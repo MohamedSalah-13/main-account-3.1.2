@@ -1,0 +1,143 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.text.Text?>
+<?import org.controlsfx.control.SearchableComboBox?>
+<StackPane xmlns:fx="http://javafx.com/fxml/1" fx:id="stackPane" xmlns="http://javafx.com/javafx/21">
+    <children>
+        <AnchorPane>
+            <children>
+                <VBox AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0"
+                      AnchorPane.topAnchor="0.0">
+                    <children>
+                        <ToolBar>
+                            <items>
+                                <Button fx:id="btnNew" mnemonicParsing="false" text="جديد"/>
+                                <Button fx:id="btnRefresh" layoutX="10.0" layoutY="10.0" mnemonicParsing="false"
+                                        text="تحديث"/>
+                                <Button fx:id="btnPrint" layoutX="84.0" layoutY="10.0" mnemonicParsing="false"
+                                        text="طباعة"/>
+                                <Separator orientation="VERTICAL"/>
+                                <Button fx:id="btnExport" layoutX="158.0" layoutY="10.0" mnemonicParsing="false"
+                                        text="تصدير"/>
+                                <ToggleButton fx:id="btnSelected" mnemonicParsing="false" text="تحديد الكل"/>
+                                <Button fx:id="btnShow" layoutX="107.0" layoutY="10.0" mnemonicParsing="false"
+                                        text="كشف حساب"/>
+                                <Button fx:id="btnPaidAll" layoutX="158.0" layoutY="10.0" mnemonicParsing="false"
+                                        text="المدفوعات"/>
+                            </items>
+                        </ToolBar>
+                        <ScrollPane fitToHeight="true" fitToWidth="true" VBox.vgrow="SOMETIMES">
+                            <content>
+                                <VBox spacing="2.0">
+                                    <children>
+                                        <VBox fx:id="box" styleClass="dashboard-tile">
+                                            <children>
+                                                <GridPane fx:id="gridPane" minHeight="-Infinity" minWidth="-Infinity"
+                                                          styleClass="grid-pane-style">
+                                                    <columnConstraints>
+                                                        <ColumnConstraints hgrow="SOMETIMES" maxWidth="-Infinity"
+                                                                           minWidth="10.0"/>
+                                                        <ColumnConstraints hgrow="SOMETIMES" maxWidth="-Infinity"
+                                                                           minWidth="10.0"/>
+                                                        <ColumnConstraints hgrow="SOMETIMES" maxWidth="-Infinity"
+                                                                           minWidth="10.0"/>
+                                                        <ColumnConstraints hgrow="SOMETIMES" maxWidth="-Infinity"
+                                                                           minWidth="10.0"/>
+                                                        <ColumnConstraints hgrow="SOMETIMES" maxWidth="-Infinity"
+                                                                           minWidth="10.0"/>
+                                                        <ColumnConstraints hgrow="SOMETIMES" maxWidth="-Infinity"
+                                                                           minWidth="10.0"/>
+                                                    </columnConstraints>
+                                                    <rowConstraints>
+                                                        <RowConstraints minHeight="10.0" prefHeight="30.0"
+                                                                        vgrow="SOMETIMES"/>
+                                                        <RowConstraints minHeight="10.0" prefHeight="30.0"
+                                                                        vgrow="SOMETIMES"/>
+                                                        <RowConstraints minHeight="10.0" prefHeight="30.0"
+                                                                        vgrow="SOMETIMES"/>
+                                                    </rowConstraints>
+                                                    <children>
+                                                        <Label minWidth="50.0" text="من تاريخ" GridPane.rowIndex="2"/>
+                                                        <Label text="الاسم" GridPane.rowIndex="1"/>
+                                                        <DatePicker fx:id="dateFrom" GridPane.columnIndex="1"
+                                                                    GridPane.rowIndex="2"/>
+                                                        <Label text="إلى تاريخ" GridPane.columnIndex="2"
+                                                               GridPane.rowIndex="2"/>
+                                                        <DatePicker fx:id="dateTo" GridPane.columnIndex="3"
+                                                                    GridPane.rowIndex="2"/>
+                                                        <Button fx:id="btnSearch" mnemonicParsing="false" text="بحث"
+                                                                GridPane.columnIndex="4" GridPane.rowIndex="2"/>
+                                                        <Label text="المنطقة" GridPane.columnIndex="2"
+                                                               GridPane.rowIndex="1"/>
+                                                        <Label minWidth="50.0" text="بحث"/>
+                                                        <TextField fx:id="textSearch" promptText="بحث"
+                                                                   GridPane.columnIndex="1"/>
+                                                        <HBox alignment="CENTER_LEFT" spacing="5.0"
+                                                              GridPane.columnIndex="3">
+                                                            <children>
+                                                                <CheckBox fx:id="checkByDate" mnemonicParsing="false"
+                                                                          text="بحث أخر"/>
+                                                                <CheckBox fx:id="checkByZero" mnemonicParsing="false"
+                                                                          text="إظهار الرصيد صفر"/>
+                                                            </children>
+                                                        </HBox>
+                                                        <SearchableComboBox fx:id="comboAddress" promptText="area"
+                                                                            GridPane.columnIndex="3"
+                                                                            GridPane.rowIndex="1"/>
+                                                        <SearchableComboBox fx:id="checkComboBox"
+                                                                            GridPane.columnIndex="1"
+                                                                            GridPane.rowIndex="1"/>
+                                                        <HBox alignment="CENTER_LEFT" spacing="5.0"
+                                                              GridPane.columnIndex="5" GridPane.rowIndex="2">
+                                                            <children>
+                                                                <CheckBox fx:id="checkColor" mnemonicParsing="false"
+                                                                          text="CheckBox"/>
+                                                                <ColorPicker fx:id="colorPicker"/>
+                                                            </children>
+                                                        </HBox>
+                                                    </children>
+                                                </GridPane>
+                                            </children>
+                                        </VBox>
+                                        <SplitPane dividerPositions="100.0" VBox.vgrow="SOMETIMES">
+                                            <items>
+                                                <TableView fx:id="tableView"/>
+                                                <VBox fx:id="boxCenter"/>
+                                            </items>
+                                        </SplitPane>
+                                        <HBox alignment="CENTER_LEFT" spacing="10.0" styleClass="pane-box-last">
+                                            <children>
+                                                <Label text="عدد"/>
+                                                <Text fx:id="textCount" strokeType="OUTSIDE" strokeWidth="0.0"
+                                                      styleClass="text-sum" text="0.0"/>
+                                                <Label layoutX="10.0" layoutY="10.0" text="مدين"/>
+                                                <Text fx:id="textTotalPurchase" layoutX="38.0" layoutY="23.0"
+                                                      strokeType="OUTSIDE" strokeWidth="0.0" styleClass="text-sum"
+                                                      text="0.0"/>
+                                                <Label layoutX="38.0" layoutY="10.0" text="دائن"/>
+                                                <Text fx:id="textTotalPaid" layoutX="145.0" layoutY="23.0"
+                                                      strokeType="OUTSIDE" strokeWidth="0.0" styleClass="text-sum"
+                                                      text="0.0"/>
+                                                <Label layoutX="10.0" layoutY="10.0" text="الباقى"/>
+                                                <Text fx:id="textTotalRest" layoutX="168.0" layoutY="23.0"
+                                                      strokeType="OUTSIDE" strokeWidth="0.0" styleClass="text-sum"
+                                                      text="0.0"/>
+                                            </children>
+                                        </HBox>
+                                    </children>
+                                    <padding>
+                                        <Insets bottom="5.0" left="5.0" right="5.0" top="5.0"/>
+                                    </padding>
+                                </VBox>
+                            </content>
+                        </ScrollPane>
+                    </children>
+                </VBox>
+            </children>
+        </AnchorPane>
+    </children>
+</StackPane>

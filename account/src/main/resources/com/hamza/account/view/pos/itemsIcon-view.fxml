@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.image.ImageView?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.text.Font?>
+<?import javafx.scene.text.Text?>
+<AnchorPane xmlns:fx="http://javafx.com/fxml/1" fx:id="anchorPane" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity"
+            minWidth="-Infinity" prefHeight="130.0" prefWidth="110.0" stylesheets="@../../css/pos.css"
+            xmlns="http://javafx.com/javafx/21">
+    <children>
+        <VBox styleClass="box-main" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0"
+              AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
+            <children>
+                <VBox alignment="CENTER" VBox.vgrow="SOMETIMES">
+                    <children>
+                        <ImageView fx:id="imageView" fitHeight="100.0" fitWidth="110.0" pickOnBounds="true"
+                                   preserveRatio="true"/>
+                    </children>
+                </VBox>
+                <VBox alignment="CENTER" minHeight="30.0" styleClass="box-name">
+                    <children>
+                        <Text fx:id="textName" strokeType="OUTSIDE" strokeWidth="0.0" styleClass="text" text="Name Item"
+                              textAlignment="CENTER"/>
+                    </children>
+                </VBox>
+            </children>
+        </VBox>
+        <VBox alignment="CENTER" layoutX="5.0" layoutY="5.0" prefHeight="30.0" prefWidth="60.0" styleClass="box-price"
+              AnchorPane.rightAnchor="5.0" AnchorPane.topAnchor="5.0">
+            <children>
+                <Text fx:id="textPrice" strokeType="OUTSIDE" strokeWidth="0.0" styleClass="text" text="SAR 15">
+                    <font>
+                        <Font name="System Bold" size="13.0"/>
+                    </font>
+                </Text>
+            </children>
+        </VBox>
+    </children>
+</AnchorPane>

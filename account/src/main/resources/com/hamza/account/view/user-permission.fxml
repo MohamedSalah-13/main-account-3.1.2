@@ -1,0 +1,414 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.text.*?>
+<StackPane xmlns:fx="http://javafx.com/fxml/1" prefHeight="489.0" prefWidth="804.0" xmlns="http://javafx.com/javafx/21">
+    <children>
+        <VBox spacing="2.0">
+            <children>
+                <TabPane tabClosingPolicy="UNAVAILABLE" VBox.vgrow="SOMETIMES">
+                    <tabs>
+                        <Tab text="المشتريات والمبيعات">
+                            <content>
+                                <ScrollPane fitToHeight="true" fitToWidth="true">
+                                    <content>
+                                        <HBox spacing="10.0">
+                                            <children>
+                                                <VBox spacing="10.0">
+                                                    <children>
+                                                        <Text strokeType="OUTSIDE" strokeWidth="0.0"
+                                                              styleClass="text-explain" text="المشتريات"
+                                                              underline="true"/>
+                                                        <CheckBox fx:id="purchase_show" mnemonicParsing="false"
+                                                                  text="purchase_show"/>
+                                                        <CheckBox fx:id="purchase_update" mnemonicParsing="false"
+                                                                  text="purchase_update"/>
+                                                        <CheckBox fx:id="purchase_delete" mnemonicParsing="false"
+                                                                  text="purchase_delete"/>
+                                                        <CheckBox fx:id="total_purchase_show" mnemonicParsing="false"
+                                                                  text="total_purchase_show"/>
+                                                        <CheckBox fx:id="total_purchase_show_invoice"
+                                                                  mnemonicParsing="false"
+                                                                  text="total_purchase_show_invoice"/>
+                                                        <Text layoutX="15.0" layoutY="28.0" strokeType="OUTSIDE"
+                                                              strokeWidth="0.0" styleClass="text-explain"
+                                                              text="مرتجع المشتريات" underline="true"/>
+                                                        <CheckBox fx:id="purchase_re_show" mnemonicParsing="false"
+                                                                  text="purchase_re_show"/>
+                                                        <CheckBox fx:id="purchase_re_update" mnemonicParsing="false"
+                                                                  text="purchase_re_update"/>
+                                                        <CheckBox fx:id="purchase_re_delete" mnemonicParsing="false"
+                                                                  text="purchase_re_delete"/>
+                                                        <CheckBox fx:id="total_purchase_re_show" mnemonicParsing="false"
+                                                                  text="total_purchase_re_show"/>
+                                                        <CheckBox fx:id="total_purchase_re_show_invoice"
+                                                                  mnemonicParsing="false"
+                                                                  text="total_purchase_re_show_invoice"/>
+                                                    </children>
+                                                    <padding>
+                                                        <Insets bottom="5.0" left="5.0" right="5.0" top="5.0"/>
+                                                    </padding>
+                                                </VBox>
+                                                <Separator orientation="VERTICAL" prefHeight="200.0"/>
+                                                <VBox spacing="10.0">
+                                                    <children>
+                                                        <Text strokeType="OUTSIDE" strokeWidth="0.0"
+                                                              styleClass="text-explain" text="المبيعات"
+                                                              underline="true"/>
+                                                        <CheckBox fx:id="sales_show" mnemonicParsing="false"
+                                                                  text="sales_show"/>
+                                                        <CheckBox fx:id="sales_update" mnemonicParsing="false"
+                                                                  text="sales_update"/>
+                                                        <CheckBox fx:id="sales_delete" mnemonicParsing="false"
+                                                                  text="sales_delete"/>
+                                                        <CheckBox fx:id="total_sales_show" mnemonicParsing="false"
+                                                                  text="total_sales_show"/>
+                                                        <CheckBox fx:id="total_sales_show_invoice"
+                                                                  mnemonicParsing="false"
+                                                                  text="total_sales_show_invoice"/>
+                                                        <Text layoutX="15.0" layoutY="55.0" strokeType="OUTSIDE"
+                                                              strokeWidth="0.0" styleClass="text-explain"
+                                                              text="مرتجع المبيعات" underline="true"/>
+                                                        <CheckBox fx:id="sales_re_show" mnemonicParsing="false"
+                                                                  text="sales_re_show"/>
+                                                        <CheckBox fx:id="sales_re_update" mnemonicParsing="false"
+                                                                  text="sales_re_update"/>
+                                                        <CheckBox fx:id="sales_re_delete" mnemonicParsing="false"
+                                                                  text="sales_re_delete"/>
+                                                        <CheckBox fx:id="total_sales_re_show" mnemonicParsing="false"
+                                                                  text="total_sales_re_show"/>
+                                                        <CheckBox fx:id="total_sales_re_show_invoice"
+                                                                  mnemonicParsing="false"
+                                                                  text="total_sales_re_show_invoice"/>
+                                                    </children>
+                                                    <padding>
+                                                        <Insets bottom="5.0" left="5.0" right="5.0" top="5.0"/>
+                                                    </padding>
+                                                </VBox>
+                                            </children>
+                                            <padding>
+                                                <Insets bottom="5.0" left="5.0" right="5.0" top="5.0"/>
+                                            </padding>
+                                        </HBox>
+                                    </content>
+                                </ScrollPane>
+                            </content>
+                        </Tab>
+                        <Tab text="الحسابات">
+                            <content>
+                                <ScrollPane fitToHeight="true" fitToWidth="true">
+                                    <content>
+                                        <HBox spacing="10.0">
+                                            <children>
+                                                <VBox spacing="10.0">
+                                                    <children>
+                                                        <Text strokeType="OUTSIDE" strokeWidth="0.0"
+                                                              styleClass="text-explain" text="العملاء"
+                                                              underline="true"/>
+                                                        <CheckBox fx:id="customer_show" mnemonicParsing="false"
+                                                                  text="customer_show"/>
+                                                        <CheckBox fx:id="customer_update" mnemonicParsing="false"
+                                                                  text="customer_update"/>
+                                                        <CheckBox fx:id="customer_delete" mnemonicParsing="false"
+                                                                  text="customer_delete"/>
+                                                        <Text strokeType="OUTSIDE" strokeWidth="0.0"
+                                                              styleClass="text-explain" text="حسابات العملاء"
+                                                              underline="true"/>
+                                                        <CheckBox fx:id="customer_account_show" mnemonicParsing="false"
+                                                                  text="customer_account_show"/>
+                                                        <CheckBox fx:id="customer_account_update"
+                                                                  mnemonicParsing="false"
+                                                                  text="customer_account_update"/>
+                                                        <CheckBox fx:id="customer_account_delete"
+                                                                  mnemonicParsing="false"
+                                                                  text="customer_account_delete"/>
+                                                    </children>
+                                                    <padding>
+                                                        <Insets bottom="5.0" left="5.0" right="5.0" top="5.0"/>
+                                                    </padding>
+                                                </VBox>
+                                                <Separator orientation="VERTICAL"/>
+                                                <VBox spacing="10.0">
+                                                    <children>
+                                                        <Text strokeType="OUTSIDE" strokeWidth="0.0"
+                                                              styleClass="text-explain" text="الموردين"
+                                                              underline="true"/>
+                                                        <CheckBox fx:id="suppliers_show" mnemonicParsing="false"
+                                                                  text="suppliers_show"/>
+                                                        <CheckBox fx:id="suppliers_update" mnemonicParsing="false"
+                                                                  text="suppliers_update"/>
+                                                        <CheckBox fx:id="suppliers_delete" mnemonicParsing="false"
+                                                                  text="suppliers_delete"/>
+                                                        <Text strokeType="OUTSIDE" strokeWidth="0.0"
+                                                              styleClass="text-explain" text="حسابات الموردين"
+                                                              underline="true"/>
+                                                        <CheckBox fx:id="suppliers_account_show" mnemonicParsing="false"
+                                                                  text="suppliers_account_show"/>
+                                                        <CheckBox fx:id="suppliers_account_update"
+                                                                  mnemonicParsing="false"
+                                                                  text="suppliers_account_update"/>
+                                                        <CheckBox fx:id="suppliers_account_delete"
+                                                                  mnemonicParsing="false"
+                                                                  text="suppliers_account_delete"/>
+                                                    </children>
+                                                    <padding>
+                                                        <Insets bottom="5.0" left="5.0" right="5.0" top="5.0"/>
+                                                    </padding>
+                                                </VBox>
+                                            </children>
+                                            <padding>
+                                                <Insets bottom="5.0" left="5.0" right="5.0" top="5.0"/>
+                                            </padding>
+                                        </HBox>
+                                    </content>
+                                </ScrollPane>
+                            </content>
+                        </Tab>
+                        <Tab text="المخازن والاصناف">
+                            <content>
+                                <ScrollPane fitToHeight="true" fitToWidth="true">
+                                    <content>
+                                        <HBox spacing="10.0">
+                                            <children>
+                                                <VBox spacing="10.0">
+                                                    <children>
+                                                        <Text strokeType="OUTSIDE" strokeWidth="0.0"
+                                                              styleClass="text-explain" text="الاصناف"
+                                                              underline="true"/>
+                                                        <CheckBox fx:id="items_show" mnemonicParsing="false"
+                                                                  text="items_show"/>
+                                                        <CheckBox fx:id="items_update" mnemonicParsing="false"
+                                                                  text="items_update"/>
+                                                        <CheckBox fx:id="items_delete" mnemonicParsing="false"
+                                                                  text="items_delete"/>
+                                                        <CheckBox fx:id="inventory_show" mnemonicParsing="false"
+                                                                  text="inventory_show"/>
+                                                        <CheckBox fx:id="items_add_excel" disable="true"
+                                                                  mnemonicParsing="false" text="items_add_excel"/>
+                                                        <Text layoutX="15.0" layoutY="55.0" strokeType="OUTSIDE"
+                                                              strokeWidth="0.0" styleClass="text-explain" text="المخزن"
+                                                              underline="true"/>
+                                                        <CheckBox fx:id="stock_show" disable="true"
+                                                                  mnemonicParsing="false" text="stock_show"/>
+                                                        <CheckBox fx:id="stock_update" disable="true"
+                                                                  mnemonicParsing="false" text="stock_update"/>
+                                                        <CheckBox fx:id="stock_delete" disable="true"
+                                                                  mnemonicParsing="false" text="stock_delete"/>
+                                                        <CheckBox fx:id="stock_convert_show" disable="true"
+                                                                  mnemonicParsing="false" text="stock_convert_show"/>
+                                                        <CheckBox fx:id="stock_convert_update" disable="true"
+                                                                  mnemonicParsing="false" text="stock_convert_update"/>
+                                                        <CheckBox fx:id="stock_convert_delete" disable="true"
+                                                                  mnemonicParsing="false" text="stock_convert_delete"/>
+                                                    </children>
+                                                    <padding>
+                                                        <Insets bottom="5.0" left="5.0" right="5.0" top="5.0"/>
+                                                    </padding>
+                                                </VBox>
+                                                <Separator orientation="VERTICAL" prefHeight="200.0"/>
+                                                <VBox spacing="10.0">
+                                                    <children>
+                                                        <Text strokeType="OUTSIDE" strokeWidth="0.0"
+                                                              styleClass="text-explain" text="مجموعة رئيسية"
+                                                              underline="true"/>
+                                                        <CheckBox fx:id="main_group_show" mnemonicParsing="false"
+                                                                  text="main_group_show"/>
+                                                        <CheckBox fx:id="main_group_update" disable="true"
+                                                                  mnemonicParsing="false" text="main_group_update"/>
+                                                        <CheckBox fx:id="main_group_delete" disable="true"
+                                                                  mnemonicParsing="false" text="main_group_delete"/>
+                                                        <Text layoutX="15.0" layoutY="190.0" strokeType="OUTSIDE"
+                                                              strokeWidth="0.0" styleClass="text-explain"
+                                                              text="مجموعة فرعية" underline="true"/>
+                                                        <CheckBox fx:id="sub_group_show" mnemonicParsing="false"
+                                                                  text="sub_group_show"/>
+                                                        <CheckBox fx:id="sub_group_update" disable="true"
+                                                                  mnemonicParsing="false" text="sub_group_update"/>
+                                                        <CheckBox fx:id="sub_group_delete" disable="true"
+                                                                  mnemonicParsing="false" text="sub_group_delete"/>
+                                                    </children>
+                                                    <padding>
+                                                        <Insets bottom="5.0" left="5.0" right="5.0" top="5.0"/>
+                                                    </padding>
+                                                </VBox>
+                                                <Separator orientation="VERTICAL" prefHeight="200.0"/>
+                                                <VBox spacing="10.0">
+                                                    <children>
+                                                        <Text strokeType="OUTSIDE" strokeWidth="0.0"
+                                                              styleClass="text-explain" text="الخزينة"
+                                                              underline="true"/>
+                                                        <CheckBox fx:id="treasury_show" mnemonicParsing="false"
+                                                                  text="treasury_show"/>
+                                                        <CheckBox fx:id="treasury_update" disable="true"
+                                                                  mnemonicParsing="false" text="treasury_update"/>
+                                                        <CheckBox fx:id="treasury_delete" disable="true"
+                                                                  mnemonicParsing="false" text="treasury_delete"/>
+                                                        <Text layoutX="15.0" layoutY="298.0" strokeType="OUTSIDE"
+                                                              strokeWidth="0.0" styleClass="text-explain" text="الوحدات"
+                                                              underline="true"/>
+                                                        <CheckBox fx:id="units_show" mnemonicParsing="false"
+                                                                  text="units_show"/>
+                                                        <CheckBox fx:id="units_update" disable="true"
+                                                                  mnemonicParsing="false" text="units_update"/>
+                                                        <CheckBox fx:id="units_delete" disable="true"
+                                                                  mnemonicParsing="false" text="units_delete"/>
+                                                        <CheckBox fx:id="sel_price_show" mnemonicParsing="false"
+                                                                  text="sel_price_show"/>
+                                                        <CheckBox fx:id="sel_price_update" mnemonicParsing="false"
+                                                                  text="sel_price_update"/>
+                                                        <CheckBox fx:id="sel_price_delete" disable="true"
+                                                                  mnemonicParsing="false" text="sel_price_delete"/>
+                                                    </children>
+                                                    <padding>
+                                                        <Insets bottom="5.0" left="5.0" right="5.0" top="5.0"/>
+                                                    </padding>
+                                                </VBox>
+                                            </children>
+                                            <padding>
+                                                <Insets bottom="5.0" left="5.0" right="5.0" top="5.0"/>
+                                            </padding>
+                                        </HBox>
+                                    </content>
+                                </ScrollPane>
+                            </content>
+                        </Tab>
+                        <Tab text="التقارير">
+                            <content>
+                                <ScrollPane fitToHeight="true" fitToWidth="true">
+                                    <content>
+                                        <HBox spacing="10.0">
+                                            <children>
+                                                <VBox spacing="10.0">
+                                                    <children>
+                                                        <Text strokeType="OUTSIDE" strokeWidth="0.0"
+                                                              styleClass="text-explain" text="التقارير"
+                                                              underline="true"/>
+                                                        <CheckBox fx:id="checkReportSummary" mnemonicParsing="false"
+                                                                  text="ملخص الحسابات"/>
+                                                        <CheckBox fx:id="checkReportItems" disable="true"
+                                                                  mnemonicParsing="false" text="تقارير الاصناف"/>
+                                                        <CheckBox fx:id="checkReportCustomers" mnemonicParsing="false"
+                                                                  text="تقارير العملاء"/>
+                                                        <CheckBox fx:id="checkReportSuppliers" mnemonicParsing="false"
+                                                                  text="تقارير الموردين"/>
+                                                        <CheckBox fx:id="checkReportCustomAccountArea" disable="true"
+                                                                  mnemonicParsing="false"
+                                                                  text="تقارير حسابات العملاء بالمنطقة"/>
+                                                        <CheckBox fx:id="checkReportSales" mnemonicParsing="false"
+                                                                  text="تقارير المبيعات"/>
+                                                        <CheckBox fx:id="checkReportPurchase" layoutX="15.0"
+                                                                  layoutY="150.0" mnemonicParsing="false"
+                                                                  text="تقارير المشتريات"/>
+                                                        <CheckBox fx:id="checkReportDayDetails" disable="true"
+                                                                  layoutX="15.0" layoutY="177.0" mnemonicParsing="false"
+                                                                  text="تقارير تفاصيل اليومية"/>
+                                                        <CheckBox fx:id="checkReportDelegate" disable="true"
+                                                                  layoutX="15.0" layoutY="204.0" mnemonicParsing="false"
+                                                                  text="تقارير المندوب"/>
+                                                        <CheckBox fx:id="checkReportProfit" layoutX="15.0"
+                                                                  layoutY="231.0" mnemonicParsing="false"
+                                                                  text="تقارير الارباح والخسائر"/>
+                                                    </children>
+                                                    <padding>
+                                                        <Insets bottom="5.0" left="5.0" right="5.0" top="5.0"/>
+                                                    </padding>
+                                                </VBox>
+                                            </children>
+                                            <padding>
+                                                <Insets bottom="5.0" left="5.0" right="5.0" top="5.0"/>
+                                            </padding>
+                                        </HBox>
+                                    </content>
+                                </ScrollPane>
+                            </content>
+                        </Tab>
+                        <Tab text="أخرى">
+                            <content>
+                                <ScrollPane fitToHeight="true" fitToWidth="true">
+                                    <content>
+                                        <HBox spacing="10.0">
+                                            <children>
+                                                <VBox spacing="10.0">
+                                                    <children>
+                                                        <Text layoutX="15.0" layoutY="217.0" strokeType="OUTSIDE"
+                                                              strokeWidth="0.0" styleClass="text-explain"
+                                                              text="المصروفات" underline="true"/>
+                                                        <CheckBox fx:id="expenses_show" mnemonicParsing="false"
+                                                                  text="expenses_show"/>
+                                                        <CheckBox fx:id="expenses_update" disable="true"
+                                                                  mnemonicParsing="false" text="expenses_update"/>
+                                                        <CheckBox fx:id="expenses_delete" disable="true"
+                                                                  mnemonicParsing="false" text="expenses_delete"/>
+                                                        <Text layoutX="15.0" layoutY="405.0" strokeType="OUTSIDE"
+                                                              strokeWidth="0.0" styleClass="text-explain"
+                                                              text="الموظفين" underline="true"/>
+                                                        <CheckBox fx:id="employee_show" mnemonicParsing="false"
+                                                                  text="employee_show"/>
+                                                        <CheckBox fx:id="employee_update" mnemonicParsing="false"
+                                                                  text="employee_update"/>
+                                                        <CheckBox fx:id="employee_delete" mnemonicParsing="false"
+                                                                  text="employee_delete"/>
+                                                        <Text strokeType="OUTSIDE" strokeWidth="0.0"
+                                                              styleClass="text-explain" text="الاعدادات"
+                                                              underline="true"/>
+                                                        <CheckBox fx:id="setting_show" mnemonicParsing="false"
+                                                                  text="setting_show"/>
+                                                        <CheckBox fx:id="setting_company_show" mnemonicParsing="false"
+                                                                  text="setting_company_show"/>
+                                                        <CheckBox fx:id="setting_backup_show" mnemonicParsing="false"
+                                                                  text="setting_backup_show"/>
+                                                        <CheckBox fx:id="setting_other_show" mnemonicParsing="false"
+                                                                  text="setting_other_show"/>
+                                                        <CheckBox fx:id="setting_items_show" mnemonicParsing="false"
+                                                                  text="setting_items_show"/>
+                                                        <CheckBox fx:id="setting_shows_show" mnemonicParsing="false"
+                                                                  text="setting_shows_show"/>
+                                                        <CheckBox fx:id="invoice_profit_show" mnemonicParsing="false"
+                                                                  text="invoice_profit_show"/>
+                                                    </children>
+                                                    <padding>
+                                                        <Insets bottom="5.0" left="5.0" right="5.0" top="5.0"/>
+                                                    </padding>
+                                                </VBox>
+                                                <Separator orientation="VERTICAL" prefHeight="200.0"/>
+                                                <VBox spacing="10.0">
+                                                    <children>
+                                                        <CheckBox fx:id="employees_show_salary" mnemonicParsing="false"
+                                                                  text="عرض المرتب"/>
+                                                        <CheckBox fx:id="show_column_buy_price" mnemonicParsing="false"
+                                                                  text="عرض سعر الشراء"/>
+                                                        <CheckBox fx:id="checkEditPreviousData" layoutX="15.0"
+                                                                  layoutY="42.0" mnemonicParsing="false"
+                                                                  text="تعديل بيانات سابقة"/>
+                                                        <CheckBox fx:id="checkShowPreviousData" layoutX="15.0"
+                                                                  layoutY="69.0" mnemonicParsing="false"
+                                                                  text="عرض بيانات سابقة"/>
+                                                        <CheckBox fx:id="checkUpdateName" layoutX="15.0" layoutY="96.0"
+                                                                  mnemonicParsing="false" text="تعديل الاسم"/>
+                                                        <CheckBox fx:id="checkUpdatePass" layoutX="15.0" layoutY="123.0"
+                                                                  mnemonicParsing="false" text="تعديل كلمة المرور"/>
+                                                    </children>
+                                                    <padding>
+                                                        <Insets bottom="5.0" left="5.0" right="5.0" top="5.0"/>
+                                                    </padding>
+                                                </VBox>
+                                            </children>
+                                            <padding>
+                                                <Insets bottom="5.0" left="5.0" right="5.0" top="5.0"/>
+                                            </padding>
+                                        </HBox>
+                                    </content>
+                                </ScrollPane>
+                            </content>
+                        </Tab>
+                    </tabs>
+                </TabPane>
+            </children>
+            <padding>
+                <Insets bottom="2.0" left="2.0" right="2.0" top="2.0"/>
+            </padding>
+        </VBox>
+    </children>
+</StackPane>

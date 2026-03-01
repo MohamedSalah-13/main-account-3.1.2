@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import com.jfoenix.controls.JFXDrawer?>
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Tab?>
+<?import javafx.scene.control.TabPane?>
+<?import javafx.scene.image.*?>
+<?import javafx.scene.layout.*?>
+<BorderPane xmlns:fx="http://javafx.com/fxml/1" fx:id="borderPane" prefHeight="478.0" prefWidth="723.0"
+            xmlns="http://javafx.com/javafx/21">
+    <center>
+        <HBox BorderPane.alignment="CENTER">
+            <children>
+                <JFXDrawer fx:id="drawer" defaultDrawerSize="0.0"/>
+                <VBox fx:id="boxCenter" spacing="2.0" HBox.hgrow="SOMETIMES">
+                    <children>
+                        <TabPane fx:id="tabPane" tabClosingPolicy="ALL_TABS" VBox.vgrow="ALWAYS">
+                            <tabs>
+                                <Tab text="Untitled Tab 1">
+                                    <content>
+                                        <HBox prefHeight="100.0" prefWidth="200.0"/>
+                                    </content>
+                                    <content>
+                                        <AnchorPane>
+                                            <children>
+                                                <StackPane fx:id="stackPane" AnchorPane.bottomAnchor="0.0"
+                                                           AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0"
+                                                           AnchorPane.topAnchor="0.0">
+                                                    <children>
+                                                        <ImageView fx:id="imageView" fitHeight="150.0" fitWidth="200.0"
+                                                                   pickOnBounds="true" preserveRatio="true"/>
+                                                        <BorderPane fx:id="paneAnyDesk">
+                                                            <center>
+                                                                <FlowPane fx:id="flowPane" hgap="5.0" vgap="5.0"
+                                                                          BorderPane.alignment="CENTER">
+                                                                    <padding>
+                                                                        <Insets bottom="10.0" left="10.0" right="10.0"
+                                                                                top="10.0"/>
+                                                                    </padding>
+                                                                </FlowPane>
+                                                            </center>
+                                                            <bottom>
+                                                                <HBox styleClass="pane-box-button-anyDesk"
+                                                                      BorderPane.alignment="CENTER">
+                                                                    <children>
+                                                                        <Button fx:id="btnAnyDesk"
+                                                                                mnemonicParsing="false">
+                                                                            <graphic>
+                                                                                <ImageView fx:id="imageAny"
+                                                                                           fitHeight="25.0"
+                                                                                           fitWidth="25.0"
+                                                                                           pickOnBounds="true"
+                                                                                           preserveRatio="true">
+                                                                                    <image>
+                                                                                        <Image url="@../image/anydesk-icon-2048x2048-uwos9vv5.png"/>
+                                                                                    </image>
+                                                                                </ImageView>
+                                                                            </graphic>
+                                                                        </Button>
+                                                                        <Button fx:id="btnChooseImage" layoutX="10.0"
+                                                                                layoutY="10.0" mnemonicParsing="false">
+                                                                            <graphic>
+                                                                                <ImageView fx:id="imageAny1"
+                                                                                           fitHeight="25.0"
+                                                                                           fitWidth="25.0"
+                                                                                           pickOnBounds="true"
+                                                                                           preserveRatio="true">
+                                                                                    <image>
+                                                                                        <Image url="@../image/icons8-image-100.png"/>
+                                                                                    </image>
+                                                                                </ImageView>
+                                                                            </graphic>
+                                                                        </Button>
+                                                                    </children>
+                                                                </HBox>
+                                                            </bottom>
+                                                        </BorderPane>
+                                                    </children>
+                                                </StackPane>
+                                            </children>
+                                        </AnchorPane>
+                                    </content>
+                                    <graphic>
+                                        <ImageView fitHeight="20.0" fitWidth="20.0" pickOnBounds="true"
+                                                   preserveRatio="true">
+                                            <image>
+                                                <Image url="@../image/icons8-home-page-80.png"/>
+                                            </image>
+                                        </ImageView>
+                                    </graphic>
+                                </Tab>
+                            </tabs>
+                        </TabPane>
+                    </children>
+                </VBox>
+            </children>
+        </HBox>
+    </center>
+</BorderPane>

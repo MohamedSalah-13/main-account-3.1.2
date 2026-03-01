@@ -1,0 +1,417 @@
+package com.hamza.account.controller.name_account;
+
+import com.hamza.account.config.Image_Setting;
+import com.hamza.account.controller.main.DataPublisher;
+import com.hamza.account.controller.main.LoadOtherData;
+import com.hamza.account.interfaces.api.DataInterface;
+import com.hamza.account.model.base.BaseAccount;
+import com.hamza.account.model.base.BaseNames;
+import com.hamza.account.model.base.BasePurchasesAndSales;
+import com.hamza.account.model.base.BaseTotals;
+import com.hamza.account.model.dao.DaoFactory;
+import com.hamza.account.openFxml.FxmlPath;
+import com.hamza.account.openFxml.OpenFxmlApplication;
+import com.hamza.account.otherSetting.MaskerPaneSetting;
+import com.hamza.account.table.EditCellTree;
+import com.hamza.account.table.TableSetting;
+import com.hamza.controlsfx.alert.AllAlerts;
+import com.hamza.controlsfx.filechooser.ImageChoose;
+import com.hamza.controlsfx.interfaceData.AppSettingInterface;
+import com.hamza.controlsfx.language.Error_Text_Show;
+import com.hamza.controlsfx.language.Setting_Language;
+import com.hamza.controlsfx.others.DateSetting;
+import com.hamza.controlsfx.table.Column;
+import com.hamza.controlsfx.table.TreeTable;
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
+import javafx.fxml.FXML;
+import javafx.fxml.Initializable;
+import javafx.scene.control.*;
+import javafx.scene.layout.AnchorPane;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.Pane;
+import javafx.scene.layout.StackPane;
+import javafx.scene.text.Text;
+import lombok.extern.log4j.Log4j2;
+
+import java.io.IOException;
+import java.net.URL;
+import java.time.LocalDate;
+import java.util.*;
+import java.util.prefs.Preferences;
+
+import static com.hamza.account.controller.name_account.impl.AccountTotalsPurchase.purchaseLabel;
+import static com.hamza.account.controller.name_account.impl.AccountTotalsPurchase.purchaseReturnLabel;
+import static com.hamza.account.controller.name_account.impl.AccountTotalsSales.salesReTitle;
+import static com.hamza.account.controller.name_account.impl.AccountTotalsSales.salesTitle;
+import static com.hamza.account.table.TreeTableSetting.initializeColumnCellFactory;
+import static com.hamza.account.table.TreeTableSetting.initializeColumnCellFactoryInteger;
+import static com.hamza.account.view.OpenTreasuryDetailsApplication.ACCOUNT_STATEMENT_TITLE;
+
+@Log4j2
+@FxmlPath(pathFile = "accountDetailsTreeTableView.fxml")
+public class AccountDetailsWithItemsController<T1 extends BasePurchasesAndSales, T2 extends BaseTotals, T3 extends BaseNames, T4 extends BaseAccount>
+        extends LoadOtherData<T1, T2, T3, T4> implements Initializable, AppSettingInterface {
+
+    public static final String ACCOUNT_DETAILS_TREE_COLOR_ROW = "account.details.tree.color.row";
+    private static final String ACCOUNT_TITLE_ARABIC = "دفع";
+    private static final String BALANCE_TITLE = "الرصيد";
+    private final ObservableList<AccountCard> observableList = FXCollections.observableArrayList();
+    private final String name_account;
+    private final int num_id;
+    private final AccountDetailsInterface accountDetailsInterface;
+    private final Preferences preferences = Preferences.userNodeForPackage(AccountDetailsWithItemsController.class);
+    private TreeItem<AccountCard> treeItem;
+    @FXML
+    private TreeTableView<AccountCard> treeView;
+    @FXML
+    private Label labelName, labelFirstBalance, labelLastBalance, labelFrom, labelTo;
+    @FXML
+    private Button btnPrint, btnRefresh, btnSearch;
+    @FXML
+    private TextField txtLimit, txtLast, txtName;
+    @FXML
+    private AnchorPane pane;
+    @FXML
+    private HBox boxSearch;
+    @FXML
+    private DatePicker dateFrom;
+    @FXML
+    private DatePicker dateTo;
+    @FXML
+    private Text textSumPurchase, textSumPaid, textSumTotals;
+    @FXML
+    private CheckMenuItem checkPrintDetails, checkShowColor, checkShowAll;
+    @FXML
+    private StackPane stackPane;
+    private List<AccountCard> list_items = new ArrayList<>();
+    private MaskerPaneSetting maskerPaneSetting;
+
+    // Add this helper method:
+    public AccountDetailsWithItemsController(DaoFactory daoFactory, DataPublisher dataPublisher
+            , DataInterface<T1, T2, T3, T4> dataInterface
+            , T4 t4, AccountDetailsInterface accountDetailsInterface) throws Exception {
+        super(dataInterface, daoFactory, dataPublisher);
+        this.name_account = accountData.getName(t4);
+        this.num_id = accountData.getIdName(t4);
+        this.accountDetailsInterface = accountDetailsInterface;
+    }
+
+    @Override
+    public void initialize(URL url, ResourceBundle resourceBundle) {
+        maskerPaneSetting = new MaskerPaneSetting(stackPane);
+        otherSetting();
+        createTree();
+        buttonGraphic();
+        actionSetting();
+    }
+
+    private void actionSetting() {
+        btnPrint.setOnAction(e -> printAccount());
+        btnSearch.setOnAction(e -> filterByDate());
+        btnRefresh.setOnAction(e -> resetDateFilter());
+
+        checkShowColor.selectedProperty().addListener((observable, oldValue, newValue) -> {
+            applyRowColoringIfNeeded(newValue);
+            preferences.putBoolean(ACCOUNT_DETAILS_TREE_COLOR_ROW, newValue);
+        });
+
+        var aBoolean = preferences.getBoolean(ACCOUNT_DETAILS_TREE_COLOR_ROW, false);
+        checkShowColor.setSelected(aBoolean);
+        applyRowColoringIfNeeded(aBoolean);
+
+        colorColumn(3, "green");
+        colorColumn(4, "red");
+    }
+
+    private void applyRowColoringIfNeeded(boolean aBoolean) {
+        if (aBoolean) {
+            colorRows();
+        } else {
+            treeView.setRowFactory(null);
+            treeView.refresh();
+        }
+    }
+
+    private void colorColumn(int index, String color) {
+        TreeTableColumn<AccountCard, ?> accountCardTreeTableColumn = treeView.getColumns().get(index);
+        accountCardTreeTableColumn.setStyle(accountCardTreeTableColumn.getStyle() + "; -fx-text-fill: " + color + "; -fx-font-weight: bold;");
+    }
+
+    private void buttonGraphic() {
+//        btnPrint, btnRefresh, btnSearch, btnUpdate, btnDelete;
+        var imageSetting = new Image_Setting();
+        btnPrint.setGraphic(ImageChoose.createIcon(imageSetting.print));
+        btnRefresh.setGraphic(ImageChoose.createIcon(imageSetting.refresh));
+        btnSearch.setGraphic(ImageChoose.createIcon(imageSetting.search));
+    }
+
+    private void createTree() {
+        treeView.getColumns().clear();
+        TreeTable.createTable(treeView, initializeAccountColumnDefinitions());
+        TableSetting.tableMenuSetting(getClass(), treeView);
+        treeView.setEditable(true);
+
+        var accountCard1 = new AccountCard();
+        accountCard1.setInformation(Setting_Language.WORD_TOTAL);
+        treeItem = new TreeItem<>(accountCard1);
+        treeView.setRoot(treeItem);
+
+        treeItem.expandedProperty().addListener((observable, oldValue, newValue) -> {
+            if (newValue) {
+                if (checkShowAll.isSelected()) expandAllChildren(treeItem);
+            } else {
+                collapseAllChildren(treeItem);
+            }
+        });
+
+
+        initializeColumnCellFactoryInteger(0, treeView);
+        initializeColumnCellFactory(3, treeView);
+        initializeColumnCellFactory(4, treeView);
+
+        TreeTableColumn<AccountCard, String> column = (TreeTableColumn<AccountCard, String>) treeView.getColumns().get(5);
+        column.setCellFactory(column2 -> EditCellTree.createStringEditCell());
+        column.setOnEditCommit(t -> {
+            t.getRowValue().getValue().setNotes(t.getNewValue());
+        });
+
+        // load list data
+        list_items = generateAccountItemList(accountDetailsInterface);
+        observableList.setAll(list_items);
+
+        // initialize
+        initializeAccountTreeItems();
+        // Then in your createTree() method, after processing list_items:
+        calculateSumAccount();
+
+    }
+
+    private void filterByDate() {
+        LocalDate fromDate = dateFrom.getValue();
+        LocalDate toDate = dateTo.getValue();
+
+        if (fromDate != null && toDate != null) {
+            if (fromDate.isAfter(toDate)) {
+                AllAlerts.alertError(Error_Text_Show.NOT_POSSIBLE);
+                return;
+            }
+            List<AccountCard> filteredList = list_items.stream()
+                    .filter(item -> {
+                        var date = LocalDate.parse(item.getDate());
+                        return !date.isBefore(fromDate) && !date.isAfter(toDate);
+                    })
+                    .toList();
+            observableList.setAll(filteredList);
+            initializeAccountTreeItems();
+            calculateSumAccount();
+        }
+    }
+
+    private void resetDateFilter() {
+        observableList.setAll(list_items);
+        initializeAccountTreeItems();
+        calculateSumAccount();
+    }
+
+    private void initializeAccountTreeItems() {
+        maskerPaneSetting.showMaskerPane(() -> {
+            treeItem.getChildren().clear();
+            observableList.forEach(t4 -> {
+                TreeItem<AccountCard> accountTreeItem = new TreeItem<>(t4);
+                treeItem.getChildren().add(accountTreeItem);
+                treeItem.setExpanded(true);
+
+                // for sales or purchase
+                try {
+                    accountDetailsInterface.addTreeItemTotals(t4, accountTreeItem);
+                } catch (Exception e) {
+                    errorLog(e);
+                }
+            });
+        });
+    }
+
+
+    private void colorRows() {
+        treeView.setRowFactory(sTableView -> {
+            TreeTableRow<AccountCard> row = new TreeTableRow<>();
+            row.itemProperty().addListener((observableValue, s, t1) -> {
+                if (t1 != null) {
+                    var information = t1.getInformation();
+                    if (information != null) {
+                        switch (information) {
+                            case purchaseLabel, purchaseReturnLabel, salesTitle, salesReTitle ->
+                                    row.setStyle("-fx-background-color: rgba(246, 244, 244, 0.84); -fx-text-fill: red;");
+
+                        }
+                    }
+                }
+                treeView.refresh();
+            });
+
+            return row;
+        });
+    }
+
+
+    private void calculateSumAccount() {
+        double totalPurchase = observableList.stream()
+                .mapToDouble(AccountCard::getPurchase)
+                .sum();
+        double totalPaid = observableList.stream()
+                .mapToDouble(AccountCard::getPaid)
+                .sum();
+
+        textSumPurchase.setText(String.valueOf(totalPurchase));
+        textSumPurchase.setStyle("-fx-font-weight: bold; -fx-fill: green;");
+        textSumPaid.setText(String.valueOf(totalPaid));
+        textSumPaid.setStyle("-fx-font-weight: bold; -fx-fill: red;");
+        double total = totalPurchase - totalPaid;
+        textSumTotals.setText(String.valueOf(total));
+        textSumTotals.setStyle("-fx-font-weight: bold; -fx-fill: " + (total >= 0 ? "green" : "red") + ";");
+
+    }
+
+    private void expandAllChildren(TreeItem<?> item) {
+        if (item != null && !item.isLeaf()) {
+            item.setExpanded(true);
+            item.getChildren().forEach(this::expandAllChildren);
+        }
+    }
+
+    private void collapseAllChildren(TreeItem<?> item) {
+        if (item != null && !item.isLeaf()) {
+            item.setExpanded(false);
+            item.getChildren().forEach(this::collapseAllChildren);
+        }
+    }
+
+    private void otherSetting() {
+        List<T3> customersList = getDataAllList();
+        labelName.setText(Setting_Language.WORD_NAME);
+        labelFirstBalance.setText(Setting_Language.FIRST_BALANCE);
+        labelLastBalance.setText(Setting_Language.THE_FINAL_BALANCE);
+        btnPrint.setText(Setting_Language.WORD_PRINT);
+        btnSearch.setText(Setting_Language.WORD_SEARCH);
+        btnRefresh.setText(Setting_Language.WORD_REFRESH);
+        txtLimit.setText(String.valueOf(nameService.getCredit(customersList, num_id)));
+        txtName.setText(name_account);
+        checkPrintDetails.setText("إظهار التفاصيل فى الطباعة");
+        checkShowColor.setText("إظهار اللون");
+        checkShowAll.setText("إظهار كل البيانات");
+
+        // init date
+        DateSetting.dateAction(dateFrom);
+        DateSetting.dateAction(dateTo);
+        labelFrom.setText(Setting_Language.WORD_FROM);
+        labelTo.setText(Setting_Language.WORD_TO);
+    }
+
+    private List<T3> getDataAllList() {
+        try {
+            return nameAndAccountInterface.nameList();
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private List<AccountCard> generateAccountItemList(AccountDetailsInterface accountDetailsInterface) {
+        // add first Balance
+        try {
+            list_items = new ArrayList<>();
+            var customerById = dataInterface.nameAndAccountInterface().getNameById(num_id);
+            var firstBalance = customerById.getFirst_balance();
+            AccountCard accountName = new AccountCard(0, BALANCE_TITLE
+                    , customerById.getCreated_at().toLocalDate().toString()
+                    , firstBalance > 0 ? firstBalance : 0, firstBalance < 0 ? firstBalance : 0
+                    , "", customerById.getNotes(), BALANCE_TITLE);
+            list_items.add(accountName);
+
+            // add totals
+            accountDetailsInterface.getTotalList(list_items, num_id);
+
+            // add returns
+            accountDetailsInterface.getTotalReturnList(list_items, num_id);
+
+            // add account
+            var accountList = dataInterface.nameAndAccountInterface().accountListById(num_id);
+            var listAccount = accountList.stream().toList();
+            listAccount.forEach(account -> {
+                AccountCard accountCard = new AccountCard(account.getId(), ACCOUNT_TITLE_ARABIC, account.getDate(), account.getPurchase(), account.getPaid()
+                        , "", account.getNotes(), ACCOUNT_TITLE_ARABIC);
+                list_items.add(accountCard);
+            });
+
+            list_items.sort(Comparator.comparing(AccountCard::getDate));
+        } catch (Exception e) {
+            errorLog(e);
+        }
+        return list_items;
+    }
+
+    private void printAccount() {
+        boolean showDetails = checkPrintDetails.isSelected();
+        List<AccountCard> allItems = getAllTreeItems(treeView.getRoot());
+        if (!showDetails) {
+            allItems = allItems.stream()
+                    .filter(item -> item.getInformation() != null && !item.getInformation().isEmpty())
+                    .toList();
+        }
+
+
+        printReports.printAccountStatement(allItems, true, ACCOUNT_STATEMENT_TITLE, name_account, null);
+    }
+
+    private List<AccountCard> getAllTreeItems(TreeItem<AccountCard> item) {
+        List<AccountCard> items = new ArrayList<>();
+        if (item != null) {
+            if (item.getValue() != null) {
+                items.add(item.getValue());
+            }
+            if (!item.isLeaf()) {
+                for (TreeItem<AccountCard> child : item.getChildren()) {
+                    items.addAll(getAllTreeItems(child));
+                }
+            }
+        }
+        return items;
+    }
+
+    private void errorLog(Exception e) {
+        AllAlerts.alertError(e.getMessage());
+        log.error(e.getMessage(), e.getCause());
+    }
+
+    @Override
+    public Pane pane() throws IOException {
+        var pane1 = new OpenFxmlApplication(this).getPane();
+        pane1.getStyleClass().add(dataInterface.designInterface().styleSheet());
+        return pane1;
+    }
+
+    @Override
+    public String title() {
+        return Setting_Language.ACCOUNT_CARD + " - " + name_account;
+    }
+
+    @Override
+    public boolean resize() {
+        return true;
+    }
+
+    private List<Column<?>> initializeAccountColumnDefinitions() {
+        return new ArrayList<>(Arrays.asList(
+                new Column<>(Integer.class, "id", Setting_Language.WORD_NUM),
+                new Column<>(Date.class, "date", Setting_Language.WORD_DATE),
+                new Column<>(String.class, "information", "نوع العملية"),
+                new Column<>(Double.class, "purchase", Setting_Language.DEBTOR),
+                new Column<>(Double.class, "paid", Setting_Language.CREDITOR),
+//                new Column<>(Double.class, "details", "تحليلى"),
+                new Column<>(String.class, "notes", Setting_Language.NOTES)
+
+        ));
+    }
+
+
+}

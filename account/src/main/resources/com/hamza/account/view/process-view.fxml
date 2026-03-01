@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<StackPane xmlns:fx="http://javafx.com/fxml/1" fx:id="stackPane" prefHeight="578.0" prefWidth="916.0"
+           xmlns="http://javafx.com/javafx/21">
+    <children>
+        <AnchorPane prefHeight="502.0" prefWidth="768.0">
+            <children>
+                <VBox prefHeight="502.0" prefWidth="768.0" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0"
+                      AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
+                    <children>
+                        <ToolBar prefHeight="40.0" prefWidth="200.0">
+                            <items>
+                                <Button fx:id="btnDelete" layoutX="10.0" layoutY="10.0" mnemonicParsing="false"
+                                        text="Delete"/>
+                                <Button fx:id="btnClose" cancelButton="true" mnemonicParsing="false" text="Close"/>
+                            </items>
+                        </ToolBar>
+                        <VBox spacing="2.0" VBox.vgrow="SOMETIMES">
+                            <children>
+                                <VBox minHeight="-Infinity" styleClass="dashboard-tile">
+                                    <children>
+                                        <GridPane minHeight="-Infinity" minWidth="-Infinity"
+                                                  styleClass="grid-pane-style">
+                                            <columnConstraints>
+                                                <ColumnConstraints hgrow="SOMETIMES" maxWidth="-Infinity"
+                                                                   minWidth="10.0"/>
+                                                <ColumnConstraints hgrow="SOMETIMES" maxWidth="-Infinity"
+                                                                   minWidth="10.0"/>
+                                                <ColumnConstraints hgrow="SOMETIMES" maxWidth="-Infinity"
+                                                                   minWidth="10.0"/>
+                                                <ColumnConstraints hgrow="SOMETIMES" maxWidth="-Infinity"
+                                                                   minWidth="10.0"/>
+                                            </columnConstraints>
+                                            <rowConstraints>
+                                                <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES"/>
+                                                <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES"/>
+                                                <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES"/>
+                                                <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES"/>
+                                                <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES"/>
+                                            </rowConstraints>
+                                            <children>
+                                                <Label fx:id="labelAdmin" text="Admin"/>
+                                                <ComboBox fx:id="boxAdmin" maxWidth="1.7976931348623157E308"
+                                                          GridPane.columnIndex="1"/>
+                                                <Label fx:id="labelProcess" text="Process" GridPane.columnIndex="2"/>
+                                                <ComboBox fx:id="boxProcess" maxWidth="1.7976931348623157E308"
+                                                          GridPane.columnIndex="3"/>
+                                                <ComboBox fx:id="boxTable" maxWidth="1.7976931348623157E308"
+                                                          GridPane.columnIndex="1" GridPane.rowIndex="1"/>
+                                                <Label fx:id="labelTable" text="Table" GridPane.rowIndex="1"/>
+                                                <Label fx:id="labelSearch" text="Search" GridPane.rowIndex="4"/>
+                                                <TextField fx:id="txtSearch" minWidth="-Infinity" prefWidth="300.0"
+                                                           GridPane.columnIndex="1" GridPane.rowIndex="4"/>
+                                                <Label fx:id="labelFrom" text="From" GridPane.rowIndex="2"/>
+                                                <Label fx:id="labelTo" text="To" GridPane.columnIndex="2"
+                                                       GridPane.rowIndex="2"/>
+                                                <Label fx:id="labelSortBy" text="Sorted By" GridPane.rowIndex="3"/>
+                                                <ComboBox fx:id="comboSortedBy" disable="true"
+                                                          maxWidth="1.7976931348623157E308" GridPane.columnIndex="1"
+                                                          GridPane.rowIndex="3"/>
+                                                <HBox alignment="CENTER_LEFT" minWidth="-Infinity" spacing="20.0"
+                                                      GridPane.columnIndex="3" GridPane.rowIndex="3">
+                                                    <children>
+                                                        <RadioButton fx:id="sortAscending" disable="true"
+                                                                     mnemonicParsing="false" selected="true"
+                                                                     text="تصاعديا">
+                                                            <toggleGroup>
+                                                                <ToggleGroup fx:id="group"/>
+                                                            </toggleGroup>
+                                                        </RadioButton>
+                                                        <RadioButton fx:id="sortDescending" disable="true"
+                                                                     mnemonicParsing="false" text="تنازلبا"
+                                                                     toggleGroup="$group"/>
+                                                        <Button fx:id="btnSearch" mnemonicParsing="false"
+                                                                text="Search"/>
+                                                    </children>
+                                                </HBox>
+                                                <DatePicker fx:id="dateFrom" maxWidth="1.7976931348623157E308"
+                                                            GridPane.columnIndex="1" GridPane.rowIndex="2"/>
+                                                <DatePicker fx:id="dateTo" maxWidth="1.7976931348623157E308"
+                                                            GridPane.columnIndex="3" GridPane.rowIndex="2"/>
+                                            </children>
+                                        </GridPane>
+                                    </children>
+                                </VBox>
+                                <TableView fx:id="tableView" VBox.vgrow="SOMETIMES"/>
+                            </children>
+                            <padding>
+                                <Insets bottom="5.0" left="5.0" right="5.0"/>
+                            </padding>
+                        </VBox>
+                    </children>
+                </VBox>
+            </children>
+        </AnchorPane>
+    </children>
+</StackPane>

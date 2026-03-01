@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Created with Jaspersoft Studio version 6.20.0.final using JasperReports Library version 6.20.0-2bc7ab61c56f459e8176eb05c7705e145cd400ad  -->
+<jasperReport xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+              xmlns="http://jasperreports.sourceforge.net/jasperreports"
+              xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd"
+              name="Header" pageWidth="595" pageHeight="842" columnWidth="595" leftMargin="0" rightMargin="0"
+              topMargin="0" bottomMargin="0" uuid="a424034d-3928-4cd7-916b-f8edd4a7f3d2">
+    <property name="com.jaspersoft.studio.data.defaultdataadapter" value="One Empty Record"/>
+    <style name="Style1" hTextAlign="Center" hImageAlign="Center" vTextAlign="Middle" vImageAlign="Middle" fontSize="10"
+           isBold="true"/>
+    <style name="Style2" hTextAlign="Right" hImageAlign="Right" vTextAlign="Middle" vImageAlign="Middle" fontSize="10"
+           isBold="true">
+        <paragraph rightIndent="5"/>
+    </style>
+    <style name="Style_text" hTextAlign="Left" hImageAlign="Left" vTextAlign="Middle" vImageAlign="Middle" fontSize="10"
+           isBold="true"/>
+    <parameter name="compName" class="java.lang.String"/>
+    <parameter name="compAdd" class="java.lang.String"/>
+    <parameter name="compTel" class="java.lang.String"/>
+    <parameter name="compImage" class="java.io.InputStream"/>
+    <parameter name="title" class="java.lang.String"/>
+    <queryString>
+        <![CDATA[]]>
+    </queryString>
+    <title>
+        <band height="95" splitType="Stretch">
+            <staticText>
+                <reportElement style="Style_text" x="480" y="0" width="71" height="40"
+                               uuid="7cbb3cf3-ddd5-46a8-b859-14ace2c3cbd4"/>
+                <text><![CDATA[اسم الشركة :]]></text>
+            </staticText>
+            <staticText>
+                <reportElement style="Style_text" x="480" y="42" width="71" height="22"
+                               uuid="e6fae4de-98cf-4805-b2d1-d2dbb3dedcaa"/>
+                <text><![CDATA[بطاقة ضريبية :]]></text>
+            </staticText>
+            <staticText>
+                <reportElement style="Style_text" x="480" y="66" width="72" height="27"
+                               uuid="6d7a6f26-e821-4f50-920a-25ba9b028b6e"/>
+                <text><![CDATA[التليفون :]]></text>
+            </staticText>
+            <textField>
+                <reportElement style="Style2" x="370" y="66" width="110" height="27"
+                               uuid="7eb38ae9-1c41-4906-9dc0-2ac763ab17c0">
+                    <property name="com.jaspersoft.studio.unit.rightIndent" value="px"/>
+                </reportElement>
+                <textFieldExpression><![CDATA[$P{compTel}]]></textFieldExpression>
+            </textField>
+            <textField>
+                <reportElement style="Style2" x="370" y="42" width="110" height="22"
+                               uuid="d3680d48-c6f0-47fd-ae77-06057ba17fe5">
+                    <property name="com.jaspersoft.studio.unit.rightIndent" value="px"/>
+                </reportElement>
+                <textFieldExpression><![CDATA[$P{compAdd}]]></textFieldExpression>
+            </textField>
+            <textField evaluationTime="Column">
+                <reportElement style="Style2" x="267" y="0" width="212" height="40"
+                               uuid="2f36eb5f-e682-44ae-92f3-e4d2aa171fd4">
+                    <property name="com.jaspersoft.studio.unit.rightIndent" value="px"/>
+                </reportElement>
+                <textElement>
+                    <font size="16"/>
+                </textElement>
+                <textFieldExpression><![CDATA[$P{compName}]]></textFieldExpression>
+            </textField>
+            <image hAlign="Center" vAlign="Middle">
+                <reportElement x="3" y="0" width="160" height="70" uuid="612d343e-b256-48dd-9c49-3256ad6d560b"/>
+                <imageExpression><![CDATA[$P{compImage}]]></imageExpression>
+            </image>
+            <staticText>
+                <reportElement style="Style_text" x="113" y="70" width="77" height="24"
+                               uuid="a410bc3b-12bc-487c-947b-3a758e571147"/>
+                <text><![CDATA[تاريخ الطباعة :]]></text>
+            </staticText>
+            <textField pattern="yyyy/M/dd h:mm a">
+                <reportElement style="Style2" x="3" y="70" width="110" height="25"
+                               uuid="f3d8fa81-3e5e-440f-8c2a-340c18c33ddf">
+                    <property name="com.jaspersoft.studio.unit.height" value="px"/>
+                    <property name="com.jaspersoft.studio.unit.rightIndent" value="px"/>
+                </reportElement>
+                <textFieldExpression><![CDATA[new java.util.Date()]]></textFieldExpression>
+            </textField>
+            <line>
+                <reportElement x="0" y="94" width="551" height="1" uuid="ad6ddd7f-8e4f-4682-aba1-a584f859dd2d">
+                    <property name="com.jaspersoft.studio.unit.height" value="px"/>
+                </reportElement>
+            </line>
+            <textField>
+                <reportElement style="Style1" x="200" y="64" width="150" height="30"
+                               uuid="94049519-7967-4774-a87f-195281264bcb"/>
+                <textFieldExpression><![CDATA[$P{title}]]></textFieldExpression>
+            </textField>
+        </band>
+    </title>
+</jasperReport>

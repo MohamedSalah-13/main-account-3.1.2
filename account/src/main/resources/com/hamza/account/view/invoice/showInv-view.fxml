@@ -1,0 +1,122 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.text.*?>
+<AnchorPane xmlns:fx="http://javafx.com/fxml/1" minHeight="-Infinity" minWidth="-Infinity"
+            xmlns="http://javafx.com/javafx/21">
+    <children>
+        <VBox fx:id="root" prefHeight="547.0" prefWidth="874.0" AnchorPane.bottomAnchor="0.0"
+              AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
+            <children>
+                <ToolBar prefHeight="40.0" prefWidth="200.0">
+                    <items>
+                        <Button fx:id="btnPrint" mnemonicParsing="false" text="Print"/>
+                        <Button fx:id="btnPrintBarcode" layoutX="10.0" layoutY="10.0" mnemonicParsing="false"
+                                text="Print Barcode"/>
+                    </items>
+                </ToolBar>
+                <VBox spacing="2.0" VBox.vgrow="SOMETIMES">
+                    <children>
+                        <VBox minHeight="-Infinity" styleClass="dashboard-tile">
+                            <children>
+                                <GridPane styleClass="grid-pane-style">
+                                    <columnConstraints>
+                                        <ColumnConstraints hgrow="SOMETIMES" maxWidth="-Infinity" minWidth="10.0"/>
+                                        <ColumnConstraints hgrow="SOMETIMES" maxWidth="-Infinity" minWidth="10.0"
+                                                           prefWidth="150.0"/>
+                                        <ColumnConstraints hgrow="SOMETIMES" maxWidth="-Infinity" minWidth="10.0"/>
+                                        <ColumnConstraints hgrow="SOMETIMES" maxWidth="-Infinity" minWidth="10.0"
+                                                           prefWidth="150.0"/>
+                                        <ColumnConstraints hgrow="SOMETIMES" maxWidth="-Infinity" minWidth="10.0"/>
+                                        <ColumnConstraints hgrow="SOMETIMES" maxWidth="-Infinity" minWidth="10.0"
+                                                           prefWidth="150.0"/>
+                                    </columnConstraints>
+                                    <rowConstraints>
+                                        <RowConstraints/>
+                                        <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES"/>
+                                        <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES"/>
+                                        <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES"/>
+                                    </rowConstraints>
+                                    <children>
+                                        <Label fx:id="labelCode" text="Code"/>
+                                        <Label fx:id="labelDate" text="Date" GridPane.columnIndex="2"/>
+                                        <Label fx:id="labelName" text="Name" GridPane.rowIndex="1"/>
+                                        <Label fx:id="labelStock" text="Stock" GridPane.columnIndex="2"
+                                               GridPane.rowIndex="1"/>
+                                        <Label fx:id="labelType" text="Type" GridPane.columnIndex="4"/>
+                                        <Label fx:id="labelTotal" text="Total" GridPane.rowIndex="2"/>
+                                        <Label fx:id="labelOtherDiscount" text="Other Discount" GridPane.columnIndex="2"
+                                               GridPane.rowIndex="2"/>
+                                        <Label fx:id="labelTotalAfterDiscount" text="After Discount"
+                                               GridPane.columnIndex="4" GridPane.rowIndex="2"/>
+                                        <Label fx:id="labelPaid" text="Paid" GridPane.rowIndex="3"/>
+                                        <Label fx:id="labelRest" text="Rest" GridPane.columnIndex="2"
+                                               GridPane.rowIndex="3"/>
+                                        <Text fx:id="textPaid" strokeType="OUTSIDE" strokeWidth="0.0"
+                                              styleClass="text-sum" text="0.0" GridPane.columnIndex="1"
+                                              GridPane.rowIndex="3"/>
+                                        <Text fx:id="textRest" strokeType="OUTSIDE" strokeWidth="0.0"
+                                              styleClass="text-sum" text="0.0" GridPane.columnIndex="3"
+                                              GridPane.rowIndex="3"/>
+                                        <Text fx:id="textInvoiceTotal" strokeType="OUTSIDE" strokeWidth="0.0"
+                                              styleClass="text-sum" text="0" GridPane.columnIndex="1"
+                                              GridPane.rowIndex="2"/>
+                                        <Text fx:id="textInvoiceDiscount" strokeType="OUTSIDE" strokeWidth="0.0"
+                                              styleClass="text-sum" text="0" GridPane.columnIndex="3"
+                                              GridPane.rowIndex="2"/>
+                                        <Text fx:id="textInvoiceAfterDiscount" strokeType="OUTSIDE" strokeWidth="0.0"
+                                              styleClass="text-sum" text="0" GridPane.columnIndex="5"
+                                              GridPane.rowIndex="2"/>
+                                        <Text fx:id="textType" strokeType="OUTSIDE" strokeWidth="0.0"
+                                              styleClass="text-sum" GridPane.columnIndex="5"/>
+                                        <Text fx:id="txtDate" strokeType="OUTSIDE" strokeWidth="0.0"
+                                              styleClass="text-sum" GridPane.columnIndex="3"/>
+                                        <Text fx:id="txtCode" strokeType="OUTSIDE" strokeWidth="0.0"
+                                              styleClass="text-sum" GridPane.columnIndex="1"/>
+                                        <Text fx:id="txtName" strokeType="OUTSIDE" strokeWidth="0.0"
+                                              styleClass="text-sum" GridPane.columnIndex="1" GridPane.rowIndex="1"/>
+                                        <Text fx:id="txtStock" strokeType="OUTSIDE" strokeWidth="0.0"
+                                              styleClass="text-sum" GridPane.columnIndex="3" GridPane.rowIndex="1"/>
+                                        <Text fx:id="textInvoiceProfit" layoutX="565.0" layoutY="93.0"
+                                              strokeType="OUTSIDE" strokeWidth="0.0" styleClass="text-sum" text="0"
+                                              GridPane.columnIndex="5" GridPane.rowIndex="3"/>
+                                        <Label fx:id="labelProfit" text="gross profit" GridPane.columnIndex="4"
+                                               GridPane.rowIndex="3"/>
+                                    </children>
+                                </GridPane>
+                            </children>
+                        </VBox>
+                        <TableView fx:id="tableView" editable="true" VBox.vgrow="SOMETIMES"/>
+                        <HBox alignment="CENTER_LEFT" spacing="5.0" styleClass="pane-box-last">
+                            <children>
+                                <Label fx:id="labelCount" text="Count"/>
+                                <Text fx:id="textCount" strokeType="OUTSIDE" strokeWidth="0.0" styleClass="text-sum"
+                                      text="0.0"/>
+                                <Label fx:id="labelCountItems" text="Count Items"/>
+                                <Text fx:id="textQuantity" strokeType="OUTSIDE" strokeWidth="0.0" styleClass="text-sum"
+                                      text="0.0"/>
+                                <Label fx:id="labelTotals" text="Totals"/>
+                                <Text fx:id="textTotal" strokeType="OUTSIDE" strokeWidth="0.0" styleClass="text-sum"
+                                      text="0.0"/>
+                                <Label fx:id="labelDiscount" text="Discount"/>
+                                <Text fx:id="textDiscount" strokeType="OUTSIDE" strokeWidth="0.0" styleClass="text-sum"
+                                      text="0.0"/>
+                                <Label fx:id="labelAfterDiscount" text="After Discount"/>
+                                <Text fx:id="textAfterDiscount" strokeType="OUTSIDE" strokeWidth="0.0"
+                                      styleClass="text-sum" text="0.0"/>
+                                <Label fx:id="labelTotalCost" text="total cost"/>
+                                <Text fx:id="textTotalProfit" strokeType="OUTSIDE" strokeWidth="0.0"
+                                      styleClass="text-sum" text="0.0"/>
+                            </children>
+                        </HBox>
+                    </children>
+                    <padding>
+                        <Insets bottom="5.0" left="5.0" right="5.0"/>
+                    </padding>
+                </VBox>
+            </children>
+        </VBox>
+    </children>
+</AnchorPane>

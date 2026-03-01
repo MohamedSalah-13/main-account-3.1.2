@@ -1,0 +1,116 @@
+
+.root {
+    /*-fx-background-color: rgba(243, 253, 163, 0.62);*/
+    -fx-background-color: linear-gradient(to bottom right, #eaeab2, #ffffff);
+    -fx-font-family: "Gafata";
+    /*-fx-font-size: 1.16em;*/
+    /*-fx-font-weight: bold;*/
+    -fx-text-fill: #701010;
+}
+
+.scroll-pane .viewport, .tool-bar, .box-name {
+    -fx-background-color: linear-gradient(to bottom right, #eaeab2, #ffffff);
+    /*-fx-background-color:*/
+    /*        linear-gradient(to bottom,*/
+    /*        rgb(255, 255, 255) 0%,*/
+    /*        rgb(234, 234, 178) 100%);*/
+    -fx-effect: dropshadow(three-pass-box, rgb(124, 48, 57), 10, 0, 0, 5);
+}
+
+.box-price {
+    -fx-background-radius: 5px;
+    -fx-background-color: linear-gradient(to bottom right, #94a8d3, #ffffff);
+}
+
+.box-main {
+    -fx-border-width: 1;
+    -fx-border-color: #bdbaba;
+    -fx-border-radius: 5px;
+}
+
+.box-main:hover {
+    /*-fx-background-color: #27a7a3;*/
+    -fx-background-color: rgba(169, 215, 124, 0.6);
+    -fx-border-color: #0c1117;
+    -fx-border-width: 1;
+    -fx-border-radius: 5px;
+}
+
+.box-main:hover .box-price {
+    -fx-background-color: #27a7a3;
+}
+
+.box-name {
+    /*-fx-background-color: #27a7a3;*/
+    -fx-background-color: linear-gradient(to bottom right, #aba670, #ffffff);
+}
+
+/*.box-main:hover .box-name {*/
+/*    -fx-background-color: #27a7a3;*/
+/*}*/
+
+.box-main:selected {
+    -fx-background-color: #b21129;
+    -fx-border-color: #0c1117;
+    -fx-border-width: 1;
+    -fx-border-radius: 5px;
+}
+
+.text {
+    wrap-text: true;
+}
+
+.button {
+    -fx-background-color: transparent;
+    -fx-background-radius: 5px;
+    -fx-border-color: #e3d9d9;
+    -fx-border-width: 1;
+    -fx-border-radius: 5px;
+    -fx-text-fill: #0c1117;
+    /*-fx-font-size: 1.16em;*/
+    /*-fx-max-width: Infinity;*/
+}
+
+.button-calc {
+    -fx-min-height: 50px;
+    -fx-max-width: Infinity;
+}
+
+.menu-bar {
+    -fx-background-color: transparent;
+}
+
+.tool-bar .button {
+    -fx-background-color: rgba(63, 129, 180, 0.6);
+}
+
+.tool-bar .button:hover {
+    -fx-background-color: rgb(173, 28, 28);
+    -fx-text-fill: white;
+}
+
+.scroll-pane {
+    -fx-fit-to-height: true;
+    -fx-fit-to-width: true;
+}
+
+
+#btnAdds, #textAddons {
+    -fx-fill: #12612d;
+    -fx-text-fill: white;
+    -fx-background-color: #12612d;
+}
+
+.category-button {
+    -fx-background-color: #12612d;
+    -fx-text-fill: white;
+    -fx-cursor: hand;
+}
+
+.category-button:hover {
+    -fx-background-color: #27a7a3;
+    -fx-text-fill: white;
+    -fx-cursor: hand;
+
+}
+

@@ -1,0 +1,137 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.text.Font?>
+<VBox xmlns:fx="http://javafx.com/fxml/1" spacing="10.0" xmlns="http://javafx.com/javafx/21"
+      fx:controller="com.hamza.account.controller.setting.FontColorController">
+    <children>
+        <Label text="Font and Color Settings" textAlignment="CENTER">
+            <font>
+                <Font name="System Bold" size="14.0"/>
+            </font>
+        </Label>
+        <CheckBox fx:id="checkActive" mnemonicParsing="false" text="مفعل"/>
+        <TabPane fx:id="tabPane" tabClosingPolicy="UNAVAILABLE">
+            <tabs>
+                <Tab text="عام">
+                    <content>
+                        <AnchorPane minHeight="0.0" minWidth="0.0">
+                            <children>
+                                <VBox spacing="10.0" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0"
+                                      AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
+                                    <children>
+                                        <GridPane minHeight="-Infinity" minWidth="-Infinity"
+                                                  styleClass="grid-pane-style">
+                                            <columnConstraints>
+                                                <ColumnConstraints hgrow="SOMETIMES" maxWidth="-Infinity"
+                                                                   minWidth="100.0"/>
+                                                <ColumnConstraints hgrow="SOMETIMES" maxWidth="-Infinity"
+                                                                   minWidth="200.0"/>
+                                                <ColumnConstraints hgrow="SOMETIMES" maxWidth="-Infinity"
+                                                                   minWidth="-Infinity"/>
+                                            </columnConstraints>
+                                            <rowConstraints>
+                                                <RowConstraints minHeight="30.0" prefHeight="30.0" vgrow="SOMETIMES"/>
+                                                <RowConstraints minHeight="30.0" prefHeight="30.0" vgrow="SOMETIMES"/>
+                                                <RowConstraints minHeight="30.0" prefHeight="30.0" vgrow="SOMETIMES"/>
+                                                <RowConstraints minHeight="30.0" prefHeight="30.0" vgrow="SOMETIMES"/>
+                                                <RowConstraints minHeight="30.0" prefHeight="30.0" vgrow="SOMETIMES"/>
+                                            </rowConstraints>
+                                            <children>
+                                                <Label text="الخطوط :"/>
+                                                <ComboBox fx:id="fontFamilyComboBox" maxWidth="1.7976931348623157E308"
+                                                          GridPane.columnIndex="1"/>
+                                                <Label text="حجم الخط :" GridPane.rowIndex="1"/>
+                                                <Slider fx:id="fontSizeSlider" blockIncrement="1.0" majorTickUnit="4.0"
+                                                        max="24.0" min="8.0" minorTickCount="1" showTickLabels="true"
+                                                        showTickMarks="true" value="12.0" GridPane.columnIndex="1"
+                                                        GridPane.rowIndex="1"/>
+                                                <Label text="لون الخط :" GridPane.rowIndex="2"/>
+                                                <ColorPicker fx:id="textColorPicker" maxHeight="1.7976931348623157E308"
+                                                             maxWidth="1.7976931348623157E308" minHeight="-Infinity"
+                                                             GridPane.columnIndex="1" GridPane.rowIndex="2"/>
+                                                <Label text="لون الخلفية :" GridPane.rowIndex="3"/>
+                                                <ColorPicker fx:id="backgroundColorPicker"
+                                                             maxWidth="1.7976931348623157E308" minHeight="-Infinity"
+                                                             GridPane.columnIndex="1" GridPane.rowIndex="3"/>
+                                                <ColorPicker fx:id="buttonColorPicker" maxWidth="1.7976931348623157E308"
+                                                             minHeight="-Infinity" GridPane.columnIndex="1"
+                                                             GridPane.rowIndex="4"/>
+                                                <Label text="لون الازرار:" GridPane.rowIndex="4"/>
+                                                <Button fx:id="applyButton" mnemonicParsing="false" text="تفعيل"
+                                                        GridPane.columnIndex="2" GridPane.rowIndex="4"/>
+                                            </children>
+                                        </GridPane>
+                                        <Label text="عرض :"/>
+                                        <Label fx:id="previewLabel" alignment="CENTER" maxWidth="1.7976931348623157E308"
+                                               style="-fx-border-color: lightgray; -fx-border-radius: 5;"
+                                               text="Sample Text">
+                                            <padding>
+                                                <Insets bottom="10.0" left="10.0" right="10.0" top="10.0"/>
+                                            </padding>
+                                            <VBox.margin>
+                                                <Insets/>
+                                            </VBox.margin>
+                                        </Label>
+                                    </children>
+                                    <padding>
+                                        <Insets bottom="20.0" left="20.0" right="20.0" top="20.0"/>
+                                    </padding>
+                                </VBox>
+                            </children>
+                        </AnchorPane>
+                    </content>
+                </Tab>
+                <Tab text="الجداول">
+                    <content>
+                        <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="180.0" prefWidth="200.0">
+                            <children>
+                                <VBox spacing="10.0" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0"
+                                      AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
+                                    <children>
+                                        <GridPane minHeight="-Infinity" minWidth="-Infinity"
+                                                  styleClass="grid-pane-style">
+                                            <columnConstraints>
+                                                <ColumnConstraints hgrow="SOMETIMES" maxWidth="-Infinity"
+                                                                   minWidth="100.0"/>
+                                                <ColumnConstraints hgrow="SOMETIMES" maxWidth="-Infinity"
+                                                                   minWidth="200.0"/>
+                                            </columnConstraints>
+                                            <children>
+                                                <Label text="لون راس الجدول"/>
+                                                <Label text="إطار الجدول" GridPane.rowIndex="1"/>
+                                                <Label text="لون تعيين الجدول" GridPane.rowIndex="2"/>
+                                                <ColorPicker fx:id="tableColorPicker" maxWidth="1.7976931348623157E308"
+                                                             minHeight="-Infinity" GridPane.columnIndex="1"/>
+                                                <ColorPicker fx:id="tableBoardColorPicker"
+                                                             maxWidth="1.7976931348623157E308" minHeight="-Infinity"
+                                                             GridPane.columnIndex="1" GridPane.rowIndex="1"/>
+                                                <ColorPicker fx:id="tableAquaColorPicker"
+                                                             maxWidth="1.7976931348623157E308" minHeight="-Infinity"
+                                                             GridPane.columnIndex="1" GridPane.rowIndex="2"/>
+                                            </children>
+                                        </GridPane>
+                                        <TableView fx:id="tableView" prefHeight="50.0">
+                                            <columns>
+                                                <TableColumn prefWidth="75.0" text="C1"/>
+                                                <TableColumn prefWidth="75.0" text="C2"/>
+                                            </columns>
+                                        </TableView>
+                                    </children>
+                                    <padding>
+                                        <Insets bottom="20.0" left="20.0" right="20.0" top="20.0"/>
+                                    </padding>
+                                </VBox>
+                            </children>
+                        </AnchorPane>
+                    </content>
+                </Tab>
+            </tabs>
+        </TabPane>
+    </children>
+    <padding>
+        <Insets bottom="10.0" left="10.0" right="10.0" top="10.0"/>
+    </padding>
+</VBox>

@@ -1,0 +1,163 @@
+[
+  {
+    "product": "itext-core",
+    "licensee": {
+      "company": "No",
+      "name": "mohamed salah",
+      "email": "m13ido@gmail.com"
+    },
+    "key": "0cb2a2cadbf6e3bb82ee44cc18579426b158f1cd9342d247408dbf677b1bf958",
+    "creationDate": "2025-10-18",
+    "expirationDate": "2025-11-18",
+    "onExpiration": "fail",
+    "platform": "any",
+    "licenseType": "trial",
+    "limits": {
+      "default": {
+        "limitType": "unlimited",
+        "sendEvents": false
+      }
+    },
+    "licenseVersion": "1.0.0",
+    "sendStatistics": "disabled",
+    "signature": "gYxhBHHJl9jcGFVDWgZuD4JrvS8M9KWqLsXlQCtniiiG8yiPwc/I0wic9caxOGEO4ireiFqilRruOO8xP4dOqIgrqipvSbEbiwAgPrRJqA1aGxP/2IovW1PNMZDlG82I0Ch0umLZtpWpXA8Krv7FD9R1vMJJZC//B9N137KypY1E8GcY4958tNLZRcVjf7VqD1PFRZJpuJGS22cyn0rHtJux8lAJJxyjAzl28NNC7phAbWBNGyq5I8q9mN/Dv1HRPTI/+FrtWxbtRyURKsFZwFaxMT0pIAjZuRCz0npcaZGXLzsN14H1APEq9c2xZ/sULPQAW/4nNlRlu1FlN16E6sg3/dwAHP/xXhyMIJbhHsHxs9bA6JsEewgoY6sMd0k1De/fXXfjo+0VuRQQtn0c62vZXVjB08zuQdLdkm6nSxQdgU+o8FZyXKKCpUaLEO31Qh1+ucXm8TjWpeJ2JZ+ebAXt5oGB//bCGlNgu//Z9PWnE2yJ2oyXkEY/k6kH95wIlpifnXP/4szTZSi1T1HBHxrDeflLB89RgGqeXPP+PuMKEYlg9d5VztG9bTW+QWaqSn680/2EfbGn0iNk1zjdv+V4mwz9lN3X4BhX6/QGhZdTGxc/+gYzb+zdZ+0Ez8AwVpJg9JPsA7OGe+mQwikrpOo7ZLxb+GXUXZWN2O22pe0="
+  },
+  {
+    "product": "pdfXfa",
+    "licensee": {
+      "company": "No",
+      "name": "mohamed salah",
+      "email": "m13ido@gmail.com"
+    },
+    "key": "0cb2a2cadbf6e3bb82ee44cc18579426b158f1cd9342d247408dbf677b1bf958",
+    "creationDate": "2025-10-18",
+    "expirationDate": "2025-11-18",
+    "onExpiration": "fail",
+    "platform": "any",
+    "licenseType": "trial",
+    "limits": {
+      "default": {
+        "limitType": "unlimited",
+        "sendEvents": false
+      }
+    },
+    "licenseVersion": "1.0.0",
+    "sendStatistics": "disabled",
+    "signature": "eQP2LvXXXdB1/rRGv+Z86YgkTSdnVmbYLo/po2ylVQglBxhf3ZPpAGkJnz+toeD4sJ3pmbxIyCxxyKJMKv5HgbTQbKNDAPuUIhXQ9XRN5BjnsEXyf8nV8JHmX5Kcs2VM3xux4lwzIclG9JINhTsBOMSF5snXHnysk4XJC6iPNusDGzH4J88XkLTDcYtVaFeH4YhYy+FCgL6pfylwVaAFUu4FEnppJ9JHKLPk9jvOC1SjtAsA7RIV+gU/lRrlrPraZJ7ZzTXpLAxHD82riYlOtqdyjolxUvyyzY/FgGjBR+ukf7KMPJpPUd+ygk7nkx+FOMkgc+1CKWD/Q9OzuLYmIq8H36TpVHHQouOm9dmUrMPuIfTeZtB0MJmOtCQblFwqTRpsFJ81NLghChQhfU/d1YAx3NFpkpJvdTMcdLI5HsFL6617vPH7rlupRTD6oNf0G+gutq65m8ZzzHrRfT2KXA+uT/MqzpcI1tmxEP+rH5deEjRQwiP7YqL47p5fENGL8q20OPwaCmlxfdJSEG4jJPlI+Ms9YApssHxZmHBVyYfHCqUx9YBCcS9CxaN2W4L+f/h8xW7HPvIe8mHipcPvBwzrFyxlyHqpRjWPZvVH5q403VtLEHIgjeK+UeXW+r/hcfoOVibXvh8+IuqowsANO7aH7P6gsDSqB8HlKDlyCLk="
+  },
+  {
+    "product": "pdfSweep",
+    "licensee": {
+      "company": "No",
+      "name": "mohamed salah",
+      "email": "m13ido@gmail.com"
+    },
+    "key": "0cb2a2cadbf6e3bb82ee44cc18579426b158f1cd9342d247408dbf677b1bf958",
+    "creationDate": "2025-10-18",
+    "expirationDate": "2025-11-18",
+    "onExpiration": "fail",
+    "platform": "any",
+    "licenseType": "trial",
+    "limits": {
+      "default": {
+        "limitType": "unlimited",
+        "sendEvents": false
+      }
+    },
+    "licenseVersion": "1.0.0",
+    "sendStatistics": "disabled",
+    "signature": "h9pN2Ba+diBOLukJxlpSz4mDTha6YV3zfFul3eQiKY+/1cU05HJ+SsWjZ9nyjExHlr9IzN4Xs1b8KDfOMrJBphcHrvp8bY0CU4ptcGdArWd23kcvMtCWHLaZpZE0tKh2TOBJrxzUv+i6S8nRP22RO6hzUa4IPl0sm+EIsf8ORILlTuLqciz/wV/jbDco9sEWdq0rEJ6HTcyNnY8rwcYRQxnZqdCtt/P+NhbVqCHvR0CUcjeiYBlYmgtXz+tHLiG76qhA7zCb5Hd/JwiR7V08dOaKE+SkGZ72VZ+H9hbUbUPauv4oK9E4DR/0HtfibE9UIfdpOqX2D+/FVxpnti0vtvO4xf94uIxoqDaf9P4zTsaBvpxBby+n7tLYmul/iYTwKaow+0Yh0EIdLU8Vd3myrLjI/TjPuyweqC8dcrte4iIZOL0vhLTvksqPFqiga2wPRJK2pFhxAeNViy0QbFzOeExGH70SBsJPGG2JG8ueeZgCrB3tFV4g9RiMRsbzTIfGT9U4KRoQBB5wf/mZtOUjpEqW4YYyuKj4pAwY/lwshEs41J0VUham4hPEXr9mLVX4F9qVWDeO2EgCRQ8TQicVJ2u3ayd7l0mGsBO1dTdjDdBMXwPwVYzZXdgEqgxyKTYN7Bn+Xqb0UCJj1yeRYjSvH0Hjjiv7B9rh0I09AU/EWas="
+  },
+  {
+    "product": "pdfOcr-tesseract4",
+    "licensee": {
+      "company": "No",
+      "name": "mohamed salah",
+      "email": "m13ido@gmail.com"
+    },
+    "key": "0cb2a2cadbf6e3bb82ee44cc18579426b158f1cd9342d247408dbf677b1bf958",
+    "creationDate": "2025-10-18",
+    "expirationDate": "2025-11-18",
+    "onExpiration": "fail",
+    "platform": "any",
+    "licenseType": "trial",
+    "limits": {
+      "default": {
+        "limitType": "unlimited",
+        "sendEvents": false
+      }
+    },
+    "licenseVersion": "1.0.0",
+    "sendStatistics": "disabled",
+    "signature": "jCGd7A/s9J5E+rp9HYA3wXZJbc4fEXoEaJziK6Y+KlVKaq5UbDRlVCUrIuwD9FRWjEOm7VYowpRZmxFYMuE4OkLnKZBTdpqLMpDns/b8kCd2Hs3zmDs+lIXtDWM3XaLqT8wXvfUL+9TXHP02Kb77WyWhkN5FXxT9i6E1cfQEk534cFAOZ49pVzgLe4y5ZIARuDejnO3hr/5HjPCXxvocrYPbtMP/A4nmZ25rM2l8SlqWTDYn8kcTbu9Su+ux7xxi9QdkAYEVLFjk3DGjH2Qy0EYixVm2QIcdwJ1O1S37Sbsti1olHBz9nKT91dWj39IFwj3W2okN1KejSkSRYBkUIB2roN8JT+000dPjvg2LfzXt5dG6qShga2029RhT3ru/JW5zOv9g9G8XWu5bCkAPdN7/o6XIB/j1UBD/vh48XsGz47B/LuOu9S3hwTxLoZPZMNhzGS30WclC3fwLTgSc7FfIyljEDEom81gRygBy0KAFJXIpow+kbVKrcd9wFe7+P6rI4Yzo6WOubBN+QRcIzN0kraSmwJlY+D9/49YSSH+bncXlQZ4ADeIf4Qslos2jVuBdjOP4GSB/EXXjbogk7PMUews2/ygmf8mpsFuV5s/LVXmmUM/QdGGuLfRcPOB0dXySnnc7cf4h+HkgT2WA/nU5mPDJ+Am3RK9gP5mKIhg="
+  },
+  {
+    "product": "pdfOptimizer",
+    "licensee": {
+      "company": "No",
+      "name": "mohamed salah",
+      "email": "m13ido@gmail.com"
+    },
+    "key": "0cb2a2cadbf6e3bb82ee44cc18579426b158f1cd9342d247408dbf677b1bf958",
+    "creationDate": "2025-10-18",
+    "expirationDate": "2025-11-18",
+    "onExpiration": "fail",
+    "platform": "any",
+    "licenseType": "trial",
+    "limits": {
+      "default": {
+        "limitType": "unlimited",
+        "sendEvents": false
+      }
+    },
+    "licenseVersion": "1.0.0",
+    "sendStatistics": "disabled",
+    "signature": "KWNgwq10XGUVTPu8Uu76H9fxBVpVxWx8vjKiQlCewMkUA+/t5n1AZAWctv9T96XXowWedBSqvhtjNyNEQhRX7BGiBekr82ir/UKcJ8MvMl0o4tQwOf/uIJ4ODvkGndYn1jg2TIX+rvLBQOl04nxJUnZ9rxiBr+9MvsKZj4eN+tC4powzPVBMQP5ttgWE/KgJ0GR/QFCO1CY8UTBHYudzDUaRIrnCbjLhScBwfZsJQDBQovtVzp7Kf64PACMy6t6RN08BFl0RJd3Lw5isY2wODJiQgF10Ucqo4a7APp68r6TBjJdiA3AG9OSD70z3SwlHG5u8DbNwQHlCPEVNkc5olX+iN7a3NzBqMPnzdoJ5rNRC/sJjyWQoQFmgnb/IcF/lk1vX/ivkeTU10JMPR/X9R/hAtnh21eIbH2OJKWyaW4lUQzEuB5k3LlGqFxxSo8MAqnUbA63gVvGyR97pmg78AvJynLROkgzXTYVjCaF8i73Qht808h/gCeZjQUbWkYWo0yInlgp4rENTF6RQOwDmtDAA7o5hoT4pxU7ykGUfwWrOUpovX8+Jd9h/YNlcFBw5Yg8nY40mup5tWZ8KPUp5WIPOMDLOqv1Mt82Ha0lPdiYczH5muEIJUqtpG8oHqFGAHoHAiN1AHk3r2rrJzbUoRNJgRZofwOJvwlUZ0paJyYA="
+  },
+  {
+    "product": "pdfHtml",
+    "licensee": {
+      "company": "No",
+      "name": "mohamed salah",
+      "email": "m13ido@gmail.com"
+    },
+    "key": "0cb2a2cadbf6e3bb82ee44cc18579426b158f1cd9342d247408dbf677b1bf958",
+    "creationDate": "2025-10-18",
+    "expirationDate": "2025-11-18",
+    "onExpiration": "fail",
+    "platform": "any",
+    "licenseType": "trial",
+    "limits": {
+      "default": {
+        "limitType": "unlimited",
+        "sendEvents": false
+      }
+    },
+    "licenseVersion": "1.0.0",
+    "sendStatistics": "disabled",
+    "signature": "aCd3hV3SKLSK2BF6VhjkZet1zL6wTwZ4GAXJ18UG3fHC0cRlyQ9yNc6TnBxZj5xK51r2yWHZmodmkoYNvscQxZp1WLfP52GEg4/0/jEhh92QIEimdslv9OilQJuKShF+3sLYnY6LlUqCNb6rtg4MFhjGNT4EW/RGdyLvPw8SsR3l48ti61DnFWyEGKVUxueuAMeE5J8K3NV3G7gHv9VNTE8ivGNFslxtDUoDJ93a8toGmeqcL4VEac03uqOF/tp78PwKZCq5wzBksUICNsHGplMDBS5BeLekkDk1FcJ6P5XOv9nkmHIYtLPPoEABNj1yo/AFTkGRRH1S/gNiVlqBIc34hYkywWzGmpIeq6cHcsMVIWlyWGeURlNzoyO3jyqFGivz2PtehGuo3avnHoERYifP8D21wk7fJmx+8H/5FRQloReP+PRBFkEbZMMA9kchfAKyx2RWv8X8Z+MFCb4eXFWquruuksv/qXjAWDDSeDmzuErqkDaVcPtDq7ieu7g4jCzhoGdxFWosXtKnN2FRpcP+F2/5KABe3zAmFF+iKipVdUiIlhBCivAhNJNSRQAB12S6pIyQb75bJbwyCBHxO+KuzvCAFGaCMLsIhtU7qvNZdR/2WIn9Cgbvf8/It8f29NeNlfNxr3lXj8Wk7qIqmIIpCtpYoJL+w3WG0y2H0cE="
+  },
+  {
+    "product": "pdfCalligraph",
+    "licensee": {
+      "company": "No",
+      "name": "mohamed salah",
+      "email": "m13ido@gmail.com"
+    },
+    "key": "0cb2a2cadbf6e3bb82ee44cc18579426b158f1cd9342d247408dbf677b1bf958",
+    "creationDate": "2025-10-18",
+    "expirationDate": "2025-11-18",
+    "onExpiration": "fail",
+    "platform": "any",
+    "licenseType": "trial",
+    "limits": {
+      "default": {
+        "limitType": "unlimited",
+        "sendEvents": false
+      }
+    },
+    "licenseVersion": "1.0.0",
+    "sendStatistics": "disabled",
+    "signature": "fVk3S86ruOqJu+Ma4UFkSqoe5HcsKecb6V097K0sf9QeXyFKtpR8TGtKYbF/7uP4+m9TvTHz7TNVuuUWd8oIGpXAYxJSHLJRjgCtYQtqfArbOh9ijQ5sq054sSQMJ5rkwnj7h7VmiLmzwxbkqp8NXsPjxAM+ZED/nladCKNwWw4v8F2ixecMV8shJQBOXxg7IZUxg0biG10YdvMSX6cauWksysBD2jgM3/zBdKvQYJs/2F9tReemjms1eDlL2Vc2Zn5ZcBcD1wtzi+DAqbuPpLxJxQvrsWCW6yjOOUA4CRYRz5dwOSw/+fKHZGq83L2b+/jI62rL9pIh968qJA+LpPaBocIDO0Ds62xLiLb1Psr+nXwY01OI75QX2rolx+lzoQ4k2OjTvLqzrz+3KmMAdyIcKdBu2JO02eKRIdfg2AY3sS6hqbaijrTcUGOQKv9tWm26pTckfF3bRw/OtPMtbjZKMuTje8qhyKqWynrBjH/mZovFmwyKlhbczZf7O91IDzNloQKhWIyEVX4fH/xGvw9DaCpobwGxo9rNfxkgiSlEEWRoEf50qy/0VCA1gSzN35LIGvNJPBe/NgMFEPv9TCK89aWcmF2QoxqzPPEUp9khREZueF7PlChwondlzRzTEuwVPpOKVYWtJhGdQQU1jAjD7eDNHl5hLlrXPLY5QkU="
+  }
+]

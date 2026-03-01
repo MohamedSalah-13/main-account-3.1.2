@@ -1,0 +1,317 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.text.*?>
+<?import java.lang.String?>
+<?import java.net.URL?>
+<StackPane xmlns:fx="http://javafx.com/fxml/1" fx:id="stackPane" xmlns="http://javafx.com/javafx/21">
+    <children>
+        <ScrollPane fitToHeight="true" fitToWidth="true">
+            <content>
+                <VBox alignment="TOP_CENTER" spacing="10.0">
+                    <children>
+                        <Text strokeType="OUTSIDE" strokeWidth="0.0" style="-fx-font-size: 25; -fx-fill: #cbb925;"
+                              text="ملخص الحسابات" underline="true">
+                            <font>
+                                <Font size="27.0"/>
+                            </font>
+                        </Text>
+                        <HBox spacing="10.0">
+                            <children>
+                                <VBox styleClass="box-sales" HBox.hgrow="SOMETIMES">
+                                    <children>
+                                        <Label text="مبيعات اليوم"/>
+                                        <Label fx:id="labelDay" layoutX="58.0" layoutY="35.0" text="0"/>
+                                    </children>
+                                </VBox>
+                                <VBox layoutX="20.0" layoutY="20.0" styleClass="box-2" HBox.hgrow="SOMETIMES">
+                                    <children>
+                                        <Label text="مبيعات الامس"/>
+                                        <Label fx:id="labelPreviousDay" layoutX="58.0" layoutY="35.0" text="0"/>
+                                    </children>
+                                </VBox>
+                                <VBox layoutX="160.0" layoutY="20.0" styleClass="box-3" HBox.hgrow="SOMETIMES">
+                                    <children>
+                                        <Label text="مبيعات الاسبوع"/>
+                                        <Label fx:id="labelWeek" layoutX="58.0" layoutY="35.0" text="0"/>
+                                    </children>
+                                </VBox>
+                                <VBox layoutX="300.0" layoutY="20.0" styleClass="box-month" HBox.hgrow="SOMETIMES">
+                                    <children>
+                                        <Label text="مبيعات الشهر"/>
+                                        <Label fx:id="labelMonth" layoutX="58.0" layoutY="35.0" text="0"/>
+                                    </children>
+                                </VBox>
+                            </children>
+                            <padding>
+                                <Insets bottom="10.0" left="10.0" right="10.0" top="10.0"/>
+                            </padding>
+                            <styleClass>
+                                <String fx:value="box"/>
+                                <String fx:value="dashboard-tile"/>
+                            </styleClass>
+                        </HBox>
+                        <HBox spacing="10.0" styleClass="dashboard-tile" VBox.vgrow="SOMETIMES">
+                            <children>
+                                <VBox spacing="10.0" styleClass="box" HBox.hgrow="SOMETIMES">
+                                    <children>
+                                        <GridPane hgap="5.0" vgap="25.0">
+                                            <columnConstraints>
+                                                <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0"/>
+                                                <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0"/>
+                                            </columnConstraints>
+                                            <rowConstraints>
+                                                <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES"/>
+                                                <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES"/>
+                                                <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES"/>
+                                                <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES"/>
+                                                <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES"/>
+                                                <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES"/>
+                                                <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES"/>
+                                            </rowConstraints>
+                                            <children>
+                                                <VBox alignment="CENTER"
+                                                      style="-fx-background-color: #333; -fx-background-radius: 5;">
+                                                    <children>
+                                                        <Text strokeType="OUTSIDE" strokeWidth="0.0" text="المبيعات"/>
+                                                    </children>
+                                                </VBox>
+                                                <VBox alignment="CENTER"
+                                                      style="-fx-background-color: #333; -fx-background-radius: 5;"
+                                                      GridPane.columnIndex="1">
+                                                    <children>
+                                                        <Text strokeType="OUTSIDE" strokeWidth="0.0" text="المشتريات"/>
+                                                    </children>
+                                                </VBox>
+                                                <VBox styleClass="box-details" GridPane.rowIndex="1">
+                                                    <children>
+                                                        <Label text="إجمالى المبيعات"/>
+                                                        <Label fx:id="totalSales" layoutX="58.0" layoutY="35.0"
+                                                               text="0"/>
+                                                    </children>
+                                                </VBox>
+                                                <VBox styleClass="box-details" GridPane.columnIndex="1"
+                                                      GridPane.rowIndex="1">
+                                                    <children>
+                                                        <Label text="إجمالى المشتريات"/>
+                                                        <Label fx:id="totalPurchase" layoutX="58.0" layoutY="35.0"
+                                                               text="0"/>
+                                                    </children>
+                                                </VBox>
+                                                <VBox styleClass="box-details" GridPane.rowIndex="2">
+                                                    <children>
+                                                        <Label text="نقدا"/>
+                                                        <Label fx:id="totalSalesCash" layoutX="58.0" layoutY="35.0"
+                                                               text="0"/>
+                                                    </children>
+                                                </VBox>
+                                                <VBox styleClass="box-details" GridPane.columnIndex="1"
+                                                      GridPane.rowIndex="2">
+                                                    <children>
+                                                        <Label text="نقدا"/>
+                                                        <Label fx:id="totalPurchaseCash" layoutX="58.0" layoutY="35.0"
+                                                               text="0"/>
+                                                    </children>
+                                                </VBox>
+                                                <VBox styleClass="box-details" GridPane.rowIndex="3">
+                                                    <children>
+                                                        <Label text="اجل"/>
+                                                        <Label fx:id="totalSalesDefer" layoutX="58.0" layoutY="35.0"
+                                                               text="0"/>
+                                                    </children>
+                                                </VBox>
+                                                <VBox styleClass="box-details" GridPane.columnIndex="1"
+                                                      GridPane.rowIndex="3">
+                                                    <children>
+                                                        <Label text="اجل"/>
+                                                        <Label fx:id="totalPurchaseDefer" layoutX="58.0" layoutY="35.0"
+                                                               text="0"/>
+                                                    </children>
+                                                </VBox>
+                                                <VBox styleClass="box-details" GridPane.rowIndex="4">
+                                                    <children>
+                                                        <Label text="خصم مسموح به"/>
+                                                        <Label fx:id="totalSalesDiscount" layoutX="58.0" layoutY="35.0"
+                                                               text="0"/>
+                                                    </children>
+                                                </VBox>
+                                                <VBox styleClass="box-details" GridPane.columnIndex="1"
+                                                      GridPane.rowIndex="4">
+                                                    <children>
+                                                        <Label text="خصم مكتسب"/>
+                                                        <Label fx:id="totalPurchaseDiscount" layoutX="58.0"
+                                                               layoutY="35.0" text="0"/>
+                                                    </children>
+                                                </VBox>
+                                                <VBox styleClass="box-details" GridPane.rowIndex="5">
+                                                    <children>
+                                                        <Label text="مرتجع المبيعات"/>
+                                                        <Label fx:id="totalSalesRe" layoutX="58.0" layoutY="35.0"
+                                                               text="0"/>
+                                                    </children>
+                                                </VBox>
+                                                <VBox styleClass="box-details" GridPane.columnIndex="1"
+                                                      GridPane.rowIndex="5">
+                                                    <children>
+                                                        <Label text="مرتجع المشتريات"/>
+                                                        <Label fx:id="totalPurchaseRe" layoutX="58.0" layoutY="35.0"
+                                                               text="0"/>
+                                                    </children>
+                                                </VBox>
+                                                <VBox styleClass="box-details" GridPane.rowIndex="6">
+                                                    <children>
+                                                        <Label text="خصم مرتجع المبيعات"/>
+                                                        <Label fx:id="totalSalesReDiscount" layoutX="58.0"
+                                                               layoutY="35.0" text="0"/>
+                                                    </children>
+                                                </VBox>
+                                                <VBox styleClass="box-details" GridPane.columnIndex="1"
+                                                      GridPane.rowIndex="6">
+                                                    <children>
+                                                        <Label text="خصم مرتجع المشتريات"/>
+                                                        <Label fx:id="totalPurchaseReDiscount" layoutX="58.0"
+                                                               layoutY="35.0" text="0"/>
+                                                    </children>
+                                                </VBox>
+                                            </children>
+                                        </GridPane>
+                                        <HBox spacing="20.0" style="-fx-background-color: #465546;"
+                                              styleClass="box-details">
+                                            <children>
+                                                <Label text="الصافى"/>
+                                                <Label fx:id="amount" text="0"/>
+                                            </children>
+                                        </HBox>
+                                    </children>
+                                    <padding>
+                                        <Insets bottom="5.0" left="5.0" right="5.0" top="5.0"/>
+                                    </padding>
+                                </VBox>
+                                <VBox spacing="5.0" HBox.hgrow="SOMETIMES">
+                                    <children>
+                                        <VBox alignment="TOP_CENTER" spacing="20.0"
+                                              style="-fx-background-color: #8a8011; -fx-background-radius: 10;">
+                                            <children>
+                                                <GridPane hgap="5.0" minHeight="-Infinity" minWidth="-Infinity"
+                                                          vgap="5.0">
+                                                    <columnConstraints>
+                                                        <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0"/>
+                                                        <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0"/>
+                                                    </columnConstraints>
+                                                    <rowConstraints>
+                                                        <RowConstraints minHeight="10.0" prefHeight="30.0"
+                                                                        vgrow="SOMETIMES"/>
+                                                        <RowConstraints minHeight="10.0" prefHeight="30.0"
+                                                                        vgrow="SOMETIMES"/>
+                                                        <RowConstraints minHeight="10.0" prefHeight="30.0"
+                                                                        vgrow="SOMETIMES"/>
+                                                        <RowConstraints minHeight="10.0" prefHeight="30.0"
+                                                                        vgrow="SOMETIMES"/>
+                                                        <RowConstraints minHeight="10.0" prefHeight="30.0"
+                                                                        vgrow="SOMETIMES"/>
+                                                        <RowConstraints minHeight="10.0" prefHeight="30.0"
+                                                                        vgrow="SOMETIMES"/>
+                                                    </rowConstraints>
+                                                    <children>
+                                                        <Text strokeType="OUTSIDE" strokeWidth="0.0" text="النقدية"
+                                                              underline="true"/>
+                                                        <Label text="إجمالى المدفوعات" GridPane.rowIndex="1"/>
+                                                        <Label fx:id="cash1" text="0" GridPane.columnIndex="1"
+                                                               GridPane.rowIndex="1"/>
+                                                        <Label text="إجمالى المقبوضات" GridPane.rowIndex="2"/>
+                                                        <Label fx:id="cash2" text="0" GridPane.columnIndex="1"
+                                                               GridPane.rowIndex="2"/>
+                                                        <Label text="إجمالى المصروفات" GridPane.rowIndex="3"/>
+                                                        <Label fx:id="cash3" text="0" GridPane.columnIndex="1"
+                                                               GridPane.rowIndex="3"/>
+                                                        <Label text="إجمالى المسحوبات" GridPane.rowIndex="4"/>
+                                                        <Label fx:id="cash4" text="0" GridPane.columnIndex="1"
+                                                               GridPane.rowIndex="4"/>
+                                                        <Label text="صافى النقد اليومى" GridPane.rowIndex="5"/>
+                                                        <Label fx:id="cash5" text="0" GridPane.columnIndex="1"
+                                                               GridPane.rowIndex="5"/>
+                                                    </children>
+                                                </GridPane>
+                                            </children>
+                                            <padding>
+                                                <Insets bottom="5.0" left="5.0" right="5.0" top="5.0"/>
+                                            </padding>
+                                        </VBox>
+                                        <VBox alignment="TOP_CENTER" spacing="20.0"
+                                              style="-fx-background-color: #125e8c; -fx-background-radius: 10;">
+                                            <children>
+                                                <GridPane hgap="5.0" minHeight="-Infinity" minWidth="-Infinity"
+                                                          vgap="5.0">
+                                                    <columnConstraints>
+                                                        <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0"/>
+                                                        <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0"/>
+                                                    </columnConstraints>
+                                                    <rowConstraints>
+                                                        <RowConstraints minHeight="10.0" prefHeight="30.0"
+                                                                        vgrow="SOMETIMES"/>
+                                                        <RowConstraints minHeight="10.0" prefHeight="30.0"
+                                                                        vgrow="SOMETIMES"/>
+                                                        <RowConstraints minHeight="10.0" prefHeight="30.0"
+                                                                        vgrow="SOMETIMES"/>
+                                                        <RowConstraints minHeight="10.0" prefHeight="30.0"
+                                                                        vgrow="SOMETIMES"/>
+                                                        <RowConstraints minHeight="10.0" prefHeight="30.0"
+                                                                        vgrow="SOMETIMES"/>
+                                                    </rowConstraints>
+                                                    <children>
+                                                        <Text strokeType="OUTSIDE" strokeWidth="0.0" text="العمليات"
+                                                              underline="true"/>
+                                                        <Label text="عدد فواتير البيع" GridPane.rowIndex="1"/>
+                                                        <Label fx:id="countSales" text="0" GridPane.columnIndex="1"
+                                                               GridPane.rowIndex="1"/>
+                                                        <Label text="عدد فواتير مرتجع المبيعات" GridPane.rowIndex="2"/>
+                                                        <Label fx:id="countSalesRe" text="0" GridPane.columnIndex="1"
+                                                               GridPane.rowIndex="2"/>
+                                                        <Label text="عدد فواتير الشراء" GridPane.rowIndex="3"/>
+                                                        <Label fx:id="countPurchase" text="0" GridPane.columnIndex="1"
+                                                               GridPane.rowIndex="3"/>
+                                                        <Label text="عدد فواتير مرتجع المشتريات" GridPane.rowIndex="4"/>
+                                                        <Label fx:id="countPurchaseRe" text="0" GridPane.columnIndex="1"
+                                                               GridPane.rowIndex="4"/>
+                                                    </children>
+                                                </GridPane>
+                                            </children>
+                                            <padding>
+                                                <Insets bottom="5.0" left="5.0" right="5.0" top="5.0"/>
+                                            </padding>
+                                        </VBox>
+                                    </children>
+                                    <padding>
+                                        <Insets bottom="5.0" left="5.0" right="5.0" top="5.0"/>
+                                    </padding>
+                                </VBox>
+                                <VBox alignment="TOP_CENTER" spacing="5.0" styleClass="box" HBox.hgrow="SOMETIMES">
+                                    <children>
+                                        <Text strokeType="OUTSIDE" strokeWidth="0.0" style="-fx-fill: red;"
+                                              text="أكثر الاصناف مبيعات" underline="true"/>
+                                        <TableView fx:id="tableView" focusTraversable="false" styleClass="table">
+                                            <columnResizePolicy>
+                                                <TableView fx:constant="CONSTRAINED_RESIZE_POLICY"/>
+                                            </columnResizePolicy>
+                                        </TableView>
+                                    </children>
+                                    <padding>
+                                        <Insets bottom="2.0" left="2.0" right="2.0" top="2.0"/>
+                                    </padding>
+                                </VBox>
+                            </children>
+                        </HBox>
+                    </children>
+                    <padding>
+                        <Insets bottom="10.0" left="10.0" right="10.0" top="10.0"/>
+                    </padding>
+                </VBox>
+            </content>
+        </ScrollPane>
+    </children>
+    <stylesheets>
+        <URL value="@../../css/summary.css"/>
+    </stylesheets>
+</StackPane>

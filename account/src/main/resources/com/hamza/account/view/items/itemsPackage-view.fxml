@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<AnchorPane xmlns:fx="http://javafx.com/fxml/1" xmlns="http://javafx.com/javafx/21">
+    <children>
+        <VBox layoutX="5.0" layoutY="5.0" spacing="5.0" styleClass="dashboard-tile" AnchorPane.bottomAnchor="5.0"
+              AnchorPane.leftAnchor="5.0" AnchorPane.rightAnchor="5.0" AnchorPane.topAnchor="5.0">
+            <children>
+                <CheckBox fx:id="checkBox" mnemonicParsing="false" text="Add Package"/>
+                <VBox fx:id="boxData" spacing="5.0" VBox.vgrow="SOMETIMES">
+                    <children>
+                        <GridPane fx:id="gridPane" styleClass="grid-pane-style">
+                            <columnConstraints>
+                                <ColumnConstraints hgrow="SOMETIMES" maxWidth="-Infinity" minWidth="10.0"/>
+                                <ColumnConstraints hgrow="SOMETIMES" maxWidth="-Infinity" minWidth="10.0"/>
+                                <ColumnConstraints hgrow="SOMETIMES" maxWidth="-Infinity" minWidth="10.0"/>
+                                <ColumnConstraints hgrow="SOMETIMES" maxWidth="-Infinity" minWidth="10.0"
+                                                   prefWidth="80.0"/>
+                                <ColumnConstraints hgrow="SOMETIMES" maxWidth="-Infinity" minWidth="10.0"/>
+                            </columnConstraints>
+                            <rowConstraints>
+                                <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES"/>
+                            </rowConstraints>
+                            <children>
+                                <Label fx:id="labelName" text="Name"/>
+                                <Label fx:id="labelQuantity" text="Quantity" GridPane.columnIndex="2"/>
+                                <TextField fx:id="txtCount" GridPane.columnIndex="3"/>
+                                <Button fx:id="btnAddItem" mnemonicParsing="false" text="Add" GridPane.columnIndex="4"/>
+                            </children>
+                        </GridPane>
+                        <TableView fx:id="tableView" prefHeight="150.0" VBox.vgrow="SOMETIMES"/>
+                    </children>
+                </VBox>
+            </children>
+        </VBox>
+    </children>
+</AnchorPane>

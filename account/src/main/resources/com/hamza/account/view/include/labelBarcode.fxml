@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.image.Image?>
+<?import javafx.scene.image.ImageView?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.VBox?>
+<VBox xmlns:fx="http://javafx.com/fxml/1" alignment="CENTER" style="-fx-border-color: #eee; -fx-border-width: 1;"
+      xmlns="http://javafx.com/javafx/21" fx:controller="com.hamza.account.controller.setting.LabelBarcodeController">
+    <children>
+        <Label fx:id="labelName" text="Name"/>
+        <ImageView fitHeight="30.0" fitWidth="180.0" pickOnBounds="true" preserveRatio="true">
+            <image>
+                <Image url="@../../image/testBarcode.png"/>
+            </image>
+        </ImageView>
+        <HBox alignment="CENTER" spacing="5.0">
+            <children>
+                <Label fx:id="labelBarcode" text="Barcode"/>
+                <Label fx:id="labelPrice" text="Price"/>
+            </children>
+        </HBox>
+    </children>
+</VBox>

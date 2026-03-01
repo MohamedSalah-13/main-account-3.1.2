@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.text.Text?>
+<StackPane xmlns:fx="http://javafx.com/fxml/1" fx:id="stackPane" xmlns="http://javafx.com/javafx/21">
+    <children>
+        <AnchorPane>
+            <children>
+                <VBox AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0"
+                      AnchorPane.topAnchor="0.0">
+                    <children>
+                        <ToolBar>
+                            <items>
+                                <Button fx:id="btnSave" mnemonicParsing="false" prefWidth="70.0" text="حفظ"/>
+                                <Button fx:id="btnPrint" layoutX="10.0" layoutY="10.0" mnemonicParsing="false"
+                                        prefWidth="70.0" text="طباعة"/>
+                                <Separator orientation="VERTICAL"/>
+                                <Button fx:id="btnSearch" layoutX="84.0" layoutY="10.0" mnemonicParsing="false"
+                                        prefWidth="70.0" text="بحث"/>
+                                <Button fx:id="btnAddStock" mnemonicParsing="false" text="إضافة مخزن"/>
+                            </items>
+                        </ToolBar>
+                        <VBox spacing="5.0" VBox.vgrow="SOMETIMES">
+                            <children>
+                                <VBox minHeight="-Infinity" minWidth="-Infinity" spacing="5.0"
+                                      styleClass="dashboard-tile">
+                                    <children>
+                                        <GridPane fx:id="gridPane" styleClass="grid-pane-style" VBox.vgrow="SOMETIMES">
+                                            <columnConstraints>
+                                                <ColumnConstraints hgrow="SOMETIMES" maxWidth="-Infinity"
+                                                                   minWidth="10.0"/>
+                                                <ColumnConstraints hgrow="SOMETIMES" maxWidth="-Infinity"
+                                                                   minWidth="10.0"/>
+                                                <ColumnConstraints hgrow="SOMETIMES" maxWidth="-Infinity"
+                                                                   minWidth="10.0"/>
+                                                <ColumnConstraints hgrow="SOMETIMES" maxWidth="-Infinity"
+                                                                   minWidth="10.0"/>
+                                                <ColumnConstraints hgrow="SOMETIMES" maxWidth="-Infinity"
+                                                                   minWidth="10.0"/>
+                                                <ColumnConstraints hgrow="SOMETIMES" maxWidth="-Infinity"
+                                                                   minWidth="10.0" prefWidth="150.0"/>
+                                                <ColumnConstraints hgrow="SOMETIMES" maxWidth="-Infinity"
+                                                                   minWidth="10.0"/>
+                                            </columnConstraints>
+                                            <rowConstraints>
+                                                <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES"/>
+                                                <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES"/>
+                                                <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES"/>
+                                                <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES"/>
+                                            </rowConstraints>
+                                            <children>
+                                                <Label text="كود"/>
+                                                <Label text="التاريخ" GridPane.columnIndex="2"/>
+                                                <Label text="من مخزن" GridPane.rowIndex="1"/>
+                                                <Label text="الى مخزن" GridPane.columnIndex="2" GridPane.rowIndex="1"/>
+                                                <TextField fx:id="txtCode" editable="false" text="0"
+                                                           GridPane.columnIndex="1"/>
+                                                <DatePicker fx:id="convertDate" GridPane.columnIndex="3"/>
+                                                <Label text="اسم الصنف" GridPane.rowIndex="2"/>
+                                                <Label text="المتاح" GridPane.rowIndex="3"/>
+                                                <TextField fx:id="txtAvailable" editable="false" text="0"
+                                                           GridPane.columnIndex="1" GridPane.rowIndex="3"/>
+                                                <Label text="الكمية" GridPane.columnIndex="2" GridPane.rowIndex="3"/>
+                                                <TextField fx:id="txtQuantity" text="0" GridPane.columnIndex="3"
+                                                           GridPane.rowIndex="3"/>
+                                                <Label text="الباقى" GridPane.columnIndex="4" GridPane.rowIndex="3"/>
+                                                <TextField fx:id="txtRest" editable="false" text="0"
+                                                           GridPane.columnIndex="5" GridPane.rowIndex="3"/>
+                                                <Button fx:id="btnAddRow" mnemonicParsing="false" text="إضافة"
+                                                        GridPane.columnIndex="6" GridPane.rowIndex="3"/>
+                                                <ComboBox prefWidth="150.0" GridPane.columnIndex="1"
+                                                          GridPane.rowIndex="1"/>
+                                                <ComboBox prefWidth="150.0" GridPane.columnIndex="3"
+                                                          GridPane.rowIndex="1"/>
+                                            </children>
+                                        </GridPane>
+                                    </children>
+                                </VBox>
+                                <TableView fx:id="tableView" VBox.vgrow="SOMETIMES"/>
+                                <HBox alignment="CENTER_LEFT" spacing="10.0" styleClass="pane-box-last">
+                                    <children>
+                                        <Label text="عدد الاصناف"/>
+                                        <Text fx:id="stockCount" strokeType="OUTSIDE" strokeWidth="0.0"
+                                              styleClass="text-sum" text="0"/>
+                                        <Label text="الكميات"/>
+                                        <Text fx:id="stockTotal" strokeType="OUTSIDE" strokeWidth="0.0"
+                                              styleClass="text-sum" text="0"/>
+                                    </children>
+                                </HBox>
+                            </children>
+                            <padding>
+                                <Insets bottom="5.0" left="5.0" right="5.0" top="5.0"/>
+                            </padding>
+                        </VBox>
+                    </children>
+                </VBox>
+            </children>
+        </AnchorPane>
+    </children>
+</StackPane>

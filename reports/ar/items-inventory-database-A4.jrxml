@@ -1,0 +1,490 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Created with Jaspersoft Studio version 6.20.0.final using JasperReports Library version 6.20.0-2bc7ab61c56f459e8176eb05c7705e145cd400ad  -->
+<jasperReport xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+              xmlns="http://jasperreports.sourceforge.net/jasperreports"
+              xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd"
+              name="inventory" columnDirection="RTL" pageWidth="842" pageHeight="595" orientation="Landscape"
+              columnWidth="802" leftMargin="20" rightMargin="20" topMargin="20" bottomMargin="20"
+              uuid="b2a55182-4965-48b1-8489-5da3f8c8b2d9">
+    <property name="com.jaspersoft.studio.data.sql.tables" value=""/>
+    <property name="com.jaspersoft.studio.data.defaultdataadapter" value="mysql 3306"/>
+    <property name="com.jaspersoft.studio.unit." value="pixel"/>
+    <property name="com.jaspersoft.studio.unit.pageHeight" value="pixel"/>
+    <property name="com.jaspersoft.studio.unit.pageWidth" value="pixel"/>
+    <property name="com.jaspersoft.studio.unit.topMargin" value="pixel"/>
+    <property name="com.jaspersoft.studio.unit.bottomMargin" value="pixel"/>
+    <property name="com.jaspersoft.studio.unit.leftMargin" value="pixel"/>
+    <property name="com.jaspersoft.studio.unit.rightMargin" value="pixel"/>
+    <property name="com.jaspersoft.studio.unit.columnWidth" value="pixel"/>
+    <property name="com.jaspersoft.studio.unit.columnSpacing" value="pixel"/>
+    <style name="Style1" hTextAlign="Right" vTextAlign="Middle" vImageAlign="Middle" fontSize="9" isBold="false">
+        <box>
+            <pen lineWidth="0.5" lineStyle="Solid" lineColor="#A6A6A6"/>
+            <topPen lineWidth="0.5" lineStyle="Solid" lineColor="#A6A6A6"/>
+            <leftPen lineWidth="0.5" lineStyle="Solid" lineColor="#A6A6A6"/>
+            <bottomPen lineWidth="0.5" lineStyle="Solid" lineColor="#A6A6A6"/>
+            <rightPen lineWidth="0.5" lineStyle="Solid" lineColor="#A6A6A6"/>
+        </box>
+        <paragraph rightIndent="5"/>
+    </style>
+    <style name="header" forecolor="#63100F" hTextAlign="Center" vTextAlign="Middle" vImageAlign="Middle" fontSize="11"
+           isBold="true">
+        <box>
+            <pen lineStyle="Solid"/>
+            <topPen lineWidth="1.0" lineStyle="Solid" lineColor="#63100F"/>
+            <leftPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+            <bottomPen lineWidth="1.0" lineStyle="Solid" lineColor="#63100F"/>
+            <rightPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+        </box>
+    </style>
+    <parameter name="stock_id" class="java.lang.Integer"/>
+    <queryString language="SQL">
+        <![CDATA[SELECT account_system_db.quantity_items_table.item_id,
+	account_system_db.quantity_items_table.stock_id,
+	account_system_db.quantity_items_table.first_balance,
+	account_system_db.quantity_items_table.`quantityPurchase`,
+	account_system_db.quantity_items_table.`quantitySales`,
+	account_system_db.quantity_items_table.`quantityPurchaseRe`,
+	account_system_db.quantity_items_table.`quantitySalesRe`,
+	account_system_db.quantity_items_table.`fromStock`,
+	account_system_db.quantity_items_table.`toStock`,
+	account_system_db.items.`nameItem`,
+	account_system_db.items.barcode,
+	account_system_db.stocks.stock_name
+FROM account_system_db.quantity_items_table
+	INNER JOIN account_system_db.items ON 
+	 account_system_db.items.id = account_system_db.quantity_items_table.item_id 
+	INNER JOIN account_system_db.stocks ON 
+	 account_system_db.stocks.stock_id = account_system_db.quantity_items_table.stock_id 
+WHERE
+	account_system_db.quantity_items_table.stock_id= $P!{stock_id} OR $P!{stock_id} IS NULL]]>
+    </queryString>
+    <field name="item_id" class="java.lang.Integer">
+        <property name="com.jaspersoft.studio.field.name" value="item_id"/>
+        <property name="com.jaspersoft.studio.field.label" value="item_id"/>
+        <property name="com.jaspersoft.studio.field.tree.path" value="quantity_items_table"/>
+    </field>
+    <field name="stock_id" class="java.lang.Integer">
+        <property name="com.jaspersoft.studio.field.name" value="stock_id"/>
+        <property name="com.jaspersoft.studio.field.label" value="stock_id"/>
+        <property name="com.jaspersoft.studio.field.tree.path" value="quantity_items_table"/>
+    </field>
+    <field name="first_balance" class="java.lang.Integer">
+        <property name="com.jaspersoft.studio.field.name" value="first_balance"/>
+        <property name="com.jaspersoft.studio.field.label" value="first_balance"/>
+        <property name="com.jaspersoft.studio.field.tree.path" value="quantity_items_table"/>
+    </field>
+    <field name="quantityPurchase" class="java.lang.Double">
+        <property name="com.jaspersoft.studio.field.name" value="quantityPurchase"/>
+        <property name="com.jaspersoft.studio.field.label" value="quantityPurchase"/>
+        <property name="com.jaspersoft.studio.field.tree.path" value="quantity_items_table"/>
+    </field>
+    <field name="quantitySales" class="java.lang.Double">
+        <property name="com.jaspersoft.studio.field.name" value="quantitySales"/>
+        <property name="com.jaspersoft.studio.field.label" value="quantitySales"/>
+        <property name="com.jaspersoft.studio.field.tree.path" value="quantity_items_table"/>
+    </field>
+    <field name="quantityPurchaseRe" class="java.lang.Double">
+        <property name="com.jaspersoft.studio.field.name" value="quantityPurchaseRe"/>
+        <property name="com.jaspersoft.studio.field.label" value="quantityPurchaseRe"/>
+        <property name="com.jaspersoft.studio.field.tree.path" value="quantity_items_table"/>
+    </field>
+    <field name="quantitySalesRe" class="java.lang.Double">
+        <property name="com.jaspersoft.studio.field.name" value="quantitySalesRe"/>
+        <property name="com.jaspersoft.studio.field.label" value="quantitySalesRe"/>
+        <property name="com.jaspersoft.studio.field.tree.path" value="quantity_items_table"/>
+    </field>
+    <field name="fromStock" class="java.lang.Double">
+        <property name="com.jaspersoft.studio.field.name" value="fromStock"/>
+        <property name="com.jaspersoft.studio.field.label" value="fromStock"/>
+        <property name="com.jaspersoft.studio.field.tree.path" value="quantity_items_table"/>
+    </field>
+    <field name="toStock" class="java.lang.Double">
+        <property name="com.jaspersoft.studio.field.name" value="toStock"/>
+        <property name="com.jaspersoft.studio.field.label" value="toStock"/>
+        <property name="com.jaspersoft.studio.field.tree.path" value="quantity_items_table"/>
+    </field>
+    <field name="nameItem" class="java.lang.String">
+        <property name="com.jaspersoft.studio.field.name" value="nameItem"/>
+        <property name="com.jaspersoft.studio.field.label" value="nameItem"/>
+        <property name="com.jaspersoft.studio.field.tree.path" value="items"/>
+    </field>
+    <field name="barcode" class="java.lang.String">
+        <property name="com.jaspersoft.studio.field.name" value="barcode"/>
+        <property name="com.jaspersoft.studio.field.label" value="barcode"/>
+        <property name="com.jaspersoft.studio.field.tree.path" value="items"/>
+    </field>
+    <field name="stock_name" class="java.lang.String">
+        <property name="com.jaspersoft.studio.field.name" value="stock_name"/>
+        <property name="com.jaspersoft.studio.field.label" value="stock_name"/>
+        <property name="com.jaspersoft.studio.field.tree.path" value="stocks"/>
+    </field>
+    <sortField name="stock_id"/>
+    <group name="Group1">
+        <groupExpression><![CDATA[$F{stock_id}]]></groupExpression>
+        <groupHeader>
+            <band height="49">
+                <frame>
+                    <reportElement x="10" y="25" width="523" height="23" uuid="4aebd0dc-352c-4ba9-947d-bb64ea3337c8">
+                        <property name="com.jaspersoft.studio.layout"
+                                  value="com.jaspersoft.studio.editor.layout.grid.JSSGridBagLayout"/>
+                        <property name="com.jaspersoft.studio.unit.y" value="px"/>
+                        <property name="com.jaspersoft.studio.unit.height" value="px"/>
+                    </reportElement>
+                    <staticText>
+                        <reportElement style="Style1" x="449" y="0" width="74" height="23"
+                                       uuid="5d590551-40d1-4781-a2de-58afeb63fe6a">
+                            <property name="com.jaspersoft.studio.spreadsheet.connectionID"
+                                      value="e3d10b1e-dcb8-445e-bcc6-cdd84708ab01"/>
+                            <property name="com.jaspersoft.layout.grid.x" value="6"/>
+                            <property name="com.jaspersoft.layout.grid.y" value="-1"/>
+                            <property name="com.jaspersoft.layout.grid.weight.x" value="1.0"/>
+                            <property name="com.jaspersoft.layout.grid.weight.y" value="1.0"/>
+                            <property name="com.jaspersoft.layout.grid.rowspan" value="1"/>
+                            <property name="com.jaspersoft.layout.grid.colspan" value="1"/>
+                            <property name="com.jaspersoft.layout.grid.weight.fixed" value="false"/>
+                        </reportElement>
+                        <text><![CDATA[رصيد اول]]></text>
+                    </staticText>
+                    <staticText>
+                        <reportElement style="Style1" x="375" y="0" width="74" height="23"
+                                       uuid="85a1890c-a653-4b23-bcb6-c3dabb4754af">
+                            <property name="com.jaspersoft.studio.spreadsheet.connectionID"
+                                      value="a90f9932-f110-4284-9d29-46a8a0a91647"/>
+                            <property name="com.jaspersoft.layout.grid.x" value="5"/>
+                            <property name="com.jaspersoft.layout.grid.y" value="-1"/>
+                            <property name="com.jaspersoft.layout.grid.weight.x" value="1.0"/>
+                            <property name="com.jaspersoft.layout.grid.weight.y" value="1.0"/>
+                            <property name="com.jaspersoft.layout.grid.rowspan" value="1"/>
+                            <property name="com.jaspersoft.layout.grid.colspan" value="1"/>
+                            <property name="com.jaspersoft.layout.grid.weight.fixed" value="false"/>
+                        </reportElement>
+                        <text><![CDATA[المشتريات]]></text>
+                    </staticText>
+                    <staticText>
+                        <reportElement style="Style1" x="300" y="0" width="75" height="23"
+                                       uuid="8e298c4a-6acf-45ff-a21d-eb146b000943">
+                            <property name="com.jaspersoft.studio.spreadsheet.connectionID"
+                                      value="691edaae-704c-493a-81b1-8bd83e0fb3e0"/>
+                            <property name="com.jaspersoft.layout.grid.x" value="4"/>
+                            <property name="com.jaspersoft.layout.grid.y" value="-1"/>
+                            <property name="com.jaspersoft.layout.grid.weight.x" value="1.0"/>
+                            <property name="com.jaspersoft.layout.grid.weight.y" value="1.0"/>
+                            <property name="com.jaspersoft.layout.grid.rowspan" value="1"/>
+                            <property name="com.jaspersoft.layout.grid.colspan" value="1"/>
+                            <property name="com.jaspersoft.layout.grid.weight.fixed" value="false"/>
+                        </reportElement>
+                        <text><![CDATA[المبيعات]]></text>
+                    </staticText>
+                    <staticText>
+                        <reportElement style="Style1" x="225" y="0" width="75" height="23"
+                                       uuid="9cfda04f-a18c-4e0d-97c0-62528fffd505">
+                            <property name="com.jaspersoft.studio.spreadsheet.connectionID"
+                                      value="bcd041cc-36f0-46e7-89b0-65107a962178"/>
+                            <property name="com.jaspersoft.layout.grid.x" value="3"/>
+                            <property name="com.jaspersoft.layout.grid.y" value="-1"/>
+                            <property name="com.jaspersoft.layout.grid.weight.x" value="1.0"/>
+                            <property name="com.jaspersoft.layout.grid.weight.y" value="1.0"/>
+                            <property name="com.jaspersoft.layout.grid.rowspan" value="1"/>
+                            <property name="com.jaspersoft.layout.grid.colspan" value="1"/>
+                            <property name="com.jaspersoft.layout.grid.weight.fixed" value="false"/>
+                        </reportElement>
+                        <text><![CDATA[مرتجع المشتريات]]></text>
+                    </staticText>
+                    <staticText>
+                        <reportElement style="Style1" x="150" y="0" width="75" height="23"
+                                       uuid="7f09e874-de91-4353-9321-203601d0b7d1">
+                            <property name="com.jaspersoft.studio.spreadsheet.connectionID"
+                                      value="337bd3c4-c95f-40db-8407-9130c1aa5237"/>
+                            <property name="com.jaspersoft.layout.grid.x" value="2"/>
+                            <property name="com.jaspersoft.layout.grid.y" value="-1"/>
+                            <property name="com.jaspersoft.layout.grid.weight.x" value="1.0"/>
+                            <property name="com.jaspersoft.layout.grid.weight.y" value="1.0"/>
+                            <property name="com.jaspersoft.layout.grid.rowspan" value="1"/>
+                            <property name="com.jaspersoft.layout.grid.colspan" value="1"/>
+                            <property name="com.jaspersoft.layout.grid.weight.fixed" value="false"/>
+                        </reportElement>
+                        <text><![CDATA[مرتجع المبيعات]]></text>
+                    </staticText>
+                    <staticText>
+                        <reportElement style="Style1" x="75" y="0" width="75" height="23"
+                                       uuid="ef169711-3fc3-40b2-9d03-29173f5f9ac0">
+                            <property name="com.jaspersoft.studio.spreadsheet.connectionID"
+                                      value="30894f14-1ca7-4364-ae88-f6a5ddc30f61"/>
+                            <property name="com.jaspersoft.layout.grid.x" value="1"/>
+                            <property name="com.jaspersoft.layout.grid.y" value="-1"/>
+                            <property name="com.jaspersoft.layout.grid.weight.x" value="1.0"/>
+                            <property name="com.jaspersoft.layout.grid.weight.y" value="1.0"/>
+                            <property name="com.jaspersoft.layout.grid.rowspan" value="1"/>
+                            <property name="com.jaspersoft.layout.grid.colspan" value="1"/>
+                            <property name="com.jaspersoft.layout.grid.weight.fixed" value="false"/>
+                        </reportElement>
+                        <text><![CDATA[تحويلات واردة]]></text>
+                    </staticText>
+                    <staticText>
+                        <reportElement style="Style1" x="0" y="0" width="75" height="23"
+                                       uuid="63ad1e6c-48f9-4a43-8677-6740aafe674e">
+                            <property name="com.jaspersoft.studio.spreadsheet.connectionID"
+                                      value="a340a6fc-137e-4488-81f1-5ff67c4ce0b8"/>
+                            <property name="com.jaspersoft.layout.grid.x" value="0"/>
+                            <property name="com.jaspersoft.layout.grid.y" value="-1"/>
+                            <property name="com.jaspersoft.layout.grid.weight.x" value="1.0"/>
+                            <property name="com.jaspersoft.layout.grid.weight.y" value="1.0"/>
+                            <property name="com.jaspersoft.layout.grid.rowspan" value="1"/>
+                            <property name="com.jaspersoft.layout.grid.colspan" value="1"/>
+                            <property name="com.jaspersoft.layout.grid.weight.fixed" value="false"/>
+                        </reportElement>
+                        <text><![CDATA[تحويلات صادرة]]></text>
+                    </staticText>
+                </frame>
+                <staticText>
+                    <reportElement style="Style1" x="707" y="5" width="87" height="20"
+                                   uuid="f5fac059-4862-47da-9918-1735847e886f">
+                        <property name="com.jaspersoft.studio.spreadsheet.connectionID"
+                                  value="2c23b31c-6cb6-4745-b8d3-fda535ec27c2"/>
+                    </reportElement>
+                    <textElement textAlignment="Center" verticalAlignment="Middle">
+                        <font size="12"/>
+                    </textElement>
+                    <text><![CDATA[المخزن]]></text>
+                </staticText>
+                <textField>
+                    <reportElement style="Style1" x="533" y="5" width="174" height="20"
+                                   uuid="f488ea5b-62c2-4093-82d2-9b970de6ae2e">
+                        <property name="com.jaspersoft.studio.spreadsheet.connectionID"
+                                  value="2c23b31c-6cb6-4745-b8d3-fda535ec27c2"/>
+                    </reportElement>
+                    <textElement textAlignment="Right">
+                        <font size="12" isBold="true"/>
+                    </textElement>
+                    <textFieldExpression><![CDATA[$F{stock_name}]]></textFieldExpression>
+                </textField>
+                <textField>
+                    <reportElement style="Style1" x="750" y="25" width="44" height="23"
+                                   uuid="c94fdf3e-a947-4d0f-b732-124bb51a0040">
+                        <property name="com.jaspersoft.layout.grid.x" value="8"/>
+                        <property name="com.jaspersoft.layout.grid.y" value="-1"/>
+                        <property name="com.jaspersoft.layout.grid.weight.x" value="1.0"/>
+                        <property name="com.jaspersoft.layout.grid.weight.y" value="1.0"/>
+                        <property name="com.jaspersoft.layout.grid.rowspan" value="1"/>
+                        <property name="com.jaspersoft.layout.grid.colspan" value="1"/>
+                        <property name="com.jaspersoft.layout.grid.weight.fixed" value="false"/>
+                        <property name="com.jaspersoft.studio.unit.height" value="pixel"/>
+                    </reportElement>
+                    <textFieldExpression><![CDATA[$R{code}]]></textFieldExpression>
+                </textField>
+                <staticText>
+                    <reportElement style="Style1" x="533" y="25" width="217" height="23"
+                                   uuid="0d89a49d-a3cc-49fb-8927-673dcaeb45aa">
+                        <property name="com.jaspersoft.studio.spreadsheet.connectionID"
+                                  value="8aa88647-5f93-4384-b63b-a31b441cace4"/>
+                        <property name="com.jaspersoft.layout.grid.x" value="7"/>
+                        <property name="com.jaspersoft.layout.grid.y" value="-1"/>
+                        <property name="com.jaspersoft.layout.grid.weight.x" value="1.0"/>
+                        <property name="com.jaspersoft.layout.grid.weight.y" value="1.0"/>
+                        <property name="com.jaspersoft.layout.grid.rowspan" value="1"/>
+                        <property name="com.jaspersoft.layout.grid.colspan" value="1"/>
+                        <property name="com.jaspersoft.layout.grid.weight.fixed" value="false"/>
+                    </reportElement>
+                    <text><![CDATA[الاسم]]></text>
+                </staticText>
+            </band>
+        </groupHeader>
+    </group>
+    <background>
+        <band height="555" splitType="Stretch">
+            <property name="com.jaspersoft.studio.unit.height" value="px"/>
+            <rectangle>
+                <reportElement x="0" y="0" width="802" height="555" uuid="ed094de0-b2a4-4b89-a415-52525d4505a2"/>
+                <graphicElement>
+                    <pen lineWidth="0.5"/>
+                </graphicElement>
+            </rectangle>
+        </band>
+    </background>
+    <title>
+        <band height="47">
+            <staticText>
+                <reportElement style="Style1" x="240" y="3" width="340" height="36"
+                               uuid="1b301d8e-c2dc-403d-962f-7e49d8101bdf"/>
+                <textElement textAlignment="Center" verticalAlignment="Middle">
+                    <font size="22" isBold="true" isUnderline="true"/>
+                </textElement>
+                <text><![CDATA[جرد اصناف]]></text>
+            </staticText>
+            <textField pattern="yyyy/M/dd - h:mm a">
+                <reportElement style="Style1" x="10" y="10" width="132" height="23"
+                               uuid="d778fc91-50e5-4099-b289-2be2d2f3b286"/>
+                <textFieldExpression><![CDATA[new java.util.Date()]]></textFieldExpression>
+            </textField>
+        </band>
+    </title>
+    <detail>
+        <band height="20" splitType="Stretch">
+            <property name="com.jaspersoft.studio.unit.height" value="px"/>
+            <frame>
+                <reportElement x="10" y="0" width="523" height="20" uuid="83ae5487-7220-41fb-a32a-c941fc03dbd4">
+                    <property name="com.jaspersoft.studio.layout"
+                              value="com.jaspersoft.studio.editor.layout.grid.JSSGridBagLayout"/>
+                    <property name="com.jaspersoft.studio.unit.height" value="px"/>
+                </reportElement>
+                <textField>
+                    <reportElement style="Style1" x="449" y="0" width="74" height="20"
+                                   uuid="e34be6e0-a9ba-4e96-9776-c45822882411">
+                        <property name="com.jaspersoft.studio.spreadsheet.connectionID"
+                                  value="e3d10b1e-dcb8-445e-bcc6-cdd84708ab01"/>
+                        <property name="com.jaspersoft.layout.grid.x" value="6"/>
+                        <property name="com.jaspersoft.layout.grid.y" value="0"/>
+                        <property name="com.jaspersoft.layout.grid.weight.x" value="1.0"/>
+                        <property name="com.jaspersoft.layout.grid.weight.y" value="1.0"/>
+                        <property name="com.jaspersoft.layout.grid.rowspan" value="1"/>
+                        <property name="com.jaspersoft.layout.grid.colspan" value="1"/>
+                        <property name="com.jaspersoft.layout.grid.weight.fixed" value="false"/>
+                    </reportElement>
+                    <textFieldExpression><![CDATA[$F{first_balance}]]></textFieldExpression>
+                </textField>
+                <textField>
+                    <reportElement style="Style1" x="375" y="0" width="74" height="20"
+                                   uuid="236423b4-3ac6-4587-ac4b-83fad505db78">
+                        <property name="com.jaspersoft.studio.spreadsheet.connectionID"
+                                  value="a90f9932-f110-4284-9d29-46a8a0a91647"/>
+                        <property name="com.jaspersoft.layout.grid.x" value="5"/>
+                        <property name="com.jaspersoft.layout.grid.y" value="0"/>
+                        <property name="com.jaspersoft.layout.grid.weight.x" value="1.0"/>
+                        <property name="com.jaspersoft.layout.grid.weight.y" value="1.0"/>
+                        <property name="com.jaspersoft.layout.grid.rowspan" value="1"/>
+                        <property name="com.jaspersoft.layout.grid.colspan" value="1"/>
+                        <property name="com.jaspersoft.layout.grid.weight.fixed" value="false"/>
+                    </reportElement>
+                    <textFieldExpression><![CDATA[$F{quantityPurchase}]]></textFieldExpression>
+                </textField>
+                <textField>
+                    <reportElement style="Style1" x="300" y="0" width="75" height="20"
+                                   uuid="68d90dbf-1a97-4533-989a-31174c4aa69c">
+                        <property name="com.jaspersoft.studio.spreadsheet.connectionID"
+                                  value="691edaae-704c-493a-81b1-8bd83e0fb3e0"/>
+                        <property name="com.jaspersoft.layout.grid.x" value="4"/>
+                        <property name="com.jaspersoft.layout.grid.y" value="0"/>
+                        <property name="com.jaspersoft.layout.grid.weight.x" value="1.0"/>
+                        <property name="com.jaspersoft.layout.grid.weight.y" value="1.0"/>
+                        <property name="com.jaspersoft.layout.grid.rowspan" value="1"/>
+                        <property name="com.jaspersoft.layout.grid.colspan" value="1"/>
+                        <property name="com.jaspersoft.layout.grid.weight.fixed" value="false"/>
+                    </reportElement>
+                    <textFieldExpression><![CDATA[$F{quantitySales}]]></textFieldExpression>
+                </textField>
+                <textField>
+                    <reportElement style="Style1" x="225" y="0" width="75" height="20"
+                                   uuid="e550be47-78fe-45a5-9a13-ed022c01ddbd">
+                        <property name="com.jaspersoft.studio.spreadsheet.connectionID"
+                                  value="bcd041cc-36f0-46e7-89b0-65107a962178"/>
+                        <property name="com.jaspersoft.layout.grid.x" value="3"/>
+                        <property name="com.jaspersoft.layout.grid.y" value="0"/>
+                        <property name="com.jaspersoft.layout.grid.weight.x" value="1.0"/>
+                        <property name="com.jaspersoft.layout.grid.weight.y" value="1.0"/>
+                        <property name="com.jaspersoft.layout.grid.rowspan" value="1"/>
+                        <property name="com.jaspersoft.layout.grid.colspan" value="1"/>
+                        <property name="com.jaspersoft.layout.grid.weight.fixed" value="false"/>
+                    </reportElement>
+                    <textFieldExpression><![CDATA[$F{quantityPurchaseRe}]]></textFieldExpression>
+                </textField>
+                <textField>
+                    <reportElement style="Style1" x="150" y="0" width="75" height="20"
+                                   uuid="75e7f491-de75-4c2b-b0f0-c12b6cf14bfb">
+                        <property name="com.jaspersoft.studio.spreadsheet.connectionID"
+                                  value="337bd3c4-c95f-40db-8407-9130c1aa5237"/>
+                        <property name="com.jaspersoft.layout.grid.x" value="2"/>
+                        <property name="com.jaspersoft.layout.grid.y" value="0"/>
+                        <property name="com.jaspersoft.layout.grid.weight.x" value="1.0"/>
+                        <property name="com.jaspersoft.layout.grid.weight.y" value="1.0"/>
+                        <property name="com.jaspersoft.layout.grid.rowspan" value="1"/>
+                        <property name="com.jaspersoft.layout.grid.colspan" value="1"/>
+                        <property name="com.jaspersoft.layout.grid.weight.fixed" value="false"/>
+                    </reportElement>
+                    <textFieldExpression><![CDATA[$F{quantitySalesRe}]]></textFieldExpression>
+                </textField>
+                <textField>
+                    <reportElement style="Style1" x="75" y="0" width="75" height="20"
+                                   uuid="882456fd-882b-4f78-9eb6-758cd3e0313a">
+                        <property name="com.jaspersoft.studio.spreadsheet.connectionID"
+                                  value="30894f14-1ca7-4364-ae88-f6a5ddc30f61"/>
+                        <property name="com.jaspersoft.layout.grid.x" value="1"/>
+                        <property name="com.jaspersoft.layout.grid.y" value="0"/>
+                        <property name="com.jaspersoft.layout.grid.weight.x" value="1.0"/>
+                        <property name="com.jaspersoft.layout.grid.weight.y" value="1.0"/>
+                        <property name="com.jaspersoft.layout.grid.rowspan" value="1"/>
+                        <property name="com.jaspersoft.layout.grid.colspan" value="1"/>
+                        <property name="com.jaspersoft.layout.grid.weight.fixed" value="false"/>
+                        <property name="com.jaspersoft.studio.unit.width" value="pixel"/>
+                    </reportElement>
+                    <textFieldExpression><![CDATA[$F{fromStock}]]></textFieldExpression>
+                </textField>
+                <textField>
+                    <reportElement style="Style1" x="0" y="0" width="75" height="20"
+                                   uuid="ab6ba8c6-a997-446f-ac2f-531b0092bf5c">
+                        <property name="com.jaspersoft.studio.spreadsheet.connectionID"
+                                  value="a340a6fc-137e-4488-81f1-5ff67c4ce0b8"/>
+                        <property name="com.jaspersoft.layout.grid.x" value="0"/>
+                        <property name="com.jaspersoft.layout.grid.y" value="0"/>
+                        <property name="com.jaspersoft.layout.grid.weight.x" value="1.0"/>
+                        <property name="com.jaspersoft.layout.grid.weight.y" value="1.0"/>
+                        <property name="com.jaspersoft.layout.grid.rowspan" value="1"/>
+                        <property name="com.jaspersoft.layout.grid.colspan" value="1"/>
+                        <property name="com.jaspersoft.layout.grid.weight.fixed" value="false"/>
+                    </reportElement>
+                    <textFieldExpression><![CDATA[$F{toStock}]]></textFieldExpression>
+                </textField>
+            </frame>
+            <textField>
+                <reportElement style="Style1" x="750" y="0" width="44" height="20"
+                               uuid="dc94b375-f66f-44cf-bddf-7ea62da3fb1b">
+                    <property name="com.jaspersoft.studio.spreadsheet.connectionID"
+                              value="8d72f3a8-dd2a-4f4d-b84e-24481c2e6a4d"/>
+                    <property name="com.jaspersoft.layout.grid.x" value="8"/>
+                    <property name="com.jaspersoft.layout.grid.y" value="0"/>
+                    <property name="com.jaspersoft.layout.grid.weight.x" value="1.0"/>
+                    <property name="com.jaspersoft.layout.grid.weight.y" value="1.0"/>
+                    <property name="com.jaspersoft.layout.grid.rowspan" value="1"/>
+                    <property name="com.jaspersoft.layout.grid.colspan" value="1"/>
+                    <property name="com.jaspersoft.layout.grid.weight.fixed" value="false"/>
+                    <property name="com.jaspersoft.studio.unit.width" value="pixel"/>
+                </reportElement>
+                <textFieldExpression><![CDATA[$F{item_id}]]></textFieldExpression>
+            </textField>
+            <textField>
+                <reportElement style="Style1" x="533" y="0" width="217" height="20"
+                               uuid="d4b15d33-557c-40e9-b8f0-185e542d493d">
+                    <property name="com.jaspersoft.studio.spreadsheet.connectionID"
+                              value="8aa88647-5f93-4384-b63b-a31b441cace4"/>
+                    <property name="com.jaspersoft.layout.grid.x" value="7"/>
+                    <property name="com.jaspersoft.layout.grid.y" value="0"/>
+                    <property name="com.jaspersoft.layout.grid.weight.x" value="1.0"/>
+                    <property name="com.jaspersoft.layout.grid.weight.y" value="1.0"/>
+                    <property name="com.jaspersoft.layout.grid.rowspan" value="1"/>
+                    <property name="com.jaspersoft.layout.grid.colspan" value="1"/>
+                    <property name="com.jaspersoft.layout.grid.weight.fixed" value="false"/>
+                </reportElement>
+                <textFieldExpression><![CDATA[$F{nameItem}]]></textFieldExpression>
+            </textField>
+        </band>
+    </detail>
+    <pageFooter>
+        <band height="25">
+            <property name="com.jaspersoft.studio.unit.height" value="px"/>
+            <textField>
+                <reportElement x="280" y="0" width="100" height="25" uuid="e2ed7587-5e9e-4453-9fb6-f9adeb1f8569"/>
+                <textElement textAlignment="Right">
+                    <font isBold="true"/>
+                </textElement>
+                <textFieldExpression><![CDATA["Page " + $V{PAGE_NUMBER}]]></textFieldExpression>
+            </textField>
+            <textField evaluationTime="Report">
+                <reportElement x="380" y="0" width="100" height="25" uuid="fcf4a0db-bb9e-4ce9-9963-a273a008b892"/>
+                <textElement textAlignment="Left">
+                    <font isBold="true"/>
+                </textElement>
+                <textFieldExpression><![CDATA[" of " + $V{PAGE_NUMBER}]]></textFieldExpression>
+            </textField>
+        </band>
+    </pageFooter>
+</jasperReport>

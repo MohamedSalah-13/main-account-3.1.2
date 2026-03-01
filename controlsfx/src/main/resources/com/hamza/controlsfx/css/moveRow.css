@@ -1,0 +1,8 @@
+.button {
+    -fx-background-color: transparent;
+    -fx-min-width: 30px;
+}
+
+.button:hover {
+    -fx-background-color: transparent, rgb(136, 17, 145), #135c77, transparent;
+}

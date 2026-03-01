@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<StackPane xmlns:fx="http://javafx.com/fxml/1" fx:id="stackPane" xmlns="http://javafx.com/javafx/21">
+    <children>
+        <VBox>
+            <children>
+                <ToolBar>
+                    <items>
+                        <Button fx:id="btnSave" mnemonicParsing="false" text="Save Data"/>
+                        <Button fx:id="btnClear" mnemonicParsing="false" text="Clear"/>
+                        <Separator orientation="VERTICAL"/>
+                        <Button fx:id="btnDownload" minWidth="70.0" mnemonicParsing="false" text="Download File"/>
+                    </items>
+                </ToolBar>
+                <VBox spacing="5.0" VBox.vgrow="SOMETIMES">
+                    <children>
+                        <VBox minHeight="-Infinity" minWidth="-Infinity" styleClass="dashboard-tile">
+                            <children>
+                                <GridPane styleClass="grid-pane-style">
+                                    <columnConstraints>
+                                        <ColumnConstraints hgrow="SOMETIMES" maxWidth="-Infinity" minWidth="10.0"/>
+                                        <ColumnConstraints hgrow="SOMETIMES" maxWidth="-Infinity" minWidth="10.0"/>
+                                        <ColumnConstraints hgrow="SOMETIMES" maxWidth="-Infinity" minWidth="10.0"/>
+                                    </columnConstraints>
+                                    <rowConstraints>
+                                        <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES"/>
+                                        <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES"/>
+                                    </rowConstraints>
+                                    <children>
+                                        <Label text="مسار الملف"/>
+                                        <TextField fx:id="textField" disable="true" prefWidth="250.0"
+                                                   GridPane.columnIndex="1"/>
+                                        <Button fx:id="bntChooseFile" mnemonicParsing="false" text="Choose File"
+                                                GridPane.columnIndex="2"/>
+                                        <Label text="بحث" GridPane.rowIndex="1"/>
+                                        <TextField fx:id="textSearch" GridPane.columnIndex="1" GridPane.rowIndex="1"/>
+                                    </children>
+                                </GridPane>
+                            </children>
+                            <padding>
+                                <Insets bottom="5.0" left="5.0" right="5.0" top="5.0"/>
+                            </padding>
+                        </VBox>
+                        <TableView fx:id="tableView" VBox.vgrow="SOMETIMES"/>
+                        <HBox alignment="CENTER_LEFT" spacing="5.0" styleClass="pane-box-last">
+                            <children>
+                                <Label text="عدد الاصناف"/>
+                                <Label fx:id="labelCount" layoutX="10.0" layoutY="10.0" styleClass="text-sum" text="0"/>
+                            </children>
+                        </HBox>
+                    </children>
+                    <padding>
+                        <Insets bottom="5.0" left="5.0" right="5.0" top="5.0"/>
+                    </padding>
+                </VBox>
+            </children>
+        </VBox>
+    </children>
+</StackPane>

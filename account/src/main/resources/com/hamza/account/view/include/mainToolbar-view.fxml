@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import com.jfoenix.controls.JFXHamburger?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.HBox?>
+<ToolBar xmlns:fx="http://javafx.com/fxml/1" id="paneTool" fx:id="toolBar" prefHeight="35.0" prefWidth="549.0"
+         xmlns="http://javafx.com/javafx/21">
+    <items>
+        <JFXHamburger fx:id="hamburger"/>
+        <Button fx:id="btnHome" mnemonicParsing="false" text="Home"/>
+        <Button fx:id="btnPosSales" mnemonicParsing="false" text="Pos Sales"/>
+        <Button fx:id="btnSales" layoutX="10.0" layoutY="13.0" mnemonicParsing="false" text="Sales"/>
+        <Button fx:id="btnPurchase" layoutX="66.0" layoutY="13.0" mnemonicParsing="false" text="Purchase"/>
+        <Button fx:id="btnItems" layoutX="122.0" layoutY="13.0" mnemonicParsing="false" text="Items"/>
+        <Button fx:id="btnCalc" layoutX="178.0" layoutY="10.0" mnemonicParsing="false" text="Calc"/>
+        <Button fx:id="btnAlarm" layoutX="227.0" layoutY="10.0" mnemonicParsing="false" text="Alarm"/>
+        <HBox alignment="CENTER_RIGHT">
+            <children>
+                <MenuButton fx:id="menuButton" mnemonicParsing="false" styleClass="menu-button-items" text="MenuButton">
+                    <items>
+                        <MenuItem fx:id="menuItemChangeName" mnemonicParsing="false" text="Change Name"/>
+                        <MenuItem fx:id="menuItemChangePass" mnemonicParsing="false" text="Change Password"/>
+                        <MenuItem fx:id="menuItemLogout" mnemonicParsing="false" text="Logout"/>
+                    </items>
+                </MenuButton>
+            </children>
+        </HBox>
+    </items>
+</ToolBar>

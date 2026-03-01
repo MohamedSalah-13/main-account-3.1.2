@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.text.Text?>
+<StackPane xmlns:fx="http://javafx.com/fxml/1" fx:id="stackPane" xmlns="http://javafx.com/javafx/21">
+    <children>
+        <VBox>
+            <children>
+                <ToolBar>
+                    <items>
+                        <Button fx:id="btnRefresh" mnemonicParsing="false" text="Refresh"/>
+                        <Button fx:id="btnPrint" layoutX="10.0" layoutY="10.0" mnemonicParsing="false" text="Print"/>
+                    </items>
+                </ToolBar>
+                <ScrollPane fitToHeight="true" fitToWidth="true" VBox.vgrow="SOMETIMES">
+                    <content>
+                        <VBox spacing="2.0">
+                            <children>
+                                <VBox styleClass="dashboard-tile">
+                                    <children>
+                                        <GridPane minHeight="-Infinity" minWidth="-Infinity"
+                                                  styleClass="grid-pane-style">
+                                            <columnConstraints>
+                                                <ColumnConstraints maxWidth="-Infinity" minWidth="10.0"/>
+                                                <ColumnConstraints hgrow="SOMETIMES" maxWidth="-Infinity"
+                                                                   minWidth="10.0"/>
+                                                <ColumnConstraints hgrow="SOMETIMES" maxWidth="-Infinity"
+                                                                   minWidth="10.0"/>
+                                            </columnConstraints>
+                                            <rowConstraints>
+                                                <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES"/>
+                                                <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES"/>
+                                            </rowConstraints>
+                                            <children>
+                                                <TextField fx:id="textSearch" GridPane.columnIndex="1"
+                                                           GridPane.rowIndex="1"/>
+                                                <ComboBox fx:id="comboStock" maxWidth="1.7976931348623157E308"
+                                                          GridPane.columnIndex="1"/>
+                                                <Label fx:id="labelStock" text="Stock"/>
+                                                <Label fx:id="labelSearch" text="Search Name" GridPane.rowIndex="1"/>
+                                                <CheckBox fx:id="checkShowZeroBalance" mnemonicParsing="false"
+                                                          text="Show Zero Balance" GridPane.columnIndex="2"/>
+                                            </children>
+                                        </GridPane>
+                                    </children>
+                                </VBox>
+                                <TableView fx:id="tableView" VBox.vgrow="SOMETIMES"/>
+                                <HBox alignment="CENTER_LEFT" maxHeight="-Infinity" minHeight="-Infinity" spacing="5.0"
+                                      styleClass="pane-box-last">
+                                    <children>
+                                        <Label fx:id="labelSumPurchase" text="sum purchase"/>
+                                        <Text fx:id="textSumPurchase" strokeType="OUTSIDE" strokeWidth="0.0"
+                                              styleClass="text-sum" text="0.0"/>
+                                        <Label fx:id="labelSumSales" text="sum sales"/>
+                                        <Text fx:id="textSumSales" strokeType="OUTSIDE" strokeWidth="0.0"
+                                              styleClass="text-sum" text="0.0"/>
+                                    </children>
+                                </HBox>
+                            </children>
+                            <padding>
+                                <Insets bottom="5.0" left="5.0" right="5.0"/>
+                            </padding>
+                        </VBox>
+                    </content>
+                </ScrollPane>
+            </children>
+        </VBox>
+    </children>
+</StackPane>

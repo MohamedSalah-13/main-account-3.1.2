@@ -1,0 +1,19 @@
+.button-white {
+    -fx-min-width: 60px;
+    -fx-max-width: 70px;
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+    -fx-text-fill: black;
+    -fx-content-display: top;
+    /*-fx-font-size: 11px;*/
+}
+
+.button-white:hover {
+    -fx-background-color: transparent;
+    -fx-border-color: gray;
+    /*-fx-border-width: .5;*/
+}
+
+.button-white:focused {
+    -fx-background-color: transparent;
+}

@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.VBox?>
+<VBox xmlns:fx="http://javafx.com/fxml/1" fx:id="box" spacing="2.0" xmlns="http://javafx.com/javafx/21">
+    <children>
+        <TabPane fx:id="pane" tabClosingPolicy="UNAVAILABLE" VBox.vgrow="SOMETIMES">
+            <tabs>
+                <Tab text="Company"/>
+                <Tab text="Language"/>
+                <Tab text="Barcode"/>
+                <Tab text="Others"/>
+            </tabs>
+        </TabPane>
+    </children>
+</VBox>

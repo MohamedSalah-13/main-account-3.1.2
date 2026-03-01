@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.image.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.text.Text?>
+<AnchorPane xmlns:fx="http://javafx.com/fxml/1" xmlns="http://javafx.com/javafx/21">
+    <children>
+        <HBox alignment="CENTER_LEFT" maxHeight="-Infinity" minWidth="-Infinity" prefHeight="25.0" spacing="2.0"
+              AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0"
+              AnchorPane.topAnchor="0.0">
+            <children>
+                <HBox alignment="CENTER_LEFT" prefWidth="70.0" style="-fx-background-color: white;">
+                    <children>
+                        <TextField fx:id="targetRate" text="0.0" HBox.hgrow="SOMETIMES"/>
+                        <ImageView fitHeight="15.0" fitWidth="15.0" pickOnBounds="true" preserveRatio="true">
+                            <image>
+                                <Image url="@../../image/percent_24dp_666666_FILL0_wght400_GRAD0_opsz24.png"/>
+                            </image>
+                        </ImageView>
+                    </children>
+                </HBox>
+                <Text layoutX="154.0" layoutY="30.0" strokeType="OUTSIDE" strokeWidth="0.0" styleClass="text-explain"
+                      text="او"/>
+                <HBox alignment="CENTER_LEFT" layoutX="10.0" layoutY="10.0" prefWidth="90.0"
+                      style="-fx-background-color: white;" styleClass="box-search">
+                    <children>
+                        <TextField fx:id="targetAmount" text="0.0" HBox.hgrow="SOMETIMES"/>
+                        <ImageView fitHeight="15.0" fitWidth="15.0" pickOnBounds="true" preserveRatio="true">
+                            <image>
+                                <Image url="@../../image/attach_money_24dp_666666_FILL0_wght400_GRAD0_opsz24.png"/>
+                            </image>
+                        </ImageView>
+                    </children>
+                </HBox>
+                <Text strokeType="OUTSIDE" strokeWidth="0.0" styleClass="text-explain" text="العمولة"/>
+                <HBox alignment="CENTER_LEFT" layoutX="10.0" layoutY="12.0" prefWidth="70.0"
+                      style="-fx-background-color: white;" styleClass="box-search">
+                    <children>
+                        <TextField fx:id="txtRate" text="0.0" HBox.hgrow="SOMETIMES"/>
+                        <ImageView fitHeight="15.0" fitWidth="15.0" pickOnBounds="true" preserveRatio="true">
+                            <image>
+                                <Image url="@../../image/percent_24dp_666666_FILL0_wght400_GRAD0_opsz24.png"/>
+                            </image>
+                        </ImageView>
+                    </children>
+                </HBox>
+            </children>
+        </HBox>
+    </children>
+</AnchorPane>

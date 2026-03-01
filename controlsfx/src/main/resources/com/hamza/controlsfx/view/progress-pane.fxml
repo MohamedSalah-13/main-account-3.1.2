@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import java.net.URL?>
+<AnchorPane xmlns:fx="http://javafx.com/fxml/1" minHeight="-Infinity" minWidth="-Infinity"
+            xmlns="http://javafx.com/javafx/21">
+    <children>
+        <VBox alignment="CENTER" spacing="10.0" style="-fx-border-color: #be1313; -fx-border-width: 3;"
+              AnchorPane.bottomAnchor="5.0" AnchorPane.leftAnchor="5.0" AnchorPane.rightAnchor="5.0"
+              AnchorPane.topAnchor="5.0">
+            <padding>
+                <Insets bottom="20.0" left="20.0" right="20.0" top="20.0"/>
+            </padding>
+            <children>
+                <Label text="Recover Data"/>
+                <Label layoutX="200.0" layoutY="60.0" text="Please Wait"/>
+                <HBox alignment="CENTER" spacing="5.0">
+                    <children>
+                        <ProgressBar fx:id="progressBar" prefWidth="400.0" progress="0.0" HBox.hgrow="SOMETIMES"/>
+                        <Label fx:id="labelProgress" text="0.0"/>
+                    </children>
+                </HBox>
+                <Label fx:id="labelMessage" text="message"/>
+                <ProgressIndicator fx:id="pi"/>
+                <Button fx:id="btnClose" disable="true" mnemonicParsing="false" prefWidth="75.0" text="Close"/>
+            </children>
+        </VBox>
+    </children>
+    <stylesheets>
+        <URL value="@../css/progress.css"/>
+        <URL value="@../css/style.css"/>
+    </stylesheets>
+</AnchorPane>

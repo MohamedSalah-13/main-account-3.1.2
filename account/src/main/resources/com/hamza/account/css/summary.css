@@ -1,0 +1,75 @@
+* {
+    -fx-fill: white;
+    -fx-font-size: 15px;
+    -fx-font-weight: bold;
+}
+
+.root {
+    /*-fx-background-color: linear-gradient(rgb(225, 157, 150), #da9367);*/
+}
+
+.box {
+    -fx-background-color: white;
+}
+
+.box-sales {
+    -fx-background-color: #b71b40;
+}
+
+.box-2 {
+    -fx-background-color: #125e8c;
+}
+
+.box-3 {
+    -fx-background-color: #cbb925;
+}
+
+.box-month {
+    -fx-background-color: #076c3a;
+}
+
+.box-details {
+    -fx-background-color: #6f0a0a;
+}
+
+.box, .box-sales, .box-2, .box-3, .box-month, .box-details {
+    -fx-background-radius: 9px;
+    -fx-border-color: white;
+    -fx-border-radius: 7px;
+}
+
+.box-sales, .box-2, .box-3, .box-month {
+    -fx-pref-height: 90px;
+    -fx-alignment: center;
+    -fx-spacing: 5px;
+}
+
+.box-details {
+    -fx-pref-height: 40px;
+    -fx-min-height: 50px;
+    -fx-max-height: 40px;
+    -fx-alignment: center;
+    -fx-spacing: 5px;
+}
+
+
+.table .column-header,
+.table .column-header .filler,
+.table .column-header-background .filler {
+    -fx-background-color: #800013;
+    -fx-pref-height: 30px;
+}
+
+.table .column-header .label, .table-row-cell .text {
+    -fx-fill: black;
+}
+
+.table-row-cell:empty {
+    -fx-background-color: transparent;
+}
+
+.table-row-cell {
+    -fx-background-color: transparent;
+    -fx-border-width: 0px;
+}
+

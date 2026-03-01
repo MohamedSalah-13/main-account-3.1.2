@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.image.*?>
+<?import javafx.scene.layout.*?>
+<AnchorPane xmlns:fx="http://javafx.com/fxml/1" minWidth="600.0" stylesheets="@../css/toolbar-account.css"
+            xmlns="http://javafx.com/javafx/21">
+    <children>
+        <ToolBar prefHeight="60.0" prefWidth="398.0" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0"
+                 AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
+            <items>
+                <Button fx:id="btnAddNew" layoutX="324.0" layoutY="11.0" mnemonicParsing="false"
+                        styleClass="button-white" text="جديد">
+                    <graphic>
+                        <ImageView fitHeight="20.0" fitWidth="20.0" pickOnBounds="true" preserveRatio="true">
+                            <image>
+                                <Image url="@../image/add_24dp_5F6368_FILL0_wght400_GRAD0_opsz24.png"/>
+                            </image>
+                        </ImageView>
+                    </graphic>
+                </Button>
+                <Button fx:id="btnSave" layoutX="10.0" layoutY="11.0" mnemonicParsing="false" styleClass="button-white"
+                        text="حفظ">
+                    <graphic>
+                        <ImageView fitHeight="20.0" fitWidth="20.0" pickOnBounds="true" preserveRatio="true">
+                            <image>
+                                <Image url="@../image/save_as_24dp_5F6368_FILL0_wght400_GRAD0_opsz24.png"/>
+                            </image>
+                        </ImageView>
+                    </graphic>
+                </Button>
+                <Button fx:id="btnDelete" layoutX="260.0" layoutY="11.0" mnemonicParsing="false"
+                        styleClass="button-white" text="حذف">
+                    <graphic>
+                        <ImageView fitHeight="20.0" fitWidth="20.0" pickOnBounds="true" preserveRatio="true">
+                            <image>
+                                <Image url="@../image/trash.png"/>
+                            </image>
+                        </ImageView>
+                    </graphic>
+                </Button>
+                <Button fx:id="btnPrint" layoutX="122.0" layoutY="13.0" mnemonicParsing="false"
+                        styleClass="button-white" text="طباعة">
+                    <graphic>
+                        <ImageView fitHeight="20.0" fitWidth="20.0" pickOnBounds="true" preserveRatio="true">
+                            <image>
+                                <Image url="@../image/print_24dp_5F6368_FILL0_wght400_GRAD0_opsz24.png"/>
+                            </image>
+                        </ImageView>
+                    </graphic>
+                </Button>
+                <Separator orientation="VERTICAL"/>
+                <Button fx:id="btnFirstPage" mnemonicParsing="false" styleClass="button-white" text="الاول">
+                    <graphic>
+                        <ImageView fitHeight="20.0" fitWidth="20.0" nodeOrientation="INHERIT" pickOnBounds="true"
+                                   preserveRatio="true">
+                            <image>
+                                <Image url="@../image/first_page_24dp_5F6368_FILL0_wght400_GRAD0_opsz24.png"/>
+                            </image>
+                        </ImageView>
+                    </graphic>
+                </Button>
+                <Button fx:id="btnPreviousRecord" layoutX="199.0" layoutY="11.0" mnemonicParsing="false"
+                        styleClass="button-white" text="السابق">
+                    <graphic>
+                        <ImageView fitHeight="20.0" fitWidth="20.0" nodeOrientation="INHERIT" pickOnBounds="true"
+                                   preserveRatio="true">
+                            <image>
+                                <Image url="@../image/keyboard_arrow_left_24dp_5F6368_FILL0_wght400_GRAD0_opsz24.png"/>
+                            </image>
+                        </ImageView>
+                    </graphic>
+                </Button>
+                <Button fx:id="btnNextRecord" layoutX="239.0" layoutY="11.0" mnemonicParsing="false"
+                        styleClass="button-white" text="التالى">
+                    <graphic>
+                        <ImageView fitHeight="20.0" fitWidth="20.0" nodeOrientation="INHERIT" pickOnBounds="true"
+                                   preserveRatio="true">
+                            <image>
+                                <Image url="@../image/keyboard_arrow_right_24dp_5F6368_FILL0_wght400_GRAD0_opsz24.png"/>
+                            </image>
+                        </ImageView>
+                    </graphic>
+                </Button>
+                <Button fx:id="btnLastPage" layoutX="279.0" layoutY="11.0" mnemonicParsing="false"
+                        styleClass="button-white" text="الاخير">
+                    <graphic>
+                        <ImageView fitHeight="20.0" fitWidth="20.0" nodeOrientation="INHERIT" pickOnBounds="true"
+                                   preserveRatio="true">
+                            <image>
+                                <Image url="@../image/last_page_24dp_5F6368_FILL0_wght400_GRAD0_opsz24.png"/>
+                            </image>
+                        </ImageView>
+                    </graphic>
+                </Button>
+            </items>
+        </ToolBar>
+    </children>
+</AnchorPane>

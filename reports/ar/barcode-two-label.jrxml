@@ -1,0 +1,125 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Created with Jaspersoft Studio version 6.20.0.final using JasperReports Library version 6.20.0-2bc7ab61c56f459e8176eb05c7705e145cd400ad  -->
+<jasperReport xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+              xmlns="http://jasperreports.sourceforge.net/jasperreports"
+              xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd"
+              name="Blank_A4" pageWidth="116" pageHeight="79" columnWidth="106" leftMargin="5" rightMargin="5"
+              topMargin="0" bottomMargin="0" uuid="2dfbb65d-ee38-4de5-84be-b60f5da8ea86">
+    <property name="com.jaspersoft.studio.data.sql.tables" value=""/>
+    <property name="com.jaspersoft.studio.data.defaultdataadapter" value="NO_DATA_ADAPTER"/>
+    <property name="com.jaspersoft.studio.unit.pageHeight" value="mm"/>
+    <property name="com.jaspersoft.studio.unit.pageWidth" value="mm"/>
+    <property name="com.jaspersoft.studio.unit.topMargin" value="mm"/>
+    <property name="com.jaspersoft.studio.unit.bottomMargin" value="mm"/>
+    <property name="com.jaspersoft.studio.unit.leftMargin" value="mm"/>
+    <property name="com.jaspersoft.studio.unit.rightMargin" value="mm"/>
+    <property name="com.jaspersoft.studio.unit.columnWidth" value="mm"/>
+    <property name="com.jaspersoft.studio.unit.columnSpacing" value="mm"/>
+    <style name="style1" fontSize="5" isBold="false"/>
+    <parameter name="barcode" class="java.lang.String"/>
+    <parameter name="num" class="java.lang.String"/>
+    <parameter name="name" class="java.lang.String"/>
+    <parameter name="details" class="java.lang.String"/>
+    <parameter name="y2" class="java.lang.String"/>
+    <parameter name="y3" class="java.lang.String"/>
+    <queryString language="SQL">
+        <![CDATA[]]>
+    </queryString>
+    <background>
+        <band splitType="Stretch"/>
+    </background>
+    <detail>
+        <band height="76" splitType="Stretch">
+            <property name="com.jaspersoft.studio.layout" value="com.jaspersoft.studio.editor.layout.FreeLayout"/>
+            <property name="com.jaspersoft.studio.unit.height" value="pixel"/>
+            <textField textAdjust="StretchHeight">
+                <reportElement style="style1" positionType="Float" stretchType="RelativeToTallestObject" x="0" y="0"
+                               width="106" height="12" uuid="5ebe287c-4f60-4ed2-8361-3ac938881eca">
+                    <property name="com.jaspersoft.studio.unit.rightIndent" value="px"/>
+                    <property name="com.jaspersoft.studio.unit.firstLineIndent" value="px"/>
+                    <property name="com.jaspersoft.studio.unit.height" value="px"/>
+                    <propertyExpression name="net.sf.jasperreports.style.fontName">
+                        <![CDATA[$P{y2}]]></propertyExpression>
+                    <propertyExpression name="net.sf.jasperreports.style.fontSize">
+                        <![CDATA[$P{y3}]]></propertyExpression>
+                </reportElement>
+                <textElement textAlignment="Right" verticalAlignment="Top">
+                    <font size="7" isBold="true"/>
+                    <paragraph rightIndent="10"/>
+                </textElement>
+                <textFieldExpression><![CDATA[$P{name}]]></textFieldExpression>
+            </textField>
+            <componentElement>
+                <reportElement positionType="Float" stretchType="RelativeToTallestObject" x="0" y="12" width="106"
+                               height="12" uuid="0f550fb9-76da-4825-8967-7d10ca23bb4e">
+                    <property name="com.jaspersoft.studio.unit.barWidth" value="px"/>
+                    <property name="com.jaspersoft.studio.unit.width" value="px"/>
+                    <property name="com.jaspersoft.studio.unit.height" value="px"/>
+                </reportElement>
+                <jr:barbecue xmlns:jr="http://jasperreports.sourceforge.net/jasperreports/components"
+                             xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports/components http://jasperreports.sourceforge.net/xsd/components.xsd"
+                             type="Code128" drawText="false" checksumRequired="false" barHeight="35">
+                    <jr:codeExpression><![CDATA[$P{barcode}]]></jr:codeExpression>
+                </jr:barbecue>
+            </componentElement>
+            <textField textAdjust="StretchHeight">
+                <reportElement style="style1" positionType="Float" stretchType="RelativeToTallestObject" x="0" y="24"
+                               width="106" height="12" uuid="a30ff716-9d5d-4a15-9315-b968b1e72f97">
+                    <property name="com.jaspersoft.studio.unit.height" value="px"/>
+                    <propertyExpression name="net.sf.jasperreports.style.fontName">
+                        <![CDATA[$P{y2}]]></propertyExpression>
+                    <propertyExpression name="net.sf.jasperreports.style.fontSize">
+                        <![CDATA[$P{y3}]]></propertyExpression>
+                </reportElement>
+                <textElement textAlignment="Center">
+                    <font size="5" isBold="true"/>
+                </textElement>
+                <textFieldExpression><![CDATA[$P{details}]]></textFieldExpression>
+            </textField>
+            <textField textAdjust="StretchHeight">
+                <reportElement style="style1" positionType="Float" stretchType="RelativeToTallestObject" x="0" y="36"
+                               width="106" height="12" uuid="c109472a-d908-47de-bc19-204c1894bd42">
+                    <property name="com.jaspersoft.studio.unit.firstLineIndent" value="px"/>
+                    <property name="com.jaspersoft.studio.unit.spacingBefore" value="px"/>
+                    <property name="com.jaspersoft.studio.unit.height" value="px"/>
+                    <propertyExpression name="net.sf.jasperreports.style.fontName">
+                        <![CDATA[$P{y2}]]></propertyExpression>
+                    <propertyExpression name="net.sf.jasperreports.style.fontSize">
+                        <![CDATA[$P{y3}]]></propertyExpression>
+                </reportElement>
+                <textElement textAlignment="Right" verticalAlignment="Top">
+                    <font size="7" isBold="true"/>
+                    <paragraph rightIndent="10"/>
+                </textElement>
+                <textFieldExpression><![CDATA[$P{name}]]></textFieldExpression>
+            </textField>
+            <componentElement>
+                <reportElement positionType="Float" stretchType="RelativeToTallestObject" x="0" y="48" width="106"
+                               height="12" uuid="f679cf65-e9fd-4dea-a583-61358b2c1fab">
+                    <property name="com.jaspersoft.studio.unit.barWidth" value="px"/>
+                    <property name="com.jaspersoft.studio.unit.width" value="px"/>
+                    <property name="com.jaspersoft.studio.unit.height" value="px"/>
+                </reportElement>
+                <jr:barbecue xmlns:jr="http://jasperreports.sourceforge.net/jasperreports/components"
+                             xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports/components http://jasperreports.sourceforge.net/xsd/components.xsd"
+                             type="Code128" drawText="false" checksumRequired="false" barHeight="35">
+                    <jr:codeExpression><![CDATA[$P{barcode}]]></jr:codeExpression>
+                </jr:barbecue>
+            </componentElement>
+            <textField textAdjust="StretchHeight">
+                <reportElement style="style1" positionType="Float" stretchType="RelativeToTallestObject" x="0" y="60"
+                               width="106" height="12" uuid="d4511f2b-1b25-4dcd-9a10-c241b229e815">
+                    <property name="com.jaspersoft.studio.unit.height" value="px"/>
+                    <propertyExpression name="net.sf.jasperreports.style.fontName">
+                        <![CDATA[$P{y2}]]></propertyExpression>
+                    <propertyExpression name="net.sf.jasperreports.style.fontSize">
+                        <![CDATA[$P{y3}]]></propertyExpression>
+                </reportElement>
+                <textElement textAlignment="Center">
+                    <font size="5" isBold="true"/>
+                </textElement>
+                <textFieldExpression><![CDATA[$P{details}]]></textFieldExpression>
+            </textField>
+        </band>
+    </detail>
+</jasperReport>

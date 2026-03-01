@@ -1,0 +1,169 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.image.*?>
+<?import javafx.scene.input.*?>
+<MenuBar xmlns:fx="http://javafx.com/fxml/1" fx:id="menuBar" xmlns="http://javafx.com/javafx/21"
+         fx:controller="com.hamza.account.controller.main.MainMenuController">
+    <Menu fx:id="menuAccounts" mnemonicParsing="false" text="Accounts">
+        <MenuItem fx:id="menuItemTreeAccounts" mnemonicParsing="false" text="Tree Accounts">
+            <graphic>
+                <ImageView fitHeight="20.0" fitWidth="20.0" pickOnBounds="true" preserveRatio="true">
+                    <Image url="@../../image/Custom-Icon-Design-Flatastic-5-Binary-tree.48.png"/>
+                </ImageView>
+            </graphic>
+        </MenuItem>
+        <MenuItem fx:id="menuItemAllAccounts" mnemonicParsing="false" text="All Accounts">
+            <graphic>
+                <ImageView fitHeight="20.0" fitWidth="20.0" pickOnBounds="true" preserveRatio="true">
+                    <Image url="@../../image/Custom-Icon-Design-Flatastic-8-Content-tree.48.png"/>
+                </ImageView>
+            </graphic>
+        </MenuItem>
+        <MenuItem fx:id="menuItemGroupAccounts" mnemonicParsing="false" text="Group Accounts">
+            <graphic>
+                <ImageView fitHeight="20.0" fitWidth="20.0" pickOnBounds="true" preserveRatio="true">
+                    <Image url="@../../image/Oxygen-Icons.org-Oxygen-Actions-view-process-all-tree.48.png"/>
+                </ImageView>
+            </graphic>
+        </MenuItem>
+        <MenuItem fx:id="menuItemBillExchange" mnemonicParsing="false" text="Group Accounts">
+            <graphic>
+                <ImageView fitHeight="20.0" fitWidth="20.0" pickOnBounds="true" preserveRatio="true">
+                    <Image url="@../../image/Oxygen-Icons.org-Oxygen-Actions-view-process-all-tree.48.png"/>
+                </ImageView>
+            </graphic>
+        </MenuItem>
+    </Menu>
+    <Menu fx:id="menuSales" mnemonicParsing="false" text="Sales">
+        <MenuItem fx:id="menuItemSales" mnemonicParsing="false" text="Sales"/>
+        <MenuItem fx:id="menuItemSalesReturn" mnemonicParsing="false" text="Sales Return"/>
+        <SeparatorMenuItem mnemonicParsing="false"/>
+        <MenuItem fx:id="menuItemTotalSales" mnemonicParsing="false" text="Total Sales"/>
+        <MenuItem fx:id="menuItemTotalSalesReturn" mnemonicParsing="false" text="Total Sales Return"/>
+    </Menu>
+    <Menu fx:id="menuPurchase" mnemonicParsing="false" text="Purchase">
+        <MenuItem fx:id="menuItemPurchase" mnemonicParsing="false" text="Purchase"/>
+        <MenuItem fx:id="menuItemPurchaseReturn" mnemonicParsing="false" text="Purchase Return"/>
+        <SeparatorMenuItem mnemonicParsing="false"/>
+        <MenuItem fx:id="menuItemTotalPurchase" mnemonicParsing="false" text="Total Purchase"/>
+        <MenuItem fx:id="menuItemTotalPurchaseReturn" mnemonicParsing="false" text="Total Purchase Return"/>
+    </Menu>
+    <Menu fx:id="menuItems" mnemonicParsing="false" text="Items">
+        <MenuItem fx:id="menuItemItems" mnemonicParsing="false" text="Items">
+            <accelerator>
+                <KeyCodeCombination alt="ANY" code="I" control="UP" meta="UP" shift="UP" shortcut="DOWN"/>
+            </accelerator>
+        </MenuItem>
+        <MenuItem fx:id="menuItemAddItem" mnemonicParsing="false" text="Add Item">
+            <accelerator>
+                <KeyCodeCombination alt="UP" code="I" control="DOWN" meta="UP" shift="DOWN" shortcut="UP"/>
+            </accelerator>
+        </MenuItem>
+        <MenuItem fx:id="menuItemAddItemFromExcel" mnemonicParsing="false" text="Add From Excel"/>
+        <SeparatorMenuItem mnemonicParsing="false"/>
+        <MenuItem fx:id="menuItemUnit" mnemonicParsing="false" text="Add Unit"/>
+        <MenuItem fx:id="menuItemMainGroup" mnemonicParsing="false" text="Main Group"/>
+        <MenuItem fx:id="menuItemSupGroup" mnemonicParsing="false" text="Sup Group"/>
+        <SeparatorMenuItem mnemonicParsing="false"/>
+        <MenuItem fx:id="menuItemConvertStock" mnemonicParsing="false" text="Transfer Stocks"/>
+        <MenuItem fx:id="menuItemArea" mnemonicParsing="false" text="Area"/>
+        <SeparatorMenuItem mnemonicParsing="false"/>
+        <MenuItem fx:id="menuItemInventory" mnemonicParsing="false" text="Inventory"/>
+        <MenuItem fx:id="menuItemMiniQuantity" mnemonicParsing="false" text="Mini Quantity Items"/>
+    </Menu>
+    <Menu fx:id="menuCustomer" mnemonicParsing="false" text="Customer">
+        <MenuItem fx:id="menuItemAddCustomName" mnemonicParsing="false" text="Add Name"/>
+        <MenuItem fx:id="menuItemCustomName" mnemonicParsing="false" text="Name"/>
+        <SeparatorMenuItem mnemonicParsing="false"/>
+        <MenuItem fx:id="menuItemCustomAccount" mnemonicParsing="false" text="Account"/>
+    </Menu>
+    <Menu fx:id="menuSupplier" mnemonicParsing="false" text="Suppliers">
+        <MenuItem fx:id="menuItemAddSupplierName" mnemonicParsing="false" text="Add Name"/>
+        <MenuItem fx:id="menuItemSuppliersName" mnemonicParsing="false" text="Name"/>
+        <SeparatorMenuItem mnemonicParsing="false"/>
+        <MenuItem fx:id="menuItemSuppliersAccount" mnemonicParsing="false" text="Account"/>
+    </Menu>
+    <Menu fx:id="menuReport" mnemonicParsing="false" text="Report">
+        <MenuItem fx:id="menuItemSummary" mnemonicParsing="false" text="Summary"/>
+        <MenuItem fx:id="menuItemReportItems" mnemonicParsing="false" text="Report Items"/>
+        <SeparatorMenuItem mnemonicParsing="false"/>
+        <Menu mnemonicParsing="false" text="تقارير العملاء">
+            <items>
+                <MenuItem fx:id="menuItemReportCustom" mnemonicParsing="false" text="Report Custom"/>
+                <MenuItem fx:id="menuItemCustomPaid" mnemonicParsing="false" text="Custom Paid"/>
+            </items>
+        </Menu>
+        <Menu mnemonicParsing="false" text="تقارير الموردين">
+            <items>
+                <MenuItem fx:id="menuItemReportSuppliers" mnemonicParsing="false" text="Report Supplier"/>
+                <MenuItem fx:id="menuItemSuppliersPaid" mnemonicParsing="false" text="Supplier Paid"/>
+            </items>
+        </Menu>
+
+        <SeparatorMenuItem mnemonicParsing="false"/>
+        <Menu mnemonicParsing="false" text="تقارير المبيعات">
+            <items>
+                <MenuItem fx:id="menuItemReportSales" mnemonicParsing="false" text="Report Sales"/>
+                <MenuItem fx:id="menuItemReportSalesByYear" mnemonicParsing="false" text="مبيعات سنوية"/>
+            </items>
+        </Menu>
+        <Menu mnemonicParsing="false" text="تقارير المشتريات">
+            <items>
+                <MenuItem fx:id="menuItemReportPurchase" mnemonicParsing="false" text="Report Purchase"/>
+                <MenuItem fx:id="menuItemReportPurchaseByYear" mnemonicParsing="false" text="مشتريات سنوية"/>
+            </items>
+        </Menu>
+        <SeparatorMenuItem mnemonicParsing="false"/>
+        <MenuItem fx:id="menuItemReportDetails" mnemonicParsing="false" text="Details"/>
+        <MenuItem fx:id="menuItemReportDelegate" mnemonicParsing="false" text="Details"/>
+        <SeparatorMenuItem mnemonicParsing="false"/>
+        <MenuItem fx:id="menuItemReportYearly" mnemonicParsing="false" text="Report_Yearly"/>
+        <MenuItem fx:id="menuItemReportProfitLoss" mnemonicParsing="false" text="Profit-loss"/>
+    </Menu>
+    <Menu fx:id="menuExpenses" mnemonicParsing="false" text="Expenses">
+        <MenuItem fx:id="menuItemAddExpenseName" mnemonicParsing="false" text="Add Expense Name"/>
+        <MenuItem fx:id="menuItemExpensesName" mnemonicParsing="false" text="Expenses Name"/>
+        <SeparatorMenuItem mnemonicParsing="false"/>
+        <MenuItem fx:id="menuItemAddExpense" mnemonicParsing="false" text="Add Expense"/>
+        <MenuItem fx:id="menuItemAllExpenses" mnemonicParsing="false" text="All Expenses"/>
+        <SeparatorMenuItem mnemonicParsing="false"/>
+        <MenuItem fx:id="menuItemExpensesDetails" mnemonicParsing="false" text="Expenses Details"/>
+    </Menu>
+    <Menu fx:id="menuEmployees" mnemonicParsing="false" text="Employees">
+        <MenuItem fx:id="menuItemAddUser" mnemonicParsing="false" text="Add User"/>
+        <MenuItem fx:id="menuItemUsers" mnemonicParsing="false" text="Users"/>
+        <SeparatorMenuItem mnemonicParsing="false"/>
+        <MenuItem fx:id="menuItemAddEmployee" mnemonicParsing="false" text="Add Employee"/>
+        <MenuItem fx:id="menuItemEmployees" mnemonicParsing="false" text="Employees"/>
+        <SeparatorMenuItem mnemonicParsing="false"/>
+        <MenuItem fx:id="menuItemAddTargetDelegate" mnemonicParsing="false" text="Employees"/>
+    </Menu>
+    <Menu fx:id="menuSetting" mnemonicParsing="false" text="Setting">
+        <MenuItem fx:id="menuItemHome" mnemonicParsing="false" text="Home"/>
+        <MenuItem fx:id="menuItemSettingUsers" mnemonicParsing="false" text="Users"/>
+        <MenuItem fx:id="menuItemDeleteData" mnemonicParsing="false" text="Delete Data">
+            <accelerator>
+                <KeyCodeCombination alt="UP" code="D" control="DOWN" meta="UP" shift="UP" shortcut="UP"/>
+            </accelerator>
+        </MenuItem>
+        <MenuItem fx:id="menuItemBackup" mnemonicParsing="false" text="Backup"/>
+        <MenuItem fx:id="menuItemCalculator" mnemonicParsing="false" text="Calculator">
+            <accelerator>
+                <KeyCodeCombination alt="UP" code="C" control="DOWN" meta="UP" shift="UP" shortcut="UP"/>
+            </accelerator>
+        </MenuItem>
+        <SeparatorMenuItem mnemonicParsing="false"/>
+        <MenuItem fx:id="menuItemCheckUpdate" mnemonicParsing="false" text="التحديث"/>
+        <MenuItem fx:id="menuItemRegister" mnemonicParsing="false" text="التفعيل"/>
+        <MenuItem fx:id="menuItemAbout" mnemonicParsing="false" text="عن البرنامج"/>
+        <MenuItem fx:id="menuNumber" mnemonicParsing="false" text="طباعة أرقام"/>
+        <MenuItem fx:id="menuFontColor" mnemonicParsing="false" text="عن البرنامج"/>
+        <SeparatorMenuItem mnemonicParsing="false"/>
+        <MenuItem fx:id="menuItemClose" mnemonicParsing="false" text="Close">
+            <accelerator>
+                <KeyCodeCombination alt="UP" code="Q" control="DOWN" meta="UP" shift="UP" shortcut="UP"/>
+            </accelerator>
+        </MenuItem>
+    </Menu>
+</MenuBar>

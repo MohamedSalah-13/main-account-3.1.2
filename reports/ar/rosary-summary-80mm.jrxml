@@ -1,0 +1,390 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Created with Jaspersoft Studio version 6.20.0.final using JasperReports Library version 6.20.0-2bc7ab61c56f459e8176eb05c7705e145cd400ad  -->
+<jasperReport xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+              xmlns="http://jasperreports.sourceforge.net/jasperreports"
+              xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd"
+              name="accounts-totals-80mm" pageWidth="226" pageHeight="842" columnWidth="186" leftMargin="20"
+              rightMargin="20" topMargin="20" bottomMargin="20" uuid="1267b443-4937-4122-b1b0-673b699f1192">
+    <property name="com.jaspersoft.studio.data.sql.tables" value=""/>
+    <property name="com.jaspersoft.studio.data.defaultdataadapter" value="NO_DATA_ADAPTER"/>
+    <property name="com.jaspersoft.studio.unit." value="pixel"/>
+    <style name="Style1" hTextAlign="Center" vTextAlign="Middle" fontSize="10" isBold="true">
+        <box>
+            <pen lineWidth="0.5"/>
+            <topPen lineWidth="0.5" lineStyle="Solid" lineColor="#000000"/>
+            <leftPen lineWidth="0.5" lineStyle="Solid" lineColor="#000000"/>
+            <bottomPen lineWidth="0.5" lineStyle="Solid" lineColor="#000000"/>
+            <rightPen lineWidth="0.5" lineStyle="Solid" lineColor="#000000"/>
+        </box>
+    </style>
+    <style name="StyleRight" style="Style1" hTextAlign="Right"/>
+    <style name="StyleLeft" style="Style1" hTextAlign="Left">
+        <paragraph leftIndent="2"/>
+    </style>
+    <parameter name="CollectionBeanParam" class="net.sf.jasperreports.engine.data.JRBeanCollectionDataSource"/>
+    <parameter name="compName" class="java.lang.String"/>
+    <parameter name="compAdd" class="java.lang.String"/>
+    <parameter name="compTel" class="java.lang.String"/>
+    <parameter name="compImage" class="java.io.InputStream"/>
+    <parameter name="AddressAndTel" class="java.lang.String"/>
+    <parameter name="title" class="java.lang.String"/>
+    <parameter name="date" class="java.lang.String"/>
+    <parameter name="by-user" class="java.lang.String"/>
+    <parameter name="start-job" class="java.lang.String"/>
+    <parameter name="end-job" class="java.lang.String"/>
+    <parameter name="count_sales" class="java.lang.Long"/>
+    <parameter name="total_sales" class="java.lang.Double"/>
+    <parameter name="customer_paid" class="java.lang.Double"/>
+    <parameter name="total_sales_re" class="java.lang.Double"/>
+    <parameter name="expense" class="java.lang.Double"/>
+    <parameter name="count_purchases" class="java.lang.Long"/>
+    <parameter name="total_purchases" class="java.lang.Double"/>
+    <parameter name="supplier_paid" class="java.lang.Double"/>
+    <parameter name="total_purchases_re" class="java.lang.Double"/>
+    <parameter name="income" class="java.lang.Double"/>
+    <parameter name="totals_after_expenses" class="java.lang.Double"/>
+    <parameter name="totals_all" class="java.lang.Double"/>
+    <queryString language="SQL">
+        <![CDATA[]]>
+    </queryString>
+    <variable name="V1" class="java.lang.Double"/>
+    <variable name="row_number" class="java.lang.Integer">
+        <variableExpression><![CDATA[$V{REPORT_COUNT}]]></variableExpression>
+    </variable>
+    <title>
+        <band height="43">
+            <frame>
+                <reportElement x="0" y="0" width="185" height="35" uuid="1cb2de9a-5341-4863-a6fb-606c14446df7">
+                    <property name="com.jaspersoft.studio.layout"
+                              value="com.jaspersoft.studio.editor.layout.VerticalRowLayout"/>
+                    <property name="com.jaspersoft.studio.unit.width" value="px"/>
+                    <property name="com.jaspersoft.studio.unit.height" value="px"/>
+                </reportElement>
+                <textField>
+                    <reportElement style="Style1" x="0" y="0" width="185" height="18"
+                                   uuid="be7541e5-5c92-4b71-8c9c-8a8a4df29d95"/>
+                    <textFieldExpression><![CDATA[$P{compName}]]></textFieldExpression>
+                </textField>
+                <staticText>
+                    <reportElement style="Style1" x="0" y="18" width="185" height="17"
+                                   uuid="996ec415-d4d0-4f6f-a489-4473f0e78034"/>
+                    <text><![CDATA[ملخص الوردية]]></text>
+                </staticText>
+            </frame>
+        </band>
+    </title>
+    <pageHeader>
+        <band height="81">
+            <frame>
+                <reportElement x="120" y="0" width="64" height="75" uuid="c2a9517c-23ef-48b1-862d-b4c86f574723">
+                    <property name="com.jaspersoft.studio.layout"
+                              value="com.jaspersoft.studio.editor.layout.VerticalRowLayout"/>
+                    <property name="com.jaspersoft.studio.unit.height" value="px"/>
+                </reportElement>
+                <staticText>
+                    <reportElement style="StyleLeft" x="0" y="0" width="64" height="15"
+                                   uuid="536e5bde-60b8-46ea-8b9d-4e1ce8108911">
+                        <property name="com.jaspersoft.studio.unit.height" value="px"/>
+                    </reportElement>
+                    <text><![CDATA[التاريخ:]]></text>
+                </staticText>
+                <staticText>
+                    <reportElement style="StyleLeft" x="0" y="15" width="64" height="15"
+                                   uuid="c9b1ece5-74fd-44b3-a419-21f8380cb6d9">
+                        <property name="com.jaspersoft.studio.unit.height" value="px"/>
+                    </reportElement>
+                    <text><![CDATA[بواسطة:]]></text>
+                </staticText>
+                <staticText>
+                    <reportElement style="StyleLeft" x="0" y="30" width="64" height="15"
+                                   uuid="bec84aa4-1e1a-429a-ad8c-827fa3a63139">
+                        <property name="com.jaspersoft.studio.unit.height" value="px"/>
+                    </reportElement>
+                    <text><![CDATA[بداية الوردية:]]></text>
+                </staticText>
+                <staticText>
+                    <reportElement style="StyleLeft" x="0" y="45" width="64" height="15"
+                                   uuid="bd5c141b-5ef5-4e2c-8fde-1d86d3250b36">
+                        <property name="com.jaspersoft.studio.unit.height" value="px"/>
+                    </reportElement>
+                    <text><![CDATA[نهاية الوردية:]]></text>
+                </staticText>
+                <staticText>
+                    <reportElement style="StyleLeft" x="0" y="60" width="64" height="15"
+                                   uuid="d52b34b9-e68e-40a7-a623-d7203035eba2">
+                        <property name="com.jaspersoft.studio.unit.height" value="px"/>
+                    </reportElement>
+                    <text><![CDATA[تاريخ الطباعة :]]></text>
+                </staticText>
+            </frame>
+            <frame>
+                <reportElement x="0" y="0" width="120" height="75" uuid="4a1ef261-715d-4830-ac49-ab04a94398e8">
+                    <property name="com.jaspersoft.studio.layout"
+                              value="com.jaspersoft.studio.editor.layout.VerticalRowLayout"/>
+                </reportElement>
+                <textField>
+                    <reportElement style="Style1" x="0" y="0" width="120" height="15"
+                                   uuid="c4889206-e44c-472a-b926-659234dbc363">
+                        <property name="com.jaspersoft.studio.unit.height" value="px"/>
+                        <property name="com.jaspersoft.studio.unit.width" value="px"/>
+                    </reportElement>
+                    <textFieldExpression><![CDATA[$P{date}]]></textFieldExpression>
+                </textField>
+                <textField>
+                    <reportElement style="Style1" x="0" y="15" width="120" height="15"
+                                   uuid="deb818ec-017d-41df-99eb-707716430777">
+                        <property name="com.jaspersoft.studio.unit.height" value="px"/>
+                    </reportElement>
+                    <textFieldExpression><![CDATA[$P{by-user}]]></textFieldExpression>
+                </textField>
+                <textField>
+                    <reportElement style="Style1" x="0" y="30" width="120" height="15"
+                                   uuid="07a77169-c576-4113-98fd-dbc8d74e6684">
+                        <property name="com.jaspersoft.studio.unit.height" value="px"/>
+                        <property name="com.jaspersoft.studio.unit.width" value="px"/>
+                    </reportElement>
+                    <textFieldExpression><![CDATA[$P{start-job}]]></textFieldExpression>
+                </textField>
+                <textField>
+                    <reportElement style="Style1" x="0" y="45" width="120" height="15"
+                                   uuid="ca964f63-b96e-42f5-863e-971b936e0d7f">
+                        <property name="com.jaspersoft.studio.unit.height" value="px"/>
+                    </reportElement>
+                    <textFieldExpression><![CDATA[$P{end-job}]]></textFieldExpression>
+                </textField>
+                <textField pattern="yyyy/M/dd h:mm a">
+                    <reportElement style="Style1" x="0" y="60" width="120" height="15"
+                                   uuid="7d4d1e66-4579-4f3f-970a-064d8f08a5b1">
+                        <property name="com.jaspersoft.studio.unit.height" value="px"/>
+                        <property name="com.jaspersoft.studio.unit.rightIndent" value="px"/>
+                    </reportElement>
+                    <textElement>
+                        <font size="8"/>
+                    </textElement>
+                    <textFieldExpression><![CDATA[new java.util.Date()]]></textFieldExpression>
+                </textField>
+            </frame>
+        </band>
+    </pageHeader>
+    <detail>
+        <band height="265" splitType="Stretch">
+            <frame>
+                <reportElement x="90" y="3" width="94" height="255" uuid="cc6a7521-e77d-4b7b-85f1-7dacb9fc065d">
+                    <property name="com.jaspersoft.studio.layout"
+                              value="com.jaspersoft.studio.editor.layout.VerticalRowLayout"/>
+                    <property name="com.jaspersoft.studio.unit.height" value="px"/>
+                </reportElement>
+                <staticText>
+                    <reportElement style="Style1" x="0" y="0" width="94" height="15"
+                                   uuid="9c9a6290-cdd2-4945-9802-bc4b9fc9fad6">
+                        <property name="com.jaspersoft.studio.unit.height" value="px"/>
+                    </reportElement>
+                    <text><![CDATA[عدد فواتير المبيعات]]></text>
+                </staticText>
+                <staticText>
+                    <reportElement style="Style1" x="0" y="15" width="94" height="15"
+                                   uuid="7e115c22-7c75-4265-9198-16a176d890fb">
+                        <property name="com.jaspersoft.studio.unit.height" value="px"/>
+                    </reportElement>
+                    <text><![CDATA[إجمالى المبيعات]]></text>
+                </staticText>
+                <staticText>
+                    <reportElement style="Style1" x="0" y="30" width="94" height="15"
+                                   uuid="3cf4a5b6-7cf1-4313-b2e0-ce3a6c366435">
+                        <property name="com.jaspersoft.studio.unit.height" value="px"/>
+                    </reportElement>
+                    <text><![CDATA[مدفوعات]]></text>
+                </staticText>
+                <staticText>
+                    <reportElement style="Style1" x="0" y="45" width="94" height="15"
+                                   uuid="70f06bf1-d9b3-4780-87ea-614c178e42a2">
+                        <property name="com.jaspersoft.studio.unit.height" value="px"/>
+                    </reportElement>
+                    <text><![CDATA[-]]></text>
+                </staticText>
+                <staticText>
+                    <reportElement style="Style1" x="0" y="60" width="94" height="15"
+                                   uuid="bf5ee027-0aaa-4ba0-9ad2-84108225ab03"/>
+                    <text><![CDATA[مرتجعات المبيعات]]></text>
+                </staticText>
+                <staticText>
+                    <reportElement style="Style1" x="0" y="75" width="94" height="15"
+                                   uuid="cb3b9890-229f-463d-b3d6-0ab3975d447c">
+                        <property name="com.jaspersoft.studio.unit.height" value="px"/>
+                    </reportElement>
+                    <text><![CDATA[إجمالى المصروفات]]></text>
+                </staticText>
+                <staticText>
+                    <reportElement style="Style1" x="0" y="90" width="94" height="15"
+                                   uuid="def58a41-42ff-473f-ade2-2228c2ee4e95">
+                        <property name="com.jaspersoft.studio.unit.height" value="px"/>
+                    </reportElement>
+                    <text><![CDATA[=]]></text>
+                </staticText>
+                <staticText>
+                    <reportElement style="Style1" x="0" y="105" width="94" height="15"
+                                   uuid="aac4b0ed-d8db-4dd1-9aae-5da109b159da">
+                        <property name="com.jaspersoft.studio.unit.height" value="px"/>
+                    </reportElement>
+                    <text><![CDATA[صافى الايراد]]></text>
+                </staticText>
+                <staticText>
+                    <reportElement style="Style1" x="0" y="120" width="94" height="15"
+                                   uuid="3a904fd2-8ceb-44b3-9a03-3fcd8b2d7dc6">
+                        <property name="com.jaspersoft.studio.unit.height" value="px"/>
+                    </reportElement>
+                    <text><![CDATA[-]]></text>
+                </staticText>
+                <staticText>
+                    <reportElement style="Style1" x="0" y="135" width="94" height="15"
+                                   uuid="18df21d6-faa7-4c5c-b017-c641e5733f65">
+                        <property name="com.jaspersoft.studio.unit.height" value="px"/>
+                    </reportElement>
+                    <text><![CDATA[عدد فواتير المشتريات]]></text>
+                </staticText>
+                <staticText>
+                    <reportElement style="Style1" x="0" y="150" width="94" height="15"
+                                   uuid="97aea4a0-fa81-4346-9c4a-020dbce4bf7b">
+                        <property name="com.jaspersoft.studio.unit.height" value="px"/>
+                    </reportElement>
+                    <text><![CDATA[إجمالى المشتريات]]></text>
+                </staticText>
+                <staticText>
+                    <reportElement style="Style1" x="0" y="165" width="94" height="15"
+                                   uuid="a0ce24be-863f-4748-be64-fd97e13d395c">
+                        <property name="com.jaspersoft.studio.unit.height" value="px"/>
+                    </reportElement>
+                    <text><![CDATA[دفعات موردين]]></text>
+                </staticText>
+                <staticText>
+                    <reportElement style="Style1" x="0" y="180" width="94" height="15"
+                                   uuid="4bd70e24-0e53-4975-ba34-df60281c259b">
+                        <property name="com.jaspersoft.studio.unit.height" value="px"/>
+                    </reportElement>
+                    <text><![CDATA[-]]></text>
+                </staticText>
+                <staticText>
+                    <reportElement style="Style1" x="0" y="195" width="94" height="15"
+                                   uuid="edbcda2d-be45-438f-b0f2-16e96a16bab3">
+                        <property name="com.jaspersoft.studio.unit.height" value="px"/>
+                    </reportElement>
+                    <text><![CDATA[مرتجع المشتريات]]></text>
+                </staticText>
+                <staticText>
+                    <reportElement style="Style1" x="0" y="210" width="94" height="15"
+                                   uuid="e77e4ff8-2213-424a-a216-b3ce7256e47a">
+                        <property name="com.jaspersoft.studio.unit.height" value="px"/>
+                    </reportElement>
+                    <text><![CDATA[ايرادات أخرى]]></text>
+                </staticText>
+                <staticText>
+                    <reportElement style="Style1" x="0" y="225" width="94" height="15"
+                                   uuid="0a6692e8-f083-4d9f-a9ec-7cc8a707f9f9">
+                        <property name="com.jaspersoft.studio.unit.height" value="px"/>
+                    </reportElement>
+                    <text><![CDATA[=]]></text>
+                </staticText>
+                <staticText>
+                    <reportElement style="Style1" x="0" y="240" width="94" height="15"
+                                   uuid="70656c8c-f009-4a8b-8c98-0ff0b8ea5072">
+                        <property name="com.jaspersoft.studio.unit.height" value="px"/>
+                    </reportElement>
+                    <text><![CDATA[الصافى]]></text>
+                </staticText>
+            </frame>
+            <frame>
+                <reportElement x="0" y="3" width="90" height="255" uuid="12554ec0-b681-4a20-a211-3cc642ec8d05">
+                    <property name="com.jaspersoft.studio.layout"
+                              value="com.jaspersoft.studio.editor.layout.VerticalRowLayout"/>
+                </reportElement>
+                <textField>
+                    <reportElement style="Style1" x="0" y="0" width="90" height="15"
+                                   uuid="11fbfcd8-2fd6-4d3f-9b4b-c2f8b302322c">
+                        <property name="com.jaspersoft.studio.unit.height" value="pixel"/>
+                    </reportElement>
+                    <textFieldExpression><![CDATA[$P{count_sales}]]></textFieldExpression>
+                </textField>
+                <textField>
+                    <reportElement style="Style1" x="0" y="15" width="90" height="15"
+                                   uuid="46c37f72-302f-4cb2-a631-f9bdef96f826"/>
+                    <textFieldExpression><![CDATA[$P{total_sales}]]></textFieldExpression>
+                </textField>
+                <textField>
+                    <reportElement style="Style1" x="0" y="30" width="90" height="15"
+                                   uuid="f2d93859-29db-492f-82eb-f574664bb450"/>
+                    <textFieldExpression><![CDATA[$P{customer_paid}]]></textFieldExpression>
+                </textField>
+                <textField>
+                    <reportElement style="Style1" x="0" y="45" width="90" height="15"
+                                   uuid="4bff1b1d-4a55-460a-ad79-dc39bc2c95cb"/>
+                    <textFieldExpression><![CDATA['-']]></textFieldExpression>
+                </textField>
+                <textField>
+                    <reportElement style="Style1" x="0" y="60" width="90" height="15"
+                                   uuid="3c42d6d3-603d-46dd-988b-067e3663e7e6"/>
+                    <textFieldExpression><![CDATA[$P{total_sales_re}]]></textFieldExpression>
+                </textField>
+                <textField>
+                    <reportElement style="Style1" x="0" y="75" width="90" height="15"
+                                   uuid="f288696f-2c7e-4c14-a6e3-689fdb497e4b"/>
+                    <textFieldExpression><![CDATA[$P{expense}]]></textFieldExpression>
+                </textField>
+                <textField>
+                    <reportElement style="Style1" x="0" y="90" width="90" height="15"
+                                   uuid="28c59de2-6fe1-46de-8733-38eba4ddd319"/>
+                    <textFieldExpression><![CDATA['=']]></textFieldExpression>
+                </textField>
+                <textField>
+                    <reportElement style="Style1" x="0" y="105" width="90" height="15"
+                                   uuid="cd9c0d97-509d-44ec-bb4e-0a83d672f8d6"/>
+                    <textFieldExpression><![CDATA[$P{totals_after_expenses}]]></textFieldExpression>
+                </textField>
+                <textField>
+                    <reportElement style="Style1" x="0" y="120" width="90" height="15"
+                                   uuid="331c2458-a3de-42d0-a353-5a29b28ae7e6"/>
+                    <textFieldExpression><![CDATA['-']]></textFieldExpression>
+                </textField>
+                <textField>
+                    <reportElement style="Style1" x="0" y="135" width="90" height="15"
+                                   uuid="152c1b1f-f92b-4bf9-a677-18db996a46ca"/>
+                    <textFieldExpression><![CDATA[$P{count_purchases}]]></textFieldExpression>
+                </textField>
+                <textField>
+                    <reportElement style="Style1" x="0" y="150" width="90" height="15"
+                                   uuid="9f1cea5d-191a-4de0-b940-1f106088b283"/>
+                    <textFieldExpression><![CDATA[$P{total_purchases}]]></textFieldExpression>
+                </textField>
+                <textField>
+                    <reportElement style="Style1" x="0" y="165" width="90" height="15"
+                                   uuid="d1ee8532-f6a7-432a-b673-d6e240859b5b"/>
+                    <textFieldExpression><![CDATA[$P{supplier_paid}]]></textFieldExpression>
+                </textField>
+                <textField>
+                    <reportElement style="Style1" x="0" y="180" width="90" height="15"
+                                   uuid="a655dd69-75ec-4bd2-a3d8-b97c80563f6d"/>
+                    <textFieldExpression><![CDATA['-']]></textFieldExpression>
+                </textField>
+                <textField>
+                    <reportElement style="Style1" x="0" y="195" width="90" height="15"
+                                   uuid="38e8bb95-c936-40a4-8246-b4caf0295361"/>
+                    <textFieldExpression><![CDATA[$P{total_purchases_re}]]></textFieldExpression>
+                </textField>
+                <textField>
+                    <reportElement style="Style1" x="0" y="210" width="90" height="15"
+                                   uuid="9c048ae3-e758-43ef-bc25-f204de7f6467"/>
+                    <textFieldExpression><![CDATA[$P{income}]]></textFieldExpression>
+                </textField>
+                <textField>
+                    <reportElement style="Style1" x="0" y="225" width="90" height="15"
+                                   uuid="f18c6487-be87-48af-b30b-90ca4050df96"/>
+                    <textFieldExpression><![CDATA['=']]></textFieldExpression>
+                </textField>
+                <textField>
+                    <reportElement style="Style1" x="0" y="240" width="90" height="15"
+                                   uuid="db0530e4-7ba7-4124-b2fa-d12441fcfa0f"/>
+                    <textFieldExpression><![CDATA[$P{totals_all}]]></textFieldExpression>
+                </textField>
+            </frame>
+        </band>
+    </detail>
+</jasperReport>

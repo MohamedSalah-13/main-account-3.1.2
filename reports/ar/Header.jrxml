@@ -1,0 +1,206 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Created with Jaspersoft Studio version 6.20.0.final using JasperReports Library version 6.20.0-2bc7ab61c56f459e8176eb05c7705e145cd400ad  -->
+<jasperReport xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+              xmlns="http://jasperreports.sourceforge.net/jasperreports"
+              xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd"
+              name="Header" pageWidth="595" pageHeight="842" columnWidth="555" leftMargin="20" rightMargin="20"
+              topMargin="20" bottomMargin="20" uuid="efea49a9-f359-4a31-b081-cf4e50e27cfe">
+    <property name="com.jaspersoft.studio.data.defaultdataadapter" value="One Empty Record"/>
+    <parameter name="compName" class="java.lang.String"/>
+    <parameter name="compAdd" class="java.lang.String"/>
+    <parameter name="compTel" class="java.lang.String"/>
+    <parameter name="compImage" class="java.io.InputStream"/>
+    <parameter name="print-title" class="java.lang.Boolean"/>
+    <parameter name="DesignCompanyName" class="java.lang.String"/>
+    <parameter name="AddressAndTel" class="java.lang.String"/>
+    <parameter name="TEMPLATE_XML" class="java.lang.String"/>
+    <parameter name="CollectionBeanParam" class="net.sf.jasperreports.engine.data.JRBeanCollectionDataSource"/>
+    <parameter name="changeColor" class="java.lang.Boolean"/>
+    <parameter name="p1" class="java.lang.String"/>
+    <parameter name="p2" class="java.lang.String"/>
+    <parameter name="p3" class="java.lang.String"/>
+    <parameter name="p4" class="java.lang.String"/>
+    <parameter name="p5" class="java.lang.String"/>
+    <parameter name="p6" class="java.lang.String"/>
+    <parameter name="p7" class="java.lang.String"/>
+    <parameter name="check1" class="java.lang.Boolean"/>
+    <parameter name="check2" class="java.lang.Boolean"/>
+    <parameter name="check3" class="java.lang.Boolean"/>
+    <queryString>
+        <![CDATA[]]>
+    </queryString>
+    <title>
+        <band height="95" splitType="Stretch">
+            <printWhenExpression><![CDATA[$P{print-title}]]></printWhenExpression>
+            <staticText>
+                <reportElement x="480" y="0" width="71" height="40" uuid="aea913fa-38c6-42c6-9973-1510f8c65ac3"/>
+                <textElement verticalAlignment="Middle">
+                    <font isBold="true"/>
+                </textElement>
+                <text><![CDATA[اسم الشركة :]]></text>
+            </staticText>
+            <staticText>
+                <reportElement x="480" y="42" width="71" height="22" uuid="c4514d15-9e61-4ac2-8985-ec9378772e8e"/>
+                <textElement textAlignment="Left" verticalAlignment="Middle">
+                    <font isBold="true"/>
+                </textElement>
+                <text><![CDATA[بطاقة ضريبية :]]></text>
+            </staticText>
+            <staticText>
+                <reportElement x="480" y="66" width="72" height="27" uuid="1ca3367e-e457-4136-ad40-40f03be08d95"/>
+                <textElement textAlignment="Left" verticalAlignment="Middle">
+                    <font isBold="true"/>
+                </textElement>
+                <text><![CDATA[التليفون :]]></text>
+            </staticText>
+            <textField>
+                <reportElement x="340" y="66" width="140" height="27" uuid="55663435-9090-40f4-80a3-096458ca473b">
+                    <property name="com.jaspersoft.studio.unit.rightIndent" value="px"/>
+                </reportElement>
+                <textElement textAlignment="Right" verticalAlignment="Middle">
+                    <font size="10" isBold="true"/>
+                    <paragraph rightIndent="5"/>
+                </textElement>
+                <textFieldExpression><![CDATA[$P{compTel}]]></textFieldExpression>
+            </textField>
+            <textField>
+                <reportElement x="340" y="42" width="140" height="22" uuid="04f762ca-4793-4af2-9f9e-3a59afbd657a">
+                    <property name="com.jaspersoft.studio.unit.rightIndent" value="px"/>
+                </reportElement>
+                <textElement textAlignment="Right" verticalAlignment="Middle">
+                    <font size="10" isBold="true"/>
+                    <paragraph rightIndent="5"/>
+                </textElement>
+                <textFieldExpression><![CDATA[$P{compAdd}]]></textFieldExpression>
+            </textField>
+            <textField>
+                <reportElement x="267" y="0" width="212" height="40" uuid="e0e728d1-b47b-43ff-8c1a-afd5161e7a35">
+                    <property name="com.jaspersoft.studio.unit.rightIndent" value="px"/>
+                </reportElement>
+                <textElement textAlignment="Right" verticalAlignment="Middle">
+                    <font size="19" isBold="true"/>
+                    <paragraph rightIndent="5"/>
+                </textElement>
+                <textFieldExpression><![CDATA[$P{compName}]]></textFieldExpression>
+            </textField>
+            <image hAlign="Center" vAlign="Middle">
+                <reportElement x="3" y="0" width="160" height="70" uuid="cfc0aa29-eebe-4a7d-81d7-41c10541cc08"/>
+                <imageExpression><![CDATA[$P{compImage}]]></imageExpression>
+            </image>
+            <staticText>
+                <reportElement x="113" y="70" width="100" height="24" uuid="42e260e0-ea26-4b4b-8acf-23fce9d3c71e"/>
+                <textElement textAlignment="Left" verticalAlignment="Middle">
+                    <font isBold="true"/>
+                </textElement>
+                <text><![CDATA[تاريخ الطباعة :]]></text>
+            </staticText>
+            <textField pattern="yyyy/M/dd h:mm a">
+                <reportElement x="3" y="70" width="110" height="25" uuid="b02b7a09-bbcc-4060-aed2-3089b7451c3a">
+                    <property name="com.jaspersoft.studio.unit.height" value="px"/>
+                    <property name="com.jaspersoft.studio.unit.rightIndent" value="px"/>
+                </reportElement>
+                <textElement textAlignment="Right" verticalAlignment="Middle">
+                    <font size="10" isBold="true"/>
+                    <paragraph rightIndent="5"/>
+                </textElement>
+                <textFieldExpression><![CDATA[new java.util.Date()]]></textFieldExpression>
+            </textField>
+            <line>
+                <reportElement x="0" y="94" width="551" height="1" uuid="bbdf8d38-4752-471c-8ffd-8de9c63fd717">
+                    <property name="com.jaspersoft.studio.unit.height" value="px"/>
+                </reportElement>
+            </line>
+        </band>
+    </title>
+    <detail>
+        <band height="60">
+            <property name="com.jaspersoft.studio.unit.height" value="px"/>
+            <property name="com.jaspersoft.studio.layout" value="com.jaspersoft.studio.editor.layout.FreeLayout"/>
+            <subreport>
+                <reportElement x="0" y="0" width="555" height="60" uuid="02982209-9cc4-49b0-9320-48713d9aaac2">
+                    <property name="com.jaspersoft.studio.unit.width" value="px"/>
+                </reportElement>
+                <subreportParameter name="CollectionBeanParam">
+                    <subreportParameterExpression><![CDATA[$P{CollectionBeanParam}]]></subreportParameterExpression>
+                </subreportParameter>
+                <subreportParameter name="changeColor">
+                    <subreportParameterExpression><![CDATA[$P{changeColor}]]></subreportParameterExpression>
+                </subreportParameter>
+                <subreportParameter name="p1">
+                    <subreportParameterExpression><![CDATA[$P{p1}]]></subreportParameterExpression>
+                </subreportParameter>
+                <subreportParameter name="p2">
+                    <subreportParameterExpression><![CDATA[$P{p2}]]></subreportParameterExpression>
+                </subreportParameter>
+                <subreportParameter name="p3">
+                    <subreportParameterExpression><![CDATA[$P{p3}]]></subreportParameterExpression>
+                </subreportParameter>
+                <subreportParameter name="p4">
+                    <subreportParameterExpression><![CDATA[$P{p4}]]></subreportParameterExpression>
+                </subreportParameter>
+                <subreportParameter name="p5">
+                    <subreportParameterExpression><![CDATA[$P{p5}]]></subreportParameterExpression>
+                </subreportParameter>
+                <subreportParameter name="p6">
+                    <subreportParameterExpression><![CDATA[$P{p6}]]></subreportParameterExpression>
+                </subreportParameter>
+                <subreportParameter name="p7">
+                    <subreportParameterExpression><![CDATA[$P{p7}]]></subreportParameterExpression>
+                </subreportParameter>
+                <subreportParameter name="check1">
+                    <subreportParameterExpression><![CDATA[$P{check1}]]></subreportParameterExpression>
+                </subreportParameter>
+                <subreportParameter name="check2">
+                    <subreportParameterExpression><![CDATA[$P{check2}]]></subreportParameterExpression>
+                </subreportParameter>
+                <subreportParameter name="check3">
+                    <subreportParameterExpression><![CDATA[$P{check3}]]></subreportParameterExpression>
+                </subreportParameter>
+                <dataSourceExpression>
+                    <![CDATA[new net.sf.jasperreports.engine.JREmptyDataSource()]]></dataSourceExpression>
+                <subreportExpression><![CDATA[$P{TEMPLATE_XML}]]></subreportExpression>
+            </subreport>
+        </band>
+    </detail>
+    <pageFooter>
+        <band height="31">
+            <property name="com.jaspersoft.studio.unit.height" value="px"/>
+            <textField>
+                <reportElement x="240" y="0" width="312" height="31" uuid="dd4b7993-c6d7-45fa-b683-63aa83ebe828">
+                    <property name="com.jaspersoft.studio.unit.height" value="px"/>
+                </reportElement>
+                <textElement textAlignment="Right" verticalAlignment="Middle">
+                    <font size="10" isBold="true"/>
+                </textElement>
+                <textFieldExpression><![CDATA[$P{DesignCompanyName}+" - "+$P{AddressAndTel}]]></textFieldExpression>
+            </textField>
+            <textField>
+                <reportElement x="62" y="0" width="90" height="31" uuid="89b3125b-9925-4259-9227-dbb0eb0ea6c6"/>
+                <textElement textAlignment="Left" verticalAlignment="Middle">
+                    <font isBold="true"/>
+                </textElement>
+                <textFieldExpression><![CDATA["  صفحة " + $V{PAGE_NUMBER}]]></textFieldExpression>
+            </textField>
+            <textField evaluationTime="Report">
+                <reportElement x="0" y="0" width="60" height="31" uuid="6dfeb6e5-b500-435a-b30c-47fdf4d5ac21"/>
+                <textElement textAlignment="Right" verticalAlignment="Middle">
+                    <font isBold="true"/>
+                </textElement>
+                <textFieldExpression><![CDATA[" من " + $V{PAGE_NUMBER}]]></textFieldExpression>
+            </textField>
+        </band>
+    </pageFooter>
+    <noData>
+        <band height="50">
+            <staticText>
+                <reportElement x="150" y="10" width="240" height="30" uuid="8a3daf48-6839-45cb-bdf4-12a65912ea9e"/>
+                <textElement textAlignment="Center" verticalAlignment="Middle">
+                    <font size="16" isBold="true"/>
+                </textElement>
+                <text><![CDATA[لا يوجد بيانات تطابق البحث
+
+]]></text>
+            </staticText>
+        </band>
+    </noData>
+</jasperReport>

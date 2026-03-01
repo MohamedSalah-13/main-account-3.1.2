@@ -1,0 +1,14 @@
+
+.label {
+    -fx-font-size: 16px;
+}
+
+.box-pass {
+    -fx-border-color: #333;
+    -fx-border-width: .5;
+    -fx-border-radius: 3;
+}
+
+
+
+

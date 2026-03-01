@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<AnchorPane xmlns:fx="http://javafx.com/fxml/1" xmlns="http://javafx.com/javafx/21">
+    <children>
+        <VBox layoutX="5.0" layoutY="5.0" styleClass="dashboard-tile" AnchorPane.bottomAnchor="0.0"
+              AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
+            <children>
+                <GridPane styleClass="grid-pane-style">
+                    <columnConstraints>
+                        <ColumnConstraints hgrow="SOMETIMES" maxWidth="-Infinity" minWidth="10.0"/>
+                        <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0"/>
+                    </columnConstraints>
+                    <rowConstraints>
+                        <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES"/>
+                        <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES"/>
+                        <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES"/>
+                        <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES"/>
+                        <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES"/>
+                        <RowConstraints minHeight="10.0" prefHeight="50.0" vgrow="SOMETIMES"/>
+                    </rowConstraints>
+                    <children>
+                        <Label fx:id="labelCode" text="Code"/>
+                        <Label fx:id="labelDate" text="Date" GridPane.rowIndex="1"/>
+                        <Label fx:id="labelType" text="Type" GridPane.rowIndex="2"/>
+                        <Label fx:id="labelName" text="Name Employee" GridPane.rowIndex="3"/>
+                        <Label fx:id="labelAmount" text="Amount" GridPane.rowIndex="4"/>
+                        <Label fx:id="labelNotes" text="Notes" GridPane.rowIndex="5"/>
+                        <TextField fx:id="txtCode" editable="false" promptText="code" GridPane.columnIndex="1"/>
+                        <TextField fx:id="txtAmount" maxWidth="1.7976931348623157E308" promptText="amount"
+                                   GridPane.columnIndex="1" GridPane.rowIndex="4"/>
+                        <DatePicker fx:id="date" editable="false" maxWidth="1.7976931348623157E308" promptText="date"
+                                    GridPane.columnIndex="1" GridPane.rowIndex="1"/>
+                        <ComboBox fx:id="comboType" maxWidth="1.7976931348623157E308" promptText="type"
+                                  GridPane.columnIndex="1" GridPane.rowIndex="2"/>
+                        <ComboBox fx:id="comboName" maxWidth="1.7976931348623157E308" promptText="name emplyee"
+                                  GridPane.columnIndex="1" GridPane.rowIndex="3"/>
+                        <TextArea fx:id="txtNotes" promptText="notes" GridPane.columnIndex="1" GridPane.rowIndex="5"/>
+                    </children>
+                </GridPane>
+            </children>
+        </VBox>
+    </children>
+</AnchorPane>

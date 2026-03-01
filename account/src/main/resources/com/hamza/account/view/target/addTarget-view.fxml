@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<AnchorPane xmlns:fx="http://javafx.com/fxml/1" minHeight="-Infinity" minWidth="-Infinity"
+            xmlns="http://javafx.com/javafx/21">
+    <children>
+        <VBox layoutX="16.0" layoutY="62.0" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0"
+              AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
+            <children>
+                <ToolBar prefHeight="40.0" prefWidth="200.0">
+                    <items>
+                        <Button fx:id="btnSave" mnemonicParsing="false" text="Save"/>
+                        <Button fx:id="btnClear" mnemonicParsing="false" text="Clear"/>
+                        <Separator orientation="VERTICAL"/>
+                        <Button fx:id="btnClose" cancelButton="true" mnemonicParsing="false" text="Close"/>
+                    </items>
+                </ToolBar>
+                <VBox spacing="5.0" VBox.vgrow="SOMETIMES">
+                    <children>
+                        <VBox maxHeight="-Infinity" minHeight="-Infinity" styleClass="dashboard-tile">
+                            <children>
+                                <GridPane fx:id="gridPane" minHeight="-Infinity" minWidth="-Infinity"
+                                          styleClass="grid-pane-style">
+                                    <columnConstraints>
+                                        <ColumnConstraints hgrow="SOMETIMES" maxWidth="-Infinity" minWidth="10.0"/>
+                                        <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0"/>
+                                        <ColumnConstraints hgrow="SOMETIMES" maxWidth="-Infinity" minWidth="10.0"/>
+                                        <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0"/>
+                                    </columnConstraints>
+                                    <rowConstraints>
+                                        <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES"/>
+                                        <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES"/>
+                                        <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES"/>
+                                        <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES"/>
+                                        <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES"/>
+                                    </rowConstraints>
+                                    <children>
+                                        <Label fx:id="labelCode" text="Code"/>
+                                        <Label fx:id="labelName" text="Delegate Name" GridPane.columnIndex="2"/>
+                                        <Label fx:id="labelTarget" text="Target" GridPane.rowIndex="1"/>
+                                        <Label fx:id="labelNotes" text="Notes" GridPane.columnIndex="2"
+                                               GridPane.rowIndex="1"/>
+                                        <TextField fx:id="txtCode" editable="false" maxWidth="-Infinity"
+                                                   prefWidth="100.0" GridPane.columnIndex="1"/>
+                                        <TextField fx:id="txtTarget" GridPane.columnIndex="1" GridPane.rowIndex="1"/>
+                                        <TextArea fx:id="notes" GridPane.columnIndex="3" GridPane.rowIndex="1"/>
+                                        <Label fx:id="labelSearch" text="Search" GridPane.rowIndex="4"/>
+                                        <TextField fx:id="txtSearch" minWidth="-Infinity" prefWidth="265.0"
+                                                   promptText="Search" GridPane.columnIndex="1" GridPane.rowIndex="4"/>
+                                        <Label text="نسبة1" GridPane.rowIndex="2"/>
+                                        <Label text="نسبة2" GridPane.columnIndex="2" GridPane.rowIndex="2"/>
+                                        <Label text="نسبة3" GridPane.rowIndex="3"/>
+                                        <ComboBox fx:id="searchableComboBox" prefWidth="150.0"
+                                                  GridPane.columnIndex="3"/>
+                                    </children>
+                                </GridPane>
+                            </children>
+                        </VBox>
+                        <TableView fx:id="tableView" VBox.vgrow="SOMETIMES"/>
+                    </children>
+                    <padding>
+                        <Insets bottom="5.0" left="5.0" right="5.0" top="5.0"/>
+                    </padding>
+                </VBox>
+            </children>
+        </VBox>
+    </children>
+</AnchorPane>

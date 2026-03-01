@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.image.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.text.Text?>
+<StackPane xmlns:fx="http://javafx.com/fxml/1" fx:id="stackPane" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity"
+           minWidth="-Infinity" xmlns="http://javafx.com/javafx/21">
+    <children>
+        <AnchorPane>
+            <children>
+                <VBox spacing="5.0" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0"
+                      AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
+                    <children>
+                        <GridPane styleClass="grid-pane-style" VBox.vgrow="SOMETIMES">
+                            <columnConstraints>
+                                <ColumnConstraints hgrow="SOMETIMES" maxWidth="-Infinity" minWidth="10.0"/>
+                                <ColumnConstraints hgrow="SOMETIMES" maxWidth="-Infinity" minWidth="10.0"/>
+                                <ColumnConstraints hgrow="SOMETIMES" maxWidth="-Infinity" minWidth="10.0"/>
+                            </columnConstraints>
+                            <rowConstraints>
+                                <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES"/>
+                                <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES"/>
+                                <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES"/>
+                                <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES"/>
+                                <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES"/>
+                                <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES"/>
+                                <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES"/>
+                                <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES"/>
+                            </rowConstraints>
+                            <children>
+                                <CheckBox fx:id="checkUpdateGroup" mnemonicParsing="false" text="Update Group"/>
+                                <CheckBox fx:id="checkUpdateActive" mnemonicParsing="false" text="Update Active"
+                                          GridPane.rowIndex="2"/>
+                                <CheckBox fx:id="checkUpdateBuy" mnemonicParsing="false" text="Update Buy price"
+                                          GridPane.rowIndex="3"/>
+                                <CheckBox fx:id="checkUpdateSell" mnemonicParsing="false" text="Update Sel Price"
+                                          GridPane.rowIndex="4"/>
+                                <CheckBox fx:id="checkDeleteImage" mnemonicParsing="false" text="Delete Image"
+                                          GridPane.rowIndex="7"/>
+                                <CheckBox fx:id="checkMini" mnemonicParsing="false" text="Mini Quantity"
+                                          GridPane.rowIndex="5"/>
+                                <CheckBox fx:id="checkFirstBalance" mnemonicParsing="false" text="First Balance"
+                                          GridPane.rowIndex="6"/>
+                                <ComboBox fx:id="comboActive" prefWidth="150.0" GridPane.columnIndex="1"
+                                          GridPane.rowIndex="2"/>
+                                <TextField fx:id="textBuyPrice" GridPane.columnIndex="1" GridPane.rowIndex="3"/>
+                                <TextField fx:id="textSellPrice" GridPane.columnIndex="1" GridPane.rowIndex="4"/>
+                                <TextField fx:id="textMini" GridPane.columnIndex="1" GridPane.rowIndex="5"/>
+                                <TextField fx:id="textFirstBalance" GridPane.columnIndex="1" GridPane.rowIndex="6"/>
+                                <ComboBox fx:id="comboMainGroup" prefWidth="150.0" GridPane.columnIndex="1"/>
+                                <ComboBox fx:id="comboSubGroup" prefWidth="150.0" GridPane.columnIndex="1"
+                                          GridPane.rowIndex="1"/>
+                                <ImageView fitHeight="25.0" fitWidth="25.0" pickOnBounds="true" preserveRatio="true"
+                                           GridPane.columnIndex="2" GridPane.rowIndex="3">
+                                    <image>
+                                        <Image url="@../../image/percent_24dp_666666_FILL0_wght400_GRAD0_opsz24.png"/>
+                                    </image>
+                                </ImageView>
+                                <ImageView fitHeight="25.0" fitWidth="25.0" layoutX="375.0" layoutY="152.0"
+                                           pickOnBounds="true" preserveRatio="true" GridPane.columnIndex="2"
+                                           GridPane.rowIndex="4">
+                                    <image>
+                                        <Image url="@../../image/percent_24dp_666666_FILL0_wght400_GRAD0_opsz24.png"/>
+                                    </image>
+                                </ImageView>
+                                <HBox alignment="CENTER_LEFT" spacing="5.0" GridPane.columnIndex="1"
+                                      GridPane.rowIndex="7">
+                                    <children>
+                                        <RadioButton fx:id="radioDeleteImage" mnemonicParsing="false" selected="true"
+                                                     text="حذف">
+                                            <toggleGroup>
+                                                <ToggleGroup fx:id="group"/>
+                                            </toggleGroup>
+                                        </RadioButton>
+                                        <RadioButton fx:id="radioAddImage" mnemonicParsing="false" text="إضافة"
+                                                     toggleGroup="$group"/>
+                                        <HBox>
+                                            <children>
+                                                <ImageView fx:id="imageInformation" fitHeight="15.0" fitWidth="15.0"
+                                                           pickOnBounds="true" preserveRatio="true">
+                                                    <image>
+                                                        <Image url="@../../image/icons8-information-48.png"/>
+                                                    </image>
+                                                </ImageView>
+                                            </children>
+                                        </HBox>
+                                        <Text fx:id="textPath" strokeType="OUTSIDE" strokeWidth="0.0"/>
+                                    </children>
+                                </HBox>
+                            </children>
+                        </GridPane>
+                        <HBox alignment="CENTER_RIGHT" spacing="5.0" styleClass="pane-box-last">
+                            <children>
+                                <Button fx:id="btnSave" mnemonicParsing="false" text="Save"/>
+                                <Button fx:id="btnClose" mnemonicParsing="false" text="Close"/>
+                            </children>
+                        </HBox>
+                    </children>
+                    <padding>
+                        <Insets bottom="5.0" left="5.0" right="5.0" top="5.0"/>
+                    </padding>
+                </VBox>
+            </children>
+        </AnchorPane>
+    </children>
+</StackPane>

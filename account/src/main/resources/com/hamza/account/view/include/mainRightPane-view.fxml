@@ -1,0 +1,166 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.text.Text?>
+<AnchorPane xmlns:fx="http://javafx.com/fxml/1" maxWidth="-Infinity" minWidth="-Infinity" prefHeight="587.0"
+            prefWidth="210.0" xmlns="http://javafx.com/javafx/21"
+            fx:controller="com.hamza.account.controller.main.MainRightPaneController">
+    <children>
+        <VBox spacing="5.0" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0"
+              AnchorPane.topAnchor="0.0">
+            <children>
+                <TextField fx:id="txtSearch" promptText="Search"/>
+                <Accordion>
+                    <panes>
+                        <TitledPane fx:id="paneSales" animated="false" text="Sales">
+                            <content>
+                                <ScrollPane>
+                                    <content>
+                                        <VBox styleClass="box">
+                                            <children>
+                                                <Button fx:id="btnSales" mnemonicParsing="false" text="Sales"/>
+                                                <Button fx:id="btnTotalSale" layoutX="10.0" layoutY="10.0"
+                                                        mnemonicParsing="false" text="Total Sales"/>
+                                            </children>
+                                        </VBox>
+                                    </content>
+                                </ScrollPane>
+                            </content>
+                        </TitledPane>
+                        <TitledPane fx:id="panePurchase" animated="false" text="Purchase">
+                            <content>
+                                <ScrollPane>
+                                    <content>
+                                        <VBox styleClass="box">
+                                            <children>
+                                                <Button fx:id="btnPurchase" mnemonicParsing="false" text="Purchase"/>
+                                                <Button fx:id="btnPurchaseRe" layoutX="10.0" layoutY="10.0"
+                                                        mnemonicParsing="false" text="Purchase Re"/>
+                                                <Button fx:id="btnTotalPurchase" layoutX="10.0" layoutY="35.0"
+                                                        mnemonicParsing="false" text="Total Purchase"/>
+                                                <Button fx:id="btnTotalPurchaseRe" layoutX="11.0" layoutY="69.0"
+                                                        mnemonicParsing="false" text="Total Purchase Re"/>
+                                            </children>
+                                        </VBox>
+                                    </content>
+                                </ScrollPane>
+                            </content>
+                        </TitledPane>
+                        <TitledPane fx:id="paneItems" animated="false" text="Items">
+                            <content>
+                                <ScrollPane>
+                                    <content>
+                                        <VBox styleClass="box">
+                                            <children>
+                                                <Button fx:id="btnItems" mnemonicParsing="false" text="Items"/>
+                                                <Button fx:id="btnAddItem" layoutX="10.0" layoutY="10.0"
+                                                        mnemonicParsing="false" text="Add Item"/>
+                                                <Button fx:id="btnUnits" layoutX="10.0" layoutY="35.0"
+                                                        mnemonicParsing="false" text="Units"/>
+                                                <Button fx:id="btnMainGroup" layoutX="11.0" layoutY="69.0"
+                                                        mnemonicParsing="false" text="Main Group"/>
+                                                <Button fx:id="btnInventory" layoutX="11.0" layoutY="127.0"
+                                                        mnemonicParsing="false" text="Inventory"/>
+                                            </children>
+                                        </VBox>
+                                    </content>
+                                </ScrollPane>
+                            </content>
+                        </TitledPane>
+                        <TitledPane fx:id="paneCustom" animated="false" layoutX="10.0" layoutY="62.0" text="Custom">
+                            <content>
+                                <ScrollPane>
+                                    <content>
+                                        <VBox styleClass="box">
+                                            <children>
+                                                <Button fx:id="btnCustomer" mnemonicParsing="false" text="Customer"/>
+                                                <Button fx:id="btnAccountCustom" layoutX="10.0" layoutY="10.0"
+                                                        mnemonicParsing="false" text="Account Customer"/>
+                                            </children>
+                                        </VBox>
+                                    </content>
+                                </ScrollPane>
+                            </content>
+                        </TitledPane>
+                        <TitledPane fx:id="paneSuppliers" animated="false" layoutX="10.0" layoutY="185.0"
+                                    text="Suppliers">
+                            <content>
+                                <ScrollPane>
+                                    <content>
+                                        <VBox styleClass="box">
+                                            <children>
+                                                <Button fx:id="btnSuppliers" mnemonicParsing="false" text="Suppliers"/>
+                                                <Button fx:id="btnAccountSuppliers" layoutX="10.0" layoutY="10.0"
+                                                        mnemonicParsing="false" text="Account Suppliers"/>
+                                            </children>
+                                        </VBox>
+                                    </content>
+                                </ScrollPane>
+                            </content>
+                        </TitledPane>
+                        <TitledPane fx:id="paneTreasury" animated="false" layoutX="10.0" layoutY="211.0"
+                                    text="Treasury">
+                            <content>
+                                <ScrollPane>
+                                    <content>
+                                        <VBox styleClass="box">
+                                            <children>
+                                                <Button fx:id="btnAddDeposit" mnemonicParsing="false"
+                                                        text="إيداع / صرف"/>
+                                                <Button fx:id="btnTreasuryDetails" mnemonicParsing="false"
+                                                        text="كشف حساب"/>
+                                                <Button fx:id="btnConvertTreasury" mnemonicParsing="false"
+                                                        text="Convert Treasury"/>
+                                                <Button fx:id="btnProcess" layoutX="10.0" layoutY="10.0"
+                                                        mnemonicParsing="false" text="Process"/>
+                                                <Button fx:id="btnExpenses" layoutX="10.0" layoutY="35.0"
+                                                        mnemonicParsing="false" text="Expenses"/>
+                                            </children>
+                                        </VBox>
+                                    </content>
+                                </ScrollPane>
+                            </content>
+                        </TitledPane>
+                        <TitledPane fx:id="paneSetting" animated="false" layoutX="10.0" layoutY="237.0" text="Setting">
+                            <content>
+                                <ScrollPane>
+                                    <content>
+                                        <VBox styleClass="box">
+                                            <children>
+                                                <Button fx:id="btnHome" mnemonicParsing="false" text="Home"/>
+                                                <Button fx:id="btnUsers" layoutX="10.0" layoutY="10.0"
+                                                        mnemonicParsing="false" text="Users"/>
+                                                <Button fx:id="btnBackup" layoutX="10.0" layoutY="35.0"
+                                                        mnemonicParsing="false" text="Backup"/>
+                                                <Button fx:id="btnClose" layoutX="11.0" layoutY="69.0"
+                                                        mnemonicParsing="false" text="Close"/>
+                                            </children>
+                                        </VBox>
+                                    </content>
+                                </ScrollPane>
+                            </content>
+                        </TitledPane>
+                    </panes>
+                </Accordion>
+                <VBox alignment="BOTTOM_CENTER" spacing="5.0" VBox.vgrow="SOMETIMES">
+                    <children>
+                        <Text fx:id="txtNameProject" strokeType="OUTSIDE" strokeWidth="0.0" styleClass="text-account"
+                              text="Account System"/>
+                        <Text fx:id="txtName" strokeType="OUTSIDE" strokeWidth="0.0" styleClass="text-name"
+                              text="Mohamed Salah"/>
+                        <Text fx:id="txtTel" strokeType="OUTSIDE" strokeWidth="0.0" styleClass="text-tel"
+                              text="01002937820"/>
+                    </children>
+                    <padding>
+                        <Insets bottom="5.0" left="5.0" right="5.0" top="5.0"/>
+                    </padding>
+                </VBox>
+            </children>
+            <padding>
+                <Insets bottom="5.0" left="5.0" right="5.0" top="5.0"/>
+            </padding>
+        </VBox>
+    </children>
+</AnchorPane>

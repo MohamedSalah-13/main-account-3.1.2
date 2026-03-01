@@ -1,0 +1,451 @@
+/* Dark theme overrides. It imports the base mainStyle.css rules and overrides color variables. */
+@import url("mainStyle.css");
+
+* {
+    -fx-root-background-color: #2B2B2B;
+    /*-fx-button-color: #4A88C7; !* Darcula blue *!*/
+    -fx-button-color: #313335; /* Darcula blue */
+    -fx-button-color-hover: #5394D1; /* Darcula blue hover */
+    -fx-button-color-pressed: #3776B8; /* Darcula blue pressed */
+
+    -fx-Main-color: #3C3F41; /* Darcula main background */
+    -fx-color-text: #BBBBBB; /* Darcula text color */
+    -fx-border-color-pane: #555555; /* Darcula border */
+
+    -fx-background-color-table: #313335; /* Darcula table background */
+    -fx-border-color-table: #555555; /* Darcula table border */
+    -fx-background-color-aquaRow: #214283; /* Darcula selection blue */
+}
+
+.root {
+    -fx-background-color: #2B2B2B; /* Darcula root background */
+}
+
+.table-row-cell, .tree-table-row-cell {
+    -fx-background-color: #313335; /* Darcula table cell */
+    -fx-border-color: #3C3F41;
+}
+
+.table-row-cell:odd, .tree-table-row-cell:odd {
+    -fx-background-color: #3C3F41; /* Darcula alternating row */
+}
+
+.table-row-cell:selected .text, .tree-table-row-cell:selected .text {
+    -fx-fill: #FFFFFF; /* White text on selection */
+}
+
+.text-area, .date-picker, .text-field, .combo-box, .box-search {
+    -fx-background-color: #45494A;
+    -fx-text-fill: #BBBBBB;
+}
+
+.combo-box-popup .list-cell:hover {
+    -fx-background-color: #4B6EAF;
+}
+
+.combo-box-popup .list-cell:selected {
+    -fx-background-color: #4A88C7;
+    -fx-text-fill: #FFFFFF;
+}
+
+.tab-pane .tab-header-area .tab-header-background {
+    -fx-background-color: #2B2B2B;
+}
+
+.tab-pane .tab, .text-area, .tool-bar, .list-view, .scroll-pane, .anchor-pane {
+    -fx-background-color: #2B2B2B;
+}
+
+.scroll-pane > .viewport {
+    -fx-background-color: #2B2B2B;
+}
+
+.text {
+    -fx-fill: #BBBBBB;
+}
+
+.label {
+    -fx-text-fill: #BBBBBB;
+}
+
+.text-sum, .text-sum-total, .text-error, .text-explain {
+    -fx-fill: #FFFFFF;
+}
+
+.title-pane, #dialog-header {
+    -fx-background-color: #313335;
+}
+
+#btnClose {
+    -fx-background-color: -fx-button-color;
+}
+
+/* CheckListView styling */
+.check-list-view {
+    -fx-background-color: #313335;
+}
+
+.check-list-view .list-cell {
+    -fx-background-color: #313335;
+    -fx-text-fill: #BBBBBB;
+    -fx-padding: 0.4em 0.5em;
+}
+
+.check-list-view .list-cell:odd {
+    -fx-background-color: #3C3F41;
+}
+
+.check-list-view .list-cell:hover {
+    -fx-background-color: #4B6EAF;
+}
+
+.check-list-view .list-cell:selected {
+    -fx-background-color: #214283;
+    -fx-text-fill: #FFFFFF;
+}
+
+.check-list-view .list-cell .check-box {
+    -fx-text-fill: #BBBBBB;
+}
+
+.check-list-view .list-cell .check-box .box {
+    -fx-background-color: #45494A;
+    -fx-border-color: #6B6B6B;
+}
+
+.check-list-view .list-cell .check-box:selected .box {
+    -fx-background-color: #4A88C7;
+    -fx-border-color: #4A88C7;
+}
+
+.check-list-view .list-cell .check-box:selected .mark {
+    -fx-background-color: #FFFFFF;
+}
+
+.check-list-view .list-cell .check-box:hover .box {
+    -fx-border-color: #5394D1;
+}
+
+.check-list-view .list-cell:selected .check-box {
+    -fx-text-fill: #FFFFFF;
+}
+
+/* ==================== JFXDrawer Dark Theme ==================== */
+/* Matches Darcula palette using existing CSS variables */
+
+/* Main drawer container */
+.jfx-drawer {
+    -fx-background-color: transparent;
+}
+
+/* Side pane (the sliding panel content area) */
+.jfx-drawer .jfx-drawer-side-pane {
+    -fx-background-color: -fx-Main-color; /* #3C3F41 */
+    -fx-border-color: -fx-border-color-pane; /* #555555 */
+    -fx-border-width: 0 1px 0 0; /* Right border for left drawer */
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.5), 12, 0, 2, 0);
+}
+
+/* Side pane when drawer opens from right */
+.jfx-drawer:right .jfx-drawer-side-pane {
+    -fx-border-width: 0 0 0 1px; /* Left border for right drawer */
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.5), 12, 0, -2, 0);
+}
+
+/* Overlay pane (dims the content when drawer is open) */
+.jfx-drawer .jfx-drawer-overlay-pane {
+    -fx-background-color: rgba(0, 0, 0, 0.4);
+}
+
+/* Buttons inside drawer */
+.jfx-drawer .button,
+.jfx-drawer .toggle-button {
+    -fx-background-color: -fx-button-color; /* #4A88C7 */
+    -fx-text-fill: #FFFFFF;
+    -fx-font-weight: bold;
+    -fx-background-radius: 3px;
+    -fx-cursor: hand;
+}
+
+.jfx-drawer .button:hover,
+.jfx-drawer .toggle-button:hover {
+    -fx-background-color: -fx-button-color-hover; /* #5394D1 */
+}
+
+.jfx-drawer .button:pressed,
+.jfx-drawer .toggle-button:pressed {
+    -fx-background-color: -fx-button-color-pressed; /* #3776B8 */
+}
+
+.jfx-drawer .toggle-button:selected {
+    -fx-background-color: -fx-button-color-pressed;
+    -fx-effect: innershadow(gaussian, rgba(0, 0, 0, 0.4), 8, 0, 0, 0);
+}
+
+/* Labels and text inside drawer */
+.jfx-drawer .label,
+.jfx-drawer .text {
+    -fx-text-fill: -fx-color-text; /* #BBBBBB */
+}
+
+/* Separator inside drawer */
+.jfx-drawer .separator {
+    -fx-background-color: -fx-border-color-pane; /* #555555 */
+}
+
+/* VBox/HBox containers in drawer */
+.jfx-drawer .vbox,
+.jfx-drawer .hbox {
+    -fx-background-color: transparent;
+}
+
+/* ScrollPane inside drawer */
+.jfx-drawer .scroll-pane,
+.jfx-drawer .scroll-pane > .viewport {
+    -fx-background-color: -fx-Main-color; /* #3C3F41 */
+}
+
+/* ListView inside drawer */
+.jfx-drawer .list-view {
+    -fx-background-color: -fx-Main-color;
+    -fx-border-color: transparent;
+}
+
+.jfx-drawer .list-cell {
+    -fx-background-color: -fx-Main-color;
+    -fx-text-fill: -fx-color-text;
+    -fx-padding: 0.6em 0.8em;
+}
+
+.jfx-drawer .list-cell:odd {
+    -fx-background-color: #313335;
+}
+
+.jfx-drawer .list-cell:hover {
+    -fx-background-color: #4B6EAF;
+}
+
+.jfx-drawer .list-cell:selected {
+    -fx-background-color: -fx-background-color-aquaRow; /* #214283 */
+    -fx-text-fill: #FFFFFF;
+}
+
+/* ToolBar inside drawer */
+.jfx-drawer .tool-bar {
+    -fx-background-color: -fx-Main-color;
+    -fx-border-color: -fx-border-color-pane;
+    -fx-border-width: 0 0 1px 0;
+}
+
+/* Menu buttons inside drawer */
+.jfx-drawer .menu-button {
+    -fx-background-color: -fx-button-color;
+    -fx-text-fill: #FFFFFF;
+}
+
+.jfx-drawer .menu-button:hover {
+    -fx-background-color: -fx-button-color-hover;
+}
+
+.jfx-drawer .menu-button .arrow {
+    -fx-background-color: #FFFFFF;
+}
+
+/* Text fields inside drawer */
+.jfx-drawer .text-field,
+.jfx-drawer .text-area {
+    -fx-background-color: #45494A;
+    -fx-text-fill: -fx-color-text;
+    -fx-prompt-text-fill: #808080;
+    -fx-border-color: -fx-border-color-pane;
+    -fx-border-radius: 3px;
+    -fx-background-radius: 3px;
+}
+
+.jfx-drawer .text-field:focused,
+.jfx-drawer .text-area:focused {
+    -fx-border-color: -fx-button-color;
+    -fx-border-width: 2px;
+}
+
+/* ComboBox inside drawer */
+.jfx-drawer .combo-box {
+    -fx-background-color: #45494A;
+    -fx-text-fill: -fx-color-text;
+}
+
+.jfx-drawer .combo-box:hover {
+    -fx-border-color: -fx-button-color-hover;
+}
+
+/* CheckBox inside drawer */
+.jfx-drawer .check-box {
+    -fx-text-fill: -fx-color-text;
+}
+
+.jfx-drawer .check-box .box {
+    -fx-background-color: #45494A;
+    -fx-border-color: #6B6B6B;
+}
+
+.jfx-drawer .check-box:selected .box {
+    -fx-background-color: -fx-button-color;
+    -fx-border-color: -fx-button-color;
+}
+
+.jfx-drawer .check-box:selected .mark {
+    -fx-background-color: #FFFFFF;
+}
+
+/* TitledPane inside drawer */
+.jfx-drawer .titled-pane > .title {
+    -fx-background-color: #313335;
+    -fx-text-fill: -fx-color-text;
+}
+
+.jfx-drawer .titled-pane > .title:hover {
+    -fx-background-color: #3C3F41;
+}
+
+.jfx-drawer .titled-pane > *.content {
+    -fx-background-color: -fx-Main-color;
+}
+
+/* ==================== Dialog Dark Theme ==================== */
+/* Style all dialog components for dark theme */
+
+/* Dialog pane main container */
+.dialog-pane {
+    -fx-background-color: -fx-root-background-color; /* #3C3F41 */
+}
+
+/* Dialog header area */
+.dialog-pane > .header-panel {
+    -fx-background-color: #313335; /* Darcula header background */
+    -fx-border-color: -fx-border-color-pane;
+    -fx-border-width: 0 0 1px 0;
+    -fx-padding: 1em;
+}
+
+/* Dialog header text */
+.dialog-pane > .header-panel > .label {
+    -fx-text-fill: -fx-color-text; /* #BBBBBB */
+    -fx-font-size: 1.2em;
+    -fx-font-weight: bold;
+}
+
+/* Dialog content area */
+.dialog-pane > .content {
+    -fx-background-color: -fx-root-background-color;
+    -fx-padding: 1em;
+}
+
+.dialog-pane > .content .label {
+    -fx-text-fill: -fx-color-text;
+}
+
+/* Dialog button bar */
+.dialog-pane > .button-bar {
+    -fx-background-color: #313335;
+    -fx-border-color: -fx-border-color-pane;
+    -fx-border-width: 1px 0 0 0;
+    -fx-padding: 0.8em;
+}
+
+/* Dialog buttons */
+.dialog-pane .button {
+    -fx-background-color: -fx-button-color;
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+    -fx-background-radius: 3px;
+    -fx-padding: 0.5em 1em;
+    -fx-border-color: -fx-border-color-pane;
+    -fx-border-radius: 2px;
+}
+
+.dialog-pane .button:hover {
+    -fx-background-color: -fx-button-color-hover;
+}
+
+.dialog-pane .button:pressed {
+    -fx-background-color: -fx-button-color-pressed;
+}
+
+/* Specific button types in dialogs */
+.dialog-pane .button:cancel-button {
+    -fx-background-color: #555555;
+}
+
+.dialog-pane .button:cancel-button:hover {
+    -fx-background-color: #666666;
+}
+
+.dialog-pane .button:default {
+    -fx-background-color: -fx-button-color-hover;
+}
+
+/* Dialog expandable content */
+.dialog-pane > .expandable-content {
+    -fx-background-color: -fx-root-background-color;
+    -fx-border-color: -fx-border-color-pane;
+    -fx-border-width: 1px 0 0 0;
+    -fx-padding: 0.8em;
+}
+
+/* Alert dialog specific styling */
+.alert.dialog-pane {
+    -fx-background-color: -fx-root-background-color;
+}
+
+.alert .header-panel {
+    -fx-background-color: #313335;
+}
+
+/* Confirmation dialog */
+.confirmation.dialog-pane {
+    -fx-background-color: -fx-root-background-color;
+}
+
+/* Error dialog */
+.error.dialog-pane > .header-panel {
+    -fx-background-color: #5C3535; /* Darker red tint for errors */
+}
+
+/* Warning dialog */
+.warning.dialog-pane > .header-panel {
+    -fx-background-color: #5C5235; /* Darker yellow tint for warnings */
+}
+
+/* Information dialog */
+.information.dialog-pane > .header-panel {
+    -fx-background-color: #313335;
+}
+
+/* Dialog text input controls */
+.dialog-pane .text-field,
+.dialog-pane .text-area,
+.dialog-pane .combo-box {
+    -fx-background-color: #45494A;
+    -fx-text-fill: -fx-color-text;
+    -fx-border-color: -fx-border-color-pane;
+    -fx-border-radius: 3px;
+    -fx-background-radius: 3px;
+}
+
+.dialog-pane .text-field:focused,
+.dialog-pane .text-area:focused,
+.dialog-pane .combo-box:focused {
+    -fx-border-color: -fx-button-color;
+    -fx-border-width: 2px;
+}
+
+/* Dialog labels */
+.dialog-pane .label {
+    -fx-text-fill: -fx-color-text;
+}
+
+/* Dialog title (window title bar is OS-controlled, but this affects internal titles) */
+.dialog-pane .title {
+    -fx-text-fill: -fx-color-text;
+    -fx-font-weight: bold;
+}

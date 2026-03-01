@@ -1,0 +1,65 @@
+
+* {
+    -fx-color: #4380bb;
+}
+
+.box {
+    -fx-background-color: #faf4f4;
+    -fx-pref-height: 100px;
+    -fx-pref-width: 210px;
+    -fx-translate-y: 57px;
+    -fx-background-radius: 5px;
+    -fx-border-radius: 5px;
+}
+
+.box:hover {
+    -fx-background-color: #f5f5f5;
+    -fx-cursor: hand;
+    -fx-effect: dropshadow(three-pass-box, rgba(243, 239, 239, 0.83), 56.1625, 0.46, 0.0, 0.0);
+}
+
+.box > .separator {
+    -fx-effect: innershadow(three-pass-box, -fx-color, 56.1625, 0.46, 0.0, 0.0);
+}
+
+.box > .box2 {
+    -fx-padding: 5px;
+    -fx-spacing: 5px;
+}
+
+.box-image {
+    -fx-pref-width: 75px;
+    -fx-pref-height: 75px;
+    -fx-translate-x: 25px;
+    -fx-translate-y: 25px;
+    -fx-background-color: -fx-color;
+}
+
+.box, .box-image {
+    -fx-background-radius: 5;
+}
+
+.text {
+    -fx-font-size: 14px;
+    -fx-font-weight: bold;
+    -fx-fill: -fx-color;
+}
+
+.text:hover {
+    -fx-cursor: hand;
+    -fx-underline: true;
+}
+
+#id:red {
+    -fx-color: #ad3434;
+}
+
+#id:green {
+    -fx-color: #086966FF;
+}
+
+#id:yellow {
+    -fx-color: #868325;
+}
+
+

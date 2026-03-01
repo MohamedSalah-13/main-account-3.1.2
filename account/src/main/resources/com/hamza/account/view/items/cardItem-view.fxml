@@ -1,0 +1,113 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.text.*?>
+<AnchorPane xmlns:fx="http://javafx.com/fxml/1" xmlns="http://javafx.com/javafx/21">
+    <children>
+        <VBox fx:id="box" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0"
+              AnchorPane.topAnchor="0.0">
+            <children>
+                <VBox styleClass="dashboard-tile">
+                    <children>
+                        <GridPane minWidth="-Infinity" styleClass="grid-pane-style">
+                            <columnConstraints>
+                                <ColumnConstraints hgrow="SOMETIMES" maxWidth="-Infinity" minWidth="10.0"/>
+                                <ColumnConstraints hgrow="SOMETIMES" maxWidth="-Infinity" minWidth="10.0"/>
+                                <ColumnConstraints hgrow="SOMETIMES" maxWidth="-Infinity" minWidth="10.0"/>
+                                <ColumnConstraints hgrow="SOMETIMES" maxWidth="-Infinity" minWidth="10.0"/>
+                            </columnConstraints>
+                            <rowConstraints>
+                                <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES"/>
+                                <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES"/>
+                                <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES"/>
+                            </rowConstraints>
+                            <children>
+                                <Label fx:id="labelType" text="Type" GridPane.columnIndex="2"/>
+                                <ComboBox fx:id="comboBox" maxWidth="1.7976931348623157E308" GridPane.columnIndex="3"/>
+                                <Label fx:id="labelName" text="Name"/>
+                                <TextField fx:id="textName" editable="false" GridPane.columnIndex="1"/>
+                                <Label fx:id="labelFrom" text="From" GridPane.rowIndex="1"/>
+                                <Label fx:id="labelTo" text="To" GridPane.columnIndex="2" GridPane.rowIndex="1"/>
+                                <HBox alignment="CENTER_LEFT" spacing="5.0" GridPane.columnIndex="3"
+                                      GridPane.rowIndex="2">
+                                    <children>
+                                        <Button fx:id="btnSearch" mnemonicParsing="false" text="Search"/>
+                                        <Button fx:id="btnPrint" mnemonicParsing="false" text="Print"/>
+                                    </children>
+                                </HBox>
+                                <DatePicker fx:id="dateFrom" editable="false" maxWidth="1.7976931348623157E308"
+                                            GridPane.columnIndex="1" GridPane.rowIndex="1"/>
+                                <DatePicker fx:id="dateTo" editable="false" maxWidth="1.7976931348623157E308"
+                                            GridPane.columnIndex="3" GridPane.rowIndex="1"/>
+                                <Label text="الوحدة الاساسية" GridPane.rowIndex="2"/>
+                                <Text fx:id="textType" strokeType="OUTSIDE" strokeWidth="0.0" styleClass="text-sum"
+                                      text="قطعة" GridPane.columnIndex="1" GridPane.rowIndex="2"/>
+                            </children>
+                        </GridPane>
+                    </children>
+                </VBox>
+                <TableView fx:id="tableView" VBox.vgrow="SOMETIMES"/>
+                <HBox alignment="CENTER_LEFT" spacing="5.0">
+                    <children>
+                        <GridPane styleClass="grid-pane-style" HBox.hgrow="SOMETIMES">
+                            <columnConstraints>
+                                <ColumnConstraints hgrow="SOMETIMES" maxWidth="-Infinity" minWidth="10.0"/>
+                                <ColumnConstraints hgrow="SOMETIMES" maxWidth="-Infinity" minWidth="10.0"/>
+                                <ColumnConstraints hgrow="SOMETIMES" maxWidth="-Infinity" minWidth="10.0"/>
+                                <ColumnConstraints hgrow="SOMETIMES" maxWidth="-Infinity" minWidth="10.0"/>
+                                <ColumnConstraints hgrow="SOMETIMES" maxWidth="-Infinity" minWidth="10.0"/>
+                                <ColumnConstraints hgrow="SOMETIMES" maxWidth="-Infinity" minWidth="10.0"/>
+                                <ColumnConstraints hgrow="SOMETIMES" maxWidth="-Infinity" minWidth="10.0"/>
+                                <ColumnConstraints hgrow="SOMETIMES" maxWidth="-Infinity" minWidth="10.0"/>
+                                <ColumnConstraints hgrow="SOMETIMES" maxWidth="-Infinity" minWidth="10.0"/>
+                                <ColumnConstraints hgrow="SOMETIMES" maxWidth="-Infinity" minWidth="10.0"
+                                                   prefWidth="100.0"/>
+                            </columnConstraints>
+                            <rowConstraints>
+                                <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES"/>
+                                <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES"/>
+                            </rowConstraints>
+                            <children>
+                                <Label fx:id="labelPurchase" text="Purchase"/>
+                                <Text fx:id="textPurchase" strokeType="OUTSIDE" strokeWidth="0.0" styleClass="text-sum"
+                                      text="0.0" GridPane.columnIndex="1"/>
+                                <Label fx:id="labelSales" text="Sales" GridPane.columnIndex="2"/>
+                                <Text fx:id="textSales" strokeType="OUTSIDE" strokeWidth="0.0" styleClass="text-sum"
+                                      text="0.0" GridPane.columnIndex="3"/>
+                                <Label fx:id="labelRePurchase" text="Return Purchase" GridPane.columnIndex="4"/>
+                                <Text fx:id="textRePurchase" strokeType="OUTSIDE" strokeWidth="0.0"
+                                      styleClass="text-sum" text="0.0" GridPane.columnIndex="5"/>
+                                <Label fx:id="labelReSales" text="Retaun Sales" GridPane.columnIndex="6"/>
+                                <Text fx:id="textReSales" strokeType="OUTSIDE" strokeWidth="0.0" styleClass="text-sum"
+                                      text="0.0" GridPane.columnIndex="7"/>
+                                <Label text="إجمالى الشراء" GridPane.rowIndex="1"/>
+                                <Label text="إجمالى البيع" GridPane.columnIndex="2" GridPane.rowIndex="1"/>
+                                <Label text="إجمالى مرتجع المشتريات" GridPane.columnIndex="4" GridPane.rowIndex="1"/>
+                                <Label text="إجمالى مرتجع المبيعات" GridPane.columnIndex="6" GridPane.rowIndex="1"/>
+                                <Label text="ربح الصنف" GridPane.columnIndex="8" GridPane.rowIndex="1"/>
+                                <Text fx:id="textCostPurchase" strokeType="OUTSIDE" strokeWidth="0.0"
+                                      styleClass="text-sum" text="0.0" GridPane.columnIndex="1" GridPane.rowIndex="1"/>
+                                <Text fx:id="textCostSales" strokeType="OUTSIDE" strokeWidth="0.0" styleClass="text-sum"
+                                      text="0.0" GridPane.columnIndex="3" GridPane.rowIndex="1"/>
+                                <Text fx:id="textCostPurchaseRe" strokeType="OUTSIDE" strokeWidth="0.0"
+                                      styleClass="text-sum" text="0.0" GridPane.columnIndex="5" GridPane.rowIndex="1"/>
+                                <Text fx:id="textCostSalesRe" strokeType="OUTSIDE" strokeWidth="0.0"
+                                      styleClass="text-sum" text="0.0" GridPane.columnIndex="7" GridPane.rowIndex="1"/>
+                                <Text fx:id="textCostTotals" strokeType="OUTSIDE" strokeWidth="0.0"
+                                      styleClass="text-sum" text="0.0" GridPane.columnIndex="9" GridPane.rowIndex="1"/>
+                                <Label text="إجمالى الكمية" GridPane.columnIndex="8"/>
+                                <Text fx:id="textCountTotals" strokeType="OUTSIDE" strokeWidth="0.0"
+                                      styleClass="text-sum" text="0.0" GridPane.columnIndex="9"/>
+                            </children>
+                        </GridPane>
+                    </children>
+                    <padding>
+                        <Insets bottom="5.0" left="5.0" right="5.0" top="5.0"/>
+                    </padding>
+                </HBox>
+            </children>
+        </VBox>
+    </children>
+</AnchorPane>

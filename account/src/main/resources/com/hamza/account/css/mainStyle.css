@@ -1,0 +1,412 @@
+* {
+    -fx-button-color: #1abc9c;
+    /*-fx-button-color-hover: #16a085;*/
+    /*-fx-button-color-pressed: #0e6655;*/
+    -fx-button-color-hover: derive(-fx-button-color, -10%);
+    -fx-button-color-pressed: derive(-fx-button-color, -20%);
+
+    -fx-Main-color: #34495E;
+    -fx-color-text: #ffffff;
+    -fx-border-color-pane: #777;
+    /*---------------------------------- table -----------------------------------*/
+    -fx-background-color-table: #2c3e50;
+    -fx-border-color-table: rgb(187, 44, 44);
+    -fx-background-color-aquaRow: #d9c781;
+
+    -fx-root-background-color: #ffffff;
+    -fx-background-color-line: #125e8c;
+}
+
+.root {
+    -fx-font-family: 'El Messiri', sans-serif;
+    /*-fx-font-family: "Segoe UI", Arial, sans-serif;*/
+    -fx-background-color: #ffffff;
+    -fx-root-background-color: #ffffff;
+}
+
+.scroll-pane .viewport {
+    -fx-background-color: -fx-root-background-color;
+}
+
+.tool-bar {
+    -fx-background-color: derive(-fx-root-background-color, -15%);
+}
+
+.tab-pane .tab-header-area .tab-header-background, .stack-pane {
+    -fx-background-color: derive(-fx-root-background-color, -5%);
+}
+
+/* Tables */
+.table-view {
+    -fx-background-color: transparent;
+}
+
+.table-view .column-header {
+    -fx-background-color: -fx-background-color-table;
+    -fx-border-color: -fx-border-color-table;
+    -fx-border-width: 3 0 0 0;
+    -fx-text-fill: white;
+}
+
+.table-view .column-header .label {
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+}
+
+.table-row-cell {
+    -fx-background-color: white;
+    -fx-border-color: #f5f5f5;
+    -fx-border-width: 0 0 1 0;
+}
+
+.table-row-cell:odd {
+    -fx-background-color: #f9f9f9;
+}
+
+.table-row-cell:selected {
+    -fx-background-color: -fx-button-color;
+}
+
+.table-view :row2, .tree-table-row-cell:aquaRow, .table-view .column-header .label {
+    -fx-font-weight: bold;
+    -fx-font-size: 13px;
+}
+
+.table-cell, .tree-table-cell, .box-title {
+    -fx-alignment: center;
+}
+
+.table-row-cell:empty .table-cell {
+    -fx-border-width: 0px;
+}
+
+
+.tree-table-row-cell:expanded .text {
+    /*-fx-fill: #7a0f0f;*/
+    /* تغيير لون الخط فى كشف الحساب*/
+}
+
+
+.tree-table-row-cell:expanded {
+    -fx-background-color: rgba(246, 244, 244, 0.84);
+    /*-fx-font-size: 1.2em;*/
+    /*-fx-font-weight: bold;*/
+}
+
+
+.table-view :aquaRow, .tree-table-row-cell:aquaRow {
+    -fx-background-color: rgba(243, 253, 163, 0.62);
+}
+
+.table-view :row2 {
+    -fx-background-color: #911111;
+    -fx-text-background-color: #ffffff;
+}
+
+
+/* buttons */
+#btnSearchText {
+    -fx-background-image: url("search.png");
+}
+
+#btnAdd {
+    -fx-background-image: url("add.png");
+}
+
+#btnSearchText, #btnAdd {
+    -fx-min-width: 36px;
+    -fx-min-height: 28px;
+    -fx-background-size: 20 20;
+    -fx-background-repeat: no-repeat;
+    -fx-background-position: center;
+}
+
+.pane-box-last {
+    -fx-border-color: #777;
+    -fx-border-width: .5 0 0 0;
+    -fx-padding: 5;
+    -fx-pref-height: 50px;
+    -fx-min-height: 50px;
+}
+
+.text-sum, .text-error {
+    -fx-font-weight: bold;
+    -fx-font-size: 1.5em;
+    -fx-alignment: center;
+    -fx-fill: #b21919;
+    -fx-text-fill: #b21919;
+    -fx-text-alignment: center;
+    -fx-text-overrun: ellipsis;
+}
+
+.box-title {
+    -fx-background-radius: 1em;
+    -fx-min-height: 45px;
+    -fx-pref-height: 45px;
+}
+
+.box-title > .label {
+    -fx-underline: true;
+    -fx-font-size: 3em;
+    -fx-text-fill: #b21919;
+}
+
+
+.pane-box-button-anyDesk {
+    /*-fx-padding: 5;*/
+    -fx-spacing: 5;
+    -fx-max-height: 30px;
+    /*-fx-background-color: #f5f5f5;*/
+    -fx-effect: dropshadow(three-pass-box, rgba(203, 127, 127, 0.6), 5, 0, 0, 0);
+}
+
+#btnAnyDesk, #btnChooseImage {
+    -fx-background-color: transparent;
+}
+
+#btnAnyDesk:hover, #btnChooseImage:hover {
+    -fx-background-color: rgba(243, 253, 163, 0.62);
+}
+
+#btnClose {
+    -fx-background-color: #820707;
+}
+
+#btnClose:hover {
+    -fx-background-color: transparent, rgba(0, 0, 0, .1), rgba(185, 138, 148, 0.98), transparent;
+    -fx-text-fill: #820707;
+}
+
+/* Dashboard tiles */
+.dashboard-tile {
+    -fx-background-color: derive(-fx-root-background-color, -5%);
+    -fx-background-radius: 5px;
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.1), 10, 0, 0, 3);
+    -fx-padding: .5em;
+}
+
+/* Buttons */
+.button, .toggle-button, .menu-button-items {
+    -fx-background-color: -fx-button-color;
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+}
+
+.button:hover, .toggle-button:hover, .menu-button-items:hover {
+    -fx-background-color: -fx-button-color-hover;
+}
+
+.button:pressed, .toggle-button:pressed {
+    -fx-background-color: -fx-button-color-pressed;
+}
+
+.toggle-button:selected {
+    -fx-background-color: -fx-button-color-pressed;
+    -fx-effect: innershadow(gaussian, rgba(0, 0, 0, 0.4), 10, 0, 0, 0);
+}
+
+.menu-button-items .label {
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+}
+
+.menu-button-items .arrow {
+    -fx-background-color: -fx-root-background-color;
+}
+
+.menu-button-items:showing {
+    -fx-background-color: -fx-button-color-pressed;
+}
+
+.menu-button-items:showing .label {
+    -fx-text-fill: #0c0c0c;
+}
+
+
+.text-input .prompt-text, .combo-box .prompt-text {
+    -fx-fill: #9aa0a6;
+}
+
+.text-field:disabled, .combo-box:disabled, .combo-box-base:disabled {
+    -fx-opacity: 0.8;
+    -fx-background-color: #f2f2f2;
+}
+
+/* ComboBox popup list styling */
+.combo-box-popup .list-cell:hover {
+    -fx-background-color: rgba(26, 188, 156, 0.1);
+}
+
+.combo-box-popup .list-cell:selected {
+    -fx-background-color: -fx-button-color;
+    -fx-text-fill: white;
+}
+
+/* em = px / parent_font_size_in_px */
+/* px = em * parent_font_size_in_px */
+.grid-pane-style {
+    -fx-padding: 1em; /* Example padding */
+    -fx-border-color: #cccccc; /* Example border color */
+    -fx-border-width: 1px; /* Example border width */
+    /*-fx-border-radius: 5px;*/
+    -fx-border-radius: 0.25em;
+    -fx-hgap: 1em;
+    -fx-vgap: 1em;
+}
+
+/* Style for specific elements within the GridPane */
+.grid-pane-style .label {
+    /*-fx-font-size: 14px;*/
+    -fx-text-fill: #333333;
+}
+
+
+/*---------------------------------- Text -----------------------------------*/
+
+.text-explain {
+    -fx-fill: #777;
+}
+
+/*---------------------------------- check-box -----------------------------------*/
+
+.check-box {
+    -fx-spacing: 0.5em;
+}
+
+.check-box .box {
+    -fx-background-color: -fx-color-text;
+    -fx-border-color: -fx-border-color-pane;
+    -fx-border-radius: 0.25em;
+    -fx-background-radius: 0.25em;
+    -fx-padding: 0.1em; /* increases clickable area */
+    -fx-min-width: 1.1em;
+    -fx-min-height: 1.1em;
+}
+
+.check-box .mark {
+    -fx-background-color: transparent;
+}
+
+.check-box:selected .mark {
+    -fx-background-color: -fx-color-text;
+}
+
+.check-box:selected .box {
+    -fx-background-color: -fx-button-color-pressed;
+}
+
+.check-box:selected {
+    -fx-text-fill: #032a3a;
+}
+
+.check-box:focused .box {
+    -fx-border-color: -fx-button-color;
+}
+
+.check-box-not-used:disabled {
+    -fx-underline: true;
+}
+
+.text-area, .date-picker, .text-field, .combo-box, .box-search {
+    -fx-pref-width: 18em; /* scales with root font size */
+}
+
+.box-search > .text-field {
+    -fx-background-color: -fx-root-background-color;
+    -fx-border-color: #ddd;
+}
+
+.scroll-pane {
+    -fx-fit-to-width: true;
+    -fx-fit-to-height: true;
+}
+
+/* --------------------------- right pane ------------------------*/
+.box {
+    -fx-padding: 1 1 .5 1;
+    -fx-spacing: 2px;
+    -fx-fill-width: true;
+    -fx-background-color: transparent;
+}
+
+.button {
+    -fx-max-width: Infinity;
+}
+
+
+/* ------------------------- text ------------------------- */
+
+.text-account {
+    -fx-font-family: "Grand Hotel";
+    -fx-fill: orange;
+}
+
+.text-name {
+    -fx-font-family: "Gafata";
+}
+
+.text-tel {
+    -fx-font-family: "New Rocker";
+}
+
+.text-tel, .text-name, .text-account, .titled-pane {
+    -fx-font-size: 1.16em;
+}
+
+.titled-pane {
+    -fx-text-fill: -fx-background-color-table;
+    /*-fx-background-color: white;*/
+}
+
+.titled-pane > .title {
+    -fx-background-color: #f8f9fa;
+    -fx-padding: 10px;
+    -fx-border-color: #dee2e6;
+    -fx-border-width: 1px;
+    -fx-background-radius: 5px;
+}
+
+.titled-pane > .title > .arrow-button {
+    -fx-padding: 5px;
+}
+
+.titled-pane > .title > .arrow-button > .arrow {
+    -fx-background-color: -fx-background-color-table;
+}
+
+.titled-pane > *.content {
+    -fx-background-color: white;
+    -fx-border-color: #dee2e6;
+    -fx-border-width: 0 1px 1px 1px;
+    /*-fx-padding: 10px;*/
+}
+
+.titled-pane:hover > .title {
+    -fx-background-color: #e9ecef;
+}
+
+.titled-pane:focused > .title {
+    -fx-border-color: -fx-button-color;
+}
+
+
+/* ------------------------- accordion ------------------------- */
+.accordion .titled-pane {
+    -fx-text-fill: white;
+}
+
+.accordion .titled-pane > *.content {
+    -fx-background-color: transparent;
+}
+
+.accordion .titled-pane .title {
+    -fx-background-color: -fx-button-color-pressed;
+}
+
+.accordion .titled-pane > .title > .arrow-button > .arrow {
+    -fx-background-color: rgb(255, 255, 255);
+}
+
+
+
+

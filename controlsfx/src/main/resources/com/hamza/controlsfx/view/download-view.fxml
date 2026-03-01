@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!--<?import de.jensd.fx.glyphs.fontawesome.FontAwesomeIconView?>-->
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.ProgressBar?>
+<?import javafx.scene.effect.DropShadow?>
+<?import javafx.scene.image.Image?>
+<?import javafx.scene.image.ImageView?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.text.Text?>
+<AnchorPane xmlns:fx="http://javafx.com/fxml/1" prefHeight="343.0" prefWidth="443.0" stylesheets="@../css/style.css"
+            xmlns="http://javafx.com/javafx/21">
+    <children>
+        <StackPane fx:id="pane" AnchorPane.bottomAnchor="5.0" AnchorPane.leftAnchor="5.0" AnchorPane.rightAnchor="5.0"
+                   AnchorPane.topAnchor="5.0">
+            <children>
+                <VBox>
+                    <children>
+                        <HBox alignment="TOP_CENTER" VBox.vgrow="ALWAYS">
+                            <children>
+                                <Text fx:id="textStart" strokeType="OUTSIDE" strokeWidth="0.0"
+                                      style="-fx-fill: #c1c1c1; -fx-font-size: 3em;" text="Please Wait">
+                                    <effect>
+                                        <DropShadow/>
+                                    </effect>
+                                </Text>
+                            </children>
+                            <padding>
+                                <Insets top="10.0"/>
+                            </padding>
+                        </HBox>
+                        <HBox prefHeight="100.0" styleClass="box-progress"/>
+                        <VBox alignment="BOTTOM_CENTER" VBox.vgrow="ALWAYS">
+                            <VBox.margin>
+                                <Insets bottom="10.0" left="10.0" right="10.0" top="10.0"/>
+                            </VBox.margin>
+                            <children>
+                                <HBox alignment="CENTER" prefWidth="441.0" spacing="5.0">
+                                    <children>
+                                        <ProgressBar fx:id="progress" prefWidth="200.0" progress="0.2"/>
+                                        <Text fx:id="textProgress" strokeType="OUTSIDE" strokeWidth="0.0"
+                                              styleClass="text" text="Progress"/>
+                                    </children>
+                                </HBox>
+                                <Text fx:id="textShowData" strokeType="OUTSIDE" strokeWidth="0.0" styleClass="text"
+                                      text="Show Data"/>
+                            </children>
+                            <padding>
+                                <Insets top="20.0"/>
+                            </padding>
+                        </VBox>
+                    </children>
+                </VBox>
+                <VBox alignment="CENTER">
+                    <children>
+                        <StackPane VBox.vgrow="ALWAYS">
+                            <children>
+                                <VBox maxHeight="-Infinity" maxWidth="-Infinity" prefHeight="200.0" prefWidth="200.0"
+                                      style="-fx-background-color: white; -fx-background-radius: 100;">
+                                    <effect>
+                                        <DropShadow/>
+                                    </effect>
+                                </VBox>
+                                <VBox alignment="CENTER" layoutX="205.0" layoutY="105.0" maxHeight="-Infinity"
+                                      maxWidth="-Infinity" prefHeight="170.0" prefWidth="170.0"
+                                      style="-fx-background-color: white; -fx-background-radius: 100;">
+                                    <effect>
+                                        <DropShadow/>
+                                    </effect>
+                                    <children>
+                                        <ImageView fitHeight="50.0" fitWidth="50.0" pickOnBounds="true"
+                                                   preserveRatio="true">
+                                            <image>
+                                                <Image url="@../image/icons8-cloud-100.png"/>
+                                            </image>
+                                        </ImageView>
+                                        <!--                                        <FontAwesomeIconView fill="#c1c1c1" glyphName="CLOUD_DOWNLOAD" size="3em" />-->
+                                        <Text fx:id="textCenter" strokeType="OUTSIDE" strokeWidth="0.0"
+                                              styleClass="text" text="DownLoad Database"/>
+                                    </children>
+                                </VBox>
+                            </children>
+                        </StackPane>
+                    </children>
+                </VBox>
+            </children>
+            <effect>
+                <DropShadow radius="10.7325" width="23.93"/>
+            </effect>
+        </StackPane>
+    </children>
+</AnchorPane>

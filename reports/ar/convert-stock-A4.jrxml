@@ -1,0 +1,241 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Created with Jaspersoft Studio version 6.20.0.final using JasperReports Library version 6.20.0-2bc7ab61c56f459e8176eb05c7705e145cd400ad  -->
+<jasperReport xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+              xmlns="http://jasperreports.sourceforge.net/jasperreports"
+              xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd"
+              name="convert_stock" columnDirection="RTL" pageWidth="595" pageHeight="842" columnWidth="555"
+              leftMargin="20" rightMargin="20" topMargin="20" bottomMargin="20"
+              uuid="ddffe5f6-3c15-4bb3-aa22-90dbf7ad08cd">
+    <property name="com.jaspersoft.studio.data.sql.tables" value=""/>
+    <property name="com.jaspersoft.studio.data.defaultdataadapter" value="mysql 3306"/>
+    <property name="com.jaspersoft.studio.unit." value="pixel"/>
+    <property name="com.jaspersoft.studio.unit.pageHeight" value="pixel"/>
+    <property name="com.jaspersoft.studio.unit.pageWidth" value="pixel"/>
+    <property name="com.jaspersoft.studio.unit.topMargin" value="pixel"/>
+    <property name="com.jaspersoft.studio.unit.bottomMargin" value="pixel"/>
+    <property name="com.jaspersoft.studio.unit.leftMargin" value="pixel"/>
+    <property name="com.jaspersoft.studio.unit.rightMargin" value="pixel"/>
+    <property name="com.jaspersoft.studio.unit.columnWidth" value="pixel"/>
+    <property name="com.jaspersoft.studio.unit.columnSpacing" value="pixel"/>
+    <property name="com.jaspersoft.studio.data.sql.SQLQueryDesigner.sash.w1" value="265"/>
+    <property name="com.jaspersoft.studio.data.sql.SQLQueryDesigner.sash.w2" value="730"/>
+    <style name="header" forecolor="#A61614" hTextAlign="Center" vTextAlign="Middle" fontSize="12" isBold="true">
+        <box>
+            <pen lineStyle="Solid" lineColor="#911917"/>
+            <topPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+            <leftPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+            <bottomPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+            <rightPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+        </box>
+    </style>
+    <style name="Style1" hTextAlign="Center" vTextAlign="Middle" fontSize="11" isBold="false">
+        <box>
+            <pen lineStyle="Solid"/>
+            <topPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+            <leftPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+            <bottomPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+            <rightPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+        </box>
+    </style>
+    <style name="group style" forecolor="#156185" hTextAlign="Center" vTextAlign="Middle" fontSize="12" isBold="true">
+        <box>
+            <pen lineStyle="Solid"/>
+            <topPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+            <leftPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+            <bottomPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+            <rightPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+        </box>
+    </style>
+    <parameter name="transfer_id" class="java.lang.Integer"/>
+    <parameter name="transfer_end" class="java.lang.Integer"/>
+    <queryString language="SQL">
+        <![CDATA[SELECT id,
+	transfer_date,
+	stock_from,
+	name_from,
+	stock_to,
+	name_to,
+	`nameItem`,
+	item_id,
+	quantity
+FROM account_system_db.stock_transfer_view
+WHERE
+	id BETWEEN  $P{transfer_id} AND $P{transfer_end}]]>
+    </queryString>
+    <field name="id" class="java.lang.Integer">
+        <property name="com.jaspersoft.studio.field.name" value="id"/>
+        <property name="com.jaspersoft.studio.field.label" value="id"/>
+        <property name="com.jaspersoft.studio.field.tree.path" value="stock_transfer_view"/>
+    </field>
+    <field name="transfer_date" class="java.sql.Date">
+        <property name="com.jaspersoft.studio.field.name" value="transfer_date"/>
+        <property name="com.jaspersoft.studio.field.label" value="transfer_date"/>
+        <property name="com.jaspersoft.studio.field.tree.path" value="stock_transfer_view"/>
+    </field>
+    <field name="stock_from" class="java.lang.Integer">
+        <property name="com.jaspersoft.studio.field.name" value="stock_from"/>
+        <property name="com.jaspersoft.studio.field.label" value="stock_from"/>
+        <property name="com.jaspersoft.studio.field.tree.path" value="stock_transfer_view"/>
+    </field>
+    <field name="name_from" class="java.lang.String">
+        <property name="com.jaspersoft.studio.field.name" value="name_from"/>
+        <property name="com.jaspersoft.studio.field.label" value="name_from"/>
+        <property name="com.jaspersoft.studio.field.tree.path" value="stock_transfer_view"/>
+    </field>
+    <field name="stock_to" class="java.lang.Integer">
+        <property name="com.jaspersoft.studio.field.name" value="stock_to"/>
+        <property name="com.jaspersoft.studio.field.label" value="stock_to"/>
+        <property name="com.jaspersoft.studio.field.tree.path" value="stock_transfer_view"/>
+    </field>
+    <field name="name_to" class="java.lang.String">
+        <property name="com.jaspersoft.studio.field.name" value="name_to"/>
+        <property name="com.jaspersoft.studio.field.label" value="name_to"/>
+        <property name="com.jaspersoft.studio.field.tree.path" value="stock_transfer_view"/>
+    </field>
+    <field name="nameItem" class="java.lang.String">
+        <property name="com.jaspersoft.studio.field.name" value="nameItem"/>
+        <property name="com.jaspersoft.studio.field.label" value="nameItem"/>
+        <property name="com.jaspersoft.studio.field.tree.path" value="stock_transfer_view"/>
+    </field>
+    <field name="item_id" class="java.lang.Integer">
+        <property name="com.jaspersoft.studio.field.name" value="item_id"/>
+        <property name="com.jaspersoft.studio.field.label" value="item_id"/>
+        <property name="com.jaspersoft.studio.field.tree.path" value="stock_transfer_view"/>
+    </field>
+    <field name="quantity" class="java.lang.Double">
+        <property name="com.jaspersoft.studio.field.name" value="quantity"/>
+        <property name="com.jaspersoft.studio.field.label" value="quantity"/>
+        <property name="com.jaspersoft.studio.field.tree.path" value="stock_transfer_view"/>
+    </field>
+    <group name="id">
+        <groupExpression><![CDATA[$F{id}]]></groupExpression>
+        <groupHeader>
+            <band height="25">
+                <property name="com.jaspersoft.studio.unit.height" value="px"/>
+                <textField>
+                    <reportElement style="group style" x="360" y="0" width="110" height="25"
+                                   uuid="0c4cdd62-43e7-4812-99ad-a8b297f5680f"/>
+                    <textFieldExpression><![CDATA[$F{transfer_date}]]></textFieldExpression>
+                </textField>
+                <textField>
+                    <reportElement style="group style" x="10" y="0" width="90" height="25"
+                                   uuid="6a2de042-21cb-4d13-8c66-be28e3b6a23a"/>
+                    <textFieldExpression><![CDATA[$F{name_to}]]></textFieldExpression>
+                </textField>
+                <staticText>
+                    <reportElement style="group style" x="470" y="0" width="75" height="25"
+                                   uuid="1c76f976-6d7d-4657-ab2c-35b4f3da3b28"/>
+                    <text><![CDATA[تاريخ التحويل]]></text>
+                </staticText>
+                <staticText>
+                    <reportElement style="group style" x="275" y="0" width="85" height="25"
+                                   uuid="07b651c0-67e7-42b4-9a1a-2425c6e4c9a4"/>
+                    <text><![CDATA[من مخزن]]></text>
+                </staticText>
+                <staticText>
+                    <reportElement style="group style" x="100" y="0" width="85" height="25"
+                                   uuid="e8e46f9a-7382-488f-8465-99f40fa4ceb2"/>
+                    <text><![CDATA[الى مخزن]]></text>
+                </staticText>
+                <textField>
+                    <reportElement style="group style" x="185" y="0" width="90" height="25"
+                                   uuid="eeca34e8-9158-4b5b-ad51-421a31c964ed"/>
+                    <textFieldExpression><![CDATA[$F{name_from}]]></textFieldExpression>
+                </textField>
+            </band>
+        </groupHeader>
+    </group>
+    <background>
+        <band height="802" splitType="Stretch">
+            <rectangle>
+                <reportElement x="0" y="0" width="555" height="802" uuid="2e31d892-0792-419e-9e19-8a4e39124560"/>
+                <graphicElement>
+                    <pen lineWidth="0.5"/>
+                </graphicElement>
+            </rectangle>
+        </band>
+    </background>
+    <title>
+        <band height="33" splitType="Stretch">
+            <staticText>
+                <reportElement x="190" y="0" width="180" height="30" uuid="5d4938f9-95c9-4e2f-b422-d2b3a2b2c855"/>
+                <textElement textAlignment="Center" verticalAlignment="Middle">
+                    <font size="16" isBold="true"/>
+                </textElement>
+                <text><![CDATA[تحويلات المخزن]]></text>
+            </staticText>
+        </band>
+    </title>
+    <columnHeader>
+        <band height="20" splitType="Stretch">
+            <property name="com.jaspersoft.studio.unit.height" value="px"/>
+            <staticText>
+                <reportElement style="header" x="370" y="0" width="175" height="20"
+                               uuid="fbbb69c4-b1cb-452c-9a6f-bf38132e4f59">
+                    <property name="com.jaspersoft.studio.spreadsheet.connectionID"
+                              value="09546e41-31ad-42ff-8942-21298bc5f661"/>
+                </reportElement>
+                <text><![CDATA[كود الصنف]]></text>
+            </staticText>
+            <staticText>
+                <reportElement style="header" x="10" y="0" width="175" height="20"
+                               uuid="85fd30d2-0bd7-4bc5-a446-5cf1c2e4afa8">
+                    <property name="com.jaspersoft.studio.spreadsheet.connectionID"
+                              value="ac0331a7-5e96-46ff-9461-b31e06a56625"/>
+                </reportElement>
+                <text><![CDATA[الكمية]]></text>
+            </staticText>
+            <staticText>
+                <reportElement style="header" x="185" y="0" width="185" height="20"
+                               uuid="e640ee25-ae6c-4391-915f-6432d7c4cd3e">
+                    <property name="com.jaspersoft.studio.spreadsheet.connectionID"
+                              value="7c708d44-05a7-425f-a6ac-56f123f414f1"/>
+                </reportElement>
+                <text><![CDATA[اسم الصنف]]></text>
+            </staticText>
+        </band>
+    </columnHeader>
+    <detail>
+        <band height="20" splitType="Stretch">
+            <property name="com.jaspersoft.studio.unit.height" value="px"/>
+            <textField>
+                <reportElement style="Style1" x="370" y="0" width="175" height="20"
+                               uuid="46bec903-f43e-42f4-b9cc-565236d4f0cb">
+                    <property name="com.jaspersoft.studio.spreadsheet.connectionID"
+                              value="09546e41-31ad-42ff-8942-21298bc5f661"/>
+                </reportElement>
+                <textFieldExpression><![CDATA[$F{item_id}]]></textFieldExpression>
+            </textField>
+            <textField>
+                <reportElement style="Style1" x="10" y="0" width="175" height="20"
+                               uuid="9f342be8-a1a1-4de7-9aea-416322a538d1">
+                    <property name="com.jaspersoft.studio.spreadsheet.connectionID"
+                              value="ac0331a7-5e96-46ff-9461-b31e06a56625"/>
+                </reportElement>
+                <textFieldExpression><![CDATA[$F{quantity}]]></textFieldExpression>
+            </textField>
+            <textField>
+                <reportElement style="Style1" x="185" y="0" width="185" height="20"
+                               uuid="8f3605db-44bc-4443-853d-db14d8c03350">
+                    <property name="com.jaspersoft.studio.spreadsheet.connectionID"
+                              value="7c708d44-05a7-425f-a6ac-56f123f414f1"/>
+                </reportElement>
+                <textFieldExpression><![CDATA[$F{nameItem}]]></textFieldExpression>
+            </textField>
+        </band>
+    </detail>
+    <pageFooter>
+        <band height="31" splitType="Stretch">
+            <textField>
+                <reportElement x="170" y="0" width="100" height="31" uuid="105e6ca3-4fc7-4f8f-b888-601dcba7aed2"/>
+                <textElement textAlignment="Right"/>
+                <textFieldExpression><![CDATA["Page " + $V{PAGE_NUMBER}]]></textFieldExpression>
+            </textField>
+            <textField evaluationTime="Report">
+                <reportElement x="270" y="0" width="100" height="31" uuid="754ee193-dd96-4b7d-bf81-a12b6fc79ae3"/>
+                <textElement textAlignment="Left"/>
+                <textFieldExpression><![CDATA[" of " + $V{PAGE_NUMBER}]]></textFieldExpression>
+            </textField>
+        </band>
+    </pageFooter>
+</jasperReport>

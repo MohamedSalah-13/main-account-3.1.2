@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.Pagination?>
+<?import javafx.scene.layout.AnchorPane?>
+<?import javafx.scene.text.Font?>
+<AnchorPane xmlns:fx="http://javafx.com/fxml/1" id="AnchorPane" fx:id="deleteRows" prefHeight="492.0" prefWidth="557.0"
+            xmlns="http://javafx.com/javafx/8">
+    <children>
+        <Label fx:id="label" layoutX="126" layoutY="120" minHeight="16" minWidth="69"/>
+        <Label layoutX="16.0" layoutY="33.0" text="Table View Example" textFill="WHITE">
+            <font>
+                <Font name="System Bold" size="24.0"/>
+            </font>
+        </Label>
+        <Pagination fx:id="pagination" layoutX="14.0" layoutY="96.0" pageCount="10" prefHeight="384.0"
+                    prefWidth="531.0"/>
+    </children>
+</AnchorPane>

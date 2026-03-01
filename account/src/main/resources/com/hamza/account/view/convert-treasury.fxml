@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<AnchorPane xmlns:fx="http://javafx.com/fxml/1" xmlns="http://javafx.com/javafx/21">
+    <children>
+        <VBox styleClass="dashboard-tile" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0"
+              AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
+            <children>
+                <GridPane styleClass="grid-pane-style">
+                    <columnConstraints>
+                        <ColumnConstraints hgrow="SOMETIMES" maxWidth="-Infinity" minWidth="10.0"/>
+                        <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0"/>
+                        <ColumnConstraints hgrow="SOMETIMES" maxWidth="-Infinity" minWidth="10.0"/>
+                        <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0"/>
+                    </columnConstraints>
+                    <rowConstraints>
+                        <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES"/>
+                        <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES"/>
+                        <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES"/>
+                        <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES"/>
+                        <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES"/>
+                    </rowConstraints>
+                    <children>
+                        <Label fx:id="labelDate" text="Date"/>
+                        <Label fx:id="labelFrom" text="From" GridPane.rowIndex="1"/>
+                        <Label fx:id="labelTo" text="To" GridPane.rowIndex="3"/>
+                        <Label fx:id="labelBalance" text="Balance From" GridPane.columnIndex="2" GridPane.rowIndex="1"/>
+                        <Label fx:id="labelTransfer" text="Transfer" GridPane.rowIndex="2"/>
+                        <Label fx:id="labelAmount" text="Amount" GridPane.columnIndex="2" GridPane.rowIndex="2"/>
+                        <DatePicker fx:id="date" editable="false" GridPane.columnIndex="1"/>
+                        <ComboBox fx:id="comboFrom" prefWidth="150.0" promptText="from" GridPane.columnIndex="1"
+                                  GridPane.rowIndex="1"/>
+                        <ComboBox fx:id="comboTo" prefWidth="150.0" promptText="to" GridPane.columnIndex="1"
+                                  GridPane.rowIndex="3"/>
+                        <TextField fx:id="txtTransfer" maxWidth="-Infinity" promptText="transfer"
+                                   GridPane.columnIndex="1" GridPane.rowIndex="2"/>
+                        <TextField fx:id="txtBalance" editable="false" promptText="balance from"
+                                   GridPane.columnIndex="3" GridPane.rowIndex="1"/>
+                        <TextField fx:id="txtAmount" editable="false" promptText="amount from" GridPane.columnIndex="3"
+                                   GridPane.rowIndex="2"/>
+                        <Label fx:id="labelBalanceTo" text="Balance To" GridPane.columnIndex="2" GridPane.rowIndex="3"/>
+                        <Label fx:id="labelAmountTo" text="Amount To" GridPane.rowIndex="4"/>
+                        <TextField fx:id="txtBalanceTo" editable="false" promptText="balance to"
+                                   GridPane.columnIndex="3" GridPane.rowIndex="3"/>
+                        <TextField fx:id="txtAmountTo" editable="false" promptText="amount to" GridPane.columnIndex="1"
+                                   GridPane.rowIndex="4"/>
+                        <Label fx:id="labelNotes" prefWidth="70.0" text="Notes" GridPane.columnIndex="2"
+                               GridPane.rowIndex="4"/>
+                        <TextArea fx:id="txtNotes" maxHeight="-Infinity" promptText="notes" GridPane.columnIndex="3"
+                                  GridPane.rowIndex="4"/>
+                    </children>
+                </GridPane>
+            </children>
+        </VBox>
+    </children>
+</AnchorPane>

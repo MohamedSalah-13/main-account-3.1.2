@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.text.*?>
+<AnchorPane xmlns:fx="http://javafx.com/fxml/1" prefHeight="30.0" xmlns="http://javafx.com/javafx/21">
+    <children>
+        <BorderPane style="-fx-border-color: #777; -fx-border-width: 1 0 0 0;" AnchorPane.bottomAnchor="0.0"
+                    AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
+            <center>
+                <HBox alignment="CENTER_LEFT" spacing="20.0">
+                    <children>
+                        <Label fx:id="labelDate" text="Date"/>
+                        <Text fx:id="textDate" strokeType="OUTSIDE" strokeWidth="0.0" text="Text Date"/>
+                        <Separator orientation="VERTICAL"/>
+                        <Label fx:id="labelTime" layoutX="10.0" layoutY="10.0" text="Time"/>
+                        <Text fx:id="textTime" layoutX="122.0" layoutY="23.0" strokeType="OUTSIDE" strokeWidth="0.0"
+                              text="Text Time"/>
+                        <Separator layoutX="61.0" layoutY="10.0" orientation="VERTICAL"/>
+                        <Label fx:id="labelSystem" layoutX="38.0" layoutY="10.0" text="System"/>
+                        <Text fx:id="textSystem" layoutX="145.0" layoutY="23.0" strokeType="OUTSIDE" strokeWidth="0.0"
+                              text="Text System"/>
+                        <Separator layoutX="118.0" layoutY="10.0" orientation="VERTICAL"/>
+                        <Label fx:id="labelNameWindows" layoutX="66.0" layoutY="10.0" text="Name Windows"/>
+                        <Text fx:id="textNameWindows" layoutX="168.0" layoutY="23.0" strokeType="OUTSIDE"
+                              strokeWidth="0.0" text="Text Windows"/>
+                    </children>
+                </HBox>
+            </center>
+            <right>
+                <HBox alignment="CENTER_LEFT" spacing="2.0" BorderPane.alignment="CENTER">
+                    <children>
+                        <ProgressBar fx:id="progress" prefWidth="200.0" progress="0.0"/>
+                        <Text fx:id="textProgress" strokeType="OUTSIDE" strokeWidth="0.0"/>
+                        <Text fx:id="textShowData" strokeType="OUTSIDE" strokeWidth="0.0"/>
+                    </children>
+                    <padding>
+                        <Insets bottom="2.0" left="2.0" right="2.0" top="2.0"/>
+                    </padding>
+                </HBox>
+            </right>
+        </BorderPane>
+    </children>
+</AnchorPane>

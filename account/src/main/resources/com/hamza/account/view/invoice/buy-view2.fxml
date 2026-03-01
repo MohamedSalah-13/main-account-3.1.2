@@ -1,0 +1,261 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.text.*?>
+<StackPane xmlns:fx="http://javafx.com/fxml/1" fx:id="stackPane" xmlns="http://javafx.com/javafx/21">
+    <children>
+        <VBox>
+            <children>
+                <ToolBar>
+                    <items>
+                        <Button fx:id="btnNew" layoutX="226.0" layoutY="10.0" mnemonicParsing="false" text="جديد"/>
+                        <Button fx:id="btnSearch" layoutX="182.0" layoutY="13.0" mnemonicParsing="false" text="بحث"/>
+                        <Separator orientation="VERTICAL"/>
+                        <Button fx:id="btnSave" mnemonicParsing="false" text="Save"/>
+                        <Button fx:id="btnPrintSave" mnemonicParsing="false" text="Save And Print"/>
+                        <Button fx:id="btnUpdateItem" layoutX="242.0" layoutY="13.0" mnemonicParsing="false"
+                                text="تعديل الصنف"/>
+                    </items>
+                </ToolBar>
+                <ScrollPane fitToHeight="true" fitToWidth="true" VBox.vgrow="SOMETIMES">
+                    <content>
+                        <VBox fx:id="boxCenter">
+                            <children>
+                                <HBox styleClass="dashboard-tile">
+                                    <children>
+                                        <GridPane fx:id="gridPane" minHeight="-Infinity" minWidth="-Infinity"
+                                                  styleClass="grid-pane-style" HBox.hgrow="SOMETIMES">
+                                            <columnConstraints>
+                                                <ColumnConstraints hgrow="SOMETIMES" maxWidth="-Infinity"
+                                                                   minWidth="10.0"/>
+                                                <ColumnConstraints hgrow="SOMETIMES" maxWidth="-Infinity"
+                                                                   minWidth="10.0"/>
+                                                <ColumnConstraints hgrow="SOMETIMES" maxWidth="-Infinity"
+                                                                   minWidth="10.0"/>
+                                                <ColumnConstraints hgrow="SOMETIMES" maxWidth="-Infinity"
+                                                                   minWidth="10.0"/>
+                                                <ColumnConstraints hgrow="SOMETIMES" maxWidth="-Infinity"
+                                                                   minWidth="10.0"/>
+                                                <ColumnConstraints hgrow="SOMETIMES" maxWidth="-Infinity"
+                                                                   minWidth="10.0"/>
+                                            </columnConstraints>
+                                            <rowConstraints>
+                                                <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES"/>
+                                                <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES"/>
+                                                <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES"/>
+                                                <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES"/>
+                                                <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES"/>
+                                            </rowConstraints>
+                                            <children>
+                                                <Label fx:id="labelNum" text="Code"/>
+                                                <Label fx:id="labelName" text="Name" GridPane.rowIndex="1"/>
+                                                <Label fx:id="labelDate" text="Date" GridPane.columnIndex="2"/>
+                                                <Label fx:id="labelStockName" text="Stoke" GridPane.columnIndex="4"/>
+                                                <Label fx:id="labelDelegate" text="Delegate" GridPane.columnIndex="2"
+                                                       GridPane.rowIndex="1"/>
+                                                <Label fx:id="labelPrice" text="Price" GridPane.columnIndex="2"
+                                                       GridPane.rowIndex="3"/>
+                                                <Label fx:id="labelSearchBy" text="Search" GridPane.columnIndex="2"
+                                                       GridPane.rowIndex="2"/>
+                                                <Label fx:id="labelQuantity" text="Quantity" GridPane.columnIndex="4"
+                                                       GridPane.rowIndex="3"/>
+                                                <Label fx:id="labelCondition" text="Type" GridPane.rowIndex="3"/>
+                                                <Label fx:id="labelItemBalance" text="Item Balance"
+                                                       GridPane.columnIndex="4" GridPane.rowIndex="2"/>
+                                                <Label fx:id="labelBarcode" text="barcode" GridPane.rowIndex="2"/>
+                                                <Label fx:id="labelTotals" text="Totals" GridPane.rowIndex="4"/>
+                                                <Label fx:id="labelTreasury" text="Treasury" GridPane.columnIndex="4"
+                                                       GridPane.rowIndex="1"/>
+                                                <Label fx:id="labelNotes" text="Notes" GridPane.columnIndex="4"
+                                                       GridPane.rowIndex="4"/>
+                                                <TextField fx:id="txtNum" editable="false" GridPane.columnIndex="1"/>
+                                                <DatePicker fx:id="date" editable="false" GridPane.columnIndex="3"/>
+                                                <ComboBox fx:id="comboStock" disable="true"
+                                                          maxWidth="1.7976931348623157E308" GridPane.columnIndex="5"/>
+                                                <ComboBox fx:id="comboDelegate" maxWidth="1.7976931348623157E308"
+                                                          GridPane.columnIndex="3" GridPane.rowIndex="1"/>
+                                                <ComboBox fx:id="comboTreasury" disable="true"
+                                                          maxWidth="1.7976931348623157E308" GridPane.columnIndex="5"
+                                                          GridPane.rowIndex="1"/>
+                                                <TextField fx:id="txtItemBalance" editable="false" promptText="balance"
+                                                           GridPane.columnIndex="5" GridPane.rowIndex="2"/>
+                                                <TextField fx:id="txtBarcode" GridPane.columnIndex="1"
+                                                           GridPane.rowIndex="2"/>
+                                                <ComboBox fx:id="comboType" maxWidth="1.7976931348623157E308"
+                                                          GridPane.columnIndex="1" GridPane.rowIndex="3"/>
+                                                <TextField fx:id="txtPrice" promptText="price" GridPane.columnIndex="3"
+                                                           GridPane.rowIndex="3"/>
+                                                <TextField fx:id="txtQuantity" promptText="quantity"
+                                                           GridPane.columnIndex="5" GridPane.rowIndex="3"/>
+                                                <TextField fx:id="txtTotals" editable="false" GridPane.columnIndex="1"
+                                                           GridPane.rowIndex="4"/>
+                                                <TextArea fx:id="txtNotes" GridPane.columnIndex="5"
+                                                          GridPane.rowIndex="4"/>
+                                                <Button fx:id="btnAdd" mnemonicParsing="false" GridPane.columnIndex="2"
+                                                        GridPane.rowIndex="4"/>
+                                            </children>
+                                        </GridPane>
+                                    </children>
+                                </HBox>
+                                <TableView fx:id="table" minHeight="350.0" VBox.vgrow="SOMETIMES"/>
+                                <VBox>
+                                    <children>
+                                        <HBox minHeight="-Infinity" minWidth="-Infinity" spacing="30.0"
+                                              style="-fx-border-color: #777; -fx-border-width: .5 0 0 0;"
+                                              styleClass="dashboard-tile">
+                                            <children>
+                                                <VBox layoutX="316.0" layoutY="10.0" spacing="5.0">
+                                                    <children>
+                                                        <GridPane styleClass="grid-pane-style">
+                                                            <columnConstraints>
+                                                                <ColumnConstraints hgrow="SOMETIMES"
+                                                                                   maxWidth="-Infinity"
+                                                                                   minWidth="10.0"/>
+                                                                <ColumnConstraints hgrow="SOMETIMES"
+                                                                                   maxWidth="-Infinity"
+                                                                                   minWidth="10.0"/>
+                                                                <ColumnConstraints hgrow="SOMETIMES"
+                                                                                   maxWidth="-Infinity"
+                                                                                   minWidth="10.0"/>
+                                                                <ColumnConstraints hgrow="SOMETIMES"
+                                                                                   maxWidth="-Infinity"
+                                                                                   minWidth="10.0"/>
+                                                                <ColumnConstraints hgrow="SOMETIMES"
+                                                                                   maxWidth="-Infinity"
+                                                                                   minWidth="10.0"/>
+                                                                <ColumnConstraints hgrow="SOMETIMES"
+                                                                                   maxWidth="-Infinity" minWidth="10.0"
+                                                                                   prefWidth="150.0"/>
+                                                                <ColumnConstraints hgrow="SOMETIMES"
+                                                                                   maxWidth="-Infinity"
+                                                                                   minWidth="10.0"/>
+                                                                <ColumnConstraints hgrow="SOMETIMES"
+                                                                                   maxWidth="-Infinity" minWidth="10.0"
+                                                                                   prefWidth="150.0"/>
+                                                            </columnConstraints>
+                                                            <rowConstraints>
+                                                                <RowConstraints minHeight="10.0" prefHeight="30.0"
+                                                                                vgrow="SOMETIMES"/>
+                                                                <RowConstraints minHeight="10.0" prefHeight="30.0"
+                                                                                vgrow="SOMETIMES"/>
+                                                                <RowConstraints minHeight="10.0" prefHeight="30.0"
+                                                                                vgrow="SOMETIMES"/>
+                                                            </rowConstraints>
+                                                            <children>
+                                                                <TextField fx:id="txtPaid" text="0.0"
+                                                                           GridPane.columnIndex="7"
+                                                                           GridPane.rowIndex="1"/>
+                                                                <Label text="المدفوع" GridPane.columnIndex="6"
+                                                                       GridPane.rowIndex="1"/>
+                                                                <Label text="الباقى" GridPane.columnIndex="6"
+                                                                       GridPane.rowIndex="2"/>
+                                                                <TextField fx:id="txtRestAfterPaid" editable="false"
+                                                                           text="0.0" GridPane.columnIndex="7"
+                                                                           GridPane.rowIndex="2"/>
+                                                                <HBox spacing="10.0" GridPane.columnIndex="7">
+                                                                    <children>
+                                                                        <RadioButton fx:id="radioCash"
+                                                                                     mnemonicParsing="false"
+                                                                                     selected="true" text="Cash">
+                                                                            <toggleGroup>
+                                                                                <ToggleGroup fx:id="group1"/>
+                                                                            </toggleGroup>
+                                                                        </RadioButton>
+                                                                        <RadioButton fx:id="radioDeffer" layoutX="10.0"
+                                                                                     layoutY="10.0"
+                                                                                     mnemonicParsing="false"
+                                                                                     text="Deffer"
+                                                                                     toggleGroup="$group1"/>
+                                                                    </children>
+                                                                    <padding>
+                                                                        <Insets bottom="5.0" left="5.0" right="5.0"
+                                                                                top="5.0"/>
+                                                                    </padding>
+                                                                </HBox>
+                                                                <Text strokeType="OUTSIDE" strokeWidth="0.0"
+                                                                      text="نوع الفاتورة" GridPane.columnIndex="6"/>
+                                                                <TextField fx:id="txtOtherDiscount" text="0.0"
+                                                                           GridPane.columnIndex="5"
+                                                                           GridPane.rowIndex="1"/>
+                                                                <TextField fx:id="txtRestAfterDiscount" editable="false"
+                                                                           text="0.0" GridPane.columnIndex="5"
+                                                                           GridPane.rowIndex="2"/>
+                                                                <Label text="الخصم" GridPane.columnIndex="4"
+                                                                       GridPane.rowIndex="1"/>
+                                                                <Label text="الباقى" GridPane.columnIndex="4"
+                                                                       GridPane.rowIndex="2"/>
+                                                                <HBox alignment="CENTER_LEFT" spacing="10.0"
+                                                                      GridPane.columnIndex="5">
+                                                                    <children>
+                                                                        <RadioButton fx:id="radioAmount"
+                                                                                     mnemonicParsing="false"
+                                                                                     selected="true" text="Amount">
+                                                                            <toggleGroup>
+                                                                                <ToggleGroup fx:id="group"/>
+                                                                            </toggleGroup>
+                                                                        </RadioButton>
+                                                                        <RadioButton fx:id="radioRate" layoutX="10.0"
+                                                                                     layoutY="10.0"
+                                                                                     mnemonicParsing="false" text="Rate"
+                                                                                     toggleGroup="$group"/>
+                                                                    </children>
+                                                                    <padding>
+                                                                        <Insets bottom="5.0" left="5.0" right="5.0"
+                                                                                top="5.0"/>
+                                                                    </padding>
+                                                                </HBox>
+                                                                <Text strokeType="OUTSIDE" strokeWidth="0.0"
+                                                                      text="الخصم" GridPane.columnIndex="4"/>
+                                                                <Label fx:id="last1" text="Label"/>
+                                                                <Text fx:id="textSumCount" strokeType="OUTSIDE"
+                                                                      strokeWidth="0.0" styleClass="text-sum" text="0"
+                                                                      GridPane.columnIndex="1"/>
+                                                                <Label fx:id="last2" text="Label"
+                                                                       GridPane.rowIndex="1"/>
+                                                                <Text fx:id="txtSumQuantity" strokeType="OUTSIDE"
+                                                                      strokeWidth="0.0" styleClass="text-sum" text="0"
+                                                                      GridPane.columnIndex="1" GridPane.rowIndex="1"/>
+                                                                <Label fx:id="last3" text="Label"
+                                                                       GridPane.columnIndex="2"/>
+                                                                <Text fx:id="txtBeforeDiscount" strokeType="OUTSIDE"
+                                                                      strokeWidth="0.0" styleClass="text-sum" text="0"
+                                                                      GridPane.columnIndex="3"/>
+                                                                <Label fx:id="last4" text="Label"
+                                                                       GridPane.columnIndex="2" GridPane.rowIndex="1"/>
+                                                                <Text fx:id="txtSumDiscount" strokeType="OUTSIDE"
+                                                                      strokeWidth="0.0" styleClass="text-sum" text="0"
+                                                                      GridPane.columnIndex="3" GridPane.rowIndex="1"/>
+                                                                <Label fx:id="last5" text="Label"
+                                                                       GridPane.columnIndex="2" GridPane.rowIndex="2"/>
+                                                                <Text fx:id="txtSumTotals" strokeType="OUTSIDE"
+                                                                      strokeWidth="0.0" styleClass="text-sum" text="0"
+                                                                      GridPane.columnIndex="3" GridPane.rowIndex="2"/>
+                                                            </children>
+                                                        </GridPane>
+                                                    </children>
+                                                </VBox>
+                                                <VBox alignment="CENTER" maxHeight="-Infinity" prefHeight="100.0"
+                                                      prefWidth="150.0" spacing="10.0" style="-fx-border-color: #777;">
+                                                    <children>
+                                                        <Label fx:id="labelInvoiceTotal" text="Total"/>
+                                                        <Text fx:id="textInvoiceTotal" strokeType="OUTSIDE"
+                                                              strokeWidth="0.0" styleClass="text-sum" text="0"/>
+                                                    </children>
+                                                    <padding>
+                                                        <Insets bottom="5.0" left="5.0" right="5.0" top="5.0"/>
+                                                    </padding>
+                                                </VBox>
+                                            </children>
+                                        </HBox>
+                                    </children>
+                                </VBox>
+                            </children>
+                        </VBox>
+                    </content>
+                </ScrollPane>
+            </children>
+        </VBox>
+    </children>
+</StackPane>

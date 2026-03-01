@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.DatePicker?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.layout.HBox?>
+<HBox xmlns:fx="http://javafx.com/fxml/1" alignment="CENTER_LEFT" spacing="5.0" xmlns="http://javafx.com/javafx/21"
+      fx:controller="com.hamza.account.controller.others.SearchDateController">
+    <children>
+        <Label fx:id="labelDateFrom" text="from"/>
+        <DatePicker fx:id="dateFrom" editable="false" maxWidth="-Infinity" minWidth="-Infinity" prefWidth="150.0"/>
+        <Label fx:id="labelDateTo" text="to"/>
+        <DatePicker fx:id="dateTo" editable="false" maxWidth="-Infinity" minWidth="-Infinity" prefWidth="150.0"/>
+    </children>
+</HBox>

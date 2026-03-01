@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<AnchorPane xmlns:fx="http://javafx.com/fxml/1" xmlns="http://javafx.com/javafx/21">
+    <children>
+        <VBox layoutX="5.0" layoutY="5.0" styleClass="dashboard-tile" AnchorPane.bottomAnchor="0.0"
+              AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
+            <children>
+                <GridPane minHeight="-Infinity" minWidth="-Infinity" styleClass="grid-pane-style">
+                    <columnConstraints>
+                        <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0"/>
+                        <ColumnConstraints hgrow="SOMETIMES" maxWidth="-Infinity" minWidth="10.0"/>
+                    </columnConstraints>
+                    <rowConstraints>
+                        <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES"/>
+                        <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES"/>
+                        <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES"/>
+                        <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES"/>
+                        <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES"/>
+                    </rowConstraints>
+                    <children>
+                        <Label fx:id="labelCode" text="Code"/>
+                        <Label fx:id="labelName" text="Name" GridPane.rowIndex="1"/>
+                        <Label fx:id="labelActive" text="Active" GridPane.rowIndex="4"/>
+                        <Label fx:id="labelPass" text="Password" GridPane.rowIndex="2"/>
+                        <TextField fx:id="txtCode" editable="false" promptText="code" GridPane.columnIndex="1"/>
+                        <TextField fx:id="txtName" promptText="name" GridPane.columnIndex="1" GridPane.rowIndex="1"/>
+                        <PasswordField fx:id="txtPass" promptText="pass" GridPane.columnIndex="1"
+                                       GridPane.rowIndex="2"/>
+                        <CheckBox fx:id="checkShowPass" mnemonicParsing="false" text="Show Password"
+                                  GridPane.columnIndex="1" GridPane.rowIndex="3"/>
+                        <ComboBox fx:id="comboActive" maxWidth="1.7976931348623157E308" GridPane.columnIndex="1"
+                                  GridPane.rowIndex="4"/>
+                    </children>
+                </GridPane>
+            </children>
+        </VBox>
+    </children>
+</AnchorPane>

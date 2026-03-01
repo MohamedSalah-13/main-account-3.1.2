@@ -1,0 +1,18 @@
+
+.progress-bar {
+    -fx-background-color: transparent;
+}
+
+.progress-bar .bar {
+    -fx-background-insets: 0.0 .0 .0;
+    -fx-padding: .3em;
+}
+
+.progress-bar .track {
+    -fx-background-color: #e0e0e0;
+}
+
+
+.box-progress, .progress-bar .bar {
+    -fx-background-color: #7a0f0f;
+}

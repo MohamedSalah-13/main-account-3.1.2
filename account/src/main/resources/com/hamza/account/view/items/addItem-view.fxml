@@ -1,0 +1,329 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.image.ImageView?>
+<?import javafx.scene.layout.*?>
+<StackPane xmlns:fx="http://javafx.com/fxml/1" fx:id="stackPane" xmlns="http://javafx.com/javafx/21">
+    <children>
+        <AnchorPane>
+            <children>
+                <VBox fx:id="box" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0"
+                      AnchorPane.topAnchor="0.0">
+                    <children>
+                        <ToolBar prefHeight="40.0">
+                            <items>
+                                <Button fx:id="btnSave" mnemonicParsing="false" text="Save"/>
+                                <Button fx:id="btnSaveDuplicate" layoutX="10.0" layoutY="13.0" mnemonicParsing="false"
+                                        text="Save &amp;"/>
+                                <Button fx:id="btnBarcode" layoutX="10.0" layoutY="12.0" mnemonicParsing="false"
+                                        text="barcode"/>
+                                <Button fx:id="btnAddMainGroup" mnemonicParsing="false" text="مجموعة رئيسية"/>
+                                <Button fx:id="btnAddSubGroup" mnemonicParsing="false" text="مجموعة فرعية"/>
+                                <Separator orientation="VERTICAL"/>
+                                <Button fx:id="btnClose" cancelButton="true" layoutX="10.0" layoutY="13.0"
+                                        mnemonicParsing="false" text="Close"/>
+                            </items>
+                        </ToolBar>
+                        <ScrollPane fitToHeight="true" fitToWidth="true" VBox.vgrow="SOMETIMES">
+                            <content>
+                                <VBox minHeight="-Infinity" minWidth="-Infinity">
+                                    <children>
+                                        <HBox spacing="5.0">
+                                            <children>
+                                                <VBox>
+                                                    <children>
+                                                        <GridPane minHeight="-Infinity" minWidth="-Infinity"
+                                                                  styleClass="grid-pane-style">
+                                                            <columnConstraints>
+                                                                <ColumnConstraints hgrow="SOMETIMES"
+                                                                                   maxWidth="-Infinity"
+                                                                                   minWidth="10.0"/>
+                                                                <ColumnConstraints hgrow="SOMETIMES"
+                                                                                   maxWidth="-Infinity"
+                                                                                   minWidth="10.0"/>
+                                                                <ColumnConstraints hgrow="SOMETIMES"
+                                                                                   maxWidth="-Infinity"
+                                                                                   minWidth="10.0"/>
+                                                                <ColumnConstraints hgrow="SOMETIMES"
+                                                                                   maxWidth="-Infinity"
+                                                                                   minWidth="10.0"/>
+                                                            </columnConstraints>
+                                                            <rowConstraints>
+                                                                <RowConstraints minHeight="10.0" prefHeight="30.0"
+                                                                                vgrow="SOMETIMES"/>
+                                                                <RowConstraints minHeight="10.0" prefHeight="30.0"
+                                                                                vgrow="SOMETIMES"/>
+                                                                <RowConstraints minHeight="10.0" prefHeight="30.0"
+                                                                                vgrow="SOMETIMES"/>
+                                                                <RowConstraints minHeight="10.0" prefHeight="30.0"
+                                                                                vgrow="SOMETIMES"/>
+                                                                <RowConstraints minHeight="10.0" prefHeight="30.0"
+                                                                                vgrow="SOMETIMES"/>
+                                                                <RowConstraints minHeight="10.0" prefHeight="30.0"
+                                                                                vgrow="SOMETIMES"/>
+                                                            </rowConstraints>
+                                                            <children>
+                                                                <Label fx:id="labelCode" text="Code"/>
+                                                                <Label fx:id="labelBarcode" text="Barcode"
+                                                                       GridPane.columnIndex="2"/>
+                                                                <Label fx:id="labelName" text="Name"
+                                                                       GridPane.rowIndex="1"/>
+                                                                <Label fx:id="labelBuyPrice" text="Buy Price"
+                                                                       GridPane.columnIndex="2" GridPane.rowIndex="1"/>
+                                                                <Label fx:id="labelSelPrice" text="Sel Price"
+                                                                       GridPane.rowIndex="2"/>
+                                                                <Label fx:id="labelMiniQuantity" text="Mini Quantity"
+                                                                       GridPane.columnIndex="2" GridPane.rowIndex="4"/>
+                                                                <Label fx:id="labelFirstBalance" text="First Balance"
+                                                                       GridPane.rowIndex="4"/>
+                                                                <TextField fx:id="txtCode" disable="true"
+                                                                           promptText="code" GridPane.columnIndex="1"/>
+                                                                <TextField fx:id="txtBarcode" promptText="barcode"
+                                                                           GridPane.columnIndex="3"/>
+                                                                <TextField fx:id="txtItemName" promptText="name"
+                                                                           GridPane.columnIndex="1"
+                                                                           GridPane.rowIndex="1"/>
+                                                                <TextField fx:id="txtBuyPrice" promptText="buy price"
+                                                                           GridPane.columnIndex="3"
+                                                                           GridPane.rowIndex="1"/>
+                                                                <TextField fx:id="txtSelPrice" promptText="sel price"
+                                                                           GridPane.columnIndex="1"
+                                                                           GridPane.rowIndex="2"/>
+                                                                <TextField fx:id="txtBalance" promptText="balance"
+                                                                           GridPane.columnIndex="1"
+                                                                           GridPane.rowIndex="4"/>
+                                                                <TextField fx:id="txtMiniQuantity" promptText="mini"
+                                                                           GridPane.columnIndex="3"
+                                                                           GridPane.rowIndex="4"/>
+                                                                <Label fx:id="labelMainGroup" text="Main Group"
+                                                                       GridPane.rowIndex="5"/>
+                                                                <Label fx:id="labelSupGroup" text="Sup Group"
+                                                                       GridPane.columnIndex="2" GridPane.rowIndex="5"/>
+                                                                <ComboBox fx:id="comboMainGroup"
+                                                                          maxWidth="1.7976931348623157E308"
+                                                                          GridPane.columnIndex="1"
+                                                                          GridPane.rowIndex="5"/>
+                                                                <ComboBox fx:id="comboSupGroup"
+                                                                          maxWidth="1.7976931348623157E308"
+                                                                          GridPane.columnIndex="3"
+                                                                          GridPane.rowIndex="5"/>
+                                                                <TextField fx:id="txtSelPrice2" promptText="price2"
+                                                                           GridPane.columnIndex="3"
+                                                                           GridPane.rowIndex="2"/>
+                                                                <TextField fx:id="txtSelPrice3" promptText="price3"
+                                                                           GridPane.columnIndex="1"
+                                                                           GridPane.rowIndex="3"/>
+                                                                <Label fx:id="labelSelPrice2" text="Sel Price2"
+                                                                       GridPane.columnIndex="2" GridPane.rowIndex="2"/>
+                                                                <Label fx:id="labelSelPrice3" text="Sel Price3"
+                                                                       GridPane.rowIndex="3"/>
+                                                                <Label fx:id="labelType" text="Type"
+                                                                       GridPane.columnIndex="2" GridPane.rowIndex="3"/>
+                                                                <ComboBox fx:id="comboType"
+                                                                          maxWidth="1.7976931348623157E308"
+                                                                          GridPane.columnIndex="3"
+                                                                          GridPane.rowIndex="3"/>
+                                                            </children>
+                                                        </GridPane>
+                                                    </children>
+                                                </VBox>
+                                                <VBox minHeight="-Infinity" minWidth="-Infinity">
+                                                    <children>
+                                                        <VBox alignment="TOP_CENTER" spacing="10.0"
+                                                              styleClass="grid-pane-style">
+                                                            <children>
+                                                                <ImageView fx:id="imageAdd" fitHeight="150.0"
+                                                                           fitWidth="200.0" pickOnBounds="true"
+                                                                           preserveRatio="true"/>
+                                                                <HBox alignment="CENTER" spacing="5.0">
+                                                                    <children>
+                                                                        <Button fx:id="btnAddImage"
+                                                                                mnemonicParsing="false"
+                                                                                text="إضافة صورة"/>
+                                                                        <Button fx:id="btnClearImage" layoutX="10.0"
+                                                                                layoutY="10.0" mnemonicParsing="false"
+                                                                                text="حذف"/>
+                                                                    </children>
+                                                                </HBox>
+                                                            </children>
+                                                        </VBox>
+                                                    </children>
+                                                </VBox>
+                                            </children>
+                                            <padding>
+                                                <Insets bottom="5.0" left="5.0" right="5.0" top="5.0"/>
+                                            </padding>
+                                        </HBox>
+                                        <TabPane fx:id="tabPane" tabClosingPolicy="UNAVAILABLE" VBox.vgrow="SOMETIMES">
+                                            <tabs>
+                                                <Tab text="الوحدات">
+                                                    <content>
+                                                        <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="180.0">
+                                                            <children>
+                                                                <VBox spacing="5.0" AnchorPane.bottomAnchor="0.0"
+                                                                      AnchorPane.leftAnchor="0.0"
+                                                                      AnchorPane.rightAnchor="0.0"
+                                                                      AnchorPane.topAnchor="0.0">
+                                                                    <children>
+                                                                        <HBox alignment="CENTER_LEFT"
+                                                                              minHeight="-Infinity" spacing="5.0">
+                                                                            <children>
+                                                                                <GridPane styleClass="grid-pane-style"
+                                                                                          HBox.hgrow="SOMETIMES">
+                                                                                    <columnConstraints>
+                                                                                        <ColumnConstraints
+                                                                                                hgrow="SOMETIMES"
+                                                                                                maxWidth="-Infinity"
+                                                                                                minWidth="10.0"/>
+                                                                                        <ColumnConstraints
+                                                                                                hgrow="SOMETIMES"
+                                                                                                maxWidth="-Infinity"
+                                                                                                minWidth="10.0"/>
+                                                                                        <ColumnConstraints
+                                                                                                hgrow="SOMETIMES"
+                                                                                                maxWidth="-Infinity"
+                                                                                                minWidth="10.0"/>
+                                                                                        <ColumnConstraints
+                                                                                                hgrow="SOMETIMES"
+                                                                                                maxWidth="-Infinity"
+                                                                                                minWidth="10.0"/>
+                                                                                    </columnConstraints>
+                                                                                    <rowConstraints>
+                                                                                        <RowConstraints minHeight="10.0"
+                                                                                                        prefHeight="30.0"
+                                                                                                        vgrow="SOMETIMES"/>
+                                                                                        <RowConstraints minHeight="10.0"
+                                                                                                        prefHeight="30.0"
+                                                                                                        vgrow="SOMETIMES"/>
+                                                                                    </rowConstraints>
+                                                                                    <children>
+                                                                                        <Label text="الوحدة الكبرى"/>
+                                                                                        <ComboBox
+                                                                                                fx:id="comboOtherTypes"
+                                                                                                maxWidth="1.7976931348623157E308"
+                                                                                                GridPane.columnIndex="1"/>
+                                                                                        <Label text="الكمية"
+                                                                                               GridPane.columnIndex="2"/>
+                                                                                        <TextField
+                                                                                                fx:id="textUnitQuantity"
+                                                                                                prefWidth="80.0"
+                                                                                                GridPane.columnIndex="3"/>
+                                                                                        <Label text="الباركود"
+                                                                                               GridPane.rowIndex="1"/>
+                                                                                        <TextField
+                                                                                                fx:id="textUnitBarcode"
+                                                                                                GridPane.columnIndex="1"
+                                                                                                GridPane.rowIndex="1"/>
+                                                                                        <Button fx:id="btnAdd"
+                                                                                                mnemonicParsing="false"
+                                                                                                GridPane.columnIndex="2"
+                                                                                                GridPane.rowIndex="1"/>
+                                                                                    </children>
+                                                                                </GridPane>
+                                                                            </children>
+                                                                            <padding>
+                                                                                <Insets bottom="10.0" left="10.0"
+                                                                                        right="10.0" top="10.0"/>
+                                                                            </padding>
+                                                                        </HBox>
+                                                                        <TableView fx:id="tableUnits"
+                                                                                   VBox.vgrow="SOMETIMES"/>
+                                                                    </children>
+                                                                    <padding>
+                                                                        <Insets bottom="5.0" left="5.0" right="5.0"
+                                                                                top="5.0"/>
+                                                                    </padding>
+                                                                </VBox>
+                                                            </children>
+                                                        </AnchorPane>
+                                                    </content>
+                                                </Tab>
+                                                <Tab text="أخرى">
+                                                    <content>
+                                                        <AnchorPane minHeight="0.0" minWidth="0.0">
+                                                            <children>
+                                                                <VBox spacing="20.0" AnchorPane.bottomAnchor="0.0"
+                                                                      AnchorPane.leftAnchor="0.0"
+                                                                      AnchorPane.rightAnchor="0.0"
+                                                                      AnchorPane.topAnchor="0.0">
+                                                                    <children>
+                                                                        <HBox spacing="10.0">
+                                                                            <children>
+                                                                                <CheckBox fx:id="checkItemActive"
+                                                                                          minWidth="-Infinity"
+                                                                                          mnemonicParsing="false"
+                                                                                          text="صنف مفعل"/>
+                                                                                <CheckBox fx:id="checkItemActive1"
+                                                                                          minWidth="-Infinity"
+                                                                                          mnemonicParsing="false"
+                                                                                          text="صنف له وزن"/>
+                                                                            </children>
+                                                                        </HBox>
+                                                                        <CheckBox fx:id="checkItemValidate"
+                                                                                  disable="true" minWidth="-Infinity"
+                                                                                  mnemonicParsing="false"
+                                                                                  text="تفعيل تاريخ الصلاحية"/>
+                                                                        <GridPane fx:id="gridValidate" disable="true"
+                                                                                  styleClass="grid-pane-style">
+                                                                            <columnConstraints>
+                                                                                <ColumnConstraints hgrow="SOMETIMES"
+                                                                                                   maxWidth="-Infinity"
+                                                                                                   minWidth="10.0"
+                                                                                                   prefWidth="80.0"/>
+                                                                                <ColumnConstraints hgrow="SOMETIMES"
+                                                                                                   maxWidth="-Infinity"
+                                                                                                   minWidth="10.0"
+                                                                                                   prefWidth="70.0"/>
+                                                                                <ColumnConstraints hgrow="SOMETIMES"
+                                                                                                   maxWidth="-Infinity"
+                                                                                                   minWidth="10.0"/>
+                                                                            </columnConstraints>
+                                                                            <rowConstraints>
+                                                                                <RowConstraints minHeight="10.0"
+                                                                                                prefHeight="30.0"
+                                                                                                vgrow="SOMETIMES"/>
+                                                                                <RowConstraints minHeight="10.0"
+                                                                                                prefHeight="30.0"
+                                                                                                vgrow="SOMETIMES"/>
+                                                                            </rowConstraints>
+                                                                            <children>
+                                                                                <Label text="بعد"/>
+                                                                                <Label text="التنبيه قبل"
+                                                                                       GridPane.rowIndex="1"/>
+                                                                                <TextField fx:id="textDaysValidate"
+                                                                                           text="0"
+                                                                                           GridPane.columnIndex="1"/>
+                                                                                <TextField fx:id="textAlertBefore"
+                                                                                           text="0"
+                                                                                           GridPane.columnIndex="1"
+                                                                                           GridPane.rowIndex="1"/>
+                                                                                <Label text="من تاريخ الانتاج"
+                                                                                       GridPane.columnIndex="2"/>
+                                                                                <Label text="يوم من تاريخ الصلاحية"
+                                                                                       GridPane.columnIndex="2"
+                                                                                       GridPane.rowIndex="1"/>
+                                                                            </children>
+                                                                        </GridPane>
+                                                                    </children>
+                                                                    <padding>
+                                                                        <Insets bottom="10.0" left="10.0" right="10.0"
+                                                                                top="10.0"/>
+                                                                    </padding>
+                                                                </VBox>
+                                                            </children>
+                                                        </AnchorPane>
+                                                    </content>
+                                                </Tab>
+                                            </tabs>
+                                        </TabPane>
+                                    </children>
+                                </VBox>
+                            </content>
+                        </ScrollPane>
+                    </children>
+                </VBox>
+            </children>
+        </AnchorPane>
+    </children>
+</StackPane>
