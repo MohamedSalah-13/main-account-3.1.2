@@ -71,6 +71,7 @@ import static com.hamza.controlsfx.text.NumberUtils.roundToTwoDecimalPlaces;
 @FxmlPath(pathFile = "pos/pos-view.fxml")
 public class PosController extends ButtonSetting {
 
+    private static final int PAGE_SIZE = 100;
     private final Publisher<String> publisherAddCustomer;
     private final DaoFactory daoFactory;
     private final List<Button> paneList = new ArrayList<>();
@@ -78,11 +79,20 @@ public class PosController extends ButtonSetting {
     private final NameController<Sales, Total_Sales, Customers, CustomerAccount> nameController;
     private final DataInterface<Sales, Total_Sales, Customers, CustomerAccount> dataInterface;
     private final Map<BasePurchasesAndSales, String> originalNames = new HashMap<>();
+    private final Map<Integer, List<Button>> groupButtonsCache = new HashMap<>();
+    private final Map<Integer, List<ItemsModel>> groupItemsCache = new HashMap<>();
+    private final Map<Integer, Button> itemButtonCache = new HashMap<>();
+    private final Map<Integer, ItemRef> itemRefById = new HashMap<>();
+    private final Map<String, List<ItemRef>> searchIndex = new HashMap<>();
+    private final List<ItemRef> allIndexedItems = new ArrayList<>();
+    private final Label loadingLabel = new Label("جاري التحميل...");
+    private final Button loadMoreButton = new Button("المزيد");
     private List<ItemsModel> itemsList;
     private List<MainGroups> mainGroupList = new ArrayList<>();
     private MainGroups selectedMainGroup;
-    private final Map<Integer, List<Button>> groupButtonsCache = new HashMap<>();
-    private final Label loadingLabel = new Label("جاري التحميل...");
+    private List<Button> currentPagedButtons = new ArrayList<>();
+    private int currentPage = 0;
+    private boolean inSearchMode = false;
     private int customerId = 0;
     @FXML
     private FlowPane hBox;
@@ -130,11 +140,11 @@ public class PosController extends ButtonSetting {
     @FXML
     public void initialize() {
         maskerPaneSetting = new MaskerPaneSetting(stackPane);
+        setupLoadMoreButton();
         loadData();
         getTextCode();
         buttonGraphic();
         permissionButtons();
-
 
 
         addTable();
@@ -181,7 +191,7 @@ public class PosController extends ButtonSetting {
         mainGroupList.forEach(mainGroup -> {
             var e = new Button(mainGroup.getName());
             e.setOnAction(event -> {
-                loadItemsByMainGroup(mainGroup);
+                loadItemsByMainGroup(mainGroup, false);
             });
             hBox.getChildren().add(e);
         });
@@ -207,35 +217,22 @@ public class PosController extends ButtonSetting {
 
         if (!mainGroupList.isEmpty() && selectedMainGroup == null) {
             selectedMainGroup = mainGroupList.getFirst();
-            loadItemsByMainGroup(selectedMainGroup);
+            loadItemsByMainGroup(selectedMainGroup, false);
         }
     }
 
-    private void loadItemsByMainGroup(MainGroups mainGroup) {
+    private void loadItemsByMainGroup(MainGroups mainGroup, boolean forceReload) {
         selectedMainGroup = mainGroup;
-        var cachedButtons = groupButtonsCache.get(mainGroup.getId());
-        if (cachedButtons != null) {
-            paneList.clear();
-            paneList.addAll(cachedButtons);
-            flowPane.getChildren().setAll(cachedButtons);
-            return;
-        }
+        if (!forceReload && tryUseCachedGroup(mainGroup.getId())) return;
+
         flowPane.getChildren().setAll(loadingLabel);
         maskerPaneSetting.showMaskerPane(() -> {
             paneList.clear();
-            try {
-                itemsList = itemsService.getMainItemsListWithoutInactiveByMainGroupId(mainGroup.getId());
-            } catch (DaoException e) {
-                logError(e);
-                itemsList = new ArrayList<>();
-            }
-            itemsList.forEach(itemsModel -> paneList.add(getButton(itemsModel)));
-            groupButtonsCache.put(mainGroup.getId(), new ArrayList<>(paneList));
+            itemsList = loadItemsForGroup(mainGroup.getId());
+            paneList.addAll(buildButtons(itemsList));
+            cacheGroup(mainGroup.getId(), itemsList, paneList);
         });
-        maskerPaneSetting.getVoidTask().setOnSucceeded(event -> {
-            flowPane.getChildren().clear();
-            flowPane.getChildren().addAll(paneList);
-        });
+        maskerPaneSetting.getVoidTask().setOnSucceeded(event -> showGroupFromCache(mainGroup.getId()));
     }
 
     private List<Area> getAreas() {
@@ -335,11 +332,6 @@ public class PosController extends ButtonSetting {
             }
         });
 
-//        btnShowAll.setOnAction(e -> {
-//            textSearch.clear();
-//            loadPane(itemsList);
-//        });
-
     }
 
     private void addTable() {
@@ -434,29 +426,17 @@ public class PosController extends ButtonSetting {
     private void refreshData() {
         maskerPaneSetting.showMaskerPane(LoadDataAndList::get2ItemsLoad);
         maskerPaneSetting.getVoidTask().setOnSucceeded(event -> {
-            groupButtonsCache.clear();
+            clearGroupCache();
             loadData();
         });
     }
 
     private void loadData() {
-        maskerPaneSetting.showMaskerPane(() -> {
-            paneList.clear();
-            itemsList = new ArrayList<>();
-            if (selectedMainGroup != null) {
-                try {
-                    itemsList = itemsService.getMainItemsListWithoutInactiveByMainGroupId(selectedMainGroup.getId());
-                } catch (DaoException e) {
-                    logError(e);
-                }
-                itemsList.forEach(itemsModel -> paneList.add(getButton(itemsModel)));
-                groupButtonsCache.put(selectedMainGroup.getId(), new ArrayList<>(paneList));
-            }
-        });
-        maskerPaneSetting.getVoidTask().setOnSucceeded(event -> {
+        if (selectedMainGroup != null) {
+            loadItemsByMainGroup(selectedMainGroup, true);
+        } else {
             flowPane.getChildren().clear();
-            flowPane.getChildren().addAll(paneList);
-        });
+        }
     }
 
     @NotNull
@@ -789,19 +769,26 @@ public class PosController extends ButtonSetting {
     }
 
     private void refreshFlowPaneNodes(String searchText) {
-        if (searchText != null) {
-            List<Node> sortedNodes = new ArrayList<>(paneList);
-            sortedNodes.sort((n1, n2) -> {
-                boolean m1 = n1.getId().contains(searchText.toLowerCase());
-                boolean m2 = n2.getId().contains(searchText.toLowerCase());
-                return Boolean.compare(m2, m1);
-            });
-            flowPane.getChildren().setAll(sortedNodes);
-            flowPane.getChildren().forEach(node ->
-                    node.setVisible(node.getId().contains(searchText.toLowerCase())));
-        } else {
-            flowPane.getChildren().forEach(node -> node.setVisible(true));
+        if (searchText == null || searchText.isBlank()) {
+            inSearchMode = false;
+            if (selectedMainGroup != null) {
+                showGroupFromCache(selectedMainGroup.getId());
+            }
+            return;
         }
+
+        var lowered = normalizeSearchText(searchText);
+        flowPane.getChildren().setAll(loadingLabel);
+        maskerPaneSetting.showMaskerPane(() -> {
+            ensureAllGroupsIndexed();
+            List<ItemRef> results = searchItems(lowered);
+            results.sort((a, b) -> a.item.getNameItem().compareToIgnoreCase(b.item.getNameItem()));
+            currentPagedButtons = buildButtonsFromRefs(results);
+        });
+        maskerPaneSetting.getVoidTask().setOnSucceeded(event -> {
+            inSearchMode = true;
+            setPagedView(currentPagedButtons, true);
+        });
     }
 
     private void onCustomerNameChanged(String newValue) {
@@ -934,4 +921,189 @@ public class PosController extends ButtonSetting {
             logError(e);
         }
     }
+
+    private void clearGroupCache() {
+        groupButtonsCache.clear();
+        groupItemsCache.clear();
+        itemButtonCache.clear();
+        itemRefById.clear();
+        searchIndex.clear();
+        allIndexedItems.clear();
+    }
+
+    private List<ItemsModel> loadItemsForGroup(int mainGroupId) {
+        try {
+            return itemsService.getMainItemsListWithoutInactiveByMainGroupId(mainGroupId);
+        } catch (DaoException e) {
+            logError(e);
+            return new ArrayList<>();
+        }
+    }
+
+    private List<Button> buildButtons(List<ItemsModel> items) {
+        List<Button> buttons = new ArrayList<>(items.size());
+        for (ItemsModel itemsModel : items) {
+            buttons.add(getButtonCached(itemsModel));
+        }
+        return buttons;
+    }
+
+    private List<Button> buildButtonsFromRefs(List<ItemRef> refs) {
+        List<Button> buttons = new ArrayList<>(refs.size());
+        for (ItemRef ref : refs) {
+            buttons.add(getButtonCached(ref.item));
+        }
+        return buttons;
+    }
+
+    private Button getButtonCached(ItemsModel itemsModel) {
+        return itemButtonCache.computeIfAbsent(itemsModel.getId(), id -> getButton(itemsModel));
+    }
+
+    private void cacheGroup(int mainGroupId, List<ItemsModel> items, List<Button> buttons) {
+        groupItemsCache.put(mainGroupId, new ArrayList<>(items));
+        groupButtonsCache.put(mainGroupId, new ArrayList<>(buttons));
+        indexItems(mainGroupId, items);
+    }
+
+    private boolean tryUseCachedGroup(int mainGroupId) {
+        var cachedButtons = groupButtonsCache.get(mainGroupId);
+        if (cachedButtons == null) return false;
+        paneList.clear();
+        paneList.addAll(cachedButtons);
+        setPagedView(cachedButtons, false);
+        return true;
+    }
+
+    private void showGroupFromCache(int mainGroupId) {
+        var cachedButtons = groupButtonsCache.get(mainGroupId);
+        if (cachedButtons == null) return;
+        setPagedView(cachedButtons, false);
+    }
+
+    private void setPagedView(List<Button> buttons, boolean searchMode) {
+        inSearchMode = searchMode;
+        currentPagedButtons = buttons;
+        currentPage = 0;
+        showPage(true);
+    }
+
+    private void showPage(boolean reset) {
+        int fromIndex = 0;
+        if (!reset) {
+            fromIndex = currentPage * PAGE_SIZE;
+        }
+        int toIndex = Math.min(currentPagedButtons.size(), (currentPage + 1) * PAGE_SIZE);
+        if (reset) {
+            flowPane.getChildren().setAll(currentPagedButtons.subList(0, toIndex));
+        } else {
+            flowPane.getChildren().addAll(currentPagedButtons.subList(fromIndex, toIndex));
+        }
+
+        if (toIndex < currentPagedButtons.size()) {
+            if (!flowPane.getChildren().contains(loadMoreButton)) {
+                flowPane.getChildren().add(loadMoreButton);
+            }
+        } else {
+            flowPane.getChildren().remove(loadMoreButton);
+        }
+    }
+
+    private void showNextPage() {
+        int nextPage = currentPage + 1;
+        int maxPages = (currentPagedButtons.size() + PAGE_SIZE - 1) / PAGE_SIZE;
+        if (nextPage >= maxPages) return;
+        currentPage = nextPage;
+        showPage(false);
+    }
+
+    private void setupLoadMoreButton() {
+        loadMoreButton.setOnAction(e -> showNextPage());
+    }
+
+    private void ensureAllGroupsIndexed() {
+        for (MainGroups group : mainGroupList) {
+            ensureGroupItemsCached(group.getId());
+        }
+    }
+
+    private void ensureGroupItemsCached(int mainGroupId) {
+        if (groupItemsCache.containsKey(mainGroupId)) return;
+        List<ItemsModel> items = loadItemsForGroup(mainGroupId);
+        groupItemsCache.put(mainGroupId, new ArrayList<>(items));
+        indexItems(mainGroupId, items);
+    }
+
+    private void indexItems(int mainGroupId, List<ItemsModel> items) {
+        for (ItemsModel item : items) {
+            if (itemRefById.containsKey(item.getId())) continue;
+            ItemRef ref = new ItemRef(item, mainGroupId);
+            itemRefById.put(item.getId(), ref);
+            allIndexedItems.add(ref);
+            for (String token : tokenize(item.getNameItem())) {
+                searchIndex.computeIfAbsent(token, k -> new ArrayList<>()).add(ref);
+            }
+        }
+    }
+
+    private List<ItemRef> searchItems(String text) {
+        var tokens = tokenize(text);
+        if (tokens.isEmpty()) return new ArrayList<>(allIndexedItems);
+
+        List<ItemRef> candidates = null;
+        for (String token : tokens) {
+            var list = searchIndex.get(token);
+            if (list == null) return new ArrayList<>();
+            candidates = intersectById(candidates, list);
+            if (candidates.isEmpty()) return candidates;
+        }
+
+        String lowered = normalizeSearchText(text);
+        List<ItemRef> filtered = new ArrayList<>();
+        for (ItemRef ref : candidates) {
+            if (normalizeSearchText(ref.item.getNameItem()).contains(lowered)) {
+                filtered.add(ref);
+            }
+        }
+        return filtered;
+    }
+
+    private List<ItemRef> intersectById(List<ItemRef> a, List<ItemRef> b) {
+        if (a == null) return new ArrayList<>(b);
+        Map<Integer, ItemRef> map = new HashMap<>();
+        for (ItemRef ref : b) {
+            map.put(ref.item.getId(), ref);
+        }
+        List<ItemRef> out = new ArrayList<>();
+        for (ItemRef ref : a) {
+            if (map.containsKey(ref.item.getId())) out.add(ref);
+        }
+        return out;
+    }
+
+    private List<String> tokenize(String text) {
+        String normalized = normalizeSearchText(text);
+        if (normalized.isBlank()) return List.of();
+        String[] parts = normalized.split("\\s+");
+        List<String> tokens = new ArrayList<>();
+        for (String part : parts) {
+            if (!part.isBlank()) tokens.add(part);
+        }
+        return tokens;
+    }
+
+    private String normalizeSearchText(String text) {
+        return text == null ? "" : text.trim().toLowerCase();
+    }
+
+    private static class ItemRef {
+        private final ItemsModel item;
+        private final int groupId;
+
+        private ItemRef(ItemsModel item, int groupId) {
+            this.item = item;
+            this.groupId = groupId;
+        }
+    }
+
 }
