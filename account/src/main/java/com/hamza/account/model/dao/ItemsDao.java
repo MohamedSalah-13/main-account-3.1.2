@@ -275,6 +275,11 @@ public class ItemsDao extends AbstractDao<ItemsModel> {
         return queryForObjects("SELECT * from items", this::getItemsModel);
     }
 
+    public List<ItemsModel> getItemsByMainGroupId(int mainGroupId) throws DaoException {
+        String query = QUERY_ITEMS + " where items.sub_num in (select id from sub_group where main_id = ?)";
+        return queryForObjects(query, this::map, mainGroupId);
+    }
+
     public int deleteRangeById(Integer... ids) throws DaoException {
         String query = SqlStatements.deleteInRangeId(TABLE_NAME, ID, ids);
         return executeUpdate(query);

@@ -79,6 +79,10 @@ public class PosController extends ButtonSetting {
     private final DataInterface<Sales, Total_Sales, Customers, CustomerAccount> dataInterface;
     private final Map<BasePurchasesAndSales, String> originalNames = new HashMap<>();
     private List<ItemsModel> itemsList;
+    private List<MainGroups> mainGroupList = new ArrayList<>();
+    private MainGroups selectedMainGroup;
+    private final Map<Integer, List<Button>> groupButtonsCache = new HashMap<>();
+    private final Label loadingLabel = new Label("جاري التحميل...");
     private int customerId = 0;
     @FXML
     private FlowPane hBox;
@@ -96,7 +100,7 @@ public class PosController extends ButtonSetting {
     @FXML
     private Button btnQuantity, btnDiscount, btnDiscountPercent, btnPrice, btnBackSpace, btnAdds, btnClear, btnInvoiceSuspension, btnOutstandingBills;
     @FXML
-    private Button btnAddCustom, btnCustomers, btnUpdate, btnShowAll;
+    private Button btnAddCustom, btnCustomers, btnUpdate;
     @FXML
     private TextField textCode, textCustomName, textTel, textAddress, textSearch;
     @FXML
@@ -173,12 +177,11 @@ public class PosController extends ButtonSetting {
         ObservableList<String> areaList = FXCollections.observableArrayList(getAreas().stream().map(Area::getArea_name).toList());
         comboArea.setItems(areaList);
 
-        getMainGroupList().forEach(mainGroup -> {
+        mainGroupList = getMainGroupList();
+        mainGroupList.forEach(mainGroup -> {
             var e = new Button(mainGroup.getName());
             e.setOnAction(event -> {
-                var list = itemsList.stream()
-                        .filter(itemsModel -> itemsModel.getSubGroups().getMainGroups().getName().equals(mainGroup.getName())).toList();
-                loadPane(list);
+                loadItemsByMainGroup(mainGroup);
             });
             hBox.getChildren().add(e);
         });
@@ -202,16 +205,37 @@ public class PosController extends ButtonSetting {
             }
         });
 
+        if (!mainGroupList.isEmpty() && selectedMainGroup == null) {
+            selectedMainGroup = mainGroupList.getFirst();
+            loadItemsByMainGroup(selectedMainGroup);
+        }
     }
 
-    private void loadPane(List<ItemsModel> list) {
-        List<Button> filteredPanes = paneList.stream()
-                .filter(pane -> list.stream()
-                        .anyMatch(item -> pane.getId().equals(item.getNameItem().toLowerCase())))
-                .sorted((p1, p2) -> p1.getId().compareToIgnoreCase(p2.getId()))
-                .toList();
-        flowPane.getChildren().clear();
-        flowPane.getChildren().addAll(filteredPanes);
+    private void loadItemsByMainGroup(MainGroups mainGroup) {
+        selectedMainGroup = mainGroup;
+        var cachedButtons = groupButtonsCache.get(mainGroup.getId());
+        if (cachedButtons != null) {
+            paneList.clear();
+            paneList.addAll(cachedButtons);
+            flowPane.getChildren().setAll(cachedButtons);
+            return;
+        }
+        flowPane.getChildren().setAll(loadingLabel);
+        maskerPaneSetting.showMaskerPane(() -> {
+            paneList.clear();
+            try {
+                itemsList = itemsService.getMainItemsListWithoutInactiveByMainGroupId(mainGroup.getId());
+            } catch (DaoException e) {
+                logError(e);
+                itemsList = new ArrayList<>();
+            }
+            itemsList.forEach(itemsModel -> paneList.add(getButton(itemsModel)));
+            groupButtonsCache.put(mainGroup.getId(), new ArrayList<>(paneList));
+        });
+        maskerPaneSetting.getVoidTask().setOnSucceeded(event -> {
+            flowPane.getChildren().clear();
+            flowPane.getChildren().addAll(paneList);
+        });
     }
 
     private List<Area> getAreas() {
@@ -311,10 +335,10 @@ public class PosController extends ButtonSetting {
             }
         });
 
-        btnShowAll.setOnAction(e -> {
-            textSearch.clear();
-            loadPane(itemsList);
-        });
+//        btnShowAll.setOnAction(e -> {
+//            textSearch.clear();
+//            loadPane(itemsList);
+//        });
 
     }
 
@@ -409,17 +433,25 @@ public class PosController extends ButtonSetting {
 
     private void refreshData() {
         maskerPaneSetting.showMaskerPane(LoadDataAndList::get2ItemsLoad);
-        maskerPaneSetting.getVoidTask().setOnSucceeded(event -> loadData());
+        maskerPaneSetting.getVoidTask().setOnSucceeded(event -> {
+            groupButtonsCache.clear();
+            loadData();
+        });
     }
 
     private void loadData() {
         maskerPaneSetting.showMaskerPane(() -> {
             paneList.clear();
-            itemsList = itemsService.getMainItemsListWithoutInactive();
-            itemsList.forEach(itemsModel -> {
-                var button = getButton(itemsModel);
-                paneList.add(button);
-            });
+            itemsList = new ArrayList<>();
+            if (selectedMainGroup != null) {
+                try {
+                    itemsList = itemsService.getMainItemsListWithoutInactiveByMainGroupId(selectedMainGroup.getId());
+                } catch (DaoException e) {
+                    logError(e);
+                }
+                itemsList.forEach(itemsModel -> paneList.add(getButton(itemsModel)));
+                groupButtonsCache.put(selectedMainGroup.getId(), new ArrayList<>(paneList));
+            }
         });
         maskerPaneSetting.getVoidTask().setOnSucceeded(event -> {
             flowPane.getChildren().clear();

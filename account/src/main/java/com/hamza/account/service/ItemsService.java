@@ -95,6 +95,11 @@ public record ItemsService(DaoFactory daoFactory, ServiceData serviceData) {
                 .filter(ItemsModel::isActiveItem).toList();
     }
 
+    public List<ItemsModel> getMainItemsListWithoutInactiveByMainGroupId(int mainGroupId) throws DaoException {
+        return daoFactory.getItemsDao().getItemsByMainGroupId(mainGroupId).stream()
+                .filter(ItemsModel::isActiveItem).toList();
+    }
+
     public List<ItemsModel> getMainItemsList() {
         return LoadDataAndList.getItemsModelList();
     }
