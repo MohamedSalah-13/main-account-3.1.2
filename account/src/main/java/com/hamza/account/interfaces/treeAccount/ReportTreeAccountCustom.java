@@ -32,6 +32,7 @@ public class ReportTreeAccountCustom extends LoadData implements ReportTreeInter
     private final DataInterface<Sales, Total_Sales, Customers, CustomerAccount> dataInterface;
     private final Print_Reports printReports;
     private List<TreeAccountModelForPrint> listPrint;
+    private final Set<TreeItem<CustomerAccount>> lazyLoadedItems = Collections.newSetFromMap(new IdentityHashMap<>());
 
     public ReportTreeAccountCustom(DaoFactory daoFactory, DataPublisher dataPublisher) throws Exception {
         super(daoFactory, dataPublisher);
@@ -77,34 +78,50 @@ public class ReportTreeAccountCustom extends LoadData implements ReportTreeInter
     @Override
     public void addItemInTree(TreeItem<CustomerAccount> treeItem, List<CustomerAccount> list) {
 
-        try {
-            listPrint = new ArrayList<>();
-            treeItem.getChildren().clear();
+        listPrint = new ArrayList<>();
+        treeItem.getChildren().clear();
+        lazyLoadedItems.clear();
 
-            Set<String> dateSet = list.stream().map(CustomerAccount::getDate).sorted().collect(Collectors.toCollection(LinkedHashSet::new));
+        for (CustomerAccount accountModel : list) {
+            TreeAccountModelForPrint treeAccountModelForPrint = new TreeAccountModelForPrint(accountModel.getCustomers().getId(),
+                    accountModel.getCustomers().getName(), accountModel.getDate(), accountModel.getPurchase(),
+                    accountModel.getPaid(), accountModel.getAmount(), accountModel.getNotes());
+            listPrint.add(treeAccountModelForPrint);
+        }
 
-            List<String> arr = dateSet.stream().toList();
-            for (int i = 0; i < dateSet.size(); i++) {
-                int finalI = i;
+        Set<String> dateSet = list.stream().map(CustomerAccount::getDate).sorted().collect(Collectors.toCollection(LinkedHashSet::new));
 
-                List<CustomerAccount> list_sum = list
-                        .stream().filter(account_model -> account_model.getDate().equals(arr.get(finalI))).toList();
-                double pur = roundToTwoDecimalPlaces(list_sum.stream().mapToDouble(CustomerAccount::getPurchase).sum());
-                double paid = roundToTwoDecimalPlaces(list_sum.stream().mapToDouble(CustomerAccount::getPaid).sum());
+        List<String> arr = dateSet.stream().toList();
+        for (int i = 0; i < dateSet.size(); i++) {
+            int finalI = i;
 
-                CustomerAccount customerAccount = new CustomerAccount();
-                customerAccount.setDate(arr.get(i));
-                customerAccount.setPurchase(pur);
-                customerAccount.setPaid(paid);
-                customerAccount.setAmount(roundToTwoDecimalPlaces(pur - paid));
-                customerAccount.setCustomers(new Customers(0));
-                TreeItem<CustomerAccount> treeItemDate = new TreeItem<>(customerAccount);
+            List<CustomerAccount> list_sum = list
+                    .stream().filter(account_model -> account_model.getDate().equals(arr.get(finalI))).toList();
+            double pur = roundToTwoDecimalPlaces(list_sum.stream().mapToDouble(CustomerAccount::getPurchase).sum());
+            double paid = roundToTwoDecimalPlaces(list_sum.stream().mapToDouble(CustomerAccount::getPaid).sum());
+
+            CustomerAccount customerAccount = new CustomerAccount();
+            customerAccount.setDate(arr.get(i));
+            customerAccount.setPurchase(pur);
+            customerAccount.setPaid(paid);
+            customerAccount.setAmount(roundToTwoDecimalPlaces(pur - paid));
+            customerAccount.setCustomers(new Customers(0));
+            TreeItem<CustomerAccount> treeItemDate = new TreeItem<>(customerAccount);
 //                treeItemDate.setExpanded(true);
-                treeItem.getChildren().add(treeItemDate);
-                addTreeDate(list_sum, treeItemDate);
-            }
-        } catch (DaoException e) {
-            AllAlerts.alertError(e.getMessage());
+            treeItem.getChildren().add(treeItemDate);
+
+            treeItemDate.getChildren().add(new TreeItem<>(new CustomerAccount()));
+            treeItemDate.expandedProperty().addListener((observable, oldValue, newValue) -> {
+                if (newValue && !lazyLoadedItems.contains(treeItemDate)) {
+                    treeItemDate.getChildren().clear();
+                    try {
+                        addTreeDate(list_sum, treeItemDate);
+                    } catch (DaoException e) {
+                        AllAlerts.alertError(e.getMessage());
+                    }
+                    lazyLoadedItems.add(treeItemDate);
+                }
+            });
         }
     }
 
@@ -191,9 +208,6 @@ public class ReportTreeAccountCustom extends LoadData implements ReportTreeInter
             TreeItem<CustomerAccount> treeItem = new TreeItem<>(model);
             item.getChildren().add(treeItem);
 
-            TreeAccountModelForPrint treeAccountModelForPrint = new TreeAccountModelForPrint(model.getCustomers().getId(), model.getCustomers().getName()
-                    , model.getDate(), model.getPurchase(), model.getPaid(), model.getAmount(), model.getNotes());
-            listPrint.add(treeAccountModelForPrint);
         }
     }
 

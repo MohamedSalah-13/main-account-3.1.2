@@ -34,6 +34,7 @@ public class ReportTreeSales implements ReportTreeInterface<Sales, Customers> {
     private List<Sales> listPrint;
     private String date1;
     private String date2;
+    private final Set<TreeItem<Sales>> lazyLoadedItems = Collections.newSetFromMap(new IdentityHashMap<>());
 
     public ReportTreeSales(DaoFactory daoFactory, DataPublisher dataPublisher) throws Exception {
         ServiceData serviceData = new ServiceData(daoFactory);
@@ -120,7 +121,8 @@ public class ReportTreeSales implements ReportTreeInterface<Sales, Customers> {
     @Override
     public void addItemInTree(TreeItem<Sales> treeItem, List<Sales> list) {
         List<Integer> dateSet = list.stream().map(Sales::getInvoiceNumber).sorted().collect(Collectors.toCollection(LinkedHashSet::new)).stream().toList();
-        this.listPrint = new ArrayList<>();
+        this.listPrint = new ArrayList<>(list);
+        lazyLoadedItems.clear();
         for (Integer integer : dateSet) {
             List<Sales> salesList = list.stream().filter(sales -> sales.getInvoiceNumber() == integer).toList();
             if (!salesList.isEmpty()) {
@@ -145,12 +147,17 @@ public class ReportTreeSales implements ReportTreeInterface<Sales, Customers> {
                 TreeItem<Sales> treeItemDate = new TreeItem<>(mainSalesTree);
                 treeItem.getChildren().add(treeItemDate);
 
-                // add children
-                for (Sales sales : salesList) {
-                    TreeItem<Sales> treePurchase = new TreeItem<>(sales);
-                    treeItemDate.getChildren().add(treePurchase);
-                    listPrint.add(sales);
-                }
+                treeItemDate.getChildren().add(new TreeItem<>(new Sales()));
+                treeItemDate.expandedProperty().addListener((observable, oldValue, newValue) -> {
+                    if (newValue && !lazyLoadedItems.contains(treeItemDate)) {
+                        treeItemDate.getChildren().clear();
+                        for (Sales sales : salesList) {
+                            TreeItem<Sales> treePurchase = new TreeItem<>(sales);
+                            treeItemDate.getChildren().add(treePurchase);
+                        }
+                        lazyLoadedItems.add(treeItemDate);
+                    }
+                });
             }
         }
     }

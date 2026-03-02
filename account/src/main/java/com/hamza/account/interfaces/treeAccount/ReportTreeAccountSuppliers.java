@@ -39,6 +39,7 @@ public class ReportTreeAccountSuppliers
     private final Print_Reports printReports;
     private final AccountData<SupplierAccount> accountData;
     private List<TreeAccountModelForPrint> listPrint;
+    private final Set<TreeItem<SupplierAccount>> lazyLoadedItems = Collections.newSetFromMap(new IdentityHashMap<>());
 
     public ReportTreeAccountSuppliers(DaoFactory daoFactory, DataPublisher dataPublisher) throws Exception {
         super(daoFactory, dataPublisher);
@@ -85,34 +86,50 @@ public class ReportTreeAccountSuppliers
     @Override
     public void addItemInTree(TreeItem<SupplierAccount> treeItem, List<SupplierAccount> list) {
 
-        try {
-            listPrint = new ArrayList<>();
-            treeItem.getChildren().clear();
+        listPrint = new ArrayList<>();
+        treeItem.getChildren().clear();
+        lazyLoadedItems.clear();
 
-            Set<String> dateSet = list.stream().map(SupplierAccount::getDate).sorted().collect(Collectors.toCollection(LinkedHashSet::new));
+        for (SupplierAccount accountModel : list) {
+            TreeAccountModelForPrint treeAccountModelForPrint = new TreeAccountModelForPrint(accountModel.getSuppliers().getId(),
+                    accountModel.getSuppliers().getName(), accountModel.getDate(), accountModel.getPurchase(),
+                    accountModel.getPaid(), accountModel.getAmount(), accountModel.getNotes());
+            listPrint.add(treeAccountModelForPrint);
+        }
 
-            List<String> arr = dateSet.stream().toList();
-            for (int i = 0; i < dateSet.size(); i++) {
-                int finalI = i;
+        Set<String> dateSet = list.stream().map(SupplierAccount::getDate).sorted().collect(Collectors.toCollection(LinkedHashSet::new));
 
-                List<SupplierAccount> list_sum = list
-                        .stream().filter(account_model -> account_model.getDate().equals(arr.get(finalI))).toList();
-                double pur = roundToTwoDecimalPlaces(list_sum.stream().mapToDouble(SupplierAccount::getPurchase).sum());
-                double paid = roundToTwoDecimalPlaces(list_sum.stream().mapToDouble(SupplierAccount::getPaid).sum());
+        List<String> arr = dateSet.stream().toList();
+        for (int i = 0; i < dateSet.size(); i++) {
+            int finalI = i;
 
-                SupplierAccount model_day = new SupplierAccount();
-                model_day.setDate(arr.get(i));
-                model_day.setPurchase(pur);
-                model_day.setPaid(paid);
-                model_day.setAmount(roundToTwoDecimalPlaces(pur - paid));
-                model_day.setSuppliers(new Suppliers(0));
-                TreeItem<SupplierAccount> treeItemDate = new TreeItem<>(model_day);
+            List<SupplierAccount> list_sum = list
+                    .stream().filter(account_model -> account_model.getDate().equals(arr.get(finalI))).toList();
+            double pur = roundToTwoDecimalPlaces(list_sum.stream().mapToDouble(SupplierAccount::getPurchase).sum());
+            double paid = roundToTwoDecimalPlaces(list_sum.stream().mapToDouble(SupplierAccount::getPaid).sum());
+
+            SupplierAccount model_day = new SupplierAccount();
+            model_day.setDate(arr.get(i));
+            model_day.setPurchase(pur);
+            model_day.setPaid(paid);
+            model_day.setAmount(roundToTwoDecimalPlaces(pur - paid));
+            model_day.setSuppliers(new Suppliers(0));
+            TreeItem<SupplierAccount> treeItemDate = new TreeItem<>(model_day);
 //                treeItemDate.setExpanded(true);
-                treeItem.getChildren().add(treeItemDate);
-                addTreeDate(list_sum, treeItemDate);
-            }
-        } catch (DaoException e) {
-            AllAlerts.alertError(e.getMessage());
+            treeItem.getChildren().add(treeItemDate);
+
+            treeItemDate.getChildren().add(new TreeItem<>(new SupplierAccount()));
+            treeItemDate.expandedProperty().addListener((observable, oldValue, newValue) -> {
+                if (newValue && !lazyLoadedItems.contains(treeItemDate)) {
+                    treeItemDate.getChildren().clear();
+                    try {
+                        addTreeDate(list_sum, treeItemDate);
+                    } catch (DaoException e) {
+                        AllAlerts.alertError(e.getMessage());
+                    }
+                    lazyLoadedItems.add(treeItemDate);
+                }
+            });
         }
     }
 
@@ -203,9 +220,6 @@ public class ReportTreeAccountSuppliers
             TreeItem<SupplierAccount> treeItem = new TreeItem<>(model);
             item.getChildren().add(treeItem);
 
-            TreeAccountModelForPrint treeAccountModelForPrint = new TreeAccountModelForPrint(model.getSuppliers().getId(), model.getSuppliers().getName()
-                    , model.getDate(), model.getPurchase(), model.getPaid(), model.getAmount(), model.getNotes());
-            listPrint.add(treeAccountModelForPrint);
         }
     }
 

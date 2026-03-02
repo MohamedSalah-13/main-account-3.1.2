@@ -19,9 +19,12 @@ import lombok.extern.log4j.Log4j2;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.IdentityHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import static com.hamza.account.interfaces.treePurchase.ReportTreeSales.createSalesReportColumns;
@@ -34,6 +37,7 @@ public class ReportTreePurchase extends LoadOtherData<Purchase, Total_buy, Suppl
     private List<Purchase> listPrint;
     private String date1;
     private String date2;
+    private final Set<TreeItem<Purchase>> lazyLoadedItems = Collections.newSetFromMap(new IdentityHashMap<>());
 
     public ReportTreePurchase(DaoFactory daoFactory, DataPublisher dataPublisher
             , DataInterface<Purchase, Total_buy, Suppliers, SupplierAccount> dataInterface) throws Exception {
@@ -107,7 +111,8 @@ public class ReportTreePurchase extends LoadOtherData<Purchase, Total_buy, Suppl
     @Override
     public void addItemInTree(TreeItem<Purchase> treeItem, List<Purchase> list) {
         List<Integer> dateSet = list.stream().map(Purchase::getInvoiceNumber).sorted().collect(Collectors.toCollection(LinkedHashSet::new)).stream().toList();
-        this.listPrint = new ArrayList<>();
+        this.listPrint = new ArrayList<>(list);
+        lazyLoadedItems.clear();
         for (Integer integer : dateSet) {
             List<Purchase> purchaseList = list.stream().filter(purchase1 -> purchase1.getInvoiceNumber() == integer).toList();
             if (!purchaseList.isEmpty()) {
@@ -132,12 +137,17 @@ public class ReportTreePurchase extends LoadOtherData<Purchase, Total_buy, Suppl
                 TreeItem<Purchase> treeItemDate = new TreeItem<>(mainPurchaseTree);
                 treeItem.getChildren().add(treeItemDate);
 
-                // add children
-                for (Purchase purchase : purchaseList) {
-                    TreeItem<Purchase> treePurchase = new TreeItem<>(purchase);
-                    treeItemDate.getChildren().add(treePurchase);
-                    listPrint.add(purchase);
-                }
+                treeItemDate.getChildren().add(new TreeItem<>(new Purchase()));
+                treeItemDate.expandedProperty().addListener((observable, oldValue, newValue) -> {
+                    if (newValue && !lazyLoadedItems.contains(treeItemDate)) {
+                        treeItemDate.getChildren().clear();
+                        for (Purchase purchase : purchaseList) {
+                            TreeItem<Purchase> treePurchase = new TreeItem<>(purchase);
+                            treeItemDate.getChildren().add(treePurchase);
+                        }
+                        lazyLoadedItems.add(treeItemDate);
+                    }
+                });
             }
         }
     }

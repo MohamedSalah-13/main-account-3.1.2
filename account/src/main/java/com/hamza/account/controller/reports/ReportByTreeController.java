@@ -81,6 +81,8 @@ public class ReportByTreeController<T1, T3> implements Initializable {
         nameSetting();
         comboDetailsAction();
         TableSetting.tableMenuSetting(getClass(), treeView);
+        checkExpanded.setSelected(false);
+        checkExpanded.setDisable(true);
     }
 
     private void loadToolbarName() {

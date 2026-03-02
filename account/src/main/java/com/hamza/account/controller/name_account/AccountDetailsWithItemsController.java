@@ -57,6 +57,7 @@ public class AccountDetailsWithItemsController<T1 extends BasePurchasesAndSales,
     private static final String ACCOUNT_TITLE_ARABIC = "دفع";
     private static final String BALANCE_TITLE = "الرصيد";
     private final ObservableList<AccountCard> observableList = FXCollections.observableArrayList();
+    private final Set<TreeItem<AccountCard>> lazyLoadedItems = Collections.newSetFromMap(new IdentityHashMap<>());
     private final String name_account;
     private final int num_id;
     private final AccountDetailsInterface accountDetailsInterface;
@@ -222,14 +223,35 @@ public class AccountDetailsWithItemsController<T1 extends BasePurchasesAndSales,
                 treeItem.getChildren().add(accountTreeItem);
                 treeItem.setExpanded(true);
 
-                // for sales or purchase
-                try {
-                    accountDetailsInterface.addTreeItemTotals(t4, accountTreeItem);
-                } catch (Exception e) {
-                    errorLog(e);
+                // lazy load details only when expanded
+                if (shouldLazyLoad(t4)) {
+                    accountTreeItem.getChildren().add(new TreeItem<>(new AccountCard()));
+                    accountTreeItem.expandedProperty().addListener((observable, oldValue, newValue) -> {
+                        if (newValue && !lazyLoadedItems.contains(accountTreeItem)) {
+//                            maskerPaneSetting.showMaskerPane(() -> {
+                                accountTreeItem.getChildren().clear();
+                                try {
+                                    accountDetailsInterface.addTreeItemTotals(t4, accountTreeItem);
+                                } catch (Exception e) {
+                                    errorLog(e);
+                                }
+                                lazyLoadedItems.add(accountTreeItem);
+                                if (checkShowAll.isSelected()) {
+                                    expandAllChildren(accountTreeItem);
+                                }
+//                            });
+                        }
+                    });
                 }
             });
         });
+    }
+
+    private boolean shouldLazyLoad(AccountCard item) {
+        var info = item.getInformation();
+        if (info == null) return false;
+        return info.equals(purchaseLabel) || info.equals(purchaseReturnLabel)
+                || info.equals(salesTitle) || info.equals(salesReTitle);
     }
 
 
@@ -264,11 +286,14 @@ public class AccountDetailsWithItemsController<T1 extends BasePurchasesAndSales,
                 .sum();
 
         textSumPurchase.setText(String.valueOf(totalPurchase));
-        textSumPurchase.setStyle("-fx-font-weight: bold; -fx-fill: green;");
         textSumPaid.setText(String.valueOf(totalPaid));
-        textSumPaid.setStyle("-fx-font-weight: bold; -fx-fill: red;");
         double total = totalPurchase - totalPaid;
+        total = Math.round(total * 100.0) / 100.0;
+
         textSumTotals.setText(String.valueOf(total));
+
+        textSumPurchase.setStyle("-fx-font-weight: bold; -fx-fill: green;");
+        textSumPaid.setStyle("-fx-font-weight: bold; -fx-fill: red;");
         textSumTotals.setStyle("-fx-font-weight: bold; -fx-fill: " + (total >= 0 ? "green" : "red") + ";");
 
     }
