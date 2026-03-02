@@ -861,6 +861,7 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
         DateSetting.dateAction(date);
         whenEnterPressed(txtBarcode, txtPrice, txtQuantity, btnAdd);
         setTextFormatter(txtPaid, txtOtherDiscount, txtItemBalance, txtPrice, txtQuantity, txtTotals);
+        Utils.replaceNonDigitChar(txtBarcode);
         txtNum.setText(num_invoice_update > 0 ? String.valueOf(num_invoice_update) : Setting_Language.generate);
         // stock data
         comboStock.setItems(FXCollections.observableArrayList(getStockNames()));
