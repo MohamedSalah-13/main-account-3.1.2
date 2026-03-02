@@ -23,7 +23,7 @@ public class AccountTotalsPurchase extends ServiceData implements AccountDetails
     public static <T extends BasePurchasesAndSales> void addPurchaseItemsToTree(List<T> purchaseList, TreeItem<AccountCard> accountTreeItem) {
         purchaseList.forEach(purchase -> {
             var accountCard = new AccountCard();
-            accountCard.setDetails(String.valueOf(purchase.getTotal()));
+            accountCard.setDetails(purchase.getTotal());
             accountCard.setNotes(count + " ( " + formatQuantity(purchase.getQuantity()) + " ) " + purchase.getItems().getNameItem()
                     + " - " + purchase.getTotal());
             accountTreeItem.getChildren().add(new TreeItem<>(accountCard));
@@ -42,8 +42,8 @@ public class AccountTotalsPurchase extends ServiceData implements AccountDetails
     public void getTotalList(List<AccountCard> list_items, int num_id) throws Exception {
         var list = totalBuyService.getTotalBuyBySupId(num_id);
         list.forEach(totalSales -> {
-            AccountCard accountCard = new AccountCard(totalSales.getId(), purchaseLabel, totalSales.getDate(), totalSales.getTotal(), totalSales.getPaid()
-                    , "", totalSales.getNotes(), purchaseLabel);
+            AccountCard accountCard = new AccountCard(totalSales.getId(), purchaseLabel, totalSales.getDate(), totalSales.getTotal_after_discount(), totalSales.getPaid()
+                    , 0, totalSales.getNotes(), purchaseLabel);
             list_items.add(accountCard);
         });
 
@@ -54,9 +54,9 @@ public class AccountTotalsPurchase extends ServiceData implements AccountDetails
         var list = totalBuyReturnService.getTotalBuyBySupId(num_id);
         list.forEach(total_buy_re -> {
             double total = 0;
-            if (total_buy_re.getInvoiceType().equals(InvoiceType.CASH)) total = total_buy_re.getTotal();
+            if (total_buy_re.getInvoiceType().equals(InvoiceType.CASH)) total = total_buy_re.getTotal_after_discount();
             AccountCard accountCard = new AccountCard(total_buy_re.getId(), purchaseReturnLabel, total_buy_re.getDate(), total, total_buy_re.getPaid()
-                    , "", total_buy_re.getNotes(), purchaseReturnLabel);
+                    , 0, total_buy_re.getNotes(), purchaseReturnLabel);
             list_items.add(accountCard);
         });
     }

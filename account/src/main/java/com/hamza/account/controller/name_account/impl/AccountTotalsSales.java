@@ -24,8 +24,8 @@ public class AccountTotalsSales extends ServiceData implements AccountDetailsInt
     public void getTotalList(List<AccountCard> list_items, int num_id) throws Exception {
         var list = totalSalesService.getTotalSalesByCustomerId(num_id);
         list.forEach(totalSales -> {
-            AccountCard accountCard = new AccountCard(totalSales.getId(), salesTitle, totalSales.getDate(), totalSales.getTotal(), totalSales.getPaid()
-                    , "", totalSales.getNotes(), salesTitle);
+            AccountCard accountCard = new AccountCard(totalSales.getId(), salesTitle, totalSales.getDate(), totalSales.getTotal_after_discount(), totalSales.getPaid()
+                    , 0, totalSales.getNotes(), salesTitle);
             list_items.add(accountCard);
         });
 
@@ -36,10 +36,10 @@ public class AccountTotalsSales extends ServiceData implements AccountDetailsInt
         var list = totalSalesReturnService.getTotalSalesByCustomerId(num_id);
         list.forEach(totalSalesRe -> {
             double total = 0;
-            if (totalSalesRe.getInvoiceType().equals(InvoiceType.CASH)) total = totalSalesRe.getTotal();
+            if (totalSalesRe.getInvoiceType().equals(InvoiceType.CASH)) total = totalSalesRe.getTotal_after_discount();
 
             AccountCard accountCard = new AccountCard(totalSalesRe.getId(), salesReTitle, totalSalesRe.getDate(), total, totalSalesRe.getPaid()
-                    , "", totalSalesRe.getNotes(), salesReTitle);
+                    , 0, totalSalesRe.getNotes(), salesReTitle);
             list_items.add(accountCard);
         });
     }

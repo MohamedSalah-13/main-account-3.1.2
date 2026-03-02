@@ -47,6 +47,7 @@ import static com.hamza.account.controller.name_account.impl.AccountTotalsSales.
 import static com.hamza.account.table.TreeTableSetting.initializeColumnCellFactory;
 import static com.hamza.account.table.TreeTableSetting.initializeColumnCellFactoryInteger;
 import static com.hamza.account.view.OpenTreasuryDetailsApplication.ACCOUNT_STATEMENT_TITLE;
+import static com.hamza.controlsfx.text.NumberUtils.roundToTwoDecimalPlaces;
 
 @Log4j2
 @FxmlPath(pathFile = "accountDetailsTreeTableView.fxml")
@@ -170,8 +171,9 @@ public class AccountDetailsWithItemsController<T1 extends BasePurchasesAndSales,
         initializeColumnCellFactoryInteger(0, treeView);
         initializeColumnCellFactory(3, treeView);
         initializeColumnCellFactory(4, treeView);
+        initializeColumnCellFactory(5, treeView);
 
-        TreeTableColumn<AccountCard, String> column = (TreeTableColumn<AccountCard, String>) treeView.getColumns().get(5);
+        TreeTableColumn<AccountCard, String> column = (TreeTableColumn<AccountCard, String>) treeView.getColumns().get(6);
         column.setCellFactory(column2 -> EditCellTree.createStringEditCell());
         column.setOnEditCommit(t -> {
             t.getRowValue().getValue().setNotes(t.getNewValue());
@@ -179,6 +181,7 @@ public class AccountDetailsWithItemsController<T1 extends BasePurchasesAndSales,
 
         // load list data
         list_items = generateAccountItemList(accountDetailsInterface);
+        updateRunningBalance(list_items);
         observableList.setAll(list_items);
 
         // initialize
@@ -203,6 +206,7 @@ public class AccountDetailsWithItemsController<T1 extends BasePurchasesAndSales,
                         return !date.isBefore(fromDate) && !date.isAfter(toDate);
                     })
                     .toList();
+            updateRunningBalance(filteredList);
             observableList.setAll(filteredList);
             initializeAccountTreeItems();
             calculateSumAccount();
@@ -210,6 +214,7 @@ public class AccountDetailsWithItemsController<T1 extends BasePurchasesAndSales,
     }
 
     private void resetDateFilter() {
+        updateRunningBalance(list_items);
         observableList.setAll(list_items);
         initializeAccountTreeItems();
         calculateSumAccount();
@@ -350,7 +355,7 @@ public class AccountDetailsWithItemsController<T1 extends BasePurchasesAndSales,
             AccountCard accountName = new AccountCard(0, BALANCE_TITLE
                     , customerById.getCreated_at().toLocalDate().toString()
                     , firstBalance > 0 ? firstBalance : 0, firstBalance < 0 ? firstBalance : 0
-                    , "", customerById.getNotes(), BALANCE_TITLE);
+                    , 0, customerById.getNotes(), BALANCE_TITLE);
             list_items.add(accountName);
 
             // add totals
@@ -364,7 +369,7 @@ public class AccountDetailsWithItemsController<T1 extends BasePurchasesAndSales,
             var listAccount = accountList.stream().toList();
             listAccount.forEach(account -> {
                 AccountCard accountCard = new AccountCard(account.getId(), ACCOUNT_TITLE_ARABIC, account.getDate(), account.getPurchase(), account.getPaid()
-                        , "", account.getNotes(), ACCOUNT_TITLE_ARABIC);
+                        , 0, account.getNotes(), ACCOUNT_TITLE_ARABIC);
                 list_items.add(accountCard);
             });
 
@@ -373,6 +378,14 @@ public class AccountDetailsWithItemsController<T1 extends BasePurchasesAndSales,
             errorLog(e);
         }
         return list_items;
+    }
+
+    private void updateRunningBalance(List<AccountCard> items) {
+        double running = 0;
+        for (AccountCard item : items) {
+            running += item.getPurchase() - item.getPaid();
+            item.setDetails(roundToTwoDecimalPlaces(running));
+        }
     }
 
     private void printAccount() {
@@ -406,6 +419,7 @@ public class AccountDetailsWithItemsController<T1 extends BasePurchasesAndSales,
     private void errorLog(Exception e) {
         AllAlerts.alertError(e.getMessage());
         log.error(e.getMessage(), e.getCause());
+        e.printStackTrace();
     }
 
     @Override
@@ -432,7 +446,7 @@ public class AccountDetailsWithItemsController<T1 extends BasePurchasesAndSales,
                 new Column<>(String.class, "information", "نوع العملية"),
                 new Column<>(Double.class, "purchase", Setting_Language.DEBTOR),
                 new Column<>(Double.class, "paid", Setting_Language.CREDITOR),
-//                new Column<>(Double.class, "details", "تحليلى"),
+                new Column<>(Double.class, "details", Setting_Language.WORD_BALANCE),
                 new Column<>(String.class, "notes", Setting_Language.NOTES)
 
         ));
@@ -440,3 +454,4 @@ public class AccountDetailsWithItemsController<T1 extends BasePurchasesAndSales,
 
 
 }
+

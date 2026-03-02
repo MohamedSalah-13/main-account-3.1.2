@@ -12,14 +12,14 @@ public class AccountCard {
     private String date;
     private double purchase;
     private double paid;
-    private String details;
+    private double details;
     private String notes;
     private String information;
 
     public AccountCard() {
     }
 
-    public AccountCard(int id, String name, String date, double purchase, double paid, String details, String notes, String information) {
+    public AccountCard(int id, String name, String date, double purchase, double paid, double details, String notes, String information) {
         this.id = id;
         this.name = name;
         this.date = date;
