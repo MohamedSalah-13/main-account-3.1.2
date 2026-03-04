@@ -76,7 +76,7 @@ public class ReportCompany {
         map.put("AddressAndTel", " ");
         map.put("print-title", getSettingPrintReportTitle());
 
-        Locale locale = new Locale("ar", "AR");
+        Locale locale = resolveReportLocale();
         map.put("REPORT_LOCALE", locale);
         map.put("REPORT_RESOURCE_BUNDLE", ResourceBundle.getBundle("words", locale));
         return map;
@@ -118,6 +118,15 @@ public class ReportCompany {
         helper.setStyle("-named-color: " + name + ";");
         helper.applyCss();
         return helper.getNamedColor();
+    }
+
+    private Locale resolveReportLocale() {
+//        Locale current = Locale.getDefault();
+//        String language = current.getLanguage();
+//        if ("en".equalsIgnoreCase(language)) {
+//            return Locale.ENGLISH;
+//        }
+        return new Locale("ar", "AR");
     }
 
 }
