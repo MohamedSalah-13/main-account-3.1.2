@@ -339,11 +339,11 @@ public class Print_Reports extends ReportCompany {
         map.put("details", detailsOfBarcode);
         map.put("barcode", barcode);
 
-        var jasperBarcode = JasperReportPaths.Barcode.VERSION_1;
-        if (barcodePrintDoubleLabel.getBoolean_saved()) {
-            jasperBarcode = JasperReportPaths.Barcode.VERSION_2;
-        }
-        jasperData.printJasperPrint(jasperBarcode, Setting_Language.WORD_BARCODE, map, copies, printerNameBarcode);
+        int labelCount = barcodePrintDoubleLabel.getBoolean_saved() ? 2 : 1;
+        map.put("label_count", labelCount);
+
+        jasperData.printJasperPrint(JasperReportPaths.Barcode.VERSION_1, Setting_Language.WORD_BARCODE, map, copies, printerNameBarcode);
 
     }
 }
+
