@@ -827,7 +827,7 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
             maskerPaneSetting.showMaskerPane(() -> {
                 Print_Reports printReports = new Print_Reports();
                 if (getPrintPaperReceiptInvoice()) {
-                    printReports.printReceiptInvoice(modelPrintInvoices, dataInterface.designInterface().nameTextOfInvoice(), invNumber
+                    printReports.printReceiptInvoice(modelPrintInvoices, textSearchName.getValue(), invNumber
                             , discountValue, LocalDateTime.now().format(DATE_TIME_FORMATTER), date.getValue().toString(), 0);
                 } else
                     printReports.printInvoice(modelPrintInvoices, ShowInvoiceDetails.invoiceDetails(dataInterface, t2), dataInterface.designInterface().nameTextOfInvoice());

@@ -201,7 +201,7 @@ public class ShowInvoiceController<T1 extends BasePurchasesAndSales, T2 extends 
             modelPrintInvoices.add(modelPrintInvoice);
         }
         if (PropertiesName.getPrintPaperReceiptAccount()) {
-            printReports.printReceiptInvoice(modelPrintInvoices, dataInterface.designInterface().nameTextOfInvoice(), invNum
+            printReports.printReceiptInvoice(modelPrintInvoices, txtName.getText(), invNum
                     , Double.parseDouble(textInvoiceDiscount.getText()), date_insert, txtDate.getText(), 0);
         } else
             printReports.printInvoice(modelPrintInvoices, ShowInvoiceDetails.invoiceDetails(dataInterface, tObject), dataInterface.designInterface().nameTextOfInvoice());
