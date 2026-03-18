@@ -119,7 +119,12 @@ public class Print_Reports extends ReportCompany {
         company.put("date_from", from);
         company.put("date_to", to);
         addHeaderToReports(company, reportName);
-        jasperData.printJasperPrint(JasperReportPaths.Invoice.MULTI, Setting_Language.WORD_TOTAL, company, 1, "");
+
+        if (getPrintPaperReceiptAccount()) {
+            jasperData.printJasperPrint(JasperReportPaths.Invoice.MULTI_80mm, Setting_Language.WORD_TOTAL, company, 1, "");
+        } else {
+            jasperData.printJasperPrint(JasperReportPaths.Invoice.MULTI, Setting_Language.WORD_TOTAL, company, 1, "");
+        }
     }
 
     public <T> void printAccountByNameOrDate(List<T> list, boolean s, String reportName, CssToColorHelper helper) {
