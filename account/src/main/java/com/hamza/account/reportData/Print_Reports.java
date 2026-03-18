@@ -120,11 +120,15 @@ public class Print_Reports extends ReportCompany {
         company.put("date_to", to);
         addHeaderToReports(company, reportName);
 
-        if (getPrintPaperReceiptAccount()) {
-            jasperData.printJasperPrint(JasperReportPaths.Invoice.MULTI_80mm, Setting_Language.WORD_TOTAL, company, 1, "");
-        } else {
-            jasperData.printJasperPrint(JasperReportPaths.Invoice.MULTI, Setting_Language.WORD_TOTAL, company, 1, "");
-        }
+        Thread thread = new Thread(() -> {
+            if (getPrintPaperReceiptAccount()) {
+                jasperData.printJasperPrint(JasperReportPaths.Invoice.MULTI_80mm, Setting_Language.WORD_TOTAL, company, 1, "");
+            } else {
+                jasperData.printJasperPrint(JasperReportPaths.Invoice.MULTI, Setting_Language.WORD_TOTAL, company, 1, "");
+            }
+        });
+        thread.start();
+
     }
 
     public <T> void printAccountByNameOrDate(List<T> list, boolean s, String reportName, CssToColorHelper helper) {
