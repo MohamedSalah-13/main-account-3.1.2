@@ -74,12 +74,19 @@ import javafx.util.Callback;
 import lombok.Getter;
 import lombok.extern.log4j.Log4j2;
 import org.jetbrains.annotations.NotNull;
+import org.json.simple.JSONArray;
+import org.json.simple.JSONObject;
+import org.json.simple.parser.JSONParser;
 
 import java.io.IOException;
 import java.net.URL;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 
 import static com.hamza.account.config.PropertiesName.*;
 import static com.hamza.account.controller.invoice.DialogCashPaid.showCashChangeDialog;
@@ -139,8 +146,8 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
     private TextArea txtNotes;
     private MaskerPaneSetting maskerPaneSetting;
     // --- Auto-save (draft) ---
-    private java.util.concurrent.ScheduledExecutorService autosaveExecutor;
-    private java.util.concurrent.ScheduledFuture<?> pendingSave;
+    private ScheduledExecutorService autosaveExecutor;
+    private ScheduledFuture<?> pendingSave;
     private String draftKey; // مفتاح المسودة الخاص بهذه الشاشة/الفاتورة
 
     public BuyController2(DataInterface<T1, T2, T3, T4> dataInterface, DaoFactory daoFactory
@@ -1232,7 +1239,7 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
 
     // ===================== Draft save/restore =====================
     private void setupAutosave() {
-        autosaveExecutor = java.util.concurrent.Executors.newSingleThreadScheduledExecutor(r -> {
+        autosaveExecutor = Executors.newSingleThreadScheduledExecutor(r -> {
             Thread t = new Thread(r, "invoice-autosave");
             t.setDaemon(true);
             return t;
@@ -1266,7 +1273,7 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
         }
 
         if (pendingSave != null) pendingSave.cancel(false);
-        pendingSave = autosaveExecutor.schedule(this::saveDraftSafe, AUTOSAVE_DEBOUNCE_MS, java.util.concurrent.TimeUnit.MILLISECONDS);
+        pendingSave = autosaveExecutor.schedule(this::saveDraftSafe, AUTOSAVE_DEBOUNCE_MS, TimeUnit.MILLISECONDS);
     }
 
     private void saveDraftSafe() {
@@ -1284,7 +1291,7 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
     @SuppressWarnings("unchecked")
     private String buildDraftJson() {
         try {
-            org.json.simple.JSONObject jsonObject = new org.json.simple.JSONObject();
+            JSONObject jsonObject = new JSONObject();
 
             String invoiceDate = date.getValue() != null ? date.getValue().toString() : "";
             double total = DoubleSetting.parseDoubleOrDefault(txtSumTotals.getText());
@@ -1310,12 +1317,12 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
             jsonObject.put("name", Optional.ofNullable(textSearchName != null ? textSearchName.get() : null).orElse(""));
             jsonObject.put("timestamp", System.currentTimeMillis());
 
-            org.json.simple.JSONArray itemsArray = new org.json.simple.JSONArray();
+            JSONArray itemsArray = new JSONArray();
             for (var row : table.getItems()) {
                 BasePurchasesAndSales r = row;
                 ItemsModel model = purchaseSalesInterface.getItems(r);
                 if (model == null) continue;
-                org.json.simple.JSONObject item = new org.json.simple.JSONObject();
+                JSONObject item = new JSONObject();
                 item.put("barcode", model.getBarcode());
                 item.put("price", purchaseSalesInterface.getPrice(r));
                 item.put("quantity", purchaseSalesInterface.getQuantity(r));
@@ -1332,7 +1339,7 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
     }
 
     @SuppressWarnings("unchecked")
-    private void applyDraftObject(org.json.simple.JSONObject obj) {
+    private void applyDraftObject(JSONObject obj) {
         String invoiceDate = (String) obj.getOrDefault("invoiceDate", "");
         if (!invoiceDate.isEmpty()) date.setValue(LocalDate.parse(invoiceDate));
 
@@ -1358,10 +1365,10 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
 
         // restore items
         myObservableList.clear();
-        org.json.simple.JSONArray items = (org.json.simple.JSONArray) obj.get("items");
+        JSONArray items = (JSONArray) obj.get("items");
         if (items != null) {
             for (Object o : items) {
-                org.json.simple.JSONObject it = (org.json.simple.JSONObject) o;
+                JSONObject it = (JSONObject) o;
                 String barcode = (String) it.get("barcode");
                 double price = it.get("price") == null ? 0.0 : ((Number) it.get("price")).doubleValue();
                 double quantity = it.get("quantity") == null ? 0.0 : ((Number) it.get("quantity")).doubleValue();
@@ -1396,8 +1403,8 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
                         InvoiceDraftService.saveJson(draftType, draftKey, legacyJson);
                         InvoiceDraftService.legacyBuyClear();
                         // طبّق الاسترجاع مباشرة
-                        org.json.simple.parser.JSONParser parser = new org.json.simple.parser.JSONParser();
-                        org.json.simple.JSONObject obj = (org.json.simple.JSONObject) parser.parse(legacyJson);
+                        JSONParser parser = new JSONParser();
+                        JSONObject obj = (JSONObject) parser.parse(legacyJson);
                         applyDraftObject(obj);
                         sumTotals();
                         AllAlerts.alertSaveWithMessage("تم استرجاع الفاتورة غير المحفوظة (نظام قديم) لهذه النافذة.");
@@ -1420,8 +1427,8 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
 
             String json = InvoiceDraftService.loadJson(draftType, draftKey);
             if (json == null) return;
-            org.json.simple.parser.JSONParser parser = new org.json.simple.parser.JSONParser();
-            org.json.simple.JSONObject obj = (org.json.simple.JSONObject) parser.parse(json);
+            JSONParser parser = new JSONParser();
+            JSONObject obj = (JSONObject) parser.parse(json);
             applyDraftObject(obj);
             sumTotals();
             AllAlerts.alertSaveWithMessage("تم استرجاع الفاتورة غير المحفوظة لهذه النافذة. تذكر الضغط على حفظ لحفظها في قاعدة البيانات.");
@@ -1438,8 +1445,8 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
             // عيّن المفتاح المختار لاستمرار الحفظ عليه
             this.draftKey = summary.code;
             // طبّق المحتوى مباشرة
-            org.json.simple.parser.JSONParser parser = new org.json.simple.parser.JSONParser();
-            org.json.simple.JSONObject obj = (org.json.simple.JSONObject) parser.parse(summary.json);
+            JSONParser parser = new JSONParser();
+            JSONObject obj = (JSONObject) parser.parse(summary.json);
             applyDraftObject(obj);
             sumTotals();
             AllAlerts.alertSaveWithMessage("تم تحميل المسودة المختارة بنجاح. يمكنك المتابعة ثم الحفظ.");
@@ -1456,7 +1463,7 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
             } else {
                 // فاتورة جديدة: مفتاح مؤقت فريد
                 String ts = String.valueOf(System.currentTimeMillis());
-                String rnd = java.util.UUID.randomUUID().toString().substring(0, 8);
+                String rnd = UUID.randomUUID().toString().substring(0, 8);
                 this.draftKey = "NEW-" + ts + "-" + rnd;
             }
         } catch (Exception ex) {
