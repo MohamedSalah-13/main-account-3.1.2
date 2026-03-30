@@ -68,7 +68,7 @@ public class PropertiesName extends PreferencesSetting {
     private static final String NUMBER_GENERATOR_LAST_NUMBER = "number.generator.last.number";
     private static final String FONT_COLOR_ACTIVE = "font.color.active";
     private static final String SHOW_MAIN_TOTALS = "setting.show.main.totals";
-
+    private static final String INVOICE_ADD_ITEMS_DIRECT = "invoice.add.items.direct";
 
 
     public static String getItemsSubGroup() {
@@ -477,6 +477,14 @@ public class PropertiesName extends PreferencesSetting {
 
     public static boolean getPosInvoiceShowSelectPrice() {
         return getBoolean(POS_INVOICE_SHOW_SELECT_PRICE, false);
+    }
+
+    public static boolean getInvoiceAddItemDirect() {
+        return getBoolean(INVOICE_ADD_ITEMS_DIRECT, false);
+    }
+
+    public static void setInvoiceAddItemsDirect(boolean value) {
+        putBoolean(INVOICE_ADD_ITEMS_DIRECT, value);
     }
 
     public static void setPosInvoiceShowSelectPrice(boolean value) {

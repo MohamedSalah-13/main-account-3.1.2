@@ -17,6 +17,8 @@ import java.net.URL;
 import java.util.ResourceBundle;
 
 import static com.hamza.account.config.PropertiesName.*;
+import static com.hamza.account.config.PropertiesName.getInvoiceAddItemDirect;
+import static com.hamza.account.config.PropertiesName.setInvoiceAddItemsDirect;
 
 @Log4j2
 @FxmlPath(pathFile = "include/settingTabChecks.fxml")
@@ -44,7 +46,7 @@ public class SettingTabCheckController implements Initializable {
     @FXML
     private CheckBox checkBackupAfterSave;
     @FXML
-    private CheckBox checkPrintReceiptAccount, checkPosSelectPrice;
+    private CheckBox checkPrintReceiptAccount, checkPosSelectPrice,checkAddItemDirect;
     @FXML
     private CheckBox checkInsideDatabase;
     @FXML
@@ -153,6 +155,7 @@ public class SettingTabCheckController implements Initializable {
         checkSetting(checkEditItems, "تعديل الاصناف من الجدول", getItemEditFromTable());
         checkSetting(checkShowImageHint, "إظهار تلميحات الصورة", getItemImageHint());
         checkSetting(checkPosSelectPrice, "إظهار اختيار السعر فى الفواتير POS", getPosInvoiceShowSelectPrice());
+        checkSetting(checkAddItemDirect, "إضافة الصنف مباشرة فى الفاتورة", getInvoiceAddItemDirect());
 
         checkSetting(checkIncreaseItemOnTable, "جمع الاصناف المكررة", getInvoiceIncreaseItemOneTable());
         checkSetting(checkSelWithoutBalance, Setting_Language.BUY_WITHOUT_BALANCE, getSelWithoutBalance());
@@ -188,6 +191,7 @@ public class SettingTabCheckController implements Initializable {
         checkSelWithoutBalance.selectedProperty().addListener((observable, oldValue, newValue) -> setSelWithoutBalance(newValue));
         checkPrintTitleInReports.selectedProperty().addListener((observable, oldValue, newValue) -> setSettingPrintReportTitle(newValue));
         checkPosSelectPrice.selectedProperty().addListener((observable, oldValue, newValue) -> setPosInvoiceShowSelectPrice(newValue));
+        checkAddItemDirect.selectedProperty().addListener((observableValue, aBoolean, t1) -> setInvoiceAddItemsDirect(t1));
     }
 
     private void checkSetting(CheckBox checkBox, String nameText, boolean b) {

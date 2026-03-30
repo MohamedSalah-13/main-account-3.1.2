@@ -172,31 +172,11 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
         totalSetting();
         buttonGraphic();
 
-        // إعداد مفتاح المسودة (لكل فاتورة)
-//        initDraftKey();
-        // setup autosave (draft) متعدد
-//        setupAutosave();
-
-        // for update invoice
         if (num_invoice_update > 0) {
             selectData();
         } else {
             getSavedCustomerAndDelegate();
-            // عرض استرجاع المسودة فقط عند إنشاء فاتورة جديدة
-//            Platform.runLater(this::maybeOfferRestoreDraft);
         }
-
-        // إضافة اختصار لعرض قائمة المسودات: Ctrl+Shift+D
-//        Platform.runLater(() -> {
-//            if (stackPane != null && stackPane.getScene() != null) {
-//                stackPane.getScene().addEventFilter(KeyEvent.KEY_PRESSED, ev -> {
-//                    if (ev.isControlDown() && ev.isShiftDown() && ev.getCode() == KeyCode.D) {
-//                        ev.consume();
-//                        openDraftsList();
-//                    }
-//                });
-//            }
-//        });
     }
 
     private void buttonGraphic() {

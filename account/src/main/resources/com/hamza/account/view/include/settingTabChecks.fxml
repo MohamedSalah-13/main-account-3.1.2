@@ -85,6 +85,7 @@
                                                     </padding>
                                                     <children>
                                                         <CheckBox fx:id="checkPosSelectPrice" mnemonicParsing="false" text="اختيار السعر فى نقاط البيع" />
+                                                        <CheckBox fx:id="checkAddItemDirect" layoutX="15.0" layoutY="15.0" mnemonicParsing="false" text="إضافة الصنف مباشرة فى الفاتورة" />
                                                     </children>
                                                 </VBox>
                                             </children>
