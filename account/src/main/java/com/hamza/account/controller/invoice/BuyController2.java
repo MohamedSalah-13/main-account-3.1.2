@@ -405,7 +405,11 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
                                 txtQuantity.setText(String.valueOf(barcodeResult.quantity()));
                                 txtTotals.setText(String.valueOf(barcodeResult.total()));
 
-                                txtPrice.requestFocus();
+                                if (getInvoiceAddItemDirect()) {
+                                    addData();
+                                } else {
+                                    txtPrice.requestFocus();
+                                }
                                 return;
                             } catch (Exception e) {
                                 log.error(e.getMessage());
@@ -418,7 +422,12 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
                 }
 
                 searchItemByTypeAndName(txtBarcode.getText(), false, false);
-                txtPrice.requestFocus();
+
+                if (getInvoiceAddItemDirect()) {
+                    addData();
+                } else {
+                    txtPrice.requestFocus();
+                }
             }
         }
     }
