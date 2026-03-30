@@ -30,6 +30,7 @@ import com.hamza.account.type.DiscountType;
 import com.hamza.account.type.InvoiceType;
 import com.hamza.account.type.ProcessType;
 import com.hamza.account.view.AddItemApplication;
+import com.hamza.account.view.LogApplication;
 import com.hamza.account.view.SearchItemsApplication;
 import com.hamza.account.view.TextSearchApplication;
 import com.hamza.controlsfx.alert.AllAlerts;
@@ -74,19 +75,14 @@ import javafx.util.Callback;
 import lombok.Getter;
 import lombok.extern.log4j.Log4j2;
 import org.jetbrains.annotations.NotNull;
-import org.json.simple.JSONArray;
-import org.json.simple.JSONObject;
-import org.json.simple.parser.JSONParser;
 
 import java.io.IOException;
 import java.net.URL;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.*;
-import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.TimeUnit;
 
 import static com.hamza.account.config.PropertiesName.*;
 import static com.hamza.account.controller.invoice.DialogCashPaid.showCashChangeDialog;
@@ -103,22 +99,17 @@ import static com.hamza.controlsfx.text.NumberUtils.roundToTwoDecimalPlaces;
 public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTotals, T3 extends BaseNames, T4 extends BaseAccount>
         extends BuyData<T1, T2, T3, T4> implements Initializable, AppSettingInterface {
 
-    private static final long AUTOSAVE_DEBOUNCE_MS = 1200;
     private final ObservableList<T1> myObservableList = FXCollections.observableArrayList();
     private final DataPublisher dataPublisher;
     private final ActionTextBuy actionTextBuy;
     private final DaoFactory daoFactory;
     private final ObjectProperty<ItemsModel> itemsModel = new SimpleObjectProperty<>(new ItemsModel());
-    private final InvoiceDraftService.Type draftType;
     private List<ModelPrintInvoice> modelPrintInvoices = new ArrayList<>();
     private int priceTypeByNameId = 1; // use a first price type
     private int codeAccount;
     private double discountValue;
     private int invNumber;
-    private TreeMap<Integer, Object> treeMap;
     private StringProperty textSearchName, textSearchItems;
-    //    @FXML
-//    private TextField textSearchItems;
     @FXML
     private Label labelNum, labelName, labelBarcode, labelDate, labelStockName, labelCondition, labelDelegate, labelTreasury, labelSearchBy, labelPrice, labelQuantity, labelItemBalance, labelTotals, last1, last2, last3, last4, last5, labelNotes, labelInvoiceTotal;
     @FXML
@@ -145,17 +136,13 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
     @FXML
     private TextArea txtNotes;
     private MaskerPaneSetting maskerPaneSetting;
-    // --- Auto-save (draft) ---
-    private ScheduledExecutorService autosaveExecutor;
-    private ScheduledFuture<?> pendingSave;
-    private String draftKey; // مفتاح المسودة الخاص بهذه الشاشة/الفاتورة
+
 
     public BuyController2(DataInterface<T1, T2, T3, T4> dataInterface, DaoFactory daoFactory
             , DataPublisher dataPublisher, int numInvoiceUpdate) throws Exception {
         super(dataInterface, dataPublisher, daoFactory, numInvoiceUpdate);
         this.dataPublisher = dataPublisher;
         this.daoFactory = daoFactory;
-        this.draftType = dataInterface.draftType();
         this.actionTextBuy = new ActionTextBuy() {
             @Override
             public int addRowToTable(String barcode, double quantity, double price, double discount, double total, LocalDate expireDate) throws Exception {
@@ -291,14 +278,6 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
         btnAdd.setOnAction(actionEvent -> addData());
         btnNew.setOnAction(actionEvent -> {
             reset_all();
-            // حذف مسودة الفاتورة الحالية فقط ثم إنشاء مفتاح جديد للجديدة
-            try {
-                if (draftKey != null) {
-                    InvoiceDraftService.clear(draftType, draftKey);
-                }
-            } catch (Exception ignore) {
-            }
-            initDraftKey();
         });
         btnSave.setOnAction(event -> saveInvoice(false));
         btnPrintSave.setOnAction(actionEvent -> saveInvoice(true));
@@ -719,15 +698,6 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
                 else save = totalDaoList.insert(t2);
                 if (save == 1) {
                     AllAlerts.alertSave();
-
-                    // حذف مسودة هذه الفاتورة فقط عند الحفظ الناجح
-                    try {
-                        if (draftKey != null) {
-                            InvoiceDraftService.clear(draftType, draftKey);
-                        }
-                    } catch (Exception ignore) {
-                    }
-
                     // Show change dialog only for cash invoices
                     if (dataInterface.designInterface().showScreenPaidInInvoice()) {
                         if (getInvoiceShowScreenPaid())
@@ -737,7 +707,6 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
                     }
 
                     reset_all();
-
                     // for print invoice
                     printInvoice(print, t2);
 
@@ -1059,7 +1028,15 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
         // Unified key handler: combines Alt+Arrow movement and existing quantity key behavior
         table.setOnKeyPressed(createTableKeyHandler());
 
-        TableSetting.tableMenuSetting(getClass(), table);
+        // hide data table if not admin
+        var b = LogApplication.usersVo.getId() == 1;
+        if(b){
+            // show table menu
+            TableSetting.tableMenuSetting(getClass(), table);
+        }
+
+        table.getColumns().get(8).setVisible(b);
+        table.getColumns().get(9).setVisible(b);
     }
 
     private void updateItem(BasePurchasesAndSales purchase) throws DaoException {
@@ -1246,237 +1223,4 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
         table.getColumns().add(2, typeColumn);
     }
 
-    // ===================== Draft save/restore =====================
-    private void setupAutosave() {
-        autosaveExecutor = Executors.newSingleThreadScheduledExecutor(r -> {
-            Thread t = new Thread(r, "invoice-autosave");
-            t.setDaemon(true);
-            return t;
-        });
-
-        // trigger on key fields
-        if (txtNotes != null) txtNotes.textProperty().addListener((obs, o, n) -> triggerAutosave());
-        if (txtPaid != null) txtPaid.textProperty().addListener((obs, o, n) -> triggerAutosave());
-        if (txtOtherDiscount != null) txtOtherDiscount.textProperty().addListener((obs, o, n) -> triggerAutosave());
-        if (date != null) date.valueProperty().addListener((obs, o, n) -> triggerAutosave());
-        if (textSearchName != null) textSearchName.addListener((obs, o, n) -> triggerAutosave());
-
-        if (comboTreasury != null)
-            comboTreasury.getSelectionModel().selectedItemProperty().addListener((obs, o, n) -> triggerAutosave());
-        if (comboDelegate != null)
-            comboDelegate.getSelectionModel().selectedItemProperty().addListener((obs, o, n) -> triggerAutosave());
-        if (comboStock != null)
-            comboStock.getSelectionModel().selectedItemProperty().addListener((obs, o, n) -> triggerAutosave());
-
-        if (radioCash != null) radioCash.selectedProperty().addListener((obs, o, n) -> triggerAutosave());
-        if (radioDeffer != null) radioDeffer.selectedProperty().addListener((obs, o, n) -> triggerAutosave());
-        if (radioAmount != null) radioAmount.selectedProperty().addListener((obs, o, n) -> triggerAutosave());
-        if (radioRate != null) radioRate.selectedProperty().addListener((obs, o, n) -> triggerAutosave());
-    }
-
-    private void triggerAutosave() {
-        try {
-            // don't save empty
-            if (table.getItems().isEmpty()) return;
-        } catch (Exception ignore) {
-        }
-
-        if (pendingSave != null) pendingSave.cancel(false);
-        pendingSave = autosaveExecutor.schedule(this::saveDraftSafe, AUTOSAVE_DEBOUNCE_MS, TimeUnit.MILLISECONDS);
-    }
-
-    private void saveDraftSafe() {
-        try {
-            String json = buildDraftJson();
-            if (json != null && !json.isEmpty()) {
-                if (draftKey == null) initDraftKey();
-                InvoiceDraftService.saveJson(draftType, draftKey, json);
-            }
-        } catch (Exception e) {
-            logError(new Exception("Failed to autosave draft: " + e.getMessage(), e));
-        }
-    }
-
-    @SuppressWarnings("unchecked")
-    private String buildDraftJson() {
-        try {
-            JSONObject jsonObject = new JSONObject();
-
-            String invoiceDate = date.getValue() != null ? date.getValue().toString() : "";
-            double total = DoubleSetting.parseDoubleOrDefault(txtSumTotals.getText());
-            double discountVal = DoubleSetting.parseDoubleOrDefault(txtOtherDiscount.getText());
-            double paidValue = DoubleSetting.parseDoubleOrDefault(txtPaid.getText());
-            String notes = Optional.ofNullable(txtNotes.getText()).orElse("");
-
-            InvoiceType invoiceType = radioCash.isSelected() ? InvoiceType.CASH : InvoiceType.DEFER;
-            String treasuryName = Optional.ofNullable(comboTreasury.getSelectionModel().getSelectedItem()).orElse("");
-            String employeeName = Optional.ofNullable(comboDelegate.getSelectionModel().getSelectedItem()).orElse("");
-            String stockName = Optional.ofNullable(comboStock.getSelectionModel().getSelectedItem()).orElse("");
-
-            jsonObject.put("invoiceType", invoiceType.getType());
-            jsonObject.put("invoiceDate", invoiceDate);
-            jsonObject.put("total", total);
-            jsonObject.put("invoiceDiscountType", radioAmount.isSelected() ? "amount" : "rate");
-            jsonObject.put("discountValue", discountVal);
-            jsonObject.put("paidValue", paidValue);
-            jsonObject.put("notes", notes);
-            jsonObject.put("stock", stockName);
-            jsonObject.put("treasury", treasuryName);
-            jsonObject.put("employees", employeeName);
-            jsonObject.put("name", Optional.ofNullable(textSearchName != null ? textSearchName.get() : null).orElse(""));
-            jsonObject.put("timestamp", System.currentTimeMillis());
-
-            JSONArray itemsArray = new JSONArray();
-            for (var row : table.getItems()) {
-                BasePurchasesAndSales r = row;
-                ItemsModel model = purchaseSalesInterface.getItems(r);
-                if (model == null) continue;
-                JSONObject item = new JSONObject();
-                item.put("barcode", model.getBarcode());
-                item.put("price", purchaseSalesInterface.getPrice(r));
-                item.put("quantity", purchaseSalesInterface.getQuantity(r));
-                item.put("discount", purchaseSalesInterface.getDiscount(r));
-                itemsArray.add(item);
-            }
-            jsonObject.put("items", itemsArray);
-
-            return jsonObject.toJSONString();
-        } catch (Exception e) {
-            logError(e);
-            return null;
-        }
-    }
-
-    @SuppressWarnings("unchecked")
-    private void applyDraftObject(JSONObject obj) {
-        String invoiceDate = (String) obj.getOrDefault("invoiceDate", "");
-        if (!invoiceDate.isEmpty()) date.setValue(LocalDate.parse(invoiceDate));
-
-        Object dv = obj.get("discountValue");
-        if (dv != null) txtOtherDiscount.setText(String.valueOf(dv));
-        Object pv = obj.get("paidValue");
-        if (pv != null) txtPaid.setText(String.valueOf(pv));
-
-        comboTreasury.getSelectionModel().select((String) obj.getOrDefault("treasury", ""));
-        comboStock.getSelectionModel().select((String) obj.getOrDefault("stock", ""));
-        comboDelegate.getSelectionModel().select((String) obj.getOrDefault("employees", ""));
-        if (textSearchName != null) textSearchName.set((String) obj.getOrDefault("name", ""));
-        txtNotes.setText((String) obj.getOrDefault("notes", ""));
-
-        String typeStr = (String) obj.getOrDefault("invoiceType", InvoiceType.CASH.getType());
-        var typeEnum = InvoiceType.getInvoiceTypeByType(typeStr);
-        radioCash.setSelected(typeEnum.equals(InvoiceType.CASH));
-        radioDeffer.setSelected(typeEnum.equals(InvoiceType.DEFER));
-
-        String discType = (String) obj.getOrDefault("invoiceDiscountType", "amount");
-        radioAmount.setSelected("amount".equals(discType));
-        radioRate.setSelected("rate".equals(discType));
-
-        // restore items
-        myObservableList.clear();
-        JSONArray items = (JSONArray) obj.get("items");
-        if (items != null) {
-            for (Object o : items) {
-                JSONObject it = (JSONObject) o;
-                String barcode = (String) it.get("barcode");
-                double price = it.get("price") == null ? 0.0 : ((Number) it.get("price")).doubleValue();
-                double quantity = it.get("quantity") == null ? 0.0 : ((Number) it.get("quantity")).doubleValue();
-                double discount = it.get("discount") == null ? 0.0 : ((Number) it.get("discount")).doubleValue();
-
-                try {
-                    Stock stock = getStockIdBySelectedStock();
-                    if (stock == null) continue;
-                    ItemsModel itemModel = itemsService.getItemByBarcodeAndStockId(barcode, stock.getId());
-                    if (itemModel != null) {
-                        UnitsModel unitsModel = unitsService.getUnitsById(1); // Default unit
-                        T1 object = invoiceBuy.object_TableData(0, 0, itemModel.getId(), price, quantity, discount, price * quantity, unitsModel, itemModel, null);
-                        myObservableList.add(object);
-                    }
-                } catch (Exception ex) {
-                    logError(ex);
-                }
-            }
-        }
-    }
-
-    private void maybeOfferRestoreDraft() {
-        try {
-            // أولاً: توافق مع المسودة القديمة الأحادية (استرجاع لمرة واحدة)
-            if (InvoiceDraftService.legacyBuyExists()) {
-                boolean restoreLegacy = AllAlerts.confirm_all("تم العثور على فاتورة غير محفوظة (نظام قديم). هل تريد استرجاعها؟");
-                if (restoreLegacy) {
-                    String legacyJson = InvoiceDraftService.legacyBuyLoad();
-                    if (legacyJson != null) {
-                        // خزّنها تحت مسودة المفتاح الحالي ثم امسح القديمة
-                        if (draftKey == null) initDraftKey();
-                        InvoiceDraftService.saveJson(draftType, draftKey, legacyJson);
-                        InvoiceDraftService.legacyBuyClear();
-                        // طبّق الاسترجاع مباشرة
-                        JSONParser parser = new JSONParser();
-                        JSONObject obj = (JSONObject) parser.parse(legacyJson);
-                        applyDraftObject(obj);
-                        sumTotals();
-                        AllAlerts.alertSaveWithMessage("تم استرجاع الفاتورة غير المحفوظة (نظام قديم) لهذه النافذة.");
-                        return;
-                    }
-                } else {
-                    InvoiceDraftService.legacyBuyClear();
-                }
-            }
-
-            // الآن الاسترجاع للمفتاح الحالي فقط
-            if (draftKey == null) initDraftKey();
-            if (!InvoiceDraftService.exists(draftType, draftKey)) return;
-            boolean restore = AllAlerts.confirm_all("تم العثور على فاتورة غير محفوظة. هل تريد استرجاعها؟");
-            if (!restore) {
-                // تجاهل مسودة هذه الفاتورة فقط
-                InvoiceDraftService.clear(draftType, draftKey);
-                return;
-            }
-
-            String json = InvoiceDraftService.loadJson(draftType, draftKey);
-            if (json == null) return;
-            JSONParser parser = new JSONParser();
-            JSONObject obj = (JSONObject) parser.parse(json);
-            applyDraftObject(obj);
-            sumTotals();
-            AllAlerts.alertSaveWithMessage("تم استرجاع الفاتورة غير المحفوظة لهذه النافذة. تذكر الضغط على حفظ لحفظها في قاعدة البيانات.");
-        } catch (Exception e) {
-            logError(e);
-        }
-    }
-
-    private void openDraftsList() {
-        try {
-            var chosen = DraftsDialog.show(draftType);
-            if (chosen.isEmpty()) return;
-            var summary = chosen.get();
-            // عيّن المفتاح المختار لاستمرار الحفظ عليه
-            this.draftKey = summary.code;
-            // طبّق المحتوى مباشرة
-            JSONParser parser = new JSONParser();
-            JSONObject obj = (JSONObject) parser.parse(summary.json);
-            applyDraftObject(obj);
-            sumTotals();
-            AllAlerts.alertSaveWithMessage("تم تحميل المسودة المختارة بنجاح. يمكنك المتابعة ثم الحفظ.");
-        } catch (Exception e) {
-            logError(e);
-        }
-    }
-
-    private void initDraftKey() {
-        try {
-            if (num_invoice_update > 0) {
-                // عند التعديل على فاتورة موجودة: استخدم معرفها ككود
-                this.draftKey = String.valueOf(num_invoice_update);
-            } else {
-                // فاتورة جديدة: مفتاح مؤقت فريد
-                String ts = String.valueOf(System.currentTimeMillis());
-                String rnd = UUID.randomUUID().toString().substring(0, 8);
-                this.draftKey = "NEW-" + ts + "-" + rnd;
-            }
-        } catch (Exception ex) {
-            this.draftKey = "NEW-" + System.currentTimeMillis();
-        }
-    }
 }

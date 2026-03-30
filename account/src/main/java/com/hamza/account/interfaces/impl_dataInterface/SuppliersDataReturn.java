@@ -1,6 +1,5 @@
 package com.hamza.account.interfaces.impl_dataInterface;
 
-import com.hamza.account.controller.invoice.InvoiceDraftService;
 import com.hamza.account.controller.main.DataPublisher;
 import com.hamza.account.controller.main.LoadData;
 import com.hamza.account.controller.model_print.PrintPurchaseWithName;
@@ -132,10 +131,4 @@ public class SuppliersDataReturn extends LoadData implements DataInterface<Purch
             }
         }
     }
-
-    @Override
-    public InvoiceDraftService.Type draftType() {
-        return InvoiceDraftService.Type.BUY_RETURN;
-    }
-
 }

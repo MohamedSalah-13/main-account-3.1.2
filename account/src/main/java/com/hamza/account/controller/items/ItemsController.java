@@ -166,10 +166,7 @@ public class ItemsController extends LoadData {
         tableView.setItems(sortedList);
         tableView.refresh();
 
-        TableSetting.tableMenuSetting(getClass(), tableView);
 
-        // Add per-column filters for search and numeric comparisons
-//        TableFilter.forTableView(tableView).apply();
 
         // change column names
         dataPublisher.getPublisherSelPriceUnits().addObserver(message -> Platform.runLater(() -> updateColumnNames(message)));
@@ -180,10 +177,15 @@ public class ItemsController extends LoadData {
             logErrors(e);
         }
 
-        // add active column
-//        if (LogApplication.usersVo.getId() == 1)
-//            createActiveColumn();
-//        createActiveColumn2();
+        // hide data table if not admin
+        var b = LogApplication.usersVo.getId() == 1;
+        if(b){
+            // show table menu
+            TableSetting.tableMenuSetting(getClass(), tableView);
+        }
+
+        tableView.getColumns().get(5).setVisible(b);
+
     }
 
     private void setUpEditableTableColumns() {

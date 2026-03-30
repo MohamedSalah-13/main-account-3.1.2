@@ -1,6 +1,5 @@
 package com.hamza.account.interfaces.api;
 
-import com.hamza.account.controller.invoice.InvoiceDraftService;
 import com.hamza.account.controller.model_print.PrintPurchaseWithName;
 import com.hamza.account.interfaces.FilterDateInterface;
 import com.hamza.account.interfaces.spinner.SpinnerInterface;
@@ -58,6 +57,4 @@ public interface DataInterface<T1 extends BasePurchasesAndSales, T2 extends Base
     void loadNameAndAccount();
 
     void addList(List<T2> items, List<PrintPurchaseWithName> printPurchaseWithNames) throws DaoException;
-
-    InvoiceDraftService.Type draftType();
 }
