@@ -77,14 +77,10 @@ module com.hamza.account {
     exports com.hamza.account.interfaces.names;
     opens com.hamza.account.interfaces.names to javafx.fxml;
 
-    opens com.hamza.account.test.easyedit;
-    exports com.hamza.account.test.easyedit;
-
     exports com.hamza.account.interfaces.treePurchase;
     opens com.hamza.account.interfaces.treePurchase to javafx.fxml;
     opens com.hamza.account.reportData to javafx.fxml;
     exports com.hamza.account.reportData;
-    exports com.hamza.account.test;
     exports com.hamza.account.interfaces;
     opens com.hamza.account.interfaces to javafx.fxml;
     exports com.hamza.account.openFxml;
@@ -101,7 +97,6 @@ module com.hamza.account {
     exports com.hamza.account.controller.model_print;
     exports com.hamza.account.controller.convert_treasury;
     opens com.hamza.account.controller.convert_treasury to javafx.fxml;
-    opens com.hamza.account.test;
     exports com.hamza.account.dash;
     opens com.hamza.account.dash to javafx.fxml;
     exports com.hamza.account.controller.search;
