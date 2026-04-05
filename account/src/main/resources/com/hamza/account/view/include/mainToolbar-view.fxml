@@ -14,6 +14,7 @@
         <Button fx:id="btnItems" layoutX="122.0" layoutY="13.0" mnemonicParsing="false" text="Items"/>
         <Button fx:id="btnCalc" layoutX="178.0" layoutY="10.0" mnemonicParsing="false" text="Calc"/>
         <Button fx:id="btnAlarm" layoutX="227.0" layoutY="10.0" mnemonicParsing="false" text="Alarm"/>
+        <Button fx:id="btnYouTube" mnemonicParsing="false" text="YouTube"/>
         <HBox alignment="CENTER_RIGHT">
             <children>
                 <MenuButton fx:id="menuButton" mnemonicParsing="false" styleClass="menu-button-items" text="MenuButton">

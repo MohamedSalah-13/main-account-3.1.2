@@ -53,6 +53,7 @@ public class Image_Setting {
     public final InputStream itemWhite = getResourceAsStream("icons8-pink-basket-with-products-100", ImageFormat.PNG, ImageTheme.NONE);
     public final InputStream calcWhite = getResourceAsStream("icons8-calculator-94", ImageFormat.PNG, ImageTheme.NONE);
     public final InputStream alarmWhite = getResourceAsStream("icons8-alert-100", ImageFormat.PNG, ImageTheme.NONE);
+    public final InputStream youtube = getResourceAsStream("icons8-youtube-100", ImageFormat.PNG, ImageTheme.NONE);
     //----------------------------------------- black -----------------------------------------//
     public final InputStream addBlack24 = getResourceAsStream("outline_add_black_24dp", ImageFormat.PNG, ImageTheme.BLACK);
 

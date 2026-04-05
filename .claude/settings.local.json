@@ -1,0 +1,7 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(curl -L -o \"G:/release/main-account-3.1.2/account/src/main/resources/com/hamza/account/image/icons8-youtube-100.png\" \"https://img.icons8.com/color/100/youtube-play.png\")"
+    ]
+  }
+}

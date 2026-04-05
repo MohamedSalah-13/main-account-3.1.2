@@ -14,6 +14,8 @@ import javafx.scene.control.ToolBar;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
+import java.awt.Desktop;
+import java.net.URI;
 import java.net.URL;
 import java.util.ResourceBundle;
 
@@ -29,6 +31,8 @@ public class MainToolbarController implements Initializable {
     private Button btnAlarm;
     @FXML
     private Button btnCalc;
+    @FXML
+    private Button btnYouTube;
     @FXML
     private Button btnHome;
     @FXML
@@ -65,6 +69,17 @@ public class MainToolbarController implements Initializable {
         menuButtonSetting.configureButton(btnItems, imageSetting.itemWhite, controller.getItemsButtons().allItems(controller));
         menuButtonSetting.configureButton(btnCalc, imageSetting.calcWhite, controller.getForAllButtons().calc());
         menuButtonSetting.configureButton(btnAlarm, imageSetting.alarmWhite, controller.getForAllButtons().alarm());
+
+        btnYouTube.setGraphic(new ImageDesign(imageSetting.youtube, 36));
+        btnYouTube.setText("شرح البرنامج");
+        btnYouTube.setTooltip(new javafx.scene.control.Tooltip("قناة يوتيوب - شرح البرنامج"));
+        btnYouTube.setOnAction(e -> {
+            try {
+                Desktop.getDesktop().browse(new URI("https://www.youtube.com/playlist?list=PL2fs9t9FGXhoSOJ5UFsAWm2tLS_EfOvAE"));
+            } catch (Exception ex) {
+                ex.printStackTrace();
+            }
+        });
 
         menuButton.setGraphic(new ImageDesign(imageSetting.personCustomer, 36));
         menuButton.setText(Setting_Language.WELCOME + " " + nameProperty + " !");
