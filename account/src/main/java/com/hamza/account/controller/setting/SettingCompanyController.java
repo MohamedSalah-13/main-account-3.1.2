@@ -13,7 +13,7 @@ import com.hamza.account.openFxml.FxmlPath;
 import com.hamza.account.openFxml.OpenFxmlApplication;
 import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.database.DaoException;
-import com.hamza.controlsfx.filechooser.ImageChoose;
+import com.hamza.controlsfx.util.ImageChoose;
 import com.hamza.controlsfx.language.Setting_Language;
 import com.hamza.controlsfx.observer.Publisher;
 import javafx.fxml.FXML;
@@ -34,7 +34,7 @@ import java.io.IOException;
 import java.net.URL;
 import java.util.ResourceBundle;
 
-import static com.hamza.controlsfx.filechooser.ImageChoose.createIcon;
+import static com.hamza.controlsfx.util.ImageChoose.createIcon;
 import static com.hamza.controlsfx.others.TextFormat.createNumericTextFormatter;
 import static com.hamza.controlsfx.others.Utils.whenEnterPressed;
 

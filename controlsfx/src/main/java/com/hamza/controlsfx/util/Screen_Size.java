@@ -1,4 +1,4 @@
-package com.hamza.controlsfx.resize;
+package com.hamza.controlsfx.util;
 
 import javafx.geometry.Rectangle2D;
 import javafx.scene.layout.Pane;

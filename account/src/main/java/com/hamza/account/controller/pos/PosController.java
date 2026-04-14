@@ -63,9 +63,9 @@ import static com.hamza.account.controller.invoice.DialogCashPaid.showPriceSelec
 import static com.hamza.account.controller.invoice.UpdateInvoiceRow.updateData;
 import static com.hamza.account.otherSetting.Currency_Setting.getCurrency;
 import static com.hamza.controlsfx.dateTime.DateUtils.DATE_TIME_FORMATTER;
-import static com.hamza.controlsfx.filechooser.ImageChoose.createIcon;
+import static com.hamza.controlsfx.util.ImageChoose.createIcon;
 import static com.hamza.controlsfx.others.TextFormat.createNumericTextFormatter;
-import static com.hamza.controlsfx.text.NumberUtils.roundToTwoDecimalPlaces;
+import static com.hamza.controlsfx.util.NumberUtils.roundToTwoDecimalPlaces;
 
 @Log4j2
 @FxmlPath(pathFile = "pos/pos-view.fxml")

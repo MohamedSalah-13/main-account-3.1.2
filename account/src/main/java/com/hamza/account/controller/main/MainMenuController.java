@@ -13,7 +13,7 @@ import javafx.scene.input.KeyCombination;
 import javafx.stage.Stage;
 import lombok.Getter;
 
-import static com.hamza.controlsfx.filechooser.ImageChoose.createIcon;
+import static com.hamza.controlsfx.util.ImageChoose.createIcon;
 
 @Getter
 public class MainMenuController {

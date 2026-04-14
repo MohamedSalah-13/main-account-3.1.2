@@ -25,7 +25,7 @@ import java.time.LocalDate;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static com.hamza.controlsfx.text.NumberUtils.roundToTwoDecimalPlaces;
+import static com.hamza.controlsfx.util.NumberUtils.roundToTwoDecimalPlaces;
 
 public class ReportTreeAccountCustom extends LoadData implements ReportTreeInterface<CustomerAccount, Customers> {
 

@@ -8,7 +8,7 @@ import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.otherSetting.ExitClass;
 import com.hamza.controlsfx.language.Error_Text_Show;
 import com.hamza.controlsfx.language.Setting_Language;
-import com.hamza.controlsfx.resize.Screen_Size;
+import com.hamza.controlsfx.util.Screen_Size;
 import javafx.application.Application;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;

@@ -18,7 +18,7 @@ import lombok.extern.log4j.Log4j2;
 
 import java.util.Optional;
 
-import static com.hamza.controlsfx.text.NumberUtils.roundToTwoDecimalPlaces;
+import static com.hamza.controlsfx.util.NumberUtils.roundToTwoDecimalPlaces;
 
 @Log4j2
 public class ButtonSetting extends ServiceData {

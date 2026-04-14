@@ -33,7 +33,7 @@ import java.net.URL;
 import java.util.List;
 import java.util.ResourceBundle;
 
-import static com.hamza.controlsfx.filechooser.ImageChoose.createIcon;
+import static com.hamza.controlsfx.util.ImageChoose.createIcon;
 import static com.hamza.controlsfx.language.Setting_Language.CLEAR;
 import static com.hamza.controlsfx.language.Setting_Language.generate;
 import static com.hamza.controlsfx.others.Utils.setTextFormatter;

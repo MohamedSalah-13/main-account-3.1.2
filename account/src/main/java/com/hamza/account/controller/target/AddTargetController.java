@@ -40,7 +40,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Optional;
 
-import static com.hamza.controlsfx.filechooser.ImageChoose.createIcon;
+import static com.hamza.controlsfx.util.ImageChoose.createIcon;
 import static com.hamza.controlsfx.table.TextSearch.searchTableFromExitedText;
 
 @Log4j2

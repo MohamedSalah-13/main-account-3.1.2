@@ -49,7 +49,7 @@ import java.util.function.Predicate;
 
 import static com.hamza.account.config.PropertiesName.setAccountControllerRowColor;
 import static com.hamza.account.view.OpenTreasuryDetailsApplication.ACCOUNT_STATEMENT_TITLE;
-import static com.hamza.controlsfx.filechooser.ImageChoose.createIcon;
+import static com.hamza.controlsfx.util.ImageChoose.createIcon;
 
 
 @Log4j2

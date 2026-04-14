@@ -17,7 +17,7 @@ import com.hamza.account.type.UserPermissionType;
 import com.hamza.account.view.AddGroupApp;
 import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.database.DaoException;
-import com.hamza.controlsfx.filechooser.ImageChoose;
+import com.hamza.controlsfx.util.ImageChoose;
 import com.hamza.controlsfx.interfaceData.AppSettingInterface;
 import com.hamza.controlsfx.language.Setting_Language;
 import com.hamza.controlsfx.others.DoubleSetting;
@@ -46,7 +46,7 @@ import java.util.Objects;
 import static com.hamza.account.config.Configs.ADD_PACKAGE_TO_ITEMS;
 import static com.hamza.account.controller.setting.ComboSetting.comboSubSetting;
 import static com.hamza.account.controller.setting.ComboSetting.comboTypeSetting;
-import static com.hamza.controlsfx.filechooser.ImageChoose.createIcon;
+import static com.hamza.controlsfx.util.ImageChoose.createIcon;
 import static com.hamza.controlsfx.others.Utils.*;
 
 @Log4j2

@@ -1,4 +1,4 @@
-package com.hamza.controlsfx.resize;
+package com.hamza.controlsfx.util;
 
 import javafx.event.Event;
 import javafx.scene.Node;

@@ -47,7 +47,7 @@ import java.util.ResourceBundle;
 import static com.hamza.account.config.PropertiesName.getPosSplitPaneDividerSearchItems;
 import static com.hamza.account.config.PropertiesName.setPosSplitPaneDividerSearchItems;
 import static com.hamza.account.controller.invoice.UpdateInvoiceRow.updateData;
-import static com.hamza.controlsfx.filechooser.ImageChoose.createIcon;
+import static com.hamza.controlsfx.util.ImageChoose.createIcon;
 import static com.hamza.controlsfx.table.TextSearch.searchTableFromExitedText;
 
 @Log4j2

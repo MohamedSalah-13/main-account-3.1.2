@@ -15,7 +15,7 @@ import com.hamza.account.otherSetting.MaskerPaneSetting;
 import com.hamza.account.table.EditCellTree;
 import com.hamza.account.table.TableSetting;
 import com.hamza.controlsfx.alert.AllAlerts;
-import com.hamza.controlsfx.filechooser.ImageChoose;
+import com.hamza.controlsfx.util.ImageChoose;
 import com.hamza.controlsfx.interfaceData.AppSettingInterface;
 import com.hamza.controlsfx.language.Error_Text_Show;
 import com.hamza.controlsfx.language.Setting_Language;
@@ -47,7 +47,7 @@ import static com.hamza.account.controller.name_account.impl.AccountTotalsSales.
 import static com.hamza.account.table.TreeTableSetting.initializeColumnCellFactory;
 import static com.hamza.account.table.TreeTableSetting.initializeColumnCellFactoryInteger;
 import static com.hamza.account.view.OpenTreasuryDetailsApplication.ACCOUNT_STATEMENT_TITLE;
-import static com.hamza.controlsfx.text.NumberUtils.roundToTwoDecimalPlaces;
+import static com.hamza.controlsfx.util.NumberUtils.roundToTwoDecimalPlaces;
 
 @Log4j2
 @FxmlPath(pathFile = "accountDetailsTreeTableView.fxml")

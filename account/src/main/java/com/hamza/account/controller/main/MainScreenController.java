@@ -60,7 +60,7 @@ import java.util.ArrayList;
 import java.util.ResourceBundle;
 
 import static com.hamza.account.config.PropertiesName.*;
-import static com.hamza.controlsfx.text.NumberUtils.roundToTwoDecimalPlaces;
+import static com.hamza.controlsfx.util.NumberUtils.roundToTwoDecimalPlaces;
 
 @Log4j2
 public class MainScreenController extends MainItems implements Initializable {

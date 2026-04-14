@@ -2,7 +2,7 @@ package com.hamza.controlsfx.controller;
 
 import com.hamza.controlsfx.others.CloseService;
 import com.hamza.controlsfx.others.ImageSetting;
-import com.hamza.controlsfx.resize.Opacity_Move_Stage;
+import com.hamza.controlsfx.util.Opacity_Move_Stage;
 import javafx.fxml.FXML;
 import javafx.geometry.Rectangle2D;
 import javafx.scene.Node;

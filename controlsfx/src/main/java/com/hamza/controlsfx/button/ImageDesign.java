@@ -5,7 +5,7 @@ import javafx.scene.image.ImageView;
 
 import java.io.InputStream;
 
-import static com.hamza.controlsfx.filechooser.ImageChoose.ADD_IMAGE;
+import static com.hamza.controlsfx.util.ImageChoose.ADD_IMAGE;
 
 public class ImageDesign extends ImageView {
 

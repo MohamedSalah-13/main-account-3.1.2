@@ -10,7 +10,7 @@ import lombok.extern.log4j.Log4j2;
 import java.time.LocalDate;
 import java.util.List;
 
-import static com.hamza.controlsfx.text.NumberUtils.roundToTwoDecimalPlaces;
+import static com.hamza.controlsfx.util.NumberUtils.roundToTwoDecimalPlaces;
 
 @Log4j2
 public class SalesInvoice implements InvoiceBuy<Sales, Total_Sales, Customers, CustomerAccount> {

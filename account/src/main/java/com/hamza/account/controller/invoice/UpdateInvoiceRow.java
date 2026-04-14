@@ -2,7 +2,7 @@ package com.hamza.account.controller.invoice;
 
 import com.hamza.account.model.base.BasePurchasesAndSales;
 
-import static com.hamza.controlsfx.text.NumberUtils.roundToTwoDecimalPlaces;
+import static com.hamza.controlsfx.util.NumberUtils.roundToTwoDecimalPlaces;
 
 public class UpdateInvoiceRow {
 

@@ -19,7 +19,7 @@ module com.hamza.controlsfx {
 
     opens com.hamza.controlsfx.controller to javafx.fxml;
     exports com.hamza.controlsfx.controller;
-    exports com.hamza.controlsfx.filechooser;
+    exports com.hamza.controlsfx.util;
     exports com.hamza.controlsfx.observer;
     exports com.hamza.controlsfx.others;
     exports com.hamza.controlsfx.alert;
@@ -27,7 +27,6 @@ module com.hamza.controlsfx {
     exports com.hamza.controlsfx.button.api;
     exports com.hamza.controlsfx.button.button_column;
     exports com.hamza.controlsfx.notifications;
-    exports com.hamza.controlsfx.resize;
     exports com.hamza.controlsfx.table;
     exports com.hamza.controlsfx.interfaceData;
     exports com.hamza.controlsfx.view;
@@ -50,7 +49,6 @@ module com.hamza.controlsfx {
     exports com.hamza.controlsfx.font;
 
     exports com.hamza.controlsfx.serial;
-    exports com.hamza.controlsfx.text;
     exports com.hamza.controlsfx.type;
 
     exports com.hamza.controlsfx.language;

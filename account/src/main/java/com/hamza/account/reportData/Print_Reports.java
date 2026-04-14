@@ -26,7 +26,7 @@ import java.util.List;
 import static com.hamza.account.config.PropertiesName.*;
 import static com.hamza.controlsfx.dateTime.DateUtils.DATE_FORMATTER;
 import static com.hamza.controlsfx.dateTime.DateUtils.DATE_TIME_FORMATTER;
-import static com.hamza.controlsfx.text.NumberUtils.roundToTwoDecimalPlaces;
+import static com.hamza.controlsfx.util.NumberUtils.roundToTwoDecimalPlaces;
 
 @Log4j2
 public class Print_Reports extends ReportCompany {

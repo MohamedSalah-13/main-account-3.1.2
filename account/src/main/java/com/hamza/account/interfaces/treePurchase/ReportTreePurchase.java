@@ -29,7 +29,7 @@ import java.util.stream.Collectors;
 
 import static com.hamza.account.interfaces.treePurchase.ReportTreeSales.createSalesReportColumns;
 import static com.hamza.controlsfx.language.Setting_Language.REPORT_PURCHASE;
-import static com.hamza.controlsfx.text.NumberUtils.roundToTwoDecimalPlaces;
+import static com.hamza.controlsfx.util.NumberUtils.roundToTwoDecimalPlaces;
 
 @Log4j2
 public class ReportTreePurchase extends LoadOtherData<Purchase, Total_buy, Suppliers, SupplierAccount> implements ReportTreeInterface<Purchase, Suppliers> {

@@ -2,7 +2,7 @@ package com.hamza.controlsfx.controller;
 
 import com.hamza.controlsfx.interfaceData.DownloadTask;
 import com.hamza.controlsfx.language.StringConstants;
-import com.hamza.controlsfx.resize.Opacity_Move_Stage;
+import com.hamza.controlsfx.util.Opacity_Move_Stage;
 import javafx.concurrent.Task;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;

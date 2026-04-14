@@ -1,4 +1,4 @@
-package com.hamza.controlsfx.filechooser;
+package com.hamza.controlsfx.util;
 
 import javafx.embed.swing.SwingFXUtils;
 import javafx.scene.image.Image;

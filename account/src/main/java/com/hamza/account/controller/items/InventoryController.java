@@ -14,7 +14,7 @@ import com.hamza.controlsfx.language.Setting_Language;
 import com.hamza.controlsfx.table.AddColumnMix;
 import com.hamza.controlsfx.table.ColumnInterface;
 import com.hamza.controlsfx.table.TableColumnAnnotation;
-import com.hamza.controlsfx.text.NumberUtils;
+import com.hamza.controlsfx.util.NumberUtils;
 import javafx.beans.value.ObservableValue;
 import javafx.collections.FXCollections;
 import javafx.collections.ListChangeListener;

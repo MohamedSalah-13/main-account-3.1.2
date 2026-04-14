@@ -59,10 +59,10 @@ import java.util.ResourceBundle;
 import java.util.function.Predicate;
 import java.util.function.ToDoubleFunction;
 
-import static com.hamza.controlsfx.filechooser.ImageChoose.createIcon;
+import static com.hamza.controlsfx.util.ImageChoose.createIcon;
 import static com.hamza.controlsfx.table.TextSearch.searchTableFromExitedText;
 import static com.hamza.controlsfx.table.columnEdit.ColumnSetting.addColumn;
-import static com.hamza.controlsfx.text.NumberUtils.roundToTwoDecimalPlaces;
+import static com.hamza.controlsfx.util.NumberUtils.roundToTwoDecimalPlaces;
 
 
 @Log4j2

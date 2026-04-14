@@ -6,7 +6,7 @@ import com.hamza.controlsfx.file.Extensions;
 import com.hamza.controlsfx.file.crypto.CryptoDatabaseFile;
 import com.hamza.controlsfx.interfaceData.DownloadTask;
 import com.hamza.controlsfx.language.StringConstants;
-import com.hamza.controlsfx.resize.Opacity_Move_Stage;
+import com.hamza.controlsfx.util.Opacity_Move_Stage;
 import com.hamza.controlsfx.view.BackupApplication;
 import javafx.beans.property.BooleanProperty;
 import javafx.concurrent.Task;

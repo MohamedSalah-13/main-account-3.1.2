@@ -19,7 +19,7 @@ import javafx.scene.layout.Pane;
 import javafx.util.converter.IntegerStringConverter;
 import lombok.RequiredArgsConstructor;
 
-import static com.hamza.controlsfx.filechooser.ImageChoose.createIcon;
+import static com.hamza.controlsfx.util.ImageChoose.createIcon;
 
 @RequiredArgsConstructor
 public class PrintBarcode implements AppSettingInterface {

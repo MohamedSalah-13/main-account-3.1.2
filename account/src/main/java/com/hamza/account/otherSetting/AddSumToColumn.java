@@ -1,6 +1,6 @@
 package com.hamza.account.otherSetting;
 
-import com.hamza.controlsfx.text.NumberUtils;
+import com.hamza.controlsfx.util.NumberUtils;
 import javafx.beans.property.DoubleProperty;
 import javafx.beans.property.SimpleDoubleProperty;
 import javafx.geometry.Pos;

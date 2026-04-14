@@ -25,7 +25,7 @@ import java.net.URL;
 import java.util.ResourceBundle;
 
 import static com.hamza.account.config.PropertiesName.*;
-import static com.hamza.controlsfx.text.NumberUtils.roundToTwoDecimalPlaces;
+import static com.hamza.controlsfx.util.NumberUtils.roundToTwoDecimalPlaces;
 
 
 @Log4j2

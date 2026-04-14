@@ -1,4 +1,4 @@
-package com.hamza.controlsfx.text;
+package com.hamza.controlsfx.util;
 
 import org.jetbrains.annotations.NotNull;
 
