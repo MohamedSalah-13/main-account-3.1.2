@@ -3,7 +3,7 @@ package com.hamza.account.controller.invoice;
 import com.hamza.account.config.PropertiesName;
 import com.hamza.account.controller.main.DataPublisher;
 import com.hamza.account.controller.main.LoadOtherData;
-import com.hamza.account.controller.model_print.ModelPrintInvoice;
+import com.hamza.account.controller.model.ModelPrintInvoice;
 import com.hamza.account.interfaces.api.DataInterface;
 import com.hamza.account.interfaces.api.PurchaseSalesInterface;
 import com.hamza.account.model.base.BaseAccount;

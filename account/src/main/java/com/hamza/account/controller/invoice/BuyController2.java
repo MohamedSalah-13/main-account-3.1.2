@@ -4,7 +4,7 @@ import com.hamza.account.config.Image_Setting;
 import com.hamza.account.config.SaveDatabaseFile;
 import com.hamza.account.controller.main.DataPublisher;
 import com.hamza.account.controller.main.LoadDataAndList;
-import com.hamza.account.controller.model_print.ModelPrintInvoice;
+import com.hamza.account.controller.model.ModelPrintInvoice;
 import com.hamza.account.controller.search.ItemsSearch;
 import com.hamza.account.controller.setting.SettingTabLanguageController;
 import com.hamza.account.features.key_setting.MoveRow;

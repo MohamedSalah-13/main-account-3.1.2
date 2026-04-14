@@ -1,4 +1,4 @@
-package com.hamza.account.controller.model_print;
+package com.hamza.account.controller.model;
 
 import com.hamza.account.model.domain.UnitsModel;
 import lombok.AllArgsConstructor;

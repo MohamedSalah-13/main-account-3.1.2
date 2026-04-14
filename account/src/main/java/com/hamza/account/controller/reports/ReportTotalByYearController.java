@@ -1,6 +1,7 @@
 package com.hamza.account.controller.reports;
 
 import com.hamza.account.config.Image_Setting;
+import com.hamza.account.controller.model.TableDataReports;
 import com.hamza.account.controller.others.ServiceData;
 import com.hamza.account.model.base.BaseTotals;
 import com.hamza.account.model.dao.DaoFactory;
@@ -31,11 +32,11 @@ import java.util.List;
 @FxmlPath(pathFile = "reports/total-year-profit.fxml")
 public class ReportTotalByYearController extends ServiceData {
 
-    private final List<TableData> allData = new ArrayList<>();
+    private final List<TableDataReports> allData = new ArrayList<>();
     @FXML
     private CheckComboBox<String> checkComboBox;
     @FXML
-    private TableView<TableData> tableView;
+    private TableView<TableDataReports> tableView;
     @FXML
     private ComboBox<Integer> comboYear;
     @FXML
@@ -47,7 +48,7 @@ public class ReportTotalByYearController extends ServiceData {
 
     @FXML
     public void initialize() {
-        new TableColumnAnnotation().getTable(tableView, TableData.class);
+        new TableColumnAnnotation().getTable(tableView, TableDataReports.class);
         TableSetting.tableMenuSetting(getClass(), tableView);
 
         checkComboBox.getItems().setAll(Arrays.stream(MonthsEnum.values()).map(MonthsEnum::getArabicName).toList());
@@ -82,7 +83,7 @@ public class ReportTotalByYearController extends ServiceData {
 
         tableView.setRowFactory(tv -> new TableRow<>() {
             @Override
-            protected void updateItem(TableData item, boolean empty) {
+            protected void updateItem(TableDataReports item, boolean empty) {
                 super.updateItem(item, empty);
                 if (empty || item == null) {
                     setStyle("");
@@ -127,7 +128,7 @@ public class ReportTotalByYearController extends ServiceData {
             var sumSalesReProfit = totalSalesRe.stream().filter(total_sales -> LocalDate.parse(total_sales.getDate()).getMonth().getValue() == value.getNumber()).mapToDouble(Total_Sales_Re::getTotal_profit).sum();
 
             String profit = String.format("%.2f", (sumSalesProfit * 100) / sumSales);
-            var build = TableData.builder()
+            var build = TableDataReports.builder()
                     .name(value.getArabicName())
                     .purchase(sumPurchase)
                     .discountPurchase(sumPurchaseDiscount)
@@ -155,21 +156,21 @@ public class ReportTotalByYearController extends ServiceData {
                 .toList();
         tableView.getItems().addAll(filteredData);
 
-        var sumPurchase = filteredData.stream().mapToDouble(TableData::getPurchase).sum();
-        var sumPurchaseDiscount = filteredData.stream().mapToDouble(TableData::getDiscountPurchase).sum();
+        var sumPurchase = filteredData.stream().mapToDouble(TableDataReports::getPurchase).sum();
+        var sumPurchaseDiscount = filteredData.stream().mapToDouble(TableDataReports::getDiscountPurchase).sum();
 
-        var sumSales = filteredData.stream().mapToDouble(TableData::getSales).sum();
-        var sumSalesDiscount = filteredData.stream().mapToDouble(TableData::getDiscountSales).sum();
+        var sumSales = filteredData.stream().mapToDouble(TableDataReports::getSales).sum();
+        var sumSalesDiscount = filteredData.stream().mapToDouble(TableDataReports::getDiscountSales).sum();
 
-        var sumPurchaseRe = filteredData.stream().mapToDouble(TableData::getPurchaseRe).sum();
-        var sumPurchaseReDiscount = filteredData.stream().mapToDouble(TableData::getDiscountPurchaseRe).sum();
+        var sumPurchaseRe = filteredData.stream().mapToDouble(TableDataReports::getPurchaseRe).sum();
+        var sumPurchaseReDiscount = filteredData.stream().mapToDouble(TableDataReports::getDiscountPurchaseRe).sum();
 
-        var sumSalesRe = filteredData.stream().mapToDouble(TableData::getSalesRe).sum();
-        var sumSalesReDiscount = filteredData.stream().mapToDouble(TableData::getDiscountSalesRe).sum();
+        var sumSalesRe = filteredData.stream().mapToDouble(TableDataReports::getSalesRe).sum();
+        var sumSalesReDiscount = filteredData.stream().mapToDouble(TableDataReports::getDiscountSalesRe).sum();
 
-        var sumProfit = filteredData.stream().mapToDouble(TableData::getProfit).sum();
+        var sumProfit = filteredData.stream().mapToDouble(TableDataReports::getProfit).sum();
 
-        tableView.getItems().add(TableData.builder()
+        tableView.getItems().add(TableDataReports.builder()
                 .name(Setting_Language.WORD_TOTAL)
                 .purchase(sumPurchase)
                 .discountPurchase(sumPurchaseDiscount)

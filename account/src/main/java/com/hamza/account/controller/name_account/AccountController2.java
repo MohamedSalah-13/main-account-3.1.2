@@ -4,7 +4,7 @@ import com.hamza.account.config.Image_Setting;
 import com.hamza.account.config.PropertiesName;
 import com.hamza.account.controller.main.DataPublisher;
 import com.hamza.account.controller.main.LoadOtherData;
-import com.hamza.account.controller.model_print.TreeAccountModelForPrint;
+import com.hamza.account.controller.model.TreeAccountModelForPrint;
 import com.hamza.account.controller.name_account.impl.AccountTotalsPurchase;
 import com.hamza.account.controller.name_account.impl.AccountTotalsSales;
 import com.hamza.account.controller.others.SelectedButton;

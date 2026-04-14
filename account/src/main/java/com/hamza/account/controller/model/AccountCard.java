@@ -1,4 +1,4 @@
-package com.hamza.account.controller.name_account;
+package com.hamza.account.controller.model;
 
 import lombok.Getter;
 import lombok.Setter;

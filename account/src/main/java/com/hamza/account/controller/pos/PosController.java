@@ -5,7 +5,7 @@ import com.hamza.account.config.Image_Setting;
 import com.hamza.account.controller.main.DataPublisher;
 import com.hamza.account.controller.main.DisableButtons;
 import com.hamza.account.controller.main.LoadDataAndList;
-import com.hamza.account.controller.model_print.ModelPrintInvoice;
+import com.hamza.account.controller.model.ModelPrintInvoice;
 import com.hamza.account.controller.name_account.NameController;
 import com.hamza.account.interfaces.api.DataInterface;
 import com.hamza.account.interfaces.impl_dataInterface.CustomData;

@@ -1,6 +1,6 @@
 package com.hamza.account.controller.name_account.impl;
 
-import com.hamza.account.controller.name_account.AccountCard;
+import com.hamza.account.controller.model.AccountCard;
 import com.hamza.account.controller.name_account.AccountDetailsInterface;
 import com.hamza.account.controller.others.ServiceData;
 import com.hamza.account.model.dao.DaoFactory;

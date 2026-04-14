@@ -1,4 +1,4 @@
-package com.hamza.account.controller.model_print;
+package com.hamza.account.controller.model;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;

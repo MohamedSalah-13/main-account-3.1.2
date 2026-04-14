@@ -1,6 +1,6 @@
 package com.hamza.account.interfaces.api;
 
-import com.hamza.account.controller.model_print.PrintPurchaseWithName;
+import com.hamza.account.controller.model.PrintPurchaseWithName;
 import com.hamza.account.interfaces.FilterDateInterface;
 import com.hamza.account.interfaces.spinner.SpinnerInterface;
 import com.hamza.account.model.base.BaseAccount;

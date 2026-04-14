@@ -1,4 +1,4 @@
-package com.hamza.account.controller.pos;
+package com.hamza.account.controller.model;
 
 import com.hamza.account.type.InvoiceType;
 import lombok.Data;

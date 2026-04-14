@@ -2,7 +2,7 @@ package com.hamza.account.interfaces.treeAccount;
 
 import com.hamza.account.controller.main.DataPublisher;
 import com.hamza.account.controller.main.LoadData;
-import com.hamza.account.controller.model_print.TreeAccountModelForPrint;
+import com.hamza.account.controller.model.TreeAccountModelForPrint;
 import com.hamza.account.controller.name_account.AccountDetailsController;
 import com.hamza.account.interfaces.ReportTreeInterface;
 import com.hamza.account.interfaces.api.AccountData;

@@ -1,7 +1,7 @@
 package com.hamza.account.controller.reports;
 
 import com.hamza.account.config.FxmlConstants;
-import com.hamza.account.controller.reports.model.DataTable;
+import com.hamza.account.controller.model.DataTable;
 import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.model.domain.CustomerAccount;
 import com.hamza.account.model.domain.Total_Sales;

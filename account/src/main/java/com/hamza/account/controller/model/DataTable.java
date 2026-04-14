@@ -1,4 +1,4 @@
-package com.hamza.account.controller.reports.model;
+package com.hamza.account.controller.model;
 
 import javafx.beans.property.DoubleProperty;
 import javafx.beans.property.SimpleDoubleProperty;

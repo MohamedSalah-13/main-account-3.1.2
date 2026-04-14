@@ -2,8 +2,8 @@ package com.hamza.account.controller.target;
 
 import com.hamza.account.features.chart.ChartDesign;
 import com.hamza.account.controller.main.DataPublisher;
-import com.hamza.account.controller.model_print.PrintTotalsData;
-import com.hamza.account.controller.model_print.TreeAccountModelForPrint;
+import com.hamza.account.controller.model.PrintTotalsData;
+import com.hamza.account.controller.model.TreeAccountModelForPrint;
 import com.hamza.account.controller.others.ServiceData;
 import com.hamza.account.controller.reports.ToolbarReportsNameController;
 import com.hamza.account.controller.reports.ToolbarReportsNameInterface;

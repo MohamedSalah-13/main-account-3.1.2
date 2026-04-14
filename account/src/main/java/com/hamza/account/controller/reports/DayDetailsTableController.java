@@ -1,7 +1,7 @@
 package com.hamza.account.controller.reports;
 
 import com.hamza.account.controller.others.SearchDateController;
-import com.hamza.account.controller.reports.model.DayModel;
+import com.hamza.account.controller.model.DayModel;
 import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.model.domain.CustomerAccount;
 import com.hamza.account.model.domain.Total_Sales;

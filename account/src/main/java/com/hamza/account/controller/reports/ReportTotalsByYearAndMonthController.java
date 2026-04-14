@@ -1,6 +1,6 @@
 package com.hamza.account.controller.reports;
 
-import com.hamza.account.controller.reports.model.TableTotals;
+import com.hamza.account.controller.model.TableTotals;
 import com.hamza.account.features.export.ReportExportService;
 import com.hamza.account.interfaces.ReportTotalsInterface;
 import com.hamza.account.interfaces.api.DataInterface;

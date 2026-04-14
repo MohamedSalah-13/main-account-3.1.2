@@ -1,4 +1,4 @@
-package com.hamza.account.controller.reports;
+package com.hamza.account.controller.model;
 
 import com.hamza.controlsfx.table.ColumnData;
 import lombok.Builder;
@@ -8,7 +8,7 @@ import lombok.Setter;
 @Getter
 @Setter
 @Builder
-public class TableData {
+public class TableDataReports {
 
     @ColumnData(titleName = "الشهر")
     private String name;

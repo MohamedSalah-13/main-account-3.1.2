@@ -1,5 +1,6 @@
 package com.hamza.account.controller.pos;
 
+import com.hamza.account.controller.model.InvoiceData;
 import com.hamza.account.type.InvoiceType;
 import com.hamza.controlsfx.others.Utils;
 import javafx.scene.control.*;

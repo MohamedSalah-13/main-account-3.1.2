@@ -1,6 +1,6 @@
 package com.hamza.account.features.export;
 
-import com.hamza.account.controller.reports.model.TableTotals;
+import com.hamza.account.controller.model.TableTotals;
 import com.itextpdf.kernel.geom.PageSize;
 import javafx.collections.ObservableList;
 import lombok.extern.log4j.Log4j2;

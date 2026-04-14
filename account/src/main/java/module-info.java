@@ -95,8 +95,8 @@ module com.hamza.account {
     exports com.hamza.account.controller.invoice;
     exports com.hamza.account.controller.convert_stock;
     opens com.hamza.account.controller.convert_stock to javafx.fxml;
-    opens com.hamza.account.controller.model_print to javafx.fxml;
-    exports com.hamza.account.controller.model_print;
+    opens com.hamza.account.controller.model to javafx.fxml;
+    exports com.hamza.account.controller.model;
     exports com.hamza.account.controller.convert_treasury;
     opens com.hamza.account.controller.convert_treasury to javafx.fxml;
     exports com.hamza.account.dash;
@@ -134,8 +134,6 @@ module com.hamza.account {
     exports com.hamza.account;
     opens com.hamza.account to javafx.fxml;
     opens com.hamza.account.config;
-    exports com.hamza.account.controller.reports.model;
-    opens com.hamza.account.controller.reports.model to javafx.fxml;
     exports com.hamza.account.controller.pos;
     opens com.hamza.account.controller.pos to javafx.fxml;
     exports com.hamza.account.features.key_setting;
