@@ -1,6 +1,6 @@
 package com.hamza.controlsfx.controller;
 
-import com.hamza.controlsfx.file.FileDir;
+import com.hamza.controlsfx.util.FileDir;
 import com.hamza.controlsfx.language.StringConstants;
 import javafx.application.Platform;
 import javafx.concurrent.Task;

@@ -2,8 +2,8 @@ package com.hamza.controlsfx.controller;
 
 import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.backupPane.DatabaseBackup;
-import com.hamza.controlsfx.file.Extensions;
-import com.hamza.controlsfx.file.crypto.CryptoDatabaseFile;
+import com.hamza.controlsfx.util.Extensions;
+import com.hamza.controlsfx.util.crypto.CryptoDatabaseFile;
 import com.hamza.controlsfx.interfaceData.DownloadTask;
 import com.hamza.controlsfx.language.StringConstants;
 import com.hamza.controlsfx.util.Opacity_Move_Stage;

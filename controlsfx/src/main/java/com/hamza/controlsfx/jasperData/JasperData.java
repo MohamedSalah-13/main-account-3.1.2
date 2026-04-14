@@ -2,7 +2,7 @@ package com.hamza.controlsfx.jasperData;
 
 import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.language.Setting_Language;
-import com.hamza.controlsfx.print.CheckPrinterSetting;
+import com.hamza.controlsfx.util.CheckPrinterSetting;
 import lombok.extern.log4j.Log4j2;
 import net.sf.jasperreports.engine.*;
 import net.sf.jasperreports.engine.design.JasperDesign;

@@ -41,20 +41,17 @@ module com.hamza.controlsfx {
     exports com.hamza.controlsfx;
     exports com.hamza.controlsfx.database;
     exports com.hamza.controlsfx.backupPane;
-    exports com.hamza.controlsfx.file.crypto;
+    exports com.hamza.controlsfx.util.crypto;
     exports com.hamza.controlsfx.dateTime;
     exports com.hamza.controlsfx.dateTime.impl;
     exports com.hamza.controlsfx.excel;
-    exports com.hamza.controlsfx.file;
     exports com.hamza.controlsfx.font;
 
-    exports com.hamza.controlsfx.serial;
     exports com.hamza.controlsfx.type;
 
     exports com.hamza.controlsfx.language;
     opens com.hamza.controlsfx.language to javafx.fxml;
-    exports com.hamza.controlsfx.print;
-    opens com.hamza.controlsfx.print to javafx.fxml;
     exports com.hamza.controlsfx.jasperData;
     opens com.hamza.controlsfx.interfaceData to javafx.fxml;
+    opens com.hamza.controlsfx.util to javafx.fxml;
 }

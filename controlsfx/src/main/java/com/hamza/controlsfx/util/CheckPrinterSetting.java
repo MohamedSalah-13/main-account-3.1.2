@@ -1,4 +1,4 @@
-package com.hamza.controlsfx.print;
+package com.hamza.controlsfx.util;
 
 import javafx.print.Printer;
 import org.jetbrains.annotations.NotNull;

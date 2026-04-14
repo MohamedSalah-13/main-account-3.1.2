@@ -1,4 +1,4 @@
-package com.hamza.controlsfx.file;
+package com.hamza.controlsfx.util;
 
 import javafx.stage.FileChooser;
 

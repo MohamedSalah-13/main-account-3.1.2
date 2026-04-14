@@ -1,4 +1,4 @@
-package com.hamza.controlsfx.file.crypto;
+package com.hamza.controlsfx.util.crypto;
 
 import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
