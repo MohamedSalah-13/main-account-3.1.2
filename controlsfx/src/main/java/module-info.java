@@ -48,12 +48,11 @@ module com.hamza.controlsfx {
     exports com.hamza.controlsfx.excel;
     exports com.hamza.controlsfx.file;
     exports com.hamza.controlsfx.font;
-    exports com.hamza.controlsfx.file.json;
-    exports com.hamza.controlsfx.file.network;
+
     exports com.hamza.controlsfx.serial;
     exports com.hamza.controlsfx.text;
     exports com.hamza.controlsfx.type;
-    exports com.hamza.controlsfx.file.xml_properties;
+
     exports com.hamza.controlsfx.language;
     opens com.hamza.controlsfx.language to javafx.fxml;
     exports com.hamza.controlsfx.print;
