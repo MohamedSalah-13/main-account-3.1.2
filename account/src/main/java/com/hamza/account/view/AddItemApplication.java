@@ -22,17 +22,6 @@ public class AddItemApplication extends Application {
     private final DataPublisher dataPublisher;
     private final DaoFactory daoFactory;
 
-    public AddItemApplication() {
-        this(0, new DataPublisher(), DownLoadApplication.getDaoFactory());
-        LoadDataAndList loadDataAndList = new LoadDataAndList(daoFactory);
-        loadDataAndList.get2ItemsLoad();
-    }
-
-    public static void main(String[] args) {
-        LogApplication.usersVo = new Users(1);
-        launch(args);
-    }
-
     @Override
     public void start(Stage stage) throws Exception {
         var addItemController = new AddItemController(num, dataPublisher, daoFactory);

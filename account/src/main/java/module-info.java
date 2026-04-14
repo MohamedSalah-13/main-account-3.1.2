@@ -28,6 +28,8 @@ module com.hamza.account {
     requires javafx.controls;
     requires com.github.librepdf.openpdf;
     requires org.json;
+//    requires spring.context;
+//    requires spring.beans;
 //    requires licensing.base;
 //    requires typography;
 

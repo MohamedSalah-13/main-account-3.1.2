@@ -7,11 +7,11 @@ import com.hamza.account.controller.main.LoadDataAndList;
 import com.hamza.account.controller.model_print.ModelPrintInvoice;
 import com.hamza.account.controller.search.ItemsSearch;
 import com.hamza.account.controller.setting.SettingTabLanguageController;
-import com.hamza.account.interfaces.api.DataInterface;
-import com.hamza.account.interfaces.api.TotalsDataInterface;
 import com.hamza.account.features.key_setting.MoveRow;
 import com.hamza.account.features.key_setting.UpdateInterface;
 import com.hamza.account.features.key_setting.UpdateQuantity;
+import com.hamza.account.interfaces.api.DataInterface;
+import com.hamza.account.interfaces.api.TotalsDataInterface;
 import com.hamza.account.model.base.BaseAccount;
 import com.hamza.account.model.base.BaseNames;
 import com.hamza.account.model.base.BasePurchasesAndSales;
@@ -86,10 +86,10 @@ import static com.hamza.account.config.PropertiesName.*;
 import static com.hamza.account.controller.invoice.DialogCashPaid.showCashChangeDialog;
 import static com.hamza.account.controller.invoice.UpdateInvoiceRow.updateData;
 import static com.hamza.controlsfx.dateTime.DateUtils.DATE_TIME_FORMATTER;
-import static com.hamza.controlsfx.util.ImageChoose.createIcon;
 import static com.hamza.controlsfx.others.Utils.setTextFormatter;
 import static com.hamza.controlsfx.others.Utils.whenEnterPressed;
 import static com.hamza.controlsfx.table.columnEdit.ColumnSetting.addColumn;
+import static com.hamza.controlsfx.util.ImageChoose.createIcon;
 import static com.hamza.controlsfx.util.NumberUtils.roundToTwoDecimalPlaces;
 
 @Log4j2
@@ -134,7 +134,6 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
     @FXML
     private TextArea txtNotes;
     private MaskerPaneSetting maskerPaneSetting;
-
 
     public BuyController2(DataInterface<T1, T2, T3, T4> dataInterface, DaoFactory daoFactory
             , DataPublisher dataPublisher, int numInvoiceUpdate) throws Exception {
@@ -1028,7 +1027,7 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
 
         // hide data table if not admin
         var b = LogApplication.usersVo.getId() == 1;
-        if(b){
+        if (b) {
             // show table menu
             TableSetting.tableMenuSetting(getClass(), table);
         }
