@@ -15,7 +15,7 @@ import com.hamza.account.model.base.BasePurchasesAndSales;
 import com.hamza.account.model.base.BaseTotals;
 import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.model.domain.*;
-import com.hamza.account.notification.ItemNotifications;
+import com.hamza.account.features.notification.ItemNotifications;
 import com.hamza.account.openFxml.OpenFxmlApplication;
 import com.hamza.account.service.AccountCustomerService;
 import com.hamza.account.service.AccountSupplierService;

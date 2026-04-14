@@ -1,7 +1,7 @@
 package com.hamza.account.otherSetting;
 
-import com.hamza.account.checkbox.impl.setting.BarcodePrintPrice;
-import com.hamza.account.checkbox.impl.setting.CheckPrintBarcode;
+import com.hamza.account.features.checkbox.impl.setting.BarcodePrintPrice;
+import com.hamza.account.features.checkbox.impl.setting.CheckPrintBarcode;
 
 public class BarcodeDetails {
 

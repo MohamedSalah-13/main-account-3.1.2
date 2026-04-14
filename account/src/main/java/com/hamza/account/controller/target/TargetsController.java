@@ -1,6 +1,6 @@
 package com.hamza.account.controller.target;
 
-import com.hamza.account.chart.ChartDesign;
+import com.hamza.account.features.chart.ChartDesign;
 import com.hamza.account.controller.main.DataPublisher;
 import com.hamza.account.controller.model_print.PrintTotalsData;
 import com.hamza.account.controller.model_print.TreeAccountModelForPrint;

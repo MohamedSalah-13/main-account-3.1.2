@@ -43,9 +43,7 @@ module com.hamza.controlsfx {
     exports com.hamza.controlsfx.backupPane;
     exports com.hamza.controlsfx.util.crypto;
     exports com.hamza.controlsfx.dateTime;
-    exports com.hamza.controlsfx.dateTime.impl;
     exports com.hamza.controlsfx.excel;
-    exports com.hamza.controlsfx.font;
 
     exports com.hamza.controlsfx.type;
 

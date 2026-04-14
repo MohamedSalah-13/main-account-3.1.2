@@ -101,23 +101,6 @@ public class DateUtils {
         return FXCollections.observableArrayList(years);
     }
 
-    /**
-     * Adjusts the given LocalDate by a specified amount of time in days, months, or years according to the specified unit.
-     *
-     * @param amount the amount of time to adjust the LocalDate by, which can be positive or negative
-     * @param unit the unit of time for the adjustment; valid values are "Day", "Month", or "Year"
-     * @param date the initial LocalDate to be adjusted
-     * @param dateInterfaceSetting an implementation of DateInterfaceSetting used for the adjustment operations
-     * @return a new LocalDate adjusted by the specified unit and amount, or null if the unit is not "Day", "Month", or "Year"
-     */
-    public static LocalDate adjustLocalDate(long amount, @NotNull String unit, @NotNull LocalDate date, @NotNull DateInterfaceSetting dateInterfaceSetting) {
-        return switch (unit) {
-            case "Day" -> dateInterfaceSetting.localDate_day(date, amount);
-            case "Month" -> dateInterfaceSetting.localDate_month(date, amount);
-            case "Year" -> dateInterfaceSetting.localDate_year(date, amount);
-            default -> null;
-        };
-    }
 
     /**
      * Extracts minimum date from a list of objects using a provided date string extractor function.

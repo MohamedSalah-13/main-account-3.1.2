@@ -37,8 +37,8 @@ module com.hamza.account {
     exports com.hamza.account.interfaces.impl_invoiceBuy;
     opens com.hamza.account.interfaces.impl_invoiceBuy to javafx.fxml;
 
-    exports com.hamza.account.checkbox.api;
-    opens com.hamza.account.checkbox.api to javafx.fxml;
+    exports com.hamza.account.features.checkbox.api;
+    opens com.hamza.account.features.checkbox.api to javafx.fxml;
 
     exports com.hamza.account.interfaces.impl_dataInterface;
     opens com.hamza.account.interfaces.impl_dataInterface to javafx.fxml;
@@ -47,9 +47,9 @@ module com.hamza.account {
 
     exports com.hamza.account.service;
     opens com.hamza.account.service to javafx.fxml;
-    exports com.hamza.account.choiceDialoge;
-    exports com.hamza.account.chart;
-    opens com.hamza.account.chart to javafx.fxml;
+    exports com.hamza.account.features.choiceDialoge;
+    exports com.hamza.account.features.chart;
+    opens com.hamza.account.features.chart to javafx.fxml;
     exports com.hamza.account.interfaces.treeAccount;
     opens com.hamza.account.interfaces.treeAccount to javafx.fxml;
     exports com.hamza.account.interfaces.implReportTotals;
@@ -58,15 +58,15 @@ module com.hamza.account {
     exports com.hamza.account.config;
     exports com.hamza.account.interfaces.impl_totalDesgin;
     opens com.hamza.account.interfaces.impl_totalDesgin to javafx.fxml;
-    opens com.hamza.account.choiceDialoge to javafx.fxml;
+    opens com.hamza.account.features.choiceDialoge to javafx.fxml;
     opens com.hamza.account.model.domain to javafx.fxml;
     exports com.hamza.account.interfaces.impl_design;
     opens com.hamza.account.interfaces.impl_design to javafx.fxml;
     exports com.hamza.account.table;
     exports com.hamza.account.view;
     opens com.hamza.account.view to javafx.fxml;
-    exports com.hamza.account.checkbox.impl.setting;
-    opens com.hamza.account.checkbox.impl.setting to javafx.fxml;
+    exports com.hamza.account.features.checkbox.impl.setting;
+    opens com.hamza.account.features.checkbox.impl.setting to javafx.fxml;
     exports com.hamza.account.model.dao;
     exports com.hamza.account.interfaces.impl_namesDao;
     opens com.hamza.account.interfaces.impl_namesDao to javafx.fxml;
@@ -117,8 +117,8 @@ module com.hamza.account {
     opens com.hamza.account.table;
     exports com.hamza.account.view.barcode;
     opens com.hamza.account.view.barcode to javafx.fxml;
-    exports com.hamza.account.notification;
-    opens com.hamza.account.notification to javafx.fxml;
+    exports com.hamza.account.features.notification;
+    opens com.hamza.account.features.notification to javafx.fxml;
     exports com.hamza.account.controller.dataSetting;
     opens com.hamza.account.controller.dataSetting to javafx.fxml;
     exports com.hamza.account.controller.dataSetting.impl;
@@ -136,16 +136,12 @@ module com.hamza.account {
     opens com.hamza.account.controller.reports.model to javafx.fxml;
     exports com.hamza.account.controller.pos;
     opens com.hamza.account.controller.pos to javafx.fxml;
-    exports com.hamza.account.key_setting;
-    opens com.hamza.account.key_setting to javafx.fxml;
+    exports com.hamza.account.features.key_setting;
+    opens com.hamza.account.features.key_setting to javafx.fxml;
     exports com.hamza.account.view.calculator;
     exports com.hamza.account.controller.calculator;
     opens com.hamza.account.view.calculator to javafx.fxml;
     opens com.hamza.account.controller.calculator to javafx.fxml;
-    exports com.hamza.account.features;
-    opens com.hamza.account.features;
     exports com.hamza.account.features.export;
     opens com.hamza.account.features.export;
-    exports com.hamza.account.conditional;
-    opens com.hamza.account.conditional;
 }

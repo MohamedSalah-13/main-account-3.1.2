@@ -1,6 +1,6 @@
 package com.hamza.account.reportData;
 
-import com.hamza.account.checkbox.impl.setting.BarcodePrintDoubleLabel;
+import com.hamza.account.features.checkbox.impl.setting.BarcodePrintDoubleLabel;
 import com.hamza.account.config.ConnectionToDatabase;
 import com.hamza.account.controller.invoice.ShowInvoiceNameData;
 import com.hamza.account.controller.model_print.ModelPrintInvoice;

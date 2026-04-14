@@ -15,7 +15,7 @@ import com.hamza.account.controller.main.MainItems;
 import com.hamza.account.controller.others.ImportDataFromExcelFileController;
 import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.model.domain.ItemsMiniQuantity;
-import com.hamza.account.notification.NotifyItemAlert;
+import com.hamza.account.features.notification.NotifyItemAlert;
 import com.hamza.account.openFxml.OpenFxmlApplication;
 import com.hamza.account.table.TableOpen;
 import com.hamza.account.type.UserPermissionType;

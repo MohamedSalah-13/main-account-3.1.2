@@ -1,6 +1,6 @@
 package com.hamza.account.dash;
 
-import com.hamza.account.choiceDialoge.ChangeUserName;
+import com.hamza.account.features.choiceDialoge.ChangeUserName;
 import com.hamza.account.controller.main.ButtonWithPerm;
 import com.hamza.account.controller.main.DataPublisher;
 import com.hamza.account.controller.main.LoadData;

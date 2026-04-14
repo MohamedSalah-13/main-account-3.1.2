@@ -1,10 +1,10 @@
 package com.hamza.account.controller.setting;
 
-import com.hamza.account.checkbox.api.CheckBox_Setting;
-import com.hamza.account.checkbox.impl.setting.BarcodePrintDoubleLabel;
-import com.hamza.account.checkbox.impl.setting.BarcodePrintName;
-import com.hamza.account.checkbox.impl.setting.BarcodePrintPrice;
-import com.hamza.account.checkbox.impl.setting.CheckPrintBarcode;
+import com.hamza.account.features.checkbox.api.CheckBox_Setting;
+import com.hamza.account.features.checkbox.impl.setting.BarcodePrintDoubleLabel;
+import com.hamza.account.features.checkbox.impl.setting.BarcodePrintName;
+import com.hamza.account.features.checkbox.impl.setting.BarcodePrintPrice;
+import com.hamza.account.features.checkbox.impl.setting.CheckPrintBarcode;
 import com.hamza.account.config.FxmlConstants;
 import com.hamza.account.controller.others.ServiceData;
 import com.hamza.account.model.dao.DaoFactory;

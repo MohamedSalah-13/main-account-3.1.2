@@ -1,7 +1,7 @@
 package com.hamza.account.controller.setting;
 
-import com.hamza.account.choiceDialoge.ChoiceDialogSetting;
-import com.hamza.account.choiceDialoge.ChoosePrinter;
+import com.hamza.account.features.choiceDialoge.ChoiceDialogSetting;
+import com.hamza.account.features.choiceDialoge.ChoosePrinter;
 import com.hamza.account.config.Image_Setting;
 import com.hamza.account.config.PropertiesName;
 import com.hamza.account.controller.main.DataPublisher;
