@@ -15,7 +15,7 @@ import java.net.URL;
 import java.util.List;
 import java.util.ResourceBundle;
 
-import static com.hamza.controlsfx.filechooser.ImageChoose.createIcon;
+import static com.hamza.controlsfx.util.ImageChoose.createIcon;
 
 @FxmlPath(pathFile = "add-data.fxml")
 @Log4j2

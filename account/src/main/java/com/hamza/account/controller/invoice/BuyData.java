@@ -19,7 +19,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.function.ToDoubleFunction;
 
-import static com.hamza.controlsfx.text.NumberUtils.roundToTwoDecimalPlaces;
+import static com.hamza.controlsfx.util.NumberUtils.roundToTwoDecimalPlaces;
 
 public class BuyData<T1 extends BasePurchasesAndSales, T2 extends BaseTotals, T3 extends BaseNames, T4 extends BaseAccount>
         extends ServiceData {

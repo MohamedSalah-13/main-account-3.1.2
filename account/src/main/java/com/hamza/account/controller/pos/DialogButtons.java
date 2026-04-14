@@ -12,7 +12,7 @@ import javafx.stage.Stage;
 
 import java.awt.*;
 
-import static com.hamza.controlsfx.filechooser.ImageChoose.createIcon;
+import static com.hamza.controlsfx.util.ImageChoose.createIcon;
 
 public class DialogButtons {
 

@@ -17,7 +17,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 
-import static com.hamza.controlsfx.text.NumberUtils.roundToTwoDecimalPlaces;
+import static com.hamza.controlsfx.util.NumberUtils.roundToTwoDecimalPlaces;
 
 @Log4j2
 public class TotalsSalesDao extends AbstractDao<Total_Sales> {

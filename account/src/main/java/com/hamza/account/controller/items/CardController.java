@@ -22,7 +22,7 @@ import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.button.api.ButtonColumnI;
 import com.hamza.controlsfx.button.button_column.ButtonColumn;
 import com.hamza.controlsfx.database.DaoException;
-import com.hamza.controlsfx.filechooser.ImageChoose;
+import com.hamza.controlsfx.util.ImageChoose;
 import com.hamza.controlsfx.interfaceData.AppSettingInterface;
 import com.hamza.controlsfx.language.Setting_Language;
 import com.hamza.controlsfx.others.DateSetting;

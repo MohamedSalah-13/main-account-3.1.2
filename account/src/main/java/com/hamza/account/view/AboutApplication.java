@@ -7,7 +7,7 @@ import com.hamza.account.config.Style_Sheet;
 import com.hamza.account.trial.TrialManager;
 import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.button.ImageDesign;
-import com.hamza.controlsfx.filechooser.ImageChoose;
+import com.hamza.controlsfx.util.ImageChoose;
 import com.hamza.controlsfx.language.Setting_Language;
 import com.hamza.controlsfx.others.ChangeOrientation;
 import javafx.application.Application;
@@ -27,7 +27,6 @@ import lombok.extern.log4j.Log4j2;
 
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
-import java.time.format.DateTimeFormatter;
 import java.util.Properties;
 
 @Log4j2

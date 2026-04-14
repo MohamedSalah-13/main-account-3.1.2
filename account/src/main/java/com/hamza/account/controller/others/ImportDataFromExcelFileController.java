@@ -45,7 +45,7 @@ import java.util.stream.Collectors;
 
 import static com.hamza.controlsfx.dateTime.DateUtils.generateRandomBarcode;
 import static com.hamza.controlsfx.table.TextSearch.searchTableFromExitedText;
-import static com.hamza.controlsfx.text.NumberUtils.roundToTwoDecimalPlaces;
+import static com.hamza.controlsfx.util.NumberUtils.roundToTwoDecimalPlaces;
 
 @Log4j2
 @FxmlPath(pathFile = "excel-view.fxml")

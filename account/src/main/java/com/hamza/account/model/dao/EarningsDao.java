@@ -4,7 +4,7 @@ import com.hamza.account.model.domain.Earnings;
 import com.hamza.account.model.domain.Users;
 import com.hamza.controlsfx.database.AbstractDao;
 import com.hamza.controlsfx.database.DaoException;
-import com.hamza.controlsfx.text.NumberUtils;
+import com.hamza.controlsfx.util.NumberUtils;
 
 import java.sql.Connection;
 import java.sql.ResultSet;

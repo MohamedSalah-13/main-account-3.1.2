@@ -19,7 +19,7 @@ import com.hamza.controlsfx.observer.Publisher;
 import com.hamza.controlsfx.others.DateSetting;
 import com.hamza.controlsfx.others.Utils;
 import com.hamza.controlsfx.table.TableColumnAnnotation;
-import com.hamza.controlsfx.text.MaxNumberList;
+import com.hamza.controlsfx.util.MaxNumberList;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;

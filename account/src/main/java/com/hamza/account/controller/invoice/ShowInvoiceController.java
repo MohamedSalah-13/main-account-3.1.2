@@ -47,7 +47,7 @@ import java.util.ResourceBundle;
 import java.util.function.ToDoubleFunction;
 
 import static com.hamza.controlsfx.table.columnEdit.ColumnSetting.addColumn;
-import static com.hamza.controlsfx.text.NumberUtils.roundToTwoDecimalPlaces;
+import static com.hamza.controlsfx.util.NumberUtils.roundToTwoDecimalPlaces;
 
 @Log4j2
 @FxmlPath(pathFile = "invoice/showInv-view.fxml")

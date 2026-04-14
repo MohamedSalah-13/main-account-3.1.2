@@ -21,7 +21,7 @@ import com.hamza.account.table.TableSetting;
 import com.hamza.account.view.AddAccountApplication;
 import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.dateTime.SearchInTwoDate;
-import com.hamza.controlsfx.filechooser.ImageChoose;
+import com.hamza.controlsfx.util.ImageChoose;
 import com.hamza.controlsfx.interfaceData.AppSettingInterface;
 import com.hamza.controlsfx.language.Setting_Language;
 import com.hamza.controlsfx.others.CssToColorHelper;
@@ -45,7 +45,7 @@ import java.util.function.Predicate;
 
 import static com.hamza.controlsfx.dateTime.DateUtils.getMinDateWithFilter;
 import static com.hamza.controlsfx.table.Table_Setting.createTable;
-import static com.hamza.controlsfx.text.NumberUtils.roundToTwoDecimalPlaces;
+import static com.hamza.controlsfx.util.NumberUtils.roundToTwoDecimalPlaces;
 
 @Log4j2
 @FxmlPath(pathFile = "accountDetails-view.fxml")

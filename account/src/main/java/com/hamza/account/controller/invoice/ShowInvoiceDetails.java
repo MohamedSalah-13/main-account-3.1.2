@@ -10,7 +10,7 @@ import com.hamza.account.type.InvoiceType;
 
 import java.util.HashMap;
 
-import static com.hamza.controlsfx.text.NumberUtils.roundToTwoDecimalPlaces;
+import static com.hamza.controlsfx.util.NumberUtils.roundToTwoDecimalPlaces;
 
 public class ShowInvoiceDetails {
 
