@@ -93,7 +93,7 @@
 		<![CDATA[]]>
 	</queryString>
 	<title>
-		<band height="91" splitType="Stretch">
+		<band height="143" splitType="Stretch">
 			<image hAlign="Center" vAlign="Middle">
 				<reportElement x="2" y="0" width="199" height="69" uuid="5c341682-1b13-4c00-8dd5-5b3e88599d24"/>
 				<imageExpression><![CDATA[$P{compImage}]]></imageExpression>
@@ -111,12 +111,8 @@
 				</textElement>
 				<textFieldExpression><![CDATA[$P{compName}]]></textFieldExpression>
 			</textField>
-		</band>
-	</title>
-	<pageHeader>
-		<band height="54">
 			<textField textAdjust="ScaleFont">
-				<reportElement x="107" y="4" width="62" height="15" uuid="bdc18b9d-0cb6-457c-8c3b-bc838258f942">
+				<reportElement x="106" y="94" width="62" height="15" uuid="bdc18b9d-0cb6-457c-8c3b-bc838258f942">
 					<property name="com.jaspersoft.studio.unit.height" value="px"/>
 					<property name="com.jaspersoft.studio.unit.width" value="px"/>
 				</reportElement>
@@ -133,7 +129,7 @@
 				<textFieldExpression><![CDATA[$P{count}]]></textFieldExpression>
 			</textField>
 			<textField textAdjust="ScaleFont">
-				<reportElement x="107" y="19" width="62" height="15" uuid="99db2595-293d-436e-b84d-21cdb9fa8407">
+				<reportElement x="106" y="109" width="62" height="15" uuid="99db2595-293d-436e-b84d-21cdb9fa8407">
 					<property name="com.jaspersoft.studio.unit.height" value="px"/>
 					<property name="com.jaspersoft.studio.unit.width" value="px"/>
 				</reportElement>
@@ -150,7 +146,7 @@
 				<textFieldExpression><![CDATA[$P{invoice_date}]]></textFieldExpression>
 			</textField>
 			<textField textAdjust="ScaleFont">
-				<reportElement x="107" y="34" width="62" height="15" uuid="10840e86-9162-4a45-b947-21d4fc7e8784">
+				<reportElement x="106" y="124" width="62" height="15" uuid="10840e86-9162-4a45-b947-21d4fc7e8784">
 					<property name="com.jaspersoft.studio.unit.height" value="px"/>
 					<property name="com.jaspersoft.studio.unit.width" value="px"/>
 				</reportElement>
@@ -167,7 +163,7 @@
 				<textFieldExpression><![CDATA[$P{admin}]]></textFieldExpression>
 			</textField>
 			<textField textAdjust="ScaleFont">
-				<reportElement x="1" y="4" width="70" height="15" uuid="f0bd8f30-afdd-4264-88e0-7e8629312e05">
+				<reportElement x="0" y="94" width="70" height="15" uuid="f0bd8f30-afdd-4264-88e0-7e8629312e05">
 					<property name="com.jaspersoft.studio.unit.width" value="px"/>
 				</reportElement>
 				<box>
@@ -183,7 +179,7 @@
 				<textFieldExpression><![CDATA[$P{No_Invoice}]]></textFieldExpression>
 			</textField>
 			<textField textAdjust="ScaleFont">
-				<reportElement x="1" y="34" width="70" height="15" uuid="0480f623-c5f4-4be3-ab1a-de3144bfeaa9">
+				<reportElement x="0" y="124" width="70" height="15" uuid="0480f623-c5f4-4be3-ab1a-de3144bfeaa9">
 					<property name="com.jaspersoft.studio.unit.height" value="px"/>
 					<property name="com.jaspersoft.studio.unit.width" value="px"/>
 				</reportElement>
@@ -200,7 +196,7 @@
 				<textFieldExpression><![CDATA[$P{date_time}]]></textFieldExpression>
 			</textField>
 			<textField textAdjust="ScaleFont">
-				<reportElement x="1" y="19" width="70" height="15" uuid="5b6c1f11-51b3-4c47-a71e-30fa2acdd968">
+				<reportElement x="0" y="109" width="70" height="15" uuid="5b6c1f11-51b3-4c47-a71e-30fa2acdd968">
 					<property name="com.jaspersoft.studio.unit.width" value="px"/>
 				</reportElement>
 				<box>
@@ -216,7 +212,7 @@
 				<textFieldExpression><![CDATA[$P{name}]]></textFieldExpression>
 			</textField>
 			<textField textAdjust="ScaleFont">
-				<reportElement style="Style_text_header" x="169" y="19" width="33" height="15" uuid="38499ada-15c1-443b-8bb0-407d1153868f">
+				<reportElement style="Style_text_header" x="168" y="109" width="33" height="15" uuid="38499ada-15c1-443b-8bb0-407d1153868f">
 					<property name="com.jaspersoft.studio.unit.height" value="px"/>
 					<property name="com.jaspersoft.studio.unit.width" value="px"/>
 				</reportElement>
@@ -233,7 +229,7 @@
 				<textFieldExpression><![CDATA[$R{invoice.date}]]></textFieldExpression>
 			</textField>
 			<textField textAdjust="ScaleFont">
-				<reportElement style="Style_text_header" x="169" y="4" width="33" height="15" uuid="7dab2791-26d5-4bb9-bff9-bd5264f7b3d7">
+				<reportElement style="Style_text_header" x="168" y="94" width="33" height="15" uuid="7dab2791-26d5-4bb9-bff9-bd5264f7b3d7">
 					<property name="com.jaspersoft.studio.unit.height" value="px"/>
 					<property name="com.jaspersoft.studio.unit.width" value="px"/>
 				</reportElement>
@@ -247,7 +243,7 @@
 				<textFieldExpression><![CDATA[$R{invoice.short.no}]]></textFieldExpression>
 			</textField>
 			<textField textAdjust="ScaleFont">
-				<reportElement style="Style_text_header" x="71" y="19" width="36" height="15" uuid="15766cdd-7b92-403f-acc1-337dbd8d0d8e">
+				<reportElement style="Style_text_header" x="70" y="109" width="36" height="15" uuid="15766cdd-7b92-403f-acc1-337dbd8d0d8e">
 					<property name="com.jaspersoft.studio.unit.height" value="px"/>
 					<property name="com.jaspersoft.studio.unit.width" value="px"/>
 				</reportElement>
@@ -261,7 +257,7 @@
 				<textFieldExpression><![CDATA[$R{invoice.customer.name}]]></textFieldExpression>
 			</textField>
 			<textField textAdjust="ScaleFont">
-				<reportElement style="Style_text_header" x="71" y="4" width="36" height="15" uuid="12891eac-a59e-40bc-b03a-28ded1d3a99e">
+				<reportElement style="Style_text_header" x="70" y="94" width="36" height="15" uuid="12891eac-a59e-40bc-b03a-28ded1d3a99e">
 					<property name="com.jaspersoft.studio.unit.height" value="px"/>
 					<property name="com.jaspersoft.studio.unit.width" value="px"/>
 				</reportElement>
@@ -275,7 +271,7 @@
 				<textFieldExpression><![CDATA[$R{invoice.number}]]></textFieldExpression>
 			</textField>
 			<textField textAdjust="ScaleFont">
-				<reportElement style="Style_text_header" x="169" y="34" width="33" height="15" uuid="37cc1a32-cd83-413a-af21-ea4666c1d6a9">
+				<reportElement style="Style_text_header" x="168" y="124" width="33" height="15" uuid="37cc1a32-cd83-413a-af21-ea4666c1d6a9">
 					<property name="com.jaspersoft.studio.unit.height" value="px"/>
 					<property name="com.jaspersoft.studio.unit.width" value="px"/>
 				</reportElement>
@@ -289,7 +285,7 @@
 				<textFieldExpression><![CDATA[$R{invoice.admin}]]></textFieldExpression>
 			</textField>
 			<textField textAdjust="ScaleFont">
-				<reportElement style="Style_text_header" x="71" y="34" width="36" height="15" uuid="7bb01a97-0bd5-48c1-949c-ded7b18a9104">
+				<reportElement style="Style_text_header" x="70" y="124" width="36" height="15" uuid="7bb01a97-0bd5-48c1-949c-ded7b18a9104">
 					<property name="com.jaspersoft.studio.unit.height" value="px"/>
 					<property name="com.jaspersoft.studio.unit.width" value="px"/>
 				</reportElement>
@@ -303,7 +299,7 @@
 				<textFieldExpression><![CDATA[$R{invoice.entry.time}]]></textFieldExpression>
 			</textField>
 		</band>
-	</pageHeader>
+	</title>
 	<detail>
 		<band height="58">
 			<componentElement>

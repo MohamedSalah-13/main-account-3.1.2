@@ -9,6 +9,7 @@ suspended_invoices/
 !**/src/main/**/target/
 !**/src/test/**/target/
 private_key.pem
+license.dat
 
 ### STS ###
 .apt_generated
