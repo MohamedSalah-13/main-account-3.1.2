@@ -13,11 +13,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.security.KeyFactory;
-import java.security.MessageDigest;
-import java.security.PublicKey;
-import java.security.SecureRandom;
-import java.security.Signature;
+import java.security.*;
 import java.security.spec.X509EncodedKeySpec;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -61,6 +57,10 @@ public class TrialManager {
 
     public TrialManager(Connection connection) {
         this.connection = connection;
+    }
+
+    public static Path getLicensePath() {
+        return Paths.get(LICENSE_FILE_PATH);
     }
 
     public void checkTrialStatus() {
@@ -470,10 +470,6 @@ public class TrialManager {
         return info;
     }
 
-    public static Path getLicensePath() {
-        return Paths.get(LICENSE_FILE_PATH);
-    }
-
     private LicenseCheckResult validateLicense(Path path, boolean strict) {
         LicenseCheckResult result = new LicenseCheckResult();
         try {
@@ -634,18 +630,22 @@ public class TrialManager {
     }
 
     public boolean canAddItem() {
+        if (getDisplayInfo().licenseValid) return true;
         return checkLimit("items", MAX_ITEMS, "لقد وصلت للحد الأقصى من الأصناف في النسخة التجريبية (100 صنف).");
     }
 
     public boolean canAddCustomer() {
+        if (getDisplayInfo().licenseValid) return true;
         return checkLimit("customers", MAX_CUSTOMERS, "لقد وصلت للحد الأقصى من العملاء في النسخة التجريبية (100 عميل).");
     }
 
     public boolean canAddSale() {
+        if (getDisplayInfo().licenseValid) return true;
         return checkLimit("total_sales", MAX_SALES, "لقد وصلت للحد الأقصى من المبيعات في النسخة التجريبية (100 مبيعات).");
     }
 
     public boolean canAddPurchase() {
+        if (getDisplayInfo().licenseValid) return true;
         return checkLimit("total_buy", MAX_PURCHASES, "لقد وصلت للحد الأقصى من المشتريات في النسخة التجريبية (100 مشتريات).");
     }
 

@@ -5,6 +5,7 @@ import com.hamza.account.config.Image_Setting;
 import com.hamza.account.config.Style_Sheet;
 import com.hamza.account.controller.main.LoadDataAndList;
 import com.hamza.account.model.dao.DaoFactory;
+import com.hamza.account.trial.TrialManager;
 import com.hamza.controlsfx.alert.AlertSetting;
 import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.database.DaoException;
@@ -47,7 +48,7 @@ public class DownLoadApplication extends Application {
             DaoFactory daoFactory = DaoFactory.INSTANCE;
             var connection = new ConnectionToDatabase().getDbConnection().getConnection();
             daoFactory.setConnection(connection);
-//            new TrialManager(connection).checkTrialStatus();
+            new TrialManager(connection).checkTrialStatus();
             return daoFactory;
         } catch (DaoException e) {
             AllAlerts.alertError(e.getMessage());
