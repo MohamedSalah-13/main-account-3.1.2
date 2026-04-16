@@ -784,4 +784,16 @@ create table if not exists user_permission
             on update cascade on delete cascade
 );
 
+CREATE TABLE user_shifts (
+                             id INT AUTO_INCREMENT PRIMARY KEY,
+                             user_id INT NOT NULL,
+                             open_time DATETIME NOT NULL,
+                             close_time DATETIME NULL,
+                             open_balance DOUBLE DEFAULT 0.0,
+                             close_balance DOUBLE DEFAULT 0.0,
+                             is_open BOOLEAN DEFAULT TRUE,
+                             notes TEXT NULL,
+                             FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
 

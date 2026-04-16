@@ -45,6 +45,7 @@ public class ServiceData {
     protected final AreaService areaService;
     protected final SelPriceItemService selPriceItemService;
     protected final ItemPackageService itemPackageService;
+    protected final UserShiftService userShiftService;
 
     public ServiceData(DaoFactory daoFactory) throws Exception {
 
@@ -85,5 +86,6 @@ public class ServiceData {
         this.areaService = new AreaService(daoFactory);
         this.selPriceItemService = new SelPriceItemService(daoFactory);
         this.itemPackageService = new ItemPackageService(daoFactory);
+        this.userShiftService = new UserShiftService(daoFactory);
     }
 }

@@ -178,4 +178,8 @@ public enum DaoFactory {
     public ItemsPackageDao getItemsPackageDao() {
         return new ItemsPackageDao(connection);
     }
+
+    public UserShiftDao userShiftDao() {
+        return new UserShiftDao(connection);
+    }
 }

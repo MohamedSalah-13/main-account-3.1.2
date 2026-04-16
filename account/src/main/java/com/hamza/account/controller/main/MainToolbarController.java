@@ -42,6 +42,8 @@ public class MainToolbarController implements Initializable {
     @FXML
     private Button btnSales, btnPosSales;
     @FXML
+    private Button btnShift;
+    @FXML
     private MenuItem menuItemChangeName, menuItemChangePass, menuItemLogout;
     @FXML
     private MenuButton menuButton;
@@ -69,6 +71,7 @@ public class MainToolbarController implements Initializable {
         menuButtonSetting.configureButton(btnItems, imageSetting.itemWhite, controller.getItemsButtons().allItems(controller));
         menuButtonSetting.configureButton(btnCalc, imageSetting.calcWhite, controller.getForAllButtons().calc());
         menuButtonSetting.configureButton(btnAlarm, imageSetting.alarmWhite, controller.getForAllButtons().alarm());
+        menuButtonSetting.configureButton(btnShift, imageSetting.tools, controller.getShiftButtons().openShiftScreen());
 
         btnYouTube.setGraphic(new ImageDesign(imageSetting.youtube, 36));
         btnYouTube.setText("شرح البرنامج");

@@ -31,6 +31,7 @@ public class MainItems extends DataPublisher {
     private final CustomData customData;
     private final ReportsButtons ReportsButtons;
     private final TreasuryButtons treasuryButtons;
+    private final ShiftButtons shiftButtons;
     protected ServiceData serviceData;
     protected DaoFactory daoFactory;
     protected DataInterface<Purchase, Total_buy, Suppliers, SupplierAccount> dataInterfacePurchase;
@@ -56,6 +57,7 @@ public class MainItems extends DataPublisher {
         this.ReportsButtons = new ReportsButtons(daoFactory, this, this);
         this.forAllButtons = new ForAllButtons(daoFactory, this, loadDataAndList);
         this.treasuryButtons = new TreasuryButtons(daoFactory, this);
+        this.shiftButtons = new ShiftButtons(daoFactory, this);
         this.nameSup = new NameButtons<>(daoFactory, this, suppliersData);
         this.nameCustomer = new NameButtons<>(daoFactory, this, customData);
         this.totalPurchase = new TotalsButton(suppliersData, daoFactory, this, employeeService);

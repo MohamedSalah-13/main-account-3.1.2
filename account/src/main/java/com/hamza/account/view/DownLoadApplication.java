@@ -48,7 +48,7 @@ public class DownLoadApplication extends Application {
             DaoFactory daoFactory = DaoFactory.INSTANCE;
             var connection = new ConnectionToDatabase().getDbConnection().getConnection();
             daoFactory.setConnection(connection);
-            new TrialManager(connection).checkTrialStatus();
+//            new TrialManager(connection).checkTrialStatus();
             return daoFactory;
         } catch (DaoException e) {
             AllAlerts.alertError(e.getMessage());

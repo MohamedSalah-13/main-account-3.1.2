@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<VBox xmlns="http://javafx.com/javafx"
+      xmlns:fx="http://javafx.com/fxml"
+      spacing="15" alignment="CENTER"
+      stylesheets="@../css/main-style.css">
+    <padding>
+        <Insets top="20" right="20" bottom="20" left="20"/>
+    </padding>
+
+    <!-- Header -->
+    <Label fx:id="labelTitle" text="إدارة الورديات" styleClass="title-label"/>
+
+    <!-- Current Shift Info -->
+    <GridPane hgap="10" vgap="10" alignment="CENTER">
+        <Label text="حالة الوردية:" GridPane.rowIndex="0" GridPane.columnIndex="0"/>
+        <Label fx:id="labelShiftStatus" text="غير محددة" styleClass="status-label" GridPane.rowIndex="0" GridPane.columnIndex="1"/>
+
+        <Label text="وقت الفتح:" GridPane.rowIndex="1" GridPane.columnIndex="0"/>
+        <Label fx:id="labelOpenTime" text="-" GridPane.rowIndex="1" GridPane.columnIndex="1"/>
+
+        <Label text="الرصيد الافتتاحي:" GridPane.rowIndex="2" GridPane.columnIndex="0"/>
+        <Label fx:id="labelOpenBalance" text="0.0" GridPane.rowIndex="2" GridPane.columnIndex="1"/>
+    </GridPane>
+
+    <Separator/>
+
+    <!-- Open Shift Section -->
+    <VBox fx:id="boxOpenShift" spacing="10" alignment="CENTER">
+        <Label text="فتح وردية جديدة" styleClass="section-title"/>
+        <GridPane hgap="10" vgap="10" alignment="CENTER">
+            <Label text="الرصيد الافتتاحي:" GridPane.rowIndex="0" GridPane.columnIndex="0"/>
+            <TextField fx:id="txtOpenBalance" promptText="أدخل الرصيد الافتتاحي" GridPane.rowIndex="0" GridPane.columnIndex="1"/>
+
+            <Label text="ملاحظات:" GridPane.rowIndex="1" GridPane.columnIndex="0"/>
+            <TextArea fx:id="txtOpenNotes" promptText="ملاحظات (اختياري)" prefRowCount="2" GridPane.rowIndex="1" GridPane.columnIndex="1"/>
+        </GridPane>
+        <Button fx:id="btnOpenShift" text="فتح الوردية" styleClass="btn-primary"/>
+    </VBox>
+
+    <Separator/>
+
+    <!-- Close Shift Section -->
+    <VBox fx:id="boxCloseShift" spacing="10" alignment="CENTER">
+        <Label text="غلق الوردية" styleClass="section-title"/>
+        <GridPane hgap="10" vgap="10" alignment="CENTER">
+            <Label text="الرصيد الختامي:" GridPane.rowIndex="0" GridPane.columnIndex="0"/>
+            <TextField fx:id="txtCloseBalance" promptText="أدخل الرصيد الختامي" GridPane.rowIndex="0" GridPane.columnIndex="1"/>
+
+            <Label text="ملاحظات:" GridPane.rowIndex="1" GridPane.columnIndex="0"/>
+            <TextArea fx:id="txtCloseNotes" promptText="ملاحظات (اختياري)" prefRowCount="2" GridPane.rowIndex="1" GridPane.columnIndex="1"/>
+        </GridPane>
+        <Button fx:id="btnCloseShift" text="غلق الوردية" styleClass="btn-danger"/>
+    </VBox>
+
+    <Separator/>
+
+    <!-- Shifts History Table -->
+    <Label text="سجل الورديات" styleClass="section-title"/>
+    <TableView fx:id="tableShifts" prefHeight="200">
+        <columns>
+            <TableColumn fx:id="colId" text="الكود" prefWidth="60"/>
+            <TableColumn fx:id="colOpenTime" text="وقت الفتح" prefWidth="150"/>
+            <TableColumn fx:id="colCloseTime" text="وقت الغلق" prefWidth="150"/>
+            <TableColumn fx:id="colOpenBalance" text="رصيد الفتح" prefWidth="100"/>
+            <TableColumn fx:id="colCloseBalance" text="رصيد الغلق" prefWidth="100"/>
+            <TableColumn fx:id="colStatus" text="الحالة" prefWidth="80"/>
+        </columns>
+    </TableView>
+
+</VBox>
