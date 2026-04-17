@@ -1,17 +1,17 @@
 package com.hamza.account.model.dao;
 
 import com.hamza.account.model.domain.UserShift;
+import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.database.AbstractDao;
 import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.database.SqlStatements;
+import lombok.extern.log4j.Log4j2;
 
-import java.sql.Connection;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Timestamp;
+import java.sql.*;
 import java.time.LocalDateTime;
 import java.util.List;
 
+@Log4j2
 public class UserShiftDao extends AbstractDao<UserShift> {
 
     private final String TABLE_NAME = "user_shifts";
@@ -117,14 +117,24 @@ public class UserShiftDao extends AbstractDao<UserShift> {
      * Check if user has an open shift
      */
     public boolean hasOpenShift(int userId) throws DaoException {
-        String sql = "SELECT COUNT(*) FROM " + TABLE_NAME + " WHERE " + USER_ID + " = ? AND " + IS_OPEN + " = true";
-        UserShift count = queryForObject(sql, rs -> {
-            try {
-                return new UserShift(rs.getInt(1));
-            } catch (SQLException e) {
-                throw new DaoException(e);
+        String sql = "SELECT COUNT(*) FROM " + TABLE_NAME + " WHERE " + USER_ID + " = "+userId+" AND " + IS_OPEN + " = true";
+//        UserShift count = queryForObject(sql, rs -> {
+//            try {
+//                return new UserShift(rs.getInt(1));
+//            } catch (SQLException e) {
+//                throw new DaoException(e);
+//            }
+//        }, userId);
+//        return count != null && count.isOpen();
+
+        try (Statement stmt = connection.createStatement();
+             ResultSet rs = stmt.executeQuery(sql)){
+            if (rs.next()) {
+                return rs.getInt(1) > 0;
             }
-        }, userId);
-        return count != null && count.isOpen();
+        } catch (Exception e) {
+            log.error("Error checking open shift for user ID: " + userId, e);
+        }
+        return false;
     }
 }

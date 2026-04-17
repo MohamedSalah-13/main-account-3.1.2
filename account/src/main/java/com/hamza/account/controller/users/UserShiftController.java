@@ -63,8 +63,7 @@ public class UserShiftController extends ServiceData {
         setupTextFormatters();
         setupTableColumns();
         setupActions();
-        loadCurrentShiftStatus();
-        loadShiftHistory();
+        refreshView();
     }
 
     private void setupTextFormatters() {
@@ -85,15 +84,18 @@ public class UserShiftController extends ServiceData {
         });
 
         colOpenBalance.setCellValueFactory(cellData -> new javafx.beans.property.SimpleDoubleProperty(cellData.getValue().getOpenBalance()).asObject());
-
         colCloseBalance.setCellValueFactory(cellData -> new javafx.beans.property.SimpleDoubleProperty(cellData.getValue().getCloseBalance()).asObject());
-
         colStatus.setCellValueFactory(cellData -> cellData.getValue().statusProperty());
     }
 
     private void setupActions() {
         btnOpenShift.setOnAction(e -> openShift());
         btnCloseShift.setOnAction(e -> closeShift());
+    }
+
+    private void refreshView() {
+        loadCurrentShiftStatus();
+        loadShiftHistory();
     }
 
     private void loadCurrentShiftStatus() {
@@ -104,10 +106,13 @@ public class UserShiftController extends ServiceData {
                 showOpenShiftInfo(openShift);
                 boxOpenShift.setDisable(true);
                 boxCloseShift.setDisable(false);
+                txtCloseBalance.setText(String.valueOf(openShift.getOpenBalance()));
             } else {
                 showNoOpenShift();
                 boxOpenShift.setDisable(false);
                 boxCloseShift.setDisable(true);
+                txtCloseBalance.clear();
+                txtCloseNotes.clear();
             }
         } catch (DaoException e) {
             log.error("Error loading shift status", e);
@@ -118,7 +123,7 @@ public class UserShiftController extends ServiceData {
     private void showOpenShiftInfo(UserShift shift) {
         labelShiftStatus.setText("مفتوحة");
         labelShiftStatus.setStyle("-fx-text-fill: green; -fx-font-weight: bold;");
-        labelOpenTime.setText(shift.getOpenTime().format(DATE_TIME_FORMATTER));
+        labelOpenTime.setText(shift.getOpenTime() != null ? shift.getOpenTime().format(DATE_TIME_FORMATTER) : "-");
         labelOpenBalance.setText(String.valueOf(shift.getOpenBalance()));
     }
 
@@ -148,8 +153,7 @@ public class UserShiftController extends ServiceData {
             if (result > 0) {
                 AllAlerts.alertSaveWithMessage("تم فتح الوردية بنجاح!");
                 clearOpenShiftFields();
-                loadCurrentShiftStatus();
-                loadShiftHistory();
+                refreshView();
             }
         } catch (DaoException e) {
             log.error("Error opening shift", e);
@@ -161,6 +165,11 @@ public class UserShiftController extends ServiceData {
 
     private void closeShift() {
         try {
+            if (!userShiftService.hasOpenShift(currentUserId)) {
+                AllAlerts.alertError("لا توجد وردية مفتوحة لإغلاقها!");
+                return;
+            }
+
             if (!AllAlerts.confirm_all("هل تريد غلق الوردية؟")) {
                 return;
             }
@@ -172,8 +181,7 @@ public class UserShiftController extends ServiceData {
             if (result > 0) {
                 AllAlerts.alertSaveWithMessage("تم غلق الوردية بنجاح!");
                 clearCloseShiftFields();
-                loadCurrentShiftStatus();
-                loadShiftHistory();
+                refreshView();
             }
         } catch (DaoException e) {
             log.error("Error closing shift", e);
