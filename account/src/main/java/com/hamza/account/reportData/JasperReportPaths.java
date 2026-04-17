@@ -50,5 +50,14 @@ public final class JasperReportPaths {
         public static final String VERSION_2 = BASE_PATH + "barcode-two-label.jrxml";
         public static final String ITEMS = BASE_PATH + "items-barcode-A4.jrxml";
     }
+
+    public static class Shift {
+        // تقرير غلق الوردية — طباعة حرارية 80mm
+        public static final String Z_REPORT_80 = BASE_PATH + "shift-z-report-80mm.jrxml";
+        // تقرير لحظي — طباعة حرارية 80mm
+        public static final String X_REPORT_80 = BASE_PATH + "shift-x-report-80mm.jrxml";
+        // تقرير تجميعي A4
+        public static final String AGGREGATE_A4 = BASE_PATH + "shift-aggregate-A4.jrxml";
+    }
 }
 

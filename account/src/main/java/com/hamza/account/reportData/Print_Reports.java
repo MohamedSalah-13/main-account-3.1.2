@@ -354,5 +354,73 @@ public class Print_Reports extends ReportCompany {
         jasperData.printJasperPrint(JasperReportPaths.Barcode.VERSION_1, Setting_Language.WORD_BARCODE, map, copies, printerNameBarcode);
 
     }
+
+    // ==================== Shift Reports ====================
+
+    /**
+     * طباعة تقرير X (لحظي) - 80mm حراري.
+     */
+    public void printShiftXReport(ShiftReportData data) {
+        HashMap<String, Object> map = buildShiftReportMap(data);
+        jasperData.printJasperPrint(
+                JasperReportPaths.Shift.X_REPORT_80,
+                "X-Report", map, 1, printerNameThermal);
+    }
+
+    /**
+     * طباعة تقرير Z (غلق) - 80mm حراري.
+     */
+    public void printShiftZReport(ShiftReportData data) {
+        HashMap<String, Object> map = buildShiftReportMap(data);
+        jasperData.printJasperPrint(
+                JasperReportPaths.Shift.Z_REPORT_80,
+                "Z-Report", map, 1, printerNameThermal);
+    }
+
+    /**
+     * طباعة تقرير تجميعي لورديات متعددة - A4.
+     */
+    public void printShiftAggregateReport(List<UserShift> list, String from, String to, String username) {
+        HashMap<String, Object> map = getStringObjectHashMap(list, null);
+        map.put("dateFrom", from);
+        map.put("dateTo", to);
+        map.put("username", username == null ? "الكل" : username);
+        addHeaderToReports(map, "تقرير الورديات");
+        jasperData.printJasperPrint(
+                JasperReportPaths.Shift.AGGREGATE_A4,
+                "تقرير الورديات", map, 1, "");
+    }
+
+    private HashMap<String, Object> buildShiftReportMap(ShiftShiftReportDataAlias) {
+        // (placeholder - see real helper below)
+        return new HashMap<>();
+    }
+
+    private HashMap<String, Object> buildShiftReportMap(ShiftReportData data) {
+        HashMap<String, Object> map = getCompany();
+        var shift = data.shift();
+        var summary = data.summary();
+        double expected = summary.getExpectedBalance();
+        double diff = summary.calculateDifference(shift.getCloseBalance());
+
+        map.put("reportType", data.reportType());
+        map.put("printTime", data.printTime().format(DATE_TIME_FORMATTER));
+        map.put("shiftId", shift.getId());
+        map.put("username", shift.getUsername());
+        map.put("openTime", shift.getOpenTime() == null ? "" : shift.getOpenTime().format(DATE_TIME_FORMATTER));
+        map.put("closeTime", shift.getCloseTime() == null ? "-" : shift.getCloseTime().format(DATE_TIME_FORMATTER));
+        map.put("openBalance", shift.getOpenBalance());
+        map.put("closeBalance", shift.getCloseBalance());
+        map.put("totalSales", summary.getTotalSales());
+        map.put("totalSalesReturns", summary.getTotalSalesReturns());
+        map.put("totalExpenses", summary.getTotalExpenses());
+        map.put("totalDeposits", summary.getTotalDeposits());
+        map.put("totalWithdrawals", summary.getTotalWithdrawals());
+        map.put("invoicesCount", summary.getInvoicesCount());
+        map.put("expectedBalance", expected);
+        map.put("difference", diff);
+        map.put("notes", shift.getNotes() == null ? "" : shift.getNotes());
+        return map;
+    }
 }
 

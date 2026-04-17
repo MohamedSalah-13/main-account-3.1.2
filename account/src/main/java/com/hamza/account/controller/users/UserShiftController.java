@@ -5,6 +5,8 @@ import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.model.domain.ShiftSummary;
 import com.hamza.account.model.domain.UserShift;
 import com.hamza.account.openFxml.FxmlPath;
+import com.hamza.account.reportData.Print_Reports;
+import com.hamza.account.service.ShiftReportService;
 import com.hamza.account.session.ShiftContext;
 import com.hamza.account.view.LogApplication;
 import com.hamza.controlsfx.alert.AllAlerts;
@@ -50,9 +52,17 @@ public class UserShiftController extends ServiceData {
     private Label labelSummaryTotalSales, labelSummaryReturns, labelSummaryExpenses,
             labelSummaryExpected, labelSummaryDifference, labelSummaryInvoices;
 
+    @FXML
+    private Button btnPrintXReport;
+
+    private final ShiftReportService shiftReportService;
+    private final Print_Reports printReports;
+
     public UserShiftController(DaoFactory daoFactory) throws Exception {
         super(daoFactory);
         this.currentUserId = LogApplication.usersVo.getId();
+        this.shiftReportService = new ShiftReportService(daoFactory, userShiftService);
+        this.printReports = new Print_Reports();
     }
 
     @FXML
@@ -90,6 +100,9 @@ public class UserShiftController extends ServiceData {
 
         btnOpenShift.setOnAction(e -> openShift());
         btnCloseShift.setOnAction(e -> closeShift());
+        if (btnPrintXReport != null) {
+            btnPrintXReport.setOnAction(e -> printXReport());
+        }
     }
 
     private void refreshView() {
@@ -220,6 +233,16 @@ public class UserShiftController extends ServiceData {
         }
     }
 
+    private void printXReport() {
+        try {
+            var data = shiftReportService.buildXReport(currentUserId);
+            printReports.printShiftXReport(data);
+        } catch (DaoException e) {
+            log.error("Error printing X-Report", e);
+            AllAlerts.alertError(e.getMessage());
+        }
+    }
+
     private void closeShift() {
         try {
             if (!userShiftService.hasOpenShift(currentUserId)) {
@@ -242,8 +265,16 @@ public class UserShiftController extends ServiceData {
             }
 
             String notes = safeTrim(txtCloseNotes.getText());
-            if (userShiftService.closeShift(currentUserId, closeBalance, notes) > 0) {
+            int closedShiftId = userShiftService.closeShift(currentUserId, closeBalance, notes);
+            if (closedShiftId > 0) {
                 ShiftContext.clear();
+                // طباعة Z-Report تلقائياً
+                try {
+                    var zData = shiftReportService.buildZReport(closedShiftId);
+                    printReports.printShiftZReport(zData);
+                } catch (Exception ex) {
+                    log.error("Error auto-printing Z-Report", ex);
+                }
                 AllAlerts.alertSaveWithMessage("تم غلق الوردية بنجاح!");
                 clearCloseShiftFields();
                 refreshView();
