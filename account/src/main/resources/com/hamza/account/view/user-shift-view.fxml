@@ -1,111 +1,158 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <?import javafx.geometry.Insets?>
-<?import javafx.scene.control.*?>
-<?import javafx.scene.layout.*?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.ScrollPane?>
+<?import javafx.scene.control.Separator?>
+<?import javafx.scene.control.TableColumn?>
+<?import javafx.scene.control.TableView?>
+<?import javafx.scene.control.TextArea?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.control.TitledPane?>
+<?import javafx.scene.layout.ColumnConstraints?>
+<?import javafx.scene.layout.GridPane?>
+<?import javafx.scene.layout.RowConstraints?>
+<?import javafx.scene.layout.VBox?>
 
-<VBox xmlns="http://javafx.com/javafx"
-      xmlns:fx="http://javafx.com/fxml"
-      spacing="15" alignment="CENTER"
-      stylesheets="@../css/mainStyle.css">
-    <padding>
-        <Insets top="20" right="20" bottom="20" left="20"/>
-    </padding>
 
-    <!-- Header -->
-    <Label fx:id="labelTitle" text="إدارة الورديات" styleClass="title-label"/>
-
-    <!-- Current Shift Info -->
-    <GridPane hgap="10" vgap="10" alignment="CENTER">
-        <Label text="حالة الوردية:" GridPane.rowIndex="0" GridPane.columnIndex="0"/>
-        <Label fx:id="labelShiftStatus" text="غير محددة" styleClass="status-label" GridPane.rowIndex="0" GridPane.columnIndex="1"/>
-
-        <Label text="وقت الفتح:" GridPane.rowIndex="1" GridPane.columnIndex="0"/>
-        <Label fx:id="labelOpenTime" text="-" GridPane.rowIndex="1" GridPane.columnIndex="1"/>
-
-        <Label text="الرصيد الافتتاحي:" GridPane.rowIndex="2" GridPane.columnIndex="0"/>
-        <Label fx:id="labelOpenBalance" text="0.0" GridPane.rowIndex="2" GridPane.columnIndex="1"/>
-    </GridPane>
-
-    <Separator/>
-
-    <!-- Open Shift Section -->
-    <VBox fx:id="boxOpenShift" spacing="10" alignment="CENTER">
-        <Label text="فتح وردية جديدة" styleClass="section-title"/>
-        <GridPane hgap="10" vgap="10" alignment="CENTER">
-            <Label text="الرصيد الافتتاحي:" GridPane.rowIndex="0" GridPane.columnIndex="0"/>
-            <TextField fx:id="txtOpenBalance" promptText="أدخل الرصيد الافتتاحي" GridPane.rowIndex="0" GridPane.columnIndex="1"/>
-
-            <Label text="ملاحظات:" GridPane.rowIndex="1" GridPane.columnIndex="0"/>
-            <TextArea fx:id="txtOpenNotes" promptText="ملاحظات (اختياري)" prefRowCount="2" GridPane.rowIndex="1" GridPane.columnIndex="1"/>
-        </GridPane>
-        <Button fx:id="btnOpenShift" text="فتح الوردية" styleClass="btn-primary"/>
-    </VBox>
-
-    <Separator/>
-
-    <!-- ==================== Live Summary (X-Report) ==================== -->
-    <TitledPane text="ملخص الوردية اللحظي (X-Report)" collapsible="true" expanded="true">
-        <GridPane hgap="15" vgap="8" alignment="CENTER">
-            <padding>
-                <Insets top="10" right="15" bottom="10" left="15"/>
-            </padding>
-
-            <!-- الصف 0: المبيعات -->
-            <Label text="إجمالي المبيعات:" GridPane.rowIndex="0" GridPane.columnIndex="0"/>
-            <Label fx:id="labelSummaryTotalSales" text="-" styleClass="summary-value"
-                   GridPane.rowIndex="0" GridPane.columnIndex="1"/>
-
-            <Label text="مرتجعات المبيعات:" GridPane.rowIndex="0" GridPane.columnIndex="2"/>
-            <Label fx:id="labelSummaryReturns" text="-" styleClass="summary-value"
-                   GridPane.rowIndex="0" GridPane.columnIndex="3"/>
-
-            <!-- الصف 1: المصروفات + عدد الفواتير -->
-            <Label text="المصروفات:" GridPane.rowIndex="1" GridPane.columnIndex="0"/>
-            <Label fx:id="labelSummaryExpenses" text="-" styleClass="summary-value"
-                   GridPane.rowIndex="1" GridPane.columnIndex="1"/>
-
-            <Label text="عدد الفواتير:" GridPane.rowIndex="1" GridPane.columnIndex="2"/>
-            <Label fx:id="labelSummaryInvoices" text="-" styleClass="summary-value"
-                   GridPane.rowIndex="1" GridPane.columnIndex="3"/>
-
-            <!-- الصف 2: الرصيد المتوقع + الفرق -->
-            <Label text="الرصيد المتوقع:" GridPane.rowIndex="2" GridPane.columnIndex="0"/>
-            <Label fx:id="labelSummaryExpected" text="-" styleClass="summary-value"
-                   GridPane.rowIndex="2" GridPane.columnIndex="1"/>
-
-            <Label text="الفرق:" GridPane.rowIndex="2" GridPane.columnIndex="2"/>
-            <Label fx:id="labelSummaryDifference" text="-" styleClass="summary-value"
-                   GridPane.rowIndex="2" GridPane.columnIndex="3"/>
-        </GridPane>
-    </TitledPane>
-
-    <!-- Close Shift Section -->
-    <VBox fx:id="boxCloseShift" spacing="10" alignment="CENTER">
-        <Label text="غلق الوردية" styleClass="section-title"/>
-        <GridPane hgap="10" vgap="10" alignment="CENTER">
-            <Label text="الرصيد الختامي:" GridPane.rowIndex="0" GridPane.columnIndex="0"/>
-            <TextField fx:id="txtCloseBalance" promptText="أدخل الرصيد الختامي" GridPane.rowIndex="0" GridPane.columnIndex="1"/>
-
-            <Label text="ملاحظات:" GridPane.rowIndex="1" GridPane.columnIndex="0"/>
-            <TextArea fx:id="txtCloseNotes" promptText="ملاحظات (اختياري)" prefRowCount="2" GridPane.rowIndex="1" GridPane.columnIndex="1"/>
-        </GridPane>
-        <Button fx:id="btnCloseShift" text="غلق الوردية" styleClass="btn-danger"/>
-    </VBox>
-
-    <Separator/>
-
-    <!-- Shifts History Table -->
-    <Label text="سجل الورديات" styleClass="section-title"/>
-    <TableView fx:id="tableShifts" prefHeight="200">
-        <columns>
-            <TableColumn fx:id="colId" text="الكود" prefWidth="60"/>
-            <TableColumn fx:id="colOpenTime" text="وقت الفتح" prefWidth="150"/>
-            <TableColumn fx:id="colCloseTime" text="وقت الغلق" prefWidth="150"/>
-            <TableColumn fx:id="colOpenBalance" text="رصيد الفتح" prefWidth="100"/>
-            <TableColumn fx:id="colCloseBalance" text="رصيد الغلق" prefWidth="100"/>
-            <TableColumn fx:id="colStatus" text="الحالة" prefWidth="80"/>
-        </columns>
-    </TableView>
-
+<VBox prefHeight="587.0" prefWidth="600.0" stylesheets="@../css/mainStyle.css" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1">
+   <children>
+      <ScrollPane fitToHeight="true" fitToWidth="true" VBox.vgrow="SOMETIMES">
+         <content>
+            <VBox alignment="CENTER" spacing="15">
+                <padding>
+                    <Insets bottom="20" left="20" right="20" top="20" />
+                </padding>
+            
+                <!-- Header -->
+                <Label fx:id="labelTitle" styleClass="title-label" text="إدارة الورديات" />
+            
+                <!-- Current Shift Info -->
+                <GridPane alignment="CENTER" hgap="10" vgap="10">
+                    <Label text="حالة الوردية:" GridPane.columnIndex="0" GridPane.rowIndex="0" />
+                    <Label fx:id="labelShiftStatus" styleClass="status-label" text="غير محددة" GridPane.columnIndex="1" GridPane.rowIndex="0" />
+            
+                    <Label text="وقت الفتح:" GridPane.columnIndex="0" GridPane.rowIndex="1" />
+                    <Label fx:id="labelOpenTime" text="-" GridPane.columnIndex="1" GridPane.rowIndex="1" />
+            
+                    <Label text="الرصيد الافتتاحي:" GridPane.columnIndex="0" GridPane.rowIndex="2" />
+                    <Label fx:id="labelOpenBalance" text="0.0" GridPane.columnIndex="1" GridPane.rowIndex="2" />
+                  <columnConstraints>
+                     <ColumnConstraints />
+                     <ColumnConstraints />
+                  </columnConstraints>
+                  <rowConstraints>
+                     <RowConstraints />
+                     <RowConstraints />
+                     <RowConstraints />
+                  </rowConstraints>
+                </GridPane>
+            
+                <Separator />
+            
+                <!-- Open Shift Section -->
+                <VBox fx:id="boxOpenShift" alignment="CENTER" spacing="10">
+                    <Label styleClass="section-title" text="فتح وردية جديدة" />
+                    <GridPane alignment="CENTER" hgap="10" vgap="10">
+                        <Label text="الرصيد الافتتاحي:" GridPane.columnIndex="0" GridPane.rowIndex="0" />
+                        <TextField fx:id="txtOpenBalance" promptText="أدخل الرصيد الافتتاحي" GridPane.columnIndex="1" GridPane.rowIndex="0" />
+            
+                        <Label text="ملاحظات:" GridPane.columnIndex="0" GridPane.rowIndex="1" />
+                        <TextArea fx:id="txtOpenNotes" prefRowCount="2" promptText="ملاحظات (اختياري)" GridPane.columnIndex="1" GridPane.rowIndex="1" />
+                     <columnConstraints>
+                        <ColumnConstraints />
+                        <ColumnConstraints />
+                     </columnConstraints>
+                     <rowConstraints>
+                        <RowConstraints />
+                        <RowConstraints />
+                     </rowConstraints>
+                    </GridPane>
+                    <Button fx:id="btnOpenShift" styleClass="btn-primary" text="فتح الوردية" />
+                </VBox>
+            
+                <Separator />
+            
+                <!-- ==================== Live Summary (X-Report) ==================== -->
+                <TitledPane collapsible="true" expanded="true" text="ملخص الوردية اللحظي (X-Report)">
+                    <GridPane alignment="CENTER" hgap="15" vgap="8">
+                        <padding>
+                            <Insets bottom="10" left="15" right="15" top="10" />
+                        </padding>
+            
+                        <!-- الصف 0: المبيعات -->
+                        <Label text="إجمالي المبيعات:" GridPane.columnIndex="0" GridPane.rowIndex="0" />
+                        <Label fx:id="labelSummaryTotalSales" styleClass="summary-value" text="-" GridPane.columnIndex="1" GridPane.rowIndex="0" />
+            
+                        <Label text="مرتجعات المبيعات:" GridPane.columnIndex="2" GridPane.rowIndex="0" />
+                        <Label fx:id="labelSummaryReturns" styleClass="summary-value" text="-" GridPane.columnIndex="3" GridPane.rowIndex="0" />
+            
+                        <!-- الصف 1: المصروفات + عدد الفواتير -->
+                        <Label text="المصروفات:" GridPane.columnIndex="0" GridPane.rowIndex="1" />
+                        <Label fx:id="labelSummaryExpenses" styleClass="summary-value" text="-" GridPane.columnIndex="1" GridPane.rowIndex="1" />
+            
+                        <Label text="عدد الفواتير:" GridPane.columnIndex="2" GridPane.rowIndex="1" />
+                        <Label fx:id="labelSummaryInvoices" styleClass="summary-value" text="-" GridPane.columnIndex="3" GridPane.rowIndex="1" />
+            
+                        <!-- الصف 2: الرصيد المتوقع + الفرق -->
+                        <Label text="الرصيد المتوقع:" GridPane.columnIndex="0" GridPane.rowIndex="2" />
+                        <Label fx:id="labelSummaryExpected" styleClass="summary-value" text="-" GridPane.columnIndex="1" GridPane.rowIndex="2" />
+            
+                        <Label text="الفرق:" GridPane.columnIndex="2" GridPane.rowIndex="2" />
+                        <Label fx:id="labelSummaryDifference" styleClass="summary-value" text="-" GridPane.columnIndex="3" GridPane.rowIndex="2" />
+                     <columnConstraints>
+                        <ColumnConstraints />
+                        <ColumnConstraints />
+                        <ColumnConstraints />
+                        <ColumnConstraints />
+                     </columnConstraints>
+                     <rowConstraints>
+                        <RowConstraints />
+                        <RowConstraints />
+                        <RowConstraints />
+                     </rowConstraints>
+                    </GridPane>
+                </TitledPane>
+            
+                <!-- Close Shift Section -->
+                <VBox fx:id="boxCloseShift" alignment="CENTER" spacing="10">
+                    <Label styleClass="section-title" text="غلق الوردية" />
+                    <GridPane alignment="CENTER" hgap="10" vgap="10">
+                        <Label text="الرصيد الختامي:" GridPane.columnIndex="0" GridPane.rowIndex="0" />
+                        <TextField fx:id="txtCloseBalance" promptText="أدخل الرصيد الختامي" GridPane.columnIndex="1" GridPane.rowIndex="0" />
+            
+                        <Label text="ملاحظات:" GridPane.columnIndex="0" GridPane.rowIndex="1" />
+                        <TextArea fx:id="txtCloseNotes" prefRowCount="2" promptText="ملاحظات (اختياري)" GridPane.columnIndex="1" GridPane.rowIndex="1" />
+                     <columnConstraints>
+                        <ColumnConstraints />
+                        <ColumnConstraints />
+                     </columnConstraints>
+                     <rowConstraints>
+                        <RowConstraints />
+                        <RowConstraints />
+                     </rowConstraints>
+                    </GridPane>
+                    <Button fx:id="btnCloseShift" styleClass="btn-danger" text="غلق الوردية" />
+                </VBox>
+            
+                <Separator />
+            
+                <!-- Shifts History Table -->
+                <Label styleClass="section-title" text="سجل الورديات" />
+                <TableView fx:id="tableShifts" prefHeight="200">
+                    <columns>
+                        <TableColumn fx:id="colId" prefWidth="60" text="الكود" />
+                        <TableColumn fx:id="colOpenTime" prefWidth="150" text="وقت الفتح" />
+                        <TableColumn fx:id="colCloseTime" prefWidth="150" text="وقت الغلق" />
+                        <TableColumn fx:id="colOpenBalance" prefWidth="100" text="رصيد الفتح" />
+                        <TableColumn fx:id="colCloseBalance" prefWidth="100" text="رصيد الغلق" />
+                        <TableColumn fx:id="colStatus" prefWidth="80" text="الحالة" />
+                    </columns>
+                </TableView>
+            
+            </VBox>
+         </content>
+      </ScrollPane>
+   </children>
 </VBox>

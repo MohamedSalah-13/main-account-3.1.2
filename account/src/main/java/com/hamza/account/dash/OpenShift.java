@@ -18,9 +18,9 @@ public class OpenShift extends Application {
         var connection = new ConnectionToDatabase().getDbConnection().getConnection();
         daoFactory.setConnection(connection);
         var controller = new UserShiftController(daoFactory);
-        Scene scene = new Scene(new OpenFxmlApplication(controller).getPane()
-                , 300, 300);
+        Scene scene = new Scene(new OpenFxmlApplication(controller).getPane());
 
+        stage.setResizable(false);
         stage.setScene(scene);
         stage.setTitle("OpenShift Dashboard");
         stage.show();
