@@ -2,8 +2,10 @@ package com.hamza.account.controller.users;
 
 import com.hamza.account.controller.others.ServiceData;
 import com.hamza.account.model.dao.DaoFactory;
+import com.hamza.account.model.domain.ShiftSummary;
 import com.hamza.account.model.domain.UserShift;
 import com.hamza.account.openFxml.FxmlPath;
+import com.hamza.account.session.ShiftContext;
 import com.hamza.account.view.LogApplication;
 import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.database.DaoException;
@@ -25,35 +27,28 @@ public class UserShiftController extends ServiceData {
 
     private static final DateTimeFormatter DATE_TIME_FORMATTER =
             DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
-
+    private final int currentUserId;
     @FXML
     private Label labelTitle, labelShiftStatus, labelOpenTime, labelOpenBalance;
-
     @FXML
     private VBox boxOpenShift, boxCloseShift;
-
     @FXML
     private TextField txtOpenBalance, txtCloseBalance;
-
     @FXML
     private TextArea txtOpenNotes, txtCloseNotes;
-
     @FXML
     private Button btnOpenShift, btnCloseShift;
-
     @FXML
     private TableView<UserShift> tableShifts;
-
     @FXML
     private TableColumn<UserShift, Integer> colId;
-
     @FXML
     private TableColumn<UserShift, String> colOpenTime, colCloseTime, colStatus;
-
     @FXML
     private TableColumn<UserShift, Number> colOpenBalance, colCloseBalance;
-
-    private final int currentUserId;
+    @FXML
+    private Label labelSummaryTotalSales, labelSummaryReturns, labelSummaryExpenses,
+            labelSummaryExpected, labelSummaryDifference, labelSummaryInvoices;
 
     public UserShiftController(DaoFactory daoFactory) throws Exception {
         super(daoFactory);
@@ -92,6 +87,7 @@ public class UserShiftController extends ServiceData {
     }
 
     private void setupActions() {
+
         btnOpenShift.setOnAction(e -> openShift());
         btnCloseShift.setOnAction(e -> closeShift());
     }
@@ -99,17 +95,20 @@ public class UserShiftController extends ServiceData {
     private void refreshView() {
         loadCurrentShiftStatus();
         loadShiftHistory();
+        loadLiveSummary();
     }
 
     private void loadCurrentShiftStatus() {
         try {
             if (userShiftService.hasOpenShift(currentUserId)) {
                 UserShift openShift = userShiftService.getOpenShift(currentUserId);
+                ShiftContext.setCurrentShift(openShift);
                 showOpenShiftInfo(openShift);
                 boxOpenShift.setDisable(true);
                 boxCloseShift.setDisable(false);
                 txtCloseBalance.setText(String.valueOf(openShift.getOpenBalance()));
             } else {
+                ShiftContext.clear();
                 showNoOpenShift();
                 boxOpenShift.setDisable(false);
                 boxCloseShift.setDisable(true);
@@ -147,6 +146,58 @@ public class UserShiftController extends ServiceData {
         }
     }
 
+    /**
+     * تحميل الملخص اللحظي (X-Report) لو هناك وردية مفتوحة.
+     */
+    private void loadLiveSummary() {
+        if (labelSummaryTotalSales == null) {
+            return; // الحقول غير موجودة في الـ fxml بعد
+        }
+        try {
+            if (!userShiftService.hasOpenShift(currentUserId)) {
+                clearSummaryLabels();
+                return;
+            }
+            ShiftSummary s = userShiftService.getCurrentShiftSummary(currentUserId);
+            double closeBalance = parseBalanceSafe(txtCloseBalance.getText(), s.getOpenBalance());
+            double diff = s.calculateDifference(closeBalance);
+
+            labelSummaryTotalSales.setText(format(s.getTotalSales()));
+            labelSummaryReturns.setText(format(s.getTotalSalesReturns()));
+            labelSummaryExpenses.setText(format(s.getTotalExpenses()));
+            labelSummaryExpected.setText(format(s.getExpectedBalance()));
+            labelSummaryDifference.setText(format(diff));
+            labelSummaryDifference.setStyle(diff < 0
+                    ? "-fx-text-fill: red;  -fx-font-weight: bold;"
+                    : (diff > 0 ? "-fx-text-fill: orange; -fx-font-weight: bold;"
+                       : "-fx-text-fill: green;  -fx-font-weight: bold;"));
+            labelSummaryInvoices.setText(String.valueOf(s.getInvoicesCount()));
+        } catch (DaoException e) {
+            log.error("Error loading live summary", e);
+        }
+    }
+
+    private void clearSummaryLabels() {
+        labelSummaryTotalSales.setText("-");
+        labelSummaryReturns.setText("-");
+        labelSummaryExpenses.setText("-");
+        labelSummaryExpected.setText("-");
+        labelSummaryDifference.setText("-");
+        labelSummaryInvoices.setText("-");
+    }
+
+    private String format(double v) {
+        return String.format("%,.2f", v);
+    }
+
+    private double parseBalanceSafe(String text, double fallback) {
+        try {
+            return parseBalance(text);
+        } catch (Exception e) {
+            return fallback;
+        }
+    }
+
     private void openShift() {
         try {
             double openBalance = parseBalance(txtOpenBalance.getText());
@@ -175,18 +226,24 @@ public class UserShiftController extends ServiceData {
                 AllAlerts.alertError("لا توجد وردية مفتوحة لإغلاقها!");
                 return;
             }
-            if (!AllAlerts.confirm_all("هل تريد غلق الوردية؟")) {
-                return;
-            }
 
             double closeBalance = parseBalance(txtCloseBalance.getText());
             if (closeBalance < 0) {
                 AllAlerts.alertError("لا يمكن أن يكون الرصيد الختامي بالسالب!");
                 return;
             }
-            String notes = safeTrim(txtCloseNotes.getText());
 
+            // عرض ملخص التأكيد قبل الغلق
+            ShiftSummary s = userShiftService.getCurrentShiftSummary(currentUserId);
+            double diff = s.calculateDifference(closeBalance);
+            String msg = buildCloseConfirmMessage(s, closeBalance, diff);
+            if (!AllAlerts.confirm_all(msg)) {
+                return;
+            }
+
+            String notes = safeTrim(txtCloseNotes.getText());
             if (userShiftService.closeShift(currentUserId, closeBalance, notes) > 0) {
+                ShiftContext.clear();
                 AllAlerts.alertSaveWithMessage("تم غلق الوردية بنجاح!");
                 clearCloseShiftFields();
                 refreshView();
@@ -197,6 +254,29 @@ public class UserShiftController extends ServiceData {
         } catch (NumberFormatException e) {
             AllAlerts.alertError("الرجاء إدخال رصيد صحيح!");
         }
+    }
+
+    private String buildCloseConfirmMessage(ShiftSummary s, double closeBalance, double diff) {
+        String diffLabel;
+        if (Math.abs(diff) < 0.005)         diffLabel = "مطابق ✅";
+        else if (diff < 0)                  diffLabel = String.format("عجز %,.2f ⚠️", -diff);
+        else                                diffLabel = String.format("زيادة %,.2f", diff);
+
+        return String.format(
+                "ملخص الوردية:%n" +
+                        "- المبيعات: %,.2f%n" +
+                        "- المرتجعات: %,.2f%n" +
+                        "- المصروفات: %,.2f%n" +
+                        "- الرصيد المتوقع: %,.2f%n" +
+                        "- الرصيد المُدخل: %,.2f%n" +
+                        "- الفرق: %s%n%n" +
+                        "هل تريد غلق الوردية؟",
+                s.getTotalSales(),
+                s.getTotalSalesReturns(),
+                s.getTotalExpenses(),
+                s.getExpectedBalance(),
+                closeBalance,
+                diffLabel);
     }
 
     private double parseBalance(String text) {

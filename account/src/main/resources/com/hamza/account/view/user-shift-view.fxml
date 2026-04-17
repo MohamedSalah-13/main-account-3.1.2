@@ -44,6 +44,42 @@
 
     <Separator/>
 
+    <!-- ==================== Live Summary (X-Report) ==================== -->
+    <TitledPane text="ملخص الوردية اللحظي (X-Report)" collapsible="true" expanded="true">
+        <GridPane hgap="15" vgap="8" alignment="CENTER">
+            <padding>
+                <Insets top="10" right="15" bottom="10" left="15"/>
+            </padding>
+
+            <!-- الصف 0: المبيعات -->
+            <Label text="إجمالي المبيعات:" GridPane.rowIndex="0" GridPane.columnIndex="0"/>
+            <Label fx:id="labelSummaryTotalSales" text="-" styleClass="summary-value"
+                   GridPane.rowIndex="0" GridPane.columnIndex="1"/>
+
+            <Label text="مرتجعات المبيعات:" GridPane.rowIndex="0" GridPane.columnIndex="2"/>
+            <Label fx:id="labelSummaryReturns" text="-" styleClass="summary-value"
+                   GridPane.rowIndex="0" GridPane.columnIndex="3"/>
+
+            <!-- الصف 1: المصروفات + عدد الفواتير -->
+            <Label text="المصروفات:" GridPane.rowIndex="1" GridPane.columnIndex="0"/>
+            <Label fx:id="labelSummaryExpenses" text="-" styleClass="summary-value"
+                   GridPane.rowIndex="1" GridPane.columnIndex="1"/>
+
+            <Label text="عدد الفواتير:" GridPane.rowIndex="1" GridPane.columnIndex="2"/>
+            <Label fx:id="labelSummaryInvoices" text="-" styleClass="summary-value"
+                   GridPane.rowIndex="1" GridPane.columnIndex="3"/>
+
+            <!-- الصف 2: الرصيد المتوقع + الفرق -->
+            <Label text="الرصيد المتوقع:" GridPane.rowIndex="2" GridPane.columnIndex="0"/>
+            <Label fx:id="labelSummaryExpected" text="-" styleClass="summary-value"
+                   GridPane.rowIndex="2" GridPane.columnIndex="1"/>
+
+            <Label text="الفرق:" GridPane.rowIndex="2" GridPane.columnIndex="2"/>
+            <Label fx:id="labelSummaryDifference" text="-" styleClass="summary-value"
+                   GridPane.rowIndex="2" GridPane.columnIndex="3"/>
+        </GridPane>
+    </TitledPane>
+
     <!-- Close Shift Section -->
     <VBox fx:id="boxCloseShift" spacing="10" alignment="CENTER">
         <Label text="غلق الوردية" styleClass="section-title"/>

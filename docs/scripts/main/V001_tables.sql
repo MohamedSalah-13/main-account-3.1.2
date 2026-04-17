@@ -796,4 +796,26 @@ CREATE TABLE user_shifts (
                              FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
+-- ============================================================
+-- V018: إضافة أعمدة ملخص الوردية (المرحلة 2)
+-- ============================================================
+
+-- إضافة الإجماليات المحسوبة عند غلق الوردية
+ALTER TABLE user_shifts
+    ADD COLUMN IF NOT EXISTS total_sales       DOUBLE DEFAULT 0.0 AFTER close_balance,
+    ADD COLUMN IF NOT EXISTS total_sales_returns DOUBLE DEFAULT 0.0 AFTER total_sales,
+    ADD COLUMN IF NOT EXISTS total_expenses    DOUBLE DEFAULT 0.0 AFTER total_sales_returns,
+    ADD COLUMN IF NOT EXISTS total_deposits    DOUBLE DEFAULT 0.0 AFTER total_expenses,
+    ADD COLUMN IF NOT EXISTS total_withdrawals DOUBLE DEFAULT 0.0 AFTER total_deposits,
+    ADD COLUMN IF NOT EXISTS expected_balance  DOUBLE DEFAULT 0.0 AFTER total_withdrawals,
+    ADD COLUMN IF NOT EXISTS difference        DOUBLE DEFAULT 0.0 AFTER expected_balance,
+    ADD COLUMN IF NOT EXISTS invoices_count    INT    DEFAULT 0   AFTER difference;
+
+-- فهرس يساعد في استعلامات الحالة/التاريخ
+CREATE INDEX IF NOT EXISTS idx_user_shifts_user_open
+    ON user_shifts (user_id, is_open);
+
+CREATE INDEX IF NOT EXISTS idx_user_shifts_open_time
+    ON user_shifts (open_time);
+
 

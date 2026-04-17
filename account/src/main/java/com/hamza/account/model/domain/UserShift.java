@@ -42,6 +42,27 @@ public class UserShift extends DForColumnTable {
 
     private final BooleanProperty open = new SimpleBooleanProperty(false);
 
+    // ===== حقول المرحلة 2: ملخص الوردية =====
+    @ColumnData(titleName = "إجمالي المبيعات")
+    private final DoubleProperty totalSales = new SimpleDoubleProperty(0.0);
+
+    @ColumnData(titleName = "مرتجعات المبيعات")
+    private final DoubleProperty totalSalesReturns = new SimpleDoubleProperty(0.0);
+
+    @ColumnData(titleName = "المصروفات")
+    private final DoubleProperty totalExpenses = new SimpleDoubleProperty(0.0);
+
+    private final DoubleProperty totalDeposits = new SimpleDoubleProperty(0.0);
+    private final DoubleProperty totalWithdrawals = new SimpleDoubleProperty(0.0);
+
+    @ColumnData(titleName = "الرصيد المتوقع")
+    private final DoubleProperty expectedBalance = new SimpleDoubleProperty(0.0);
+
+    @ColumnData(titleName = "الفرق")
+    private final DoubleProperty difference = new SimpleDoubleProperty(0.0);
+
+    private final IntegerProperty invoicesCount = new SimpleIntegerProperty(0);
+
     public UserShift(int userId) {
         this.userId = userId;
     }
@@ -85,4 +106,44 @@ public class UserShift extends DForColumnTable {
     public boolean isOpen() { return open.get(); }
     public void setOpen(boolean value) { this.open.set(value); }
     public BooleanProperty openProperty() { return open; }
+
+    // ===== totalSales =====
+    public double getTotalSales() { return totalSales.get(); }
+    public void setTotalSales(double v) { this.totalSales.set(v); }
+    public DoubleProperty totalSalesProperty() { return totalSales; }
+
+    // ===== totalSalesReturns =====
+    public double getTotalSalesReturns() { return totalSalesReturns.get(); }
+    public void setTotalSalesReturns(double v) { this.totalSalesReturns.set(v); }
+    public DoubleProperty totalSalesReturnsProperty() { return totalSalesReturns; }
+
+    // ===== totalExpenses =====
+    public double getTotalExpenses() { return totalExpenses.get(); }
+    public void setTotalExpenses(double v) { this.totalExpenses.set(v); }
+    public DoubleProperty totalExpensesProperty() { return totalExpenses; }
+
+    // ===== totalDeposits =====
+    public double getTotalDeposits() { return totalDeposits.get(); }
+    public void setTotalDeposits(double v) { this.totalDeposits.set(v); }
+    public DoubleProperty totalDepositsProperty() { return totalDeposits; }
+
+    // ===== totalWithdrawals =====
+    public double getTotalWithdrawals() { return totalWithdrawals.get(); }
+    public void setTotalWithdrawals(double v) { this.totalWithdrawals.set(v); }
+    public DoubleProperty totalWithdrawalsProperty() { return totalWithdrawals; }
+
+    // ===== expectedBalance =====
+    public double getExpectedBalance() { return expectedBalance.get(); }
+    public void setExpectedBalance(double v) { this.expectedBalance.set(v); }
+    public DoubleProperty expectedBalanceProperty() { return expectedBalance; }
+
+    // ===== difference =====
+    public double getDifference() { return difference.get(); }
+    public void setDifference(double v) { this.difference.set(v); }
+    public DoubleProperty differenceProperty() { return difference; }
+
+    // ===== invoicesCount =====
+    public int getInvoicesCount() { return invoicesCount.get(); }
+    public void setInvoicesCount(int v) { this.invoicesCount.set(v); }
+    public IntegerProperty invoicesCountProperty() { return invoicesCount; }
 }

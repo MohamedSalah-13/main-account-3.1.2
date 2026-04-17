@@ -8,6 +8,8 @@ import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.model.domain.Users;
 import com.hamza.account.model.domain.Users_Permission;
 import com.hamza.account.service.UserPermissionService;
+import com.hamza.account.service.UserShiftService;
+import com.hamza.account.session.ShiftContextLoader;
 import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.language.Error_Text_Show;
@@ -52,6 +54,8 @@ public class LogApplication extends Application {
             login.start(stage);
         else {
             LogApplication.usersVo = daoFactory.usersDao().getDataById(1);
+            // مثال للتكامل — ضعه بعد تعيين LogApplication.usersVo
+            ShiftContextLoader.loadForUser(usersVo.getId(), new UserShiftService(daoFactory));
             openMainScreen();
             stage.close();
         }

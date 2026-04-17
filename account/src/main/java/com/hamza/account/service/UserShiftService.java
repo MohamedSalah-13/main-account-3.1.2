@@ -1,6 +1,7 @@
 package com.hamza.account.service;
 
 import com.hamza.account.model.dao.DaoFactory;
+import com.hamza.account.model.domain.ShiftSummary;
 import com.hamza.account.model.domain.UserShift;
 import com.hamza.controlsfx.database.DaoException;
 
@@ -9,9 +10,6 @@ import java.util.List;
 
 public record UserShiftService(DaoFactory daoFactory) {
 
-    /**
-     * فتح وردية جديدة للمستخدم.
-     */
     public int openShift(int userId, double openBalance, String notes) throws DaoException {
         if (userId <= 0) {
             throw new DaoException("معرّف المستخدم غير صالح!");
@@ -33,7 +31,7 @@ public record UserShiftService(DaoFactory daoFactory) {
     }
 
     /**
-     * غلق الوردية الحالية للمستخدم.
+     * غلق الوردية مع حساب الملخص وتخزينه في السجل.
      */
     public int closeShift(int userId, double closeBalance, String notes) throws DaoException {
         if (closeBalance < 0) {
@@ -45,11 +43,29 @@ public record UserShiftService(DaoFactory daoFactory) {
             throw new DaoException("لا توجد وردية مفتوحة لهذا المستخدم!");
         }
 
-        openShift.setCloseTime(LocalDateTime.now());
+        LocalDateTime closeTime = LocalDateTime.now();
+
+        // حساب الملخص خلال الفترة
+        ShiftSummary summary = daoFactory.userShiftDao().calculateShiftSummary(
+                userId, openShift.getOpenTime(), closeTime);
+        summary.setOpenBalance(openShift.getOpenBalance());
+
+        double expected = summary.getExpectedBalance();
+        double diff = summary.calculateDifference(closeBalance);
+
+        openShift.setCloseTime(closeTime);
         openShift.setCloseBalance(closeBalance);
         openShift.setOpen(false);
+        openShift.setTotalSales(summary.getTotalSales());
+        openShift.setTotalSalesReturns(summary.getTotalSalesReturns());
+        openShift.setTotalExpenses(summary.getTotalExpenses());
+        openShift.setTotalDeposits(summary.getTotalDeposits());
+        openShift.setTotalWithdrawals(summary.getTotalWithdrawals());
+        openShift.setExpectedBalance(expected);
+        openShift.setDifference(diff);
+        openShift.setInvoicesCount(summary.getInvoicesCount());
+
         if (notes != null && !notes.isBlank()) {
-            // دمج الملاحظات: إبقاء ملاحظات الفتح مع إضافة ملاحظات الغلق
             String current = openShift.getNotes();
             openShift.setNotes((current == null || current.isBlank())
                     ? notes
@@ -57,6 +73,20 @@ public record UserShiftService(DaoFactory daoFactory) {
         }
 
         return daoFactory.userShiftDao().update(openShift);
+    }
+
+    /**
+     * ملخص لحظي للوردية المفتوحة (X-Report) — لا يغلقها.
+     */
+    public ShiftSummary getCurrentShiftSummary(int userId) throws DaoException {
+        UserShift openShift = daoFactory.userShiftDao().getOpenShiftByUserId(userId);
+        if (openShift == null) {
+            throw new DaoException("لا توجد وردية مفتوحة لهذا المستخدم!");
+        }
+        ShiftSummary summary = daoFactory.userShiftDao()
+                .calculateShiftSummary(userId, openShift.getOpenTime(), LocalDateTime.now());
+        summary.setOpenBalance(openShift.getOpenBalance());
+        return summary;
     }
 
     public UserShift getOpenShift(int userId) throws DaoException {

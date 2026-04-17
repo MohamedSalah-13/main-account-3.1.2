@@ -1,5 +1,6 @@
 package com.hamza.account.model.dao;
 
+import com.hamza.account.model.domain.ShiftSummary;
 import com.hamza.account.model.domain.UserShift;
 import com.hamza.controlsfx.database.AbstractDao;
 import com.hamza.controlsfx.database.DaoException;
@@ -7,6 +8,7 @@ import com.hamza.controlsfx.database.SqlStatements;
 import lombok.extern.log4j.Log4j2;
 
 import java.sql.*;
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Log4j2
@@ -21,6 +23,16 @@ public class UserShiftDao extends AbstractDao<UserShift> {
     private static final String CLOSE_BALANCE = "close_balance";
     private static final String IS_OPEN = "is_open";
     private static final String NOTES = "notes";
+
+    // أعمدة المرحلة 2
+    private static final String TOTAL_SALES = "total_sales";
+    private static final String TOTAL_SALES_RETURNS = "total_sales_returns";
+    private static final String TOTAL_EXPENSES = "total_expenses";
+    private static final String TOTAL_DEPOSITS = "total_deposits";
+    private static final String TOTAL_WITHDRAWALS = "total_withdrawals";
+    private static final String EXPECTED_BALANCE = "expected_balance";
+    private static final String DIFFERENCE = "difference";
+    private static final String INVOICES_COUNT = "invoices_count";
 
     UserShiftDao(Connection connection) {
         super(connection);
@@ -45,11 +57,17 @@ public class UserShiftDao extends AbstractDao<UserShift> {
                 objects);
     }
 
+    /**
+     * تحديث كامل للوردية بما فيها حقول الملخص (يُستخدم عند الغلق).
+     */
     @Override
     public int update(UserShift shift) throws DaoException {
-        return executeUpdate(
-                SqlStatements.updateStatement(TABLE_NAME, ID, CLOSE_TIME, CLOSE_BALANCE, IS_OPEN, NOTES),
-                getData(shift));
+        String sql = SqlStatements.updateStatement(TABLE_NAME, ID,
+                CLOSE_TIME, CLOSE_BALANCE, IS_OPEN, NOTES,
+                TOTAL_SALES, TOTAL_SALES_RETURNS, TOTAL_EXPENSES,
+                TOTAL_DEPOSITS, TOTAL_WITHDRAWALS,
+                EXPECTED_BALANCE, DIFFERENCE, INVOICES_COUNT);
+        return executeUpdate(sql, getData(shift));
     }
 
     @Override
@@ -74,6 +92,14 @@ public class UserShiftDao extends AbstractDao<UserShift> {
                 shift.getCloseBalance(),
                 shift.isOpen(),
                 shift.getNotes(),
+                shift.getTotalSales(),
+                shift.getTotalSalesReturns(),
+                shift.getTotalExpenses(),
+                shift.getTotalDeposits(),
+                shift.getTotalWithdrawals(),
+                shift.getExpectedBalance(),
+                shift.getDifference(),
+                shift.getInvoicesCount(),
                 shift.getId()
         };
     }
@@ -96,15 +122,30 @@ public class UserShiftDao extends AbstractDao<UserShift> {
             shift.setOpen(rs.getBoolean(IS_OPEN));
             shift.setNotes(rs.getString(NOTES));
             shift.setStatus(shift.isOpen() ? "مفتوحة" : "مغلقة");
+
+            // حقول المرحلة 2 (قد لا تكون موجودة لو لم يُشغَّل الـ migration بعد)
+            shift.setTotalSales(getDoubleSafe(rs, TOTAL_SALES));
+            shift.setTotalSalesReturns(getDoubleSafe(rs, TOTAL_SALES_RETURNS));
+            shift.setTotalExpenses(getDoubleSafe(rs, TOTAL_EXPENSES));
+            shift.setTotalDeposits(getDoubleSafe(rs, TOTAL_DEPOSITS));
+            shift.setTotalWithdrawals(getDoubleSafe(rs, TOTAL_WITHDRAWALS));
+            shift.setExpectedBalance(getDoubleSafe(rs, EXPECTED_BALANCE));
+            shift.setDifference(getDoubleSafe(rs, DIFFERENCE));
+            shift.setInvoicesCount(getIntSafe(rs, INVOICES_COUNT));
         } catch (SQLException e) {
             throw new DaoException(e);
         }
         return shift;
     }
 
-    /**
-     * الوردية المفتوحة لمستخدم معيّن (إن وجدت).
-     */
+    private double getDoubleSafe(ResultSet rs, String col) {
+        try { return rs.getDouble(col); } catch (SQLException e) { return 0.0; }
+    }
+
+    private int getIntSafe(ResultSet rs, String col) {
+        try { return rs.getInt(col); } catch (SQLException e) { return 0; }
+    }
+
     public UserShift getOpenShiftByUserId(int userId) throws DaoException {
         String sql = "SELECT * FROM " + TABLE_NAME +
                 " WHERE " + USER_ID + " = ? AND " + IS_OPEN + " = TRUE" +
@@ -112,18 +153,12 @@ public class UserShiftDao extends AbstractDao<UserShift> {
         return queryForObject(sql, this::map, userId);
     }
 
-    /**
-     * جميع ورديات المستخدم مرتبة من الأحدث.
-     */
     public List<UserShift> getShiftsByUserId(int userId) throws DaoException {
         String sql = "SELECT * FROM " + TABLE_NAME +
                 " WHERE " + USER_ID + " = ? ORDER BY " + OPEN_TIME + " DESC";
         return queryForObjects(sql, this::map, userId);
     }
 
-    /**
-     * التحقق من وجود وردية مفتوحة (عبر PreparedStatement بدون SQL Injection).
-     */
     public boolean hasOpenShift(int userId) throws DaoException {
         String sql = "SELECT COUNT(*) FROM " + TABLE_NAME +
                 " WHERE " + USER_ID + " = ? AND " + IS_OPEN + " = TRUE";
@@ -135,6 +170,97 @@ public class UserShiftDao extends AbstractDao<UserShift> {
         } catch (SQLException e) {
             log.error("Error checking open shift for user ID: {}", userId, e);
             throw new DaoException(e);
+        }
+    }
+
+    // =========================================================
+    // حساب ملخص الوردية من الجداول الأخرى (Time-Based)
+    // =========================================================
+
+    /**
+     * يحسب الملخص المالي للوردية اعتماداً على نطاق الوقت ومعرف المستخدم.
+     * يُستخدم لحظياً (X-Report) أو عند الغلق (Z-Report).
+     *
+     * @param userId  معرّف المستخدم
+     * @param from    بداية الفترة (open_time)
+     * @param to      نهاية الفترة (الآن أو close_time)
+     */
+    public ShiftSummary calculateShiftSummary(int userId, LocalDateTime from, LocalDateTime to)
+            throws DaoException {
+
+        Timestamp tsFrom = Timestamp.valueOf(from);
+        Timestamp tsTo = Timestamp.valueOf(to);
+
+        double totalSales = sumDouble(
+                "SELECT COALESCE(SUM(paid_up), 0) FROM total_sales " +
+                        "WHERE user_id = ? AND date_insert BETWEEN ? AND ?",
+                userId, tsFrom, tsTo);
+
+        double totalSalesReturns = sumDouble(
+                "SELECT COALESCE(SUM(paid_from_treasury), 0) FROM total_sales_re " +
+                        "WHERE user_id = ? AND date_insert BETWEEN ? AND ?",
+                userId, tsFrom, tsTo);
+
+        double totalExpenses = sumDouble(
+                "SELECT COALESCE(SUM(amount), 0) FROM expenses_details " +
+                        "WHERE user_id = ? AND date_insert BETWEEN ? AND ?",
+                userId, tsFrom, tsTo);
+
+        // deposit_or_expenses: 1 = إيداع, 2 = سحب (حسب التصميم الحالي)
+        double totalDeposits = sumDouble(
+                "SELECT COALESCE(SUM(amount), 0) FROM treasury_deposit_expenses " +
+                        "WHERE user_id = ? AND deposit_or_expenses = 1 " +
+                        "AND date_insert BETWEEN ? AND ?",
+                userId, tsFrom, tsTo);
+
+        double totalWithdrawals = sumDouble(
+                "SELECT COALESCE(SUM(amount), 0) FROM treasury_deposit_expenses " +
+                        "WHERE user_id = ? AND deposit_or_expenses = 2 " +
+                        "AND date_insert BETWEEN ? AND ?",
+                userId, tsFrom, tsTo);
+
+        int invoicesCount = countInt(
+                "SELECT COUNT(*) FROM total_sales " +
+                        "WHERE user_id = ? AND date_insert BETWEEN ? AND ?",
+                userId, tsFrom, tsTo);
+
+        return ShiftSummary.builder()
+                .totalSales(totalSales)
+                .totalSalesReturns(totalSalesReturns)
+                .totalExpenses(totalExpenses)
+                .totalDeposits(totalDeposits)
+                .totalWithdrawals(totalWithdrawals)
+                .invoicesCount(invoicesCount)
+                .build();
+    }
+
+    private double sumDouble(String sql, Object... params) throws DaoException {
+        try (PreparedStatement ps = connection.prepareStatement(sql)) {
+            bindParams(ps, params);
+            try (ResultSet rs = ps.executeQuery()) {
+                return rs.next() ? rs.getDouble(1) : 0.0;
+            }
+        } catch (SQLException e) {
+            log.error("sumDouble failed: {}", sql, e);
+            throw new DaoException(e);
+        }
+    }
+
+    private int countInt(String sql, Object... params) throws DaoException {
+        try (PreparedStatement ps = connection.prepareStatement(sql)) {
+            bindParams(ps, params);
+            try (ResultSet rs = ps.executeQuery()) {
+                return rs.next() ? rs.getInt(1) : 0;
+            }
+        } catch (SQLException e) {
+            log.error("countInt failed: {}", sql, e);
+            throw new DaoException(e);
+        }
+    }
+
+    private void bindParams(PreparedStatement ps, Object... params) throws SQLException {
+        for (int i = 0; i < params.length; i++) {
+            ps.setObject(i + 1, params[i]);
         }
     }
 }
