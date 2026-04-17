@@ -7,6 +7,7 @@ import com.hamza.account.openFxml.FxmlPath;
 import com.hamza.account.view.LogApplication;
 import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.database.DaoException;
+import javafx.beans.property.SimpleIntegerProperty;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
@@ -22,7 +23,8 @@ import static com.hamza.controlsfx.others.Utils.setTextFormatter;
 @FxmlPath(pathFile = "user-shift-view.fxml")
 public class UserShiftController extends ServiceData {
 
-    private static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+    private static final DateTimeFormatter DATE_TIME_FORMATTER =
+            DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
     @FXML
     private Label labelTitle, labelShiftStatus, labelOpenTime, labelOpenBalance;
@@ -49,7 +51,7 @@ public class UserShiftController extends ServiceData {
     private TableColumn<UserShift, String> colOpenTime, colCloseTime, colStatus;
 
     @FXML
-    private TableColumn<UserShift, Double> colOpenBalance, colCloseBalance;
+    private TableColumn<UserShift, Number> colOpenBalance, colCloseBalance;
 
     private final int currentUserId;
 
@@ -71,21 +73,22 @@ public class UserShiftController extends ServiceData {
     }
 
     private void setupTableColumns() {
-        colId.setCellValueFactory(cellData -> new javafx.beans.property.SimpleIntegerProperty(cellData.getValue().getId()).asObject());
+        colId.setCellValueFactory(c -> new SimpleIntegerProperty(c.getValue().getId()).asObject());
 
-        colOpenTime.setCellValueFactory(cellData -> {
-            var openTime = cellData.getValue().getOpenTime();
-            return new SimpleStringProperty(openTime != null ? openTime.format(DATE_TIME_FORMATTER) : "-");
+        colOpenTime.setCellValueFactory(c -> {
+            var t = c.getValue().getOpenTime();
+            return new SimpleStringProperty(t != null ? t.format(DATE_TIME_FORMATTER) : "-");
         });
 
-        colCloseTime.setCellValueFactory(cellData -> {
-            var closeTime = cellData.getValue().getCloseTime();
-            return new SimpleStringProperty(closeTime != null ? closeTime.format(DATE_TIME_FORMATTER) : "-");
+        colCloseTime.setCellValueFactory(c -> {
+            var t = c.getValue().getCloseTime();
+            return new SimpleStringProperty(t != null ? t.format(DATE_TIME_FORMATTER) : "-");
         });
 
-        colOpenBalance.setCellValueFactory(cellData -> new javafx.beans.property.SimpleDoubleProperty(cellData.getValue().getOpenBalance()).asObject());
-        colCloseBalance.setCellValueFactory(cellData -> new javafx.beans.property.SimpleDoubleProperty(cellData.getValue().getCloseBalance()).asObject());
-        colStatus.setCellValueFactory(cellData -> cellData.getValue().statusProperty());
+        // استخدام الـ properties الأصلية من الدومين (ربط حقيقي لا نسخة جديدة)
+        colOpenBalance.setCellValueFactory(c -> c.getValue().openBalanceProperty());
+        colCloseBalance.setCellValueFactory(c -> c.getValue().closeBalanceProperty());
+        colStatus.setCellValueFactory(c -> c.getValue().statusProperty());
     }
 
     private void setupActions() {
@@ -100,8 +103,7 @@ public class UserShiftController extends ServiceData {
 
     private void loadCurrentShiftStatus() {
         try {
-            boolean hasOpen = userShiftService.hasOpenShift(currentUserId);
-            if (hasOpen) {
+            if (userShiftService.hasOpenShift(currentUserId)) {
                 UserShift openShift = userShiftService.getOpenShift(currentUserId);
                 showOpenShiftInfo(openShift);
                 boxOpenShift.setDisable(true);
@@ -123,7 +125,8 @@ public class UserShiftController extends ServiceData {
     private void showOpenShiftInfo(UserShift shift) {
         labelShiftStatus.setText("مفتوحة");
         labelShiftStatus.setStyle("-fx-text-fill: green; -fx-font-weight: bold;");
-        labelOpenTime.setText(shift.getOpenTime() != null ? shift.getOpenTime().format(DATE_TIME_FORMATTER) : "-");
+        labelOpenTime.setText(shift.getOpenTime() != null
+                ? shift.getOpenTime().format(DATE_TIME_FORMATTER) : "-");
         labelOpenBalance.setText(String.valueOf(shift.getOpenBalance()));
     }
 
@@ -147,10 +150,13 @@ public class UserShiftController extends ServiceData {
     private void openShift() {
         try {
             double openBalance = parseBalance(txtOpenBalance.getText());
-            String notes = txtOpenNotes.getText();
+            if (openBalance < 0) {
+                AllAlerts.alertError("لا يمكن أن يكون الرصيد الافتتاحي بالسالب!");
+                return;
+            }
+            String notes = safeTrim(txtOpenNotes.getText());
 
-            int result = userShiftService.openShift(currentUserId, openBalance, notes);
-            if (result > 0) {
+            if (userShiftService.openShift(currentUserId, openBalance, notes) > 0) {
                 AllAlerts.alertSaveWithMessage("تم فتح الوردية بنجاح!");
                 clearOpenShiftFields();
                 refreshView();
@@ -169,16 +175,18 @@ public class UserShiftController extends ServiceData {
                 AllAlerts.alertError("لا توجد وردية مفتوحة لإغلاقها!");
                 return;
             }
-
             if (!AllAlerts.confirm_all("هل تريد غلق الوردية؟")) {
                 return;
             }
 
             double closeBalance = parseBalance(txtCloseBalance.getText());
-            String notes = txtCloseNotes.getText();
+            if (closeBalance < 0) {
+                AllAlerts.alertError("لا يمكن أن يكون الرصيد الختامي بالسالب!");
+                return;
+            }
+            String notes = safeTrim(txtCloseNotes.getText());
 
-            int result = userShiftService.closeShift(currentUserId, closeBalance, notes);
-            if (result > 0) {
+            if (userShiftService.closeShift(currentUserId, closeBalance, notes) > 0) {
                 AllAlerts.alertSaveWithMessage("تم غلق الوردية بنجاح!");
                 clearCloseShiftFields();
                 refreshView();
@@ -192,10 +200,19 @@ public class UserShiftController extends ServiceData {
     }
 
     private double parseBalance(String text) {
-        if (text == null || text.trim().isEmpty()) {
+        if (text == null || text.isBlank()) {
             return 0.0;
         }
-        return Double.parseDouble(text.trim());
+        // دعم الفواصل العربية والمسافات
+        String normalized = text.trim()
+                .replace('٫', '.')
+                .replace(',', '.')
+                .replaceAll("\\s+", "");
+        return Double.parseDouble(normalized);
+    }
+
+    private String safeTrim(String s) {
+        return s == null ? null : s.trim();
     }
 
     private void clearOpenShiftFields() {
