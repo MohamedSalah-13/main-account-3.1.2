@@ -25,6 +25,7 @@ import com.hamza.account.otherSetting.ButtonDeleteRow;
 import com.hamza.account.otherSetting.MaskerPaneSetting;
 import com.hamza.account.reportData.Print_Reports;
 import com.hamza.account.service.CardItemService;
+import com.hamza.account.session.ShiftContext;
 import com.hamza.account.table.TableSetting;
 import com.hamza.account.type.DiscountType;
 import com.hamza.account.type.InvoiceType;
@@ -660,6 +661,10 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
             if (comboTreasury.getSelectionModel().getSelectedItem() == null) {
                 Platform.runLater(() -> comboTreasury.requestFocus());
                 throw new Exception("من فضلك حدد الخزينة");
+            }
+
+            if (!ShiftContext.requireOpenShift()) {
+                return;
             }
 
             if (AllAlerts.confirmSave()) {

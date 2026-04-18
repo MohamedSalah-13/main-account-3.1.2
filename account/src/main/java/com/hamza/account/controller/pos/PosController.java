@@ -19,6 +19,7 @@ import com.hamza.account.openFxml.FxmlPath;
 import com.hamza.account.otherSetting.ButtonDeleteRow;
 import com.hamza.account.otherSetting.MaskerPaneSetting;
 import com.hamza.account.reportData.Print_Reports;
+import com.hamza.account.session.ShiftContext;
 import com.hamza.account.table.TableOpen;
 import com.hamza.account.type.InvoiceType;
 import com.hamza.account.type.UserPermissionType;
@@ -289,6 +290,10 @@ public class PosController extends ButtonSetting {
 
         btnClear.setOnAction(event -> clearData());
         btnPay.setOnAction(actionEvent -> saveInvoice());
+
+        // 🛡️ تلميح بصري: عطّل زر الدفع عند عدم وجود وردية مفتوحة
+        refreshShiftGuardUi();
+
         textSearch.textProperty().addListener((observable, oldValue, newValue) -> searchAndSortNodes(newValue));
         btnUpdate.setOnAction(event -> refreshData());
         flowPane.getChildren().addListener((ListChangeListener<? super Node>) observable -> textCount.setText(Setting_Language.WORD_COUNT + " -: " + flowPane.getChildren().size()));
@@ -332,6 +337,21 @@ public class PosController extends ButtonSetting {
             }
         });
 
+    }
+
+    /**
+     * يُحدّث حالة أزرار POS بناءً على وجود وردية مفتوحة.
+     * يُستدعى عند بدء الشاشة، ويمكن ربطه بـ DataPublisher لاحقاً للتحديث التلقائي.
+     */
+    private void refreshShiftGuardUi() {
+        if (!ShiftContext.isEnforceShiftRequired()) {
+            return;
+        }
+        boolean hasShift = ShiftContext.isOpen();
+        btnPay.setDisable(!hasShift);
+        if (!hasShift) {
+            btnPay.setTooltip(new Tooltip("افتح وردية أولاً من شاشة إدارة الورديات"));
+        }
     }
 
     private void addTable() {
@@ -522,6 +542,11 @@ public class PosController extends ButtonSetting {
 
     private void saveInvoice() {
         try {
+            // 🛡️ Shift guard — منع البيع بدون وردية مفتوحة
+            if (!ShiftContext.requireOpenShift()) {
+                return;
+            }
+
             Platform.runLater(this::getTextCode);
             if (textCustomName.getText().isEmpty() || customerId == 0) {
                 customerId = 1;

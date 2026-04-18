@@ -6,6 +6,7 @@ import com.hamza.account.model.domain.ExpensesDetails;
 import com.hamza.account.model.domain.TreasuryModel;
 import com.hamza.account.openFxml.AddInterface;
 import com.hamza.account.openFxml.FxmlPath;
+import com.hamza.account.session.ShiftContext;
 import com.hamza.account.type.ExpensesType;
 import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.database.DaoException;
@@ -91,6 +92,10 @@ public class AddExpensesController extends ServiceData implements AddInterface {
 
     @Override
     public int insertData() throws DaoException {
+        if (!ShiftContext.requireOpenShift()) {
+            return 0;
+        }
+
         ExpensesDetails expensesDetails = new ExpensesDetails();
         ExpensesType byType = ExpensesType.fromType(comboType.getSelectionModel().getSelectedItem());
         if (byType == null) throw new DaoException("خطا فى نوع المصروف");
