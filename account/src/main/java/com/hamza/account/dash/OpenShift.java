@@ -20,7 +20,7 @@ public class OpenShift extends Application {
         var controller = new UserShiftController(daoFactory);
         Scene scene = new Scene(new OpenFxmlApplication(controller).getPane());
 
-        stage.setResizable(false);
+//        stage.setResizable(false);
         stage.setScene(scene);
         stage.setTitle("OpenShift Dashboard");
         stage.show();

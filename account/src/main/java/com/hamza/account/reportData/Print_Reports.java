@@ -8,6 +8,7 @@ import com.hamza.account.controller.model.PrintPurchaseWithName;
 import com.hamza.account.controller.model.TableTotals;
 import com.hamza.account.model.domain.*;
 import com.hamza.account.otherSetting.BarcodeDetails;
+import com.hamza.account.service.ShiftReportService;
 import com.hamza.account.view.LogApplication;
 import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.language.Setting_Language;
@@ -360,7 +361,7 @@ public class Print_Reports extends ReportCompany {
     /**
      * طباعة تقرير X (لحظي) - 80mm حراري.
      */
-    public void printShiftXReport(ShiftReportData data) {
+    public void printShiftXReport(ShiftReportService.ShiftReportData data) {
         HashMap<String, Object> map = buildShiftReportMap(data);
         jasperData.printJasperPrint(
                 JasperReportPaths.Shift.X_REPORT_80,
@@ -370,7 +371,7 @@ public class Print_Reports extends ReportCompany {
     /**
      * طباعة تقرير Z (غلق) - 80mm حراري.
      */
-    public void printShiftZReport(ShiftReportData data) {
+    public void printShiftZReport(ShiftReportService.ShiftReportData data) {
         HashMap<String, Object> map = buildShiftReportMap(data);
         jasperData.printJasperPrint(
                 JasperReportPaths.Shift.Z_REPORT_80,
@@ -391,12 +392,12 @@ public class Print_Reports extends ReportCompany {
                 "تقرير الورديات", map, 1, "");
     }
 
-    private HashMap<String, Object> buildShiftReportMap(ShiftShiftReportDataAlias) {
-        // (placeholder - see real helper below)
-        return new HashMap<>();
-    }
+//    private HashMap<String, Object> buildShiftReportMap(ShiftShiftReportDataAlias) {
+//        // (placeholder - see real helper below)
+//        return new HashMap<>();
+//    }
 
-    private HashMap<String, Object> buildShiftReportMap(ShiftReportData data) {
+    private HashMap<String, Object> buildShiftReportMap(ShiftReportService.ShiftReportData data) {
         HashMap<String, Object> map = getCompany();
         var shift = data.shift();
         var summary = data.summary();

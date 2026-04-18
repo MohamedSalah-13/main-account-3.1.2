@@ -95,11 +95,11 @@
                 <textFieldExpression>$P{closeBalance}</textFieldExpression></textField>
 
             <staticText><reportElement x="0" y="239" width="120" height="15">
-                <textElement><font isBold="true"/></textElement>
+<!--                <textElement><font isBold="true"/></textElement>-->
             </reportElement>
                 <text><![CDATA[الفرق:]]></text></staticText>
             <textField pattern="#,##0.00"><reportElement x="120" y="239" width="86" height="15">
-                <textElement><font isBold="true"/></textElement>
+<!--                <textElement><font isBold="true"/></textElement>-->
             </reportElement>
                 <textFieldExpression>$P{difference}</textFieldExpression></textField>
 
@@ -111,9 +111,9 @@
                 <textFieldExpression>$P{notes}</textFieldExpression></textField>
 
             <textField><reportElement x="0" y="340" width="206" height="12">
-                <textElement textAlignment="Center">
-                    <font size="8"/>
-                </textElement>
+<!--                <textElement textAlignment="Center">-->
+<!--                    <font size="8"/>-->
+<!--                </textElement>-->
             </reportElement>
                 <textFieldExpression>$P{printTime}</textFieldExpression></textField>
         </band>

@@ -29,7 +29,7 @@ public record ShiftReportService(DaoFactory daoFactory, UserShiftService userShi
      * بيانات تقرير Z — بعد غلق الوردية (يُستدعى بـ shiftId).
      */
     public ShiftReportData buildZReport(int shiftId) throws DaoException {
-        UserShift shift = daoFactory.userShiftDao().loadById(shiftId);
+        UserShift shift = daoFactory.userShiftDao().getDataById(shiftId);
         if (shift == null) {
             throw new DaoException("الوردية غير موجودة!");
         }
@@ -50,7 +50,8 @@ public record ShiftReportService(DaoFactory daoFactory, UserShiftService userShi
      */
     public List<UserShift> buildAggregateReport(LocalDateTime from, LocalDateTime to, Integer userId)
             throws DaoException {
-        return daoFactory.userShiftDao().getShiftsBetween(from, to, userId);
+//        return daoFactory.userShiftDao().getShiftsBetween(from, to, userId);
+        return null;
     }
 
     /**
