@@ -6,8 +6,10 @@ import com.hamza.account.model.domain.Sales;
 import com.hamza.account.model.domain.Total_Sales;
 import com.hamza.controlsfx.database.DaoException;
 
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 public record CustomerPurchasedItemsService(DaoFactory daoFactory) {
 
@@ -49,5 +51,50 @@ public record CustomerPurchasedItemsService(DaoFactory daoFactory) {
         }
 
         return result;
+    }
+
+    public List<PurchasedItemByCustomerView> filterByDateRange(
+            List<PurchasedItemByCustomerView> source,
+            LocalDate from,
+            LocalDate to) {
+        if (source == null || source.isEmpty()) {
+            return List.of();
+        }
+        if (from == null || to == null) {
+            return source;
+        }
+        return source.stream()
+                .filter(row -> {
+                    if (row.getInvoiceDate() == null || row.getInvoiceDate().isBlank()) {
+                        return false;
+                    }
+                    LocalDate rowDate = LocalDate.parse(row.getInvoiceDate());
+                    return (rowDate.isEqual(from) || rowDate.isAfter(from))
+                            && (rowDate.isEqual(to) || rowDate.isBefore(to));
+                })
+                .toList();
+    }
+
+    public List<PurchasedItemByCustomerView> filterByItemName(
+            List<PurchasedItemByCustomerView> source,
+            String name) {
+        if (source == null || source.isEmpty()) {
+            return List.of();
+        }
+        if (name == null || name.isBlank()) {
+            return source;
+        }
+        String search = name.trim().toLowerCase(Locale.ROOT);
+        return source.stream()
+                .filter(row -> row.getItemName() != null
+                        && row.getItemName().toLowerCase(Locale.ROOT).contains(search))
+                .toList();
+    }
+
+    public double sumTotalSales(List<PurchasedItemByCustomerView> source) {
+        if (source == null || source.isEmpty()) {
+            return 0;
+        }
+        return source.stream().mapToDouble(PurchasedItemByCustomerView::getTotal).sum();
     }
 }

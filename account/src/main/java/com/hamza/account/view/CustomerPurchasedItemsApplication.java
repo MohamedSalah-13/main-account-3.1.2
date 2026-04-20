@@ -1,6 +1,5 @@
 package com.hamza.account.view;
 
-import com.hamza.account.controller.name_account.CustomerPurchasedItemsController;
 import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.controlsfx.others.ChangeOrientation;
 import javafx.application.Application;
@@ -34,7 +33,7 @@ public class CustomerPurchasedItemsApplication extends Application {
         this.customerId = customerId;
 
         FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource("/com/hamza/account/view/customer-purchased-items-view.fxml"));
-        fxmlLoader.setController(new CustomerPurchasedItemsController(daoFactory, customerId));
+        fxmlLoader.setController(new com.hamza.account.controller.name_account.CustomerPurchasedItemsController(daoFactory, customerId));
         this.scene = new Scene(fxmlLoader.load());
     }
 

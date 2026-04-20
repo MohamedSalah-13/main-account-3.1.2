@@ -1,8 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.DatePicker?>
 <?import javafx.scene.control.Label?>
 <?import javafx.scene.control.TableView?>
+<?import javafx.scene.control.TextField?>
 <?import javafx.scene.layout.BorderPane?>
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.VBox?>
@@ -20,11 +23,24 @@
                 <Label text="الأصناف المشتراة من العميل" styleClass="title-label"/>
                 <Label text="عدد السطور:"/>
                 <Label fx:id="labelCount" text="0"/>
+                <Label text="إجمالي البيع:"/>
+                <Label fx:id="labelTotalSales" text="0"/>
             </HBox>
 
             <HBox spacing="10.0">
                 <Label text="العميل:"/>
                 <Label fx:id="labelCustomerName" text=""/>
+            </HBox>
+
+            <HBox spacing="10.0">
+                <Label text="من:"/>
+                <DatePicker fx:id="dateFrom"/>
+                <Label text="إلى:"/>
+                <DatePicker fx:id="dateTo"/>
+                <Label text="اسم الصنف:"/>
+                <TextField fx:id="textSearchName" promptText="ابحث بالاسم"/>
+                <Button fx:id="btnSearch" text="بحث"/>
+                <Button fx:id="btnReset" text="إعادة ضبط"/>
             </HBox>
         </VBox>
     </top>
