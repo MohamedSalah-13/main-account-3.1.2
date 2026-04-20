@@ -9,12 +9,11 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class PurchasedItemByCustomerView {
-    @ColumnData(titleName = "code")
+    @ColumnData(titleName = "invoice number")
     private int invoiceNumber;
     @ColumnData(titleName = "date")
     private String invoiceDate;
     private int customerId;
-    @ColumnData(titleName = "customerName")
     private String customerName;
     @ColumnData(titleName = "item")
     private int itemId;
@@ -34,4 +33,8 @@ public class PurchasedItemByCustomerView {
     private double total;
     @ColumnData(titleName = "totalAfterDiscount")
     private double totalAfterDiscount;
+
+    public double getNetTotal() {
+        return totalAfterDiscount;
+    }
 }

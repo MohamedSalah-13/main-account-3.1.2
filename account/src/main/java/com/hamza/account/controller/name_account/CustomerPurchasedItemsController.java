@@ -1,13 +1,17 @@
 package com.hamza.account.controller.name_account;
 
 import com.hamza.account.controller.model.PurchasedItemByCustomerView;
+import com.hamza.account.features.export.PdfExportService;
 import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.model.domain.Customers;
 import com.hamza.account.openFxml.FxmlPath;
+
 import com.hamza.account.service.CustomerPurchasedItemsService;
 import com.hamza.account.service.CustomerService;
 import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.database.DaoException;
+import com.hamza.controlsfx.excel.ExcelException;
+import com.hamza.controlsfx.excel.ExportData;
 import com.hamza.controlsfx.interfaceData.AppSettingInterface;
 import com.hamza.controlsfx.others.DateSetting;
 import com.hamza.controlsfx.table.TableColumnAnnotation;
@@ -15,22 +19,24 @@ import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
+import javafx.scene.control.Button;
 import javafx.scene.control.DatePicker;
 import javafx.scene.control.Label;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TextField;
-import javafx.scene.control.Button;
 import javafx.scene.layout.Pane;
 import lombok.extern.log4j.Log4j2;
 import org.jetbrains.annotations.NotNull;
 
+import java.io.File;
 import java.io.IOException;
 import java.net.URL;
 import java.time.LocalDate;
+import java.util.List;
 import java.util.ResourceBundle;
 
 @Log4j2
-@FxmlPath(pathFile = "customer-purchased-items-view.fxml")
+@FxmlPath(pathFile = "customer/customer-purchased-items-view.fxml")
 public class CustomerPurchasedItemsController implements Initializable, AppSettingInterface {
 
     private final CustomerPurchasedItemsService purchasedItemsService;
@@ -46,6 +52,10 @@ public class CustomerPurchasedItemsController implements Initializable, AppSetti
     @FXML
     private Label labelTotalSales;
     @FXML
+    private Label labelTotalQuantity;
+    @FXML
+    private Label labelNetTotal;
+    @FXML
     private DatePicker dateFrom;
     @FXML
     private DatePicker dateTo;
@@ -55,6 +65,12 @@ public class CustomerPurchasedItemsController implements Initializable, AppSetti
     private Button btnSearch;
     @FXML
     private Button btnReset;
+    @FXML
+    private Button btnExportExcel;
+    @FXML
+    private Button btnExportPdf;
+    @FXML
+    private Button btnSortDate;
 
     private final ObservableList<PurchasedItemByCustomerView> masterData = FXCollections.observableArrayList();
     private final ObservableList<PurchasedItemByCustomerView> filteredData = FXCollections.observableArrayList();
@@ -88,12 +104,19 @@ public class CustomerPurchasedItemsController implements Initializable, AppSetti
             btnSearch.setOnAction(e -> applyFilters());
         }
         if (btnReset != null) {
-            btnReset.setOnAction(e -> {
-                if (dateFrom != null) dateFrom.setValue(null);
-                if (dateTo != null) dateTo.setValue(null);
-                if (textSearchName != null) textSearchName.clear();
+            btnReset.setOnAction(e -> resetFilters());
+        }
+        if (btnSortDate != null) {
+            btnSortDate.setOnAction(e -> {
+                masterData.setAll(purchasedItemsService.sortByDateDescending(masterData));
                 applyFilters();
             });
+        }
+        if (btnExportExcel != null) {
+            btnExportExcel.setOnAction(e -> exportExcel());
+        }
+        if (btnExportPdf != null) {
+            btnExportPdf.setOnAction(e -> exportPdf());
         }
     }
 
@@ -112,7 +135,6 @@ public class CustomerPurchasedItemsController implements Initializable, AppSetti
     private void loadData() {
         try {
             masterData.setAll(purchasedItemsService.getPurchasedItemsByCustomerId(customerId));
-            applyFilters();
         } catch (DaoException e) {
             log.error(e.getMessage(), e.getCause());
             AllAlerts.showExceptionDialog(e);
@@ -138,12 +160,99 @@ public class CustomerPurchasedItemsController implements Initializable, AppSetti
 
         filteredData.setAll(result);
         tableView.refresh();
+        updateSummary();
+    }
 
+    private void updateSummary() {
         if (labelCount != null) {
             labelCount.setText(String.valueOf(filteredData.size()));
         }
         if (labelTotalSales != null) {
             labelTotalSales.setText(String.valueOf(purchasedItemsService.sumTotalSales(filteredData)));
+        }
+        if (labelTotalQuantity != null) {
+            labelTotalQuantity.setText(String.valueOf(purchasedItemsService.sumTotalQuantity(filteredData)));
+        }
+        if (labelNetTotal != null) {
+            labelNetTotal.setText(String.valueOf(purchasedItemsService.sumTotalAfterDiscount(filteredData)));
+        }
+    }
+
+    private void resetFilters() {
+        if (dateFrom != null) dateFrom.setValue(null);
+        if (dateTo != null) dateTo.setValue(null);
+        if (textSearchName != null) textSearchName.clear();
+        filteredData.setAll(masterData);
+        updateSummary();
+    }
+
+    private void exportExcel() {
+        try {
+            if (filteredData.isEmpty()) {
+                AllAlerts.alertError("لا توجد بيانات للتصدير");
+                return;
+            }
+            int result = ExportData.exportDataToExcel(
+                    filteredData.stream().toList(),
+                    new CustomerPurchasedItemsExcelWriter(filteredData, labelCustomerName != null ? labelCustomerName.getText() : "")
+            );
+            if (result >= 1) {
+                AllAlerts.alertSaveWithMessage("تم تصدير ملف Excel بنجاح");
+            }
+        } catch (ExcelException e) {
+            log.error(e.getMessage(), e.getCause());
+            AllAlerts.alertError(e.getMessage());
+        }
+    }
+
+    private void exportPdf() {
+        try {
+            if (filteredData.isEmpty()) {
+                AllAlerts.alertError("لا توجد بيانات للطباعة");
+                return;
+            }
+
+            File file = new javafx.stage.FileChooser().showSaveDialog(tableView.getScene().getWindow());
+            if (file == null) {
+                return;
+            }
+
+            List<String[]> rows = filteredData.stream()
+                    .map(row -> new String[]{
+                            String.valueOf(row.getInvoiceNumber()),
+                            row.getInvoiceDate(),
+                            row.getItemName(),
+                            row.getItemBarcode(),
+                            row.getUnitName(),
+                            String.valueOf(row.getQuantity()),
+                            String.valueOf(row.getPrice()),
+                            String.valueOf(row.getDiscount()),
+                            String.valueOf(row.getTotal()),
+                            String.valueOf(row.getTotalAfterDiscount())
+                    })
+                    .toList();
+
+            PdfExportService pdfExportService = new PdfExportService();
+            boolean success = pdfExportService.exportGenericReport(
+                    file.getAbsolutePath(),
+                    "الأصناف المشتراة من العميل",
+                    "العميل: " + (labelCustomerName != null ? labelCustomerName.getText() : ""),
+                    new String[]{"رقم الفاتورة", "التاريخ", "الصنف", "الباركود", "الوحدة", "الكمية", "السعر", "الخصم", "الإجمالي", "الصافي"},
+                    new float[]{10, 14, 18, 14, 10, 10, 10, 10, 10, 10},
+                    rows,
+                    "الإجمالي",
+                    String.valueOf(purchasedItemsService.sumTotalAfterDiscount(filteredData)),
+                    com.itextpdf.kernel.geom.PageSize.A4.rotate()
+            );
+
+            if (success) {
+                AllAlerts.alertSaveWithMessage("تم تصدير ملف PDF بنجاح");
+            } else {
+                AllAlerts.alertError("حدث خطأ أثناء التصدير");
+            }
+        } catch (Exception e) {
+            log.error(e.getMessage(), e.getCause());
+            AllAlerts.alertError(e.getMessage());
         }
     }
 

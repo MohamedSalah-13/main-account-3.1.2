@@ -25,6 +25,10 @@
                 <Label fx:id="labelCount" text="0"/>
                 <Label text="إجمالي البيع:"/>
                 <Label fx:id="labelTotalSales" text="0"/>
+                <Label text="إجمالي الكمية:"/>
+                <Label fx:id="labelTotalQuantity" text="0"/>
+                <Label text="صافي الإجمالي:"/>
+                <Label fx:id="labelNetTotal" text="0"/>
             </HBox>
 
             <HBox spacing="10.0">
@@ -41,6 +45,9 @@
                 <TextField fx:id="textSearchName" promptText="ابحث بالاسم"/>
                 <Button fx:id="btnSearch" text="بحث"/>
                 <Button fx:id="btnReset" text="إعادة ضبط"/>
+                <Button fx:id="btnSortDate" text="ترتيب حسب التاريخ"/>
+                <Button fx:id="btnExportExcel" text="تصدير Excel"/>
+                <Button fx:id="btnExportPdf" text="تصدير PDF"/>
             </HBox>
         </VBox>
     </top>

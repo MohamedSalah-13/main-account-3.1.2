@@ -8,6 +8,7 @@ import com.hamza.controlsfx.database.DaoException;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
 
@@ -91,10 +92,36 @@ public record CustomerPurchasedItemsService(DaoFactory daoFactory) {
                 .toList();
     }
 
+    public List<PurchasedItemByCustomerView> sortByDateDescending(List<PurchasedItemByCustomerView> source) {
+        if (source == null || source.isEmpty()) {
+            return List.of();
+        }
+        return source.stream()
+                .sorted(Comparator.comparing(
+                        row -> LocalDate.parse(row.getInvoiceDate()),
+                        Comparator.reverseOrder()
+                ))
+                .toList();
+    }
+
     public double sumTotalSales(List<PurchasedItemByCustomerView> source) {
         if (source == null || source.isEmpty()) {
             return 0;
         }
         return source.stream().mapToDouble(PurchasedItemByCustomerView::getTotal).sum();
+    }
+
+    public double sumTotalAfterDiscount(List<PurchasedItemByCustomerView> source) {
+        if (source == null || source.isEmpty()) {
+            return 0;
+        }
+        return source.stream().mapToDouble(PurchasedItemByCustomerView::getTotalAfterDiscount).sum();
+    }
+
+    public double sumTotalQuantity(List<PurchasedItemByCustomerView> source) {
+        if (source == null || source.isEmpty()) {
+            return 0;
+        }
+        return source.stream().mapToDouble(PurchasedItemByCustomerView::getQuantity).sum();
     }
 }
