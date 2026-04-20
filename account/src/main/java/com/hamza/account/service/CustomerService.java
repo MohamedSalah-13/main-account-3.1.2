@@ -25,4 +25,8 @@ public record CustomerService(DaoFactory daoFactory) {
     public Customers getCustomerById(int id) throws DaoException {
         return daoFactory.customersDao().getDataById(id);
     }
+
+    public CustomerPurchasedItemsService purchasedItemsService() {
+        return new CustomerPurchasedItemsService(daoFactory);
+    }
 }
