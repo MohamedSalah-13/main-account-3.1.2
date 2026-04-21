@@ -102,7 +102,7 @@ public class ReportExportService {
             List<CustomerAccountData> data,
             String outputPath) {
 
-        String[] headers = {"#", "اسم العميل", "له", "عليه", "الرصيد"};
+        String[] headers = {"#", "التاريخ", "له", "عليه", "الرصيد"};
         float[] columnWidths = {10f, 40f, 16.67f, 16.67f, 16.67f};
 
         List<String[]> rows = new ArrayList<>();

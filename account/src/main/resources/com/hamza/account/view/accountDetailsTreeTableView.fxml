@@ -15,6 +15,7 @@
                         <ToolBar>
                             <items>
                                 <Button fx:id="btnPrint" mnemonicParsing="false" text="Print"/>
+                                <Button fx:id="btnExport" layoutX="134.0" layoutY="10.0" mnemonicParsing="false" text="Export"/>
                                 <Button fx:id="btnRefresh" mnemonicParsing="false" text="Refresh"/>
                                 <MenuButton mnemonicParsing="false" styleClass="menu-button-items" text="إعدادات">
                                     <items>

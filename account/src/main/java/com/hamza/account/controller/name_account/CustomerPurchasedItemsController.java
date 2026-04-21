@@ -25,6 +25,7 @@ import javafx.scene.control.Label;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TextField;
 import javafx.scene.layout.Pane;
+import javafx.stage.FileChooser;
 import lombok.extern.log4j.Log4j2;
 import org.jetbrains.annotations.NotNull;
 
@@ -212,7 +213,15 @@ public class CustomerPurchasedItemsController implements Initializable, AppSetti
                 return;
             }
 
-            File file = new javafx.stage.FileChooser().showSaveDialog(tableView.getScene().getWindow());
+            FileChooser fileChooser = new FileChooser();
+            fileChooser.setTitle("حفظ التقرير");
+            fileChooser.setInitialFileName("items_" + labelCustomerName.getText() + ".pdf");
+            fileChooser.getExtensionFilters().add(
+                    new FileChooser.ExtensionFilter("PDF Files", "*.pdf")
+            );
+
+            File file = fileChooser.showSaveDialog(tableView.getScene().getWindow());
+//            File file = new javafx.stage.FileChooser().showSaveDialog(tableView.getScene().getWindow());
             if (file == null) {
                 return;
             }

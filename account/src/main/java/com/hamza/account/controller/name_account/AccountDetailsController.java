@@ -6,8 +6,6 @@ import com.hamza.account.controller.main.DataPublisher;
 import com.hamza.account.controller.main.DisableButtons;
 import com.hamza.account.controller.main.LoadOtherData;
 import com.hamza.account.controller.model.TreeAccountModelForPrint;
-import com.hamza.account.features.export.CustomerAccountData;
-import com.hamza.account.features.export.ReportExportService;
 import com.hamza.account.interfaces.api.DataInterface;
 import com.hamza.account.model.base.BaseAccount;
 import com.hamza.account.model.base.BaseNames;
@@ -21,12 +19,12 @@ import com.hamza.account.table.TableSetting;
 import com.hamza.account.view.AddAccountApplication;
 import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.dateTime.SearchInTwoDate;
-import com.hamza.controlsfx.util.ImageChoose;
 import com.hamza.controlsfx.interfaceData.AppSettingInterface;
 import com.hamza.controlsfx.language.Setting_Language;
 import com.hamza.controlsfx.others.CssToColorHelper;
 import com.hamza.controlsfx.others.DateSetting;
 import com.hamza.controlsfx.table.Column;
+import com.hamza.controlsfx.util.ImageChoose;
 import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
@@ -34,10 +32,8 @@ import javafx.scene.control.*;
 import javafx.scene.layout.AnchorPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Pane;
-import javafx.stage.FileChooser;
 import lombok.extern.log4j.Log4j2;
 
-import java.io.File;
 import java.io.IOException;
 import java.net.URL;
 import java.util.*;
@@ -223,7 +219,6 @@ public class AccountDetailsController<T1 extends BasePurchasesAndSales, T2 exten
         });
 
         btnPrint.setOnAction(event -> printAccount());
-//        btnPrint.setOnAction(event -> exportToPdf());
         btnSearch.setOnAction(actionEvent -> {
             try {
                 String firstDate = dateFrom.getValue().toString();
@@ -319,45 +314,6 @@ public class AccountDetailsController<T1 extends BasePurchasesAndSales, T2 exten
         AllAlerts.alertError(e.getMessage());
         log.error(e.getMessage(), e.getCause());
     }
-
-    private void exportToPdf() {
-        String textStart = "report";
-        String year = "2025";
-        FileChooser fileChooser = new FileChooser();
-        fileChooser.setTitle("حفظ التقرير");
-        fileChooser.setInitialFileName(textStart + "_" + year + ".pdf");
-        fileChooser.getExtensionFilters().add(
-                new FileChooser.ExtensionFilter("PDF Files", "*.pdf")
-        );
-
-        File file = fileChooser.showSaveDialog(null);
-
-        if (file != null) {
-            List<CustomerAccountData> tableTotals = new ArrayList<>();
-            tableView.getItems().forEach(t4 -> {
-                tableTotals.add(CustomerAccountData.builder()
-                        .customerName(accountData.getName(t4))
-                        .debit(t4.getPurchase())
-                        .credit(t4.getPaid()).balance(t4.getAmount())
-                        .build());
-            });
-
-            var reportExportService = new ReportExportService();
-            boolean success = reportExportService.exportCustomerAccountsReport(
-                    tableTotals, file.getAbsolutePath()
-            );
-
-            javafx.application.Platform.runLater(() -> {
-                if (success) {
-                    AllAlerts.alertSaveWithMessage("تم التصدير بنجاح" +
-                            "تم حفظ التقرير في:\n" + file.getAbsolutePath());
-                } else {
-                    AllAlerts.alertError("حدث خطأ أثناء التصدير");
-                }
-            });
-        }
-    }
-
 
     @Override
     public Pane pane() throws IOException {

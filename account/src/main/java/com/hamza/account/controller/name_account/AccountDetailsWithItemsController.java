@@ -4,6 +4,8 @@ import com.hamza.account.config.Image_Setting;
 import com.hamza.account.controller.main.DataPublisher;
 import com.hamza.account.controller.main.LoadOtherData;
 import com.hamza.account.controller.model.AccountCard;
+import com.hamza.account.features.export.CustomerAccountData;
+import com.hamza.account.features.export.ReportExportService;
 import com.hamza.account.interfaces.api.DataInterface;
 import com.hamza.account.model.base.BaseAccount;
 import com.hamza.account.model.base.BaseNames;
@@ -33,8 +35,10 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.StackPane;
 import javafx.scene.text.Text;
+import javafx.stage.FileChooser;
 import lombok.extern.log4j.Log4j2;
 
+import java.io.File;
 import java.io.IOException;
 import java.net.URL;
 import java.time.LocalDate;
@@ -70,7 +74,7 @@ public class AccountDetailsWithItemsController<T1 extends BasePurchasesAndSales,
     @FXML
     private Label labelName, labelFirstBalance, labelLastBalance, labelFrom, labelTo;
     @FXML
-    private Button btnPrint, btnRefresh, btnSearch;
+    private Button btnPrint,btnExport, btnRefresh, btnSearch;
     @FXML
     private TextField txtLimit, txtLast, txtName;
     @FXML
@@ -110,6 +114,7 @@ public class AccountDetailsWithItemsController<T1 extends BasePurchasesAndSales,
     }
 
     private void actionSetting() {
+        btnExport.setOnAction(event -> exportToPdf());
         btnPrint.setOnAction(e -> printAccount());
         btnSearch.setOnAction(e -> filterByDate());
         btnRefresh.setOnAction(e -> resetDateFilter());
@@ -145,6 +150,7 @@ public class AccountDetailsWithItemsController<T1 extends BasePurchasesAndSales,
 //        btnPrint, btnRefresh, btnSearch, btnUpdate, btnDelete;
         var imageSetting = new Image_Setting();
         btnPrint.setGraphic(ImageChoose.createIcon(imageSetting.print));
+        btnExport.setGraphic(ImageChoose.createIcon(imageSetting.export));
         btnRefresh.setGraphic(ImageChoose.createIcon(imageSetting.refresh));
         btnSearch.setGraphic(ImageChoose.createIcon(imageSetting.search));
     }
@@ -324,6 +330,7 @@ public class AccountDetailsWithItemsController<T1 extends BasePurchasesAndSales,
         labelFirstBalance.setText(Setting_Language.FIRST_BALANCE);
         labelLastBalance.setText(Setting_Language.THE_FINAL_BALANCE);
         btnPrint.setText(Setting_Language.WORD_PRINT);
+        btnExport.setText(Setting_Language.EXPORT_TO_EXCEL);
         btnSearch.setText(Setting_Language.WORD_SEARCH);
         btnRefresh.setText(Setting_Language.WORD_REFRESH);
         txtLimit.setText(String.valueOf(nameService.getCredit(customersList, num_id)));
@@ -415,6 +422,43 @@ public class AccountDetailsWithItemsController<T1 extends BasePurchasesAndSales,
             }
         }
         return items;
+    }
+    private void exportToPdf() {
+        String textStart = "report";
+        String year = "2025";
+        FileChooser fileChooser = new FileChooser();
+        fileChooser.setTitle("حفظ التقرير");
+        fileChooser.setInitialFileName(textStart + "_" + year + ".pdf");
+        fileChooser.getExtensionFilters().add(
+                new FileChooser.ExtensionFilter("PDF Files", "*.pdf")
+        );
+
+        File file = fileChooser.showSaveDialog(null);
+
+        if (file != null) {
+            List<CustomerAccountData> tableTotals = new ArrayList<>();
+            treeItem.getChildren().forEach(t4 -> {
+                tableTotals.add(CustomerAccountData.builder()
+                        .customerName(t4.getValue().getDate())
+                        .debit(t4.getValue().getPurchase())
+                        .credit(t4.getValue().getPaid()).balance(t4.getValue().getDetails())
+                        .build());
+            });
+
+            var reportExportService = new ReportExportService();
+            boolean success = reportExportService.exportCustomerAccountsReport(
+                    tableTotals, file.getAbsolutePath()
+            );
+
+            javafx.application.Platform.runLater(() -> {
+                if (success) {
+                    AllAlerts.alertSaveWithMessage("تم التصدير بنجاح" +
+                            "تم حفظ التقرير في:\n" + file.getAbsolutePath());
+                } else {
+                    AllAlerts.alertError("حدث خطأ أثناء التصدير");
+                }
+            });
+        }
     }
 
     private void errorLog(Exception e) {
