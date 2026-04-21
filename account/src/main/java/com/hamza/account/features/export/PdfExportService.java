@@ -169,16 +169,21 @@ public class PdfExportService {
     }
 
     /**
-     * إنشاء جدول مع ترويسة
+     * إنشاء جدول مع ترويسة (الجدول يُبنى من اليمين إلى اليسار بعكس ترتيب الأعمدة)
      */
     private Table createTable(String[] headers, float[] columnWidths) {
-        Table table = new Table(UnitValue.createPercentArray(columnWidths));
+        // عكس الأعمدة والعناوين لجعل أول عمود منطقي يظهر في أقصى اليمين
+        float[] rtlWidths = reverseFloats(columnWidths);
+        String[] rtlHeaders = reverseStrings(headers);
+
+        Table table = new Table(UnitValue.createPercentArray(rtlWidths));
         table.setBaseDirection(BaseDirection.RIGHT_TO_LEFT);
         table.setTextAlignment(TextAlignment.RIGHT);
+        table.setHorizontalAlignment(com.itextpdf.layout.properties.HorizontalAlignment.RIGHT);
         table.setWidth(UnitValue.createPercentValue(100));
         table.setFont(arabicFont);
 
-        for (String header : headers) {
+        for (String header : rtlHeaders) {
             Cell cell = new Cell()
                     .add(arabicParagraphBold(header).setTextAlignment(TextAlignment.CENTER))
                     .setBackgroundColor(HEADER_COLOR)
@@ -192,10 +197,11 @@ public class PdfExportService {
     }
 
     /**
-     * إضافة صف للجدول
+     * إضافة صف للجدول مع عكس ترتيب الخلايا (RTL)
      */
     private void addTableRow(Table table, String[] rowData, boolean isAlternate) {
-        for (String data : rowData) {
+        String[] rtlRow = reverseStrings(rowData);
+        for (String data : rtlRow) {
             Cell cell = new Cell()
                     .add(arabicParagraph(data))
                     .setTextAlignment(TextAlignment.RIGHT)
@@ -211,16 +217,10 @@ public class PdfExportService {
 
     /**
      * إضافة صف إجمالي للجدول
+     * في RTL: خلية المجموع (الصغيرة) تكون في اليمين، والعنوان يمتد على باقي الأعمدة لليسار.
      */
     private void addTotalRow(Table table, String label, String total, int colspan) {
-        Cell labelCell = new Cell(1, colspan)
-                .add(arabicParagraphBold(label).setTextAlignment(TextAlignment.CENTER))
-                .setBackgroundColor(new DeviceRgb(52, 152, 219))
-                .setFontColor(ColorConstants.WHITE)
-                .setTextAlignment(TextAlignment.CENTER)
-                .setPadding(10);
-        table.addCell(labelCell);
-
+        // خلية المجموع أولاً لتظهر في أقصى اليمين
         Cell totalCell = new Cell()
                 .add(arabicParagraphBold(total).setTextAlignment(TextAlignment.CENTER))
                 .setBackgroundColor(new DeviceRgb(52, 152, 219))
@@ -228,6 +228,35 @@ public class PdfExportService {
                 .setTextAlignment(TextAlignment.CENTER)
                 .setPadding(10);
         table.addCell(totalCell);
+
+        // ثم خلية الوصف الممتدة
+        Cell labelCell = new Cell(1, colspan)
+                .add(arabicParagraphBold(label).setTextAlignment(TextAlignment.CENTER))
+                .setBackgroundColor(new DeviceRgb(52, 152, 219))
+                .setFontColor(ColorConstants.WHITE)
+                .setTextAlignment(TextAlignment.CENTER)
+                .setPadding(10);
+        table.addCell(labelCell);
+    }
+
+    // ===================== أدوات مساعدة لعكس المصفوفات (RTL) =====================
+
+    private static String[] reverseStrings(String[] arr) {
+        if (arr == null) return null;
+        String[] out = new String[arr.length];
+        for (int i = 0; i < arr.length; i++) {
+            out[i] = arr[arr.length - 1 - i];
+        }
+        return out;
+    }
+
+    private static float[] reverseFloats(float[] arr) {
+        if (arr == null) return null;
+        float[] out = new float[arr.length];
+        for (int i = 0; i < arr.length; i++) {
+            out[i] = arr[arr.length - 1 - i];
+        }
+        return out;
     }
 
     /**
