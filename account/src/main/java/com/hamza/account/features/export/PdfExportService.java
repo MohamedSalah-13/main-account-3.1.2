@@ -15,25 +15,29 @@ import com.itextpdf.layout.element.Table;
 import com.itextpdf.layout.properties.*;
 import lombok.extern.log4j.Log4j2;
 
-import java.io.File;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
-
-import static com.itextpdf.kernel.pdf.PdfName.WritingMode;
 
 /**
  * خدمة تصدير البيانات إلى ملفات PDF
  * تدعم اللغة العربية والتنسيق الاحترافي
  *
  * @author Hamza
- * @version 1.0
+ * @version 1.1
  */
 @Log4j2
 public class PdfExportService {
 
-    private static final String ARABIC_FONT_PATH = "fonts/arial.ttf";
+    // الخط يجب أن يكون داخل resources لنتمكن من قراءته من داخل JAR
+    private static final String ARABIC_FONT_RESOURCE =
+            "/com/hamza/account/fonts/NotoNaskhArabic-Regular.ttf";
+    private static final String ARABIC_FONT_BOLD_RESOURCE =
+            "/com/hamza/account/fonts/NotoNaskhArabic-Bold.ttf";
+
     private static final DeviceRgb HEADER_COLOR = new DeviceRgb(41, 128, 185);
     private static final DeviceRgb ALTERNATE_ROW_COLOR = new DeviceRgb(236, 240, 241);
 
@@ -45,29 +49,60 @@ public class PdfExportService {
     }
 
     /**
-     * تهيئة الخطوط العربية
+     * تهيئة الخطوط العربية - يجب تحميل الخط كـ bytes من classpath
+     * حتى يعمل داخل JAR أيضاً.
      */
     private void initializeFonts() {
         try {
-            // محاولة تحميل خط عربي من الموارد
-            File fontFile = new File(ARABIC_FONT_PATH);
-            if (fontFile.exists()) {
-                arabicFont = PdfFontFactory.createFont(ARABIC_FONT_PATH, PdfEncodings.IDENTITY_H, PdfFontFactory.EmbeddingStrategy.PREFER_EMBEDDED, true);
+            byte[] regularBytes = loadFontBytes(ARABIC_FONT_RESOURCE);
+            byte[] boldBytes = loadFontBytes(ARABIC_FONT_BOLD_RESOURCE);
+
+            if (regularBytes != null) {
+                arabicFont = PdfFontFactory.createFont(
+                        regularBytes,
+                        PdfEncodings.IDENTITY_H,
+                        PdfFontFactory.EmbeddingStrategy.FORCE_EMBEDDED);
             } else {
-                // استخدام خط افتراضي يدعم العربية
-                arabicFont = PdfFontFactory.createFont("STSong-Light", "UniGB-UCS2-H");
+                log.warn("Arabic font not found in resources, using fallback");
+                arabicFont = PdfFontFactory.createFont();
             }
-            boldFont = arabicFont;
+
+            if (boldBytes != null) {
+                boldFont = PdfFontFactory.createFont(
+                        boldBytes,
+                        PdfEncodings.IDENTITY_H,
+                        PdfFontFactory.EmbeddingStrategy.FORCE_EMBEDDED);
+            } else {
+                boldFont = arabicFont;
+            }
             log.info("Arabic fonts loaded successfully");
         } catch (IOException e) {
             log.error("Error loading Arabic fonts", e);
             try {
-                // خط احتياطي
                 arabicFont = PdfFontFactory.createFont();
                 boldFont = arabicFont;
             } catch (IOException ex) {
                 log.error("Error loading fallback font", ex);
             }
+        }
+    }
+
+    private byte[] loadFontBytes(String resourcePath) {
+        try (InputStream is = PdfExportService.class.getResourceAsStream(resourcePath)) {
+            if (is == null) {
+                return null;
+            }
+            try (ByteArrayOutputStream buffer = new ByteArrayOutputStream()) {
+                byte[] tmp = new byte[8192];
+                int n;
+                while ((n = is.read(tmp)) != -1) {
+                    buffer.write(tmp, 0, n);
+                }
+                return buffer.toByteArray();
+            }
+        } catch (IOException e) {
+            log.error("Failed to read font resource: {}", resourcePath, e);
+            return null;
         }
     }
 
@@ -78,10 +113,31 @@ public class PdfExportService {
         PdfWriter writer = new PdfWriter(filePath);
         PdfDocument pdf = new PdfDocument(writer);
         Document document = new Document(pdf, pageSize);
-        document.setProperty(Property.RIGHT, WritingMode.getValue());
-//        document.setRightToLeft(true); // دعم الكتابة من اليمين لليسار
+        document.setFont(arabicFont);
+        document.setFontSize(11);
+        // الاتجاه الافتراضي للمستند كله: من اليمين لليسار
+        document.setProperty(Property.BASE_DIRECTION, BaseDirection.RIGHT_TO_LEFT);
+        document.setTextAlignment(TextAlignment.RIGHT);
         document.setMargins(20, 20, 20, 20);
         return document;
+    }
+
+    /**
+     * فقرة عربية جاهزة مع reshaping و bidi
+     */
+    private Paragraph arabicParagraph(String text) {
+        return new Paragraph(ArabicTextHelper.shape(text != null ? text : ""))
+                .setFont(arabicFont)
+                .setBaseDirection(BaseDirection.RIGHT_TO_LEFT)
+                .setTextAlignment(TextAlignment.RIGHT);
+    }
+
+    private Paragraph arabicParagraphBold(String text) {
+        return new Paragraph(ArabicTextHelper.shape(text != null ? text : ""))
+                .setFont(boldFont)
+                .setBold()
+                .setBaseDirection(BaseDirection.RIGHT_TO_LEFT)
+                .setTextAlignment(TextAlignment.RIGHT);
     }
 
     /**
@@ -89,33 +145,25 @@ public class PdfExportService {
      */
     private void addHeader(Document document, String title, String subtitle) {
         // العنوان الرئيسي
-        Paragraph titlePara = new Paragraph(title)
-                .setFont(boldFont)
+        Paragraph titlePara = arabicParagraphBold(title)
                 .setFontSize(20)
-                .setBold()
                 .setTextAlignment(TextAlignment.CENTER)
                 .setMarginBottom(5);
         document.add(titlePara);
+
         // العنوان الفرعي
         if (subtitle != null && !subtitle.isEmpty()) {
-            Paragraph subtitlePara = new Paragraph(subtitle)
-                    .setFont(arabicFont)
+            Paragraph subtitlePara = arabicParagraph(subtitle)
                     .setFontSize(12)
-                    .setTextAlignment(TextAlignment.RIGHT)
-                    .setBaseDirection(BaseDirection.RIGHT_TO_LEFT)
                     .setMarginBottom(20);
             document.add(subtitlePara);
-//            LicenseKey.loadLicenseFile("path/to/your/itextkey.xml");
         }
 
         // التاريخ والوقت
         String dateTime = LocalDateTime.now()
                 .format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
-        Paragraph datePara = new Paragraph("تاريخ التقرير: " + dateTime)
-                .setFont(arabicFont)
+        Paragraph datePara = arabicParagraph("تاريخ التقرير: " + dateTime)
                 .setFontSize(10)
-                .setTextAlignment(TextAlignment.RIGHT)
-                .setBaseDirection(BaseDirection.RIGHT_TO_LEFT)
                 .setMarginBottom(20);
         document.add(datePara);
     }
@@ -128,21 +176,18 @@ public class PdfExportService {
         table.setBaseDirection(BaseDirection.RIGHT_TO_LEFT);
         table.setTextAlignment(TextAlignment.RIGHT);
         table.setWidth(UnitValue.createPercentValue(100));
-        // إضافة ترويسة الجدول
+        table.setFont(arabicFont);
+
         for (String header : headers) {
             Cell cell = new Cell()
-                    .add(new Paragraph(header)
-                            .setFont(boldFont)
-                            .setBaseDirection(BaseDirection.RIGHT_TO_LEFT).setTextAlignment(TextAlignment.RIGHT))
+                    .add(arabicParagraphBold(header).setTextAlignment(TextAlignment.CENTER))
                     .setBackgroundColor(HEADER_COLOR)
                     .setFontColor(ColorConstants.WHITE)
-                    .setTextAlignment(TextAlignment.RIGHT)
+                    .setTextAlignment(TextAlignment.CENTER)
                     .setVerticalAlignment(VerticalAlignment.MIDDLE)
-                    .setPadding(10)
-                    .setBold();
+                    .setPadding(10);
             table.addHeaderCell(cell);
         }
-
         return table;
     }
 
@@ -152,7 +197,7 @@ public class PdfExportService {
     private void addTableRow(Table table, String[] rowData, boolean isAlternate) {
         for (String data : rowData) {
             Cell cell = new Cell()
-                    .add(new Paragraph(data != null ? data : "").setFont(arabicFont))
+                    .add(arabicParagraph(data))
                     .setTextAlignment(TextAlignment.RIGHT)
                     .setVerticalAlignment(VerticalAlignment.MIDDLE)
                     .setPadding(8);
@@ -160,7 +205,6 @@ public class PdfExportService {
             if (isAlternate) {
                 cell.setBackgroundColor(ALTERNATE_ROW_COLOR);
             }
-
             table.addCell(cell);
         }
     }
@@ -169,24 +213,20 @@ public class PdfExportService {
      * إضافة صف إجمالي للجدول
      */
     private void addTotalRow(Table table, String label, String total, int colspan) {
-        // خلية الوصف
         Cell labelCell = new Cell(1, colspan)
-                .add(new Paragraph(label).setFont(boldFont))
+                .add(arabicParagraphBold(label).setTextAlignment(TextAlignment.CENTER))
                 .setBackgroundColor(new DeviceRgb(52, 152, 219))
                 .setFontColor(ColorConstants.WHITE)
                 .setTextAlignment(TextAlignment.CENTER)
-                .setPadding(10)
-                .setBold();
+                .setPadding(10);
         table.addCell(labelCell);
 
-        // خلية المجموع
         Cell totalCell = new Cell()
-                .add(new Paragraph(total).setFont(boldFont))
+                .add(arabicParagraphBold(total).setTextAlignment(TextAlignment.CENTER))
                 .setBackgroundColor(new DeviceRgb(52, 152, 219))
                 .setFontColor(ColorConstants.WHITE)
                 .setTextAlignment(TextAlignment.CENTER)
-                .setPadding(10)
-                .setBold();
+                .setPadding(10);
         table.addCell(totalCell);
     }
 
@@ -195,9 +235,7 @@ public class PdfExportService {
      */
     private void addFooter(Document document) {
         document.add(new Paragraph("\n"));
-
-        Paragraph footer = new Paragraph("تم إنشاء هذا التقرير بواسطة نظام الحسابات")
-                .setFont(arabicFont)
+        Paragraph footer = arabicParagraph("تم إنشاء هذا التقرير بواسطة نظام الحسابات")
                 .setFontSize(10)
                 .setTextAlignment(TextAlignment.CENTER)
                 .setFontColor(ColorConstants.GRAY);
@@ -219,35 +257,26 @@ public class PdfExportService {
             PageSize pageSize) {
 
         try (Document document = createDocument(filePath, pageSize)) {
-
-            // إضافة الترويسة
             addHeader(document, title, subtitle);
 
-            // إنشاء الجدول
             Table table = createTable(headers, columnWidths);
 
-            // إضافة البيانات
             int rowIndex = 0;
             for (String[] row : data) {
                 addTableRow(table, row, rowIndex % 2 == 1);
                 rowIndex++;
             }
 
-            // إضافة صف الإجمالي
             if (totalLabel != null && totalValue != null) {
                 addTotalRow(table, totalLabel, totalValue, headers.length - 1);
             }
 
             document.add(table);
-
-            // إضافة التذييل
             addFooter(document);
 
             log.info("PDF exported successfully: {}", filePath);
             return true;
-
         } catch (IOException e) {
-            e.printStackTrace();
             log.error("Error exporting PDF", e);
             return false;
         }
@@ -258,29 +287,17 @@ public class PdfExportService {
      */
     public boolean exportInvoice(InvoiceData invoiceData, String filePath, PageSize pageSize) {
         try (Document document = createDocument(filePath, pageSize)) {
-
-            // معلومات الشركة
             addCompanyInfo(document, invoiceData.getCompanyName(),
                     invoiceData.getCompanyAddress(),
                     invoiceData.getCompanyPhone());
-
-            // معلومات الفاتورة
             addInvoiceInfo(document, invoiceData);
-
-            // جدول الأصناف
             addInvoiceItemsTable(document, invoiceData);
-
-            // الإجماليات
             addInvoiceTotals(document, invoiceData);
-
-            // الملاحظات
             if (invoiceData.getNotes() != null && !invoiceData.getNotes().isEmpty()) {
                 addNotes(document, invoiceData.getNotes());
             }
-
             log.info("Invoice PDF exported successfully: {}", filePath);
             return true;
-
         } catch (IOException e) {
             log.error("Error exporting invoice PDF", e);
             return false;
@@ -288,35 +305,27 @@ public class PdfExportService {
     }
 
     private void addCompanyInfo(Document document, String name, String address, String phone) {
-        Paragraph companyName = new Paragraph(name)
-                .setFont(boldFont)
+        document.add(arabicParagraphBold(name)
                 .setFontSize(18)
-                .setTextAlignment(TextAlignment.CENTER)
-                .setBold();
-        document.add(companyName);
+                .setTextAlignment(TextAlignment.CENTER));
 
         if (address != null) {
-            Paragraph companyAddress = new Paragraph(address)
-                    .setFont(arabicFont)
+            document.add(arabicParagraph(address)
                     .setFontSize(10)
-                    .setTextAlignment(TextAlignment.CENTER);
-            document.add(companyAddress);
+                    .setTextAlignment(TextAlignment.CENTER));
         }
-
         if (phone != null) {
-            Paragraph companyPhone = new Paragraph("هاتف: " + phone)
-                    .setFont(arabicFont)
+            document.add(arabicParagraph("هاتف: " + phone)
                     .setFontSize(10)
                     .setTextAlignment(TextAlignment.CENTER)
-                    .setMarginBottom(20);
-            document.add(companyPhone);
+                    .setMarginBottom(20));
         }
     }
 
     private void addInvoiceInfo(Document document, InvoiceData invoiceData) {
-        // إنشاء جدول لمعلومات الفاتورة
         Table infoTable = new Table(2);
         infoTable.setWidth(UnitValue.createPercentValue(100));
+        infoTable.setBaseDirection(BaseDirection.RIGHT_TO_LEFT);
 
         addInfoRow(infoTable, "نوع الفاتورة:", invoiceData.getInvoiceType());
         addInfoRow(infoTable, "رقم الفاتورة:", String.valueOf(invoiceData.getInvoiceNumber()));
@@ -329,13 +338,13 @@ public class PdfExportService {
 
     private void addInfoRow(Table table, String label, String value) {
         Cell labelCell = new Cell()
-                .add(new Paragraph(label).setFont(boldFont))
+                .add(arabicParagraphBold(label))
                 .setBackgroundColor(new DeviceRgb(236, 240, 241))
                 .setPadding(5);
         table.addCell(labelCell);
 
         Cell valueCell = new Cell()
-                .add(new Paragraph(value).setFont(arabicFont))
+                .add(arabicParagraph(value))
                 .setPadding(5);
         table.addCell(valueCell);
     }
@@ -365,32 +374,28 @@ public class PdfExportService {
         Table totalsTable = new Table(2);
         totalsTable.setWidth(UnitValue.createPercentValue(40));
         totalsTable.setHorizontalAlignment(com.itextpdf.layout.properties.HorizontalAlignment.LEFT);
+        totalsTable.setBaseDirection(BaseDirection.RIGHT_TO_LEFT);
 
         addInfoRow(totalsTable, "الإجمالي:", String.format("%.2f", invoiceData.getSubtotal()));
-
         if (invoiceData.getDiscount() > 0) {
             addInfoRow(totalsTable, "الخصم:", String.format("%.2f", invoiceData.getDiscount()));
         }
-
         if (invoiceData.getTax() > 0) {
             addInfoRow(totalsTable, "الضريبة:", String.format("%.2f", invoiceData.getTax()));
         }
 
-        // الصف النهائي
         Cell labelCell = new Cell()
-                .add(new Paragraph("الإجمالي النهائي:").setFont(boldFont))
+                .add(arabicParagraphBold("الإجمالي النهائي:"))
                 .setBackgroundColor(HEADER_COLOR)
                 .setFontColor(ColorConstants.WHITE)
-                .setPadding(8)
-                .setBold();
+                .setPadding(8);
         totalsTable.addCell(labelCell);
 
         Cell totalCell = new Cell()
-                .add(new Paragraph(String.format("%.2f", invoiceData.getTotal())).setFont(boldFont))
+                .add(arabicParagraphBold(String.format("%.2f", invoiceData.getTotal())))
                 .setBackgroundColor(HEADER_COLOR)
                 .setFontColor(ColorConstants.WHITE)
-                .setPadding(8)
-                .setBold();
+                .setPadding(8);
         totalsTable.addCell(totalCell);
 
         document.add(new Paragraph("\n"));
@@ -399,14 +404,7 @@ public class PdfExportService {
 
     private void addNotes(Document document, String notes) {
         document.add(new Paragraph("\n"));
-        Paragraph notesPara = new Paragraph("ملاحظات:")
-                .setFont(boldFont)
-                .setBold();
-        document.add(notesPara);
-
-        Paragraph notesContent = new Paragraph(notes)
-                .setFont(arabicFont)
-                .setFontSize(10);
-        document.add(notesContent);
+        document.add(arabicParagraphBold("ملاحظات:"));
+        document.add(arabicParagraph(notes).setFontSize(10));
     }
 }

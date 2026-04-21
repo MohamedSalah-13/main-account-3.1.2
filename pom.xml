@@ -145,6 +145,13 @@
             <version>8.0.5</version>
         </dependency>
 
+        <!-- ICU4J: يستخدم للقيام بـ reshaping و bidi للنص العربي قبل كتابته في PDF -->
+        <dependency>
+            <groupId>com.ibm.icu</groupId>
+            <artifactId>icu4j</artifactId>
+            <version>74.2</version>
+        </dependency>
+
 <!--        <dependency>-->
 <!--            <groupId>com.itextpdf</groupId>-->
 <!--            <artifactId>typography</artifactId>-->
