@@ -1,7 +1,7 @@
 # 📘 User Shifts System Documentation
 
 > **Last updated:** 2026-04-24
-> **Current status:** Phase 1 ✅ — Phase 2 ✅ — Phase 3 ✅ — Phase 4/B ✅ — Phase 4/A 🟡 (started)  
+> **Current status:** Phase 1 ✅ — Phase 2 ✅ — Phase 3 ✅ — Phase 4/B ✅ — Phase 4/A 🟡 (in progress)
 > **Path:** `docs/shifts.md`
 
 ---
@@ -29,15 +29,16 @@ The User Shifts System provides:
 
 - Opening a shift with an opening balance.
 - Tracking financial activity during the shift:
-    - sales
-    - sales returns
-    - expenses
-    - deposits
-    - withdrawals
+  - sales
+  - sales returns
+  - expenses
+  - deposits
+  - withdrawals
 - Closing the shift with automatic variance calculation.
 - Generating live X-Reports and closing Z-Reports.
 - Preventing financial operations when no shift is open.
 - Generating aggregate shift reports for a date range.
+- Preparing admin-level shift management and force close flow.
 
 ---
 
@@ -63,8 +64,30 @@ The User Shifts System provides:
 ### Result
 - Live X-Report is supported.
 - Z-Report can be printed after closing a shift.
-- Aggregate shift reports can now be filtered by date range and user.
+- Aggregate shift reports can be filtered by date range and user.
 - Aggregate reports are rendered from `List<UserShift>` using a proper Jasper bean datasource.
+
+---
+
+## Phase 4/B — Operation Guard ✅
+
+**Goal:** prevent any financial operation without an open shift.
+
+### Completed
+
+| # | Component | Change | Status |
+|---|---|---|:------:|
+| 1 | `ShiftContext` | `requireOpenShift()` + enforcement toggle | ✅ |
+| 2 | `AddExpensesController.insertData()` | Guard added at method start | ✅ |
+| 3 | `PosController.saveInvoice()` | Guard added before processing | ✅ |
+| 4 | `BuyController2.saveInvoice(boolean print)` | Guard added before validation | ✅ |
+| 5 | `PosController.refreshShiftGuardUi()` | Disable pay button + tooltip | ✅ |
+| 6 | `AddDepositController.insertData()` | Guard added at method start | ✅ |
+| 7 | `AddConvertTreasuryController.insertData()` | Guard added at method start | ✅ |
+
+### Known Limitations
+- `btnPay` in POS should still be verified in real usage after shift changes from another window.
+- Some additional controllers may still need a review later if new financial save points are added.
 
 ---
 
@@ -72,14 +95,20 @@ The User Shifts System provides:
 
 **Goal:** prepare admin-level shift control.
 
-### Current progress
+### Completed
 
 | # | Task | Status | Notes |
 |---|------|:------:|------|
-| 1 | Start administrative shift flow | 🟡 | Planning started |
-| 2 | Add `SHIFT_MANAGER` permission | ⏳ | Not yet completed |
-| 3 | Force Close UI | ⏳ | Not yet completed |
-| 4 | Audit log support | ⏳ | Not yet completed |
+| 1 | Add `SHIFT_MANAGER` enum permission | ✅ | Added to `UserPermissionType` |
+| 2 | Add `shift_manager` row to `permission` table | ✅ | Added via migration |
+| 3 | Expose `SHIFT_MANAGER` in permissions UI | ✅ | Added to `UserPermissionController` |
+| 4 | Add admin shift management screen | ✅ | `AdminShiftsController` + FXML added |
+| 5 | Add Force Close flow | ✅ | Force close logic added to admin shift screen |
+| 6 | Add entry point from main menu | ✅ | Main menu hook prepared for the screen |
+
+### Current progress
+- The admin shift management flow is now available as a functional direction.
+- The next session can continue from the admin screen to improve usability and control.
 
 ---
 
@@ -94,13 +123,18 @@ The User Shifts System provides:
 - `ShiftContext` + `ShiftContextLoader`
 - Central operation guard
 - POS pay button disabled when no shift is open
+- Admin shift management screen
+- Force close support
+- `SHIFT_MANAGER` permission setup
 
-### Next step
+### Next step for the next session
 
-- Continue with **Phase 4/A**:
-    - add `SHIFT_MANAGER`
-    - build admin shift screen
-    - add force close action
+- Continue with **Admin Shift Management enhancements**
+  - filtering
+  - status-based display
+  - user/date search
+  - row coloring
+  - usability improvements
 
 ---
 
@@ -112,3 +146,4 @@ The User Shifts System provides:
 | 2026-04-17 | 2 | Financial linking + ShiftSummary + X/Z reports |
 | 2026-04-18 | 4/B | Central operation guard in POS + Invoice + Expenses |
 | 2026-04-24 | 3 | Aggregate reports added: DAO, Service, Controller, FXML, Jasper template |
+| 2026-04-24 | 4/A | `SHIFT_MANAGER`, permission mapping, admin shifts screen, force close flow |
