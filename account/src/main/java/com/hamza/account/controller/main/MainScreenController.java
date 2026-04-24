@@ -378,6 +378,7 @@ public class MainScreenController extends MainItems implements Initializable {
         menuButtonSetting.initializeMenuItem(menuController.getMenuItemBackup(), getSettingButtons().backup());
         menuButtonSetting.initializeMenuItem(menuController.getMenuItemAbout(), getSettingButtons().about());
         menuButtonSetting.initializeMenuItem(menuController.getMenuItemClose(), getSettingButtons().close());
+        menuButtonSetting.initializeMenuItem(menuController.getMenuItemShiftReports(), getSettingButtons().adminShifts());
     }
 
     private <T1 extends BasePurchasesAndSales, T2 extends BaseTotals, T3 extends BaseNames, T4 extends BaseAccount> ButtonWithPerm getAction(

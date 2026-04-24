@@ -153,6 +153,7 @@
                 <KeyCodeCombination alt="UP" code="C" control="DOWN" meta="UP" shift="UP" shortcut="UP"/>
             </accelerator>
         </MenuItem>
+        <MenuItem fx:id="menuItemShiftReports" text="إدارة الورديات" />
         <SeparatorMenuItem mnemonicParsing="false"/>
         <MenuItem fx:id="menuItemCheckUpdate" mnemonicParsing="false" text="التحديث"/>
         <MenuItem fx:id="menuItemRegister" mnemonicParsing="false" text="التفعيل"/>

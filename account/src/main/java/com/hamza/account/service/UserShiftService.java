@@ -108,4 +108,44 @@ public record UserShiftService(DaoFactory daoFactory) {
     public int deleteShift(int shiftId) throws DaoException {
         return daoFactory.userShiftDao().deleteById(shiftId);
     }
+
+    public int forceCloseShift(int shiftId, double closeBalance, String notes) throws DaoException {
+        UserShift shift = daoFactory.userShiftDao().getDataById(shiftId);
+        if (shift == null) {
+            throw new DaoException("الوردية غير موجودة");
+        }
+
+        if (!shift.isOpen()) {
+            throw new DaoException("الوردية مغلقة بالفعل");
+        }
+
+        shift.setCloseTime(java.time.LocalDateTime.now());
+        shift.setCloseBalance(closeBalance);
+        shift.setOpen(false);
+        shift.setStatus("مغلقة قسريًا");
+
+        if (notes != null && !notes.isBlank()) {
+            String current = shift.getNotes();
+            shift.setNotes((current == null || current.isBlank())
+                    ? notes
+                    : current + " | [Force Close] " + notes);
+        }
+
+        var summary = daoFactory.userShiftDao().calculateShiftSummary(
+                shift.getUserId(),
+                shift.getOpenTime(),
+                shift.getCloseTime()
+        );
+
+        shift.setTotalSales(summary.getTotalSales());
+        shift.setTotalSalesReturns(summary.getTotalSalesReturns());
+        shift.setTotalExpenses(summary.getTotalExpenses());
+        shift.setTotalDeposits(summary.getTotalDeposits());
+        shift.setTotalWithdrawals(summary.getTotalWithdrawals());
+        shift.setInvoicesCount(summary.getInvoicesCount());
+        shift.setExpectedBalance(summary.getExpectedBalance());
+        shift.setDifference(summary.calculateDifference(closeBalance));
+
+        return daoFactory.userShiftDao().update(shift);
+    }
 }

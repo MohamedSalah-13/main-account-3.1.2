@@ -46,6 +46,9 @@ public class MainMenuController {
     private MenuBar menuBar;
 
     @FXML
+    private MenuItem menuItemShiftReports;
+
+    @FXML
     public void initialize() {
         otherSetting();
         setGraphicMenu();

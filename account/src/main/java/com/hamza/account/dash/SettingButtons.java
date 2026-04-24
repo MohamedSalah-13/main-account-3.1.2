@@ -8,7 +8,9 @@ import com.hamza.account.controller.main.DataPublisher;
 import com.hamza.account.controller.main.LoadDataAndList;
 import com.hamza.account.controller.others.DeleteDataController;
 import com.hamza.account.controller.others.ServiceData;
+import com.hamza.account.controller.users.AdminShiftsController;
 import com.hamza.account.model.dao.DaoFactory;
+import com.hamza.account.openFxml.OpenFxmlApplication;
 import com.hamza.account.otherSetting.KeyCodeCombinationSetting;
 import com.hamza.account.type.UserPermissionType;
 import com.hamza.account.view.AboutApplication;
@@ -20,6 +22,7 @@ import com.hamza.controlsfx.language.Setting_Language;
 import com.hamza.controlsfx.others.ChangeOrientation;
 import com.hamza.controlsfx.view.PassCheckApplication;
 import javafx.scene.Node;
+import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.ButtonType;
 import javafx.scene.control.DialogPane;
@@ -244,4 +247,31 @@ public class SettingButtons extends ServiceData {
         };
     }
 
+    public ButtonWithPerm adminShifts() {
+        return new ButtonWithPerm() {
+            @Override
+            public UserPermissionType getPermissionType() {
+                return null;
+            }
+
+            @Override
+            public void action() throws Exception {
+                var pane = new OpenFxmlApplication(new AdminShiftsController(daoFactory)).getPane();
+                if (pane != null) {
+                    Stage stage = new Stage();
+                    stage.setTitle(textName());
+                    stage.setScene(new Scene(pane));
+                    stage.show();
+                } else {
+                    AllAlerts.alertError("Failed to load admin shifts pane");
+                }
+            }
+
+            @NotNull
+            @Override
+            public String textName() {
+                return Setting_Language.WORD_ADMIN;
+            }
+        };
+    }
 }
