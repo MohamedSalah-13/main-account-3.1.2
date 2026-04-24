@@ -263,4 +263,29 @@ public class UserShiftDao extends AbstractDao<UserShift> {
             ps.setObject(i + 1, params[i]);
         }
     }
+
+    public List<UserShift> getShiftsBetween(LocalDateTime from, LocalDateTime to, Integer userId) throws DaoException {
+        StringBuilder sql = new StringBuilder("SELECT * FROM ").append(TABLE_NAME)
+                .append(" WHERE ").append(OPEN_TIME).append(" BETWEEN ? AND ?");
+
+        if (userId != null && userId > 0) {
+            sql.append(" AND ").append(USER_ID).append(" = ?");
+        }
+
+        sql.append(" ORDER BY ").append(OPEN_TIME).append(" DESC");
+
+        try {
+            if (userId != null && userId > 0) {
+                return queryForObjects(sql.toString(), this::map,
+                        Timestamp.valueOf(from),
+                        Timestamp.valueOf(to),
+                        userId);
+            }
+            return queryForObjects(sql.toString(), this::map,
+                    Timestamp.valueOf(from),
+                    Timestamp.valueOf(to));
+        } catch (DaoException e) {
+            throw e;
+        }
+    }
 }

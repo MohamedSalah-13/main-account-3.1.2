@@ -7,6 +7,7 @@ import com.hamza.account.model.domain.AddDeposit;
 import com.hamza.account.model.domain.TreasuryBalance;
 import com.hamza.account.openFxml.FxmlPath;
 import com.hamza.account.reportData.Print_Reports;
+import com.hamza.account.session.ShiftContext;
 import com.hamza.account.type.OperationType;
 import com.hamza.account.view.LogApplication;
 import com.hamza.account.view.OpenTreasuryDetailsApplication;
@@ -226,6 +227,10 @@ public class AddDepositController extends ServiceData {
     }
 
     private AddDeposit insertData() throws Exception {
+        if (!ShiftContext.requireOpenShift()) {
+            return null;
+        }
+
         if (txtStatement.getText().isEmpty() || txtAmount.getText().isEmpty() || txtCode.getText().isEmpty()) {
             throw new RuntimeException(Error_Text_Show.PLEASE_INSERT_ALL_DATA);
         }

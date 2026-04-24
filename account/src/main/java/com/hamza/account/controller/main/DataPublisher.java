@@ -34,4 +34,7 @@ public class DataPublisher {
     private final Publisher<String> changeMainScreenImage = new Publisher<>();
     private final Publisher<String> afterAddTarget = new Publisher<>();
     private final Publisher<HashMap<Integer, String>> publisherSelPriceUnits = new Publisher<>();
+
+    private final Publisher<Boolean> publisherShiftChanged = new Publisher<>();
+
 }

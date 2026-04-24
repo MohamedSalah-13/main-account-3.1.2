@@ -50,8 +50,7 @@ public record ShiftReportService(DaoFactory daoFactory, UserShiftService userShi
      */
     public List<UserShift> buildAggregateReport(LocalDateTime from, LocalDateTime to, Integer userId)
             throws DaoException {
-//        return daoFactory.userShiftDao().getShiftsBetween(from, to, userId);
-        return null;
+        return daoFactory.userShiftDao().getShiftsBetween(from, to, userId);
     }
 
     /**

@@ -5,6 +5,7 @@ import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.model.domain.TreasuryTransferModel;
 import com.hamza.account.openFxml.AddInterface;
 import com.hamza.account.openFxml.FxmlPath;
+import com.hamza.account.session.ShiftContext;
 import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.language.Setting_Language;
@@ -94,6 +95,9 @@ public class AddConvertTreasuryController extends ServiceData implements AddInte
 
     @Override
     public int insertData() throws Exception {
+        if (!ShiftContext.requireOpenShift()) {
+            return 0;
+        }
         // check comboTo to not select treasury From
         if (comboTo.getSelectionModel().getSelectedItem().equals(comboFrom.getSelectionModel().getSelectedItem()))
             throw new Exception("لا يمكن التحويل الى نفس الخزينة");
