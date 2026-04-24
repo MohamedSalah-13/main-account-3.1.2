@@ -139,11 +139,19 @@ public class UserShiftDao extends AbstractDao<UserShift> {
     }
 
     private double getDoubleSafe(ResultSet rs, String col) {
-        try { return rs.getDouble(col); } catch (SQLException e) { return 0.0; }
+        try {
+            return rs.getDouble(col);
+        } catch (SQLException e) {
+            return 0.0;
+        }
     }
 
     private int getIntSafe(ResultSet rs, String col) {
-        try { return rs.getInt(col); } catch (SQLException e) { return 0; }
+        try {
+            return rs.getInt(col);
+        } catch (SQLException e) {
+            return 0;
+        }
     }
 
     public UserShift getOpenShiftByUserId(int userId) throws DaoException {
@@ -221,7 +229,7 @@ public class UserShiftDao extends AbstractDao<UserShift> {
 
         int invoicesCount = countInt(
                 "SELECT COUNT(*) FROM total_sales " +
-                        "WHERE user_id = ? AND date_insert BETWEEN ? AND ?",
+                        " WHERE user_id = ? AND date_insert BETWEEN ? AND ?",
                 userId, tsFrom, tsTo);
 
         return ShiftSummary.builder()
@@ -237,6 +245,7 @@ public class UserShiftDao extends AbstractDao<UserShift> {
     private double sumDouble(String sql, Object... params) throws DaoException {
         try (PreparedStatement ps = connection.prepareStatement(sql)) {
             bindParams(ps, params);
+            System.out.println("sumDouble SQL: " + ps.toString());
             try (ResultSet rs = ps.executeQuery()) {
                 return rs.next() ? rs.getDouble(1) : 0.0;
             }
@@ -249,8 +258,12 @@ public class UserShiftDao extends AbstractDao<UserShift> {
     private int countInt(String sql, Object... params) throws DaoException {
         try (PreparedStatement ps = connection.prepareStatement(sql)) {
             bindParams(ps, params);
+//            System.out.println("countInt SQL: " + ps.toString());
             try (ResultSet rs = ps.executeQuery()) {
-                return rs.next() ? rs.getInt(1) : 0;
+                if (rs.next()) {
+                    return rs.getInt(1);
+                }
+                return 0;
             }
         } catch (SQLException e) {
             log.error("countInt failed: {}", sql, e);
