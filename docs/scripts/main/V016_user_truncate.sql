@@ -116,12 +116,14 @@ BEGIN
     TRUNCATE TABLE items_package;
     TRUNCATE TABLE items_units;
     TRUNCATE TABLE items_stock;
+    TRUNCATE TABLE stock_movements;
 END
 |
 
 DROP PROCEDURE IF EXISTS truncateAndInitializeStocksTables;
 CREATE PROCEDURE truncateAndInitializeStocksTables()
 BEGIN
+    TRUNCATE TABLE stock_movements;
     TRUNCATE TABLE stocks;
     TRUNCATE TABLE stock_transfer;
     TRUNCATE TABLE stock_transfer_list;

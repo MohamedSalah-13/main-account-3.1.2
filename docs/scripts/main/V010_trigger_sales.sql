@@ -42,15 +42,5 @@ DELIMITER ;
 
 -- sales_package
 DROP TRIGGER IF EXISTS before_sales_package_insert;
-DELIMITER |
-create trigger before_sales_package_insert
-    before insert
-    on sales_package
-    for each row
-begin
-    set NEW.sales_id=(SELECT id FROM sales ORDER BY id DESC LIMIT 1);
-end;
-|
-DELIMITER ;
 
 

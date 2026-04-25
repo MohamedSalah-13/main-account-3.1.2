@@ -1,822 +1,890 @@
 DROP DATABASE IF EXISTS account_system_db;
-CREATE DATABASE account_system_db;
+CREATE DATABASE account_system_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 USE account_system_db;
-# for %S in (*.sql) do mysql -u root --default-character-set=utf8mb4 --password=m13ido account_system_db < %S
-# docker bash
-# for sql_file in *.sql; do mysql -u root --default-character-set=utf8mb4 --password=m13ido account_system_db < $sql_file ; done
-# add user hamza
-/*CREATE USER 'hamza'@'%' IDENTIFIED BY 'm13ido';
-GRANT ALL PRIVILEGES ON *.* TO 'hamza'@'%' WITH GRANT OPTION;
-FLUSH PRIVILEGES;*/
 
-create table if not exists company
+-- =====================================================================
+-- 1) Base / Lookup tables
+-- =====================================================================
+
+CREATE TABLE IF NOT EXISTS company
 (
-    comp_id      int auto_increment
-        primary key,
-    comp_name    varchar(50)                         not null,
-    comp_tel     varchar(50)                         null,
-    comp_address varchar(100)                        null,
-    comp_tax     varchar(100)                        null,
-    comp_comm    varchar(50)                         null,
-    comp_image   longblob                            null,
-    updated_at   timestamp default CURRENT_TIMESTAMP not null on update CURRENT_TIMESTAMP
+    comp_id      INT AUTO_INCREMENT PRIMARY KEY,
+    comp_name    VARCHAR(50)                         NOT NULL,
+    comp_tel     VARCHAR(50)                         NULL,
+    comp_address VARCHAR(100)                        NULL,
+    comp_tax     VARCHAR(100)                        NULL,
+    comp_comm    VARCHAR(50)                         NULL,
+    comp_image   LONGBLOB                            NULL,
+    updated_at   TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL ON UPDATE CURRENT_TIMESTAMP
 );
 
-create table if not exists expenses
+CREATE TABLE IF NOT EXISTS expenses
 (
-    id            int         not null
-        primary key,
-    expenses_name varchar(50) not null,
-    constraint expenses_pk
-        unique (expenses_name)
+    id            INT         NOT NULL PRIMARY KEY,
+    expenses_name VARCHAR(50) NOT NULL,
+    CONSTRAINT expenses_pk UNIQUE (expenses_name)
 );
 
-create table if not exists jobs
+CREATE TABLE IF NOT EXISTS jobs
 (
-    id       int         not null
-        primary key,
-    job_name varchar(20) not null,
-    constraint jobs_pk_2
-        unique (job_name)
+    id       INT         NOT NULL PRIMARY KEY,
+    job_name VARCHAR(20) NOT NULL,
+    CONSTRAINT jobs_pk_2 UNIQUE (job_name)
 );
 
-create table if not exists permission
+CREATE TABLE IF NOT EXISTS permission
 (
-    id              int auto_increment
-        primary key,
-    name_permission varchar(50) not null,
-    description     varchar(50) null,
-    constraint users_permission_pk
-        unique (name_permission)
+    id              INT AUTO_INCREMENT PRIMARY KEY,
+    name_permission VARCHAR(50) NOT NULL,
+    description     VARCHAR(50) NULL,
+    CONSTRAINT users_permission_pk UNIQUE (name_permission)
 );
 
-create table if not exists table_area
+CREATE TABLE IF NOT EXISTS table_area
 (
-    id        int auto_increment
-        primary key,
-    area_name varchar(100) not null,
-    constraint table_area_pk_2
-        unique (area_name)
+    id        INT AUTO_INCREMENT PRIMARY KEY,
+    area_name VARCHAR(100) NOT NULL,
+    CONSTRAINT table_area_pk_2 UNIQUE (area_name)
 );
 
-create table if not exists users
+CREATE TABLE IF NOT EXISTS users
 (
-    id             int auto_increment
-        primary key,
-    user_name      varchar(30)                         null,
-    user_pass      varchar(50)                         null,
-    user_activity  int       default 1                 not null,
-    user_available int       default 0                 not null,
-    updated_at     timestamp default CURRENT_TIMESTAMP not null on update CURRENT_TIMESTAMP,
-    constraint users_pk
-        unique (user_name)
+    id             INT AUTO_INCREMENT PRIMARY KEY,
+    user_name      VARCHAR(30)                         NULL,
+    user_pass      VARCHAR(255)                        NULL,
+    user_activity  TINYINT   DEFAULT 1                 NOT NULL,
+    user_available TINYINT   DEFAULT 0                 NOT NULL,
+    updated_at     TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL ON UPDATE CURRENT_TIMESTAMP,
+    CONSTRAINT users_pk UNIQUE (user_name),
+    CONSTRAINT users_activity_chk CHECK (user_activity IN (0, 1)),
+    CONSTRAINT users_available_chk CHECK (user_available IN (0, 1))
 );
 
-create table if not exists employees
+-- =====================================================================
+-- 2) Tables depending mainly on users
+-- =====================================================================
+
+CREATE TABLE IF NOT EXISTS processes_data
 (
-    id          int auto_increment
-        primary key,
-    column_name varchar(50)                         not null,
-    birth_date  date                                not null,
-    hire_date   date                                not null,
-    salary      double                              not null,
-    email       varchar(200)                        null,
-    tel         varchar(200)                        null,
-    address     varchar(200)                        null,
-    image       longblob                            null,
-    job         int                                 not null,
-    date_insert datetime  default CURRENT_TIMESTAMP not null,
-    updated_at  timestamp default CURRENT_TIMESTAMP not null on update CURRENT_TIMESTAMP,
-    user_id     int       default 1                 not null,
-    constraint employees_pk2
-        unique (column_name),
-    constraint employees_jobs_id_fk
-        foreign key (job) references jobs (id),
-    constraint employees_users_id_fk
-        foreign key (user_id) references users (id)
+    id             INT AUTO_INCREMENT PRIMARY KEY,
+    user_id        INT                                 NOT NULL,
+    processes_name VARCHAR(50)                         NOT NULL,
+    table_name     VARCHAR(50)                         NOT NULL,
+    table_id       INT                                 NOT NULL,
+    date_insert    DATETIME  DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    updated_at     TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL ON UPDATE CURRENT_TIMESTAMP,
+    notes          LONGTEXT                            NULL,
+    CONSTRAINT processes_data_users_id_fk
+        FOREIGN KEY (user_id) REFERENCES users (id)
+            ON UPDATE CASCADE ON DELETE CASCADE
 );
 
-create table if not exists main_group
+CREATE INDEX processes_data_table_idx ON processes_data (table_name, table_id);
+CREATE INDEX processes_data_date_idx ON processes_data (date_insert);
+
+CREATE TABLE IF NOT EXISTS main_group
 (
-    id          int auto_increment
-        primary key,
-    name_g      varchar(50)                         not null,
-    date_insert datetime  default CURRENT_TIMESTAMP not null,
-    updated_at  timestamp default CURRENT_TIMESTAMP not null on update CURRENT_TIMESTAMP,
-    user_id     int       default 1                 not null,
-    constraint main_group_pk
-        unique (name_g),
-    constraint main_group_users_id_fk
-        foreign key (user_id) references users (id)
+    id          INT AUTO_INCREMENT PRIMARY KEY,
+    name_g      VARCHAR(50)                         NOT NULL,
+    date_insert DATETIME  DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    updated_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL ON UPDATE CURRENT_TIMESTAMP,
+    user_id     INT       DEFAULT 1                 NOT NULL,
+    CONSTRAINT main_group_pk UNIQUE (name_g),
+    CONSTRAINT main_group_users_id_fk FOREIGN KEY (user_id) REFERENCES users (id)
 );
 
-create table if not exists processes_data
+CREATE TABLE IF NOT EXISTS stocks
 (
-    id             int auto_increment
-        primary key,
-    user_id        int                                 not null,
-    processes_name varchar(50)                         not null,
-    table_name     varchar(50)                         not null,
-    table_id       int                                 not null,
-    date_insert    datetime  default CURRENT_TIMESTAMP not null,
-    updated_at     timestamp default CURRENT_TIMESTAMP not null on update CURRENT_TIMESTAMP,
-    notes          longtext                            null,
-    constraint processes_data_users_id_fk
-        foreign key (user_id) references users (id)
-            on update cascade on delete cascade
+    stock_id      INT AUTO_INCREMENT PRIMARY KEY,
+    stock_name    VARCHAR(50)                         NOT NULL,
+    stock_address VARCHAR(50)                         NULL,
+    date_insert   DATETIME  DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    updated_at    TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL ON UPDATE CURRENT_TIMESTAMP,
+    user_id       INT       DEFAULT 1                 NOT NULL,
+    CONSTRAINT stocks_pk UNIQUE (stock_name),
+    CONSTRAINT stocks_users_id_fk FOREIGN KEY (user_id) REFERENCES users (id)
 );
 
-create table if not exists stock_transfer
+CREATE TABLE IF NOT EXISTS treasury
 (
-    id            int auto_increment
-        primary key,
-    transfer_date date                                not null,
-    stock_from    int                                 not null,
-    stock_to      int                                 not null,
-    date_insert   datetime  default CURRENT_TIMESTAMP not null,
-    updated_at    timestamp default CURRENT_TIMESTAMP not null on update CURRENT_TIMESTAMP,
-    user_id       int       default 1                 not null,
-    constraint stock_transfer_users_id_fk
-        foreign key (user_id) references users (id)
+    id          INT AUTO_INCREMENT PRIMARY KEY,
+    t_name      VARCHAR(50)                              NOT NULL,
+    amount      DECIMAL(14, 2) DEFAULT 0                 NOT NULL,
+    date_insert DATETIME       DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    updated_at  TIMESTAMP      DEFAULT CURRENT_TIMESTAMP NOT NULL ON UPDATE CURRENT_TIMESTAMP,
+    user_id     INT            DEFAULT 1                 NOT NULL,
+    CONSTRAINT treasury_pk UNIQUE (t_name),
+    CONSTRAINT treasury_users_id_fk FOREIGN KEY (user_id) REFERENCES users (id)
 );
 
-create index stock_transfer_stocks_stock_id_fk
-    on stock_transfer (stock_from);
-
-create index stock_transfer_stocks_stock_id_fk_2
-    on stock_transfer (stock_to);
-
-create table if not exists stock_transfer_list
+CREATE TABLE IF NOT EXISTS type_price
 (
-    id                int auto_increment
-        primary key,
-    stock_transfer_id int    not null,
-    item_id           int    not null,
-    quantity          double not null,
-    constraint stock_transfer_list_stock_transfer_id_fk
-        foreign key (stock_transfer_id) references stock_transfer (id)
-            on update cascade on delete cascade
+    id          INT AUTO_INCREMENT PRIMARY KEY,
+    name        VARCHAR(50)                         NOT NULL,
+    date_insert DATETIME  DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    updated_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL ON UPDATE CURRENT_TIMESTAMP,
+    user_id     INT       DEFAULT 1                 NOT NULL,
+    CONSTRAINT items_price_pk UNIQUE (name),
+    CONSTRAINT type_price_users_id_fk FOREIGN KEY (user_id) REFERENCES users (id)
 );
 
-create table if not exists stocks
+CREATE TABLE IF NOT EXISTS units
 (
-    stock_id      int auto_increment
-        primary key,
-    stock_name    varchar(50)                         not null,
-    stock_address varchar(50)                         null,
-    date_insert   datetime  default CURRENT_TIMESTAMP not null,
-    updated_at    timestamp default CURRENT_TIMESTAMP not null on update CURRENT_TIMESTAMP,
-    user_id       int       default 1                 not null,
-    constraint stocks_pk
-        unique (stock_name),
-    constraint stocks_users_id_fk
-        foreign key (user_id) references users (id)
+    unit_id     INT AUTO_INCREMENT PRIMARY KEY,
+    unit_name   VARCHAR(50)                              NOT NULL,
+    value_d     DECIMAL(14, 3) DEFAULT 1                 NOT NULL,
+    date_insert DATETIME       DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    updated_at  TIMESTAMP      DEFAULT CURRENT_TIMESTAMP NOT NULL ON UPDATE CURRENT_TIMESTAMP,
+    user_id     INT            DEFAULT 1                 NOT NULL,
+    CONSTRAINT units_pk UNIQUE (unit_name),
+    CONSTRAINT units_users_id_fk FOREIGN KEY (user_id) REFERENCES users (id)
 );
 
-create table if not exists sub_group
+-- =====================================================================
+-- 3) Main master data
+-- =====================================================================
+
+CREATE TABLE IF NOT EXISTS employees
 (
-    id          int auto_increment
-        primary key,
-    name        varchar(50)                         not null,
-    main_id     int                                 not null,
-    date_insert datetime  default CURRENT_TIMESTAMP not null,
-    updated_at  timestamp default CURRENT_TIMESTAMP not null on update CURRENT_TIMESTAMP,
-    user_id     int       default 1                 not null,
-    constraint sub_group_pk
-        unique (name),
-    constraint sub_group_main_group_id_fk
-        foreign key (main_id) references main_group (id),
-    constraint sub_group_users_id_fk
-        foreign key (user_id) references users (id)
+    id          INT AUTO_INCREMENT PRIMARY KEY,
+    column_name VARCHAR(50)                         NOT NULL,
+    birth_date  DATE                                NOT NULL,
+    hire_date   DATE                                NOT NULL,
+    salary      DECIMAL(14, 2)                      NOT NULL,
+    email       VARCHAR(200)                        NULL,
+    tel         VARCHAR(200)                        NULL,
+    address     VARCHAR(200)                        NULL,
+    image       LONGBLOB                            NULL,
+    job         INT                                 NOT NULL,
+    date_insert DATETIME  DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    updated_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL ON UPDATE CURRENT_TIMESTAMP,
+    user_id     INT       DEFAULT 1                 NOT NULL,
+    CONSTRAINT employees_pk2 UNIQUE (column_name),
+    CONSTRAINT employees_jobs_id_fk FOREIGN KEY (job) REFERENCES jobs (id),
+    CONSTRAINT employees_users_id_fk FOREIGN KEY (user_id) REFERENCES users (id)
 );
 
-create table if not exists suppliers
+CREATE TABLE IF NOT EXISTS sub_group
 (
-    id            int auto_increment
-        primary key,
-    name          varchar(50)                         not null,
-    tel           varchar(50)                         null,
-    address       varchar(255)                        null,
-    notes         longtext                            null,
-    first_balance double    default 0                 not null,
-    table_id      int       default 1                 not null,
-    date_insert   datetime  default CURRENT_TIMESTAMP not null,
-    updated_at    timestamp default CURRENT_TIMESTAMP not null on update CURRENT_TIMESTAMP,
-    user_id       int       default 1                 not null,
-    area_id       int       default 1                 not null,
-    constraint suppliers_pk
-        unique (name),
-    constraint suppliers_table_area_id_fk
-        foreign key (area_id) references table_area (id),
-    constraint suppliers_users_id_fk
-        foreign key (user_id) references users (id)
+    id          INT AUTO_INCREMENT PRIMARY KEY,
+    name        VARCHAR(50)                         NOT NULL,
+    main_id     INT                                 NOT NULL,
+    date_insert DATETIME  DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    updated_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL ON UPDATE CURRENT_TIMESTAMP,
+    user_id     INT       DEFAULT 1                 NOT NULL,
+    CONSTRAINT sub_group_pk UNIQUE (name),
+    CONSTRAINT sub_group_main_group_id_fk FOREIGN KEY (main_id) REFERENCES main_group (id),
+    CONSTRAINT sub_group_users_id_fk FOREIGN KEY (user_id) REFERENCES users (id)
 );
 
-create table if not exists targeted_sales
-(
-    id            int auto_increment
-        primary key,
-    delegate_id   int                                 not null,
-    target        double                              not null,
-    target_ratio1 double    default 100               not null,
-    rate_1        double    default 0                 not null,
-    target_ratio2 double    default 0                 not null,
-    rate_2        double    default 0                 not null,
-    target_ratio3 double    default 0                 not null,
-    rate_3        double    default 0                 not null,
-    notes         varchar(200)                        null,
-    date_insert   datetime  default CURRENT_TIMESTAMP not null,
-    updated_at    timestamp default CURRENT_TIMESTAMP not null on update CURRENT_TIMESTAMP,
-    user_id       int       default 1                 not null,
-    constraint targeted_sales_employees_id_fk
-        foreign key (delegate_id) references employees (id)
-            on update cascade on delete cascade,
-    constraint targeted_sales_users_id_fk
-        foreign key (user_id) references users (id)
-);
-
-create table if not exists treasury
-(
-    id          int auto_increment
-        primary key,
-    t_name      varchar(50)                         not null,
-    amount      double    default 0                 not null,
-    date_insert datetime  default CURRENT_TIMESTAMP not null,
-    updated_at  timestamp default CURRENT_TIMESTAMP not null on update CURRENT_TIMESTAMP,
-    user_id     int       default 1                 not null,
-    constraint treasury_pk
-        unique (t_name),
-    constraint treasury_users_id_fk
-        foreign key (user_id) references users (id)
-);
-
-create table if not exists expenses_details
-(
-    id          int auto_increment
-        primary key,
-    type_code   int                                 not null,
-    date        date                                not null,
-    amount      int       default 0                 not null,
-    notes       varchar(255)                        null,
-    emp_id      int       default 0                 not null,
-    treasury_id int       default 1                 not null,
-    date_insert datetime  default CURRENT_TIMESTAMP not null,
-    updated_at  timestamp default CURRENT_TIMESTAMP not null on update CURRENT_TIMESTAMP,
-    user_id     int       default 1                 not null,
-    constraint expenses_details_expenses_id_fk
-        foreign key (type_code) references expenses (id),
-    constraint expenses_details_treasury_id_fk
-        foreign key (treasury_id) references treasury (id),
-    constraint expenses_details_users_id_fk
-        foreign key (user_id) references users (id)
-);
-
-create table if not exists expense_salary
-(
-    employee_id         int not null,
-    expenses_details_id int not null,
-    constraint expense_salary_employees_id_fk
-        foreign key (employee_id) references employees (id),
-    constraint expense_salary_expenses_details_id_fk
-        foreign key (expenses_details_id) references expenses_details (id)
-            on update cascade on delete cascade
-);
-
-create table if not exists suppliers_accounts
-(
-    account_num           int                                 not null
-        primary key,
-    account_code          int                                 not null,
-    account_date          date                                not null,
-    purchase              double    default 0                 not null,
-    paid                  double                              not null,
-    numberInv             int                                 not null,
-    notes                 longtext                            null,
-    treasury_id           int       default 1                 not null,
-    table_id              int       default 2                 not null,
-    date_insert           datetime  default CURRENT_TIMESTAMP not null,
-    updated_at            timestamp default CURRENT_TIMESTAMP not null on update CURRENT_TIMESTAMP,
-    user_id               int       default 1                 not null,
-    invoice_number_return int       default 0                 not null comment 'This column for number invoice for returns',
-    constraint suppliers_accounts_suppliers_id_fk
-        foreign key (account_code) references suppliers (id),
-    constraint suppliers_accounts_treasury_id_fk
-        foreign key (treasury_id) references treasury (id),
-    constraint suppliers_accounts_users_id_fk
-        foreign key (user_id) references users (id)
-);
-
-create index suppliers_accounts_total_buy_invoice_number_fk
-    on suppliers_accounts (numberInv);
-
-create table if not exists total_buy
-(
-    invoice_number int                                 not null
-        primary key,
-    sup_code       int                                 not null,
-    invoice_type   int       default 1                 not null,
-    invoice_date   date                                not null,
-    total          double                              not null,
-    discount       double                              not null,
-    paid_up        double                              not null comment 'paid from the treasury مدفوع نقدا من الخزينة',
-    stock_id       int       default 1                 not null,
-    treasury_id    int       default 1                 not null,
-    notes          longtext                            null,
-    table_id       int       default 3                 not null,
-    date_insert    datetime  default CURRENT_TIMESTAMP not null,
-    updated_at     timestamp default CURRENT_TIMESTAMP not null on update CURRENT_TIMESTAMP,
-    user_id        int       default 1                 not null,
-    constraint total_buy_stocks_stock_id_fk
-        foreign key (stock_id) references stocks (stock_id),
-    constraint total_buy_suppliers_sup_id_fk
-        foreign key (sup_code) references suppliers (id),
-    constraint total_buy_treasury_id_fk
-        foreign key (treasury_id) references treasury (id),
-    constraint total_buy_users_id_fk
-        foreign key (user_id) references users (id)
-);
-
-create index total_buy_suppliers_sup_code_fk
-    on total_buy (sup_code);
-
-create table if not exists total_buy_re
-(
-    id               bigint                              not null
-        primary key,
-    sup_id           int                                 not null,
-    invoice_date     date                                not null,
-    invoice_type     int       default 1                 not null,
-    total            double                              not null,
-    discount         double                              not null,
-    paid_to_treasury double                              not null comment 'Paid to the treasury مدفوعات الى الخزينة',
-    stock_id         int                                 not null,
-    treasury_id      int       default 1                 not null,
-    notes            longtext                            null,
-    table_id         int       default 4                 not null,
-    date_insert      datetime  default CURRENT_TIMESTAMP not null,
-    updated_at       timestamp default CURRENT_TIMESTAMP not null on update CURRENT_TIMESTAMP,
-    user_id          int       default 1                 not null,
-    constraint total_buy_re_stocks_stock_id_fk
-        foreign key (stock_id) references stocks (stock_id),
-    constraint total_buy_re_suppliers_sup_id_fk
-        foreign key (sup_id) references suppliers (id),
-    constraint total_buy_re_treasury_id_fk
-        foreign key (treasury_id) references treasury (id),
-    constraint total_buy_re_users_id_fk
-        foreign key (user_id) references users (id)
-);
-
-create table if not exists treasury_deposit_expenses
-(
-    id                  int auto_increment
-        primary key,
-    statement           varchar(50)                         not null,
-    date_inter          date                                not null,
-    amount              double                              not null,
-    description_data    text                                null,
-    deposit_or_expenses int       default 1                 not null,
-    treasury_id         int       default 1                 not null,
-    date_insert         datetime  default CURRENT_TIMESTAMP not null,
-    updated_at          timestamp default CURRENT_TIMESTAMP not null on update CURRENT_TIMESTAMP,
-    user_id             int       default 1                 not null,
-    constraint treasury_deposit_expenses_treasury_id_fk
-        foreign key (treasury_id) references treasury (id),
-    constraint treasury_deposit_expenses_users_id_fk
-        foreign key (user_id) references users (id)
-);
-
-create table if not exists treasury_transfers
-(
-    id            int auto_increment
-        primary key,
-    treasury_from int                                 not null,
-    treasury_to   int                                 not null,
-    amount        double                              not null,
-    transfer_date date                                not null,
-    notes         longtext                            null,
-    date_insert   datetime  default CURRENT_TIMESTAMP not null,
-    updated_at    timestamp default CURRENT_TIMESTAMP not null on update CURRENT_TIMESTAMP,
-    user_id       int       default 1                 not null,
-    constraint treasury_transfers_treasury_id_fk
-        foreign key (treasury_from) references treasury (id),
-    constraint treasury_transfers_treasury_id_fk_2
-        foreign key (treasury_to) references treasury (id),
-    constraint treasury_transfers_users_id_fk
-        foreign key (user_id) references users (id)
-);
-
-create table if not exists type_price
-(
-    id          int auto_increment
-        primary key,
-    name        varchar(50)                         not null,
-    date_insert datetime  default CURRENT_TIMESTAMP not null,
-    updated_at  timestamp default CURRENT_TIMESTAMP not null on update CURRENT_TIMESTAMP,
-    user_id     int       default 1                 not null,
-    constraint items_price_pk
-        unique (name),
-    constraint type_price_users_id_fk
-        foreign key (user_id) references users (id)
-);
-
-create table if not exists custom
-(
-    id            int auto_increment
-        primary key,
-    name          varchar(100)                        not null,
-    tel           varchar(50)                         null,
-    address       varchar(200)                        null,
-    notes         longtext                            null,
-    limit_num     double                              not null,
-    first_balance double    default 0                 not null,
-    price_id      int                                 not null,
-    table_id      int       default 1                 not null,
-    created_at    timestamp default CURRENT_TIMESTAMP not null,
-    updated_at    timestamp default CURRENT_TIMESTAMP not null on update CURRENT_TIMESTAMP,
-    user_id       int       default 1                 not null,
-    area_id       int       default 1                 not null,
-    constraint custom_pk
-        unique (name),
-    constraint custom_items_price_id_fk
-        foreign key (price_id) references type_price (id),
-    constraint custom_table_area_id_fk
-        foreign key (area_id) references table_area (id),
-    constraint custom_users_id_fk
-        foreign key (user_id) references users (id)
-);
-
-create table if not exists customers_accounts
-(
-    account_num           int                                 not null
-        primary key,
-    account_code          int                                 null,
-    account_date          date                                null,
-    paid                  double                              null,
-    notes                 longtext                            null,
-    treasury_id           int       default 1                 not null,
-    purchase              double    default 0                 not null,
-    numberInv             int                                 not null,
-    table_id              int       default 2                 not null,
-    created_at            timestamp default CURRENT_TIMESTAMP not null,
-    updated_at            timestamp default CURRENT_TIMESTAMP not null on update CURRENT_TIMESTAMP,
-    user_id               int       default 1                 not null,
-    invoice_number_return int       default 0                 not null comment 'This column for number invoice for returns',
-    constraint customers_accounts_custom_id_fk
-        foreign key (account_code) references custom (id),
-    constraint customers_accounts_treasury_id_fk
-        foreign key (treasury_id) references treasury (id),
-    constraint customers_accounts_users_id_fk
-        foreign key (user_id) references users (id)
-);
-
-create index customers_accounts_total_sales_invoice_number_fk
-    on customers_accounts (numberInv);
-
-create table if not exists total_sales
-(
-    invoice_number int                                 not null
-        primary key,
-    sup_code       int                                 not null,
-    invoice_type   int       default 1                 not null,
-    invoice_date   date                                not null,
-    total          double                              not null,
-    discount       double                              not null,
-    paid_up        double                              not null comment 'paid to the treasury مدفوع نقدا الى الخزينة',
-    stock_id       int       default 1                 not null,
-    delegate_id    int                                 not null,
-    treasury_id    int       default 1                 not null,
-    notes          longtext                            null,
-    table_id       int       default 3                 not null,
-    date_insert    datetime  default CURRENT_TIMESTAMP not null,
-    updated_at     timestamp default CURRENT_TIMESTAMP not null on update CURRENT_TIMESTAMP,
-    user_id        int       default 1                 not null,
-    constraint total_sales_custom_sup_id_fk
-        foreign key (sup_code) references custom (id),
-    constraint total_sales_employees_id_fk
-        foreign key (delegate_id) references employees (id),
-    constraint total_sales_stocks_stock_id_fk
-        foreign key (stock_id) references stocks (stock_id),
-    constraint total_sales_treasury_id_fk
-        foreign key (treasury_id) references treasury (id),
-    constraint total_sales_users_id_fk
-        foreign key (user_id) references users (id)
-);
-
-create index total_sales_sup_code_fk
-    on total_sales (sup_code);
-
-create index total_sales_users_id_fk2
-    on total_sales (delegate_id);
-
-create table if not exists total_sales_re
-(
-    id                 bigint                              not null
-        primary key,
-    sup_id             int                                 not null,
-    invoice_date       date                                not null,
-    invoice_type       int       default 1                 not null,
-    total              double                              not null,
-    discount           double                              not null,
-    paid_from_treasury double                              not null comment 'paid from the treasury مدفوع نقدا من الخزينة',
-    stock_id           int       default 1                 not null,
-    delegate_id        int                                 not null,
-    treasury_id        int       default 1                 not null,
-    notes              longtext                            null,
-    table_id           int       default 4                 not null,
-    date_insert        datetime  default CURRENT_TIMESTAMP not null,
-    updated_at         timestamp default CURRENT_TIMESTAMP not null on update CURRENT_TIMESTAMP,
-    user_id            int       default 1                 not null,
-    constraint total_sales_re_custom_id_fk
-        foreign key (sup_id) references custom (id),
-    constraint total_sales_re_employees_id_fk
-        foreign key (delegate_id) references employees (id),
-    constraint total_sales_re_stocks_stock_id_fk
-        foreign key (stock_id) references stocks (stock_id),
-    constraint total_sales_re_treasury_id_fk
-        foreign key (treasury_id) references treasury (id),
-    constraint total_sales_re_users_id_fk
-        foreign key (user_id) references users (id)
-);
-
-create table if not exists units
-(
-    unit_id     int auto_increment
-        primary key,
-    unit_name   varchar(50)                         not null,
-    value_d     double    default 1                 not null,
-    date_insert datetime  default CURRENT_TIMESTAMP not null,
-    updated_at  timestamp default CURRENT_TIMESTAMP not null on update CURRENT_TIMESTAMP,
-    user_id     int       default 1                 not null,
-    constraint units_pk
-        unique (unit_name),
-    constraint units_users_id_fk
-        foreign key (user_id) references users (id)
-);
-
-create table if not exists items
-(
-    id                       int auto_increment
-        primary key,
-    barcode                  varchar(200)                         not null,
-    nameItem                 varchar(200)                         not null,
-    sub_num                  int                                  not null,
-    buy_price                double     default 0                 not null,
-    sel_price1               double     default 0                 not null,
-    sel_price2               double     default 0                 not null,
-    sel_price3               double     default 0                 not null,
-    unit_id                  int                                  not null,
-    mini_quantity            double     default 1                 not null,
-    first_balance            double     default 0                 not null,
-    item_image               longblob                             null,
-    item_active              tinyint(1) default 1                 not null,
-    item_has_validity        tinyint(1) default 0                 not null,
-    number_validity_days     int        default 0                 not null,
-    alert_days_before_expire int        default 0                 not null,
-    item_has_package         tinyint(1) default 0                 not null,
-    created_at               timestamp  default CURRENT_TIMESTAMP not null,
-    updated_at               timestamp  default CURRENT_TIMESTAMP not null on update CURRENT_TIMESTAMP,
-    user_id                  int        default 1                 not null,
-    constraint items_barcode_uindex
-        unique (barcode),
-    constraint items_pk
-        unique (nameItem),
-    constraint items_sub_group_id_fk
-        foreign key (sub_num) references sub_group (id),
-    constraint items_units_unit_id_fk
-        foreign key (unit_id) references units (unit_id),
-    constraint items_users_id_fk
-        foreign key (user_id) references users (id)
-);
-
-create table if not exists items_package
-(
-    id         int auto_increment
-        primary key,
-    item_id    int                                not null,
-    package_id int                                not null,
-    quantity   double                             not null,
-    created_at datetime default CURRENT_TIMESTAMP null,
-    updated_at datetime default CURRENT_TIMESTAMP null on update CURRENT_TIMESTAMP,
-    constraint items_package_items_id_fk
-        foreign key (package_id) references items (id)
-            on update cascade on delete cascade
-);
-
-create table if not exists items_stock
-(
-    id            int auto_increment
-        primary key,
-    item_id       int           not null,
-    stock_id      int           not null,
-    first_balance int default 0 not null,
-    constraint items_stock_items_id_fk
-        foreign key (item_id) references items (id)
-            on update cascade on delete cascade,
-    constraint items_stock_stocks_stock_id_fk
-        foreign key (stock_id) references stocks (stock_id)
-);
-
-create table if not exists items_units
-(
-    id            int auto_increment
-        primary key,
-    items_id      int                                 not null,
-    items_barcode varchar(50)                         not null,
-    unit          int                                 not null,
-    quantity      double                              not null,
-    buy_price     double                              not null,
-    sel_price     double                              not null,
-    date_insert   datetime  default CURRENT_TIMESTAMP not null,
-    updated_at    timestamp default CURRENT_TIMESTAMP not null on update CURRENT_TIMESTAMP,
-    user_id       int       default 1                 not null,
-    constraint items_units_pk
-        unique (items_barcode),
-    constraint items_units_items_id_fk
-        foreign key (items_id) references items (id)
-            on update cascade on delete cascade,
-    constraint items_units_units_unit_id_fk
-        foreign key (unit) references units (unit_id)
-);
-
-create index items_units_items_num_fk
-    on items_units (items_id);
-
-create table if not exists purchase
-(
-    id              int auto_increment
-        primary key,
-    invoice_number  int              not null,
-    num             int              not null,
-    type            int    default 1 not null,
-    quantity        double           not null,
-    price           double           not null,
-    discount        int    default 0 not null,
-    type_value      double default 1 not null,
-    expiration_date date             null,
-    constraint purchase_items_id_fk
-        foreign key (num) references items (id),
-    constraint purchase_total_buy_invoice_number_fk
-        foreign key (invoice_number) references total_buy (invoice_number)
-            on update cascade on delete cascade,
-    constraint purchase_units_unit_id_fk
-        foreign key (type) references units (unit_id)
-);
-
-create table if not exists purchase_re
-(
-    id              int auto_increment
-        primary key,
-    invoice_number  bigint           not null,
-    item_id         int              not null,
-    type            int    default 1 not null,
-    quantity        double           not null,
-    price           double           not null,
-    discount        double default 0 not null,
-    type_value      double default 1 not null,
-    expiration_date date             null,
-    constraint purchase_re_items_id_fk
-        foreign key (item_id) references items (id),
-    constraint purchase_re_total_buy_re_id_fk
-        foreign key (invoice_number) references total_buy_re (id)
-            on update cascade on delete cascade,
-    constraint purchase_re_units_unit_id_fk
-        foreign key (type) references units (unit_id)
-);
-
-create table if not exists sales
-(
-    id               int auto_increment
-        primary key,
-    invoice_number   int                  not null,
-    num              int                  not null,
-    type             int        default 1 not null,
-    quantity         double               not null,
-    price            double               not null,
-    buy_price        double               not null,
-    total_sel_price  double     default 0 not null,
-    total_buy_price  double     default 0 not null,
-    total_profit     double     default 0 not null,
-    discount         double     default 0 not null,
-    type_value       double     default 1 not null,
-    expiration_date  date                 null,
-    item_has_package tinyint(1) default 0 not null,
-    constraint sales_items_id_fk
-        foreign key (num) references items (id),
-    constraint sales_total_invoice_number_fk
-        foreign key (invoice_number) references total_sales (invoice_number)
-            on update cascade on delete cascade,
-    constraint sales_units_unit_id_fk
-        foreign key (type) references units (unit_id)
-);
-
-create table if not exists sales_package
-(
-    id              int auto_increment
-        primary key,
-    sales_id        int              not null,
-    item_id         int              not null,
-    unit_id         int    default 1 not null,
-    quantity        double           not null,
-    price           double           not null,
-    buy_price       double           not null,
-    total_sel_price double default 0 not null,
-    total_buy_price double default 0 not null,
-    total_profit    double default 0 not null,
-    discount        double default 0 not null,
-    unit_value      double default 1 not null,
-    expiration_date date             null,
-    constraint sales_package_items_id_fk
-        foreign key (item_id) references items (id),
-    constraint sales_package_sales_id_fk
-        foreign key (sales_id) references sales (id)
-            on update cascade on delete cascade,
-    constraint sales_package_units_unit_id_fk
-        foreign key (unit_id) references units (unit_id)
-);
-
-create index sales_items_id_fk
-    on sales_package (item_id);
-
-create index sales_total_invoice_number_fk
-    on sales_package (sales_id);
-
-create index sales_units_unit_id_fk
-    on sales_package (unit_id);
-
-create table if not exists sales_re
-(
-    id              int auto_increment
-        primary key,
-    invoice_number  bigint           not null,
-    item_id         int              not null,
-    type            int    default 1 not null,
-    quantity        double           not null,
-    price           double           not null,
-    buy_price       double default 0 not null,
-    total_sel_price double default 0 not null,
-    total_buy_price double default 0 not null,
-    total_profit    double default 0 not null,
-    discount        double default 0 not null,
-    type_value      double default 1 not null,
-    expiration_date date             null,
-    constraint sales_re_items_id_fk
-        foreign key (item_id) references items (id),
-    constraint sales_re_total_sales_re_id_fk
-        foreign key (invoice_number) references total_sales_re (id)
-            on update cascade on delete cascade,
-    constraint sales_re_units_unit_id_fk
-        foreign key (type) references units (unit_id)
-);
-
-create table if not exists user_permission
-(
-    id            int auto_increment
-        primary key,
-    permission_id int                                 not null,
-    user_id       int                                 not null,
-    check_status  int       default 0                 not null,
-    updated_at    timestamp default CURRENT_TIMESTAMP not null on update CURRENT_TIMESTAMP,
-    constraint user_permission_permission_id_fk
-        foreign key (permission_id) references permission (id)
-            on update cascade on delete cascade,
-    constraint user_permission_users_id_fk
-        foreign key (user_id) references users (id)
-            on update cascade on delete cascade
-);
-
-CREATE TABLE user_shifts
+CREATE TABLE IF NOT EXISTS suppliers
 (
     id            INT AUTO_INCREMENT PRIMARY KEY,
-    user_id       INT      NOT NULL,
-    open_time     DATETIME NOT NULL,
-    close_time    DATETIME NULL,
-    open_balance  DOUBLE  DEFAULT 0.0,
-    close_balance DOUBLE  DEFAULT 0.0,
-    is_open       BOOLEAN DEFAULT TRUE,
-    notes         TEXT     NULL,
-    FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
+    name          VARCHAR(50)                              NOT NULL,
+    tel           VARCHAR(50)                              NULL,
+    address       VARCHAR(255)                             NULL,
+    notes         LONGTEXT                                 NULL,
+    first_balance DECIMAL(14, 2) DEFAULT 0                 NOT NULL,
+    table_id      INT            DEFAULT 1                 NOT NULL,
+    date_insert   DATETIME       DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    updated_at    TIMESTAMP      DEFAULT CURRENT_TIMESTAMP NOT NULL ON UPDATE CURRENT_TIMESTAMP,
+    user_id       INT            DEFAULT 1                 NOT NULL,
+    area_id       INT            DEFAULT 1                 NOT NULL,
+    CONSTRAINT suppliers_pk UNIQUE (name),
+    CONSTRAINT suppliers_table_area_id_fk FOREIGN KEY (area_id) REFERENCES table_area (id),
+    CONSTRAINT suppliers_users_id_fk FOREIGN KEY (user_id) REFERENCES users (id)
 );
 
--- ============================================================
--- V018: إضافة أعمدة ملخص الوردية (المرحلة 2)
--- ============================================================
+CREATE TABLE IF NOT EXISTS custom
+(
+    id            INT AUTO_INCREMENT PRIMARY KEY,
+    name          VARCHAR(100)                             NOT NULL,
+    tel           VARCHAR(50)                              NULL,
+    address       VARCHAR(200)                             NULL,
+    notes         LONGTEXT                                 NULL,
+    limit_num     DECIMAL(14, 2)                           NOT NULL,
+    first_balance DECIMAL(14, 2) DEFAULT 0                 NOT NULL,
+    price_id      INT                                      NOT NULL,
+    table_id      INT            DEFAULT 1                 NOT NULL,
+    created_at    TIMESTAMP      DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    updated_at    TIMESTAMP      DEFAULT CURRENT_TIMESTAMP NOT NULL ON UPDATE CURRENT_TIMESTAMP,
+    user_id       INT            DEFAULT 1                 NOT NULL,
+    area_id       INT            DEFAULT 1                 NOT NULL,
+    CONSTRAINT custom_pk UNIQUE (name),
+    CONSTRAINT custom_items_price_id_fk FOREIGN KEY (price_id) REFERENCES type_price (id),
+    CONSTRAINT custom_table_area_id_fk FOREIGN KEY (area_id) REFERENCES table_area (id),
+    CONSTRAINT custom_users_id_fk FOREIGN KEY (user_id) REFERENCES users (id)
+);
 
--- إضافة الإجماليات المحسوبة عند غلق الوردية
-ALTER TABLE user_shifts
-    ADD COLUMN total_sales         DOUBLE DEFAULT 0.0 AFTER close_balance,
-    ADD COLUMN total_sales_returns DOUBLE DEFAULT 0.0 AFTER total_sales,
-    ADD COLUMN total_expenses      DOUBLE DEFAULT 0.0 AFTER total_sales_returns,
-    ADD COLUMN total_deposits      DOUBLE DEFAULT 0.0 AFTER total_expenses,
-    ADD COLUMN total_withdrawals   DOUBLE DEFAULT 0.0 AFTER total_deposits,
-    ADD COLUMN expected_balance    DOUBLE DEFAULT 0.0 AFTER total_withdrawals,
-    ADD COLUMN difference          DOUBLE DEFAULT 0.0 AFTER expected_balance,
-    ADD COLUMN invoices_count      INT    DEFAULT 0 AFTER difference;
+-- =====================================================================
+-- 4) Items
+-- =====================================================================
 
--- فهرس يساعد في استعلامات الحالة/التاريخ
-CREATE INDEX idx_user_shifts_user_open
-    ON user_shifts (user_id, is_open);
+CREATE TABLE IF NOT EXISTS items
+(
+    id                       INT AUTO_INCREMENT PRIMARY KEY,
+    barcode                  VARCHAR(200)                             NOT NULL,
+    nameItem                 VARCHAR(200)                             NOT NULL,
+    sub_num                  INT                                      NOT NULL,
+    buy_price                DECIMAL(14, 2) DEFAULT 0                 NOT NULL,
+    sel_price1               DECIMAL(14, 2) DEFAULT 0                 NOT NULL,
+    sel_price2               DECIMAL(14, 2) DEFAULT 0                 NOT NULL,
+    sel_price3               DECIMAL(14, 2) DEFAULT 0                 NOT NULL,
+    unit_id                  INT                                      NOT NULL,
+    mini_quantity            DECIMAL(14, 3) DEFAULT 1                 NOT NULL,
+    first_balance            DECIMAL(14, 3) DEFAULT 0                 NOT NULL,
+    item_image               LONGBLOB                                 NULL,
+    item_active              TINYINT(1)     DEFAULT 1                 NOT NULL,
+    item_has_validity        TINYINT(1)     DEFAULT 0                 NOT NULL,
+    number_validity_days     INT            DEFAULT 0                 NOT NULL,
+    alert_days_before_expire INT            DEFAULT 0                 NOT NULL,
+    item_has_package         TINYINT(1)     DEFAULT 0                 NOT NULL,
+    created_at               TIMESTAMP      DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    updated_at               TIMESTAMP      DEFAULT CURRENT_TIMESTAMP NOT NULL ON UPDATE CURRENT_TIMESTAMP,
+    user_id                  INT            DEFAULT 1                 NOT NULL,
+    CONSTRAINT items_barcode_uindex UNIQUE (barcode),
+    CONSTRAINT items_pk UNIQUE (nameItem),
+    CONSTRAINT items_sub_group_id_fk FOREIGN KEY (sub_num) REFERENCES sub_group (id),
+    CONSTRAINT items_units_unit_id_fk FOREIGN KEY (unit_id) REFERENCES units (unit_id),
+    CONSTRAINT items_users_id_fk FOREIGN KEY (user_id) REFERENCES users (id)
+);
 
-CREATE INDEX idx_user_shifts_open_time
-    ON user_shifts (open_time);
+CREATE TABLE IF NOT EXISTS items_package
+(
+    id         INT AUTO_INCREMENT PRIMARY KEY,
+    item_id    INT                                NOT NULL,
+    package_id INT                                NOT NULL,
+    quantity   DECIMAL(14, 3)                     NOT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP NULL,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP NULL ON UPDATE CURRENT_TIMESTAMP,
+    CONSTRAINT items_package_item_id_fk
+        FOREIGN KEY (item_id) REFERENCES items (id)
+            ON UPDATE CASCADE ON DELETE CASCADE,
+    CONSTRAINT items_package_package_id_fk
+        FOREIGN KEY (package_id) REFERENCES items (id)
+            ON UPDATE CASCADE ON DELETE CASCADE,
+    CONSTRAINT items_package_quantity_chk CHECK (quantity > 0)
+);
 
+CREATE INDEX items_package_item_idx ON items_package (item_id);
+CREATE INDEX items_package_package_idx ON items_package (package_id);
 
+CREATE TABLE IF NOT EXISTS items_stock
+(
+    id               INT AUTO_INCREMENT PRIMARY KEY,
+    item_id          INT                      NOT NULL,
+    stock_id         INT                      NOT NULL,
+    first_balance    DECIMAL(14, 3) DEFAULT 0 NOT NULL,
+    current_quantity DECIMAL(14, 3) DEFAULT 0 NOT NULL,
+    CONSTRAINT items_stock_items_id_fk
+        FOREIGN KEY (item_id) REFERENCES items (id)
+            ON UPDATE CASCADE ON DELETE CASCADE,
+    CONSTRAINT items_stock_stocks_stock_id_fk
+        FOREIGN KEY (stock_id) REFERENCES stocks (stock_id),
+    CONSTRAINT items_stock_uk UNIQUE (item_id, stock_id)
+);
+
+CREATE TABLE IF NOT EXISTS items_units
+(
+    id            INT AUTO_INCREMENT PRIMARY KEY,
+    items_id      INT                                 NOT NULL,
+    items_barcode VARCHAR(50)                         NOT NULL,
+    unit          INT                                 NOT NULL,
+    quantity      DECIMAL(14, 3)                      NOT NULL,
+    buy_price     DECIMAL(14, 2)                      NOT NULL,
+    sel_price     DECIMAL(14, 2)                      NOT NULL,
+    date_insert   DATETIME  DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    updated_at    TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL ON UPDATE CURRENT_TIMESTAMP,
+    user_id       INT       DEFAULT 1                 NOT NULL,
+    CONSTRAINT items_units_pk UNIQUE (items_barcode),
+    CONSTRAINT items_units_items_id_fk
+        FOREIGN KEY (items_id) REFERENCES items (id)
+            ON UPDATE CASCADE ON DELETE CASCADE,
+    CONSTRAINT items_units_units_unit_id_fk FOREIGN KEY (unit) REFERENCES units (unit_id),
+    CONSTRAINT items_units_quantity_chk CHECK (quantity > 0)
+);
+
+CREATE INDEX items_units_items_num_fk ON items_units (items_id);
+
+-- =====================================================================
+-- 5) Stock movements and transfers
+-- =====================================================================
+
+CREATE TABLE IF NOT EXISTS stock_movements
+(
+    id                BIGINT AUTO_INCREMENT PRIMARY KEY,
+    item_id           INT                                      NOT NULL,
+    stock_id          INT                                      NOT NULL,
+    movement_date     DATETIME       DEFAULT CURRENT_TIMESTAMP NOT NULL,
+
+    movement_type     VARCHAR(30)                              NOT NULL,
+    quantity_in       DECIMAL(15, 3) DEFAULT 0                 NOT NULL,
+    quantity_out      DECIMAL(15, 3) DEFAULT 0                 NOT NULL,
+
+    unit_id           INT                                      NULL,
+    unit_value        DECIMAL(15, 3) DEFAULT 1                 NOT NULL,
+
+    reference_type    VARCHAR(30)                              NULL,
+    reference_id      BIGINT                                   NULL,
+    reference_line_id BIGINT                                   NULL,
+
+    notes             TEXT                                     NULL,
+    user_id           INT            DEFAULT 1                 NOT NULL,
+
+    CONSTRAINT stock_movements_items_id_fk FOREIGN KEY (item_id) REFERENCES items (id),
+    CONSTRAINT stock_movements_stocks_stock_id_fk FOREIGN KEY (stock_id) REFERENCES stocks (stock_id),
+    CONSTRAINT stock_movements_units_unit_id_fk FOREIGN KEY (unit_id) REFERENCES units (unit_id),
+    CONSTRAINT stock_movements_users_id_fk FOREIGN KEY (user_id) REFERENCES users (id),
+
+    CONSTRAINT stock_movements_quantity_chk
+        CHECK (
+            (quantity_in > 0 AND quantity_out = 0)
+                OR
+            (quantity_in = 0 AND quantity_out > 0)
+            ),
+
+    CONSTRAINT stock_movements_unit_value_chk CHECK (unit_value > 0),
+
+    CONSTRAINT stock_movements_type_chk
+        CHECK (movement_type IN (
+                                 'OPENING',
+                                 'PURCHASE',
+                                 'PURCHASE_RETURN',
+                                 'SALE',
+                                 'SALE_RETURN',
+                                 'TRANSFER_IN',
+                                 'TRANSFER_OUT',
+                                 'INVENTORY_ADJUST_IN',
+                                 'INVENTORY_ADJUST_OUT'
+            )),
+
+    CONSTRAINT stock_movements_reference_type_chk
+        CHECK (
+            reference_type IS NULL
+                OR reference_type IN (
+                                      'ITEM',
+                                      'PURCHASE',
+                                      'PURCHASE_RETURN',
+                                      'SALE',
+                                      'SALE_RETURN',
+                                      'STOCK_TRANSFER',
+                                      'INVENTORY'
+                )
+            )
+);
+
+CREATE INDEX idx_stock_movements_item_stock_date
+    ON stock_movements (item_id, stock_id, movement_date);
+
+CREATE INDEX idx_stock_movements_reference
+    ON stock_movements (reference_type, reference_id);
+
+CREATE INDEX idx_stock_movements_stock_date
+    ON stock_movements (stock_id, movement_date);
+
+CREATE TABLE IF NOT EXISTS stock_transfer
+(
+    id            INT AUTO_INCREMENT PRIMARY KEY,
+    transfer_date DATE                                NOT NULL,
+    stock_from    INT                                 NOT NULL,
+    stock_to      INT                                 NOT NULL,
+    date_insert   DATETIME  DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    updated_at    TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL ON UPDATE CURRENT_TIMESTAMP,
+    user_id       INT       DEFAULT 1                 NOT NULL,
+    CONSTRAINT stock_transfer_users_id_fk FOREIGN KEY (user_id) REFERENCES users (id),
+    CONSTRAINT stock_transfer_from_fk FOREIGN KEY (stock_from) REFERENCES stocks (stock_id),
+    CONSTRAINT stock_transfer_to_fk FOREIGN KEY (stock_to) REFERENCES stocks (stock_id),
+    CONSTRAINT stock_transfer_not_same_chk CHECK (stock_from <> stock_to)
+);
+
+CREATE INDEX stock_transfer_stocks_stock_id_fk ON stock_transfer (stock_from);
+CREATE INDEX stock_transfer_stocks_stock_id_fk_2 ON stock_transfer (stock_to);
+CREATE INDEX stock_transfer_date_idx ON stock_transfer (transfer_date);
+
+CREATE TABLE IF NOT EXISTS stock_transfer_list
+(
+    id                INT AUTO_INCREMENT PRIMARY KEY,
+    stock_transfer_id INT            NOT NULL,
+    item_id           INT            NOT NULL,
+    quantity          DECIMAL(14, 3) NOT NULL,
+
+    CONSTRAINT stock_transfer_list_stock_transfer_id_fk
+        FOREIGN KEY (stock_transfer_id) REFERENCES stock_transfer (id)
+            ON UPDATE CASCADE ON DELETE CASCADE,
+
+    CONSTRAINT stock_transfer_list_items_id_fk
+        FOREIGN KEY (item_id) REFERENCES items (id),
+
+    CONSTRAINT stock_transfer_list_quantity_chk
+        CHECK (quantity > 0)
+);
+
+CREATE INDEX stock_transfer_list_item_idx ON stock_transfer_list (item_id);
+
+-- =====================================================================
+-- 6) Treasury / Expenses
+-- =====================================================================
+
+CREATE TABLE IF NOT EXISTS treasury_deposit_expenses
+(
+    id                  INT AUTO_INCREMENT PRIMARY KEY,
+    statement           VARCHAR(50)                         NOT NULL,
+    date_inter          DATE                                NOT NULL,
+    amount              DECIMAL(14, 2)                      NOT NULL,
+    description_data    TEXT                                NULL,
+    deposit_or_expenses TINYINT   DEFAULT 1                 NOT NULL,
+    treasury_id         INT       DEFAULT 1                 NOT NULL,
+    date_insert         DATETIME  DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    updated_at          TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL ON UPDATE CURRENT_TIMESTAMP,
+    user_id             INT       DEFAULT 1                 NOT NULL,
+    CONSTRAINT treasury_deposit_expenses_treasury_id_fk FOREIGN KEY (treasury_id) REFERENCES treasury (id),
+    CONSTRAINT treasury_deposit_expenses_users_id_fk FOREIGN KEY (user_id) REFERENCES users (id),
+    CONSTRAINT treasury_deposit_expenses_type_chk CHECK (deposit_or_expenses IN (1, 2))
+);
+
+CREATE INDEX treasury_deposit_expenses_date_idx ON treasury_deposit_expenses (date_inter);
+CREATE INDEX treasury_deposit_expenses_treasury_idx ON treasury_deposit_expenses (treasury_id, date_inter);
+
+CREATE TABLE IF NOT EXISTS treasury_transfers
+(
+    id            INT AUTO_INCREMENT PRIMARY KEY,
+    treasury_from INT                                 NOT NULL,
+    treasury_to   INT                                 NOT NULL,
+    amount        DECIMAL(14, 2)                      NOT NULL,
+    transfer_date DATE                                NOT NULL,
+    notes         LONGTEXT                            NULL,
+    date_insert   DATETIME  DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    updated_at    TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL ON UPDATE CURRENT_TIMESTAMP,
+    user_id       INT       DEFAULT 1                 NOT NULL,
+    CONSTRAINT treasury_transfers_treasury_id_fk FOREIGN KEY (treasury_from) REFERENCES treasury (id),
+    CONSTRAINT treasury_transfers_treasury_id_fk_2 FOREIGN KEY (treasury_to) REFERENCES treasury (id),
+    CONSTRAINT treasury_transfers_users_id_fk FOREIGN KEY (user_id) REFERENCES users (id),
+    CONSTRAINT treasury_transfers_not_same_chk CHECK (treasury_from <> treasury_to),
+    CONSTRAINT treasury_transfers_amount_chk CHECK (amount > 0)
+);
+
+CREATE INDEX treasury_transfers_date_idx ON treasury_transfers (transfer_date);
+
+CREATE TABLE IF NOT EXISTS expenses_details
+(
+    id          INT AUTO_INCREMENT PRIMARY KEY,
+    type_code   INT                                      NOT NULL,
+    date        DATE                                     NOT NULL,
+    amount      DECIMAL(14, 2) DEFAULT 0                 NOT NULL,
+    notes       VARCHAR(255)                             NULL,
+    emp_id      INT            DEFAULT 0                 NOT NULL,
+    treasury_id INT            DEFAULT 1                 NOT NULL,
+    date_insert DATETIME       DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    updated_at  TIMESTAMP      DEFAULT CURRENT_TIMESTAMP NOT NULL ON UPDATE CURRENT_TIMESTAMP,
+    user_id     INT            DEFAULT 1                 NOT NULL,
+    CONSTRAINT expenses_details_expenses_id_fk FOREIGN KEY (type_code) REFERENCES expenses (id),
+    CONSTRAINT expenses_details_treasury_id_fk FOREIGN KEY (treasury_id) REFERENCES treasury (id),
+    CONSTRAINT expenses_details_users_id_fk FOREIGN KEY (user_id) REFERENCES users (id),
+    CONSTRAINT expenses_details_amount_chk CHECK (amount >= 0)
+);
+
+CREATE INDEX expenses_details_date_idx ON expenses_details (date);
+CREATE INDEX expenses_details_treasury_idx ON expenses_details (treasury_id, date);
+
+CREATE TABLE IF NOT EXISTS expense_salary
+(
+    employee_id         INT NOT NULL,
+    expenses_details_id INT NOT NULL,
+    CONSTRAINT expense_salary_employees_id_fk FOREIGN KEY (employee_id) REFERENCES employees (id),
+    CONSTRAINT expense_salary_expenses_details_id_fk
+        FOREIGN KEY (expenses_details_id) REFERENCES expenses_details (id)
+            ON UPDATE CASCADE ON DELETE CASCADE
+);
+
+-- =====================================================================
+-- 7) Invoice totals
+-- =====================================================================
+
+CREATE TABLE IF NOT EXISTS total_buy
+(
+    invoice_number BIGINT                              NOT NULL PRIMARY KEY,
+    sup_code       INT                                 NOT NULL,
+    invoice_type   TINYINT   DEFAULT 1                 NOT NULL,
+    invoice_date   DATE                                NOT NULL,
+    total          DECIMAL(14, 2)                      NOT NULL,
+    discount       DECIMAL(14, 2)                      NOT NULL,
+    paid_up        DECIMAL(14, 2)                      NOT NULL COMMENT 'paid from the treasury مدفوع نقدا من الخزينة',
+    stock_id       INT       DEFAULT 1                 NOT NULL,
+    treasury_id    INT       DEFAULT 1                 NOT NULL,
+    notes          LONGTEXT                            NULL,
+    table_id       INT       DEFAULT 3                 NOT NULL,
+    date_insert    DATETIME  DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    updated_at     TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL ON UPDATE CURRENT_TIMESTAMP,
+    user_id        INT       DEFAULT 1                 NOT NULL,
+    CONSTRAINT total_buy_stocks_stock_id_fk FOREIGN KEY (stock_id) REFERENCES stocks (stock_id),
+    CONSTRAINT total_buy_suppliers_sup_id_fk FOREIGN KEY (sup_code) REFERENCES suppliers (id),
+    CONSTRAINT total_buy_treasury_id_fk FOREIGN KEY (treasury_id) REFERENCES treasury (id),
+    CONSTRAINT total_buy_users_id_fk FOREIGN KEY (user_id) REFERENCES users (id),
+    CONSTRAINT total_buy_invoice_type_chk CHECK (invoice_type IN (1, 2))
+);
+
+CREATE INDEX total_buy_sup_code_fk ON total_buy (sup_code);
+CREATE INDEX total_buy_date_idx ON total_buy (invoice_date);
+CREATE INDEX total_buy_treasury_idx ON total_buy (treasury_id, invoice_date);
+
+CREATE TABLE IF NOT EXISTS total_buy_re
+(
+    id               BIGINT                              NOT NULL PRIMARY KEY,
+    sup_id           INT                                 NOT NULL,
+    invoice_date     DATE                                NOT NULL,
+    invoice_type     TINYINT   DEFAULT 1                 NOT NULL,
+    total            DECIMAL(14, 2)                      NOT NULL,
+    discount         DECIMAL(14, 2)                      NOT NULL,
+    paid_to_treasury DECIMAL(14, 2)                      NOT NULL COMMENT 'Paid to the treasury مدفوعات الى الخزينة',
+    stock_id         INT                                 NOT NULL,
+    treasury_id      INT       DEFAULT 1                 NOT NULL,
+    notes            LONGTEXT                            NULL,
+    table_id         INT       DEFAULT 4                 NOT NULL,
+    date_insert      DATETIME  DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    updated_at       TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL ON UPDATE CURRENT_TIMESTAMP,
+    user_id          INT       DEFAULT 1                 NOT NULL,
+    CONSTRAINT total_buy_re_stocks_stock_id_fk FOREIGN KEY (stock_id) REFERENCES stocks (stock_id),
+    CONSTRAINT total_buy_re_suppliers_sup_id_fk FOREIGN KEY (sup_id) REFERENCES suppliers (id),
+    CONSTRAINT total_buy_re_treasury_id_fk FOREIGN KEY (treasury_id) REFERENCES treasury (id),
+    CONSTRAINT total_buy_re_users_id_fk FOREIGN KEY (user_id) REFERENCES users (id),
+    CONSTRAINT total_buy_re_invoice_type_chk CHECK (invoice_type IN (1, 2))
+);
+
+CREATE INDEX total_buy_re_date_idx ON total_buy_re (invoice_date);
+CREATE INDEX total_buy_re_treasury_idx ON total_buy_re (treasury_id, invoice_date);
+CREATE INDEX total_buy_re_sup_idx ON total_buy_re (sup_id);
+
+CREATE TABLE IF NOT EXISTS total_sales
+(
+    invoice_number BIGINT                              NOT NULL PRIMARY KEY,
+    sup_code       INT                                 NOT NULL,
+    invoice_type   TINYINT   DEFAULT 1                 NOT NULL,
+    invoice_date   DATE                                NOT NULL,
+    total          DECIMAL(14, 2)                      NOT NULL,
+    discount       DECIMAL(14, 2)                      NOT NULL,
+    paid_up        DECIMAL(14, 2)                      NOT NULL COMMENT 'paid to the treasury مدفوع نقدا الى الخزينة',
+    stock_id       INT       DEFAULT 1                 NOT NULL,
+    delegate_id    INT                                 NOT NULL,
+    treasury_id    INT       DEFAULT 1                 NOT NULL,
+    notes          LONGTEXT                            NULL,
+    table_id       INT       DEFAULT 3                 NOT NULL,
+    date_insert    DATETIME  DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    updated_at     TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL ON UPDATE CURRENT_TIMESTAMP,
+    user_id        INT       DEFAULT 1                 NOT NULL,
+    CONSTRAINT total_sales_custom_sup_id_fk FOREIGN KEY (sup_code) REFERENCES custom (id),
+    CONSTRAINT total_sales_employees_id_fk FOREIGN KEY (delegate_id) REFERENCES employees (id),
+    CONSTRAINT total_sales_stocks_stock_id_fk FOREIGN KEY (stock_id) REFERENCES stocks (stock_id),
+    CONSTRAINT total_sales_treasury_id_fk FOREIGN KEY (treasury_id) REFERENCES treasury (id),
+    CONSTRAINT total_sales_users_id_fk FOREIGN KEY (user_id) REFERENCES users (id),
+    CONSTRAINT total_sales_invoice_type_chk CHECK (invoice_type IN (1, 2))
+);
+
+CREATE INDEX total_sales_sup_code_fk ON total_sales (sup_code);
+CREATE INDEX total_sales_users_id_fk2 ON total_sales (delegate_id);
+CREATE INDEX total_sales_date_idx ON total_sales (invoice_date);
+CREATE INDEX total_sales_treasury_idx ON total_sales (treasury_id, invoice_date);
+
+CREATE TABLE IF NOT EXISTS total_sales_re
+(
+    id                 BIGINT                              NOT NULL PRIMARY KEY,
+    sup_id             INT                                 NOT NULL,
+    invoice_date       DATE                                NOT NULL,
+    invoice_type       TINYINT   DEFAULT 1                 NOT NULL,
+    total              DECIMAL(14, 2)                      NOT NULL,
+    discount           DECIMAL(14, 2)                      NOT NULL,
+    paid_from_treasury DECIMAL(14, 2)                      NOT NULL COMMENT 'paid from the treasury مدفوع نقدا من الخزينة',
+    stock_id           INT       DEFAULT 1                 NOT NULL,
+    delegate_id        INT                                 NOT NULL,
+    treasury_id        INT       DEFAULT 1                 NOT NULL,
+    notes              LONGTEXT                            NULL,
+    table_id           INT       DEFAULT 4                 NOT NULL,
+    date_insert        DATETIME  DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    updated_at         TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL ON UPDATE CURRENT_TIMESTAMP,
+    user_id            INT       DEFAULT 1                 NOT NULL,
+    CONSTRAINT total_sales_re_custom_id_fk FOREIGN KEY (sup_id) REFERENCES custom (id),
+    CONSTRAINT total_sales_re_employees_id_fk FOREIGN KEY (delegate_id) REFERENCES employees (id),
+    CONSTRAINT total_sales_re_stocks_stock_id_fk FOREIGN KEY (stock_id) REFERENCES stocks (stock_id),
+    CONSTRAINT total_sales_re_treasury_id_fk FOREIGN KEY (treasury_id) REFERENCES treasury (id),
+    CONSTRAINT total_sales_re_users_id_fk FOREIGN KEY (user_id) REFERENCES users (id),
+    CONSTRAINT total_sales_re_invoice_type_chk CHECK (invoice_type IN (1, 2))
+);
+
+CREATE INDEX total_sales_re_date_idx ON total_sales_re (invoice_date);
+CREATE INDEX total_sales_re_treasury_idx ON total_sales_re (treasury_id, invoice_date);
+CREATE INDEX total_sales_re_sup_idx ON total_sales_re (sup_id);
+CREATE INDEX total_sales_re_delegate_idx ON total_sales_re (delegate_id);
+
+-- =====================================================================
+-- 8) Accounts
+-- =====================================================================
+
+CREATE TABLE IF NOT EXISTS suppliers_accounts
+(
+    account_num           BIGINT AUTO_INCREMENT PRIMARY KEY,
+    account_code          INT                                      NOT NULL,
+    account_date          DATE                                     NOT NULL,
+    purchase              DECIMAL(14, 2) DEFAULT 0                 NOT NULL,
+    paid                  DECIMAL(14, 2)                           NOT NULL,
+    numberInv             BIGINT                                   NOT NULL,
+    notes                 LONGTEXT                                 NULL,
+    treasury_id           INT            DEFAULT 1                 NOT NULL,
+    table_id              INT            DEFAULT 2                 NOT NULL,
+    date_insert           DATETIME       DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    updated_at            TIMESTAMP      DEFAULT CURRENT_TIMESTAMP NOT NULL ON UPDATE CURRENT_TIMESTAMP,
+    user_id               INT            DEFAULT 1                 NOT NULL,
+    invoice_number_return BIGINT         DEFAULT 0                 NOT NULL COMMENT 'This column for number invoice for returns',
+    CONSTRAINT suppliers_accounts_suppliers_id_fk FOREIGN KEY (account_code) REFERENCES suppliers (id),
+    CONSTRAINT suppliers_accounts_treasury_id_fk FOREIGN KEY (treasury_id) REFERENCES treasury (id),
+    CONSTRAINT suppliers_accounts_users_id_fk FOREIGN KEY (user_id) REFERENCES users (id)
+);
+
+CREATE INDEX suppliers_accounts_numberInv_idx ON suppliers_accounts (numberInv);
+CREATE INDEX suppliers_accounts_date_idx ON suppliers_accounts (account_date);
+
+CREATE TABLE IF NOT EXISTS customers_accounts
+(
+    account_num           BIGINT AUTO_INCREMENT PRIMARY KEY,
+    account_code          INT                                      NOT NULL,
+    account_date          DATE                                     NOT NULL,
+    paid                  DECIMAL(14, 2)                           NOT NULL,
+    notes                 LONGTEXT                                 NULL,
+    treasury_id           INT            DEFAULT 1                 NOT NULL,
+    purchase              DECIMAL(14, 2) DEFAULT 0                 NOT NULL,
+    numberInv             BIGINT                                   NOT NULL,
+    table_id              INT            DEFAULT 2                 NOT NULL,
+    created_at            TIMESTAMP      DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    updated_at            TIMESTAMP      DEFAULT CURRENT_TIMESTAMP NOT NULL ON UPDATE CURRENT_TIMESTAMP,
+    user_id               INT            DEFAULT 1                 NOT NULL,
+    invoice_number_return BIGINT         DEFAULT 0                 NOT NULL COMMENT 'This column for number invoice for returns',
+    CONSTRAINT customers_accounts_custom_id_fk FOREIGN KEY (account_code) REFERENCES custom (id),
+    CONSTRAINT customers_accounts_treasury_id_fk FOREIGN KEY (treasury_id) REFERENCES treasury (id),
+    CONSTRAINT customers_accounts_users_id_fk FOREIGN KEY (user_id) REFERENCES users (id)
+);
+
+CREATE INDEX customers_accounts_numberInv_idx ON customers_accounts (numberInv);
+CREATE INDEX customers_accounts_date_idx ON customers_accounts (account_date);
+
+-- =====================================================================
+-- 9) Invoice lines
+-- =====================================================================
+
+CREATE TABLE IF NOT EXISTS purchase
+(
+    id              INT AUTO_INCREMENT PRIMARY KEY,
+    invoice_number  BIGINT                   NOT NULL,
+    num             INT                      NOT NULL,
+    type            INT            DEFAULT 1 NOT NULL,
+    quantity        DECIMAL(14, 3)           NOT NULL,
+    price           DECIMAL(14, 2)           NOT NULL,
+    discount        DECIMAL(14, 2) DEFAULT 0 NOT NULL,
+    type_value      DECIMAL(14, 3) DEFAULT 1 NOT NULL,
+    expiration_date DATE                     NULL,
+    CONSTRAINT purchase_items_id_fk FOREIGN KEY (num) REFERENCES items (id),
+    CONSTRAINT purchase_total_buy_invoice_number_fk
+        FOREIGN KEY (invoice_number) REFERENCES total_buy (invoice_number)
+            ON UPDATE CASCADE ON DELETE CASCADE,
+    CONSTRAINT purchase_units_unit_id_fk FOREIGN KEY (type) REFERENCES units (unit_id),
+    CONSTRAINT purchase_quantity_chk CHECK (quantity > 0)
+);
+
+CREATE INDEX purchase_item_idx ON purchase (num);
+
+CREATE TABLE IF NOT EXISTS purchase_re
+(
+    id              INT AUTO_INCREMENT PRIMARY KEY,
+    invoice_number  BIGINT                   NOT NULL,
+    item_id         INT                      NOT NULL,
+    type            INT            DEFAULT 1 NOT NULL,
+    quantity        DECIMAL(14, 3)           NOT NULL,
+    price           DECIMAL(14, 2)           NOT NULL,
+    discount        DECIMAL(14, 2) DEFAULT 0 NOT NULL,
+    type_value      DECIMAL(14, 3) DEFAULT 1 NOT NULL,
+    expiration_date DATE                     NULL,
+    CONSTRAINT purchase_re_items_id_fk FOREIGN KEY (item_id) REFERENCES items (id),
+    CONSTRAINT purchase_re_total_buy_re_id_fk
+        FOREIGN KEY (invoice_number) REFERENCES total_buy_re (id)
+            ON UPDATE CASCADE ON DELETE CASCADE,
+    CONSTRAINT purchase_re_units_unit_id_fk FOREIGN KEY (type) REFERENCES units (unit_id),
+    CONSTRAINT purchase_re_quantity_chk CHECK (quantity > 0)
+);
+
+CREATE INDEX purchase_re_item_idx ON purchase_re (item_id);
+
+CREATE TABLE IF NOT EXISTS sales
+(
+    id               INT AUTO_INCREMENT PRIMARY KEY,
+    invoice_number   BIGINT                   NOT NULL,
+    num              INT                      NOT NULL,
+    type             INT            DEFAULT 1 NOT NULL,
+    quantity         DECIMAL(14, 3)           NOT NULL,
+    price            DECIMAL(14, 2)           NOT NULL,
+    buy_price        DECIMAL(14, 2)           NOT NULL,
+    total_sel_price  DECIMAL(14, 2) DEFAULT 0 NOT NULL,
+    total_buy_price  DECIMAL(14, 2) DEFAULT 0 NOT NULL,
+    total_profit     DECIMAL(14, 2) DEFAULT 0 NOT NULL,
+    discount         DECIMAL(14, 2) DEFAULT 0 NOT NULL,
+    type_value       DECIMAL(14, 3) DEFAULT 1 NOT NULL,
+    expiration_date  DATE                     NULL,
+    item_has_package TINYINT(1)     DEFAULT 0 NOT NULL,
+    CONSTRAINT sales_items_id_fk FOREIGN KEY (num) REFERENCES items (id),
+    CONSTRAINT sales_total_invoice_number_fk
+        FOREIGN KEY (invoice_number) REFERENCES total_sales (invoice_number)
+            ON UPDATE CASCADE ON DELETE CASCADE,
+    CONSTRAINT sales_units_unit_id_fk FOREIGN KEY (type) REFERENCES units (unit_id),
+    CONSTRAINT sales_quantity_chk CHECK (quantity > 0)
+);
+
+CREATE INDEX sales_item_idx ON sales (num);
+
+CREATE TABLE IF NOT EXISTS sales_package
+(
+    id              INT AUTO_INCREMENT PRIMARY KEY,
+    sales_id        INT                      NOT NULL,
+    item_id         INT                      NOT NULL,
+    unit_id         INT            DEFAULT 1 NOT NULL,
+    quantity        DECIMAL(14, 3)           NOT NULL,
+    price           DECIMAL(14, 2)           NOT NULL,
+    buy_price       DECIMAL(14, 2)           NOT NULL,
+    total_sel_price DECIMAL(14, 2) DEFAULT 0 NOT NULL,
+    total_buy_price DECIMAL(14, 2) DEFAULT 0 NOT NULL,
+    total_profit    DECIMAL(14, 2) DEFAULT 0 NOT NULL,
+    discount        DECIMAL(14, 2) DEFAULT 0 NOT NULL,
+    unit_value      DECIMAL(14, 3) DEFAULT 1 NOT NULL,
+    expiration_date DATE                     NULL,
+    CONSTRAINT sales_package_items_id_fk FOREIGN KEY (item_id) REFERENCES items (id),
+    CONSTRAINT sales_package_sales_id_fk
+        FOREIGN KEY (sales_id) REFERENCES sales (id)
+            ON UPDATE CASCADE ON DELETE CASCADE,
+    CONSTRAINT sales_package_units_unit_id_fk FOREIGN KEY (unit_id) REFERENCES units (unit_id),
+    CONSTRAINT sales_package_quantity_chk CHECK (quantity > 0)
+);
+
+CREATE INDEX sales_package_item_idx ON sales_package (item_id);
+CREATE INDEX sales_package_sales_idx ON sales_package (sales_id);
+CREATE INDEX sales_package_unit_idx ON sales_package (unit_id);
+
+CREATE TABLE IF NOT EXISTS sales_re
+(
+    id              INT AUTO_INCREMENT PRIMARY KEY,
+    invoice_number  BIGINT                   NOT NULL,
+    item_id         INT                      NOT NULL,
+    type            INT            DEFAULT 1 NOT NULL,
+    quantity        DECIMAL(14, 3)           NOT NULL,
+    price           DECIMAL(14, 2)           NOT NULL,
+    buy_price       DECIMAL(14, 2) DEFAULT 0 NOT NULL,
+    total_sel_price DECIMAL(14, 2) DEFAULT 0 NOT NULL,
+    total_buy_price DECIMAL(14, 2) DEFAULT 0 NOT NULL,
+    total_profit    DECIMAL(14, 2) DEFAULT 0 NOT NULL,
+    discount        DECIMAL(14, 2) DEFAULT 0 NOT NULL,
+    type_value      DECIMAL(14, 3) DEFAULT 1 NOT NULL,
+    expiration_date DATE                     NULL,
+    CONSTRAINT sales_re_items_id_fk FOREIGN KEY (item_id) REFERENCES items (id),
+    CONSTRAINT sales_re_total_sales_re_id_fk
+        FOREIGN KEY (invoice_number) REFERENCES total_sales_re (id)
+            ON UPDATE CASCADE ON DELETE CASCADE,
+    CONSTRAINT sales_re_units_unit_id_fk FOREIGN KEY (type) REFERENCES units (unit_id),
+    CONSTRAINT sales_re_quantity_chk CHECK (quantity > 0)
+);
+
+CREATE INDEX sales_re_item_idx ON sales_re (item_id);
+
+-- =====================================================================
+-- 10) Targets
+-- =====================================================================
+
+CREATE TABLE IF NOT EXISTS targeted_sales
+(
+    id            INT AUTO_INCREMENT PRIMARY KEY,
+    delegate_id   INT                                     NOT NULL,
+    target        DECIMAL(14, 2)                          NOT NULL,
+    target_ratio1 DECIMAL(6, 2) DEFAULT 100               NOT NULL,
+    rate_1        DECIMAL(6, 2) DEFAULT 0                 NOT NULL,
+    target_ratio2 DECIMAL(6, 2) DEFAULT 0                 NOT NULL,
+    rate_2        DECIMAL(6, 2) DEFAULT 0                 NOT NULL,
+    target_ratio3 DECIMAL(6, 2) DEFAULT 0                 NOT NULL,
+    rate_3        DECIMAL(6, 2) DEFAULT 0                 NOT NULL,
+    notes         VARCHAR(200)                            NULL,
+    date_insert   DATETIME      DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    updated_at    TIMESTAMP     DEFAULT CURRENT_TIMESTAMP NOT NULL ON UPDATE CURRENT_TIMESTAMP,
+    user_id       INT           DEFAULT 1                 NOT NULL,
+    CONSTRAINT targeted_sales_employees_id_fk
+        FOREIGN KEY (delegate_id) REFERENCES employees (id)
+            ON UPDATE CASCADE ON DELETE CASCADE,
+    CONSTRAINT targeted_sales_users_id_fk FOREIGN KEY (user_id) REFERENCES users (id)
+);
+
+-- =====================================================================
+-- 11) Users permissions / shifts
+-- =====================================================================
+
+CREATE TABLE IF NOT EXISTS user_permission
+(
+    id            INT AUTO_INCREMENT PRIMARY KEY,
+    permission_id INT                                 NOT NULL,
+    user_id       INT                                 NOT NULL,
+    check_status  TINYINT   DEFAULT 0                 NOT NULL,
+    updated_at    TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL ON UPDATE CURRENT_TIMESTAMP,
+    CONSTRAINT user_permission_permission_id_fk
+        FOREIGN KEY (permission_id) REFERENCES permission (id)
+            ON UPDATE CASCADE ON DELETE CASCADE,
+    CONSTRAINT user_permission_users_id_fk
+        FOREIGN KEY (user_id) REFERENCES users (id)
+            ON UPDATE CASCADE ON DELETE CASCADE,
+    CONSTRAINT user_permission_uk UNIQUE (permission_id, user_id),
+    CONSTRAINT user_permission_chk CHECK (check_status IN (0, 1))
+);
+
+CREATE TABLE IF NOT EXISTS user_shifts
+(
+    id                  INT AUTO_INCREMENT PRIMARY KEY,
+    user_id             INT                      NOT NULL,
+    open_time           DATETIME                 NOT NULL,
+    close_time          DATETIME                 NULL,
+    open_balance        DECIMAL(14, 2) DEFAULT 0 NOT NULL,
+    close_balance       DECIMAL(14, 2) DEFAULT 0 NOT NULL,
+    total_sales         DECIMAL(14, 2) DEFAULT 0 NOT NULL,
+    total_sales_returns DECIMAL(14, 2) DEFAULT 0 NOT NULL,
+    total_expenses      DECIMAL(14, 2) DEFAULT 0 NOT NULL,
+    total_deposits      DECIMAL(14, 2) DEFAULT 0 NOT NULL,
+    total_withdrawals   DECIMAL(14, 2) DEFAULT 0 NOT NULL,
+    expected_balance    DECIMAL(14, 2) DEFAULT 0 NOT NULL,
+    difference          DECIMAL(14, 2) DEFAULT 0 NOT NULL,
+    invoices_count      INT            DEFAULT 0 NOT NULL,
+    is_open             BOOLEAN        DEFAULT TRUE,
+    notes               TEXT                     NULL,
+    CONSTRAINT user_shifts_users_id_fk
+        FOREIGN KEY (user_id) REFERENCES users (id)
+            ON DELETE CASCADE
+);
+
+CREATE INDEX idx_user_shifts_user_open ON user_shifts (user_id, is_open);
+CREATE INDEX idx_user_shifts_open_time ON user_shifts (open_time);
+
+-- =====================================================================
+-- 12) Audit log
+-- =====================================================================
+
+CREATE TABLE IF NOT EXISTS audit_log
+(
+    id          BIGINT AUTO_INCREMENT PRIMARY KEY,
+    table_name  VARCHAR(100)                         NOT NULL,
+    record_id   VARCHAR(100)                         NULL,
+    action_type VARCHAR(20)                          NOT NULL,
+    user_id     INT                                  NULL,
+    action_time DATETIME DEFAULT CURRENT_TIMESTAMP   NOT NULL,
+    old_data    JSON                                 NULL,
+    new_data    JSON                                 NULL,
+    source      VARCHAR(50) DEFAULT 'APP'            NOT NULL,
+    notes       TEXT                                 NULL,
+
+    CONSTRAINT audit_log_action_chk
+        CHECK (action_type IN ('INSERT', 'UPDATE', 'DELETE')),
+
+    CONSTRAINT audit_log_users_id_fk
+        FOREIGN KEY (user_id) REFERENCES users (id)
+            ON DELETE SET NULL
+);
+
+CREATE INDEX idx_audit_table_record ON audit_log (table_name, record_id);
+CREATE INDEX idx_audit_user_time ON audit_log (user_id, action_time);
+CREATE INDEX idx_audit_action_time ON audit_log (action_type, action_time);

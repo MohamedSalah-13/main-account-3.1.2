@@ -60,20 +60,6 @@
 -- company
 DROP TRIGGER IF EXISTS after_company_update;
 
-DELIMITER |
-create trigger after_company_update
-    after update
-    on company
-    for each row
-begin
-    SET @name = JSON_ARRAY(OLD.comp_id, OLD.comp_name, OLD.comp_tel, OLD.comp_address, OLD.comp_tax, OLD.comp_comm,
-                           NEW.updated_at);
-#     call update_processes_data(UPPER('COMPANY'), NEW.comp_id, @name);
-    CALL handle_processes_data(1, 'UPDATE', UPPER('COMPANY'), OLD.comp_id, @name);
-end;
-|
-DELIMITER ;
-
 -- user permission
 DROP TRIGGER IF EXISTS after_users_insert;
 DROP TRIGGER IF EXISTS before_users_delete;

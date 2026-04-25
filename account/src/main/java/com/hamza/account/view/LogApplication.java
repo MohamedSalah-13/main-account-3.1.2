@@ -120,6 +120,7 @@ public class LogApplication extends Application {
      * @throws IOException if an I/O error occurs while loading the main screen.
      */
     private void openMainScreen() throws Exception {
+        daoFactory.setAuditUserId(usersVo.getId());
         updateData();
         usersPermissionList = new UserPermissionService(daoFactory).getUsersPermissionById(usersVo.getId());
         var mainScreenApplication = new MainScreenApplication(daoFactory, loadDataAndList);

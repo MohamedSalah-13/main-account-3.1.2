@@ -3,6 +3,7 @@ package com.hamza.account.model.dao;
 import lombok.Setter;
 
 import java.sql.Connection;
+import java.sql.SQLException;
 
 public enum DaoFactory {
 
@@ -11,6 +12,26 @@ public enum DaoFactory {
     @Setter
     private Connection connection;
 
+    public void setAuditUserId(int userId) throws SQLException {
+        if (connection == null || connection.isClosed()) {
+            return;
+        }
+
+        try (var statement = connection.prepareStatement("SET @app_user_id = ?")) {
+            statement.setInt(1, userId);
+            statement.execute();
+        }
+    }
+
+    public void clearAuditUserId() throws SQLException {
+        if (connection == null || connection.isClosed()) {
+            return;
+        }
+
+        try (var statement = connection.prepareStatement("SET @app_user_id = NULL")) {
+            statement.execute();
+        }
+    }
     public CompanyDao getCompanyDao() {
         return new CompanyDao(connection);
     }
