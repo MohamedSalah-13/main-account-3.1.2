@@ -52,8 +52,8 @@ import java.util.function.Predicate;
 
 import static com.hamza.account.config.PropertiesName.getItemEditFromTable;
 import static com.hamza.account.view.ConvertItemsGroup.HEADER_TEXT;
-import static com.hamza.controlsfx.util.ImageChoose.createIcon;
 import static com.hamza.controlsfx.table.TextSearch.searchTableFromExitedText;
+import static com.hamza.controlsfx.util.ImageChoose.createIcon;
 
 @Log4j2
 @FxmlPath(pathFile = "items/items-view.fxml")
@@ -167,7 +167,6 @@ public class ItemsController extends LoadData {
         tableView.refresh();
 
 
-
         // change column names
         dataPublisher.getPublisherSelPriceUnits().addObserver(message -> Platform.runLater(() -> updateColumnNames(message)));
         // load column names
@@ -179,7 +178,7 @@ public class ItemsController extends LoadData {
 
         // hide data table if not admin
         var b = LogApplication.usersVo.getId() == 1;
-        if(b){
+        if (b) {
             // show table menu
             TableSetting.tableMenuSetting(getClass(), tableView);
         }

@@ -126,7 +126,7 @@ public class AddItemController extends ServiceData implements AppSettingInterfac
         btnClearImage.fire();
         permButtons();
         buttonGraphic();
-        if (ADD_PACKAGE_TO_ITEMS) addPackaged();
+//        if (ADD_PACKAGE_TO_ITEMS) addPackaged();
         selectData();
 
         tabPane.getTabs().getFirst().setDisable(true);

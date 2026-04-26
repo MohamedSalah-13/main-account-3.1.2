@@ -56,7 +56,7 @@
 - `DialogCashPaid.java` — حوار الدفع
 - `ChoiceItemExpireDate.java`, `ExpireDateInterface.java` — تواريخ الصلاحية
 
-**Service:** `J:/service/SalesService.java`, `SalesReService.java`, `SalesPackageService.java`, `TotalSalesService.java`, `TotalSalesReturnService.java`, `TotalsService.java`
+**Service:** `J:/service/SalesService.java`, `SalesReService.java`, `TotalSalesService.java`, `TotalSalesReturnService.java`, `TotalsService.java`
 
 **DAO:** `J:/model/dao/SalesDao.java`, `SalesReturnDao.java`, `SalesPackageDao.java`, `TotalsSalesDao.java`, `TotalsSalesReturnDao.java`
 

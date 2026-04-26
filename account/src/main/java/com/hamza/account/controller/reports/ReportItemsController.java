@@ -6,7 +6,6 @@ import com.hamza.account.model.base.BaseTotals;
 import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.model.domain.ItemsModel;
 import com.hamza.account.model.domain.Sales;
-import com.hamza.account.model.domain.Sales_Package;
 import com.hamza.account.openFxml.FxmlPath;
 import com.hamza.account.otherSetting.MaskerPaneSetting;
 import com.hamza.account.reportData.Print_Reports;
@@ -117,27 +116,6 @@ public class ReportItemsController extends ServiceData {
             }
 
             var list = salesService.findBetweenTwoInvoiceNumber(listTotalSalesId.getFirst(), listTotalSalesId.getLast());
-
-            // add items from sales package
-            List<Sales> list1 = new ArrayList<>();
-            list.forEach(sales -> {
-                if (sales.isItem_has_package()) {
-                    try {
-                        var salesPackages = salesPackageService.fetchByInvoiceNumber(sales.getId());
-                        for (Sales_Package salesPackage : salesPackages) {
-                            Sales salesFrom = new Sales();
-                            salesFrom.setNumItem(salesPackage.getItems_id());
-                            salesFrom.setQuantityByUnit(salesPackage.getQuantity());
-                            list1.add(salesFrom);
-                        }
-                    } catch (DaoException e) {
-                        AllAlerts.alertError("Error fetching sales packages for invoice: " + sales.getId());
-                        log.error("Error fetching sales packages for invoice: {}", sales.getId(), e);
-                    }
-                }
-            });
-
-            list.addAll(list1);
 
             // group by item id
             var itemQuantities = list.stream()

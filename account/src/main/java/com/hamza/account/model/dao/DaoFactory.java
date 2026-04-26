@@ -84,10 +84,6 @@ public enum DaoFactory {
         return new SalesDao(connection, this);
     }
 
-    public SalesPackageDao salesPackageDao() {
-        return new SalesPackageDao(connection);
-    }
-
     public SalesReturnDao salesReturnsDao() {
         return new SalesReturnDao(connection, this);
     }

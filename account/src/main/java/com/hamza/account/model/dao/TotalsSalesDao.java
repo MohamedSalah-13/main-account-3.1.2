@@ -72,18 +72,6 @@ public class TotalsSalesDao extends AbstractDao<Total_Sales> {
             executeUpdateWithException(query, data);
             // Secondly, enter the sales data.
             salesDao.insertList(totalSales.getSalesList());
-
-            // insert item package
-            totalSales.getSalesList().stream().filter(Sales::isItem_has_package)
-                    .forEach(sales -> {
-                        try {
-                            sales.setItem_has_package(true);
-                            insertPackage(sales);
-                        } catch (DaoException e) {
-                            log.error(e.getMessage(), e.getCause());
-                        }
-                    });
-
         });
 
     }
@@ -228,10 +216,6 @@ public class TotalsSalesDao extends AbstractDao<Total_Sales> {
                     throw new RuntimeException(e);
                 }
             });
-        }
-
-        if (!salesPackageList.isEmpty()) {
-            daoFactory.salesPackageDao().insertList(salesPackageList);
         }
     }
 

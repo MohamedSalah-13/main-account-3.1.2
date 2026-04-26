@@ -27,43 +27,6 @@ FROM purchase p
          JOIN total_buy tb ON tb.invoice_number = p.invoice_number
          JOIN suppliers t  ON t.id = tb.sup_code;
 
--- --------------------------------------sales_with_sales_package-----------------------------------
-
-CREATE OR REPLACE VIEW sales_with_sales_package AS
-WITH sales_query AS (SELECT id,
-                            invoice_number,
-                            num,
-                            type,
-                            quantity,
-                            price,
-                            buy_price,
-                            total_sel_price,
-                            total_buy_price,
-                            total_profit,
-                            discount,
-                            type_value,
-                            expiration_date,
-                            item_has_package
-                     FROM sales),
-     sales_package_query AS (SELECT 0              AS id,
-                                    0              AS invoice_number,
-                                    item_id        AS num,
-                                    unit_id        AS type,
-                                    quantity,
-                                    price,
-                                    buy_price,
-                                    total_sel_price,
-                                    total_buy_price,
-                                    total_profit,
-                                    discount,
-                                    unit_value     AS type_value,
-                                    expiration_date,
-                                    1              AS item_has_package
-                             FROM sales_package)
-SELECT * FROM sales_query
-UNION ALL
-SELECT * FROM sales_package_query;
-
 -- --------------------------------------sales_names_table------------------------------------------
 
 CREATE OR REPLACE VIEW sales_names_table AS

@@ -29,7 +29,6 @@ public class ServiceData {
     protected final TotalBuyReturnService totalBuyReturnService;
     protected final TotalSalesReturnService totalSalesReturnService;
     protected final SalesService salesService;
-    protected final SalesPackageService salesPackageService;
     protected final PurchaseService purchaseService;
     protected final PurchaseReService purchaseReService;
     protected final SalesReService salesReService;
@@ -70,7 +69,6 @@ public class ServiceData {
         this.totalBuyReturnService = new TotalBuyReturnService(daoFactory);
         this.totalSalesReturnService = new TotalSalesReturnService(daoFactory);
         this.salesService = new SalesService(daoFactory);
-        this.salesPackageService = new SalesPackageService(daoFactory);
         this.purchaseService = new PurchaseService(daoFactory);
         this.purchaseReService = new PurchaseReService(daoFactory);
         this.salesReService = new SalesReService(daoFactory);

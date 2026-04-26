@@ -18,12 +18,31 @@ public class Items_StockDao extends AbstractDao<Items_Stock_Model> {
     private final String ITEMS_ID = "item_id";
     private final String STOCK_ID = "stock_id";
     private final String FIRST_BALANCE = "first_balance";
+    private final String currentQuantity = "current_quantity";
     private final DaoFactory daoFactory;
 
 
     public Items_StockDao(Connection connection, DaoFactory daoFactory) {
         super(connection);
         this.daoFactory = daoFactory;
+    }
+
+    public Optional<Items_Stock_Model> findItemsStockByItemIdAndStockId(int itemId, int stockId) throws DaoException {
+        String query = " SELECT * from items_stock i join stocks s on s.stock_id = i.stock_id\n" +
+                "where item_id =? and i.stock_id =? ";
+        return Optional.ofNullable(queryForObject(query, this::map, itemId, stockId));
+    }
+
+    public int insertWithException(Items_Stock_Model itemsStockModel) throws SQLException {
+        String insert = SqlStatements.insertStatement(TABLE_NAME, ITEMS_ID, STOCK_ID, FIRST_BALANCE,currentQuantity);
+        Object[] objects = new Object[]{itemsStockModel.getItemsModel().getId(), itemsStockModel.getStock().getId(), itemsStockModel.getFirstBalance(),itemsStockModel.getCurrentQuantity()};
+        return executeUpdateWithException(insert, objects);
+    }
+
+    @Override
+    public int insert(Items_Stock_Model itemsStockModel) throws DaoException {
+        return executeUpdate(SqlStatements.insertStatement(TABLE_NAME, ITEMS_ID, STOCK_ID, FIRST_BALANCE,currentQuantity)
+                , itemsStockModel.getItemsModel().getId(), itemsStockModel.getStock().getId(), itemsStockModel.getFirstBalance(),itemsStockModel.getCurrentQuantity());
     }
 
     @Override
@@ -40,17 +59,5 @@ public class Items_StockDao extends AbstractDao<Items_Stock_Model> {
             throw new DaoException(e);
         }
         return stockModel;
-    }
-
-    public Optional<Items_Stock_Model> findItemsStockByItemIdAndStockId(int itemId, int stockId) throws DaoException {
-        String query = " SELECT * from items_stock i join stocks s on s.stock_id = i.stock_id\n" +
-                "where item_id =? and i.stock_id =? ";
-        return Optional.ofNullable(queryForObject(query, this::map, itemId, stockId));
-    }
-
-    public int insertWithException(Items_Stock_Model itemsStockModel) throws SQLException {
-        String insert = SqlStatements.insertStatement(TABLE_NAME, ITEMS_ID, STOCK_ID, FIRST_BALANCE);
-        Object[] objects = new Object[]{itemsStockModel.getItemsModel().getId(), itemsStockModel.getStock().getId(), itemsStockModel.getFirstBalance()};
-        return executeUpdateWithException(insert, objects);
     }
 }

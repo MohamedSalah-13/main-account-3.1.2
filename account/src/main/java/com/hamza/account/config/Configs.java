@@ -13,7 +13,7 @@ public class Configs {
 
     //TODO 11/16/2025 9:14 AM Mohamed: check in realtime
     public static final boolean IS_DOWNLOAD_TASK = true;
-    public static final boolean ADD_PACKAGE_TO_ITEMS = true ; // تستخدم فى إضافة المجموعات ام لا
+    public static final boolean ADD_PACKAGE_TO_ITEMS = false ; // تستخدم فى إضافة المجموعات ام لا
     public static final File FILE_REPORTS = new File("reports/");
     public static final String BACKUP_DATA_PATH = System.getProperty("user.dir") + "/backup_data";
 

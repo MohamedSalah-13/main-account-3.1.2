@@ -1,6 +1,5 @@
 package com.hamza.account.model.dao;
 
-import com.hamza.account.model.domain.Items_Stock_Model;
 import com.hamza.account.model.domain.StockTransfer;
 import com.hamza.account.model.domain.StockTransferListItems;
 import com.hamza.controlsfx.database.AbstractDao;
@@ -49,24 +48,7 @@ public class StockTransferDao extends AbstractDao<StockTransfer> {
             List<StockTransferListItems> transferListItems = stockTransfer.getTransferListItems();
             transferListItems.forEach(stockTransferListItems -> stockTransferListItems.setStock_transfer_id(maxStockId()));
             daoFactory.stockTransferListDao().insertList(transferListItems);
-
-            // insert items in stock_items if not exit
-            int stockToId = stockTransfer.getStockTo().getId();
-            transferListItems.forEach(stockTransferListItems -> {
-                try {
-                    var itemsStockByItemIdAndStockId = daoFactory.getItemsStockDao().findItemsStockByItemIdAndStockId(stockTransferListItems.getItem().getId(), stockToId);
-                    if (itemsStockByItemIdAndStockId.isEmpty()) {
-                        var i = daoFactory.getItemsStockDao().insertWithException(new Items_Stock_Model(stockTransferListItems.getItem().getId(), stockToId, 0));
-                        if (i == 0) {
-                            log.info("cant insert into items_stock");
-                            throw new RuntimeException("cant insert into items_stock");
-                        }
-                    }
-                } catch (DaoException | SQLException e) {
-                    log.error(e.getMessage(), "cant insert into items_stock");
-                    throw new RuntimeException(e);
-                }
-            });
+            //TODO 4/26/2026 12:01 PM Mohamed: add data
         });
     }
 

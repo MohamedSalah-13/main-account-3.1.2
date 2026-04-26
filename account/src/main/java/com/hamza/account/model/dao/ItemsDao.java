@@ -2,7 +2,7 @@ package com.hamza.account.model.dao;
 
 import com.hamza.account.model.domain.ItemsModel;
 import com.hamza.account.model.domain.ItemsUnitsModel;
-import com.hamza.account.model.domain.Sales_Package;
+import com.hamza.account.model.domain.Items_Stock_Model;
 import com.hamza.account.trial.TrialManager;
 import com.hamza.controlsfx.database.AbstractDao;
 import com.hamza.controlsfx.database.DaoException;
@@ -78,19 +78,16 @@ public class ItemsDao extends AbstractDao<ItemsModel> {
                 , selPrice1, selPrice2, selPrice3, itemActive, itemHasValidity, numberValidityDays, alertDaysBeforeExpire
                 , UNIT_ID, MINI_QUANTITY, FIRST_BALANCE, ITEM_IMAGE, has_package, USER_ID);
 
+        try {
+            connection.setAutoCommit(false);
+            executeUpdate(INSERT_ITEM, objects);
+
+        }catch (Exception e){
+
+        }
         return insertMultiData(() -> {
             executeUpdateWithException(INSERT_ITEM, objects);
 
-            // إذا كان الصنف يمتلك مجموعة لا يتم إضافة وحدات له
-            // insert package
-            if (!itemsModel.getItems_packageList().isEmpty() || itemsModel.isHasPackage()) {
-                daoFactory.getItemsPackageDao().insertList(itemsModel.getItems_packageList());
-            } else {
-                // insert units
-                if (!itemsModel.getItemsUnitsModelList().isEmpty()) {
-                    daoFactory.getItemsUnitDao().insertList(itemsModel.getItemsUnitsModelList());
-                }
-            }
         });
 
     }
@@ -159,10 +156,6 @@ public class ItemsDao extends AbstractDao<ItemsModel> {
     @Override
     public ItemsModel map(ResultSet rs) throws DaoException {
         try {
-            var sumOfQuantities = 0.0;
-            // add sum sales from sales_package
-            var salesPackageByItemId = daoFactory.salesPackageDao().getSalesPackageByItemId(rs.getInt(ID));
-            sumOfQuantities = salesPackageByItemId.stream().map(Sales_Package::getQuantity).reduce(0.0, Double::sum);
             var itemsModel = getItemsModel(rs);
             // others
             double purchase = rs.getDouble(QUANTITY_PURCHASE);
@@ -174,13 +167,12 @@ public class ItemsDao extends AbstractDao<ItemsModel> {
 
             itemsModel.setItemStock(daoFactory.stockDao().getDataById(rs.getInt(STOCK_ID)));
             itemsModel.setSumPurchase(purchase);
-            var sumSales = sales + sumOfQuantities;
-            itemsModel.setSumSales(sumSales);
+            itemsModel.setSumSales(sales);
             itemsModel.setSumPurchaseRe(purRe);
             itemsModel.setSumSalesRe(saleRe);
             itemsModel.setFromStock(fromStock);
             itemsModel.setToStock(toStock);
-            double sumAllBalance = (itemsModel.getFirstBalanceForStock() + purchase + saleRe + toStock) - (sumSales + purRe + fromStock);
+            double sumAllBalance = (itemsModel.getFirstBalanceForStock() + purchase + saleRe + toStock) - (sales + purRe + fromStock);
             itemsModel.setSumAllBalance(sumAllBalance);
             itemsModel.setSumAllBalanceByBuyPrice(roundToTwoDecimalPlaces(itemsModel.getBuyPrice() * sumAllBalance));
             itemsModel.setSumAllBalanceBySelPrice(roundToTwoDecimalPlaces(itemsModel.getSelPrice1() * sumAllBalance));

@@ -736,33 +736,6 @@ CREATE TABLE IF NOT EXISTS sales
 
 CREATE INDEX sales_item_idx ON sales (num);
 
-CREATE TABLE IF NOT EXISTS sales_package
-(
-    id              INT AUTO_INCREMENT PRIMARY KEY,
-    sales_id        INT                      NOT NULL,
-    item_id         INT                      NOT NULL,
-    unit_id         INT            DEFAULT 1 NOT NULL,
-    quantity        DECIMAL(14, 3)           NOT NULL,
-    price           DECIMAL(14, 2)           NOT NULL,
-    buy_price       DECIMAL(14, 2)           NOT NULL,
-    total_sel_price DECIMAL(14, 2) DEFAULT 0 NOT NULL,
-    total_buy_price DECIMAL(14, 2) DEFAULT 0 NOT NULL,
-    total_profit    DECIMAL(14, 2) DEFAULT 0 NOT NULL,
-    discount        DECIMAL(14, 2) DEFAULT 0 NOT NULL,
-    unit_value      DECIMAL(14, 3) DEFAULT 1 NOT NULL,
-    expiration_date DATE                     NULL,
-    CONSTRAINT sales_package_items_id_fk FOREIGN KEY (item_id) REFERENCES items (id),
-    CONSTRAINT sales_package_sales_id_fk
-        FOREIGN KEY (sales_id) REFERENCES sales (id)
-            ON UPDATE CASCADE ON DELETE CASCADE,
-    CONSTRAINT sales_package_units_unit_id_fk FOREIGN KEY (unit_id) REFERENCES units (unit_id),
-    CONSTRAINT sales_package_quantity_chk CHECK (quantity > 0)
-);
-
-CREATE INDEX sales_package_item_idx ON sales_package (item_id);
-CREATE INDEX sales_package_sales_idx ON sales_package (sales_id);
-CREATE INDEX sales_package_unit_idx ON sales_package (unit_id);
-
 CREATE TABLE IF NOT EXISTS sales_re
 (
     id              INT AUTO_INCREMENT PRIMARY KEY,
