@@ -335,7 +335,7 @@ ALTER TABLE user_shifts
 SET FOREIGN_KEY_CHECKS = 1;
 SET SQL_MODE = @OLD_SQL_MODE;
 
--- Views are recreated by re-running docs/scripts/main/V017_view_table.sql
+-- Views are recreated by re-running docs/scripts/main/V008_view_table.sql
 -- (kept separate to keep this migration file focused on schema changes).
 
 -- =====================================================================

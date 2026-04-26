@@ -16,13 +16,13 @@ import java.util.List;
 
 public class Processes_Dao extends AbstractDao<Processes_Data> {
 
-    private final String TABLE_NAME = "processes_data";
+    private final String TABLE_NAME = "audit_log";
     private final String ID = "id";
     private final String USER_ID = "user_id";
-    private final String PROCESSES_NAME = "processes_name";
+    private final String action_type = "action_type";
     private final String TABLE_NAME_DATA = "table_name";
-    private final String TABLE_ID = "table_id";
-    private final String TIME_INSERT = "date_insert";
+    private final String record_id = "record_id";
+    private final String action_time = "action_time";
     private final String NOTES = "notes";
 
 
@@ -32,7 +32,25 @@ public class Processes_Dao extends AbstractDao<Processes_Data> {
 
     @Override
     public List<Processes_Data> loadAll() throws DaoException {
-        String query = "SELECT processes_data.id, user_id, processes_name, table_name, table_id, date_insert, notes, u.user_name from processes_data join users u on u.id = processes_data.user_id";
+        String query = """
+                SELECT audit_log.id,
+                       table_name,
+                       record_id,
+                       action_type,
+                       user_id,
+                       action_time,
+                       old_data,
+                       new_data,
+                       source,
+                       notes,
+                       u.id,
+                       user_name,
+                       user_pass,
+                       user_activity,
+                       user_available,
+                       updated_at
+                FROM audit_log
+                         join users u on u.id = audit_log.user_id""";
         return queryForObjects(query, this::map);
     }
 
@@ -43,13 +61,13 @@ public class Processes_Dao extends AbstractDao<Processes_Data> {
         try {
             processesData.setId(rs.getInt(ID));
             processesData.setUsersObject(new Users(rs.getInt(USER_ID), rs.getString(UsersDao.USER_NAME)));
-            processesData.setProcessesDataType(ProcessesDataType.valueOf(rs.getString(PROCESSES_NAME)));
+            processesData.setProcessesDataType(ProcessesDataType.valueOf(rs.getString(action_type)));
 
             var tableType = TableType.valueOf(rs.getString(TABLE_NAME_DATA));
             processesData.setTableType(tableType);
-            processesData.setCode(rs.getLong(TABLE_ID));
+            processesData.setCode(rs.getLong(record_id));
 
-            String string = rs.getString(TIME_INSERT);
+            String string = rs.getString(action_time);
             processesData.setCreated_at(LocalDateTime.parse(string, DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
             processesData.setNotes(rs.getString(NOTES));
         } catch (Exception e) {

@@ -42,6 +42,10 @@ public class TreasuryDao extends AbstractDao<TreasuryModel> {
 
     @Override
     public int deleteById(int id) throws DaoException {
+        if (id <= 0)
+            throw new IllegalArgumentException("Invalid treasury ID: " + id);
+        if (id == 1)
+            throw new IllegalArgumentException("Cannot delete treasury with ID 1");
         String deleteStatement = SqlStatements.deleteStatement(TABLE_NAME, ID);
         return executeUpdate(deleteStatement, id);
     }

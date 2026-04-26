@@ -47,6 +47,10 @@ public class StockDao extends AbstractDao<Stock> {
 
     @Override
     public int deleteById(int id) throws DaoException {
+        if (id <= 0)
+            throw new IllegalArgumentException("Invalid stock ID: " + id);
+        if (id == 1)
+            throw new IllegalArgumentException("Cannot delete stock with ID 1");
         return executeUpdate(SqlStatements.deleteStatement(TABLE_NAME, STOCK_ID), id);
     }
 

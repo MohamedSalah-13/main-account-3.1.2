@@ -39,6 +39,10 @@ public class MainGroupsDao extends AbstractDao<MainGroups> {
 
     @Override
     public int deleteById(int id) throws DaoException {
+        if (id <= 0)
+            throw new IllegalArgumentException("Invalid main group ID: " + id);
+        if (id == 1)
+            throw new IllegalArgumentException("Cannot delete main group with ID 1");
         return executeUpdate(SqlStatements.deleteStatement(TABLE_NAME, ID), id);
     }
 

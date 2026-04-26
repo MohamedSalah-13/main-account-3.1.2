@@ -42,6 +42,10 @@ public class UnitsDao extends AbstractDao<UnitsModel> {
 
     @Override
     public int deleteById(int id) throws DaoException {
+        if (id <= 0)
+            throw new IllegalArgumentException("Invalid unit ID: " + id);
+        if (id == 1 || id == 2)
+            throw new IllegalArgumentException("Cannot delete unit with ID 1 or 2");
         String deleteStatement = SqlStatements.deleteStatement(TABLE_NAME, UNIT_ID);
         return executeUpdate(deleteStatement, id);
     }

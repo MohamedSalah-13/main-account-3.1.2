@@ -1,9 +1,6 @@
 -- items
-DROP TRIGGER IF EXISTS after_items_insert;
-DROP TRIGGER IF EXISTS after_items_delete;
 DROP TRIGGER IF EXISTS after_items_update;
 DROP PROCEDURE IF EXISTS max_item_id;
-DROP TRIGGER IF EXISTS before_items_insert;
 
 
 /*----------------------------------------------- update -----------------------------------------------*/
@@ -82,24 +79,4 @@ end;
 |
 DELIMITER ;
 
--- units
-DROP TRIGGER IF EXISTS before_units_insert;
-DROP TRIGGER IF EXISTS before_units_delete;
 
--- ----------------------------------------------- before delete -----------------------------------------------
-DELIMITER |
-create trigger before_units_delete
-    before delete
-    on units
-    for each row
-begin
-    if (OLD.unit_id = 1 OR OLD.unit_id = 2) Then
-        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Cannot delete or update a parent row id 1 , 2 ';
-    end if;
-
-end;
-|
-DELIMITER ;
-
--- items_package
-DROP TRIGGER IF EXISTS before_items_package_insert;

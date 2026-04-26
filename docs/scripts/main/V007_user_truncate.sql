@@ -15,7 +15,6 @@ begin
     if (deleteSales) THEN
         TRUNCATE table total_sales;
         TRUNCATE table sales;
-        TRUNCATE table sales_package;
     End IF;
 
     IF (deleteAccount) Then
@@ -186,7 +185,7 @@ begin
     End IF;
 
     if (deleteProcesses) THEN
-        TRUNCATE table processes_data;
+        TRUNCATE table audit_log;
     End IF;
 
     SET FOREIGN_KEY_CHECKS = 1;

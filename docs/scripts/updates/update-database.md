@@ -352,7 +352,7 @@ ALTER TABLE user_shifts
 SET FOREIGN_KEY_CHECKS = 1;
 SET SQL_MODE = @OLD_SQL_MODE;
 
--- Views are recreated by re-running docs/scripts/main/V017_view_table.sql
+-- Views are recreated by re-running docs/scripts/main/V008_view_table.sql
 -- (kept separate to keep this migration file focused on schema changes).
 
 -- =====================================================================
@@ -378,7 +378,7 @@ mysql -u root -p --default-character-set=utf8mb4 account_system_db < docs/script
 
 3. أعد إنشاء الـ Views من النسخة الجديدة:
 ```shell script
-mysql -u root -p --default-character-set=utf8mb4 account_system_db < docs/scripts/main/V017_view_table.sql
+mysql -u root -p --default-character-set=utf8mb4 account_system_db < docs/scripts/main/V008_view_table.sql
 ```
 
 4. تحقّق من السلامة:
@@ -399,7 +399,7 @@ SHOW ENGINE INNODB STATUS;     -- لا أخطاء
 |---|---|---|
 | 1 | **MySQL < 8.0.16** لا يدعم CHECK constraints فعلياً (يقبلها كـ comments فقط). | تأكد أن إصدار MySQL **8.0.16+**؛ وإلا احذف أسطر `ADD CONSTRAINT ... CHECK`. |
 | 2 | عمود `account_num` بدون AUTO_INCREMENT سابقاً — قد تكون له قيمة 0 في بعض السجلات. | السكربت يحوّله لـ `BIGINT AUTO_INCREMENT`؛ لو توجد قيم مكررة/صفرية، استخدم `SELECT account_num, COUNT(*) FROM suppliers_accounts GROUP BY account_num HAVING COUNT(*)>1;` قبل الترحيل. |
-| 3 | أي **trigger** قديم يستخدم `DECLARE var INT` لـ `invoice_number` سيعمل لكن يفقد الدقة فوق 2^31. | راجع ملفات `V009_trigger_purchase.sql`, `V010_trigger_sales.sql`, `V013_trigger_totals.sql` وحدّث الأنواع إلى `BIGINT`. لو تحب، أرسلها لي وأحدّثها معك. |
+| 3 | أي **trigger** قديم يستخدم `DECLARE var INT` لـ `invoice_number` سيعمل لكن يفقد الدقة فوق 2^31. | راجع ملفات `V009_trigger_purchase.sql`, `V005_trigger_sales.sql`, `V013_trigger_totals.sql` وحدّث الأنواع إلى `BIGINT`. لو تحب، أرسلها لي وأحدّثها معك. |
 | 4 | طبقة **Java DAO** تقرأ `invoice_number` كـ `int`. | بعد الترحيل، ابحث عن `getInt("invoice_number")` و `getInt("numberInv")` و `getInt("account_num")` وحوّلها إلى `getLong`. أقدر أعمل لك هذا المسح وقائمة الملفات لو أردت. |
 | 5 | لو تطبيقك يستخدم أحد الـ FKs بأسماء قديمة نسيت ذكرها، سيفشل `DROP FOREIGN KEY`. | تحقق بالاستعلام: `SELECT CONSTRAINT_NAME FROM information_schema.KEY_COLUMN_USAGE WHERE TABLE_NAME='purchase' AND REFERENCED_TABLE_NAME='total_buy';` قبل التنفيذ. |
 | 6 | بعض الفهارس قد تكون موجودة باسم آخر وتفشل `CREATE INDEX`. | لو حصل، نفّذ `SHOW INDEX FROM <table>;` واحذف التكرار يدوياً. |

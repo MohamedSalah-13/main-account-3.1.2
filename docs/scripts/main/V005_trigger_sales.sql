@@ -40,7 +40,5 @@ end;
 |
 DELIMITER ;
 
--- sales_package
-DROP TRIGGER IF EXISTS before_sales_package_insert;
 
 

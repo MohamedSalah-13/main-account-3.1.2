@@ -64,23 +64,23 @@ CREATE TABLE IF NOT EXISTS users
 -- 2) Tables depending mainly on users
 -- =====================================================================
 
-CREATE TABLE IF NOT EXISTS processes_data
-(
-    id             INT AUTO_INCREMENT PRIMARY KEY,
-    user_id        INT                                 NOT NULL,
-    processes_name VARCHAR(50)                         NOT NULL,
-    table_name     VARCHAR(50)                         NOT NULL,
-    table_id       INT                                 NOT NULL,
-    date_insert    DATETIME  DEFAULT CURRENT_TIMESTAMP NOT NULL,
-    updated_at     TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL ON UPDATE CURRENT_TIMESTAMP,
-    notes          LONGTEXT                            NULL,
-    CONSTRAINT processes_data_users_id_fk
-        FOREIGN KEY (user_id) REFERENCES users (id)
-            ON UPDATE CASCADE ON DELETE CASCADE
-);
+# CREATE TABLE IF NOT EXISTS processes_data
+# (
+#     id             INT AUTO_INCREMENT PRIMARY KEY,
+#     user_id        INT                                 NOT NULL,
+#     processes_name VARCHAR(50)                         NOT NULL,
+#     table_name     VARCHAR(50)                         NOT NULL,
+#     table_id       INT                                 NOT NULL,
+#     date_insert    DATETIME  DEFAULT CURRENT_TIMESTAMP NOT NULL,
+#     updated_at     TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL ON UPDATE CURRENT_TIMESTAMP,
+#     notes          LONGTEXT                            NULL,
+#     CONSTRAINT processes_data_users_id_fk
+#         FOREIGN KEY (user_id) REFERENCES users (id)
+#             ON UPDATE CASCADE ON DELETE CASCADE
+# );
 
-CREATE INDEX processes_data_table_idx ON processes_data (table_name, table_id);
-CREATE INDEX processes_data_date_idx ON processes_data (date_insert);
+# CREATE INDEX processes_data_table_idx ON processes_data (table_name, table_id);
+# CREATE INDEX processes_data_date_idx ON processes_data (date_insert);
 
 CREATE TABLE IF NOT EXISTS main_group
 (

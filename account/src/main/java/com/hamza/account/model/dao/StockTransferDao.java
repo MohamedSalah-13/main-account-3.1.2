@@ -7,7 +7,6 @@ import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.database.SqlStatements;
 import lombok.extern.log4j.Log4j2;
 
-import java.sql.CallableStatement;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -42,13 +41,7 @@ public class StockTransferDao extends AbstractDao<StockTransfer> {
     public int insert(StockTransfer stockTransfer) throws DaoException {
         String insert = SqlStatements.insertStatement(TABLE_NAME, STOCK_FROM, STOCK_TO, TRANSFER_DATE, USER_ID);
         return insertMultiData(() -> {
-            // first insert
-            executeUpdateWithException(insert, getData(stockTransfer));
-            // second
-            List<StockTransferListItems> transferListItems = stockTransfer.getTransferListItems();
-            transferListItems.forEach(stockTransferListItems -> stockTransferListItems.setStock_transfer_id(maxStockId()));
-            daoFactory.stockTransferListDao().insertList(transferListItems);
-            //TODO 4/26/2026 12:01 PM Mohamed: add data
+
         });
     }
 
@@ -64,11 +57,6 @@ public class StockTransferDao extends AbstractDao<StockTransfer> {
             // second
             executeUpdateWithException(SqlStatements.deleteStatement(StockTransferListDao.TABLE_NAME, StockTransferListDao.STOCK_TRANSFER_ID), stock.getId());
             daoFactory.stockTransferListDao().insertList(transferListItems);
-
-            // insert if not existing
-//            daoFactory.stockTransferListDao().insertList(transferListItems.stream().filter(items -> items.getId() == 0).toList());
-            // update list if existing
-//            daoFactory.stockTransferListDao().updateList(transferListItems.stream().filter(items -> items.getId() != 0).toList());
         });
     }
 
@@ -125,18 +113,4 @@ public class StockTransferDao extends AbstractDao<StockTransfer> {
         return model;
     }
 
-    /**
-     * Fetches the maximum stock transfer ID from the database by executing a stored procedure.
-     *
-     * @return the maximum stock transfer ID as an integer.
-     */
-    public int maxStockId() {
-        try {
-            CallableStatement cs = connection.prepareCall("{CALL max_stock_transfer_id(?)}");
-            cs.executeUpdate();
-            return cs.getInt(1);
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
-        }
-    }
 }
