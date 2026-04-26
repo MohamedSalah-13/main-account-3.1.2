@@ -55,6 +55,7 @@ public class Items_StockDao extends AbstractDao<Items_Stock_Model> {
             stockModel.setItemsModel(daoFactory.getItemsDao().findItemByIdAndStockId(rs.getInt(ITEMS_ID), stockId));
             stockModel.setStock(new Stock(stockId, rs.getString(StockDao.STOCK_NAME)));
             stockModel.setFirstBalance(firstBalance);
+            stockModel.setCurrentQuantity(rs.getDouble(currentQuantity));
         } catch (SQLException e) {
             throw new DaoException(e);
         }

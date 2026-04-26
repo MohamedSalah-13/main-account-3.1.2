@@ -63,32 +63,32 @@ public class ItemsDao extends AbstractDao<ItemsModel> {
     @Override
     public int insert(ItemsModel itemsModel) throws DaoException {
         if (!new TrialManager(connection).canAddItem()) return 0;
-        Object[] objects = {itemsModel.getBarcode(), itemsModel.getNameItem()
-                , itemsModel.getSubGroups().getId(), itemsModel.getBuyPrice()
-                , itemsModel.getSelPrice1(), itemsModel.getSelPrice2(), itemsModel.getSelPrice3()
-                , itemsModel.isActiveItem(), itemsModel.isHasValidate(), itemsModel.getNumberValidityDays()
-                , itemsModel.getAlertDaysBeforeExpiry()
-                , itemsModel.getUnitsType().getUnit_id()
-                , itemsModel.getMini_quantity()
-                , itemsModel.getFirstBalanceForStock()
-                , itemsModel.getItem_image() != null ? itemsModel.getItem_image() : new byte[0]
-                , itemsModel.isHasPackage()
-                , itemsModel.getUsers().getId()};
-        String INSERT_ITEM = SqlStatements.insertStatement(TABLE_NAME, BARCODE, NAME_ITEM, SUB_NUM, BUY_PRICE
-                , selPrice1, selPrice2, selPrice3, itemActive, itemHasValidity, numberValidityDays, alertDaysBeforeExpire
-                , UNIT_ID, MINI_QUANTITY, FIRST_BALANCE, ITEM_IMAGE, has_package, USER_ID);
+
 
         try {
             connection.setAutoCommit(false);
-            executeUpdate(INSERT_ITEM, objects);
 
-        }catch (Exception e){
+            int itemId = insertItem(itemsModel);
+            daoFactory.getItemsStockDao().insert(new Items_Stock_Model(
+                    itemsModel.getId(), 1, itemsModel.getFirstBalanceForStock(), itemsModel.getFirstBalanceForStock()
+            ));
 
+            connection.setAutoCommit(true);
+            return 1;
+        } catch (Exception e) {
+            try {
+                connection.rollback();
+            } catch (Exception rollbackException) {
+                throw new DaoException(rollbackException.getMessage(), rollbackException);
+            }
+            throw new DaoException(e.getMessage(), e);
+        } finally {
+            try {
+                connection.setAutoCommit(true);
+            } catch (Exception e) {
+                throw new DaoException(e.getMessage(), e);
+            }
         }
-        return insertMultiData(() -> {
-            executeUpdateWithException(INSERT_ITEM, objects);
-
-        });
 
     }
 
@@ -193,6 +193,46 @@ public class ItemsDao extends AbstractDao<ItemsModel> {
                     , (statement, itemsModel) -> this.setData(statement, getData(itemsModel)));
         } catch (SQLException e) {
             throw new DaoException(e);
+        }
+    }
+
+    private int insertItem(ItemsModel itemsModel) throws DaoException {
+        Object[] objects = {itemsModel.getBarcode(), itemsModel.getNameItem()
+                , itemsModel.getSubGroups().getId(), itemsModel.getBuyPrice()
+                , itemsModel.getSelPrice1(), itemsModel.getSelPrice2(), itemsModel.getSelPrice3()
+                , itemsModel.isActiveItem(), itemsModel.isHasValidate(), itemsModel.getNumberValidityDays()
+                , itemsModel.getAlertDaysBeforeExpiry()
+                , itemsModel.getUnitsType().getUnit_id()
+                , itemsModel.getMini_quantity()
+                , itemsModel.getFirstBalanceForStock()
+                , itemsModel.getItem_image() != null ? itemsModel.getItem_image() : new byte[0]
+                , itemsModel.isHasPackage()
+                , itemsModel.getUsers().getId()};
+        String INSERT_ITEM = SqlStatements.insertStatement(TABLE_NAME, BARCODE, NAME_ITEM, SUB_NUM, BUY_PRICE
+                , selPrice1, selPrice2, selPrice3, itemActive, itemHasValidity, numberValidityDays, alertDaysBeforeExpire
+                , UNIT_ID, MINI_QUANTITY, FIRST_BALANCE, ITEM_IMAGE, has_package, USER_ID);
+
+        try (PreparedStatement statement = connection.prepareStatement(INSERT_ITEM, Statement.RETURN_GENERATED_KEYS)) {
+            for (int i = 1; i < objects.length + 1; i++) {
+                statement.setObject(i, objects[i - 1]);
+            }
+
+            int affectedRows = statement.executeUpdate();
+            if (affectedRows == 0) {
+                throw new DaoException("لم يتم إضافة الصنف");
+            }
+
+            try (ResultSet generatedKeys = statement.getGeneratedKeys()) {
+                if (generatedKeys.next()) {
+                    int generatedId = generatedKeys.getInt(1);
+                    itemsModel.setId(generatedId);
+                    return generatedId;
+                }
+                throw new DaoException("لم يتم الحصول على رقم الصنف الجديد");
+            }
+
+        } catch (Exception e) {
+            throw new DaoException(e.getMessage(), e);
         }
     }
 
