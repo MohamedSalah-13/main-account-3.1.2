@@ -37,7 +37,7 @@ public class ServiceData {
     protected final SuppliersService suppliersService;
     protected final AccountCustomerService accountCustomerService;
     protected final AccountSupplierService accountSupplierService;
-    protected final ProcessService processService;
+    protected final AuditLogService auditLogService;
     protected final DepositService depositService;
     protected final TreasuryBalanceService treasuryBalanceService;
     protected final ItemMiniQuantityService itemMiniQuantityService;
@@ -77,7 +77,7 @@ public class ServiceData {
         this.suppliersService = new SuppliersService(daoFactory);
         this.accountCustomerService = new AccountCustomerService(daoFactory);
         this.accountSupplierService = new AccountSupplierService(daoFactory);
-        this.processService = new ProcessService(daoFactory);
+        this.auditLogService = new AuditLogService(daoFactory);
         this.depositService = new DepositService(daoFactory);
         this.treasuryBalanceService = new TreasuryBalanceService(daoFactory);
         this.itemMiniQuantityService = new ItemMiniQuantityService(daoFactory);

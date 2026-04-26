@@ -12,13 +12,19 @@ import lombok.Setter;
 
 @Setter
 @Getter
-public class Processes_Data extends BaseEntity {
+public class Audit_log extends BaseEntity {
 
     private ObjectProperty<Users> usersObject = new SimpleObjectProperty<>();
     private ProcessesDataType processesDataType;
     private TableType tableType;
     @ColumnData(titleName = "كود العملية")
-    private long code;
+    private Long code;
+    @ColumnData(titleName = "رقم السجل")
+    private String record_id;
+    @ColumnData(titleName = "بيانات القديمة")
+    private String old_data;
+    @ColumnData(titleName = "بيانات جديدة")
+    private String new_data;
     @ColumnData(titleName = NamesTables.NOTES)
     private String notes;
 

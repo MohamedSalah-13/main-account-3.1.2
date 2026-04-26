@@ -2,7 +2,7 @@ package com.hamza.account.controller.others;
 
 import com.hamza.account.config.Image_Setting;
 import com.hamza.account.model.dao.DaoFactory;
-import com.hamza.account.model.domain.Processes_Data;
+import com.hamza.account.model.domain.Audit_log;
 import com.hamza.account.openFxml.FxmlPath;
 import com.hamza.account.otherSetting.MaskerPaneSetting;
 import com.hamza.account.table.TableSetting;
@@ -41,9 +41,9 @@ import static com.hamza.controlsfx.table.TextSearch.searchTableFromExitedText;
 @FxmlPath(pathFile = "process-view.fxml")
 public class ProcessesController extends ServiceData implements Initializable {
 
-    private final ObservableList<Processes_Data> observableListTable = FXCollections.observableArrayList();
+    private final ObservableList<Audit_log> observableListTable = FXCollections.observableArrayList();
     @FXML
-    private TableView<Processes_Data> tableView;
+    private TableView<Audit_log> tableView;
     @FXML
     private TextField txtSearch;
     @FXML
@@ -59,7 +59,7 @@ public class ProcessesController extends ServiceData implements Initializable {
     @FXML
     private DatePicker dateFrom, dateTo;
     private MaskerPaneSetting maskerPaneSetting;
-    private FilteredList<Processes_Data> filteredTable;
+    private FilteredList<Audit_log> filteredTable;
 
     public ProcessesController(DaoFactory daoFactory) throws Exception {
         super(daoFactory);
@@ -123,20 +123,20 @@ public class ProcessesController extends ServiceData implements Initializable {
     }
 
     private void getTable() {
-        new TableColumnAnnotation().getTable(tableView, Processes_Data.class);
+        new TableColumnAnnotation().getTable(tableView, Audit_log.class);
 //        tableView.setItems(observableListTable);
         tableView.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
 
-        Callback<TableColumn.CellDataFeatures<Processes_Data, String>, ObservableValue<String>> columnDate = f -> new SimpleStringProperty(f.getValue().getCreated_at().toString());
+        Callback<TableColumn.CellDataFeatures<Audit_log, String>, ObservableValue<String>> columnDate = f -> new SimpleStringProperty(f.getValue().getCreated_at().toString());
         ColumnSetting.addColumn(tableView, Setting_Language.WORD_DATE, 1, columnDate);
 
-        Callback<TableColumn.CellDataFeatures<Processes_Data, String>, ObservableValue<String>> column = f -> f.getValue().getUsersObject().usernameProperty();
+        Callback<TableColumn.CellDataFeatures<Audit_log, String>, ObservableValue<String>> column = f -> f.getValue().getUsersObject().usernameProperty();
         ColumnSetting.addColumn(tableView, Setting_Language.WORD_USERS, 2, column);
 
-        Callback<TableColumn.CellDataFeatures<Processes_Data, String>, ObservableValue<String>> columnProcessesDataType = f -> f.getValue().getProcessesDataType().typeProperty();
+        Callback<TableColumn.CellDataFeatures<Audit_log, String>, ObservableValue<String>> columnProcessesDataType = f -> f.getValue().getProcessesDataType().typeProperty();
         ColumnSetting.addColumn(tableView, Setting_Language.WORD_TYPE, 3, columnProcessesDataType);
 
-        Callback<TableColumn.CellDataFeatures<Processes_Data, String>, ObservableValue<String>> columnTableType = f -> f.getValue().getTableType().typeProperty();
+        Callback<TableColumn.CellDataFeatures<Audit_log, String>, ObservableValue<String>> columnTableType = f -> f.getValue().getTableType().typeProperty();
         ColumnSetting.addColumn(tableView, "من جدول", 4, columnTableType);
 
         filteredTable = new FilteredList<>(observableListTable);
@@ -152,12 +152,12 @@ public class ProcessesController extends ServiceData implements Initializable {
 
     private void searchAction() {
         filteredTable.setPredicate(getAdminPredicate().and(getSelectedProcessPredicate()).and(getSelectedTablePredicate()).and(filterByDate()));
-        SortedList<Processes_Data> sortedList = new SortedList<>(filteredTable);
+        SortedList<Audit_log> sortedList = new SortedList<>(filteredTable);
         sortedList.comparatorProperty().bind(tableView.comparatorProperty());
         tableView.setItems(sortedList);
     }
 
-    private Predicate<Processes_Data> getAdminPredicate() {
+    private Predicate<Audit_log> getAdminPredicate() {
         if (!boxAdmin.getSelectionModel().isEmpty()) {
             if (boxAdmin.getSelectionModel().getSelectedIndex() == 0) return t2 -> true;
             return processesData -> processesData.getUsersObject().getUsername().equals(boxAdmin.getSelectionModel().getSelectedItem());
@@ -165,7 +165,7 @@ public class ProcessesController extends ServiceData implements Initializable {
         return t2 -> false;
     }
 
-    private Predicate<Processes_Data> getSelectedProcessPredicate() {
+    private Predicate<Audit_log> getSelectedProcessPredicate() {
         if (!boxProcess.getSelectionModel().isEmpty()) {
             if (boxProcess.getSelectionModel().getSelectedIndex() == 0) return t2 -> true;
             return processesData -> processesData.getProcessesDataType().getType().equals(boxProcess.getSelectionModel().getSelectedItem());
@@ -173,7 +173,7 @@ public class ProcessesController extends ServiceData implements Initializable {
         return t2 -> false;
     }
 
-    private Predicate<Processes_Data> getSelectedTablePredicate() {
+    private Predicate<Audit_log> getSelectedTablePredicate() {
         if (!boxTable.getSelectionModel().isEmpty()) {
             if (boxTable.getSelectionModel().getSelectedIndex() == 0) return t2 -> true;
             return processesData -> processesData.getTableType().getType().equals(boxTable.getSelectionModel().getSelectedItem());
@@ -181,7 +181,7 @@ public class ProcessesController extends ServiceData implements Initializable {
         return t2 -> false;
     }
 
-    private Predicate<Processes_Data> filterByDate() {
+    private Predicate<Audit_log> filterByDate() {
         LocalDate dateFromValue = parseDate(dateFrom.getValue().toString());
         LocalDate dateToValue = parseDate(dateTo.getValue().toString());
         return t2 -> {
@@ -205,9 +205,9 @@ public class ProcessesController extends ServiceData implements Initializable {
         });
     }
 
-    private List<Processes_Data> getProcessesData() {
+    private List<Audit_log> getProcessesData() {
         try {
-            return processService.getProcessesData();
+            return auditLogService.getProcessesData();
         } catch (DaoException e) {
             log.error(e.getMessage());
             AllAlerts.alertError(e.getMessage());
@@ -225,12 +225,12 @@ public class ProcessesController extends ServiceData implements Initializable {
 
     private void deleteProcessesData() {
         try {
-            List<Processes_Data> processesDataList = tableView.getSelectionModel().getSelectedItems();
+            List<Audit_log> processesDataList = tableView.getSelectionModel().getSelectedItems();
             if (!processesDataList.isEmpty()) {
-                var list = processesDataList.stream().map(Processes_Data::getId).toList();
+                var list = processesDataList.stream().map(Audit_log::getId).toList();
                 Integer[] ids = list.toArray(new Integer[0]);
 //                System.out.println(ids);
-                var i = processService.deleteInRangeId(ids);
+                var i = auditLogService.deleteInRangeId(ids);
                 if (i > 0) {
                     AllAlerts.alertSave();
                     maskerPaneSetting.showMaskerPane(() -> {

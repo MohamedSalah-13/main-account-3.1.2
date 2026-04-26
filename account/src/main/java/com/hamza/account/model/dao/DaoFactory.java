@@ -144,8 +144,8 @@ public enum DaoFactory {
         return new TotalsSalesReturnDao(connection, this);
     }
 
-    public Processes_Dao processesDao() {
-        return new Processes_Dao(connection);
+    public AuditLogDao processesDao() {
+        return new AuditLogDao(connection);
     }
 
     public ExpensesDetailsDao expensesDetailsDao() {

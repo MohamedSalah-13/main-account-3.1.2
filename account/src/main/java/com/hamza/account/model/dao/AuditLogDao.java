@@ -1,6 +1,6 @@
 package com.hamza.account.model.dao;
 
-import com.hamza.account.model.domain.Processes_Data;
+import com.hamza.account.model.domain.Audit_log;
 import com.hamza.account.model.domain.Users;
 import com.hamza.account.type.ProcessesDataType;
 import com.hamza.account.type.TableType;
@@ -14,7 +14,7 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 
-public class Processes_Dao extends AbstractDao<Processes_Data> {
+public class AuditLogDao extends AbstractDao<Audit_log> {
 
     private final String TABLE_NAME = "audit_log";
     private final String ID = "id";
@@ -26,12 +26,12 @@ public class Processes_Dao extends AbstractDao<Processes_Data> {
     private final String NOTES = "notes";
 
 
-    public Processes_Dao(Connection connection) {
+    public AuditLogDao(Connection connection) {
         super(connection);
     }
 
     @Override
-    public List<Processes_Data> loadAll() throws DaoException {
+    public List<Audit_log> loadAll() throws DaoException {
         String query = """
                 SELECT audit_log.id,
                        table_name,
@@ -56,24 +56,28 @@ public class Processes_Dao extends AbstractDao<Processes_Data> {
 
 
     @Override
-    public Processes_Data map(ResultSet rs) throws DaoException {
-        Processes_Data processesData = new Processes_Data();
+    public Audit_log map(ResultSet rs) throws DaoException {
+        Audit_log auditLog = new Audit_log();
         try {
-            processesData.setId(rs.getInt(ID));
-            processesData.setUsersObject(new Users(rs.getInt(USER_ID), rs.getString(UsersDao.USER_NAME)));
-            processesData.setProcessesDataType(ProcessesDataType.valueOf(rs.getString(action_type)));
+            auditLog.setId(rs.getInt(ID));
+            auditLog.setUsersObject(new Users(rs.getInt(USER_ID), rs.getString(UsersDao.USER_NAME)));
+            auditLog.setProcessesDataType(ProcessesDataType.valueOf(rs.getString(action_type)));
 
             var tableType = TableType.valueOf(rs.getString(TABLE_NAME_DATA));
-            processesData.setTableType(tableType);
-            processesData.setCode(rs.getLong(record_id));
+            auditLog.setTableType(tableType);
+            auditLog.setCode(rs.getLong(record_id));
 
             String string = rs.getString(action_time);
-            processesData.setCreated_at(LocalDateTime.parse(string, DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
-            processesData.setNotes(rs.getString(NOTES));
+            auditLog.setCreated_at(LocalDateTime.parse(string, DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
+            auditLog.setNotes(rs.getString(NOTES));
+            auditLog.setRecord_id(rs.getString(record_id));
+            auditLog.setOld_data(rs.getString("old_data"));
+            auditLog.setNew_data(rs.getString("new_data"));
+
         } catch (Exception e) {
             throw new DaoException(e);
         }
-        return processesData;
+        return auditLog;
     }
 
     public int deleteRangeIds(Integer... rangeIds) throws DaoException {

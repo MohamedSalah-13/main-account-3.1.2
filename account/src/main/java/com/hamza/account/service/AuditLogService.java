@@ -1,14 +1,14 @@
 package com.hamza.account.service;
 
 import com.hamza.account.model.dao.DaoFactory;
-import com.hamza.account.model.domain.Processes_Data;
+import com.hamza.account.model.domain.Audit_log;
 import com.hamza.controlsfx.database.DaoException;
 
 import java.util.List;
 
-public record ProcessService(DaoFactory daoFactory) {
+public record AuditLogService(DaoFactory daoFactory) {
 
-    public List<Processes_Data> getProcessesData() throws DaoException {
+    public List<Audit_log> getProcessesData() throws DaoException {
         return daoFactory.processesDao().loadAll();
     }
 
