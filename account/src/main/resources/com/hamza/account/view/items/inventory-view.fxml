@@ -20,8 +20,8 @@
     <children>
         <ToolBar>
             <items>
-                <Button fx:id="btnRefresh" mnemonicParsing="false" text="%refresh" />
-                <Button fx:id="btnPrint" layoutX="10.0" layoutY="10.0" mnemonicParsing="false" text="%print" />
+                <Button fx:id="btnRefresh" mnemonicParsing="false" text="تحديث" />
+                <Button fx:id="btnPrint" layoutX="10.0" layoutY="10.0" mnemonicParsing="false" text="طباعة" />
             </items>
         </ToolBar>
         <ScrollPane fitToHeight="true" fitToWidth="true" VBox.vgrow="SOMETIMES">
@@ -40,10 +40,10 @@
                                         <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
                                     </rowConstraints>
                                     <children>
-                                        <TextField fx:id="textSearch" promptText="%search" GridPane.columnIndex="1" GridPane.rowIndex="1" />
-                                        <ComboBox fx:id="comboStock" maxWidth="1.7976931348623157E308" promptText="%invoice.stock" GridPane.columnIndex="1" />
-                                        <Label text="%invoice.stock" />
-                                        <Label text="%search" GridPane.rowIndex="1" />
+                                        <TextField fx:id="textSearch" promptText="بحث" GridPane.columnIndex="1" GridPane.rowIndex="1" />
+                                        <ComboBox fx:id="comboStock" maxWidth="1.7976931348623157E308" promptText="المخزن" GridPane.columnIndex="1" />
+                                        <Label text="المخزن" />
+                                        <Label text="بحث" GridPane.rowIndex="1" />
                                     </children>
                                 </GridPane>
                             </children>
@@ -51,9 +51,9 @@
                         <Pagination fx:id="pagination" VBox.vgrow="SOMETIMES" />
                         <HBox alignment="CENTER_LEFT" maxHeight="-Infinity" minHeight="-Infinity" spacing="5.0" styleClass="pane-box-last">
                             <children>
-                                <Label text="%invoice.sum.purchase" />
+                                <Label text="إجمالى المشتريات" />
                                 <Text fx:id="textSumPurchase" strokeType="OUTSIDE" strokeWidth="0.0" styleClass="text-sum" text="0.0" />
-                                <Label text="%invoice.sum.sales" />
+                                <Label text="إجمالى المبيعات" />
                                 <Text fx:id="textSumSales" strokeType="OUTSIDE" strokeWidth="0.0" styleClass="text-sum" text="0.0" />
                             </children>
                         </HBox>

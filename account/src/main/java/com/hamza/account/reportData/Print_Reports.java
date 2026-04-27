@@ -1,11 +1,11 @@
 package com.hamza.account.reportData;
 
-import com.hamza.account.features.checkbox.impl.setting.BarcodePrintDoubleLabel;
 import com.hamza.account.config.ConnectionToDatabase;
 import com.hamza.account.controller.invoice.ShowInvoiceNameData;
 import com.hamza.account.controller.model.ModelPrintInvoice;
 import com.hamza.account.controller.model.PrintPurchaseWithName;
 import com.hamza.account.controller.model.TableTotals;
+import com.hamza.account.features.checkbox.impl.setting.BarcodePrintDoubleLabel;
 import com.hamza.account.model.domain.*;
 import com.hamza.account.otherSetting.BarcodeDetails;
 import com.hamza.account.service.ShiftReportService;
@@ -13,12 +13,12 @@ import com.hamza.account.view.LogApplication;
 import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.language.Setting_Language;
 import com.hamza.controlsfx.others.CssToColorHelper;
-import lombok.SneakyThrows;
 import lombok.extern.log4j.Log4j2;
 import net.sf.jasperreports.engine.data.JRBeanCollectionDataSource;
 import org.jetbrains.annotations.NotNull;
 
 import java.sql.Connection;
+import java.sql.SQLException;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.HashMap;
@@ -32,15 +32,18 @@ import static com.hamza.controlsfx.util.NumberUtils.roundToTwoDecimalPlaces;
 @Log4j2
 public class Print_Reports extends ReportCompany {
 
-    private final Connection connection;
     private final String printerNameThermal = getSettingPrinterThermal();
     private final String printerNameBarcode = getSettingPrinterBarcode();
     private final String printerNameNormal = getSettingPrinterNormal();
 
-    @SneakyThrows
     public Print_Reports() {
         super();
-        this.connection = new ConnectionToDatabase().getDbConnection().getConnection();
+    }
+
+    private <E extends Exception> void withConnection(ThrowingConsumer<Connection, E> action) throws E, DaoException, SQLException {
+        try (Connection connection = new ConnectionToDatabase().getDbConnection().getConnection()) {
+            action.accept(connection);
+        }
     }
 
     /**
@@ -162,11 +165,25 @@ public class Print_Reports extends ReportCompany {
         HashMap<String, Object> company = getCompany();
         company.put("transfer_id", stockId);
         company.put("transfer_end", stockEnd);
-        jasperData.printJasperPrintWithConnection(JasperReportPaths.Report.CONVERT_STOCK, Setting_Language.STORE_TRANSFERS, company, 1, "", connection);
+        try {
+            withConnection(connection ->
+                    jasperData.printJasperPrintWithConnection(
+                            JasperReportPaths.Report.CONVERT_STOCK,
+                            Setting_Language.STORE_TRANSFERS,
+                            company,
+                            1,
+                            "",
+                            connection
+                    )
+            );
+        } catch (Exception e) {
+            log.error("Failed to print stock transfer report", e);
+            throw new RuntimeException(e);
+        }
     }
 
     public void printCardItem(@NotNull Integer itemId, double purchase, double sales, double purchase_re, double sales_re, double first_balance
-            , double amount, @NotNull String dateFrom, @NotNull String dateTo) throws DaoException {
+            , double amount, @NotNull String dateFrom, @NotNull String dateTo) throws DaoException, SQLException {
         HashMap<String, Object> company = getCompany();
         company.put("itemNum", itemId);
         company.put("purchase", purchase);
@@ -177,7 +194,16 @@ public class Print_Reports extends ReportCompany {
         company.put("amount", amount);
         company.put("dateFrom", dateFrom);
         company.put("dateTo", dateTo);
-        jasperData.printJasperPrintWithConnection(JasperReportPaths.Report.CARD_ITEMS, Setting_Language.WORD_CARD_ITEM, company, 1, "", connection);
+        withConnection(connection ->
+                jasperData.printJasperPrintWithConnection(
+                        JasperReportPaths.Report.CARD_ITEMS,
+                        Setting_Language.WORD_CARD_ITEM,
+                        company,
+                        1,
+                        "",
+                        connection
+                )
+        );
     }
 
     public void printInvoice(@NotNull List<?> list, @NotNull HashMap<String, Object> invoiceDetails, String nameReport) { // invoice purchase or nameReport
@@ -247,19 +273,25 @@ public class Print_Reports extends ReportCompany {
         jasperData.printJasperPrint(JasperReportPaths.Invoice.THERMAL_Kitchen, Setting_Language.WORD_PRINT, map, 1, printerNameThermal);
     }
 
-    public void printReportDelegate(String name, Integer year, Integer firstMonth, Integer lastMonth) throws DaoException {
+    public void printReportDelegate(String name, Integer year, Integer firstMonth, Integer lastMonth) throws Exception {
         HashMap<String, Object> company = getCompany();
         company.put("by_year", year);
         company.put("by_name", name);
         company.put("by_first_month", firstMonth);
         company.put("by_last_month", lastMonth);
-        jasperData.printJasperPrintWithConnection(JasperReportPaths.Report.DELEGATE, Setting_Language.REPORT_DELEGATE, company, 1, "", connection);
+
+        withConnection(connection ->
+                jasperData.printJasperPrintWithConnection(
+                        JasperReportPaths.Report.DELEGATE,
+                        Setting_Language.REPORT_DELEGATE,
+                        company,
+                        1,
+                        "",
+                        connection
+                )
+        );
     }
 
-    public void printAccountsByArea(List<CustomerAccount> list) {
-        HashMap<String, Object> map = getStringObjectHashMap(list, null);
-        jasperData.printJasperPrint(JasperReportPaths.Account.BY_AREA, Setting_Language.ACCOUNT_TOTAL, map, 1, "");
-    }
 
     public void printDeposit(double amount, int code, String name_report, String statements, String description, String name_type, String treasury_name, String convert_to_treasury, String dateTo) {
         HashMap<String, Object> company = getCompany();
@@ -422,6 +454,11 @@ public class Print_Reports extends ReportCompany {
         map.put("difference", diff);
         map.put("notes", shift.getNotes() == null ? "" : shift.getNotes());
         return map;
+    }
+
+    @FunctionalInterface
+    private interface ThrowingConsumer<T, E extends Exception> {
+        void accept(T t) throws E;
     }
 }
 

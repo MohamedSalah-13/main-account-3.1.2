@@ -407,7 +407,7 @@ public class TargetsController extends ServiceData implements AppSettingInterfac
 
 
             printReports.printReportDelegate(selectedEmployee, selectedYear, firstMonth, lastMonth);
-        } catch (DaoException e) {
+        } catch (Exception e) {
             logErrors(e);
         }
     }

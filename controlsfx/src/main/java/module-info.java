@@ -16,6 +16,7 @@ module com.hamza.controlsfx {
     requires jasperreports;
     requires org.apache.commons.io;
     requires javafx.swing;
+    requires com.zaxxer.hikari;
 
     opens com.hamza.controlsfx.controller to javafx.fxml;
     exports com.hamza.controlsfx.controller;
