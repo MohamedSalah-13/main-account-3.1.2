@@ -7,6 +7,7 @@ import com.hamza.account.type.InvoiceType;
 import com.hamza.controlsfx.database.DaoException;
 import lombok.extern.log4j.Log4j2;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 
@@ -54,6 +55,13 @@ public class SalesInvoice implements InvoiceBuy<Sales, Total_Sales, Customers, C
         totalSales.setStockData(stock);
         totalSales.setEmployeeObject(userDelegate);
         totalSales.setTreasuryModel(treasuryModel);
+
+        for (Sales sales : list) {
+            sales.setTotalSelPrice(BigDecimal.valueOf(sales.getQuantity() * sales.getPrice()));
+            sales.setTotal_buy_price(sales.getQuantity() * sales.getBuy_price());
+            sales.setTotal_profit(sales.getTotalSelPrice().subtract(BigDecimal.valueOf(sales.getTotal_buy_price())));
+        }
+
         totalSales.setSalesList(list);
         return totalSales;
     }

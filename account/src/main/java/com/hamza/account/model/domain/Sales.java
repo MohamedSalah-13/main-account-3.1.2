@@ -9,6 +9,7 @@ import lombok.Setter;
 
 import java.io.Serial;
 import java.io.Serializable;
+import java.math.BigDecimal;
 import java.time.LocalDate;
 
 @Setter
@@ -19,6 +20,9 @@ public class Sales extends BasePurchasesAndSales implements Serializable {
     private static final long serialVersionUID = 1L;
     private boolean item_has_package;
     private ObjectProperty<Customers> customers = new SimpleObjectProperty<>();
+
+    private BigDecimal totalSelPrice;
+    private BigDecimal total_profit;
 
     // for totals
     private LocalDate invoiceDate;

@@ -95,7 +95,7 @@ public class SalesReturnDao extends AbstractDao<Sales_Return> {
     public int insertList(List<Sales_Return> list) throws DaoException {
         try {
             return executeUpdateListWithException(list, SqlStatements.insertStatement(TABLE_NAME, INVOICE_NUMBER
-                    , ITEM_ID, TYPE, QUANTITY, PRICE
+                    , ITEM_ID, TYPE, QUANTITY, PRICE, "buy_price", "total_sel_price", "total_buy_price", "total_profit"
                     , DISCOUNT, TYPE_VALUE, EXPIRATION_DATE), this::setData);
         } catch (SQLException e) {
             throw new DaoException(e);
@@ -105,7 +105,10 @@ public class SalesReturnDao extends AbstractDao<Sales_Return> {
     private void setData(PreparedStatement statement, Sales_Return salesReturn) throws SQLException {
         try {
             Object[] objects = new Object[]{salesReturn.getInvoiceNumber(), salesReturn.getItems().getId()
-                    , salesReturn.getUnitsType().getUnit_id(), salesReturn.getQuantity(), salesReturn.getPrice(), salesReturn.getDiscount()
+                    , salesReturn.getUnitsType().getUnit_id(), salesReturn.getQuantity(), salesReturn.getPrice()
+                    , salesReturn.getBuy_price(), salesReturn.getTotalSelPrice()
+                    , salesReturn.getTotal_buy_price(), salesReturn.getTotal_profit()
+                    , salesReturn.getDiscount()
                     , salesReturn.getUnitsType().getValue(), salesReturn.getExpiration_date()};
             for (int i = 0; i < objects.length; i++) {
                 statement.setObject(i + 1, objects[i]);

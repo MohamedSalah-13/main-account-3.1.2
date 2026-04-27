@@ -97,6 +97,7 @@ public abstract class AbstractDao<T> implements DaoList<T> {
     public int executeUpdateListWithException(@NotNull final List<T> list, @NotNull String query, final GenericMapperList<T> mapper) throws SQLException, DaoException {
         int count = 0;
         PreparedStatement statement = connection.prepareStatement(query);
+//        System.out.println(statement.toString());
         for (T t : list) {
             mapper.setData(statement, t);
             statement.addBatch();

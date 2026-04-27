@@ -7,8 +7,11 @@ import com.hamza.account.type.InvoiceType;
 import com.hamza.controlsfx.database.DaoException;
 import lombok.extern.log4j.Log4j2;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
+
+import static com.hamza.controlsfx.util.NumberUtils.roundToTwoDecimalPlaces;
 
 @Log4j2
 public class SalesInvoiceReturn implements InvoiceBuy<Sales_Return, Total_Sales_Re, Customers, CustomerAccount> {
@@ -27,6 +30,8 @@ public class SalesInvoiceReturn implements InvoiceBuy<Sales_Return, Total_Sales_
         salesReturn.setId(id);
         salesReturn.setInvoiceNumber(num);
         salesReturn.setExpiration_date(expireDate);
+        salesReturn.setBuy_price(roundToTwoDecimalPlaces(itemsModel.getBuyPrice() * type.getValue()));
+
         return salesReturn;
     }
 
@@ -46,8 +51,15 @@ public class SalesInvoiceReturn implements InvoiceBuy<Sales_Return, Total_Sales_
         totalSalesRe.setStockData(stock);
         totalSalesRe.setEmployeeObject(userDelegate);
         totalSalesRe.setTreasuryModel(treasuryModel);
-        totalSalesRe.setSalesReturnList(list);
         totalSalesRe.setInvoiceType(invoiceType);
+
+        for (Sales_Return sales : list) {
+            sales.setTotalSelPrice(BigDecimal.valueOf(sales.getQuantity() * sales.getPrice()));
+            sales.setTotal_buy_price(sales.getQuantity() * sales.getBuy_price());
+            sales.setTotal_profit(sales.getTotalSelPrice().subtract(BigDecimal.valueOf(sales.getTotal_buy_price())));
+        }
+
+        totalSalesRe.setSalesReturnList(list);
         return totalSalesRe;
     }
 

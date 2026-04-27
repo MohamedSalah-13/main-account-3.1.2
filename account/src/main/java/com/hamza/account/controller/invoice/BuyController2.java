@@ -1037,8 +1037,8 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
             TableSetting.tableMenuSetting(getClass(), table);
         }
 
-        table.getColumns().get(8).setVisible(b);
-        table.getColumns().get(9).setVisible(b);
+//        table.getColumns().get(8).setVisible(b);
+//        table.getColumns().get(9).setVisible(b);
     }
 
     private void updateItem(BasePurchasesAndSales purchase) throws DaoException {

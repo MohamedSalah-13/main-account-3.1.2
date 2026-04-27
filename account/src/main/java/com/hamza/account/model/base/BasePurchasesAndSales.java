@@ -30,9 +30,9 @@ public abstract class BasePurchasesAndSales extends UnitExtends {
     private DoubleProperty total_after_discount = new SimpleDoubleProperty();
 
     // for profit for sales
-    @ColumnData(titleName = NamesTables.BUY_PRICE)
+//    @ColumnData(titleName = NamesTables.BUY_PRICE)
     private DoubleProperty buy_price = new SimpleDoubleProperty();
-    @ColumnData(titleName = NamesTables.TOTAL_BUY_PRICE)
+//    @ColumnData(titleName = NamesTables.TOTAL_BUY_PRICE)
     private DoubleProperty total_buy_price = new SimpleDoubleProperty();
 
 

@@ -30,10 +30,10 @@ public class SalesDao extends AbstractDao<Sales> {
     private final String TYPE_VALUE = "type_value";
     private final String QUANTITY = "quantity";
     private final String PRICE = "price";
-    private final String totalSales = "total_sales";
-    private final String discount = "discount";
-    // for buy price
     private final String buyPrice = "buy_price";
+    private final String discount = "discount";
+
+    private final String totalSales = "total_sales";
     private final String totalBuy = "total_buy";
     // for name items
     private final String name = "name";
@@ -68,7 +68,8 @@ public class SalesDao extends AbstractDao<Sales> {
     @Override
     public Object[] getData(Sales sales) throws DaoException {
         return new Object[]{sales.getInvoiceNumber(), sales.getItems().getId(), sales.getUnitsType().getUnit_id()
-                , sales.getQuantity(), sales.getPrice(), sales.getBuy_price(), sales.getDiscount()
+                , sales.getQuantity(), sales.getPrice(), sales.getBuy_price(), sales.getTotalSelPrice()
+                , sales.getTotal_buy_price(), sales.getTotal_profit(), sales.getDiscount()
                 , sales.getUnitsType().getValue(), sales.getExpiration_date(), sales.isItem_has_package()};
     }
 
@@ -126,7 +127,7 @@ public class SalesDao extends AbstractDao<Sales> {
     public int insertList(List<Sales> list) throws DaoException {
         try {
             String query = SqlStatements.insertStatement(TABLE_NAME, INVOICE_NUMBER
-                    , NUM, TYPE, QUANTITY, PRICE, buyPrice
+                    , NUM, TYPE, QUANTITY, PRICE, buyPrice, "total_sel_price", "total_buy_price", "total_profit"
                     , discount, TYPE_VALUE, expirationDate, itemHasPackage);
             return executeUpdateListWithException(list, query, (statement, sales) -> setData(statement, getData(sales)));
         } catch (SQLException e) {
