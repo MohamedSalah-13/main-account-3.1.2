@@ -5,7 +5,6 @@ import com.hamza.account.controller.others.ServiceData;
 import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.model.domain.ItemsModel;
 import com.hamza.account.openFxml.FxmlPath;
-import com.hamza.account.otherSetting.MaskerPaneSetting;
 import com.hamza.account.reportData.Print_Reports;
 import com.hamza.account.table.TableSetting;
 import com.hamza.controlsfx.alert.AllAlerts;
@@ -15,25 +14,21 @@ import com.hamza.controlsfx.table.AddColumnMix;
 import com.hamza.controlsfx.table.ColumnInterface;
 import com.hamza.controlsfx.table.TableColumnAnnotation;
 import com.hamza.controlsfx.util.NumberUtils;
+import javafx.animation.PauseTransition;
 import javafx.beans.value.ObservableValue;
 import javafx.collections.FXCollections;
-import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
-import javafx.collections.transformation.FilteredList;
-import javafx.collections.transformation.SortedList;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
-import javafx.scene.layout.StackPane;
 import javafx.scene.text.Text;
 import javafx.util.Callback;
+import javafx.util.Duration;
 import lombok.extern.log4j.Log4j2;
 
 import java.util.HashMap;
 import java.util.List;
-import java.util.function.Predicate;
 
 import static com.hamza.controlsfx.language.Setting_Language.*;
-import static com.hamza.controlsfx.table.TextSearch.searchTableFromExitedText;
 
 @Log4j2
 @FxmlPath(pathFile = "items/inventory-view.fxml")
@@ -41,14 +36,10 @@ public class InventoryController extends ServiceData {
 
     private final DataPublisher dataPublisher;
     private final ObservableList<String> observableList = FXCollections.observableArrayList();
-    private final ObservableList<ItemsModel> observableListTable = FXCollections.observableArrayList();
-    private MaskerPaneSetting maskerPaneSetting;
-    @FXML
-    private TableView<ItemsModel> tableView;
+    private final TableView<ItemsModel> tableView = new TableView<>();
+    private final int ROWS_PER_PAGE = 50;
     @FXML
     private ComboBox<String> comboStock;
-    @FXML
-    private Label labelStock, labelSearch, labelSumPurchase, labelSumSales;
     @FXML
     private TextField textSearch;
     @FXML
@@ -56,10 +47,7 @@ public class InventoryController extends ServiceData {
     @FXML
     private Button btnPrint, btnRefresh;
     @FXML
-    private StackPane stackPane;
-    @FXML
-    private CheckBox checkShowZeroBalance;
-    private FilteredList<ItemsModel> filteredTable;
+    private Pagination pagination;
 
     public InventoryController(DaoFactory daoFactory, DataPublisher dataPublisher) throws Exception {
         super(daoFactory);
@@ -68,26 +56,33 @@ public class InventoryController extends ServiceData {
 
     @FXML
     public void initialize() {
-        maskerPaneSetting = new MaskerPaneSetting(stackPane);
-        nameSetting();
         addComboStock();
         actionButton();
         getTable();
-        loadData();
-        calculatePurchaseAndSalesTotal();
+        initializePagination();
         dataPublisher.getPublisherAddStock().addObserver(message -> addComboStock());
     }
 
-    private void nameSetting() {
-        labelStock.setText(STOCK_NAME);
-        labelSearch.setText(WORD_SEARCH);
-        labelSumPurchase.setText(TOTAL_BY_PUR);
-        labelSumSales.setText(TOTAL_BY_SALES);
-        textSearch.setPromptText(WORD_SEARCH);
-        comboStock.setPromptText(STOCK_NAME);
-        btnPrint.setText(WORD_PRINT);
-        btnRefresh.setText(WORD_REFRESH);
-        checkShowZeroBalance.setText(Setting_Language.SHOW_BALANCE_ZERO);
+    private void initializePagination() {
+        int totalItems = itemsService.getCountItems(); // database.getCount();
+        int pageCount = (totalItems / ROWS_PER_PAGE) + 1;
+        pagination.setPageCount(pageCount);
+        // 3. تحديد ماذا يحدث عند تغيير الصفحة (Factory)
+        pagination.setPageFactory((pageIndex) -> {
+            updateTableView(pageIndex);
+            return tableView; // نعيد الجدول ليتم عرضه داخل صفحة الـ Pagination
+        });
+    }
+
+    private void updateTableView(int pageIndex) {
+        try {
+            int offset = pageIndex * ROWS_PER_PAGE;
+            // هنا الكود الحقيقي لجلب البيانات من قاعدة البيانات
+            List<ItemsModel> data = itemsService.getProducts(ROWS_PER_PAGE, offset);
+            tableView.setItems(FXCollections.observableArrayList(data));
+        } catch (DaoException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     private void getTable() {
@@ -123,8 +118,6 @@ public class InventoryController extends ServiceData {
         tableView.getColumns().get(2).setPrefWidth(250);
         List<Integer> list = List.of(5, 4, 3, 1);
         tableView.getColumns().removeAll(list.stream().map(tableView.getColumns()::get).toList());
-        filteredTable = new FilteredList<>(observableListTable);
-
         TableSetting.tableMenuSetting(getClass(), tableView);
     }
 
@@ -152,33 +145,6 @@ public class InventoryController extends ServiceData {
         tableView.getColumns().add(new AddColumnMix<ItemsModel, Double>().getTableColumn(SALES, columnInterfaceSales));
     }
 
-    private void loadData() {
-        maskerPaneSetting.showMaskerPane(() -> {
-            var processesData = itemsService.getMainItemsListWithoutInactive();
-            observableListTable.setAll(processesData);
-        });
-    }
-
-    private void searchAction() {
-        filteredTable.setPredicate(getAdminPredicate().and(filterItemsByBalance()));
-        SortedList<ItemsModel> sortedList = new SortedList<>(filteredTable);
-        sortedList.comparatorProperty().bind(tableView.comparatorProperty());
-        tableView.setItems(sortedList);
-    }
-
-    private Predicate<ItemsModel> getAdminPredicate() {
-        if (!comboStock.getSelectionModel().isEmpty()) {
-            if (comboStock.getSelectionModel().getSelectedIndex() == 0) return t2 -> true;
-            return itemsModel -> itemsModel.getItemStock().getName().equals(comboStock.getSelectionModel().getSelectedItem());
-        }
-        return t2 -> false;
-    }
-
-    private Predicate<ItemsModel> filterItemsByBalance() {
-        if (checkShowZeroBalance.isSelected()) return itemsModel -> true;
-        return itemsModel -> itemsModel.getSumAllBalance() != 0;
-    }
-
     private void addComboStock() {
         try {
             observableList.clear();
@@ -193,21 +159,42 @@ public class InventoryController extends ServiceData {
 
     private void actionButton() {
         comboStock.setItems(observableList);
-        comboStock.valueProperty().addListener((observableValue, s, t1) -> searchAction());
-        checkShowZeroBalance.selectedProperty().addListener((observableValue, s, t1) -> searchAction());
-        btnRefresh.setOnAction(actionEvent -> loadData());
+//        comboStock.valueProperty().addListener((observableValue, s, t1) -> searchAction());
+//        checkShowZeroBalance.selectedProperty().addListener((observableValue, s, t1) -> searchAction());
+        pagination.currentPageIndexProperty().addListener((observableValue, s, t1) -> updateTableView(t1.intValue()));
         btnPrint.setOnAction(actionEvent -> new Print_Reports().printInventoryByTable(tableView.getItems(), comboStock.getSelectionModel().getSelectedItem()));
         btnPrint.disableProperty().bind(comboStock.valueProperty().isNull());
-        textSearch.setOnKeyReleased(event -> searchTableFromExitedText(tableView, textSearch.getText(), observableListTable));
+
+        pagination.currentPageIndexProperty().addListener((observableValue, s, t1) -> {
+            calculateTotalBalances();
+        });
+
+        PauseTransition pause = new PauseTransition(Duration.millis(500));
+        textSearch.textProperty().addListener((observable, oldValue, newValue) -> {
+            pause.setOnFinished(event -> {
+                try {
+                    loadDataFromDB(newValue); // لا يتم الاستدعاء إلا بعد التوقف عن الكتابة
+                    calculateTotalBalances();
+                } catch (DaoException e) {
+                    log.error(e.getMessage(), e.getCause());
+                    AllAlerts.alertError(e.getMessage());
+                }
+            });
+            pause.playFromStart();
+        });
     }
 
-    private void calculatePurchaseAndSalesTotal() {
-        filteredTable.addListener((ListChangeListener<? super ItemsModel>) change -> {
-            double v2 = filteredTable.stream().mapToDouble(ItemsModel::getSumAllBalanceByBuyPrice).sum();
-            double v3 = filteredTable.stream().mapToDouble(ItemsModel::getSumAllBalanceBySelPrice).sum();
-            textSumPurchase.setText(String.valueOf(NumberUtils.roundToTwoDecimalPlaces(v2)));
-            textSumSales.setText(String.valueOf(NumberUtils.roundToTwoDecimalPlaces(v3)));
-        });
+    private void loadDataFromDB(String newValue) throws DaoException {
+        var filterItems = itemsService.getFilterItems(newValue);
+        tableView.setItems(FXCollections.observableArrayList(filterItems));
+    }
+
+
+    private void calculateTotalBalances() {
+        double v2 = tableView.getItems().stream().mapToDouble(ItemsModel::getSumAllBalanceByBuyPrice).sum();
+        double v3 = tableView.getItems().stream().mapToDouble(ItemsModel::getSumAllBalanceBySelPrice).sum();
+        textSumPurchase.setText(String.valueOf(NumberUtils.roundToTwoDecimalPlaces(v2)));
+        textSumSales.setText(String.valueOf(NumberUtils.roundToTwoDecimalPlaces(v3)));
     }
 
     private <T> void addColumnData(String name, Callback<TableColumn.CellDataFeatures<ItemsModel, T>, ObservableValue<T>> column) {

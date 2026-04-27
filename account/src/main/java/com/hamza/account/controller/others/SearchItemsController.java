@@ -2,6 +2,7 @@ package com.hamza.account.controller.others;
 
 import com.hamza.account.config.Image_Setting;
 import com.hamza.account.controller.items.ColumnImage;
+import com.hamza.account.controller.items.PaginationTableSetting;
 import com.hamza.account.interfaces.api.DataInterface;
 import com.hamza.account.interfaces.api.DesignInterface;
 import com.hamza.account.interfaces.api.InvoiceBuy;
@@ -13,7 +14,6 @@ import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.model.domain.ItemsModel;
 import com.hamza.account.openFxml.FxmlPath;
 import com.hamza.account.otherSetting.ButtonDeleteRow;
-import com.hamza.account.otherSetting.MaskerPaneSetting;
 import com.hamza.account.table.TableSetting;
 import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.button.ImageDesign;
@@ -48,7 +48,6 @@ import static com.hamza.account.config.PropertiesName.getPosSplitPaneDividerSear
 import static com.hamza.account.config.PropertiesName.setPosSplitPaneDividerSearchItems;
 import static com.hamza.account.controller.invoice.UpdateInvoiceRow.updateData;
 import static com.hamza.controlsfx.util.ImageChoose.createIcon;
-import static com.hamza.controlsfx.table.TextSearch.searchTableFromExitedText;
 
 @Log4j2
 @FxmlPath(pathFile = "search-view.fxml")
@@ -60,9 +59,7 @@ public class SearchItemsController<T1 extends BasePurchasesAndSales, T2 extends 
     private final InvoiceBuy<T1, T2, T3, T4> invoiceBuy;
     private final ObservableList<ItemsModel> itemsModels = FXCollections.observableArrayList();
     private final ListProperty<T1> selectedItem = new SimpleListProperty<>();
-    private final String stockName;
-    @FXML
-    private TableView<ItemsModel> tableItems;
+    private final TableView<ItemsModel> tableItems = new TableView<>();
     @Getter
     @FXML
     private TableView<T1> tableView;
@@ -80,6 +77,8 @@ public class SearchItemsController<T1 extends BasePurchasesAndSales, T2 extends 
     private SplitPane splitPane;
     @FXML
     private Button btnClose, btnSave;
+    @FXML
+    private Pagination pagination;
 
     public SearchItemsController(DataInterface<T1, T2, T3, T4> dataInterface, DaoFactory daoFactory
             , String stockName) throws Exception {
@@ -87,32 +86,19 @@ public class SearchItemsController<T1 extends BasePurchasesAndSales, T2 extends 
         this.dataInterface = dataInterface;
         this.invoiceBuy = dataInterface.invoiceBuy();
         this.designInterface = dataInterface.designInterface();
-        this.stockName = stockName;
     }
 
     @Override
     public void initialize(URL url, ResourceBundle resourceBundle) {
-        MaskerPaneSetting maskerPaneSetting = new MaskerPaneSetting(stackPane);
         otherSetting();
         getTableItems();
         createTablePurchase();
         buttonSetting();
-        maskerPaneSetting.showMaskerPane(() -> {
-            itemsModels.clear();
-            var filteredItems = getFilteredItemsForDisplay();
-            itemsModels.setAll(filteredItems);
-        });
+        new PaginationTableSetting(tableItems, itemsService
+                , txtSearch, pagination).initializePagination();
+    }
 
-    }
-    private List<ItemsModel> getFilteredItemsForDisplay() {
-        var mainItemsListWithoutInactive = itemsService.getMainItemsListWithoutInactive();
-        if (dataInterface.designInterface().showDataForCustomer()) {
-            return mainItemsListWithoutInactive;
-        }
-        return mainItemsListWithoutInactive.stream()
-                .filter(itemsModel -> !itemsModel.isHasPackage())
-                .toList();
-    }
+
     private void buttonSetting() {
         var images = new Image_Setting();
         btnSave.setText(Setting_Language.OK);
@@ -136,7 +122,6 @@ public class SearchItemsController<T1 extends BasePurchasesAndSales, T2 extends 
             }
         });
 
-        txtSearch.setOnKeyReleased(event -> searchTableFromExitedText(tableItems, txtSearch.getText(), itemsModels));
         txtSearch.setOnKeyPressed(keyEvent -> {
             if (keyEvent.getCode() == KeyCode.DOWN) {
                 tableItems.getSelectionModel().selectFirst();
@@ -170,17 +155,8 @@ public class SearchItemsController<T1 extends BasePurchasesAndSales, T2 extends 
         new TableColumnAnnotation().getTable(tableItems, ItemsModel.class);
         tableItems.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
         tableItems.setItems(itemsModels);
-
-//        Callback<TableColumn.CellDataFeatures<ItemsModel, Double>, ObservableValue<Double>> columnSel = f -> f.getValue().selPrice1Property().asObject();
-//        ColumnSetting.addColumn(tableItems, Setting_Language.WORD_SEL_PRICE, 4, columnSel);
-//        Callback<TableColumn.CellDataFeatures<ItemsModel, Double>, ObservableValue<Double>> columnBalance = f -> f.getValue().sumAllBalanceProperty().asObject();
-//        ColumnSetting.addColumn(tableItems, BALANCE_NOW, 5, columnBalance);
-
-//        tableItems.getColumns().get(2).setPrefWidth(300);
         tableItems.getColumns().get(3).setVisible(!designInterface.showDataForCustomer());
         tableItems.getColumns().get(4).setVisible(designInterface.showDataForCustomer());
-//        tableItems.getColumns().add(new ButtonColumn<>(addItemsInOtherTable()));
-
         new ColumnImage(tableItems, itemsService).addColumnImage();
         TableSetting.tableMenuSetting(getClass(), tableItems);
 

@@ -1,10 +1,19 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <?import javafx.geometry.Insets?>
-<?import javafx.scene.control.*?>
-<?import javafx.scene.layout.*?>
-<StackPane xmlns:fx="http://javafx.com/fxml/1" fx:id="stackPane" minHeight="-Infinity" minWidth="-Infinity" prefHeight="583.0"
-           prefWidth="850.0" xmlns="http://javafx.com/javafx/21">
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.CheckBox?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.Pagination?>
+<?import javafx.scene.control.SplitPane?>
+<?import javafx.scene.control.TableView?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.control.ToolBar?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.StackPane?>
+<?import javafx.scene.layout.VBox?>
+
+<StackPane fx:id="stackPane" minHeight="-Infinity" minWidth="-Infinity" prefHeight="583.0" prefWidth="850.0" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1">
     <children>
         <SplitPane fx:id="splitPane" dividerPositions="0.5" orientation="VERTICAL">
             <items>
@@ -12,40 +21,38 @@
                     <children>
                         <HBox alignment="CENTER_LEFT" spacing="10.0" styleClass="dashboard-tile">
                             <children>
-                                <Label fx:id="labelSearch" text="Search"/>
-                                <TextField fx:id="txtSearch"/>
-                                <CheckBox fx:id="checkAddDirect" mnemonicParsing="false" text="إضافة مباشرة"/>
+                                <Label fx:id="labelSearch" text="Search" />
+                                <TextField fx:id="txtSearch" />
+                                <CheckBox fx:id="checkAddDirect" mnemonicParsing="false" text="إضافة مباشرة" />
                             </children>
                             <padding>
-                                <Insets bottom="5.0" left="5.0" right="5.0" top="5.0"/>
+                                <Insets bottom="5.0" left="5.0" right="5.0" top="5.0" />
                             </padding>
                         </HBox>
-                        <TableView fx:id="tableItems" VBox.vgrow="SOMETIMES">
-                        </TableView>
+                        <Pagination fx:id="pagination" VBox.vgrow="SOMETIMES" />
                     </children>
                     <padding>
-                        <Insets bottom="5.0" left="5.0" right="5.0" top="5.0"/>
+                        <Insets bottom="5.0" left="5.0" right="5.0" top="5.0" />
                     </padding>
                 </VBox>
                 <VBox>
                     <children>
                         <ToolBar>
                             <items>
-                                <Button fx:id="btnAdd2" mnemonicParsing="false" text="إضافة"/>
+                                <Button fx:id="btnAdd2" mnemonicParsing="false" text="إضافة" />
                             </items>
                         </ToolBar>
                         <TableView fx:id="tableView" VBox.vgrow="SOMETIMES">
                         </TableView>
                         <HBox alignment="CENTER_RIGHT" spacing="5.0" styleClass="pane-box-last">
                             <children>
-                                <Button fx:id="btnSave" mnemonicParsing="false" text="Save"/>
-                                <Button fx:id="btnClose" layoutX="15.0" layoutY="16.0" mnemonicParsing="false"
-                                        text="Close"/>
+                                <Button fx:id="btnSave" mnemonicParsing="false" text="Save" />
+                                <Button fx:id="btnClose" layoutX="15.0" layoutY="16.0" mnemonicParsing="false" text="Close" />
                             </children>
                         </HBox>
                     </children>
                     <padding>
-                        <Insets bottom="5.0" left="5.0" right="5.0"/>
+                        <Insets bottom="5.0" left="5.0" right="5.0" />
                     </padding>
                 </VBox>
             </items>

@@ -1,6 +1,5 @@
 package com.hamza.account.service;
 
-import com.hamza.account.controller.main.LoadDataAndList;
 import com.hamza.account.controller.others.ServiceData;
 import com.hamza.account.model.base.BaseTotals;
 import com.hamza.account.model.dao.DaoFactory;
@@ -43,6 +42,10 @@ public record ItemsService(DaoFactory daoFactory, ServiceData serviceData) {
         return daoFactory.getItemsDao().updateList(itemsModel);
     }
 
+    public int insertList(List<ItemsModel> list) throws DaoException {
+        return daoFactory.getItemsDao().insertList(list);
+    }
+
     public int deleteItem(int id) throws DaoException {
         return daoFactory.getItemsDao().deleteById(id);
     }
@@ -81,26 +84,32 @@ public record ItemsService(DaoFactory daoFactory, ServiceData serviceData) {
                 .sorted(Comparator.comparing(ItemsModel::getSumSales).reversed()).limit(5).toList();
     }
 
-    public List<ItemsModel> filterItemListsByStockName(String stockName) {
-        if (stockName == null) return getMainItemsListWithoutInactive();
-        return getMainItemsListWithoutInactive().stream().filter(itemsModel -> itemsModel.getItemStock().getName().equals(stockName)).toList();
+    public List<ItemsModel> filterItemListsByStockName(String stockName) throws DaoException {
+        var itemsModels = daoFactory.getItemsDao().loadAll();
+        if (stockName == null) return itemsModels;
+        return itemsModels.stream().filter(itemsModel -> itemsModel.getItemStock().getName().equals(stockName)).toList();
     }
 
-    public List<ItemsModel> getListItemsInMainStock() {
-        return getMainItemsList().stream().filter(itemsModel -> itemsModel.getItemStock().getId() == 1).toList();
+
+    public ItemsModel findItemById(int id) throws DaoException {
+        return daoFactory.getItemsDao().findItemById(id);
     }
 
-    public List<ItemsModel> getMainItemsListWithoutInactive() {
-        return getMainItemsList().stream()
-                .filter(ItemsModel::isActiveItem).toList();
+    public List<ItemsModel> getFilterItems(String newValue) throws DaoException {
+        return daoFactory.getItemsDao().getFilterItems(newValue);
+    }
+
+
+    public List<ItemsModel> getProducts(int rowsPerPage, int offset) throws DaoException {
+        return daoFactory.getItemsDao().getProducts(rowsPerPage, offset);
+    }
+
+    public int getCountItems() {
+        return daoFactory.getItemsDao().getCountItems();
     }
 
     public List<ItemsModel> getMainItemsListWithoutInactiveByMainGroupId(int mainGroupId) throws DaoException {
         return daoFactory.getItemsDao().getItemsByMainGroupId(mainGroupId).stream()
                 .filter(ItemsModel::isActiveItem).toList();
-    }
-
-    public List<ItemsModel> getMainItemsList() {
-        return LoadDataAndList.getItemsModelList();
     }
 }

@@ -22,11 +22,11 @@ import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.button.api.ButtonColumnI;
 import com.hamza.controlsfx.button.button_column.ButtonColumn;
 import com.hamza.controlsfx.database.DaoException;
-import com.hamza.controlsfx.util.ImageChoose;
 import com.hamza.controlsfx.interfaceData.AppSettingInterface;
 import com.hamza.controlsfx.language.Setting_Language;
 import com.hamza.controlsfx.others.DateSetting;
 import com.hamza.controlsfx.table.TableColumnAnnotation;
+import com.hamza.controlsfx.util.ImageChoose;
 import javafx.collections.FXCollections;
 import javafx.collections.transformation.FilteredList;
 import javafx.collections.transformation.SortedList;
@@ -160,22 +160,20 @@ public class CardController extends LoadData implements Initializable, AppSettin
     }
 
     private void print() {
-        List<CardItems> cardItems = cardItemsList();
-        Optional<ItemsModel> first = itemsService.getListItemsInMainStock().stream().filter(itemsModel -> itemsModel.getId() == numItem).findFirst();
-        double purchase = cardItems.stream().filter(cardItems1 -> cardItems1.getProcessType().equals(ProcessType.PURCHASE)).mapToDouble(CardItems::getQuantity).sum();
-        double sales = cardItems.stream().filter(cardItems1 -> cardItems1.getProcessType().equals(ProcessType.SALES)).mapToDouble(CardItems::getQuantity).sum();
-        double purchase_re = cardItems.stream().filter(cardItems1 -> cardItems1.getProcessType().equals(ProcessType.PURCHASE_RETURN)).mapToDouble(CardItems::getQuantity).sum();
-        double sales_re = cardItems.stream().filter(cardItems1 -> cardItems1.getProcessType().equals(ProcessType.SALES_RETURN)).mapToDouble(CardItems::getQuantity).sum();
+        try {
+            List<CardItems> cardItems = cardItemsList();
+            ItemsModel itemsModel = itemsService.findItemById(numItem);
+            double purchase = cardItems.stream().filter(cardItems1 -> cardItems1.getProcessType().equals(ProcessType.PURCHASE)).mapToDouble(CardItems::getQuantity).sum();
+            double sales = cardItems.stream().filter(cardItems1 -> cardItems1.getProcessType().equals(ProcessType.SALES)).mapToDouble(CardItems::getQuantity).sum();
+            double purchase_re = cardItems.stream().filter(cardItems1 -> cardItems1.getProcessType().equals(ProcessType.PURCHASE_RETURN)).mapToDouble(CardItems::getQuantity).sum();
+            double sales_re = cardItems.stream().filter(cardItems1 -> cardItems1.getProcessType().equals(ProcessType.SALES_RETURN)).mapToDouble(CardItems::getQuantity).sum();
 
-        first.ifPresent(itemsModel -> {
-            try {
-                double amount = itemsModel.getFirstBalanceForStock() + purchase + sales_re - (sales + purchase_re);
-                new Print_Reports().printCardItem(numItem, purchase, sales, purchase_re, sales_re, itemsModel.getFirstBalanceForStock()
-                        , amount, dateFrom.getValue().toString(), dateTo.getValue().toString());
-            } catch (DaoException e) {
-                logError(e);
-            }
-        });
+            double amount = itemsModel.getFirstBalanceForStock() + purchase + sales_re - (sales + purchase_re);
+            new Print_Reports().printCardItem(numItem, purchase, sales, purchase_re, sales_re, itemsModel.getFirstBalanceForStock()
+                    , amount, dateFrom.getValue().toString(), dateTo.getValue().toString());
+        } catch (Exception e) {
+            logError(e);
+        }
 
     }
 

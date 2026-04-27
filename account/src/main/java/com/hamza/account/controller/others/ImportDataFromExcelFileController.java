@@ -259,34 +259,15 @@ public class ImportDataFromExcelFileController implements Initializable, AppSett
         List<Double> buy = (List<Double>) data.get(ImportDataFromExcelFileController.this.buy);
         List<Double> sel = (List<Double>) data.get(ImportDataFromExcelFileController.this.sel);
         List<Double> balance = (List<Double>) data.get(ImportDataFromExcelFileController.this.balance);
-        List<ItemsModel> itemsModels1 = itemsService.getMainItemsList();
-        List<Integer> list = itemsModels1.stream().map(ItemsModel::getId).toList();
 
         int size = name.size();
-        // check list
-        Integer max = 0;
-        if (!list.isEmpty())
-            max = Collections.max(list);
-        Set<Integer> set = new Random().ints(1000, 2000)
-                .distinct()
-                .limit(size)
-                .boxed()
-                .collect(Collectors.toSet());
-
-        Iterator<Integer> itr = set.iterator();
-
         for (int i = 0; i < size; i++) {
-            max++;
-            String barcode1 = barcode.get(i);
-            if (barcode1.equals("1")) {
-                barcode1 = generateRandomBarcode(itr.next());
-            }
+            ItemsModel itemModel = new ItemsModel(barcode.get(i), name.get(i));
+            itemModel.setId(0);
+            itemModel.setBuyPrice(Math.round(buy.get(i) * 100.0) / 100.0);
 
-            ItemsModel itemModel = new ItemsModel(barcode1, name.get(i));
-            itemModel.setId(max);
-            itemModel.setBuyPrice(buy.get(i));
             itemModel.setSubGroups(new SubGroups(1));
-            itemModel.setMini_quantity(sel.get(i));
+            itemModel.setSelPrice1(sel.get(i));
             itemModel.setFirstBalanceForStock(balance.get(i));
             itemModel.setUnitsType(new UnitsModel(1));
             itemsModels.add(itemModel);

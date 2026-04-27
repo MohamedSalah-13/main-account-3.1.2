@@ -8,10 +8,10 @@ import com.hamza.account.openFxml.FxmlPath;
 import com.hamza.account.openFxml.OpenFxmlApplication;
 import com.hamza.account.otherSetting.MaskerPaneSetting;
 import com.hamza.controlsfx.alert.AllAlerts;
-import com.hamza.controlsfx.util.ImageChoose;
 import com.hamza.controlsfx.interfaceData.AppSettingInterface;
 import com.hamza.controlsfx.language.Error_Text_Show;
 import com.hamza.controlsfx.language.Setting_Language;
+import com.hamza.controlsfx.util.ImageChoose;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
 import javafx.scene.control.CheckBox;
@@ -94,20 +94,7 @@ public class DeleteDataController implements AppSettingInterface {
                 return;
             }
             if (AllAlerts.confirmDelete()) {
-                maskerPaneSetting.showMaskerPane(() -> {
-                    delete();
-                    LoadDataAndList.get2ItemsLoad();
-//                    LoadDataAndList.get2SalesList();
-//                    LoadDataAndList.get2SalesReturnList();
-//                    LoadDataAndList.get2PurchaseList();
-//                    LoadDataAndList.get2PurchaseReturnList();
-//                    LoadDataAndList.get2TotalSales();
-//                    LoadDataAndList.get2TotalSalesReturn();
-//                    LoadDataAndList.get2TotalBuys();
-//                    LoadDataAndList.get2TotalBuysReturn();
-//                    LoadDataAndList.get2ListCustomers();
-//                    LoadDataAndList.get2ListSuppliers();
-                });
+                maskerPaneSetting.showMaskerPane(() -> delete());
 
                 maskerPaneSetting.getVoidTask().setOnSucceeded(workerStateEvent -> {
                     AllAlerts.alertSave();

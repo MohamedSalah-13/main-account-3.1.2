@@ -3,7 +3,6 @@ package com.hamza.account.controller.invoice;
 import com.hamza.account.config.Image_Setting;
 import com.hamza.account.config.SaveDatabaseFile;
 import com.hamza.account.controller.main.DataPublisher;
-import com.hamza.account.controller.main.LoadDataAndList;
 import com.hamza.account.controller.model.ModelPrintInvoice;
 import com.hamza.account.controller.search.ItemsSearch;
 import com.hamza.account.controller.setting.SettingTabLanguageController;
@@ -1052,16 +1051,6 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
         var b = invoiceBuy.updateItemPrice(items, roundToTwoDecimalPlaces(purchase.getPrice() / unitIdPurchase), priceTypeByNameId);
         if (b) {
             var i = itemsService.commitItemUpdate(items);
-            if (i >= 1) {
-                new Thread(() -> {
-                    try {
-                        Thread.sleep(1000);
-                        LoadDataAndList.get2ItemsLoad();
-                    } catch (Exception e) {
-                        log.error(e.getMessage(), e.getCause());
-                    }
-                }).start();
-            }
         }
     }
 

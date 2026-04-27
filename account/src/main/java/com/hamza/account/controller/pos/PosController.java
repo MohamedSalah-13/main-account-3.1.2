@@ -4,13 +4,12 @@ package com.hamza.account.controller.pos;
 import com.hamza.account.config.Image_Setting;
 import com.hamza.account.controller.main.DataPublisher;
 import com.hamza.account.controller.main.DisableButtons;
-import com.hamza.account.controller.main.LoadDataAndList;
 import com.hamza.account.controller.model.ModelPrintInvoice;
 import com.hamza.account.controller.name_account.NameController;
-import com.hamza.account.interfaces.api.DataInterface;
-import com.hamza.account.interfaces.impl_dataInterface.CustomData;
 import com.hamza.account.features.key_setting.UpdateInterface;
 import com.hamza.account.features.key_setting.UpdateQuantity;
+import com.hamza.account.interfaces.api.DataInterface;
+import com.hamza.account.interfaces.impl_dataInterface.CustomData;
 import com.hamza.account.model.base.BasePurchasesAndSales;
 import com.hamza.account.model.base.BaseTotals;
 import com.hamza.account.model.dao.DaoFactory;
@@ -64,8 +63,8 @@ import static com.hamza.account.controller.invoice.DialogCashPaid.showPriceSelec
 import static com.hamza.account.controller.invoice.UpdateInvoiceRow.updateData;
 import static com.hamza.account.otherSetting.Currency_Setting.getCurrency;
 import static com.hamza.controlsfx.dateTime.DateUtils.DATE_TIME_FORMATTER;
-import static com.hamza.controlsfx.util.ImageChoose.createIcon;
 import static com.hamza.controlsfx.others.TextFormat.createNumericTextFormatter;
+import static com.hamza.controlsfx.util.ImageChoose.createIcon;
 import static com.hamza.controlsfx.util.NumberUtils.roundToTwoDecimalPlaces;
 
 @Log4j2
@@ -444,9 +443,8 @@ public class PosController extends ButtonSetting {
     }
 
     private void refreshData() {
-        maskerPaneSetting.showMaskerPane(LoadDataAndList::get2ItemsLoad);
+//        maskerPaneSetting.showMaskerPane(LoadDataAndList::get2ItemsLoad);
         maskerPaneSetting.getVoidTask().setOnSucceeded(event -> {
-            clearGroupCache();
             loadData();
         });
     }
@@ -947,14 +945,6 @@ public class PosController extends ButtonSetting {
         }
     }
 
-    private void clearGroupCache() {
-        groupButtonsCache.clear();
-        groupItemsCache.clear();
-        itemButtonCache.clear();
-        itemRefById.clear();
-        searchIndex.clear();
-        allIndexedItems.clear();
-    }
 
     private List<ItemsModel> loadItemsForGroup(int mainGroupId) {
         try {

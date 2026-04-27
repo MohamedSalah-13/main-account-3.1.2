@@ -1,13 +1,15 @@
 package com.hamza.account.controller.items;
 
 import com.hamza.account.config.Image_Setting;
-import com.hamza.account.controller.main.*;
+import com.hamza.account.controller.main.DataPublisher;
+import com.hamza.account.controller.main.DisableButtons;
+import com.hamza.account.controller.main.LoadData;
+import com.hamza.account.controller.main.MainItems;
 import com.hamza.account.controller.others.SelectedButton;
 import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.model.domain.ItemsModel;
 import com.hamza.account.model.domain.MainGroups;
 import com.hamza.account.openFxml.FxmlPath;
-import com.hamza.account.otherSetting.MaskerPaneSetting;
 import com.hamza.account.table.EditCell;
 import com.hamza.account.table.TableSetting;
 import com.hamza.account.type.UserPermissionType;
@@ -29,8 +31,6 @@ import javafx.application.Platform;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
-import javafx.collections.transformation.FilteredList;
-import javafx.collections.transformation.SortedList;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
 import javafx.scene.input.KeyCode;
@@ -48,24 +48,19 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
-import java.util.function.Predicate;
 
 import static com.hamza.account.config.PropertiesName.getItemEditFromTable;
 import static com.hamza.account.view.ConvertItemsGroup.HEADER_TEXT;
-import static com.hamza.controlsfx.table.TextSearch.searchTableFromExitedText;
 import static com.hamza.controlsfx.util.ImageChoose.createIcon;
 
 @Log4j2
 @FxmlPath(pathFile = "items/items-view.fxml")
 public class ItemsController extends LoadData {
 
-    private final FilteredList<ItemsModel> filteredTable;
     private final Publisher<ItemsModel> publisherAddItem;
     private final MainItems mainScreenData;
-    private final ObservableList<ItemsModel> itemsModelObservableList;
+    private final TableView<ItemsModel> tableView = new TableView<>();
 
-    @FXML
-    private TableView<ItemsModel> tableView;
     @FXML
     private Button btnNew, btnUpdate, btnDelete, btnRefresh, btnSearch;
     @FXML
@@ -84,14 +79,14 @@ public class ItemsController extends LoadData {
     private ToggleButton btnSelected;
     @FXML
     private MenuButton menuButtonOther, menuButtonPrint;
-    private MaskerPaneSetting maskerPaneSetting;
+    @FXML
+    private Pagination pagination;
+    private PaginationTableSetting paginationTableSetting;
 
     public ItemsController(DaoFactory daoFactory, DataPublisher dataPublisher, MainItems mainScreenData) throws Exception {
         super(daoFactory, dataPublisher);
         this.publisherAddItem = dataPublisher.getPublisherAddItem();
         this.mainScreenData = mainScreenData;
-        this.itemsModelObservableList = FXCollections.observableArrayList();
-        this.filteredTable = new FilteredList<>(itemsModelObservableList);
     }
 
     public void initialize() {
@@ -100,12 +95,12 @@ public class ItemsController extends LoadData {
         action();
         buttonGraphic();
         permissionButtons();
-        maskerPaneSetting.showMaskerPane(this::refreshData);
-//        applyRowColoringForBalance();
+        paginationTableSetting = new PaginationTableSetting(tableView, itemsService
+                , txtSearch, pagination);
+        paginationTableSetting.initializePagination();
     }
 
     private void otherSetting() {
-        maskerPaneSetting = new MaskerPaneSetting(stackPane);
         comboMain.setPromptText(Setting_Language.WORD_MAIN_G);
         comboSub.setPromptText(Setting_Language.WORD_SUB_G);
         menuItemConvertGroup.setText(HEADER_TEXT);
@@ -161,11 +156,7 @@ public class ItemsController extends LoadData {
         if (getItemEditFromTable()) setUpEditableTableColumns();
 
         ColumnSetting.addSelectedColumn(tableView);
-        SortedList<ItemsModel> sortedList = new SortedList<>(filteredTable);
-        sortedList.comparatorProperty().bind(tableView.comparatorProperty());
-        tableView.setItems(sortedList);
-        tableView.refresh();
-
+        TableSetting.tableMenuSetting(getClass(), tableView);
 
         // change column names
         dataPublisher.getPublisherSelPriceUnits().addObserver(message -> Platform.runLater(() -> updateColumnNames(message)));
@@ -239,7 +230,7 @@ public class ItemsController extends LoadData {
             }
         };
 
-        btnSearch.setOnAction(actionEvent -> searchAction());
+//        btnSearch.setOnAction(actionEvent -> searchAction());
         comboMain.valueProperty().addListener((observableValue, string, t1) -> getData(t1));
 
         menuItemCard.setOnAction(actionEvent -> openDetails());
@@ -259,12 +250,8 @@ public class ItemsController extends LoadData {
             addItem(numItem);
         });
         btnDelete.setOnAction(actionEvent -> delete());
-        btnRefresh.setOnAction(actionEvent -> {
-            maskerPaneSetting.showMaskerPane(LoadDataAndList::get2ItemsLoad);
-            maskerPaneSetting.getVoidTask().setOnSucceeded(workerStateEvent -> refreshData());
-        });
+        btnRefresh.setOnAction(actionEvent -> paginationTableSetting.initializePagination());
 
-        txtSearch.setOnKeyReleased(event -> searchTableFromExitedText(tableView, txtSearch.getText(), filteredTable));
         tableView.itemsProperty().addListener((observableValue, ts, t1) -> txtSumTotals.setText(String.valueOf(tableView.getItems().size())));
 
         tableView.setOnKeyPressed(keyEvent -> {
@@ -315,8 +302,6 @@ public class ItemsController extends LoadData {
             if (i >= 1) {
                 AllAlerts.alertDelete();
                 btnRefresh.fire();
-                itemsModelObservableList.remove(selectedItem);
-                filteredTable.setPredicate(itemsModel -> true);
                 tableView.refresh();
             }
         } catch (DaoException e) {
@@ -333,13 +318,6 @@ public class ItemsController extends LoadData {
         } catch (Exception e) {
             logErrors(e);
         }
-    }
-
-    private void refreshData() {
-        var itemsModelList = itemsService.getMainItemsList();
-        itemsModelObservableList.setAll(itemsModelList);
-        filteredTable.setPredicate(t -> true);
-        tableView.refresh();
     }
 
     private void printBarcode() {
@@ -394,26 +372,6 @@ public class ItemsController extends LoadData {
             }
         }
         return list;
-    }
-
-    private void searchAction() {
-        filteredTable.setPredicate((filterBySubGroup(comboSub.getSelectionModel().getSelectedItem(), comboMain.getSelectionModel().getSelectedItem())).and(filterByMainGroup((comboMain.getSelectionModel().getSelectedItem()))));
-    }
-
-    private Predicate<ItemsModel> filterByMainGroup(String string) {
-        if (!comboMain.getSelectionModel().isEmpty()) {
-            if (comboMain.getSelectionModel().getSelectedIndex() == 0) return t2 -> true;
-            return itemsModel -> itemsModel.getSubGroups().getMainGroups().getName().equals(string);
-        }
-        return t2 -> true;
-    }
-
-    private Predicate<ItemsModel> filterBySubGroup(String string, String mainName) {
-        if (!comboSub.getSelectionModel().isEmpty()) {
-            if (comboSub.getSelectionModel().getSelectedIndex() == 0) return t2 -> true;
-            return itemsModel -> itemsModel.getSubGroups().getName().equals(string) && itemsModel.getSubGroups().getMainGroups().getName().equals(mainName);
-        }
-        return t2 -> true;
     }
 
     private void exportToExcel() {
@@ -618,9 +576,6 @@ public class ItemsController extends LoadData {
         item.setUsers(LogApplication.usersVo);
         var i = itemsService.commitItemUpdate(item);
         if (i >= 0) {
-            Thread thread = new Thread(LoadDataAndList::get2ItemsLoad);
-            thread.setDaemon(true);
-            thread.start();
             tableView.refresh();
             tableView.requestFocus();
             tableView.getSelectionModel().selectNext();

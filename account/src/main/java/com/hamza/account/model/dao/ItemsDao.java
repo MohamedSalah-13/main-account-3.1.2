@@ -11,13 +11,17 @@ import lombok.extern.log4j.Log4j2;
 import org.jetbrains.annotations.NotNull;
 
 import java.sql.*;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 import static com.hamza.controlsfx.util.NumberUtils.roundToTwoDecimalPlaces;
 
 @Log4j2
 public class ItemsDao extends AbstractDao<ItemsModel> {
 
+    private static final int FILTER_ITEMS_LIMIT = 50;
     public static final String BARCODE = "barcode";
     public static final String NAME_ITEM = "nameItem";
     private final String ID = "id";
@@ -279,6 +283,9 @@ public class ItemsDao extends AbstractDao<ItemsModel> {
         return itemsModel;
     }
 
+    public ItemsModel findItemById(Integer itemId) throws DaoException {
+        return queryForObject(QUERY_ITEMS.concat(" where items.id = ? "), this::map, itemId);
+    }
 
     public ItemsModel findItemByIdAndStockId(Integer itemId, Integer stockId) throws DaoException {
         return queryForObject(QUERY_ITEMS.concat(" where items.id = ? and ip.stock_id = ? "), this::map, itemId, stockId);
@@ -303,17 +310,146 @@ public class ItemsDao extends AbstractDao<ItemsModel> {
         return 0;
     }
 
-    public List<ItemsModel> getMainItemsList() throws DaoException {
-        return queryForObjects("SELECT * from items", this::getItemsModel);
-    }
-
     public List<ItemsModel> getItemsByMainGroupId(int mainGroupId) throws DaoException {
         String query = QUERY_ITEMS + " where items.sub_num in (select id from sub_group where main_id = ?)";
         return queryForObjects(query, this::map, mainGroupId);
     }
 
-    public int deleteRangeById(Integer... ids) throws DaoException {
-        String query = SqlStatements.deleteInRangeId(TABLE_NAME, ID, ids);
-        return executeUpdate(query);
+    private static final String FILTER_ITEMS_SQL_TEXT_STARTS = """
+            SELECT *
+            FROM items
+            JOIN quantity_items_table ip ON items.id = ip.item_id
+            WHERE items.nameItem LIKE ?
+               OR items.barcode LIKE ?
+            ORDER BY
+                CASE
+                    WHEN items.barcode = ? THEN 0
+                    WHEN items.id = ? THEN 1
+                    WHEN items.nameItem LIKE ? THEN 2
+                    WHEN items.barcode LIKE ? THEN 3
+                    ELSE 4
+                END,
+                items.id DESC
+            LIMIT %d
+            """.formatted(FILTER_ITEMS_LIMIT);
+
+    private static final String FILTER_ITEMS_SQL_TEXT_CONTAINS = """
+            SELECT *
+            FROM items
+            JOIN quantity_items_table ip ON items.id = ip.item_id
+            WHERE items.nameItem LIKE ?
+               OR items.barcode LIKE ?
+            ORDER BY
+                CASE
+                    WHEN items.barcode = ? THEN 0
+                    WHEN items.id = ? THEN 1
+                    ELSE 2
+                END,
+                items.id DESC
+            LIMIT %d
+            """.formatted(FILTER_ITEMS_LIMIT);
+
+    private static final String FILTER_ITEMS_SQL_NUMERIC = """
+            SELECT *
+            FROM items
+            JOIN quantity_items_table ip ON items.id = ip.item_id
+            WHERE items.id = ?
+               OR items.barcode = ?
+            ORDER BY
+                CASE
+                    WHEN items.id = ? THEN 0
+                    WHEN items.barcode = ? THEN 1
+                    ELSE 2
+                END,
+                items.id DESC
+            LIMIT %d
+            """.formatted(FILTER_ITEMS_LIMIT);
+
+
+    public List<ItemsModel> getFilterItems(String searchText) throws DaoException {
+        if (searchText == null) {
+            return getLast50Items();
+        }
+
+        String q = searchText.trim();
+        if (q.isEmpty()) {
+            return getLast50Items();
+        }
+
+        boolean numericOnly = q.matches("\\d+");
+
+        // 1) لو أرقام فقط: بحث سريع ودقيق (id/barcode =)
+        if (numericOnly) {
+            int id;
+            try {
+                id = Integer.parseInt(q);
+            } catch (NumberFormatException ex) {
+                // باركود طويل جداً => اعتبره باركود فقط
+                id = -1;
+            }
+            return queryForObjects(FILTER_ITEMS_SQL_NUMERIC, this::map, id, q, id, q);
+        }
+
+        // 2) نص/مختلط: مرحلتين startsWith ثم contains
+        final String likeStarts = q + "%";
+        final String likeContains = "%" + q + "%";
+
+        // LinkedHashMap يحافظ على الترتيب + يمنع التكرار حسب id
+        Map<Integer, ItemsModel> result = new LinkedHashMap<>(FILTER_ITEMS_LIMIT);
+
+        // Phase A: startsWith (سريع + يستفيد من index)
+        List<ItemsModel> starts = queryForObjects(
+                FILTER_ITEMS_SQL_TEXT_STARTS,
+                this::map,
+                likeStarts, likeStarts, // WHERE
+                q, 0,                   // ORDER BY (barcode exact, id exact disabled)
+                likeStarts, likeStarts  // ORDER BY (name starts, barcode starts)
+        );
+        putUniqueById(result, starts, FILTER_ITEMS_LIMIT);
+
+        // Phase B: contains (%text%) فقط إذا لسه محتاجين نتائج
+        if (result.size() < FILTER_ITEMS_LIMIT) {
+            List<ItemsModel> contains = queryForObjects(
+                    FILTER_ITEMS_SQL_TEXT_CONTAINS,
+                    this::map,
+                    likeContains, likeContains, // WHERE (contains)
+                    q, 0                        // ORDER BY (barcode exact, id exact disabled)
+            );
+            putUniqueById(result, contains, FILTER_ITEMS_LIMIT);
+        }
+
+        return new ArrayList<>(result.values());
+    }
+
+    private void putUniqueById(Map<Integer, ItemsModel> target, List<ItemsModel> source, int limit) {
+        for (ItemsModel item : source) {
+            if (item == null) continue;
+            target.putIfAbsent(item.getId(), item);
+            if (target.size() >= limit) return;
+        }
+    }
+
+
+    public List<ItemsModel> getLast50Items() throws DaoException {
+        return queryForObjects(QUERY_ITEMS.concat(" ORDER BY id DESC LIMIT 50"), this::map);
+    }
+
+    public List<ItemsModel> getProducts(int rowsPerPage, int offset) throws DaoException {
+        return queryForObjects(QUERY_ITEMS.concat(" ORDER BY id DESC LIMIT ? OFFSET ?"), this::map, rowsPerPage, offset);
+    }
+    public int getCountItems() {
+        return queryForInt("SELECT COUNT(*) FROM items");
+    }
+
+    private int queryForInt(String query) {
+        try {
+            PreparedStatement statement = connection.prepareStatement(query);
+            ResultSet resultSet = statement.executeQuery();
+            resultSet.next();
+            return resultSet.getInt(1);
+        } catch (SQLException e) {
+            log.error(e.getMessage(), e.getCause());
+            return 0;
+        }
     }
 }

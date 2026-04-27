@@ -18,9 +18,6 @@ import java.util.function.Supplier;
 public class DataList extends DataTask {
     private static final Map<Class<?>, List<?>> dataLists = new ConcurrentHashMap<>();
     private static DaoFactory daoFactory;
-    @Setter
-    @Getter
-    private static List<ItemsModel> itemsModelList = new ArrayList<>();
 
     public DataList(DaoFactory daoFactory) {
         DataList.daoFactory = daoFactory;
@@ -41,14 +38,6 @@ public class DataList extends DataTask {
             log.error("Error loading {}: {}", dataName, e.getMessage(), e);
             dataSetter.accept(new ArrayList<>());
         }
-    }
-
-    public static void get2ItemsLoad() {
-        loadData(
-                () -> listData(daoFactory.getItemsDao()),
-                DataList::setItemsModelList,
-                "items"
-        );
     }
 
     private void initializeLists() {
