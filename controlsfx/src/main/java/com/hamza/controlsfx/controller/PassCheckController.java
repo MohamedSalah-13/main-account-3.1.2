@@ -1,6 +1,6 @@
 package com.hamza.controlsfx.controller;
 
-import com.hamza.controlsfx.language.StringConstants;
+import com.hamza.controlsfx.language.Error_Text_Show;
 import com.hamza.controlsfx.others.ShowPassService;
 import javafx.beans.property.SimpleBooleanProperty;
 import javafx.fxml.FXML;
@@ -30,9 +30,8 @@ public class PassCheckController {
         checkBox.selectedProperty().bindBidirectional(booleanProperty);
         ShowPassService.show(passwordField, booleanProperty);
 
-        passwordField.setPromptText(StringConstants.PLEASE_ENTER_YOUR_SYSTEM_PASSWORD);
-        labelPassword.setText(StringConstants.PASSWORD);
-        checkBox.setText(StringConstants.SHOW + " " + StringConstants.PASSWORD);
-
+        passwordField.setPromptText(Error_Text_Show.PLEASE_ENTER_YOUR_SYSTEM_PASSWORD);
+        labelPassword.setText(Error_Text_Show.PASSWORD);
+        checkBox.setText("show password");
     }
 }

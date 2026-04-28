@@ -59,9 +59,9 @@ import java.util.ResourceBundle;
 import java.util.function.Predicate;
 import java.util.function.ToDoubleFunction;
 
-import static com.hamza.controlsfx.util.ImageChoose.createIcon;
 import static com.hamza.controlsfx.table.TextSearch.searchTableFromExitedText;
 import static com.hamza.controlsfx.table.columnEdit.ColumnSetting.addColumn;
+import static com.hamza.controlsfx.util.ImageChoose.createIcon;
 import static com.hamza.controlsfx.util.NumberUtils.roundToTwoDecimalPlaces;
 
 
@@ -201,11 +201,11 @@ public class TotalsController<T1 extends BasePurchasesAndSales, T2 extends BaseT
         btnUpdate.setText(Setting_Language.WORD_UPDATE);
         btnDelete.setText(Setting_Language.WORD_DELETE);
         btnShowInvoice.setText(Setting_Language.WORD_SHOW);
-        btnToExcel.setText(Setting_Language.EXPORT_TO_EXCEL);
+        btnToExcel.setText("Export to Excel");
         textSearch.setPromptText(Setting_Language.WORD_SEARCH);
         comboName.setPromptText(Setting_Language.WORD_NAME);
         comboDelegate.setPromptText(Setting_Language.NAME_DELEGATE);
-        checkBoxShowOtherSearch.setText(Setting_Language.OTHER_SEARCH);
+        checkBoxShowOtherSearch.setText(Setting_Language.OTHERS);
         btnSelected.setText(Setting_Language.SELECT_ALL);
         labelFrom.setText(Setting_Language.WORD_FROM);
         labelTo.setText(Setting_Language.WORD_TO);
@@ -450,7 +450,7 @@ public class TotalsController<T1 extends BasePurchasesAndSales, T2 extends BaseT
     private void searchAction() {
         btnRefresh.fire();
         maskerPaneSetting.getVoidTask().setOnSucceeded(workerStateEvent -> {
-            var and =filterByComboType().and(filterByComboName());
+            var and = filterByComboType().and(filterByComboName());
             filteredTable.setPredicate(and);
             sumTable();
         });

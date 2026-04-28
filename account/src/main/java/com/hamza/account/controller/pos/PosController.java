@@ -726,7 +726,7 @@ public class PosController extends ButtonSetting {
             }
 
             if (customerId > 0) {
-                var b = AllAlerts.confirm_all("هل تريد تعديل البيانات");
+                var b = AllAlerts.confirm_all("update","هل تريد تعديل البيانات");
                 if (!b) return;
             }
 

@@ -5,7 +5,6 @@ import com.hamza.controlsfx.backupPane.DatabaseBackup;
 import com.hamza.controlsfx.util.Extensions;
 import com.hamza.controlsfx.util.crypto.CryptoDatabaseFile;
 import com.hamza.controlsfx.interfaceData.DownloadTask;
-import com.hamza.controlsfx.language.StringConstants;
 import com.hamza.controlsfx.util.Opacity_Move_Stage;
 import com.hamza.controlsfx.view.BackupApplication;
 import javafx.beans.property.BooleanProperty;
@@ -49,7 +48,7 @@ public record BackupFiles<V>(DatabaseBackup databaseBackup, DownloadTask progres
             File targetFile = fileChooser.showSaveDialog(null);
 
             if (targetFile == null) {
-                log.warn("{}: No file selected for backup.", StringConstants.MESSAGE);
+                log.warn("No file selected for backup.");
                 throw new IOException("No file selected for backup.");
             }
             maskerPaneSetting.showMaskerPane(() -> {
@@ -151,7 +150,7 @@ public record BackupFiles<V>(DatabaseBackup databaseBackup, DownloadTask progres
         File selectedFile = fileChooser.showOpenDialog(null);
 
         if (selectedFile == null) {
-            log.warn("{}: No file selected for restore.", StringConstants.MESSAGE);
+            log.warn("No file selected for restore.");
             throw new IOException("No file selected for restore.");
         }
 

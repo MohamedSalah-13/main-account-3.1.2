@@ -1,7 +1,6 @@
 package com.hamza.controlsfx.controller;
 
 import com.hamza.controlsfx.util.FileDir;
-import com.hamza.controlsfx.language.StringConstants;
 import javafx.application.Platform;
 import javafx.concurrent.Task;
 import javafx.fxml.FXML;
@@ -32,10 +31,10 @@ public class DateTimePaneController {
         textSystem.setText(FileDir.OPERATE_SYSTEM);
         textNameWindows.setText(FileDir.USER_NAME);
 
-        labelDate.setText(StringConstants.DATE);
-        labelTime.setText(StringConstants.TIME);
-        labelSystem.setText(StringConstants.SYSTEM);
-        labelNameWindows.setText(StringConstants.COMPUTER_NAME);
+        labelDate.setText("date");
+        labelTime.setText("time");
+        labelSystem.setText("system");
+        labelNameWindows.setText("computer name");
         progress.setVisible(false);
     }
 

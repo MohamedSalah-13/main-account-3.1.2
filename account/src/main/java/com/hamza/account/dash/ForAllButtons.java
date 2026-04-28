@@ -188,7 +188,7 @@ public class ForAllButtons extends LoadData {
 
             @Override
             public void action() throws Exception {
-                if (AllAlerts.confirm_all("هل تريد الخروج")) {
+                if (AllAlerts.confirm_all("logout","هل تريد الخروج")) {
                     dataPublisher.getCloseStageFromLogout().setAvailability(true);
                     new LogApplication(daoFactory, loadDataAndList).start(new Stage());
                 }

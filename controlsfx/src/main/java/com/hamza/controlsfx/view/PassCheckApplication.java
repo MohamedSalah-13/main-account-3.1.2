@@ -2,7 +2,7 @@ package com.hamza.controlsfx.view;
 
 import com.hamza.controlsfx.controller.PassCheckController;
 import com.hamza.controlsfx.interfaceData.AppSettingInterface;
-import com.hamza.controlsfx.language.StringConstants;
+import com.hamza.controlsfx.language.Error_Text_Show;
 import com.hamza.controlsfx.others.ImageSetting;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.control.ButtonType;
@@ -48,14 +48,15 @@ public class PassCheckApplication extends Dialog<Boolean> {
                 return fxmlLoader.load();
             }
 
+
             @Override
             public String title() {
-                return StringConstants.PASSWORD;
+                return Error_Text_Show.PASSWORD;
             }
 
             @Override
             public String header() {
-                return StringConstants.PLEASE_ENTER_YOUR_SYSTEM_PASSWORD;
+                return Error_Text_Show.PLEASE_ENTER_YOUR_SYSTEM_PASSWORD;
             }
 
             @Override

@@ -7,7 +7,7 @@ public class ExitClass {
 
     public void exit(Stage stage) {
         stage.setOnCloseRequest(windowEvent -> {
-            if (AllAlerts.confirm_all("هل تريد الخروج")) {
+            if (AllAlerts.confirm_all("logout","هل تريد الخروج")) {
                 stage.close();
                 updateData();
             } else windowEvent.consume();

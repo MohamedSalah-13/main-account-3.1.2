@@ -169,7 +169,7 @@ public class ReportByTreeController<T1, T3> implements Initializable {
 
     private void nameSetting() {
         checkExpanded.setSelected(getSettingExpanded());
-        checkExpanded.setText(Setting_Language.WORD_EXPAND);
+        checkExpanded.setText("Expand All");
         labelFrom.setText(Setting_Language.WORD_FROM);
         labelTo.setText(Setting_Language.WORD_TO);
         labelName.setText(Setting_Language.WORD_NAME);

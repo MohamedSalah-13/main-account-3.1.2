@@ -5,7 +5,6 @@ import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.model.domain.UserShift;
 import com.hamza.account.openFxml.FxmlPath;
 import com.hamza.account.session.ShiftContext;
-import com.hamza.account.type.UserPermissionType;
 import com.hamza.account.view.LogApplication;
 import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.database.DaoException;
@@ -82,7 +81,7 @@ public class AdminShiftsController extends ServiceData {
             }
 
             String msg = buildForceCloseMessage(selected);
-            if (!AllAlerts.confirm_all(msg)) {
+            if (!AllAlerts.confirm_all("forceClose", msg)) {
                 return;
             }
 
@@ -106,11 +105,11 @@ public class AdminShiftsController extends ServiceData {
     private String buildForceCloseMessage(UserShift shift) {
         return String.format(
                 "هل تريد غلق الوردية قسريًا؟%n%n" +
-                "المستخدم: %s%n" +
-                "رقم الوردية: %d%n" +
-                "وقت الفتح: %s%n" +
-                "الرصيد الافتتاحي: %,.2f%n" +
-                "الملاحظات: %s",
+                        "المستخدم: %s%n" +
+                        "رقم الوردية: %d%n" +
+                        "وقت الفتح: %s%n" +
+                        "الرصيد الافتتاحي: %,.2f%n" +
+                        "الملاحظات: %s",
                 shift.getUsername(),
                 shift.getId(),
                 shift.getOpenTime() == null ? "-" : shift.getOpenTime().format(DATE_TIME_FORMATTER),

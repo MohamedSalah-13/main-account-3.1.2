@@ -1,6 +1,6 @@
 package com.hamza.controlsfx.alert;
 
-import com.hamza.controlsfx.language.StringConstants;
+import com.hamza.controlsfx.language.LanguageManager;
 import javafx.scene.control.Alert;
 import javafx.scene.control.ButtonType;
 import javafx.scene.control.Label;
@@ -15,45 +15,49 @@ import java.util.Optional;
 
 public class AllAlerts {
 
+    private static final LanguageManager LANGUAGE_MANAGER = LanguageManager.getInstance();
+    public static final String SAVE = LANGUAGE_MANAGER.getString("common.save");
+    public static final String SAVE_ALL = LANGUAGE_MANAGER.getString("common.save.all");
+    private static final String ERROR = LANGUAGE_MANAGER.getString("common.error");
+    private static final String DELETE = LANGUAGE_MANAGER.getString("common.delete");
+    private static final String DELETE_ALL = LANGUAGE_MANAGER.getString("common.delete.all");
+    private static final String DELETE_DONE = LANGUAGE_MANAGER.getString("common.delete.done");
+    private static final String MSG_DO_YOU_WANT_SAVE = LANGUAGE_MANAGER.getString("msg.do.you.want.save");
+    private static final String MSG_DO_YOU_WANT_DELETE = LANGUAGE_MANAGER.getString("msg.delete.confirm");
+
     public static void alertError(String s) {
-        new AlertSetting(Alert.AlertType.ERROR, s, StringConstants.WRONG, StringConstants.WRONG);
+        new AlertSetting(Alert.AlertType.ERROR, s, ERROR, ERROR);
     }
 
     public static void alertSave() {
-        alertSaveWithMessage(StringConstants.SAVE_DONE);
+        alertSaveWithMessage(SAVE);
     }
 
     public static void alertSaveWithMessage(String message) {
         new AlertSetting(Alert.AlertType.INFORMATION,
-                message,
-                StringConstants.SAVE_ALL_DATA,
-                StringConstants.SAVE);
+                message, SAVE_ALL, SAVE);
     }
 
     public static void alertDelete() {
-        alertDeleteWithMessage(StringConstants.DELETE_DONE);
+        alertDeleteWithMessage(DELETE_DONE);
     }
 
     public static void alertDeleteWithMessage(String message) {
         new AlertSetting(Alert.AlertType.INFORMATION,
-                message,
-                StringConstants.DELETE_ALL_DATA,
-                StringConstants.DELETE_DATA);
+                message, DELETE_ALL, DELETE);
     }
 
     public static boolean confirmDelete() {
-        return confirm_all(StringConstants.DELETE);
+        return confirm_all(DELETE, MSG_DO_YOU_WANT_DELETE);
     }
 
     public static boolean confirmSave() {
-        return confirm_all(StringConstants.SAVE);
+        return confirm_all(SAVE, MSG_DO_YOU_WANT_SAVE);
     }
 
-    public static boolean confirm_all(String s) {
+    public static boolean confirm_all(String title, String message) {
         Alert alert = new AlertSetting(
-                StringConstants.DO_YOU_WANT + " " + s,
-                s + " " + StringConstants.ALL_DATA,
-                s + " " + StringConstants.DATA);
+                message, title, title);
 
         Optional<ButtonType> result = alert.showAndWait();
         return result.isPresent() && result.get() == ButtonType.OK;

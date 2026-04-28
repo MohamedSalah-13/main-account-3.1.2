@@ -193,35 +193,45 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
     }
 
     private void labelName() {
-        // labels
-        last1.setText(Setting_Language.COUNT_ITEMS);
-        last2.setText(Setting_Language.THE_NUMBER_OF_PIECES);
-        last3.setText(Setting_Language.WORD_TOTAL);
-        last4.setText(Setting_Language.TOTAL_DISCOUNT);
-        last5.setText(Setting_Language.TOTAL_AFTER_DISCOUNT);
-        labelDelegate.setText(Setting_Language.DELEGATE);
-        labelNum.setText(Setting_Language.WORD_NUM_INV);
-        labelName.setText(Setting_Language.WORD_NAME);
-        labelBarcode.setText(Setting_Language.WORD_BARCODE);
-        labelDate.setText(Setting_Language.WORD_DATE);
-        labelStockName.setText(Setting_Language.WORD_STOCK);
-        labelCondition.setText(Setting_Language.WORD_TYPE);
-        labelSearchBy.setText(Setting_Language.NAME_ITEM);
-        labelPrice.setText(Setting_Language.PRICE);
-        labelQuantity.setText(Setting_Language.WORD_QUANTITY);
-        labelItemBalance.setText(Setting_Language.WORD_BALANCE);
-        labelTotals.setText(Setting_Language.WORD_TOTAL);
-        labelTreasury.setText(Setting_Language.TREASURY);
-        // combo
-        comboTreasury.setPromptText(Setting_Language.TREASURY);
-        comboDelegate.setPromptText(Setting_Language.DELEGATE);
-        comboStock.setPromptText(Setting_Language.WORD_STOCK);
-        comboType.setPromptText((Setting_Language.WORD_TYPE));
-        // text
-        txtBarcode.setPromptText(Setting_Language.WORD_BARCODE);
-        // buttons
-        btnSave.setText(Setting_Language.WORD_SAVE);
-        btnPrintSave.setText(Setting_Language.SAVE_AND_PRINT);
+        var lang = com.hamza.controlsfx.language.LanguageManager.getInstance();
+
+        // labels - التسميات
+        last1.setText(lang.getString("invoice.count.items"));
+        last2.setText(lang.getString("invoice.count.pieces"));
+        last3.setText(lang.getString("invoice.total"));
+        last4.setText(lang.getString("invoice.total.discount"));
+        last5.setText(lang.getString("invoice.total.after.discount"));
+        labelDelegate.setText(lang.getString("invoice.delegate"));
+        labelNum.setText(lang.getString("invoice.code"));
+        labelName.setText(lang.getString("invoice.name"));
+        labelBarcode.setText(lang.getString("invoice.barcode"));
+        labelDate.setText(lang.getString("invoice.date"));
+        labelStockName.setText(lang.getString("invoice.stock"));
+        labelCondition.setText(lang.getString("invoice.type"));
+        labelSearchBy.setText(lang.getString("invoice.search.by"));
+        labelPrice.setText(lang.getString("invoice.price"));
+        labelQuantity.setText(lang.getString("invoice.quantity"));
+        labelItemBalance.setText(lang.getString("invoice.item.balance"));
+        labelTotals.setText(lang.getString("invoice.totals"));
+        labelTreasury.setText(lang.getString("invoice.treasury"));
+        labelNotes.setText(lang.getString("invoice.notes"));
+
+        // combo prompts - نصوص الاختيارات
+        comboTreasury.setPromptText(lang.getString("invoice.treasury"));
+        comboDelegate.setPromptText(lang.getString("invoice.delegate"));
+        comboStock.setPromptText(lang.getString("invoice.stock"));
+        comboType.setPromptText(lang.getString("invoice.type"));
+
+        // text field prompts - نصوص الحقول
+        txtBarcode.setPromptText(lang.getString("invoice.barcode"));
+
+        // buttons - الأزرار
+        btnNew.setText(lang.getString("invoice.btn.new"));
+        btnSearch.setText(lang.getString("invoice.btn.search"));
+        btnSave.setText(lang.getString("invoice.btn.save"));
+        btnPrintSave.setText(lang.getString("invoice.btn.save.print"));
+        btnUpdateItem.setText(lang.getString("invoice.btn.update.item"));
+        btnAdd.setText(lang.getString("invoice.btn.add"));
     }
 
     private void addTextSearchName() {

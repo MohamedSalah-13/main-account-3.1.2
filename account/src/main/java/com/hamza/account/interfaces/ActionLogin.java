@@ -1,4 +1,4 @@
-package com.hamza.controlsfx.interfaceData;
+package com.hamza.account.interfaces;
 
 @FunctionalInterface
 public interface ActionLogin {

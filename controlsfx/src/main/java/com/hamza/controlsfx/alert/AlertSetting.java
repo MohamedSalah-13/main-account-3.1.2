@@ -1,6 +1,6 @@
 package com.hamza.controlsfx.alert;
 
-import com.hamza.controlsfx.language.StringConstants;
+import com.hamza.controlsfx.language.LanguageManager;
 import com.hamza.controlsfx.others.ImageSetting;
 import javafx.geometry.NodeOrientation;
 import javafx.scene.Node;
@@ -43,9 +43,10 @@ public class AlertSetting extends Alert {
 //        var cancel = ButtonType.CANCEL;
 //        Button okButton = (Button) getDialogPane().lookupButton(cancel);
 //        okButton.setId("btnClose");
+        LanguageManager languageManager = LanguageManager.getInstance();
 
-        buttonOk(this, ButtonType.OK, StringConstants.OK);
-        if (b) buttonOk(this, ButtonType.CANCEL, StringConstants.CANCEL);
+        buttonOk(this, ButtonType.OK, languageManager.getString("ok"));
+        if (b) buttonOk(this, ButtonType.CANCEL, languageManager.getString("cancel"));
 
         Toolkit.getDefaultToolkit().beep();
     }

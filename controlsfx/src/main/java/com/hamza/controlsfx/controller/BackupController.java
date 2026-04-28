@@ -2,10 +2,10 @@ package com.hamza.controlsfx.controller;
 
 import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.backupPane.DatabaseBackup;
+import com.hamza.controlsfx.language.Error_Text_Show;
 import com.hamza.controlsfx.util.FileDir;
 import com.hamza.controlsfx.util.DirectoryChooserApp;
 import com.hamza.controlsfx.interfaceData.DownloadTask;
-import com.hamza.controlsfx.language.StringConstants;
 import javafx.beans.property.*;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -140,19 +140,18 @@ public class BackupController<V> implements Initializable {
     }
 
     private void otherSetting() {
-        String stringBackup = StringConstants.BACKUP;
+        String stringBackup = Error_Text_Show.BACKUP;
         textTitle.setText(stringBackup);
-        btnChooseFile.setText(StringConstants.CHOOSE);
-        btnRestore.setText(StringConstants.RECOVERY);
+        btnChooseFile.setText(Error_Text_Show.CHOOSE);
+        btnRestore.setText(Error_Text_Show.RECOVERY);
         btnBackup.setText(stringBackup);
         btnBackup.setMinWidth(100);
 
-        labelHour.setText(StringConstants.HOUR);
-        labelSaveFolder.setText(StringConstants.WHERE_TO_SAVE);
-        labelDateSaveTime.setText(StringConstants.SAVING_TIME);
-        checkSaveBeforeClose.setText(StringConstants.SAVE_BEFORE_CLOSE);
-        automaticCopying.setText(StringConstants.AUTOMATIC_BACKUP);
-
+        labelHour.setText(Error_Text_Show.HOUR);
+        labelSaveFolder.setText(Error_Text_Show.WHERE_TO_SAVE);
+        labelDateSaveTime.setText(Error_Text_Show.SAVING_TIME);
+        checkSaveBeforeClose.setText(Error_Text_Show.SAVE_BEFORE_CLOSE);
+        automaticCopying.setText(Error_Text_Show.AUTOMATIC_BACKUP);
         textField.textProperty().bindBidirectional(savedLocationProperty());
         automaticCopying.selectedProperty().bindBidirectional(activateBackupProperty());
         saveBeforeClose.bindBidirectional(checkSaveBeforeClose.selectedProperty());

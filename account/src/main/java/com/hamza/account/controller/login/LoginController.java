@@ -1,10 +1,8 @@
-package com.hamza.controlsfx.controller;
+package com.hamza.account.controller.login;
 
 import com.hamza.controlsfx.alert.AllAlerts;
-import com.hamza.controlsfx.interfaceData.ActionLogin;
-import com.hamza.controlsfx.language.StringConstants;
+import com.hamza.account.interfaces.ActionLogin;
 import com.hamza.controlsfx.others.ImageSetting;
-import com.hamza.controlsfx.others.LoginService;
 import com.hamza.controlsfx.others.ShowPassService;
 import javafx.beans.binding.BooleanBinding;
 import javafx.fxml.FXML;
@@ -46,13 +44,13 @@ public class LoginController extends LoginService implements Initializable {
 
     @Override
     public void initialize(URL url, ResourceBundle resourceBundle) {
-        btnEnter.setText(StringConstants.ENTER);
-        btnClose.setText(StringConstants.CLOSE);
-        textLoginName.setText(StringConstants.SCREEN_LOGIN);
-        textCopyRight.setText(StringConstants.COPY_RIGHT);
-        txtUsername.setPromptText(StringConstants.USERNAME);
-        pass.setPromptText(StringConstants.PASSWORD);
-        checkShowPass.setText(StringConstants.SHOW + " " + StringConstants.PASSWORD);
+//        btnEnter.setText(StringConstants.ENTER);
+//        btnClose.setText(StringConstants.CLOSE);
+//        textLoginName.setText(StringConstants.SCREEN_LOGIN);
+//        textCopyRight.setText(StringConstants.COPY_RIGHT);
+//        txtUsername.setPromptText(StringConstants.USERNAME);
+//        pass.setPromptText(StringConstants.PASSWORD);
+//        checkShowPass.setText(StringConstants.SHOW + " " + StringConstants.PASSWORD);
 
         txtUsername.textProperty().bindBidirectional(usernameProperty());
         pass.textProperty().bindBidirectional(passProperty());

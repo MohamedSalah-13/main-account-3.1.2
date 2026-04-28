@@ -17,6 +17,7 @@ module com.hamza.controlsfx {
     requires org.apache.commons.io;
     requires javafx.swing;
     requires com.zaxxer.hikari;
+    requires java.prefs;
 
     opens com.hamza.controlsfx.controller to javafx.fxml;
     exports com.hamza.controlsfx.controller;

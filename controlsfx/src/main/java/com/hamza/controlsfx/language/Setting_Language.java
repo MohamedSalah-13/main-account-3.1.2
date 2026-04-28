@@ -1,52 +1,34 @@
 package com.hamza.controlsfx.language;
 
-import lombok.extern.log4j.Log4j2;
-
-import static com.hamza.controlsfx.language.ResourceLanguage.getWord;
-
-@Log4j2
 public class Setting_Language {
 
+    public static final LanguageManager INSTANCE = LanguageManager.getInstance();
     public static final String CLEAR = "مسح";
     public static final String salary = "المرتب";
     public static final String ERROR = "خطأ";
     public static final String string_birth = "تاريخ الميلاد";
     public static final String string_hire = "تاريخ التعيين";
     public static final String generate = "Generate";
-    public static final String Alert_Validity = "التنبيه عند قرب انتهاء صنف";
-    public static final String Alert_Balance = "التنبيه عند الرصيد اقل من الحد ألأدنى";
-    public static final String Alert_SelPrice = "التنبيه عند سعر البيع اقل من سعر الشراء";
+
     public static final String showInv = "عرض الفاتورة";
     public static final String print1 = "الطابعة العادية";
     public static final String print2 = "طابعة الباركود";
     public static final String print3 = "طابعة الفواتير";
-    public static final String show_column_check_items = "إظهار عمود التحديد";
-    public static final String show_customer_balance_zero = "إظهار عملاء رصيدهم صفر";
-    public static final String show_sup_balance_zero = "إظهار موردين رصيدهم صفر";
-    public static final String DATA_LESS_THAN_ZERO = "بيانات اقل من الصفر";
-    public static final String ADD_IMAGE = "صورة";
+
     public static final String COMPANY_DATA = "بيانات الشركة";
     public static final String WORD_REPORT_CUSTOMER = "تقارير العملاء";
     public static final String WORD_REPORT_SUPP = "تقارير الموردين";
-    public static final String WORD_GOOD = "جيد";
-    public static final String WORD_MEDIUM = "متوسط";
-    public static final String WORD_BAD = "سئ";
-    public static final String PRODUCTION_DATE = "تاريخ الإنتاج";
-    public static final String FINISHED_YET = "الانتهاء بعد";
+
     public static final String TOTAL_PUR = "إجمالي المشتريات";
     public static final String TOTAL_PUR_RE = "إجمالي مرتجع المشتريات";
     public static final String TOTAL_SALES_RE = "إجمالي مرتجع المبيعات";
     public static final String TOTAL_SALES = "إجمالي المبيعات";
     public static final String AREA = "المنطقة";
-    public static final String ITEMS_S1 = "لا يمكن إدخال معادلات فى خانة الأرقام";
     public static final String ALERT_ERROR = "لا يمكن إدخال باركود اكبر من 14 رقم!";
-    public static final String ITEMS_S3 = "لا يمكن ان يكون سعر البيع اصغر من او يساوى سعر الشراء";
+
     public static final String TOTAL_DISCOUNT = "إجمالي الخصم";
-    public static final String TOTAL_AFTER_DISCOUNT = "ألإجمالي بعد الخصم";
     public static final String ACCOUNT_TOTAL = "إجمالي الحساب";
-    public static final String THE_NUMBER_OF_PIECES = "عدد القطع";
     public static final String THE_AMOUNT = "المبلغ";
-    public static final String CREDIT_LIMIT = "حد الائتمان";
     public static final String COUNT_ITEMS = "عدد الأصناف";
     public static final String ACCOUNT_CARD = "كشف حساب";
     public static final String CHANGE_PASS = "تغيير كلمة المرور";
@@ -58,16 +40,13 @@ public class Setting_Language {
     public static final String THE_PASSWORD_IS_INCORRECT = "كلمة المرور غير صحيحة";
     public static final String NO_NAME = "لا يوجد بيانات بهذا الاسم";
     public static final String THIS_NAME_IS_INACTIVE = "هذ الاسم غير مفعل";
-    public static final String LOGIN_SCREEN = "شاشة الدخول";
+
     public static final String PROGRAM_TITLE = "AccountK / حساباتك";
     public static final String PROGRAM_TEL = "01002937820";
-    public static final String PROGRAM_NAME_AR = "محمد صلاح";
+
     public static final String PROGRAM_NAME_EN = "Mohamed Salah";
     public static final String TREASURY = "الخزينة";
-    public static final String ADD_MULTI = "إضافة متعدد";
-    public static final String AL_STOCK = "المخزن";
-    public static final String TOP_5_PURCHASING_SUPPLIERS_BY_YEAR = "اكبر 5 موردين مشتريات طبقا للسنة";
-    public static final String TOP_5_Sales_customer_BY_YEAR = "اكبر 5 عملاء مبيعات طبقا للسنة";
+
     public static final String PRINT_TOTALS = "طباعة الإجماليات";
     public static final String THE_CURRENCY = "العملة";
     public static final String E_MAIL = "E-mail";
@@ -78,41 +57,33 @@ public class Setting_Language {
     public static final String MANAGER = "مدير";
     public static final String EMPLOYEE = "موظف";
     public static final String DELEGATE = "مندوب";
-    public static final String MINI_QUANTITY = "اقل كمية";
+
     public static final String PLEASE_SELECT_ROW = "من فضلك حدد الصف";
-    public static final String NO_CONTENT_IN_TABLE = "No content in table";
+
     public static final String PLEASE_INSERT_ALL_DATA = "من فضلك ادخل جميع البيانات";
     public static final String WELCOME = "مرحبا";
-    public static final String COMPUTER_NAME = "Computer Name";
+
     public static final String MONTHS = "شهر";
     public static final String LIMIT = "الحد الائتماني";
     public static final String WORD_CARD_ITEM = "كارت الصنف";
     public static final String SHOW_PASS = "عرض كلمة المرور";
-    public static final String WORD_PRINT_NAME_GROUP = "طباعة اسم المجموعة";
+
     public static final String WORD_SETTING = "الإعدادات";
-    public static final String WORD_During_The_Period = "خلال فتره من";
+
     public static final String WORD_REPORT_ITEMS = "تقارير الأصناف";
     public static final String WORD_PROFIT_LOSS = "الارباح والخسائر";
-    public static final String SELECTED = "تحديد";
-    public static final String count_items = "عدد الأصناف";
-    public static final String DISCOUNT1 = "خصم على الفاتورة";
+
     public static final String GARD = "جرد اصناف";
-    public static final String VALUE = "قيمة";
-    public static final String PRINT_TEST = "طباعة إختبار";
-    public static final String DELETE_ITEM = "حذف الصنف";
-    public static final String UPDATE_ITEMS = "تعديل الاصناف";
     public static final String MAIN = "رئيسية";
     public static final String SUB = "فرعية";
-    public static final String GROUP = "مجموعة";
+
     public static final String PRICE = "سعر";
     public static final String TOTAL = "إجمالى";
     public static final String PURCHASE = "الشراء";
     public static final String SALES = "البيع";
     public static final String RETURN = "مرتجع";
-    public static final String TOTAL_BY_PUR = "الاجمالى بسعر الشراء";
-    public static final String TOTAL_BY_SALES = "الاجمالى بسعر البيع";
     public static final String BALANCE_NOW = "الرصيد الحالى";
-    public static final String SHOW_REPORT_IN_MAIN = "إظهار التقارير فى الشاشة الرئيسية";
+
     public static final String UPDATE_PRICE_FROM_INVOICE = "تعديل السعر فى الفاتورة";
     public static final String PRINT_RECEIPT_INVOICE = "طباعة فاتورة ريسيت";
     public static final String PRINT_HEADER = "طباعة رأس الصفحة فى التقارير";
@@ -121,131 +92,104 @@ public class Setting_Language {
     public static final String TWO_BARCODE = "ملصق مزدوج - الملصق يحتوى على 2 باركود";
     public static final String NAME_ITEM = "أسم الصنف";
     public static final String PRINT_BARCODE = "طباعة الباركود";
-    public static final String MINI_RATE = "اقل بيع بالنسبة";
+
     public static final String TOP = "اعلى";
     public static final String RIGHT = "يمين";
     public static final String BOTTOM = "أسفل";
     public static final String LEFT = "شمال";
     public static final String OK = "موافق";
     public static final String ADD_EMPLOYEE = "إضافة موظف";
-    public static final String SHOW_SCREEN = "عرض شاشة";
+
     public static final String UPDATE_DATE = "تعديل التاريخ";
 
-    public static final String DEPOSIT = getWord("deposit");
-    public static final String EXPENSES = getWord("expenses");
-    public static final String WORD_CASE = getWord("case");
-    public static final String WORD_ACTIVE = getWord("activated");
-    public static final String WORD_CHOOSE_FILE = getWord("choose_file");
-    public static final String WORD_SEARCH_DATE = getWord("search_date");
-    public static final String WORD_ADDRESS = getWord("address");
-    public static final String WORD_CLOSE = getWord("close");
-    public static final String WORD_LOGOUT = getWord("logout");
-    public static final String WORD_NAME = getWord("name");
-    public static final String WORD_PASS = getWord("password");
-    public static final String WORD_PRINT = getWord("print");
-    public static final String WORD_SAVE = getWord("save");
-    public static final String WORD_SEARCH = getWord("search");
-    public static final String FIRST_BALANCE = getWord("firstBalance");
-    public static final String EMPLOYEES = getWord("employees");
-    public static final String WORD_DATE = getWord("date");
-    public static final String WORD_CODE = getWord("code");
-    public static final String WORD_BARCODE = getWord("barcode");
-    public static final String WORD_PUR = getWord("pur");
-    public static final String WORD_SALES = getWord("sales");
-    public static final String WORD_MAIN = getWord("main");
-    public static final String WORD_TOTAL = getWord("total");
-    public static final String WORD_STOCK = getWord("stock");
-    public static final String WORD_PAID = getWord("paid");
-    public static final String WORD_PRICE = getWord("price");
-    public static final String WORD_NUM = getWord("num");
-    public static final String WORD_NUM_INV = getWord("numInv");
-    public static final String WORD_RE_PUR = getWord("RePur");
-    public static final String WORD_RE_SALES = getWord("ReSal");
-    public static final String WORD_GROUP = getWord("groups");
-    public static final String WORD_ITEMS = getWord("items");
-    public static final String WORD_COUNT = getWord("count");
-    public static final String WORD_SUP_ACC = getWord("supAcc");
-    public static final String WORD_CUSTOM_ACC = getWord("cuAcc");
-    public static final String WORD_RATE = getWord("rate");
-    public static final String WORD_REST = getWord("rest");
-    public static final String WORD_ADD = getWord("add");
-    public static final String WORD_LANGUAGE = getWord("language");
-    public static final String WORD_REFRESH = getWord("refresh");
-    public static final String WORD_UPDATE = getWord("update");
-    public static final String WORD_INSERT = getWord("insert");
-    public static final String WORD_DELETE = getWord("delete");
-    public static final String WORD_NEW = getWord("new");
-    public static final String WORD_SHOW = getWord("show");
-    public static final String WORD_REPORT = getWord("report");
-    public static final String WORD_QUANTITY = getWord("quantity");
-    public static final String WORD_DISCOUNT = getWord("discount");
-    public static final String WORD_CUSTOM = getWord("customers");
-    public static final String WORD_SUP = getWord("suppliers");
-    public static final String WORD_ACCOUNT = getWord("account");
-    public static final String WORD_PIECE = getWord("piece");
-    public static final String WORD_ALL_RIGHTS = getWord("allRights");
-    public static final String WORD_ENTER = getWord("enter");
-    public static final String WORD_CHOOSE_COLUMN = getWord("choose_column");
-    public static final String WORD_INACTIVE = getWord("in_active");
-    public static final String WORD_SEARCH_NAME = getWord("search_name");
-    public static final String WORD_TIME = getWord("time");
-    public static final String WORD_ERROR = getWord("error");
-    public static final String WORD_ADD_GROUP = getWord("add_group");
-    public static final String WORD_AR = getWord("ar");
-    public static final String WORD_N_PIECE = getWord("nPiece");
-    public static final String WORD_YEAR = getWord("year");
-    public static final String WORD_OPEN = getWord("open");
-    public static final String WORD_P_MOVEMENT = getWord("pMovement");
-    public static final String WORD_RECOVERY = getWord("recovery");
-    public static final String WORD_BASIC = getWord("basic");
-    public static final String WORD_FONT_COLOR = getWord("fColor");
-    public static final String WORD_QUERY_PRICE = getWord("QueryPrice");
-    public static final String WORD_ALERTS = getWord("Alerts");
-    public static final String WORD_STOCK_TAKING = getWord("stocktaking");
-    public static final String WORD_G_CODE = getWord("groupCode");
-    public static final String WORD_LAST_UPDATE = getWord("lastUpdated");
-    public static final String WORD_DUE_DATE = getWord("dueDate");
-    public static final String WORD_ADMIN = getWord("Administrator");
-    public static final String WORD_CONFIRM = getWord("confirm");
-    public static final String WORD_BACKGROUND = getWord("background");
-    public static final String WORD_EN = getWord("en");
-    public static final String WORD_CANCEL = getWord("cancel");
-    public static final String WORD_FONT = getWord("font");
-    public static final String WORD_PRINT_1 = getWord("normalPrinter");
-    public static final String WORD_PRINT_2 = getWord("print2");
-    public static final String WORD_BOX = getWord("box");
-    public static final String WORD_CHOOSE = getWord("choose");
-    public static final String WORD_USERS = getWord("users");
-    public static final String WORD_OTHERS = getWord("others");
-    public static final String WORD_TEL = getWord("tel");
-    public static final String WORD_TAX = getWord("tax");
-    public static final String WORD_COMM = getWord("commercial");
-    public static final String WORD_CASH = getWord("cash");
-    public static final String WORD_DEFER = getWord("defer");
-    public static final String WORD_ADD_ITEM = getWord("addItem");
-    public static final String UPDATE_ITEM = getWord("updateItem");
-    public static final String WORD_FROM = getWord("from");
-    public static final String WORD_TO = getWord("to");
-    public static final String WORD_ALL = getWord("all");
-    public static final String WORD_TYPE = getWord("type");
-    public static final String WORD_BALANCE = getWord("balance");
-    public static final String WORD_BACKUP = getWord("backup");
-    public static final String WORD_COLLAPSE = getWord("collapse");
-    public static final String WORD_EXPAND = getWord("expand");
-    public static final String WORD_PERM = getWord("permissions");
-    public static final String WORD_MAIN_G = getWord("mainGroup");
-    public static final String WORD_SUB_G = getWord("subGroup");
-    public static final String WORD_ADD_USER = getWord("addUser");
-    public static final String WORD_OLD_PASS = getWord("oldPass");
-    public static final String WORD_NEW_PASS = getWord("newPass");
-    public static final String WORD_BUY_PRICE = getWord("BuyPrice");
-    public static final String WORD_SEL_PRICE = getWord("selPrice");
-    public static final String WORD_AFTER_DIS = getWord("totalAfter");
-    public static final String EXPANDED = "Expanded";
-    public static final String COLLAPSE = "Collapse";
+    public static final String DEPOSIT = INSTANCE.getString("deposit");
+    public static final String EXPENSES = INSTANCE.getString("expenses");
+    public static final String WORD_CASE = INSTANCE.getString("case");
+    public static final String WORD_ACTIVE = INSTANCE.getString("activated");
+    public static final String WORD_CHOOSE_FILE = INSTANCE.getString("choose_file");
+    public static final String WORD_SEARCH_DATE = INSTANCE.getString("search_date");
+    public static final String WORD_ADDRESS = INSTANCE.getString("address");
+    public static final String WORD_CLOSE = INSTANCE.getString("common.close");
+    public static final String WORD_LOGOUT = INSTANCE.getString("logout");
+    public static final String WORD_NAME = INSTANCE.getString("name");
+    public static final String WORD_PASS = INSTANCE.getString("password");
+    public static final String WORD_PRINT = INSTANCE.getString("print");
+    public static final String WORD_SAVE = INSTANCE.getString("common.save");
+    public static final String WORD_SEARCH = INSTANCE.getString("search");
+    public static final String FIRST_BALANCE = INSTANCE.getString("firstBalance");
+    public static final String EMPLOYEES = INSTANCE.getString("employees");
+    public static final String WORD_DATE = INSTANCE.getString("date");
+    public static final String WORD_CODE = INSTANCE.getString("code");
+    public static final String WORD_BARCODE = INSTANCE.getString("barcode");
+    public static final String WORD_PUR = INSTANCE.getString("pur");
+    public static final String WORD_SALES = INSTANCE.getString("sales");
+    public static final String WORD_MAIN = INSTANCE.getString("main");
+    public static final String WORD_TOTAL = INSTANCE.getString("total");
+    public static final String WORD_STOCK = INSTANCE.getString("stock");
+    public static final String WORD_PAID = INSTANCE.getString("paid");
+    public static final String WORD_PRICE = INSTANCE.getString("price");
+    public static final String WORD_NUM = INSTANCE.getString("num");
+    public static final String WORD_NUM_INV = INSTANCE.getString("numInv");
+    public static final String WORD_RE_PUR = INSTANCE.getString("RePur");
+    public static final String WORD_RE_SALES = INSTANCE.getString("ReSal");
+    public static final String WORD_GROUP = INSTANCE.getString("groups");
+    public static final String WORD_ITEMS = INSTANCE.getString("items");
+    public static final String WORD_COUNT = INSTANCE.getString("count");
+    public static final String WORD_SUP_ACC = INSTANCE.getString("supAcc");
+    public static final String WORD_CUSTOM_ACC = INSTANCE.getString("cuAcc");
+    public static final String WORD_RATE = INSTANCE.getString("rate");
+    public static final String WORD_REST = INSTANCE.getString("rest");
+    public static final String WORD_ADD = INSTANCE.getString("add");
+    public static final String WORD_LANGUAGE = INSTANCE.getString("language");
+    public static final String WORD_REFRESH = INSTANCE.getString("refresh");
+    public static final String WORD_UPDATE = INSTANCE.getString("update");
+    public static final String WORD_INSERT = INSTANCE.getString("insert");
+    public static final String WORD_DELETE = INSTANCE.getString("delete");
+    public static final String WORD_NEW = INSTANCE.getString("new");
+    public static final String WORD_SHOW = INSTANCE.getString("show");
+    public static final String WORD_REPORT = INSTANCE.getString("report");
+    public static final String WORD_QUANTITY = INSTANCE.getString("quantity");
+    public static final String WORD_DISCOUNT = INSTANCE.getString("discount");
+    public static final String WORD_CUSTOM = INSTANCE.getString("customers");
+    public static final String WORD_SUP = INSTANCE.getString("suppliers");
+    public static final String WORD_ACCOUNT = INSTANCE.getString("account");
+
+    public static final String WORD_INACTIVE = INSTANCE.getString("in_active");
+    public static final String WORD_ADD_GROUP = INSTANCE.getString("add_group");
+
+    public static final String WORD_YEAR = INSTANCE.getString("year");
+
+    public static final String WORD_ADMIN = INSTANCE.getString("Administrator");
+
+    public static final String WORD_CANCEL = INSTANCE.getString("cancel");
+    public static final String WORD_USERS = INSTANCE.getString("users");
+    public static final String WORD_OTHERS = INSTANCE.getString("others");
+    public static final String WORD_TEL = INSTANCE.getString("tel");
+    public static final String WORD_TAX = INSTANCE.getString("tax");
+    public static final String WORD_COMM = INSTANCE.getString("commercial");
+    public static final String WORD_CASH = INSTANCE.getString("cash");
+    public static final String WORD_DEFER = INSTANCE.getString("defer");
+    public static final String WORD_ADD_ITEM = INSTANCE.getString("addItem");
+    public static final String UPDATE_ITEM = INSTANCE.getString("updateItem");
+    public static final String WORD_FROM = INSTANCE.getString("from");
+    public static final String WORD_TO = INSTANCE.getString("to");
+    public static final String WORD_ALL = INSTANCE.getString("all");
+    public static final String WORD_TYPE = INSTANCE.getString("type");
+    public static final String WORD_BALANCE = INSTANCE.getString("balance");
+    public static final String WORD_BACKUP = INSTANCE.getString("backup");
+
+    public static final String WORD_PERM = INSTANCE.getString("permissions");
+    public static final String WORD_MAIN_G = INSTANCE.getString("mainGroup");
+    public static final String WORD_SUB_G = INSTANCE.getString("subGroup");
+    public static final String WORD_ADD_USER = INSTANCE.getString("addUser");
+    public static final String WORD_OLD_PASS = INSTANCE.getString("oldPass");
+    public static final String WORD_NEW_PASS = INSTANCE.getString("newPass");
+    public static final String WORD_BUY_PRICE = INSTANCE.getString("BuyPrice");
+    public static final String WORD_SEL_PRICE = INSTANCE.getString("selPrice");
+    public static final String WORD_AFTER_DIS = INSTANCE.getString("totalAfter");
+
     public static final String PASS_OK = "تاكيد كلمة المرور";
-    public static final String OK_SAVE = "تم حفظ كلمة المرور";
-    public static final String NOT_RIGHT = "غير صحيحة";
+
     public static final String PASS_NO_RIGHT = "كلمة المرور غير متطابقة";
     public static final String ABOUT = "عن البرنامج";
     public static final String RENTALS = "ايجارات";
@@ -255,63 +199,54 @@ public class Setting_Language {
     public static final String PRED = "السلف";
     public static final String OTHERS = "أخرى";
     public static final String DOWNLOAD = "تنزيل ملف";
-    public static final String PLE = "من فضلك حدد اسم الورقة";
-    public static final String NAME_PAPER = "اسم الورقة";
     public static final String MESSAGE = "لم يتم التحديث";
     public static final String PROCESS = "عمليات المستخدم";
-    public static final String PRINT_LABEL = "مقاسات طباعة فواتير المبيعات";
-    public static final String ADD_ACCOUNT = "إضافة حساب";
-    public static final String UPDATE_ACCOUNT = "إضافة حساب";
-    public static final String OTHER_SEARCH = "بحث أخر";
+
     public static final String DATA = "بيانات";
-    public static final String EXPORT_TO_EXCEL = "تصدير";
+
     public static final String NO_ITEM = "هذا الصنف غير موجود فى المرتجعات";
     public static final String ADD_PACKAGE = "إضافة حزمة";
-    public static final String SEARCH_BY_NAME_OR_BARCODE = "بحث بالاسم او الباركود";
-    public static final String BALANCE_STOCK = "رصيد المخزن";
+
     public static final String STOCK_NAME = "اسم المخزن";
     public static final String ERROR_DATA = "بيانات الصورة غير صحيحة";
     public static final String Unit = "الوحدة";
     public static final String UNITS = "الوحدات";
-    public static final String UNITS_SUB = "وحدات فرعية";
+
     public static final String CHOOSE_PRINTER = " تحديد الطابعة";
     public static final String REPORT_SALES = "تقارير المبيعات";
     public static final String DETAILS = "تفاصيل اليومية";
     public static final String Alerts = "التنبيهات";
     public static final String CALC = "الالة الحاسبة";
-    public static final String REPORT_CUSTOMER = "تقارير ح/ العملاء";
+
     public static final String COMPANY_NAME = "اسم الشركة";
     public static final String TIME_NOT = "التاريخ والوقت غير صحيح";
-    public static final String SAVE_AND_PRINT = "حفظ وطباعة";
+
     public static final String BUY_WITHOUT_BALANCE = "بيع بدون رصيد";
-    public static final String UPDATE_PRICE = "تعديل السعر";
-    public static final String PRINT_CURRENCY = "طباعة العملة";
     public static final String STORE_TRANSFERS = "تحويلات المخزن";
-    public static final String CONVERT = getWord("CONVERT");
-    public static final String NAME_DELEGATE = getWord("NAME_DELEGATE");
-    public static final String CONDITION = "الشرط";
-    public static final String SEARCH_BY = "بحث بواسطة";
-    public static final String GENERAL = "عام";
+
+    public static final String NAME_DELEGATE = INSTANCE.getString("NAME_DELEGATE");
+
     public static final String TREASURY_TRANSFERS = "تحويلات الخزينة";
     public static final String REPORT_PURCHASE = "تقارير المشتريات";
     public static final String REPORT_DELEGATE = "تقارير المندوب";
     public static final String PLEASE_WAIT = "من فضلك انتظر";
     public static final String TARGET = "الهدف";
-    public static final String INVESTIGATION_RATE = "نسبة التحقيق";
-    public static final String NON_INVESTIGATION_RATE = "نسبة عدم التحقيق";
+
     public static final String TOTAL_DAMAGED = "إجمالى التالف";
-    public static final String PAYMENT_FEES = "رسوم الدفع";
+
     public static final String TOTAL_COST = "إجمالى التكلفة";
     public static final String TOTAL_RECEIPT = "إجمالي المقبوضات";
-    public static final String WITHDRAWALS = "المسحوبات";
+
     public static final String BANK_BALANCE = "الرصيد المصرفى";
     public static final String GROSS_PROFIT = "إجمالى الربح";
     public static final String NET_CASH = "صافي النقد";
     public static final String CASH_DEPOSIT = "إيداع نقدي";
-    public static final String OTHER_PAID = "مدفوعات أخرى";
-    public static final String SHOW_BALANCE_ZERO = "عرض بدون رصيد";
+
     public static final String company = "الشركة";
-    public static final String WORD_ACTIVATION = "activation";
+    public static final String PREVIOUS_LABEL = "السابق";
+    public static final String FIRST_PAGE_TOOLTIP = "السجل الاولى";
+    public static final String NEXT_RECORD_TOOLTIP = "التالى";
+    public static final String TOOLTIP_LAST_RECORD = "السجل الاخير";
 
 
     private Setting_Language() {

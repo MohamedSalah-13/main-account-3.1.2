@@ -330,7 +330,7 @@ public class AccountDetailsWithItemsController<T1 extends BasePurchasesAndSales,
         labelFirstBalance.setText(Setting_Language.FIRST_BALANCE);
         labelLastBalance.setText(Setting_Language.THE_FINAL_BALANCE);
         btnPrint.setText(Setting_Language.WORD_PRINT);
-        btnExport.setText(Setting_Language.EXPORT_TO_EXCEL);
+        btnExport.setText("export to pdf");
         btnSearch.setText(Setting_Language.WORD_SEARCH);
         btnRefresh.setText(Setting_Language.WORD_REFRESH);
         txtLimit.setText(String.valueOf(nameService.getCredit(customersList, num_id)));

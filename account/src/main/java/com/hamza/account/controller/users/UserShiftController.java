@@ -260,7 +260,7 @@ public class UserShiftController extends ServiceData {
             ShiftSummary s = userShiftService.getCurrentShiftSummary(currentUserId);
             double diff = s.calculateDifference(closeBalance);
             String msg = buildCloseConfirmMessage(s, closeBalance, diff);
-            if (!AllAlerts.confirm_all(msg)) {
+            if (!AllAlerts.confirm_all("Details",msg)) {
                 return;
             }
 

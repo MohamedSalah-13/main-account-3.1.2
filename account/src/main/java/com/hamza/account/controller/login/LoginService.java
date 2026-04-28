@@ -1,6 +1,6 @@
-package com.hamza.controlsfx.others;
+package com.hamza.account.controller.login;
 
-import com.hamza.controlsfx.interfaceData.ActionLogin;
+import com.hamza.account.interfaces.ActionLogin;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.property.SimpleStringProperty;

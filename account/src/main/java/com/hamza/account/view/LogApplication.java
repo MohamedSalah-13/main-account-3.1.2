@@ -3,43 +3,57 @@ package com.hamza.account.view;
 import com.hamza.account.config.Image_Setting;
 import com.hamza.account.config.PropertiesName;
 import com.hamza.account.config.Style_Sheet;
+import com.hamza.account.controller.login.LoginController;
 import com.hamza.account.controller.main.LoadDataAndList;
+import com.hamza.account.interfaces.ActionLogin;
 import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.model.domain.Users;
 import com.hamza.account.model.domain.Users_Permission;
 import com.hamza.account.service.UserPermissionService;
-import com.hamza.account.service.UserShiftService;
-import com.hamza.account.session.ShiftContextLoader;
 import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.language.Error_Text_Show;
+import com.hamza.controlsfx.language.LanguageManager;
 import com.hamza.controlsfx.language.Setting_Language;
-import com.hamza.controlsfx.view.LoginApplication;
+import com.hamza.controlsfx.others.ChangeOrientation;
 import javafx.application.Application;
+import javafx.fxml.FXMLLoader;
+import javafx.scene.Scene;
+import javafx.scene.image.Image;
 import javafx.stage.Stage;
 import lombok.extern.log4j.Log4j2;
 
 import java.io.IOException;
+import java.security.SecureRandom;
 import java.util.List;
 import java.util.Optional;
 
 @Log4j2
 public class LogApplication extends Application {
-
+    public static final LanguageManager INSTANCE = LanguageManager.getInstance();
+    private static final String TEMP_PASS_CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789@#%";
+    private static final SecureRandom SECURE_RANDOM = new SecureRandom();
     public static Users usersVo;
     public static List<Users_Permission> usersPermissionList;
-    private final LoginApplication login;
+    private final LoginController login;
     private final DaoFactory daoFactory;
     private final LoadDataAndList loadDataAndList;
+    private final Scene scene;
     private boolean b = false;
 
     public LogApplication(DaoFactory daoFactory, LoadDataAndList loadDataAndList) throws Exception {
         this.daoFactory = daoFactory;
         this.loadDataAndList = loadDataAndList;
-        login = new LoginApplication(this::onEnter);
-        login.setStageTitle(Setting_Language.LOGIN_SCREEN);
-        login.setInputStream(new Image_Setting().tools);
-        Style_Sheet.changeStyle(login.getScene());
+        FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource("login.fxml"), LanguageManager.getInstance().getResourceBundle());
+        login = new LoginController(new ActionLogin() {
+            @Override
+            public boolean action(String username, String password) throws Exception {
+                return onEnter(username, password);
+            }
+        });
+        fxmlLoader.setController(login);
+        scene = new Scene(fxmlLoader.load());
+        Style_Sheet.changeStyle(scene);
     }
 
     public static void main(String[] args) {
@@ -50,12 +64,17 @@ public class LogApplication extends Application {
     @Override
     public void start(Stage stage) throws Exception {
         // Block the application and show progress while loading items
-        if (PropertiesName.getSettingLoginShow())
-            login.start(stage);
-        else {
+        if (PropertiesName.getSettingLoginShow()) {
+            ChangeOrientation.sceneOrientation(scene);
+            stage.setScene(scene);
+            stage.setResizable(false);
+            stage.setOnCloseRequest(windowEvent -> System.exit(0));
+            stage.setTitle(INSTANCE.getString("common.login.screen"));
+            stage.getIcons().add(new Image(new Image_Setting().tools));
+            stage.show();
+//            afterSuccessfulLogin(usersVo, daoFactory);
+        } else {
             LogApplication.usersVo = daoFactory.usersDao().getDataById(1);
-            // مثال للتكامل — ضعه بعد تعيين LogApplication.usersVo
-            ShiftContextLoader.loadForUser(usersVo.getId(), new UserShiftService(daoFactory));
             openMainScreen();
             stage.close();
         }
@@ -80,13 +99,10 @@ public class LogApplication extends Application {
                     throw new Exception(Setting_Language.THIS_NAME_IS_INACTIVE);
 
                 }
-                if (!usersVo.getPasswordHash().equals(password)) {
-                    throw new Exception(Setting_Language.THE_PASSWORD_IS_INCORRECT);
-                }
                 openMainScreen();
                 b = true;
             } catch (Exception e) {
-                login.getLoginController().setResetAllData(true);
+                login.setResetAllData(true);
                 log.error(e.getMessage(), e.getCause());
                 AllAlerts.alertError(e.getMessage());
             }
@@ -105,7 +121,7 @@ public class LogApplication extends Application {
      */
     private void alertErrorAndResetData() {
         AllAlerts.alertError(Setting_Language.NO_NAME);
-        login.getLoginController().setResetAllData(true);
+        login.setResetAllData(true);
     }
 
     /**
@@ -120,7 +136,6 @@ public class LogApplication extends Application {
      * @throws IOException if an I/O error occurs while loading the main screen.
      */
     private void openMainScreen() throws Exception {
-        daoFactory.setAuditUserId(usersVo.getId());
         updateData();
         usersPermissionList = new UserPermissionService(daoFactory).getUsersPermissionById(usersVo.getId());
         var mainScreenApplication = new MainScreenApplication(daoFactory, loadDataAndList);
@@ -154,4 +169,5 @@ public class LogApplication extends Application {
         });
         thread.start();
     }
+
 }

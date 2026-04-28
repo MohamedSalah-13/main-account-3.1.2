@@ -525,7 +525,7 @@ public class AddItemController extends ServiceData implements AppSettingInterfac
         labelSupGroup.setText(Setting_Language.WORD_SUB_G);
         labelType.setText("الوحدة الصغرى");
         labelBuyPrice.setText(Setting_Language.WORD_BUY_PRICE);
-        labelMiniQuantity.setText(Setting_Language.MINI_QUANTITY);
+        labelMiniQuantity.setText("اقل كمية");
         labelFirstBalance.setText(Setting_Language.FIRST_BALANCE);
 
         comboMainGroup.setPromptText(Setting_Language.WORD_MAIN_G);
@@ -535,7 +535,7 @@ public class AddItemController extends ServiceData implements AppSettingInterfac
         txtSelPrice.setPromptText(Setting_Language.WORD_SEL_PRICE);
         txtBuyPrice.setPromptText(Setting_Language.WORD_BUY_PRICE);
         txtBalance.setPromptText(Setting_Language.FIRST_BALANCE);
-        txtMiniQuantity.setPromptText(Setting_Language.MINI_QUANTITY);
+        txtMiniQuantity.setPromptText("اقل كمية");
 
         btnSave.setText(Setting_Language.WORD_SAVE + " F10");
         btnSaveDuplicate.setText("حفظ وتكرار");
