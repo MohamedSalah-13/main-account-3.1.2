@@ -25,7 +25,7 @@
                             <children>
                                 <ImageView fitHeight="30.0" fitWidth="25.0" pickOnBounds="true" preserveRatio="true">
                                     <image>
-                                        <Image url="@../../../../../../../../controlsfx/src/main/resources/com/hamza/controlsfx/image/person.png"/>
+                                        <Image url="@../image/person.png"/>
                                     </image>
                                 </ImageView>
                                 <AnchorPane HBox.hgrow="SOMETIMES">
@@ -42,7 +42,7 @@
                             <children>
                                 <ImageView fitHeight="30.0" fitWidth="25.0" pickOnBounds="true" preserveRatio="true">
                                     <image>
-                                        <Image url="@../../../../../../../../controlsfx/src/main/resources/com/hamza/controlsfx/image/password.png"/>
+                                        <Image url="@../image/password.png"/>
                                     </image>
                                 </ImageView>
                                 <AnchorPane HBox.hgrow="SOMETIMES">
@@ -76,7 +76,6 @@
         </VBox>
     </children>
     <stylesheets>
-        <URL value="@../../../../../../../../controlsfx/src/main/resources/com/hamza/controlsfx/css/loginStyle.css"/>
-        <URL value="@../../../../../../../../controlsfx/src/main/resources/com/hamza/controlsfx/css/style.css"/>
+        <URL value="@../css/loginStyle.css"/>
     </stylesheets>
 </AnchorPane>
