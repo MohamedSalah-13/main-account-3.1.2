@@ -1,7 +1,5 @@
 package com.hamza.account.view;
 
-import com.hamza.account.Main;
-import com.hamza.account.backup.EncryptionUtil;
 import com.hamza.account.config.ConnectionToDatabase;
 import com.hamza.account.config.Style_Sheet;
 import com.hamza.account.controller.main.LoadDataAndList;
@@ -11,15 +9,9 @@ import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.util.FontsSetting;
 import javafx.application.Application;
-import javafx.fxml.FXMLLoader;
-import javafx.scene.Parent;
-import javafx.scene.Scene;
 import javafx.stage.Stage;
 import lombok.Getter;
 import lombok.extern.log4j.Log4j2;
-
-import java.io.File;
-import java.io.IOException;
 
 @Log4j2
 public class DownLoadApplication extends Application {

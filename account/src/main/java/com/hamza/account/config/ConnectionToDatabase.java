@@ -14,13 +14,13 @@ import java.io.File;
 public class ConnectionToDatabase {
 
     @Getter
-    private DatabaseProperties properties;
-    private DBConnection dbConnection;
-    private String dbName;
-    private String host;
-    private String username;
-    private String port;
-    private String pass;
+    private final DatabaseProperties properties;
+    private final DBConnection dbConnection;
+    private final String dbName;
+    private final String host;
+    private final String username;
+    private final String port;
+    private final String pass;
 
     public ConnectionToDatabase() {
         try {

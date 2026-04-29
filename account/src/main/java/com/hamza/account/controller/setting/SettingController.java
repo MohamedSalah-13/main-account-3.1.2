@@ -1,6 +1,7 @@
 package com.hamza.account.controller.setting;
 
 import com.hamza.account.Main;
+import com.hamza.account.config.ConnectionToDatabase;
 import com.hamza.account.config.ConnectionToMysql;
 import com.hamza.account.controller.main.DataPublisher;
 import com.hamza.account.controller.main.LoadDataAndList;
@@ -16,12 +17,10 @@ import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.fxml.Initializable;
 import javafx.scene.Parent;
-import javafx.scene.Scene;
 import javafx.scene.control.Tab;
 import javafx.scene.control.TabPane;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.VBox;
-import javafx.stage.Stage;
 import lombok.extern.log4j.Log4j2;
 
 import java.io.IOException;
@@ -154,7 +153,8 @@ public class SettingController extends ServiceData implements Initializable, App
         FXMLLoader loader = new FXMLLoader(Main.class.getResource("view/BackupView.fxml"));
         Parent root = loader.load();
         com.hamza.account.backup.BackupController controller = loader.getController();
-        controller.initConnection("localhost", "3306", "account_system_db", "root", "m13ido");
+        var connection = new ConnectionToDatabase();
+        controller.initConnection(connection.getHost(), connection.getPort(), connection.getDbName(), connection.getUsername(), connection.getPass());
         return root;
     }
 
