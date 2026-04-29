@@ -1,5 +1,6 @@
 package com.hamza.account.controller.setting;
 
+import com.hamza.account.Main;
 import com.hamza.account.config.ConnectionToMysql;
 import com.hamza.account.controller.main.DataPublisher;
 import com.hamza.account.controller.main.LoadDataAndList;
@@ -10,9 +11,9 @@ import com.hamza.account.openFxml.OpenFxmlApplication;
 import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.interfaceData.AppSettingInterface;
 import com.hamza.controlsfx.language.Setting_Language;
-import com.hamza.controlsfx.view.BackupApplication;
 import javafx.concurrent.Task;
 import javafx.fxml.FXML;
+import javafx.fxml.FXMLLoader;
 import javafx.fxml.Initializable;
 import javafx.scene.control.Tab;
 import javafx.scene.control.TabPane;
@@ -24,7 +25,8 @@ import java.io.IOException;
 import java.net.URL;
 import java.util.ResourceBundle;
 
-import static com.hamza.account.config.PropertiesName.*;
+import static com.hamza.account.config.PropertiesName.getPaneIndex;
+import static com.hamza.account.config.PropertiesName.setPaneIndex;
 import static com.hamza.controlsfx.util.NumberUtils.roundToTwoDecimalPlaces;
 
 
@@ -58,6 +60,7 @@ public class SettingController extends ServiceData implements Initializable, App
         try {
             addTabs();
         } catch (Exception e) {
+            e.printStackTrace();
             log.error(e.getMessage(), e.getCause());
             AllAlerts.showExceptionDialog(e);
         }
@@ -134,42 +137,14 @@ public class SettingController extends ServiceData implements Initializable, App
             }
         };
 
-        BackupApplication<Void> backupApplication = new BackupApplication<>(new ConnectionToMysql().connect()
+        BackupController<Void> controller = new BackupController<>(new ConnectionToMysql().connect()
                 , workerStateEvent -> {
             loadDataAndList.updateData(dataPublisher);
             AllAlerts.alertSave();
         }, voidTask);
-        var controller = backupApplication.getController();
-
-        controller.getSaveBeforeClose().setValue(getBackupDatabaseSaveBeforeClose());
-        controller.getSaveBeforeClose()
-                .addListener((observableValue, aBoolean, t1) ->
-                        setBackupDatabaseSaveBeforeClose(t1));
-
-        controller.setActivateBackup(getBackupDatabaseSaveAutomatic());
-        controller.activateBackupProperty()
-                .addListener((observableValue, aBoolean, t1) ->
-                        setBackupDatabaseSaveAutomatic(t1));
-
-        controller.setSavedLocation(getBackupDatabaseSaveFolder());
-        controller.savedLocationProperty()
-                .addListener((observableValue, s, t1) -> {
-                    setBackupDatabaseSaveFolder(t1);
-                });
-
-        controller.backupTimeHourProperty().addListener((observableValue, number, t1) -> {
-            setBackupDatabaseTimeBackup(t1.intValue());
-        });
-
-        controller.afterSavedProperty().addListener((observableValue, aBoolean, t1) -> {
-            if (t1) {
-                AllAlerts.alertSaveWithMessage("The backup has been successfully saved.");
-                controller.setAfterSaved(false);
-                loadDataAndList.updateData(dataPublisher);
-            }
-        });
-
-        return backupApplication.getPane();
+        FXMLLoader fxmlLoader = new FXMLLoader(Main.class.getResource("view/backup-view.fxml"));
+        fxmlLoader.setController(controller);
+        return fxmlLoader.load();
     }
 
     @Override

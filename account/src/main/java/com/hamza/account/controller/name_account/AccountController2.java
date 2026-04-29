@@ -116,11 +116,6 @@ public class AccountController2<T1 extends BasePurchasesAndSales, T2 extends Bas
 
     private void hideBoxCenter() {
         boxCenter.setVisible(false);
-        // إضافة لوحة تنسيقات شرطية أسفل الجدول
-//        try {
-//            ConditionalFormatPane<T4> conditionalPane = new ConditionalFormatPane<>(tableView);
-//            boxCenter.getChildren().add(conditionalPane);
-//        } catch (Throwable ignored) { /* لا تعطل الواجهة إذا فشل البناء */ }
     }
 
     private void buttonGraphic() {

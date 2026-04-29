@@ -1,32 +1,24 @@
-package com.hamza.controlsfx.controller;
+package com.hamza.account.controller.setting;
 
 import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.backupPane.DatabaseBackup;
+import com.hamza.controlsfx.controller.MaskerPaneSetting;
+import com.hamza.controlsfx.interfaceData.DownloadTask;
 import com.hamza.controlsfx.util.Extensions;
 import com.hamza.controlsfx.util.crypto.CryptoDatabaseFile;
-import com.hamza.controlsfx.interfaceData.DownloadTask;
-import com.hamza.controlsfx.util.Opacity_Move_Stage;
-import com.hamza.controlsfx.view.BackupApplication;
 import javafx.beans.property.BooleanProperty;
 import javafx.concurrent.Task;
-import javafx.fxml.FXMLLoader;
-import javafx.scene.Scene;
-import javafx.scene.layout.Pane;
-import javafx.scene.paint.Color;
 import javafx.stage.FileChooser;
-import javafx.stage.Modality;
-import javafx.stage.Stage;
-import javafx.stage.StageStyle;
 import lombok.extern.log4j.Log4j2;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
-import java.time.Duration;
 import java.time.LocalDateTime;
 
-import static com.hamza.controlsfx.controller.BackupController.*;
+import static com.hamza.account.controller.setting.BackupController.*;
+
 
 @Log4j2
 public record BackupFiles<V>(DatabaseBackup databaseBackup, DownloadTask progressFinishTask, Task<V> progressTask) {
@@ -85,40 +77,6 @@ public record BackupFiles<V>(DatabaseBackup databaseBackup, DownloadTask progres
         }
     }
 
-    public void restoreAction() {
-        try {
-            var result = getResult();
-
-            Task<Boolean> taskRestore = new Task<>() {
-                @Override
-                protected Boolean call() throws Exception {
-                    Thread.sleep(Duration.ofSeconds(5).toMillis());
-                    return databaseBackup.restore(quoteForCommand(result.decryptedPath));
-                }
-            };
-            // start restore task and show progress
-            threadRestore(taskRestore);
-            openProgressPane(progressTask, progressFinishTask);
-
-            taskRestore.setOnSucceeded(workerStateEvent -> {
-                threadRestore(progressTask);
-                encryptFileDatabase(result.selectedFile);
-            });
-
-            taskRestore.setOnFailed(workerStateEvent -> {
-                encryptFileDatabase(result.selectedFile);
-                AllAlerts.showExceptionDialog(taskRestore.getException());
-            });
-            taskRestore.setOnCancelled(workerStateEvent -> {
-                encryptFileDatabase(result.selectedFile);
-            });
-
-        } catch (Exception e) {
-            log.error("Restore failed with an unexpected error.", e);
-            AllAlerts.showExceptionDialog(e);
-        }
-    }
-
     public void restoreAction(MaskerPaneSetting maskerPaneSetting, BooleanProperty afterSaved) {
         try {
             var result = getResult();
@@ -168,12 +126,6 @@ public record BackupFiles<V>(DatabaseBackup databaseBackup, DownloadTask progres
         return fc;
     }
 
-    private void threadRestore(Task<?> task) {
-        Thread thread = new Thread(task);
-        thread.setDaemon(true);
-        thread.start();
-    }
-
     public String generateBackupFileName() {
         String ts = LocalDateTime.now().format(BACKUP_TIMESTAMP_FORMAT);
         return BACKUP_FILE_PREFIX + ts + BACKUP_FILE_EXTENSION;
@@ -187,22 +139,6 @@ public record BackupFiles<V>(DatabaseBackup databaseBackup, DownloadTask progres
         String s = path.toAbsolutePath().toString();
         // Normalize for process invocation on Windows; other platforms remain unchanged.
         return File.separatorChar == '\\' ? s.replace('\\', '/') : s;
-    }
-
-    private void openProgressPane(Task<V> progressTask, DownloadTask progressFinishTask) throws IOException {
-        ProgressPaneController<V> application = new ProgressPaneController<>(progressTask, progressFinishTask);
-        FXMLLoader fxmlLoader = new FXMLLoader(BackupApplication.class.getResource("progress-pane.fxml"));
-
-        fxmlLoader.setController(application);
-        Pane load = fxmlLoader.load();
-        Scene scene = new Scene(load, 490, 280);
-        new Opacity_Move_Stage(load);
-        scene.setFill(Color.TRANSPARENT);
-        Stage stage = new Stage();
-        stage.setScene(scene);
-        stage.initModality(Modality.APPLICATION_MODAL);
-        stage.initStyle(StageStyle.UNDECORATED);
-        stage.show();
     }
 
     private record Result(File selectedFile, Path decryptedPath) {
