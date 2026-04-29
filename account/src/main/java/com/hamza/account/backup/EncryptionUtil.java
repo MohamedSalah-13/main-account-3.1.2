@@ -60,15 +60,14 @@ public class EncryptionUtil {
              BufferedInputStream bis = new BufferedInputStream(fis);
              FileOutputStream fos = new FileOutputStream(outputFile)) {
 
-            // قراءة الـ Salt والـ IV
             byte[] salt = new byte[SALT_SIZE];
-            bis.read(salt);
+            if (bis.read(salt) != SALT_SIZE) {
+                throw new IOException("الملف تالف: لا يحتوي على بيانات الملح الكافية.");
+            }
+
             byte[] iv = new byte[IV_SIZE];
-            bis.read(iv);
-            int saltLen = bis.read(salt);
-            int ivLen = bis.read(iv);
-            if (saltLen < SALT_SIZE || ivLen < IV_SIZE) {
-                throw new IOException("ملف النسخة الاحتياطية تالف (غير مكتمل).");
+            if (bis.read(iv) != IV_SIZE) {
+                throw new IOException("الملف تالف: لا يحتوي على IV صحيح.");
             }
 
             SecretKey key = getKeyFromPassword(password, salt);
@@ -76,7 +75,6 @@ public class EncryptionUtil {
             GCMParameterSpec spec = new GCMParameterSpec(TAG_BIT_LENGTH, iv);
             cipher.init(Cipher.DECRYPT_MODE, key, spec);
 
-            // فك التشفير
             try (CipherInputStream cis = new CipherInputStream(bis, cipher)) {
                 byte[] buffer = new byte[8192];
                 int count;
@@ -84,6 +82,9 @@ public class EncryptionUtil {
                     fos.write(buffer, 0, count);
                 }
             }
+            // إذا وصلنا هنا بنجاح فالتشفير سليم
+        } catch (AEADBadTagException e) {
+            throw new Exception("كلمة مرور خاطئة أو الملف المشفر تالف (فشل التحقق من سلامة البيانات).", e);
         }
     }
 }

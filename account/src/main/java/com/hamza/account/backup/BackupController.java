@@ -88,6 +88,7 @@ public class BackupController {
         if (dir != null) {
             backupPathField.setText(dir.getAbsolutePath());
             prefs.put("backupPath", dir.getAbsolutePath());
+            prefs.put("encryptionPassword", encryptionPasswordField.getText());
         }
     }
 
@@ -156,7 +157,7 @@ public class BackupController {
             Task<Void> task = new Task<>() {
                 @Override
                 protected Void call() throws Exception {
-                    restoreService.restoreFromFile(file);
+                    restoreService.restoreFromFile(file, password);
                     return null;
                 }
             };
@@ -172,9 +173,10 @@ public class BackupController {
 
             task.setOnFailed(e -> {
                 Throwable ex = task.getException();
+                ex.printStackTrace();
                 String msg = ex.getMessage();
-                if (msg.contains("فشل فك التشفير")) {
-                    setStatus("✗ " + msg + "\nتأكد من كلمة مرور التشفير الصحيحة.");
+                if (msg.contains("كلمة مرور خاطئة") || msg.contains("تالف")) {
+                    setStatus("✗ " + msg);
                 } else {
                     setStatus("✗ فشل الاستعادة: " + msg);
                 }

@@ -1,6 +1,7 @@
 package com.hamza.account.view;
 
 import com.hamza.account.Main;
+import com.hamza.account.backup.EncryptionUtil;
 import com.hamza.account.config.ConnectionToDatabase;
 import com.hamza.account.config.Style_Sheet;
 import com.hamza.account.controller.main.LoadDataAndList;
@@ -17,6 +18,7 @@ import javafx.stage.Stage;
 import lombok.Getter;
 import lombok.extern.log4j.Log4j2;
 
+import java.io.File;
 import java.io.IOException;
 
 @Log4j2
@@ -67,6 +69,9 @@ public class DownLoadApplication extends Application {
 //            Stage stage = new Stage();
             stage.setScene(new Scene(root));
             stage.show();
+
+//            EncryptionUtil.decryptFile(new File("E:\\الضريبة\\backup_20260429_132655.enc"),new File("test"), "123");
+//            System.out.println("Prefs path: " + System.getProperty("java.util.prefs.userRoot"));
         } catch (IOException e) {
             e.printStackTrace();
         }

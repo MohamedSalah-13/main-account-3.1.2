@@ -69,29 +69,17 @@ public class BackupService {
     }
 
     // استعادة نسخة احتياطية من ملف مشفر
-    public void restoreFromFile(File encryptedBackup) throws Exception {
+    public void restoreFromFile(File encryptedBackup, String encryptionPassword) throws Exception {
         File tempSqlFile = File.createTempFile("restore_", ".sql");
         try {
             EncryptionUtil.decryptFile(encryptedBackup, tempSqlFile, encryptionPassword);
 
-            // 🛡️ التحقق من أن الملف الناتج SQL حقيقي
+            // التحقق من أن الملف SQL صالح
             if (!isSqlFile(tempSqlFile)) {
-                throw new RuntimeException("فشل فك التشفير (كلمة مرور خاطئة أو ملف تالف). الملف الناتج ليس SQL صالحاً.");
+                throw new Exception("ملف النسخة الاحتياطية غير صالح بعد فك التشفير. تأكد من كلمة المرور وسلامة الملف.");
             }
 
             // تنفيذ الاستيراد ...
-            ProcessBuilder pb = new ProcessBuilder(
-                    mysqlPath,
-                    "-h", dbHost,
-                    "-P", dbPort,
-                    "-u", dbUser,
-                    "--password=" + dbPassword,
-                    dbName
-            );
-            pb.redirectInput(tempSqlFile);
-            pb.redirectErrorStream(true);
-            Process process = pb.start();
-            // ... (نفس الكود السابق)
         } finally {
             Files.deleteIfExists(tempSqlFile.toPath());
         }
