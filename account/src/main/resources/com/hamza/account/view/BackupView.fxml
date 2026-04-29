@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.geometry.Insets?>
+<VBox spacing="15" alignment="CENTER" styleClass="backup-container" xmlns="http://javafx.com/javafx/8"
+      stylesheets="@../css/backup.css"
+      xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.hamza.account.backup.BackupController">
+    <padding><Insets topRightBottomLeft="20"/></padding>
+
+    <Label text="إدارة النسخ الاحتياطي" styleClass="title-label"/>
+
+    <HBox spacing="10" alignment="CENTER">
+        <Label text="مسار الحفظ:"/>
+        <TextField fx:id="backupPathField" HBox.hgrow="ALWAYS" editable="false"/>
+        <Button text="تغيير" onAction="#changeBackupPath"/>
+    </HBox>
+
+    <HBox spacing="10" alignment="CENTER">
+        <Label text="كلمة مرور التشفير:"/>
+        <PasswordField fx:id="encryptionPasswordField" promptText="كلمة مرور لحماية النسخة"/>
+    </HBox>
+
+    <HBox spacing="10" alignment="CENTER">
+        <Label text="التكرار التلقائي:"/>
+        <ComboBox fx:id="intervalCombo"/>
+        <Button text="تطبيق" onAction="#applySchedule"/>
+    </HBox>
+
+    <HBox spacing="20" alignment="CENTER">
+        <Button text="نسخ احتياطي الآن" fx:id="backupBtn" styleClass="primary-button" onAction="#backupNow"/>
+        <Button text="استعادة نسخة" fx:id="restoreBtn" styleClass="primary-button" onAction="#restoreBackup"/>
+    </HBox>
+
+    <!-- مؤشر التقدم (دائري + وصف نصي) يظهر فقط عند التنفيذ -->
+    <HBox fx:id="progressBox" alignment="CENTER" spacing="10" visible="false">
+        <ProgressIndicator fx:id="progressIndicator" maxWidth="30" maxHeight="30"/>
+        <Label fx:id="progressLabel" text="جارٍ النسخ الاحتياطي..." styleClass="status-label"/>
+    </HBox>
+    <Label fx:id="statusLabel" text="جاهز" styleClass="status-label"/>
+</VBox>

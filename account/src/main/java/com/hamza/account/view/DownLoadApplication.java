@@ -1,5 +1,6 @@
 package com.hamza.account.view;
 
+import com.hamza.account.Main;
 import com.hamza.account.config.ConnectionToDatabase;
 import com.hamza.account.config.Style_Sheet;
 import com.hamza.account.controller.main.LoadDataAndList;
@@ -9,9 +10,14 @@ import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.util.FontsSetting;
 import javafx.application.Application;
+import javafx.fxml.FXMLLoader;
+import javafx.scene.Parent;
+import javafx.scene.Scene;
 import javafx.stage.Stage;
 import lombok.Getter;
 import lombok.extern.log4j.Log4j2;
+
+import java.io.IOException;
 
 @Log4j2
 public class DownLoadApplication extends Application {
@@ -52,7 +58,18 @@ public class DownLoadApplication extends Application {
 
     @Override
     public void start(Stage stage) throws Exception {
-        new LogApplication(daoFactory, loadDataAndList).start(new Stage());
+//        new LogApplication(daoFactory, loadDataAndList).start(new Stage());
+        try {
+            FXMLLoader loader = new FXMLLoader(Main.class.getResource("view/BackupView.fxml"));
+            Parent root = loader.load();
+            com.hamza.account.backup.BackupController controller = loader.getController();
+            controller.initConnection("localhost", "3306", "account_system_db", "root", "m13ido");
+//            Stage stage = new Stage();
+            stage.setScene(new Scene(root));
+            stage.show();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
 
