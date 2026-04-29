@@ -60,6 +60,7 @@ public class BackupController {
         encryptionPasswordField.textProperty().addListener((obs, oldVal, newVal) -> {
             if (backupService != null) {
                 // تحديث كلمة المرور في BackupService (يمكن إضافة setter)
+                prefs.put("encryptionPassword", newVal);
             }
         });
     }
@@ -88,7 +89,7 @@ public class BackupController {
         if (dir != null) {
             backupPathField.setText(dir.getAbsolutePath());
             prefs.put("backupPath", dir.getAbsolutePath());
-            prefs.put("encryptionPassword", encryptionPasswordField.getText());
+
         }
     }
 

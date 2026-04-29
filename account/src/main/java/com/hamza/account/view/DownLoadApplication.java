@@ -60,21 +60,21 @@ public class DownLoadApplication extends Application {
 
     @Override
     public void start(Stage stage) throws Exception {
-//        new LogApplication(daoFactory, loadDataAndList).start(new Stage());
-        try {
-            FXMLLoader loader = new FXMLLoader(Main.class.getResource("view/BackupView.fxml"));
-            Parent root = loader.load();
-            com.hamza.account.backup.BackupController controller = loader.getController();
-            controller.initConnection("localhost", "3306", "account_system_db", "root", "m13ido");
-//            Stage stage = new Stage();
-            stage.setScene(new Scene(root));
-            stage.show();
-
-//            EncryptionUtil.decryptFile(new File("E:\\الضريبة\\backup_20260429_132655.enc"),new File("test"), "123");
-//            System.out.println("Prefs path: " + System.getProperty("java.util.prefs.userRoot"));
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        new LogApplication(daoFactory, loadDataAndList).start(new Stage());
+//        try {
+//            FXMLLoader loader = new FXMLLoader(Main.class.getResource("view/BackupView.fxml"));
+//            Parent root = loader.load();
+//            com.hamza.account.backup.BackupController controller = loader.getController();
+//            controller.initConnection("localhost", "3306", "account_system_db", "root", "m13ido");
+////            Stage stage = new Stage();
+//            stage.setScene(new Scene(root));
+//            stage.show();
+//
+////            EncryptionUtil.decryptFile(new File("E:\\الضريبة\\backup_20260429_132655.enc"),new File("test"), "123");
+////            System.out.println("Prefs path: " + System.getProperty("java.util.prefs.userRoot"));
+//        } catch (IOException e) {
+//            e.printStackTrace();
+//        }
     }
 
 
