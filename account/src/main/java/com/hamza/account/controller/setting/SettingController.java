@@ -2,7 +2,6 @@ package com.hamza.account.controller.setting;
 
 import com.hamza.account.Main;
 import com.hamza.account.config.ConnectionToDatabase;
-import com.hamza.account.config.ConnectionToMysql;
 import com.hamza.account.controller.main.DataPublisher;
 import com.hamza.account.controller.main.LoadDataAndList;
 import com.hamza.account.controller.others.ServiceData;
@@ -12,7 +11,6 @@ import com.hamza.account.openFxml.OpenFxmlApplication;
 import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.interfaceData.AppSettingInterface;
 import com.hamza.controlsfx.language.Setting_Language;
-import javafx.concurrent.Task;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.fxml.Initializable;
@@ -29,7 +27,6 @@ import java.util.ResourceBundle;
 
 import static com.hamza.account.config.PropertiesName.getPaneIndex;
 import static com.hamza.account.config.PropertiesName.setPaneIndex;
-import static com.hamza.controlsfx.util.NumberUtils.roundToTwoDecimalPlaces;
 
 
 @Log4j2
@@ -117,36 +114,6 @@ public class SettingController extends ServiceData implements Initializable, App
     private Pane getTabChecks() throws Exception {
         SettingTabCheckController checkController = new SettingTabCheckController(dataPublisher);
         return new OpenFxmlApplication(checkController).getPane();
-    }
-
-    private Pane backupSetting() throws Exception {
-        Task<Void> voidTask = new Task<>() {
-            @Override
-            protected Void call() {
-                double maxLength = 100;
-                for (int i = 1; i <= maxLength; i++) {
-                    try {
-                        int sum = (int) roundToTwoDecimalPlaces((i / maxLength) * 100);
-                        updateProgress(i, maxLength);
-                        updateMessage(String.valueOf(sum));
-                        updateTitle("Load Data " + i);
-                        Thread.sleep(100);
-                    } catch (InterruptedException e) {
-                        log.error(e.getMessage(), e.getCause());
-                    }
-                }
-                return null;
-            }
-        };
-
-        BackupController<Void> controller = new BackupController<>(new ConnectionToMysql().connect()
-                , workerStateEvent -> {
-            loadDataAndList.updateData(dataPublisher);
-            AllAlerts.alertSave();
-        }, voidTask);
-        FXMLLoader fxmlLoader = new FXMLLoader(Main.class.getResource("view/backup-view.fxml"));
-        fxmlLoader.setController(controller);
-        return fxmlLoader.load();
     }
 
     private Parent backup() throws IOException {
