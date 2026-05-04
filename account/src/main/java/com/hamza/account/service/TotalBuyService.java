@@ -1,8 +1,10 @@
 package com.hamza.account.service;
 
 import com.hamza.account.model.dao.DaoFactory;
+import com.hamza.account.model.dao.TotalsBuyDao;
 import com.hamza.account.model.domain.Total_buy;
 import com.hamza.controlsfx.database.DaoException;
+import org.jetbrains.annotations.NotNull;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -11,7 +13,7 @@ public record TotalBuyService(DaoFactory daoFactory) {
 
     public Total_buy getTotalBuyById(int id) throws DaoException {
 //        return totalBuyList().stream().filter(totalBuy -> totalBuy.getId() == id).findFirst().orElse(null);
-        return daoFactory.totalsPurchaseDao().getDataById(id);
+        return getTotalsBuyDao().getDataById(id);
     }
 
     public double sumTotal() throws DaoException {
@@ -33,23 +35,31 @@ public record TotalBuyService(DaoFactory daoFactory) {
 //        return totalBuyList().stream().filter(totalBuy -> !LocalDate.parse(totalBuy.getDate()).isBefore(LocalDate.parse(dateFrom)) &&
 //                !LocalDate.parse(totalBuy.getDate()).isAfter(LocalDate.parse(dateTo))).toList();
 
-        return daoFactory.totalsPurchaseDao().loadDataBetweenDate(dateFrom, dateTo);
+        return getTotalsBuyDao().loadDataBetweenDate(dateFrom, dateTo);
 
     }
 
     public int deleteMultiData(Integer[] ids) throws DaoException {
-        return daoFactory.totalsPurchaseDao().deleteInvoicesInRange(ids);
+        return getTotalsBuyDao().deleteInvoicesInRange(ids);
     }
 
     public List<Total_buy> getTotalBuyBySupId(int customer_id) throws DaoException {
-        return daoFactory.totalsPurchaseDao().getTotalBuyBySupId(customer_id);
+        return getTotalsBuyDao().getTotalBuyBySupId(customer_id);
     }
 
     public List<Total_buy> getTotalBuyByYear(int year) throws DaoException {
-        return daoFactory.totalsPurchaseDao().getTotalBuyByYear(year);
+        return getTotalsBuyDao().getTotalBuyByYear(year);
     }
 
     public List<Integer> getListYear() throws DaoException {
-        return daoFactory.totalsPurchaseDao().getListYear();
+        return getTotalsBuyDao().getListYear();
+    }
+    public int getMaxId() {
+        return getTotalsBuyDao().getMaxId();
+    }
+
+    @NotNull
+    private TotalsBuyDao getTotalsBuyDao() {
+        return daoFactory.totalsPurchaseDao();
     }
 }

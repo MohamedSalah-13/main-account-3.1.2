@@ -47,7 +47,6 @@ import com.hamza.controlsfx.others.DoubleSetting;
 import com.hamza.controlsfx.others.Utils;
 import com.hamza.controlsfx.table.TableColumnAnnotation;
 import com.hamza.controlsfx.table.columnEdit.ColumnSetting;
-import com.hamza.controlsfx.util.MaxNumberList;
 import javafx.application.Platform;
 import javafx.beans.binding.BooleanBinding;
 import javafx.beans.property.ObjectProperty;
@@ -693,19 +692,25 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
                 double remainingBalance = 0; //Double.parseDouble(paneRightController.getRest());
                 String notes = txtNotes.getText();
 
+
                 InvoiceType invoiceType = radioCash.isSelected() ? InvoiceType.CASH : InvoiceType.DEFER;
+
                 TreasuryModel treasuryByName = treasuryService.getTreasuryByName(comboTreasury.getSelectionModel().getSelectedItem());
+
                 Employees employees = employeeService.getDelegateByName(comboDelegate.getSelectionModel().getSelectedItem());
+
                 T3 t3 = invoiceBuy.objectName(codeAccount, textSearchName.get());
 
                 // check code account
                 if (codeAccount == 0) throw new DaoException("لا يوجد بيانات الاسم");
 
+                System.out.println(5);
                 // check to get code for update or insert
                 invNumber = num_invoice_update > 0 ? num_invoice_update : getInvNumber();
-
+                System.out.println(6);
                 DiscountType discountType = radioAmount.isSelected() ? DiscountType.AMOUNT : DiscountType.RATE;
                 List<T1> list = listOfItemsPurchase(invNumber);
+
                 T2 t2 = invoiceBuy.object_Totals(invNumber, invoiceType, invoiceDate, total, discountValue, discountType, after, paidValue, remainingBalance, notes,
                         t3, getStockIdBySelectedStock(), employees, list, treasuryByName);
 
@@ -760,9 +765,8 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
 
     private int getInvNumber() {
         try {
-            MaxNumberList<T2> totalBuyMaxNumberList = new MaxNumberList<>(BaseTotals::getId, dataInterface.totalsAndPurchaseList().totalDao().loadAll());
-            return totalBuyMaxNumberList.getCode();
-        } catch (DaoException e) {
+            return dataInterface.totalsAndPurchaseList().getMaxId();
+        } catch (Exception e) {
             AllAlerts.alertError(Error_Text_Show.NO_DATA + e.getMessage());
         }
         return 1;

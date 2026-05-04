@@ -79,6 +79,11 @@ public class SuppliersDataReturn extends LoadData implements DataInterface<Purch
             public List<Purchase_Return> purchaseOrSalesList(int from, int to) throws DaoException {
                 return purchaseReService.findBetweenTwoInvoiceNumber(from, to);
             }
+
+            @Override
+            public int getMaxId() throws Exception {
+                return totalBuyReturnService.getMaxId();
+            }
         };
     }
 

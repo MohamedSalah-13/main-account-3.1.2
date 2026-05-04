@@ -441,15 +441,4 @@ public class ItemsDao extends AbstractDao<ItemsModel> {
         return queryForInt("SELECT COUNT(*) FROM items");
     }
 
-    private int queryForInt(String query) {
-        try {
-            PreparedStatement statement = connection.prepareStatement(query);
-            ResultSet resultSet = statement.executeQuery();
-            resultSet.next();
-            return resultSet.getInt(1);
-        } catch (SQLException e) {
-            log.error(e.getMessage(), e.getCause());
-            return 0;
-        }
-    }
 }

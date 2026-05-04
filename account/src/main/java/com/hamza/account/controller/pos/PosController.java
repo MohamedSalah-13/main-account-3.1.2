@@ -11,7 +11,6 @@ import com.hamza.account.features.key_setting.UpdateQuantity;
 import com.hamza.account.interfaces.api.DataInterface;
 import com.hamza.account.interfaces.impl_dataInterface.CustomData;
 import com.hamza.account.model.base.BasePurchasesAndSales;
-import com.hamza.account.model.base.BaseTotals;
 import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.model.domain.*;
 import com.hamza.account.openFxml.FxmlPath;
@@ -531,9 +530,8 @@ public class PosController extends ButtonSetting {
 
     private void getTextCode() {
         try {
-            BaseTotals maxId = totalSalesService.getMaxId();
-            textCode.setText(String.valueOf(maxId.getId() + 1));
-        } catch (DaoException e) {
+            textCode.setText(String.valueOf(totalSalesService.getMaxId()));
+        } catch (Exception e) {
             logError(e);
         }
     }
@@ -726,7 +724,7 @@ public class PosController extends ButtonSetting {
             }
 
             if (customerId > 0) {
-                var b = AllAlerts.confirm_all("update","هل تريد تعديل البيانات");
+                var b = AllAlerts.confirm_all("update", "هل تريد تعديل البيانات");
                 if (!b) return;
             }
 

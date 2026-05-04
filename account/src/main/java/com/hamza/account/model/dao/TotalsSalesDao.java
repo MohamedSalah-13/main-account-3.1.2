@@ -219,18 +219,6 @@ public class TotalsSalesDao extends AbstractDao<Total_Sales> {
         }
     }
 
-    public Total_Sales getMaxId() throws DaoException {
-        String query = "SELECT MAX(" + INVOICE_NUMBER + ") FROM " + TABLE_NAME;
-        return queryForObject(query, resultSet -> {
-//            if (!resultSet.next()) {
-//                return new Total_Sales(0); // or appropriate default value
-//            }
-            int maxInvoiceNumber = resultSet.getInt(1);
-            return new Total_Sales(maxInvoiceNumber);
-
-        });
-    }
-
     public int deleteInvoicesInRange(Integer... invoiceNumbers) throws DaoException {
         String query = SqlStatements.deleteInRangeId(TABLE_NAME, INVOICE_NUMBER, invoiceNumbers);
         return executeUpdate(query);
@@ -244,5 +232,9 @@ public class TotalsSalesDao extends AbstractDao<Total_Sales> {
     public List<Total_Sales> getTotalSalesByYear(int year) throws DaoException {
         String query = SqlStatements.selectStatement(TABLE_VIEW).concat(" WHERE YEAR(invoice_date)").concat(" = ?");
         return queryForObjects(query, this::map, year);
+    }
+
+    public int getMaxId() {
+        return queryForInt("SELECT MAX(invoice_number)+1 FROM " + TABLE_NAME);
     }
 }

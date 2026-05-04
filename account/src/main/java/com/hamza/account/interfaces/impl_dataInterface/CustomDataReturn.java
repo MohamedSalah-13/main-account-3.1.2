@@ -79,6 +79,11 @@ public class CustomDataReturn extends LoadData implements DataInterface<Sales_Re
             public List<Sales_Return> purchaseOrSalesList(int from, int to) throws DaoException {
                 return salesReService.findBetweenTwoInvoiceNumber(from, to);
             }
+
+            @Override
+            public int getMaxId() throws Exception {
+                return totalSalesReturnService.getMaxId();
+            }
         };
     }
 

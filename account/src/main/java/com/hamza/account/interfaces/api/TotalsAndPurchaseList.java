@@ -15,4 +15,6 @@ public interface TotalsAndPurchaseList<T1 extends BasePurchasesAndSales, T2 exte
 
     List<T1> purchaseOrSalesList(int from, int to) throws Exception;
 
+    int getMaxId() throws Exception;
+
 }

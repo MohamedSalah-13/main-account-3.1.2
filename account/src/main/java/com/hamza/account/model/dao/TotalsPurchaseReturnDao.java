@@ -167,4 +167,8 @@ public class TotalsPurchaseReturnDao extends AbstractDao<Total_Buy_Re> {
         String query = SqlStatements.selectStatement(TABLE_VIEW).concat(" WHERE YEAR(invoice_date)").concat(" = ?");
         return queryForObjects(query, this::map, year);
     }
+
+    public int getMaxId() {
+        return queryForInt("SELECT MAX(id)+1 FROM " + TABLE_NAME);
+    }
 }

@@ -36,17 +36,11 @@ public record EmployeeService(DaoFactory daoFactory) {
     }
 
     public Employees getDelegateByName(String name) throws DaoException {
-        return getEmployeesList()
-                .stream()
-                .filter(users -> users.getName().equals(name))
-                .findAny().orElse(null);
+        return daoFactory.employeesDao().getDataByString(name);
     }
 
     public Employees getDelegateById(int id) throws DaoException {
-        return getEmployeesList()
-                .stream()
-                .filter(users -> users.getId() == id)
-                .findAny().orElse(null);
+        return daoFactory.employeesDao().getDataById(id);
     }
 
     public int deleteEmployee(int id) throws DaoException {

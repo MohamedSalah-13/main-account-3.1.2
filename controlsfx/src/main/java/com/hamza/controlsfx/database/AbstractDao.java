@@ -268,4 +268,16 @@ public abstract class AbstractDao<T> implements DaoList<T> {
         }
 
     }
+
+    public int queryForInt(String query) {
+        try {
+            PreparedStatement statement = connection.prepareStatement(query);
+            ResultSet resultSet = statement.executeQuery();
+            resultSet.next();
+            return resultSet.getInt(1);
+        } catch (SQLException e) {
+            log.error(e.getMessage(), e.getCause());
+            return 0;
+        }
+    }
 }

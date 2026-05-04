@@ -85,6 +85,11 @@ public class SuppliersData
             public List<Purchase> purchaseOrSalesList(int from, int to) throws DaoException {
                 return purchaseService.findBetweenTwoInvoiceNumber(from, to);
             }
+
+            @Override
+            public int getMaxId() throws Exception {
+                return totalBuyService.getMaxId();
+            }
         };
     }
 

@@ -86,6 +86,11 @@ public class CustomData extends LoadData implements DataInterface<Sales, Total_S
 //                return daoFactory.salesDao().loadBetweenTwoInvoiceNumber(from, to);
                 return salesService.findBetweenTwoInvoiceNumber(from, to);
             }
+
+            @Override
+            public int getMaxId() throws Exception {
+                return totalSalesService.getMaxId();
+            }
         };
     }
 

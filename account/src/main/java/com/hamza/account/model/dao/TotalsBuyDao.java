@@ -184,4 +184,8 @@ public class TotalsBuyDao extends AbstractDao<Total_buy> {
         //TODO 11/16/2025 9:47 AM Mohamed: get all years
         return List.of();
     }
+
+    public int getMaxId() {
+        return queryForInt("SELECT MAX(invoice_number)+1 FROM " + TABLE_NAME);
+    }
 }

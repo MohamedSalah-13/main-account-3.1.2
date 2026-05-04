@@ -1,8 +1,10 @@
 package com.hamza.account.service;
 
 import com.hamza.account.model.dao.DaoFactory;
+import com.hamza.account.model.dao.TotalsPurchaseReturnDao;
 import com.hamza.account.model.domain.Total_Buy_Re;
 import com.hamza.controlsfx.database.DaoException;
+import org.jetbrains.annotations.NotNull;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -25,19 +27,28 @@ public record TotalBuyReturnService(DaoFactory daoFactory) {
 //        return getTotalBuyReturns().stream().filter(totalBuy -> !LocalDate.parse(totalBuy.getDate()).isBefore(LocalDate.parse(dateFrom)) &&
 //                !LocalDate.parse(totalBuy.getDate()).isAfter(LocalDate.parse(dateTo))).toList();
 
-        return daoFactory.totalsBuyReturnDao().loadDataBetweenDate(dateFrom, dateTo);
+        return getTotalsPurchaseReturnDao().loadDataBetweenDate(dateFrom, dateTo);
 
     }
 
     public int deleteMultiData(Integer[] ids) throws DaoException {
-        return daoFactory.totalsBuyReturnDao().deleteInvoicesInRange(ids);
+        return getTotalsPurchaseReturnDao().deleteInvoicesInRange(ids);
     }
 
     public List<Total_Buy_Re> getTotalBuyBySupId(int customer_id) throws DaoException {
-        return daoFactory.totalsBuyReturnDao().getTotalBuyBySupId(customer_id);
+        return getTotalsPurchaseReturnDao().getTotalBuyBySupId(customer_id);
     }
 
     public List<Total_Buy_Re> getTotalBuyByYear(int year) throws DaoException {
-        return daoFactory.totalsBuyReturnDao().getTotalBuyByYear(year);
+        return getTotalsPurchaseReturnDao().getTotalBuyByYear(year);
+    }
+
+    public int getMaxId() {
+        return getTotalsPurchaseReturnDao().getMaxId();
+    }
+
+    @NotNull
+    private TotalsPurchaseReturnDao getTotalsPurchaseReturnDao() {
+        return daoFactory.totalsBuyReturnDao();
     }
 }

@@ -1,9 +1,11 @@
 package com.hamza.account.service;
 
 import com.hamza.account.model.dao.DaoFactory;
+import com.hamza.account.model.dao.TotalsSalesDao;
 import com.hamza.account.model.domain.Total_Sales;
 import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.others.ThisLocalizedWeek;
+import org.jetbrains.annotations.NotNull;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -13,7 +15,7 @@ import java.util.function.Predicate;
 public record TotalSalesService(DaoFactory daoFactory) {
 
     public Total_Sales getTotalSalesById(int id) throws DaoException {
-        return daoFactory.totalsSalesDao().getDataById(id);
+        return getTotalsSalesDao().getDataById(id);
 //        return totalSalesList().stream().filter(totalSales -> totalSales.getId() == id).findFirst().orElse(null);
     }
 
@@ -51,27 +53,31 @@ public record TotalSalesService(DaoFactory daoFactory) {
     }
 
     public List<Total_Sales> getTotalSalesByDateRange(String startDate, String endDate) throws DaoException {
-        return daoFactory.totalsSalesDao().loadDataBetweenDate(startDate, endDate);
+        return getTotalsSalesDao().loadDataBetweenDate(startDate, endDate);
 
 //        return totalSalesList().stream().filter(totalSales -> !LocalDate.parse(totalSales.getDate()).isBefore(LocalDate.parse(startDate)) &&
 //                !LocalDate.parse(totalSales.getDate()).isAfter(LocalDate.parse(endDate))).toList();
 
     }
 
-    public Total_Sales getMaxId() throws DaoException {
-        return daoFactory.totalsSalesDao().getMaxId();
-//        return totalSalesList().stream().max(Comparator.comparing(Total_Sales::getId)).orElse(null);
+    public int getMaxId() {
+        return getTotalsSalesDao().getMaxId();
+    }
+
+    @NotNull
+    private TotalsSalesDao getTotalsSalesDao() {
+        return daoFactory.totalsSalesDao();
     }
 
     public int deleteMultiData(Integer[] ids) throws DaoException {
-        return daoFactory.totalsSalesDao().deleteInvoicesInRange(ids);
+        return getTotalsSalesDao().deleteInvoicesInRange(ids);
     }
 
     public List<Total_Sales> getTotalSalesByCustomerId(int customer_id) throws DaoException {
-        return daoFactory.totalsSalesDao().getTotalSalesByCustomerId(customer_id);
+        return getTotalsSalesDao().getTotalSalesByCustomerId(customer_id);
     }
 
     public List<Total_Sales> getTotalSalesByYear(int year) throws DaoException {
-        return daoFactory.totalsSalesDao().getTotalSalesByYear(year);
+        return getTotalsSalesDao().getTotalSalesByYear(year);
     }
 }
