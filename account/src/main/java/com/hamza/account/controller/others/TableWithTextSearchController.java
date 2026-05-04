@@ -5,8 +5,10 @@ import com.hamza.account.openFxml.FxmlPath;
 import com.hamza.account.otherSetting.MaskerPaneSetting;
 import com.hamza.account.table.TableSetting;
 import com.hamza.controlsfx.alert.AllAlerts;
+import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.language.Setting_Language;
 import com.hamza.controlsfx.table.TableColumnAnnotation;
+import javafx.animation.PauseTransition;
 import javafx.application.Platform;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleObjectProperty;
@@ -18,6 +20,7 @@ import javafx.scene.control.TableView;
 import javafx.scene.control.TextField;
 import javafx.scene.input.KeyCode;
 import javafx.scene.layout.StackPane;
+import javafx.util.Duration;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 
@@ -93,7 +96,25 @@ public class TableWithTextSearchController<T> {
         tableView.getSelectionModel().selectedItemProperty().addListener((observable, oldValue, newValue) -> selectedItem.set(newValue));
         labelSearch.setText(Setting_Language.WORD_SEARCH);
         txtSearch.setPromptText(Setting_Language.WORD_SEARCH);
-        txtSearch.setOnKeyReleased(event -> searchTableFromExitedText(tableView, txtSearch.getText(), itemsModels));
+//        txtSearch.setOnKeyReleased(event -> searchTableFromExitedText(tableView, txtSearch.getText(), itemsModels));
+
+        PauseTransition pause = new PauseTransition(Duration.millis(500));
+        txtSearch.textProperty().addListener((observable, oldValue, newValue) -> {
+            pause.setOnFinished(event -> {
+                try {
+                    loadDataFromDB(newValue); // لا يتم الاستدعاء إلا بعد التوقف عن الكتابة
+                } catch (Exception e) {
+                    log.error(e.getMessage(), e.getCause());
+                    AllAlerts.alertError(e.getMessage());
+                }
+            });
+            pause.playFromStart();
+        });
+    }
+
+    private void loadDataFromDB(String newValue) throws Exception {
+        var filterItems = searchInterface.getFilterItems(newValue);
+        tableView.setItems(FXCollections.observableArrayList(filterItems));
     }
 
     public Object getSelectedItem() {

@@ -5,6 +5,7 @@ import com.hamza.account.service.ItemsService;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.property.StringProperty;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class ItemsSearch implements SearchInterface<ItemsModel> {
@@ -37,15 +38,21 @@ public class ItemsSearch implements SearchInterface<ItemsModel> {
 
         // 4. جلب البيانات من الداتا بيز (يحدث فقط أول مرة أو بعد مسح الكاش)
         // TODO 11/23/2025 6:55 AM Mohamed: filter to remove item package
-        cachedItems = itemsService.filterItemListsByStockName(stockNameProperty().get());
+//        cachedItems = itemsService.filterItemListsByStockName(stockNameProperty().get());
         isCacheValid = true; // تفعيل الكاش للاستخدامات القادمة
 
-        return cachedItems;
+//        return cachedItems;
+        return new ArrayList<>();
     }
 
     @Override
     public String getName(ItemsModel itemsModel) {
         return itemsModel.getNameItem();
+    }
+
+    @Override
+    public List<ItemsModel> getFilterItems(String filter) throws Exception {
+        return itemsService.getFilterItems(filter);
     }
 
     // 5. دالة هامة لمسح الكاش يدوياً

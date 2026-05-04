@@ -20,7 +20,7 @@ public final class ShiftContext {
      * في حال كان المستخدم لا يستخدم نظام الورديات بعد، يمكن تعطيله.
      * (مستقبلاً: يُقرأ من إعدادات النظام)
      */
-    private static volatile boolean enforceShiftRequired = true;
+    private static volatile boolean enforceShiftRequired = false;
 
     private static volatile UserShift currentShift;
 

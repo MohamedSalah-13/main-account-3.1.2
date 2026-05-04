@@ -14,4 +14,9 @@ public interface SearchInterface<T> {
         return false;
     }
 
+   default List<T> getFilterItems(String filter) throws Exception {
+        //TODO 5/4/2026 10:58 AM Mohamed: must used in other implementations
+        return List.of();
+    }
+
 }
