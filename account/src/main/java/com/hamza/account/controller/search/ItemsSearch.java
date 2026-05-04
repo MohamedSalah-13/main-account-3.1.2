@@ -12,8 +12,15 @@ public class ItemsSearch implements SearchInterface<ItemsModel> {
     private final ItemsService itemsService;
     private final StringProperty stockName = new SimpleStringProperty();
 
+    // 1. تعريف متغيرات الكاش
+    private List<ItemsModel> cachedItems = null;
+    private boolean isCacheValid = false;
+
     public ItemsSearch(ItemsService itemsService) {
         this.itemsService = itemsService;
+
+        // 2. مستمع (Listener) لمسح الكاش تلقائياً إذا تم تغيير اسم المخزن
+        this.stockName.addListener((observable, oldValue, newValue) -> invalidateCache());
     }
 
     @Override
@@ -23,8 +30,17 @@ public class ItemsSearch implements SearchInterface<ItemsModel> {
 
     @Override
     public List<ItemsModel> searchItems() throws Exception {
-        //TODO 11/23/2025 6:55 AM Mohamed: filter to remove item package
-        return itemsService.filterItemListsByStockName(stockNameProperty().get());
+        // 3. التحقق من حالة الكاش قبل الاتصال بقاعدة البيانات
+        if (isCacheValid && cachedItems != null) {
+            return cachedItems; // إرجاع البيانات من الكاش مباشرة (زمن استجابة فوري)
+        }
+
+        // 4. جلب البيانات من الداتا بيز (يحدث فقط أول مرة أو بعد مسح الكاش)
+        // TODO 11/23/2025 6:55 AM Mohamed: filter to remove item package
+        cachedItems = itemsService.filterItemListsByStockName(stockNameProperty().get());
+        isCacheValid = true; // تفعيل الكاش للاستخدامات القادمة
+
+        return cachedItems;
     }
 
     @Override
@@ -32,15 +48,11 @@ public class ItemsSearch implements SearchInterface<ItemsModel> {
         return itemsModel.getNameItem();
     }
 
-//    private List<ItemsModel> getFilteredItemsForDisplay() {
-//        var mainItemsListWithoutInactive = itemsService.getMainItemsListWithoutInactive();
-//        if (dataInterface.designInterface().showDataForCustomer()) {
-//            return mainItemsListWithoutInactive;
-//        }
-//        return mainItemsListWithoutInactive.stream()
-//                .filter(itemsModel -> !itemsModel.isHasPackage())
-//                .toList();
-//    }
+    // 5. دالة هامة لمسح الكاش يدوياً
+    public void invalidateCache() {
+        this.isCacheValid = false;
+        this.cachedItems = null;
+    }
 
     public String getStockName() {
         return stockName.get();

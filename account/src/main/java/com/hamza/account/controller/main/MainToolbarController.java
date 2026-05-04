@@ -56,8 +56,17 @@ public class MainToolbarController implements Initializable {
         otherSetting();
         dataPublisher.getPublisherAddUser().addObserver(message -> menuButton.setText(Setting_Language.WELCOME + " " + message + " !"));
         dataPublisher.getShowLoginScreen().addObserver(message -> menuItemLogout.setDisable(!message));
-        toolBar.getItems().remove(btnAlarm);
+//        toolBar.getItems().remove(btnAlarm);
 //        toolBar.getItems().remove(btnPosSales);
+
+        showButton(btnPosSales, false);
+        showButton(btnAlarm, false);
+        showButton(btnShift, false);
+    }
+
+    private void showButton(Button button, boolean show) {
+        button.setVisible(show);
+        button.setManaged(show);
     }
 
     private void otherSetting() {
