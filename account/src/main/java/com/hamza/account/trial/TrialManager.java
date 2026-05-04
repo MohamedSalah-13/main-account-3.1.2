@@ -438,6 +438,7 @@ public class TrialManager {
         try {
             LicenseCheckResult license = validateLicense(Paths.get(LICENSE_FILE_PATH), false);
             info.licensePresent = license.present;
+            //TODO 5/4/2026 12:05 PM Mohamed: change in other version
 //            info.licenseValid = license.valid;
             info.licenseValid = true;
             info.licenseError = license.error;

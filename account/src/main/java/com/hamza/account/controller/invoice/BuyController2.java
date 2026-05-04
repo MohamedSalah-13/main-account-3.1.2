@@ -559,6 +559,7 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
 
     private void addData() {
         try {
+            long startTime = System.nanoTime();
             double quantity = DoubleSetting.parseDoubleOrDefault(txtQuantity.getText());
             double price = DoubleSetting.parseDoubleOrDefault(txtPrice.getText());
             double total = DoubleSetting.parseDoubleOrDefault(txtTotals.getText());
@@ -578,12 +579,13 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
                     if (quantity > balance) throw new Exception(Error_Text_Show.NO_BALANCE);
                 }
 
-            ExpireDateInterface anInterface = getDatePicker();
-            if (dataInterface.designInterface().showDataForCustomer()) {
-                anInterface = getDateList(cardItemService);
-            }
 
+            //TODO 5/4/2026 12:48 PM Mohamed: check this to load speed
             if (itemsModel.get().isHasValidate()) {
+                ExpireDateInterface anInterface = getDatePicker();
+                if (dataInterface.designInterface().showDataForCustomer()) {
+                    anInterface = getDateList(cardItemService);
+                }
                 var choiceItemExpireDate = new ChoiceItemExpireDate(anInterface);
                 var s = choiceItemExpireDate.showAndWait();
                 s.ifPresentOrElse(choiceItemExpireDate1 -> {
@@ -598,6 +600,12 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
             } else if (actionTextBuy.addRowToTable(itemsModel.get().getBarcode(), quantity, price, discount, total, null) == 1) {
                 clearData();
             }
+
+            long endTime = System.nanoTime();
+
+            // تحويل النانو ثانية إلى مللي ثانية لسهولة القراءة
+            long duration = (endTime - startTime) / 1_000_000;
+            System.out.println("Execution time: " + duration + " ms");
         } catch (Exception e) {
             logError(e);
         }

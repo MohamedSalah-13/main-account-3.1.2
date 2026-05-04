@@ -49,5 +49,5 @@ exit /b 0
 :run_sql
 set "FILE=%~1"
 REM Note: passing password on CLI; consider MYSQL_PWD env var if preferred.
-"%MYSQL_BIN%" --host=%HOST% --port=%PORT% --user=%USER% --default-character-set=utf8mb4 --password=%PASS% %DB% < "%FILE%"
+"%MYSQL_BIN%" --host=%HOST% --port=%PORT% --user=%USER% --default-character-set=utf8mb4 --password=%PASS% -vvv %DB% < "%FILE%"
 exit /b %errorlevel%
