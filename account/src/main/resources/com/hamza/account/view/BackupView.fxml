@@ -1,40 +1,54 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<?import javafx.scene.control.*?>
-<?import javafx.scene.layout.*?>
+
 <?import javafx.geometry.Insets?>
-<VBox spacing="15" alignment="CENTER" styleClass="backup-container" xmlns="http://javafx.com/javafx/8"
-      stylesheets="@../css/backup.css"
-      xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.hamza.account.backup.BackupController">
-    <padding><Insets topRightBottomLeft="20"/></padding>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.ComboBox?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.PasswordField?>
+<?import javafx.scene.control.ProgressIndicator?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.layout.ColumnConstraints?>
+<?import javafx.scene.layout.GridPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.RowConstraints?>
+<?import javafx.scene.layout.VBox?>
 
-    <Label text="إدارة النسخ الاحتياطي" styleClass="title-label"/>
+<VBox alignment="CENTER" spacing="15.0" styleClass="backup-container" stylesheets="@../css/backup.css" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.hamza.account.backup.BackupController">
+    <padding><Insets topRightBottomLeft="20" /></padding>
 
-    <HBox spacing="10" alignment="CENTER">
-        <Label text="مسار الحفظ:"/>
-        <TextField fx:id="backupPathField" HBox.hgrow="ALWAYS" editable="false"/>
-        <Button text="تغيير" onAction="#changeBackupPath"/>
-    </HBox>
+    <Label styleClass="title-label" text="إدارة النسخ الاحتياطي" />
+   <GridPane hgap="5.0" vgap="30.0">
+     <columnConstraints>
+       <ColumnConstraints hgrow="SOMETIMES" maxWidth="-Infinity" minWidth="10.0" />
+       <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" />
+         <ColumnConstraints hgrow="SOMETIMES" maxWidth="-Infinity" minWidth="10.0" prefWidth="100.0" />
+     </columnConstraints>
+     <rowConstraints>
+       <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
+       <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
+       <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
+     </rowConstraints>
+      <children>
+           <Label text="مسار الحفظ:" />
+           <TextField fx:id="backupPathField" editable="false" GridPane.columnIndex="1" />
+           <Button onAction="#changeBackupPath" text="تغيير" GridPane.columnIndex="2" />
+           <Label text="كلمة مرور التشفير:" GridPane.rowIndex="1" />
+           <PasswordField fx:id="encryptionPasswordField" promptText="كلمة مرور لحماية النسخة" GridPane.columnIndex="1" GridPane.rowIndex="1" />
+           <Label text="التكرار التلقائي:" GridPane.rowIndex="2" />
+           <ComboBox fx:id="intervalCombo" maxWidth="1.7976931348623157E308" GridPane.columnIndex="1" GridPane.rowIndex="2" />
+           <Button onAction="#applySchedule" text="تطبيق" GridPane.columnIndex="2" GridPane.rowIndex="2" />
+      </children>
+   </GridPane>
 
-    <HBox spacing="10" alignment="CENTER">
-        <Label text="كلمة مرور التشفير:"/>
-        <PasswordField fx:id="encryptionPasswordField" promptText="كلمة مرور لحماية النسخة"/>
-    </HBox>
-
-    <HBox spacing="10" alignment="CENTER">
-        <Label text="التكرار التلقائي:"/>
-        <ComboBox fx:id="intervalCombo"/>
-        <Button text="تطبيق" onAction="#applySchedule"/>
-    </HBox>
-
-    <HBox spacing="20" alignment="CENTER">
-        <Button text="نسخ احتياطي الآن" fx:id="backupBtn" styleClass="primary-button" onAction="#backupNow"/>
-        <Button text="استعادة نسخة" fx:id="restoreBtn" styleClass="primary-button" onAction="#restoreBackup"/>
+    <HBox alignment="CENTER" spacing="20">
+        <Button fx:id="backupBtn" onAction="#backupNow" styleClass="primary-button" text="نسخ احتياطي الآن" />
+        <Button fx:id="restoreBtn" onAction="#restoreBackup" styleClass="primary-button" text="استعادة نسخة" />
     </HBox>
 
     <!-- مؤشر التقدم (دائري + وصف نصي) يظهر فقط عند التنفيذ -->
     <HBox fx:id="progressBox" alignment="CENTER" spacing="10" visible="false">
-        <ProgressIndicator fx:id="progressIndicator" maxWidth="30" maxHeight="30"/>
-        <Label fx:id="progressLabel" text="جارٍ النسخ الاحتياطي..." styleClass="status-label"/>
+        <ProgressIndicator fx:id="progressIndicator" maxHeight="30" maxWidth="30" />
+        <Label fx:id="progressLabel" styleClass="status-label" text="جارٍ النسخ الاحتياطي..." />
     </HBox>
-    <Label fx:id="statusLabel" text="جاهز" styleClass="status-label"/>
+    <Label fx:id="statusLabel" styleClass="status-label" text="جاهز" />
 </VBox>

@@ -140,7 +140,7 @@ public class TableController<T> implements Initializable {
 
         var imageSetting = new Image_Setting();
         buttonSetting(btnNew, Setting_Language.WORD_NEW, imageSetting.add);
-        buttonSetting(btnUpdate, Setting_Language.WORD_UPDATE, imageSetting.update);
+        buttonSetting(btnUpdate, "تعديل", imageSetting.update);
         buttonSetting(btnDelete, Setting_Language.WORD_DELETE, imageSetting.delete);
         buttonSetting(btnRefresh, Setting_Language.WORD_REFRESH, imageSetting.refresh);
         buttonSetting(btnPrint, Setting_Language.WORD_PRINT, imageSetting.print);

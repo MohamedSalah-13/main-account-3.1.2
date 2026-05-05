@@ -5,6 +5,7 @@ import com.hamza.account.config.Image_Setting;
 import com.hamza.account.controller.others.ServiceData;
 import com.hamza.account.controller.reports.ReportTotalsByYearAndMonthController;
 import com.hamza.account.dash.ReportByDate;
+import com.hamza.account.features.notification.ItemNotifications;
 import com.hamza.account.interfaces.treeAccount.ReportTreeAccountCustom;
 import com.hamza.account.interfaces.treeAccount.ReportTreeAccountSuppliers;
 import com.hamza.account.interfaces.treePurchase.ReportTreePurchase;
@@ -15,7 +16,6 @@ import com.hamza.account.model.base.BasePurchasesAndSales;
 import com.hamza.account.model.base.BaseTotals;
 import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.model.domain.*;
-import com.hamza.account.features.notification.ItemNotifications;
 import com.hamza.account.openFxml.OpenFxmlApplication;
 import com.hamza.account.service.AccountCustomerService;
 import com.hamza.account.service.AccountSupplierService;
@@ -115,13 +115,25 @@ public class MainScreenController extends MainItems implements Initializable {
     public void initialize(URL url, ResourceBundle resourceBundle) {
         menuButtonSetting = new MenuButtonSetting(tabPane);
         mainPane = (Pane) borderPane.getCenter();
-//        showImage();
-        menuBarSetting();
+        showImage();
+
+        long startTime = System.nanoTime();
+
+        new Thread(() -> {
+            menuBarSetting();
+            dontShowData();
+        }).start();
+
+        long endTime = System.nanoTime();
+
+        // تحويل النانو ثانية إلى مللي ثانية لسهولة القراءة
+        long duration = (endTime - startTime) / 1_000_000;
+        System.out.println("Execution time: " + duration + " ms");
+
         mainToolbarSetting();
         otherSetting();
-        setBackgroundImage();
         action();
-        dontShowData();
+        setBackgroundImage();
         addTabContextMenu();
 
         if (LogApplication.usersVo.getId() == 1) {
@@ -176,12 +188,17 @@ public class MainScreenController extends MainItems implements Initializable {
 
 
     private void notifyItems() {
-        if (getItemShowAlert()) {
-            var size = getItemsMiniQuantities().size();
-            if (size > 0) {
-                new ItemNotifications(getItemsMiniQuantities());
+        Thread thread = new Thread(() -> {
+
+            if (getItemShowAlert()) {
+                var size = getItemsMiniQuantities().size();
+                if (size > 0) {
+                    new ItemNotifications(getItemsMiniQuantities());
+                }
             }
-        }
+        });
+
+        thread.start();
     }
 
     private java.util.List<ItemsMiniQuantity> getItemsMiniQuantities() {
