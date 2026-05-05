@@ -24,10 +24,7 @@ public class LoadDataAndList extends DataList {
         super(daoFactory);
     }
 
-    /**
-     * تحديث جميع البيانات عن طريق إشعار جميع المراقبين
-     */
-    public void updateData(DataPublisher dataPublisher) {
+    public static void updateData(DataPublisher dataPublisher) {
         if (dataPublisher == null) {
             log.warn("DataPublisher is null, skipping update");
             return;

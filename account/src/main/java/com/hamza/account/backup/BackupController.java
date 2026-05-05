@@ -1,5 +1,7 @@
 package com.hamza.account.backup;
 
+import com.hamza.account.controller.main.DataPublisher;
+import com.hamza.account.controller.main.LoadDataAndList;
 import javafx.application.Platform;
 import javafx.concurrent.Task;
 import javafx.fxml.FXML;
@@ -38,6 +40,7 @@ public class BackupController {
     private Label progressLabel, statusLabel;
 
 
+    private DataPublisher dataPublisher;
     private BackupService backupService;
     private Preferences prefs;
 //    private ScheduledExecutorService scheduler;
@@ -70,12 +73,13 @@ public class BackupController {
 
     // هذه الدالة تُستدعى من التطبيق الرئيسي لضبط بيانات الاتصال
     public void initConnection(String dbHost, String dbPort, String dbName,
-                               String dbUser, String dbPassword) {
+                               String dbUser, String dbPassword,DataPublisher dataPublisher) {
         this.dbHost = dbHost;
         this.dbPort = dbPort;
         this.dbName = dbName;
         this.dbUser = dbUser;
         this.dbPassword = dbPassword;
+        this.dataPublisher = dataPublisher;
         updateBackupService();
     }
 
@@ -174,6 +178,7 @@ public class BackupController {
                 Toolkit.getDefaultToolkit().beep();
                 setStatus("✓ تمت الاستعادة بنجاح");
                 resetUIAfterTask();
+                LoadDataAndList.updateData(dataPublisher);
             });
 
             task.setOnFailed(e -> {
@@ -224,25 +229,4 @@ public class BackupController {
                 LocalDateTime.now().format(DateTimeFormatter.ofPattern("HH:mm:ss"))));
     }
 
-//    public static void startScheduler(long intervalHours) {
-//        if (scheduler == null || scheduler.isShutdown()) {
-//            scheduler = Executors.newSingleThreadScheduledExecutor();
-//        }
-//        if (backupTaskHandle != null) backupTaskHandle.cancel(false);
-//
-//        backupTaskHandle = scheduler.scheduleAtFixedRate(() -> {
-//            try {
-//                File dir = new File(prefs.get("backupPath", System.getProperty("user.home")));
-//                File backup = backupService.backupToFile(dir);
-//                Platform.runLater(() -> setStatus("نسخ تلقائي: " + backup.getName()));
-//            } catch (Exception e) {
-//                Platform.runLater(() -> setStatus("فشل النسخ التلقائي: " + e.getMessage()));
-//            }
-//        }, 0, intervalHours, TimeUnit.MINUTES);
-//    }
-//
-//    private void stopScheduler() {
-//        if (backupTaskHandle != null) backupTaskHandle.cancel(false);
-//        if (scheduler != null) scheduler.shutdownNow();
-//    }
 }

@@ -119,10 +119,10 @@ public class MainScreenController extends MainItems implements Initializable {
 
         long startTime = System.nanoTime();
 
-        new Thread(() -> {
+//        new Thread(() -> {
             menuBarSetting();
             dontShowData();
-        }).start();
+//        }).start();
 
         long endTime = System.nanoTime();
 

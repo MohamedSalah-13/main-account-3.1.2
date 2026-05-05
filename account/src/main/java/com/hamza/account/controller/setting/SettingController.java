@@ -121,7 +121,8 @@ public class SettingController extends ServiceData implements Initializable, App
         Parent root = loader.load();
         com.hamza.account.backup.BackupController controller = loader.getController();
         var connection = new ConnectionToDatabase();
-        controller.initConnection(connection.getHost(), connection.getPort(), connection.getDbName(), connection.getUsername(), connection.getPass());
+        controller.initConnection(connection.getHost(), connection.getPort(), connection.getDbName()
+                , connection.getUsername(), connection.getPass(),dataPublisher);
         return root;
     }
 

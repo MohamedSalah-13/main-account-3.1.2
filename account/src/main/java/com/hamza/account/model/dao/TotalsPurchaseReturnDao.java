@@ -169,6 +169,6 @@ public class TotalsPurchaseReturnDao extends AbstractDao<Total_Buy_Re> {
     }
 
     public int getMaxId() {
-        return queryForInt("SELECT MAX(id)+1 FROM " + TABLE_NAME);
+        return queryForInt("SELECT COALESCE(MAX(id), 0) + 1 FROM " + TABLE_NAME);
     }
 }

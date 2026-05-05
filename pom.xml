@@ -6,14 +6,8 @@
 
     <groupId>com.hamza</groupId>
     <artifactId>main</artifactId>
-    <version>3.1.2</version>
+    <version>4.0.0</version>
     <packaging>pom</packaging>
-
-<!--    <parent>-->
-<!--        <groupId>org.springframework.boot</groupId>-->
-<!--        <artifactId>spring-boot-starter-parent</artifactId>-->
-<!--        <version>3.2.5</version> <relativePath/>-->
-<!--    </parent>-->
 
     <modules>
         <module>account</module>
@@ -28,7 +22,6 @@
         <openjfx.version>21.0.2</openjfx.version>
         <lombok.version>1.18.30</lombok.version>
         <poi.version>5.4.0</poi.version>
-        <!--        <itext.licensekey.version>4.2.2</itext.licensekey.version>-->
     </properties>
 
     <dependencies>
@@ -152,11 +145,6 @@
             <version>74.2</version>
         </dependency>
 
-<!--        <dependency>-->
-<!--            <groupId>com.itextpdf</groupId>-->
-<!--            <artifactId>typography</artifactId>-->
-<!--            <version>4.0.2</version>-->
-<!--        </dependency>-->
 
 
         <!-- =============================== json-file ===============================-->
@@ -252,13 +240,6 @@
         </dependency>
     </dependencies>
 
-<!--    <repositories>-->
-<!--        <repository>-->
-<!--            <id>itext</id>-->
-<!--            <name>iText Repository - releases</name>-->
-<!--            <url>https://repo.itextsupport.com/releases</url>-->
-<!--        </repository>-->
-<!--    </repositories>-->
     <build>
         <pluginManagement>
             <plugins>

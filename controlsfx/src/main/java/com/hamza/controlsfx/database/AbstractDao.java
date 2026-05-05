@@ -277,7 +277,7 @@ public abstract class AbstractDao<T> implements DaoList<T> {
             return resultSet.getInt(1);
         } catch (SQLException e) {
             log.error(e.getMessage(), e.getCause());
-            return 0;
+            return 1;
         }
     }
 }

@@ -186,6 +186,6 @@ public class TotalsBuyDao extends AbstractDao<Total_buy> {
     }
 
     public int getMaxId() {
-        return queryForInt("SELECT MAX(invoice_number)+1 FROM " + TABLE_NAME);
+        return queryForInt("SELECT COALESCE(MAX(invoice_number), 0) + 1 FROM " + TABLE_NAME);
     }
 }

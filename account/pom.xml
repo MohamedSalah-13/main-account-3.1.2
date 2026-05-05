@@ -6,41 +6,32 @@
 
     <artifactId>account</artifactId>
 
+    <parent>
+        <groupId>com.hamza</groupId>
+        <artifactId>main</artifactId>
+        <version>4.0.0</version>
+    </parent>
+
     <properties>
         <maven.build.timestamp.format>yyyy-MM-dd HH:mm:ss</maven.build.timestamp.format>
         <build.timestamp.display>${maven.build.timestamp}</build.timestamp.display>
+        <hamza.version>4.0.0</hamza.version>
     </properties>
-    <!--    <properties>-->
-    <!--        <revision>2.0.0</revision>-->
-    <!--    </properties>-->
-    <!--    <version>${revision}</version>-->
-
-    <!--    <properties>-->
-    <!--        <itext.licensekey.version>4.2.2</itext.licensekey.version>-->
-    <!--    </properties>-->
 
     <dependencies>
-        <!--        <dependency>-->
-        <!--            <groupId>com.itextpdf.licensing</groupId>-->
-        <!--            <artifactId>licensing-base</artifactId>-->
-        <!--            <version>${itext.licensekey.version}</version>-->
-        <!--        </dependency>-->
-<!--        <dependency>-->
-<!--            <groupId>org.springframework.boot</groupId>-->
-<!--            <artifactId>spring-boot-starter</artifactId>-->
-<!--        </dependency>-->
         <dependency>
             <groupId>com.hamza</groupId>
             <artifactId>controlsfx</artifactId>
-            <version>3.1.2</version>
+            <version>4.0.0</version>
             <scope>compile</scope>
         </dependency>
 
         <dependency>
             <groupId>com.hamza</groupId>
             <artifactId>main</artifactId>
-            <version>3.1.2</version>
+            <version>4.0.0</version>
         </dependency>
+
         <dependency>
             <groupId>org.mindrot</groupId>
             <artifactId>jbcrypt</artifactId>
@@ -48,12 +39,6 @@
         </dependency>
 
     </dependencies>
-
-    <parent>
-        <groupId>com.hamza</groupId>
-        <artifactId>main</artifactId>
-        <version>3.1.2</version>
-    </parent>
 
     <build>
         <plugins>
@@ -144,6 +129,5 @@
                 </excludes>
             </resource>
         </resources>
-
     </build>
 </project>
