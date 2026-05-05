@@ -4,6 +4,7 @@ import com.hamza.account.config.Image_Setting;
 import com.hamza.account.model.domain.Company;
 import com.hamza.account.view.DownLoadApplication;
 import com.hamza.controlsfx.jasperData.JasperData;
+import com.hamza.controlsfx.language.LanguageManager;
 import com.hamza.controlsfx.language.Setting_Language;
 import com.hamza.controlsfx.others.CssToColorHelper;
 import javafx.scene.paint.Color;
@@ -76,9 +77,12 @@ public class ReportCompany {
         map.put("AddressAndTel", " ");
         map.put("print-title", getSettingPrintReportTitle());
 
-        Locale locale = resolveReportLocale();
-        map.put("REPORT_LOCALE", locale);
-        map.put("REPORT_RESOURCE_BUNDLE", ResourceBundle.getBundle("words", locale));
+//        Locale locale = resolveReportLocale();
+//        map.put("REPORT_LOCALE", locale);
+//        map.put("REPORT_RESOURCE_BUNDLE", ResourceBundle.getBundle("messages", locale));
+        var instance = LanguageManager.getInstance();
+        map.put("REPORT_LOCALE", instance.getCurrentLocale());
+        map.put("REPORT_RESOURCE_BUNDLE", instance.getResourceBundle());
         return map;
     }
 
@@ -126,7 +130,7 @@ public class ReportCompany {
 //        if ("en".equalsIgnoreCase(language)) {
 //            return Locale.ENGLISH;
 //        }
-        return new Locale("ar", "AR");
+        return Locale.ENGLISH;
     }
 
 }

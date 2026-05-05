@@ -9,6 +9,7 @@ import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.List;
+import java.util.Optional;
 
 public class UsersDao extends AbstractDao<Users> {
 
@@ -84,5 +85,10 @@ public class UsersDao extends AbstractDao<Users> {
 
     public int updateAvailable(Users users) throws DaoException {
         return executeUpdate(SqlStatements.updateStatement(TABLE_NAME, ID, USER_AVAILABLE), users.getUser_available(), users.getId());
+    }
+    public Optional<Users> getUserByNameAndPassword(String username, String password) throws DaoException {
+        String query = "SELECT * FROM users WHERE user_name = ? AND user_pass = ?";
+        var users = queryForObject(query, this::map, username, password);
+        return Optional.ofNullable(users);
     }
 }

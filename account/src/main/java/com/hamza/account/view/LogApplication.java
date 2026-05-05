@@ -80,17 +80,8 @@ public class LogApplication extends Application {
         }
     }
 
-    /**
-     * Handles the entry attempt by a user with the given username and password.
-     * Validates the user's credentials, checks activity status, and opens the main screen if authentication is successful.
-     *
-     * @param username the username entered by the user
-     * @param password the password entered by the user
-     * @return true if the user's authentication is successful and main screen is opened; false otherwise
-     * @throws Exception if the username does not exist, the user is inactive, or the password is incorrect
-     */
     protected boolean onEnter(String username, String password) throws Exception {
-        Optional<Users> list = daoFactory.usersDao().loadAll().stream().filter(users -> users.getUsername().equals(username)).findFirst();
+        Optional<Users> list = daoFactory.usersDao().getUserByNameAndPassword(username, password);
 
         list.ifPresentOrElse(users -> {
             try {

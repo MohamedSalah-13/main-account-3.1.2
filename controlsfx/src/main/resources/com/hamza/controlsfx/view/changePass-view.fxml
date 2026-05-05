@@ -54,6 +54,5 @@
     </children>
     <stylesheets>
         <URL value="@../css/style.css"/>
-        <URL value="@../../../../../../../../account/src/main/resources/com/hamza/account/css/loginStyle.css"/>
     </stylesheets>
 </AnchorPane>

@@ -79,7 +79,7 @@ public class AddUserController extends ServiceData implements AddInterface {
         Users users = new Users();
         users.setUsername(txtName.getText());
         users.setPasswordHash(txtPass.getText());
-        var byType = ActivityType.getByType(comboActive.getSelectionModel().getSelectedItem());
+//        var byType = ActivityType.getByType(comboActive.getSelectionModel().getSelectedItem());
         users.setActive(true);
         if (codeId > 0) {
             users.setId(codeId);

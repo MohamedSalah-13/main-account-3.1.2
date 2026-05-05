@@ -704,10 +704,9 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
                 // check code account
                 if (codeAccount == 0) throw new DaoException("لا يوجد بيانات الاسم");
 
-                System.out.println(5);
                 // check to get code for update or insert
                 invNumber = num_invoice_update > 0 ? num_invoice_update : getInvNumber();
-                System.out.println(6);
+
                 DiscountType discountType = radioAmount.isSelected() ? DiscountType.AMOUNT : DiscountType.RATE;
                 List<T1> list = listOfItemsPurchase(invNumber);
 

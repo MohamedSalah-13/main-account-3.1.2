@@ -204,7 +204,7 @@ CREATE TABLE IF NOT EXISTS custom
     notes         LONGTEXT                                 NULL,
     limit_num     DECIMAL(14, 2)                           NOT NULL,
     first_balance DECIMAL(14, 2) DEFAULT 0                 NOT NULL,
-    price_id      INT                                      NOT NULL,
+    price_id      INT            DEFAULT 1                 NOT NULL,
     table_id      INT            DEFAULT 1                 NOT NULL,
     created_at    TIMESTAMP      DEFAULT CURRENT_TIMESTAMP NOT NULL,
     updated_at    TIMESTAMP      DEFAULT CURRENT_TIMESTAMP NOT NULL ON UPDATE CURRENT_TIMESTAMP,
@@ -840,15 +840,15 @@ CREATE INDEX idx_user_shifts_open_time ON user_shifts (open_time);
 CREATE TABLE IF NOT EXISTS audit_log
 (
     id          BIGINT AUTO_INCREMENT PRIMARY KEY,
-    table_name  VARCHAR(100)                         NOT NULL,
-    record_id   VARCHAR(100)                         NULL,
-    action_type VARCHAR(20)                          NOT NULL,
-    user_id     INT                                  NULL,
-    action_time DATETIME DEFAULT CURRENT_TIMESTAMP   NOT NULL,
-    old_data    JSON                                 NULL,
-    new_data    JSON                                 NULL,
-    source      VARCHAR(50) DEFAULT 'APP'            NOT NULL,
-    notes       TEXT                                 NULL,
+    table_name  VARCHAR(100)                          NOT NULL,
+    record_id   VARCHAR(100)                          NULL,
+    action_type VARCHAR(20)                           NOT NULL,
+    user_id     INT                                   NULL,
+    action_time DATETIME    DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    old_data    JSON                                  NULL,
+    new_data    JSON                                  NULL,
+    source      VARCHAR(50) DEFAULT 'APP'             NOT NULL,
+    notes       TEXT                                  NULL,
 
     CONSTRAINT audit_log_action_chk
         CHECK (action_type IN ('INSERT', 'UPDATE', 'DELETE')),

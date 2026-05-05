@@ -3,11 +3,15 @@ package com.hamza.account.backup;
 import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
+import javafx.scene.control.Button;
+import javafx.scene.control.Label;
+import javafx.scene.control.TextField;
 import javafx.scene.layout.HBox;
 import javafx.stage.DirectoryChooser;
 import javafx.stage.FileChooser;
 import javafx.concurrent.Task;
 
+import java.awt.*;
 import java.io.File;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -168,6 +172,7 @@ public class BackupController {
             restoreBtn.setDisable(true);
 
             task.setOnSucceeded(e -> {
+                Toolkit.getDefaultToolkit().beep();
                 setStatus("✓ تمت الاستعادة بنجاح");
                 resetUIAfterTask();
             });

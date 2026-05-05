@@ -24,8 +24,8 @@ begin
     IF (deleteName) Then
         # this use for customer
         TRUNCATE table custom;
-        INSERT INTO custom(name, limit_num, price_id)
-        VALUES ('بيع نقدى', 5000, 1);
+        INSERT INTO custom(id, name, limit_num, price_id)
+        VALUES (1, 'بيع نقدى', 5000, 1);
     End IF;
 
     SET FOREIGN_KEY_CHECKS = 1;
@@ -59,8 +59,8 @@ begin
 
     IF (deleteName) Then
         TRUNCATE table suppliers;
-        INSERT INTO suppliers(name)
-        VALUES ('مورد عام');
+        INSERT INTO suppliers(id, name)
+        VALUES (1, 'مورد عام');
     End IF;
 
     SET FOREIGN_KEY_CHECKS = 1;
