@@ -1,5 +1,6 @@
 package com.hamza.account.view;
 
+import com.hamza.account.backup.ScheduledBackup;
 import com.hamza.account.config.Image_Setting;
 import com.hamza.account.config.PropertiesName;
 import com.hamza.account.config.Style_Sheet;
@@ -24,15 +25,12 @@ import javafx.stage.Stage;
 import lombok.extern.log4j.Log4j2;
 
 import java.io.IOException;
-import java.security.SecureRandom;
 import java.util.List;
 import java.util.Optional;
 
 @Log4j2
 public class LogApplication extends Application {
     public static final LanguageManager INSTANCE = LanguageManager.getInstance();
-    private static final String TEMP_PASS_CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789@#%";
-    private static final SecureRandom SECURE_RANDOM = new SecureRandom();
     public static Users usersVo;
     public static List<Users_Permission> usersPermissionList;
     private final LoginController login;
@@ -90,6 +88,14 @@ public class LogApplication extends Application {
                     throw new Exception(Setting_Language.THIS_NAME_IS_INACTIVE);
 
                 }
+
+                new Thread(()->{
+                    // scheduled backup
+                    if (ScheduledBackup.getTime() > 0)
+                        ScheduledBackup.startScheduler(DownLoadApplication.loadBackupService());
+                }).start();
+
+                // load mainscreen
                 openMainScreen();
                 b = true;
             } catch (Exception e) {

@@ -1,5 +1,6 @@
 package com.hamza.account.view;
 
+import com.hamza.account.backup.BackupService;
 import com.hamza.account.config.ConnectionToDatabase;
 import com.hamza.account.config.Style_Sheet;
 import com.hamza.account.controller.main.LoadDataAndList;
@@ -13,9 +14,12 @@ import javafx.stage.Stage;
 import lombok.Getter;
 import lombok.extern.log4j.Log4j2;
 
+import static com.hamza.account.backup.ScheduledBackup.ENCRYPTION_PASSWORD;
+
 @Log4j2
 public class DownLoadApplication extends Application {
 
+    private static ConnectionToDatabase connectionToDatabase;
     @Getter
     private final LoadDataAndList loadDataAndList;
     private final DaoFactory daoFactory;
@@ -27,6 +31,7 @@ public class DownLoadApplication extends Application {
         FontsSetting.fontName(FontsSetting.GAFATA);
 
         // change language
+        connectionToDatabase = new ConnectionToDatabase();
         daoFactory = getDaoFactory();
         loadDataAndList = new LoadDataAndList(daoFactory);
         AlertSetting.stylesheetPath = Style_Sheet.getStyle();
@@ -39,7 +44,7 @@ public class DownLoadApplication extends Application {
     public static DaoFactory getDaoFactory() {
         try {
             DaoFactory daoFactory = DaoFactory.INSTANCE;
-            var connection = new ConnectionToDatabase().getDbConnection().getConnection();
+            var connection = connectionToDatabase.getDbConnection().getConnection();
             daoFactory.setConnection(connection);
 //            new TrialManager(connection).checkTrialStatus();
             return daoFactory;
@@ -48,6 +53,13 @@ public class DownLoadApplication extends Application {
             System.exit(0);
         }
         return null;
+    }
+
+    public static BackupService loadBackupService() {
+        var connection = connectionToDatabase;
+        return new BackupService(connection.getHost()
+                , connection.getPort(), connection.getDbName(), connection.getUsername(), connection.getPass()
+                , ENCRYPTION_PASSWORD);
     }
 
     @Override

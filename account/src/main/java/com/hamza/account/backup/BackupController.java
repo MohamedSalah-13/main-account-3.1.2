@@ -1,6 +1,7 @@
 package com.hamza.account.backup;
 
 import javafx.application.Platform;
+import javafx.concurrent.Task;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
 import javafx.scene.control.Button;
@@ -9,18 +10,16 @@ import javafx.scene.control.TextField;
 import javafx.scene.layout.HBox;
 import javafx.stage.DirectoryChooser;
 import javafx.stage.FileChooser;
-import javafx.concurrent.Task;
 
 import java.awt.*;
 import java.io.File;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Optional;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.TimeUnit;
 import java.util.prefs.Preferences;
+
+import static com.hamza.account.backup.ScheduledBackup.BACKUP_PATH;
+import static com.hamza.account.backup.ScheduledBackup.ENCRYPTION_PASSWORD;
 
 public class BackupController {
     @FXML
@@ -41,18 +40,18 @@ public class BackupController {
 
     private BackupService backupService;
     private Preferences prefs;
-    private ScheduledExecutorService scheduler;
+//    private ScheduledExecutorService scheduler;
 
     // بيانات الاتصال (يجب تهيئتها من التطبيق الرئيسي)
     private String dbHost, dbPort, dbName, dbUser, dbPassword;
-    private ScheduledFuture<?> backupTaskHandle;
+//    private ScheduledFuture<?> backupTaskHandle;
 
     @FXML
     public void initialize() {
         prefs = Preferences.userNodeForPackage(BackupController.class);
         // تعبئة القيم المحفوظة
-        backupPathField.setText(prefs.get("backupPath", System.getProperty("user.home")));
-        encryptionPasswordField.setText(prefs.get("encryptionPassword", ""));
+        backupPathField.setText(BACKUP_PATH);
+        encryptionPasswordField.setText(ENCRYPTION_PASSWORD);
         intervalCombo.getItems().addAll("معطل", "كل ساعة", "كل ساعتين", "كل 6 ساعات", "كل يوم");
         String savedInterval = prefs.get("interval", "معطل");
         intervalCombo.setValue(savedInterval);
@@ -209,28 +208,12 @@ public class BackupController {
     private void applySchedule() {
         String selected = intervalCombo.getValue();
         prefs.put("interval", selected);
-        long hours = 0;
-        switch (selected) {
-            case "كل ساعة":
-                hours = 1;
-                break;
-            case "كل ساعتين":
-                hours = 2;
-                break;
-            case "كل 6 ساعات":
-                hours = 6;
-                break;
-            case "كل يوم":
-                hours = 24;
-                break;
-            default:
-                hours = 0;
-        }
-        if (hours > 0) {
-            startScheduler(hours);
+
+        if (ScheduledBackup.getTime() > 0) {
+            ScheduledBackup.startScheduler(backupService);
             setStatus("تم تفعيل النسخ التلقائي كل " + selected);
         } else {
-            stopScheduler();
+            ScheduledBackup.stopScheduler();
             setStatus("تم إيقاف النسخ التلقائي");
         }
     }
@@ -241,25 +224,25 @@ public class BackupController {
                 LocalDateTime.now().format(DateTimeFormatter.ofPattern("HH:mm:ss"))));
     }
 
-    private void startScheduler(long intervalHours) {
-        if (scheduler == null || scheduler.isShutdown()) {
-            scheduler = Executors.newSingleThreadScheduledExecutor();
-        }
-        if (backupTaskHandle != null) backupTaskHandle.cancel(false);
-
-        backupTaskHandle = scheduler.scheduleAtFixedRate(() -> {
-            try {
-                File dir = new File(prefs.get("backupPath", System.getProperty("user.home")));
-                File backup = backupService.backupToFile(dir);
-                Platform.runLater(() -> setStatus("نسخ تلقائي: " + backup.getName()));
-            } catch (Exception e) {
-                Platform.runLater(() -> setStatus("فشل النسخ التلقائي: " + e.getMessage()));
-            }
-        }, 0, intervalHours, TimeUnit.HOURS);
-    }
-
-    private void stopScheduler() {
-        if (backupTaskHandle != null) backupTaskHandle.cancel(false);
-        if (scheduler != null) scheduler.shutdownNow();
-    }
+//    public static void startScheduler(long intervalHours) {
+//        if (scheduler == null || scheduler.isShutdown()) {
+//            scheduler = Executors.newSingleThreadScheduledExecutor();
+//        }
+//        if (backupTaskHandle != null) backupTaskHandle.cancel(false);
+//
+//        backupTaskHandle = scheduler.scheduleAtFixedRate(() -> {
+//            try {
+//                File dir = new File(prefs.get("backupPath", System.getProperty("user.home")));
+//                File backup = backupService.backupToFile(dir);
+//                Platform.runLater(() -> setStatus("نسخ تلقائي: " + backup.getName()));
+//            } catch (Exception e) {
+//                Platform.runLater(() -> setStatus("فشل النسخ التلقائي: " + e.getMessage()));
+//            }
+//        }, 0, intervalHours, TimeUnit.MINUTES);
+//    }
+//
+//    private void stopScheduler() {
+//        if (backupTaskHandle != null) backupTaskHandle.cancel(false);
+//        if (scheduler != null) scheduler.shutdownNow();
+//    }
 }
