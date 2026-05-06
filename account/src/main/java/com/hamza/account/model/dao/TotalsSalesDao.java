@@ -14,7 +14,6 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
 import java.util.List;
 
 import static com.hamza.controlsfx.util.NumberUtils.roundToTwoDecimalPlaces;
@@ -100,16 +99,6 @@ public class TotalsSalesDao extends AbstractDao<Total_Sales> {
                     , totalSales.getId());
             // Secondly, enter the sales data.
             salesDao.insertList(totalSales.getSalesList());
-            // insert item package
-            totalSales.getSalesList().stream().filter(Sales::isItem_has_package)
-                    .forEach(sales -> {
-                        try {
-                            sales.setItem_has_package(true);
-                            insertPackage(sales);
-                        } catch (DaoException e) {
-                            log.error(e.getMessage(), e.getCause());
-                        }
-                    });
 
             // finally, insert data in total
             executeUpdateWithException(query, data);
@@ -189,34 +178,6 @@ public class TotalsSalesDao extends AbstractDao<Total_Sales> {
             throw new DaoException(e);
         }
         return totalSales;
-    }
-
-    private void insertPackage(Sales sales) throws DaoException {
-        List<Sales_Package> salesPackageList = new ArrayList<>();
-        var itemsPackageByPackageId = daoFactory.getItemsPackageDao().getItemsPackageByPackageId(sales.getNumItem());
-        if (!itemsPackageByPackageId.isEmpty()) {
-            itemsPackageByPackageId.forEach(itemsPackage -> {
-                try {
-                    Sales_Package salesPackage = new Sales_Package();
-                    var itemsModel = daoFactory.getItemsDao().getDataById(itemsPackage.getItems_id());
-
-                    salesPackage.setSales_id(sales.getNumItem());
-                    salesPackage.setItems_id(itemsModel.getId());
-                    salesPackage.setUnit_id(itemsModel.getUnitsType().getUnit_id());
-                    salesPackage.setQuantity(itemsPackage.getQuantity());
-                    salesPackage.setSelling_price(itemsModel.getSelPrice1());
-                    salesPackage.setBuying_price(itemsModel.getBuyPrice());
-                    salesPackage.setTotal_sales(itemsPackage.getQuantity() * itemsModel.getSelPrice1());
-                    salesPackage.setTotal_buying(itemsPackage.getQuantity() * itemsModel.getBuyPrice());
-                    salesPackage.setTotal_profit(salesPackage.getTotal_sales() - salesPackage.getTotal_buying());
-                    salesPackage.setUnit_value(itemsModel.getUnitsType().getValue());
-                    salesPackageList.add(salesPackage);
-                } catch (DaoException e) {
-                    log.error(e.getMessage(), e.getCause());
-                    throw new RuntimeException(e);
-                }
-            });
-        }
     }
 
     public int deleteInvoicesInRange(Integer... invoiceNumbers) throws DaoException {

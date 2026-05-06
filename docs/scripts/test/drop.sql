@@ -1,0 +1,1 @@
+mysql -u root -p -e "DROP DATABASE IF EXISTS account_system_db; CREATE DATABASE account_system_db;"
