@@ -11,7 +11,7 @@ import lombok.Getter;
 public enum TableType {
 
     COMPANY(Setting_Language.company),
-    CUSTOMER(Setting_Language.WORD_CUSTOM),
+    CUSTOM(Setting_Language.WORD_CUSTOM),
     CUSTOMER_ACC(Setting_Language.WORD_CUSTOM_ACC),
     EMPLOYEES(Setting_Language.EMPLOYEES),
     EXPENSES(Setting_Language.EXPENSES),

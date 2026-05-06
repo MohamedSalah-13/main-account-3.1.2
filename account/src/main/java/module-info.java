@@ -29,6 +29,7 @@ module com.hamza.account {
     requires com.github.librepdf.openpdf;
     requires org.json;
     requires com.ibm.icu;
+    requires eu.hansolo.tilesfx;
 //    requires spring.context;
 //    requires spring.beans;
 //    requires licensing.base;

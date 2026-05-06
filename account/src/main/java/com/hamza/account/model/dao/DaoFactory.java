@@ -199,4 +199,13 @@ public enum DaoFactory {
     public UserShiftDao userShiftDao() {
         return new UserShiftDao(connection);
     }
+
+    public DailyDashboardReportDao dailyDashboardReportDao() {
+        return new DailyDashboardReportDao(connection);
+    }
+
+    public TopSellingItemDao topSellingItemDao() {
+        return new TopSellingItemDao(connection);
+    }
+
 }
