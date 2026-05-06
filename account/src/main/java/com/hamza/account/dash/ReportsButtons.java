@@ -5,6 +5,7 @@ import com.hamza.account.controller.main.ButtonWithPerm;
 import com.hamza.account.controller.main.DataPublisher;
 import com.hamza.account.controller.main.LoadData;
 import com.hamza.account.controller.main.MainItems;
+import com.hamza.account.controller.reports.ModernDashboardApp;
 import com.hamza.account.controller.reports.ProfitLossController;
 import com.hamza.account.controller.reports.ReportItemsController;
 import com.hamza.account.controller.reports.ReportPaid;
@@ -13,7 +14,6 @@ import com.hamza.account.openFxml.OpenFxmlApplication;
 import com.hamza.account.type.UserPermissionType;
 import com.hamza.account.view.OpenApplication;
 import com.hamza.account.view.ReportTotalYearlyApplication;
-import com.hamza.account.view.SummaryApplication;
 import com.hamza.account.view.TargetApplication;
 import com.hamza.controlsfx.interfaceData.AppSettingInterface;
 import com.hamza.controlsfx.language.Setting_Language;
@@ -42,7 +42,8 @@ public class ReportsButtons extends LoadData {
 
             @Override
             public void action() throws Exception {
-                new SummaryApplication(daoFactory, textName()).start(new Stage());
+//                new SummaryApplication(daoFactory, textName()).start(new Stage());
+                new ModernDashboardApp(daoFactory).start(new Stage());
             }
 
             @NotNull

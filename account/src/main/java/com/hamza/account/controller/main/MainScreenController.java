@@ -3,6 +3,7 @@ package com.hamza.account.controller.main;
 import com.hamza.account.config.FxmlConstants;
 import com.hamza.account.config.Image_Setting;
 import com.hamza.account.controller.others.ServiceData;
+import com.hamza.account.controller.reports.ModernDashboardApp;
 import com.hamza.account.controller.reports.ReportTotalsByYearAndMonthController;
 import com.hamza.account.dash.ReportByDate;
 import com.hamza.account.features.notification.ItemNotifications;
@@ -133,7 +134,7 @@ public class MainScreenController extends MainItems implements Initializable {
         mainToolbarSetting();
         otherSetting();
         action();
-        setBackgroundImage();
+//        setBackgroundImage();
         addTabContextMenu();
 
         if (LogApplication.usersVo.getId() == 1) {
@@ -461,11 +462,17 @@ public class MainScreenController extends MainItems implements Initializable {
 
     private void firstBoxInMain() {
         flowPane.getChildren().clear();
-        Image_Setting imageSetting = new Image_Setting();
-        addBoxData(sumTotalsSales, Setting_Language.WORD_SALES, "red", imageSetting.shoppingSales);
-        addBoxData(sumTotalsPurchase, Setting_Language.WORD_PUR, "1", imageSetting.shoppingPurchase);
-        addBoxData(sumTotalsCustomerAccounts, Setting_Language.WORD_CUSTOM_ACC, "green", imageSetting.vertical_align_bottom);
-        addBoxData(sumTotalsSuppliersAccounts, Setting_Language.WORD_SUP_ACC, "yellow", imageSetting.vertical_align_top);
+//        Image_Setting imageSetting = new Image_Setting();
+//        addBoxData(sumTotalsSales, Setting_Language.WORD_SALES, "red", imageSetting.shoppingSales);
+//        addBoxData(sumTotalsPurchase, Setting_Language.WORD_PUR, "1", imageSetting.shoppingPurchase);
+//        addBoxData(sumTotalsCustomerAccounts, Setting_Language.WORD_CUSTOM_ACC, "green", imageSetting.vertical_align_bottom);
+//        addBoxData(sumTotalsSuppliersAccounts, Setting_Language.WORD_SUP_ACC, "yellow", imageSetting.vertical_align_top);
+
+        try {
+            paneAnyDesk.setCenter(new ModernDashboardApp(daoFactory).getPane());
+        } catch (DaoException e) {
+            logException(e);
+        }
     }
 
     private void addBoxData(StringProperty stringProperty, String title, String color, InputStream image) {
@@ -573,17 +580,6 @@ public class MainScreenController extends MainItems implements Initializable {
         mainPane.setOnContextMenuRequested(e ->
                 slideshowMenu.show(mainPane, e.getScreenX(), e.getScreenY())
         );
-    }
-
-    // Bind to your "Choose folder" button
-    public void onChooseFolderClick() {
-        // replace with an actual Window, e.g., mainPane.getScene().getWindow()
-        slideshow.chooseFolderAndStart(mainPane.getScene().getWindow());
-    }
-
-    // Call this when closing the app/window to clean up
-    public void onClose() {
-        slideshow.stop();
     }
 
     private void addTabContextMenu() {
