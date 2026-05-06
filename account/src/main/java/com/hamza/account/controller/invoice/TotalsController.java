@@ -510,7 +510,6 @@ public class TotalsController<T1 extends BasePurchasesAndSales, T2 extends BaseT
             }
         }
         BuyApplication<T1, T2, T3, T4> buyApp = new BuyApplication<>(dataInterface, daoFactory, dataPublisher, i);
-//        new OpenApplication<>(buyApp.getController());
         buyApp.start(new Stage());
     }
 

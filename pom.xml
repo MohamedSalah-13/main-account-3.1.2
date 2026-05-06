@@ -47,10 +47,12 @@
             <version>${openjfx.version}</version>
         </dependency>
 
+        <!-- Source: https://mvnrepository.com/artifact/eu.hansolo/tilesfx -->
         <dependency>
             <groupId>eu.hansolo</groupId>
             <artifactId>tilesfx</artifactId>
-            <version>17.1.31</version> <!-- اختر الإصدار المناسب لنسخة الجافا الخاصة بك -->
+            <version>21.0.9</version>
+            <scope>compile</scope>
         </dependency>
         <!-- =============================== TEST ===============================-->
         <dependency>

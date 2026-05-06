@@ -25,7 +25,6 @@ public class OpenTreasuryDetailsApplication extends Application {
         stage.setTitle(OpenTreasuryDetailsApplication.ACCOUNT_STATEMENT_TITLE);
         stage.getIcons().add(new javafx.scene.image.Image(new Image_Setting().tools));
         stage.setResizable(true);
-//        stage.initModality(javafx.stage.Modality.APPLICATION_MODAL);
         stage.show();
         StageDimensions.stageDimensions(getClass(), stage);
     }

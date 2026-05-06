@@ -729,6 +729,13 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
                             }
                     }
 
+                    System.out.println(num_invoice_update);
+                    // close stage if open when update
+                    if (num_invoice_update > 0) {
+                        System.out.println("update");
+                        table.getScene().getWindow().hide();
+                    }
+
                     reset_all();
                     // for print invoice
                     printInvoice(print, t2);
@@ -736,10 +743,6 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
                     // if portable version don`t create backup
                     handlePurchaseAndSales();
 
-                    // close stage if open when update
-                    if (num_invoice_update > 0) {
-                        table.getScene().getWindow().hide();
-                    }
                 }
             }
         } catch (Exception e) {

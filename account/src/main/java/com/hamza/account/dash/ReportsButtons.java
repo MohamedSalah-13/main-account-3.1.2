@@ -43,7 +43,7 @@ public class ReportsButtons extends LoadData {
             @Override
             public void action() throws Exception {
 //                new SummaryApplication(daoFactory, textName()).start(new Stage());
-                new ModernDashboardApp(daoFactory).start(new Stage());
+                new ModernDashboardApp(daoFactory).showWindow();
             }
 
             @NotNull

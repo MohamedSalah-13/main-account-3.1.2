@@ -11,7 +11,6 @@ import eu.hansolo.tilesfx.skins.BarChartItem;
 import javafx.animation.FadeTransition;
 import javafx.animation.ParallelTransition;
 import javafx.animation.TranslateTransition;
-import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.geometry.Insets;
 import javafx.scene.Node;
@@ -32,12 +31,13 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 @Log4j2
-public class ModernDashboardApp extends Application {
+public class ModernDashboardApp {
 
     private static final Color TILE_BACKGROUND = Color.web("#2a2a2a");
     private static final Color MAIN_BACKGROUND = Color.web("#1d1d1d");
 //    private static final Color MAIN_BACKGROUND = Color.WHEAT;
-
+    // مرجع ثابت للنافذة لمنع تكرارها
+    private static Stage dashboardStage = null;
     @Getter
     private final GridPane pane;
     private final ScheduledExecutorService scheduler;
@@ -191,20 +191,36 @@ public class ModernDashboardApp extends Application {
 
     }
 
-    public static void main(String[] args) {
-        launch(args);
-    }
+    public void showWindow() {
+        // 1. التحقق مما إذا كانت النافذة مفتوحة بالفعل
+        if (dashboardStage != null && dashboardStage.isShowing()) {
+            dashboardStage.toFront();    // إحضارها للمقدمة
+            dashboardStage.requestFocus(); // وضع التركيز عليها
+            return; // إنهاء الدالة هنا لمنع إنشاء نافذة جديدة
+        }
 
-    @Override
-    public void start(Stage primaryStage) {
-        // 5. إعداد وعرض الشاشة
-        Scene scene = new Scene(pane, 850, 850);
-        primaryStage.setTitle("لوحة المتابعة اليومية - Dashboard");
-        primaryStage.setScene(scene);
-        primaryStage.getIcons().add(new javafx.scene.image.Image(new Image_Setting().reports));
-        primaryStage.show();
-// تأكد من إيقاف المؤقت عند إغلاق البرنامج لتجنب بقائه في الذاكرة
-        primaryStage.setOnCloseRequest(event -> scheduler.shutdownNow());
+        // 2. إذا كانت النافذة غير موجودة أو أُغلقت سابقاً، ننشئها من جديد
+        if (dashboardStage == null) {
+            dashboardStage = new Stage();
+
+            // إعداد المحتوى (Pane) والـ Scene
+            // ملاحظة: تأكد من تعريف 'pane' و 'scheduler' في الكلاس
+            Scene scene = new Scene(pane, 850, 850);
+
+            dashboardStage.setTitle("لوحة المتابعة اليومية - Dashboard");
+            dashboardStage.setScene(scene);
+            dashboardStage.getIcons().add(new javafx.scene.image.Image(new Image_Setting().reports));
+
+            // 3. التعامل مع حدث الإغلاق
+            dashboardStage.setOnCloseRequest(event -> {
+                if (scheduler != null) {
+                    scheduler.shutdownNow(); // إيقاف المؤقت
+                }
+                dashboardStage = null; // تفريغ المرجع لكي نتمكن من فتحها مرة أخرى
+            });
+        }
+
+        dashboardStage.show();
     }
 
     /**
