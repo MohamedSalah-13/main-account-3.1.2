@@ -2,6 +2,7 @@ package com.hamza.account.controller.main;
 
 import com.hamza.account.config.Image_Setting;
 import com.hamza.account.config.PropertiesName;
+import com.hamza.account.view.LogApplication;
 import com.hamza.controlsfx.button.ImageDesign;
 import com.hamza.controlsfx.language.Setting_Language;
 import com.jfoenix.controls.JFXHamburger;
@@ -13,12 +14,14 @@ import javafx.scene.control.MenuItem;
 import javafx.scene.control.ToolBar;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.log4j.Log4j2;
 
-import java.awt.Desktop;
+import java.awt.*;
 import java.net.URI;
 import java.net.URL;
 import java.util.ResourceBundle;
 
+@Log4j2
 @RequiredArgsConstructor
 public class MainToolbarController implements Initializable {
 
@@ -89,9 +92,11 @@ public class MainToolbarController implements Initializable {
             try {
                 Desktop.getDesktop().browse(new URI("https://www.youtube.com/playlist?list=PL2fs9t9FGXhoSOJ5UFsAWm2tLS_EfOvAE"));
             } catch (Exception ex) {
-                ex.printStackTrace();
+                log.error("Error opening YouTube link", ex);
             }
         });
+
+        showButton(btnYouTube, LogApplication.usersVo.getId() == 1);
 
         menuButton.setGraphic(new ImageDesign(imageSetting.personCustomer, 36));
         menuButton.setText(Setting_Language.WELCOME + " " + nameProperty + " !");
