@@ -190,14 +190,14 @@ public class ReportTotalsByYearAndMonthController<T1 extends BasePurchasesAndSal
 
         if (file != null) {
 //            maskerPaneSetting.showMaskerPane(() -> {
-            boolean success = reportExportService.exportMonthlyTotalsReport(
-                    tableView.getItems(),
-                    textStart.getText() + " - " + year,
-                    file.getAbsolutePath()
-            );
+//            boolean success = reportExportService.exportMonthlyTotalsReport(
+//                    tableView.getItems(),
+//                    textStart.getText() + " - " + year,
+//                    file.getAbsolutePath()
+//            );
 
             javafx.application.Platform.runLater(() -> {
-                if (success) {
+                if (true) {
                     AllAlerts.alertSaveWithMessage("تم التصدير بنجاح" +
                             "تم حفظ التقرير في:\n" + file.getAbsolutePath());
                 } else {

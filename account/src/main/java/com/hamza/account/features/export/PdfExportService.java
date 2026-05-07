@@ -190,7 +190,7 @@ public class PdfExportService {
                     .setFontColor(ColorConstants.WHITE)
                     .setTextAlignment(TextAlignment.CENTER)
                     .setVerticalAlignment(VerticalAlignment.MIDDLE)
-                    .setPadding(10);
+                    .setPadding(2);
             table.addHeaderCell(cell);
         }
         return table;
@@ -206,7 +206,7 @@ public class PdfExportService {
                     .add(arabicParagraph(data))
                     .setTextAlignment(TextAlignment.RIGHT)
                     .setVerticalAlignment(VerticalAlignment.MIDDLE)
-                    .setPadding(8);
+                    .setPadding(2);
 
             if (isAlternate) {
                 cell.setBackgroundColor(ALTERNATE_ROW_COLOR);
@@ -226,7 +226,8 @@ public class PdfExportService {
                 .setBackgroundColor(new DeviceRgb(52, 152, 219))
                 .setFontColor(ColorConstants.WHITE)
                 .setTextAlignment(TextAlignment.CENTER)
-                .setPadding(10);
+                .setFontSize(10)
+                .setPadding(2);
         table.addCell(totalCell);
 
         // ثم خلية الوصف الممتدة
@@ -235,7 +236,7 @@ public class PdfExportService {
                 .setBackgroundColor(new DeviceRgb(52, 152, 219))
                 .setFontColor(ColorConstants.WHITE)
                 .setTextAlignment(TextAlignment.CENTER)
-                .setPadding(10);
+                .setPadding(2);
         table.addCell(labelCell);
     }
 

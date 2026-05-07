@@ -1,6 +1,7 @@
 package com.hamza.account.features.export;
 
 import com.hamza.account.controller.model.TableTotals;
+import com.hamza.account.model.domain.MonthlySalesViewModel;
 import com.itextpdf.kernel.geom.PageSize;
 import javafx.collections.ObservableList;
 import lombok.extern.log4j.Log4j2;
@@ -34,55 +35,57 @@ public class ReportExportService {
         return new File("reports", fileName).getAbsolutePath();
     }
 
+
     /**
      * تصدير تقرير المجاميع الشهرية
      */
     public boolean exportMonthlyTotalsReport(
-            ObservableList<TableTotals> data,
+            ObservableList<MonthlySalesViewModel> data,
             String title,
             String outputPath) {
 
         String[] headers = {
-                "البيان", "يناير", "فبراير", "مارس", "أبريل",
+                "السنة", "يناير", "فبراير", "مارس", "أبريل",
                 "مايو", "يونيو", "يوليو", "أغسطس",
                 "سبتمبر", "أكتوبر", "نوفمبر", "ديسمبر", "الإجمالي"
         };
 
+        // تم تعديل أحجام الأعمدة لتكون نسب مئوية (المجموع = 100)
+        // تقليل حجم عمود السنة وتكبير عمود الإجمالي قليلاً
         float[] columnWidths = {
-                15f, 7f, 7f, 7f, 7f, 7f, 7f,
-                7f, 7f, 7f, 7f, 7f, 7f, 8f
+                6f,   // البيان (السنة)
+                7f, 7f, 7f, 7f, 7f, 7f, // 6 شهور الأولى
+                7f, 7f, 7f, 7f, 7f, 7f, // 6 شهور الأخيرة
+                10f   // الإجمالي
         };
 
         List<String[]> rows = new ArrayList<>();
-        TableTotals totalRow = null;
+        double totalRow = 0.0;
 
-        for (TableTotals item : data) {
-            if (item.getName().equals("الاجمالى") || item.getName().equals("الإجمالي")) {
-                totalRow = item;
-                continue;
-            }
-
+        for (MonthlySalesViewModel item : data) {
             String[] row = {
-                    item.getName(),
-                    format(item.getJan()),
-                    format(item.getFeb()),
-                    format(item.getMar()),
-                    format(item.getApril()),
-                    format(item.getMay()),
-                    format(item.getJun()),
-                    format(item.getJuly()),
-                    format(item.getAug()),
-                    format(item.getSep()),
-                    format(item.getOct()),
-                    format(item.getNov()),
-                    format(item.getDes()),
-                    format(item.getTotals())
+                    String.valueOf(item.getSalesYear()), // تصحيح: طباعة السنة كنص عادي بدلاً من تنسيق مالي
+                    format(item.getJanuary().doubleValue()),
+                    format(item.getFebruary().doubleValue()),
+                    format(item.getMarch().doubleValue()),
+                    format(item.getApril().doubleValue()),
+                    format(item.getMay().doubleValue()),
+                    format(item.getJune().doubleValue()),
+                    format(item.getJuly().doubleValue()),
+                    format(item.getAugust().doubleValue()),
+                    format(item.getSeptember().doubleValue()),
+                    format(item.getOctober().doubleValue()),
+                    format(item.getNovember().doubleValue()),
+                    format(item.getDecember().doubleValue()),
+                    format(item.getTotalYearlySales().doubleValue())
             };
             rows.add(row);
+            totalRow += item.getTotalYearlySales().doubleValue();
         }
 
-        String totalValue = totalRow != null ? format(totalRow.getTotals()) : "0.00";
+//        String totalValue = totalRow != null ? format(totalRow.getTotalYearlySales().doubleValue()) : "0.00";
 
+        // يتم طباعة التقرير بالعرض (Landscape) باستخدام PageSize.A4.rotate()
         return pdfExportService.exportGenericReport(
                 outputPath,
                 title,
@@ -91,7 +94,7 @@ public class ReportExportService {
                 columnWidths,
                 rows,
                 "الإجمالي الكلي",
-                totalValue, PageSize.A4.rotate()
+                format(totalRow), PageSize.A4.rotate()
         );
     }
 

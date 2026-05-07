@@ -974,3 +974,28 @@ WHERE YEAR(ts.invoice_date) = YEAR(CURDATE())
 GROUP BY i.id, i.nameItem
 ORDER BY total_quantity DESC
 LIMIT 10;
+
+CREATE OR REPLACE VIEW view_monthly_sales AS
+SELECT
+    YEAR(invoice_date) AS sales_year,
+
+    SUM(CASE WHEN MONTH(invoice_date) = 1 THEN total ELSE 0 END) AS January,
+    SUM(CASE WHEN MONTH(invoice_date) = 2 THEN total ELSE 0 END) AS February,
+    SUM(CASE WHEN MONTH(invoice_date) = 3 THEN total ELSE 0 END) AS March,
+    SUM(CASE WHEN MONTH(invoice_date) = 4 THEN total ELSE 0 END) AS April,
+    SUM(CASE WHEN MONTH(invoice_date) = 5 THEN total ELSE 0 END) AS May,
+    SUM(CASE WHEN MONTH(invoice_date) = 6 THEN total ELSE 0 END) AS June,
+    SUM(CASE WHEN MONTH(invoice_date) = 7 THEN total ELSE 0 END) AS July,
+    SUM(CASE WHEN MONTH(invoice_date) = 8 THEN total ELSE 0 END) AS August,
+    SUM(CASE WHEN MONTH(invoice_date) = 9 THEN total ELSE 0 END) AS September,
+    SUM(CASE WHEN MONTH(invoice_date) = 10 THEN total ELSE 0 END) AS October,
+    SUM(CASE WHEN MONTH(invoice_date) = 11 THEN total ELSE 0 END) AS November,
+    SUM(CASE WHEN MONTH(invoice_date) = 12 THEN total ELSE 0 END) AS December,
+
+    -- إجمالي مبيعات السنة بالكامل
+    SUM(total) AS total_yearly_sales
+
+FROM
+    total_sales
+GROUP BY
+    YEAR(invoice_date);

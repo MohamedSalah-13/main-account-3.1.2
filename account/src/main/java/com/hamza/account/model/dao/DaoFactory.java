@@ -208,4 +208,8 @@ public enum DaoFactory {
         return new TopSellingItemDao(connection);
     }
 
+    public MonthlySalesViewDao monthlySalesViewDao() {
+        return new MonthlySalesViewDao(connection);
+    }
+
 }

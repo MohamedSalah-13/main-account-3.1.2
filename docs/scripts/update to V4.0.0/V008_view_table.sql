@@ -900,3 +900,102 @@ UNION ALL
 SELECT * FROM treasury_deposit_query
 UNION ALL
 SELECT * FROM treasury_expenses_query;
+
+CREATE OR REPLACE VIEW daily_dashboard_report AS
+SELECT
+    -- ==========================================
+    -- 1. المبيعات (اليوم، أمس، الأسبوع، الشهر)
+    -- ==========================================
+    (SELECT COUNT(invoice_number) FROM total_sales WHERE invoice_date = CURDATE()) AS sales_count_today,
+    COALESCE((SELECT SUM(total) FROM total_sales WHERE invoice_date = CURDATE()), 0) AS sales_total_today,
+    COALESCE((SELECT SUM(total) FROM total_sales WHERE invoice_date = CURDATE() - INTERVAL 1 DAY), 0) AS sales_total_yesterday,
+    COALESCE((SELECT SUM(total) FROM total_sales WHERE YEARWEEK(invoice_date, 1) = YEARWEEK(CURDATE(), 1)), 0) AS sales_total_week,
+    COALESCE((SELECT SUM(total) FROM total_sales WHERE YEAR(invoice_date) = YEAR(CURDATE()) AND MONTH(invoice_date) = MONTH(CURDATE())), 0) AS sales_total_month,
+
+    -- ==========================================
+    -- 2. المشتريات (اليوم)
+    -- ==========================================
+    (SELECT COUNT(invoice_number) FROM total_buy WHERE invoice_date = CURDATE()) AS purchases_count_today,
+    COALESCE((SELECT SUM(total) FROM total_buy WHERE invoice_date = CURDATE()), 0) AS purchases_total_today,
+
+    -- ==========================================
+    -- 3. مرتجعات المبيعات (اليوم)
+    -- ==========================================
+    (SELECT COUNT(id) FROM total_sales_re WHERE invoice_date = CURDATE()) AS sales_returns_count_today,
+    COALESCE((SELECT SUM(total) FROM total_sales_re WHERE invoice_date = CURDATE()), 0) AS sales_returns_total_today,
+
+    -- ==========================================
+    -- 4. مرتجعات المشتريات (اليوم)
+    -- ==========================================
+    (SELECT COUNT(id) FROM total_buy_re WHERE invoice_date = CURDATE()) AS purchases_returns_count_today,
+    COALESCE((SELECT SUM(total) FROM total_buy_re WHERE invoice_date = CURDATE()), 0) AS purchases_returns_total_today,
+
+    -- ==========================================
+    -- 5. المقبوضات (النقدية الداخلة للخزينة اليوم)
+    -- ==========================================
+    (
+        COALESCE((SELECT SUM(paid_up) FROM total_sales WHERE invoice_date = CURDATE()), 0) +
+        COALESCE((SELECT SUM(paid_to_treasury) FROM total_buy_re WHERE invoice_date = CURDATE()), 0) +
+        COALESCE((SELECT SUM(amount) FROM treasury_deposit_expenses WHERE date_inter = CURDATE() AND deposit_or_expenses = 1), 0)
+        ) AS total_receipts_today,
+
+    -- ==========================================
+    -- 6. المدفوعات والمصروفات (النقدية الخارجة اليوم)
+    -- ==========================================
+    (
+        COALESCE((SELECT SUM(paid_up) FROM total_buy WHERE invoice_date = CURDATE()), 0) +
+        COALESCE((SELECT SUM(paid_from_treasury) FROM total_sales_re WHERE invoice_date = CURDATE()), 0) +
+        COALESCE((SELECT SUM(amount) FROM treasury_deposit_expenses WHERE date_inter = CURDATE() AND deposit_or_expenses = 2), 0) +
+        COALESCE((SELECT SUM(amount) FROM expenses_details WHERE date = CURDATE()), 0)
+        ) AS total_payments_and_expenses_today,
+
+    -- ==========================================
+    -- 7. الخصومات (إجمالي خصومات اليوم الممنوحة والمكتسبة)
+    -- ==========================================
+    (
+        COALESCE((SELECT SUM(discount) FROM total_sales WHERE invoice_date = CURDATE()), 0) +
+        COALESCE((SELECT SUM(discount) FROM total_buy WHERE invoice_date = CURDATE()), 0) +
+        COALESCE((SELECT SUM(discount) FROM total_sales_re WHERE invoice_date = CURDATE()), 0) +
+        COALESCE((SELECT SUM(discount) FROM total_buy_re WHERE invoice_date = CURDATE()), 0)
+        ) AS total_discounts_today
+;
+
+
+CREATE OR REPLACE VIEW top_selling_items_current_month AS
+SELECT
+    i.nameItem AS item_name,
+    SUM(s.quantity) AS total_quantity,
+    CAST((SUM(s.total_sel_price) / SUM(s.quantity)) AS DECIMAL(14,2)) AS average_price
+FROM sales s
+         JOIN total_sales ts ON s.invoice_number = ts.invoice_number
+         JOIN items i ON s.num = i.id
+WHERE YEAR(ts.invoice_date) = YEAR(CURDATE())
+  AND MONTH(ts.invoice_date) = MONTH(CURDATE())
+GROUP BY i.id, i.nameItem
+ORDER BY total_quantity DESC
+LIMIT 10;
+
+CREATE OR REPLACE VIEW view_monthly_sales AS
+SELECT
+    YEAR(invoice_date) AS sales_year,
+
+    SUM(CASE WHEN MONTH(invoice_date) = 1 THEN total ELSE 0 END) AS January,
+    SUM(CASE WHEN MONTH(invoice_date) = 2 THEN total ELSE 0 END) AS February,
+    SUM(CASE WHEN MONTH(invoice_date) = 3 THEN total ELSE 0 END) AS March,
+    SUM(CASE WHEN MONTH(invoice_date) = 4 THEN total ELSE 0 END) AS April,
+    SUM(CASE WHEN MONTH(invoice_date) = 5 THEN total ELSE 0 END) AS May,
+    SUM(CASE WHEN MONTH(invoice_date) = 6 THEN total ELSE 0 END) AS June,
+    SUM(CASE WHEN MONTH(invoice_date) = 7 THEN total ELSE 0 END) AS July,
+    SUM(CASE WHEN MONTH(invoice_date) = 8 THEN total ELSE 0 END) AS August,
+    SUM(CASE WHEN MONTH(invoice_date) = 9 THEN total ELSE 0 END) AS September,
+    SUM(CASE WHEN MONTH(invoice_date) = 10 THEN total ELSE 0 END) AS October,
+    SUM(CASE WHEN MONTH(invoice_date) = 11 THEN total ELSE 0 END) AS November,
+    SUM(CASE WHEN MONTH(invoice_date) = 12 THEN total ELSE 0 END) AS December,
+
+    -- إجمالي مبيعات السنة بالكامل
+    SUM(total) AS total_yearly_sales
+
+FROM
+    total_sales
+GROUP BY
+    YEAR(invoice_date);
