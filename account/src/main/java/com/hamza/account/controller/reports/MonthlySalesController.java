@@ -1,10 +1,12 @@
 package com.hamza.account.controller.reports;
 
+import com.hamza.account.features.export.ExcelExportService;
 import com.hamza.account.features.export.ReportExportService;
 import com.hamza.account.model.dao.MonthlySalesViewDao;
 import com.hamza.account.model.domain.MonthlySalesViewModel;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
+import javafx.embed.swing.SwingFXUtils;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.chart.BarChart;
@@ -13,9 +15,13 @@ import javafx.scene.control.Alert;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.cell.PropertyValueFactory;
+import javafx.scene.image.WritableImage;
 import javafx.stage.FileChooser;
 
+import javax.imageio.ImageIO;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.IOException;
 import java.math.BigDecimal;
 import java.net.URL;
 import java.sql.Connection;
@@ -113,8 +119,20 @@ public class MonthlySalesController implements Initializable {
     private void populateChart(List<MonthlySalesViewModel> data) {
         chartSales.getData().clear(); // تنظيف الرسم البياني القديم
 
+        // ترتيب البيانات تنازلياً (من الأحدث للأقدم) إذا لم تكن مرتبة من قاعدة البيانات
+        data.sort((d1, d2) -> Integer.compare(d2.getSalesYear(), d1.getSalesYear()));
+
+        // أخذ أحدث 5 سنوات فقط للرسم البياني
+        int maxYearsToShow = 5;
+        int count = 0;
+
         // كل سنة ستمثل "سلسلة بيانات" (Series) مختلفة بلون مختلف في الرسم البياني
         for (MonthlySalesViewModel yearData : data) {
+            if (count >= maxYearsToShow) {
+                break;
+            }
+            count++;
+
             XYChart.Series<String, Number> series = new XYChart.Series<>();
             series.setName(String.valueOf(yearData.getSalesYear())); // اسم السلسلة هو السنة (مثال: 2025)
 
@@ -166,8 +184,8 @@ public class MonthlySalesController implements Initializable {
 
             boolean success = reportExportService.exportMonthlyTotalsReport(
                     salesDataList,
-                    "تقرير إجمالي المبيعات الشهرية لكل سنة",
-                    defaultPath
+                    "تقرير إجمالي المبيعات الشهرية لكل سنة"
+                    , getChartImageBytes(), defaultPath
             );
 
             if (success) {
@@ -192,31 +210,37 @@ public class MonthlySalesController implements Initializable {
         }
 
         FileChooser fileChooser = new FileChooser();
-        fileChooser.setTitle("حفظ ملف Excel");
-        fileChooser.setInitialFileName("Monthly_Sales_Report.csv"); // تصدير CSV لسهولة التوافق
-        fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("CSV Files", "*.csv"));
+        fileChooser.setTitle("حفظ تقرير إكسيل");
+        fileChooser.setInitialFileName("تقرير_المبيعات_السنوي.xlsx");
+        fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("Excel Files", "*.xlsx"));
 
         File file = fileChooser.showSaveDialog(tableSales.getScene().getWindow());
 
         if (file != null) {
-            try (java.io.PrintWriter writer = new java.io.PrintWriter(file)) {
-                // كتابة العناوين
-                writer.println("Year,Jan,Feb,Mar,Apr,May,Jun,Jul,Aug,Sep,Oct,Nov,Dec,Total");
-
-                // كتابة البيانات
-                for (MonthlySalesViewModel row : salesDataList) {
-                    writer.printf("%d,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s\n",
-                            row.getSalesYear(),
-                            row.getJanuary(), row.getFebruary(), row.getMarch(), row.getApril(),
-                            row.getMay(), row.getJune(), row.getJuly(), row.getAugust(),
-                            row.getSeptember(), row.getOctober(), row.getNovember(), row.getDecember(),
-                            row.getTotalYearlySales()
-                    );
-                }
-                showInfo("تم تصدير ملف Excel بنجاح");
+            try {
+                ExcelExportService excelService = new ExcelExportService();
+                excelService.exportMonthlySalesToExcel(salesDataList, file.getAbsolutePath());
+                showInfo("تم تصدير ملف Excel بنجاح مع المخطط البياني");
             } catch (Exception e) {
-                showError("خطأ أثناء تصدير Excel: " + e.getMessage());
+                e.printStackTrace();
+                showError("خطأ أثناء التصدير: " + e.getMessage());
             }
+        }
+    }
+
+    private byte[] getChartImageBytes() {
+        try {
+            // أخذ لقطة من الرسم البياني
+            WritableImage image = chartSales.snapshot(null, null);
+            ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+
+            // تحويلها إلى تنسيق PNG
+            ImageIO.write(SwingFXUtils.fromFXImage(image, null), "png", outputStream);
+
+            return outputStream.toByteArray();
+        } catch (IOException e) {
+            e.printStackTrace();
+            return null;
         }
     }
 

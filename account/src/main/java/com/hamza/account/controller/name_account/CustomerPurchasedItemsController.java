@@ -251,6 +251,7 @@ public class CustomerPurchasedItemsController implements Initializable, AppSetti
                     rows,
                     "الإجمالي",
                     String.valueOf(purchasedItemsService.sumTotalAfterDiscount(filteredData)),
+                    null,
                     com.itextpdf.kernel.geom.PageSize.A4.rotate()
             );
 

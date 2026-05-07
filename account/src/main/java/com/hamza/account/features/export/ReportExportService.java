@@ -1,6 +1,5 @@
 package com.hamza.account.features.export;
 
-import com.hamza.account.controller.model.TableTotals;
 import com.hamza.account.model.domain.MonthlySalesViewModel;
 import com.itextpdf.kernel.geom.PageSize;
 import javafx.collections.ObservableList;
@@ -41,7 +40,7 @@ public class ReportExportService {
      */
     public boolean exportMonthlyTotalsReport(
             ObservableList<MonthlySalesViewModel> data,
-            String title,
+            String title, byte[] chartImageBytes, // الصورة هنا
             String outputPath) {
 
         String[] headers = {
@@ -94,7 +93,7 @@ public class ReportExportService {
                 columnWidths,
                 rows,
                 "الإجمالي الكلي",
-                format(totalRow), PageSize.A4.rotate()
+                format(totalRow), chartImageBytes, PageSize.A4.rotate()
         );
     }
 
@@ -132,7 +131,7 @@ public class ReportExportService {
                 columnWidths,
                 rows,
                 "الرصيد الإجمالي",
-                format(totalBalance), PageSize.A4
+                format(totalBalance), null, PageSize.A4
         );
     }
 

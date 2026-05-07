@@ -1,6 +1,7 @@
 package com.hamza.account.features.export;
 
 import com.itextpdf.io.font.PdfEncodings;
+import com.itextpdf.io.image.ImageDataFactory;
 import com.itextpdf.kernel.colors.ColorConstants;
 import com.itextpdf.kernel.colors.DeviceRgb;
 import com.itextpdf.kernel.font.PdfFont;
@@ -10,6 +11,7 @@ import com.itextpdf.kernel.pdf.PdfDocument;
 import com.itextpdf.kernel.pdf.PdfWriter;
 import com.itextpdf.layout.Document;
 import com.itextpdf.layout.element.Cell;
+import com.itextpdf.layout.element.Image;
 import com.itextpdf.layout.element.Paragraph;
 import com.itextpdf.layout.element.Table;
 import com.itextpdf.layout.properties.*;
@@ -155,7 +157,7 @@ public class PdfExportService {
         if (subtitle != null && !subtitle.isEmpty()) {
             Paragraph subtitlePara = arabicParagraph(subtitle)
                     .setFontSize(12)
-                    .setMarginBottom(20);
+                    .setMarginBottom(5);
             document.add(subtitlePara);
         }
 
@@ -164,7 +166,7 @@ public class PdfExportService {
                 .format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
         Paragraph datePara = arabicParagraph("تاريخ التقرير: " + dateTime)
                 .setFontSize(10)
-                .setMarginBottom(20);
+                .setMarginBottom(5);
         document.add(datePara);
     }
 
@@ -284,6 +286,7 @@ public class PdfExportService {
             List<String[]> data,
             String totalLabel,
             String totalValue,
+            byte[] chartImageBytes, // الصورة هنا
             PageSize pageSize) {
 
         try (Document document = createDocument(filePath, pageSize)) {
@@ -302,6 +305,15 @@ public class PdfExportService {
             }
 
             document.add(table);
+
+            if (chartImageBytes != null) {
+                Image chartImage = new Image(ImageDataFactory.create(chartImageBytes));
+                chartImage.setAutoScale(true);
+                chartImage.setHorizontalAlignment(HorizontalAlignment.CENTER);
+                chartImage.setMarginBottom(5f); // مسافة تحت الرسم
+                document.add(chartImage);
+            }
+
             addFooter(document);
 
             log.info("PDF exported successfully: {}", filePath);
