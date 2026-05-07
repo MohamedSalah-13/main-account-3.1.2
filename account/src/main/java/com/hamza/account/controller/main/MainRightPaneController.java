@@ -12,6 +12,12 @@ import javafx.scene.text.Text;
 import lombok.Getter;
 import lombok.extern.log4j.Log4j2;
 
+import org.controlsfx.control.PopOver;
+import javafx.scene.control.ListView;
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
+import javafx.scene.input.MouseEvent;
+
 import java.io.InputStream;
 import java.net.URL;
 import java.util.ResourceBundle;
@@ -33,10 +39,14 @@ public class MainRightPaneController implements Initializable {
     private TitledPane paneSales, panePurchase, paneItems, paneCustom, paneSuppliers, paneTreasury, paneSetting;
     @FXML
     private Text txtNameProject, txtName, txtTel;
+    private PopOver searchPopOver;
+    private ListView<String> searchResultsListView;
+    // يمكنك استبدال String بكلاس مخصص (مثلاً SearchResult) إذا أردت إرجاع كود العنصر مع اسمه
 
     @Override
     public void initialize(URL url, ResourceBundle resourceBundle) {
         otherSetting();
+        setupGlobalSearch();
     }
 
 
@@ -53,7 +63,7 @@ public class MainRightPaneController implements Initializable {
 
         // Add a listener to txtSearch to filter TitledPane buttons
         txtSearch.textProperty().addListener((observable, oldValue, newValue) -> {
-            filterTitledPaneButtons(newValue);
+//            filterTitledPaneButtons(newValue);
         });
 
         txtNameProject.setText(PROGRAM_TITLE);
@@ -67,85 +77,175 @@ public class MainRightPaneController implements Initializable {
         titledPane.setGraphic(new ImageDesign(stream, 20));
     }
 
-    /**
-     * Filters the TitledPane buttons based on the search text.
-     * Shows only the TitledPanes that contain buttons with text matching the search text.
-     * If search text is empty, all TitledPanes are shown.
-     *
-     * @param searchText The text to filter buttons by
-     */
     private void filterTitledPaneButtons(String searchText) {
         if (searchText == null || searchText.trim().isEmpty()) {
-            // Show all TitledPanes if search text is empty
-            setTitledPaneVisibility(paneSales, true);
-            setTitledPaneVisibility(panePurchase, true);
-            setTitledPaneVisibility(paneItems, true);
-            setTitledPaneVisibility(paneCustom, true);
-            setTitledPaneVisibility(paneSuppliers, true);
-            setTitledPaneVisibility(paneTreasury, true);
-            setTitledPaneVisibility(paneSetting, true);
+            // إرجاع القائمة لحالتها الطبيعية إذا كان مربع البحث فارغاً
+            resetSearchVisibility();
             return;
         }
 
-        // Convert search text to lowercase for case-insensitive comparison
+        // تحويل نص البحث إلى حروف صغيرة لضمان دقة البحث
         String lowerCaseSearchText = searchText.toLowerCase();
 
-        // Filter each TitledPane based on its buttons' text
-        setTitledPaneVisibility(paneSales, containsButtonWithText(paneSales, lowerCaseSearchText));
-        setTitledPaneVisibility(panePurchase, containsButtonWithText(panePurchase, lowerCaseSearchText));
-        setTitledPaneVisibility(paneItems, containsButtonWithText(paneItems, lowerCaseSearchText));
-        setTitledPaneVisibility(paneCustom, containsButtonWithText(paneCustom, lowerCaseSearchText));
-        setTitledPaneVisibility(paneSuppliers, containsButtonWithText(paneSuppliers, lowerCaseSearchText));
-        setTitledPaneVisibility(paneTreasury, containsButtonWithText(paneTreasury, lowerCaseSearchText));
-        setTitledPaneVisibility(paneSetting, containsButtonWithText(paneSetting, lowerCaseSearchText));
+        // تطبيق الفلترة على كل قائمة (TitledPane)
+        filterSpecificPane(paneSales, lowerCaseSearchText);
+        filterSpecificPane(panePurchase, lowerCaseSearchText);
+        filterSpecificPane(paneItems, lowerCaseSearchText);
+        filterSpecificPane(paneCustom, lowerCaseSearchText);
+        filterSpecificPane(paneSuppliers, lowerCaseSearchText);
+        filterSpecificPane(paneTreasury, lowerCaseSearchText);
+        filterSpecificPane(paneSetting, lowerCaseSearchText);
     }
 
-    /**
-     * Sets the visibility of a TitledPane.
-     * Uses both visible and managed properties to ensure proper layout behavior.
-     *
-     * @param titledPane The TitledPane to set visibility for
-     * @param visible Whether the TitledPane should be visible
-     */
-    private void setTitledPaneVisibility(TitledPane titledPane, boolean visible) {
-        titledPane.setVisible(visible);
-        titledPane.setManaged(visible); // This ensures layout space is not reserved for invisible panes
-    }
+    private void filterSpecificPane(TitledPane titledPane, String searchText) {
+        // هل عنوان القائمة الرئيسية يطابق البحث؟
+        boolean paneTitleMatches = titledPane.getText() != null && titledPane.getText().toLowerCase().contains(searchText);
+        boolean hasMatchingButton = false;
 
-    /**
-     * Checks if a TitledPane contains any button with text that matches the search text.
-     *
-     * @param titledPane The TitledPane to check
-     * @param searchText The search text (lowercase)
-     * @return true if the TitledPane contains a matching button, false otherwise
-     */
-    private boolean containsButtonWithText(TitledPane titledPane, String searchText) {
-        // Check if the TitledPane's text matches
-        if (titledPane.getText() != null && titledPane.getText().toLowerCase().contains(searchText)) {
-            return true;
+        // التأكد من أن محتوى القائمة هو Pane (مثل VBox) لنتمكن من المرور على الأزرار داخله
+        if (titledPane.getContent() instanceof javafx.scene.layout.Pane contentPane) {
+
+            for (javafx.scene.Node node : contentPane.getChildren()) {
+                if (node instanceof Button button) {
+                    boolean buttonMatches = button.getText() != null && button.getText().toLowerCase().contains(searchText);
+
+                    // إظهار الزر إذا كان يطابق البحث، أو إذا كان عنوان القائمة الرئيسية نفسه يطابق البحث
+                    if (buttonMatches || paneTitleMatches) {
+                        button.setVisible(true);
+                        button.setManaged(true);
+                        hasMatchingButton = true;
+                    } else {
+                        // إخفاء الأزرار التي لا تتطابق مع البحث
+                        button.setVisible(false);
+                        button.setManaged(false);
+                    }
+                }
+            }
         }
 
-        // If the TitledPane is not expanded, we need to expand it temporarily to access its content
-        boolean wasExpanded = titledPane.isExpanded();
-        if (!wasExpanded) {
+        // إظهار الـ TitledPane فقط إذا كان عنوانه يطابق أو إذا كان بداخله زر يطابق
+        boolean shouldShowPane = paneTitleMatches || hasMatchingButton;
+        setTitledPaneVisibility(titledPane, shouldShowPane);
+
+        // فتح القائمة تلقائياً (Expand) لتسهيل رؤية الزر المطابق
+        if (shouldShowPane) {
             titledPane.setExpanded(true);
         }
+    }
 
-        try {
-            // Check if any button in the TitledPane's content matches
-            if (titledPane.getContent() != null) {
-                return titledPane.getContent().lookupAll(".button").stream()
-                        .filter(node -> node instanceof Button)
-                        .map(node -> (Button) node)
-                        .anyMatch(button -> button.getText() != null &&
-                                button.getText().toLowerCase().contains(searchText));
-            }
-            return false;
-        } finally {
-            // Restore the original expanded state
-            if (!wasExpanded) {
-                titledPane.setExpanded(wasExpanded);
+    private void resetSearchVisibility() {
+        // مصفوفة بكل القوائم لإرجاعها لوضعها الافتراضي
+        TitledPane[] allPanes = {paneSales, panePurchase, paneItems, paneCustom, paneSuppliers, paneTreasury, paneSetting};
+
+        for (TitledPane pane : allPanes) {
+            setTitledPaneVisibility(pane, true);
+            pane.setExpanded(false); // يمكنك تغييرها لـ true إذا كنت تفضل أن تكون القوائم مفتوحة دائماً
+
+            // إرجاع جميع الأزرار لتكون مرئية
+            if (pane.getContent() instanceof javafx.scene.layout.Pane contentPane) {
+                for (javafx.scene.Node node : contentPane.getChildren()) {
+                    if (node instanceof Button) {
+                        node.setVisible(true);
+                        node.setManaged(true);
+                    }
+                }
             }
         }
+    }
+
+    private void setTitledPaneVisibility(TitledPane titledPane, boolean visible) {
+        titledPane.setVisible(visible);
+        titledPane.setManaged(visible);
+    }
+
+    private void setupGlobalSearch() {
+        // 1. إعداد قائمة عرض النتائج (ListView)
+        searchResultsListView = new ListView<>();
+        searchResultsListView.setPrefSize(250, 200); // عرض وارتفاع نافذة النتائج
+
+        // 2. إعداد نافذة الـ PopOver المنبثقة
+        searchPopOver = new PopOver(searchResultsListView);
+        searchPopOver.setArrowLocation(PopOver.ArrowLocation.TOP_CENTER); // السهم يشير للأعلى نحو مربع البحث
+        searchPopOver.setDetachable(false); // منع المستخدم من فصلها كنافذة حرة
+        searchPopOver.setHeaderAlwaysVisible(false); // إخفاء العنوان العلوي للنافذة
+
+        // 3. مراقبة ما يكتبه المستخدم في مربع البحث
+        txtSearch.textProperty().addListener((observable, oldValue, newValue) -> {
+            if (newValue == null || newValue.trim().isEmpty()) {
+                searchPopOver.hide(); // إخفاء النافذة إذا كان المربع فارغاً
+            } else {
+                // استدعاء دالة البحث في قاعدة البيانات
+                ObservableList<String> results = fetchResultsFromDatabase(newValue.trim());
+
+                if (results.isEmpty()) {
+                    searchPopOver.hide(); // إخفاء النافذة إذا لم توجد نتائج
+                } else {
+                    searchResultsListView.setItems(results); // تحديث القائمة بالنتائج
+
+                    // إظهار النافذة تحت مربع البحث إذا لم تكن ظاهرة بالفعل
+                    if (!searchPopOver.isShowing()) {
+                        searchPopOver.show(txtSearch);
+                    }
+                }
+            }
+        });
+
+        // 4. حدث عند النقر على إحدى النتائج في القائمة
+        searchResultsListView.setOnMouseClicked((MouseEvent event) -> {
+            // تنفيذ الإجراء عند النقر المزدوج (Double Click)
+            if (event.getClickCount() == 2) {
+                String selectedItem = searchResultsListView.getSelectionModel().getSelectedItem();
+                if (selectedItem != null) {
+                    handleSelectedResult(selectedItem);
+                }
+            }
+        });
+    }
+
+    private ObservableList<String> fetchResultsFromDatabase(String searchText) {
+        ObservableList<String> results = FXCollections.observableArrayList();
+
+        // =========================================================
+        // هنا تضع كود قاعدة البيانات الحقيقي (JDBC أو Hibernate الخ)
+        // مثال SQL:
+        // SELECT customer_name FROM customers WHERE customer_name LIKE '%searchText%'
+        // UNION ALL
+        // SELECT item_name FROM items WHERE item_name LIKE '%searchText%'
+        // =========================================================
+
+        // بيانات وهمية لاختبار الكود قبل ربطه بقاعدة البيانات:
+        String[] mockDatabase = {
+                "أحمد محمد - عميل",
+                "فاتورة مبيعات #1024",
+                "لابتوب ديل - منتج",
+                "محمود علي - مورد",
+                "شاشة سامسونج - منتج",
+                "محمد ابراهيم - موظف"
+        };
+
+        for (String item : mockDatabase) {
+            // تجاهل حالة الأحرف عند البحث
+            if (item.toLowerCase().contains(searchText.toLowerCase())) {
+                results.add(item);
+            }
+        }
+
+        return results;
+    }
+
+    private void handleSelectedResult(String selectedItem) {
+        log.info("تم اختيار: " + selectedItem);
+        searchPopOver.hide(); // إخفاء القائمة بعد الاختيار
+
+        // يمكنك هنا تمرير بيانات العنصر المحدد وفتح الشاشة المناسبة
+        // مثلاً: إذا كان يحتوي على كلمة "عميل"، قم بفتح شاشة العملاء وتمرير اسمه
+        if(selectedItem.contains("عميل")) {
+            // openCustomerProfile(selectedItem);
+        } else if (selectedItem.contains("فاتورة")) {
+            // openInvoice(selectedItem);
+        }
+
+        // تنظيف مربع البحث بعد الاختيار (اختياري)
+        txtSearch.clear();
     }
 }

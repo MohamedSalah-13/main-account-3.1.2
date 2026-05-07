@@ -65,6 +65,12 @@ for /f "delims=" %%F in ('dir /b /on *.sql') do (
 )
 popd
 
+REM ==============================================================
+REM --- مسح مسار إعدادات الواجهة (Preferences) من الريجستري ---
+REM ==============================================================
+echo Deleting Java Preferences from Registry...
+reg delete "HKEY_CURRENT_USER\SOFTWARE\JavaSoft\Prefs\com\hamza\account\controller" /f
+
 echo Done.
 exit /b 0
 
