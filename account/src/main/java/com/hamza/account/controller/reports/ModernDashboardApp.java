@@ -3,6 +3,7 @@ package com.hamza.account.controller.reports;
 import com.hamza.account.config.Image_Setting;
 import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.model.domain.DailyDashboardReport;
+import com.hamza.account.model.domain.TopSellingItem;
 import com.hamza.controlsfx.database.DaoException;
 import eu.hansolo.tilesfx.Tile;
 import eu.hansolo.tilesfx.TileBuilder;
@@ -26,6 +27,8 @@ import javafx.util.Duration;
 import lombok.Getter;
 import lombok.extern.log4j.Log4j2;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -35,7 +38,7 @@ public class ModernDashboardApp {
 
     private static final Color TILE_BACKGROUND = Color.web("#2a2a2a");
     private static final Color MAIN_BACKGROUND = Color.web("#1d1d1d");
-//    private static final Color MAIN_BACKGROUND = Color.WHEAT;
+    //    private static final Color MAIN_BACKGROUND = Color.WHEAT;
     // مرجع ثابت للنافذة لمنع تكرارها
     private static Stage dashboardStage = null;
     @Getter
@@ -46,7 +49,6 @@ public class ModernDashboardApp {
         // 1. جلب البيانات من قاعدة البيانات
 //        DaoFactory daoFactory = getDummyReport();
         DailyDashboardReport report = daoFactory.dailyDashboardReportDao().loadAll().getFirst();
-
         // 2. إنشاء البطاقات (Tiles)
 
         Tile salesTodayTile = TileBuilder.create()
@@ -144,6 +146,7 @@ public class ModernDashboardApp {
         pane.add(cashFlowTile, 2, 1);
 
         pane.add(discountsTile, 0, 2);
+//        pane.add(maxItems(daoFactory), 1, 2,2,1);
 
         // ==========================================
         // 4. تطبيق حركة الدخول المتسلسل (Cascade Animation)
@@ -243,6 +246,32 @@ public class ModernDashboardApp {
         ParallelTransition animation = new ParallelTransition(fadeIn, slideUp);
         animation.setDelay(Duration.millis(delayMillis)); // وقت التأخير قبل بدء الحركة
         animation.play();
+    }
+
+    private Tile maxItems(DaoFactory daoFactory) throws DaoException {
+        var topSellingItems = daoFactory.topSellingItemDao().loadAll()
+                .stream().limit(5).toList();
+        List<BarChartItem> barChartItems = new ArrayList<>();
+        List<Color> colors = List.of(Tile.BLUE, Tile.ORANGE, Tile.GREEN, Tile.YELLOW, Tile.MAGENTA);
+
+        for (int i = 0; i < topSellingItems.size(); i++) {
+            TopSellingItem item = topSellingItems.get(i);
+            BarChartItem todayData = new BarChartItem(item.getItemName(), item.getTotalQuantity().doubleValue(), colors.get(i));
+            barChartItems.add(todayData);
+        }
+
+// 2. إنشاء البطاقة وتمرير المتغيرات إليها
+        return TileBuilder.create()
+                .skinType(Tile.SkinType.BAR_CHART)
+                .title("اكثر الاصناف مبيعا")
+                .text("تحديث حي للفترات الزمنية")
+                .animated(true)
+                .animationDuration(800)
+                // 👇 هنا التغيير الأهم: نستخدم barChartItems بدلاً من chartData
+                .barChartItems(barChartItems)
+                .backgroundColor(TILE_BACKGROUND)
+                // .barColor(Tile.ORANGE) <-- (اختياري) يمكنك إزالتها لأننا حددنا لوناً لكل عنصر بالأعلى
+                .build();
     }
 
 }

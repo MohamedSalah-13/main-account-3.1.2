@@ -2,6 +2,7 @@ package com.hamza.account.dash;
 
 import com.hamza.account.Main;
 import com.hamza.account.config.ConnectionToDatabase;
+import com.hamza.account.controller.reports.ModernDashboardApp;
 import com.hamza.account.controller.reports.MonthlySalesController;
 import com.hamza.account.controller.users.UserShiftController;
 import com.hamza.account.model.dao.DaoFactory;
@@ -24,15 +25,19 @@ public class OpenShift extends Application {
 
 
         // مثال لكيفية فتح الشاشة وتمرير الاتصال
-        FXMLLoader loader = new FXMLLoader(Main.class.getResource("view/MonthlySalesView.fxml"));
-        Parent root = loader.load();
+//        FXMLLoader loader = new FXMLLoader(Main.class.getResource("view/MonthlySalesView.fxml"));
+//        Parent root = loader.load();
+//
+//        MonthlySalesController controller = loader.getController();
+//        controller.loadData(connection); // تمرير اتصال قاعدة البيانات
+//
+//        Scene scene = new Scene(root);
+//        stage.setScene(scene);
+//        stage.setTitle("تقرير المبيعات السنوي");
+//        stage.show();
 
-        MonthlySalesController controller = loader.getController();
-        controller.loadData(connection); // تمرير اتصال قاعدة البيانات
 
-        Scene scene = new Scene(root);
-        stage.setScene(scene);
-        stage.setTitle("تقرير المبيعات السنوي");
-        stage.show();
+        ModernDashboardApp modernDashboardApp = new ModernDashboardApp(daoFactory);
+        modernDashboardApp.showWindow();
     }
 }
