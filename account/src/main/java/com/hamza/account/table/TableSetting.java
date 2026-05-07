@@ -6,80 +6,81 @@ import javafx.scene.control.TreeTableColumn;
 import javafx.scene.control.TreeTableView;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.Objects;
 import java.util.prefs.Preferences;
 
 public class TableSetting {
 
-
-    public static <S> void tableMenuSetting(@NotNull Class<?> clazz, TableView<S> tableView) {
+    public static <S> void tableMenuSetting(@NotNull Class<?> clazz, @NotNull TableView<S> tableView) {
         Preferences preferences = Preferences.userNodeForPackage(clazz);
         tableView.tableMenuButtonVisibleProperty().setValue(true);
-        // Restore column visibility from preferences
+
+        // استخدام معرف الجدول كجزء من المفتاح لتجنب التداخل بين الجداول في نفس الكلاس
+        String tablePrefix = (tableView.getId() != null && !tableView.getId().isEmpty())
+                ? tableView.getId() + "_" : "table_";
+
+        int index = 0;
         for (TableColumn<S, ?> column : tableView.getColumns()) {
-            String key = "column_" + column.getText() + "_visible";
-            boolean visible = preferences.getBoolean(key, column.isVisible());
+
+            // تحديد المعرف: الأولوية لـ ID العمود، وإذا لم يوجد نستخدم الـ Index
+            String colIdentifier = (column.getId() != null && !column.getId().isEmpty())
+                    ? column.getId()
+                    : String.valueOf(index);
+
+            String visibleKey = tablePrefix + "col_" + colIdentifier + "_visible";
+            String widthKey = tablePrefix + "col_" + colIdentifier + "_width";
+
+            // استرجاع الإعدادات المحفوظة
+            boolean visible = preferences.getBoolean(visibleKey, column.isVisible());
             column.setVisible(visible);
-        }
 
-        // Save column visibility and width when changed
-        for (TableColumn<S, ?> column : tableView.getColumns()) {
-            var text = column.getText();
-            column.visibleProperty().addListener((observable, oldValue, newValue) -> {
-                String key = "column_" + text + "_visible";
-                preferences.putBoolean(key, newValue);
-            });
-
-            // Restore column width from preferences
-            String widthKey = "column_" + text + "_width";
             double width = preferences.getDouble(widthKey, column.getPrefWidth());
             column.setPrefWidth(width);
 
-            // Save column width when changed
-            column.widthProperty().addListener((observable, oldValue, newValue) -> {
-                String key = "column_" + text + "_width";
-                preferences.putDouble(key, newValue.doubleValue());
+            // حفظ التغييرات عند حدوثها
+            column.visibleProperty().addListener((observable, oldValue, newValue) -> {
+                preferences.putBoolean(visibleKey, newValue);
             });
+
+            column.widthProperty().addListener((observable, oldValue, newValue) -> {
+                preferences.putDouble(widthKey, newValue.doubleValue());
+            });
+
+            index++;
         }
     }
 
-    public static <S> void tableMenuSetting(@NotNull Class<?> clazz, TreeTableView<S> treeTableView) {
+    public static <S> void tableMenuSetting(@NotNull Class<?> clazz, @NotNull TreeTableView<S> treeTableView) {
         Preferences preferences = Preferences.userNodeForPackage(clazz);
         treeTableView.tableMenuButtonVisibleProperty().setValue(true);
-        // Restore column visibility from preferences
+
+        String tablePrefix = (treeTableView.getId() != null && !treeTableView.getId().isEmpty())
+                ? treeTableView.getId() + "_" : "treeTable_";
+
+        int index = 0;
         for (TreeTableColumn<S, ?> column : treeTableView.getColumns()) {
-            String key = "column_" + column.getText() + "_visible";
-            boolean visible = preferences.getBoolean(key, column.isVisible());
+
+            String colIdentifier = (column.getId() != null && !column.getId().isEmpty())
+                    ? column.getId()
+                    : String.valueOf(index);
+
+            String visibleKey = tablePrefix + "col_" + colIdentifier + "_visible";
+            String widthKey = tablePrefix + "col_" + colIdentifier + "_width";
+
+            boolean visible = preferences.getBoolean(visibleKey, column.isVisible());
             column.setVisible(visible);
-        }
 
-        // Save column visibility and width when changed
-        for (TreeTableColumn<S, ?> column : treeTableView.getColumns()) {
-            var text = column.getText();
-            column.visibleProperty().addListener((observable, oldValue, newValue) -> {
-                String key = "column_" + text + "_visible";
-                preferences.putBoolean(key, newValue);
-            });
-
-            // Restore column width from preferences
-            String widthKey = "column_" + text + "_width";
             double width = preferences.getDouble(widthKey, column.getPrefWidth());
             column.setPrefWidth(width);
 
-            // Save column width when changed
-            column.widthProperty().addListener((observable, oldValue, newValue) -> {
-                String key = "column_" + text + "_width";
-                preferences.putDouble(key, newValue.doubleValue());
+            column.visibleProperty().addListener((observable, oldValue, newValue) -> {
+                preferences.putBoolean(visibleKey, newValue);
             });
+
+            column.widthProperty().addListener((observable, oldValue, newValue) -> {
+                preferences.putDouble(widthKey, newValue.doubleValue());
+            });
+
+            index++;
         }
-    }
-
-
-    private static int calculateTableHash(TableView<?> table) {
-        return Objects.hash(table.getId(), table.getClass().getName());
-    }
-
-    private static int calculateTableHash(TreeTableView<?> table) {
-        return Objects.hash(table.getId(), table.getClass().getName());
     }
 }

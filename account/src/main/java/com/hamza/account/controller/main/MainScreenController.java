@@ -28,8 +28,6 @@ import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.language.Setting_Language;
 import com.hamza.controlsfx.observer.Publisher;
-import com.hamza.controlsfx.view.BoxApplication;
-import com.hamza.controlsfx.view.DateTimeApplication;
 import com.jfoenix.controls.JFXDrawer;
 import com.jfoenix.controls.JFXHamburger;
 import com.jfoenix.transitions.hamburger.HamburgerBackArrowBasicTransition;
@@ -55,13 +53,17 @@ import lombok.extern.log4j.Log4j2;
 import org.jetbrains.annotations.NotNull;
 
 import java.awt.*;
-import java.io.*;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.ResourceBundle;
 
 import static com.hamza.account.config.PropertiesName.*;
 import static com.hamza.controlsfx.util.NumberUtils.roundToTwoDecimalPlaces;
+import static com.hamza.controlsfx.view.FxmlLoad.fxmlTimePane;
 
 @Log4j2
 public class MainScreenController extends MainItems implements Initializable {
@@ -86,8 +88,6 @@ public class MainScreenController extends MainItems implements Initializable {
     private TabPane tabPane;
     @FXML
     private BorderPane borderPane;
-    @FXML
-    private FlowPane flowPane;
     @FXML
     private VBox boxCenter;
     @FXML
@@ -117,20 +117,8 @@ public class MainScreenController extends MainItems implements Initializable {
         menuButtonSetting = new MenuButtonSetting(tabPane);
         mainPane = (Pane) borderPane.getCenter();
         showImage();
-
-        long startTime = System.nanoTime();
-
-//        new Thread(() -> {
-            menuBarSetting();
-            dontShowData();
-//        }).start();
-
-        long endTime = System.nanoTime();
-
-        // تحويل النانو ثانية إلى مللي ثانية لسهولة القراءة
-        long duration = (endTime - startTime) / 1_000_000;
-        System.out.println("Execution time: " + duration + " ms");
-
+        menuBarSetting();
+        dontShowData();
         mainToolbarSetting();
         otherSetting();
         action();
@@ -159,14 +147,11 @@ public class MainScreenController extends MainItems implements Initializable {
             if (message == true) {
                 firstBoxInMain();
             } else {
-                flowPane.getChildren().clear();
+                paneAnyDesk.setCenter(null);
             }
         });
 
         initializeDataRefresh();
-//        if (getSettingServerStart()) {
-//            new UpdateData(this).loadAllData();
-//        }
     }
 
     private double getSumTotal() {
@@ -221,8 +206,7 @@ public class MainScreenController extends MainItems implements Initializable {
 
     private void otherSetting() {
         try {
-            DateTimeApplication dateTimeApplication = new DateTimeApplication();
-            borderPane.setBottom(dateTimeApplication.getPane());
+            borderPane.setBottom(fxmlTimePane.load());
             tabPane.getTabs().getFirst().setText(Setting_Language.WORD_MAIN);
             tabPane.getTabs().getFirst().setClosable(false);
             getRightPane();
@@ -461,40 +445,10 @@ public class MainScreenController extends MainItems implements Initializable {
     }
 
     private void firstBoxInMain() {
-        flowPane.getChildren().clear();
-//        Image_Setting imageSetting = new Image_Setting();
-//        addBoxData(sumTotalsSales, Setting_Language.WORD_SALES, "red", imageSetting.shoppingSales);
-//        addBoxData(sumTotalsPurchase, Setting_Language.WORD_PUR, "1", imageSetting.shoppingPurchase);
-//        addBoxData(sumTotalsCustomerAccounts, Setting_Language.WORD_CUSTOM_ACC, "green", imageSetting.vertical_align_bottom);
-//        addBoxData(sumTotalsSuppliersAccounts, Setting_Language.WORD_SUP_ACC, "yellow", imageSetting.vertical_align_top);
-
         try {
+            paneAnyDesk.setCenter(null);
             paneAnyDesk.setCenter(new ModernDashboardApp(daoFactory).getPane());
         } catch (DaoException e) {
-            logException(e);
-        }
-    }
-
-    private void addBoxData(StringProperty stringProperty, String title, String color, InputStream image) {
-        try {
-            BoxApplication boxApplication = new BoxApplication(title, image, color);
-            boxApplication.getBoxController().textSumTotalsProperty().bind(stringProperty);
-            Pane pane = boxApplication.getPane();
-            pane.setOnMouseClicked(mouseEvent -> {
-                try {
-                    if (title.equals(Setting_Language.WORD_SALES)) menuController.getMenuItemTotalSales().fire();
-                    if (title.equals(Setting_Language.WORD_PUR)) menuController.getMenuItemTotalPurchase().fire();
-                    if (title.equals(Setting_Language.WORD_CUSTOM_ACC))
-                        menuController.getMenuItemCustomAccount().fire();
-                    if (title.equals(Setting_Language.WORD_SUP_ACC))
-                        menuController.getMenuItemSuppliersAccount().fire();
-                } catch (Exception e) {
-                    logException(e);
-                }
-            });
-
-            flowPane.getChildren().add(pane);
-        } catch (Exception e) {
             logException(e);
         }
     }

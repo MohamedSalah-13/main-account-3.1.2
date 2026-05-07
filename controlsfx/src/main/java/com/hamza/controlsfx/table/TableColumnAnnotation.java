@@ -42,6 +42,7 @@ public class TableColumnAnnotation {
         String anm = f.getName();
         if (!annotation.columnName().isEmpty()) anm = annotation.columnName();
         tableColumn.setCellValueFactory(new PropertyValueFactory<>(anm));
+        tableColumn.setId(f.getName());
         return tableColumn;
     }
 

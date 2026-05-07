@@ -17,7 +17,6 @@ import com.hamza.controlsfx.observer.Publisher;
 import com.hamza.controlsfx.others.DoubleSetting;
 import com.hamza.controlsfx.table.TableColumnAnnotation;
 import com.hamza.controlsfx.table.columnEdit.ColumnSetting;
-import com.hamza.controlsfx.view.TaskProgressViewAction;
 import javafx.beans.property.IntegerProperty;
 import javafx.beans.property.SimpleIntegerProperty;
 import javafx.collections.FXCollections;
@@ -41,9 +40,7 @@ import java.io.File;
 import java.io.IOException;
 import java.net.URL;
 import java.util.*;
-import java.util.stream.Collectors;
 
-import static com.hamza.controlsfx.dateTime.DateUtils.generateRandomBarcode;
 import static com.hamza.controlsfx.table.TextSearch.searchTableFromExitedText;
 import static com.hamza.controlsfx.util.NumberUtils.roundToTwoDecimalPlaces;
 
