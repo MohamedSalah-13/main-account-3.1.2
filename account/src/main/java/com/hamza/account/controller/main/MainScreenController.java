@@ -1,10 +1,10 @@
 package com.hamza.account.controller.main;
 
+import com.hamza.account.Main;
 import com.hamza.account.config.FxmlConstants;
-import com.hamza.account.config.Image_Setting;
 import com.hamza.account.controller.others.ServiceData;
 import com.hamza.account.controller.reports.ModernDashboardApp;
-import com.hamza.account.controller.reports.ReportTotalsByYearAndMonthController;
+import com.hamza.account.controller.reports.MonthlySalesController;
 import com.hamza.account.dash.ReportByDate;
 import com.hamza.account.features.notification.ItemNotifications;
 import com.hamza.account.interfaces.treeAccount.ReportTreeAccountCustom;
@@ -17,17 +17,18 @@ import com.hamza.account.model.base.BasePurchasesAndSales;
 import com.hamza.account.model.base.BaseTotals;
 import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.model.domain.*;
-import com.hamza.account.openFxml.OpenFxmlApplication;
 import com.hamza.account.service.AccountCustomerService;
 import com.hamza.account.service.AccountSupplierService;
 import com.hamza.account.service.TotalBuyService;
 import com.hamza.account.service.TotalSalesService;
 import com.hamza.account.type.UserPermissionType;
 import com.hamza.account.view.LogApplication;
+import com.hamza.account.view.SceneAll;
 import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.language.Setting_Language;
 import com.hamza.controlsfx.observer.Publisher;
+import com.hamza.controlsfx.others.ChangeOrientation;
 import com.jfoenix.controls.JFXDrawer;
 import com.jfoenix.controls.JFXHamburger;
 import com.jfoenix.transitions.hamburger.HamburgerBackArrowBasicTransition;
@@ -40,6 +41,8 @@ import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.fxml.Initializable;
 import javafx.scene.Node;
+import javafx.scene.Parent;
+import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.control.Button;
 import javafx.scene.control.MenuBar;
@@ -48,6 +51,7 @@ import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.*;
 import javafx.stage.FileChooser;
+import javafx.stage.Stage;
 import lombok.Getter;
 import lombok.extern.log4j.Log4j2;
 import org.jetbrains.annotations.NotNull;
@@ -351,8 +355,8 @@ public class MainScreenController extends MainItems implements Initializable {
         menuButtonSetting.initializeMenuItem(menuController.getMenuItemReportPurchase(), actionPurchase);
         menuButtonSetting.initializeMenuItem(menuController.getMenuItemReportSales(), actionSales);
 
-        menuButtonSetting.initializeMenuItem(menuController.getMenuItemReportSalesByYear(), getAction(new ReportTotalsByYearAndMonthController<>(dataInterfaceSales), "مبيعات الكل"));
-        menuButtonSetting.initializeMenuItem(menuController.getMenuItemReportPurchaseByYear(), getAction(new ReportTotalsByYearAndMonthController<>(dataInterfacePurchase), "مشتريات الكل"));
+        menuButtonSetting.initializeMenuItem(menuController.getMenuItemReportSalesByYear(), getAction("مبيعات الكل"));
+        menuButtonSetting.initializeMenuItem(menuController.getMenuItemReportPurchaseByYear(), getAction("مشتريات الكل"));
 
 
         ReportTreeAccountCustom treeAccountCustom = new ReportTreeAccountCustom(this.getDaoFactory(), this) {
@@ -383,8 +387,7 @@ public class MainScreenController extends MainItems implements Initializable {
         menuButtonSetting.initializeMenuItem(menuController.getMenuItemShiftReports(), getSettingButtons().adminShifts());
     }
 
-    private <T1 extends BasePurchasesAndSales, T2 extends BaseTotals, T3 extends BaseNames, T4 extends BaseAccount> ButtonWithPerm getAction(
-            ReportTotalsByYearAndMonthController<T1, T2, T3, T4> controller, String name) {
+    private <T1 extends BasePurchasesAndSales, T2 extends BaseTotals, T3 extends BaseNames, T4 extends BaseAccount> ButtonWithPerm getAction(String name) {
         String sales = "مبيعات";
         return new ButtonWithPerm() {
             @Override
@@ -395,8 +398,18 @@ public class MainScreenController extends MainItems implements Initializable {
             }
 
             @Override
-            public void action() {
-
+            public void action() throws Exception {
+                FXMLLoader loader = new FXMLLoader(Main.class.getResource("view/MonthlySalesView.fxml"));
+                Parent root = loader.load();
+//
+                MonthlySalesController controller = loader.getController();
+                controller.loadData(daoFactory); // تمرير اتصال قاعدة البيانات
+                Stage stage = new Stage();
+                Scene scene = new SceneAll(root);
+                ChangeOrientation.sceneOrientation(scene);
+                stage.setScene(scene);
+                stage.setTitle("تقرير المبيعات السنوي");
+                stage.show();
             }
 
             @NotNull
@@ -407,17 +420,17 @@ public class MainScreenController extends MainItems implements Initializable {
 
             @Override
             public void actionAddPaneToTabPane(TabPane tabPane) throws Exception {
-                var setting24 = new Image_Setting().shoppingPurchase;
-                if (name.equals(sales))
-                    setting24 = new Image_Setting().shoppingSales;
-
-                addTape(tabPane, new OpenFxmlApplication(controller).getPane(), textName(), setting24);
+//                var setting24 = new Image_Setting().shoppingPurchase;
+//                if (name.equals(sales))
+//                    setting24 = new Image_Setting().shoppingSales;
+//
+//                addTape(tabPane, new OpenFxmlApplication(controller).getPane(), textName(), setting24);
             }
 
-            @Override
-            public boolean showOnTapPane() {
-                return true;
-            }
+//            @Override
+//            public boolean showOnTapPane() {
+//                return true;
+//            }
         };
     }
 
