@@ -115,8 +115,17 @@ public class ConvertTreasuryController extends ServiceData implements TableInter
     }
 
     @Override
-    public void loadData() throws Exception {
-        //TODO 10/10/2025 7:20 PM Mohamed: load data
+    public List<TreasuryTransferModel> getProducts(int rowsPerPage, int offset) throws Exception {
+        return List.of();
     }
 
+    @Override
+    public List<TreasuryTransferModel> getFilterItems(String newValue) {
+        return null;
+    }
+
+    @Override
+    public int getCountItems() {
+        return 0;
+    }
 }

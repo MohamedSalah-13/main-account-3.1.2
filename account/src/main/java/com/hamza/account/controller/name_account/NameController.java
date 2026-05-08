@@ -23,8 +23,6 @@ import com.hamza.controlsfx.language.Setting_Language;
 import com.hamza.controlsfx.observer.Publisher;
 import com.hamza.controlsfx.others.CssToColorHelper;
 import javafx.beans.property.*;
-import javafx.collections.ListChangeListener;
-import javafx.collections.transformation.FilteredList;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TextField;
 import javafx.scene.control.ToolBar;
@@ -61,14 +59,9 @@ public class NameController<T1 extends BasePurchasesAndSales, T2 extends BaseTot
     }
 
     @Override
-    public void addToLastPane(GridPane gridPane, HBox hBox, ToolBar toolBar, FilteredList<T3> filteredTable) {
+    public void addToLastPane(GridPane gridPane, HBox hBox, ToolBar toolBar) {
         hBox.getChildren().addAll(sumBalance);
         sumTable();
-//        table.itemsProperty().addListener(observable -> sumTable());
-        filteredTable.addListener((ListChangeListener<? super T3>) change -> {
-            sumTable();
-            table.refresh();
-        });
     }
 
     @Override
@@ -178,8 +171,18 @@ public class NameController<T1 extends BasePurchasesAndSales, T2 extends BaseTot
     }
 
     @Override
-    public void loadData() throws Exception {
-        dataInterface.loadNameAndAccount();
+    public List<T3> getProducts(int rowsPerPage, int offset) throws Exception {
+        return nameAndAccountInterface.getCustomers(rowsPerPage, offset);
+    }
+
+    @Override
+    public List<T3> getFilterItems(String newValue) throws Exception {
+        return nameAndAccountInterface.getFilterItems(newValue);
+    }
+
+    @Override
+    public int getCountItems() {
+        return nameAndAccountInterface.getCountCustomers();
     }
 
     @Override

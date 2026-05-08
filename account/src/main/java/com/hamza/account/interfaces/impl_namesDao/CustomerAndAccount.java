@@ -74,4 +74,19 @@ public class CustomerAndAccount extends ServiceData implements NameAndAccountInt
     public Customers getNameById(int id) throws DaoException {
         return customerService.getCustomerById(id);
     }
+
+    @Override
+    public List<Customers> getFilterItems(String filter) throws Exception {
+        return customerService.getFilterCustomers(filter);
+    }
+
+    @Override
+    public List<Customers> getCustomers(int rowsPerPage, int offset) throws Exception {
+        return customerService.getCustomers(rowsPerPage, offset);
+    }
+
+    @Override
+    public int getCountCustomers() {
+        return customerService.getCountCustomers();
+    }
 }

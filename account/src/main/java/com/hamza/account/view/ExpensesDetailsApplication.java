@@ -18,7 +18,6 @@ import com.hamza.controlsfx.table.columnEdit.ColumnSetting;
 import javafx.application.Application;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.value.ObservableValue;
-import javafx.collections.transformation.FilteredList;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.ToolBar;
@@ -58,7 +57,7 @@ public class ExpensesDetailsApplication extends Application implements TableInte
     }
 
     @Override
-    public void addToLastPane(GridPane gridPane, HBox hBox, ToolBar toolBar, FilteredList<ExpensesDetails> filteredTable) {
+    public void addToLastPane(GridPane gridPane, HBox hBox, ToolBar toolBar) {
         AddSumToColumn boxActive = new AddSumToColumn(TOTAL);
         double v = tableView.getItems().stream().mapToDouble(ExpensesDetails::getAmount).sum();
         boxActive.setSum(v);
@@ -147,8 +146,18 @@ public class ExpensesDetailsApplication extends Application implements TableInte
     }
 
     @Override
-    public void loadData() throws Exception {
-        //TODO 10/10/2025 7:20 PM Mohamed: add load data to table
+    public List<ExpensesDetails> getProducts(int rowsPerPage, int offset) throws Exception {
+        return List.of();
+    }
+
+    @Override
+    public List<ExpensesDetails> getFilterItems(String newValue) {
+        return null;
+    }
+
+    @Override
+    public int getCountItems() {
+        return 0;
     }
 
     private void openApp(int id) throws Exception {

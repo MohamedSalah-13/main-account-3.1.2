@@ -2,6 +2,7 @@ package com.hamza.account.model.dao;
 
 import com.hamza.account.model.domain.Area;
 import com.hamza.account.model.domain.Customers;
+import com.hamza.account.model.domain.ItemsModel;
 import com.hamza.account.trial.TrialManager;
 import com.hamza.controlsfx.database.AbstractDao;
 import com.hamza.controlsfx.database.DaoException;
@@ -212,5 +213,13 @@ public class CustomerDao extends AbstractDao<Customers> {
         }
 
         return new java.util.ArrayList<>(result.values());
+    }
+
+    public List<Customers> getProducts(int rowsPerPage, int offset) throws DaoException {
+        return queryForObjects("SELECT * FROM custom INNER JOIN table_area ON custom.area_id = table_area.id ORDER BY custom.id DESC LIMIT ? OFFSET ?", this::map, rowsPerPage, offset);
+    }
+
+    public int getCountItems() {
+        return queryForInt("SELECT COUNT(*) FROM custom");
     }
 }

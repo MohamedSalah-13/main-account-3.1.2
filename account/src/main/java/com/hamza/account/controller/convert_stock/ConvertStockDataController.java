@@ -18,7 +18,6 @@ import com.hamza.controlsfx.observer.Publisher;
 import com.hamza.controlsfx.table.columnEdit.ColumnSetting;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.value.ObservableValue;
-import javafx.collections.transformation.FilteredList;
 import javafx.scene.control.SelectionMode;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
@@ -51,7 +50,7 @@ public class ConvertStockDataController extends ServiceData implements TableInte
     }
 
     @Override
-    public void addToLastPane(GridPane gridPane, HBox hBox, ToolBar toolBar, FilteredList<StockTransfer> filteredTable) {
+    public void addToLastPane(GridPane gridPane, HBox hBox, ToolBar toolBar) {
         tableView.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
     }
 
@@ -153,8 +152,18 @@ public class ConvertStockDataController extends ServiceData implements TableInte
     }
 
     @Override
-    public void loadData() throws Exception {
-        //TODO 10/10/2025 7:21 PM Mohamed: load data
+    public List<StockTransfer> getProducts(int rowsPerPage, int offset) throws Exception {
+        return List.of();
+    }
+
+    @Override
+    public List<StockTransfer> getFilterItems(String newValue) {
+        return null;
+    }
+
+    @Override
+    public int getCountItems() {
+        return 0;
     }
 
     private void openApp(int code) throws Exception {

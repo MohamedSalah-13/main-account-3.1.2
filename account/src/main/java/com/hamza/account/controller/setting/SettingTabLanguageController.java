@@ -236,11 +236,6 @@ public class SettingTabLanguageController extends ServiceData implements Initial
                 }
 
                 @Override
-                public List<Employees> searchItems() throws Exception {
-                    return employeeService.getDelegateList();
-                }
-
-                @Override
                 public String getName(Employees customers) {
                     return Setting_Language.EMPLOYEES;
                 }

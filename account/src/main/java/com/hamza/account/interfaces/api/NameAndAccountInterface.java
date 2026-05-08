@@ -33,4 +33,9 @@ public interface NameAndAccountInterface<T1 extends BaseNames, T2 extends BaseAc
     Publisher<String> addNamePublisher();
 
     T1 getNameById(int id) throws Exception;
+
+    //TODO 5/8/2026 6:59 PM Mohamed:  add in searchInterface
+    List<T1> getFilterItems(String filter) throws Exception;
+    List<T1> getCustomers(int rowsPerPage, int offset) throws Exception;
+    int getCountCustomers();
 }

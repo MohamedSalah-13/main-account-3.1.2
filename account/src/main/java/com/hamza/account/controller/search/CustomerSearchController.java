@@ -3,9 +3,7 @@ package com.hamza.account.controller.search;
 import com.hamza.account.model.base.BaseNames;
 import com.hamza.account.model.domain.Customers;
 import com.hamza.account.service.CustomerService;
-import com.hamza.controlsfx.database.DaoException;
 
-import java.util.ArrayList;
 import java.util.List;
 
 
@@ -14,11 +12,6 @@ public record CustomerSearchController(CustomerService customerService) implemen
     @Override
     public Class<? super Customers> getSearchClass() {
         return BaseNames.class;
-    }
-
-    @Override
-    public List<Customers> searchItems() throws DaoException {
-        return new ArrayList<>();
     }
 
     @Override

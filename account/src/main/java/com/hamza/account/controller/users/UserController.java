@@ -135,8 +135,18 @@ public class UserController implements TableInterface<Users> {
     }
 
     @Override
-    public void loadData() throws Exception {
-        usersService.getUsersList();
+    public List<Users> getProducts(int rowsPerPage, int offset) throws Exception {
+        return List.of();
+    }
+
+    @Override
+    public List<Users> getFilterItems(String newValue) {
+        return null;
+    }
+
+    @Override
+    public int getCountItems() {
+        return 0;
     }
 
     private ButtonColumnI getButtonColumnI() {

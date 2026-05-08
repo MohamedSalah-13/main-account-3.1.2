@@ -2,10 +2,8 @@ package com.hamza.account.controller.others;
 
 import com.hamza.account.controller.search.SearchInterface;
 import com.hamza.account.openFxml.FxmlPath;
-import com.hamza.account.otherSetting.MaskerPaneSetting;
 import com.hamza.account.table.TableSetting;
 import com.hamza.controlsfx.alert.AllAlerts;
-import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.language.Setting_Language;
 import com.hamza.controlsfx.table.TableColumnAnnotation;
 import javafx.animation.PauseTransition;
@@ -24,8 +22,6 @@ import javafx.util.Duration;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 
-import static com.hamza.controlsfx.table.TextSearch.searchTableFromExitedText;
-
 @Log4j2
 @FxmlPath(pathFile = "table-with-text.fxml")
 @RequiredArgsConstructor
@@ -42,11 +38,9 @@ public class TableWithTextSearchController<T> {
     private Label labelSearch;
     @FXML
     private StackPane stackPane;
-    private MaskerPaneSetting maskerPaneSetting;
 
     @FXML
     public void initialize() {
-        maskerPaneSetting = new MaskerPaneSetting(stackPane);
         getTable();
         addOtherData();
     }
@@ -62,16 +56,6 @@ public class TableWithTextSearchController<T> {
 
     private void addOtherData() {
         Platform.runLater(() -> txtSearch.requestFocus());
-
-        maskerPaneSetting.showMaskerPane(() -> {
-            try {
-                itemsModels.clear();
-                itemsModels.setAll(searchInterface.searchItems());
-            } catch (Exception e) {
-                log.error(e.getMessage(), e.getCause());
-                AllAlerts.alertError(e.getMessage());
-            }
-        });
 
         txtSearch.setOnKeyPressed(keyEvent -> {
             if (keyEvent.getCode() == KeyCode.DOWN) {

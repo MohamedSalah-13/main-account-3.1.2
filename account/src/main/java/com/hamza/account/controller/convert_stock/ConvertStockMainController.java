@@ -96,7 +96,6 @@ public class ConvertStockMainController extends ServiceData implements AppSettin
     private void addTextSearch() {
         try {
             ItemsSearch itemsSearch = new ItemsSearch(itemsService);
-            itemsSearch.stockNameProperty().bind(comboFromStock.getSelectionModel().selectedItemProperty());
             TextSearchApplication<ItemsModel> itemsTextSearchApplication = new TextSearchApplication<>(itemsSearch);
             textSearchItems = itemsTextSearchApplication.getTextSearchController().textNameProperty();
             disableButton = itemsTextSearchApplication.getTextSearchController().disableButtonProperty();

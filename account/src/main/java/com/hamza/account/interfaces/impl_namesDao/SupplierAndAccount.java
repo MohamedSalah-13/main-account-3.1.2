@@ -74,4 +74,19 @@ public class SupplierAndAccount extends ServiceData implements NameAndAccountInt
     public Suppliers getNameById(int id) throws Exception {
         return suppliersService.getNameById(id);
     }
+
+    @Override
+    public List<Suppliers> getFilterItems(String filter) throws Exception {
+        return List.of();
+    }
+
+    @Override
+    public List<Suppliers> getCustomers(int rowsPerPage, int offset) throws Exception {
+        return List.of();
+    }
+
+    @Override
+    public int getCountCustomers() {
+        return 0;
+    }
 }

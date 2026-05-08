@@ -5,12 +5,13 @@ import com.hamza.account.openFxml.MainData;
 import com.hamza.account.type.UserPermissionType;
 import com.hamza.controlsfx.observer.Publisher;
 import javafx.beans.property.BooleanProperty;
-import javafx.collections.transformation.FilteredList;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TextField;
 import javafx.scene.control.ToolBar;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
+
+import java.util.List;
 
 public interface TableInterface<T> extends MainData {
 
@@ -19,7 +20,7 @@ public interface TableInterface<T> extends MainData {
         return "";
     }
 
-    default void addToLastPane(GridPane gridPane, HBox hBox, ToolBar toolBar, FilteredList<T> filteredTable) {
+    default void addToLastPane(GridPane gridPane, HBox hBox, ToolBar toolBar) {
     }
 
     default void textData(TableView<T> tableView, TextField textField) {
@@ -47,5 +48,9 @@ public interface TableInterface<T> extends MainData {
 
     UserPermissionType permDelete();
 
-    void loadData() throws Exception;
+    List<T> getProducts(int rowsPerPage, int offset) throws Exception;
+
+    List<T> getFilterItems(String newValue) throws Exception;
+
+    int getCountItems();
 }

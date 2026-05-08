@@ -3,20 +3,16 @@ package com.hamza.account.controller.others;
 import com.hamza.account.config.Image_Setting;
 import com.hamza.account.controller.main.DisableButtons;
 import com.hamza.account.openFxml.FxmlPath;
-import com.hamza.account.otherSetting.MaskerPaneSetting;
 import com.hamza.account.table.ActionButtonToolBar;
 import com.hamza.account.table.TableInterface;
 import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.button.ButtonGraphics;
-import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.language.Setting_Language;
 import com.hamza.controlsfx.others.CssToColorHelper;
 import com.hamza.controlsfx.table.TableColumnAnnotation;
 import com.hamza.controlsfx.table.columnEdit.ColumnSetting;
+import javafx.animation.PauseTransition;
 import javafx.collections.FXCollections;
-import javafx.collections.ObservableList;
-import javafx.collections.transformation.FilteredList;
-import javafx.collections.transformation.SortedList;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.control.*;
@@ -26,14 +22,15 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.scene.text.Text;
+import javafx.util.Duration;
 import lombok.extern.log4j.Log4j2;
 
 import java.io.InputStream;
 import java.net.URL;
+import java.util.List;
 import java.util.ResourceBundle;
 
 import static com.hamza.controlsfx.util.ImageChoose.createIcon;
-import static com.hamza.controlsfx.table.TextSearch.searchTableFromExitedText;
 
 /**
  * Controller class for managing a TableView and its associated UI components.
@@ -52,11 +49,9 @@ public class TableController<T> implements Initializable {
     private final TableInterface<T> tableInterface;
     private final CssToColorHelper helper = new CssToColorHelper();
     private final ActionButtonToolBar<T> actionButtonToolBar;
-    private final ObservableList<T> observableList = FXCollections.observableArrayList();
-    private FilteredList<T> filteredTable;
-    private MaskerPaneSetting maskerPaneSetting;
-    @FXML
-    private TableView<T> tableView;
+    private final int ROWS_PER_PAGE = 50;
+
+    private TableView<T> tableView = new TableView<>();
     @FXML
     private Button btnNew, btnUpdate, btnDelete, btnRefresh, btnPrint;
     @FXML
@@ -79,6 +74,8 @@ public class TableController<T> implements Initializable {
     private Text textData;
     @FXML
     private GridPane gridPane;
+    @FXML
+    private Pagination pagination;
 
     public TableController(TableInterface<T> tableInterface) {
         this.tableInterface = tableInterface;
@@ -87,11 +84,12 @@ public class TableController<T> implements Initializable {
 
     @Override
     public void initialize(URL url, ResourceBundle resourceBundle) {
-        maskerPaneSetting = new MaskerPaneSetting(root);
         getTable();
+        initializePagination();
         otherSetting();
         sumTable();
-        tableInterface.addToLastPane(gridPane, hBox, toolBar, filteredTable);
+
+        tableInterface.addToLastPane(gridPane, hBox, toolBar);
 
         if (tableInterface.styleSheet() != null) {
             root.getStylesheets().add(tableInterface.styleSheet());
@@ -104,8 +102,50 @@ public class TableController<T> implements Initializable {
 
         actionButton();
         permButtons();
-        loadTable();
-        tableInterface.publisherTable().addObserver(message -> loadTable());
+        updateTableView(0);
+        tableInterface.publisherTable().addObserver(message -> updateTableView(0));
+    }
+
+    public void initializePagination() {
+        int totalItems = tableInterface.getCountItems(); // database.getCount();
+        int pageCount = (totalItems / ROWS_PER_PAGE) + 1;
+        pagination.setPageCount(pageCount);
+        // 3. تحديد ماذا يحدث عند تغيير الصفحة (Factory)
+        pagination.setPageFactory((pageIndex) -> {
+            updateTableView(pageIndex);
+            return tableView; // نعيد الجدول ليتم عرضه داخل صفحة الـ Pagination
+        });
+
+
+        PauseTransition pause = new PauseTransition(Duration.millis(500));
+        txtSearch.textProperty().addListener((observable, oldValue, newValue) -> {
+            pause.setOnFinished(event -> {
+                try {
+                    loadDataFromDB(newValue); // لا يتم الاستدعاء إلا بعد التوقف عن الكتابة
+                } catch (Exception e) {
+                    log.error(this.getClass().getName(), e.getMessage());
+                }
+            });
+            pause.playFromStart();
+        });
+    }
+
+    private void updateTableView(int pageIndex) {
+        int offset = pageIndex * ROWS_PER_PAGE;
+        // هنا الكود الحقيقي لجلب البيانات من قاعدة البيانات
+        List<T> data = null;
+        try {
+            data = tableInterface.getProducts(ROWS_PER_PAGE, offset);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+        tableView.setItems(FXCollections.observableArrayList(data));
+        tableView.refresh();
+    }
+
+    private void loadDataFromDB(String newValue) throws Exception {
+        var filterItems = tableInterface.getFilterItems(newValue);
+        tableView.setItems(FXCollections.observableArrayList(filterItems));
     }
 
     private void permButtons() {
@@ -120,15 +160,8 @@ public class TableController<T> implements Initializable {
         new TableColumnAnnotation().getTable(tableView, tableInterface.table_data().classForColumn());
         tableInterface.table_data().getTable(tableView);
         ColumnSetting.addSelectedColumn(tableView);
-//        tableView.getColumns().add(1, column_number());
         tableView.setEditable(true);
         tableView.getSelectionModel().setSelectionMode(SelectionMode.SINGLE);
-        filteredTable = new FilteredList<>(observableList);
-        SortedList<T> sortedList = new SortedList<>(filteredTable);
-        sortedList.comparatorProperty().bind(tableView.comparatorProperty());
-        tableView.setItems(sortedList);
-        // test
-//        getList(false);
     }
 
     private void otherSetting() {
@@ -174,7 +207,6 @@ public class TableController<T> implements Initializable {
             }
         };
 
-        txtSearch.setOnKeyReleased(event -> searchTableFromExitedText(tableView, txtSearch.getText(), filteredTable));
         tableView.itemsProperty().addListener((observableValue, ts, t1) -> sumTable());
         tableView.setOnKeyPressed(keyEvent -> {
             if (keyEvent.getCode() == KeyCode.DELETE) {
@@ -220,7 +252,7 @@ public class TableController<T> implements Initializable {
                 }
         });
 
-        btnRefresh.setOnAction(actionEvent -> getList());
+        btnRefresh.setOnAction(actionEvent -> updateTableView(0));
 
         btnPrint.setOnAction(actionEvent -> {
             try {
@@ -230,30 +262,6 @@ public class TableController<T> implements Initializable {
             }
         });
     }
-
-    private void getList() {
-        maskerPaneSetting.showMaskerPane(() -> {
-            try {
-                tableInterface.loadData();
-            } catch (Exception e) {
-                throw new RuntimeException(e);
-            }
-        });
-        maskerPaneSetting.getVoidTask().setOnSucceeded(workerStateEvent -> loadTable());
-    }
-
-    private void loadTable() {
-        try {
-            observableList.clear();
-            observableList.setAll(tableInterface.table_data().dataList());
-            tableView.refresh();
-        } catch (DaoException e) {
-            errorLog(e);
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-    }
-
 
     private void errorLog(Exception e) {
         log.error(e.getMessage(), e.getCause());

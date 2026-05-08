@@ -29,7 +29,12 @@ public record CustomerService(DaoFactory daoFactory) {
         return nameDao().getFilterCustomers(newValue);
     }
 
-    public CustomerPurchasedItemsService purchasedItemsService() {
-        return new CustomerPurchasedItemsService(daoFactory);
+    public List<Customers> getCustomers(int rowsPerPage, int offset) throws DaoException {
+        return nameDao().getProducts(rowsPerPage, offset);
     }
+
+    public int getCountCustomers() {
+        return nameDao().getCountItems();
+    }
+
 }
