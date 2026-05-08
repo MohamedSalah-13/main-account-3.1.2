@@ -212,4 +212,8 @@ public enum DaoFactory {
         return new MonthlySalesViewDao(connection);
     }
 
+    public CustomerPurchasedItemDao customerPurchasedItemDao() {
+        return new CustomerPurchasedItemDao(connection);
+    }
+
 }

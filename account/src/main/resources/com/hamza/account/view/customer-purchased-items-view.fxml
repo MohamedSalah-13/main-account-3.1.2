@@ -7,57 +7,59 @@
 <?import javafx.scene.control.TableView?>
 <?import javafx.scene.control.TextField?>
 <?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.layout.FlowPane?>
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.VBox?>
+<?import javafx.scene.text.Font?>
 
-<BorderPane xmlns:fx="http://javafx.com/fxml"
-            prefWidth="1200.0" prefHeight="700.0">
+<BorderPane prefHeight="700.0" prefWidth="1200.0" xmlns:fx="http://javafx.com/fxml/1" xmlns="http://javafx.com/javafx/21">
 
     <top>
-        <VBox spacing="10.0" BorderPane.alignment="CENTER">
+        <VBox alignment="TOP_CENTER" spacing="10.0" BorderPane.alignment="CENTER">
             <padding>
-                <Insets top="15.0" right="15.0" bottom="10.0" left="15.0"/>
+                <Insets bottom="10.0" left="15.0" right="15.0" top="15.0" />
             </padding>
+             <Label styleClass="title-label" text="الأصناف المشتراة من العميل" underline="true">
+            <font>
+               <Font size="20.0" />
+            </font>
+         </Label>
 
             <HBox spacing="20.0">
-                <Label text="الأصناف المشتراة من العميل" styleClass="title-label"/>
-                <Label text="عدد السطور:"/>
-                <Label fx:id="labelCount" text="0"/>
-                <Label text="إجمالي البيع:"/>
-                <Label fx:id="labelTotalSales" text="0"/>
-                <Label text="إجمالي الكمية:"/>
-                <Label fx:id="labelTotalQuantity" text="0"/>
-                <Label text="صافي الإجمالي:"/>
-                <Label fx:id="labelNetTotal" text="0"/>
+                <Label text="عدد السطور:" />
+                <Label fx:id="labelCount" text="0" />
+                <Label text="إجمالي البيع:" />
+                <Label fx:id="labelTotalSales" text="0" />
+                <Label text="إجمالي الكمية:" />
+                <Label fx:id="labelTotalQuantity" text="0" />
+                <Label text="صافي الإجمالي:" />
+                <Label fx:id="labelNetTotal" text="0" />
             </HBox>
 
             <HBox spacing="10.0">
-                <Label text="العميل:"/>
-                <Label fx:id="labelCustomerName" text=""/>
+                <Label text="العميل:" />
+                <Label fx:id="labelCustomerName" text="" />
             </HBox>
-
-            <HBox spacing="10.0">
-                <Label text="من:"/>
-                <DatePicker fx:id="dateFrom"/>
-                <Label text="إلى:"/>
-                <DatePicker fx:id="dateTo"/>
-                <Label text="اسم الصنف:"/>
-                <TextField fx:id="textSearchName" promptText="ابحث بالاسم"/>
-                <Button fx:id="btnSearch" text="بحث"/>
-                <Button fx:id="btnReset" text="إعادة ضبط"/>
-                <Button fx:id="btnSortDate" text="ترتيب حسب التاريخ"/>
-                <Button fx:id="btnExportExcel" text="تصدير Excel"/>
-                <Button fx:id="btnExportPdf" text="تصدير PDF"/>
-            </HBox>
+         <FlowPane hgap="10.0" vgap="5.0">
+            <children>
+                   <Label text="من:" />
+                   <DatePicker fx:id="dateFrom" />
+                   <Label text="إلى:" />
+                   <DatePicker fx:id="dateTo" />
+                   <Label text="اسم الصنف:" />
+                   <TextField fx:id="textSearchName" promptText="ابحث بالاسم" />
+                   <Button fx:id="btnSearch" text="بحث" />
+                   <Button fx:id="btnReset" text="إعادة ضبط" />
+                   <Button fx:id="btnSortDate" text="ترتيب حسب التاريخ" />
+                   <Button fx:id="btnExportExcel" text="تصدير Excel" />
+                   <Button fx:id="btnExportPdf" text="تصدير PDF" />
+            </children>
+         </FlowPane>
         </VBox>
     </top>
 
     <center>
-        <TableView fx:id="tableView" BorderPane.alignment="CENTER">
-            <columnResizePolicy>
-                <TableView fx:constant="CONSTRAINED_RESIZE_POLICY"/>
-            </columnResizePolicy>
-        </TableView>
+        <TableView fx:id="tableView" BorderPane.alignment="CENTER" />
     </center>
 
 </BorderPane>

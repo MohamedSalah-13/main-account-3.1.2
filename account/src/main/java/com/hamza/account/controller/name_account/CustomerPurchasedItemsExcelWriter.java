@@ -1,54 +1,49 @@
 package com.hamza.account.controller.name_account;
 
-import com.hamza.account.controller.model.PurchasedItemByCustomerView;
+import com.hamza.account.model.domain.CustomerPurchasedItem;
 import com.hamza.controlsfx.excel.WriteExcelInterface;
 import lombok.RequiredArgsConstructor;
 
 import java.util.List;
 
 @RequiredArgsConstructor
-public class CustomerPurchasedItemsExcelWriter implements WriteExcelInterface<PurchasedItemByCustomerView> {
+public class CustomerPurchasedItemsExcelWriter implements WriteExcelInterface<CustomerPurchasedItem> {
 
-    private final List<PurchasedItemByCustomerView> items;
-    private final String customerName;
+    private final List<CustomerPurchasedItem> items;
 
     @Override
     public Object[] columnHeader() {
         return new Object[]{
-                "رقم الفاتورة", "التاريخ", "العميل", "الصنف", "الباركود", "الوحدة",
-                "الكمية", "السعر", "الخصم", "الإجمالي", "الصافي"
+                "رقم العميل", "العميل", "الصنف",
+                "الكمية", "السعر", "التاريخ", "رقم الفاتورة"
         };
     }
 
     @Override
-    public Object[] dataRow(PurchasedItemByCustomerView item) {
+    public Object[] dataRow(CustomerPurchasedItem item) {
         return new Object[]{
-                item.getInvoiceNumber(),
-                item.getInvoiceDate(),
-                customerName,
+                item.getCustomerId(),
+                item.getCustomerName(),
                 item.getItemName(),
-                item.getItemBarcode(),
-                item.getUnitName(),
                 item.getQuantity(),
-                item.getPrice(),
-                item.getDiscount(),
-                item.getTotal(),
-                item.getTotalAfterDiscount()
+                item.getSellingPrice(),
+                item.getInvoiceDate(),
+                item.getInvoiceNumber()
         };
     }
 
     @Override
-    public List<PurchasedItemByCustomerView> itemsList() {
+    public List<CustomerPurchasedItem> itemsList() {
         return items;
-    }
-
-    @Override
-    public String sheetName() {
-        return "Purchased Items";
     }
 
     @Override
     public boolean addDataToFile() {
         return true;
+    }
+
+    @Override
+    public String sheetName() {
+        return "Purchased Items";
     }
 }

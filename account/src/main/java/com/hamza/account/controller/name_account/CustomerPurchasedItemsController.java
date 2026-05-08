@@ -1,13 +1,10 @@
 package com.hamza.account.controller.name_account;
 
-import com.hamza.account.controller.model.PurchasedItemByCustomerView;
 import com.hamza.account.features.export.PdfExportService;
 import com.hamza.account.model.dao.DaoFactory;
-import com.hamza.account.model.domain.Customers;
+import com.hamza.account.model.domain.CustomerPurchasedItem;
 import com.hamza.account.openFxml.FxmlPath;
-
 import com.hamza.account.service.CustomerPurchasedItemsService;
-import com.hamza.account.service.CustomerService;
 import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.excel.ExcelException;
@@ -19,11 +16,7 @@ import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
-import javafx.scene.control.Button;
-import javafx.scene.control.DatePicker;
-import javafx.scene.control.Label;
-import javafx.scene.control.TableView;
-import javafx.scene.control.TextField;
+import javafx.scene.control.*;
 import javafx.scene.layout.Pane;
 import javafx.stage.FileChooser;
 import lombok.extern.log4j.Log4j2;
@@ -41,11 +34,12 @@ import java.util.ResourceBundle;
 public class CustomerPurchasedItemsController implements Initializable, AppSettingInterface {
 
     private final CustomerPurchasedItemsService purchasedItemsService;
-    private final CustomerService customerService;
     private final int customerId;
-
+    private final String customerName;
+    private final ObservableList<CustomerPurchasedItem> masterData = FXCollections.observableArrayList();
+    private final ObservableList<CustomerPurchasedItem> filteredData = FXCollections.observableArrayList();
     @FXML
-    private TableView<PurchasedItemByCustomerView> tableView;
+    private TableView<CustomerPurchasedItem> tableView;
     @FXML
     private Label labelCustomerName;
     @FXML
@@ -73,28 +67,24 @@ public class CustomerPurchasedItemsController implements Initializable, AppSetti
     @FXML
     private Button btnSortDate;
 
-    private final ObservableList<PurchasedItemByCustomerView> masterData = FXCollections.observableArrayList();
-    private final ObservableList<PurchasedItemByCustomerView> filteredData = FXCollections.observableArrayList();
-
-    public CustomerPurchasedItemsController(DaoFactory daoFactory, int customerId) {
+    public CustomerPurchasedItemsController(DaoFactory daoFactory, int customerId, String customerName) {
         this.purchasedItemsService = new CustomerPurchasedItemsService(daoFactory);
-        this.customerService = new CustomerService(daoFactory);
         this.customerId = customerId;
+        this.customerName = customerName;
     }
 
     @Override
     public void initialize(URL url, ResourceBundle resourceBundle) {
         setupTable();
         setupControls();
-        loadCustomerName();
         loadData();
-        applyFilters();
+//        applyFilters();
     }
 
     private void setupTable() {
-        new TableColumnAnnotation().getTable(tableView, PurchasedItemByCustomerView.class);
+        new TableColumnAnnotation().getTable(tableView, CustomerPurchasedItem.class);
         tableView.setItems(filteredData);
-        tableView.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
+//        tableView.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
     }
 
     private void setupControls() {
@@ -121,21 +111,11 @@ public class CustomerPurchasedItemsController implements Initializable, AppSetti
         }
     }
 
-    private void loadCustomerName() {
-        try {
-            Customers customer = customerService.getCustomerById(customerId);
-            if (customer != null && labelCustomerName != null) {
-                labelCustomerName.setText(customer.getName());
-            }
-        } catch (DaoException e) {
-            log.error(e.getMessage(), e.getCause());
-            AllAlerts.showExceptionDialog(e);
-        }
-    }
 
     private void loadData() {
         try {
             masterData.setAll(purchasedItemsService.getPurchasedItemsByCustomerId(customerId));
+            labelCustomerName.setText(customerName);
         } catch (DaoException e) {
             log.error(e.getMessage(), e.getCause());
             AllAlerts.showExceptionDialog(e);
@@ -195,7 +175,7 @@ public class CustomerPurchasedItemsController implements Initializable, AppSetti
             }
             int result = ExportData.exportDataToExcel(
                     filteredData.stream().toList(),
-                    new CustomerPurchasedItemsExcelWriter(filteredData, labelCustomerName != null ? labelCustomerName.getText() : "")
+                    new CustomerPurchasedItemsExcelWriter(filteredData)
             );
             if (result >= 1) {
                 AllAlerts.alertSaveWithMessage("تم تصدير ملف Excel بنجاح");
@@ -228,16 +208,13 @@ public class CustomerPurchasedItemsController implements Initializable, AppSetti
 
             List<String[]> rows = filteredData.stream()
                     .map(row -> new String[]{
-                            String.valueOf(row.getInvoiceNumber()),
-                            row.getInvoiceDate(),
+                            String.valueOf(row.getCustomerId()),
+                            row.getCustomerName(),
                             row.getItemName(),
-                            row.getItemBarcode(),
-                            row.getUnitName(),
                             String.valueOf(row.getQuantity()),
-                            String.valueOf(row.getPrice()),
-                            String.valueOf(row.getDiscount()),
-                            String.valueOf(row.getTotal()),
-                            String.valueOf(row.getTotalAfterDiscount())
+                            String.valueOf(row.getSellingPrice()),
+                            row.getInvoiceDate().toString(),
+                            String.valueOf(row.getInvoiceNumber())
                     })
                     .toList();
 
@@ -246,8 +223,8 @@ public class CustomerPurchasedItemsController implements Initializable, AppSetti
                     file.getAbsolutePath(),
                     "الأصناف المشتراة من العميل",
                     "العميل: " + (labelCustomerName != null ? labelCustomerName.getText() : ""),
-                    new String[]{"رقم الفاتورة", "التاريخ", "الصنف", "الباركود", "الوحدة", "الكمية", "السعر", "الخصم", "الإجمالي", "الصافي"},
-                    new float[]{10, 14, 18, 14, 10, 10, 10, 10, 10, 10},
+                    new String[]{"رقم العميل", "الاسم", "الصنف", "الكمية", "السعر", "التاريخ", "رقم الفاتورة"},
+                    new float[]{10, 14, 18, 10, 10, 10, 10},
                     rows,
                     "الإجمالي",
                     String.valueOf(purchasedItemsService.sumTotalAfterDiscount(filteredData)),

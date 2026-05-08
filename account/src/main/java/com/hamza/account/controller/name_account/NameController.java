@@ -83,24 +83,6 @@ public class NameController<T1 extends BasePurchasesAndSales, T2 extends BaseTot
         });
     }
 
-    public void openPurchasedItemsForSelectedCustomer() {
-        if (table == null || table.getSelectionModel().getSelectedItem() == null) {
-            return;
-        }
-        try {
-            T3 selected = table.getSelectionModel().getSelectedItem();
-            openPurchasedItems(selected.getId(), selected.getName());
-        } catch (Exception e) {
-            log.error(e.getMessage(), e.getCause());
-        }
-    }
-
-    private void openPurchasedItems(int customerId, String customerName) throws Exception {
-        var app = new com.hamza.account.view.CustomerPurchasedItemsApplication(daoFactory, customerId);
-        app.setStageTitle("الأصناف المشتراة: " + customerName);
-        app.start(new javafx.stage.Stage());
-    }
-
     @Override
     public ActionButtonToolBar<T3> actionButton() {
         return new ActionButtonToolBar<>() {
@@ -149,7 +131,7 @@ public class NameController<T1 extends BasePurchasesAndSales, T2 extends BaseTot
                         try {
                             var selectedItem = tableView.getSelectionModel().getSelectedItem();
                             if (selectedItem != null) {
-                                openPurchasedItems(selectedItem.getId(), selectedItem.getName());
+                                open(selectedItem.getId());
                             }
                         } catch (Exception e) {
                             log.error(e.getMessage(), e.getCause());

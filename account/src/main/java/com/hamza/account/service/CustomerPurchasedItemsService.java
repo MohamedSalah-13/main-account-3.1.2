@@ -1,61 +1,22 @@
 package com.hamza.account.service;
 
-import com.hamza.account.controller.model.PurchasedItemByCustomerView;
 import com.hamza.account.model.dao.DaoFactory;
-import com.hamza.account.model.domain.Sales;
-import com.hamza.account.model.domain.Total_Sales;
+import com.hamza.account.model.domain.CustomerPurchasedItem;
 import com.hamza.controlsfx.database.DaoException;
 
 import java.time.LocalDate;
-import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
 
 public record CustomerPurchasedItemsService(DaoFactory daoFactory) {
 
-    public List<PurchasedItemByCustomerView> getPurchasedItemsByCustomerId(int customerId) throws DaoException {
-        List<PurchasedItemByCustomerView> result = new ArrayList<>();
-
-        List<Total_Sales> customerInvoices = daoFactory.totalsSalesDao().getTotalSalesByCustomerId(customerId);
-        if (customerInvoices == null || customerInvoices.isEmpty()) {
-            return result;
-        }
-
-        for (Total_Sales totalSales : customerInvoices) {
-            List<Sales> invoiceItems = daoFactory.salesDao().loadAllById(totalSales.getId());
-            if (invoiceItems == null || invoiceItems.isEmpty()) {
-                continue;
-            }
-
-            for (Sales sales : invoiceItems) {
-                var item = sales.getItems();
-                var unit = sales.getUnitsType();
-                var customer = totalSales.getCustomers();
-
-                result.add(new PurchasedItemByCustomerView(
-                        totalSales.getId(),
-                        totalSales.getDate(),
-                        customer != null ? customer.getId() : 0,
-                        customer != null ? customer.getName() : "",
-                        item != null ? item.getId() : 0,
-                        item != null ? item.getBarcode() : "",
-                        item != null ? item.getNameItem() : "",
-                        unit != null ? unit.getUnit_name() : "",
-                        sales.getQuantity(),
-                        sales.getPrice(),
-                        sales.getDiscount(),
-                        sales.getTotal(),
-                        sales.getTotal_after_discount()
-                ));
-            }
-        }
-
-        return result;
+    public List<CustomerPurchasedItem> getPurchasedItemsByCustomerId(int customerId) throws DaoException {
+        return daoFactory.customerPurchasedItemDao().findByCustomerId(customerId);
     }
 
-    public List<PurchasedItemByCustomerView> filterByDateRange(
-            List<PurchasedItemByCustomerView> source,
+    public List<CustomerPurchasedItem> filterByDateRange(
+            List<CustomerPurchasedItem> source,
             LocalDate from,
             LocalDate to) {
         if (source == null || source.isEmpty()) {
@@ -66,18 +27,18 @@ public record CustomerPurchasedItemsService(DaoFactory daoFactory) {
         }
         return source.stream()
                 .filter(row -> {
-                    if (row.getInvoiceDate() == null || row.getInvoiceDate().isBlank()) {
+                    if (row.getInvoiceDate() == null || row.getInvoiceDate().toString().isBlank()) {
                         return false;
                     }
-                    LocalDate rowDate = LocalDate.parse(row.getInvoiceDate());
+                    LocalDate rowDate = row.getInvoiceDate();
                     return (rowDate.isEqual(from) || rowDate.isAfter(from))
                             && (rowDate.isEqual(to) || rowDate.isBefore(to));
                 })
                 .toList();
     }
 
-    public List<PurchasedItemByCustomerView> filterByItemName(
-            List<PurchasedItemByCustomerView> source,
+    public List<CustomerPurchasedItem> filterByItemName(
+            List<CustomerPurchasedItem> source,
             String name) {
         if (source == null || source.isEmpty()) {
             return List.of();
@@ -92,36 +53,36 @@ public record CustomerPurchasedItemsService(DaoFactory daoFactory) {
                 .toList();
     }
 
-    public List<PurchasedItemByCustomerView> sortByDateDescending(List<PurchasedItemByCustomerView> source) {
+    public List<CustomerPurchasedItem> sortByDateDescending(List<CustomerPurchasedItem> source) {
         if (source == null || source.isEmpty()) {
             return List.of();
         }
         return source.stream()
                 .sorted(Comparator.comparing(
-                        row -> LocalDate.parse(row.getInvoiceDate()),
+                        row -> row.getInvoiceDate(),
                         Comparator.reverseOrder()
                 ))
                 .toList();
     }
 
-    public double sumTotalSales(List<PurchasedItemByCustomerView> source) {
+    public double sumTotalSales(List<CustomerPurchasedItem> source) {
         if (source == null || source.isEmpty()) {
             return 0;
         }
-        return source.stream().mapToDouble(PurchasedItemByCustomerView::getTotal).sum();
+        return source.stream().mapToDouble(value -> value.getSellingPrice().doubleValue()).sum();
     }
 
-    public double sumTotalAfterDiscount(List<PurchasedItemByCustomerView> source) {
+    public double sumTotalAfterDiscount(List<CustomerPurchasedItem> source) {
         if (source == null || source.isEmpty()) {
             return 0;
         }
-        return source.stream().mapToDouble(PurchasedItemByCustomerView::getTotalAfterDiscount).sum();
+        return source.stream().mapToDouble(value -> value.getQuantity().doubleValue()).sum();
     }
 
-    public double sumTotalQuantity(List<PurchasedItemByCustomerView> source) {
+    public double sumTotalQuantity(List<CustomerPurchasedItem> source) {
         if (source == null || source.isEmpty()) {
             return 0;
         }
-        return source.stream().mapToDouble(PurchasedItemByCustomerView::getQuantity).sum();
+        return source.stream().mapToDouble(value -> value.getQuantity().doubleValue()).sum();
     }
 }

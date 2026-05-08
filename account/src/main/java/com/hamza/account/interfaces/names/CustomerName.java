@@ -4,7 +4,7 @@ import com.hamza.account.interfaces.api.NameData;
 import com.hamza.account.model.domain.Area;
 import com.hamza.account.model.domain.Customers;
 import com.hamza.account.model.domain.SelPriceTypeModel;
-import com.hamza.account.reportData.Print_Reports;
+import com.hamza.account.view.DownLoadApplication;
 import com.hamza.controlsfx.language.Setting_Language;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.scene.control.Button;
@@ -46,15 +46,24 @@ public class CustomerName implements NameData<Customers> {
         TableColumn<Customers, String> tableColumnArea = addColumn(Setting_Language.AREA
                 , f -> new SimpleStringProperty(f.getValue().areaProperty().get().getArea_name()));
 
-        TableColumn<Customers, String> printColumn = new TableColumn<>("Print");
+        TableColumn<Customers, String> printColumn = new TableColumn<>("Show");
         printColumn.setCellFactory(col -> new TableCell<>() {
-            private final Button btn = new Button(Setting_Language.WORD_PRINT);
+            private final Button btn = new Button(Setting_Language.WORD_SHOW);
 
             {
                 btn.setOnAction(e -> {
                     Customers customer = getTableView().getItems().get(getIndex());
                     // Print logic here
-                    new Print_Reports().printReceiptNames(customer.getAddress(), customer.getTel(), customer.getName());
+//                    new Print_Reports().printReceiptNames(customer.getAddress(), customer.getTel(), customer.getName());
+
+                    try {
+                        var app = new com.hamza.account.view.CustomerPurchasedItemsApplication(DownLoadApplication.getDaoFactory()
+                                , customer.getId(), customer.getName());
+                        app.start(new javafx.stage.Stage());
+                    } catch (Exception ex) {
+                        ex.printStackTrace();
+                    }
+
                 });
             }
 

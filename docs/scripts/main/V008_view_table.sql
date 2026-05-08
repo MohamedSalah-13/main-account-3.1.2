@@ -999,3 +999,18 @@ FROM
     total_sales
 GROUP BY
     YEAR(invoice_date);
+
+
+CREATE OR REPLACE VIEW view_customer_purchased_items AS
+SELECT
+    c.id AS customer_id,
+    c.name AS customer_name,
+    i.nameItem AS item_name,
+    s.quantity,
+    s.price AS selling_price,
+    ts.invoice_date,
+    ts.invoice_number
+FROM custom c
+         JOIN total_sales ts ON c.id = ts.sup_code
+         JOIN sales s ON ts.invoice_number = s.invoice_number
+         JOIN items i ON s.num = i.id;
