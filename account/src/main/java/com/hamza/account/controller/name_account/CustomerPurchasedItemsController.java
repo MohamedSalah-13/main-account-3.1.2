@@ -5,6 +5,7 @@ import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.model.domain.CustomerPurchasedItem;
 import com.hamza.account.openFxml.FxmlPath;
 import com.hamza.account.service.CustomerPurchasedItemsService;
+import com.hamza.account.table.TableSetting;
 import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.excel.ExcelException;
@@ -84,6 +85,7 @@ public class CustomerPurchasedItemsController implements Initializable, AppSetti
     private void setupTable() {
         new TableColumnAnnotation().getTable(tableView, CustomerPurchasedItem.class);
         tableView.setItems(filteredData);
+        TableSetting.tableMenuSetting(getClass(), tableView);
 //        tableView.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
     }
 

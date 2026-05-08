@@ -12,9 +12,7 @@ import java.time.LocalDate;
 @NoArgsConstructor
 @AllArgsConstructor
 public class CustomerPurchasedItem {
-    @ColumnData(titleName = "Customer ID")
     private Integer customerId;      // INT
-    @ColumnData(titleName = "Customer Name")
     private String customerName;    // VARCHAR
     @ColumnData(titleName = "Item Name")
     private String itemName;        // VARCHAR
