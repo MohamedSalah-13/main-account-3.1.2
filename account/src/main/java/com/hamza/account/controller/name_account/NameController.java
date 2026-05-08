@@ -182,7 +182,7 @@ public class NameController<T1 extends BasePurchasesAndSales, T2 extends BaseTot
 
     @Override
     public int getCountItems() {
-        return nameAndAccountInterface.getCountCustomers();
+        return nameAndAccountInterface.getCountItems();
     }
 
     @Override

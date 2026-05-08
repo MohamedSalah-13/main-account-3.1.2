@@ -29,4 +29,12 @@ public record SuppliersService(DaoFactory daoFactory) {
     public List<Suppliers> getFilterSuppliers(String newValue) throws DaoException {
         return nameDao().getFilterSuppliers(newValue);
     }
+
+    public List<Suppliers> getSuppliers(int rowsPerPage, int offset) throws DaoException {
+        return nameDao().getProducts(rowsPerPage, offset);
+    }
+
+    public int getCountItems() {
+        return nameDao().getCountItems();
+    }
 }

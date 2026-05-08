@@ -1,5 +1,6 @@
 package com.hamza.account.model.dao;
 
+import com.hamza.account.model.domain.Customers;
 import com.hamza.account.model.domain.Suppliers;
 import com.hamza.controlsfx.database.AbstractDao;
 import com.hamza.controlsfx.database.DaoException;
@@ -193,6 +194,14 @@ public class SuppliersDao extends AbstractDao<Suppliers> {
         }
 
         return new java.util.ArrayList<>(result.values());
+    }
+
+    public List<Suppliers> getProducts(int rowsPerPage, int offset) throws DaoException {
+        return queryForObjects("SELECT * FROM suppliers ORDER BY id DESC LIMIT ? OFFSET ?", this::map, rowsPerPage, offset);
+    }
+
+    public int getCountItems() {
+        return queryForInt("SELECT COUNT(*) FROM suppliers");
     }
 
 }

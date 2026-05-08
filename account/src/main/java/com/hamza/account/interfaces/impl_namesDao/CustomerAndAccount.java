@@ -86,7 +86,7 @@ public class CustomerAndAccount extends ServiceData implements NameAndAccountInt
     }
 
     @Override
-    public int getCountCustomers() {
+    public int getCountItems() {
         return customerService.getCountCustomers();
     }
 }
