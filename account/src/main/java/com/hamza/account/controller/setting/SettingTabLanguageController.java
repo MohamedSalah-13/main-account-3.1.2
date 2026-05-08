@@ -1,13 +1,13 @@
 package com.hamza.account.controller.setting;
 
-import com.hamza.account.features.choiceDialoge.ChoiceDialogSetting;
-import com.hamza.account.features.choiceDialoge.ChoosePrinter;
 import com.hamza.account.config.Image_Setting;
 import com.hamza.account.config.PropertiesName;
 import com.hamza.account.controller.main.DataPublisher;
 import com.hamza.account.controller.others.ServiceData;
+import com.hamza.account.controller.search.CustomerSearchController;
 import com.hamza.account.controller.search.SearchInterface;
-import com.hamza.account.model.base.BaseNames;
+import com.hamza.account.features.choiceDialoge.ChoiceDialogSetting;
+import com.hamza.account.features.choiceDialoge.ChoosePrinter;
 import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.model.domain.Customers;
 import com.hamza.account.model.domain.Employees;
@@ -17,11 +17,11 @@ import com.hamza.account.service.EmployeeService;
 import com.hamza.account.view.TableWithTextSearchApplication;
 import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.database.DaoException;
-import com.hamza.controlsfx.util.Extensions;
-import com.hamza.controlsfx.util.ImageChoose;
 import com.hamza.controlsfx.language.Setting_Language;
 import com.hamza.controlsfx.observer.Publisher;
 import com.hamza.controlsfx.others.TextFormat;
+import com.hamza.controlsfx.util.Extensions;
+import com.hamza.controlsfx.util.ImageChoose;
 import javafx.collections.ObservableSet;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
@@ -35,6 +35,7 @@ import java.io.IOException;
 import java.net.URL;
 import java.nio.file.Path;
 import java.util.*;
+import java.util.stream.Collectors;
 
 import static com.hamza.account.config.PropertiesName.*;
 import static com.hamza.account.otherSetting.Currency_Setting.getCurrency;
@@ -212,22 +213,9 @@ public class SettingTabLanguageController extends ServiceData implements Initial
 
     private void chooseCustomer() {
         try {
-            TableWithTextSearchApplication<Customers> tableWithTextSearchApplication = new TableWithTextSearchApplication<>(new SearchInterface<>() {
-                @Override
-                public Class<? super Customers> getSearchClass() {
-                    return BaseNames.class;
-                }
-
-                @Override
-                public List<Customers> searchItems() throws DaoException {
-                    return customerService.getCustomerList();
-                }
-
-                @Override
-                public String getName(Customers customers) {
-                    return Setting_Language.WORD_CUSTOM;
-                }
-            });
+            TableWithTextSearchApplication<Customers> tableWithTextSearchApplication = new TableWithTextSearchApplication<>(
+                    new CustomerSearchController(customerService)
+            );
             Optional<Customers> customers = tableWithTextSearchApplication.showAndWait();
             customers.ifPresent(itemsModel -> {
                 setSettingSaveNameCustomer(String.valueOf(itemsModel.getId()));
@@ -257,6 +245,12 @@ public class SettingTabLanguageController extends ServiceData implements Initial
                     return Setting_Language.EMPLOYEES;
                 }
 
+                @Override
+                public List<Employees> getFilterItems(String filter) throws Exception {
+                    return employeeService.getDelegateList().stream()
+                            .filter(employee -> employee.getName().toLowerCase().contains(filter.toLowerCase()))
+                            .collect(Collectors.toList());
+                }
             });
             Optional<Employees> customers = tableWithTextSearchApplication.showAndWait();
             customers.ifPresent(itemsModel -> {

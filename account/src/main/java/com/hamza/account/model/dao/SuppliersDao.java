@@ -11,6 +11,7 @@ import java.sql.SQLException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Map;
 
 public class SuppliersDao extends AbstractDao<Suppliers> {
 
@@ -103,6 +104,95 @@ public class SuppliersDao extends AbstractDao<Suppliers> {
             throw new DaoException(e);
         }
         return suppliers;
+    }
+
+    // --- أضف هذه الثوابت في أعلى الكلاس ---
+    private static final int FILTER_LIMIT = 50;
+
+    private static final String FILTER_SUPPLIERS_SQL_NUMERIC = """
+            SELECT * FROM suppliers
+            WHERE suppliers.id = ? OR suppliers.tel = ?
+            ORDER BY
+                CASE
+                    WHEN suppliers.id = ? THEN 0
+                    WHEN suppliers.tel = ? THEN 1
+                    ELSE 2
+                END,
+                suppliers.id DESC
+            LIMIT %d
+            """.formatted(FILTER_LIMIT);
+
+    private static final String FILTER_SUPPLIERS_SQL_TEXT_STARTS = """
+            SELECT * FROM suppliers
+            WHERE suppliers.name LIKE ? OR suppliers.tel LIKE ?
+            ORDER BY
+                CASE
+                    WHEN suppliers.name LIKE ? THEN 0
+                    WHEN suppliers.tel LIKE ? THEN 1
+                    ELSE 2
+                END,
+                suppliers.id DESC
+            LIMIT %d
+            """.formatted(FILTER_LIMIT);
+
+    private static final String FILTER_SUPPLIERS_SQL_TEXT_CONTAINS = """
+            SELECT * FROM suppliers
+            WHERE suppliers.name LIKE ? OR suppliers.tel LIKE ?
+            ORDER BY suppliers.id DESC
+            LIMIT %d
+            """.formatted(FILTER_LIMIT);
+
+    // --- أضف هذه الميثود داخل الكلاس ---
+    public List<Suppliers> getFilterSuppliers(String searchText) throws DaoException {
+        if (searchText == null || searchText.trim().isEmpty()) {
+            return queryForObjects("SELECT * FROM suppliers ORDER BY suppliers.id DESC LIMIT " + FILTER_LIMIT, this::map);
+        }
+
+        String q = searchText.trim();
+        boolean numericOnly = q.matches("\\d+");
+
+        // 1) لو أرقام فقط: بحث سريع (id أو رقم التليفون)
+        if (numericOnly) {
+            int id = -1;
+            try {
+                id = Integer.parseInt(q);
+            } catch (NumberFormatException ignored) {}
+
+            return queryForObjects(FILTER_SUPPLIERS_SQL_NUMERIC, this::map, id, q, id, q);
+        }
+
+        // 2) نص/مختلط: مرحلتين startsWith ثم contains
+        final String likeStarts = q + "%";
+        final String likeContains = "%" + q + "%";
+
+        Map<Integer, Suppliers> result = new java.util.LinkedHashMap<>(FILTER_LIMIT);
+
+        // Phase A: startsWith
+        List<Suppliers> starts = queryForObjects(
+                FILTER_SUPPLIERS_SQL_TEXT_STARTS,
+                this::map,
+                likeStarts, likeStarts, // WHERE
+                likeStarts, likeStarts  // ORDER BY
+        );
+
+        for (Suppliers s : starts) {
+            if (s != null) result.putIfAbsent(s.getId(), s);
+        }
+
+        // Phase B: contains
+        if (result.size() < FILTER_LIMIT) {
+            List<Suppliers> contains = queryForObjects(
+                    FILTER_SUPPLIERS_SQL_TEXT_CONTAINS,
+                    this::map,
+                    likeContains, likeContains // WHERE
+            );
+            for (Suppliers s : contains) {
+                if (s != null) result.putIfAbsent(s.getId(), s);
+                if (result.size() >= FILTER_LIMIT) break;
+            }
+        }
+
+        return new java.util.ArrayList<>(result.values());
     }
 
 }

@@ -5,6 +5,7 @@ import com.hamza.account.model.domain.Customers;
 import com.hamza.account.service.CustomerService;
 import com.hamza.controlsfx.database.DaoException;
 
+import java.util.ArrayList;
 import java.util.List;
 
 
@@ -17,11 +18,16 @@ public record CustomerSearchController(CustomerService customerService) implemen
 
     @Override
     public List<Customers> searchItems() throws DaoException {
-        return customerService.getCustomerList();
+        return new ArrayList<>();
     }
 
     @Override
     public String getName(Customers customers) {
         return customers.getName();
+    }
+
+    @Override
+    public List<Customers> getFilterItems(String filter) throws Exception {
+        return customerService.getFilterCustomers(filter);
     }
 }

@@ -10,6 +10,7 @@ import com.hamza.controlsfx.database.SqlStatements;
 
 import java.sql.Connection;
 import java.sql.ResultSet;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
@@ -25,35 +26,9 @@ public class AuditLogDao extends AbstractDao<Audit_log> {
     private final String action_time = "action_time";
     private final String NOTES = "notes";
 
-
     public AuditLogDao(Connection connection) {
         super(connection);
     }
-
-    @Override
-    public List<Audit_log> loadAll() throws DaoException {
-        String query = """
-                SELECT audit_log.id,
-                       table_name,
-                       record_id,
-                       action_type,
-                       user_id,
-                       action_time,
-                       old_data,
-                       new_data,
-                       source,
-                       notes,
-                       u.id,
-                       user_name,
-                       user_pass,
-                       user_activity,
-                       user_available,
-                       updated_at
-                FROM audit_log
-                         join users u on u.id = audit_log.user_id""";
-        return queryForObjects(query, this::map);
-    }
-
 
     @Override
     public Audit_log map(ResultSet rs) throws DaoException {
@@ -82,5 +57,30 @@ public class AuditLogDao extends AbstractDao<Audit_log> {
 
     public int deleteRangeIds(Integer... rangeIds) throws DaoException {
         return executeUpdate(SqlStatements.deleteInRangeId(TABLE_NAME, ID, rangeIds));
+    }
+
+    public List<Audit_log> getAuditLogsBetweenDates(LocalDate startDate, LocalDate endDate) throws DaoException {
+        String query = """
+                SELECT audit_log.id,
+                       table_name,
+                       record_id,
+                       action_type,
+                       user_id,
+                       action_time,
+                       old_data,
+                       new_data,
+                       source,
+                       notes,
+                       u.id,
+                       user_name,
+                       user_pass,
+                       user_activity,
+                       user_available,
+                       updated_at
+                FROM audit_log
+                         join users u on u.id = audit_log.user_id
+                WHERE DATE(action_time) BETWEEN ? AND ?
+                ORDER BY action_time DESC""";
+        return queryForObjects(query, this::map, startDate, endDate);
     }
 }

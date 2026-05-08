@@ -13,6 +13,7 @@ import java.sql.SQLException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Map;
 
 public class CustomerDao extends AbstractDao<Customers> {
 
@@ -119,5 +120,97 @@ public class CustomerDao extends AbstractDao<Customers> {
             throw new DaoException(e);
         }
         return customers;
+    }
+
+    // --- أضف هذه الثوابت في أعلى الكلاس ---
+    private static final int FILTER_LIMIT = 50;
+
+    private static final String FILTER_CUSTOMERS_SQL_NUMERIC = """
+            SELECT * FROM custom
+            INNER JOIN table_area ON custom.area_id = table_area.id
+            WHERE custom.id = ? OR custom.tel = ?
+            ORDER BY
+                CASE
+                    WHEN custom.id = ? THEN 0
+                    WHEN custom.tel = ? THEN 1
+                    ELSE 2
+                END,
+                custom.id DESC
+            LIMIT %d
+            """.formatted(FILTER_LIMIT);
+
+    private static final String FILTER_CUSTOMERS_SQL_TEXT_STARTS = """
+            SELECT * FROM custom
+            INNER JOIN table_area ON custom.area_id = table_area.id
+            WHERE custom.name LIKE ? OR custom.tel LIKE ?
+            ORDER BY
+                CASE
+                    WHEN custom.name LIKE ? THEN 0
+                    WHEN custom.tel LIKE ? THEN 1
+                    ELSE 2
+                END,
+                custom.id DESC
+            LIMIT %d
+            """.formatted(FILTER_LIMIT);
+
+    private static final String FILTER_CUSTOMERS_SQL_TEXT_CONTAINS = """
+            SELECT * FROM custom
+            INNER JOIN table_area ON custom.area_id = table_area.id
+            WHERE custom.name LIKE ? OR custom.tel LIKE ?
+            ORDER BY custom.id DESC
+            LIMIT %d
+            """.formatted(FILTER_LIMIT);
+
+    // --- أضف هذه الميثود داخل الكلاس ---
+    public List<Customers> getFilterCustomers(String searchText) throws DaoException {
+        if (searchText == null || searchText.trim().isEmpty()) {
+            return queryForObjects("SELECT * FROM custom INNER JOIN table_area ON custom.area_id = table_area.id ORDER BY custom.id DESC LIMIT " + FILTER_LIMIT, this::map);
+        }
+
+        String q = searchText.trim();
+        boolean numericOnly = q.matches("\\d+");
+
+        // 1) لو أرقام فقط: بحث سريع ودقيق (id أو رقم التليفون)
+        if (numericOnly) {
+            int id = -1;
+            try {
+                id = Integer.parseInt(q);
+            } catch (NumberFormatException ignored) {} // في حال كان رقم الهاتف طويلاً جداً
+
+            return queryForObjects(FILTER_CUSTOMERS_SQL_NUMERIC, this::map, id, q, id, q);
+        }
+
+        // 2) نص/مختلط: مرحلتين startsWith ثم contains
+        final String likeStarts = q + "%";
+        final String likeContains = "%" + q + "%";
+
+        Map<Integer, Customers> result = new java.util.LinkedHashMap<>(FILTER_LIMIT);
+
+        // Phase A: startsWith (سريع)
+        List<Customers> starts = queryForObjects(
+                FILTER_CUSTOMERS_SQL_TEXT_STARTS,
+                this::map,
+                likeStarts, likeStarts, // WHERE
+                likeStarts, likeStarts  // ORDER BY
+        );
+
+        for (Customers c : starts) {
+            if (c != null) result.putIfAbsent(c.getId(), c);
+        }
+
+        // Phase B: contains (%text%) فقط إذا لم نصل للحد الأقصى
+        if (result.size() < FILTER_LIMIT) {
+            List<Customers> contains = queryForObjects(
+                    FILTER_CUSTOMERS_SQL_TEXT_CONTAINS,
+                    this::map,
+                    likeContains, likeContains // WHERE
+            );
+            for (Customers c : contains) {
+                if (c != null) result.putIfAbsent(c.getId(), c);
+                if (result.size() >= FILTER_LIMIT) break;
+            }
+        }
+
+        return new java.util.ArrayList<>(result.values());
     }
 }

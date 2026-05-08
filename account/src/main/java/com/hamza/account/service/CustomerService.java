@@ -10,8 +10,7 @@ import java.util.List;
 public record CustomerService(DaoFactory daoFactory) {
 
     public List<Customers> getCustomerList() throws DaoException {
-//        return LoadDataAndList.getListCustomers();
-        return daoFactory.customersDao().loadAll();
+        return nameDao().loadAll();
     }
 
     public List<String> getNames() throws DaoException {
@@ -23,7 +22,11 @@ public record CustomerService(DaoFactory daoFactory) {
     }
 
     public Customers getCustomerById(int id) throws DaoException {
-        return daoFactory.customersDao().getDataById(id);
+        return nameDao().getDataById(id);
+    }
+
+    public List<Customers> getFilterCustomers(String newValue) throws DaoException {
+        return nameDao().getFilterCustomers(newValue);
     }
 
     public CustomerPurchasedItemsService purchasedItemsService() {

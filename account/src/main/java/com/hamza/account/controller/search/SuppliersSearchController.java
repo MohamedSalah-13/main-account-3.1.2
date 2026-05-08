@@ -25,4 +25,9 @@ public record SuppliersSearchController(SuppliersService suppliersService) imple
         return suppliers.getName();
     }
 
+    @Override
+    public List<Suppliers> getFilterItems(String filter) throws Exception {
+        return suppliersService.getFilterSuppliers(filter);
+    }
+
 }

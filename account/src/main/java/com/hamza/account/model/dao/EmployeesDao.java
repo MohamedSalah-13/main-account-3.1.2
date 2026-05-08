@@ -122,4 +122,8 @@ public class EmployeesDao extends AbstractDao<Employees> {
         }
         return employees;
     }
+
+    public List<Employees> loadAllDelegate() throws DaoException {
+        return queryForObjects(SqlStatements.selectStatement(EMPLOYEES).concat(" where job = 4"), this::map);
+    }
 }

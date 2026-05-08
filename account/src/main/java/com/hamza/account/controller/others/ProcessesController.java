@@ -10,11 +10,11 @@ import com.hamza.account.type.ProcessesDataType;
 import com.hamza.account.type.TableType;
 import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.database.DaoException;
-import com.hamza.controlsfx.util.ImageChoose;
 import com.hamza.controlsfx.language.Setting_Language;
 import com.hamza.controlsfx.others.DateSetting;
 import com.hamza.controlsfx.table.TableColumnAnnotation;
 import com.hamza.controlsfx.table.columnEdit.ColumnSetting;
+import com.hamza.controlsfx.util.ImageChoose;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.value.ObservableValue;
 import javafx.collections.FXCollections;
@@ -207,7 +207,7 @@ public class ProcessesController extends ServiceData implements Initializable {
 
     private List<Audit_log> getProcessesData() {
         try {
-            return auditLogService.getProcessesData();
+            return auditLogService.getProcessesData(dateFrom.getValue(), dateTo.getValue());
         } catch (DaoException e) {
             log.error(e.getMessage());
             AllAlerts.alertError(e.getMessage());

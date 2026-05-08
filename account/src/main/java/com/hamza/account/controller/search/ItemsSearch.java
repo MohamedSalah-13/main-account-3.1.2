@@ -37,7 +37,6 @@ public class ItemsSearch implements SearchInterface<ItemsModel> {
         }
 
         // 4. جلب البيانات من الداتا بيز (يحدث فقط أول مرة أو بعد مسح الكاش)
-        // TODO 11/23/2025 6:55 AM Mohamed: filter to remove item package
 //        cachedItems = itemsService.filterItemListsByStockName(stockNameProperty().get());
         isCacheValid = true; // تفعيل الكاش للاستخدامات القادمة
 

@@ -21,9 +21,56 @@ import static com.hamza.controlsfx.util.NumberUtils.roundToTwoDecimalPlaces;
 @Log4j2
 public class ItemsDao extends AbstractDao<ItemsModel> {
 
-    private static final int FILTER_ITEMS_LIMIT = 50;
     public static final String BARCODE = "barcode";
     public static final String NAME_ITEM = "nameItem";
+    private static final int FILTER_ITEMS_LIMIT = 50;
+    private static final String FILTER_ITEMS_SQL_TEXT_STARTS = """
+            SELECT *
+            FROM items
+            JOIN quantity_items_table ip ON items.id = ip.item_id
+            WHERE items.nameItem LIKE ?
+               OR items.barcode LIKE ?
+            ORDER BY
+                CASE
+                    WHEN items.barcode = ? THEN 0
+                    WHEN items.id = ? THEN 1
+                    WHEN items.nameItem LIKE ? THEN 2
+                    WHEN items.barcode LIKE ? THEN 3
+                    ELSE 4
+                END,
+                items.id DESC
+            LIMIT %d
+            """.formatted(FILTER_ITEMS_LIMIT);
+    private static final String FILTER_ITEMS_SQL_TEXT_CONTAINS = """
+            SELECT *
+            FROM items
+            JOIN quantity_items_table ip ON items.id = ip.item_id
+            WHERE items.nameItem LIKE ?
+               OR items.barcode LIKE ?
+            ORDER BY
+                CASE
+                    WHEN items.barcode = ? THEN 0
+                    WHEN items.id = ? THEN 1
+                    ELSE 2
+                END,
+                items.id DESC
+            LIMIT %d
+            """.formatted(FILTER_ITEMS_LIMIT);
+    private static final String FILTER_ITEMS_SQL_NUMERIC = """
+            SELECT *
+            FROM items
+            JOIN quantity_items_table ip ON items.id = ip.item_id
+            WHERE items.id = ?
+               OR items.barcode = ?
+            ORDER BY
+                CASE
+                    WHEN items.id = ? THEN 0
+                    WHEN items.barcode = ? THEN 1
+                    ELSE 2
+                END,
+                items.id DESC
+            LIMIT %d
+            """.formatted(FILTER_ITEMS_LIMIT);
     private final String ID = "id";
     private final String SUB_NUM = "sub_num";
     private final String BUY_PRICE = "buy_price";
@@ -39,7 +86,6 @@ public class ItemsDao extends AbstractDao<ItemsModel> {
     private final String FROM_STOCK = "fromStock";
     private final String TO_STOCK = "toStock";
     private final String STOCK_ID = "stock_id";
-
     private final String selPrice1 = "sel_price1";
     private final String selPrice2 = "sel_price2";
     private final String selPrice3 = "sel_price3";
@@ -57,11 +103,6 @@ public class ItemsDao extends AbstractDao<ItemsModel> {
         super(connection);
         this.connection = connection;
         this.daoFactory = daoFactory;
-    }
-
-    @Override
-    public List<ItemsModel> loadAll() throws DaoException {
-        return queryForObjects(QUERY_ITEMS, this::map);
     }
 
     @Override
@@ -315,57 +356,6 @@ public class ItemsDao extends AbstractDao<ItemsModel> {
         return queryForObjects(query, this::map, mainGroupId);
     }
 
-    private static final String FILTER_ITEMS_SQL_TEXT_STARTS = """
-            SELECT *
-            FROM items
-            JOIN quantity_items_table ip ON items.id = ip.item_id
-            WHERE items.nameItem LIKE ?
-               OR items.barcode LIKE ?
-            ORDER BY
-                CASE
-                    WHEN items.barcode = ? THEN 0
-                    WHEN items.id = ? THEN 1
-                    WHEN items.nameItem LIKE ? THEN 2
-                    WHEN items.barcode LIKE ? THEN 3
-                    ELSE 4
-                END,
-                items.id DESC
-            LIMIT %d
-            """.formatted(FILTER_ITEMS_LIMIT);
-
-    private static final String FILTER_ITEMS_SQL_TEXT_CONTAINS = """
-            SELECT *
-            FROM items
-            JOIN quantity_items_table ip ON items.id = ip.item_id
-            WHERE items.nameItem LIKE ?
-               OR items.barcode LIKE ?
-            ORDER BY
-                CASE
-                    WHEN items.barcode = ? THEN 0
-                    WHEN items.id = ? THEN 1
-                    ELSE 2
-                END,
-                items.id DESC
-            LIMIT %d
-            """.formatted(FILTER_ITEMS_LIMIT);
-
-    private static final String FILTER_ITEMS_SQL_NUMERIC = """
-            SELECT *
-            FROM items
-            JOIN quantity_items_table ip ON items.id = ip.item_id
-            WHERE items.id = ?
-               OR items.barcode = ?
-            ORDER BY
-                CASE
-                    WHEN items.id = ? THEN 0
-                    WHEN items.barcode = ? THEN 1
-                    ELSE 2
-                END,
-                items.id DESC
-            LIMIT %d
-            """.formatted(FILTER_ITEMS_LIMIT);
-
-
     public List<ItemsModel> getFilterItems(String searchText) throws DaoException {
         if (searchText == null) {
             return getLast50Items();
@@ -429,7 +419,6 @@ public class ItemsDao extends AbstractDao<ItemsModel> {
         }
     }
 
-
     public List<ItemsModel> getLast50Items() throws DaoException {
         return queryForObjects(QUERY_ITEMS.concat(" ORDER BY id DESC LIMIT 50"), this::map);
     }
@@ -437,6 +426,7 @@ public class ItemsDao extends AbstractDao<ItemsModel> {
     public List<ItemsModel> getProducts(int rowsPerPage, int offset) throws DaoException {
         return queryForObjects(QUERY_ITEMS.concat(" ORDER BY id DESC LIMIT ? OFFSET ?"), this::map, rowsPerPage, offset);
     }
+
     public int getCountItems() {
         return queryForInt("SELECT COUNT(*) FROM items");
     }
