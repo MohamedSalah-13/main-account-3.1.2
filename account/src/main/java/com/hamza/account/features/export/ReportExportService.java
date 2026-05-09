@@ -1,6 +1,7 @@
 package com.hamza.account.features.export;
 
 import com.hamza.account.model.domain.MonthlySalesViewModel;
+import com.hamza.account.model.domain.TableDataReports;
 import com.itextpdf.kernel.geom.PageSize;
 import javafx.collections.ObservableList;
 import lombok.extern.log4j.Log4j2;
@@ -132,6 +133,54 @@ public class ReportExportService {
                 rows,
                 "الرصيد الإجمالي",
                 format(totalBalance), null, PageSize.A4
+        );
+    }
+
+    // داخل كلاس ReportExportService.java
+
+    public boolean exportYearlyComprehensiveReport(
+            List<TableDataReports> data,
+            String title,
+            String outputPath) {
+
+        // 1. تعريف العناوين باللغة العربية
+        String[] headers = {
+                "الشهر", "المشتريات", "خصم مشتريات", "المبيعات", "خصم مبيعات",
+                "مرتجع مشتريات", "خصم م.مشتريات", "مرتجع مبيعات", "خصم م.مبيعات",
+                "المصروفات", "الربح"
+        };
+
+        // 2. تحديد نسب عرض الأعمدة (المجموع 100) لتناسب A4 بالعرض
+        float[] columnWidths = {8f, 9f, 9f, 9f, 9f, 9f, 9f, 9f, 9f, 9f, 10f};
+
+        // 3. تحويل البيانات إلى مصفوفة نصوص
+        List<String[]> rows = new ArrayList<>();
+        for (TableDataReports item : data) {
+            rows.add(new String[]{
+                    item.getReport_month_name(),
+                    format(item.getPurchase()),
+                    format(item.getPurchases_discount()),
+                    format(item.getSales()),
+                    format(item.getSales_discount()),
+                    format(item.getPurchases_return()),
+                    format(item.getPurchases_return_discount()),
+                    format(item.getSales_return()),
+                    format(item.getSales_return_discount()),
+                    format(item.getExpense()),
+                    format(item.getProfit())
+            });
+        }
+
+        // 4. استدعاء خدمة الـ PDF (نستخدم التدوير Landscape لاتساع الأعمدة)
+        return pdfExportService.exportGenericReport(
+                outputPath,
+                title,
+                "تقرير حركة السنة المالية",
+                headers,
+                columnWidths,
+                rows,
+                "", "",null, // يمكن إضافة إجمالي كلي هنا إذا أردت
+                PageSize.A4.rotate()
         );
     }
 

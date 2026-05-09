@@ -1,27 +1,29 @@
 package com.hamza.account.controller.reports;
 
 import com.hamza.account.config.Image_Setting;
-import com.hamza.account.model.domain.TableDataReports;
 import com.hamza.account.controller.others.ServiceData;
+import com.hamza.account.features.export.ExcelExportService;
+import com.hamza.account.features.export.ReportExportService;
 import com.hamza.account.model.dao.DaoFactory;
+import com.hamza.account.model.domain.TableDataReports;
 import com.hamza.account.openFxml.FxmlPath;
 import com.hamza.account.table.TableSetting;
-import com.hamza.account.type.MonthsEnum;
 import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.database.DaoException;
-import com.hamza.controlsfx.util.ImageChoose;
 import com.hamza.controlsfx.language.Setting_Language;
 import com.hamza.controlsfx.table.TableColumnAnnotation;
+import com.hamza.controlsfx.util.ImageChoose;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.TableRow;
 import javafx.scene.control.TableView;
+import javafx.stage.FileChooser;
 import lombok.extern.log4j.Log4j2;
-import org.controlsfx.control.CheckComboBox;
 
+import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 @Log4j2
@@ -29,41 +31,38 @@ import java.util.List;
 public class ReportTotalByYearController extends ServiceData {
 
     private final DaoFactory daoFactory;
-    private final List<TableDataReports> allData = new ArrayList<>();
-    @FXML
-    private CheckComboBox<String> checkComboBox;
+    private final ReportExportService reportExportService = new ReportExportService();
+    private final ExcelExportService excelExportService = new ExcelExportService();
     @FXML
     private TableView<TableDataReports> tableView;
     @FXML
     private ComboBox<Integer> comboYear;
     @FXML
-    private Button searchButton, btnPrint;
+    private Button searchButton, btnPrintPdf, btnExportExcel;
 
     public ReportTotalByYearController(DaoFactory daoFactory) throws Exception {
         super(daoFactory);
         this.daoFactory = daoFactory;
     }
 
+    // داخل ReportTotalByYearController.java
+
     @FXML
     public void initialize() {
         new TableColumnAnnotation().getTable(tableView, TableDataReports.class);
         TableSetting.tableMenuSetting(getClass(), tableView);
 
-        checkComboBox.getItems().setAll(Arrays.stream(MonthsEnum.values()).map(MonthsEnum::getArabicName).toList());
-        checkComboBox.getCheckModel().checkAll();
         searchButton.setText(Setting_Language.WORD_SEARCH);
-        btnPrint.setText(Setting_Language.WORD_PRINT);
+        btnPrintPdf.setText(Setting_Language.WORD_PRINT);
 
         var imageSetting = new Image_Setting();
         searchButton.setGraphic(ImageChoose.createIcon(imageSetting.search));
-        btnPrint.setGraphic(ImageChoose.createIcon(imageSetting.print));
+        btnPrintPdf.setGraphic(ImageChoose.createIcon(imageSetting.print));
 
-        // get all years from purchase and sales without duplicate
         var listYear = totalBuyService.getListYear();
         comboYear.getItems().setAll(listYear);
         comboYear.getSelectionModel().selectFirst();
 
-        btnPrint.setOnAction(event -> printTable());
         searchButton.setOnAction(event -> {
             try {
                 searchAction();
@@ -72,7 +71,6 @@ public class ReportTotalByYearController extends ServiceData {
                 AllAlerts.alertError(e.getMessage());
             }
         });
-//        checkComboBox.getCheckModel().getCheckedItems().addListener((javafx.collections.ListChangeListener<String>) c -> filterTable());
 
         tableView.getColumns().forEach(column ->
                 column.setStyle("-fx-border-color: #135A8DFF; -fx-border-width: 0 0 0 .5;")
@@ -85,12 +83,15 @@ public class ReportTotalByYearController extends ServiceData {
                 if (empty || item == null) {
                     setStyle("");
                 } else {
-//                    if (item.getReport_month().equals(Setting_Language.WORD_TOTAL)) {
-//                        setStyle("-fx-background-color: #cccc69; -fx-text-fill: red; -fx-font-weight: bold; -fx-font-size: 14px;");
-//                    }
+                    if (item.getReport_month_name().equals(Setting_Language.WORD_TOTAL)) {
+                        setStyle("-fx-background-color: #cccc69; -fx-text-fill: red; -fx-font-weight: bold; -fx-font-size: 14px;");
+                    }
                 }
             }
         });
+
+        btnExportExcel.setOnAction(event -> onExportExcelAction());
+        btnPrintPdf.setOnAction(event -> onExportPdfAction());
 
     }
 
@@ -100,54 +101,51 @@ public class ReportTotalByYearController extends ServiceData {
             return;
         }
 
-        allData.clear();
         tableView.getItems().clear();
         var tableDataReports = daoFactory.tableDataReportsDao().loadAllById(comboYear.getSelectionModel().getSelectedItem());
-        tableDataReports.forEach(System.out::println);
         tableView.getItems().setAll(tableDataReports);
     }
 
+    @FXML
+    private void onExportPdfAction() {
+        if (tableView.getItems().isEmpty()) {
+            AllAlerts.alertError("لا توجد بيانات لتصديرها، قم بالبحث أولاً");
+            return;
+        }
 
-    private void filterTable() {
-        if (allData.isEmpty()) return;
-        tableView.getItems().clear();
-        var selectedMonths = checkComboBox.getCheckModel().getCheckedItems();
-        var filteredData = allData.stream()
-                .filter(data -> selectedMonths.contains(data.getReport_month()))
-                .toList();
-        tableView.getItems().addAll(filteredData);
+        String path = ReportExportService.getDefaultOutputPath("تقرير_الأرباح_السنوي_" + comboYear.getValue());
+        boolean success = reportExportService.exportYearlyComprehensiveReport(
+                tableView.getItems(),
+                "تقرير الأرباح والمبيعات لسنة " + comboYear.getValue(),
+                path
+        );
 
-        var sumPurchase = filteredData.stream().mapToDouble(TableDataReports::getPurchase).sum();
-        var sumPurchaseDiscount = filteredData.stream().mapToDouble(TableDataReports::getPurchases_discount).sum();
-
-        var sumSales = filteredData.stream().mapToDouble(TableDataReports::getSales).sum();
-        var sumSalesDiscount = filteredData.stream().mapToDouble(TableDataReports::getSales_discount).sum();
-
-        var sumPurchaseRe = filteredData.stream().mapToDouble(TableDataReports::getPurchases_return).sum();
-        var sumPurchaseReDiscount = filteredData.stream().mapToDouble(TableDataReports::getPurchases_return_discount).sum();
-
-        var sumSalesRe = filteredData.stream().mapToDouble(TableDataReports::getSales_return).sum();
-        var sumSalesReDiscount = filteredData.stream().mapToDouble(TableDataReports::getSales_return_discount).sum();
-
-        var sumProfit = filteredData.stream().mapToDouble(TableDataReports::getProfit).sum();
-//
-//        tableView.getItems().add(TableDataReports.builder()
-//                .name(Setting_Language.WORD_TOTAL)
-//                .purchase(sumPurchase)
-//                .discountPurchase(sumPurchaseDiscount)
-//                .sales(sumSales)
-//                .discountSales(sumSalesDiscount)
-//                .purchaseRe(sumPurchaseRe)
-//                .discountPurchaseRe(sumPurchaseReDiscount)
-//                .salesRe(sumSalesRe)
-//                .discountSalesRe(sumSalesReDiscount)
-//                .profit(sumProfit)
-//                .build());
+        if (success) {
+            AllAlerts.alertSaveWithMessage("تم حفظ ملف PDF بنجاح:\n" + path);
+        }
     }
 
-    private void printTable() {
-        //TODO 11/16/2025 9:15 AM Mohamed: add print
-        AllAlerts.alertError("لم يتم عمل التقرير");
+    @FXML
+    private void onExportExcelAction() {
+        if (tableView.getItems().isEmpty()) {
+            AllAlerts.alertError("لا توجد بيانات لتصديرها");
+            return;
+        }
+
+        FileChooser fileChooser = new FileChooser();
+        fileChooser.setInitialFileName("Report_" + comboYear.getValue() + ".xlsx");
+        fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("Excel Files", "*.xlsx"));
+        File file = fileChooser.showSaveDialog(tableView.getScene().getWindow());
+
+        if (file != null) {
+            try {
+                excelExportService.exportYearlyReportToExcel(tableView.getItems(), file.getAbsolutePath());
+                AllAlerts.alertSaveWithMessage("تم تصدير ملف Excel بنجاح");
+            } catch (IOException e) {
+                log.error(e.getMessage());
+                AllAlerts.alertError("فشل التصدير: " + e.getMessage());
+            }
+        }
     }
 
 }

@@ -11,8 +11,10 @@ import lombok.Setter;
 public class TableDataReports {
 
     private double report_year;
-    @ColumnData(titleName = "الشهر")
     private double report_month;
+
+    @ColumnData(titleName = "الشهر")
+    private String report_month_name;
     @ColumnData(titleName = "المشتريات")
     private double purchase;
     @ColumnData(titleName = "خصم المشتريات")

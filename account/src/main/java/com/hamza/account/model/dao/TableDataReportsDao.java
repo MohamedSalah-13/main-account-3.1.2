@@ -7,7 +7,10 @@ import com.hamza.controlsfx.database.DaoException;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.time.Month;
+import java.time.format.TextStyle;
 import java.util.List;
+import java.util.Locale;
 
 public class TableDataReportsDao extends AbstractDao<TableDataReports> {
     public TableDataReportsDao(Connection connection) {
@@ -23,6 +26,7 @@ public class TableDataReportsDao extends AbstractDao<TableDataReports> {
     public TableDataReports map(ResultSet rs) throws DaoException {
         TableDataReports tableDataReports=new TableDataReports();
         try {
+            tableDataReports.setReport_month_name(Month.of(rs.getInt("report_month")).getDisplayName(TextStyle.FULL, Locale.getDefault()));
             tableDataReports.setReport_year(rs.getInt("report_year"));
             tableDataReports.setReport_month(rs.getInt("report_month"));
             tableDataReports.setPurchase(rs.getDouble("purchases"));
