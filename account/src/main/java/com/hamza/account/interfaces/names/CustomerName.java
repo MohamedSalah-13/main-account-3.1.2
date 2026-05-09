@@ -8,12 +8,9 @@ import com.hamza.account.model.domain.CustomerPurchasedItem;
 import com.hamza.account.model.domain.Customers;
 import com.hamza.account.model.domain.SelPriceTypeModel;
 import com.hamza.account.view.CustomerPurchasedItemsApplication;
-import com.hamza.account.view.DownLoadApplication;
 import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.language.Setting_Language;
 import javafx.beans.property.SimpleStringProperty;
-import javafx.scene.control.Button;
-import javafx.scene.control.TableCell;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import org.jetbrains.annotations.NotNull;
@@ -52,47 +49,8 @@ public class CustomerName implements NameData<Customers> {
         TableColumn<Customers, String> tableColumnArea = addColumn(Setting_Language.AREA
                 , f -> new SimpleStringProperty(f.getValue().areaProperty().get().getArea_name()));
 
-        TableColumn<Customers, String> printColumn = new TableColumn<>("Show");
-        printColumn.setCellFactory(col -> new TableCell<>() {
-            private final Button btn = new Button(Setting_Language.WORD_SHOW);
-
-            {
-                btn.setOnAction(e -> {
-                    Customers customer = getTableView().getItems().get(getIndex());
-
-                    try {
-                        var daoFactory = DownLoadApplication.getDaoFactory();
-                        var app = new CustomerPurchasedItemsApplication(daoFactory
-                                , customer.getId(), customer.getName(), new CustomerPurchaseInterface() {
-                            @Override
-                            public List<CustomerPurchasedItem> getPurchasedItemsByCustomerId(int customerId) throws DaoException {
-                                return daoFactory.customerPurchasedItemDao().findByCustomerId(customerId);
-                            }
-
-                            @Override
-                            public String title() {
-                                return "الأصناف المشتراة من العميل";
-                            }
-                        });
-                        app.start(new javafx.stage.Stage());
-                    } catch (Exception ex) {
-
-                    }
-
-                });
-            }
-
-            @Override
-            protected void updateItem(String item, boolean empty) {
-                super.updateItem(item, empty);
-                setGraphic(empty ? null : btn);
-            }
-        });
-
         tableView.getColumns().add(tableColumnSelPriceType);
         tableView.getColumns().add(tableColumnArea);
-        tableView.getColumns().add(printColumn);
-
     }
 
     @Override
@@ -122,19 +80,19 @@ public class CustomerName implements NameData<Customers> {
 
     @Override
     public void actionColumnShow(Customers customers, DaoFactory daoFactory) throws Exception {
-            var app = new CustomerPurchasedItemsApplication(daoFactory
-                    , customers.getId(), customers.getName(), new CustomerPurchaseInterface() {
-                @Override
-                public List<CustomerPurchasedItem> getPurchasedItemsByCustomerId(int customerId) throws DaoException {
-                    return daoFactory.customerPurchasedItemDao().findByCustomerId(customerId);
-                }
+        var app = new CustomerPurchasedItemsApplication(daoFactory
+                , customers.getId(), customers.getName(), new CustomerPurchaseInterface() {
+            @Override
+            public List<CustomerPurchasedItem> getPurchasedItemsByCustomerId(int customerId) throws DaoException {
+                return daoFactory.customerPurchasedItemDao().findByCustomerId(customerId);
+            }
 
-                @Override
-                public String title() {
-                    return "الأصناف المشتراة من العميل";
-                }
-            });
-            app.start(new javafx.stage.Stage());
+            @Override
+            public String title() {
+                return "الأصناف المشتراة من العميل";
+            }
+        });
+        app.start(new javafx.stage.Stage());
     }
 
 }

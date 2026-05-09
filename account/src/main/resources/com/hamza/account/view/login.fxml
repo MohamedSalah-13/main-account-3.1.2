@@ -16,7 +16,7 @@
                         <ImageView fx:id="imageView" fitHeight="80.0" fitWidth="120.0" pickOnBounds="true"
                                    preserveRatio="true"/>
                         <Text fx:id="textLoginName" strokeType="OUTSIDE" strokeWidth="0.0" styleClass="label"
-                              text="Login Name"/>
+                              text="%common.login.screen"/>
                     </children>
                 </VBox>
                 <VBox spacing="20.0">
@@ -31,7 +31,7 @@
                                 <AnchorPane HBox.hgrow="SOMETIMES">
                                     <children>
                                         <TextField fx:id="txtUsername" maxHeight="-Infinity" maxWidth="-Infinity"
-                                                   prefHeight="30.0" prefWidth="222.0" promptText="username"
+                                                   prefHeight="30.0" prefWidth="222.0" promptText="%user.username"
                                                    AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0"/>
                                     </children>
                                 </AnchorPane>
@@ -48,27 +48,27 @@
                                 <AnchorPane HBox.hgrow="SOMETIMES">
                                     <children>
                                         <PasswordField fx:id="pass" maxHeight="-Infinity" maxWidth="-Infinity"
-                                                       prefHeight="28.0" prefWidth="209.0" promptText="password"
+                                                       prefHeight="28.0" prefWidth="209.0" promptText="%user.password"
                                                        AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0"
                                                        AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0"/>
                                     </children>
                                 </AnchorPane>
                             </children>
                         </HBox>
-                        <CheckBox fx:id="checkShowPass" mnemonicParsing="false" text="Show Password"/>
+                        <CheckBox fx:id="checkShowPass" mnemonicParsing="false" text="%user.show.password"/>
                         <Button fx:id="btnEnter" defaultButton="true" maxHeight="-Infinity"
                                 maxWidth="1.7976931348623157E308" mnemonicParsing="false" prefHeight="30.0"
-                                text="Enter"/>
+                                text="%common.enter"/>
                         <Button fx:id="btnClose" cancelButton="true" maxHeight="-Infinity"
                                 maxWidth="1.7976931348623157E308" mnemonicParsing="false" prefHeight="30.0"
-                                text="Close"/>
+                                text="%common.close"/>
                     </children>
                     <padding>
                         <Insets bottom="30.0" left="30.0" right="30.0" top="5.0"/>
                     </padding>
                 </VBox>
                 <Text fx:id="textCopyRight" strokeType="OUTSIDE" strokeWidth="0.0" styleClass="label"
-                      text="Copy Right"/>
+                      text="%common.login.copy.right"/>
             </children>
             <padding>
                 <Insets bottom="50.0"/>

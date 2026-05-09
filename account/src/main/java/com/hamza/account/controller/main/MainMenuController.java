@@ -57,7 +57,11 @@ public class MainMenuController {
         // disable menu
         menuAccounts.setVisible(false);
         menuExpenses.setVisible(false);
-        menuItemCalculator.setDisable(true);
+        menuItemCalculator.setVisible(false);
+        menuFontColor.setVisible(false);
+        menuNumber.setVisible(false);
+        menuItemRegister.setVisible(false);
+        menuItemCheckUpdate.setVisible(false);
     }
 
     private void otherSetting() {
@@ -75,7 +79,6 @@ public class MainMenuController {
         menuFontColor.setText("Font and Color Settings");
         menuFontColor.setOnAction(event -> openFontColorDialog());
         menuNumber.setOnAction(event -> new NumberGenerator().start(new Stage()));
-
         menuItemCalculator.setOnAction(event -> openCalculator());
 
     }

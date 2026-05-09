@@ -1,6 +1,7 @@
 package com.hamza.account.openFxml;
 
 import com.hamza.account.Main;
+import com.hamza.controlsfx.language.LanguageManager;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.layout.Pane;
 import lombok.Getter;
@@ -49,7 +50,8 @@ public class OpenFxmlApplication {
      */
     private Pane loadPane(@NotNull Object controller, boolean removeController) throws IOException {
         String fxmlPath = new FxmlPathSetting().getFxmlPath(controller.getClass());
-        FXMLLoader fxmlLoader = new FXMLLoader(Main.class.getResource("view/" + fxmlPath));
+        var resourceBundle = LanguageManager.getInstance().getResourceBundle();
+        FXMLLoader fxmlLoader = new FXMLLoader(Main.class.getResource("view/" + fxmlPath), resourceBundle);
         if (removeController) {
             fxmlLoader.setController(controller);
         }
