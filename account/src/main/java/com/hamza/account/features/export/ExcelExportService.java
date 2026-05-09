@@ -1,5 +1,6 @@
 package com.hamza.account.features.export;
 
+import com.hamza.account.model.domain.ItemSalesRank;
 import com.hamza.account.model.domain.MonthlySalesViewModel;
 import com.hamza.account.model.domain.TableDataReports;
 import org.apache.poi.ss.usermodel.*;
@@ -164,6 +165,47 @@ public class ExcelExportService {
                 row.createCell(8).setCellValue(report.getSales_return_discount());
                 row.createCell(9).setCellValue(report.getExpense());
                 row.createCell(10).setCellValue(report.getProfit());
+            }
+
+            for (int i = 0; i < headers.length; i++) sheet.autoSizeColumn(i);
+
+            try (FileOutputStream fileOut = new FileOutputStream(filePath)) {
+                workbook.write(fileOut);
+            }
+        }
+    }
+
+    // أضف هذه الدالة داخل كلاس ExcelExportService.java
+
+    public void exportItemSalesToExcel(List<ItemSalesRank> data, String filePath) throws IOException {
+        try (XSSFWorkbook workbook = new XSSFWorkbook()) {
+            XSSFSheet sheet = workbook.createSheet("الأصناف الأكثر مبيعاً");
+            sheet.setRightToLeft(true);
+
+            // تنسيق الرأس
+            XSSFCellStyle headerStyle = workbook.createCellStyle();
+            headerStyle.setFillForegroundColor(IndexedColors.TEAL.getIndex());
+            headerStyle.setFillPattern(FillPatternType.SOLID_FOREGROUND);
+            XSSFFont font = workbook.createFont();
+            font.setColor(IndexedColors.WHITE.getIndex());
+            font.setBold(true);
+            headerStyle.setFont(font);
+
+            String[] headers = {"اسم الصنف", "الكمية المباعة", "إجمالي المبيعات", "صافي الربح"};
+            Row headerRow = sheet.createRow(0);
+            for (int i = 0; i < headers.length; i++) {
+                Cell cell = headerRow.createCell(i);
+                cell.setCellValue(headers[i]);
+                cell.setCellStyle(headerStyle);
+            }
+
+            int rowNum = 1;
+            for (ItemSalesRank item : data) {
+                Row row = sheet.createRow(rowNum++);
+                row.createCell(0).setCellValue(item.getItemName());
+                row.createCell(1).setCellValue(item.getTotalQty());
+                row.createCell(2).setCellValue(item.getTotalAmount());
+                row.createCell(3).setCellValue(item.getTotalProfit());
             }
 
             for (int i = 0; i < headers.length; i++) sheet.autoSizeColumn(i);

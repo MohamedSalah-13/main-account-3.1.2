@@ -1,5 +1,7 @@
 package com.hamza.account.controller.reports;
 
+import com.hamza.account.features.export.ExcelExportService;
+import com.hamza.account.features.export.ReportExportService;
 import com.hamza.account.model.domain.ItemSalesRank;
 import com.hamza.account.model.dao.DaoFactory; // افترضت وجوده بناءً على ملفاتك السابقة
 import com.hamza.controlsfx.alert.AllAlerts;
@@ -11,8 +13,10 @@ import javafx.fxml.Initializable;
 import javafx.scene.chart.PieChart;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
+import javafx.stage.FileChooser;
 import lombok.extern.log4j.Log4j2;
 
+import java.io.File;
 import java.net.URL;
 import java.util.List;
 import java.util.ResourceBundle;
@@ -131,5 +135,64 @@ public class ItemSalesRankController implements Initializable {
                 }
             }
         });
+    }
+
+    // داخل ItemSalesRankController.java
+
+    private final ReportExportService reportExportService = new ReportExportService();
+    private final ExcelExportService excelExportService = new ExcelExportService();
+
+    @FXML
+    private void onExportPdf() {
+        if (tableView.getItems().isEmpty()) {
+            AllAlerts.alertError("لا توجد بيانات لتصديرها");
+            return;
+        }
+
+        // 1. أخذ لقطة (Snapshot) من الـ PieChart
+        byte[] chartImage = null;
+        try {
+            javafx.scene.image.WritableImage image = pieChartBestSellers.snapshot(null, null);
+            java.io.ByteArrayOutputStream out = new java.io.ByteArrayOutputStream();
+            javax.imageio.ImageIO.write(javafx.embed.swing.SwingFXUtils.fromFXImage(image, null), "png", out);
+            chartImage = out.toByteArray();
+        } catch (java.io.IOException e) {
+            log.error("خطأ في تحويل الرسم البياني لصورة", e);
+        }
+
+        // 2. التصدير
+        String path = ReportExportService.getDefaultOutputPath("تقرير_الأصناف_المباعة");
+        boolean success = reportExportService.exportItemSalesRankReport(
+                tableView.getItems(),
+                "تقرير حركة الأصناف لسنة " + comboYear.getValue(),
+                path,
+                chartImage
+        );
+
+        if (success) {
+            alertInfo("تم تصدير ملف PDF بنجاح شاملاً الرسم البياني");
+        }
+    }
+
+    @FXML
+    private void onExportExcel() {
+        if (tableView.getItems().isEmpty()) return;
+
+        FileChooser fileChooser = new FileChooser();
+        fileChooser.setInitialFileName("Best_Sellers_" + comboYear.getValue() + ".xlsx");
+        File file = fileChooser.showSaveDialog(tableView.getScene().getWindow());
+
+        if (file != null) {
+            try {
+                excelExportService.exportItemSalesToExcel(tableView.getItems(), file.getAbsolutePath());
+                alertInfo("تم تصدير ملف Excel بنجاح");
+            } catch (Exception e) {
+                AllAlerts.alertError("فشل التصدير: " + e.getMessage());
+            }
+        }
+    }
+
+    private Alert alertInfo(String message) {
+        return new Alert(Alert.AlertType.INFORMATION, message, ButtonType.OK);
     }
 }

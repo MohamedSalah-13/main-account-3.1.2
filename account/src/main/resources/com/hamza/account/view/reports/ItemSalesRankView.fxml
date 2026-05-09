@@ -42,6 +42,8 @@
                                 <Font name="System Bold" size="14.0" />
                             </font>
                         </Button>
+                        <Button onAction="#onExportPdf" style="-fx-background-color: #e74c3c; -fx-text-fill: white;" text="PDF" />
+                        <Button onAction="#onExportExcel" style="-fx-background-color: #27ae60; -fx-text-fill: white;" text="Excel" />
                     </children>
                 </HBox>
 

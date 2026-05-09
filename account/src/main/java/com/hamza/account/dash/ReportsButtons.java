@@ -1,26 +1,33 @@
 package com.hamza.account.dash;
 
+import com.hamza.account.Main;
 import com.hamza.account.config.Image_Setting;
 import com.hamza.account.controller.main.ButtonWithPerm;
 import com.hamza.account.controller.main.DataPublisher;
 import com.hamza.account.controller.main.LoadData;
 import com.hamza.account.controller.main.MainItems;
+import com.hamza.account.controller.reports.ItemSalesRankController;
 import com.hamza.account.controller.reports.ModernDashboardApp;
 import com.hamza.account.controller.reports.ProfitLossController;
-import com.hamza.account.controller.reports.ReportItemsController;
 import com.hamza.account.controller.reports.ReportPaid;
 import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.openFxml.OpenFxmlApplication;
 import com.hamza.account.type.UserPermissionType;
 import com.hamza.account.view.OpenApplication;
 import com.hamza.account.view.ReportTotalYearlyApplication;
+import com.hamza.account.view.SceneAll;
 import com.hamza.account.view.TargetApplication;
 import com.hamza.controlsfx.interfaceData.AppSettingInterface;
 import com.hamza.controlsfx.language.Setting_Language;
+import javafx.fxml.FXMLLoader;
+import javafx.scene.Parent;
+import javafx.scene.Scene;
 import javafx.scene.control.TabPane;
 import javafx.scene.layout.Pane;
 import javafx.stage.Stage;
 import org.jetbrains.annotations.NotNull;
+
+import java.io.IOException;
 
 import static com.hamza.account.view.ReportTotalYearlyApplication.YEARLY_REPORT_NAME;
 
@@ -156,8 +163,18 @@ public class ReportsButtons extends LoadData {
             }
 
             @Override
-            public void action() {
+            public void action() throws IOException {
+                FXMLLoader loader = new FXMLLoader(Main.class.getResource("view/reports/ItemSalesRankView.fxml"));
+                Parent root = loader.load();
 
+                ItemSalesRankController controller = loader.getController();
+                controller.setDaoFactory(daoFactory); // تمرير اتصال قاعدة البيانات
+
+                Stage stage = new Stage();
+                Scene scene = new SceneAll(root);
+                stage.setScene(scene);
+                stage.setTitle(Setting_Language.WORD_REPORT_ITEMS);
+                stage.show();
             }
 
             @NotNull
@@ -168,14 +185,8 @@ public class ReportsButtons extends LoadData {
 
 
             @Override
-            public void actionAddPaneToTabPane(TabPane tabPane) throws Exception {
-                var pane = new OpenFxmlApplication(new ReportItemsController(daoFactory)).getPane();
-                addTape(tabPane, pane, textName(), new Image_Setting().reports);
-            }
+            public void actionAddPaneToTabPane(TabPane tabPane) {
 
-            @Override
-            public boolean showOnTapPane() {
-                return true;
             }
         };
     }

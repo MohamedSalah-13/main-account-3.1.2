@@ -1,5 +1,6 @@
 package com.hamza.account.features.export;
 
+import com.hamza.account.model.domain.ItemSalesRank;
 import com.hamza.account.model.domain.MonthlySalesViewModel;
 import com.hamza.account.model.domain.TableDataReports;
 import com.itextpdf.kernel.geom.PageSize;
@@ -218,6 +219,41 @@ public class ReportExportService {
                 .build();
 
         return pdfExportService.exportInvoice(data, outputPath, PageSize.A4.rotate());
+    }
+
+    // أضف هذه الدالة داخل كلاس ReportExportService.java
+
+    public boolean exportItemSalesRankReport(
+            List<ItemSalesRank> data,
+            String title,
+            String outputPath,
+            byte[] chartImage) {
+
+        String[] headers = {"اسم الصنف", "الكمية المباعة", "إجمالي المبيعات", "صافي الربح"};
+        float[] columnWidths = {40f, 20f, 20f, 20f}; // اسم الصنف يأخذ مساحة أكبر
+
+        List<String[]> rows = new ArrayList<>();
+        for (ItemSalesRank item : data) {
+            rows.add(new String[]{
+                    item.getItemName(),
+                    format(item.getTotalQty()),
+                    format(item.getTotalAmount()),
+                    format(item.getTotalProfit())
+            });
+        }
+
+        // تصدير التقرير مع الصورة (الرسم البياني)
+        return pdfExportService.exportGenericReport(
+                outputPath,
+                title,
+                "تقرير تحليل مبيعات الأصناف",
+                headers,
+                columnWidths,
+                rows,
+                "", "",
+                chartImage,
+                PageSize.A4 // الوضع الرأسي مناسب هنا لأن الأعمدة قليلة
+        );
     }
 
     /**
