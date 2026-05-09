@@ -147,17 +147,17 @@ public class ExpensesDetailsApplication extends Application implements TableInte
 
     @Override
     public List<ExpensesDetails> getProducts(int rowsPerPage, int offset) throws Exception {
-        return List.of();
+        return expensesDetailsService.getProducts(rowsPerPage, offset);
     }
 
     @Override
-    public List<ExpensesDetails> getFilterItems(String newValue) {
-        return null;
+    public List<ExpensesDetails> getFilterItems(String newValue) throws Exception {
+        return expensesDetailsService.getFilterExpensesDetails(newValue);
     }
 
     @Override
     public int getCountItems() {
-        return 0;
+        return expensesDetailsService.getCountItems();
     }
 
     private void openApp(int id) throws Exception {

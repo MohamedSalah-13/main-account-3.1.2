@@ -38,4 +38,17 @@ public record UsersService(DaoFactory daoFactory) {
         if (id == 1) throw new DaoException(Error_Text_Show.CANT_DELETE);
         return daoFactory.usersDao().deleteById(id);
     }
+
+    public List<Users> getFilterUsers(String searchText) throws DaoException {
+        return daoFactory.usersDao().getFilterUsers(searchText);
+    }
+
+    public List<Users> getProducts(int rowsPerPage, int offset) throws DaoException {
+        return daoFactory.usersDao().getProducts(rowsPerPage, offset);
+    }
+
+    public int getCountItems() {
+        return daoFactory.usersDao().getCountItems();
+    }
+
 }

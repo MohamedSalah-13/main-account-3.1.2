@@ -60,4 +60,16 @@ public record EmployeeService(DaoFactory daoFactory) {
 
         else return getEmployeesDao().update(employees);
     }
+
+    public List<Employees> getFilterEmployees(String searchText) throws DaoException {
+        return getEmployeesDao().getFilterEmployees(searchText);
+    }
+
+    public List<Employees> getProducts(int rowsPerPage, int offset) throws DaoException {
+        return getEmployeesDao().getProducts(rowsPerPage, offset);
+    }
+
+    public int getCountItems() {
+        return getEmployeesDao().getCountItems();
+    }
 }

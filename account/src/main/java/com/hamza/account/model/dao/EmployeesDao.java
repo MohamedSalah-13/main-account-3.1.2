@@ -12,10 +12,42 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 
 public class EmployeesDao extends AbstractDao<Employees> {
 
     public static final String COLUMN_NAME = "column_name";
+    private static final int FILTER_LIMIT = 50;
+    private static final String FILTER_EMPLOYEES_SQL_NUMERIC = """
+            SELECT * FROM employees
+            WHERE id = ? OR tel = ?
+            ORDER BY
+                CASE
+                    WHEN id = ? THEN 0
+                    WHEN tel = ? THEN 1
+                    ELSE 2
+                END,
+                id DESC
+            LIMIT %d
+            """.formatted(FILTER_LIMIT);
+    private static final String FILTER_EMPLOYEES_SQL_TEXT_STARTS = """
+            SELECT * FROM employees
+            WHERE column_name LIKE ? OR tel LIKE ?
+            ORDER BY
+                CASE
+                    WHEN column_name LIKE ? THEN 0
+                    WHEN tel LIKE ? THEN 1
+                    ELSE 2
+                END,
+                id DESC
+            LIMIT %d
+            """.formatted(FILTER_LIMIT);
+    private static final String FILTER_EMPLOYEES_SQL_TEXT_CONTAINS = """
+            SELECT * FROM employees
+            WHERE column_name LIKE ? OR tel LIKE ?
+            ORDER BY id DESC
+            LIMIT %d
+            """.formatted(FILTER_LIMIT);
     private final String EMPLOYEES = "employees";
     private final String BIRTH_DATE = "birth_date";
     private final String HIRE_DATE = "hire_date";
@@ -125,5 +157,66 @@ public class EmployeesDao extends AbstractDao<Employees> {
 
     public List<Employees> loadAllDelegate() throws DaoException {
         return queryForObjects(SqlStatements.selectStatement(EMPLOYEES).concat(" where job = 4"), this::map);
+    }
+
+    public List<Employees> getFilterEmployees(String searchText) throws DaoException {
+        if (searchText == null || searchText.trim().isEmpty()) {
+            return queryForObjects("SELECT * FROM employees ORDER BY id DESC LIMIT " + FILTER_LIMIT, this::map);
+        }
+
+        String q = searchText.trim();
+        boolean numericOnly = q.matches("\\d+");
+
+        // 1) بحث رقمي (ID أو هاتف)
+        if (numericOnly) {
+            int id = -1;
+            try {
+                id = Integer.parseInt(q);
+            } catch (NumberFormatException ignored) {
+            }
+
+            return queryForObjects(FILTER_EMPLOYEES_SQL_NUMERIC, this::map, id, q, id, q);
+        }
+
+        // 2) بحث نصي (مرحلتين)
+        final String likeStarts = q + "%";
+        final String likeContains = "%" + q + "%";
+
+        Map<Integer, Employees> result = new java.util.LinkedHashMap<>(FILTER_LIMIT);
+
+        // المرحلة الأولى: StartsWith
+        List<Employees> starts = queryForObjects(
+                FILTER_EMPLOYEES_SQL_TEXT_STARTS,
+                this::map,
+                likeStarts, likeStarts, // WHERE
+                likeStarts, likeStarts  // ORDER BY
+        );
+
+        for (Employees e : starts) {
+            if (e != null) result.putIfAbsent(e.getId(), e);
+        }
+
+        // المرحلة الثانية: Contains
+        if (result.size() < FILTER_LIMIT) {
+            List<Employees> contains = queryForObjects(
+                    FILTER_EMPLOYEES_SQL_TEXT_CONTAINS,
+                    this::map,
+                    likeContains, likeContains // WHERE
+            );
+            for (Employees e : contains) {
+                if (e != null) result.putIfAbsent(e.getId(), e);
+                if (result.size() >= FILTER_LIMIT) break;
+            }
+        }
+
+        return new java.util.ArrayList<>(result.values());
+    }
+
+    public List<Employees> getProducts(int rowsPerPage, int offset) throws DaoException {
+        return queryForObjects("SELECT * FROM employees ORDER BY id DESC LIMIT ? OFFSET ?", this::map, rowsPerPage, offset);
+    }
+
+    public int getCountItems() {
+        return queryForInt("SELECT COUNT(*) FROM employees");
     }
 }

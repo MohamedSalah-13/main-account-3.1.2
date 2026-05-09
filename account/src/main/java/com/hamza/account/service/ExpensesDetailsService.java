@@ -32,4 +32,16 @@ public record ExpensesDetailsService(DaoFactory daoFactory) {
     public int update(ExpensesDetails expensesDetails) throws DaoException {
         return daoFactory.expensesDetailsDao().update(expensesDetails);
     }
+
+    public List<ExpensesDetails> getFilterExpensesDetails(String searchText) throws DaoException {
+        return daoFactory.expensesDetailsDao().getFilterExpensesDetails(searchText);
+    }
+
+    public List<ExpensesDetails> getProducts(int rowsPerPage, int offset) throws DaoException {
+        return daoFactory.expensesDetailsDao().getProducts(rowsPerPage, offset);
+    }
+
+    public int getCountItems() {
+        return daoFactory.expensesDetailsDao().getCountItems();
+    }
 }

@@ -112,17 +112,17 @@ public class EmployeesController extends ServiceData implements TableInterface<E
 
     @Override
     public List<Employees> getProducts(int rowsPerPage, int offset) throws Exception {
-        return List.of();
+        return employeeService.getProducts(rowsPerPage, offset);
     }
 
     @Override
-    public List<Employees> getFilterItems(String newValue) {
-        return null;
+    public List<Employees> getFilterItems(String newValue) throws Exception {
+        return employeeService.getFilterEmployees(newValue);
     }
 
     @Override
     public int getCountItems() {
-        return 0;
+        return employeeService.getCountItems();
     }
 
     private void openData(int id) throws Exception {

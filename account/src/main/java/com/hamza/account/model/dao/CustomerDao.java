@@ -2,7 +2,6 @@ package com.hamza.account.model.dao;
 
 import com.hamza.account.model.domain.Area;
 import com.hamza.account.model.domain.Customers;
-import com.hamza.account.model.domain.ItemsModel;
 import com.hamza.account.trial.TrialManager;
 import com.hamza.controlsfx.database.AbstractDao;
 import com.hamza.controlsfx.database.DaoException;
@@ -19,6 +18,40 @@ import java.util.Map;
 public class CustomerDao extends AbstractDao<Customers> {
 
     public static final String NAME = "name";
+    private static final int FILTER_LIMIT = 50;
+    private static final String FILTER_CUSTOMERS_SQL_NUMERIC = """
+            SELECT * FROM custom
+            INNER JOIN table_area ON custom.area_id = table_area.id
+            WHERE custom.id = ? OR custom.tel = ?
+            ORDER BY
+                CASE
+                    WHEN custom.id = ? THEN 0
+                    WHEN custom.tel = ? THEN 1
+                    ELSE 2
+                END,
+                custom.id DESC
+            LIMIT %d
+            """.formatted(FILTER_LIMIT);
+    private static final String FILTER_CUSTOMERS_SQL_TEXT_STARTS = """
+            SELECT * FROM custom
+            INNER JOIN table_area ON custom.area_id = table_area.id
+            WHERE custom.name LIKE ? OR custom.tel LIKE ?
+            ORDER BY
+                CASE
+                    WHEN custom.name LIKE ? THEN 0
+                    WHEN custom.tel LIKE ? THEN 1
+                    ELSE 2
+                END,
+                custom.id DESC
+            LIMIT %d
+            """.formatted(FILTER_LIMIT);
+    private static final String FILTER_CUSTOMERS_SQL_TEXT_CONTAINS = """
+            SELECT * FROM custom
+            INNER JOIN table_area ON custom.area_id = table_area.id
+            WHERE custom.name LIKE ? OR custom.tel LIKE ?
+            ORDER BY custom.id DESC
+            LIMIT %d
+            """.formatted(FILTER_LIMIT);
     private final String ID = "id";
     private final String TEL = "tel";
     private final String ADDRESS = "address";
@@ -31,7 +64,6 @@ public class CustomerDao extends AbstractDao<Customers> {
     private final String AREA_ID = "area_id";
     private final String AREA_NAME = "area_name";
     private final String DATE_INSERT = "created_at";
-
     private final DaoFactory daoFactory;
 
     CustomerDao(Connection connection, DaoFactory daoFactory) {
@@ -123,46 +155,6 @@ public class CustomerDao extends AbstractDao<Customers> {
         return customers;
     }
 
-    // --- أضف هذه الثوابت في أعلى الكلاس ---
-    private static final int FILTER_LIMIT = 50;
-
-    private static final String FILTER_CUSTOMERS_SQL_NUMERIC = """
-            SELECT * FROM custom
-            INNER JOIN table_area ON custom.area_id = table_area.id
-            WHERE custom.id = ? OR custom.tel = ?
-            ORDER BY
-                CASE
-                    WHEN custom.id = ? THEN 0
-                    WHEN custom.tel = ? THEN 1
-                    ELSE 2
-                END,
-                custom.id DESC
-            LIMIT %d
-            """.formatted(FILTER_LIMIT);
-
-    private static final String FILTER_CUSTOMERS_SQL_TEXT_STARTS = """
-            SELECT * FROM custom
-            INNER JOIN table_area ON custom.area_id = table_area.id
-            WHERE custom.name LIKE ? OR custom.tel LIKE ?
-            ORDER BY
-                CASE
-                    WHEN custom.name LIKE ? THEN 0
-                    WHEN custom.tel LIKE ? THEN 1
-                    ELSE 2
-                END,
-                custom.id DESC
-            LIMIT %d
-            """.formatted(FILTER_LIMIT);
-
-    private static final String FILTER_CUSTOMERS_SQL_TEXT_CONTAINS = """
-            SELECT * FROM custom
-            INNER JOIN table_area ON custom.area_id = table_area.id
-            WHERE custom.name LIKE ? OR custom.tel LIKE ?
-            ORDER BY custom.id DESC
-            LIMIT %d
-            """.formatted(FILTER_LIMIT);
-
-    // --- أضف هذه الميثود داخل الكلاس ---
     public List<Customers> getFilterCustomers(String searchText) throws DaoException {
         if (searchText == null || searchText.trim().isEmpty()) {
             return queryForObjects("SELECT * FROM custom INNER JOIN table_area ON custom.area_id = table_area.id ORDER BY custom.id DESC LIMIT " + FILTER_LIMIT, this::map);
@@ -176,7 +168,8 @@ public class CustomerDao extends AbstractDao<Customers> {
             int id = -1;
             try {
                 id = Integer.parseInt(q);
-            } catch (NumberFormatException ignored) {} // في حال كان رقم الهاتف طويلاً جداً
+            } catch (NumberFormatException ignored) {
+            } // في حال كان رقم الهاتف طويلاً جداً
 
             return queryForObjects(FILTER_CUSTOMERS_SQL_NUMERIC, this::map, id, q, id, q);
         }

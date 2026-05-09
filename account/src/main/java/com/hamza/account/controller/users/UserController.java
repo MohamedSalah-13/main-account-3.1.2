@@ -136,17 +136,17 @@ public class UserController implements TableInterface<Users> {
 
     @Override
     public List<Users> getProducts(int rowsPerPage, int offset) throws Exception {
-        return List.of();
+        return usersService.getProducts(rowsPerPage, offset);
     }
 
     @Override
-    public List<Users> getFilterItems(String newValue) {
-        return null;
+    public List<Users> getFilterItems(String newValue) throws DaoException {
+        return usersService.getFilterUsers(newValue);
     }
 
     @Override
     public int getCountItems() {
-        return 0;
+        return usersService.getCountItems();
     }
 
     private ButtonColumnI getButtonColumnI() {

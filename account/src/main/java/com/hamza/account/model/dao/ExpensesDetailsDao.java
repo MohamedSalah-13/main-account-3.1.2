@@ -1,9 +1,6 @@
 package com.hamza.account.model.dao;
 
-import com.hamza.account.model.domain.Employees;
-import com.hamza.account.model.domain.Expenses;
-import com.hamza.account.model.domain.ExpensesDetails;
-import com.hamza.account.model.domain.TreasuryModel;
+import com.hamza.account.model.domain.*;
 import com.hamza.controlsfx.database.AbstractDao;
 import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.database.SqlStatements;
@@ -13,9 +10,30 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 
 public class ExpensesDetailsDao extends AbstractDao<ExpensesDetails> {
 
+    private static final int FILTER_LIMIT = 50;
+    private static final String FILTER_EXPENSES_SQL_NUMERIC = """
+            SELECT * FROM expenses_details_view
+            WHERE id = ?
+            ORDER BY id DESC
+            LIMIT %d
+            """.formatted(FILTER_LIMIT);
+    // البحث في الملاحظات، اسم المصروف، أو اسم الموظف
+    private static final String FILTER_EXPENSES_SQL_TEXT_STARTS = """
+            SELECT * FROM expenses_details_view
+            WHERE notes LIKE ? OR expenses_name LIKE ? OR column_name LIKE ?
+            ORDER BY id DESC
+            LIMIT %d
+            """.formatted(FILTER_LIMIT);
+    private static final String FILTER_EXPENSES_SQL_TEXT_CONTAINS = """
+            SELECT * FROM expenses_details_view
+            WHERE notes LIKE ? OR expenses_name LIKE ? OR column_name LIKE ?
+            ORDER BY id DESC
+            LIMIT %d
+            """.formatted(FILTER_LIMIT);
     private final String TABLE_VIEW = "expenses_details_view";
     private final String TABLE_NAME = "expenses_details";
     private final String TYPE_CODE = "type_code";
@@ -98,6 +116,62 @@ public class ExpensesDetailsDao extends AbstractDao<ExpensesDetails> {
             throw new DaoException(e);
         }
         return expensesDetails;
+    }
+
+    public List<ExpensesDetails> getFilterExpensesDetails(String searchText) throws DaoException {
+        if (searchText == null || searchText.trim().isEmpty()) {
+            return queryForObjects("SELECT * FROM expenses_details_view ORDER BY id DESC LIMIT " + FILTER_LIMIT, this::map);
+        }
+
+        String q = searchText.trim();
+        boolean numericOnly = q.matches("\\d+");
+
+        if (numericOnly) {
+            int id = -1;
+            try {
+                id = Integer.parseInt(q);
+            } catch (NumberFormatException ignored) {
+            }
+
+            return queryForObjects(FILTER_EXPENSES_SQL_NUMERIC, this::map, id);
+        }
+
+        final String likeStarts = q + "%";
+        final String likeContains = "%" + q + "%";
+
+        Map<Integer, ExpensesDetails> result = new java.util.LinkedHashMap<>(FILTER_LIMIT);
+
+        List<ExpensesDetails> starts = queryForObjects(
+                FILTER_EXPENSES_SQL_TEXT_STARTS,
+                this::map,
+                likeStarts, likeStarts, likeStarts // WHERE 3 parameters
+        );
+
+        for (ExpensesDetails ed : starts) {
+            if (ed != null) result.putIfAbsent(ed.getId(), ed);
+        }
+
+        if (result.size() < FILTER_LIMIT) {
+            List<ExpensesDetails> contains = queryForObjects(
+                    FILTER_EXPENSES_SQL_TEXT_CONTAINS,
+                    this::map,
+                    likeContains, likeContains, likeContains // WHERE 3 parameters
+            );
+            for (ExpensesDetails ed : contains) {
+                if (ed != null) result.putIfAbsent(ed.getId(), ed);
+                if (result.size() >= FILTER_LIMIT) break;
+            }
+        }
+
+        return new java.util.ArrayList<>(result.values());
+    }
+
+    public List<ExpensesDetails> getProducts(int rowsPerPage, int offset) throws DaoException {
+        return queryForObjects("SELECT * FROM expenses_details_view ORDER BY id DESC LIMIT ? OFFSET ?", this::map, rowsPerPage, offset);
+    }
+
+    public int getCountItems() {
+        return queryForInt("SELECT COUNT(*) FROM expenses_details_view");
     }
 
 }

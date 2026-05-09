@@ -9,11 +9,31 @@ import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 public class UsersDao extends AbstractDao<Users> {
 
     public static final String USER_NAME = "user_name";
+    private static final int FILTER_LIMIT = 50;
+    private static final String FILTER_USERS_SQL_NUMERIC = """
+            SELECT * FROM users
+            WHERE id = ?
+            ORDER BY id DESC
+            LIMIT %d
+            """.formatted(FILTER_LIMIT);
+    private static final String FILTER_USERS_SQL_TEXT_STARTS = """
+            SELECT * FROM users
+            WHERE user_name LIKE ?
+            ORDER BY id DESC
+            LIMIT %d
+            """.formatted(FILTER_LIMIT);
+    private static final String FILTER_USERS_SQL_TEXT_CONTAINS = """
+            SELECT * FROM users
+            WHERE user_name LIKE ?
+            ORDER BY id DESC
+            LIMIT %d
+            """.formatted(FILTER_LIMIT);
     private final String TABLE_NAME = "users";
     private final String ID = "id";
     private final String USER_PASS = "user_pass";
@@ -86,9 +106,57 @@ public class UsersDao extends AbstractDao<Users> {
     public int updateAvailable(Users users) throws DaoException {
         return executeUpdate(SqlStatements.updateStatement(TABLE_NAME, ID, USER_AVAILABLE), users.getUser_available(), users.getId());
     }
+
     public Optional<Users> getUserByNameAndPassword(String username, String password) throws DaoException {
         String query = "SELECT * FROM users WHERE user_name = ? AND user_pass = ?";
         var users = queryForObject(query, this::map, username, password);
         return Optional.ofNullable(users);
+    }
+
+    public List<Users> getFilterUsers(String searchText) throws DaoException {
+        if (searchText == null || searchText.trim().isEmpty()) {
+            return queryForObjects("SELECT * FROM users ORDER BY id DESC LIMIT " + FILTER_LIMIT, this::map);
+        }
+
+        String q = searchText.trim();
+        boolean numericOnly = q.matches("\\d+");
+
+        if (numericOnly) {
+            int id = -1;
+            try {
+                id = Integer.parseInt(q);
+            } catch (NumberFormatException ignored) {
+            }
+
+            return queryForObjects(FILTER_USERS_SQL_NUMERIC, this::map, id);
+        }
+
+        final String likeStarts = q + "%";
+        final String likeContains = "%" + q + "%";
+
+        Map<Integer, Users> result = new java.util.LinkedHashMap<>(FILTER_LIMIT);
+
+        List<Users> starts = queryForObjects(FILTER_USERS_SQL_TEXT_STARTS, this::map, likeStarts);
+        for (Users u : starts) {
+            if (u != null) result.putIfAbsent(u.getId(), u);
+        }
+
+        if (result.size() < FILTER_LIMIT) {
+            List<Users> contains = queryForObjects(FILTER_USERS_SQL_TEXT_CONTAINS, this::map, likeContains);
+            for (Users u : contains) {
+                if (u != null) result.putIfAbsent(u.getId(), u);
+                if (result.size() >= FILTER_LIMIT) break;
+            }
+        }
+
+        return new java.util.ArrayList<>(result.values());
+    }
+
+    public List<Users> getProducts(int rowsPerPage, int offset) throws DaoException {
+        return queryForObjects("SELECT * FROM users ORDER BY id DESC LIMIT ? OFFSET ?", this::map, rowsPerPage, offset);
+    }
+
+    public int getCountItems() {
+        return queryForInt("SELECT COUNT(*) FROM users");
     }
 }
