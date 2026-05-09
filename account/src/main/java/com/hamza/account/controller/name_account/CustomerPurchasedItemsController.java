@@ -1,6 +1,7 @@
 package com.hamza.account.controller.name_account;
 
 import com.hamza.account.features.export.PdfExportService;
+import com.hamza.account.interfaces.CustomerPurchaseInterface;
 import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.model.domain.CustomerPurchasedItem;
 import com.hamza.account.openFxml.FxmlPath;
@@ -35,6 +36,8 @@ import java.util.ResourceBundle;
 public class CustomerPurchasedItemsController implements Initializable, AppSettingInterface {
 
     private final CustomerPurchasedItemsService purchasedItemsService;
+    private final CustomerPurchaseInterface customerPurchaseInterface;
+
     private final int customerId;
     private final String customerName;
     private final ObservableList<CustomerPurchasedItem> masterData = FXCollections.observableArrayList();
@@ -42,7 +45,7 @@ public class CustomerPurchasedItemsController implements Initializable, AppSetti
     @FXML
     private TableView<CustomerPurchasedItem> tableView;
     @FXML
-    private Label labelCustomerName;
+    private Label labelCustomerName, title;
     @FXML
     private Label labelCount;
     @FXML
@@ -68,7 +71,9 @@ public class CustomerPurchasedItemsController implements Initializable, AppSetti
     @FXML
     private Button btnSortDate;
 
-    public CustomerPurchasedItemsController(DaoFactory daoFactory, int customerId, String customerName) {
+    public CustomerPurchasedItemsController(DaoFactory daoFactory, int customerId, String customerName
+            , CustomerPurchaseInterface customerPurchaseInterface) {
+        this.customerPurchaseInterface = customerPurchaseInterface;
         this.purchasedItemsService = new CustomerPurchasedItemsService(daoFactory);
         this.customerId = customerId;
         this.customerName = customerName;
@@ -80,6 +85,7 @@ public class CustomerPurchasedItemsController implements Initializable, AppSetti
         setupControls();
         loadData();
 //        applyFilters();
+        title.setText(customerPurchaseInterface.title());
     }
 
     private void setupTable() {
@@ -116,7 +122,7 @@ public class CustomerPurchasedItemsController implements Initializable, AppSetti
 
     private void loadData() {
         try {
-            masterData.setAll(purchasedItemsService.getPurchasedItemsByCustomerId(customerId));
+            masterData.setAll(customerPurchaseInterface.getPurchasedItemsByCustomerId(customerId));
             labelCustomerName.setText(customerName);
         } catch (DaoException e) {
             log.error(e.getMessage(), e.getCause());
@@ -223,7 +229,7 @@ public class CustomerPurchasedItemsController implements Initializable, AppSetti
             PdfExportService pdfExportService = new PdfExportService();
             boolean success = pdfExportService.exportGenericReport(
                     file.getAbsolutePath(),
-                    "الأصناف المشتراة من العميل",
+                    customerPurchaseInterface.title(),
                     "العميل: " + (labelCustomerName != null ? labelCustomerName.getText() : ""),
                     new String[]{"رقم العميل", "الاسم", "الصنف", "الكمية", "السعر", "التاريخ", "رقم الفاتورة"},
                     new float[]{10, 14, 18, 10, 10, 10, 10},
@@ -252,7 +258,7 @@ public class CustomerPurchasedItemsController implements Initializable, AppSetti
 
     @Override
     public String title() {
-        return "الأصناف المشتراة من العميل";
+        return customerPurchaseInterface.title();
     }
 
     @Override

@@ -1001,6 +1001,33 @@ GROUP BY
     YEAR(invoice_date);
 
 
+
+CREATE OR REPLACE VIEW view_monthly_purchase AS
+SELECT
+    YEAR(invoice_date) AS sales_year,
+
+    SUM(CASE WHEN MONTH(invoice_date) = 1 THEN total ELSE 0 END) AS January,
+    SUM(CASE WHEN MONTH(invoice_date) = 2 THEN total ELSE 0 END) AS February,
+    SUM(CASE WHEN MONTH(invoice_date) = 3 THEN total ELSE 0 END) AS March,
+    SUM(CASE WHEN MONTH(invoice_date) = 4 THEN total ELSE 0 END) AS April,
+    SUM(CASE WHEN MONTH(invoice_date) = 5 THEN total ELSE 0 END) AS May,
+    SUM(CASE WHEN MONTH(invoice_date) = 6 THEN total ELSE 0 END) AS June,
+    SUM(CASE WHEN MONTH(invoice_date) = 7 THEN total ELSE 0 END) AS July,
+    SUM(CASE WHEN MONTH(invoice_date) = 8 THEN total ELSE 0 END) AS August,
+    SUM(CASE WHEN MONTH(invoice_date) = 9 THEN total ELSE 0 END) AS September,
+    SUM(CASE WHEN MONTH(invoice_date) = 10 THEN total ELSE 0 END) AS October,
+    SUM(CASE WHEN MONTH(invoice_date) = 11 THEN total ELSE 0 END) AS November,
+    SUM(CASE WHEN MONTH(invoice_date) = 12 THEN total ELSE 0 END) AS December,
+
+    -- إجمالي مبيعات السنة بالكامل
+    SUM(total) AS total_yearly_sales
+
+FROM
+    total_buy
+GROUP BY
+    YEAR(invoice_date);
+
+
 CREATE OR REPLACE VIEW view_customer_purchased_items AS
 SELECT
     c.id AS customer_id,
@@ -1013,4 +1040,18 @@ SELECT
 FROM custom c
          JOIN total_sales ts ON c.id = ts.sup_code
          JOIN sales s ON ts.invoice_number = s.invoice_number
+         JOIN items i ON s.num = i.id;
+
+CREATE OR REPLACE VIEW view_suppliers_sales_items AS
+SELECT
+    c.id AS customer_id,
+    c.name AS customer_name,
+    i.nameItem AS item_name,
+    s.quantity,
+    s.price AS selling_price,
+    ts.invoice_date,
+    ts.invoice_number
+FROM suppliers c
+         JOIN total_buy ts ON c.id = ts.sup_code
+         JOIN purchase s ON ts.invoice_number = s.invoice_number
          JOIN items i ON s.num = i.id;

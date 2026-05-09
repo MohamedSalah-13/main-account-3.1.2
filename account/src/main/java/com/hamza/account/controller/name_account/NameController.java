@@ -23,9 +23,7 @@ import com.hamza.controlsfx.language.Setting_Language;
 import com.hamza.controlsfx.observer.Publisher;
 import com.hamza.controlsfx.others.CssToColorHelper;
 import javafx.beans.property.*;
-import javafx.scene.control.TableView;
-import javafx.scene.control.TextField;
-import javafx.scene.control.ToolBar;
+import javafx.scene.control.*;
 import javafx.scene.input.MouseButton;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
@@ -68,7 +66,6 @@ public class NameController<T1 extends BasePurchasesAndSales, T2 extends BaseTot
     public void textData(TableView<T3> tableView, TextField textField) {
         this.table = tableView;
         textSearchData.bind(textField.textProperty().orElse(""));
-
         tableView.getSelectionModel().selectedItemProperty().addListener((observable, oldValue, newValue) -> {
             if (newValue != null) {
                 setObjectProperty(newValue);
@@ -117,6 +114,7 @@ public class NameController<T1 extends BasePurchasesAndSales, T2 extends BaseTot
             public void getTable(TableView<T3> tableView) {
                 NameController.this.table = tableView;
                 nameData.addColumns(tableView);
+                addColumnShow();
                 TableSetting.tableMenuSetting(getClass(), tableView);
 
                 table.setOnMouseClicked(keyEvent -> {
@@ -202,6 +200,30 @@ public class NameController<T1 extends BasePurchasesAndSales, T2 extends BaseTot
     private void sumTable() {
         double purchase = table.getItems().stream().mapToDouble(BaseNames::getFirst_balance).sum();
         sumBalance.setSum(purchase);
+    }
+
+    private void addColumnShow() {
+        TableColumn<T3, String> column = new TableColumn<>("Show");
+        column.setCellFactory(col -> new TableCell<>() {
+            private final Button btn = new Button(Setting_Language.WORD_SHOW);
+
+            {
+                btn.setOnAction(e -> {
+                    try {
+                        nameData.actionColumnShow(getTableView().getItems().get(getIndex()), daoFactory);
+                    } catch (Exception ex) {
+                        log.error("Error to open Button", ex);
+                    }
+                });
+            }
+
+            @Override
+            protected void updateItem(String item, boolean empty) {
+                super.updateItem(item, empty);
+                setGraphic(empty ? null : btn);
+            }
+        });
+        table.getColumns().add(column);
     }
 
     public BaseNames getObjectProperty() {

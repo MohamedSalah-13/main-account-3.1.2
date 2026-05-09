@@ -216,4 +216,8 @@ public enum DaoFactory {
         return new CustomerPurchasedItemDao(connection);
     }
 
+    public SuppliersSalesItemDao suppliersSalesItemDao() {
+        return new SuppliersSalesItemDao(connection);
+    }
+
 }

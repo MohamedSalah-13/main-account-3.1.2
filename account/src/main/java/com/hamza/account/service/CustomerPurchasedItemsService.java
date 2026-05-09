@@ -2,7 +2,6 @@ package com.hamza.account.service;
 
 import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.model.domain.CustomerPurchasedItem;
-import com.hamza.controlsfx.database.DaoException;
 
 import java.time.LocalDate;
 import java.util.Comparator;
@@ -10,10 +9,6 @@ import java.util.List;
 import java.util.Locale;
 
 public record CustomerPurchasedItemsService(DaoFactory daoFactory) {
-
-    public List<CustomerPurchasedItem> getPurchasedItemsByCustomerId(int customerId) throws DaoException {
-        return daoFactory.customerPurchasedItemDao().findByCustomerId(customerId);
-    }
 
     public List<CustomerPurchasedItem> filterByDateRange(
             List<CustomerPurchasedItem> source,

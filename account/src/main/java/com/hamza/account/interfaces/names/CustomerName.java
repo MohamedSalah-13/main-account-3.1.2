@@ -1,10 +1,15 @@
 package com.hamza.account.interfaces.names;
 
+import com.hamza.account.interfaces.CustomerPurchaseInterface;
 import com.hamza.account.interfaces.api.NameData;
+import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.model.domain.Area;
+import com.hamza.account.model.domain.CustomerPurchasedItem;
 import com.hamza.account.model.domain.Customers;
 import com.hamza.account.model.domain.SelPriceTypeModel;
+import com.hamza.account.view.CustomerPurchasedItemsApplication;
 import com.hamza.account.view.DownLoadApplication;
+import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.language.Setting_Language;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.scene.control.Button;
@@ -13,6 +18,7 @@ import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.List;
 import java.util.function.Function;
 
 public class CustomerName implements NameData<Customers> {
@@ -53,15 +59,24 @@ public class CustomerName implements NameData<Customers> {
             {
                 btn.setOnAction(e -> {
                     Customers customer = getTableView().getItems().get(getIndex());
-                    // Print logic here
-//                    new Print_Reports().printReceiptNames(customer.getAddress(), customer.getTel(), customer.getName());
 
                     try {
-                        var app = new com.hamza.account.view.CustomerPurchasedItemsApplication(DownLoadApplication.getDaoFactory()
-                                , customer.getId(), customer.getName());
+                        var daoFactory = DownLoadApplication.getDaoFactory();
+                        var app = new CustomerPurchasedItemsApplication(daoFactory
+                                , customer.getId(), customer.getName(), new CustomerPurchaseInterface() {
+                            @Override
+                            public List<CustomerPurchasedItem> getPurchasedItemsByCustomerId(int customerId) throws DaoException {
+                                return daoFactory.customerPurchasedItemDao().findByCustomerId(customerId);
+                            }
+
+                            @Override
+                            public String title() {
+                                return "الأصناف المشتراة من العميل";
+                            }
+                        });
                         app.start(new javafx.stage.Stage());
                     } catch (Exception ex) {
-                        ex.printStackTrace();
+
                     }
 
                 });
@@ -103,6 +118,23 @@ public class CustomerName implements NameData<Customers> {
     @Override
     public String getFrom() {
         return "customer";
+    }
+
+    @Override
+    public void actionColumnShow(Customers customers, DaoFactory daoFactory) throws Exception {
+            var app = new CustomerPurchasedItemsApplication(daoFactory
+                    , customers.getId(), customers.getName(), new CustomerPurchaseInterface() {
+                @Override
+                public List<CustomerPurchasedItem> getPurchasedItemsByCustomerId(int customerId) throws DaoException {
+                    return daoFactory.customerPurchasedItemDao().findByCustomerId(customerId);
+                }
+
+                @Override
+                public String title() {
+                    return "الأصناف المشتراة من العميل";
+                }
+            });
+            app.start(new javafx.stage.Stage());
     }
 
 }

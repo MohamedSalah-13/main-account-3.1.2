@@ -1,14 +1,21 @@
 package com.hamza.account.interfaces.names;
 
+import com.hamza.account.interfaces.CustomerPurchaseInterface;
 import com.hamza.account.interfaces.api.NameData;
+import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.model.domain.Area;
+import com.hamza.account.model.domain.CustomerPurchasedItem;
 import com.hamza.account.model.domain.SelPriceTypeModel;
 import com.hamza.account.model.domain.Suppliers;
+import com.hamza.account.view.CustomerPurchasedItemsApplication;
+import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.language.Setting_Language;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import org.jetbrains.annotations.NotNull;
+
+import java.util.List;
 
 public class SupplierName implements NameData<Suppliers> {
     @Override
@@ -39,5 +46,22 @@ public class SupplierName implements NameData<Suppliers> {
     @Override
     public String getFrom() {
         return "suppliers";
+    }
+
+    @Override
+    public void actionColumnShow(Suppliers suppliers, DaoFactory daoFactory) throws Exception {
+        var app = new CustomerPurchasedItemsApplication(daoFactory
+                , suppliers.getId(), suppliers.getName(), new CustomerPurchaseInterface() {
+            @Override
+            public List<CustomerPurchasedItem> getPurchasedItemsByCustomerId(int customerId) throws DaoException {
+                return daoFactory.suppliersSalesItemDao().findBySupplierId(customerId);
+            }
+
+            @Override
+            public String title() {
+                return "الأصناف المشتراة من المورد";
+            }
+        });
+        app.start(new javafx.stage.Stage());
     }
 }

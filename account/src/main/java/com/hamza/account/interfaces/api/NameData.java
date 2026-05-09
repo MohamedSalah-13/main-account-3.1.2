@@ -1,6 +1,7 @@
 package com.hamza.account.interfaces.api;
 
 import com.hamza.account.model.base.BaseNames;
+import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.model.domain.Area;
 import com.hamza.account.model.domain.SelPriceTypeModel;
 import javafx.beans.value.ObservableValue;
@@ -83,4 +84,6 @@ public interface NameData<T extends BaseNames> extends DataTable<T> {
     }
 
     String getFrom();
+
+    void actionColumnShow(T t, DaoFactory daoFactory) throws Exception;
 }

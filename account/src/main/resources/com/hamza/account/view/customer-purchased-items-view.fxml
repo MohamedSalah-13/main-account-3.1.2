@@ -19,7 +19,7 @@
             <padding>
                 <Insets bottom="10.0" left="15.0" right="15.0" top="15.0" />
             </padding>
-             <Label styleClass="title-label" text="الأصناف المشتراة من العميل" underline="true">
+             <Label fx:id="title" styleClass="title-label" text="الأصناف المشتراة من العميل" underline="true">
             <font>
                <Font size="20.0" />
             </font>

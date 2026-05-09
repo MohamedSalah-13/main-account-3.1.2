@@ -1,5 +1,7 @@
 package com.hamza.account.view;
 
+import com.hamza.account.controller.name_account.CustomerPurchasedItemsController;
+import com.hamza.account.interfaces.CustomerPurchaseInterface;
 import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.controlsfx.others.ChangeOrientation;
 import javafx.application.Application;
@@ -13,10 +15,14 @@ import java.io.IOException;
 public class CustomerPurchasedItemsApplication extends Application {
 
     private final Scene scene;
+    private final CustomerPurchaseInterface customerPurchaseInterface;
 
-    public CustomerPurchasedItemsApplication(DaoFactory daoFactory, int customerId, String customerName) throws IOException {
+    public CustomerPurchasedItemsApplication(DaoFactory daoFactory, int customerId, String customerName
+            , CustomerPurchaseInterface customerPurchaseInterface) throws IOException {
+        this.customerPurchaseInterface = customerPurchaseInterface;
         FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource("/com/hamza/account/view/customer-purchased-items-view.fxml"));
-        fxmlLoader.setController(new com.hamza.account.controller.name_account.CustomerPurchasedItemsController(daoFactory, customerId, customerName));
+        fxmlLoader.setController(new CustomerPurchasedItemsController(daoFactory, customerId, customerName
+                , customerPurchaseInterface));
         this.scene = new SceneAll(fxmlLoader.load());
     }
 
@@ -26,7 +32,7 @@ public class CustomerPurchasedItemsApplication extends Application {
         stage.initModality(Modality.APPLICATION_MODAL);
 //        stage.setResizable(false);
         stage.setScene(scene);
-        stage.setTitle("الأصناف المشتراة من العميل");
+        stage.setTitle(customerPurchaseInterface.title());
         stage.showAndWait();
     }
 }
