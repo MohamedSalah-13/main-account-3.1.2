@@ -33,7 +33,8 @@ public class MainMenuController {
     @FXML
     private MenuItem menuItemAddSupplierName, menuItemSuppliersName, menuItemSuppliersAccount;
     @FXML
-    private MenuItem menuItemSummary, menuItemReportItems, menuItemReportCustom, menuItemCustomPaid, menuItemReportSuppliers, menuItemSuppliersPaid, menuItemReportSales, menuItemReportPurchase, menuItemReportDetails, menuItemReportDelegate, menuItemReportYearly, menuItemReportProfitLoss;
+    private MenuItem menuItemSummary, menuItemReportItems,
+            menuItemReportItemsDaily, menuItemReportCustom, menuItemCustomPaid, menuItemReportSuppliers, menuItemSuppliersPaid, menuItemReportSales, menuItemReportPurchase, menuItemReportDetails, menuItemReportDelegate, menuItemReportYearly, menuItemReportProfitLoss;
     @FXML
     private MenuItem menuItemAddUser, menuItemUsers, menuItemAddEmployee, menuItemEmployees, menuItemAddTargetDelegate;
     @FXML

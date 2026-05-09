@@ -345,6 +345,9 @@ public class MainScreenController extends MainItems implements Initializable {
     private void initializeReports(MainMenuController menuController) throws Exception {
         menuButtonSetting.initializeMenuItem(menuController.getMenuItemSummary(), getReportsButtons().summaryReport());
         menuButtonSetting.initializeMenuItem(menuController.getMenuItemReportItems(), getReportsButtons().itemsReport());
+        menuButtonSetting.initializeMenuItem(menuController.getMenuItemReportItemsDaily(), getReportsButtons().itemsReportDaily());
+
+
         // purchase - sales
         ReportTreePurchase treePurchase = new ReportTreePurchase(daoFactory, this, dataInterfacePurchase);
         ReportTreeSales treeSales = new ReportTreeSales(daoFactory, this);

@@ -6,10 +6,7 @@ import com.hamza.account.controller.main.ButtonWithPerm;
 import com.hamza.account.controller.main.DataPublisher;
 import com.hamza.account.controller.main.LoadData;
 import com.hamza.account.controller.main.MainItems;
-import com.hamza.account.controller.reports.ItemSalesRankController;
-import com.hamza.account.controller.reports.ModernDashboardApp;
-import com.hamza.account.controller.reports.ProfitLossController;
-import com.hamza.account.controller.reports.ReportPaid;
+import com.hamza.account.controller.reports.*;
 import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.openFxml.OpenFxmlApplication;
 import com.hamza.account.type.UserPermissionType;
@@ -173,14 +170,50 @@ public class ReportsButtons extends LoadData {
                 Stage stage = new Stage();
                 Scene scene = new SceneAll(root);
                 stage.setScene(scene);
-                stage.setTitle(Setting_Language.WORD_REPORT_ITEMS);
+                stage.setTitle(this.textName());
                 stage.show();
             }
 
             @NotNull
             @Override
             public String textName() {
-                return Setting_Language.WORD_REPORT_ITEMS;
+                return "تقرير حركة الأصناف (الأكثر والأقل مبيعاً)";
+            }
+
+
+            @Override
+            public void actionAddPaneToTabPane(TabPane tabPane) {
+
+            }
+        };
+    }
+
+    public ButtonWithPerm itemsReportDaily() {
+        return new ButtonWithPerm() {
+            @Override
+            public UserPermissionType getPermissionType() {
+                return UserPermissionType.REPORTS_SHOW_ITEMS;
+            }
+
+            @Override
+            public void action() throws IOException {
+                FXMLLoader loader = new FXMLLoader(Main.class.getResource("view/reports/DailyItemSalesView.fxml"));
+                Parent root = loader.load();
+
+                DailyItemSalesController controller = loader.getController();
+                controller.setDaoFactory(daoFactory);  // تمرير اتصال قاعدة البيانات
+
+                Stage stage = new Stage();
+                Scene scene = new SceneAll(root);
+                stage.setScene(scene);
+                stage.setTitle(this.textName());
+                stage.show();
+            }
+
+            @NotNull
+            @Override
+            public String textName() {
+                return "تقرير حركة الأصناف اليومي";
             }
 
 
