@@ -265,8 +265,11 @@ public class ReportExportService {
     }
 
     public boolean exportDailyItemSalesReport(List<DailyItemSales> data, String dateStr, String outputPath) {
-        String[] headers = {"اسم الصنف", "السعر", "الكمية", "الإجمالي", "رقم الفاتورة"};
-        float[] columnWidths = {35f, 15f, 15f, 15f, 20f};
+        // 1. العناوين بدون رقم الفاتورة
+        String[] headers = {"اسم الصنف", "السعر", "الكمية الإجمالية", "المبلغ الإجمالي"};
+
+        // 2. توزيع المساحات ليصبح المجموع 100%
+        float[] columnWidths = {40f, 20f, 20f, 20f};
 
         List<String[]> rows = new ArrayList<>();
         for (DailyItemSales item : data) {
@@ -274,8 +277,7 @@ public class ReportExportService {
                     item.getItemName(),
                     format(item.getPrice()),
                     format(item.getQuantity()),
-                    format(item.getTotal()),
-                    item.getInvoiceNumber()
+                    format(item.getTotal())
             });
         }
 

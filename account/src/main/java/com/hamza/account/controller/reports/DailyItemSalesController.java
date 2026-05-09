@@ -40,10 +40,10 @@ public class DailyItemSalesController implements Initializable {
     private TableColumn<DailyItemSales, Double> colQuantity;
     @FXML
     private TableColumn<DailyItemSales, Double> colTotal;
-    @FXML
-    private TableColumn<DailyItemSales, String> colInvoiceNum;
-    @FXML
-    private TableColumn<DailyItemSales, String> colTime;
+    //    @FXML
+//    private TableColumn<DailyItemSales, String> colInvoiceNum;
+//    @FXML
+//    private TableColumn<DailyItemSales, String> colTime;
     @FXML
     private Label lblDayTotal;
     private DaoFactory daoFactory;
@@ -67,8 +67,8 @@ public class DailyItemSalesController implements Initializable {
         colPrice.setCellValueFactory(new PropertyValueFactory<>("price"));
         colQuantity.setCellValueFactory(new PropertyValueFactory<>("quantity"));
         colTotal.setCellValueFactory(new PropertyValueFactory<>("total"));
-        colInvoiceNum.setCellValueFactory(new PropertyValueFactory<>("invoiceNumber"));
-        colTime.setCellValueFactory(new PropertyValueFactory<>("invoiceTime"));
+//        colInvoiceNum.setCellValueFactory(new PropertyValueFactory<>("invoiceNumber"));
+//        colTime.setCellValueFactory(new PropertyValueFactory<>("invoiceTime"));
 
         // تنسيق الأرقام لتظهر بفاصلة الألف ورقمين عشريين
         formatDoubleColumn(colPrice);
@@ -112,7 +112,7 @@ public class DailyItemSalesController implements Initializable {
         String dateStr = datePicker.getValue().toString();
         FileChooser fileChooser = new FileChooser();
         fileChooser.setTitle("حفظ التقرير");
-        fileChooser.setInitialFileName("تقرير_الأصناف_اليومى.pdf");
+        fileChooser.setInitialFileName("تقرير_الأصناف_اليومى_" + dateStr + ".pdf");
         fileChooser.getExtensionFilters().add(
                 new FileChooser.ExtensionFilter("PDF Files", "*.pdf")
         );
@@ -130,9 +130,14 @@ public class DailyItemSalesController implements Initializable {
             );
 
             if (success) {
-                alertInfo("تم تصدير ملف PDF بنجاح:\n" + path);
+                alertInfo("تم تصدير ملف PDF بنجاح في المسار: " + path);
+                try {
+                    java.awt.Desktop.getDesktop().open(new File(path));
+                } catch (Exception e) {
+                    log.error("Error opening PDF file: ", e);
+                }
             } else {
-                AllAlerts.alertError("حدث خطأ أثناء تصدير الـ PDF");
+                alertError("فشل في تصدير ملف PDF");
             }
         }
     }
@@ -188,5 +193,9 @@ public class DailyItemSalesController implements Initializable {
 
     private Alert alertWarning(String title, String message) {
         return new Alert(Alert.AlertType.WARNING, message, ButtonType.OK);
+    }
+
+    private Alert alertError(String message) {
+        return new Alert(Alert.AlertType.ERROR, message, ButtonType.OK);
     }
 }

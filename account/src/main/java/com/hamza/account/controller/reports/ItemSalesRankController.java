@@ -180,7 +180,14 @@ public class ItemSalesRankController implements Initializable {
             );
 
             if (success) {
-                alertInfo("تم تصدير ملف PDF بنجاح شاملاً الرسم البياني");
+                showInfo("تم تصدير ملف PDF بنجاح في المسار: " + path);
+                try {
+                    java.awt.Desktop.getDesktop().open(new File(path));
+                } catch (Exception e) {
+                    log.error("Error opening PDF file: ", e);
+                }
+            } else {
+                showError("فشل في تصدير ملف PDF");
             }
         }
     }
@@ -196,14 +203,17 @@ public class ItemSalesRankController implements Initializable {
         if (file != null) {
             try {
                 excelExportService.exportItemSalesToExcel(tableView.getItems(), file.getAbsolutePath());
-                alertInfo("تم تصدير ملف Excel بنجاح");
+                showInfo("تم تصدير ملف Excel بنجاح");
             } catch (Exception e) {
                 AllAlerts.alertError("فشل التصدير: " + e.getMessage());
             }
         }
     }
 
-    private Alert alertInfo(String message) {
+    private Alert showInfo(String message) {
         return new Alert(Alert.AlertType.INFORMATION, message, ButtonType.OK);
+    }
+    private Alert showError(String message) {
+        return new Alert(Alert.AlertType.ERROR, message, ButtonType.OK);
     }
 }
