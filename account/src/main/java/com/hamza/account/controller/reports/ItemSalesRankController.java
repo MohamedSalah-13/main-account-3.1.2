@@ -160,17 +160,28 @@ public class ItemSalesRankController implements Initializable {
             log.error("خطأ في تحويل الرسم البياني لصورة", e);
         }
 
-        // 2. التصدير
-        String path = ReportExportService.getDefaultOutputPath("تقرير_الأصناف_المباعة");
-        boolean success = reportExportService.exportItemSalesRankReport(
-                tableView.getItems(),
-                "تقرير حركة الأصناف لسنة " + comboYear.getValue(),
-                path,
-                chartImage
+        FileChooser fileChooser = new FileChooser();
+        fileChooser.setTitle("حفظ التقرير");
+        fileChooser.setInitialFileName("تقرير_الأصناف_المباعة.pdf");
+        fileChooser.getExtensionFilters().add(
+                new FileChooser.ExtensionFilter("PDF Files", "*.pdf")
         );
 
-        if (success) {
-            alertInfo("تم تصدير ملف PDF بنجاح شاملاً الرسم البياني");
+        File file = fileChooser.showSaveDialog(tableView.getScene().getWindow());
+
+        if (file != null) {
+            // 2. التصدير
+            String path = file.getAbsolutePath();
+            boolean success = reportExportService.exportItemSalesRankReport(
+                    tableView.getItems(),
+                    "تقرير حركة الأصناف لسنة " + comboYear.getValue(),
+                    path,
+                    chartImage
+            );
+
+            if (success) {
+                alertInfo("تم تصدير ملف PDF بنجاح شاملاً الرسم البياني");
+            }
         }
     }
 

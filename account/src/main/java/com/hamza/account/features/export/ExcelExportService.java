@@ -1,5 +1,6 @@
 package com.hamza.account.features.export;
 
+import com.hamza.account.model.domain.DailyItemSales;
 import com.hamza.account.model.domain.ItemSalesRank;
 import com.hamza.account.model.domain.MonthlySalesViewModel;
 import com.hamza.account.model.domain.TableDataReports;
@@ -211,6 +212,37 @@ public class ExcelExportService {
             for (int i = 0; i < headers.length; i++) sheet.autoSizeColumn(i);
 
             try (FileOutputStream fileOut = new FileOutputStream(filePath)) {
+                workbook.write(fileOut);
+            }
+        }
+    }
+
+    // إضافة في كلاس ExcelExportService.java
+    public void exportDailySalesToExcel(List<DailyItemSales> data, String filePath) throws IOException {
+        try (org.apache.poi.xssf.usermodel.XSSFWorkbook workbook = new org.apache.poi.xssf.usermodel.XSSFWorkbook()) {
+            org.apache.poi.xssf.usermodel.XSSFSheet sheet = workbook.createSheet("مبيعات اليوم");
+            sheet.setRightToLeft(true);
+
+            org.apache.poi.ss.usermodel.Row headerRow = sheet.createRow(0);
+            String[] headers = {"اسم الصنف", "السعر", "الكمية", "الإجمالي", "رقم الفاتورة", "الوقت"};
+            for (int i = 0; i < headers.length; i++) {
+                headerRow.createCell(i).setCellValue(headers[i]);
+            }
+
+            int rowNum = 1;
+            for (DailyItemSales item : data) {
+                org.apache.poi.ss.usermodel.Row row = sheet.createRow(rowNum++);
+                row.createCell(0).setCellValue(item.getItemName());
+                row.createCell(1).setCellValue(item.getPrice());
+                row.createCell(2).setCellValue(item.getQuantity());
+                row.createCell(3).setCellValue(item.getTotal());
+                row.createCell(4).setCellValue(item.getInvoiceNumber());
+                row.createCell(5).setCellValue(item.getInvoiceTime());
+            }
+
+            for (int i = 0; i < headers.length; i++) sheet.autoSizeColumn(i);
+
+            try (java.io.FileOutputStream fileOut = new java.io.FileOutputStream(filePath)) {
                 workbook.write(fileOut);
             }
         }

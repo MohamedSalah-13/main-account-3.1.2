@@ -1,5 +1,6 @@
 package com.hamza.account.features.export;
 
+import com.hamza.account.model.domain.DailyItemSales;
 import com.hamza.account.model.domain.ItemSalesRank;
 import com.hamza.account.model.domain.MonthlySalesViewModel;
 import com.hamza.account.model.domain.TableDataReports;
@@ -261,5 +262,37 @@ public class ReportExportService {
      */
     private String format(double value) {
         return decimalFormat.format(value);
+    }
+
+    public boolean exportDailyItemSalesReport(List<DailyItemSales> data, String dateStr, String outputPath) {
+        String[] headers = {"اسم الصنف", "السعر", "الكمية", "الإجمالي", "رقم الفاتورة"};
+        float[] columnWidths = {35f, 15f, 15f, 15f, 20f};
+
+        List<String[]> rows = new ArrayList<>();
+        for (DailyItemSales item : data) {
+            rows.add(new String[]{
+                    item.getItemName(),
+                    format(item.getPrice()),
+                    format(item.getQuantity()),
+                    format(item.getTotal()),
+                    item.getInvoiceNumber()
+            });
+        }
+
+        return pdfExportService.exportGenericReport(
+                outputPath,
+                "تقرير مبيعات الأصناف ليوم: " + dateStr,
+                "تفاصيل حركة المبيعات الصادرة",
+                headers,
+                columnWidths,
+                rows,
+                "إجمالي المبيعات المختارة",
+                calculateTotal(data),null,
+                PageSize.A4
+        );
+    }
+    private String calculateTotal(List<DailyItemSales> data) {
+        double total = data.stream().mapToDouble(DailyItemSales::getTotal).sum();
+        return format(total);
     }
 }

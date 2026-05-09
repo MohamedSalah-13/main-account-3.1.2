@@ -228,4 +228,8 @@ public enum DaoFactory {
         return new ItemSalesRankDao(connection);
     }
 
+    public DailyItemSalesDao dailyItemSalesDao() {
+        return new DailyItemSalesDao(connection);
+    }
+
 }
