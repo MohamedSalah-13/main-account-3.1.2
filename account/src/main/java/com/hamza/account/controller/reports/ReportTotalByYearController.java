@@ -49,13 +49,13 @@ public class ReportTotalByYearController extends ServiceData {
         TableSetting.tableMenuSetting(getClass(), tableView);
 
         searchButton.setText(Setting_Language.WORD_SEARCH);
-        btnPrintPdf.setText("Export PDF");
-        btnExportExcel.setText("Export Excel");
+//        btnPrintPdf.setText("Export PDF");
+//        btnExportExcel.setText("Export Excel");
 
-        var imageSetting = new Image_Setting();
-        searchButton.setGraphic(ImageChoose.createIcon(imageSetting.search));
-        btnPrintPdf.setGraphic(ImageChoose.createIcon(imageSetting.print));
-        btnExportExcel.setGraphic(ImageChoose.createIcon(imageSetting.export));
+//        var imageSetting = new Image_Setting();
+//        searchButton.setGraphic(ImageChoose.createIcon(imageSetting.search));
+//        btnPrintPdf.setGraphic(ImageChoose.createIcon(imageSetting.print));
+//        btnExportExcel.setGraphic(ImageChoose.createIcon(imageSetting.export));
 
         var listYear = totalBuyService.getListYear();
         comboYear.getItems().setAll(listYear);
@@ -177,7 +177,6 @@ public class ReportTotalByYearController extends ServiceData {
             }
         }
     }
-
 
     private TableDataReports calculateTotals(List<TableDataReports> dataList) {
         TableDataReports totalRow = new TableDataReports();

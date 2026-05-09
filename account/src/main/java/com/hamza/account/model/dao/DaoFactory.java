@@ -224,4 +224,8 @@ public enum DaoFactory {
         return new TableDataReportsDao(connection);
     }
 
+    public ItemSalesRankDao itemSalesRankDao() {
+        return new ItemSalesRankDao(connection);
+    }
+
 }

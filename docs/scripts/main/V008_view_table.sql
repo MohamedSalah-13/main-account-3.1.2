@@ -1149,3 +1149,17 @@ GROUP BY
 ORDER BY
     t.action_year DESC,
     t.action_month ASC;
+
+
+CREATE OR REPLACE VIEW view_item_sales_rank AS
+SELECT
+    num AS item_id,
+    nameItem AS item_name,
+    YEAR(invoice_date) AS sales_year,
+    MONTH(invoice_date) AS sales_month,
+    SUM(quantity) AS total_qty,
+    ROUND(SUM(total_sales), 2) AS total_amount,
+    -- حساب صافي الربح من الصنف (المبيعات - التكلفة)
+    ROUND(SUM(total_sales - (quantity * buy_price)), 2) AS total_profit
+FROM sales_names_table
+GROUP BY num, nameItem, YEAR(invoice_date), MONTH(invoice_date);

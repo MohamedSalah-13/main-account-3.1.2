@@ -6,8 +6,6 @@ import javafx.fxml.FXMLLoader;
 public class FxmlConstants {
 
     public final FXMLLoader ADMIN_APP = fxmlLoader("setting-admin.fxml");
-    public final FXMLLoader dayDetails2 = fxmlLoader("day-details2.fxml");
-    public final FXMLLoader dayDetails = fxmlLoader("day-details.fxml");
 
 
     //----------------------------------- include------------------------------------------//
