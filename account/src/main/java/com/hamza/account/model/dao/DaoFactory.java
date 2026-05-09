@@ -220,4 +220,8 @@ public enum DaoFactory {
         return new SuppliersSalesItemDao(connection);
     }
 
+    public TableDataReportsDao tableDataReportsDao() {
+        return new TableDataReportsDao(connection);
+    }
+
 }

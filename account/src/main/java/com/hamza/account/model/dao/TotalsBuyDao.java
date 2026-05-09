@@ -179,13 +179,22 @@ public class TotalsBuyDao extends AbstractDao<Total_buy> {
         return queryForObjects(query, this::map, year);
     }
 
-    public List<Integer> getListYear() throws DaoException {
-        String query = SqlStatements.selectStatement(TABLE_VIEW).concat(" GROUP BY YEAR(invoice_date) ORDER BY YEAR(invoice_date) DESC");
-        //TODO 11/16/2025 9:47 AM Mohamed: get all years
-        return List.of();
+    public List<Integer> getListYear() {
+        String query = "SELECT YEAR(invoice_date) AS action_year FROM total_sales\n" +
+                "UNION\n" +
+                "SELECT YEAR(invoice_date) FROM total_sales_re\n" +
+                "UNION\n" +
+                "SELECT YEAR(invoice_date) FROM total_buy\n" +
+                "UNION\n" +
+                "SELECT YEAR(invoice_date) FROM total_buy_re\n" +
+                "\n" +
+                "-- ترتيب السنوات تنازلياً (من الأحدث للأقدم)\n" +
+                "ORDER BY action_year DESC;";
+        return queryForIntList(query);
     }
 
     public int getMaxId() {
         return queryForInt("SELECT COALESCE(MAX(invoice_number), 0) + 1 FROM " + TABLE_NAME);
     }
+
 }

@@ -1,12 +1,9 @@
 package com.hamza.account.controller.reports;
 
 import com.hamza.account.config.Image_Setting;
-import com.hamza.account.controller.model.TableDataReports;
+import com.hamza.account.model.domain.TableDataReports;
 import com.hamza.account.controller.others.ServiceData;
-import com.hamza.account.model.base.BaseTotals;
 import com.hamza.account.model.dao.DaoFactory;
-import com.hamza.account.model.domain.Total_Sales;
-import com.hamza.account.model.domain.Total_Sales_Re;
 import com.hamza.account.openFxml.FxmlPath;
 import com.hamza.account.table.TableSetting;
 import com.hamza.account.type.MonthsEnum;
@@ -23,7 +20,6 @@ import javafx.scene.control.TableView;
 import lombok.extern.log4j.Log4j2;
 import org.controlsfx.control.CheckComboBox;
 
-import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -32,6 +28,7 @@ import java.util.List;
 @FxmlPath(pathFile = "reports/total-year-profit.fxml")
 public class ReportTotalByYearController extends ServiceData {
 
+    private final DaoFactory daoFactory;
     private final List<TableDataReports> allData = new ArrayList<>();
     @FXML
     private CheckComboBox<String> checkComboBox;
@@ -44,6 +41,7 @@ public class ReportTotalByYearController extends ServiceData {
 
     public ReportTotalByYearController(DaoFactory daoFactory) throws Exception {
         super(daoFactory);
+        this.daoFactory = daoFactory;
     }
 
     @FXML
@@ -61,9 +59,8 @@ public class ReportTotalByYearController extends ServiceData {
         btnPrint.setGraphic(ImageChoose.createIcon(imageSetting.print));
 
         // get all years from purchase and sales without duplicate
-        //TODO 11/16/2025 9:42 AM Mohamed: get all years from purchase and sales without duplicate
-//        var listYear = totalBuyService.getListYear();
-        comboYear.getItems().setAll(2024, 2025);
+        var listYear = totalBuyService.getListYear();
+        comboYear.getItems().setAll(listYear);
         comboYear.getSelectionModel().selectFirst();
 
         btnPrint.setOnAction(event -> printTable());
@@ -75,7 +72,7 @@ public class ReportTotalByYearController extends ServiceData {
                 AllAlerts.alertError(e.getMessage());
             }
         });
-        checkComboBox.getCheckModel().getCheckedItems().addListener((javafx.collections.ListChangeListener<String>) c -> filterTable());
+//        checkComboBox.getCheckModel().getCheckedItems().addListener((javafx.collections.ListChangeListener<String>) c -> filterTable());
 
         tableView.getColumns().forEach(column ->
                 column.setStyle("-fx-border-color: #135A8DFF; -fx-border-width: 0 0 0 .5;")
@@ -88,9 +85,9 @@ public class ReportTotalByYearController extends ServiceData {
                 if (empty || item == null) {
                     setStyle("");
                 } else {
-                    if (item.getName().equals(Setting_Language.WORD_TOTAL)) {
-                        setStyle("-fx-background-color: #cccc69; -fx-text-fill: red; -fx-font-weight: bold; -fx-font-size: 14px;");
-                    }
+//                    if (item.getReport_month().equals(Setting_Language.WORD_TOTAL)) {
+//                        setStyle("-fx-background-color: #cccc69; -fx-text-fill: red; -fx-font-weight: bold; -fx-font-size: 14px;");
+//                    }
                 }
             }
         });
@@ -105,45 +102,9 @@ public class ReportTotalByYearController extends ServiceData {
 
         allData.clear();
         tableView.getItems().clear();
-        var totalPurchase = totalBuyService.getTotalBuyByYear(comboYear.getValue());
-        var totalSales = totalSalesService.getTotalSalesByYear(comboYear.getValue());
-        var totalPurchaseRe = totalBuyReturnService.getTotalBuyByYear(comboYear.getValue());
-        var totalSalesRe = totalSalesReturnService.getTotalSalesByYear(comboYear.getValue());
-
-
-        for (var i = 0; i < MonthsEnum.values().length; i++) {
-            var value = MonthsEnum.values()[i];
-            var sumPurchase = totalPurchase.stream().filter(total_sales -> LocalDate.parse(total_sales.getDate()).getMonth().getValue() == value.getNumber()).mapToDouble(BaseTotals::getTotal).sum();
-            var sumSales = totalSales.stream().filter(total_sales -> LocalDate.parse(total_sales.getDate()).getMonth().getValue() == value.getNumber()).mapToDouble(BaseTotals::getTotal).sum();
-            var sumPurchaseRe = totalPurchaseRe.stream().filter(total_sales -> LocalDate.parse(total_sales.getDate()).getMonth().getValue() == value.getNumber()).mapToDouble(BaseTotals::getTotal).sum();
-            var sumSalesRe = totalSalesRe.stream().filter(total_sales -> LocalDate.parse(total_sales.getDate()).getMonth().getValue() == value.getNumber()).mapToDouble(BaseTotals::getTotal).sum();
-            // discount
-            var sumPurchaseDiscount = totalPurchase.stream().filter(total_sales -> LocalDate.parse(total_sales.getDate()).getMonth().getValue() == value.getNumber()).mapToDouble(BaseTotals::getDiscount).sum();
-            var sumSalesDiscount = totalSales.stream().filter(total_sales -> LocalDate.parse(total_sales.getDate()).getMonth().getValue() == value.getNumber()).mapToDouble(BaseTotals::getDiscount).sum();
-            var sumPurchaseReDiscount = totalPurchaseRe.stream().filter(total_sales -> LocalDate.parse(total_sales.getDate()).getMonth().getValue() == value.getNumber()).mapToDouble(BaseTotals::getDiscount).sum();
-            var sumSalesReDiscount = totalSalesRe.stream().filter(total_sales -> LocalDate.parse(total_sales.getDate()).getMonth().getValue() == value.getNumber()).mapToDouble(BaseTotals::getDiscount).sum();
-
-            // الربح بعد خصم المرتجعات
-            var sumSalesProfit = totalSales.stream().filter(total_sales -> LocalDate.parse(total_sales.getDate()).getMonth().getValue() == value.getNumber()).mapToDouble(Total_Sales::getTotal_profit).sum();
-            var sumSalesReProfit = totalSalesRe.stream().filter(total_sales -> LocalDate.parse(total_sales.getDate()).getMonth().getValue() == value.getNumber()).mapToDouble(Total_Sales_Re::getTotal_profit).sum();
-
-            String profit = String.format("%.2f", (sumSalesProfit * 100) / sumSales);
-            var build = TableDataReports.builder()
-                    .name(value.getArabicName())
-                    .purchase(sumPurchase)
-                    .discountPurchase(sumPurchaseDiscount)
-                    .sales(sumSales)
-                    .discountSales(sumSalesDiscount)
-                    .purchaseRe(sumPurchaseRe)
-                    .discountPurchaseRe(sumPurchaseReDiscount)
-                    .salesRe(sumSalesRe)
-                    .discountSalesRe(sumSalesReDiscount)
-                    .profit(sumSalesProfit)
-                    .profitPercent(sumSalesProfit > 0 ? profit + " %" : "0 %")
-                    .build();
-            allData.add(build);
-        }
-        filterTable();
+        var tableDataReports = daoFactory.tableDataReportsDao().loadAllById(comboYear.getSelectionModel().getSelectedItem());
+        tableDataReports.forEach(System.out::println);
+        tableView.getItems().setAll(tableDataReports);
     }
 
 
@@ -152,36 +113,36 @@ public class ReportTotalByYearController extends ServiceData {
         tableView.getItems().clear();
         var selectedMonths = checkComboBox.getCheckModel().getCheckedItems();
         var filteredData = allData.stream()
-                .filter(data -> selectedMonths.contains(data.getName()))
+                .filter(data -> selectedMonths.contains(data.getReport_month()))
                 .toList();
         tableView.getItems().addAll(filteredData);
 
         var sumPurchase = filteredData.stream().mapToDouble(TableDataReports::getPurchase).sum();
-        var sumPurchaseDiscount = filteredData.stream().mapToDouble(TableDataReports::getDiscountPurchase).sum();
+        var sumPurchaseDiscount = filteredData.stream().mapToDouble(TableDataReports::getPurchases_discount).sum();
 
         var sumSales = filteredData.stream().mapToDouble(TableDataReports::getSales).sum();
-        var sumSalesDiscount = filteredData.stream().mapToDouble(TableDataReports::getDiscountSales).sum();
+        var sumSalesDiscount = filteredData.stream().mapToDouble(TableDataReports::getSales_discount).sum();
 
-        var sumPurchaseRe = filteredData.stream().mapToDouble(TableDataReports::getPurchaseRe).sum();
-        var sumPurchaseReDiscount = filteredData.stream().mapToDouble(TableDataReports::getDiscountPurchaseRe).sum();
+        var sumPurchaseRe = filteredData.stream().mapToDouble(TableDataReports::getPurchases_return).sum();
+        var sumPurchaseReDiscount = filteredData.stream().mapToDouble(TableDataReports::getPurchases_return_discount).sum();
 
-        var sumSalesRe = filteredData.stream().mapToDouble(TableDataReports::getSalesRe).sum();
-        var sumSalesReDiscount = filteredData.stream().mapToDouble(TableDataReports::getDiscountSalesRe).sum();
+        var sumSalesRe = filteredData.stream().mapToDouble(TableDataReports::getSales_return).sum();
+        var sumSalesReDiscount = filteredData.stream().mapToDouble(TableDataReports::getSales_return_discount).sum();
 
         var sumProfit = filteredData.stream().mapToDouble(TableDataReports::getProfit).sum();
-
-        tableView.getItems().add(TableDataReports.builder()
-                .name(Setting_Language.WORD_TOTAL)
-                .purchase(sumPurchase)
-                .discountPurchase(sumPurchaseDiscount)
-                .sales(sumSales)
-                .discountSales(sumSalesDiscount)
-                .purchaseRe(sumPurchaseRe)
-                .discountPurchaseRe(sumPurchaseReDiscount)
-                .salesRe(sumSalesRe)
-                .discountSalesRe(sumSalesReDiscount)
-                .profit(sumProfit)
-                .build());
+//
+//        tableView.getItems().add(TableDataReports.builder()
+//                .name(Setting_Language.WORD_TOTAL)
+//                .purchase(sumPurchase)
+//                .discountPurchase(sumPurchaseDiscount)
+//                .sales(sumSales)
+//                .discountSales(sumSalesDiscount)
+//                .purchaseRe(sumPurchaseRe)
+//                .discountPurchaseRe(sumPurchaseReDiscount)
+//                .salesRe(sumSalesRe)
+//                .discountSalesRe(sumSalesReDiscount)
+//                .profit(sumProfit)
+//                .build());
     }
 
     private void printTable() {

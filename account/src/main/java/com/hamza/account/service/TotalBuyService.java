@@ -51,7 +51,7 @@ public record TotalBuyService(DaoFactory daoFactory) {
         return getTotalsBuyDao().getTotalBuyByYear(year);
     }
 
-    public List<Integer> getListYear() throws DaoException {
+    public List<Integer> getListYear(){
         return getTotalsBuyDao().getListYear();
     }
     public int getMaxId() {

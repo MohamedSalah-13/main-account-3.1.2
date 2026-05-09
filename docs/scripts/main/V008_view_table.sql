@@ -1055,3 +1055,97 @@ FROM suppliers c
          JOIN total_buy ts ON c.id = ts.sup_code
          JOIN purchase s ON ts.invoice_number = s.invoice_number
          JOIN items i ON s.num = i.id;
+
+
+CREATE OR REPLACE VIEW view_yearly_monthly_report AS
+SELECT
+    t.action_year AS report_year,
+    t.action_month AS report_month,
+
+    ROUND(SUM(t.purchases), 2) AS purchases,
+    ROUND(SUM(t.purchases_discount), 2) AS purchases_discount,
+
+    ROUND(SUM(t.sales), 2) AS sales,
+    ROUND(SUM(t.sales_discount), 2) AS sales_discount,
+
+    ROUND(SUM(t.purchases_return), 2) AS purchases_return,
+    ROUND(SUM(t.purchases_return_discount), 2) AS purchases_return_discount,
+
+    ROUND(SUM(t.sales_return), 2) AS sales_return,
+    ROUND(SUM(t.sales_return_discount), 2) AS sales_return_discount,
+
+    ROUND(SUM(t.expenses), 2) AS expenses,
+
+    -- Net Profit Calculation: (Sales - Sales_RE - Sales_Discount) - (Purchases - Purchases_RE - Purchases_Discount) - Expenses
+    ROUND(
+            (SUM(t.sales) - SUM(t.sales_return) - SUM(t.sales_discount)) -
+            (SUM(t.purchases) - SUM(t.purchases_return) - SUM(t.purchases_discount)) -
+            SUM(t.expenses),
+            2) AS estimated_net_profit
+
+FROM (
+         -- 1. Sales
+         SELECT
+             YEAR(invoice_date) AS action_year, MONTH(invoice_date) AS action_month,
+             0 AS purchases, 0 AS purchases_discount,
+             total AS sales, discount AS sales_discount,
+             0 AS purchases_return, 0 AS purchases_return_discount,
+             0 AS sales_return, 0 AS sales_return_discount,
+             0 AS expenses
+         FROM total_sales
+
+         UNION ALL
+
+         -- 2. Sales Returns
+         SELECT
+             YEAR(invoice_date), MONTH(invoice_date),
+             0, 0,
+             0, 0,
+             0, 0,
+             total, discount,
+             0
+         FROM total_sales_re
+
+         UNION ALL
+
+         -- 3. Purchases
+         SELECT
+             YEAR(invoice_date), MONTH(invoice_date),
+             total, discount,
+             0, 0,
+             0, 0,
+             0, 0,
+             0
+         FROM total_buy
+
+         UNION ALL
+
+         -- 4. Purchases Returns
+         SELECT
+             YEAR(invoice_date), MONTH(invoice_date),
+             0, 0,
+             0, 0,
+             total, discount,
+             0, 0,
+             0
+         FROM total_buy_re
+
+         UNION ALL
+
+         -- 5. Expenses
+         SELECT
+             YEAR(date_insert), MONTH(date_insert),
+             0, 0,
+             0, 0,
+             0, 0,
+             0, 0,
+             amount
+         FROM treasury_transfers
+     ) AS t
+
+GROUP BY
+    t.action_year,
+    t.action_month
+ORDER BY
+    t.action_year DESC,
+    t.action_month ASC;

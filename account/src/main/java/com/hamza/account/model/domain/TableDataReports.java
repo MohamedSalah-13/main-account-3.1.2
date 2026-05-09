@@ -1,33 +1,34 @@
-package com.hamza.account.controller.model;
+package com.hamza.account.model.domain;
 
 import com.hamza.controlsfx.table.ColumnData;
-import lombok.Builder;
+import lombok.Data;
 import lombok.Getter;
 import lombok.Setter;
 
 @Getter
 @Setter
-@Builder
+@Data
 public class TableDataReports {
 
+    private double report_year;
     @ColumnData(titleName = "الشهر")
-    private String name;
+    private double report_month;
     @ColumnData(titleName = "المشتريات")
     private double purchase;
     @ColumnData(titleName = "خصم المشتريات")
-    private double discountPurchase;
+    private double purchases_discount;
     @ColumnData(titleName = "المبيعات")
     private double sales;
     @ColumnData(titleName = "خصم المبيعات")
-    private double discountSales;
+    private double sales_discount;
     @ColumnData(titleName = "مرتجع المشتريات")
-    private double purchaseRe;
+    private double purchases_return;
     @ColumnData(titleName = "خصم مرتجع المشتريات")
-    private double discountPurchaseRe;
+    private double purchases_return_discount;
     @ColumnData(titleName = "مرتجع المبيعات")
-    private double salesRe;
+    private double sales_return;
     @ColumnData(titleName = "خصم مرتجع المبيعات")
-    private double discountSalesRe;
+    private double sales_return_discount;
     @ColumnData(titleName = "المصروفات")
     private double expense;
     @ColumnData(titleName = "الربح")
