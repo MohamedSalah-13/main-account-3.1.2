@@ -1,12 +1,12 @@
 package com.hamza.account.controller.setting;
 
+import com.hamza.account.config.FxmlConstants;
+import com.hamza.account.controller.others.ServiceRegistry;
 import com.hamza.account.features.checkbox.api.CheckBox_Setting;
 import com.hamza.account.features.checkbox.impl.setting.BarcodePrintDoubleLabel;
 import com.hamza.account.features.checkbox.impl.setting.BarcodePrintName;
 import com.hamza.account.features.checkbox.impl.setting.BarcodePrintPrice;
 import com.hamza.account.features.checkbox.impl.setting.CheckPrintBarcode;
-import com.hamza.account.config.FxmlConstants;
-import com.hamza.account.controller.others.ServiceData;
 import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.model.domain.SelPriceTypeModel;
 import com.hamza.account.openFxml.FxmlPath;
@@ -57,7 +57,6 @@ public class SettingTabBarcodeController implements Initializable {
     private final DoubleProperty v3 = new SimpleDoubleProperty(0);
     private final DoubleProperty v4 = new SimpleDoubleProperty(0);
     private final DaoFactory daoFactory;
-    private final ServiceData serviceData;
     private final Publisher<HashMap<Integer, String>> publisher;
     @FXML
     private CheckBox show2, showName, showPrice, showCurrency, showBarcode, checkActivateBarcodeScale;
@@ -110,9 +109,9 @@ public class SettingTabBarcodeController implements Initializable {
 
     @NotNull
     private SelPriceItemService loadPriceNames() {
-        SelPriceItemService priceSelService = null;
+
+        SelPriceItemService priceSelService = ServiceRegistry.get(SelPriceItemService.class);
         try {
-            priceSelService = serviceData.getSelPriceItemService();
             var priceList = priceSelService.getSelPriceTypeList();
             textPrice1.setText(priceList.getFirst().getName());
             textPrice2.setText(priceList.get(1).getName());

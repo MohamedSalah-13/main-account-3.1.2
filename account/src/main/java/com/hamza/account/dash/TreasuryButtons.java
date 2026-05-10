@@ -105,7 +105,7 @@ public class TreasuryButtons {
 
             @Override
             public void action() throws Exception {
-                new ProcessorApplication(daoFactory).start(new Stage());
+                new ProcessorApplication().start(new Stage());
             }
 
             @NotNull
@@ -118,7 +118,7 @@ public class TreasuryButtons {
 
     public ButtonWithPerm openExpenses() {
         return new ButtonWithPerm() {
-            final ExpensesDetailsApplication expensesController = new ExpensesDetailsApplication(daoFactory, dataPublisher);
+            final ExpensesDetailsApplication expensesController = new ExpensesDetailsApplication(dataPublisher);
 
             @Override
             public UserPermissionType getPermissionType() {

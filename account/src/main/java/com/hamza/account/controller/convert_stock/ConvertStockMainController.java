@@ -168,7 +168,7 @@ public class ConvertStockMainController implements AppSettingInterface {
 
         btnAddStock.setOnAction(actionEvent -> {
             try {
-                new AddForAllApplication(0, new AddStockController(0, publisherAddStock, daoFactory));
+                new AddForAllApplication(0, new AddStockController(0, publisherAddStock));
             } catch (Exception e) {
                 logError(e);
             }

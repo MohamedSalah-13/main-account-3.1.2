@@ -1,9 +1,9 @@
 package com.hamza.account.controller.others;
 
-import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.model.domain.Stock;
 import com.hamza.account.openFxml.AddInterface;
 import com.hamza.account.openFxml.FxmlPath;
+import com.hamza.account.service.StockService;
 import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.language.Setting_Language;
@@ -19,17 +19,17 @@ import org.jetbrains.annotations.NotNull;
 
 @Log4j2
 @FxmlPath(pathFile = "addStock-view.fxml")
-public class AddStockController extends ServiceData implements AddInterface {
+public class AddStockController implements AddInterface {
 
     private final int stockNum;
     private final Publisher<String> publisherAddStock;
+    private final StockService stockService = ServiceRegistry.get(StockService.class);
     @FXML
     private Label labelCode, labelName, labelAddress;
     @FXML
     private TextField txtCode, txtName, txtAddress;
 
-    public AddStockController(int stockNum, Publisher<String> publisherAddStock, DaoFactory daoFactory) throws Exception {
-        super(daoFactory);
+    public AddStockController(int stockNum, Publisher<String> publisherAddStock) {
         this.stockNum = stockNum;
         this.publisherAddStock = publisherAddStock;
     }

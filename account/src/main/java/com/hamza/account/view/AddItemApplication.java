@@ -3,9 +3,6 @@ package com.hamza.account.view;
 import com.hamza.account.config.Image_Setting;
 import com.hamza.account.controller.items.AddItemController;
 import com.hamza.account.controller.main.DataPublisher;
-import com.hamza.account.controller.main.LoadDataAndList;
-import com.hamza.account.model.dao.DaoFactory;
-import com.hamza.account.model.domain.Users;
 import com.hamza.account.table.StageDimensions;
 import javafx.application.Application;
 import javafx.scene.Scene;
@@ -20,11 +17,10 @@ public class AddItemApplication extends Application {
 
     private final int num;
     private final DataPublisher dataPublisher;
-    private final DaoFactory daoFactory;
 
     @Override
     public void start(Stage stage) throws Exception {
-        var addItemController = new AddItemController(num, dataPublisher, daoFactory);
+        var addItemController = new AddItemController(num, dataPublisher);
         Scene scene = new SceneAll(addItemController.pane());
         stage.setScene(scene);
         if (num == 0)

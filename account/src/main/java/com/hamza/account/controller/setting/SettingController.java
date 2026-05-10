@@ -3,8 +3,6 @@ package com.hamza.account.controller.setting;
 import com.hamza.account.Main;
 import com.hamza.account.config.ConnectionToDatabase;
 import com.hamza.account.controller.main.DataPublisher;
-import com.hamza.account.controller.main.LoadDataAndList;
-import com.hamza.account.controller.others.ServiceData;
 import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.openFxml.FxmlPath;
 import com.hamza.account.openFxml.OpenFxmlApplication;
@@ -31,22 +29,20 @@ import static com.hamza.account.config.PropertiesName.setPaneIndex;
 
 @Log4j2
 @FxmlPath(pathFile = "setting-view.fxml")
-public class SettingController extends ServiceData implements Initializable, AppSettingInterface {
+public class SettingController implements Initializable, AppSettingInterface {
 
     private final DataPublisher dataPublisher;
     private final DaoFactory daoFactory;
-    private final LoadDataAndList loadDataAndList;
+
     @FXML
     private TabPane pane;
     @FXML
     private VBox box;
 
     public SettingController(DaoFactory daoFactory
-            , DataPublisher dataPublisher, LoadDataAndList loadDataAndList) throws Exception {
-        super(daoFactory);
+            , DataPublisher dataPublisher) {
         this.daoFactory = daoFactory;
         this.dataPublisher = dataPublisher;
-        this.loadDataAndList = loadDataAndList;
     }
 
     @Override
@@ -59,7 +55,6 @@ public class SettingController extends ServiceData implements Initializable, App
         try {
             addTabs();
         } catch (Exception e) {
-            e.printStackTrace();
             log.error(e.getMessage(), e.getCause());
             AllAlerts.showExceptionDialog(e);
         }
@@ -96,7 +91,7 @@ public class SettingController extends ServiceData implements Initializable, App
     }
 
     private Pane getTabCompany() throws IOException {
-        SettingCompanyController companyController = new SettingCompanyController(daoFactory, dataPublisher, this);
+        SettingCompanyController companyController = new SettingCompanyController(daoFactory, dataPublisher);
         return new OpenFxmlApplication(companyController).getPane();
     }
 
@@ -107,7 +102,7 @@ public class SettingController extends ServiceData implements Initializable, App
 
     private Pane getTabBarcode() throws Exception {
         SettingTabBarcodeController barcodeController =
-                new SettingTabBarcodeController(daoFactory, this, dataPublisher.getPublisherSelPriceUnits());
+                new SettingTabBarcodeController(daoFactory, dataPublisher.getPublisherSelPriceUnits());
         return new OpenFxmlApplication(barcodeController).getPane();
     }
 
@@ -122,7 +117,7 @@ public class SettingController extends ServiceData implements Initializable, App
         com.hamza.account.backup.BackupController controller = loader.getController();
         var connection = new ConnectionToDatabase();
         controller.initConnection(connection.getHost(), connection.getPort(), connection.getDbName()
-                , connection.getUsername(), connection.getPass(),dataPublisher);
+                , connection.getUsername(), connection.getPass(), dataPublisher);
         return root;
     }
 

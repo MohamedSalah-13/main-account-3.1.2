@@ -1,10 +1,11 @@
 package com.hamza.account.controller.others;
 
 import com.hamza.account.config.Image_Setting;
-import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.model.domain.Audit_log;
 import com.hamza.account.openFxml.FxmlPath;
 import com.hamza.account.otherSetting.MaskerPaneSetting;
+import com.hamza.account.service.AuditLogService;
+import com.hamza.account.service.UsersService;
 import com.hamza.account.table.TableSetting;
 import com.hamza.account.type.ProcessesDataType;
 import com.hamza.account.type.TableType;
@@ -39,9 +40,11 @@ import static com.hamza.controlsfx.table.TextSearch.searchTableFromExitedText;
 
 @Log4j2
 @FxmlPath(pathFile = "process-view.fxml")
-public class ProcessesController extends ServiceData implements Initializable {
+public class ProcessesController implements Initializable {
 
     private final ObservableList<Audit_log> observableListTable = FXCollections.observableArrayList();
+    private final UsersService usersService = ServiceRegistry.get(UsersService.class);
+    private final AuditLogService auditLogService = ServiceRegistry.get(AuditLogService.class);
     @FXML
     private TableView<Audit_log> tableView;
     @FXML
@@ -60,10 +63,6 @@ public class ProcessesController extends ServiceData implements Initializable {
     private DatePicker dateFrom, dateTo;
     private MaskerPaneSetting maskerPaneSetting;
     private FilteredList<Audit_log> filteredTable;
-
-    public ProcessesController(DaoFactory daoFactory) throws Exception {
-        super(daoFactory);
-    }
 
     @Override
     public void initialize(URL url, ResourceBundle resourceBundle) {

@@ -56,7 +56,6 @@ public class AddItemController implements AppSettingInterface {
 
     private final int codeItem;
     private final DataPublisher dataPublisher;
-    private final DaoFactory daoFactory;
     private final ImageChoose imageChoose = new ImageChoose();
     private final ItemsPackageController itemsPackageController;
     private final UnitsService unitsService = ServiceRegistry.get(UnitsService.class);
@@ -100,10 +99,9 @@ public class AddItemController implements AppSettingInterface {
     private Button btnAddImage, btnClearImage;
     private TableUnitsSetting tableUnitsSetting;
 
-    public AddItemController(int codeItem, DataPublisher dataPublisher, DaoFactory daoFactory) throws Exception {
+    public AddItemController(int codeItem, DataPublisher dataPublisher) {
         this.codeItem = codeItem;
         this.dataPublisher = dataPublisher;
-        this.daoFactory = daoFactory;
         this.itemsPackageController = new ItemsPackageController();
         dataPublisher.getPublisherAddMainGroup().addObserver(message -> {
             comboMainGroup.setItems(FXCollections.observableList(getMainGroupsNames()));
@@ -255,7 +253,7 @@ public class AddItemController implements AppSettingInterface {
         });
         btnAddSubGroup.setOnAction(actionEvent -> {
             try {
-                new AddGroupApp(dataPublisher.getPublisherAddSubGroup(), daoFactory);
+                new AddGroupApp(dataPublisher.getPublisherAddSubGroup());
             } catch (Exception e) {
                 logError(e);
             }

@@ -53,6 +53,6 @@ public class AddDataStocks implements AddDataInterface {
     }
 
     private void openNew(int id) throws Exception {
-        new AddForAllApplication(id, new AddStockController(id, publisherAddStock, daoFactory));
+        new AddForAllApplication(id, new AddStockController(id, publisherAddStock));
     }
 }

@@ -1146,7 +1146,7 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
 
     private void addItem(int num) {
         try {
-            new AddItemApplication(num, dataPublisher, daoFactory).start(new Stage());
+            new AddItemApplication(num, dataPublisher).start(new Stage());
         } catch (Exception e) {
             logError(e);
         }

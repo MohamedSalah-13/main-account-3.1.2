@@ -73,7 +73,7 @@ public class EmployeesButtons extends LoadData {
 
             @Override
             public void action() throws Exception {
-                EmployeesController employeesController = new EmployeesController(daoFactory, dataPublisher, employeeService);
+                EmployeesController employeesController = new EmployeesController(dataPublisher, employeeService);
                 new TableOpen<>(employeesController).start(new Stage());
             }
 

@@ -46,7 +46,7 @@ public class MainItems extends DataPublisher {
         this.suppliersData = (SuppliersData) dataInterfacePurchase;
         this.customData = (CustomData) dataInterfaceSales;
         this.usersAll = new UsersButtons(daoFactory, this);
-        this.settingButtons = new SettingButtons(daoFactory, this, loadDataAndList);
+        this.settingButtons = new SettingButtons(daoFactory, this);
         this.addEmployee = new EmployeesButtons(daoFactory, this);
         this.itemsButtons = new ItemsButtons(daoFactory, this);
         this.ReportsButtons = new ReportsButtons(daoFactory, this, this);

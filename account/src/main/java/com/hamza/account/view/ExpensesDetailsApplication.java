@@ -2,8 +2,8 @@ package com.hamza.account.view;
 
 import com.hamza.account.controller.main.DataPublisher;
 import com.hamza.account.controller.others.AddExpensesController;
+import com.hamza.account.controller.others.ServiceRegistry;
 import com.hamza.account.interfaces.api.DataTable;
-import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.model.domain.ExpensesDetails;
 import com.hamza.account.openFxml.AddForAllApplication;
 import com.hamza.account.otherSetting.AddSumToColumn;
@@ -35,14 +35,12 @@ import static com.hamza.controlsfx.language.Setting_Language.TOTAL;
 @Log4j2
 public class ExpensesDetailsApplication extends Application implements TableInterface<ExpensesDetails> {
 
-    private final DaoFactory daoFactory;
+
     private final Publisher<String> stringPublisher;
-    private final ExpensesDetailsService expensesDetailsService;
+    private final ExpensesDetailsService expensesDetailsService = ServiceRegistry.get(ExpensesDetailsService.class);
     private TableView<ExpensesDetails> tableView;
 
-    public ExpensesDetailsApplication(DaoFactory daoFactory, DataPublisher dataPublisher) {
-        this.daoFactory = daoFactory;
-        this.expensesDetailsService = new ExpensesDetailsService(daoFactory);
+    public ExpensesDetailsApplication(DataPublisher dataPublisher) {
         this.stringPublisher = dataPublisher.getPublisherAddExpenses();
     }
 
@@ -161,7 +159,7 @@ public class ExpensesDetailsApplication extends Application implements TableInte
     }
 
     private void openApp(int id) throws Exception {
-        new AddForAllApplication(id, new AddExpensesController(id, stringPublisher, daoFactory));
+        new AddForAllApplication(id, new AddExpensesController(id, stringPublisher));
     }
 
     @Override

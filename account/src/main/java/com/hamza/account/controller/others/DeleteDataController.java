@@ -30,7 +30,6 @@ public class DeleteDataController implements AppSettingInterface {
 
     private final DaoFactory daoFactory;
     private final DataPublisher dataPublisher;
-    private final LoadDataAndList loadDataAndList;
     @FXML
     private CheckBox deleteSales, deleteSalesReturn, deleteCustomersAccount, deleteCustomers;
     @FXML
@@ -47,10 +46,9 @@ public class DeleteDataController implements AppSettingInterface {
     private ToggleButton btnSelected;
     private MaskerPaneSetting maskerPaneSetting;
 
-    public DeleteDataController(DaoFactory daoFactory, DataPublisher dataPublisher, LoadDataAndList loadDataAndList) {
+    public DeleteDataController(DaoFactory daoFactory, DataPublisher dataPublisher) {
         this.daoFactory = daoFactory;
         this.dataPublisher = dataPublisher;
-        this.loadDataAndList = loadDataAndList;
     }
 
     @FXML

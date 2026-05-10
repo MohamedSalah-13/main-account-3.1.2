@@ -47,7 +47,7 @@ public class ItemsButtons {
 
             @Override
             public void action() throws Exception {
-                new AddItemApplication(0, dataPublisher, daoFactory).start(new Stage());
+                new AddItemApplication(0, dataPublisher).start(new Stage());
             }
 
             @NotNull
@@ -245,7 +245,7 @@ public class ItemsButtons {
 
             @Override
             public void action() throws Exception {
-                new AddGroupApp(dataPublisher.getPublisherAddSubGroup(), daoFactory);
+                new AddGroupApp(dataPublisher.getPublisherAddSubGroup());
             }
         };
     }

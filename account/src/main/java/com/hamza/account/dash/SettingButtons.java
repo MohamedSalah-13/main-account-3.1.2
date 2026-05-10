@@ -5,7 +5,6 @@ import com.hamza.account.config.SaveDatabaseFile;
 import com.hamza.account.config.Style_Sheet;
 import com.hamza.account.controller.main.ButtonWithPerm;
 import com.hamza.account.controller.main.DataPublisher;
-import com.hamza.account.controller.main.LoadDataAndList;
 import com.hamza.account.controller.others.DeleteDataController;
 import com.hamza.account.controller.users.AdminShiftsController;
 import com.hamza.account.model.dao.DaoFactory;
@@ -39,13 +38,10 @@ public class SettingButtons {
 
     private final DataPublisher dataPublisher;
     private final DaoFactory daoFactory;
-    private final LoadDataAndList loadDataAndList;
 
-    public SettingButtons(DaoFactory daoFactory, DataPublisher dataPublisher
-            , LoadDataAndList loadDataAndList) {
+    public SettingButtons(DaoFactory daoFactory, DataPublisher dataPublisher) {
         this.daoFactory = daoFactory;
         this.dataPublisher = dataPublisher;
-        this.loadDataAndList = loadDataAndList;
     }
 
 
@@ -58,7 +54,7 @@ public class SettingButtons {
 
             @Override
             public void action() throws Exception {
-                new SettingApplication(daoFactory, dataPublisher, loadDataAndList).start(new Stage());
+                new SettingApplication(daoFactory, dataPublisher).start(new Stage());
             }
 
             @NotNull
@@ -229,7 +225,7 @@ public class SettingButtons {
                         try {
                             Stage stage = new Stage();
                             stage.setTitle(textName());
-                            new OpenApplication<>(new DeleteDataController(daoFactory, dataPublisher, loadDataAndList));
+                            new OpenApplication<>(new DeleteDataController(daoFactory, dataPublisher));
                         } catch (Exception e) {
                             AllAlerts.alertError(e.getMessage());
                         }

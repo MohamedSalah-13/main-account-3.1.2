@@ -1,11 +1,13 @@
 package com.hamza.account.controller.others;
 
-import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.model.domain.Employees;
 import com.hamza.account.model.domain.ExpensesDetails;
 import com.hamza.account.model.domain.TreasuryModel;
 import com.hamza.account.openFxml.AddInterface;
 import com.hamza.account.openFxml.FxmlPath;
+import com.hamza.account.service.EmployeeService;
+import com.hamza.account.service.ExpensesDetailsService;
+import com.hamza.account.service.ExpensesService;
 import com.hamza.account.session.ShiftContext;
 import com.hamza.account.type.ExpensesType;
 import com.hamza.controlsfx.alert.AllAlerts;
@@ -28,10 +30,13 @@ import static com.hamza.account.type.TypeList.expensesTypeList;
 
 @Log4j2
 @FxmlPath(pathFile = "addExpenses.fxml")
-public class AddExpensesController extends ServiceData implements AddInterface {
+public class AddExpensesController implements AddInterface {
 
     private final int codeId;
     private final Publisher<String> publisher;
+    private final ExpensesService expensesService = ServiceRegistry.get(ExpensesService.class);
+    private final ExpensesDetailsService expensesDetailsService = ServiceRegistry.get(ExpensesDetailsService.class);
+    private final EmployeeService employeeService = ServiceRegistry.get(EmployeeService.class);
     public TextArea txtNotes;
     @FXML
     private DatePicker date;
@@ -42,8 +47,7 @@ public class AddExpensesController extends ServiceData implements AddInterface {
     @FXML
     private TextField txtCode, txtAmount;
 
-    public AddExpensesController(int codeId, Publisher<String> publisher, DaoFactory daoFactory) throws Exception {
-        super(daoFactory);
+    public AddExpensesController(int codeId, Publisher<String> publisher) {
         this.codeId = codeId;
         this.publisher = publisher;
     }

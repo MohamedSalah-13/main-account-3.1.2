@@ -2,7 +2,6 @@ package com.hamza.account.controller.others;
 
 import com.hamza.account.controller.main.DataPublisher;
 import com.hamza.account.interfaces.api.DataTable;
-import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.model.domain.Employees;
 import com.hamza.account.openFxml.AddForAllApplication;
 import com.hamza.account.service.EmployeeService;
@@ -20,13 +19,12 @@ import org.jetbrains.annotations.NotNull;
 import java.util.List;
 
 @Log4j2
-public class EmployeesController extends ServiceData implements TableInterface<Employees> {
+public class EmployeesController implements TableInterface<Employees> {
 
     private final DataPublisher dataPublisher;
     private final EmployeeService employeeService;
 
-    public EmployeesController(DaoFactory daoFactory, DataPublisher dataPublisher, EmployeeService employeeService) throws Exception {
-        super(daoFactory);
+    public EmployeesController(DataPublisher dataPublisher, EmployeeService employeeService) throws Exception {
         this.dataPublisher = dataPublisher;
         this.employeeService = employeeService;
     }

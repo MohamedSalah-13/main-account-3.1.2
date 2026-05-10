@@ -1,9 +1,10 @@
 package com.hamza.account.controller.others;
 
 import com.hamza.account.model.base.BaseGroups;
-import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.model.domain.SubGroups;
 import com.hamza.account.openFxml.FxmlPath;
+import com.hamza.account.service.MainGroupService;
+import com.hamza.account.service.SupGroupService;
 import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.interfaceData.Disable;
@@ -26,10 +27,12 @@ import java.util.List;
 
 @Log4j2
 @FxmlPath(pathFile = "addSubGroup.fxml")
-public class AddSubGroupController extends ServiceData {
+public class AddSubGroupController {
 
     private final Publisher<String> publisherAddGroup;
-    private final ObservableList<SubGroups> subGroupsObservableList = FXCollections.observableArrayList(supGroupService.getSubGroupsList());
+    private final ObservableList<SubGroups> subGroupsObservableList;
+    private final MainGroupService mainGroupService = ServiceRegistry.get(MainGroupService.class);
+    private final SupGroupService supGroupService = ServiceRegistry.get(SupGroupService.class);
     @FXML
     private Label labelCode, labelName, labelMainGroup;
     @FXML
@@ -39,9 +42,9 @@ public class AddSubGroupController extends ServiceData {
     @FXML
     private VBox box;
 
-    public AddSubGroupController(Publisher<String> publisherAddGroup, DaoFactory daoFactory) throws Exception {
-        super(daoFactory);
+    public AddSubGroupController(Publisher<String> publisherAddGroup) throws Exception {
         this.publisherAddGroup = publisherAddGroup;
+        subGroupsObservableList = FXCollections.observableArrayList(supGroupService.getSubGroupsList());
     }
 
     @FXML

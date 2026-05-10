@@ -6,16 +6,18 @@ import com.hamza.account.controller.dataSetting.AddDataInterface;
 import com.hamza.account.controller.dataSetting.impl.AddDataStocks;
 import com.hamza.account.controller.dataSetting.impl.AddDataTreasury;
 import com.hamza.account.controller.main.DataPublisher;
-import com.hamza.account.controller.others.ServiceData;
+import com.hamza.account.controller.others.ServiceRegistry;
 import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.model.domain.Company;
 import com.hamza.account.openFxml.FxmlPath;
 import com.hamza.account.openFxml.OpenFxmlApplication;
+import com.hamza.account.service.StockService;
+import com.hamza.account.service.TreasuryService;
 import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.database.DaoException;
-import com.hamza.controlsfx.util.ImageChoose;
 import com.hamza.controlsfx.language.Setting_Language;
 import com.hamza.controlsfx.observer.Publisher;
+import com.hamza.controlsfx.util.ImageChoose;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.control.Button;
@@ -34,9 +36,9 @@ import java.io.IOException;
 import java.net.URL;
 import java.util.ResourceBundle;
 
-import static com.hamza.controlsfx.util.ImageChoose.createIcon;
 import static com.hamza.controlsfx.others.TextFormat.createNumericTextFormatter;
 import static com.hamza.controlsfx.others.Utils.whenEnterPressed;
+import static com.hamza.controlsfx.util.ImageChoose.createIcon;
 
 
 @Log4j2
@@ -47,7 +49,8 @@ public class SettingCompanyController implements Initializable {
     private final ImageChoose imageChoose = new ImageChoose();
     private final DaoFactory daoFactory;
     private final DataPublisher dataPublisher;
-    private final ServiceData serviceData;
+    private final StockService stockService = ServiceRegistry.get(StockService.class);
+    private final TreasuryService treasuryService = ServiceRegistry.get(TreasuryService.class);
     private final Image defaultImage = new Image(new Image_Setting().defaultBlog);
     private Company company = new Company();
     private Publisher<String> publisherUpdateCompany;
@@ -85,14 +88,14 @@ public class SettingCompanyController implements Initializable {
     private void addDataToSetting() {
         // add stocks
         var addDataStocks = new AddDataStocks();
-        addDataStocks.setStockService(serviceData.getStockService());
+        addDataStocks.setStockService(stockService);
         addDataStocks.setPublisherAddStock(dataPublisher.getPublisherAddStock());
         addDataStocks.setDaoFactory(daoFactory);
         addData(addDataStocks);
 
         // add treasury
         var addDataTreasury = new AddDataTreasury();
-        addDataTreasury.setTreasuryService(serviceData.getTreasuryService());
+        addDataTreasury.setTreasuryService(treasuryService);
         addDataTreasury.setPublisherAddTreasury(dataPublisher.getPublisherAddTreasury());
         addData(addDataTreasury);
     }
