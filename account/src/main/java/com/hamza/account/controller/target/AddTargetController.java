@@ -1,13 +1,14 @@
 package com.hamza.account.controller.target;
 
 import com.hamza.account.config.Image_Setting;
-import com.hamza.account.controller.others.ServiceData;
+import com.hamza.account.controller.others.ServiceRegistry;
 import com.hamza.account.model.base.BaseTarget;
-import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.model.domain.Employees;
 import com.hamza.account.model.domain.Target;
 import com.hamza.account.openFxml.FxmlPath;
 import com.hamza.account.openFxml.OpenFxmlApplication;
+import com.hamza.account.service.EmployeeService;
+import com.hamza.account.service.TargetService;
 import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.interfaceData.AppSettingInterface;
@@ -40,13 +41,15 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Optional;
 
-import static com.hamza.controlsfx.util.ImageChoose.createIcon;
 import static com.hamza.controlsfx.table.TextSearch.searchTableFromExitedText;
+import static com.hamza.controlsfx.util.ImageChoose.createIcon;
 
 @Log4j2
 @FxmlPath(pathFile = "target/addTarget-view.fxml")
-public class AddTargetController extends ServiceData implements AppSettingInterface {
+public class AddTargetController implements AppSettingInterface {
 
+    private final TargetService targetService = ServiceRegistry.get(TargetService.class);
+    private final EmployeeService employeeService = ServiceRegistry.get(EmployeeService.class);
     private final Publisher<String> afterAddTarget;
     private final String textName;
     private TargetRateController targetRate1Controller, targetRate2Controller, targetRate3Controller;
@@ -67,8 +70,7 @@ public class AddTargetController extends ServiceData implements AppSettingInterf
     private StringProperty txtRate1, txtRate2, txtRate3;
     private StringProperty target_ratio1, target_ratio2, target_ratio3;
 
-    public AddTargetController(DaoFactory daoFactory, Publisher<String> afterAddTarget, String textName) throws Exception {
-        super(daoFactory);
+    public AddTargetController(Publisher<String> afterAddTarget, String textName) {
         this.textName = textName;
         this.afterAddTarget = afterAddTarget;
     }

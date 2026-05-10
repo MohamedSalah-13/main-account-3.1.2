@@ -96,7 +96,7 @@ public class SettingController implements Initializable, AppSettingInterface {
     }
 
     private Pane getTabLanguage() throws Exception {
-        SettingTabLanguageController languageController = new SettingTabLanguageController(daoFactory, dataPublisher);
+        SettingTabLanguageController languageController = new SettingTabLanguageController(dataPublisher);
         return new OpenFxmlApplication(languageController).getPane();
     }
 

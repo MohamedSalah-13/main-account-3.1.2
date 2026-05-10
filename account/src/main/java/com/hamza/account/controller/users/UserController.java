@@ -2,6 +2,7 @@ package com.hamza.account.controller.users;
 
 import com.hamza.account.config.Image_Setting;
 import com.hamza.account.controller.main.DataPublisher;
+import com.hamza.account.controller.others.ServiceRegistry;
 import com.hamza.account.interfaces.api.DataTable;
 import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.model.domain.Users;
@@ -38,11 +39,11 @@ public class UserController implements TableInterface<Users> {
     private TableView<Users> table;
 
     public UserController(DaoFactory daoFactory, DataPublisher dataPublisher
-            , String title, UsersService usersService) {
+            , String title) {
         this.daoFactory = daoFactory;
         this.title = title;
         this.publisherAddUser = dataPublisher.getPublisherAddUser();
-        this.usersService = usersService;
+        this.usersService = ServiceRegistry.get(UsersService.class);
     }
 
     @Override

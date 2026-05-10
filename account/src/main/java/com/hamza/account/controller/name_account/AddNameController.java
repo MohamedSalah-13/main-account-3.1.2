@@ -2,6 +2,7 @@ package com.hamza.account.controller.name_account;
 
 import com.hamza.account.controller.main.DataPublisher;
 import com.hamza.account.controller.main.LoadOtherData;
+import com.hamza.account.controller.others.ServiceRegistry;
 import com.hamza.account.interfaces.api.DataInterface;
 import com.hamza.account.model.base.BaseAccount;
 import com.hamza.account.model.base.BaseNames;
@@ -12,6 +13,8 @@ import com.hamza.account.model.domain.Area;
 import com.hamza.account.model.domain.SelPriceTypeModel;
 import com.hamza.account.openFxml.AddInterface;
 import com.hamza.account.openFxml.FxmlPath;
+import com.hamza.account.service.AreaService;
+import com.hamza.account.service.SelPriceItemService;
 import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.database.DaoList;
 import com.hamza.controlsfx.language.Setting_Language;
@@ -50,6 +53,8 @@ public class AddNameController<T1 extends BasePurchasesAndSales, T2 extends Base
     private final int id;
     private final Publisher<String> publisherAddName;
     private final Publisher<String> publisherAddAccount;
+    private final AreaService areaService = ServiceRegistry.get(AreaService.class);
+    private final SelPriceItemService selPriceItemService = ServiceRegistry.get(SelPriceItemService.class);
 
     @FXML
     private Label labelCode, labelName, labelTel, labelAddress, labelBalance, labelLimit, labelOthers, labelSelPrice, labelArea;

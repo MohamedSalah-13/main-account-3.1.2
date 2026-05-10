@@ -80,7 +80,7 @@ public class MainToolbarController implements Initializable {
         menuButtonSetting.configureButton(btnPosSales, imageSetting.shoppingSalesPOS, controller.getTotalSales().addInvoicePos());
         menuButtonSetting.configureButton(btnSales, imageSetting.shoppingSales, controller.getTotalSales().addInvoice());
         menuButtonSetting.configureButton(btnPurchase, imageSetting.shoppingPurchase, controller.getTotalPurchase().addInvoice());
-        menuButtonSetting.configureButton(btnItems, imageSetting.itemWhite, controller.getItemsButtons().allItems(controller));
+        menuButtonSetting.configureButton(btnItems, imageSetting.itemWhite, controller.getItemsButtons().allItems());
         menuButtonSetting.configureButton(btnCalc, imageSetting.calcWhite, controller.getForAllButtons().calc());
         menuButtonSetting.configureButton(btnAlarm, imageSetting.alarmWhite, controller.getForAllButtons().alarm());
         menuButtonSetting.configureButton(btnShift, imageSetting.tools, controller.getShiftButtons().openShiftScreen());

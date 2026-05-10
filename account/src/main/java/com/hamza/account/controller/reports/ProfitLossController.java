@@ -1,11 +1,12 @@
 package com.hamza.account.controller.reports;
 
-import com.hamza.account.controller.others.ServiceData;
 import com.hamza.account.controller.model.TableData;
-import com.hamza.account.model.dao.DaoFactory;
+import com.hamza.account.controller.others.ServiceRegistry;
 import com.hamza.account.model.domain.Earnings;
 import com.hamza.account.openFxml.FxmlPath;
 import com.hamza.account.otherSetting.MaskerPaneSetting;
+import com.hamza.account.service.EarningsService;
+import com.hamza.account.service.UsersService;
 import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.language.Setting_Language;
@@ -24,8 +25,10 @@ import java.util.List;
 
 @Log4j2
 @FxmlPath(pathFile = "reports/profit-loss.fxml")
-public class ProfitLossController extends ServiceData {
+public class ProfitLossController {
 
+    private final UsersService usersService = ServiceRegistry.get(UsersService.class);
+    private final EarningsService earningsService = ServiceRegistry.get(EarningsService.class);
     @FXML
     private Button btnShow;
     @FXML
@@ -51,10 +54,6 @@ public class ProfitLossController extends ServiceData {
     @FXML
     private ToolbarReportsNameController toolbarReportsNameController;
     private MaskerPaneSetting maskerPaneSetting;
-
-    public ProfitLossController(DaoFactory daoFactory) throws Exception {
-        super(daoFactory);
-    }
 
     @FXML
     public void initialize() {

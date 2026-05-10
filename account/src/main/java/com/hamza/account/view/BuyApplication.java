@@ -8,7 +8,6 @@ import com.hamza.account.model.base.BaseAccount;
 import com.hamza.account.model.base.BaseNames;
 import com.hamza.account.model.base.BasePurchasesAndSales;
 import com.hamza.account.model.base.BaseTotals;
-import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.table.StageDimensions;
 import javafx.application.Application;
 import javafx.scene.Scene;
@@ -16,9 +15,10 @@ import javafx.scene.layout.Pane;
 import javafx.stage.Stage;
 import lombok.Getter;
 
-// ... الواردات (Imports)
 import java.util.HashMap;
 import java.util.Map;
+
+// ... الواردات (Imports)
 
 @Getter
 public class BuyApplication<T1 extends BasePurchasesAndSales, T2 extends BaseTotals, T3 extends BaseNames, T4 extends BaseAccount> extends Application {
@@ -31,10 +31,9 @@ public class BuyApplication<T1 extends BasePurchasesAndSales, T2 extends BaseTot
     private final int numInvoiceUpdate;
     private String title = "Buy";
 
-    public BuyApplication(DataInterface<T1, T2, T3, T4> dataInterface, DaoFactory daoFactory
-            , DataPublisher dataPublisher
+    public BuyApplication(DataInterface<T1, T2, T3, T4> dataInterface, DataPublisher dataPublisher
             , int numInvoiceUpdate) throws Exception {
-        controller = new BuyController2<>(dataInterface, daoFactory, dataPublisher, numInvoiceUpdate);
+        controller = new BuyController2<>(dataInterface, dataPublisher, numInvoiceUpdate);
         pane = controller.pane();
         this.numInvoiceUpdate = numInvoiceUpdate;
         title = dataInterface.designInterface().nameTextOfInvoice();

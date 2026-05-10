@@ -4,6 +4,7 @@ import com.hamza.account.config.Image_Setting;
 import com.hamza.account.config.SaveDatabaseFile;
 import com.hamza.account.controller.main.DataPublisher;
 import com.hamza.account.controller.model.ModelPrintInvoice;
+import com.hamza.account.controller.others.ServiceRegistry;
 import com.hamza.account.controller.search.ItemsSearch;
 import com.hamza.account.controller.setting.SettingTabLanguageController;
 import com.hamza.account.features.key_setting.MoveRow;
@@ -15,7 +16,6 @@ import com.hamza.account.model.base.BaseAccount;
 import com.hamza.account.model.base.BaseNames;
 import com.hamza.account.model.base.BasePurchasesAndSales;
 import com.hamza.account.model.base.BaseTotals;
-import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.model.domain.*;
 import com.hamza.account.openFxml.FxmlPath;
 import com.hamza.account.openFxml.OpenFxmlApplication;
@@ -23,7 +23,7 @@ import com.hamza.account.otherSetting.BarcodeProcessor;
 import com.hamza.account.otherSetting.ButtonDeleteRow;
 import com.hamza.account.otherSetting.MaskerPaneSetting;
 import com.hamza.account.reportData.Print_Reports;
-import com.hamza.account.service.CardItemService;
+import com.hamza.account.service.*;
 import com.hamza.account.session.ShiftContext;
 import com.hamza.account.table.TableSetting;
 import com.hamza.account.type.DiscountType;
@@ -99,8 +99,14 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
     private final ObservableList<T1> myObservableList = FXCollections.observableArrayList();
     private final DataPublisher dataPublisher;
     private final ActionTextBuy actionTextBuy;
-    private final DaoFactory daoFactory;
     private final ObjectProperty<ItemsModel> itemsModel = new SimpleObjectProperty<>(new ItemsModel());
+    private final CustomerService customerService = ServiceRegistry.get(CustomerService.class);
+    private final ItemsService itemsService = ServiceRegistry.get(ItemsService.class);
+    private final EmployeeService employeeService = ServiceRegistry.get(EmployeeService.class);
+    private final StockService stockService = ServiceRegistry.get(StockService.class);
+    private final TreasuryService treasuryService = ServiceRegistry.get(TreasuryService.class);
+    private final CardItemService cardItemService = ServiceRegistry.get(CardItemService.class);
+    private final UnitsService unitsService = ServiceRegistry.get(UnitsService.class);
     private List<ModelPrintInvoice> modelPrintInvoices = new ArrayList<>();
     private int priceTypeByNameId = 1; // use a first price type
     private int codeAccount;
@@ -134,11 +140,9 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
     private TextArea txtNotes;
     private MaskerPaneSetting maskerPaneSetting;
 
-    public BuyController2(DataInterface<T1, T2, T3, T4> dataInterface, DaoFactory daoFactory
-            , DataPublisher dataPublisher, int numInvoiceUpdate) throws Exception {
-        super(dataInterface, dataPublisher, daoFactory, numInvoiceUpdate);
+    public BuyController2(DataInterface<T1, T2, T3, T4> dataInterface, DataPublisher dataPublisher, int numInvoiceUpdate) throws Exception {
+        super(dataInterface, dataPublisher, numInvoiceUpdate);
         this.dataPublisher = dataPublisher;
-        this.daoFactory = daoFactory;
         this.actionTextBuy = new ActionTextBuy() {
             @Override
             public int addRowToTable(String barcode, double quantity, double price, double discount, double total, LocalDate expireDate) throws Exception {

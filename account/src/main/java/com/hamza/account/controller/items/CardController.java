@@ -3,7 +3,7 @@ package com.hamza.account.controller.items;
 import com.hamza.account.config.Image_Setting;
 import com.hamza.account.controller.main.DataPublisher;
 import com.hamza.account.controller.main.LoadData;
-import com.hamza.account.controller.main.MainItems;
+import com.hamza.account.controller.others.ServiceRegistry;
 import com.hamza.account.interfaces.api.DataInterface;
 import com.hamza.account.interfaces.impl_dataInterface.CustomData;
 import com.hamza.account.interfaces.impl_dataInterface.CustomDataReturn;
@@ -15,6 +15,9 @@ import com.hamza.account.model.domain.*;
 import com.hamza.account.openFxml.FxmlPath;
 import com.hamza.account.openFxml.OpenFxmlApplication;
 import com.hamza.account.reportData.Print_Reports;
+import com.hamza.account.service.CardItemService;
+import com.hamza.account.service.ItemsService;
+import com.hamza.account.service.UnitsService;
 import com.hamza.account.table.TableSetting;
 import com.hamza.account.type.ProcessType;
 import com.hamza.account.view.ShowInvoiceApplication;
@@ -52,8 +55,11 @@ import static com.hamza.controlsfx.table.Table_Setting.column_number;
 public class CardController extends LoadData implements Initializable, AppSettingInterface {
 
     private final int numItem;
-    private final MainItems mainItems;
+
     private final ItemsModel itemsModel;
+    private final CardItemService cardItemService = ServiceRegistry.get(CardItemService.class);
+    private final UnitsService unitsService = ServiceRegistry.get(UnitsService.class);
+    private final ItemsService itemsService = ServiceRegistry.get(ItemsService.class);
     @FXML
     private TableView<CardItems> tableView;
     @FXML
@@ -70,10 +76,9 @@ public class CardController extends LoadData implements Initializable, AppSettin
     private DatePicker dateFrom, dateTo;
     private FilteredList<CardItems> filteredTable;
 
-    public CardController(ItemsModel itemsModel, DaoFactory daoFactory, DataPublisher dataPublisher, MainItems mainItems) throws Exception {
+    public CardController(ItemsModel itemsModel, DaoFactory daoFactory, DataPublisher dataPublisher) throws Exception {
         super(daoFactory, dataPublisher);
         this.numItem = itemsModel.getId();
-        this.mainItems = mainItems;
         this.itemsModel = itemsModel;
     }
 

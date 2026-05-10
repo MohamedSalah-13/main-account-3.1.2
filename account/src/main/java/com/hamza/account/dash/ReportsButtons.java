@@ -122,7 +122,7 @@ public class ReportsButtons extends LoadData {
 
             @Override
             public void actionAddPaneToTabPane(TabPane tabPane) throws Exception {
-                Pane pane = new OpenFxmlApplication(new ProfitLossController(daoFactory)).getPane();
+                Pane pane = new OpenFxmlApplication(new ProfitLossController()).getPane();
                 addTape(tabPane, pane, textName(), new Image_Setting().reports);
             }
 

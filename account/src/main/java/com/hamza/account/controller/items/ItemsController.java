@@ -4,7 +4,6 @@ import com.hamza.account.config.Image_Setting;
 import com.hamza.account.controller.main.DataPublisher;
 import com.hamza.account.controller.main.DisableButtons;
 import com.hamza.account.controller.main.LoadData;
-import com.hamza.account.controller.main.MainItems;
 import com.hamza.account.controller.others.SelectedButton;
 import com.hamza.account.controller.others.ServiceRegistry;
 import com.hamza.account.model.dao.DaoFactory;
@@ -60,7 +59,6 @@ import static com.hamza.controlsfx.util.ImageChoose.createIcon;
 public class ItemsController extends LoadData {
 
     private final Publisher<ItemsModel> publisherAddItem;
-    private final MainItems mainScreenData;
     private final TableView<ItemsModel> tableView = new TableView<>();
     private final ItemsService itemsService = ServiceRegistry.get(ItemsService.class);
     private final StockService stockService = ServiceRegistry.get(StockService.class);
@@ -90,10 +88,9 @@ public class ItemsController extends LoadData {
     private Pagination pagination;
     private PaginationTableSetting paginationTableSetting;
 
-    public ItemsController(DaoFactory daoFactory, DataPublisher dataPublisher, MainItems mainScreenData) throws Exception {
+    public ItemsController(DaoFactory daoFactory, DataPublisher dataPublisher) throws Exception {
         super(daoFactory, dataPublisher);
         this.publisherAddItem = dataPublisher.getPublisherAddItem();
-        this.mainScreenData = mainScreenData;
     }
 
     public void initialize() {
@@ -363,7 +360,7 @@ public class ItemsController extends LoadData {
                 return;
             }
             ItemsModel selectedItem = tableView.getSelectionModel().getSelectedItem();
-            new CardApplication(selectedItem, daoFactory, dataPublisher, mainScreenData).start(new Stage());
+            new CardApplication(selectedItem, daoFactory, dataPublisher).start(new Stage());
         } catch (Exception e) {
             logErrors(e);
         }

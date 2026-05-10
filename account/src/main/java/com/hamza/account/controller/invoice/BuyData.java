@@ -1,13 +1,11 @@
 package com.hamza.account.controller.invoice;
 
 import com.hamza.account.controller.main.DataPublisher;
-import com.hamza.account.controller.others.ServiceData;
 import com.hamza.account.interfaces.api.*;
 import com.hamza.account.model.base.BaseAccount;
 import com.hamza.account.model.base.BaseNames;
 import com.hamza.account.model.base.BasePurchasesAndSales;
 import com.hamza.account.model.base.BaseTotals;
-import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.model.domain.ItemsModel;
 import com.hamza.account.service.NameService;
 import com.hamza.controlsfx.observer.Publisher;
@@ -21,8 +19,7 @@ import java.util.function.ToDoubleFunction;
 
 import static com.hamza.controlsfx.util.NumberUtils.roundToTwoDecimalPlaces;
 
-public class BuyData<T1 extends BasePurchasesAndSales, T2 extends BaseTotals, T3 extends BaseNames, T4 extends BaseAccount>
-        extends ServiceData {
+public class BuyData<T1 extends BasePurchasesAndSales, T2 extends BaseTotals, T3 extends BaseNames, T4 extends BaseAccount> {
 
     protected final InvoiceBuy<T1, T2, T3, T4> invoiceBuy;
     protected final DataInterface<T1, T2, T3, T4> dataInterface;
@@ -40,9 +37,8 @@ public class BuyData<T1 extends BasePurchasesAndSales, T2 extends BaseTotals, T3
 //    protected int numItem;
 
     public BuyData(DataInterface<T1, T2, T3, T4> dataInterface
-            , DataPublisher dataPublisher, DaoFactory daoFactory
+            , DataPublisher dataPublisher
             , int numInvoiceUpdate) throws Exception {
-        super(daoFactory);
         this.dataInterface = dataInterface;
         this.publisherBuy = dataInterface.publisherPurchaseOrSales();
         this.publisherAddItem = dataPublisher.getPublisherAddItem();

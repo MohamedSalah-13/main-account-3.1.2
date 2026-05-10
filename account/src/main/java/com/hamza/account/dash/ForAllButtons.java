@@ -1,10 +1,10 @@
 package com.hamza.account.dash;
 
-import com.hamza.account.features.choiceDialoge.ChangeUserName;
 import com.hamza.account.controller.main.ButtonWithPerm;
 import com.hamza.account.controller.main.DataPublisher;
 import com.hamza.account.controller.main.LoadData;
 import com.hamza.account.controller.main.LoadDataAndList;
+import com.hamza.account.features.choiceDialoge.ChangeUserName;
 import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.type.UserPermissionType;
 import com.hamza.account.view.ChangePassView;
@@ -27,11 +27,6 @@ public class ForAllButtons extends LoadData {
         this.loadDataAndList = loadDataAndList;
     }
 
-    /**
-     * Creates and returns a ButtonWithPerm that launches the calculator application.
-     *
-     * @return a ButtonWithPerm which executes the calculator application when its action is triggered.
-     */
     public ButtonWithPerm calc() {
         return new ButtonWithPerm() {
             @Override
@@ -188,7 +183,7 @@ public class ForAllButtons extends LoadData {
 
             @Override
             public void action() throws Exception {
-                if (AllAlerts.confirm_all("logout","هل تريد الخروج")) {
+                if (AllAlerts.confirm_all("logout", "هل تريد الخروج")) {
                     dataPublisher.getCloseStageFromLogout().setAvailability(true);
                     new LogApplication(daoFactory, loadDataAndList).start(new Stage());
                 }

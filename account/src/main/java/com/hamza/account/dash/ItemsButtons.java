@@ -10,7 +10,6 @@ import com.hamza.account.controller.items.ItemsController;
 import com.hamza.account.controller.items.UnitsController;
 import com.hamza.account.controller.main.ButtonWithPerm;
 import com.hamza.account.controller.main.DataPublisher;
-import com.hamza.account.controller.main.MainItems;
 import com.hamza.account.controller.others.ImportDataFromExcelFileController;
 import com.hamza.account.features.notification.NotifyItemAlert;
 import com.hamza.account.model.dao.DaoFactory;
@@ -58,7 +57,7 @@ public class ItemsButtons {
         };
     }
 
-    public ButtonWithPerm allItems(MainItems mainItems) {
+    public ButtonWithPerm allItems() {
         return new ButtonWithPerm() {
             @Override
             public UserPermissionType getPermissionType() {
@@ -77,7 +76,7 @@ public class ItemsButtons {
 
             @Override
             public void actionAddPaneToTabPane(TabPane tabPane) throws Exception {
-                ItemsController itemsController = new ItemsController(daoFactory, dataPublisher, mainItems);
+                ItemsController itemsController = new ItemsController(daoFactory, dataPublisher);
                 addTape(tabPane, new OpenFxmlApplication(itemsController).getPane(), textName(), new Image_Setting().itemWhite);
             }
 

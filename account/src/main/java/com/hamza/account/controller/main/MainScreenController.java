@@ -192,7 +192,7 @@ public class MainScreenController extends MainItems implements Initializable {
         menuButtonSetting.configureButton(mainRightPaneController.getBtnPurchaseRe(), getTotalPurchaseReturn().addInvoice());
         menuButtonSetting.configureButton(mainRightPaneController.getBtnTotalPurchaseRe(), getTotalPurchaseReturn().totals());
         /*----------------------------------------------- Items -----------------------------------------------*/
-        menuButtonSetting.configureButton(mainRightPaneController.getBtnItems(), getItemsButtons().allItems(this));
+        menuButtonSetting.configureButton(mainRightPaneController.getBtnItems(), getItemsButtons().allItems());
         menuButtonSetting.configureButton(mainRightPaneController.getBtnAddItem(), getItemsButtons().addItem());
         menuButtonSetting.configureButton(mainRightPaneController.getBtnUnits(), getItemsButtons().units());
         menuButtonSetting.configureButton(mainRightPaneController.getBtnMainGroup(), getItemsButtons().addMainGroup());
@@ -254,7 +254,7 @@ public class MainScreenController extends MainItems implements Initializable {
 
     private void initializeMainMenuItems(MainMenuController menuController) throws Exception {
         menuButtonSetting.initializeMenuItem(menuController.getMenuItemItems(), getItemsButtons().addItem());
-        menuButtonSetting.initializeMenuItem(menuController.getMenuItemAddItem(), getItemsButtons().allItems(this));
+        menuButtonSetting.initializeMenuItem(menuController.getMenuItemAddItem(), getItemsButtons().allItems());
         menuButtonSetting.initializeMenuItem(menuController.getMenuItemAddItemFromExcel(), getItemsButtons().addItemsFromExcel());
         menuButtonSetting.initializeMenuItem(menuController.getMenuItemUnit(), getItemsButtons().units());
         menuButtonSetting.initializeMenuItem(menuController.getMenuItemInventory(), getItemsButtons().inventory());

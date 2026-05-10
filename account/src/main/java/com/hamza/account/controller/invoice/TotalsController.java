@@ -509,7 +509,7 @@ public class TotalsController<T1 extends BasePurchasesAndSales, T2 extends BaseT
                 throw new Exception("لا يمكن التعديل");
             }
         }
-        BuyApplication<T1, T2, T3, T4> buyApp = new BuyApplication<>(dataInterface, daoFactory, dataPublisher, i);
+        BuyApplication<T1, T2, T3, T4> buyApp = new BuyApplication<>(dataInterface, dataPublisher, i);
         buyApp.start(new Stage());
     }
 

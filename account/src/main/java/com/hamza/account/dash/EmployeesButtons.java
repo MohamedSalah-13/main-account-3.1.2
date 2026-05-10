@@ -94,7 +94,7 @@ public class EmployeesButtons extends LoadData {
 
             @Override
             public void action() throws Exception {
-                new OpenApplication<>(new AddTargetController(daoFactory, dataPublisher.getAfterAddTarget(), textName()));
+                new OpenApplication<>(new AddTargetController(dataPublisher.getAfterAddTarget(), textName()));
             }
 
             @NotNull

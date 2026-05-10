@@ -2,6 +2,7 @@ package com.hamza.account.controller.name_account;
 
 import com.hamza.account.controller.main.DataPublisher;
 import com.hamza.account.controller.main.LoadOtherData;
+import com.hamza.account.controller.others.ServiceRegistry;
 import com.hamza.account.interfaces.api.DataInterface;
 import com.hamza.account.model.base.BaseAccount;
 import com.hamza.account.model.base.BaseNames;
@@ -11,6 +12,7 @@ import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.model.domain.TreasuryModel;
 import com.hamza.account.openFxml.AddInterface;
 import com.hamza.account.openFxml.FxmlPath;
+import com.hamza.account.service.TreasuryService;
 import com.hamza.account.view.NoteText;
 import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.database.DaoException;
@@ -51,9 +53,9 @@ public class Add_AccountController<T1 extends BasePurchasesAndSales, T2 extends 
     private final Publisher<String> publisherAddAccount;
     private final int numInvoice;
     private final String name;
+    private final TreasuryService treasuryService = ServiceRegistry.get(TreasuryService.class);
     private int code_id;
     private List<String> names;
-
     @FXML
     private SearchableComboBox<String> searchableName;
     @FXML

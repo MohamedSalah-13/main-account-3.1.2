@@ -88,7 +88,7 @@ public class TotalsButton<T1 extends BasePurchasesAndSales, T2 extends BaseTotal
 
             @Override
             public void action() throws Exception {
-                BuyApplication<T1, T2, T3, T4> buyApp = new BuyApplication<>(dataInterface, daoFactory, dataPublisher, 0);
+                BuyApplication<T1, T2, T3, T4> buyApp = new BuyApplication<>(dataInterface, dataPublisher, 0);
                 buyApp.start(new Stage());
             }
 
@@ -110,7 +110,7 @@ public class TotalsButton<T1 extends BasePurchasesAndSales, T2 extends BaseTotal
 
             @Override
             public void actionAddPaneToTabPane(TabPane tabPane) throws Exception {
-                BuyApplication<T1, T2, T3, T4> buyApp = new BuyApplication<>(dataInterface, daoFactory, dataPublisher, 0);
+                BuyApplication<T1, T2, T3, T4> buyApp = new BuyApplication<>(dataInterface, dataPublisher, 0);
 
                 var shoppingSales = new Image_Setting().shoppingPurchase;
                 if (textName().equals("sales") || textName().equals("المبيعات"))

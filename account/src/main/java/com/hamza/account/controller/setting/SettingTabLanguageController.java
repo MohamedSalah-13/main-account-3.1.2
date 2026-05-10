@@ -3,12 +3,11 @@ package com.hamza.account.controller.setting;
 import com.hamza.account.config.Image_Setting;
 import com.hamza.account.config.PropertiesName;
 import com.hamza.account.controller.main.DataPublisher;
-import com.hamza.account.controller.others.ServiceData;
+import com.hamza.account.controller.others.ServiceRegistry;
 import com.hamza.account.controller.search.CustomerSearchController;
 import com.hamza.account.controller.search.SearchInterface;
 import com.hamza.account.features.choiceDialoge.ChoiceDialogSetting;
 import com.hamza.account.features.choiceDialoge.ChoosePrinter;
-import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.model.domain.Customers;
 import com.hamza.account.model.domain.Employees;
 import com.hamza.account.openFxml.FxmlPath;
@@ -45,9 +44,11 @@ import static com.hamza.controlsfx.others.Utils.setTextFormatter;
 
 @Log4j2
 @FxmlPath(pathFile = "include/settingTabLanguage.fxml")
-public class SettingTabLanguageController extends ServiceData implements Initializable {
+public class SettingTabLanguageController implements Initializable {
 
     private final Publisher<String> changeImage;
+    private final CustomerService customerService = ServiceRegistry.get(CustomerService.class);
+    private final EmployeeService employeeService = ServiceRegistry.get(EmployeeService.class);
     @FXML
     private Button btnPrintNormal, btnPrintBarcode, btnPrintOther, btnPath, btnPrinterSettingNormal, btnPrinterSettingBarcode, btnPrinterSettingOther, btnDeleteImage;
     @FXML
@@ -71,8 +72,7 @@ public class SettingTabLanguageController extends ServiceData implements Initial
     @FXML
     private Button btnSaveCustomer, btnSaveDelegate;
 
-    public SettingTabLanguageController(DaoFactory daoFactory, DataPublisher dataPublisher) throws Exception {
-        super(daoFactory);
+    public SettingTabLanguageController(DataPublisher dataPublisher) {
         this.changeImage = dataPublisher.getChangeMainScreenImage();
     }
 
