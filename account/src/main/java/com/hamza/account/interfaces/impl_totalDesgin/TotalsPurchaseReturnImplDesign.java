@@ -1,15 +1,14 @@
 package com.hamza.account.interfaces.impl_totalDesgin;
 
-import com.hamza.account.controller.others.ServiceData;
 import com.hamza.account.interfaces.api.DataInterface;
 import com.hamza.account.interfaces.api.TotalDesignInterface;
 import com.hamza.account.interfaces.api.TotalsDataInterface;
 import com.hamza.account.interfaces.totals.TotalsBuyReturnData;
-import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.model.domain.Purchase_Return;
 import com.hamza.account.model.domain.SupplierAccount;
 import com.hamza.account.model.domain.Suppliers;
 import com.hamza.account.model.domain.Total_Buy_Re;
+import com.hamza.account.service.TotalBuyReturnService;
 import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.excel.WriteExcelInterface;
 import com.hamza.controlsfx.language.Setting_Language;
@@ -17,6 +16,7 @@ import javafx.beans.value.ObservableValue;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.util.Callback;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.jetbrains.annotations.NotNull;
 
@@ -26,10 +26,11 @@ import java.util.function.Predicate;
 import static com.hamza.controlsfx.table.columnEdit.ColumnSetting.addColumn;
 
 @Log4j2
-public record TotalsPurchaseReturnImplDesign(
-        DataInterface<Purchase_Return, Total_Buy_Re, Suppliers, SupplierAccount> dataInterface,
-        DaoFactory daoFactory,
-        ServiceData serviceData) implements TotalDesignInterface<Total_Buy_Re> {
+@RequiredArgsConstructor
+public class TotalsPurchaseReturnImplDesign implements TotalDesignInterface<Total_Buy_Re> {
+
+    private final DataInterface<Purchase_Return, Total_Buy_Re, Suppliers, SupplierAccount> dataInterface;
+    private final TotalBuyReturnService totalBuyReturnService;
 
     @Override
     public void getTable(TableView<Total_Buy_Re> tableView) {
@@ -46,7 +47,7 @@ public record TotalsPurchaseReturnImplDesign(
 
     @Override
     public List<Total_Buy_Re> dataList() throws Exception {
-        return serviceData.getTotalBuyReturnService().getListByCurrentMonth();
+        return totalBuyReturnService.getListByCurrentMonth();
     }
 
     @Override
@@ -62,12 +63,12 @@ public record TotalsPurchaseReturnImplDesign(
 
     @Override
     public int deleteData(Total_Buy_Re totalBuyRe) throws DaoException {
-        return daoFactory.totalsBuyReturnDao().deleteById(Math.toIntExact(totalBuyRe.getId()));
+        return totalBuyReturnService.deleteById(Math.toIntExact(totalBuyRe.getId()));
     }
 
     @Override
     public int deleteMultiData(@NotNull Integer... ids) throws Exception {
-        return serviceData.getTotalBuyReturnService().deleteMultiData(ids);
+        return totalBuyReturnService.deleteMultiData(ids);
     }
 
     @NotNull

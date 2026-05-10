@@ -6,6 +6,7 @@ import com.hamza.account.controller.main.DataPublisher;
 import com.hamza.account.controller.main.DisableButtons;
 import com.hamza.account.controller.model.ModelPrintInvoice;
 import com.hamza.account.controller.name_account.NameController;
+import com.hamza.account.controller.others.ServiceRegistry;
 import com.hamza.account.features.key_setting.UpdateInterface;
 import com.hamza.account.features.key_setting.UpdateQuantity;
 import com.hamza.account.interfaces.api.DataInterface;
@@ -17,6 +18,7 @@ import com.hamza.account.openFxml.FxmlPath;
 import com.hamza.account.otherSetting.ButtonDeleteRow;
 import com.hamza.account.otherSetting.MaskerPaneSetting;
 import com.hamza.account.reportData.Print_Reports;
+import com.hamza.account.service.*;
 import com.hamza.account.session.ShiftContext;
 import com.hamza.account.table.TableOpen;
 import com.hamza.account.type.InvoiceType;
@@ -86,6 +88,14 @@ public class PosController extends ButtonSetting {
     private final List<ItemRef> allIndexedItems = new ArrayList<>();
     private final Label loadingLabel = new Label("جاري التحميل...");
     private final Button loadMoreButton = new Button("المزيد");
+
+    private final AreaService areaService = ServiceRegistry.get(AreaService.class);
+    private final MainGroupService mainGroupService = ServiceRegistry.get(MainGroupService.class);
+    private final CustomerService customerService = ServiceRegistry.get(CustomerService.class);
+    private final ItemsService itemsService = ServiceRegistry.get(ItemsService.class);
+    private final SelPriceItemService selPriceItemService = ServiceRegistry.get(SelPriceItemService.class);
+    private final TotalSalesService totalSalesService = ServiceRegistry.get(TotalSalesService.class);
+
     private List<ItemsModel> itemsList;
     private List<MainGroups> mainGroupList = new ArrayList<>();
     private MainGroups selectedMainGroup;
@@ -127,8 +137,8 @@ public class PosController extends ButtonSetting {
     private MaskerPaneSetting maskerPaneSetting;
     private String bounds = "";
 
+
     public PosController(DaoFactory daoFactory, DataPublisher dataPublisher) throws Exception {
-        super(daoFactory);
         this.daoFactory = daoFactory;
         this.dataPublisher = dataPublisher;
         this.publisherAddCustomer = dataPublisher.getPublisherAddNameCustomer();
@@ -927,20 +937,6 @@ public class PosController extends ButtonSetting {
     private void logError(Exception e) {
         log.error(e.getMessage(), e.getCause());
         AllAlerts.alertError(e.getMessage());
-    }
-
-    private void addMainCustomer() {
-        try {
-            customerId = 1;
-            var customerByName = customerService.getCustomerById(1);
-            textCustomName.setText(customerByName.getName());
-            textTel.setText(customerByName.getTel());
-            textAddress.setText(customerByName.getAddress());
-            comboArea.getSelectionModel().select(customerByName.getArea().getArea_name());
-            textCustomName.requestFocus();
-        } catch (DaoException e) {
-            logError(e);
-        }
     }
 
 

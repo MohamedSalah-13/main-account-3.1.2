@@ -3,6 +3,7 @@ package com.hamza.account.interfaces.impl_dataInterface;
 import com.hamza.account.controller.main.DataPublisher;
 import com.hamza.account.controller.main.LoadData;
 import com.hamza.account.controller.model.PrintPurchaseWithName;
+import com.hamza.account.controller.others.ServiceRegistry;
 import com.hamza.account.interfaces.FilterDateInterface;
 import com.hamza.account.interfaces.api.*;
 import com.hamza.account.interfaces.impl_account.AccountCustomer;
@@ -18,6 +19,8 @@ import com.hamza.account.model.domain.Customers;
 import com.hamza.account.model.domain.Sales_Return;
 import com.hamza.account.model.domain.Total_Sales_Re;
 import com.hamza.account.perm.PermAccountAndNameInt;
+import com.hamza.account.service.SalesReService;
+import com.hamza.account.service.TotalSalesReturnService;
 import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.database.DaoList;
 import com.hamza.controlsfx.observer.Publisher;
@@ -25,6 +28,9 @@ import com.hamza.controlsfx.observer.Publisher;
 import java.util.List;
 
 public class CustomDataReturn extends LoadData implements DataInterface<Sales_Return, Total_Sales_Re, Customers, CustomerAccount> {
+
+    private final TotalSalesReturnService totalSalesReturnService = ServiceRegistry.get(TotalSalesReturnService.class);
+    private final SalesReService salesReService = ServiceRegistry.get(SalesReService.class);
 
     public CustomDataReturn(DaoFactory daoFactory, DataPublisher dataPublisher) throws Exception {
         super(daoFactory, dataPublisher);
@@ -37,7 +43,7 @@ public class CustomDataReturn extends LoadData implements DataInterface<Sales_Re
 
     @Override
     public TotalDesignInterface<Total_Sales_Re> totalDesignInterface() {
-        return new TotalSalesReturnImplDesign(this, daoFactory, this);
+        return new TotalSalesReturnImplDesign(this, daoFactory, totalSalesReturnService);
     }
 
     @Override

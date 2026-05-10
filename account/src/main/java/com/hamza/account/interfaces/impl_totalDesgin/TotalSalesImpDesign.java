@@ -1,6 +1,5 @@
 package com.hamza.account.interfaces.impl_totalDesgin;
 
-import com.hamza.account.controller.others.ServiceData;
 import com.hamza.account.interfaces.api.DataInterface;
 import com.hamza.account.interfaces.api.TotalDesignInterface;
 import com.hamza.account.interfaces.api.TotalsDataInterface;
@@ -9,6 +8,7 @@ import com.hamza.account.model.domain.CustomerAccount;
 import com.hamza.account.model.domain.Customers;
 import com.hamza.account.model.domain.Sales;
 import com.hamza.account.model.domain.Total_Sales;
+import com.hamza.account.service.TotalSalesService;
 import com.hamza.account.type.InvoiceType;
 import com.hamza.account.view.LogApplication;
 import com.hamza.controlsfx.database.DaoException;
@@ -19,6 +19,7 @@ import javafx.beans.value.ObservableValue;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.util.Callback;
+import lombok.RequiredArgsConstructor;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
@@ -26,8 +27,11 @@ import java.util.function.Predicate;
 
 import static com.hamza.controlsfx.table.columnEdit.ColumnSetting.addColumn;
 
-public record TotalSalesImpDesign(DataInterface<Sales, Total_Sales, Customers, CustomerAccount> dataInterface,
-                                  ServiceData serviceData) implements TotalDesignInterface<Total_Sales> {
+@RequiredArgsConstructor
+public class TotalSalesImpDesign implements TotalDesignInterface<Total_Sales> {
+
+    private final DataInterface<Sales, Total_Sales, Customers, CustomerAccount> dataInterface;
+    private final TotalSalesService totalSalesService;
 
     @Override
     public void getTable(TableView<Total_Sales> tableView) {
@@ -57,7 +61,7 @@ public record TotalSalesImpDesign(DataInterface<Sales, Total_Sales, Customers, C
 
     @Override
     public List<Total_Sales> dataList() throws Exception {
-        return serviceData.getTotalSalesService().getListByCurrentMonth();
+        return totalSalesService.getListByCurrentMonth();
     }
 
     @Override
@@ -78,7 +82,7 @@ public record TotalSalesImpDesign(DataInterface<Sales, Total_Sales, Customers, C
 
     @Override
     public int deleteMultiData(@NotNull Integer... ids) throws Exception {
-        return serviceData.getTotalSalesService().deleteMultiData(ids);
+        return totalSalesService.deleteMultiData(ids);
     }
 
 

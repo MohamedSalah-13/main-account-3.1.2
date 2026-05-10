@@ -3,6 +3,7 @@ package com.hamza.account.interfaces.impl_dataInterface;
 import com.hamza.account.controller.main.DataPublisher;
 import com.hamza.account.controller.main.LoadData;
 import com.hamza.account.controller.model.PrintPurchaseWithName;
+import com.hamza.account.controller.others.ServiceRegistry;
 import com.hamza.account.interfaces.FilterDateInterface;
 import com.hamza.account.interfaces.api.*;
 import com.hamza.account.interfaces.impl_account.AccountSuppliers;
@@ -20,6 +21,8 @@ import com.hamza.account.model.domain.Suppliers;
 import com.hamza.account.model.domain.Total_buy;
 import com.hamza.account.perm.PermAccountAndNameInt;
 import com.hamza.account.perm.PermSuppliersAccountAndName;
+import com.hamza.account.service.PurchaseService;
+import com.hamza.account.service.TotalBuyService;
 import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.database.DaoList;
 import com.hamza.controlsfx.observer.Publisher;
@@ -32,6 +35,9 @@ import static com.hamza.controlsfx.dateTime.DateUtils.*;
 public class SuppliersData
         extends LoadData implements DataInterface<Purchase, Total_buy, Suppliers, SupplierAccount> {
 
+    private final TotalBuyService totalBuyService = ServiceRegistry.get(TotalBuyService.class);
+    private final PurchaseService purchaseService = ServiceRegistry.get(PurchaseService.class);
+
     public SuppliersData(DaoFactory daoFactory, DataPublisher dataPublisher) throws Exception {
         super(daoFactory, dataPublisher);
     }
@@ -43,7 +49,7 @@ public class SuppliersData
 
     @Override
     public TotalDesignInterface<Total_buy> totalDesignInterface() {
-        return new TotalsPurchaseImplDesign(this, this);
+        return new TotalsPurchaseImplDesign(totalBuyService, this);
     }
 
     @Override

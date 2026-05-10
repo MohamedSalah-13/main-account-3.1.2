@@ -1,6 +1,5 @@
 package com.hamza.account.interfaces.impl_totalDesgin;
 
-import com.hamza.account.controller.others.ServiceData;
 import com.hamza.account.interfaces.api.DataInterface;
 import com.hamza.account.interfaces.api.TotalDesignInterface;
 import com.hamza.account.interfaces.api.TotalsDataInterface;
@@ -10,6 +9,7 @@ import com.hamza.account.model.domain.CustomerAccount;
 import com.hamza.account.model.domain.Customers;
 import com.hamza.account.model.domain.Sales_Return;
 import com.hamza.account.model.domain.Total_Sales_Re;
+import com.hamza.account.service.TotalSalesReturnService;
 import com.hamza.account.view.LogApplication;
 import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.excel.WriteExcelInterface;
@@ -19,6 +19,7 @@ import javafx.beans.value.ObservableValue;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.util.Callback;
+import lombok.RequiredArgsConstructor;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
@@ -26,11 +27,11 @@ import java.util.function.Predicate;
 
 import static com.hamza.controlsfx.table.columnEdit.ColumnSetting.addColumn;
 
-
-public record TotalSalesReturnImplDesign(
-        DataInterface<Sales_Return, Total_Sales_Re, Customers, CustomerAccount> dataInterface,
-        DaoFactory daoFactory,
-        ServiceData serviceData) implements TotalDesignInterface<Total_Sales_Re> {
+@RequiredArgsConstructor
+public class TotalSalesReturnImplDesign implements TotalDesignInterface<Total_Sales_Re> {
+    private final DataInterface<Sales_Return, Total_Sales_Re, Customers, CustomerAccount> dataInterface;
+    private final DaoFactory daoFactory;
+    private final TotalSalesReturnService totalSalesReturnService;
 
     @Override
     public void getTable(TableView<Total_Sales_Re> tableView) {
@@ -60,7 +61,7 @@ public record TotalSalesReturnImplDesign(
 
     @Override
     public List<Total_Sales_Re> dataList() throws Exception {
-        return serviceData.getTotalSalesReturnService().getListByCurrentMonth();
+        return totalSalesReturnService.getListByCurrentMonth();
     }
 
     @Override
@@ -81,7 +82,7 @@ public record TotalSalesReturnImplDesign(
 
     @Override
     public int deleteMultiData(@NotNull Integer... ids) throws Exception {
-        return serviceData.getTotalSalesReturnService().deleteMultiData(ids);
+        return totalSalesReturnService.deleteMultiData(ids);
     }
 
     @NotNull

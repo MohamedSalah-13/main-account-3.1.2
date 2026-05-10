@@ -1,11 +1,12 @@
 package com.hamza.account.controller.items;
 
 import com.hamza.account.controller.main.DataPublisher;
-import com.hamza.account.controller.others.ServiceData;
-import com.hamza.account.model.dao.DaoFactory;
+import com.hamza.account.controller.others.ServiceRegistry;
 import com.hamza.account.model.domain.ItemsModel;
 import com.hamza.account.openFxml.FxmlPath;
 import com.hamza.account.reportData.Print_Reports;
+import com.hamza.account.service.ItemsService;
+import com.hamza.account.service.StockService;
 import com.hamza.account.table.TableSetting;
 import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.database.DaoException;
@@ -32,12 +33,15 @@ import static com.hamza.controlsfx.language.Setting_Language.*;
 
 @Log4j2
 @FxmlPath(pathFile = "items/inventory-view.fxml")
-public class InventoryController extends ServiceData {
+public class InventoryController {
 
     private final DataPublisher dataPublisher;
     private final ObservableList<String> observableList = FXCollections.observableArrayList();
     private final TableView<ItemsModel> tableView = new TableView<>();
     private final int ROWS_PER_PAGE = 50;
+
+    private final ItemsService itemsService = ServiceRegistry.get(ItemsService.class);
+    private final StockService stockService = ServiceRegistry.get(StockService.class);
     @FXML
     private ComboBox<String> comboStock;
     @FXML
@@ -49,8 +53,7 @@ public class InventoryController extends ServiceData {
     @FXML
     private Pagination pagination;
 
-    public InventoryController(DaoFactory daoFactory, DataPublisher dataPublisher) throws Exception {
-        super(daoFactory);
+    public InventoryController(DataPublisher dataPublisher) {
         this.dataPublisher = dataPublisher;
     }
 

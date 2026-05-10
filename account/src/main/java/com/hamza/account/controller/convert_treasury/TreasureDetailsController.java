@@ -2,12 +2,15 @@ package com.hamza.account.controller.convert_treasury;
 
 import com.hamza.account.config.Image_Setting;
 import com.hamza.account.controller.main.DataPublisher;
-import com.hamza.account.controller.others.ServiceData;
+import com.hamza.account.controller.others.ServiceRegistry;
 import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.model.domain.TreasuryBalance;
 import com.hamza.account.model.domain.Users;
 import com.hamza.account.openFxml.FxmlPath;
 import com.hamza.account.reportData.Print_Reports;
+import com.hamza.account.service.TreasuryBalanceService;
+import com.hamza.account.service.TreasuryService;
+import com.hamza.account.service.UsersService;
 import com.hamza.account.table.TableSetting;
 import com.hamza.account.type.ProcessType;
 import com.hamza.account.view.LogApplication;
@@ -15,10 +18,10 @@ import com.hamza.account.view.ShowInvoiceApplication;
 import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.controller.MaskerPaneSetting;
 import com.hamza.controlsfx.database.DaoException;
-import com.hamza.controlsfx.util.ImageChoose;
 import com.hamza.controlsfx.language.Setting_Language;
 import com.hamza.controlsfx.others.DateSetting;
 import com.hamza.controlsfx.table.TableColumnAnnotation;
+import com.hamza.controlsfx.util.ImageChoose;
 import com.hamza.controlsfx.util.NumberUtils;
 import javafx.beans.property.DoubleProperty;
 import javafx.beans.property.LongProperty;
@@ -43,7 +46,7 @@ import static com.hamza.account.controller.items.CardController.dataInterface;
 
 @Log4j2
 @FxmlPath(pathFile = "treasury/treasury-details.fxml")
-public class TreasureDetailsController extends ServiceData {
+public class TreasureDetailsController {
 
     public static final String SALES_TITLE = "المبيعات";
     public static final String RETURNED_SALES_TITLE = "مرتجع المبيعات";
@@ -66,6 +69,9 @@ public class TreasureDetailsController extends ServiceData {
     private final DoubleProperty sumIncomeIn = new SimpleDoubleProperty();
     private final DaoFactory daoFactory;
     private final DataPublisher dataPublisher;
+    private final UsersService userService = ServiceRegistry.get(UsersService.class);
+    private final TreasuryBalanceService treasuryBalanceService = ServiceRegistry.get(TreasuryBalanceService.class);
+    private final TreasuryService treasuryService = ServiceRegistry.get(TreasuryService.class);
     @FXML
     private ComboBox<String> comboTreasury, comboDetails, comboUsers;
     @FXML
@@ -84,9 +90,7 @@ public class TreasureDetailsController extends ServiceData {
     private CheckBox checkTime;
     private FilteredList<TreasuryBalance> filteredList;
 
-
     public TreasureDetailsController(DaoFactory daoFactory, DataPublisher dataPublisher) throws Exception {
-        super(daoFactory);
         this.daoFactory = daoFactory;
         this.dataPublisher = dataPublisher;
     }
@@ -110,7 +114,7 @@ public class TreasureDetailsController extends ServiceData {
         // select user
         if (LogApplication.usersVo.getId() != 1) {
             try {
-                var usersById = usersService.getUsersById(LogApplication.usersVo.getId());
+                var usersById = userService.getUsersById(LogApplication.usersVo.getId());
                 comboUsers.setDisable(true);
                 comboUsers.getSelectionModel().select(usersById.getUsername());
                 comboTreasury.setDisable(true);
@@ -220,7 +224,7 @@ public class TreasureDetailsController extends ServiceData {
 
     private List<String> getUsersNames() {
         try {
-            return usersService.getUsersNames();
+            return userService.getUsersNames();
         } catch (DaoException e) {
             log.error(e.getMessage(), e.getCause());
             AllAlerts.alertError(e.getMessage());
@@ -301,7 +305,7 @@ public class TreasureDetailsController extends ServiceData {
 
     private Users getUsersByName() {
         try {
-            return usersService.getUsersByName(comboUsers.getSelectionModel().getSelectedItem());
+            return userService.getUsersByName(comboUsers.getSelectionModel().getSelectedItem());
         } catch (DaoException e) {
             log.error(e.getMessage(), e.getCause());
             AllAlerts.alertError(e.getMessage());

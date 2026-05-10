@@ -1,8 +1,6 @@
 package com.hamza.account.controller.pos;
 
-import com.hamza.account.controller.others.ServiceData;
 import com.hamza.account.model.base.BasePurchasesAndSales;
-import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.controlsfx.others.TextFormat;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.SimpleBooleanProperty;
@@ -21,7 +19,7 @@ import java.util.Optional;
 import static com.hamza.controlsfx.util.NumberUtils.roundToTwoDecimalPlaces;
 
 @Log4j2
-public class ButtonSetting extends ServiceData {
+public class ButtonSetting {
 
     private static final String PRESSED_STYLE = "-fx-background-color: #0f981a;";
     private static final long FEEDBACK_DURATION_MS = 100;
@@ -37,9 +35,6 @@ public class ButtonSetting extends ServiceData {
     private TableView<BasePurchasesAndSales> tableView;
     private EventHandler<KeyEvent> keyPressedHandler;
 
-    public ButtonSetting(DaoFactory daoFactory) throws Exception {
-        super(daoFactory);
-    }
 
     // مساعد لاختيار الـ buffer حسب العمود
     private java.util.Map<BasePurchasesAndSales, String> bufferForCol(int col) {

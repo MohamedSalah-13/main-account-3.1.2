@@ -31,6 +31,7 @@ public record TotalBuyReturnService(DaoFactory daoFactory) {
 
     }
 
+
     public int deleteMultiData(Integer[] ids) throws DaoException {
         return getTotalsPurchaseReturnDao().deleteInvoicesInRange(ids);
     }
@@ -50,5 +51,9 @@ public record TotalBuyReturnService(DaoFactory daoFactory) {
     @NotNull
     private TotalsPurchaseReturnDao getTotalsPurchaseReturnDao() {
         return daoFactory.totalsBuyReturnDao();
+    }
+
+    public int deleteById(int intExact) throws DaoException {
+        return getTotalsPurchaseReturnDao().deleteById(intExact);
     }
 }

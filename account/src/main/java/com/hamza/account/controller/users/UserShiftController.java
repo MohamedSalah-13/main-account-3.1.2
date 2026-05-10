@@ -1,12 +1,12 @@
 package com.hamza.account.controller.users;
 
-import com.hamza.account.controller.others.ServiceData;
-import com.hamza.account.model.dao.DaoFactory;
+import com.hamza.account.controller.others.ServiceRegistry;
 import com.hamza.account.model.domain.ShiftSummary;
 import com.hamza.account.model.domain.UserShift;
 import com.hamza.account.openFxml.FxmlPath;
 import com.hamza.account.reportData.Print_Reports;
 import com.hamza.account.service.ShiftReportService;
+import com.hamza.account.service.UserShiftService;
 import com.hamza.account.session.ShiftContext;
 import com.hamza.account.view.LogApplication;
 import com.hamza.controlsfx.alert.AllAlerts;
@@ -25,11 +25,15 @@ import static com.hamza.controlsfx.others.Utils.setTextFormatter;
 
 @Log4j2
 @FxmlPath(pathFile = "user-shift-view.fxml")
-public class UserShiftController extends ServiceData {
+public class UserShiftController {
 
     private static final DateTimeFormatter DATE_TIME_FORMATTER =
             DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
     private final int currentUserId;
+    private final ShiftReportService shiftReportService = ServiceRegistry.get(ShiftReportService.class);
+    private final UserShiftService userShiftService = ServiceRegistry.get(UserShiftService.class);
+
+    private final Print_Reports printReports = new Print_Reports();
     @FXML
     private Label labelTitle, labelShiftStatus, labelOpenTime, labelOpenBalance;
     @FXML
@@ -51,18 +55,12 @@ public class UserShiftController extends ServiceData {
     @FXML
     private Label labelSummaryTotalSales, labelSummaryReturns, labelSummaryExpenses,
             labelSummaryExpected, labelSummaryDifference, labelSummaryInvoices;
-
     @FXML
     private Button btnPrintXReport;
 
-    private final ShiftReportService shiftReportService;
-    private final Print_Reports printReports;
-
-    public UserShiftController(DaoFactory daoFactory) throws Exception {
-        super(daoFactory);
+    public UserShiftController() {
         this.currentUserId = LogApplication.usersVo.getId();
-        this.shiftReportService = new ShiftReportService(daoFactory, userShiftService);
-        this.printReports = new Print_Reports();
+
     }
 
     @FXML
@@ -260,7 +258,7 @@ public class UserShiftController extends ServiceData {
             ShiftSummary s = userShiftService.getCurrentShiftSummary(currentUserId);
             double diff = s.calculateDifference(closeBalance);
             String msg = buildCloseConfirmMessage(s, closeBalance, diff);
-            if (!AllAlerts.confirm_all("Details",msg)) {
+            if (!AllAlerts.confirm_all("Details", msg)) {
                 return;
             }
 
@@ -289,9 +287,9 @@ public class UserShiftController extends ServiceData {
 
     private String buildCloseConfirmMessage(ShiftSummary s, double closeBalance, double diff) {
         String diffLabel;
-        if (Math.abs(diff) < 0.005)         diffLabel = "مطابق ✅";
-        else if (diff < 0)                  diffLabel = String.format("عجز %,.2f ⚠️", -diff);
-        else                                diffLabel = String.format("زيادة %,.2f", diff);
+        if (Math.abs(diff) < 0.005) diffLabel = "مطابق ✅";
+        else if (diff < 0) diffLabel = String.format("عجز %,.2f ⚠️", -diff);
+        else diffLabel = String.format("زيادة %,.2f", diff);
 
         return String.format(
                 "ملخص الوردية:%n" +

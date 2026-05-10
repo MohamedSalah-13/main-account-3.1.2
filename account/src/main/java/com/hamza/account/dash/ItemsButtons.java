@@ -133,7 +133,7 @@ public class ItemsButtons {
 
     public ButtonWithPerm inventory() throws Exception {
         return new ButtonWithPerm() {
-            final InventoryController inventory = new InventoryController(daoFactory, dataPublisher);
+            final InventoryController inventory = new InventoryController(dataPublisher);
 
             @Override
             public UserPermissionType getPermissionType() {

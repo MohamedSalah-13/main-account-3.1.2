@@ -3,6 +3,7 @@ package com.hamza.account.interfaces.impl_dataInterface;
 import com.hamza.account.controller.main.DataPublisher;
 import com.hamza.account.controller.main.LoadData;
 import com.hamza.account.controller.model.PrintPurchaseWithName;
+import com.hamza.account.controller.others.ServiceRegistry;
 import com.hamza.account.interfaces.FilterDateInterface;
 import com.hamza.account.interfaces.api.*;
 import com.hamza.account.interfaces.impl_account.AccountCustomer;
@@ -20,6 +21,8 @@ import com.hamza.account.model.domain.Sales;
 import com.hamza.account.model.domain.Total_Sales;
 import com.hamza.account.perm.PermAccountAndNameInt;
 import com.hamza.account.perm.PermCustomerAccountAndName;
+import com.hamza.account.service.SalesService;
+import com.hamza.account.service.TotalSalesService;
 import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.database.DaoList;
 import com.hamza.controlsfx.dateTime.DateUtils;
@@ -33,6 +36,9 @@ import static com.hamza.controlsfx.dateTime.DateUtils.extractMonth;
 
 public class CustomData extends LoadData implements DataInterface<Sales, Total_Sales, Customers, CustomerAccount> {
 
+    private final TotalSalesService totalSalesService = ServiceRegistry.get(TotalSalesService.class);
+    private final SalesService salesService = ServiceRegistry.get(SalesService.class);
+
     public CustomData(DaoFactory daoFactory, DataPublisher dataPublisher) throws Exception {
         super(daoFactory, dataPublisher);
     }
@@ -44,7 +50,7 @@ public class CustomData extends LoadData implements DataInterface<Sales, Total_S
 
     @Override
     public TotalDesignInterface<Total_Sales> totalDesignInterface() {
-        return new TotalSalesImpDesign(this, this);
+        return new TotalSalesImpDesign(this, totalSalesService);
     }
 
     @Override
