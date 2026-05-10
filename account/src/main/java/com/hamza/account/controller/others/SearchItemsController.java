@@ -10,10 +10,10 @@ import com.hamza.account.model.base.BaseAccount;
 import com.hamza.account.model.base.BaseNames;
 import com.hamza.account.model.base.BasePurchasesAndSales;
 import com.hamza.account.model.base.BaseTotals;
-import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.model.domain.ItemsModel;
 import com.hamza.account.openFxml.FxmlPath;
 import com.hamza.account.otherSetting.ButtonDeleteRow;
+import com.hamza.account.service.ItemsService;
 import com.hamza.account.table.TableSetting;
 import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.button.ImageDesign;
@@ -52,7 +52,7 @@ import static com.hamza.controlsfx.util.ImageChoose.createIcon;
 @Log4j2
 @FxmlPath(pathFile = "search-view.fxml")
 public class SearchItemsController<T1 extends BasePurchasesAndSales, T2 extends BaseTotals, T3 extends BaseNames, T4 extends BaseAccount>
-        extends ServiceData implements Initializable {
+        implements Initializable {
 
     private final DesignInterface designInterface;
     private final DataInterface<T1, T2, T3, T4> dataInterface;
@@ -60,6 +60,7 @@ public class SearchItemsController<T1 extends BasePurchasesAndSales, T2 extends 
     private final ObservableList<ItemsModel> itemsModels = FXCollections.observableArrayList();
     private final ListProperty<T1> selectedItem = new SimpleListProperty<>();
     private final TableView<ItemsModel> tableItems = new TableView<>();
+    private final ItemsService itemsService = ServiceRegistry.get(ItemsService.class);
     @Getter
     @FXML
     private TableView<T1> tableView;
@@ -80,9 +81,7 @@ public class SearchItemsController<T1 extends BasePurchasesAndSales, T2 extends 
     @FXML
     private Pagination pagination;
 
-    public SearchItemsController(DataInterface<T1, T2, T3, T4> dataInterface, DaoFactory daoFactory
-            , String stockName) throws Exception {
-        super(daoFactory);
+    public SearchItemsController(DataInterface<T1, T2, T3, T4> dataInterface) {
         this.dataInterface = dataInterface;
         this.invoiceBuy = dataInterface.invoiceBuy();
         this.designInterface = dataInterface.designInterface();

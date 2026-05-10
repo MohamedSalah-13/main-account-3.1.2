@@ -1,12 +1,15 @@
 package com.hamza.account.controller.convert_treasury;
 
 import com.hamza.account.controller.main.DataPublisher;
-import com.hamza.account.controller.others.ServiceData;
+import com.hamza.account.controller.others.ServiceRegistry;
 import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.model.domain.AddDeposit;
 import com.hamza.account.model.domain.TreasuryBalance;
 import com.hamza.account.openFxml.FxmlPath;
 import com.hamza.account.reportData.Print_Reports;
+import com.hamza.account.service.DepositService;
+import com.hamza.account.service.TreasuryBalanceService;
+import com.hamza.account.service.TreasuryService;
 import com.hamza.account.session.ShiftContext;
 import com.hamza.account.type.OperationType;
 import com.hamza.account.view.LogApplication;
@@ -38,11 +41,14 @@ import static com.hamza.controlsfx.others.TextFormat.integerStringConverter;
 
 @Log4j2
 @FxmlPath(pathFile = "treasury/add-deposit.fxml")
-public class AddDepositController extends ServiceData {
+public class AddDepositController {
 
     private final DaoFactory daoFactory;
     private final DataPublisher dataPublisher;
     private final ObservableList<TreasuryBalance> treasuryBalances;
+    private final DepositService depositService = ServiceRegistry.get(DepositService.class);
+    private final TreasuryBalanceService treasuryBalanceService = ServiceRegistry.get(TreasuryBalanceService.class);
+    private final TreasuryService treasuryService = ServiceRegistry.get(TreasuryService.class);
     boolean isRecordeExit = false;
     @FXML
     private TableView<TreasuryBalance> tableView;
@@ -62,7 +68,7 @@ public class AddDepositController extends ServiceData {
     private VBox box;
 
     public AddDepositController(DaoFactory daoFactory, DataPublisher dataPublisher) throws Exception {
-        super(daoFactory);
+//        super(daoFactory);
         this.daoFactory = daoFactory;
         this.dataPublisher = dataPublisher;
         var treasuryBalanceSummary = treasuryBalanceService.getTreasuryBalanceSummary();

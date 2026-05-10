@@ -86,7 +86,7 @@ public class TreasuryButtons extends ServiceData {
 
             @Override
             public void action() throws Exception {
-                ConvertTreasuryController itemsController = new ConvertTreasuryController(daoFactory);
+                ConvertTreasuryController itemsController = new ConvertTreasuryController();
                 new TableOpen<>(itemsController).start(new Stage());
             }
 

@@ -350,7 +350,7 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
     private void openSearchItems() {
         try {
             SearchItemsApplication<T1, T2, T3, T4> itemsApplication
-                    = new SearchItemsApplication<>(dataInterface, daoFactory, comboStock.getSelectionModel().getSelectedItem());
+                    = new SearchItemsApplication<>(dataInterface);
 
             itemsApplication.start(new Stage());
             itemsApplication.getSearchItems().selectedItemProperty().addListener((observableValue, t1s, t1) -> {

@@ -7,7 +7,6 @@ import com.hamza.account.model.base.BaseAccount;
 import com.hamza.account.model.base.BaseNames;
 import com.hamza.account.model.base.BasePurchasesAndSales;
 import com.hamza.account.model.base.BaseTotals;
-import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.openFxml.OpenFxmlApplication;
 import com.hamza.account.table.StageDimensions;
 import com.hamza.controlsfx.language.Setting_Language;
@@ -24,8 +23,8 @@ public class SearchItemsApplication<T1 extends BasePurchasesAndSales, T2 extends
 
     private final SearchItemsController<T1, T2, T3, T4> searchItems;
 
-    public SearchItemsApplication(DataInterface<T1, T2, T3, T4> dataInterface, DaoFactory daoFactory, String stockName) throws Exception {
-        searchItems = new SearchItemsController<>(dataInterface, daoFactory, stockName);
+    public SearchItemsApplication(DataInterface<T1, T2, T3, T4> dataInterface) {
+        searchItems = new SearchItemsController<>(dataInterface);
     }
 
     @Override

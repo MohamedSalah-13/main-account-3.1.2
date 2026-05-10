@@ -1,10 +1,10 @@
 package com.hamza.account.controller.users;
 
-import com.hamza.account.controller.others.ServiceData;
-import com.hamza.account.model.dao.DaoFactory;
+import com.hamza.account.controller.others.ServiceRegistry;
 import com.hamza.account.model.domain.UserShift;
 import com.hamza.account.reportData.Print_Reports;
 import com.hamza.account.service.ShiftReportService;
+import com.hamza.account.service.UsersService;
 import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.language.Error_Text_Show;
@@ -23,9 +23,10 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 @Log4j2
-public class ShiftReportsController extends ServiceData {
+public class ShiftReportsController {
 
-    private final ShiftReportService shiftReportService;
+    private final ShiftReportService shiftReportService = ServiceRegistry.get(ShiftReportService.class);
+    private final UsersService usersService = ServiceRegistry.get(UsersService.class);
     private final Print_Reports printReports = new Print_Reports();
 
     @FXML
@@ -41,10 +42,6 @@ public class ShiftReportsController extends ServiceData {
     @FXML
     private TableView<UserShift> tableView;
 
-    public ShiftReportsController(DaoFactory daoFactory) throws Exception {
-        super(daoFactory);
-        this.shiftReportService = new ShiftReportService(daoFactory, userShiftService);
-    }
 
     @FXML
     public void initialize() {

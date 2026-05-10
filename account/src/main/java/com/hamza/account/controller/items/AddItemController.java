@@ -5,7 +5,7 @@ import com.hamza.account.controller.dataByName.OpenAddAreaApplication;
 import com.hamza.account.controller.dataByName.impl.MainGroupImpl2;
 import com.hamza.account.controller.main.DataPublisher;
 import com.hamza.account.controller.main.DisableButtons;
-import com.hamza.account.controller.others.ServiceData;
+import com.hamza.account.controller.others.ServiceRegistry;
 import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.model.domain.ItemsModel;
 import com.hamza.account.model.domain.ItemsUnitsModel;
@@ -13,6 +13,7 @@ import com.hamza.account.model.domain.SubGroups;
 import com.hamza.account.model.domain.UnitsModel;
 import com.hamza.account.openFxml.FxmlPath;
 import com.hamza.account.openFxml.OpenFxmlApplication;
+import com.hamza.account.service.*;
 import com.hamza.account.type.UserPermissionType;
 import com.hamza.account.view.AddGroupApp;
 import com.hamza.controlsfx.alert.AllAlerts;
@@ -51,13 +52,18 @@ import static com.hamza.controlsfx.util.ImageChoose.createIcon;
 
 @Log4j2
 @FxmlPath(pathFile = "items/addItem-view.fxml")
-public class AddItemController extends ServiceData implements AppSettingInterface {
+public class AddItemController implements AppSettingInterface {
 
     private final int codeItem;
     private final DataPublisher dataPublisher;
     private final DaoFactory daoFactory;
     private final ImageChoose imageChoose = new ImageChoose();
     private final ItemsPackageController itemsPackageController;
+    private final UnitsService unitsService = ServiceRegistry.get(UnitsService.class);
+    private final MainGroupService mainGroupService = ServiceRegistry.get(MainGroupService.class);
+    private final SupGroupService supGroupService = ServiceRegistry.get(SupGroupService.class);
+    private final ItemsService itemsService = ServiceRegistry.get(ItemsService.class);
+    private final SelPriceItemService selPriceItemService = ServiceRegistry.get(SelPriceItemService.class);
     private int mainId, subId;
     @FXML
     private ComboBox<String> comboMainGroup, comboSupGroup, comboType;
@@ -95,7 +101,6 @@ public class AddItemController extends ServiceData implements AppSettingInterfac
     private TableUnitsSetting tableUnitsSetting;
 
     public AddItemController(int codeItem, DataPublisher dataPublisher, DaoFactory daoFactory) throws Exception {
-        super(daoFactory);
         this.codeItem = codeItem;
         this.dataPublisher = dataPublisher;
         this.daoFactory = daoFactory;
@@ -549,7 +554,7 @@ public class AddItemController extends ServiceData implements AppSettingInterfac
 
     private void loadNamesPrices() {
         try {
-            var priceList = getSelPriceItemService().getSelPriceTypeList();
+            var priceList = selPriceItemService.getSelPriceTypeList();
             labelSelPrice.setText(priceList.getFirst().getName());
             labelSelPrice2.setText(priceList.get(1).getName());
             labelSelPrice3.setText(priceList.get(2).getName());
@@ -607,7 +612,6 @@ public class AddItemController extends ServiceData implements AppSettingInterfac
     private void logError(Exception e) {
         log.error(e.getMessage(), e.getCause());
         AllAlerts.alertError(e.getMessage());
-        e.printStackTrace();
     }
 
     @Override

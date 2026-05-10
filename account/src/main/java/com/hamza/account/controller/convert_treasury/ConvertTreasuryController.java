@@ -1,14 +1,11 @@
 package com.hamza.account.controller.convert_treasury;
 
-import com.hamza.account.controller.others.ServiceData;
 import com.hamza.account.interfaces.api.DataTable;
-import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.model.domain.TreasuryTransferModel;
 import com.hamza.account.openFxml.AddForAllApplication;
 import com.hamza.account.table.ActionButtonToolBar;
 import com.hamza.account.table.TableInterface;
 import com.hamza.account.type.UserPermissionType;
-import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.language.Setting_Language;
 import com.hamza.controlsfx.observer.Publisher;
 import javafx.beans.property.BooleanProperty;
@@ -20,26 +17,18 @@ import org.jetbrains.annotations.NotNull;
 import java.util.List;
 
 @Log4j2
-public class ConvertTreasuryController extends ServiceData implements TableInterface<TreasuryTransferModel> {
+public class ConvertTreasuryController implements TableInterface<TreasuryTransferModel> {
 
     private final Publisher<String> publisher = new Publisher<>();
-    private final DaoFactory daoFactory;
     private TableView<TreasuryTransferModel> tableView;
 
-    public ConvertTreasuryController(DaoFactory daoFactory) throws Exception {
-        super(daoFactory);
-        this.daoFactory = daoFactory;
+    public ConvertTreasuryController() {
         publisher.addObserver(message -> tableView.setItems(FXCollections.observableArrayList(getTreasuryTransferModelList())));
     }
 
     @NotNull
     private List<TreasuryTransferModel> getTreasuryTransferModelList() {
-        try {
-            return treasuryTransferService.getTreasuryTransferModelList();
-        } catch (DaoException e) {
-            log.error(e.getMessage(), e.getCause());
-            return List.of();
-        }
+        return List.of();
     }
 
     @Override
@@ -52,12 +41,12 @@ public class ConvertTreasuryController extends ServiceData implements TableInter
         return new ActionButtonToolBar<>() {
             @Override
             public void openNew() throws Exception {
-                new AddForAllApplication(0, new AddConvertTreasuryController(0, daoFactory, publisher));
+                new AddForAllApplication(0, new AddConvertTreasuryController(0, publisher));
             }
 
             @Override
             public int delete(TreasuryTransferModel treasuryTransferModel) throws Exception {
-                return treasuryTransferService.delete(treasuryTransferModel.getId());
+                return 0;
             }
 
             @Override

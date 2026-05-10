@@ -85,8 +85,6 @@ module com.hamza.account {
     exports com.hamza.account.interfaces.names;
     opens com.hamza.account.interfaces.names to javafx.fxml;
 
-    exports com.hamza.account.interfaces.treePurchase;
-    opens com.hamza.account.interfaces.treePurchase to javafx.fxml;
     opens com.hamza.account.reportData to javafx.fxml;
     exports com.hamza.account.reportData;
     exports com.hamza.account.interfaces;

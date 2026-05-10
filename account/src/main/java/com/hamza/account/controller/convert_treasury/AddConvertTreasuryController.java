@@ -1,10 +1,11 @@
 package com.hamza.account.controller.convert_treasury;
 
-import com.hamza.account.controller.others.ServiceData;
-import com.hamza.account.model.dao.DaoFactory;
+import com.hamza.account.controller.others.ServiceRegistry;
 import com.hamza.account.model.domain.TreasuryTransferModel;
 import com.hamza.account.openFxml.AddInterface;
 import com.hamza.account.openFxml.FxmlPath;
+import com.hamza.account.service.TreasuryService;
+import com.hamza.account.service.TreasuryTransferService;
 import com.hamza.account.session.ShiftContext;
 import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.database.DaoException;
@@ -25,10 +26,12 @@ import java.util.Collections;
 import java.util.List;
 
 @FxmlPath(pathFile = "convert-treasury.fxml")
-public class AddConvertTreasuryController extends ServiceData implements AddInterface {
+public class AddConvertTreasuryController implements AddInterface {
 
     private final Publisher<String> publisher;
     private final int id;
+    private final TreasuryTransferService treasuryTransferService = ServiceRegistry.get(TreasuryTransferService.class);
+    private final TreasuryService treasuryService = ServiceRegistry.get(TreasuryService.class);
     @FXML
     private TextField txtTransfer, txtBalance, txtAmount, txtBalanceTo, txtAmountTo;
     @FXML
@@ -40,8 +43,7 @@ public class AddConvertTreasuryController extends ServiceData implements AddInte
     @FXML
     private ComboBox<String> comboFrom, comboTo;
 
-    public AddConvertTreasuryController(int id, DaoFactory daoFactory, Publisher<String> publisher) throws Exception {
-        super(daoFactory);
+    public AddConvertTreasuryController(int id, Publisher<String> publisher) {
         this.id = id;
         this.publisher = publisher;
     }

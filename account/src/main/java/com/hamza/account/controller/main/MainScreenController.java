@@ -9,8 +9,6 @@ import com.hamza.account.dash.ReportByDate;
 import com.hamza.account.features.notification.ItemNotifications;
 import com.hamza.account.interfaces.treeAccount.ReportTreeAccountCustom;
 import com.hamza.account.interfaces.treeAccount.ReportTreeAccountSuppliers;
-import com.hamza.account.interfaces.treePurchase.ReportTreePurchase;
-import com.hamza.account.interfaces.treePurchase.ReportTreeSales;
 import com.hamza.account.model.base.BaseAccount;
 import com.hamza.account.model.base.BaseNames;
 import com.hamza.account.model.base.BasePurchasesAndSales;
@@ -349,15 +347,8 @@ public class MainScreenController extends MainItems implements Initializable {
 
 
         // purchase - sales
-        ReportTreePurchase treePurchase = new ReportTreePurchase(daoFactory, this, dataInterfacePurchase);
-        ReportTreeSales treeSales = new ReportTreeSales(daoFactory, this);
-        ReportByDate<Purchase, Suppliers> actionPurchase = new ReportByDate<>(this, treePurchase
-                , dataInterfacePurchase.nameData(), UserPermissionType.DISABLE_BUTTON);
-        ReportByDate<Sales, Customers> actionSales = new ReportByDate<>(this, treeSales
-                , dataInterfaceSales.nameData(), UserPermissionType.DISABLE_BUTTON);
-
-        menuButtonSetting.initializeMenuItem(menuController.getMenuItemReportPurchase(), actionPurchase);
-        menuButtonSetting.initializeMenuItem(menuController.getMenuItemReportSales(), actionSales);
+//        menuButtonSetting.initializeMenuItem(menuController.getMenuItemReportPurchase(), actionPurchase);
+//        menuButtonSetting.initializeMenuItem(menuController.getMenuItemReportSales(), actionSales);
 
         menuButtonSetting.initializeMenuItem(menuController.getMenuItemReportSalesByYear(), getAction("مبيعات الكل"));
         menuButtonSetting.initializeMenuItem(menuController.getMenuItemReportPurchaseByYear(), getAction("مشتريات الكل"));

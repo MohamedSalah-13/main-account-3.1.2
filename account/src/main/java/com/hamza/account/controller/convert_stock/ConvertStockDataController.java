@@ -1,6 +1,5 @@
 package com.hamza.account.controller.convert_stock;
 
-import com.hamza.account.controller.others.ServiceData;
 import com.hamza.account.interfaces.api.DataTable;
 import com.hamza.account.model.base.DForColumnTable;
 import com.hamza.account.model.dao.DaoFactory;
@@ -32,14 +31,13 @@ import java.util.Collections;
 import java.util.List;
 
 @Log4j2
-public class ConvertStockDataController extends ServiceData implements TableInterface<StockTransfer> {
+public class ConvertStockDataController implements TableInterface<StockTransfer> {
 
     private final DaoFactory daoFactory;
     private final Publisher<String> publisherAfterInsertData;
     private TableView<StockTransfer> tableView;
 
-    public ConvertStockDataController(DaoFactory daoFactory) throws Exception {
-        super(daoFactory);
+    public ConvertStockDataController(DaoFactory daoFactory) {
         this.daoFactory = daoFactory;
         publisherAfterInsertData = new Publisher<>();
     }
@@ -77,8 +75,7 @@ public class ConvertStockDataController extends ServiceData implements TableInte
 
             @Override
             public int delete(StockTransfer stockTransfer) throws Exception {
-                //TODO 12/22/2024 4:32 PM m13id: حذف فى حالة رصيد المخزن المحول له يسمح
-                return stockTransferService.deleteTransfer(stockTransfer);
+                return 0;
             }
 
             @Override
@@ -105,7 +102,7 @@ public class ConvertStockDataController extends ServiceData implements TableInte
                 tableView.setOnMouseClicked(keyEvent -> {
                     if (keyEvent.getClickCount() == 2) {
                         try {
-                            new ShowDataTransfer<>(new ShowDataListStock(daoFactory, tableView.getSelectionModel().getSelectedItem()));
+                            new ShowDataTransfer<>(new ShowDataListStock(tableView.getSelectionModel().getSelectedItem()));
                         } catch (Exception e) {
                             errorLog(e);
                         }
@@ -115,7 +112,7 @@ public class ConvertStockDataController extends ServiceData implements TableInte
 
             @Override
             public List<StockTransfer> dataList() throws Exception {
-                return stockTransferService.getStockTransferList();
+                return List.of();
             }
 
             @Override
@@ -176,12 +173,11 @@ public class ConvertStockDataController extends ServiceData implements TableInte
     }
 }
 
-class ShowDataListStock extends ServiceData implements ShowDataTransferList<StockTransferListItems> {
+class ShowDataListStock implements ShowDataTransferList<StockTransferListItems> {
 
     private final StockTransfer stockTransfer;
 
-    public ShowDataListStock(DaoFactory daoFactory, StockTransfer stockTransfer) throws Exception {
-        super(daoFactory);
+    public ShowDataListStock(StockTransfer stockTransfer) throws Exception {
         this.stockTransfer = stockTransfer;
     }
 
@@ -193,7 +189,7 @@ class ShowDataListStock extends ServiceData implements ShowDataTransferList<Stoc
 
     @Override
     public List<StockTransferListItems> listTable() throws DaoException {
-        return stockTransferListService.getStockTransferListItemsById(stockTransfer.getId());
+        return null;
     }
 
     @Override

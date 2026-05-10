@@ -1,9 +1,9 @@
 package com.hamza.account.controller.users;
 
-import com.hamza.account.controller.others.ServiceData;
-import com.hamza.account.model.dao.DaoFactory;
+import com.hamza.account.controller.others.ServiceRegistry;
 import com.hamza.account.model.domain.UserShift;
 import com.hamza.account.openFxml.FxmlPath;
+import com.hamza.account.service.UserShiftService;
 import com.hamza.account.session.ShiftContext;
 import com.hamza.account.view.LogApplication;
 import com.hamza.controlsfx.alert.AllAlerts;
@@ -20,21 +20,17 @@ import java.util.List;
 
 @Log4j2
 @FxmlPath(pathFile = "admin-shifts-view.fxml")
-public class AdminShiftsController extends ServiceData {
+public class AdminShiftsController {
 
     private static final DateTimeFormatter DATE_TIME_FORMATTER =
             DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
-
+    private final UserShiftService userShiftService = ServiceRegistry.get(UserShiftService.class);
     @FXML
     private TableView<UserShift> tableView;
     @FXML
     private Button btnRefresh;
     @FXML
     private Button btnForceClose;
-
-    public AdminShiftsController(DaoFactory daoFactory) throws Exception {
-        super(daoFactory);
-    }
 
     @FXML
     public void initialize() {

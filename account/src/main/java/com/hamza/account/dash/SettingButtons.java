@@ -7,7 +7,6 @@ import com.hamza.account.controller.main.ButtonWithPerm;
 import com.hamza.account.controller.main.DataPublisher;
 import com.hamza.account.controller.main.LoadDataAndList;
 import com.hamza.account.controller.others.DeleteDataController;
-import com.hamza.account.controller.others.ServiceData;
 import com.hamza.account.controller.users.AdminShiftsController;
 import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.openFxml.OpenFxmlApplication;
@@ -36,15 +35,14 @@ import org.jetbrains.annotations.NotNull;
 import java.util.Optional;
 
 @Log4j2
-public class SettingButtons extends ServiceData {
+public class SettingButtons {
 
     private final DataPublisher dataPublisher;
     private final DaoFactory daoFactory;
     private final LoadDataAndList loadDataAndList;
 
     public SettingButtons(DaoFactory daoFactory, DataPublisher dataPublisher
-            , LoadDataAndList loadDataAndList) throws Exception {
-        super(daoFactory);
+            , LoadDataAndList loadDataAndList) {
         this.daoFactory = daoFactory;
         this.dataPublisher = dataPublisher;
         this.loadDataAndList = loadDataAndList;
@@ -256,7 +254,7 @@ public class SettingButtons extends ServiceData {
 
             @Override
             public void action() throws Exception {
-                var pane = new OpenFxmlApplication(new AdminShiftsController(daoFactory)).getPane();
+                var pane = new OpenFxmlApplication(new AdminShiftsController()).getPane();
                 if (pane != null) {
                     Stage stage = new Stage();
                     stage.setTitle(textName());
