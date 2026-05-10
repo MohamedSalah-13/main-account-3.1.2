@@ -6,10 +6,12 @@ import com.hamza.account.controller.main.DisableButtons;
 import com.hamza.account.controller.main.LoadData;
 import com.hamza.account.controller.main.MainItems;
 import com.hamza.account.controller.others.SelectedButton;
+import com.hamza.account.controller.others.ServiceRegistry;
 import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.model.domain.ItemsModel;
 import com.hamza.account.model.domain.MainGroups;
 import com.hamza.account.openFxml.FxmlPath;
+import com.hamza.account.service.*;
 import com.hamza.account.table.EditCell;
 import com.hamza.account.table.TableSetting;
 import com.hamza.account.type.UserPermissionType;
@@ -60,6 +62,11 @@ public class ItemsController extends LoadData {
     private final Publisher<ItemsModel> publisherAddItem;
     private final MainItems mainScreenData;
     private final TableView<ItemsModel> tableView = new TableView<>();
+    private final ItemsService itemsService = ServiceRegistry.get(ItemsService.class);
+    private final StockService stockService = ServiceRegistry.get(StockService.class);
+    private final MainGroupService mainGroupService = ServiceRegistry.get(MainGroupService.class);
+    private final SupGroupService supGroupService = ServiceRegistry.get(SupGroupService.class);
+    private final SelPriceItemService selPriceService = ServiceRegistry.get(SelPriceItemService.class);
 
     @FXML
     private Button btnNew, btnUpdate, btnDelete, btnRefresh, btnSearch;
@@ -162,7 +169,7 @@ public class ItemsController extends LoadData {
         dataPublisher.getPublisherSelPriceUnits().addObserver(message -> Platform.runLater(() -> updateColumnNames(message)));
         // load column names
         try {
-            updateColumnNames(selPriceItemService.getIntegerStringHashMap());
+            updateColumnNames(selPriceService.getIntegerStringHashMap());
         } catch (DaoException e) {
             logErrors(e);
         }

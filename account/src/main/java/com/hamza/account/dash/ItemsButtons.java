@@ -10,12 +10,11 @@ import com.hamza.account.controller.items.ItemsController;
 import com.hamza.account.controller.items.UnitsController;
 import com.hamza.account.controller.main.ButtonWithPerm;
 import com.hamza.account.controller.main.DataPublisher;
-import com.hamza.account.controller.main.LoadData;
 import com.hamza.account.controller.main.MainItems;
 import com.hamza.account.controller.others.ImportDataFromExcelFileController;
+import com.hamza.account.features.notification.NotifyItemAlert;
 import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.model.domain.ItemsMiniQuantity;
-import com.hamza.account.features.notification.NotifyItemAlert;
 import com.hamza.account.openFxml.OpenFxmlApplication;
 import com.hamza.account.table.TableOpen;
 import com.hamza.account.type.UserPermissionType;
@@ -29,12 +28,13 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
 
-public class ItemsButtons extends LoadData {
+public class ItemsButtons {
 
     private final DaoFactory daoFactory;
+    private final DataPublisher dataPublisher;
 
-    public ItemsButtons(DaoFactory daoFactory, DataPublisher dataPublisher) throws Exception {
-        super(daoFactory, dataPublisher);
+    public ItemsButtons(DaoFactory daoFactory, DataPublisher dataPublisher) {
+        this.dataPublisher = dataPublisher;
         this.daoFactory = daoFactory;
     }
 
@@ -98,7 +98,7 @@ public class ItemsButtons extends LoadData {
 
             @Override
             public void action() throws Exception {
-                new OpenApplication<>(new ImportDataFromExcelFileController(itemsService, dataPublisher.getPublisherAddItem()));
+                new OpenApplication<>(new ImportDataFromExcelFileController(dataPublisher.getPublisherAddItem()));
             }
 
             @NotNull
@@ -120,7 +120,7 @@ public class ItemsButtons extends LoadData {
 
             @Override
             public void action() throws Exception {
-                new OpenApplication<>(new UnitsController(unitsService, dataPublisher, textName()));
+                new OpenApplication<>(new UnitsController(dataPublisher, textName()));
             }
 
             @NotNull
@@ -218,7 +218,7 @@ public class ItemsButtons extends LoadData {
 
             @Override
             public void action() throws Exception {
-                var area = new AreaImpl(areaService, dataPublisher);
+                var area = new AreaImpl(dataPublisher);
                 new OpenAddAreaApplication<>(area, textName());
             }
 
@@ -265,7 +265,7 @@ public class ItemsButtons extends LoadData {
 
             @Override
             public void action() throws Exception {
-                new OpenAddAreaApplication<>(new MainGroupImpl2(mainGroupService, dataPublisher), Setting_Language.WORD_MAIN_G);
+                new OpenAddAreaApplication<>(new MainGroupImpl2(dataPublisher), Setting_Language.WORD_MAIN_G);
             }
         };
     }

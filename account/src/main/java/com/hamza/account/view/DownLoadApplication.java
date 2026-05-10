@@ -4,7 +4,9 @@ import com.hamza.account.backup.BackupService;
 import com.hamza.account.config.ConnectionToDatabase;
 import com.hamza.account.config.Style_Sheet;
 import com.hamza.account.controller.main.LoadDataAndList;
+import com.hamza.account.controller.others.ServiceRegistry;
 import com.hamza.account.model.dao.DaoFactory;
+import com.hamza.account.service.*;
 import com.hamza.controlsfx.alert.AlertSetting;
 import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.database.DaoException;
@@ -35,6 +37,44 @@ public class DownLoadApplication extends Application {
         daoFactory = getDaoFactory();
         loadDataAndList = new LoadDataAndList(daoFactory);
         AlertSetting.stylesheetPath = Style_Sheet.getStyle();
+
+        System.out.println(1);
+        ServiceRegistry.register(ItemsService.class, new ItemsService(daoFactory));
+        ServiceRegistry.register(StockService.class, new StockService(daoFactory));
+        ServiceRegistry.register(StockTransferService.class, new StockTransferService(daoFactory));
+        ServiceRegistry.register(StockTransferListService.class, new StockTransferListService(daoFactory));
+        ServiceRegistry.register(EmployeeService.class, new EmployeeService(daoFactory));
+        ServiceRegistry.register(TreasuryService.class, new TreasuryService(daoFactory));
+        ServiceRegistry.register(UnitsService.class, new UnitsService(daoFactory));
+        ServiceRegistry.register(UsersService.class, new UsersService(daoFactory));
+        ServiceRegistry.register(MainGroupService.class, new MainGroupService(daoFactory));
+        ServiceRegistry.register(SupGroupService.class, new SupGroupService(daoFactory));
+        ServiceRegistry.register(TreasuryTransferService.class, new TreasuryTransferService(daoFactory));
+        ServiceRegistry.register(CardItemService.class, new CardItemService(daoFactory));
+        ServiceRegistry.register(TargetDetailsService.class, new TargetDetailsService(daoFactory));
+        ServiceRegistry.register(TargetService.class, new TargetService(daoFactory));
+        ServiceRegistry.register(ExpensesService.class, new ExpensesService(daoFactory));
+        ServiceRegistry.register(ExpensesDetailsService.class, new ExpensesDetailsService(daoFactory));
+        ServiceRegistry.register(TotalSalesService.class, new TotalSalesService(daoFactory));
+        ServiceRegistry.register(TotalBuyService.class, new TotalBuyService(daoFactory));
+        ServiceRegistry.register(TotalBuyReturnService.class, new TotalBuyReturnService(daoFactory));
+        ServiceRegistry.register(TotalSalesReturnService.class, new TotalSalesReturnService(daoFactory));
+        ServiceRegistry.register(SalesService.class, new SalesService(daoFactory));
+        ServiceRegistry.register(EarningsService.class, new EarningsService(daoFactory));
+        ServiceRegistry.register(CustomerService.class, new CustomerService(daoFactory));
+        ServiceRegistry.register(SuppliersService.class, new SuppliersService(daoFactory));
+        ServiceRegistry.register(AccountCustomerService.class, new AccountCustomerService(daoFactory));
+        ServiceRegistry.register(AccountSupplierService.class, new AccountSupplierService(daoFactory));
+        ServiceRegistry.register(AuditLogService.class, new AuditLogService(daoFactory));
+        ServiceRegistry.register(DepositService.class, new DepositService(daoFactory));
+        ServiceRegistry.register(TreasuryBalanceService.class, new TreasuryBalanceService(daoFactory));
+        ServiceRegistry.register(ItemMiniQuantityService.class, new ItemMiniQuantityService(daoFactory));
+        ServiceRegistry.register(AreaService.class, new AreaService(daoFactory));
+        ServiceRegistry.register(SelPriceItemService.class, new SelPriceItemService(daoFactory));
+        ServiceRegistry.register(ItemPackageService.class, new ItemPackageService(daoFactory));
+        ServiceRegistry.register(UserShiftService.class, new UserShiftService(daoFactory));
+
+        System.out.println(2);
     }
 
     public static void main(String[] args) {

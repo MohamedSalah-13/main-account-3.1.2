@@ -1,13 +1,12 @@
 package com.hamza.account.service;
 
-import com.hamza.account.controller.others.ServiceData;
 import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.model.domain.ItemsModel;
 import com.hamza.controlsfx.database.DaoException;
 
 import java.util.List;
 
-public record ItemsService(DaoFactory daoFactory, ServiceData serviceData) {
+public record ItemsService(DaoFactory daoFactory) {
 
     public ItemsModel getItemByItemIdAndStockId(Integer itemId, Integer stockId) throws DaoException {
         return daoFactory.getItemsDao().findItemByIdAndStockId(itemId, stockId);

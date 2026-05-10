@@ -10,13 +10,13 @@ import com.hamza.account.service.ItemsService;
 import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.excel.*;
-import com.hamza.controlsfx.util.Extensions;
 import com.hamza.controlsfx.interfaceData.AppSettingInterface;
 import com.hamza.controlsfx.language.Setting_Language;
 import com.hamza.controlsfx.observer.Publisher;
 import com.hamza.controlsfx.others.DoubleSetting;
 import com.hamza.controlsfx.table.TableColumnAnnotation;
 import com.hamza.controlsfx.table.columnEdit.ColumnSetting;
+import com.hamza.controlsfx.util.Extensions;
 import javafx.beans.property.IntegerProperty;
 import javafx.beans.property.SimpleIntegerProperty;
 import javafx.collections.FXCollections;
@@ -53,10 +53,10 @@ public class ImportDataFromExcelFileController implements Initializable, AppSett
     private final String buy = "buy";
     private final String sel = "sel";
     private final String balance = "first_balance";
-    private final ItemsService itemsService;
     private final Publisher<ItemsModel> publisherAddItem;
     private final IntegerProperty integerProperty = new SimpleIntegerProperty(0);
     private final ObservableList<ItemsModel> myObservableList = FXCollections.observableArrayList();
+    private final ItemsService itemsService = ServiceRegistry.get(ItemsService.class);
     @FXML
     private TableView<ItemsModel> tableView;
     @FXML
@@ -69,8 +69,7 @@ public class ImportDataFromExcelFileController implements Initializable, AppSett
     private Label labelCount;
     private MaskerPaneSetting maskerPaneSetting;
 
-    public ImportDataFromExcelFileController(ItemsService itemsService, Publisher<ItemsModel> publisherAddItem) {
-        this.itemsService = itemsService;
+    public ImportDataFromExcelFileController(Publisher<ItemsModel> publisherAddItem) {
         this.publisherAddItem = publisherAddItem;
     }
 

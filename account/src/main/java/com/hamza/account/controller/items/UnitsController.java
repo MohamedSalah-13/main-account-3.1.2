@@ -2,6 +2,7 @@ package com.hamza.account.controller.items;
 
 import com.hamza.account.config.Image_Setting;
 import com.hamza.account.controller.main.DataPublisher;
+import com.hamza.account.controller.others.ServiceRegistry;
 import com.hamza.account.model.domain.UnitsModel;
 import com.hamza.account.openFxml.FxmlPath;
 import com.hamza.account.openFxml.OpenFxmlApplication;
@@ -33,11 +34,11 @@ import java.net.URL;
 import java.util.List;
 import java.util.ResourceBundle;
 
-import static com.hamza.controlsfx.util.ImageChoose.createIcon;
 import static com.hamza.controlsfx.language.Setting_Language.CLEAR;
 import static com.hamza.controlsfx.language.Setting_Language.generate;
 import static com.hamza.controlsfx.others.Utils.setTextFormatter;
 import static com.hamza.controlsfx.others.Utils.whenEnterPressed;
+import static com.hamza.controlsfx.util.ImageChoose.createIcon;
 
 @Log4j2
 @FxmlPath(pathFile = "units-view.fxml")
@@ -45,8 +46,8 @@ public class UnitsController implements Initializable, AppSettingInterface {
 
     private static final double MIN_VALUE = 0.0;
     private final DataPublisher dataPublisher;
-    private final UnitsService unitsService;
     private final String name;
+    private final UnitsService unitsService = ServiceRegistry.get(UnitsService.class);
     @FXML
     private TableView<UnitsModel> tableView;
     @FXML
@@ -58,8 +59,7 @@ public class UnitsController implements Initializable, AppSettingInterface {
     @FXML
     private StackPane stackPane;
 
-    public UnitsController(UnitsService unitsService, DataPublisher dataPublisher, String name) {
-        this.unitsService = unitsService;
+    public UnitsController(DataPublisher dataPublisher, String name) {
         this.dataPublisher = dataPublisher;
         this.name = name;
     }

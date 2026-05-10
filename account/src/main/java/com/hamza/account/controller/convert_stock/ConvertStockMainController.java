@@ -1,7 +1,7 @@
 package com.hamza.account.controller.convert_stock;
 
 import com.hamza.account.controller.others.AddStockController;
-import com.hamza.account.controller.others.ServiceData;
+import com.hamza.account.controller.others.ServiceRegistry;
 import com.hamza.account.controller.search.ItemsSearch;
 import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.model.domain.ItemsModel;
@@ -11,6 +11,9 @@ import com.hamza.account.model.domain.StockTransferListItems;
 import com.hamza.account.openFxml.AddForAllApplication;
 import com.hamza.account.openFxml.FxmlPath;
 import com.hamza.account.openFxml.OpenFxmlApplication;
+import com.hamza.account.service.ItemsService;
+import com.hamza.account.service.StockService;
+import com.hamza.account.service.StockTransferService;
 import com.hamza.account.view.TextSearchApplication;
 import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.database.DaoException;
@@ -47,13 +50,16 @@ import java.util.List;
 
 @Log4j2
 @FxmlPath(pathFile = "convert_stocks.fxml")
-public class ConvertStockMainController extends ServiceData implements AppSettingInterface {
+public class ConvertStockMainController implements AppSettingInterface {
 
     private final Publisher<String> publisherAfterInsertData;
     private final Publisher<String> publisherAddStock = new Publisher<>();
     private final DaoFactory daoFactory;
     private final ObservableList<StockTransferListItems> observableListTable = FXCollections.observableArrayList();
     private final int codeUpdate;
+    private final ItemsService itemsService = ServiceRegistry.get(ItemsService.class);
+    private final StockTransferService stockTransferService = ServiceRegistry.get(StockTransferService.class);
+    private final StockService stockService = ServiceRegistry.get(StockService.class);
     //    private Items_Stock_Model items_stock_model;
     private StockTransferListItems stockTransferListItems;
     @FXML
@@ -76,7 +82,7 @@ public class ConvertStockMainController extends ServiceData implements AppSettin
     private BooleanProperty disableButton;
 
     public ConvertStockMainController(DaoFactory daoFactory, Publisher<String> publisherAfterInsertData, int codeUpdate) throws Exception {
-        super(daoFactory);
+//        super(daoFactory);
         this.daoFactory = daoFactory;
         this.publisherAfterInsertData = publisherAfterInsertData;
         this.codeUpdate = codeUpdate;

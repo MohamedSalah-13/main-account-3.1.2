@@ -17,10 +17,10 @@ import com.hamza.account.type.UserPermissionType;
 import com.hamza.account.view.AddGroupApp;
 import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.database.DaoException;
-import com.hamza.controlsfx.util.ImageChoose;
 import com.hamza.controlsfx.interfaceData.AppSettingInterface;
 import com.hamza.controlsfx.language.Setting_Language;
 import com.hamza.controlsfx.others.DoubleSetting;
+import com.hamza.controlsfx.util.ImageChoose;
 import javafx.application.Platform;
 import javafx.beans.binding.BooleanBinding;
 import javafx.collections.FXCollections;
@@ -46,8 +46,8 @@ import java.util.Objects;
 import static com.hamza.account.config.Configs.ADD_PACKAGE_TO_ITEMS;
 import static com.hamza.account.controller.setting.ComboSetting.comboSubSetting;
 import static com.hamza.account.controller.setting.ComboSetting.comboTypeSetting;
-import static com.hamza.controlsfx.util.ImageChoose.createIcon;
 import static com.hamza.controlsfx.others.Utils.*;
+import static com.hamza.controlsfx.util.ImageChoose.createIcon;
 
 @Log4j2
 @FxmlPath(pathFile = "items/addItem-view.fxml")
@@ -243,7 +243,7 @@ public class AddItemController extends ServiceData implements AppSettingInterfac
 
         btnAddMainGroup.setOnAction(actionEvent -> {
             try {
-                new OpenAddAreaApplication<>(new MainGroupImpl2(mainGroupService, dataPublisher), Setting_Language.WORD_MAIN_G);
+                new OpenAddAreaApplication<>(new MainGroupImpl2(dataPublisher), Setting_Language.WORD_MAIN_G);
             } catch (Exception e) {
                 logError(e);
             }

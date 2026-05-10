@@ -48,7 +48,7 @@ public class ServiceData {
 
     public ServiceData(DaoFactory daoFactory) throws Exception {
 
-        this.itemsService = new ItemsService(daoFactory, this);
+        this.itemsService = new ItemsService(daoFactory);
         this.stockService = new StockService(daoFactory);
         this.stockTransferService = new StockTransferService(daoFactory);
         this.stockTransferListService = new StockTransferListService(daoFactory);

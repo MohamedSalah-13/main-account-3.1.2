@@ -2,6 +2,7 @@ package com.hamza.account.controller.dataByName.impl;
 
 import com.hamza.account.controller.dataByName.AreaInterface;
 import com.hamza.account.controller.main.DataPublisher;
+import com.hamza.account.controller.others.ServiceRegistry;
 import com.hamza.account.model.domain.Area;
 import com.hamza.account.service.AreaService;
 import com.hamza.controlsfx.observer.Publisher;
@@ -9,8 +10,14 @@ import com.hamza.controlsfx.observer.Publisher;
 import java.util.List;
 import java.util.function.ToIntFunction;
 
-public record AreaImpl(AreaService areaService, DataPublisher dataPublisher) implements AreaInterface<Area> {
+public class AreaImpl implements AreaInterface<Area> {
 
+    private final DataPublisher dataPublisher;
+    private final AreaService areaService = ServiceRegistry.get(AreaService.class);
+
+    public AreaImpl(DataPublisher dataPublisher) {
+        this.dataPublisher = dataPublisher;
+    }
     @Override
     public Class<Area> classData() {
         return Area.class;
