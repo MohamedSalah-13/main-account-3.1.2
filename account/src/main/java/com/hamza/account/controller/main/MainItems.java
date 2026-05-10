@@ -37,7 +37,7 @@ public class MainItems extends DataPublisher {
     protected DataInterface<Sales, Total_Sales, Customers, CustomerAccount> dataInterfaceSales;
     protected DataInterface<Sales_Return, Total_Sales_Re, Customers, CustomerAccount> dataInterfaceSalesReturn;
 
-    public MainItems(DaoFactory daoFactory, LoadDataAndList loadDataAndList) throws Exception {
+    public MainItems(DaoFactory daoFactory) throws Exception {
         this.daoFactory = daoFactory;
         this.dataInterfacePurchase = new SuppliersData(daoFactory, this);
         this.dataInterfaceSales = new CustomData(daoFactory, this);
@@ -50,7 +50,7 @@ public class MainItems extends DataPublisher {
         this.addEmployee = new EmployeesButtons(daoFactory, this);
         this.itemsButtons = new ItemsButtons(daoFactory, this);
         this.ReportsButtons = new ReportsButtons(daoFactory, this, this);
-        this.forAllButtons = new ForAllButtons(daoFactory, this, loadDataAndList);
+        this.forAllButtons = new ForAllButtons(daoFactory, this);
         this.treasuryButtons = new TreasuryButtons(daoFactory, this);
         this.shiftButtons = new ShiftButtons(daoFactory, this);
         this.nameSup = new NameButtons<>(daoFactory, this, suppliersData);

@@ -5,7 +5,6 @@ import com.hamza.account.config.Image_Setting;
 import com.hamza.account.config.PropertiesName;
 import com.hamza.account.config.Style_Sheet;
 import com.hamza.account.controller.login.LoginController;
-import com.hamza.account.controller.main.LoadDataAndList;
 import com.hamza.account.interfaces.ActionLogin;
 import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.model.domain.Users;
@@ -35,13 +34,11 @@ public class LogApplication extends Application {
     public static List<Users_Permission> usersPermissionList;
     private final LoginController login;
     private final DaoFactory daoFactory;
-    private final LoadDataAndList loadDataAndList;
     private final Scene scene;
     private boolean b = false;
 
-    public LogApplication(DaoFactory daoFactory, LoadDataAndList loadDataAndList) throws Exception {
+    public LogApplication(DaoFactory daoFactory) throws Exception {
         this.daoFactory = daoFactory;
-        this.loadDataAndList = loadDataAndList;
         FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource("login.fxml"), LanguageManager.getInstance().getResourceBundle());
         login = new LoginController(new ActionLogin() {
             @Override
@@ -89,7 +86,7 @@ public class LogApplication extends Application {
 
                 }
 
-                new Thread(()->{
+                new Thread(() -> {
                     // scheduled backup
                     if (ScheduledBackup.getTime() > 0)
                         ScheduledBackup.startScheduler(DownLoadApplication.loadBackupService());
@@ -135,7 +132,7 @@ public class LogApplication extends Application {
     private void openMainScreen() throws Exception {
         updateData();
         usersPermissionList = new UserPermissionService(daoFactory).getUsersPermissionById(usersVo.getId());
-        var mainScreenApplication = new MainScreenApplication(daoFactory, loadDataAndList);
+        var mainScreenApplication = new MainScreenApplication(daoFactory);
         mainScreenApplication.start(new Stage());
     }
 

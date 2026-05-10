@@ -2,7 +2,6 @@ package com.hamza.account.view;
 
 import com.hamza.account.config.Image_Setting;
 import com.hamza.account.config.SaveDatabaseFile;
-import com.hamza.account.controller.main.LoadDataAndList;
 import com.hamza.account.controller.main.MainScreenController;
 import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.otherSetting.ExitClass;
@@ -29,7 +28,6 @@ public class MainScreenApplication extends Application {
 
     public static Scene sceneMainScreen;
     private final DaoFactory daoFactory;
-    private final LoadDataAndList loadDataAndList;
 
     private static String getAppVersion() {
         // 1) من الـ Manifest عندما يكون التطبيق مبنياً كـ JAR
@@ -59,7 +57,7 @@ public class MainScreenApplication extends Application {
     @Override
     public void start(Stage stage) throws Exception {
         FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource("mainScreen-view.fxml"));
-        MainScreenController controller = new MainScreenController(loadDataAndList, daoFactory);
+        MainScreenController controller = new MainScreenController(daoFactory);
         fxmlLoader.setController(controller);
         Parent load = fxmlLoader.load();
         Scene scene = new SceneAll(load);

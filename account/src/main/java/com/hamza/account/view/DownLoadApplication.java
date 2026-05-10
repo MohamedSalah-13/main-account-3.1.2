@@ -3,7 +3,6 @@ package com.hamza.account.view;
 import com.hamza.account.backup.BackupService;
 import com.hamza.account.config.ConnectionToDatabase;
 import com.hamza.account.config.Style_Sheet;
-import com.hamza.account.controller.main.LoadDataAndList;
 import com.hamza.account.controller.others.ServiceRegistry;
 import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.service.*;
@@ -13,7 +12,6 @@ import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.util.FontsSetting;
 import javafx.application.Application;
 import javafx.stage.Stage;
-import lombok.Getter;
 import lombok.extern.log4j.Log4j2;
 
 import static com.hamza.account.backup.ScheduledBackup.ENCRYPTION_PASSWORD;
@@ -22,8 +20,6 @@ import static com.hamza.account.backup.ScheduledBackup.ENCRYPTION_PASSWORD;
 public class DownLoadApplication extends Application {
 
     private static ConnectionToDatabase connectionToDatabase;
-    @Getter
-    private final LoadDataAndList loadDataAndList;
     private final DaoFactory daoFactory;
 
     public DownLoadApplication() {
@@ -35,7 +31,6 @@ public class DownLoadApplication extends Application {
         // change language
         connectionToDatabase = new ConnectionToDatabase();
         daoFactory = getDaoFactory();
-        loadDataAndList = new LoadDataAndList(daoFactory);
         AlertSetting.stylesheetPath = Style_Sheet.getStyle();
 
         System.out.println(1);
@@ -104,7 +99,7 @@ public class DownLoadApplication extends Application {
 
     @Override
     public void start(Stage stage) throws Exception {
-        new LogApplication(daoFactory, loadDataAndList).start(new Stage());
+        new LogApplication(daoFactory).start(new Stage());
     }
 
 

@@ -88,8 +88,8 @@ public class MainScreenController extends MainItems implements Initializable {
     private MainToolbarController toolbarController;
     private BackgroundSlideshow slideshow;
 
-    public MainScreenController(LoadDataAndList loadDataAndList, DaoFactory daoFactory) throws Exception {
-        super(daoFactory, loadDataAndList);
+    public MainScreenController(DaoFactory daoFactory) throws Exception {
+        super(daoFactory);
         this.publisherAddUser = getPublisherAddUser();
     }
 

@@ -3,7 +3,6 @@ package com.hamza.account.dash;
 import com.hamza.account.controller.main.ButtonWithPerm;
 import com.hamza.account.controller.main.DataPublisher;
 import com.hamza.account.controller.main.LoadData;
-import com.hamza.account.controller.main.LoadDataAndList;
 import com.hamza.account.features.choiceDialoge.ChangeUserName;
 import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.type.UserPermissionType;
@@ -20,11 +19,9 @@ import static com.hamza.account.otherSetting.KeyCodeCombinationSetting.*;
 
 public class ForAllButtons extends LoadData {
 
-    private final LoadDataAndList loadDataAndList;
 
-    public ForAllButtons(DaoFactory daoFactory, DataPublisher dataPublisher, LoadDataAndList loadDataAndList) throws Exception {
+    public ForAllButtons(DaoFactory daoFactory, DataPublisher dataPublisher) throws Exception {
         super(daoFactory, dataPublisher);
-        this.loadDataAndList = loadDataAndList;
     }
 
     public ButtonWithPerm calc() {
@@ -185,7 +182,7 @@ public class ForAllButtons extends LoadData {
             public void action() throws Exception {
                 if (AllAlerts.confirm_all("logout", "هل تريد الخروج")) {
                     dataPublisher.getCloseStageFromLogout().setAvailability(true);
-                    new LogApplication(daoFactory, loadDataAndList).start(new Stage());
+                    new LogApplication(daoFactory).start(new Stage());
                 }
             }
 
