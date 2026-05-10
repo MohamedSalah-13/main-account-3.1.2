@@ -1,29 +1,24 @@
 package com.hamza.account.controller.main;
 
-import com.hamza.account.Main;
 import com.hamza.account.config.FxmlConstants;
 import com.hamza.account.controller.others.ServiceRegistry;
 import com.hamza.account.controller.reports.ModernDashboardApp;
-import com.hamza.account.controller.reports.MonthlySalesController;
+import com.hamza.account.controller.reports.MonthlySalesInterface;
 import com.hamza.account.dash.ReportByDate;
 import com.hamza.account.features.notification.ItemNotifications;
 import com.hamza.account.interfaces.treeAccount.ReportTreeAccountCustom;
 import com.hamza.account.interfaces.treeAccount.ReportTreeAccountSuppliers;
-import com.hamza.account.model.base.BaseAccount;
-import com.hamza.account.model.base.BaseNames;
-import com.hamza.account.model.base.BasePurchasesAndSales;
-import com.hamza.account.model.base.BaseTotals;
 import com.hamza.account.model.dao.DaoFactory;
+import com.hamza.account.model.dao.MonthlySalesViewDao;
 import com.hamza.account.model.domain.*;
 import com.hamza.account.service.ItemMiniQuantityService;
 import com.hamza.account.type.UserPermissionType;
 import com.hamza.account.view.LogApplication;
-import com.hamza.account.view.SceneAll;
+import com.hamza.account.view.MonthlyView;
 import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.language.Setting_Language;
 import com.hamza.controlsfx.observer.Publisher;
-import com.hamza.controlsfx.others.ChangeOrientation;
 import com.jfoenix.controls.JFXDrawer;
 import com.jfoenix.controls.JFXHamburger;
 import com.jfoenix.transitions.hamburger.HamburgerBackArrowBasicTransition;
@@ -34,8 +29,6 @@ import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.fxml.Initializable;
 import javafx.scene.Node;
-import javafx.scene.Parent;
-import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.control.Button;
 import javafx.scene.control.MenuBar;
@@ -294,9 +287,34 @@ public class MainScreenController extends MainItems implements Initializable {
         // purchase - sales
 //        menuButtonSetting.initializeMenuItem(menuController.getMenuItemReportPurchase(), actionPurchase);
 //        menuButtonSetting.initializeMenuItem(menuController.getMenuItemReportSales(), actionSales);
+        var monthlySalesInterface = new MonthlySalesInterface() {
+        };
 
-        menuButtonSetting.initializeMenuItem(menuController.getMenuItemReportSalesByYear(), getAction("مبيعات الكل"));
-        menuButtonSetting.initializeMenuItem(menuController.getMenuItemReportPurchaseByYear(), getAction("مشتريات الكل"));
+        var monthlyPurchaseInterface = new MonthlySalesInterface() {
+            @Override
+            public String reportName() {
+                return "تقرير المشتريات السنوي";
+            }
+
+            @Override
+            public String reportTitle() {
+                return "تقرير إجمالي المشتريات الشهرية لكل سنة";
+            }
+
+            @Override
+            public MonthlySalesViewDao getMonthlySalesViewDao(DaoFactory daoFactory) {
+                return daoFactory.monthlyPurchaseViewDao();
+            }
+
+            @Override
+            public String chartTitle() {
+                return "مقارنة المشتريات بين الشهور";
+            }
+        };
+
+
+        menuButtonSetting.initializeMenuItem(menuController.getMenuItemReportSalesByYear(), getAction(monthlySalesInterface.reportName(), monthlySalesInterface));
+        menuButtonSetting.initializeMenuItem(menuController.getMenuItemReportPurchaseByYear(), getAction(monthlyPurchaseInterface.reportName(), monthlyPurchaseInterface));
 
 
         ReportTreeAccountCustom treeAccountCustom = new ReportTreeAccountCustom(this.getDaoFactory(), this) {
@@ -327,7 +345,7 @@ public class MainScreenController extends MainItems implements Initializable {
         menuButtonSetting.initializeMenuItem(menuController.getMenuItemShiftReports(), getSettingButtons().adminShifts());
     }
 
-    private <T1 extends BasePurchasesAndSales, T2 extends BaseTotals, T3 extends BaseNames, T4 extends BaseAccount> ButtonWithPerm getAction(String name) {
+    private ButtonWithPerm getAction(String name, MonthlySalesInterface monthlySalesInterface) {
         String sales = "مبيعات";
         return new ButtonWithPerm() {
             @Override
@@ -339,17 +357,7 @@ public class MainScreenController extends MainItems implements Initializable {
 
             @Override
             public void action() throws Exception {
-                FXMLLoader loader = new FXMLLoader(Main.class.getResource("view/MonthlySalesView.fxml"));
-                Parent root = loader.load();
-//
-                MonthlySalesController controller = loader.getController();
-                controller.loadData(daoFactory); // تمرير اتصال قاعدة البيانات
-                Stage stage = new Stage();
-                Scene scene = new SceneAll(root);
-                ChangeOrientation.sceneOrientation(scene);
-                stage.setScene(scene);
-                stage.setTitle("تقرير المبيعات السنوي");
-                stage.show();
+                new MonthlyView(daoFactory, monthlySalesInterface).start(new Stage());
             }
 
             @NotNull

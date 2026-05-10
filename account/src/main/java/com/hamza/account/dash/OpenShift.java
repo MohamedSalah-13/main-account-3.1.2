@@ -22,10 +22,12 @@ public class OpenShift extends Application {
 
 
         // مثال لكيفية فتح الشاشة وتمرير الاتصال
-        FXMLLoader loader = new FXMLLoader(Main.class.getResource("view/reports/CustomerReceivableView.fxml"));
+//        FXMLLoader loader = new FXMLLoader(Main.class.getResource("view/reports/CustomerReceivableView.fxml"));
+        FXMLLoader loader = new FXMLLoader(Main.class.getResource("view/reports/ComprehensiveSalesView.fxml"));
         Parent root = loader.load();
 
-        CustomerReceivableController controller = loader.getController();
+//        CustomerReceivableController controller = loader.getController();
+        ComprehensiveSalesController controller = loader.getController();
         controller.setDaoFactory(daoFactory); // تمرير اتصال قاعدة البيانات
 
         Scene scene = new Scene(root);

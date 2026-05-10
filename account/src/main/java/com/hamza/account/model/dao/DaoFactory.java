@@ -209,7 +209,10 @@ public enum DaoFactory {
     }
 
     public MonthlySalesViewDao monthlySalesViewDao() {
-        return new MonthlySalesViewDao(connection);
+        return new MonthlySalesViewDao(connection,"view_monthly_sales");
+    }
+    public MonthlySalesViewDao monthlyPurchaseViewDao() {
+        return new MonthlySalesViewDao(connection,"view_monthly_purchase");
     }
 
     public CustomerPurchasedItemDao customerPurchasedItemDao() {

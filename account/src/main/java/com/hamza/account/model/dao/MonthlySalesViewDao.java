@@ -12,8 +12,6 @@ import java.util.List;
 
 public class MonthlySalesViewDao extends AbstractDao<MonthlySalesViewModel> {
 
-    // أسماء الأعمدة كما هي في الـ View التي أنشأناها في قاعدة البيانات
-    private final String TABLE_NAME = "view_monthly_sales";
     private final String SALES_YEAR = "sales_year";
     private final String JANUARY = "January";
     private final String FEBRUARY = "February";
@@ -28,27 +26,23 @@ public class MonthlySalesViewDao extends AbstractDao<MonthlySalesViewModel> {
     private final String NOVEMBER = "November";
     private final String DECEMBER = "December";
     private final String TOTAL_YEARLY_SALES = "total_yearly_sales";
+    //    private final String TABLE_NAME = "view_monthly_sales";
+    private String TABLE_NAME;
 
-    public MonthlySalesViewDao(Connection connection) {
+    public MonthlySalesViewDao(Connection connection, String tableName) {
         super(connection);
+        TABLE_NAME = tableName;
     }
 
     @Override
     public List<MonthlySalesViewModel> loadAll() throws DaoException {
-        // جلب مبيعات كل السنوات
         return queryForObjects(SqlStatements.selectStatement(TABLE_NAME), this::map);
     }
 
     @Override
     public MonthlySalesViewModel getDataById(int year) throws DaoException {
-        // نعتبر الـ ID هنا هو "السنة" (sales_year) لجلب مبيعات سنة محددة
         return queryForObject(SqlStatements.selectStatementByColumnWhere(TABLE_NAME, SALES_YEAR), this::map, year);
     }
-
-
-    // =========================================================
-    // دالة عمل Mapping بين الـ ResultSet والكلاس Model
-    // =========================================================
 
     @Override
     public MonthlySalesViewModel map(ResultSet rs) throws DaoException {

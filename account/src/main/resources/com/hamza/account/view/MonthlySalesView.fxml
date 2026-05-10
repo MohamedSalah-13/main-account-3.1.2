@@ -20,7 +20,7 @@
                 <Insets bottom="15.0" left="15.0" right="15.0" top="15.0" />
             </padding>
             <children>
-                <Label text="تقرير المبيعات الشهرية لكل سنة" textFill="#2c3e50" underline="true">
+                <Label fx:id="title" text="تقرير المبيعات الشهرية لكل سنة" textFill="#2c3e50" underline="true">
                     <font>
                         <Font name="System Bold" size="22.0" />
                     </font>

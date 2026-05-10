@@ -12,11 +12,13 @@ import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.chart.BarChart;
 import javafx.scene.chart.XYChart;
+import javafx.scene.control.Label;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.image.WritableImage;
 import javafx.stage.FileChooser;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 
 import javax.imageio.ImageIO;
@@ -31,10 +33,14 @@ import java.util.ResourceBundle;
 import static com.hamza.account.controller.reports.ErrorReports.*;
 
 @Log4j2
+@RequiredArgsConstructor
 public class MonthlySalesController implements Initializable {
 
     private final ObservableList<MonthlySalesViewModel> salesDataList = FXCollections.observableArrayList();
     private final ReportExportService reportExportService = new ReportExportService();
+    private MonthlySalesInterface monthlySalesInterface;
+    @FXML
+    private Label title;
     @FXML
     private TableView<MonthlySalesViewModel> tableSales;
     @FXML
@@ -68,8 +74,11 @@ public class MonthlySalesController implements Initializable {
         colTotal.setCellValueFactory(new PropertyValueFactory<>("totalYearlySales"));
     }
 
-    public void loadData(DaoFactory daoFactory) {
-        MonthlySalesViewDao salesDao = daoFactory.monthlySalesViewDao();
+    public void loadData(DaoFactory daoFactory, MonthlySalesInterface monthlySalesInterface) {
+        this.monthlySalesInterface = monthlySalesInterface;
+        title.setText(monthlySalesInterface.reportTitle());
+        chartSales.setTitle(monthlySalesInterface.chartTitle());
+        MonthlySalesViewDao salesDao = monthlySalesInterface.getMonthlySalesViewDao(daoFactory);
         try {
             salesDataList.clear();
             List<MonthlySalesViewModel> data = salesDao.loadAll();
@@ -125,37 +134,13 @@ public class MonthlySalesController implements Initializable {
             showWarning("لا توجد بيانات لتصديرها");
             return;
         }
-
-        FileChooser fileChooser = new FileChooser();
-        fileChooser.setTitle("حفظ التقرير");
-        fileChooser.setInitialFileName("تقرير_المبيعات_السنوي.pdf");
-        fileChooser.getExtensionFilters().add(
-                new FileChooser.ExtensionFilter("PDF Files", "*.pdf")
-        );
-
-        File file = fileChooser.showSaveDialog(tableSales.getScene().getWindow());
-
-        if (file != null) {
-//        String defaultPath = ReportExportService.getDefaultOutputPath("تقرير_المبيعات_السنوي");
-            String defaultPath = file.getAbsolutePath();
-
-            boolean success = reportExportService.exportMonthlyTotalsReport(
-                    salesDataList,
-                    "تقرير إجمالي المبيعات الشهرية لكل سنة"
-                    , getChartImageBytes(), defaultPath
-            );
-
-            if (success) {
-                showInfo("تم تصدير ملف PDF بنجاح في المسار: " + defaultPath);
-                try {
-                    java.awt.Desktop.getDesktop().open(new File(defaultPath));
-                } catch (Exception e) {
-                    log.error("Error opening PDF file: ", e);
-                }
-            } else {
-                showError("فشل في تصدير ملف PDF");
-            }
-        }
+        var s = monthlySalesInterface.reportName();
+        new ChoosePdfFile().choosePdfFile(s + ".pdf", path ->
+                reportExportService.exportMonthlyTotalsReport(
+                        salesDataList,
+                        monthlySalesInterface.reportTitle()
+                        , getChartImageBytes(), path
+                ));
     }
 
     @FXML
@@ -167,7 +152,7 @@ public class MonthlySalesController implements Initializable {
 
         FileChooser fileChooser = new FileChooser();
         fileChooser.setTitle("حفظ تقرير إكسيل");
-        fileChooser.setInitialFileName("تقرير_المبيعات_السنوي.xlsx");
+        fileChooser.setInitialFileName(monthlySalesInterface.reportName() + ".xlsx");
         fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("Excel Files", "*.xlsx"));
 
         File file = fileChooser.showSaveDialog(tableSales.getScene().getWindow());
