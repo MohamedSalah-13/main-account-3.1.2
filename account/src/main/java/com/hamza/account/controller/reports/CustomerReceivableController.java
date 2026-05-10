@@ -1,16 +1,20 @@
 package com.hamza.account.controller.reports;
 
-import com.hamza.account.model.domain.CustomerReceivable;
-import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.features.export.ReportExportService;
+import com.hamza.account.model.dao.DaoFactory;
+import com.hamza.account.model.domain.CustomerReceivable;
 import com.hamza.controlsfx.alert.AllAlerts;
+import com.hamza.controlsfx.table.TableColumnAnnotation;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
-import javafx.scene.control.*;
-import javafx.scene.control.cell.PropertyValueFactory;
+import javafx.scene.control.Label;
+import javafx.scene.control.TableCell;
+import javafx.scene.control.TableColumn;
+import javafx.scene.control.TableView;
+
 import java.net.URL;
 import java.util.ResourceBundle;
 
@@ -18,29 +22,18 @@ import static com.hamza.account.controller.reports.ErrorReports.showInfo;
 
 public class CustomerReceivableController implements Initializable {
 
-    @FXML private TableView<CustomerReceivable> tableView;
-    @FXML private TableColumn<CustomerReceivable, String> colName;
-    @FXML private TableColumn<CustomerReceivable, String> colPhone;
-    @FXML private TableColumn<CustomerReceivable, Double> colInvoices;
-    @FXML private TableColumn<CustomerReceivable, Double> colOpening;
-    @FXML private TableColumn<CustomerReceivable, Double> colTotal;
-    @FXML private Label lblGrandTotal;
-
-    private DaoFactory daoFactory;
     private final ObservableList<CustomerReceivable> masterData = FXCollections.observableArrayList();
     private final ReportExportService reportExportService = new ReportExportService();
+    @FXML
+    private TableView<CustomerReceivable> tableView;
+    @FXML
+    private Label lblGrandTotal;
+    private DaoFactory daoFactory;
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
-        colName.setCellValueFactory(new PropertyValueFactory<>("customerName"));
-        colPhone.setCellValueFactory(new PropertyValueFactory<>("customerPhone"));
-        colInvoices.setCellValueFactory(new PropertyValueFactory<>("invoicesDebt"));
-        colOpening.setCellValueFactory(new PropertyValueFactory<>("openingBalance"));
-        colTotal.setCellValueFactory(new PropertyValueFactory<>("totalReceivable"));
-
-        formatColumn(colInvoices);
-        formatColumn(colOpening);
-        formatColumn(colTotal);
+        tableView.getColumns().clear();
+        new TableColumnAnnotation().getTable(tableView, CustomerReceivable.class);
     }
 
     public void setDaoFactory(DaoFactory daoFactory) {

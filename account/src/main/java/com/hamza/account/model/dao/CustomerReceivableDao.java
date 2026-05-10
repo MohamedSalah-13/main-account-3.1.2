@@ -15,7 +15,7 @@ public class CustomerReceivableDao extends AbstractDao<CustomerReceivable> {
     }
 
     public List<CustomerReceivable> getReceivablesReport() throws DaoException {
-        String query = "SELECT * FROM view_customer_receivables";
+        String query = "SELECT * FROM view_customer_receivables where final_balance > 0 ORDER BY customer_name";
         return queryForObjects(query, this::map);
     }
 
@@ -28,6 +28,7 @@ public class CustomerReceivableDao extends AbstractDao<CustomerReceivable> {
             model.setCustomerPhone(rs.getString("customer_phone"));
             model.setInvoicesDebt(rs.getDouble("total_invoices_debt"));
             model.setOpeningBalance(rs.getDouble("opening_balance"));
+            model.setTotalPayments(rs.getDouble("total_payments"));
             model.setTotalReceivable(rs.getDouble("final_balance"));
         } catch (SQLException e) {
             throw new DaoException(e);
