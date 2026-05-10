@@ -2,7 +2,7 @@ package com.hamza.account.controller.main;
 
 import com.hamza.account.Main;
 import com.hamza.account.config.FxmlConstants;
-import com.hamza.account.controller.others.ServiceData;
+import com.hamza.account.controller.others.ServiceRegistry;
 import com.hamza.account.controller.reports.ModernDashboardApp;
 import com.hamza.account.controller.reports.MonthlySalesController;
 import com.hamza.account.dash.ReportByDate;
@@ -15,10 +15,7 @@ import com.hamza.account.model.base.BasePurchasesAndSales;
 import com.hamza.account.model.base.BaseTotals;
 import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.model.domain.*;
-import com.hamza.account.service.AccountCustomerService;
-import com.hamza.account.service.AccountSupplierService;
-import com.hamza.account.service.TotalBuyService;
-import com.hamza.account.service.TotalSalesService;
+import com.hamza.account.service.ItemMiniQuantityService;
 import com.hamza.account.type.UserPermissionType;
 import com.hamza.account.view.LogApplication;
 import com.hamza.account.view.SceneAll;
@@ -32,8 +29,6 @@ import com.jfoenix.controls.JFXHamburger;
 import com.jfoenix.transitions.hamburger.HamburgerBackArrowBasicTransition;
 import javafx.beans.property.DoubleProperty;
 import javafx.beans.property.SimpleDoubleProperty;
-import javafx.beans.property.SimpleStringProperty;
-import javafx.beans.property.StringProperty;
 import javafx.collections.ListChangeListener;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
@@ -64,21 +59,10 @@ import java.util.ArrayList;
 import java.util.ResourceBundle;
 
 import static com.hamza.account.config.PropertiesName.*;
-import static com.hamza.controlsfx.util.NumberUtils.roundToTwoDecimalPlaces;
-import static com.hamza.controlsfx.view.FxmlLoad.fxmlTimePane;
 
 @Log4j2
 public class MainScreenController extends MainItems implements Initializable {
 
-    private final StringProperty sumTotalsPurchase = new SimpleStringProperty("0");
-    private final StringProperty sumTotalsSales = new SimpleStringProperty("0");
-    private final StringProperty sumTotalsCustomerAccounts = new SimpleStringProperty("0");
-    private final StringProperty sumTotalsSuppliersAccounts = new SimpleStringProperty("0");
-    private final TotalSalesService totalSalesService;
-    private final TotalBuyService totalBuyService;
-    private final AccountCustomerService accountCustomerService;
-    private final AccountSupplierService accountSupplierService;
-    private final ServiceData serviceData;
     private final Publisher<String> publisherAddUser;
     private final ContextMenu slideshowMenu = new ContextMenu();
     public Pane mainPane;
@@ -106,11 +90,6 @@ public class MainScreenController extends MainItems implements Initializable {
 
     public MainScreenController(LoadDataAndList loadDataAndList, DaoFactory daoFactory) throws Exception {
         super(daoFactory, loadDataAndList);
-        this.serviceData = new ServiceData(daoFactory);
-        this.totalSalesService = serviceData.getTotalSalesService();
-        this.totalBuyService = serviceData.getTotalBuyService();
-        this.accountCustomerService = serviceData.getAccountCustomerService();
-        this.accountSupplierService = serviceData.getAccountSupplierService();
         this.publisherAddUser = getPublisherAddUser();
     }
 
@@ -137,13 +116,6 @@ public class MainScreenController extends MainItems implements Initializable {
         // data publisher
         var name = LogApplication.usersVo.getUsername();
         publisherAddUser.setAvailability(name);
-        getPublisherSales().addObserver(message -> sumTotalsSales.setValue(String.valueOf(roundToTwoDecimalPlaces(getNumber()))));
-        getPublisherBuy().addObserver(message -> sumTotalsPurchase.setValue(String.valueOf(roundToTwoDecimalPlaces(getSumTotal()))));
-        getPublisherAddAccountCustom().addObserver(message ->
-                sumTotalsCustomerAccounts.setValue(String.valueOf(roundToTwoDecimalPlaces(accountCustomerService.sumTotal()))));
-        getPublisherAddAccountSuppliers().addObserver(message ->
-                sumTotalsSuppliersAccounts.setValue(String.valueOf(roundToTwoDecimalPlaces(accountSupplierService.sumTotal()))));
-
         getChangeMainScreenImage().addObserver(message -> setBackgroundImage());
         getShowMainTotalsScreen().addObserver(message -> {
             if (message == true) {
@@ -153,27 +125,7 @@ public class MainScreenController extends MainItems implements Initializable {
             }
         });
 
-        initializeDataRefresh();
     }
-
-    private double getSumTotal() {
-        try {
-            return totalBuyService.sumTotal();
-        } catch (DaoException e) {
-            logException(e);
-            return 0;
-        }
-    }
-
-    private double getNumber() {
-        try {
-            return totalSalesService.sumTotal();
-        } catch (DaoException e) {
-            logException(e);
-            return 0;
-        }
-    }
-
 
     private void notifyItems() {
         Thread thread = new Thread(() -> {
@@ -191,25 +143,18 @@ public class MainScreenController extends MainItems implements Initializable {
 
     private java.util.List<ItemsMiniQuantity> getItemsMiniQuantities() {
         try {
-            return this.serviceData.getItemMiniQuantityService().itemsMiniQuantityList();
+            ItemMiniQuantityService itemMiniQuantityService = ServiceRegistry.get(ItemMiniQuantityService.class);
+            return itemMiniQuantityService.itemsMiniQuantityList();
         } catch (DaoException e) {
             logException(e);
             return new ArrayList<>();
         }
     }
 
-    private void initializeDataRefresh() {
-        sumTotalsSales.setValue(String.valueOf(roundToTwoDecimalPlaces(getNumber())));
-        sumTotalsPurchase.setValue(String.valueOf(roundToTwoDecimalPlaces(getSumTotal())));
-        sumTotalsCustomerAccounts.setValue(String.valueOf(roundToTwoDecimalPlaces(accountCustomerService.sumTotal())));
-        sumTotalsSuppliersAccounts.setValue(String.valueOf(roundToTwoDecimalPlaces(accountSupplierService.sumTotal())));
-
-    }
-
     private void otherSetting() {
         try {
             //TODO 5/9/2026 10:15 AM Mohamed:  check when log out
-            borderPane.setBottom(fxmlTimePane.load());
+//            borderPane.setBottom(fxmlTimePane.load());
             tabPane.getTabs().getFirst().setText(Setting_Language.WORD_MAIN);
             tabPane.getTabs().getFirst().setClosable(false);
             getRightPane();

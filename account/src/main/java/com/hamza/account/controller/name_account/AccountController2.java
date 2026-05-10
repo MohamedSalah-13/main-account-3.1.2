@@ -347,9 +347,9 @@ public class AccountController2<T1 extends BasePurchasesAndSales, T2 extends Bas
             if (!tableView.getSelectionModel().isEmpty()) {
                 try {
                     T4 selectedItem = tableView.getSelectionModel().getSelectedItem();
-                    AccountDetailsInterface accountDetailsInterface = new AccountTotalsPurchase(daoFactory);
+                    AccountDetailsInterface accountDetailsInterface = new AccountTotalsPurchase();
                     if (dataInterface.designInterface().showDataForCustomer()) {
-                        accountDetailsInterface = new AccountTotalsSales(daoFactory);
+                        accountDetailsInterface = new AccountTotalsSales();
                     }
                     var accountDetailsController = new AccountDetailsWithItemsController<>(daoFactory, dataPublisher
                             , dataInterface, selectedItem, accountDetailsInterface);

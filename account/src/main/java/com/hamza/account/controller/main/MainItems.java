@@ -1,6 +1,5 @@
 package com.hamza.account.controller.main;
 
-import com.hamza.account.controller.others.ServiceData;
 import com.hamza.account.dash.*;
 import com.hamza.account.interfaces.api.DataInterface;
 import com.hamza.account.interfaces.impl_dataInterface.CustomData;
@@ -32,7 +31,6 @@ public class MainItems extends DataPublisher {
     private final ReportsButtons ReportsButtons;
     private final TreasuryButtons treasuryButtons;
     private final ShiftButtons shiftButtons;
-    protected ServiceData serviceData;
     protected DaoFactory daoFactory;
     protected DataInterface<Purchase, Total_buy, Suppliers, SupplierAccount> dataInterfacePurchase;
     protected DataInterface<Purchase_Return, Total_Buy_Re, Suppliers, SupplierAccount> dataInterfacePurchaseReturn;
@@ -41,9 +39,6 @@ public class MainItems extends DataPublisher {
 
     public MainItems(DaoFactory daoFactory, LoadDataAndList loadDataAndList) throws Exception {
         this.daoFactory = daoFactory;
-        this.serviceData = new ServiceData(daoFactory);
-        var employeeService = serviceData.getEmployeeService();
-
         this.dataInterfacePurchase = new SuppliersData(daoFactory, this);
         this.dataInterfaceSales = new CustomData(daoFactory, this);
         this.dataInterfacePurchaseReturn = new SuppliersDataReturn(daoFactory, this);
@@ -52,7 +47,7 @@ public class MainItems extends DataPublisher {
         this.customData = (CustomData) dataInterfaceSales;
         this.usersAll = new UsersButtons(daoFactory, this);
         this.settingButtons = new SettingButtons(daoFactory, this, loadDataAndList);
-        this.addEmployee = new EmployeesButtons(daoFactory, this, employeeService);
+        this.addEmployee = new EmployeesButtons(daoFactory, this);
         this.itemsButtons = new ItemsButtons(daoFactory, this);
         this.ReportsButtons = new ReportsButtons(daoFactory, this, this);
         this.forAllButtons = new ForAllButtons(daoFactory, this, loadDataAndList);
@@ -60,10 +55,10 @@ public class MainItems extends DataPublisher {
         this.shiftButtons = new ShiftButtons(daoFactory, this);
         this.nameSup = new NameButtons<>(daoFactory, this, suppliersData);
         this.nameCustomer = new NameButtons<>(daoFactory, this, customData);
-        this.totalPurchase = new TotalsButton(suppliersData, daoFactory, this, employeeService);
-        this.totalSales = new TotalsButton(customData, daoFactory, this, employeeService);
-        this.totalPurchaseReturn = new TotalsButton(getDataInterfacePurchaseReturn(), daoFactory, this, employeeService);
-        this.totalSalesReturn = new TotalsButton(getDataInterfaceSalesReturn(), daoFactory, this, employeeService);
+        this.totalPurchase = new TotalsButton(suppliersData, daoFactory, this);
+        this.totalSales = new TotalsButton(customData, daoFactory, this);
+        this.totalPurchaseReturn = new TotalsButton(getDataInterfacePurchaseReturn(), daoFactory, this);
+        this.totalSalesReturn = new TotalsButton(getDataInterfaceSalesReturn(), daoFactory, this);
         this.accountButtonsSup = new AccountButtons<>(daoFactory, this, suppliersData);
         this.accountButtonsCustom = new AccountButtons<>(daoFactory, this, customData);
     }

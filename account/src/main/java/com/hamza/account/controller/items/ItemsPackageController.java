@@ -1,12 +1,13 @@
 package com.hamza.account.controller.items;
 
-import com.hamza.account.controller.others.ServiceData;
+import com.hamza.account.controller.others.ServiceRegistry;
 import com.hamza.account.controller.search.ItemsSearch;
-import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.model.domain.ItemsModel;
 import com.hamza.account.model.domain.Items_Package;
 import com.hamza.account.openFxml.FxmlPath;
 import com.hamza.account.otherSetting.ButtonDeleteRow;
+import com.hamza.account.service.ItemPackageService;
+import com.hamza.account.service.ItemsService;
 import com.hamza.account.table.TableSetting;
 import com.hamza.account.view.TextSearchApplication;
 import com.hamza.controlsfx.alert.AllAlerts;
@@ -30,10 +31,12 @@ import static com.hamza.controlsfx.others.Utils.setTextFormatter;
 
 @Log4j2
 @FxmlPath(pathFile = "items/itemsPackage-view.fxml")
-public class ItemsPackageController extends ServiceData {
+public class ItemsPackageController {
 
     private final BooleanProperty itemHasPackage = new SimpleBooleanProperty();
     private final ListProperty<Items_Package> items_packageList = new SimpleListProperty<>();
+    private final ItemPackageService itemPackageService = ServiceRegistry.get(ItemPackageService.class);
+    private final ItemsService itemsService = ServiceRegistry.get(ItemsService.class);
     private ObjectProperty<ItemsModel> itemsModelObjectProperty;
     private StringProperty textSearchItems;
     @FXML
@@ -50,10 +53,6 @@ public class ItemsPackageController extends ServiceData {
     private TextField txtCount;
     @FXML
     private GridPane gridPane;
-
-    public ItemsPackageController(DaoFactory daoFactory) throws Exception {
-        super(daoFactory);
-    }
 
     @FXML
     public void initialize() {

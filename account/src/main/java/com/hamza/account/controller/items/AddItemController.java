@@ -104,7 +104,7 @@ public class AddItemController implements AppSettingInterface {
         this.codeItem = codeItem;
         this.dataPublisher = dataPublisher;
         this.daoFactory = daoFactory;
-        this.itemsPackageController = new ItemsPackageController(daoFactory);
+        this.itemsPackageController = new ItemsPackageController();
         dataPublisher.getPublisherAddMainGroup().addObserver(message -> {
             comboMainGroup.setItems(FXCollections.observableList(getMainGroupsNames()));
             comboMainGroup.getSelectionModel().selectLast();

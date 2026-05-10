@@ -2,23 +2,28 @@ package com.hamza.account.controller.name_account.impl;
 
 import com.hamza.account.controller.model.AccountCard;
 import com.hamza.account.controller.name_account.AccountDetailsInterface;
-import com.hamza.account.controller.others.ServiceData;
+import com.hamza.account.controller.others.ServiceRegistry;
 import com.hamza.account.model.base.BasePurchasesAndSales;
-import com.hamza.account.model.dao.DaoFactory;
+import com.hamza.account.service.PurchaseReService;
+import com.hamza.account.service.PurchaseService;
+import com.hamza.account.service.TotalBuyReturnService;
+import com.hamza.account.service.TotalBuyService;
 import com.hamza.account.type.InvoiceType;
 import javafx.scene.control.TreeItem;
 
 import java.util.List;
 
-public class AccountTotalsPurchase extends ServiceData implements AccountDetailsInterface {
+public class AccountTotalsPurchase implements AccountDetailsInterface {
 
     public static final String purchaseLabel = "المشتريات";
     public static final String purchaseReturnLabel = "مرتجع المشتريات";
     public static final String count = "عدد";
 
-    public AccountTotalsPurchase(DaoFactory daoFactory) throws Exception {
-        super(daoFactory);
-    }
+    private final PurchaseService purchaseService = ServiceRegistry.get(PurchaseService.class);
+    private final PurchaseReService purchaseReService = ServiceRegistry.get(PurchaseReService.class);
+    private final TotalBuyService totalBuyService = ServiceRegistry.get(TotalBuyService.class);
+    private final TotalBuyReturnService totalBuyReturnService = ServiceRegistry.get(TotalBuyReturnService.class);
+
 
     public static <T extends BasePurchasesAndSales> void addPurchaseItemsToTree(List<T> purchaseList, TreeItem<AccountCard> accountTreeItem) {
         purchaseList.forEach(purchase -> {

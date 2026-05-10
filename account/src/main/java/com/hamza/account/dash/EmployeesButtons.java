@@ -6,6 +6,7 @@ import com.hamza.account.controller.main.DataPublisher;
 import com.hamza.account.controller.main.LoadData;
 import com.hamza.account.controller.others.AddEmployeeController;
 import com.hamza.account.controller.others.EmployeesController;
+import com.hamza.account.controller.others.ServiceRegistry;
 import com.hamza.account.controller.target.AddTargetController;
 import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.openFxml.AddForAllApplication;
@@ -25,11 +26,10 @@ import org.jetbrains.annotations.NotNull;
 @Log4j2
 public class EmployeesButtons extends LoadData {
 
-    private final EmployeeService employeeService;
+    private final EmployeeService employeeService = ServiceRegistry.get(EmployeeService.class);
 
-    public EmployeesButtons(DaoFactory daoFactory, DataPublisher dataPublisher, EmployeeService employeeService) throws Exception {
+    public EmployeesButtons(DaoFactory daoFactory, DataPublisher dataPublisher) throws Exception {
         super(daoFactory, dataPublisher);
-        this.employeeService = employeeService;
     }
 
     public ButtonWithPerm addEmployee() {

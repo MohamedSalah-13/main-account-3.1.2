@@ -3,6 +3,7 @@ package com.hamza.account.dash;
 import com.hamza.account.config.Image_Setting;
 import com.hamza.account.controller.main.ButtonWithPerm;
 import com.hamza.account.controller.main.DataPublisher;
+import com.hamza.account.controller.others.ServiceRegistry;
 import com.hamza.account.interfaces.api.DataInterface;
 import com.hamza.account.model.base.BaseAccount;
 import com.hamza.account.model.base.BaseNames;
@@ -28,13 +29,12 @@ public class TotalsButton<T1 extends BasePurchasesAndSales, T2 extends BaseTotal
         extends TotalsService<T1, T2, T3, T4> {
 
     private final DataInterface<T1, T2, T3, T4> dataInterface;
-    private final EmployeeService employeeService;
+    private final EmployeeService employeeService = ServiceRegistry.get(EmployeeService.class);
 
     public TotalsButton(DataInterface<T1, T2, T3, T4> dataInterface, DaoFactory daoFactory
-            , DataPublisher dataPublisher, EmployeeService employeeService) throws Exception {
+            , DataPublisher dataPublisher) throws Exception {
         super(dataInterface, daoFactory, dataPublisher);
         this.dataInterface = dataInterface;
-        this.employeeService = employeeService;
     }
 
     public ButtonWithPerm totals() {
@@ -160,9 +160,6 @@ public class TotalsButton<T1 extends BasePurchasesAndSales, T2 extends BaseTotal
                 return dataInterface.designInterface().imageButton();
             }
 
-            @Override
-            public void actionAddPaneToTabPane(TabPane tabPane) throws Exception {
-            }
         };
     }
 
