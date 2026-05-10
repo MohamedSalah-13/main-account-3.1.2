@@ -1,9 +1,6 @@
 package com.hamza.account.features.export;
 
-import com.hamza.account.model.domain.DailyItemSales;
-import com.hamza.account.model.domain.ItemSalesRank;
-import com.hamza.account.model.domain.MonthlySalesViewModel;
-import com.hamza.account.model.domain.TableDataReports;
+import com.hamza.account.model.domain.*;
 import com.itextpdf.kernel.geom.PageSize;
 import javafx.collections.ObservableList;
 import lombok.extern.log4j.Log4j2;
@@ -296,5 +293,40 @@ public class ReportExportService {
     private String calculateTotal(List<DailyItemSales> data) {
         double total = data.stream().mapToDouble(DailyItemSales::getTotal).sum();
         return format(total);
+    }
+
+    public boolean exportComprehensiveSalesReport(List<ComprehensiveSalesReport> data, String period, String outputPath) {
+        String[] headers = {"رقم الفاتورة", "العميل", "الإجمالي", "الخصم", "الصافي", "المدفوع", "المتبقي"};
+        float[] columnWidths = {15f, 25f, 12f, 12f, 12f, 12f, 12f};
+
+        List<String[]> rows = new ArrayList<>();
+        for (ComprehensiveSalesReport item : data) {
+            rows.add(new String[]{
+                    item.getInvoiceNumber(),
+                    item.getCustomerName(),
+                    format(item.getGrossTotal()),
+                    format(item.getDiscount()),
+                    format(item.getNetTotal()),
+                    format(item.getPayed()),
+                    format(item.getRemain())
+            });
+        }
+
+        // نمرر المجاميع كإحصائيات أسفل التقرير
+        double totalNet = data.stream().mapToDouble(ComprehensiveSalesReport::getNetTotal).sum();
+        double totalRemain = data.stream().mapToDouble(ComprehensiveSalesReport::getRemain).sum();
+        String bottomNotes = "إجمالي صافي المبيعات: " + format(totalNet) + " | إجمالي الآجل (الديون): " + format(totalRemain);
+
+        return pdfExportService.exportGenericReport(
+                outputPath,
+                "تقرير المبيعات الشامل",
+                "عن الفترة: " + period,
+                headers,
+                columnWidths,
+                rows,
+                "إجمالي المبيعات",
+                format(totalNet),null,
+                PageSize.A4.rotate() // يفضل بالعرض لأن الأعمدة كثيرة
+        );
     }
 }

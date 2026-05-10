@@ -2,8 +2,8 @@ package com.hamza.account.controller.reports;
 
 import com.hamza.account.features.export.ExcelExportService;
 import com.hamza.account.features.export.ReportExportService;
-import com.hamza.account.model.domain.ItemSalesRank;
 import com.hamza.account.model.dao.DaoFactory; // افترضت وجوده بناءً على ملفاتك السابقة
+import com.hamza.account.model.domain.ItemSalesRank;
 import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.database.DaoException;
 import javafx.collections.FXCollections;
@@ -11,7 +11,10 @@ import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.chart.PieChart;
-import javafx.scene.control.*;
+import javafx.scene.control.ComboBox;
+import javafx.scene.control.TableCell;
+import javafx.scene.control.TableColumn;
+import javafx.scene.control.TableView;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.stage.FileChooser;
 import lombok.extern.log4j.Log4j2;
@@ -21,22 +24,33 @@ import java.net.URL;
 import java.util.List;
 import java.util.ResourceBundle;
 
+import static com.hamza.account.controller.reports.ErrorReports.showError;
+import static com.hamza.account.controller.reports.ErrorReports.showInfo;
+
 @Log4j2
 public class ItemSalesRankController implements Initializable {
 
+    private final ReportExportService reportExportService = new ReportExportService();
+    private final ExcelExportService excelExportService = new ExcelExportService();
     // --- عناصر التحكم في الواجهة (FXML) ---
-    @FXML private ComboBox<Integer> comboYear;
-    @FXML private ComboBox<String> comboMonth; // سيحتوي على الشهور أو "كل السنة"
-    @FXML private PieChart pieChartBestSellers;
-
-    @FXML private TableView<ItemSalesRank> tableView;
-    @FXML private TableColumn<ItemSalesRank, String> colItemName;
-    @FXML private TableColumn<ItemSalesRank, Double> colTotalQty;
-    @FXML private TableColumn<ItemSalesRank, Double> colTotalAmount;
-    @FXML private TableColumn<ItemSalesRank, Double> colTotalProfit;
-
+    @FXML
+    private ComboBox<Integer> comboYear;
+    @FXML
+    private ComboBox<String> comboMonth; // سيحتوي على الشهور أو "كل السنة"
+    @FXML
+    private PieChart pieChartBestSellers;
+    @FXML
+    private TableView<ItemSalesRank> tableView;
+    @FXML
+    private TableColumn<ItemSalesRank, String> colItemName;
+    @FXML
+    private TableColumn<ItemSalesRank, Double> colTotalQty;
+    @FXML
+    private TableColumn<ItemSalesRank, Double> colTotalAmount;
+    @FXML
+    private TableColumn<ItemSalesRank, Double> colTotalProfit;
     private DaoFactory daoFactory; // للوصول لقاعدة البيانات
-    private ObservableList<ItemSalesRank> allData = FXCollections.observableArrayList();
+    private final ObservableList<ItemSalesRank> allData = FXCollections.observableArrayList();
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
@@ -108,6 +122,8 @@ public class ItemSalesRankController implements Initializable {
         }
     }
 
+    // داخل ItemSalesRankController.java
+
     private void updatePieChart(List<ItemSalesRank> data) {
         pieChartBestSellers.getData().clear();
 
@@ -136,11 +152,6 @@ public class ItemSalesRankController implements Initializable {
             }
         });
     }
-
-    // داخل ItemSalesRankController.java
-
-    private final ReportExportService reportExportService = new ReportExportService();
-    private final ExcelExportService excelExportService = new ExcelExportService();
 
     @FXML
     private void onExportPdf() {
@@ -210,10 +221,4 @@ public class ItemSalesRankController implements Initializable {
         }
     }
 
-    private Alert showInfo(String message) {
-        return new Alert(Alert.AlertType.INFORMATION, message, ButtonType.OK);
-    }
-    private Alert showError(String message) {
-        return new Alert(Alert.AlertType.ERROR, message, ButtonType.OK);
-    }
 }

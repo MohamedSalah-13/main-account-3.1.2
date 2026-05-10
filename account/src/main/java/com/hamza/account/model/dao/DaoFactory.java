@@ -232,4 +232,8 @@ public enum DaoFactory {
         return new DailyItemSalesDao(connection);
     }
 
+    public ComprehensiveSalesDao comprehensiveSalesDao() {
+        return new ComprehensiveSalesDao(connection);
+    }
+
 }

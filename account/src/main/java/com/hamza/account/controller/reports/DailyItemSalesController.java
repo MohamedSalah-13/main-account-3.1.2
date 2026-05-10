@@ -4,7 +4,6 @@ import com.hamza.account.features.export.ExcelExportService;
 import com.hamza.account.features.export.ReportExportService;
 import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.model.domain.DailyItemSales;
-import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.database.DaoException;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -20,6 +19,10 @@ import java.net.URL;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.ResourceBundle;
+
+import static com.hamza.account.controller.reports.ErrorReports.showInfo;
+import static com.hamza.account.controller.reports.ErrorReports.showWarning;
+import static com.hamza.controlsfx.alert.AllAlerts.alertError;
 
 @Log4j2
 public class DailyItemSalesController implements Initializable {
@@ -80,7 +83,7 @@ public class DailyItemSalesController implements Initializable {
     private void onSearchAction() {
         LocalDate selectedDate = datePicker.getValue();
         if (selectedDate == null) {
-            AllAlerts.alertError("من فضلك اختر التاريخ أولاً");
+            alertError("من فضلك اختر التاريخ أولاً");
             return;
         }
 
@@ -98,14 +101,14 @@ public class DailyItemSalesController implements Initializable {
 
         } catch (DaoException e) {
             log.error("خطأ في جلب بيانات مبيعات اليوم", e);
-            AllAlerts.alertError("حدث خطأ أثناء جلب البيانات: " + e.getMessage());
+            alertError("حدث خطأ أثناء جلب البيانات: " + e.getMessage());
         }
     }
 
     @FXML
     private void onExportPdf() {
         if (allData.isEmpty()) {
-            alertWarning("لا توجد بيانات لتصديرها", "يرجى البحث عن يوم يحتوي على مبيعات أولاً.");
+            showWarning("يرجى البحث عن يوم يحتوي على مبيعات أولاً.");
             return;
         }
 
@@ -130,7 +133,7 @@ public class DailyItemSalesController implements Initializable {
             );
 
             if (success) {
-                alertInfo("تم تصدير ملف PDF بنجاح في المسار: " + path);
+                showInfo("تم تصدير ملف PDF بنجاح في المسار: " + path);
                 try {
                     java.awt.Desktop.getDesktop().open(new File(path));
                 } catch (Exception e) {
@@ -145,7 +148,7 @@ public class DailyItemSalesController implements Initializable {
     @FXML
     private void onExportExcel() {
         if (allData.isEmpty()) {
-            alertWarning("لا توجد بيانات لتصديرها", "يرجى البحث عن يوم يحتوي على مبيعات أولاً.");
+            showWarning("يرجى البحث عن يوم يحتوي على مبيعات أولاً.");
             return;
         }
 
@@ -162,10 +165,10 @@ public class DailyItemSalesController implements Initializable {
                 // افترضنا أنك أضفت دالة تصدير الإكسيل اليومية في ExcelExportService
                 // إذا لم تقم بإضافتها، يجب إضافتها لتعمل هذه الدالة
                 excelExportService.exportDailySalesToExcel(allData, file.getAbsolutePath());
-                alertInfo("تم تصدير ملف Excel بنجاح.");
+                showInfo("تم تصدير ملف Excel بنجاح.");
             } catch (Exception e) {
                 log.error("خطأ تصدير إكسيل", e);
-                AllAlerts.alertError("فشل التصدير: " + e.getMessage());
+                alertError("فشل التصدير: " + e.getMessage());
             }
         }
     }
@@ -187,15 +190,4 @@ public class DailyItemSalesController implements Initializable {
         });
     }
 
-    private Alert alertInfo(String message) {
-        return new Alert(Alert.AlertType.INFORMATION, message, ButtonType.OK);
-    }
-
-    private Alert alertWarning(String title, String message) {
-        return new Alert(Alert.AlertType.WARNING, message, ButtonType.OK);
-    }
-
-    private Alert alertError(String message) {
-        return new Alert(Alert.AlertType.ERROR, message, ButtonType.OK);
-    }
 }

@@ -2,6 +2,7 @@ package com.hamza.account.dash;
 
 import com.hamza.account.Main;
 import com.hamza.account.config.ConnectionToDatabase;
+import com.hamza.account.controller.reports.ComprehensiveSalesController;
 import com.hamza.account.controller.reports.DailyItemSalesController;
 import com.hamza.account.controller.reports.ItemSalesRankController;
 import com.hamza.account.controller.reports.ModernDashboardApp;
@@ -24,10 +25,10 @@ public class OpenShift extends Application {
 
 
         // مثال لكيفية فتح الشاشة وتمرير الاتصال
-        FXMLLoader loader = new FXMLLoader(Main.class.getResource("view/reports/DailyItemSalesView.fxml"));
+        FXMLLoader loader = new FXMLLoader(Main.class.getResource("view/reports/ComprehensiveSalesView.fxml"));
         Parent root = loader.load();
 
-        DailyItemSalesController controller = loader.getController();
+        ComprehensiveSalesController controller = loader.getController();
         controller.setDaoFactory(daoFactory); // تمرير اتصال قاعدة البيانات
 
         Scene scene = new Scene(root);

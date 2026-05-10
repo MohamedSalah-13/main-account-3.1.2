@@ -12,7 +12,6 @@ import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.chart.BarChart;
 import javafx.scene.chart.XYChart;
-import javafx.scene.control.Alert;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.cell.PropertyValueFactory;
@@ -28,6 +27,8 @@ import java.math.BigDecimal;
 import java.net.URL;
 import java.util.List;
 import java.util.ResourceBundle;
+
+import static com.hamza.account.controller.reports.ErrorReports.*;
 
 @Log4j2
 public class MonthlySalesController implements Initializable {
@@ -194,15 +195,4 @@ public class MonthlySalesController implements Initializable {
         }
     }
 
-    private void showInfo(String msg) {
-        new Alert(Alert.AlertType.INFORMATION, msg).show();
-    }
-
-    private void showWarning(String msg) {
-        new Alert(Alert.AlertType.WARNING, msg).show();
-    }
-
-    private void showError(String msg) {
-        new Alert(Alert.AlertType.ERROR, msg).show();
-    }
 }
