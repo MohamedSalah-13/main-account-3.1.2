@@ -236,4 +236,8 @@ public enum DaoFactory {
         return new ComprehensiveSalesDao(connection);
     }
 
+    public CustomerReceivableDao customerReceivableDao() {
+        return new CustomerReceivableDao(connection);
+    }
+
 }

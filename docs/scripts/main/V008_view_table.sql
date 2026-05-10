@@ -1163,3 +1163,35 @@ SELECT
     ROUND(SUM(total_sales - (quantity * buy_price)), 2) AS total_profit
 FROM sales_names_table
 GROUP BY num, nameItem, YEAR(invoice_date), MONTH(invoice_date);
+
+
+CREATE OR REPLACE VIEW view_customer_receivables AS
+SELECT
+    c.id AS customer_id,
+    c.name AS customer_name,
+    c.tel AS customer_phone,
+
+    -- رصيد أول المدة (المديونية عند تسجيل العميل)
+    ROUND(c.first_balance, 2) AS opening_balance,
+
+    -- إجمالي المبالغ الآجلة (المتبقية) من فواتير المبيعات
+    ROUND((SELECT IFNULL(SUM((ts.total - ts.discount) - ts.paid_up), 0)
+           FROM total_sales ts
+           WHERE ts.sup_code = c.id), 2) AS total_invoices_debt,
+
+    -- إجمالي التحصيلات والمدفوعات من جدول حسابات العملاء
+    ROUND((SELECT IFNULL(SUM(paid), 0)
+           FROM customers_accounts ca
+           WHERE ca.account_code = c.id), 2) AS total_payments,
+
+    -- صافي المديونية النهائية
+    ROUND((c.first_balance +
+           (SELECT IFNULL(SUM((ts.total - ts.discount) - ts.paid_up), 0) FROM total_sales ts WHERE ts.sup_code = c.id) -
+           (SELECT IFNULL(SUM(paid), 0) FROM customers_accounts ca WHERE ca.account_code = c.id)
+              ), 2) AS final_balance
+
+FROM custom c
+-- إظهار العملاء الذين لديهم تعاملات مادية فقط (اختياري)
+WHERE (c.first_balance <> 0 OR
+       EXISTS (SELECT 1 FROM total_sales WHERE sup_code = c.id) OR
+       EXISTS (SELECT 1 FROM customers_accounts WHERE account_code = c.id));

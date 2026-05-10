@@ -24,7 +24,6 @@ import java.net.URL;
 import java.util.List;
 import java.util.ResourceBundle;
 
-import static com.hamza.account.controller.reports.ErrorReports.showError;
 import static com.hamza.account.controller.reports.ErrorReports.showInfo;
 
 @Log4j2
@@ -32,6 +31,7 @@ public class ItemSalesRankController implements Initializable {
 
     private final ReportExportService reportExportService = new ReportExportService();
     private final ExcelExportService excelExportService = new ExcelExportService();
+    private final ObservableList<ItemSalesRank> allData = FXCollections.observableArrayList();
     // --- عناصر التحكم في الواجهة (FXML) ---
     @FXML
     private ComboBox<Integer> comboYear;
@@ -50,7 +50,6 @@ public class ItemSalesRankController implements Initializable {
     @FXML
     private TableColumn<ItemSalesRank, Double> colTotalProfit;
     private DaoFactory daoFactory; // للوصول لقاعدة البيانات
-    private final ObservableList<ItemSalesRank> allData = FXCollections.observableArrayList();
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
@@ -160,47 +159,26 @@ public class ItemSalesRankController implements Initializable {
             return;
         }
 
-        // 1. أخذ لقطة (Snapshot) من الـ PieChart
-        byte[] chartImage = null;
-        try {
-            javafx.scene.image.WritableImage image = pieChartBestSellers.snapshot(null, null);
-            java.io.ByteArrayOutputStream out = new java.io.ByteArrayOutputStream();
-            javax.imageio.ImageIO.write(javafx.embed.swing.SwingFXUtils.fromFXImage(image, null), "png", out);
-            chartImage = out.toByteArray();
-        } catch (java.io.IOException e) {
-            log.error("خطأ في تحويل الرسم البياني لصورة", e);
-        }
+        new ChoosePdfFile().choosePdfFile("تقرير حركة الأصناف لسنة " + comboYear.getValue(), path -> {
+            // 1. أخذ لقطة (Snapshot) من الـ PieChart
+            byte[] chartImage = null;
+            try {
+                javafx.scene.image.WritableImage image = pieChartBestSellers.snapshot(null, null);
+                java.io.ByteArrayOutputStream out = new java.io.ByteArrayOutputStream();
+                javax.imageio.ImageIO.write(javafx.embed.swing.SwingFXUtils.fromFXImage(image, null), "png", out);
+                chartImage = out.toByteArray();
+            } catch (java.io.IOException e) {
+                log.error("خطأ في تحويل الرسم البياني لصورة", e);
+                return false;
+            }
 
-        FileChooser fileChooser = new FileChooser();
-        fileChooser.setTitle("حفظ التقرير");
-        fileChooser.setInitialFileName("تقرير_الأصناف_المباعة.pdf");
-        fileChooser.getExtensionFilters().add(
-                new FileChooser.ExtensionFilter("PDF Files", "*.pdf")
-        );
-
-        File file = fileChooser.showSaveDialog(tableView.getScene().getWindow());
-
-        if (file != null) {
-            // 2. التصدير
-            String path = file.getAbsolutePath();
-            boolean success = reportExportService.exportItemSalesRankReport(
+            return reportExportService.exportItemSalesRankReport(
                     tableView.getItems(),
                     "تقرير حركة الأصناف لسنة " + comboYear.getValue(),
                     path,
                     chartImage
             );
-
-            if (success) {
-                showInfo("تم تصدير ملف PDF بنجاح في المسار: " + path);
-                try {
-                    java.awt.Desktop.getDesktop().open(new File(path));
-                } catch (Exception e) {
-                    log.error("Error opening PDF file: ", e);
-                }
-            } else {
-                showError("فشل في تصدير ملف PDF");
-            }
-        }
+        });
     }
 
     @FXML
