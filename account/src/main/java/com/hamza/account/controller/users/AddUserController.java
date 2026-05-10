@@ -1,10 +1,10 @@
 package com.hamza.account.controller.users;
 
-import com.hamza.account.controller.others.ServiceData;
-import com.hamza.account.model.dao.DaoFactory;
+import com.hamza.account.controller.others.ServiceRegistry;
 import com.hamza.account.model.domain.Users;
 import com.hamza.account.openFxml.AddInterface;
 import com.hamza.account.openFxml.FxmlPath;
+import com.hamza.account.service.UsersService;
 import com.hamza.controlsfx.language.Setting_Language;
 import com.hamza.controlsfx.observer.Publisher;
 import com.hamza.controlsfx.others.ShowPassService;
@@ -24,11 +24,12 @@ import java.util.List;
 
 @Log4j2
 @FxmlPath(pathFile = "add-user.fxml")
-public class AddUserController extends ServiceData implements AddInterface {
+public class AddUserController implements AddInterface {
 
 
     private final int codeId;
     private final Publisher<String> publisherAddUsers;
+    private final UsersService usersService = ServiceRegistry.get(UsersService.class);
     @FXML
     private Label labelCode, labelName, labelActive, labelPass;
     @FXML
@@ -40,8 +41,7 @@ public class AddUserController extends ServiceData implements AddInterface {
     @FXML
     private PasswordField txtPass;
 
-    public AddUserController(int codeId, Publisher<String> publisherAddUsers, DaoFactory daoFactory) throws Exception {
-        super(daoFactory);
+    public AddUserController(int codeId, Publisher<String> publisherAddUsers) {
         this.codeId = codeId;
         this.publisherAddUsers = publisherAddUsers;
     }

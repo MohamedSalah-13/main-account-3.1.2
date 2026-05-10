@@ -57,7 +57,7 @@ public class UsersButtons extends LoadData {
 
             @Override
             public void action() throws Exception {
-                new AddForAllApplication(0, new AddUserController(0, dataPublisher.getPublisherAddUser(), daoFactory));
+                new AddForAllApplication(0, new AddUserController(0, dataPublisher.getPublisherAddUser()));
             }
 
             @NotNull

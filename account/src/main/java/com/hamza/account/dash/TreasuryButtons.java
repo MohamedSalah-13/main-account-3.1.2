@@ -4,7 +4,6 @@ import com.hamza.account.controller.convert_treasury.AddDepositController;
 import com.hamza.account.controller.convert_treasury.ConvertTreasuryController;
 import com.hamza.account.controller.main.ButtonWithPerm;
 import com.hamza.account.controller.main.DataPublisher;
-import com.hamza.account.controller.others.ServiceData;
 import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.openFxml.OpenFxmlApplication;
 import com.hamza.account.table.TableOpen;
@@ -17,13 +16,12 @@ import com.hamza.controlsfx.language.Setting_Language;
 import javafx.stage.Stage;
 import org.jetbrains.annotations.NotNull;
 
-public class TreasuryButtons extends ServiceData {
+public class TreasuryButtons {
 
     private final DaoFactory daoFactory;
     private final DataPublisher dataPublisher;
 
-    public TreasuryButtons(DaoFactory daoFactory, DataPublisher dataPublisher) throws Exception {
-        super(daoFactory);
+    public TreasuryButtons(DaoFactory daoFactory, DataPublisher dataPublisher) {
         this.daoFactory = daoFactory;
         this.dataPublisher = dataPublisher;
     }

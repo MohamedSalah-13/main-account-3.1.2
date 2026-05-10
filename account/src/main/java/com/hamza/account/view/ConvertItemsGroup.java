@@ -17,28 +17,16 @@ import java.util.List;
 public class ConvertItemsGroup extends Application {
 
     public static final String HEADER_TEXT = "تعديل مجموعة أصناف";
-    private final DaoFactory daoFactory;
     private final List<ItemsModel> itemsModelList;
 
-    public ConvertItemsGroup(DaoFactory daoFactory, List<ItemsModel> itemsModelList) {
-        this.daoFactory = daoFactory;
+    public ConvertItemsGroup(List<ItemsModel> itemsModelList) {
         this.itemsModelList = itemsModelList;
     }
 
-    private VBox vBox(List<ItemsModel> itemsModelList) {
-        ListView<String> listView = new ListView<>();
-//        listView.setPrefSize(200, 200);
-        listView.setMaxHeight(200);
-        for (ItemsModel itemsModel : itemsModelList) {
-            listView.getItems().add(itemsModel.getId() + " - " + itemsModel.getNameItem());
-        }
-        VBox.setVgrow(listView, Priority.SOMETIMES);
-        return new VBox(listView);
-    }
 
     @Override
     public void start(Stage stage) throws Exception {
-        var controller = new UpdateSomeItems(daoFactory, itemsModelList);
+        var controller = new UpdateSomeItems(itemsModelList);
         Scene scene = new SceneAll(new OpenFxmlApplication(controller).getPane());
         stage.setScene(scene);
         stage.setTitle(HEADER_TEXT);

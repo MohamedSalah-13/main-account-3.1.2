@@ -1,17 +1,16 @@
 package com.hamza.account.controller.reports;
 
-import com.hamza.account.config.Image_Setting;
-import com.hamza.account.controller.others.ServiceData;
+import com.hamza.account.controller.others.ServiceRegistry;
 import com.hamza.account.features.export.ExcelExportService;
 import com.hamza.account.features.export.ReportExportService;
 import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.model.domain.TableDataReports;
 import com.hamza.account.openFxml.FxmlPath;
+import com.hamza.account.service.TotalBuyService;
 import com.hamza.account.table.TableSetting;
 import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.language.Setting_Language;
 import com.hamza.controlsfx.table.TableColumnAnnotation;
-import com.hamza.controlsfx.util.ImageChoose;
 import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
@@ -25,12 +24,13 @@ import java.util.List;
 
 @Log4j2
 @FxmlPath(pathFile = "reports/total-year-profit.fxml")
-public class ReportTotalByYearController extends ServiceData {
+public class ReportTotalByYearController {
 
     private final List<TableDataReports> allData = new ArrayList<>();
     private final DaoFactory daoFactory;
     private final ReportExportService reportExportService = new ReportExportService();
     private final ExcelExportService excelExportService = new ExcelExportService();
+    private final TotalBuyService totalBuyService = ServiceRegistry.get(TotalBuyService.class);
     @FXML
     private TableView<TableDataReports> tableView;
     @FXML
@@ -38,8 +38,7 @@ public class ReportTotalByYearController extends ServiceData {
     @FXML
     private Button searchButton, btnPrintPdf, btnExportExcel;
 
-    public ReportTotalByYearController(DaoFactory daoFactory) throws Exception {
-        super(daoFactory);
+    public ReportTotalByYearController(DaoFactory daoFactory) {
         this.daoFactory = daoFactory;
     }
 

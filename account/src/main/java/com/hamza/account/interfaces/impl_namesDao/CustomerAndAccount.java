@@ -1,29 +1,31 @@
 package com.hamza.account.interfaces.impl_namesDao;
 
 import com.hamza.account.controller.main.DataPublisher;
-import com.hamza.account.controller.others.ServiceData;
+import com.hamza.account.controller.others.ServiceRegistry;
 import com.hamza.account.controller.search.CustomerSearchController;
 import com.hamza.account.controller.search.SearchInterface;
 import com.hamza.account.interfaces.api.NameAndAccountInterface;
-import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.model.domain.CustomerAccount;
 import com.hamza.account.model.domain.Customers;
+import com.hamza.account.service.AccountCustomerService;
+import com.hamza.account.service.CustomerService;
 import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.database.DaoList;
 import com.hamza.controlsfx.observer.Publisher;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 
 import java.util.List;
 
 @Log4j2
-public class CustomerAndAccount extends ServiceData implements NameAndAccountInterface<Customers, CustomerAccount> {
+@RequiredArgsConstructor
+public class CustomerAndAccount implements NameAndAccountInterface<Customers, CustomerAccount> {
 
     private final DataPublisher dataPublisher;
 
-    public CustomerAndAccount(DaoFactory daoFactory, DataPublisher dataPublisher) throws Exception {
-        super(daoFactory);
-        this.dataPublisher = dataPublisher;
-    }
+    private final CustomerService customerService = ServiceRegistry.get(CustomerService.class);
+    private final AccountCustomerService accountCustomerService = ServiceRegistry.get(AccountCustomerService.class);
+
 
     @Override
     public DaoList<Customers> nameDao() {

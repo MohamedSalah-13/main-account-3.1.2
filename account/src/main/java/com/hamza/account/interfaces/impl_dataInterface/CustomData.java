@@ -102,7 +102,7 @@ public class CustomData extends LoadData implements DataInterface<Sales, Total_S
 
     @Override
     public NameAndAccountInterface<Customers, CustomerAccount> nameAndAccountInterface() throws Exception {
-        return new CustomerAndAccount(daoFactory, dataPublisher);
+        return new CustomerAndAccount(dataPublisher);
     }
 
     @Override

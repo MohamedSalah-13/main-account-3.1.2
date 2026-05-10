@@ -95,7 +95,7 @@ public class SuppliersDataReturn extends LoadData implements DataInterface<Purch
 
     @Override
     public NameAndAccountInterface<Suppliers, SupplierAccount> nameAndAccountInterface() throws Exception {
-        return new SupplierAndAccount(daoFactory, dataPublisher);
+        return new SupplierAndAccount(dataPublisher);
     }
 
     @Override

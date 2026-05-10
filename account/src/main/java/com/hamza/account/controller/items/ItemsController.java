@@ -320,7 +320,7 @@ public class ItemsController extends LoadData {
         try {
             var itemsModels = printItems();
             if (!itemsModels.isEmpty()) {
-                new ConvertItemsGroup(daoFactory, itemsModels).start(new Stage());
+                new ConvertItemsGroup(itemsModels).start(new Stage());
             } else AllAlerts.alertError(Error_Text_Show.PLEASE_INSERT_ALL_DATA);
         } catch (Exception e) {
             logErrors(e);

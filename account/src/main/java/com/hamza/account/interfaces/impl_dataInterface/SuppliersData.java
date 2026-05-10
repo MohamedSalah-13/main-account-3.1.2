@@ -101,7 +101,7 @@ public class SuppliersData
 
     @Override
     public NameAndAccountInterface<Suppliers, SupplierAccount> nameAndAccountInterface() throws Exception {
-        return new SupplierAndAccount(daoFactory, dataPublisher);
+        return new SupplierAndAccount(dataPublisher);
     }
 
     @Override

@@ -232,7 +232,7 @@ public class UserController implements TableInterface<Users> {
     }
 
     private void openAddUser(int code) throws Exception {
-        new AddForAllApplication(0, new AddUserController(code, publisherAddUser, daoFactory));
+        new AddForAllApplication(0, new AddUserController(code, publisherAddUser));
     }
 
 }

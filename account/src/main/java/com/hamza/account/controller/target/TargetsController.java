@@ -1,12 +1,12 @@
 package com.hamza.account.controller.target;
 
-import com.hamza.account.features.chart.ChartDesign;
 import com.hamza.account.controller.main.DataPublisher;
 import com.hamza.account.controller.model.PrintTotalsData;
 import com.hamza.account.controller.model.TreeAccountModelForPrint;
-import com.hamza.account.controller.others.ServiceData;
+import com.hamza.account.controller.others.ServiceRegistry;
 import com.hamza.account.controller.reports.ToolbarReportsNameController;
 import com.hamza.account.controller.reports.ToolbarReportsNameInterface;
+import com.hamza.account.features.chart.ChartDesign;
 import com.hamza.account.interfaces.api.DataInterface;
 import com.hamza.account.interfaces.impl_dataInterface.CustomData;
 import com.hamza.account.interfaces.impl_dataInterface.CustomDataReturn;
@@ -22,6 +22,10 @@ import com.hamza.account.model.domain.Total_Sales_Re;
 import com.hamza.account.openFxml.FxmlPath;
 import com.hamza.account.openFxml.OpenFxmlApplication;
 import com.hamza.account.reportData.Print_Reports;
+import com.hamza.account.service.AccountCustomerService;
+import com.hamza.account.service.TargetDetailsService;
+import com.hamza.account.service.TotalSalesReturnService;
+import com.hamza.account.service.TotalSalesService;
 import com.hamza.account.table.TableSetting;
 import com.hamza.account.view.AccountDetailsApplication;
 import com.hamza.account.view.ShowInvoiceApplication;
@@ -65,9 +69,8 @@ import static com.hamza.controlsfx.others.MonthsWithArabic.retrieveArabicMonths;
 
 @Log4j2
 @FxmlPath(pathFile = "target/target-delegate.fxml")
-public class TargetsController extends ServiceData implements AppSettingInterface {
+public class TargetsController implements AppSettingInterface {
 
-    //TODO 11/11/2025 11:02 AM Mohamed: check all data
     private final DataPublisher dataPublisher;
     private final DaoFactory daoFactory;
     private final ObservableList<XYChart.Series<String, Number>> seriesList = FXCollections.observableArrayList();
@@ -77,6 +80,10 @@ public class TargetsController extends ServiceData implements AppSettingInterfac
     private final IntegerProperty year = new SimpleIntegerProperty(1);
     private final Print_Reports printReports;
     private final String textName;
+    private final TargetDetailsService targetDetailsService = ServiceRegistry.get(TargetDetailsService.class);
+    private final TotalSalesService totalSalesService = ServiceRegistry.get(TotalSalesService.class);
+    private final TotalSalesReturnService totalSalesReturnService = ServiceRegistry.get(TotalSalesReturnService.class);
+    private final AccountCustomerService accountCustomerService = ServiceRegistry.get(AccountCustomerService.class);
     @FXML
     private CheckComboBox<Integer> comboBoxMonth;
     @FXML
@@ -97,8 +104,8 @@ public class TargetsController extends ServiceData implements AppSettingInterfac
     private TableView<Total_Sales_Re> tableTotalSalesRe;
     private TableView<CustomerAccount> tableCustomerAccount;
 
+
     public TargetsController(DaoFactory daoFactory, DataPublisher dataPublisher, String textName) throws Exception {
-        super(daoFactory);
         this.dataPublisher = dataPublisher;
         this.daoFactory = daoFactory;
         this.textName = textName;
@@ -395,8 +402,8 @@ public class TargetsController extends ServiceData implements AppSettingInterfac
             String selectedEmployee = comboBoxName.getSelectionModel().isEmpty() || comboBoxName.getSelectionModel().isSelected(0) ? null : comboBoxName.getSelectionModel().getSelectedItem();
             Integer selectedYear = comboBoxYear.getSelectionModel().isEmpty() ? null : comboBoxYear.getSelectionModel().getSelectedItem();
             List<Integer> selectedMonths = comboBoxMonth.checkModelProperty().getValue().isEmpty() ? null : comboBoxMonth.checkModelProperty().getValue().getCheckedItems().stream()
-                    .filter(Objects::nonNull)
-                    .toList();
+                                                                                                            .filter(Objects::nonNull)
+                                                                                                            .toList();
 
             Integer firstMonth = null;
             Integer lastMonth = null;

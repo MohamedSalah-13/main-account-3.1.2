@@ -1,16 +1,18 @@
 package com.hamza.account.controller.items;
 
 import com.hamza.account.config.Image_Setting;
-import com.hamza.account.controller.others.ServiceData;
-import com.hamza.account.model.dao.DaoFactory;
+import com.hamza.account.controller.others.ServiceRegistry;
 import com.hamza.account.model.domain.ItemsModel;
 import com.hamza.account.model.domain.MainGroups;
 import com.hamza.account.openFxml.FxmlPath;
 import com.hamza.account.otherSetting.MaskerPaneSetting;
+import com.hamza.account.service.ItemsService;
+import com.hamza.account.service.MainGroupService;
+import com.hamza.account.service.SupGroupService;
 import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.database.DaoException;
-import com.hamza.controlsfx.util.ImageChoose;
 import com.hamza.controlsfx.language.Setting_Language;
+import com.hamza.controlsfx.util.ImageChoose;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
@@ -29,11 +31,14 @@ import static com.hamza.controlsfx.others.Utils.setTextFormatter;
 
 @Log4j2
 @FxmlPath(pathFile = "items/update-some-items.fxml")
-public class UpdateSomeItems extends ServiceData {
+public class UpdateSomeItems {
 
     private final List<ItemsModel> itemsModelList;
     private final ImageChoose imageChoose = new ImageChoose();
     private final ImageView imageView = new ImageView();
+    private final ItemsService itemsService = ServiceRegistry.get(ItemsService.class);
+    private final MainGroupService mainGroupService = ServiceRegistry.get(MainGroupService.class);
+    private final SupGroupService supGroupService = ServiceRegistry.get(SupGroupService.class);
     private boolean isActiveProperty = false;
     @FXML
     private CheckBox checkUpdateGroup, checkUpdateActive, checkUpdateBuy, checkUpdateSell, checkDeleteImage, checkMini, checkFirstBalance;
@@ -53,8 +58,7 @@ public class UpdateSomeItems extends ServiceData {
     private StackPane stackPane;
     private MaskerPaneSetting maskerPaneSetting;
 
-    public UpdateSomeItems(DaoFactory daoFactory, List<ItemsModel> itemsModelList) throws Exception {
-        super(daoFactory);
+    public UpdateSomeItems(List<ItemsModel> itemsModelList) {
         this.itemsModelList = itemsModelList;
     }
 
