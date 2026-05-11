@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<?import javafx.geometry.Insets?>
 <?import javafx.scene.control.Button?>
 <?import javafx.scene.control.CheckBox?>
 <?import javafx.scene.control.Label?>
@@ -12,177 +11,310 @@
 <?import javafx.scene.layout.ColumnConstraints?>
 <?import javafx.scene.layout.GridPane?>
 <?import javafx.scene.layout.HBox?>
-<?import javafx.scene.layout.RowConstraints?>
 <?import javafx.scene.layout.VBox?>
 <?import javafx.scene.text.Text?>
 
-<AnchorPane xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1">
+<AnchorPane nodeOrientation="RIGHT_TO_LEFT"
+            styleClass="settings-root"
+            stylesheets="@../../css/settings-modern.css"
+            xmlns="http://javafx.com/javafx/21"
+            xmlns:fx="http://javafx.com/fxml/1">
     <children>
-        <ScrollPane fitToHeight="true" fitToWidth="true" layoutX="5.0" layoutY="5.0" AnchorPane.bottomAnchor="5.0" AnchorPane.leftAnchor="5.0" AnchorPane.rightAnchor="5.0" AnchorPane.topAnchor="5.0">
+        <ScrollPane fitToHeight="true"
+                    fitToWidth="true"
+                    styleClass="settings-scroll-pane"
+                    AnchorPane.bottomAnchor="0.0"
+                    AnchorPane.leftAnchor="0.0"
+                    AnchorPane.rightAnchor="0.0"
+                    AnchorPane.topAnchor="0.0">
             <content>
-                <AnchorPane>
+                <VBox spacing="18.0" styleClass="settings-container">
                     <children>
-                        <VBox minHeight="-Infinity" minWidth="-Infinity" spacing="10.0" styleClass="dashboard-tile" AnchorPane.bottomAnchor="5.0" AnchorPane.leftAnchor="5.0" AnchorPane.rightAnchor="5.0" AnchorPane.topAnchor="5.0">
+                        <VBox spacing="5.0">
                             <children>
-                                <VBox>
+                                <Label text="إعدادات التحقق والخيارات" styleClass="settings-title"/>
+                                <Label text="إعدادات الأصناف والفواتير والطباعة ونقاط البيع"
+                                       styleClass="settings-subtitle"/>
+                            </children>
+                        </VBox>
+
+                        <VBox spacing="18.0" styleClass="settings-card">
+                            <children>
+                                <VBox spacing="12.0" styleClass="settings-section-card">
                                     <children>
-                                        <Text fx:id="textItem" strokeType="OUTSIDE" strokeWidth="0.0" styleClass="text-explain" text="Items" />
-                                        <HBox spacing="10.0">
+                                        <Text fx:id="textItem"
+                                              strokeType="OUTSIDE"
+                                              strokeWidth="0.0"
+                                              text="Items"
+                                              styleClass="section-title"/>
+
+                                        <HBox spacing="24.0">
                                             <children>
-                                                <VBox spacing="10.0">
+                                                <VBox spacing="12.0">
                                                     <children>
-                                                        <CheckBox fx:id="checkShowColumnSelectedInItems" disable="true" mnemonicParsing="false" text="Show Column Selected In Items" underline="true" />
-                                                        <CheckBox fx:id="checkBalance" mnemonicParsing="false" styleClass="check-box-not-used" text="Check Balance Items" />
-                                                    </children>
-                                                    <padding>
-                                                        <Insets bottom="5.0" left="5.0" right="5.0" top="5.0" />
-                                                    </padding>
-                                                </VBox>
-                                                <VBox layoutX="10.0" layoutY="10.0" spacing="10.0">
-                                                    <children>
-                                                        <CheckBox fx:id="checkEditItems" mnemonicParsing="false" text="Edit Items" />
-                                                        <CheckBox fx:id="checkShowImageHint" layoutX="10.0" layoutY="27.0" mnemonicParsing="false" text="إظهار تلميحات الصورة" />
-                                                    </children>
-                                                    <padding>
-                                                        <Insets bottom="5.0" left="5.0" right="5.0" top="5.0" />
-                                                    </padding>
-                                                </VBox>
-                                            </children>
-                                        </HBox>
-                                    </children>
-                                </VBox>
-                                <Separator layoutX="26.0" layoutY="451.0" prefWidth="200.0" />
-                                <VBox>
-                                    <children>
-                                        <Text fx:id="textInvoice" strokeType="OUTSIDE" strokeWidth="0.0" styleClass="text-explain" text="Invoice" />
-                                        <HBox spacing="10.0">
-                                            <children>
-                                                <VBox layoutX="10.0" layoutY="10.0" spacing="10.0">
-                                                    <padding>
-                                                        <Insets bottom="5.0" left="5.0" right="5.0" top="5.0" />
-                                                    </padding>
-                                                    <children>
-                                                        <CheckBox fx:id="checkSelWithoutBalance" mnemonicParsing="false" text="Sales Without Balance" />
-                                                        <CheckBox fx:id="updatePriceInInvoice" mnemonicParsing="false" text="Update Price In Invoice" />
-                                                        <CheckBox fx:id="printReceiptInvoice" layoutX="15.0" layoutY="15.0" mnemonicParsing="false" text="Print invoice receipt" />
-                                                        <CheckBox fx:id="showScreenAlone" layoutX="15.0" layoutY="69.0" mnemonicParsing="false" text="عرض شاشة منفصلة" />
+                                                        <CheckBox fx:id="checkShowColumnSelectedInItems"
+                                                                  disable="true"
+                                                                  mnemonicParsing="false"
+                                                                  text="Show Column Selected In Items"
+                                                                  styleClass="modern-check-box"/>
+                                                        <CheckBox fx:id="checkBalance"
+                                                                  mnemonicParsing="false"
+                                                                  text="Check Balance Items"
+                                                                  styleClass="modern-check-box"/>
                                                     </children>
                                                 </VBox>
-                                                <VBox layoutX="10.0" layoutY="10.0" spacing="10.0">
-                                                    <padding>
-                                                        <Insets bottom="5.0" left="5.0" right="5.0" top="5.0" />
-                                                    </padding>
+
+                                                <VBox spacing="12.0">
                                                     <children>
-                                                        <CheckBox fx:id="checkIncreaseItemOnTable" mnemonicParsing="false" text="increase Item On Table" />
-                                                        <CheckBox fx:id="checkBackupAfterSave" layoutX="15.0" layoutY="15.0" mnemonicParsing="false" text="backup after save invoice" />
-                                                        <CheckBox fx:id="checkPrintReceiptAccount" mnemonicParsing="false" text="Print invoice receipt" />
-                                                        <CheckBox fx:id="checkInvoicePaid" layoutX="15.0" layoutY="69.0" mnemonicParsing="false" text="شاشة المبلغ المدفوع" />
-                                                    </children>
-                                                </VBox>
-                                                <VBox layoutX="173.0" layoutY="10.0" spacing="10.0">
-                                                    <padding>
-                                                        <Insets bottom="5.0" left="5.0" right="5.0" top="5.0" />
-                                                    </padding>
-                                                    <children>
-                                                        <CheckBox fx:id="checkPosSelectPrice" mnemonicParsing="false" text="اختيار السعر فى نقاط البيع" />
-                                                        <CheckBox fx:id="checkAddItemDirect" layoutX="15.0" layoutY="15.0" mnemonicParsing="false" text="إضافة الصنف مباشرة فى الفاتورة" />
+                                                        <CheckBox fx:id="checkEditItems"
+                                                                  mnemonicParsing="false"
+                                                                  text="Edit Items"
+                                                                  styleClass="modern-check-box"/>
+                                                        <CheckBox fx:id="checkShowImageHint"
+                                                                  mnemonicParsing="false"
+                                                                  text="إظهار تلميحات الصورة"
+                                                                  styleClass="modern-check-box"/>
                                                     </children>
                                                 </VBox>
                                             </children>
                                         </HBox>
                                     </children>
                                 </VBox>
-                                <Separator layoutX="26.0" layoutY="174.0" prefWidth="200.0" />
-                                <VBox>
+
+                                <Separator styleClass="settings-separator"/>
+
+                                <VBox spacing="12.0" styleClass="settings-section-card">
                                     <children>
-                                        <Text fx:id="textOthers" strokeType="OUTSIDE" strokeWidth="0.0" styleClass="text-explain" text="Other" />
-                                        <HBox spacing="10.0">
+                                        <Text fx:id="textInvoice"
+                                              strokeType="OUTSIDE"
+                                              strokeWidth="0.0"
+                                              text="Invoice"
+                                              styleClass="section-title"/>
+
+                                        <HBox spacing="24.0">
                                             <children>
-                                                <VBox spacing="10.0">
-                                                    <padding>
-                                                        <Insets bottom="5.0" left="5.0" right="5.0" top="5.0" />
-                                                    </padding>
+                                                <VBox spacing="12.0">
                                                     <children>
-                                                        <CheckBox fx:id="checkPrintTitleInReports" disable="true" mnemonicParsing="false" text="Print Title In Report" />
-                                                        <CheckBox fx:id="checkShowBeforePrint" mnemonicParsing="false" text="Show Before Print" />
+                                                        <CheckBox fx:id="checkSelWithoutBalance"
+                                                                  mnemonicParsing="false"
+                                                                  text="Sales Without Balance"
+                                                                  styleClass="modern-check-box"/>
+                                                        <CheckBox fx:id="updatePriceInInvoice"
+                                                                  mnemonicParsing="false"
+                                                                  text="Update Price In Invoice"
+                                                                  styleClass="modern-check-box"/>
+                                                        <CheckBox fx:id="printReceiptInvoice"
+                                                                  mnemonicParsing="false"
+                                                                  text="Print invoice receipt"
+                                                                  styleClass="modern-check-box"/>
+                                                        <CheckBox fx:id="showScreenAlone"
+                                                                  mnemonicParsing="false"
+                                                                  text="عرض شاشة منفصلة"
+                                                                  styleClass="modern-check-box"/>
                                                     </children>
                                                 </VBox>
-                                                <VBox layoutX="10.0" layoutY="10.0" spacing="10.0">
-                                                    <padding>
-                                                        <Insets bottom="5.0" left="5.0" right="5.0" top="5.0" />
-                                                    </padding>
+
+                                                <VBox spacing="12.0">
                                                     <children>
-                                                        <CheckBox fx:id="checkInsideDatabase" mnemonicParsing="false" text="قاعدة بيانات داخلية" />
-                                                        <CheckBox fx:id="checkServer" layoutX="15.0" layoutY="42.0" mnemonicParsing="false" text="يعمل سيرفر" />
+                                                        <CheckBox fx:id="checkIncreaseItemOnTable"
+                                                                  mnemonicParsing="false"
+                                                                  text="increase Item On Table"
+                                                                  styleClass="modern-check-box"/>
+                                                        <CheckBox fx:id="checkBackupAfterSave"
+                                                                  mnemonicParsing="false"
+                                                                  text="backup after save invoice"
+                                                                  styleClass="modern-check-box"/>
+                                                        <CheckBox fx:id="checkPrintReceiptAccount"
+                                                                  mnemonicParsing="false"
+                                                                  text="Print invoice receipt"
+                                                                  styleClass="modern-check-box"/>
+                                                        <CheckBox fx:id="checkInvoicePaid"
+                                                                  mnemonicParsing="false"
+                                                                  text="شاشة المبلغ المدفوع"
+                                                                  styleClass="modern-check-box"/>
                                                     </children>
                                                 </VBox>
-                                    <VBox layoutX="154.0" layoutY="10.0" spacing="10.0">
-                                       <padding>
-                                          <Insets bottom="5.0" left="5.0" right="5.0" top="5.0" />
-                                       </padding>
-                                       <children>
-                                                        <CheckBox fx:id="checkLogin" mnemonicParsing="false" text="دخول بدون شاشة الدخول" />
-                                          <CheckBox fx:id="checkShowTotals" layoutX="15.0" layoutY="15.0" mnemonicParsing="false" text="عرض الاجماليات فى الشاشة الرئيسية" />
-                                       </children>
-                                    </VBox>
+
+                                                <VBox spacing="12.0">
+                                                    <children>
+                                                        <CheckBox fx:id="checkPosSelectPrice"
+                                                                  mnemonicParsing="false"
+                                                                  text="اختيار السعر فى نقاط البيع"
+                                                                  styleClass="modern-check-box"/>
+                                                        <CheckBox fx:id="checkAddItemDirect"
+                                                                  mnemonicParsing="false"
+                                                                  text="إضافة الصنف مباشرة فى الفاتورة"
+                                                                  styleClass="modern-check-box"/>
+                                                    </children>
+                                                </VBox>
                                             </children>
                                         </HBox>
-                                        <Separator prefWidth="200.0" />
-                                        <GridPane hgap="5.0" vgap="5.0">
+                                    </children>
+                                </VBox>
+
+                                <Separator styleClass="settings-separator"/>
+
+                                <VBox spacing="12.0" styleClass="settings-section-card">
+                                    <children>
+                                        <Text fx:id="textOthers"
+                                              strokeType="OUTSIDE"
+                                              strokeWidth="0.0"
+                                              text="Other"
+                                              styleClass="section-title"/>
+
+                                        <HBox spacing="24.0">
+                                            <children>
+                                                <VBox spacing="12.0">
+                                                    <children>
+                                                        <CheckBox fx:id="checkPrintTitleInReports"
+                                                                  disable="true"
+                                                                  mnemonicParsing="false"
+                                                                  text="Print Title In Report"
+                                                                  styleClass="modern-check-box"/>
+                                                        <CheckBox fx:id="checkShowBeforePrint"
+                                                                  mnemonicParsing="false"
+                                                                  text="Show Before Print"
+                                                                  styleClass="modern-check-box"/>
+                                                    </children>
+                                                </VBox>
+
+                                                <VBox spacing="12.0">
+                                                    <children>
+                                                        <CheckBox fx:id="checkInsideDatabase"
+                                                                  mnemonicParsing="false"
+                                                                  text="قاعدة بيانات داخلية"
+                                                                  styleClass="modern-check-box"/>
+                                                        <CheckBox fx:id="checkServer"
+                                                                  mnemonicParsing="false"
+                                                                  text="يعمل سيرفر"
+                                                                  styleClass="modern-check-box"/>
+                                                    </children>
+                                                </VBox>
+
+                                                <VBox spacing="12.0">
+                                                    <children>
+                                                        <CheckBox fx:id="checkLogin"
+                                                                  mnemonicParsing="false"
+                                                                  text="دخول بدون شاشة الدخول"
+                                                                  styleClass="modern-check-box"/>
+                                                        <CheckBox fx:id="checkShowTotals"
+                                                                  mnemonicParsing="false"
+                                                                  text="عرض الاجماليات فى الشاشة الرئيسية"
+                                                                  styleClass="modern-check-box"/>
+                                                    </children>
+                                                </VBox>
+                                            </children>
+                                        </HBox>
+                                    </children>
+                                </VBox>
+
+                                <VBox spacing="12.0" styleClass="settings-section-card">
+                                    <children>
+                                        <GridPane hgap="12.0" vgap="12.0">
                                             <columnConstraints>
-                                                <ColumnConstraints hgrow="SOMETIMES" maxWidth="-Infinity" minWidth="10.0" prefWidth="50.0" />
-                                                <ColumnConstraints hgrow="SOMETIMES" maxWidth="-Infinity" minWidth="10.0" prefWidth="70.0" />
-                                                <ColumnConstraints hgrow="SOMETIMES" maxWidth="-Infinity" minWidth="10.0" />
-                                                <ColumnConstraints hgrow="SOMETIMES" maxWidth="-Infinity" minWidth="10.0" prefWidth="70.0" />
-                                                <ColumnConstraints hgrow="SOMETIMES" maxWidth="-Infinity" minWidth="10.0" />
-                                                <ColumnConstraints hgrow="SOMETIMES" maxWidth="-Infinity" minWidth="10.0" prefWidth="70.0" />
-                                                <ColumnConstraints hgrow="SOMETIMES" maxWidth="-Infinity" minWidth="10.0" />
-                                                <ColumnConstraints hgrow="SOMETIMES" maxWidth="-Infinity" minWidth="10.0" />
-                                                <ColumnConstraints hgrow="SOMETIMES" maxWidth="-Infinity" minWidth="10.0" prefWidth="70.0" />
-                                                <ColumnConstraints hgrow="SOMETIMES" maxWidth="-Infinity" minWidth="10.0" />
+                                                <ColumnConstraints minWidth="95.0"/>
+                                                <ColumnConstraints minWidth="90.0"/>
+                                                <ColumnConstraints minWidth="95.0"/>
+                                                <ColumnConstraints minWidth="90.0"/>
+                                                <ColumnConstraints minWidth="95.0"/>
+                                                <ColumnConstraints minWidth="90.0"/>
+                                                <ColumnConstraints minWidth="60.0"/>
+                                                <ColumnConstraints minWidth="95.0"/>
+                                                <ColumnConstraints minWidth="90.0"/>
+                                                <ColumnConstraints minWidth="60.0"/>
                                             </columnConstraints>
-                                            <rowConstraints>
-                                                <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
-                                                <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
-                                                <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
-                                                <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
-                                            </rowConstraints>
+
                                             <children>
-                                                <Text strokeType="OUTSIDE" strokeWidth="0.0" styleClass="text-explain" text="حجم الصنف فى نقاط البيع" />
-                                                <Label text="العرض" GridPane.rowIndex="3" />
-                                                <TextField fx:id="textWidthMenu" disable="true" GridPane.columnIndex="1" GridPane.rowIndex="3" />
-                                                <Label text="الارتفاع" GridPane.columnIndex="2" GridPane.rowIndex="3" />
-                                                <TextField fx:id="textHeightMenu" disable="true" GridPane.columnIndex="3" GridPane.rowIndex="3" />
-                                                <TextField fx:id="textHeight" disable="true" GridPane.columnIndex="3" GridPane.rowIndex="1" />
-                                                <TextField fx:id="textWidth" disable="true" GridPane.columnIndex="1" GridPane.rowIndex="1" />
-                                                <Label text="الارتفاع" GridPane.columnIndex="2" GridPane.rowIndex="1" />
-                                                <Label text="العرض" GridPane.rowIndex="1" />
-                                                <Text strokeType="OUTSIDE" strokeWidth="0.0" styleClass="text-explain" text="حجم القائمة المنسدلة" GridPane.rowIndex="2" />
-                                                <Label text="اسم الصنف" GridPane.columnIndex="4" GridPane.rowIndex="1" />
-                                                <Label text="السعر" GridPane.columnIndex="7" GridPane.rowIndex="1" />
-                                                <Spinner fx:id="spinnerFontName" GridPane.columnIndex="5" GridPane.rowIndex="1" />
-                                                <Spinner fx:id="spinnerFontPrice" GridPane.columnIndex="8" GridPane.rowIndex="1" />
-                                                <Text strokeType="OUTSIDE" strokeWidth="0.0" styleClass="text-explain" text="حجم الخط" GridPane.columnIndex="4" />
-                                                <Button fx:id="btnChooseFont" mnemonicParsing="false" text="..." GridPane.columnIndex="6" GridPane.rowIndex="1" />
-                                                <Button fx:id="btnChooseFontPrice" mnemonicParsing="false" text="..." GridPane.columnIndex="9" GridPane.rowIndex="1" />
+                                                <Text strokeType="OUTSIDE"
+                                                      strokeWidth="0.0"
+                                                      text="حجم الصنف فى نقاط البيع"
+                                                      styleClass="section-title"/>
+
+                                                <Label text="العرض"
+                                                       styleClass="form-label"
+                                                       GridPane.rowIndex="1"/>
+                                                <TextField fx:id="textWidth"
+                                                           disable="true"
+                                                           styleClass="modern-input"
+                                                           GridPane.columnIndex="1"
+                                                           GridPane.rowIndex="1"/>
+
+                                                <Label text="الارتفاع"
+                                                       styleClass="form-label"
+                                                       GridPane.columnIndex="2"
+                                                       GridPane.rowIndex="1"/>
+                                                <TextField fx:id="textHeight"
+                                                           disable="true"
+                                                           styleClass="modern-input"
+                                                           GridPane.columnIndex="3"
+                                                           GridPane.rowIndex="1"/>
+
+                                                <Text strokeType="OUTSIDE"
+                                                      strokeWidth="0.0"
+                                                      text="حجم الخط"
+                                                      styleClass="section-title"
+                                                      GridPane.columnIndex="4"/>
+
+                                                <Label text="اسم الصنف"
+                                                       styleClass="form-label"
+                                                       GridPane.columnIndex="4"
+                                                       GridPane.rowIndex="1"/>
+                                                <Spinner fx:id="spinnerFontName"
+                                                         GridPane.columnIndex="5"
+                                                         GridPane.rowIndex="1"/>
+                                                <Button fx:id="btnChooseFont"
+                                                        mnemonicParsing="false"
+                                                        text="..."
+                                                        styleClass="icon-button"
+                                                        GridPane.columnIndex="6"
+                                                        GridPane.rowIndex="1"/>
+
+                                                <Label text="السعر"
+                                                       styleClass="form-label"
+                                                       GridPane.columnIndex="7"
+                                                       GridPane.rowIndex="1"/>
+                                                <Spinner fx:id="spinnerFontPrice"
+                                                         GridPane.columnIndex="8"
+                                                         GridPane.rowIndex="1"/>
+                                                <Button fx:id="btnChooseFontPrice"
+                                                        mnemonicParsing="false"
+                                                        text="..."
+                                                        styleClass="icon-button"
+                                                        GridPane.columnIndex="9"
+                                                        GridPane.rowIndex="1"/>
+
+                                                <Text strokeType="OUTSIDE"
+                                                      strokeWidth="0.0"
+                                                      text="حجم القائمة المنسدلة"
+                                                      styleClass="section-title"
+                                                      GridPane.rowIndex="2"/>
+
+                                                <Label text="العرض"
+                                                       styleClass="form-label"
+                                                       GridPane.rowIndex="3"/>
+                                                <TextField fx:id="textWidthMenu"
+                                                           disable="true"
+                                                           styleClass="modern-input"
+                                                           GridPane.columnIndex="1"
+                                                           GridPane.rowIndex="3"/>
+
+                                                <Label text="الارتفاع"
+                                                       styleClass="form-label"
+                                                       GridPane.columnIndex="2"
+                                                       GridPane.rowIndex="3"/>
+                                                <TextField fx:id="textHeightMenu"
+                                                           disable="true"
+                                                           styleClass="modern-input"
+                                                           GridPane.columnIndex="3"
+                                                           GridPane.rowIndex="3"/>
                                             </children>
                                         </GridPane>
-                                        <HBox alignment="CENTER_LEFT" spacing="5.0">
-                                            <padding>
-                                                <Insets bottom="5.0" left="5.0" right="5.0" top="5.0" />
-                                            </padding>
-                                        </HBox>
-                                        <HBox alignment="CENTER_LEFT" layoutX="10.0" layoutY="111.0" spacing="5.0">
-                                            <padding>
-                                                <Insets bottom="5.0" left="5.0" right="5.0" top="5.0" />
-                                            </padding>
-                                        </HBox>
                                     </children>
                                 </VBox>
                             </children>
                         </VBox>
                     </children>
-                </AnchorPane>
+                </VBox>
             </content>
         </ScrollPane>
     </children>

@@ -1,126 +1,195 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<?import javafx.geometry.Insets?>
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
-<AnchorPane xmlns:fx="http://javafx.com/fxml/1" xmlns="http://javafx.com/javafx/21">
+
+<AnchorPane nodeOrientation="RIGHT_TO_LEFT"
+            styleClass="settings-root"
+            stylesheets="@../../css/settings-modern.css"
+            xmlns:fx="http://javafx.com/fxml/1"
+            xmlns="http://javafx.com/javafx/21">
     <children>
-        <ScrollPane fitToHeight="true" fitToWidth="true" layoutX="5.0" layoutY="5.0" AnchorPane.bottomAnchor="5.0"
-                    AnchorPane.leftAnchor="5.0" AnchorPane.rightAnchor="5.0" AnchorPane.topAnchor="5.0">
+        <ScrollPane fitToHeight="true"
+                    fitToWidth="true"
+                    styleClass="settings-scroll-pane"
+                    AnchorPane.bottomAnchor="0.0"
+                    AnchorPane.leftAnchor="0.0"
+                    AnchorPane.rightAnchor="0.0"
+                    AnchorPane.topAnchor="0.0">
             <content>
-                <AnchorPane>
+                <VBox spacing="18.0" styleClass="settings-container">
                     <children>
-                        <VBox spacing="10.0" styleClass="dashboard-tile" AnchorPane.bottomAnchor="5.0"
-                              AnchorPane.leftAnchor="5.0" AnchorPane.rightAnchor="5.0" AnchorPane.topAnchor="5.0">
+                        <VBox spacing="5.0">
                             <children>
-                                <VBox layoutX="10.0" layoutY="10.0" maxHeight="-Infinity" minHeight="-Infinity"
-                                      spacing="10.0">
+                                <Label text="إعدادات الباركود" styleClass="settings-title"/>
+                                <Label text="ضبط الأسعار والمجموعات وباركود الميزان وطريقة عرض الملصق"
+                                       styleClass="settings-subtitle"/>
+                            </children>
+                        </VBox>
+
+                        <VBox spacing="18.0" styleClass="settings-card">
+                            <children>
+                                <GridPane hgap="14.0" vgap="14.0">
+                                    <columnConstraints>
+                                        <ColumnConstraints minWidth="140.0"/>
+                                        <ColumnConstraints minWidth="220.0" hgrow="ALWAYS"/>
+                                        <ColumnConstraints minWidth="140.0"/>
+                                        <ColumnConstraints minWidth="220.0" hgrow="ALWAYS"/>
+                                    </columnConstraints>
+
                                     <children>
-                                        <GridPane minHeight="-Infinity" minWidth="-Infinity"
-                                                  styleClass="grid-pane-style">
-                                            <columnConstraints>
-                                                <ColumnConstraints hgrow="SOMETIMES" maxWidth="-Infinity"
-                                                                   minWidth="10.0"/>
-                                                <ColumnConstraints hgrow="SOMETIMES" maxWidth="-Infinity"
-                                                                   minWidth="10.0"/>
-                                                <ColumnConstraints hgrow="SOMETIMES" maxWidth="-Infinity"
-                                                                   minWidth="10.0"/>
-                                                <ColumnConstraints hgrow="SOMETIMES" maxWidth="-Infinity"
-                                                                   minWidth="10.0"/>
-                                            </columnConstraints>
-                                            <rowConstraints>
-                                                <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES"/>
-                                                <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES"/>
-                                                <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES"/>
-                                                <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES"/>
-                                                <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES"/>
-                                                <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES"/>
-                                                <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES"/>
-                                            </rowConstraints>
-                                            <children>
-                                                <Label fx:id="labelMain1" text="سعر3" GridPane.rowIndex="1"/>
-                                                <Label fx:id="labelSub1" text="سعر1"/>
-                                                <Label fx:id="labelType1" text="سعر2" GridPane.columnIndex="2"/>
-                                                <TextField fx:id="textPrice2" GridPane.columnIndex="3"/>
-                                                <TextField fx:id="textPrice1" GridPane.columnIndex="1"/>
-                                                <TextField fx:id="textPrice3" GridPane.columnIndex="1"
-                                                           GridPane.rowIndex="1"/>
-                                                <Label fx:id="labelMain" text="Main Group" GridPane.rowIndex="2"/>
-                                                <ComboBox fx:id="comboMain" disable="true"
-                                                          maxWidth="1.7976931348623157E308" promptText="Main"
-                                                          GridPane.columnIndex="1" GridPane.rowIndex="2"/>
-                                                <Label fx:id="labelSub" text="Sub Group" GridPane.rowIndex="3"/>
-                                                <ComboBox fx:id="comboSub" maxWidth="1.7976931348623157E308"
-                                                          promptText="Sub" GridPane.columnIndex="1"
-                                                          GridPane.rowIndex="3"/>
-                                                <Label fx:id="labelType" text="Typ" GridPane.columnIndex="2"
-                                                       GridPane.rowIndex="3"/>
-                                                <ComboBox fx:id="comboType" maxWidth="1.7976931348623157E308"
-                                                          promptText="Type" GridPane.columnIndex="3"
-                                                          GridPane.rowIndex="3"/>
-                                                <CheckBox fx:id="checkActivateBarcodeScale" mnemonicParsing="false"
-                                                          text="تفعيل ميزان الباركود" GridPane.columnIndex="1"
-                                                          GridPane.rowIndex="4"/>
-                                                <Label text="باركود يبدا برقم" GridPane.rowIndex="5"/>
-                                                <Label text="عدد ارقام الوزن" GridPane.rowIndex="6"/>
-                                                <TextField fx:id="textBarcodeStart" text="00" GridPane.columnIndex="1"
-                                                           GridPane.rowIndex="5"/>
-                                                <TextField fx:id="textCountScale" text="5" GridPane.columnIndex="1"
-                                                           GridPane.rowIndex="6"/>
-                                                <Label text="عدد ارقام الباركود" GridPane.columnIndex="2"
-                                                       GridPane.rowIndex="5"/>
-                                                <Label text="عدد الرقام الصنف" GridPane.columnIndex="2"
-                                                       GridPane.rowIndex="6"/>
-                                                <TextField fx:id="textCountBarcode" text="13" GridPane.columnIndex="3"
-                                                           GridPane.rowIndex="5"/>
-                                                <TextField fx:id="textCountItem" text="5" GridPane.columnIndex="3"
-                                                           GridPane.rowIndex="6"/>
-                                            </children>
-                                        </GridPane>
+                                        <Label fx:id="labelSub1" text="سعر1" styleClass="form-label"/>
+                                        <TextField fx:id="textPrice1"
+                                                   styleClass="modern-input"
+                                                   GridPane.columnIndex="1"/>
+
+                                        <Label fx:id="labelType1"
+                                               text="سعر2"
+                                               styleClass="form-label"
+                                               GridPane.columnIndex="2"/>
+                                        <TextField fx:id="textPrice2"
+                                                   styleClass="modern-input"
+                                                   GridPane.columnIndex="3"/>
+
+                                        <Label fx:id="labelMain1"
+                                               text="سعر3"
+                                               styleClass="form-label"
+                                               GridPane.rowIndex="1"/>
+                                        <TextField fx:id="textPrice3"
+                                                   styleClass="modern-input"
+                                                   GridPane.columnIndex="1"
+                                                   GridPane.rowIndex="1"/>
+
+                                        <Label fx:id="labelMain"
+                                               text="Main Group"
+                                               styleClass="form-label"
+                                               GridPane.rowIndex="2"/>
+                                        <ComboBox fx:id="comboMain"
+                                                  disable="true"
+                                                  maxWidth="1.7976931348623157E308"
+                                                  promptText="Main"
+                                                  GridPane.columnIndex="1"
+                                                  GridPane.rowIndex="2"/>
+
+                                        <Label fx:id="labelSub"
+                                               text="Sub Group"
+                                               styleClass="form-label"
+                                               GridPane.rowIndex="3"/>
+                                        <ComboBox fx:id="comboSub"
+                                                  maxWidth="1.7976931348623157E308"
+                                                  promptText="Sub"
+                                                  GridPane.columnIndex="1"
+                                                  GridPane.rowIndex="3"/>
+
+                                        <Label fx:id="labelType"
+                                               text="Typ"
+                                               styleClass="form-label"
+                                               GridPane.columnIndex="2"
+                                               GridPane.rowIndex="3"/>
+                                        <ComboBox fx:id="comboType"
+                                                  maxWidth="1.7976931348623157E308"
+                                                  promptText="Type"
+                                                  GridPane.columnIndex="3"
+                                                  GridPane.rowIndex="3"/>
+
+                                        <CheckBox fx:id="checkActivateBarcodeScale"
+                                                  mnemonicParsing="false"
+                                                  text="تفعيل ميزان الباركود"
+                                                  styleClass="modern-check-box"
+                                                  GridPane.columnIndex="1"
+                                                  GridPane.rowIndex="4"/>
+
+                                        <Label text="باركود يبدأ برقم"
+                                               styleClass="form-label"
+                                               GridPane.rowIndex="5"/>
+                                        <TextField fx:id="textBarcodeStart"
+                                                   text="00"
+                                                   styleClass="modern-input"
+                                                   GridPane.columnIndex="1"
+                                                   GridPane.rowIndex="5"/>
+
+                                        <Label text="عدد أرقام الباركود"
+                                               styleClass="form-label"
+                                               GridPane.columnIndex="2"
+                                               GridPane.rowIndex="5"/>
+                                        <TextField fx:id="textCountBarcode"
+                                                   text="13"
+                                                   styleClass="modern-input"
+                                                   GridPane.columnIndex="3"
+                                                   GridPane.rowIndex="5"/>
+
+                                        <Label text="عدد أرقام الوزن"
+                                               styleClass="form-label"
+                                               GridPane.rowIndex="6"/>
+                                        <TextField fx:id="textCountScale"
+                                                   text="5"
+                                                   styleClass="modern-input"
+                                                   GridPane.columnIndex="1"
+                                                   GridPane.rowIndex="6"/>
+
+                                        <Label text="عدد أرقام الصنف"
+                                               styleClass="form-label"
+                                               GridPane.columnIndex="2"
+                                               GridPane.rowIndex="6"/>
+                                        <TextField fx:id="textCountItem"
+                                                   text="5"
+                                                   styleClass="modern-input"
+                                                   GridPane.columnIndex="3"
+                                                   GridPane.rowIndex="6"/>
                                     </children>
-                                    <padding>
-                                        <Insets bottom="5.0" left="5.0" right="5.0" top="5.0"/>
-                                    </padding>
-                                </VBox>
-                                <HBox spacing="5.0" VBox.vgrow="SOMETIMES">
+                                </GridPane>
+
+                                <HBox spacing="18.0">
                                     <children>
-                                        <VBox spacing="20.0">
+                                        <VBox spacing="12.0" styleClass="settings-section-card">
                                             <children>
-                                                <CheckBox fx:id="show2" mnemonicParsing="false" text="Show Tow Label"/>
-                                                <CheckBox fx:id="showName" mnemonicParsing="false" selected="true"
-                                                          text="Show Name"/>
-                                                <CheckBox fx:id="showPrice" mnemonicParsing="false" selected="true"
-                                                          text="Show Price"/>
-                                                <CheckBox fx:id="showCurrency" mnemonicParsing="false" selected="true"
-                                                          text="Show Currency"/>
-                                                <CheckBox fx:id="showBarcode" mnemonicParsing="false" selected="true"
-                                                          text="Show Barcode"/>
+                                                <CheckBox fx:id="show2"
+                                                          mnemonicParsing="false"
+                                                          text="Show Tow Label"
+                                                          styleClass="modern-check-box"/>
+                                                <CheckBox fx:id="showName"
+                                                          mnemonicParsing="false"
+                                                          selected="true"
+                                                          text="Show Name"
+                                                          styleClass="modern-check-box"/>
+                                                <CheckBox fx:id="showPrice"
+                                                          mnemonicParsing="false"
+                                                          selected="true"
+                                                          text="Show Price"
+                                                          styleClass="modern-check-box"/>
+                                                <CheckBox fx:id="showCurrency"
+                                                          mnemonicParsing="false"
+                                                          selected="true"
+                                                          text="Show Currency"
+                                                          styleClass="modern-check-box"/>
+                                                <CheckBox fx:id="showBarcode"
+                                                          mnemonicParsing="false"
+                                                          selected="true"
+                                                          text="Show Barcode"
+                                                          styleClass="modern-check-box"/>
                                             </children>
                                         </VBox>
-                                        <Separator orientation="VERTICAL"/>
-                                        <VBox alignment="TOP_CENTER" HBox.hgrow="SOMETIMES">
+
+                                        <Separator orientation="VERTICAL" styleClass="settings-separator"/>
+
+                                        <VBox alignment="TOP_CENTER" HBox.hgrow="ALWAYS" styleClass="preview-card">
                                             <children>
                                                 <BorderPane fx:id="borderPane">
                                                     <center>
-                                                        <VBox fx:id="box" alignment="TOP_CENTER" fillWidth="false"
-                                                              spacing="5.0">
-                                                            <padding>
-                                                                <Insets bottom="5.0" left="5.0" right="5.0" top="5.0"/>
-                                                            </padding>
-                                                        </VBox>
+                                                        <VBox fx:id="box"
+                                                              alignment="TOP_CENTER"
+                                                              fillWidth="false"
+                                                              spacing="5.0"/>
                                                     </center>
                                                 </BorderPane>
                                             </children>
                                         </VBox>
                                     </children>
-                                    <padding>
-                                        <Insets left="5.0" right="5.0"/>
-                                    </padding>
                                 </HBox>
                             </children>
                         </VBox>
                     </children>
-                </AnchorPane>
+                </VBox>
             </content>
         </ScrollPane>
     </children>

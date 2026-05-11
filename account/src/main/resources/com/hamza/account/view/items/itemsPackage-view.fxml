@@ -2,34 +2,59 @@
 
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
-<AnchorPane xmlns:fx="http://javafx.com/fxml/1" xmlns="http://javafx.com/javafx/21">
+
+<AnchorPane nodeOrientation="RIGHT_TO_LEFT"
+            styleClass="items-root"
+            stylesheets="@../../css/items-modern.css"
+            xmlns:fx="http://javafx.com/fxml/1"
+            xmlns="http://javafx.com/javafx/21">
     <children>
-        <VBox layoutX="5.0" layoutY="5.0" spacing="5.0" styleClass="dashboard-tile" AnchorPane.bottomAnchor="5.0"
-              AnchorPane.leftAnchor="5.0" AnchorPane.rightAnchor="5.0" AnchorPane.topAnchor="5.0">
+        <VBox spacing="14.0"
+              styleClass="items-container"
+              AnchorPane.bottomAnchor="0.0"
+              AnchorPane.leftAnchor="0.0"
+              AnchorPane.rightAnchor="0.0"
+              AnchorPane.topAnchor="0.0">
             <children>
-                <CheckBox fx:id="checkBox" mnemonicParsing="false" text="Add Package"/>
-                <VBox fx:id="boxData" spacing="5.0" VBox.vgrow="SOMETIMES">
+                <VBox spacing="14.0" styleClass="items-card">
                     <children>
-                        <GridPane fx:id="gridPane" styleClass="grid-pane-style">
-                            <columnConstraints>
-                                <ColumnConstraints hgrow="SOMETIMES" maxWidth="-Infinity" minWidth="10.0"/>
-                                <ColumnConstraints hgrow="SOMETIMES" maxWidth="-Infinity" minWidth="10.0"/>
-                                <ColumnConstraints hgrow="SOMETIMES" maxWidth="-Infinity" minWidth="10.0"/>
-                                <ColumnConstraints hgrow="SOMETIMES" maxWidth="-Infinity" minWidth="10.0"
-                                                   prefWidth="80.0"/>
-                                <ColumnConstraints hgrow="SOMETIMES" maxWidth="-Infinity" minWidth="10.0"/>
-                            </columnConstraints>
-                            <rowConstraints>
-                                <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES"/>
-                            </rowConstraints>
+                        <CheckBox fx:id="checkBox"
+                                  mnemonicParsing="false"
+                                  text="Add Package"/>
+
+                        <VBox fx:id="boxData" spacing="12.0" VBox.vgrow="ALWAYS">
                             <children>
-                                <Label fx:id="labelName" text="Name"/>
-                                <Label fx:id="labelQuantity" text="Quantity" GridPane.columnIndex="2"/>
-                                <TextField fx:id="txtCount" GridPane.columnIndex="3"/>
-                                <Button fx:id="btnAddItem" mnemonicParsing="false" text="Add" GridPane.columnIndex="4"/>
+                                <GridPane fx:id="gridPane" hgap="12.0" vgap="12.0">
+                                    <columnConstraints>
+                                        <ColumnConstraints minWidth="120.0"/>
+                                        <ColumnConstraints minWidth="260.0" hgrow="ALWAYS"/>
+                                        <ColumnConstraints minWidth="120.0"/>
+                                        <ColumnConstraints minWidth="100.0"/>
+                                        <ColumnConstraints minWidth="90.0"/>
+                                    </columnConstraints>
+
+                                    <children>
+                                        <Label fx:id="labelName" text="Name" styleClass="form-label"/>
+                                        <Label fx:id="labelQuantity"
+                                               text="Quantity"
+                                               styleClass="form-label"
+                                               GridPane.columnIndex="2"/>
+                                        <TextField fx:id="txtCount"
+                                                   GridPane.columnIndex="3"/>
+                                        <Button fx:id="btnAddItem"
+                                                mnemonicParsing="false"
+                                                text="Add"
+                                                styleClass="primary-button"
+                                                GridPane.columnIndex="4"/>
+                                    </children>
+                                </GridPane>
+
+                                <TableView fx:id="tableView"
+                                           prefHeight="150.0"
+                                           styleClass="modern-table"
+                                           VBox.vgrow="ALWAYS"/>
                             </children>
-                        </GridPane>
-                        <TableView fx:id="tableView" prefHeight="150.0" VBox.vgrow="SOMETIMES"/>
+                        </VBox>
                     </children>
                 </VBox>
             </children>

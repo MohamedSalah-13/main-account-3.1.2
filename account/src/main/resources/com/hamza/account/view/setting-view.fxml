@@ -1,17 +1,30 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.VBox?>
-<VBox xmlns:fx="http://javafx.com/fxml/1" fx:id="box" spacing="2.0" xmlns="http://javafx.com/javafx/21">
+
+<VBox xmlns:fx="http://javafx.com/fxml/1"
+      xmlns="http://javafx.com/javafx/21"
+      fx:id="box"
+      spacing="0.0"
+      nodeOrientation="RIGHT_TO_LEFT"
+      styleClass="settings-main-root"
+      stylesheets="@../css/settings-modern.css">
     <children>
-        <TabPane fx:id="pane" tabClosingPolicy="UNAVAILABLE" VBox.vgrow="SOMETIMES">
-            <tabs>
-                <Tab text="Company"/>
-                <Tab text="Language"/>
-                <Tab text="Barcode"/>
-                <Tab text="Others"/>
-            </tabs>
-        </TabPane>
+        <VBox styleClass="settings-main-card" VBox.vgrow="ALWAYS">
+            <children>
+                <TabPane fx:id="pane"
+                         tabClosingPolicy="UNAVAILABLE"
+                         styleClass="settings-tab-pane"
+                         VBox.vgrow="ALWAYS">
+                    <tabs>
+                        <Tab text="الشركة"/>
+                        <Tab text="النظام واللغة"/>
+                        <Tab text="الباركود"/>
+                        <Tab text="خيارات أخرى"/>
+                    </tabs>
+                </TabPane>
+            </children>
+        </VBox>
     </children>
 </VBox>

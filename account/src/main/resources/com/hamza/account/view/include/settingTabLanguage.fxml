@@ -1,149 +1,270 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<?import javafx.geometry.Insets?>
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
 <?import javafx.scene.text.Text?>
-<AnchorPane xmlns:fx="http://javafx.com/fxml/1" xmlns="http://javafx.com/javafx/21">
+
+<AnchorPane nodeOrientation="RIGHT_TO_LEFT"
+            styleClass="settings-root"
+            stylesheets="@../../css/settings-modern.css"
+            xmlns:fx="http://javafx.com/fxml/1"
+            xmlns="http://javafx.com/javafx/21">
     <children>
-        <ScrollPane fitToHeight="true" fitToWidth="true" layoutX="5.0" layoutY="5.0" AnchorPane.bottomAnchor="5.0"
-                    AnchorPane.leftAnchor="5.0" AnchorPane.rightAnchor="5.0" AnchorPane.topAnchor="5.0">
+        <ScrollPane fitToHeight="true"
+                    fitToWidth="true"
+                    styleClass="settings-scroll-pane"
+                    AnchorPane.bottomAnchor="0.0"
+                    AnchorPane.leftAnchor="0.0"
+                    AnchorPane.rightAnchor="0.0"
+                    AnchorPane.topAnchor="0.0">
             <content>
-                <AnchorPane>
+                <VBox spacing="18.0" styleClass="settings-container">
                     <children>
-                        <VBox spacing="10.0" styleClass="dashboard-tile" AnchorPane.bottomAnchor="5.0"
-                              AnchorPane.leftAnchor="5.0" AnchorPane.rightAnchor="5.0" AnchorPane.topAnchor="5.0">
+                        <VBox spacing="5.0">
                             <children>
-                                <GridPane styleClass="grid-pane-style">
-                                    <columnConstraints>
-                                        <ColumnConstraints hgrow="SOMETIMES" maxWidth="-Infinity" minWidth="10.0"/>
-                                        <ColumnConstraints hgrow="SOMETIMES" maxWidth="-Infinity" minWidth="10.0"/>
-                                        <ColumnConstraints hgrow="SOMETIMES" maxWidth="-Infinity" minWidth="10.0"/>
-                                    </columnConstraints>
-                                    <rowConstraints>
-                                        <RowConstraints/>
-                                        <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES"/>
-                                        <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES"/>
-                                        <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES"/>
-                                        <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES"/>
-                                        <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES"/>
-                                        <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES"/>
-                                        <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES"/>
-                                        <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES"/>
-                                        <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES"/>
-                                        <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES"/>
-                                        <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES"/>
-                                        <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES"/>
-                                    </rowConstraints>
-                                    <children>
-                                        <Label fx:id="labelRate" text="Rate" GridPane.rowIndex="7"/>
-                                        <Label fx:id="labelMiniRate" text="اعادة مسلسل الطابعة كل"
-                                               GridPane.rowIndex="8"/>
-                                        <TextField fx:id="textRateSel" GridPane.columnIndex="1" GridPane.rowIndex="7"/>
-                                        <TextField fx:id="textSerial" GridPane.columnIndex="1" GridPane.rowIndex="8"/>
-                                        <Label fx:id="labelCurrency" text="Currency" GridPane.rowIndex="9"/>
-                                        <ComboBox fx:id="comboCurrency" maxWidth="1.7976931348623157E308"
-                                                  GridPane.columnIndex="1" GridPane.rowIndex="9"/>
-                                        <Label fx:id="labelPrintNormal" text="Normal Printer" GridPane.rowIndex="10"/>
-                                        <Label fx:id="labelPrintBarcode" text="Barcode Printer" GridPane.rowIndex="11"/>
-                                        <Label fx:id="labelPrintOther" text="Other Printer" GridPane.rowIndex="12"/>
-                                        <TextField fx:id="textPrintNormal" editable="false" GridPane.columnIndex="1"
-                                                   GridPane.rowIndex="10"/>
-                                        <TextField fx:id="textPrintBarcode" editable="false" GridPane.columnIndex="1"
-                                                   GridPane.rowIndex="11"/>
-                                        <TextField fx:id="textPrintOther" editable="false" GridPane.columnIndex="1"
-                                                   GridPane.rowIndex="12"/>
-                                        <HBox alignment="CENTER_LEFT" spacing="2.0" GridPane.columnIndex="2"
-                                              GridPane.rowIndex="10">
-                                            <children>
-                                                <Button fx:id="btnPrintNormal" mnemonicParsing="false" text="..."/>
-                                                <Button fx:id="btnPrinterSettingNormal" mnemonicParsing="false"
-                                                        text="Setting"/>
-                                            </children>
-                                        </HBox>
-                                        <HBox alignment="CENTER_LEFT" spacing="2.0" GridPane.columnIndex="2"
-                                              GridPane.rowIndex="11">
-                                            <children>
-                                                <Button fx:id="btnPrintBarcode" mnemonicParsing="false" text="..."/>
-                                                <Button fx:id="btnPrinterSettingBarcode" mnemonicParsing="false"
-                                                        text="Setting"/>
-                                            </children>
-                                        </HBox>
-                                        <HBox alignment="CENTER_LEFT" spacing="2.0" GridPane.columnIndex="2"
-                                              GridPane.rowIndex="12">
-                                            <children>
-                                                <Button fx:id="btnPrintOther" mnemonicParsing="false" text="..."/>
-                                                <Button fx:id="btnPrinterSettingOther" mnemonicParsing="false"
-                                                        text="Setting"/>
-                                            </children>
-                                        </HBox>
-                                        <Label text="العميل" GridPane.rowIndex="5"/>
-                                        <Label text="المندوب" GridPane.rowIndex="6"/>
-                                        <TextField fx:id="txtNameCustomer" disable="true" editable="false"
-                                                   GridPane.columnIndex="1" GridPane.rowIndex="5"/>
-                                        <TextField fx:id="txtNameDelegate" disable="true" editable="false"
-                                                   GridPane.columnIndex="1" GridPane.rowIndex="6"/>
-                                        <Button fx:id="btnSaveCustomer" mnemonicParsing="false" text="..."
-                                                GridPane.columnIndex="2" GridPane.rowIndex="5"/>
-                                        <Button fx:id="btnSaveDelegate" mnemonicParsing="false" text="..."
-                                                GridPane.columnIndex="2" GridPane.rowIndex="6"/>
-                                        <Label text="فاتورة المبيعات" GridPane.rowIndex="4"/>
-                                        <Text strokeType="OUTSIDE" strokeWidth="0.0" styleClass="text-explain"
-                                              text="يتم تثبيت العميل والمندوب فى كل فاتورة بيع" GridPane.columnIndex="1"
-                                              GridPane.rowIndex="4"/>
-                                        <Label fx:id="labelPath" text="Image Path" GridPane.rowIndex="3"/>
-                                        <Label fx:id="textPath" maxWidth="250.0" text="لا يوجد" wrapText="true"
-                                               GridPane.columnIndex="1" GridPane.rowIndex="3"/>
-                                        <HBox alignment="CENTER_LEFT" spacing="2.0" GridPane.columnIndex="2"
-                                              GridPane.rowIndex="3">
-                                            <children>
-                                                <Button fx:id="btnPath" mnemonicParsing="false" text="..."/>
-                                                <Button fx:id="btnDeleteImage" mnemonicParsing="false" text="Button"/>
-                                            </children>
-                                        </HBox>
-                                        <Label fx:id="labelLanguage" text="Language" GridPane.rowIndex="2"/>
-                                        <HBox alignment="CENTER_LEFT" disable="true" spacing="30.0"
-                                              GridPane.columnIndex="1" GridPane.rowIndex="2">
-                                            <children>
-                                                <RadioButton fx:id="radioArabic" mnemonicParsing="false" selected="true"
-                                                             text="Arabic">
-                                                    <toggleGroup>
-                                                        <ToggleGroup fx:id="group1"/>
-                                                    </toggleGroup>
-                                                </RadioButton>
-                                                <RadioButton fx:id="radioEnglish" layoutX="10.0" layoutY="10.0"
-                                                             mnemonicParsing="false" text="English"
-                                                             toggleGroup="$group1"/>
-                                            </children>
-                                            <padding>
-                                                <Insets bottom="5.0" left="5.0" right="5.0" top="5.0"/>
-                                            </padding>
-                                        </HBox>
-                                        <Label text="Choose theme for Desktop" GridPane.rowIndex="1"/>
-                                        <HBox alignment="CENTER_LEFT" spacing="30.0" GridPane.columnIndex="1"
-                                              GridPane.rowIndex="1">
-                                            <children>
-                                                <RadioButton fx:id="radioLight" mnemonicParsing="false" text="light">
-                                                    <toggleGroup>
-                                                        <ToggleGroup fx:id="group"/>
-                                                    </toggleGroup>
-                                                </RadioButton>
-                                                <RadioButton fx:id="radioDark" layoutX="10.0" layoutY="10.0"
-                                                             mnemonicParsing="false" text="Dark" toggleGroup="$group"/>
-                                                <RadioButton fx:id="radioSystem" layoutX="85.0" layoutY="10.0"
-                                                             mnemonicParsing="false" selected="true"
-                                                             text="Use system settings" toggleGroup="$group"/>
-                                            </children>
-                                            <padding>
-                                                <Insets bottom="5.0" left="5.0" right="5.0" top="5.0"/>
-                                            </padding>
-                                        </HBox>
-                                    </children>
-                                </GridPane>
+                                <Label text="إعدادات النظام" styleClass="settings-title"/>
+                                <Label text="اللغة والثيم والطابعات والعملاء الافتراضيين"
+                                       styleClass="settings-subtitle"/>
                             </children>
                         </VBox>
+
+                        <GridPane hgap="14.0" vgap="14.0" styleClass="settings-card">
+                            <columnConstraints>
+                                <ColumnConstraints minWidth="170.0"/>
+                                <ColumnConstraints minWidth="360.0" hgrow="ALWAYS"/>
+                                <ColumnConstraints minWidth="170.0"/>
+                            </columnConstraints>
+
+                            <children>
+                                <Label text="Choose theme for Desktop"
+                                       styleClass="form-label"/>
+                                <HBox alignment="CENTER_LEFT"
+                                      spacing="24.0"
+                                      GridPane.columnIndex="1">
+                                    <children>
+                                        <RadioButton fx:id="radioLight"
+                                                     mnemonicParsing="false"
+                                                     text="light"
+                                                     styleClass="modern-radio">
+                                            <toggleGroup>
+                                                <ToggleGroup fx:id="group"/>
+                                            </toggleGroup>
+                                        </RadioButton>
+                                        <RadioButton fx:id="radioDark"
+                                                     mnemonicParsing="false"
+                                                     text="Dark"
+                                                     toggleGroup="$group"
+                                                     styleClass="modern-radio"/>
+                                        <RadioButton fx:id="radioSystem"
+                                                     mnemonicParsing="false"
+                                                     selected="true"
+                                                     text="Use system settings"
+                                                     toggleGroup="$group"
+                                                     styleClass="modern-radio"/>
+                                    </children>
+                                </HBox>
+
+                                <Label fx:id="labelLanguage"
+                                       text="Language"
+                                       styleClass="form-label"
+                                       GridPane.rowIndex="1"/>
+                                <HBox alignment="CENTER_LEFT"
+                                      disable="true"
+                                      spacing="24.0"
+                                      GridPane.columnIndex="1"
+                                      GridPane.rowIndex="1">
+                                    <children>
+                                        <RadioButton fx:id="radioArabic"
+                                                     mnemonicParsing="false"
+                                                     selected="true"
+                                                     text="Arabic"
+                                                     styleClass="modern-radio">
+                                            <toggleGroup>
+                                                <ToggleGroup fx:id="group1"/>
+                                            </toggleGroup>
+                                        </RadioButton>
+                                        <RadioButton fx:id="radioEnglish"
+                                                     mnemonicParsing="false"
+                                                     text="English"
+                                                     toggleGroup="$group1"
+                                                     styleClass="modern-radio"/>
+                                    </children>
+                                </HBox>
+
+                                <Label fx:id="labelPath"
+                                       text="Image Path"
+                                       styleClass="form-label"
+                                       GridPane.rowIndex="2"/>
+                                <Label fx:id="textPath"
+                                       maxWidth="320.0"
+                                       text="لا يوجد"
+                                       wrapText="true"
+                                       styleClass="settings-subtitle"
+                                       GridPane.columnIndex="1"
+                                       GridPane.rowIndex="2"/>
+                                <HBox alignment="CENTER_LEFT"
+                                      spacing="6.0"
+                                      GridPane.columnIndex="2"
+                                      GridPane.rowIndex="2">
+                                    <children>
+                                        <Button fx:id="btnPath"
+                                                mnemonicParsing="false"
+                                                text="..."
+                                                styleClass="icon-button"/>
+                                        <Button fx:id="btnDeleteImage"
+                                                mnemonicParsing="false"
+                                                text="Button"
+                                                styleClass="danger-button"/>
+                                    </children>
+                                </HBox>
+
+                                <Label text="فاتورة المبيعات"
+                                       styleClass="form-label"
+                                       GridPane.rowIndex="3"/>
+                                <Text strokeType="OUTSIDE"
+                                      strokeWidth="0.0"
+                                      text="يتم تثبيت العميل والمندوب فى كل فاتورة بيع"
+                                      styleClass="info-text"
+                                      GridPane.columnIndex="1"
+                                      GridPane.rowIndex="3"/>
+
+                                <Label text="العميل"
+                                       styleClass="form-label"
+                                       GridPane.rowIndex="4"/>
+                                <TextField fx:id="txtNameCustomer"
+                                           disable="true"
+                                           editable="false"
+                                           styleClass="modern-input"
+                                           GridPane.columnIndex="1"
+                                           GridPane.rowIndex="4"/>
+                                <Button fx:id="btnSaveCustomer"
+                                        mnemonicParsing="false"
+                                        text="..."
+                                        styleClass="icon-button"
+                                        GridPane.columnIndex="2"
+                                        GridPane.rowIndex="4"/>
+
+                                <Label text="المندوب"
+                                       styleClass="form-label"
+                                       GridPane.rowIndex="5"/>
+                                <TextField fx:id="txtNameDelegate"
+                                           disable="true"
+                                           editable="false"
+                                           styleClass="modern-input"
+                                           GridPane.columnIndex="1"
+                                           GridPane.rowIndex="5"/>
+                                <Button fx:id="btnSaveDelegate"
+                                        mnemonicParsing="false"
+                                        text="..."
+                                        styleClass="icon-button"
+                                        GridPane.columnIndex="2"
+                                        GridPane.rowIndex="5"/>
+
+                                <Label fx:id="labelRate"
+                                       text="Rate"
+                                       styleClass="form-label"
+                                       GridPane.rowIndex="6"/>
+                                <TextField fx:id="textRateSel"
+                                           styleClass="modern-input"
+                                           GridPane.columnIndex="1"
+                                           GridPane.rowIndex="6"/>
+
+                                <Label fx:id="labelMiniRate"
+                                       text="اعادة مسلسل الطابعة كل"
+                                       styleClass="form-label"
+                                       GridPane.rowIndex="7"/>
+                                <TextField fx:id="textSerial"
+                                           styleClass="modern-input"
+                                           GridPane.columnIndex="1"
+                                           GridPane.rowIndex="7"/>
+
+                                <Label fx:id="labelCurrency"
+                                       text="Currency"
+                                       styleClass="form-label"
+                                       GridPane.rowIndex="8"/>
+                                <ComboBox fx:id="comboCurrency"
+                                          maxWidth="1.7976931348623157E308"
+                                          GridPane.columnIndex="1"
+                                          GridPane.rowIndex="8"/>
+
+                                <Label fx:id="labelPrintNormal"
+                                       text="Normal Printer"
+                                       styleClass="form-label"
+                                       GridPane.rowIndex="9"/>
+                                <TextField fx:id="textPrintNormal"
+                                           editable="false"
+                                           styleClass="modern-input"
+                                           GridPane.columnIndex="1"
+                                           GridPane.rowIndex="9"/>
+                                <HBox alignment="CENTER_LEFT"
+                                      spacing="6.0"
+                                      GridPane.columnIndex="2"
+                                      GridPane.rowIndex="9">
+                                    <children>
+                                        <Button fx:id="btnPrintNormal"
+                                                mnemonicParsing="false"
+                                                text="..."
+                                                styleClass="icon-button"/>
+                                        <Button fx:id="btnPrinterSettingNormal"
+                                                mnemonicParsing="false"
+                                                text="Setting"
+                                                styleClass="neutral-button"/>
+                                    </children>
+                                </HBox>
+
+                                <Label fx:id="labelPrintBarcode"
+                                       text="Barcode Printer"
+                                       styleClass="form-label"
+                                       GridPane.rowIndex="10"/>
+                                <TextField fx:id="textPrintBarcode"
+                                           editable="false"
+                                           styleClass="modern-input"
+                                           GridPane.columnIndex="1"
+                                           GridPane.rowIndex="10"/>
+                                <HBox alignment="CENTER_LEFT"
+                                      spacing="6.0"
+                                      GridPane.columnIndex="2"
+                                      GridPane.rowIndex="10">
+                                    <children>
+                                        <Button fx:id="btnPrintBarcode"
+                                                mnemonicParsing="false"
+                                                text="..."
+                                                styleClass="icon-button"/>
+                                        <Button fx:id="btnPrinterSettingBarcode"
+                                                mnemonicParsing="false"
+                                                text="Setting"
+                                                styleClass="neutral-button"/>
+                                    </children>
+                                </HBox>
+
+                                <Label fx:id="labelPrintOther"
+                                       text="Other Printer"
+                                       styleClass="form-label"
+                                       GridPane.rowIndex="11"/>
+                                <TextField fx:id="textPrintOther"
+                                           editable="false"
+                                           styleClass="modern-input"
+                                           GridPane.columnIndex="1"
+                                           GridPane.rowIndex="11"/>
+                                <HBox alignment="CENTER_LEFT"
+                                      spacing="6.0"
+                                      GridPane.columnIndex="2"
+                                      GridPane.rowIndex="11">
+                                    <children>
+                                        <Button fx:id="btnPrintOther"
+                                                mnemonicParsing="false"
+                                                text="..."
+                                                styleClass="icon-button"/>
+                                        <Button fx:id="btnPrinterSettingOther"
+                                                mnemonicParsing="false"
+                                                text="Setting"
+                                                styleClass="neutral-button"/>
+                                    </children>
+                                </HBox>
+                            </children>
+                        </GridPane>
                     </children>
-                </AnchorPane>
+                </VBox>
             </content>
         </ScrollPane>
     </children>

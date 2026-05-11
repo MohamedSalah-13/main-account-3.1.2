@@ -7,45 +7,64 @@
 <?import javafx.scene.control.TabPane?>
 <?import javafx.scene.image.*?>
 <?import javafx.scene.layout.*?>
-<BorderPane xmlns:fx="http://javafx.com/fxml/1" fx:id="borderPane" prefHeight="478.0" prefWidth="723.0"
-            xmlns="http://javafx.com/javafx/21">
+
+<BorderPane xmlns:fx="http://javafx.com/fxml/1"
+            xmlns="http://javafx.com/javafx/21"
+            fx:id="borderPane"
+            prefHeight="478.0"
+            prefWidth="723.0"
+            nodeOrientation="RIGHT_TO_LEFT"
+            styleClass="main-root"
+            stylesheets="@../css/main-screen-modern.css">
     <center>
-        <HBox BorderPane.alignment="CENTER">
+        <HBox styleClass="main-content" BorderPane.alignment="CENTER">
             <children>
                 <JFXDrawer fx:id="drawer" defaultDrawerSize="0.0"/>
-                <VBox fx:id="boxCenter" spacing="2.0" HBox.hgrow="SOMETIMES">
+
+                <VBox fx:id="boxCenter" spacing="0.0" HBox.hgrow="ALWAYS">
                     <children>
-                        <TabPane fx:id="tabPane" tabClosingPolicy="ALL_TABS" VBox.vgrow="ALWAYS">
+                        <TabPane fx:id="tabPane"
+                                 tabClosingPolicy="ALL_TABS"
+                                 styleClass="main-tab-pane"
+                                 VBox.vgrow="ALWAYS">
                             <tabs>
-                                <Tab text="Untitled Tab 1">
-                                    <content>
-                                        <HBox prefHeight="100.0" prefWidth="200.0"/>
-                                    </content>
+                                <Tab text="الرئيسية">
                                     <content>
                                         <AnchorPane>
                                             <children>
-                                                <StackPane fx:id="stackPane" AnchorPane.bottomAnchor="0.0"
-                                                           AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0"
+                                                <StackPane fx:id="stackPane"
+                                                           styleClass="home-card"
+                                                           AnchorPane.bottomAnchor="0.0"
+                                                           AnchorPane.leftAnchor="0.0"
+                                                           AnchorPane.rightAnchor="0.0"
                                                            AnchorPane.topAnchor="0.0">
                                                     <children>
-                                                        <ImageView fx:id="imageView" fitHeight="150.0" fitWidth="200.0"
-                                                                   pickOnBounds="true" preserveRatio="true"/>
+                                                        <ImageView fx:id="imageView"
+                                                                   fitHeight="150.0"
+                                                                   fitWidth="200.0"
+                                                                   pickOnBounds="true"
+                                                                   preserveRatio="true"/>
+
                                                         <BorderPane fx:id="paneAnyDesk">
                                                             <center>
-                                                                <FlowPane fx:id="flowPane" hgap="5.0" vgap="5.0"
+                                                                <FlowPane fx:id="flowPane"
+                                                                          hgap="12.0"
+                                                                          vgap="12.0"
+                                                                          styleClass="home-flow"
                                                                           BorderPane.alignment="CENTER">
                                                                     <padding>
-                                                                        <Insets bottom="10.0" left="10.0" right="10.0"
-                                                                                top="10.0"/>
+                                                                        <Insets bottom="18.0" left="18.0" right="18.0" top="18.0"/>
                                                                     </padding>
                                                                 </FlowPane>
                                                             </center>
+
                                                             <bottom>
-                                                                <HBox styleClass="pane-box-button-anyDesk"
+                                                                <HBox styleClass="home-bottom-actions"
                                                                       BorderPane.alignment="CENTER">
                                                                     <children>
                                                                         <Button fx:id="btnAnyDesk"
-                                                                                mnemonicParsing="false">
+                                                                                mnemonicParsing="false"
+                                                                                styleClass="home-icon-button">
                                                                             <graphic>
                                                                                 <ImageView fx:id="imageAny"
                                                                                            fitHeight="25.0"
@@ -58,8 +77,10 @@
                                                                                 </ImageView>
                                                                             </graphic>
                                                                         </Button>
-                                                                        <Button fx:id="btnChooseImage" layoutX="10.0"
-                                                                                layoutY="10.0" mnemonicParsing="false">
+
+                                                                        <Button fx:id="btnChooseImage"
+                                                                                mnemonicParsing="false"
+                                                                                styleClass="home-icon-button">
                                                                             <graphic>
                                                                                 <ImageView fx:id="imageAny1"
                                                                                            fitHeight="25.0"
@@ -81,8 +102,11 @@
                                             </children>
                                         </AnchorPane>
                                     </content>
+
                                     <graphic>
-                                        <ImageView fitHeight="20.0" fitWidth="20.0" pickOnBounds="true"
+                                        <ImageView fitHeight="20.0"
+                                                   fitWidth="20.0"
+                                                   pickOnBounds="true"
                                                    preserveRatio="true">
                                             <image>
                                                 <Image url="@../image/icons8-home-page-80.png"/>
