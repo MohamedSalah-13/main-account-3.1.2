@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<?import javafx.geometry.Insets?>
 <?import javafx.scene.control.Button?>
 <?import javafx.scene.control.DatePicker?>
 <?import javafx.scene.control.Label?>
@@ -9,57 +8,108 @@
 <?import javafx.scene.layout.BorderPane?>
 <?import javafx.scene.layout.FlowPane?>
 <?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Region?>
 <?import javafx.scene.layout.VBox?>
-<?import javafx.scene.text.Font?>
 
-<BorderPane prefHeight="700.0" prefWidth="1200.0" xmlns:fx="http://javafx.com/fxml/1" xmlns="http://javafx.com/javafx/21">
+<BorderPane prefHeight="700.0"
+            prefWidth="1200.0"
+            nodeOrientation="RIGHT_TO_LEFT"
+            styleClass="reports-root"
+            stylesheets="@../css/reports-modern.css"
+            xmlns:fx="http://javafx.com/fxml/1"
+            xmlns="http://javafx.com/javafx/21">
 
     <top>
-        <VBox alignment="TOP_CENTER" spacing="10.0" BorderPane.alignment="CENTER">
-            <padding>
-                <Insets bottom="10.0" left="15.0" right="15.0" top="15.0" />
-            </padding>
-             <Label fx:id="title" styleClass="title-label" text="الأصناف المشتراة من العميل" underline="true">
-            <font>
-               <Font size="20.0" />
-            </font>
-         </Label>
-
-            <HBox spacing="20.0">
-                <Label text="عدد السطور:" />
-                <Label fx:id="labelCount" text="0" />
-                <Label text="إجمالي البيع:" />
-                <Label fx:id="labelTotalSales" text="0" />
-                <Label text="إجمالي الكمية:" />
-                <Label fx:id="labelTotalQuantity" text="0" />
-                <Label text="صافي الإجمالي:" />
-                <Label fx:id="labelNetTotal" text="0" />
-            </HBox>
-
-            <HBox spacing="10.0">
-                <Label text="العميل:" />
-                <Label fx:id="labelCustomerName" text="" />
-            </HBox>
-         <FlowPane hgap="10.0" vgap="5.0">
+        <VBox spacing="16.0" styleClass="reports-container" BorderPane.alignment="CENTER">
             <children>
-                   <Label text="من:" />
-                   <DatePicker fx:id="dateFrom" />
-                   <Label text="إلى:" />
-                   <DatePicker fx:id="dateTo" />
-                   <Label text="اسم الصنف:" />
-                   <TextField fx:id="textSearchName" promptText="ابحث بالاسم" />
-                   <Button fx:id="btnSearch" text="بحث" />
-                   <Button fx:id="btnReset" text="إعادة ضبط" />
-                   <Button fx:id="btnSortDate" text="ترتيب حسب التاريخ" />
-                   <Button fx:id="btnExportExcel" text="تصدير Excel" />
-                   <Button fx:id="btnExportPdf" text="تصدير PDF" />
+                <HBox alignment="CENTER_LEFT" spacing="14.0" styleClass="report-header-card">
+                    <children>
+                        <VBox spacing="5.0">
+                            <children>
+                                <Label fx:id="title"
+                                       text="الأصناف المشتراة من العميل"
+                                       styleClass="report-title"/>
+                                <Label text="عرض وتحليل الأصناف التي اشتراها العميل خلال فترة محددة"
+                                       styleClass="report-subtitle"/>
+                            </children>
+                        </VBox>
+
+                        <Region HBox.hgrow="ALWAYS"/>
+
+                        <HBox spacing="18.0" styleClass="stats-bar">
+                            <children>
+                                <VBox alignment="CENTER" spacing="3.0">
+                                    <children>
+                                        <Label text="عدد السطور" styleClass="stat-title"/>
+                                        <Label fx:id="labelCount" text="0" styleClass="stat-value"/>
+                                    </children>
+                                </VBox>
+
+                                <VBox alignment="CENTER" spacing="3.0">
+                                    <children>
+                                        <Label text="إجمالي البيع" styleClass="stat-title"/>
+                                        <Label fx:id="labelTotalSales" text="0" styleClass="stat-value"/>
+                                    </children>
+                                </VBox>
+
+                                <VBox alignment="CENTER" spacing="3.0">
+                                    <children>
+                                        <Label text="إجمالي الكمية" styleClass="stat-title"/>
+                                        <Label fx:id="labelTotalQuantity" text="0" styleClass="stat-value"/>
+                                    </children>
+                                </VBox>
+
+                                <VBox alignment="CENTER" spacing="3.0">
+                                    <children>
+                                        <Label text="صافي الإجمالي" styleClass="stat-title"/>
+                                        <Label fx:id="labelNetTotal" text="0" styleClass="stat-value"/>
+                                    </children>
+                                </VBox>
+                            </children>
+                        </HBox>
+                    </children>
+                </HBox>
+
+                <HBox alignment="CENTER_LEFT" spacing="10.0" styleClass="customer-card">
+                    <children>
+                        <Label text="العميل:" styleClass="form-label"/>
+                        <Label fx:id="labelCustomerName" text="" styleClass="customer-name"/>
+                    </children>
+                </HBox>
+
+                <FlowPane hgap="10.0" vgap="10.0" styleClass="flow-filter-card">
+                    <children>
+                        <Label text="من:" styleClass="form-label"/>
+                        <DatePicker fx:id="dateFrom"/>
+
+                        <Label text="إلى:" styleClass="form-label"/>
+                        <DatePicker fx:id="dateTo"/>
+
+                        <Label text="اسم الصنف:" styleClass="form-label"/>
+                        <TextField fx:id="textSearchName"
+                                   promptText="ابحث بالاسم"
+                                   styleClass="modern-input"/>
+
+                        <Button fx:id="btnSearch" text="بحث" styleClass="primary-button"/>
+                        <Button fx:id="btnReset" text="إعادة ضبط" styleClass="neutral-button"/>
+                        <Button fx:id="btnSortDate" text="ترتيب حسب التاريخ" styleClass="warning-button"/>
+                        <Button fx:id="btnExportExcel" text="تصدير Excel" styleClass="excel-button"/>
+                        <Button fx:id="btnExportPdf" text="تصدير PDF" styleClass="pdf-button"/>
+                    </children>
+                </FlowPane>
             </children>
-         </FlowPane>
         </VBox>
     </top>
 
     <center>
-        <TableView fx:id="tableView" BorderPane.alignment="CENTER" />
+        <VBox styleClass="reports-container">
+            <children>
+                <TableView fx:id="tableView"
+                           styleClass="modern-table"
+                           BorderPane.alignment="CENTER"
+                           VBox.vgrow="ALWAYS"/>
+            </children>
+        </VBox>
     </center>
 
 </BorderPane>
