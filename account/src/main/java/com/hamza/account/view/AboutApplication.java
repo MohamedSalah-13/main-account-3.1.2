@@ -3,13 +3,13 @@ package com.hamza.account.view;
 import com.hamza.account.config.ConnectionToDatabase;
 import com.hamza.account.config.Image_Setting;
 import com.hamza.account.config.PropertiesName;
-import com.hamza.account.config.Style_Sheet;
+import com.hamza.account.config.ThemeManager;
 import com.hamza.account.trial.TrialManager;
 import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.button.ImageDesign;
-import com.hamza.controlsfx.util.ImageChoose;
 import com.hamza.controlsfx.language.Setting_Language;
 import com.hamza.controlsfx.others.ChangeOrientation;
+import com.hamza.controlsfx.util.ImageChoose;
 import javafx.application.Application;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
@@ -61,6 +61,22 @@ public class AboutApplication extends Application {
         launch(args);
     }
 
+    private static String getBuildDate() {
+        try (var is = MainScreenApplication.class.getResourceAsStream("/version.properties")) {
+            if (is != null) {
+                Properties props = new Properties();
+                props.load(is);
+                String pv = props.getProperty("build.date");
+                if (pv != null && !pv.isBlank() && !pv.contains("${")) {
+                    return pv;
+                }
+            }
+        } catch (Exception ignored) {
+        }
+
+        return "dev";
+    }
+
     @Override
     public void start(Stage stage) throws Exception {
         Scene scene = new SceneAll(box);
@@ -72,7 +88,7 @@ public class AboutApplication extends Application {
         stage.show();
 
         ChangeOrientation.sceneOrientation(scene);
-        Style_Sheet.changeStyle(scene);
+        ThemeManager.apply(scene);
     }
 
     private TextFlow getLabel() {
@@ -196,21 +212,5 @@ public class AboutApplication extends Application {
         applyStyle(statusText, GAFATA, size, statusColor);
         applyStyle(remainingText, GAFATA, size, statusColor);
         applyStyle(licenseText, GAFATA, size, statusColor);
-    }
-
-    private static String getBuildDate() {
-        try (var is = MainScreenApplication.class.getResourceAsStream("/version.properties")) {
-            if (is != null) {
-                Properties props = new Properties();
-                props.load(is);
-                String pv = props.getProperty("build.date");
-                if (pv != null && !pv.isBlank() && !pv.contains("${")) {
-                    return pv;
-                }
-            }
-        } catch (Exception ignored) {
-        }
-
-        return "dev";
     }
 }
