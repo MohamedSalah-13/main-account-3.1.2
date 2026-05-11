@@ -24,8 +24,6 @@ import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.excel.ExcelException;
 import com.hamza.controlsfx.excel.ExportData;
 import com.hamza.controlsfx.language.Error_Text_Show;
-import com.hamza.controlsfx.language.Setting_Language;
-import com.hamza.controlsfx.others.DateSetting;
 import com.hamza.controlsfx.table.TableColumnAnnotation;
 import com.hamza.controlsfx.table.columnEdit.ColumnSetting;
 import javafx.collections.FXCollections;
@@ -37,17 +35,13 @@ import javafx.fxml.FXML;
 import javafx.scene.control.*;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
-import javafx.scene.paint.Color;
 import javafx.scene.text.Text;
 import lombok.extern.log4j.Log4j2;
-import org.controlsfx.control.SearchableComboBox;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.function.Predicate;
 
-import static com.hamza.account.config.PropertiesName.setAccountControllerRowColor;
 import static com.hamza.account.view.OpenTreasuryDetailsApplication.ACCOUNT_STATEMENT_TITLE;
 import static com.hamza.controlsfx.util.ImageChoose.createIcon;
 
@@ -62,25 +56,19 @@ public class AccountController2<T1 extends BasePurchasesAndSales, T2 extends Bas
     @FXML
     private TableView<T4> tableView;
     @FXML
-    private Button btnNew, btnExport, btnRefresh, btnPrint, btnSearch, btnShow, btnPaidAll;
+    private Button btnNew, btnExport, btnRefresh, btnPrint, btnShow, btnPaidAll;
     @FXML
     private Text textCount, textTotalPurchase, textTotalPaid, textTotalRest;
     @FXML
     private TextField textSearch;
     @FXML
-    private VBox box, boxCenter;
+    private VBox box;
     @FXML
     private StackPane stackPane;
     @FXML
     private ToggleButton btnSelected;
     @FXML
-    private DatePicker dateFrom, dateTo;
-    @FXML
-    private CheckBox checkByDate, checkByZero, checkColor;
-    @FXML
-    private SearchableComboBox<String> checkComboBox, comboAddress;
-    @FXML
-    private ColorPicker colorPicker;
+    private CheckBox checkByZero;
     private MaskerPaneSetting maskerPaneSetting;
 
     public AccountController2(DaoFactory daoFactory, DataPublisher dataPublisher, DataInterface<T1, T2, T3, T4> dataInterface) throws Exception {
@@ -100,22 +88,13 @@ public class AccountController2<T1 extends BasePurchasesAndSales, T2 extends Bas
     @FXML
     public void initialize() {
         maskerPaneSetting = new MaskerPaneSetting(stackPane);
-        DateSetting.dateAction(dateFrom);
-        DateSetting.dateAction(dateTo);
         getTable();
-        hideBoxCenter();
         actionButton();
-        addComboAddress();
         buttonGraphic();
         observableList.addListener((ListChangeListener<T4>) change -> sumTable());
         btnRefresh.fire();
 
-        dateFrom.setValue(DateSetting.firstDayOfYear);
         btnShow.setText(ACCOUNT_STATEMENT_TITLE);
-    }
-
-    private void hideBoxCenter() {
-        boxCenter.setVisible(false);
     }
 
     private void buttonGraphic() {
@@ -123,7 +102,6 @@ public class AccountController2<T1 extends BasePurchasesAndSales, T2 extends Bas
         var images = new Image_Setting();
         btnNew.setGraphic(createIcon(images.add));
         btnPrint.setGraphic(createIcon(images.print));
-        btnSearch.setGraphic(createIcon(images.search));
         btnShow.setGraphic(createIcon(images.show));
         btnRefresh.setGraphic(createIcon(images.refresh));
         btnSelected.setGraphic(createIcon(images.select));
@@ -146,28 +124,8 @@ public class AccountController2<T1 extends BasePurchasesAndSales, T2 extends Bas
 
         ColumnSetting.addSelectedColumn(tableView);
         TableSetting.tableMenuSetting(getClass(), tableView);
-        colorSetting();
     }
 
-    private void colorSetting() {
-        checkColor.setText("تظليل المتاخر");
-        colorPicker.disableProperty().bind(checkColor.selectedProperty().not());
-        checkColor.selectedProperty().addListener((observableValue, aBoolean, t1) -> {
-            if (t1) {
-                initializeRowBackgroundColors();
-            } else {
-                tableView.setRowFactory(null);
-            }
-            tableView.refresh();
-        });
-
-        colorPicker.setValue(Color.valueOf(PropertiesName.getAccountControllerRowColor()));
-        colorPicker.setOnAction(actionEvent -> {
-            initializeRowBackgroundColors();
-            setAccountControllerRowColor(colorPicker.getValue().toString());
-        });
-
-    }
 
     private void initializeRowBackgroundColors() {
         tableView.setRowFactory(sTableView -> {
@@ -216,88 +174,13 @@ public class AccountController2<T1 extends BasePurchasesAndSales, T2 extends Bas
         });
     }
 
-    private void colorRow() {
-        colorColumn(4, "green");
-        colorColumn(5, "red");
-
-        TableColumn<T4, ?> t4TableColumn = tableView.getColumns().get(6);
-        t4TableColumn.setCellFactory(column -> new TableCell() {
-            @Override
-            protected void updateItem(Object item, boolean empty) {
-                super.updateItem(item, empty);
-                if (empty || item == null) {
-                    setText(null);
-                    setStyle("");
-                } else {
-                    setText(item.toString());
-                    double value = Double.parseDouble(item.toString());
-                    if (value < 0) {
-                        setStyle("-fx-text-fill: red; -fx-font-weight: bold;");
-                    } else {
-                        setStyle("-fx-text-fill: green; -fx-font-weight: bold;");
-                    }
-                }
-            }
-        });
-    }
-
-    private void colorColumn(int index, String color) {
-        TableColumn<T4, ?> t4TableColumn = tableView.getColumns().get(index);
-        t4TableColumn.setStyle(t4TableColumn.getStyle() + "; -fx-text-fill: " + color + "; -fx-font-weight: bold;");
-    }
-
-    private void addComboAddress() {
-        try {
-            nameAndAccountInterface.nameList().stream()
-                    .map(t3 -> nameData.getArea(t3).getArea_name())
-                    .distinct()
-                    .toList().forEach(name -> comboAddress.getItems().add(name));
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-        comboAddress.getItems().addFirst(Setting_Language.WORD_ALL);
-
-        comboAddress.getSelectionModel().selectedItemProperty().addListener((observableValue, s, t1) -> {
-            try {
-                if (t1.equals(Setting_Language.WORD_ALL)) {
-                    filteredTable.setPredicate(t4 -> true);
-                    sumTable();
-                    return;
-                }
-
-                var list = nameAndAccountInterface.nameList()
-                        .stream()
-                        .filter(t3 -> nameData.getArea(t3).getArea_name().equals(t1))
-                        .map(nameData.getId())
-                        .toList();
-
-                filteredTable.setPredicate(filterCheckBox().and(filterByDate()).and(t4 -> list.contains(accountData.getIdName(t4))));
-                sumTable();
-
-            } catch (Exception e) {
-                logError(e);
-            }
-        });
-
-
-    }
-
 
     private void actionButton() {
-        comboAddress.setDisable(true);
-//        comboAddress.disableProperty().bind(checkByDate.selectedProperty().not());
-        checkComboBox.disableProperty().bind(checkByDate.selectedProperty().not());
-        dateFrom.disableProperty().bind(checkByDate.selectedProperty().not());
-        dateTo.disableProperty().bind(checkByDate.selectedProperty().not());
-        btnSearch.disableProperty().bind(checkByDate.selectedProperty().not());
-
         try {
             items.addAll(nameAndAccountInterface.nameList().stream().map(nameData.getName()).toList());
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
-        checkComboBox.getItems().addAll(items);
-        checkComboBox.getItems().addFirst(Setting_Language.WORD_ALL);
 
         checkByZero.selectedProperty().addListener((observableValue, aBoolean, t1) -> filterAccountsByAmount(t1));
         textSearch.setOnKeyReleased(event -> {
@@ -329,11 +212,6 @@ public class AccountController2<T1 extends BasePurchasesAndSales, T2 extends Bas
         btnNew.setOnAction(actionEvent -> openAddAccount());
         btnExport.setOnAction(actionEvent -> exportTo());
         btnPrint.setOnAction(actionEvent -> printAccount());
-
-        btnSearch.setOnAction(actionEvent -> {
-            filteredTable.setPredicate(filterCheckBox().and(filterByDate()));
-            sumTable();
-        });
 
         btnRefresh.setOnAction(actionEvent -> {
             maskerPaneSetting.showMaskerPane(() -> {
@@ -369,36 +247,6 @@ public class AccountController2<T1 extends BasePurchasesAndSales, T2 extends Bas
             openAccountDetails();
         });
 
-    }
-
-    private Predicate<T4> filterCheckBox() {
-        return t4 -> {
-            if (checkComboBox.getSelectionModel().getSelectedItem().isEmpty()) {
-                return true;
-            }
-            if (checkComboBox.getSelectionModel().getSelectedItem().equals(Setting_Language.WORD_ALL)) {
-                return true;
-            }
-            String name = accountData.getName(t4);
-            return checkComboBox.getSelectionModel().getSelectedItem().equals(name);
-        };
-    }
-
-    private Predicate<T4> filterByDate() {
-        LocalDate dateFromValue = parseDate(dateFrom.getValue().toString());
-        LocalDate dateToValue = parseDate(dateTo.getValue().toString());
-        return t4 -> {
-            LocalDate date = parseDate(t4.getDate());
-            return (isDateInRange(date, dateFromValue, dateToValue));
-        };
-    }
-
-    private LocalDate parseDate(String date) {
-        return LocalDate.parse(date);
-    }
-
-    private boolean isDateInRange(LocalDate date, LocalDate dateFrom, LocalDate dateTo) {
-        return (date.isEqual(dateFrom) || date.isAfter(dateFrom)) && (date.isEqual(dateTo) || date.isBefore(dateTo));
     }
 
     private void filterAccountsByAmount(Boolean t1) {

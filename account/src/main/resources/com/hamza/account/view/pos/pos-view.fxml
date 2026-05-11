@@ -242,7 +242,6 @@
                 </SplitPane>
             </children>
             <stylesheets>
-                <URL value="@../../css/mainStyle.css" />
                 <URL value="@../../css/pos.css" />
             </stylesheets>
         </AnchorPane>
