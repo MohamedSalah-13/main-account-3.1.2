@@ -10,10 +10,7 @@ import com.hamza.account.controller.reports.*;
 import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.openFxml.OpenFxmlApplication;
 import com.hamza.account.type.UserPermissionType;
-import com.hamza.account.view.OpenApplication;
-import com.hamza.account.view.ReportTotalYearlyApplication;
-import com.hamza.account.view.SceneAll;
-import com.hamza.account.view.TargetApplication;
+import com.hamza.account.view.*;
 import com.hamza.controlsfx.interfaceData.AppSettingInterface;
 import com.hamza.controlsfx.language.Setting_Language;
 import javafx.fxml.FXMLLoader;
@@ -167,11 +164,12 @@ public class ReportsButtons extends LoadData {
                 ItemSalesRankController controller = loader.getController();
                 controller.setDaoFactory(daoFactory); // تمرير اتصال قاعدة البيانات
 
-                Stage stage = new Stage();
                 Scene scene = new SceneAll(root);
-                stage.setScene(scene);
-                stage.setTitle(this.textName());
-                stage.show();
+                StageManager.show(
+                        "item-sales-rank",
+                        scene,
+                        this.textName()
+                );
             }
 
             @NotNull
@@ -203,11 +201,11 @@ public class ReportsButtons extends LoadData {
                 DailyItemSalesController controller = loader.getController();
                 controller.setDaoFactory(daoFactory);  // تمرير اتصال قاعدة البيانات
 
-                Stage stage = new Stage();
-                Scene scene = new SceneAll(root);
-                stage.setScene(scene);
-                stage.setTitle(this.textName());
-                stage.show();
+                StageManager.show(
+                        "item-sales-daily",
+                        new SceneAll(root),
+                        this.textName()
+                );
             }
 
             @NotNull

@@ -90,11 +90,12 @@ public class TreasuryButtons {
                 TreasuryTransferController controller = loader.getController();
                 controller.setDaoFactory(daoFactory); // تمرير اتصال قاعدة البيانات
 
-                Stage stage = new Stage();
                 Scene scene = new SceneAll(root);
-                stage.setScene(scene);
-                stage.setTitle("تحويلات الخزينة");
-                stage.show();
+                StageManager.show(
+                        "treasury-transfer",
+                        scene,
+                        "تحويلات الخزينة"
+                );
             }
 
             @NotNull
