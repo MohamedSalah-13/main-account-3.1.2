@@ -1,18 +1,19 @@
 package com.hamza.account.dash;
 
+import com.hamza.account.Main;
 import com.hamza.account.controller.convert_treasury.AddDepositController;
-import com.hamza.account.controller.convert_treasury.ConvertTreasuryController;
+import com.hamza.account.controller.convert_treasury.TreasuryTransferController;
 import com.hamza.account.controller.main.ButtonWithPerm;
 import com.hamza.account.controller.main.DataPublisher;
 import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.openFxml.OpenFxmlApplication;
 import com.hamza.account.table.TableOpen;
 import com.hamza.account.type.UserPermissionType;
-import com.hamza.account.view.ExpensesDetailsApplication;
-import com.hamza.account.view.OpenApplicationWithData;
-import com.hamza.account.view.OpenTreasuryDetailsApplication;
-import com.hamza.account.view.ProcessorApplication;
+import com.hamza.account.view.*;
 import com.hamza.controlsfx.language.Setting_Language;
+import javafx.fxml.FXMLLoader;
+import javafx.scene.Parent;
+import javafx.scene.Scene;
 import javafx.stage.Stage;
 import org.jetbrains.annotations.NotNull;
 
@@ -32,7 +33,7 @@ public class TreasuryButtons {
 
             @Override
             public UserPermissionType getPermissionType() {
-                return UserPermissionType.DISABLE_BUTTON;
+                return null;
             }
 
             @Override
@@ -79,13 +80,21 @@ public class TreasuryButtons {
         return new ButtonWithPerm() {
             @Override
             public UserPermissionType getPermissionType() {
-                return UserPermissionType.DISABLE_BUTTON;
+                return null;
             }
 
             @Override
             public void action() throws Exception {
-                ConvertTreasuryController itemsController = new ConvertTreasuryController();
-                new TableOpen<>(itemsController).start(new Stage());
+                FXMLLoader loader = new FXMLLoader(Main.class.getResource("view/treasury/TreasuryTransfer.fxml"));
+                Parent root = loader.load();
+                TreasuryTransferController controller = loader.getController();
+                controller.setDaoFactory(daoFactory); // تمرير اتصال قاعدة البيانات
+
+                Stage stage = new Stage();
+                Scene scene = new SceneAll(root);
+                stage.setScene(scene);
+                stage.setTitle("تحويلات الخزينة");
+                stage.show();
             }
 
             @NotNull

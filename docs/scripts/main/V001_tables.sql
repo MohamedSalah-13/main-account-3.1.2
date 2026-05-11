@@ -861,3 +861,79 @@ CREATE TABLE IF NOT EXISTS audit_log
 CREATE INDEX idx_audit_table_record ON audit_log (table_name, record_id);
 CREATE INDEX idx_audit_user_time ON audit_log (user_id, action_time);
 CREATE INDEX idx_audit_action_time ON audit_log (action_type, action_time);
+
+#=================
+CREATE TABLE IF NOT EXISTS treasury_movements
+(
+    id             BIGINT AUTO_INCREMENT PRIMARY KEY,
+    treasury_id    INT                                      NOT NULL,
+    movement_date  DATE                                     NOT NULL,
+
+    movement_type  VARCHAR(50)                              NOT NULL,
+
+    amount_in      DECIMAL(14, 2) DEFAULT 0                 NOT NULL,
+    amount_out     DECIMAL(14, 2) DEFAULT 0                 NOT NULL,
+    balance_after  DECIMAL(14, 2) DEFAULT 0                 NOT NULL,
+
+    reference_type VARCHAR(50)                              NULL,
+    reference_id   BIGINT                                   NULL,
+
+    notes          TEXT                                     NULL,
+    date_insert    DATETIME       DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    updated_at     TIMESTAMP      DEFAULT CURRENT_TIMESTAMP NOT NULL ON UPDATE CURRENT_TIMESTAMP,
+    user_id        INT            DEFAULT 1                 NOT NULL,
+
+    CONSTRAINT treasury_movements_treasury_id_fk
+        FOREIGN KEY (treasury_id) REFERENCES treasury (id),
+
+    CONSTRAINT treasury_movements_users_id_fk
+        FOREIGN KEY (user_id) REFERENCES users (id),
+
+    CONSTRAINT treasury_movements_amount_chk
+        CHECK (
+            (amount_in > 0 AND amount_out = 0)
+                OR
+            (amount_in = 0 AND amount_out > 0)
+            ),
+
+    CONSTRAINT treasury_movements_type_chk
+        CHECK (movement_type IN (
+                                 'OPENING',
+                                 'DEPOSIT',
+                                 'WITHDRAWAL',
+                                 'TRANSFER_IN',
+                                 'TRANSFER_OUT',
+                                 'SALE',
+                                 'SALE_RETURN',
+                                 'PURCHASE',
+                                 'PURCHASE_RETURN',
+                                 'EXPENSE',
+                                 'ADJUSTMENT_IN',
+                                 'ADJUSTMENT_OUT'
+            )),
+
+    CONSTRAINT treasury_movements_reference_type_chk
+        CHECK (
+            reference_type IS NULL
+                OR reference_type IN (
+                                      'TREASURY',
+                                      'TREASURY_DEPOSIT_EXPENSES',
+                                      'TREASURY_TRANSFER',
+                                      'SALE',
+                                      'SALE_RETURN',
+                                      'PURCHASE',
+                                      'PURCHASE_RETURN',
+                                      'EXPENSE',
+                                      'ADJUSTMENT'
+                )
+            )
+);
+
+CREATE INDEX treasury_movements_treasury_date_idx
+    ON treasury_movements (treasury_id, movement_date, id);
+
+CREATE INDEX treasury_movements_reference_idx
+    ON treasury_movements (reference_type, reference_id);
+
+CREATE INDEX treasury_movements_date_idx
+    ON treasury_movements (movement_date);

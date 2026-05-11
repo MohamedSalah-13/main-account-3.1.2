@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.ComboBox?>
+<?import javafx.scene.control.DatePicker?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.TableColumn?>
+<?import javafx.scene.control.TableView?>
+<?import javafx.scene.control.TextArea?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.layout.ColumnConstraints?>
+<?import javafx.scene.layout.GridPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.RowConstraints?>
+<?import javafx.scene.layout.VBox?>
+
+<BorderPane nodeOrientation="RIGHT_TO_LEFT" styleClass="treasury-transfer-root" stylesheets="@../../css/modern_u_i_components.css" xmlns:fx="http://javafx.com/fxml/1" xmlns="http://javafx.com/javafx/21" fx:controller="com.hamza.account.controller.convert_treasury.TreasuryTransferController">
+
+    <top>
+        <VBox spacing="18" styleClass="page-container">
+            <padding>
+                <Insets bottom="18" left="28" right="28" top="24" />
+            </padding>
+
+            <VBox spacing="6">
+                <Label styleClass="page-title" text="تحويل بين الخزائن" />
+                <Label styleClass="page-subtitle" text="قم بتحويل المبالغ بين الخزائن بسهولة مع حفظ سجل كامل للتحويلات" />
+            </VBox>
+
+            <VBox spacing="16" styleClass="modern-card">
+                <GridPane hgap="18" vgap="14">
+                    <columnConstraints>
+                        <ColumnConstraints minWidth="120" prefWidth="130" />
+                        <ColumnConstraints hgrow="ALWAYS" minWidth="260" />
+                        <ColumnConstraints minWidth="120" prefWidth="130" />
+                        <ColumnConstraints hgrow="ALWAYS" minWidth="260" />
+                    </columnConstraints>
+
+                    <Label styleClass="form-label" text="من خزينة:" GridPane.columnIndex="0" GridPane.rowIndex="0" />
+                    <ComboBox fx:id="treasuryFromCombo" maxWidth="Infinity" styleClass="modern-input" GridPane.columnIndex="1" GridPane.rowIndex="0" />
+
+                    <Label styleClass="form-label" text="إلى خزينة:" GridPane.columnIndex="2" GridPane.rowIndex="0" />
+                    <ComboBox fx:id="treasuryToCombo" maxWidth="Infinity" styleClass="modern-input" GridPane.columnIndex="3" GridPane.rowIndex="0" />
+
+                    <Label styleClass="form-label" text="المبلغ:" GridPane.columnIndex="0" GridPane.rowIndex="1" />
+                    <TextField fx:id="amountField" promptText="أدخل مبلغ التحويل" styleClass="modern-input" GridPane.columnIndex="1" GridPane.rowIndex="1" />
+
+                    <Label styleClass="form-label" text="التاريخ:" GridPane.columnIndex="2" GridPane.rowIndex="1" />
+                    <DatePicker fx:id="transferDatePicker" maxWidth="Infinity" styleClass="modern-input" GridPane.columnIndex="3" GridPane.rowIndex="1" />
+
+                    <Label styleClass="form-label" text="ملاحظات:" GridPane.columnIndex="0" GridPane.rowIndex="2" />
+                    <TextArea fx:id="notesArea" prefRowCount="3" promptText="اكتب ملاحظات التحويل إن وجدت" styleClass="modern-text-area" wrapText="true" GridPane.columnIndex="1" GridPane.columnSpan="3" GridPane.rowIndex="2" />
+               <rowConstraints>
+                  <RowConstraints />
+                  <RowConstraints />
+                  <RowConstraints />
+               </rowConstraints>
+                </GridPane>
+
+                <HBox alignment="CENTER_LEFT" spacing="12">
+                    <Button onAction="#saveTransfer" styleClass="primary-button" text="تنفيذ التحويل" />
+                    <Button onAction="#clearForm" styleClass="secondary-button" text="جديد" />
+                    <Button onAction="#loadData" styleClass="neutral-button" text="تحديث" />
+                </HBox>
+            </VBox>
+        </VBox>
+    </top>
+
+    <center>
+        <VBox spacing="12" styleClass="table-section">
+            <padding>
+                <Insets bottom="28" left="28" right="28" top="8" />
+            </padding>
+
+            <Label styleClass="section-title" text="سجل التحويلات" />
+
+            <TableView fx:id="transferTable" styleClass="modern-table" VBox.vgrow="ALWAYS">
+                <columns>
+                    <TableColumn fx:id="idColumn" prefWidth="80" text="الكود" />
+                    <TableColumn fx:id="fromColumn" prefWidth="180" text="من خزينة" />
+                    <TableColumn fx:id="toColumn" prefWidth="180" text="إلى خزينة" />
+                    <TableColumn fx:id="amountColumn" prefWidth="140" text="المبلغ" />
+                    <TableColumn fx:id="dateColumn" prefWidth="140" text="التاريخ" />
+                    <TableColumn fx:id="notesColumn" prefWidth="280" text="ملاحظات" />
+                </columns>
+            </TableView>
+        </VBox>
+    </center>
+
+</BorderPane>

@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<BorderPane xmlns:fx="http://javafx.com/fxml"
+            fx:controller="com.hamza.account.controller.convert_treasury.TreasuryController"
+            nodeOrientation="RIGHT_TO_LEFT"
+            styleClass="treasury-root"
+            stylesheets="@../../css/treasury-modern.css">
+
+    <top>
+        <VBox spacing="18" styleClass="page-container">
+            <padding>
+                <Insets top="24" right="28" bottom="18" left="28"/>
+            </padding>
+
+            <VBox spacing="6">
+                <Label text="إدارة الخزائن" styleClass="page-title"/>
+                <Label text="إضافة وتعديل الخزائن ومتابعة الأرصدة الافتتاحية بسهولة"
+                       styleClass="page-subtitle"/>
+            </VBox>
+
+            <VBox spacing="16" styleClass="modern-card">
+                <GridPane hgap="18" vgap="14">
+                    <columnConstraints>
+                        <ColumnConstraints minWidth="130" prefWidth="140"/>
+                        <ColumnConstraints minWidth="320" hgrow="ALWAYS"/>
+                        <ColumnConstraints minWidth="130" prefWidth="140"/>
+                        <ColumnConstraints minWidth="260" hgrow="ALWAYS"/>
+                    </columnConstraints>
+
+                    <Label text="اسم الخزينة:" styleClass="form-label"
+                           GridPane.rowIndex="0" GridPane.columnIndex="0"/>
+
+                    <TextField fx:id="nameField"
+                               promptText="أدخل اسم الخزينة"
+                               styleClass="modern-input"
+                               GridPane.rowIndex="0" GridPane.columnIndex="1"/>
+
+                    <Label text="رصيد افتتاحي:" styleClass="form-label"
+                           GridPane.rowIndex="0" GridPane.columnIndex="2"/>
+
+                    <TextField fx:id="amountField"
+                               promptText="أدخل الرصيد الافتتاحي"
+                               styleClass="modern-input"
+                               GridPane.rowIndex="0" GridPane.columnIndex="3"/>
+                </GridPane>
+
+                <HBox spacing="12" alignment="CENTER_LEFT">
+                    <Button text="جديد"
+                            onAction="#newTreasury"
+                            styleClass="secondary-button"/>
+
+                    <Button text="حفظ"
+                            onAction="#saveTreasury"
+                            styleClass="primary-button"/>
+
+                    <Button text="تعديل"
+                            onAction="#updateTreasury"
+                            styleClass="warning-button"/>
+
+                    <Button text="تحديث"
+                            onAction="#loadTreasuries"
+                            styleClass="neutral-button"/>
+                </HBox>
+            </VBox>
+        </VBox>
+    </top>
+
+    <center>
+        <VBox spacing="12" styleClass="table-section">
+            <padding>
+                <Insets top="8" right="28" bottom="28" left="28"/>
+            </padding>
+
+            <HBox alignment="CENTER_RIGHT">
+                <Label text="قائمة الخزائن" styleClass="section-title"/>
+            </HBox>
+
+            <TableView fx:id="treasuryTable"
+                       styleClass="modern-table"
+                       VBox.vgrow="ALWAYS">
+                <columns>
+                    <TableColumn fx:id="idColumn" text="الكود" prefWidth="90"/>
+                    <TableColumn fx:id="nameColumn" text="اسم الخزينة" prefWidth="320"/>
+                    <TableColumn fx:id="amountColumn" text="الرصيد" prefWidth="180"/>
+                </columns>
+            </TableView>
+        </VBox>
+    </center>
+
+</BorderPane>

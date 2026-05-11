@@ -283,10 +283,6 @@ public class MainScreenController extends MainItems implements Initializable {
         menuButtonSetting.initializeMenuItem(menuController.getMenuItemReportItems(), getReportsButtons().itemsReport());
         menuButtonSetting.initializeMenuItem(menuController.getMenuItemReportItemsDaily(), getReportsButtons().itemsReportDaily());
 
-
-        // purchase - sales
-//        menuButtonSetting.initializeMenuItem(menuController.getMenuItemReportPurchase(), actionPurchase);
-//        menuButtonSetting.initializeMenuItem(menuController.getMenuItemReportSales(), actionSales);
         var monthlySalesInterface = new MonthlySalesInterface() {
         };
 
@@ -316,17 +312,9 @@ public class MainScreenController extends MainItems implements Initializable {
         menuButtonSetting.initializeMenuItem(menuController.getMenuItemReportSalesByYear(), getAction(monthlySalesInterface.reportName(), monthlySalesInterface));
         menuButtonSetting.initializeMenuItem(menuController.getMenuItemReportPurchaseByYear(), getAction(monthlyPurchaseInterface.reportName(), monthlyPurchaseInterface));
 
-
-        ReportTreeAccountCustom treeAccountCustom = new ReportTreeAccountCustom(this.getDaoFactory(), this) {
-        };
-        ReportTreeAccountSuppliers treeAccountSuppliers = new ReportTreeAccountSuppliers(this.getDaoFactory(), this);
-        ReportByDate<CustomerAccount, Customers> accountCustom = new ReportByDate<>(this, treeAccountCustom
-                , dataInterfaceSales.nameData(), UserPermissionType.REPORTS_SHOW_CUSTOMERS);
-        ReportByDate<SupplierAccount, Suppliers> accountSuppliers = new ReportByDate<>(this, treeAccountSuppliers
-                , dataInterfacePurchase.nameData(), UserPermissionType.REPORTS_SHOW_SUPPLIERS);
-        menuButtonSetting.initializeMenuItem(menuController.getMenuItemReportCustom(), accountCustom);
+//        menuButtonSetting.initializeMenuItem(menuController.getMenuItemReportCustom(), null);
         menuButtonSetting.initializeMenuItem(menuController.getMenuItemCustomPaid(), getReportsButtons().reportCustomPaid());
-        menuButtonSetting.initializeMenuItem(menuController.getMenuItemReportSuppliers(), accountSuppliers);
+//        menuButtonSetting.initializeMenuItem(menuController.getMenuItemReportSuppliers(), null);
         menuButtonSetting.initializeMenuItem(menuController.getMenuItemSuppliersPaid(), getReportsButtons().reportSupplierPaid());
         // details
         menuButtonSetting.initializeMenuItem(menuController.getMenuItemReportDetails(), getReportsButtons().detailsReport());
