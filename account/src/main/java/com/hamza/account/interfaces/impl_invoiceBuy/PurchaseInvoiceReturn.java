@@ -34,9 +34,9 @@ public class PurchaseInvoiceReturn implements InvoiceBuy<Purchase_Return, Total_
     public Total_Buy_Re object_Totals(int num_invoice, InvoiceType invoiceType
             , String date, double total, double discount, DiscountType discountType
             , double after, double paid, double rest, String notes, Suppliers t3, Stock stock
-            , Employees userDelegate, List<Purchase_Return> list, TreasuryModel treasuryModel) {
+            , Employees userDelegate, List<Purchase_Return> list, Treasury treasury) {
 
-        return new Total_Buy_Re(num_invoice, date, total, discount, paid, notes, t3, stock, treasuryModel, invoiceType, list);
+        return new Total_Buy_Re(num_invoice, date, total, discount, paid, notes, t3, stock, treasury, invoiceType, list);
     }
 
     @Override

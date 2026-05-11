@@ -8,6 +8,7 @@ import com.hamza.controlsfx.database.AbstractDao;
 import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.database.SqlStatements;
 
+import java.math.BigDecimal;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -151,7 +152,7 @@ public class TotalsBuyDao extends AbstractDao<Total_buy> {
             total_buy.setRest(roundToTwoDecimalPlaces(total_amount - paid));
             total_buy.setSupplierData(new Suppliers(sup_id, sup_name));
             total_buy.setStockData(new Stock(stock_id, stock_name));
-            total_buy.setTreasuryModel(new TreasuryModel(treasury_id, treasury_name, 0));
+            total_buy.setTreasuryModel(new Treasury(treasury_id, treasury_name, BigDecimal.valueOf(0)));
             total_buy.setNotes(rs.getString(NOTES) != null ? rs.getString(NOTES) : "");
             total_buy.setOtherPaid(rs.getDouble(OTHER_PAID));
             total_buy.setAmountAfterOtherPaid(roundToTwoDecimalPlaces(total_amount - total_buy.getOtherPaid() - total_buy.getPaid()));

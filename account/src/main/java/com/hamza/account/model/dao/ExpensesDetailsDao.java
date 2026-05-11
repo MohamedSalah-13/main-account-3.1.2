@@ -107,7 +107,7 @@ public class ExpensesDetailsDao extends AbstractDao<ExpensesDetails> {
             expensesDetails.setAmount(rs.getDouble(AMOUNT));
             expensesDetails.setNotes(rs.getString(NOTES));
 
-            expensesDetails.setTreasuryModel(new TreasuryModel(rs.getInt(TREASURY_ID)));
+            expensesDetails.setTreasuryModel(new Treasury(rs.getInt(TREASURY_ID)));
             expensesDetails.setExpenses(new Expenses(rs.getInt(TYPE_CODE), rs.getString(EXPENSES_NAME)));
             String string = rs.getString(EMPLOYEE_NAME);
             expensesDetails.setEmployees(new Employees(rs.getInt(EMP_ID), string));

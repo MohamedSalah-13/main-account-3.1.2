@@ -14,7 +14,7 @@ public class SupplierAccount extends BaseAccount {
 
     private ObjectProperty<Suppliers> suppliers = new SimpleObjectProperty<>();
 
-    public SupplierAccount(int num, String date, double paid, String notes, Integer invoice_number, Suppliers suppliers, TreasuryModel treasury) {
+    public SupplierAccount(int num, String date, double paid, String notes, Integer invoice_number, Suppliers suppliers, Treasury treasury) {
         super(num, date, paid, notes, invoice_number, treasury);
         this.suppliers = new SimpleObjectProperty<>(suppliers);
     }

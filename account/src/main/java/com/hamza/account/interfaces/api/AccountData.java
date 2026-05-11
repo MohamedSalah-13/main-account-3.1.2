@@ -1,7 +1,7 @@
 package com.hamza.account.interfaces.api;
 
 import com.hamza.account.model.base.BaseAccount;
-import com.hamza.account.model.domain.TreasuryModel;
+import com.hamza.account.model.domain.Treasury;
 import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.excel.WriteExcelInterface;
 import javafx.scene.control.TableView;
@@ -19,7 +19,7 @@ public interface AccountData<T extends BaseAccount> {
 
     T getAccountByNum(int i) throws DaoException;
 
-    T objectData(int num, String date, double paid, String notes, Integer invoice_id, Integer code_id, TreasuryModel treasuryModel);
+    T objectData(int num, String date, double paid, String notes, Integer invoice_id, Integer code_id, Treasury treasury);
 
     void updateTableView(TableView<T> tableView);
 

@@ -19,7 +19,7 @@ public interface InvoiceBuy<T1 extends BasePurchasesAndSales, T2 extends BaseTot
 
     T2 object_Totals(int num_invoice, InvoiceType invoiceType, String date, double total, double discount
             , DiscountType discountType, double after, double paid, double rest, String notes, T3 t3, Stock stock
-            , Employees userDelegate, List<T1> list, TreasuryModel treasuryModel) throws DaoException;
+            , Employees userDelegate, List<T1> list, Treasury treasury) throws DaoException;
 
     T3 objectName(int code, String name);
 

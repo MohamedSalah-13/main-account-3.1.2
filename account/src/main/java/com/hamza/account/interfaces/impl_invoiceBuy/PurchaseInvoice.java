@@ -33,7 +33,7 @@ public class PurchaseInvoice implements InvoiceBuy<Purchase, Total_buy, Supplier
     @Override
     public Total_buy object_Totals(int num_invoice, InvoiceType invoiceType, String date, double total
             , double discount, DiscountType discountType, double after, double paid, double rest, String notes
-            , Suppliers t3, Stock stock, Employees userDelegate, List<Purchase> list, TreasuryModel treasuryModel) throws DaoException {
+            , Suppliers t3, Stock stock, Employees userDelegate, List<Purchase> list, Treasury treasury) throws DaoException {
 
         var totalBuy = new Total_buy();
         totalBuy.setId(num_invoice);
@@ -48,7 +48,7 @@ public class PurchaseInvoice implements InvoiceBuy<Purchase, Total_buy, Supplier
         totalBuy.setNotes(notes);
         totalBuy.setSupplierData(t3);
         totalBuy.setStockData(stock);
-        totalBuy.setTreasuryModel(treasuryModel);
+        totalBuy.setTreasuryModel(treasury);
         totalBuy.setPurchaseList(list);
         return totalBuy;
     }

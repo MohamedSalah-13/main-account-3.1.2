@@ -2,7 +2,7 @@ package com.hamza.account.model.base;
 
 import com.hamza.account.config.NamesTables;
 import com.hamza.account.model.domain.Stock;
-import com.hamza.account.model.domain.TreasuryModel;
+import com.hamza.account.model.domain.Treasury;
 import com.hamza.account.type.DiscountType;
 import com.hamza.account.type.InvoiceStatus;
 import com.hamza.account.type.InvoiceType;
@@ -33,7 +33,7 @@ public abstract class BaseTotals extends DForColumnTable {
     private StringProperty notes = new SimpleStringProperty();
 
     private ObjectProperty<Stock> stockData = new SimpleObjectProperty<>();
-    private ObjectProperty<TreasuryModel> treasuryModel = new SimpleObjectProperty<>();
+    private ObjectProperty<Treasury> treasuryModel = new SimpleObjectProperty<>();
 
     private DoubleProperty otherPaid = new SimpleDoubleProperty();
     private DoubleProperty amountAfterOtherPaid = new SimpleDoubleProperty();
@@ -149,15 +149,15 @@ public abstract class BaseTotals extends DForColumnTable {
         return stockData;
     }
 
-    public TreasuryModel getTreasuryModel() {
+    public Treasury getTreasuryModel() {
         return treasuryModel.get();
     }
 
-    public void setTreasuryModel(TreasuryModel treasuryModel) {
-        this.treasuryModel.set(treasuryModel);
+    public void setTreasuryModel(Treasury treasury) {
+        this.treasuryModel.set(treasury);
     }
 
-    public ObjectProperty<TreasuryModel> treasuryModelProperty() {
+    public ObjectProperty<Treasury> treasuryModelProperty() {
         return treasuryModel;
     }
 

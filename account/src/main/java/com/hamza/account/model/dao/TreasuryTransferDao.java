@@ -1,91 +1,158 @@
 package com.hamza.account.model.dao;
 
-import com.hamza.account.model.domain.TreasuryModel;
-import com.hamza.account.model.domain.TreasuryTransferModel;
+import com.hamza.account.model.domain.Treasury;
+import com.hamza.account.model.domain.TreasuryTransfer;
 import com.hamza.controlsfx.database.AbstractDao;
 import com.hamza.controlsfx.database.DaoException;
-import com.hamza.controlsfx.database.SqlStatements;
 
+import java.math.BigDecimal;
 import java.sql.Connection;
 import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.time.LocalDate;
 import java.util.List;
 
-public class TreasuryTransferDao extends AbstractDao<TreasuryTransferModel> {
+public class TreasuryTransferDao extends AbstractDao<TreasuryTransfer> {
 
-    private final String TABLE_NAME = "treasury_transfers";
-    private final String TABLE_VIEW = "treasury_transfers_and_names";
-    private final String ID = "id";
-    private final String TREASURY_FROM = "treasury_from";
-    private final String TREASURY_TO = "treasury_to";
-    private final String TRANSFER_DATE = "transfer_date";
-    private final String NOTES = "notes";
-    private final String AMOUNT = "amount";
-    private final String TREASURY_NAME_FROM = "treasury_name_from";
-    private final String TREASURY_NAME_TO = "treasury_name_to";
-    private final String USER_ID = "user_id";
+    private final TreasuryDao treasuryDao;
 
-    protected TreasuryTransferDao(Connection connection) {
+    public TreasuryTransferDao(Connection connection) {
         super(connection);
+        this.treasuryDao = new TreasuryDao(connection);
     }
 
     @Override
-    public List<TreasuryTransferModel> loadAll() throws DaoException {
-        return queryForObjects(SqlStatements.selectStatement(TABLE_VIEW), this::map);
-    }
-
-    @Override
-    public int insert(TreasuryTransferModel treasuryModel) throws DaoException {
-        Object[] objects = {treasuryModel.getTreasuryFrom().getId(), treasuryModel.getTreasuryTo().getId()
-                , treasuryModel.getAmount(), treasuryModel.getDate(), treasuryModel.getNotes(), treasuryModel.getUsers().getId()};
-        String insert = SqlStatements.insertStatement(TABLE_NAME, TREASURY_FROM, TREASURY_TO, AMOUNT, TRANSFER_DATE
-                , NOTES, USER_ID);
-        return executeUpdate(insert, objects);
-    }
-
-    @Override
-    public int update(TreasuryTransferModel unitsModel) throws DaoException {
-        String update = SqlStatements.updateStatement(TABLE_NAME, ID, TREASURY_FROM, TREASURY_TO, AMOUNT, TRANSFER_DATE, NOTES);
-        return executeUpdate(update, getData(unitsModel));
-    }
-
-    @Override
-    public int deleteById(int id) throws DaoException {
-        String deleteStatement = SqlStatements.deleteStatement(TABLE_NAME, ID);
-        return executeUpdate(deleteStatement, id);
-    }
-
-    @Override
-    public TreasuryTransferModel getDataById(int id) throws DaoException {
-        return queryForObject(SqlStatements.selectStatementByColumnWhere(TABLE_NAME, ID), this::map, id);
-    }
-
-
-    @Override
-    public Object[] getData(TreasuryTransferModel model) throws DaoException {
-        return new Object[]{model.getTreasuryFrom().getId(), model.getTreasuryTo().getId()
-                , model.getAmount(), model.getDate(), model.getNotes(), model.getId()};
-    }
-
-    @Override
-    public TreasuryTransferModel map(ResultSet rs) throws DaoException {
-        TreasuryTransferModel unitsModel = new TreasuryTransferModel();
+    public TreasuryTransfer map(ResultSet rs) throws DaoException {
         try {
-            String stringNameFrom = rs.getString(TREASURY_NAME_FROM);
-            String stringNameTo = rs.getString(TREASURY_NAME_TO);
+            TreasuryTransfer transfer = new TreasuryTransfer();
 
-            unitsModel.setId(rs.getInt(ID));
-            unitsModel.setTreasuryFrom(new TreasuryModel(rs.getInt(TREASURY_FROM), stringNameFrom, 0));
-            unitsModel.setTreasuryTo(new TreasuryModel(rs.getInt(TREASURY_TO), stringNameTo, 0));
-            unitsModel.setAmount(rs.getDouble(AMOUNT));
-            unitsModel.setDate(LocalDate.parse(rs.getString(TRANSFER_DATE)));
-            unitsModel.setNotes(rs.getString(NOTES));
-            unitsModel.setTreasuryNameTo(stringNameTo);
-            unitsModel.setTreasuryNameFrom(stringNameFrom);
-        } catch (SQLException e) {
+            transfer.setId(rs.getInt("id"));
+            transfer.setAmount(rs.getBigDecimal("amount"));
+
+            var transferDate = rs.getDate("transfer_date");
+            if (transferDate != null) {
+                transfer.setTransferDate(transferDate.toLocalDate());
+            }
+
+            transfer.setNotes(rs.getString("notes"));
+            transfer.getUsers().setId(rs.getInt("user_id"));
+
+            Treasury from = new Treasury();
+            from.setId(rs.getInt("treasury_from"));
+            from.setName(rs.getString("from_name"));
+            transfer.setTreasuryFrom(from);
+
+            Treasury to = new Treasury();
+            to.setId(rs.getInt("treasury_to"));
+            to.setName(rs.getString("to_name"));
+            transfer.setTreasuryTo(to);
+
+            return transfer;
+        } catch (Exception e) {
             throw new DaoException(e);
         }
-        return unitsModel;
+    }
+
+    @Override
+    public List<TreasuryTransfer> loadAll() throws DaoException {
+        String query = """
+                SELECT tt.id,
+                       tt.treasury_from,
+                       tt.treasury_to,
+                       tt.amount,
+                       tt.transfer_date,
+                       tt.notes,
+                       tt.user_id,
+                       tf.t_name AS from_name,
+                       tt2.t_name AS to_name
+                FROM treasury_transfers tt
+                JOIN treasury tf ON tf.id = tt.treasury_from
+                JOIN treasury tt2 ON tt2.id = tt.treasury_to
+                ORDER BY tt.transfer_date DESC, tt.id DESC
+                """;
+        return queryForObjects(query, this::map);
+    }
+
+    public List<TreasuryTransfer> loadBetweenDates(LocalDate startDate, LocalDate endDate) throws DaoException {
+        String query = """
+                SELECT tt.id,
+                       tt.treasury_from,
+                       tt.treasury_to,
+                       tt.amount,
+                       tt.transfer_date,
+                       tt.notes,
+                       tt.user_id,
+                       tf.t_name AS from_name,
+                       tt2.t_name AS to_name
+                FROM treasury_transfers tt
+                JOIN treasury tf ON tf.id = tt.treasury_from
+                JOIN treasury tt2 ON tt2.id = tt.treasury_to
+                WHERE tt.transfer_date BETWEEN ? AND ?
+                ORDER BY tt.transfer_date DESC, tt.id DESC
+                """;
+        return queryForObjects(query, this::map, startDate, endDate);
+    }
+
+    @Override
+    public int insert(TreasuryTransfer transfer) throws DaoException {
+        validateTransfer(transfer);
+
+        return insertMultiData(() -> {
+            int affectedRows = treasuryDao.decreaseAmount(
+                    transfer.getTreasuryFrom().getId(),
+                    transfer.getAmount()
+            );
+
+            if (affectedRows == 0) {
+                throw new DaoException("رصيد الخزينة المحول منها غير كافٍ");
+            }
+
+            treasuryDao.increaseAmount(
+                    transfer.getTreasuryTo().getId(),
+                    transfer.getAmount()
+            );
+
+            insertTransferOnly(transfer);
+        });
+    }
+
+    private int insertTransferOnly(TreasuryTransfer transfer) throws DaoException {
+        String query = """
+                INSERT INTO treasury_transfers
+                    (treasury_from, treasury_to, amount, transfer_date, notes, user_id)
+                VALUES
+                    (?, ?, ?, ?, ?, ?)
+                """;
+
+        return executeUpdate(
+                query,
+                transfer.getTreasuryFrom().getId(),
+                transfer.getTreasuryTo().getId(),
+                transfer.getAmount(),
+                transfer.getTransferDate(),
+                transfer.getNotes(),
+                transfer.getUsers().getId()
+        );
+    }
+
+    private void validateTransfer(TreasuryTransfer transfer) throws DaoException {
+        if (transfer.getTreasuryFrom() == null) {
+            throw new DaoException("يجب اختيار الخزينة المحول منها");
+        }
+
+        if (transfer.getTreasuryTo() == null) {
+            throw new DaoException("يجب اختيار الخزينة المحول إليها");
+        }
+
+        if (transfer.getTreasuryFrom().getId() == transfer.getTreasuryTo().getId()) {
+            throw new DaoException("لا يمكن التحويل إلى نفس الخزينة");
+        }
+
+        if (transfer.getAmount() == null || transfer.getAmount().compareTo(BigDecimal.ZERO) <= 0) {
+            throw new DaoException("يجب إدخال مبلغ أكبر من صفر");
+        }
+
+        if (transfer.getTransferDate() == null) {
+            transfer.setTransferDate(LocalDate.now());
+        }
     }
 }

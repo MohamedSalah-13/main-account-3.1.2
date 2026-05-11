@@ -1,7 +1,7 @@
 package com.hamza.account.controller.convert_treasury;
 
 import com.hamza.account.interfaces.api.DataTable;
-import com.hamza.account.model.domain.TreasuryTransferModel;
+import com.hamza.account.model.domain.TreasuryTransfer;
 import com.hamza.account.openFxml.AddForAllApplication;
 import com.hamza.account.table.ActionButtonToolBar;
 import com.hamza.account.table.TableInterface;
@@ -17,17 +17,17 @@ import org.jetbrains.annotations.NotNull;
 import java.util.List;
 
 @Log4j2
-public class ConvertTreasuryController implements TableInterface<TreasuryTransferModel> {
+public class ConvertTreasuryController implements TableInterface<TreasuryTransfer> {
 
     private final Publisher<String> publisher = new Publisher<>();
-    private TableView<TreasuryTransferModel> tableView;
+    private TableView<TreasuryTransfer> tableView;
 
     public ConvertTreasuryController() {
         publisher.addObserver(message -> tableView.setItems(FXCollections.observableArrayList(getTreasuryTransferModelList())));
     }
 
     @NotNull
-    private List<TreasuryTransferModel> getTreasuryTransferModelList() {
+    private List<TreasuryTransfer> getTreasuryTransferModelList() {
         return List.of();
     }
 
@@ -37,7 +37,7 @@ public class ConvertTreasuryController implements TableInterface<TreasuryTransfe
     }
 
     @Override
-    public ActionButtonToolBar<TreasuryTransferModel> actionButton() {
+    public ActionButtonToolBar<TreasuryTransfer> actionButton() {
         return new ActionButtonToolBar<>() {
             @Override
             public void openNew() throws Exception {
@@ -45,7 +45,7 @@ public class ConvertTreasuryController implements TableInterface<TreasuryTransfe
             }
 
             @Override
-            public int delete(TreasuryTransferModel treasuryTransferModel) throws Exception {
+            public int delete(TreasuryTransfer treasuryTransfer) throws Exception {
                 return 0;
             }
 
@@ -58,29 +58,29 @@ public class ConvertTreasuryController implements TableInterface<TreasuryTransfe
     }
 
     @Override
-    public DataTable<TreasuryTransferModel> table_data() {
+    public DataTable<TreasuryTransfer> table_data() {
         return new DataTable<>() {
             @Override
-            public void getTable(TableView<TreasuryTransferModel> tableView) {
+            public void getTable(TableView<TreasuryTransfer> tableView) {
                 DataTable.super.getTable(tableView);
                 ConvertTreasuryController.this.tableView = tableView;
             }
 
             @Override
-            public List<TreasuryTransferModel> dataList() throws Exception {
+            public List<TreasuryTransfer> dataList() throws Exception {
                 return getTreasuryTransferModelList();
             }
 
             @Override
-            public @NotNull Class<? super TreasuryTransferModel> classForColumn() {
-                return TreasuryTransferModel.class;
+            public @NotNull Class<? super TreasuryTransfer> classForColumn() {
+                return TreasuryTransfer.class;
             }
         };
     }
 
     @Override
-    public BooleanProperty getColumnSelected(TreasuryTransferModel treasuryTransferModel) {
-        return treasuryTransferModel.getSelectedRow();
+    public BooleanProperty getColumnSelected(TreasuryTransfer treasuryTransfer) {
+        return treasuryTransfer.getSelectedRow();
     }
 
     @Override
@@ -104,12 +104,12 @@ public class ConvertTreasuryController implements TableInterface<TreasuryTransfe
     }
 
     @Override
-    public List<TreasuryTransferModel> getProducts(int rowsPerPage, int offset) throws Exception {
+    public List<TreasuryTransfer> getProducts(int rowsPerPage, int offset) throws Exception {
         return List.of();
     }
 
     @Override
-    public List<TreasuryTransferModel> getFilterItems(String newValue) {
+    public List<TreasuryTransfer> getFilterItems(String newValue) {
         return null;
     }
 

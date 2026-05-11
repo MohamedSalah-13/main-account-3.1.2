@@ -120,6 +120,10 @@ public enum DaoFactory {
         return new TreasuryDao(connection);
     }
 
+    public TreasuryDepositExpensesDao getTreasuryDepositExpensesDao() {
+        return new TreasuryDepositExpensesDao(connection);
+    }
+
     public TreasuryTransferDao treasuryTransferDao() {
         return new TreasuryTransferDao(connection);
     }

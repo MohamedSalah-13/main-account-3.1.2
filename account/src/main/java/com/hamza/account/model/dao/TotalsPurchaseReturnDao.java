@@ -1,14 +1,12 @@
 package com.hamza.account.model.dao;
 
-import com.hamza.account.model.domain.Stock;
-import com.hamza.account.model.domain.Suppliers;
-import com.hamza.account.model.domain.Total_Buy_Re;
-import com.hamza.account.model.domain.TreasuryModel;
+import com.hamza.account.model.domain.*;
 import com.hamza.account.type.InvoiceType;
 import com.hamza.controlsfx.database.AbstractDao;
 import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.database.SqlStatements;
 
+import java.math.BigDecimal;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -141,7 +139,7 @@ public class TotalsPurchaseReturnDao extends AbstractDao<Total_Buy_Re> {
 //            DiscountType discountType = DiscountType.getDiscountTypeById(rs.getInt(DISCOUNT_TYPE));
             Suppliers suppliers = new Suppliers(sup_id, sup_name);
             Stock stock = new Stock(stock_id, stock_name);
-            TreasuryModel treasury = new TreasuryModel(treasury_id, treasury_name, 0);
+            Treasury treasury = new Treasury(treasury_id, treasury_name, BigDecimal.valueOf(0));
             double paidToTreasuryAmount = rs.getDouble(PAID_TO_TREASURY);
             var invoiceTypeById = InvoiceType.getInvoiceTypeById(type_id);
             totalBuyRe = new Total_Buy_Re(id, date, total, discount, paidToTreasuryAmount, notes, suppliers, stock, treasury, invoiceTypeById, null);

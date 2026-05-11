@@ -28,7 +28,7 @@ public class ExpensesDetails extends DForColumnTable {
     private String notes;
 
     private ObjectProperty<Employees> employees = new SimpleObjectProperty<>();
-    private ObjectProperty<TreasuryModel> treasuryModel = new SimpleObjectProperty<>();
+    private ObjectProperty<Treasury> treasuryModel = new SimpleObjectProperty<>();
     private ObjectProperty<Expenses> expenses = new SimpleObjectProperty<>();
 
     public Employees getEmployees() {
@@ -43,15 +43,15 @@ public class ExpensesDetails extends DForColumnTable {
         return employees;
     }
 
-    public TreasuryModel getTreasuryModel() {
+    public Treasury getTreasuryModel() {
         return treasuryModel.get();
     }
 
-    public void setTreasuryModel(TreasuryModel treasuryModel) {
-        this.treasuryModel.set(treasuryModel);
+    public void setTreasuryModel(Treasury treasury) {
+        this.treasuryModel.set(treasury);
     }
 
-    public ObjectProperty<TreasuryModel> treasuryModelProperty() {
+    public ObjectProperty<Treasury> treasuryModelProperty() {
         return treasuryModel;
     }
 

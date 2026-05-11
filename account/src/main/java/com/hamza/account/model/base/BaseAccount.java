@@ -2,7 +2,7 @@ package com.hamza.account.model.base;
 
 
 import com.hamza.account.config.NamesTables;
-import com.hamza.account.model.domain.TreasuryModel;
+import com.hamza.account.model.domain.Treasury;
 import com.hamza.account.type.TableName;
 import com.hamza.controlsfx.table.ColumnData;
 import javafx.beans.property.*;
@@ -29,12 +29,12 @@ public abstract class BaseAccount extends DForColumnTable {
     private StringProperty date = new SimpleStringProperty();
 
     private IntegerProperty invoice_number = new SimpleIntegerProperty(0);
-    private ObjectProperty<TreasuryModel> treasury = new SimpleObjectProperty<>();
+    private ObjectProperty<Treasury> treasury = new SimpleObjectProperty<>();
 
     private TableName information;
     private String information_name;
 
-    public BaseAccount(int id, String date, double paid, String notes, int invoice_number, TreasuryModel treasury) {
+    public BaseAccount(int id, String date, double paid, String notes, int invoice_number, Treasury treasury) {
         this.id.set(id);
         this.date.set(date);
         this.paid.set(paid);
@@ -139,15 +139,15 @@ public abstract class BaseAccount extends DForColumnTable {
         return invoice_number;
     }
 
-    public TreasuryModel getTreasury() {
+    public Treasury getTreasury() {
         return treasury.get();
     }
 
-    public void setTreasury(TreasuryModel treasury) {
+    public void setTreasury(Treasury treasury) {
         this.treasury.set(treasury);
     }
 
-    public ObjectProperty<TreasuryModel> treasuryProperty() {
+    public ObjectProperty<Treasury> treasuryProperty() {
         return treasury;
     }
 

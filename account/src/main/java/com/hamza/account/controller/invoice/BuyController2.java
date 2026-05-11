@@ -699,7 +699,7 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
 
                 InvoiceType invoiceType = radioCash.isSelected() ? InvoiceType.CASH : InvoiceType.DEFER;
 
-                TreasuryModel treasuryByName = treasuryService.getTreasuryByName(comboTreasury.getSelectionModel().getSelectedItem());
+                Treasury treasuryByName = treasuryService.getTreasuryByName(comboTreasury.getSelectionModel().getSelectedItem());
 
                 Employees employees = employeeService.getDelegateByName(comboDelegate.getSelectionModel().getSelectedItem());
 

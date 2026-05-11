@@ -38,7 +38,7 @@ public class SalesInvoiceReturn implements InvoiceBuy<Sales_Return, Total_Sales_
     @Override
     public Total_Sales_Re object_Totals(int num_invoice, InvoiceType invoiceType, String date, double total, double discount
             , DiscountType discountType, double after, double paid, double rest, String notes, Customers t3, Stock stock
-            , Employees userDelegate, List<Sales_Return> list, TreasuryModel treasuryModel) throws DaoException {
+            , Employees userDelegate, List<Sales_Return> list, Treasury treasury) throws DaoException {
 
         var totalSalesRe = new Total_Sales_Re();
         totalSalesRe.setId(num_invoice);
@@ -50,7 +50,7 @@ public class SalesInvoiceReturn implements InvoiceBuy<Sales_Return, Total_Sales_
         totalSalesRe.setCustomer(t3);
         totalSalesRe.setStockData(stock);
         totalSalesRe.setEmployeeObject(userDelegate);
-        totalSalesRe.setTreasuryModel(treasuryModel);
+        totalSalesRe.setTreasuryModel(treasury);
         totalSalesRe.setInvoiceType(invoiceType);
 
         for (Sales_Return sales : list) {

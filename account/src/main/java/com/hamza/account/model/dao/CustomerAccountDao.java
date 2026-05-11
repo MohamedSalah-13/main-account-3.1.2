@@ -1,9 +1,6 @@
 package com.hamza.account.model.dao;
 
-import com.hamza.account.model.domain.Area;
-import com.hamza.account.model.domain.CustomerAccount;
-import com.hamza.account.model.domain.Customers;
-import com.hamza.account.model.domain.TreasuryModel;
+import com.hamza.account.model.domain.*;
 import com.hamza.account.type.TableName;
 import com.hamza.controlsfx.database.AbstractDao;
 import com.hamza.controlsfx.database.DaoException;
@@ -129,7 +126,7 @@ public class CustomerAccountDao extends AbstractDao<CustomerAccount> {
             model.setPaid(rs.getDouble(PAID));
             model.setInvoice_number(rs.getInt(NUMBER_INV));
             model.setNotes(rs.getString(NOTES));
-            model.setTreasury(new TreasuryModel(rs.getInt(TREASURY_ID)));
+            model.setTreasury(new Treasury(rs.getInt(TREASURY_ID)));
             var createdAt = rs.getString(dateInsert) == null ? rs.getString("created_at") : rs.getString(dateInsert);
             model.setCreated_at(LocalDateTime.parse(createdAt, DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
             String customerName = adjustPurchase ? rs.getString(NAME) : "";

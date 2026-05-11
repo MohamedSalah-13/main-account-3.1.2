@@ -628,7 +628,7 @@ public class PosController extends ButtonSetting {
                 totalSales.setDiscount(roundToTwoDecimalPlaces(discountValue));
                 totalSales.setStockData(new Stock(1));
                 totalSales.setEmployeeObject(new Employees(1));
-                totalSales.setTreasuryModel(new TreasuryModel(1));
+                totalSales.setTreasuryModel(new Treasury(1));
                 totalSales.setUsers(LogApplication.usersVo);
                 totalSales.setSalesList(salesList);
 

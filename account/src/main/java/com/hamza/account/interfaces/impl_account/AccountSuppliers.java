@@ -4,7 +4,7 @@ import com.hamza.account.interfaces.api.AccountData;
 import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.model.domain.SupplierAccount;
 import com.hamza.account.model.domain.Suppliers;
-import com.hamza.account.model.domain.TreasuryModel;
+import com.hamza.account.model.domain.Treasury;
 import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.excel.WriteExcelInterface;
 import com.hamza.controlsfx.language.Setting_Language;
@@ -41,8 +41,8 @@ public record AccountSuppliers(DaoFactory daoFactory) implements AccountData<Sup
     }
 
     @Override
-    public SupplierAccount objectData(int num, String date, double paid, String notes, Integer invoice_id, Integer code_id, TreasuryModel treasuryModel) {
-        return new SupplierAccount(num, date, paid, notes, invoice_id, new Suppliers(code_id), treasuryModel);
+    public SupplierAccount objectData(int num, String date, double paid, String notes, Integer invoice_id, Integer code_id, Treasury treasury) {
+        return new SupplierAccount(num, date, paid, notes, invoice_id, new Suppliers(code_id), treasury);
     }
 
     @Override

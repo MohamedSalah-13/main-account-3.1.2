@@ -21,7 +21,7 @@ public class Total_Buy_Re extends BaseTotals {
     private List<Purchase_Return> purchaseReturnList = new ArrayList<>();
 
     public Total_Buy_Re(int id, String date, double total, double discount, double paid, String notes
-            , Suppliers suppliers, Stock stock, TreasuryModel treasury, InvoiceType invoiceType
+            , Suppliers suppliers, Stock stock, Treasury treasury, InvoiceType invoiceType
             , List<Purchase_Return> purchaseReturnList) {
         setId(id);
         setDate(date);

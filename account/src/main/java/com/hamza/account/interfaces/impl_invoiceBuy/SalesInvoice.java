@@ -39,7 +39,7 @@ public class SalesInvoice implements InvoiceBuy<Sales, Total_Sales, Customers, C
     @Override
     public Total_Sales object_Totals(int num_invoice, InvoiceType invoiceType, String date, double total, double discount
             , DiscountType discountType, double after, double paid, double rest, String notes, Customers t3, Stock stock
-            , Employees userDelegate, List<Sales> list, TreasuryModel treasuryModel) throws DaoException {
+            , Employees userDelegate, List<Sales> list, Treasury treasury) throws DaoException {
         var totalSales = new Total_Sales();
         totalSales.setId(num_invoice);
         totalSales.setInvoiceType(invoiceType);
@@ -54,7 +54,7 @@ public class SalesInvoice implements InvoiceBuy<Sales, Total_Sales, Customers, C
         totalSales.setCustomers(t3);
         totalSales.setStockData(stock);
         totalSales.setEmployeeObject(userDelegate);
-        totalSales.setTreasuryModel(treasuryModel);
+        totalSales.setTreasuryModel(treasury);
 
         for (Sales sales : list) {
             sales.setTotalSelPrice(BigDecimal.valueOf(sales.getQuantity() * sales.getPrice()));

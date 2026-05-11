@@ -20,6 +20,6 @@ public class AddDeposit extends BaseEntity {
     private String Statement;
     private String description_data;
     private OperationType operationType;
-    private TreasuryModel treasuryModel;
+    private Treasury treasury;
 
 }

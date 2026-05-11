@@ -1,7 +1,7 @@
 package com.hamza.account.model.dao;
 
 import com.hamza.account.model.domain.AddDeposit;
-import com.hamza.account.model.domain.TreasuryModel;
+import com.hamza.account.model.domain.Treasury;
 import com.hamza.account.type.OperationType;
 import com.hamza.controlsfx.database.AbstractDao;
 import com.hamza.controlsfx.database.DaoException;
@@ -38,14 +38,14 @@ public class DepositDao extends AbstractDao<AddDeposit> {
     public int insert(AddDeposit addDeposit) throws DaoException {
         return executeUpdate(SqlStatements.insertStatement(TABLE_NAME, STATEMENT, DATE_INTER, AMOUNT, DESCRIPTION_DATA, DEPOSIT_OR_EXPENSES, TREASURY_ID, USER_ID)
                 , addDeposit.getStatement(), addDeposit.getDate(), addDeposit.getAmount(), addDeposit.getDescription_data(), addDeposit.getOperationType().getId()
-                , addDeposit.getTreasuryModel().getId(), addDeposit.getUsers().getId());
+                , addDeposit.getTreasury().getId(), addDeposit.getUsers().getId());
     }
 
     @Override
     public int update(AddDeposit addDeposit) throws DaoException {
         return executeUpdate(SqlStatements.updateStatement(TABLE_NAME, ID, STATEMENT, DATE_INTER, AMOUNT, DESCRIPTION_DATA, DEPOSIT_OR_EXPENSES, TREASURY_ID)
                 , addDeposit.getStatement(), addDeposit.getDate(), addDeposit.getAmount(), addDeposit.getDescription_data(), addDeposit.getOperationType().getId()
-                , addDeposit.getTreasuryModel().getId(), addDeposit.getId());
+                , addDeposit.getTreasury().getId(), addDeposit.getId());
     }
 
     @Override
@@ -68,8 +68,8 @@ public class DepositDao extends AbstractDao<AddDeposit> {
             addDeposit.setStatement(resultSet.getString(STATEMENT));
             addDeposit.setOperationType(resultSet.getInt(DEPOSIT_OR_EXPENSES) == 1 ? OperationType.DEPOSIT : OperationType.EXCHANGE);
             addDeposit.setDescription_data(resultSet.getString(DESCRIPTION_DATA));
-//            addDeposit.setTreasuryModel(daoFactory.treasuryDao().getDataById(resultSet.getInt(TREASURY_ID)));
-            addDeposit.setTreasuryModel(new TreasuryModel(resultSet.getInt(TREASURY_ID)));
+//            addDeposit.setTreasury(daoFactory.treasuryDao().getDataById(resultSet.getInt(TREASURY_ID)));
+            addDeposit.setTreasury(new Treasury(resultSet.getInt(TREASURY_ID)));
         } catch (SQLException e) {
             throw new DaoException(e);
         }

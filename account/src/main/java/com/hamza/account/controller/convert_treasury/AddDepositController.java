@@ -253,7 +253,7 @@ public class AddDepositController {
         addDeposit.setDate(dateAdd.getValue());
         addDeposit.setOperationType(radioDeposit.isSelected() ? OperationType.DEPOSIT : OperationType.EXCHANGE);
         addDeposit.setUsers(LogApplication.usersVo);
-        addDeposit.setTreasuryModel(treasuryService.getTreasuryByName(comboTreasury.getSelectionModel().getSelectedItem()));
+        addDeposit.setTreasury(treasuryService.getTreasuryByName(comboTreasury.getSelectionModel().getSelectedItem()));
 
         int insert;
         if (isRecordeExit) {

@@ -2,7 +2,7 @@ package com.hamza.account.controller.others;
 
 import com.hamza.account.model.domain.Employees;
 import com.hamza.account.model.domain.ExpensesDetails;
-import com.hamza.account.model.domain.TreasuryModel;
+import com.hamza.account.model.domain.Treasury;
 import com.hamza.account.openFxml.AddInterface;
 import com.hamza.account.openFxml.FxmlPath;
 import com.hamza.account.service.EmployeeService;
@@ -109,7 +109,7 @@ public class AddExpensesController implements AddInterface {
         expensesDetails.setLocalDate(date.getValue());
         expensesDetails.setAmount(Double.parseDouble(txtAmount.getText()));
         expensesDetails.setNotes(txtNotes.getText());
-        expensesDetails.setTreasuryModel(new TreasuryModel(1));
+        expensesDetails.setTreasuryModel(new Treasury(1));
 
         // add employee data
         if (byType.equals(ExpensesType.PREDECESSOR) || byType.equals(ExpensesType.SALARIES)) {

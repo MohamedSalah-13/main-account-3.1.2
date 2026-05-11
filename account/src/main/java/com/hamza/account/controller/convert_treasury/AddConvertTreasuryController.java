@@ -1,7 +1,7 @@
 package com.hamza.account.controller.convert_treasury;
 
 import com.hamza.account.controller.others.ServiceRegistry;
-import com.hamza.account.model.domain.TreasuryTransferModel;
+import com.hamza.account.model.domain.TreasuryTransfer;
 import com.hamza.account.openFxml.AddInterface;
 import com.hamza.account.openFxml.FxmlPath;
 import com.hamza.account.service.TreasuryService;
@@ -21,7 +21,6 @@ import javafx.fxml.FXML;
 import javafx.scene.control.*;
 import org.jetbrains.annotations.NotNull;
 
-import java.time.LocalDate;
 import java.util.Collections;
 import java.util.List;
 
@@ -110,11 +109,7 @@ public class AddConvertTreasuryController implements AddInterface {
         String stringDate = date.getValue().toString();
         int from = treasuryService.getTreasuryByName(comboFrom.getSelectionModel().getSelectedItem()).getId();
         int to = treasuryService.getTreasuryByName(comboTo.getSelectionModel().getSelectedItem()).getId();
-
-        if (id > 0)
-            return treasuryTransferService.update(id, amount, LocalDate.parse(stringDate), notes, from, to);
-        else
-            return treasuryTransferService.insert(amount, LocalDate.parse(stringDate), notes, from, to);
+        return 0;
     }
 
     @Override
@@ -126,7 +121,7 @@ public class AddConvertTreasuryController implements AddInterface {
     public void selectData() {
         try {
             if (id > 0) {
-                TreasuryTransferModel treasuryTransferById = treasuryTransferService.getTreasuryTransferById(id);
+                TreasuryTransfer treasuryTransferById = treasuryTransferService.getTreasuryTransferById(id);
                 comboFrom.getSelectionModel().select(treasuryTransferById.getTreasuryFrom().getName());
                 comboTo.getSelectionModel().select(treasuryTransferById.getTreasuryTo().getName());
                 txtTransfer.setText(String.valueOf(treasuryTransferById.getAmount()));

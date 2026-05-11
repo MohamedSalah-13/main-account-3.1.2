@@ -2,7 +2,7 @@ package com.hamza.account.model.dao;
 
 import com.hamza.account.model.domain.SupplierAccount;
 import com.hamza.account.model.domain.Suppliers;
-import com.hamza.account.model.domain.TreasuryModel;
+import com.hamza.account.model.domain.Treasury;
 import com.hamza.account.type.TableName;
 import com.hamza.controlsfx.database.AbstractDao;
 import com.hamza.controlsfx.database.DaoException;
@@ -130,7 +130,7 @@ public class SupplierAccountDao extends AbstractDao<SupplierAccount> {
             model.setPaid(rs.getDouble(PAID));
             model.setInvoice_number(rs.getInt(NUMBER_INV));
             model.setNotes(rs.getString(NOTES));
-            model.setTreasury(new TreasuryModel(rs.getInt(TREASURY_ID)));
+            model.setTreasury(new Treasury(rs.getInt(TREASURY_ID)));
             model.setCreated_at(LocalDateTime.parse(rs.getString(DATE_INSERT), DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
             String nameSup = adjustPurchase ? rs.getString(NAME) : "";
             model.setSuppliers(new Suppliers(codeSup, nameSup));

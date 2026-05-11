@@ -18,7 +18,7 @@ public class CustomerAccount extends BaseAccount {
     private int area_id;
     private String area_name;
 
-    public CustomerAccount(int num, String date, double paid, String notes, Integer invoice_number, Customers customers, TreasuryModel treasury) {
+    public CustomerAccount(int num, String date, double paid, String notes, Integer invoice_number, Customers customers, Treasury treasury) {
         super(num, date, paid, notes, invoice_number, treasury);
         this.customers = new SimpleObjectProperty<>(customers);
     }

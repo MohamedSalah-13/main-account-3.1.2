@@ -7,6 +7,7 @@ import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.database.SqlStatements;
 import lombok.extern.log4j.Log4j2;
 
+import java.math.BigDecimal;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -154,7 +155,7 @@ public class TotalsSalesReturnDao extends AbstractDao<Total_Sales_Re> {
             int type_id = rs.getInt(INVOICE_TYPE);
             Customers customer = new Customers(sup_id, sup_name);
             Stock stock = new Stock(stock_id, stock_name);
-            TreasuryModel treasury = new TreasuryModel(treasury_id, treasury_name, 0);
+            Treasury treasury = new Treasury(treasury_id, treasury_name, BigDecimal.valueOf(0));
             double paidFromTreasury = rs.getDouble(PAID_FROM_TREASURY);
             totalSalesRe = new Total_Sales_Re();
             totalSalesRe.setId(id);

@@ -9,6 +9,7 @@ import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.database.SqlStatements;
 import lombok.extern.log4j.Log4j2;
 
+import java.math.BigDecimal;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -165,7 +166,7 @@ public class TotalsSalesDao extends AbstractDao<Total_Sales> {
             totalSales.setCustomers(new Customers(custom_id, custom_name));
             totalSales.setStockData(new Stock(stock_id, stock_name));
             totalSales.setEmployeeObject(new Employees(delegate_id, delegate_name));
-            totalSales.setTreasuryModel(new TreasuryModel(treasury_id, treasury_name, 0));
+            totalSales.setTreasuryModel(new Treasury(treasury_id, treasury_name, BigDecimal.valueOf(0)));
             totalSales.setNotes(rs.getString(NOTES) != null ? rs.getString(NOTES) : " ");
             totalSales.setOtherPaid(rs.getDouble(OTHER_PAID));
             totalSales.setAmountAfterOtherPaid(roundToTwoDecimalPlaces(total_amount - totalSales.getOtherPaid() - totalSales.getPaid()));

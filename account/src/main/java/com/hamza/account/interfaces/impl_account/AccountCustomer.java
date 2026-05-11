@@ -4,7 +4,7 @@ import com.hamza.account.interfaces.api.AccountData;
 import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.model.domain.CustomerAccount;
 import com.hamza.account.model.domain.Customers;
-import com.hamza.account.model.domain.TreasuryModel;
+import com.hamza.account.model.domain.Treasury;
 import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.excel.WriteExcelInterface;
 import com.hamza.controlsfx.language.Setting_Language;
@@ -41,8 +41,8 @@ public record AccountCustomer(DaoFactory daoFactory) implements AccountData<Cust
     }
 
     @Override
-    public CustomerAccount objectData(int num, String date, double paid, String notes, Integer invoice_id, Integer code_id, TreasuryModel treasuryModel) {
-        return new CustomerAccount(num, date, paid, notes, invoice_id, new Customers(code_id), treasuryModel);
+    public CustomerAccount objectData(int num, String date, double paid, String notes, Integer invoice_id, Integer code_id, Treasury treasury) {
+        return new CustomerAccount(num, date, paid, notes, invoice_id, new Customers(code_id), treasury);
     }
 
     @Override

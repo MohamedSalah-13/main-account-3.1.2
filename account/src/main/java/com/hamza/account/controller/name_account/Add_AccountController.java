@@ -9,7 +9,7 @@ import com.hamza.account.model.base.BaseNames;
 import com.hamza.account.model.base.BasePurchasesAndSales;
 import com.hamza.account.model.base.BaseTotals;
 import com.hamza.account.model.dao.DaoFactory;
-import com.hamza.account.model.domain.TreasuryModel;
+import com.hamza.account.model.domain.Treasury;
 import com.hamza.account.openFxml.AddInterface;
 import com.hamza.account.openFxml.FxmlPath;
 import com.hamza.account.service.TreasuryService;
@@ -201,11 +201,11 @@ public class Add_AccountController<T1 extends BasePurchasesAndSales, T2 extends 
         int code = Integer.parseInt(txtCode.getText());
 
         // get treasury data
-        TreasuryModel treasuryModel = treasuryService.getTreasuryByName(comboTreasury.getSelectionModel().getSelectedItem());
+        Treasury treasury = treasuryService.getTreasuryByName(comboTreasury.getSelectionModel().getSelectedItem());
 
         String text = txtNumberInvoice.getText();
 
-        T4 t4 = accountData.objectData(code, value.toString(), paid, txtNotes.getText(), Integer.valueOf(text), code_id, treasuryModel);
+        T4 t4 = accountData.objectData(code, value.toString(), paid, txtNotes.getText(), Integer.valueOf(text), code_id, treasury);
 
         if (numInvoice > 0)
             return interFace.update(t4);
