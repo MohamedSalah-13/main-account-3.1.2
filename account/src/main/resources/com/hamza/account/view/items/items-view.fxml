@@ -6,12 +6,12 @@
 
 <StackPane fx:id="stackPane"
            nodeOrientation="RIGHT_TO_LEFT"
-           styleClass="items-root"
-           stylesheets="@../../css/items-modern.css"
+           styleClass="app-root"
+
            xmlns="http://javafx.com/javafx/21"
            xmlns:fx="http://javafx.com/fxml/1">
     <children>
-        <VBox spacing="14.0" styleClass="items-container">
+        <VBox spacing="14.0" styleClass="app-container">
             <children>
                 <ToolBar prefHeight="40.0" styleClass="items-toolbar">
                     <items>
@@ -53,7 +53,7 @@
                     <content>
                         <VBox spacing="14.0">
                             <children>
-                                <VBox fx:id="box" styleClass="items-card">
+                                <VBox fx:id="box" styleClass="app-card">
                                     <children>
                                         <GridPane hgap="12.0" vgap="12.0">
                                             <columnConstraints>

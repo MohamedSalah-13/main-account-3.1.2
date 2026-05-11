@@ -5,8 +5,8 @@
 <?import javafx.scene.text.Text?>
 
 <AnchorPane nodeOrientation="RIGHT_TO_LEFT"
-            styleClass="settings-root"
-            stylesheets="@../../css/settings-modern.css"
+            styleClass="app-root"
+
             xmlns:fx="http://javafx.com/fxml/1"
             xmlns="http://javafx.com/javafx/21">
     <children>
@@ -18,7 +18,7 @@
                     AnchorPane.rightAnchor="0.0"
                     AnchorPane.topAnchor="0.0">
             <content>
-                <VBox spacing="18.0" styleClass="settings-container">
+                <VBox spacing="18.0" styleClass="app-container">
                     <children>
                         <VBox spacing="5.0">
                             <children>
@@ -28,7 +28,7 @@
                             </children>
                         </VBox>
 
-                        <GridPane hgap="14.0" vgap="14.0" styleClass="settings-card">
+                        <GridPane hgap="14.0" vgap="14.0" styleClass="app-card">
                             <columnConstraints>
                                 <ColumnConstraints minWidth="170.0"/>
                                 <ColumnConstraints minWidth="360.0" hgrow="ALWAYS"/>

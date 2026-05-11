@@ -11,8 +11,7 @@
          prefHeight="48.0"
          prefWidth="549.0"
          nodeOrientation="RIGHT_TO_LEFT"
-         styleClass="main-toolbar"
-         stylesheets="@../../css/main-screen-modern.css">
+         styleClass="main-toolbar">
     <items>
         <HBox alignment="CENTER" styleClass="hamburger-box">
             <children>

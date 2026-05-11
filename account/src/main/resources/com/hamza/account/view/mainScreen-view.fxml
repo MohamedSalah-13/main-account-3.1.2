@@ -14,8 +14,8 @@
             prefHeight="478.0"
             prefWidth="723.0"
             nodeOrientation="RIGHT_TO_LEFT"
-            styleClass="main-root"
-            stylesheets="@../css/main-screen-modern.css">
+            styleClass="main-root">
+
     <center>
         <HBox styleClass="main-content" BorderPane.alignment="CENTER">
             <children>

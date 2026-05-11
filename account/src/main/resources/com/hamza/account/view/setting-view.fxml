@@ -8,8 +8,7 @@
       fx:id="box"
       spacing="0.0"
       nodeOrientation="RIGHT_TO_LEFT"
-      styleClass="settings-main-root"
-      stylesheets="@../css/settings-modern.css">
+      styleClass="settings-main-root">
     <children>
         <VBox styleClass="settings-main-card" VBox.vgrow="ALWAYS">
             <children>

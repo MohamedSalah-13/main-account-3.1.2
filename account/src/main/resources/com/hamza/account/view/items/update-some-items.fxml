@@ -7,14 +7,14 @@
 
 <StackPane fx:id="stackPane"
            nodeOrientation="RIGHT_TO_LEFT"
-           styleClass="items-root"
-           stylesheets="@../../css/items-modern.css"
+           styleClass="app-root"
+
            xmlns:fx="http://javafx.com/fxml/1"
            xmlns="http://javafx.com/javafx/21">
     <children>
-        <VBox spacing="14.0" styleClass="items-container">
+        <VBox spacing="14.0" styleClass="app-container">
             <children>
-                <VBox spacing="14.0" styleClass="items-card">
+                <VBox spacing="14.0" styleClass="app-card">
                     <children>
                         <GridPane hgap="12.0" vgap="12.0">
                             <columnConstraints>

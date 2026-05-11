@@ -6,12 +6,12 @@
 
 <StackPane fx:id="stackPane"
            nodeOrientation="RIGHT_TO_LEFT"
-           styleClass="items-root"
-           stylesheets="@../../css/items-modern.css"
+           styleClass="app-root"
+
            xmlns:fx="http://javafx.com/fxml/1"
            xmlns="http://javafx.com/javafx/21">
     <children>
-        <VBox fx:id="box" spacing="14.0" styleClass="items-container">
+        <VBox fx:id="box" spacing="14.0" styleClass="app-container">
             <children>
                 <ToolBar prefHeight="40.0" styleClass="items-toolbar">
                     <items>
@@ -34,7 +34,7 @@
                             <children>
                                 <HBox spacing="14.0">
                                     <children>
-                                        <VBox styleClass="items-card" HBox.hgrow="ALWAYS">
+                                        <VBox styleClass="app-card" HBox.hgrow="ALWAYS">
                                             <children>
                                                 <GridPane hgap="12.0" vgap="12.0">
                                                     <columnConstraints>
@@ -116,7 +116,7 @@
                                     <tabs>
                                         <Tab text="الوحدات">
                                             <content>
-                                                <VBox spacing="12.0" styleClass="items-card">
+                                                <VBox spacing="12.0" styleClass="app-card">
                                                     <children>
                                                         <GridPane hgap="12.0" vgap="12.0">
                                                             <columnConstraints>
@@ -148,7 +148,7 @@
                                                         </GridPane>
 
                                                         <TableView fx:id="tableUnits"
-                                                                   styleClass="modern-table"
+                                                                   styleClass="app-table"
                                                                    VBox.vgrow="ALWAYS"/>
                                                     </children>
                                                 </VBox>
@@ -157,7 +157,7 @@
 
                                         <Tab text="أخرى">
                                             <content>
-                                                <VBox spacing="14.0" styleClass="items-card">
+                                                <VBox spacing="14.0" styleClass="app-card">
                                                     <children>
                                                         <HBox spacing="14.0">
                                                             <children>

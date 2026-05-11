@@ -13,14 +13,14 @@
 <AnchorPane prefHeight="700.0"
             prefWidth="1100.0"
             nodeOrientation="RIGHT_TO_LEFT"
-            styleClass="reports-root"
-            stylesheets="@../../css/reports-modern.css"
+            styleClass="app-root"
+
             xmlns="http://javafx.com/javafx/17"
             xmlns:fx="http://javafx.com/fxml/1"
             fx:controller="com.hamza.account.controller.reports.CustomerStatementController">
     <children>
         <VBox spacing="16.0"
-              styleClass="reports-container"
+              styleClass="app-container"
               AnchorPane.bottomAnchor="0.0"
               AnchorPane.leftAnchor="0.0"
               AnchorPane.rightAnchor="0.0"
@@ -50,7 +50,7 @@
                     </children>
                 </HBox>
 
-                <HBox alignment="CENTER_LEFT" spacing="10.0" styleClass="report-header-card">
+                <HBox alignment="CENTER_LEFT" spacing="10.0" styleClass="app-card">
                     <children>
                         <Label text="من تاريخ:" styleClass="form-label"/>
                         <DatePicker fx:id="dpFrom" prefWidth="140.0"/>
@@ -72,7 +72,7 @@
                     </children>
                 </HBox>
 
-                <TableView fx:id="tableView" styleClass="modern-table" VBox.vgrow="ALWAYS">
+                <TableView fx:id="tableView" styleClass="app-table" VBox.vgrow="ALWAYS">
                     <columns>
                         <TableColumn fx:id="colDate" prefWidth="150.0" text="التاريخ"/>
                         <TableColumn fx:id="colType" prefWidth="150.0" text="نوع الحركة"/>

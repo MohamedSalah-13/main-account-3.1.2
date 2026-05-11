@@ -1,0 +1,67 @@
+/* =========================================================
+   Light Theme Variables
+   ========================================================= */
+
+.root {
+    -app-bg: linear-gradient(to bottom right, #eef4ff, #f8fbff);
+
+    -app-surface: rgba(255, 255, 255, 0.95);
+    -app-surface-2: #f8fafc;
+    -app-border: rgba(148, 163, 184, 0.35);
+    -app-shadow: rgba(15, 23, 42, 0.12);
+
+    -app-text: #334155;
+    -app-text-strong: #172554;
+    -app-text-muted: #64748b;
+
+    -app-primary: #2563eb;
+    -app-primary-dark: #1d4ed8;
+    -app-primary-darker: #1e40af;
+    -app-focus-shadow: rgba(37, 99, 235, 0.22);
+
+    -app-input-bg: #f8fafc;
+    -app-input-focus-bg: #ffffff;
+    -app-input-border: #dbe3ef;
+    -app-disabled-bg: #f1f5f9;
+
+    -app-neutral-soft: #f1f5f9;
+    -app-neutral-hover: #e2e8f0;
+
+    -app-success: #166534;
+    -app-success-soft: #dcfce7;
+    -app-success-border: #bbf7d0;
+    -app-success-hover: #bbf7d0;
+
+    -app-warning: #c2410c;
+    -app-warning-soft: #fff7ed;
+    -app-warning-border: #fed7aa;
+    -app-warning-hover: #ffedd5;
+
+    -app-danger: #b91c1c;
+    -app-danger-soft: #fee2e2;
+    -app-danger-border: #fecaca;
+    -app-danger-hover: #fecaca;
+
+    -app-table-header: #1e3a8a;
+    -app-table-row: #ffffff;
+    -app-table-row-alt: #f8fafc;
+    -app-table-hover: #e0edff;
+    -app-table-selected: #bfdbfe;
+    -app-table-border: #eef2f7;
+
+    -app-summary-bg: #172554;
+    -app-summary-bg-2: #1e3a8a;
+    -app-summary-value: #facc15;
+
+    -app-tab-strip: #eaf1fb;
+    -app-tab-hover: #dbeafe;
+
+    -app-side-bg: #172554;
+    -app-side-bg-2: #1e3a8a;
+    -app-side-card: rgba(255, 255, 255, 0.11);
+    -app-side-button: rgba(255, 255, 255, 0.10);
+    -app-side-button-hover: rgba(255, 255, 255, 0.22);
+    -app-side-border: rgba(255, 255, 255, 0.16);
+    -app-side-input-bg: rgba(255, 255, 255, 0.14);
+    -app-side-muted: #cbd5e1;
+}

@@ -13,7 +13,6 @@
             prefWidth="230.0"
             nodeOrientation="RIGHT_TO_LEFT"
             styleClass="right-pane-root"
-            stylesheets="@../../css/main-screen-modern.css"
             fx:controller="com.hamza.account.controller.main.MainRightPaneController">
     <children>
         <VBox spacing="12.0"

@@ -3,7 +3,7 @@ package com.hamza.account.view;
 import com.hamza.account.backup.ScheduledBackup;
 import com.hamza.account.config.Image_Setting;
 import com.hamza.account.config.PropertiesName;
-import com.hamza.account.config.Style_Sheet;
+import com.hamza.account.config.ThemeManager;
 import com.hamza.account.controller.login.LoginController;
 import com.hamza.account.interfaces.ActionLogin;
 import com.hamza.account.model.dao.DaoFactory;
@@ -48,7 +48,8 @@ public class LogApplication extends Application {
         });
         fxmlLoader.setController(login);
         scene = new Scene(fxmlLoader.load());
-        Style_Sheet.changeStyle(scene);
+//        Style_Sheet.changeStyle(scene);
+        ThemeManager.apply(scene);
     }
 
     public static void main(String[] args) {

@@ -22,8 +22,8 @@
            prefHeight="472.0"
            prefWidth="750.0"
            nodeOrientation="RIGHT_TO_LEFT"
-           styleClass="table-screen-root"
-           stylesheets="@../css/table-modern.css"
+           styleClass="app-root"
+
            xmlns="http://javafx.com/javafx/21"
            xmlns:fx="http://javafx.com/fxml/1">
     <children>

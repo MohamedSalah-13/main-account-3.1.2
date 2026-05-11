@@ -5,20 +5,20 @@
 <AnchorPane prefHeight="600.0"
             prefWidth="900.0"
             nodeOrientation="RIGHT_TO_LEFT"
-            styleClass="reports-root"
-            stylesheets="@../../css/reports-modern.css"
+            styleClass="app-root"
+
             xmlns="http://javafx.com/javafx/17"
             xmlns:fx="http://javafx.com/fxml/1"
             fx:controller="com.hamza.account.controller.reports.CustomerReceivableController">
     <children>
         <VBox spacing="16.0"
-              styleClass="reports-container"
+              styleClass="app-container"
               AnchorPane.bottomAnchor="0.0"
               AnchorPane.leftAnchor="0.0"
               AnchorPane.rightAnchor="0.0"
               AnchorPane.topAnchor="0.0">
             <children>
-                <HBox alignment="CENTER_LEFT" spacing="18.0" styleClass="report-header-card">
+                <HBox alignment="CENTER_LEFT" spacing="18.0" styleClass="app-card">
                     <children>
                         <VBox spacing="5.0">
                             <children>
@@ -35,7 +35,7 @@
                     </children>
                 </HBox>
 
-                <TableView fx:id="tableView" styleClass="modern-table" VBox.vgrow="ALWAYS">
+                <TableView fx:id="tableView" styleClass="app-table" VBox.vgrow="ALWAYS">
                     <columns>
                         <TableColumn fx:id="colName" prefWidth="250.0" text="اسم العميل"/>
                         <TableColumn fx:id="colPhone" prefWidth="150.0" text="رقم الهاتف"/>

@@ -7,8 +7,7 @@
 <BorderPane xmlns:fx="http://javafx.com/fxml"
             fx:controller="com.hamza.account.controller.convert_treasury.TreasuryController"
             nodeOrientation="RIGHT_TO_LEFT"
-            styleClass="treasury-root"
-            stylesheets="@../../css/treasury-modern.css">
+            styleClass="app-root">
 
     <top>
         <VBox spacing="18" styleClass="page-container">
@@ -22,7 +21,7 @@
                        styleClass="page-subtitle"/>
             </VBox>
 
-            <VBox spacing="16" styleClass="modern-card">
+            <VBox spacing="16" styleClass="app-card">
                 <GridPane hgap="18" vgap="14">
                     <columnConstraints>
                         <ColumnConstraints minWidth="130" prefWidth="140"/>
@@ -80,7 +79,7 @@
             </HBox>
 
             <TableView fx:id="treasuryTable"
-                       styleClass="modern-table"
+                       styleClass="app-table"
                        VBox.vgrow="ALWAYS">
                 <columns>
                     <TableColumn fx:id="idColumn" text="الكود" prefWidth="90"/>

@@ -10,13 +10,13 @@
             prefHeight="492.0"
             prefWidth="557.0"
             nodeOrientation="RIGHT_TO_LEFT"
-            styleClass="items-root"
-            stylesheets="@../../css/items-modern.css"
+            styleClass="app-root"
+
             xmlns:fx="http://javafx.com/fxml/1"
             xmlns="http://javafx.com/javafx/21">
     <children>
         <VBox spacing="14.0"
-              styleClass="items-container"
+              styleClass="app-container"
               AnchorPane.bottomAnchor="0.0"
               AnchorPane.leftAnchor="0.0"
               AnchorPane.rightAnchor="0.0"

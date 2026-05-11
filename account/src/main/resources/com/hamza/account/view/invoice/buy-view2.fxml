@@ -4,7 +4,9 @@
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
 <?import javafx.scene.text.*?>
-<StackPane xmlns:fx="http://javafx.com/fxml/1" fx:id="stackPane" xmlns="http://javafx.com/javafx/21">
+<StackPane xmlns:fx="http://javafx.com/fxml/1" fx:id="stackPane"
+           styleClass="app-root"
+           xmlns="http://javafx.com/javafx/21">
     <children>
         <VBox>
             <children>
@@ -99,7 +101,7 @@
                                         </GridPane>
                                     </children>
                                 </HBox>
-                                <TableView fx:id="table" minHeight="350.0" VBox.vgrow="SOMETIMES"/>
+                                <TableView styleClass="app-table" fx:id="table" minHeight="350.0" VBox.vgrow="SOMETIMES"/>
                                 <VBox>
                                     <children>
                                         <HBox minHeight="-Infinity" minWidth="-Infinity" spacing="30.0"

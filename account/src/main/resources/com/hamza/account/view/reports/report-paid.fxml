@@ -15,27 +15,27 @@
 
 <StackPane fx:id="stackPane"
            nodeOrientation="RIGHT_TO_LEFT"
-           styleClass="reports-root"
-           stylesheets="@../../css/reports-modern.css"
+           styleClass="app-root"
+
            xmlns="http://javafx.com/javafx/21"
            xmlns:fx="http://javafx.com/fxml/1">
     <children>
         <AnchorPane>
             <children>
                 <VBox spacing="16.0"
-                      styleClass="reports-container"
+                      styleClass="app-container"
                       AnchorPane.bottomAnchor="0.0"
                       AnchorPane.leftAnchor="0.0"
                       AnchorPane.rightAnchor="0.0"
                       AnchorPane.topAnchor="0.0">
                     <children>
-                        <VBox alignment="TOP_CENTER" spacing="8.0" styleClass="report-header-card">
+                        <VBox alignment="TOP_CENTER" spacing="8.0" styleClass="app-card">
                             <children>
                                 <Label fx:id="textTitle" text="Text" styleClass="report-title"/>
                             </children>
                         </VBox>
 
-                        <GridPane hgap="14.0" vgap="12.0" styleClass="report-header-card" VBox.vgrow="NEVER">
+                        <GridPane hgap="14.0" vgap="12.0" styleClass="app-card" VBox.vgrow="NEVER">
                             <columnConstraints>
                                 <ColumnConstraints minWidth="90.0"/>
                                 <ColumnConstraints minWidth="150.0" prefWidth="150.0"/>
@@ -81,7 +81,7 @@
                             </children>
                         </GridPane>
 
-                        <TableView fx:id="tableView" styleClass="modern-table" VBox.vgrow="ALWAYS"/>
+                        <TableView fx:id="tableView" styleClass="app-table" VBox.vgrow="ALWAYS"/>
                     </children>
                 </VBox>
             </children>

@@ -16,7 +16,7 @@
 <?import javafx.scene.layout.RowConstraints?>
 <?import javafx.scene.layout.VBox?>
 
-<BorderPane nodeOrientation="RIGHT_TO_LEFT" styleClass="treasury-transfer-root" stylesheets="@../../css/modern_u_i_components.css" xmlns:fx="http://javafx.com/fxml/1" xmlns="http://javafx.com/javafx/21" fx:controller="com.hamza.account.controller.convert_treasury.TreasuryTransferController">
+<BorderPane nodeOrientation="RIGHT_TO_LEFT" styleClass="treasury-transfer-root" xmlns:fx="http://javafx.com/fxml/1" xmlns="http://javafx.com/javafx/21" fx:controller="com.hamza.account.controller.convert_treasury.TreasuryTransferController">
 
     <top>
         <VBox spacing="18" styleClass="page-container">
@@ -29,7 +29,7 @@
                 <Label styleClass="page-subtitle" text="قم بتحويل المبالغ بين الخزائن بسهولة مع حفظ سجل كامل للتحويلات" />
             </VBox>
 
-            <VBox spacing="16" styleClass="modern-card">
+            <VBox spacing="16" styleClass="app-card">
                 <GridPane hgap="18" vgap="14">
                     <columnConstraints>
                         <ColumnConstraints minWidth="120" prefWidth="130" />
@@ -76,7 +76,7 @@
 
             <Label styleClass="section-title" text="سجل التحويلات" />
 
-            <TableView fx:id="transferTable" styleClass="modern-table" VBox.vgrow="ALWAYS">
+            <TableView fx:id="transferTable" styleClass="app-table" VBox.vgrow="ALWAYS">
                 <columns>
                     <TableColumn fx:id="idColumn" prefWidth="80" text="الكود" />
                     <TableColumn fx:id="fromColumn" prefWidth="180" text="من خزينة" />

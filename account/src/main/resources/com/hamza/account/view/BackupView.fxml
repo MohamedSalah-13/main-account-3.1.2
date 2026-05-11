@@ -17,7 +17,7 @@
       spacing="18.0"
       nodeOrientation="RIGHT_TO_LEFT"
       styleClass="backup-root"
-      stylesheets="@../css/reports-modern.css"
+
       xmlns="http://javafx.com/javafx/21"
       xmlns:fx="http://javafx.com/fxml/1"
       fx:controller="com.hamza.account.backup.BackupController">
