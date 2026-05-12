@@ -12,6 +12,7 @@
 <?import javafx.scene.control.TextArea?>
 <?import javafx.scene.control.TextField?>
 <?import javafx.scene.control.ToggleGroup?>
+<?import javafx.scene.layout.BorderPane?>
 <?import javafx.scene.layout.ColumnConstraints?>
 <?import javafx.scene.layout.GridPane?>
 <?import javafx.scene.layout.HBox?>
@@ -21,33 +22,129 @@
 <?import javafx.scene.layout.VBox?>
 <?import javafx.scene.text.Text?>
 
-<StackPane fx:id="stackPane" prefHeight="931.0" prefWidth="1207.0" styleClass="app-root" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1">
+<StackPane fx:id="stackPane" styleClass="app-root" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1">
     <children>
-        <VBox spacing="10.0" styleClass="app-container">
-            <children>
-                <HBox alignment="CENTER_RIGHT" spacing="8.0" styleClass="app-card">
+      <BorderPane styleClass="app-container">
+         <top>
+                <HBox alignment="CENTER_LEFT" spacing="8.0" styleClass="app-card">
                     <children>
+                        <VBox alignment="CENTER_LEFT" spacing="3.0">
+                            <children>
+                                <Label styleClass="app-title" text="فاتورة مشتريات" />
+                                <Label styleClass="app-subtitle" text="إدارة بيانات الفاتورة، الأصناف، المدفوعات والإجماليات" />
+                            </children>
+                        </VBox>
+                  <Region HBox.hgrow="SOMETIMES" />
                         <Button fx:id="btnNew" mnemonicParsing="false" styleClass="primary-button" text="جديد" />
                         <Button fx:id="btnSearch" mnemonicParsing="false" styleClass="neutral-button" text="بحث" />
                         <Separator orientation="VERTICAL" />
                         <Button fx:id="btnSave" mnemonicParsing="false" styleClass="success-button" text="حفظ" />
                         <Button fx:id="btnPrintSave" mnemonicParsing="false" styleClass="primary-button" text="حفظ وطباعة" />
                         <Button fx:id="btnUpdateItem" mnemonicParsing="false" styleClass="warning-button" text="تعديل الصنف" />
-                  <Region prefWidth="100.0" />
-                        <VBox alignment="CENTER_RIGHT" spacing="3.0" HBox.hgrow="ALWAYS">
-                            <children>
-                                <Label styleClass="app-title" text="فاتورة مشتريات" />
-                                <Label styleClass="app-subtitle" text="إدارة بيانات الفاتورة، الأصناف، المدفوعات والإجماليات" />
-                            </children>
-                        </VBox>
                     </children>
                 </HBox>
+         </top>
+         <bottom>
 
-                <ScrollPane fitToHeight="true" fitToWidth="true" styleClass="app-scroll-pane" VBox.vgrow="ALWAYS">
+                    <VBox spacing="8.0" BorderPane.alignment="CENTER">
+                        <children>
+                            <HBox minHeight="-Infinity" minWidth="-Infinity" spacing="30.0" styleClass="summary-card">
+                                <children>
+                                    <VBox spacing="5.0" HBox.hgrow="ALWAYS">
+                                        <children>
+                                            <GridPane hgap="10.0" vgap="8.0">
+                                                <columnConstraints>
+                                                    <ColumnConstraints hgrow="SOMETIMES" maxWidth="-Infinity" minWidth="10.0" />
+                                                    <ColumnConstraints hgrow="SOMETIMES" maxWidth="-Infinity" minWidth="10.0" />
+                                                    <ColumnConstraints hgrow="SOMETIMES" maxWidth="-Infinity" minWidth="10.0" />
+                                                    <ColumnConstraints hgrow="SOMETIMES" maxWidth="-Infinity" minWidth="10.0" />
+                                                    <ColumnConstraints hgrow="SOMETIMES" maxWidth="-Infinity" minWidth="10.0" />
+                                                    <ColumnConstraints hgrow="SOMETIMES" maxWidth="-Infinity" minWidth="10.0" prefWidth="150.0" />
+                                                    <ColumnConstraints hgrow="SOMETIMES" maxWidth="-Infinity" minWidth="10.0" />
+                                                    <ColumnConstraints hgrow="SOMETIMES" maxWidth="-Infinity" minWidth="10.0" prefWidth="150.0" />
+                                                </columnConstraints>
+                                                <rowConstraints>
+                                                    <RowConstraints minHeight="10.0" prefHeight="32.0" vgrow="SOMETIMES" />
+                                                    <RowConstraints minHeight="10.0" prefHeight="32.0" vgrow="SOMETIMES" />
+                                                    <RowConstraints minHeight="10.0" prefHeight="32.0" vgrow="SOMETIMES" />
+                                                </rowConstraints>
+                                                <children>
+                                                    <TextField fx:id="txtPaid" text="0.0" GridPane.columnIndex="7" GridPane.rowIndex="1" />
+                                                    <Label styleClass="summary-label" text="المدفوع" GridPane.columnIndex="6" GridPane.rowIndex="1" />
+                                                    <Label styleClass="summary-label" text="الباقى" GridPane.columnIndex="6" GridPane.rowIndex="2" />
+                                                    <TextField fx:id="txtRestAfterPaid" editable="false" text="0.0" GridPane.columnIndex="7" GridPane.rowIndex="2" />
+
+                                                    <HBox spacing="10.0" GridPane.columnIndex="7">
+                                                        <children>
+                                                            <RadioButton fx:id="radioCash" mnemonicParsing="false" selected="true" text="Cash">
+                                                                <toggleGroup>
+                                                                    <ToggleGroup fx:id="group1" />
+                                                                </toggleGroup>
+                                                            </RadioButton>
+                                                            <RadioButton fx:id="radioDeffer" mnemonicParsing="false" text="Deffer" toggleGroup="$group1" />
+                                                        </children>
+                                                        <padding>
+                                                            <Insets bottom="5.0" left="5.0" right="5.0" top="5.0" />
+                                                        </padding>
+                                                    </HBox>
+
+                                                    <Text strokeType="OUTSIDE" strokeWidth="0.0" styleClass="summary-label" text="نوع الفاتورة" GridPane.columnIndex="6" />
+                                                    <TextField fx:id="txtOtherDiscount" text="0.0" GridPane.columnIndex="5" GridPane.rowIndex="1" />
+                                                    <TextField fx:id="txtRestAfterDiscount" editable="false" text="0.0" GridPane.columnIndex="5" GridPane.rowIndex="2" />
+                                                    <Label styleClass="summary-label" text="الخصم" GridPane.columnIndex="4" GridPane.rowIndex="1" />
+                                                    <Label styleClass="summary-label" text="الباقى" GridPane.columnIndex="4" GridPane.rowIndex="2" />
+
+                                                    <HBox alignment="CENTER_LEFT" spacing="10.0" GridPane.columnIndex="5">
+                                                        <children>
+                                                            <RadioButton fx:id="radioAmount" mnemonicParsing="false" selected="true" text="Amount">
+                                                                <toggleGroup>
+                                                                    <ToggleGroup fx:id="group" />
+                                                                </toggleGroup>
+                                                            </RadioButton>
+                                                            <RadioButton fx:id="radioRate" mnemonicParsing="false" text="Rate" toggleGroup="$group" />
+                                                        </children>
+                                                        <padding>
+                                                            <Insets bottom="5.0" left="5.0" right="5.0" top="5.0" />
+                                                        </padding>
+                                                    </HBox>
+
+                                                    <Text strokeType="OUTSIDE" strokeWidth="0.0" styleClass="summary-label" text="الخصم" GridPane.columnIndex="4" />
+                                                    <Label fx:id="last1" styleClass="summary-label" text="Label" />
+                                                    <Text fx:id="textSumCount" strokeType="OUTSIDE" strokeWidth="0.0" styleClass="text-sum" text="0" GridPane.columnIndex="1" />
+                                                    <Label fx:id="last2" styleClass="summary-label" text="Label" GridPane.rowIndex="1" />
+                                                    <Text fx:id="txtSumQuantity" strokeType="OUTSIDE" strokeWidth="0.0" styleClass="text-sum" text="0" GridPane.columnIndex="1" GridPane.rowIndex="1" />
+                                                    <Label fx:id="last3" styleClass="summary-label" text="Label" GridPane.columnIndex="2" />
+                                                    <Text fx:id="txtBeforeDiscount" strokeType="OUTSIDE" strokeWidth="0.0" styleClass="text-sum" text="0" GridPane.columnIndex="3" />
+                                                    <Label fx:id="last4" styleClass="summary-label" text="Label" GridPane.columnIndex="2" GridPane.rowIndex="1" />
+                                                    <Text fx:id="txtSumDiscount" strokeType="OUTSIDE" strokeWidth="0.0" styleClass="text-sum" text="0" GridPane.columnIndex="3" GridPane.rowIndex="1" />
+                                                    <Label fx:id="last5" styleClass="summary-label" text="Label" GridPane.columnIndex="2" GridPane.rowIndex="2" />
+                                                    <Text fx:id="txtSumTotals" strokeType="OUTSIDE" strokeWidth="0.0" styleClass="text-sum" text="0" GridPane.columnIndex="3" GridPane.rowIndex="2" />
+                                                </children>
+                                            </GridPane>
+                                        </children>
+                                    </VBox>
+
+                                    <VBox alignment="CENTER" maxHeight="-Infinity" prefHeight="100.0" prefWidth="170.0" spacing="10.0" styleClass="summary-light-card">
+                                        <children>
+                                            <Label fx:id="labelInvoiceTotal" styleClass="summary-light-label" text="Total" />
+                                            <Text fx:id="textInvoiceTotal" strokeType="OUTSIDE" strokeWidth="0.0" styleClass="summary-value" text="0" />
+                                        </children>
+                                        <padding>
+                                            <Insets bottom="5.0" left="5.0" right="5.0" top="5.0" />
+                                        </padding>
+                                    </VBox>
+                                </children>
+                            </HBox>
+                        </children>
+                    </VBox>
+         </bottom>
+         <center>
+
+                <ScrollPane fitToHeight="true" fitToWidth="true" styleClass="app-scroll-pane" BorderPane.alignment="CENTER">
                     <content>
-                        <VBox fx:id="boxCenter" spacing="10.0">
+                        <VBox fx:id="boxCenter" spacing="5.0">
                             <children>
-                                <HBox spacing="10.0" styleClass="app-card">
+                                <HBox styleClass="app-card">
                                     <children>
                                         <GridPane fx:id="gridPane" hgap="18.0" minHeight="-Infinity" minWidth="-Infinity" vgap="14.0" HBox.hgrow="ALWAYS">
                                             <padding>
@@ -102,104 +199,12 @@
                                     </children>
                                 </HBox>
 
-                                <TableView fx:id="table" minHeight="350.0" styleClass="app-table" VBox.vgrow="ALWAYS" />
-
-                                <VBox spacing="8.0">
-                                    <children>
-                                        <HBox minHeight="-Infinity" minWidth="-Infinity" spacing="30.0" styleClass="summary-card">
-                                            <children>
-                                                <VBox spacing="5.0" HBox.hgrow="ALWAYS">
-                                                    <children>
-                                                        <GridPane hgap="10.0" vgap="8.0">
-                                                            <columnConstraints>
-                                                                <ColumnConstraints hgrow="SOMETIMES" maxWidth="-Infinity" minWidth="10.0" />
-                                                                <ColumnConstraints hgrow="SOMETIMES" maxWidth="-Infinity" minWidth="10.0" />
-                                                                <ColumnConstraints hgrow="SOMETIMES" maxWidth="-Infinity" minWidth="10.0" />
-                                                                <ColumnConstraints hgrow="SOMETIMES" maxWidth="-Infinity" minWidth="10.0" />
-                                                                <ColumnConstraints hgrow="SOMETIMES" maxWidth="-Infinity" minWidth="10.0" />
-                                                                <ColumnConstraints hgrow="SOMETIMES" maxWidth="-Infinity" minWidth="10.0" prefWidth="150.0" />
-                                                                <ColumnConstraints hgrow="SOMETIMES" maxWidth="-Infinity" minWidth="10.0" />
-                                                                <ColumnConstraints hgrow="SOMETIMES" maxWidth="-Infinity" minWidth="10.0" prefWidth="150.0" />
-                                                            </columnConstraints>
-                                                            <rowConstraints>
-                                                                <RowConstraints minHeight="10.0" prefHeight="32.0" vgrow="SOMETIMES" />
-                                                                <RowConstraints minHeight="10.0" prefHeight="32.0" vgrow="SOMETIMES" />
-                                                                <RowConstraints minHeight="10.0" prefHeight="32.0" vgrow="SOMETIMES" />
-                                                            </rowConstraints>
-                                                            <children>
-                                                                <TextField fx:id="txtPaid" text="0.0" GridPane.columnIndex="7" GridPane.rowIndex="1" />
-                                                                <Label styleClass="summary-label" text="المدفوع" GridPane.columnIndex="6" GridPane.rowIndex="1" />
-                                                                <Label styleClass="summary-label" text="الباقى" GridPane.columnIndex="6" GridPane.rowIndex="2" />
-                                                                <TextField fx:id="txtRestAfterPaid" editable="false" text="0.0" GridPane.columnIndex="7" GridPane.rowIndex="2" />
-
-                                                                <HBox spacing="10.0" GridPane.columnIndex="7">
-                                                                    <children>
-                                                                        <RadioButton fx:id="radioCash" mnemonicParsing="false" selected="true" text="Cash">
-                                                                            <toggleGroup>
-                                                                                <ToggleGroup fx:id="group1" />
-                                                                            </toggleGroup>
-                                                                        </RadioButton>
-                                                                        <RadioButton fx:id="radioDeffer" mnemonicParsing="false" text="Deffer" toggleGroup="$group1" />
-                                                                    </children>
-                                                                    <padding>
-                                                                        <Insets bottom="5.0" left="5.0" right="5.0" top="5.0" />
-                                                                    </padding>
-                                                                </HBox>
-
-                                                                <Text strokeType="OUTSIDE" strokeWidth="0.0" styleClass="summary-label" text="نوع الفاتورة" GridPane.columnIndex="6" />
-                                                                <TextField fx:id="txtOtherDiscount" text="0.0" GridPane.columnIndex="5" GridPane.rowIndex="1" />
-                                                                <TextField fx:id="txtRestAfterDiscount" editable="false" text="0.0" GridPane.columnIndex="5" GridPane.rowIndex="2" />
-                                                                <Label styleClass="summary-label" text="الخصم" GridPane.columnIndex="4" GridPane.rowIndex="1" />
-                                                                <Label styleClass="summary-label" text="الباقى" GridPane.columnIndex="4" GridPane.rowIndex="2" />
-
-                                                                <HBox alignment="CENTER_LEFT" spacing="10.0" GridPane.columnIndex="5">
-                                                                    <children>
-                                                                        <RadioButton fx:id="radioAmount" mnemonicParsing="false" selected="true" text="Amount">
-                                                                            <toggleGroup>
-                                                                                <ToggleGroup fx:id="group" />
-                                                                            </toggleGroup>
-                                                                        </RadioButton>
-                                                                        <RadioButton fx:id="radioRate" mnemonicParsing="false" text="Rate" toggleGroup="$group" />
-                                                                    </children>
-                                                                    <padding>
-                                                                        <Insets bottom="5.0" left="5.0" right="5.0" top="5.0" />
-                                                                    </padding>
-                                                                </HBox>
-
-                                                                <Text strokeType="OUTSIDE" strokeWidth="0.0" styleClass="summary-label" text="الخصم" GridPane.columnIndex="4" />
-                                                                <Label fx:id="last1" styleClass="summary-label" text="Label" />
-                                                                <Text fx:id="textSumCount" strokeType="OUTSIDE" strokeWidth="0.0" styleClass="text-sum" text="0" GridPane.columnIndex="1" />
-                                                                <Label fx:id="last2" styleClass="summary-label" text="Label" GridPane.rowIndex="1" />
-                                                                <Text fx:id="txtSumQuantity" strokeType="OUTSIDE" strokeWidth="0.0" styleClass="text-sum" text="0" GridPane.columnIndex="1" GridPane.rowIndex="1" />
-                                                                <Label fx:id="last3" styleClass="summary-label" text="Label" GridPane.columnIndex="2" />
-                                                                <Text fx:id="txtBeforeDiscount" strokeType="OUTSIDE" strokeWidth="0.0" styleClass="text-sum" text="0" GridPane.columnIndex="3" />
-                                                                <Label fx:id="last4" styleClass="summary-label" text="Label" GridPane.columnIndex="2" GridPane.rowIndex="1" />
-                                                                <Text fx:id="txtSumDiscount" strokeType="OUTSIDE" strokeWidth="0.0" styleClass="text-sum" text="0" GridPane.columnIndex="3" GridPane.rowIndex="1" />
-                                                                <Label fx:id="last5" styleClass="summary-label" text="Label" GridPane.columnIndex="2" GridPane.rowIndex="2" />
-                                                                <Text fx:id="txtSumTotals" strokeType="OUTSIDE" strokeWidth="0.0" styleClass="text-sum" text="0" GridPane.columnIndex="3" GridPane.rowIndex="2" />
-                                                            </children>
-                                                        </GridPane>
-                                                    </children>
-                                                </VBox>
-
-                                                <VBox alignment="CENTER" maxHeight="-Infinity" prefHeight="100.0" prefWidth="170.0" spacing="10.0" styleClass="summary-light-card">
-                                                    <children>
-                                                        <Label fx:id="labelInvoiceTotal" styleClass="summary-light-label" text="Total" />
-                                                        <Text fx:id="textInvoiceTotal" strokeType="OUTSIDE" strokeWidth="0.0" styleClass="summary-value" text="0" />
-                                                    </children>
-                                                    <padding>
-                                                        <Insets bottom="5.0" left="5.0" right="5.0" top="5.0" />
-                                                    </padding>
-                                                </VBox>
-                                            </children>
-                                        </HBox>
-                                    </children>
-                                </VBox>
+                                <TableView fx:id="table" minHeight="350.0" prefWidth="400.0" styleClass="app-table" VBox.vgrow="ALWAYS" />
                             </children>
                         </VBox>
                     </content>
                 </ScrollPane>
-            </children>
-        </VBox>
+         </center>
+      </BorderPane>
     </children>
 </StackPane>

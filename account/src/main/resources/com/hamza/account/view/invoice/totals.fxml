@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <?import java.lang.String?>
-<?import javafx.geometry.Insets?>
 <?import javafx.scene.control.Button?>
 <?import javafx.scene.control.CheckBox?>
 <?import javafx.scene.control.ComboBox?>
@@ -17,6 +16,7 @@
 <?import javafx.scene.control.ToggleButton?>
 <?import javafx.scene.control.ToggleGroup?>
 <?import javafx.scene.control.ToolBar?>
+<?import javafx.scene.layout.BorderPane?>
 <?import javafx.scene.layout.ColumnConstraints?>
 <?import javafx.scene.layout.GridPane?>
 <?import javafx.scene.layout.HBox?>
@@ -27,9 +27,9 @@
 
 <StackPane fx:id="stackPane" prefHeight="744.0" prefWidth="723.0" styleClass="app-root" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1">
     <children>
-        <VBox styleClass="app-container">
-            <children>
-                <ToolBar fx:id="toolBar" styleClass="app-toolbar">
+      <BorderPane prefHeight="200.0" prefWidth="200.0" styleClass="app-container">
+         <top>
+                <ToolBar fx:id="toolBar" BorderPane.alignment="CENTER">
                     <items>
                         <Button fx:id="btnUpdate" mnemonicParsing="false" styleClass="app-neutral-button" text="Update" />
                         <Button fx:id="btnDelete" mnemonicParsing="false" styleClass="app-neutral-button" text="Delete" />
@@ -50,11 +50,33 @@
                         </MenuButton>
                     </items>
                 </ToolBar>
-                <ScrollPane fitToHeight="true" fitToWidth="true" VBox.vgrow="SOMETIMES">
+         </top>
+         <bottom>
+                    <HBox alignment="CENTER_LEFT" spacing="10.0" styleClass="summary-card" BorderPane.alignment="CENTER">
+                        <children>
+                            <Label fx:id="labelSumTableSize" text="Sum Table" />
+                            <Text fx:id="textSumTableSize" strokeType="OUTSIDE" strokeWidth="0.0" styleClass="text-sum" text="0" />
+                            <Label fx:id="labelSumTotals" text="Totals" />
+                            <Text fx:id="textSumTotals" strokeType="OUTSIDE" strokeWidth="0.0" styleClass="text-sum" text="0" />
+                            <Label fx:id="labelSumDiscount" text="Discount" />
+                            <Text fx:id="textSumDiscount" strokeType="OUTSIDE" strokeWidth="0.0" styleClass="text-sum" text="0" />
+                            <Label fx:id="labelSumAfterDiscount" text="After Discount" />
+                            <Text fx:id="textSumAfterDiscount" strokeType="OUTSIDE" strokeWidth="0.0" styleClass="text-sum" text="0" />
+                            <Label fx:id="labelSumAfterDiscount1" text="مدفوع" />
+                            <Text fx:id="textCash" strokeType="OUTSIDE" strokeWidth="0.0" styleClass="text-sum" text="0" />
+                            <Label fx:id="labelSumAfterDiscount11" text="باقى" />
+                            <Text fx:id="textDeffer" strokeType="OUTSIDE" strokeWidth="0.0" styleClass="text-sum" text="0" />
+                            <Label fx:id="labelSumAfterDiscount111" layoutX="389.0" layoutY="10.0" text="الربح" />
+                            <Text fx:id="textProfit" layoutX="423.0" layoutY="24.0" strokeType="OUTSIDE" strokeWidth="0.0" styleClass="text-sum" text="0" />
+                        </children>
+                    </HBox>
+         </bottom>
+         <center>
+                <ScrollPane fitToHeight="true" fitToWidth="true" BorderPane.alignment="CENTER">
                     <content>
                         <VBox spacing="5.0">
                             <children>
-                                <VBox fx:id="box" spacing="5.0" styleClass="app-card">
+                                <VBox fx:id="box" styleClass="app-card">
                                     <children>
                                         <GridPane fx:id="gridPane" hgap="20.0" vgap="20.0">
                                             <columnConstraints>
@@ -99,32 +121,11 @@
                                 </VBox>
                                 <TableView fx:id="tableView" minHeight="-Infinity" styleClass="app-table" VBox.vgrow="SOMETIMES">
                                 </TableView>
-                                <HBox alignment="CENTER_LEFT" spacing="10.0" styleClass="summary-card">
-                                    <children>
-                                        <Label fx:id="labelSumTableSize" text="Sum Table" />
-                                        <Text fx:id="textSumTableSize" strokeType="OUTSIDE" strokeWidth="0.0" styleClass="text-sum" text="0" />
-                                        <Label fx:id="labelSumTotals" text="Totals" />
-                                        <Text fx:id="textSumTotals" strokeType="OUTSIDE" strokeWidth="0.0" styleClass="text-sum" text="0" />
-                                        <Label fx:id="labelSumDiscount" text="Discount" />
-                                        <Text fx:id="textSumDiscount" strokeType="OUTSIDE" strokeWidth="0.0" styleClass="text-sum" text="0" />
-                                        <Label fx:id="labelSumAfterDiscount" text="After Discount" />
-                                        <Text fx:id="textSumAfterDiscount" strokeType="OUTSIDE" strokeWidth="0.0" styleClass="text-sum" text="0" />
-                                        <Label fx:id="labelSumAfterDiscount1" text="مدفوع" />
-                                        <Text fx:id="textCash" strokeType="OUTSIDE" strokeWidth="0.0" styleClass="text-sum" text="0" />
-                                        <Label fx:id="labelSumAfterDiscount11" text="باقى" />
-                                        <Text fx:id="textDeffer" strokeType="OUTSIDE" strokeWidth="0.0" styleClass="text-sum" text="0" />
-                                        <Label fx:id="labelSumAfterDiscount111" layoutX="389.0" layoutY="10.0" text="الربح" />
-                                        <Text fx:id="textProfit" layoutX="423.0" layoutY="24.0" strokeType="OUTSIDE" strokeWidth="0.0" styleClass="text-sum" text="0" />
-                                    </children>
-                                </HBox>
                             </children>
-                            <padding>
-                                <Insets bottom="5.0" left="5.0" right="5.0" top="5.0" />
-                            </padding>
                         </VBox>
                     </content>
                 </ScrollPane>
-            </children>
-        </VBox>
+         </center>
+      </BorderPane>
     </children>
 </StackPane>

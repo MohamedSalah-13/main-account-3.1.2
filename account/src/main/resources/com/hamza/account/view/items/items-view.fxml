@@ -10,6 +10,7 @@
 <?import javafx.scene.control.TextField?>
 <?import javafx.scene.control.ToggleButton?>
 <?import javafx.scene.control.ToolBar?>
+<?import javafx.scene.layout.BorderPane?>
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.StackPane?>
 <?import javafx.scene.layout.VBox?>
@@ -17,9 +18,9 @@
 
 <StackPane fx:id="stackPane" nodeOrientation="RIGHT_TO_LEFT" styleClass="app-root" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1">
     <children>
-        <VBox spacing="14.0" styleClass="app-container">
-            <children>
-                <ToolBar prefHeight="40.0" styleClass="items-toolbar">
+      <BorderPane styleClass="app-container">
+         <top>
+                <ToolBar BorderPane.alignment="CENTER">
                     <items>
                         <Button fx:id="btnNew" mnemonicParsing="false" styleClass="success-button" text="جديد" />
                         <Button fx:id="btnUpdate" mnemonicParsing="false" styleClass="warning-button" text="تعديل" />
@@ -45,12 +46,23 @@
                         </MenuButton>
                     </items>
                 </ToolBar>
+         </top>
+         <bottom>
 
-                <ScrollPane fitToHeight="true" fitToWidth="true" styleClass="items-scroll-pane" VBox.vgrow="ALWAYS">
+                    <HBox alignment="CENTER_LEFT" spacing="10.0" styleClass="summary-bar" BorderPane.alignment="CENTER">
+                        <children>
+                            <Label styleClass="summary-label" text="الإجمالي" />
+                            <Text fx:id="txtSumTotals" strokeType="OUTSIDE" strokeWidth="0.0" styleClass="summary-value" text="0.0" />
+                        </children>
+                    </HBox>
+         </bottom>
+         <center>
+
+                <ScrollPane fitToHeight="true" fitToWidth="true" styleClass="items-scroll-pane" BorderPane.alignment="CENTER">
                     <content>
-                        <VBox spacing="14.0">
+                        <VBox spacing="5.0">
                             <children>
-                        <HBox alignment="CENTER_LEFT" spacing="5.0" styleClass="app-card">
+                        <HBox alignment="CENTER_LEFT" spacing="5.0" styleClass="search-card">
                            <children>
                                           <Label styleClass="form-label" text="بحث" />
                                           <TextField fx:id="txtSearch" promptText="بحث" />
@@ -58,18 +70,11 @@
                         </HBox>
 
                                 <Pagination fx:id="pagination" styleClass="modern-pagination" VBox.vgrow="ALWAYS" />
-
-                                <HBox alignment="CENTER_LEFT" spacing="10.0" styleClass="summary-bar">
-                                    <children>
-                                        <Label styleClass="summary-label" text="الإجمالي" />
-                                        <Text fx:id="txtSumTotals" strokeType="OUTSIDE" strokeWidth="0.0" styleClass="summary-value" text="0.0" />
-                                    </children>
-                                </HBox>
                             </children>
                         </VBox>
                     </content>
                 </ScrollPane>
-            </children>
-        </VBox>
+         </center>
+      </BorderPane>
     </children>
 </StackPane>
