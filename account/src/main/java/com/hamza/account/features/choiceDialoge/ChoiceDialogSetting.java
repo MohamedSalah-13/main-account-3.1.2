@@ -1,6 +1,6 @@
 package com.hamza.account.features.choiceDialoge;
 
-import com.hamza.account.config.Style_Sheet;
+import com.hamza.account.config.ThemeManager;
 import com.hamza.controlsfx.button.ImageDesign;
 import com.hamza.controlsfx.language.Setting_Language;
 import com.hamza.controlsfx.others.ChangeOrientation;
@@ -25,7 +25,7 @@ public class ChoiceDialogSetting extends ChoiceDialog<String> {
         stage.getIcons().add(choiceData.stageGraphic());
         Scene scene = stage.getScene();
 
-        Style_Sheet.changeStyle(scene);
+        ThemeManager.apply(scene);
         ChangeOrientation.sceneOrientation(scene);
 
         final Button button = (Button) getDialogPane().lookupButton(ButtonType.OK);

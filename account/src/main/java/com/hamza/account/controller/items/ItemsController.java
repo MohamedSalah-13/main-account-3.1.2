@@ -8,7 +8,6 @@ import com.hamza.account.controller.others.SelectedButton;
 import com.hamza.account.controller.others.ServiceRegistry;
 import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.model.domain.ItemsModel;
-import com.hamza.account.model.domain.MainGroups;
 import com.hamza.account.openFxml.FxmlPath;
 import com.hamza.account.service.*;
 import com.hamza.account.table.EditCell;
@@ -67,15 +66,11 @@ public class ItemsController extends LoadData {
     private final SelPriceItemService selPriceService = ServiceRegistry.get(SelPriceItemService.class);
 
     @FXML
-    private Button btnNew, btnUpdate, btnDelete, btnRefresh, btnSearch;
+    private Button btnNew, btnUpdate, btnDelete, btnRefresh;
     @FXML
     private MenuItem menuPrint, menuPrintBarcode, menuPrintMenu, menuItemCard, menuItemConvertGroup, menuExportExcel;
     @FXML
     private TextField txtSearch;
-    @FXML
-    private CheckBox checkOtherSearch;
-    @FXML
-    private ComboBox<String> comboMain, comboSub;
     @FXML
     private Text txtSumTotals;
     @FXML
@@ -105,16 +100,13 @@ public class ItemsController extends LoadData {
     }
 
     private void otherSetting() {
-        comboMain.setPromptText(Setting_Language.WORD_MAIN_G);
-        comboSub.setPromptText(Setting_Language.WORD_SUB_G);
+
         menuItemConvertGroup.setText(HEADER_TEXT);
         menuItemConvertGroup.setDisable(true);
         // combo items
         ObservableList<String> observableListStock = FXCollections.observableArrayList(getStockNames());
         ObservableList<String> observableListMain = FXCollections.observableArrayList(getMainGroupsNames());
-        comboMain.setItems(observableListMain);
-        // add select all data to combo box
-        comboMain.getItems().addFirst(Setting_Language.WORD_ALL);
+
         dataPublisher.getPublisherAddStock().addObserver(string -> observableListStock.setAll(getStockNames()));
         dataPublisher.getPublisherAddMainGroup().addObserver(string -> observableListMain.setAll(getMainGroupsNames()));
         publisherAddItem.addObserver(message -> btnRefresh.fire());
@@ -211,7 +203,6 @@ public class ItemsController extends LoadData {
         btnNew.setGraphic(createIcon(images.add));
         btnUpdate.setGraphic(createIcon(images.update));
         btnDelete.setGraphic(createIcon(images.delete));
-        btnSearch.setGraphic(createIcon(images.search));
         btnRefresh.setGraphic(createIcon(images.refresh));
         btnSelected.setGraphic(createIcon(images.select));
         menuButtonPrint.setGraphic(createIcon(images.print));
@@ -219,10 +210,6 @@ public class ItemsController extends LoadData {
     }
 
     private void action() {
-        txtSearch.disableProperty().bind(checkOtherSearch.selectedProperty());
-        comboMain.disableProperty().bind(checkOtherSearch.selectedProperty().not());
-        comboSub.disableProperty().bind(checkOtherSearch.selectedProperty().not());
-        btnSearch.disableProperty().bind(checkOtherSearch.selectedProperty().not());
         menuExportExcel.setOnAction(actionEvent -> exportToExcel());
 
         new SelectedButton(btnSelected) {
@@ -235,7 +222,7 @@ public class ItemsController extends LoadData {
         };
 
 //        btnSearch.setOnAction(actionEvent -> searchAction());
-        comboMain.valueProperty().addListener((observableValue, string, t1) -> getData(t1));
+//        comboMain.valueProperty().addListener((observableValue, string, t1) -> getData(t1));
 
         menuItemCard.setOnAction(actionEvent -> openDetails());
 
@@ -271,28 +258,6 @@ public class ItemsController extends LoadData {
 
     }
 
-    private void getData(String t1) {
-        comboSub.getItems().clear();
-        comboSub.getItems().addFirst(Setting_Language.WORD_ALL);
-
-        // add items
-        if (comboMain.getSelectionModel().getSelectedIndex() != 0) try {
-            MainGroups mainGroupsByName = mainGroupService.getMainGroupsByName(t1);
-            ObservableList<String> observableListSub = FXCollections.observableArrayList(getSubGroupsNamesByMainId(mainGroupsByName));
-            comboSub.getItems().addAll(observableListSub);
-        } catch (DaoException e) {
-            logErrors(e);
-        }
-    }
-
-    private List<String> getSubGroupsNamesByMainId(MainGroups mainGroupsByName) {
-        try {
-            return supGroupService.getSubGroupsNamesByMainId(mainGroupsByName.getId());
-        } catch (Exception e) {
-            logErrors(e);
-            return new ArrayList<>();
-        }
-    }
 
     private void delete() {
         try {

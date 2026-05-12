@@ -1,7 +1,7 @@
 package com.hamza.account.features.notification;
 
 import com.hamza.account.config.Image_Setting;
-import com.hamza.account.config.Style_Sheet;
+import com.hamza.account.config.ThemeManager;
 import com.hamza.account.model.domain.ItemsMiniQuantity;
 import com.hamza.account.view.OpenApplication;
 import com.hamza.controlsfx.button.ImageDesign;
@@ -62,7 +62,7 @@ public class NotifyItemAlert implements NotificationAction {
                 };
 
                 var pane = new TableViewShowDataApplication<>(dataTable).getPane();
-                pane.getStylesheets().add(Style_Sheet.getStyle());
+                pane.getStylesheets().add(ThemeManager.getStylesheet());
                 return pane;
             }
 

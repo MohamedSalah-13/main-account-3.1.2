@@ -1,6 +1,6 @@
 package com.hamza.account.view;
 
-import com.hamza.account.config.Style_Sheet;
+import com.hamza.account.config.ThemeManager;
 import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.model.domain.Users;
 import com.hamza.controlsfx.alert.AllAlerts;
@@ -29,7 +29,7 @@ public class ChangePassView {
         var changePassApplication = new ChangePassApplication(changePassInt);
 
         var dialogApplication = changePassApplication.getDialogApplication();
-        dialogApplication.getDialogPane().getStylesheets().add(Style_Sheet.getStyle());
+        dialogApplication.getDialogPane().getStylesheets().add(ThemeManager.getStylesheet());
         var b = dialogApplication.showAndWait();
         if (b.isPresent() && b.get()) {
             Thread thread = new Thread(() -> Platform.runLater(AllAlerts::alertSave));

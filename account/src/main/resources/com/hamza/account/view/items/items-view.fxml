@@ -1,120 +1,68 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<?import javafx.scene.control.*?>
-<?import javafx.scene.layout.*?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.MenuButton?>
+<?import javafx.scene.control.MenuItem?>
+<?import javafx.scene.control.Pagination?>
+<?import javafx.scene.control.ScrollPane?>
+<?import javafx.scene.control.Separator?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.control.ToggleButton?>
+<?import javafx.scene.control.ToolBar?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.StackPane?>
+<?import javafx.scene.layout.VBox?>
 <?import javafx.scene.text.Text?>
 
-<StackPane fx:id="stackPane"
-           nodeOrientation="RIGHT_TO_LEFT"
-           styleClass="app-root"
-
-           xmlns="http://javafx.com/javafx/21"
-           xmlns:fx="http://javafx.com/fxml/1">
+<StackPane fx:id="stackPane" nodeOrientation="RIGHT_TO_LEFT" styleClass="app-root" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1">
     <children>
         <VBox spacing="14.0" styleClass="app-container">
             <children>
                 <ToolBar prefHeight="40.0" styleClass="items-toolbar">
                     <items>
-                        <Button fx:id="btnNew" mnemonicParsing="false" text="جديد" styleClass="success-button"/>
-                        <Button fx:id="btnUpdate" mnemonicParsing="false" text="تعديل" styleClass="warning-button"/>
-                        <Button fx:id="btnDelete" mnemonicParsing="false" text="حذف" styleClass="danger-button"/>
-                        <Separator orientation="VERTICAL"/>
-                        <Button fx:id="btnRefresh" mnemonicParsing="false" text="تحديث" styleClass="neutral-button"/>
-                        <ToggleButton fx:id="btnSelected" mnemonicParsing="false" text="تحديد" styleClass="items-toggle"/>
+                        <Button fx:id="btnNew" mnemonicParsing="false" styleClass="success-button" text="جديد" />
+                        <Button fx:id="btnUpdate" mnemonicParsing="false" styleClass="warning-button" text="تعديل" />
+                        <Button fx:id="btnDelete" mnemonicParsing="false" styleClass="danger-button" text="حذف" />
+                        <Separator orientation="VERTICAL" />
+                        <Button fx:id="btnRefresh" mnemonicParsing="false" styleClass="neutral-button" text="تحديث" />
+                        <ToggleButton fx:id="btnSelected" mnemonicParsing="false" styleClass="items-toggle" text="تحديد" />
 
-                        <MenuButton fx:id="menuButtonPrint"
-                                    mnemonicParsing="false"
-                                    text="طباعة"
-                                    styleClass="modern-menu-button">
+                        <MenuButton fx:id="menuButtonPrint" mnemonicParsing="false" styleClass="modern-menu-button" text="طباعة">
                             <items>
-                                <MenuItem fx:id="menuPrint" mnemonicParsing="false" text="الكل"/>
-                                <MenuItem fx:id="menuPrintMenu" mnemonicParsing="false" text="الأصناف قوائم"/>
-                                <MenuItem fx:id="menuPrintBarcode" mnemonicParsing="false" text="باركود"/>
+                                <MenuItem fx:id="menuPrint" mnemonicParsing="false" text="الكل" />
+                                <MenuItem fx:id="menuPrintMenu" mnemonicParsing="false" text="الأصناف قوائم" />
+                                <MenuItem fx:id="menuPrintBarcode" mnemonicParsing="false" text="باركود" />
                             </items>
                         </MenuButton>
 
-                        <MenuButton fx:id="menuButtonOther"
-                                    mnemonicParsing="false"
-                                    text="أخرى"
-                                    styleClass="modern-menu-button">
+                        <MenuButton fx:id="menuButtonOther" mnemonicParsing="false" styleClass="modern-menu-button" text="أخرى">
                             <items>
-                                <MenuItem fx:id="menuItemConvertGroup" mnemonicParsing="false" text="تحويل المجموعات"/>
-                                <MenuItem fx:id="menuItemCard" mnemonicParsing="false" text="كارت صنف"/>
-                                <MenuItem fx:id="menuExportExcel" mnemonicParsing="false" text="تصدير إلى Excel"/>
+                                <MenuItem fx:id="menuItemConvertGroup" mnemonicParsing="false" text="تحويل المجموعات" />
+                                <MenuItem fx:id="menuItemCard" mnemonicParsing="false" text="كارت صنف" />
+                                <MenuItem fx:id="menuExportExcel" mnemonicParsing="false" text="تصدير إلى Excel" />
                             </items>
                         </MenuButton>
                     </items>
                 </ToolBar>
 
-                <ScrollPane fitToHeight="true"
-                            fitToWidth="true"
-                            styleClass="items-scroll-pane"
-                            VBox.vgrow="ALWAYS">
+                <ScrollPane fitToHeight="true" fitToWidth="true" styleClass="items-scroll-pane" VBox.vgrow="ALWAYS">
                     <content>
                         <VBox spacing="14.0">
                             <children>
-                                <VBox fx:id="box" styleClass="app-card">
-                                    <children>
-                                        <GridPane hgap="12.0" vgap="12.0">
-                                            <columnConstraints>
-                                                <ColumnConstraints minWidth="110.0"/>
-                                                <ColumnConstraints minWidth="260.0" hgrow="ALWAYS"/>
-                                                <ColumnConstraints minWidth="110.0"/>
-                                                <ColumnConstraints minWidth="220.0" hgrow="ALWAYS"/>
-                                                <ColumnConstraints minWidth="110.0"/>
-                                            </columnConstraints>
+                        <HBox alignment="CENTER_LEFT" spacing="5.0" styleClass="app-card">
+                           <children>
+                                          <Label styleClass="form-label" text="بحث" />
+                                          <TextField fx:id="txtSearch" promptText="بحث" />
+                           </children>
+                        </HBox>
 
-                                            <children>
-                                                <Label text="بحث" styleClass="form-label"/>
-                                                <TextField fx:id="txtSearch"
-                                                           prefWidth="300.0"
-                                                           promptText="بحث"
-                                                           GridPane.columnIndex="1"/>
-                                                <CheckBox fx:id="checkOtherSearch"
-                                                          mnemonicParsing="false"
-                                                          text="بحث آخر"
-                                                          GridPane.columnIndex="2"/>
-
-                                                <Label text="مجموعة رئيسية"
-                                                       styleClass="form-label"
-                                                       GridPane.rowIndex="1"/>
-                                                <ComboBox fx:id="comboMain"
-                                                          maxWidth="1.7976931348623157E308"
-                                                          GridPane.columnIndex="1"
-                                                          GridPane.rowIndex="1"/>
-
-                                                <Label text="مجموعة فرعية"
-                                                       styleClass="form-label"
-                                                       GridPane.columnIndex="2"
-                                                       GridPane.rowIndex="1"/>
-                                                <ComboBox fx:id="comboSub"
-                                                          maxWidth="1.7976931348623157E308"
-                                                          GridPane.columnIndex="3"
-                                                          GridPane.rowIndex="1"/>
-
-                                                <Button fx:id="btnSearch"
-                                                        mnemonicParsing="false"
-                                                        text="بحث"
-                                                        styleClass="primary-button"
-                                                        GridPane.columnIndex="4"
-                                                        GridPane.rowIndex="1"/>
-                                            </children>
-                                        </GridPane>
-                                    </children>
-                                </VBox>
-
-                                <Pagination fx:id="pagination"
-                                            styleClass="modern-pagination"
-                                            VBox.vgrow="ALWAYS"/>
+                                <Pagination fx:id="pagination" styleClass="modern-pagination" VBox.vgrow="ALWAYS" />
 
                                 <HBox alignment="CENTER_LEFT" spacing="10.0" styleClass="summary-bar">
                                     <children>
-                                        <Label text="الإجمالي" styleClass="summary-label"/>
-                                        <Text fx:id="txtSumTotals"
-                                              strokeType="OUTSIDE"
-                                              strokeWidth="0.0"
-                                              text="0.0"
-                                              styleClass="summary-value"/>
+                                        <Label styleClass="summary-label" text="الإجمالي" />
+                                        <Text fx:id="txtSumTotals" strokeType="OUTSIDE" strokeWidth="0.0" styleClass="summary-value" text="0.0" />
                                     </children>
                                 </HBox>
                             </children>

@@ -336,8 +336,6 @@ public class SettingTabLanguageController implements Initializable {
         var scene = labelLanguage.getScene();
         if (scene != null) {
             com.hamza.account.config.ThemeManager.apply(scene);
-            // keep legacy font/color loading and responsive font size
-            com.hamza.account.config.Style_Sheet.changeStyle(scene);
         } else if (labelLanguage.getParent() != null) {
             com.hamza.account.config.ThemeManager.apply(labelLanguage.getParent());
         }

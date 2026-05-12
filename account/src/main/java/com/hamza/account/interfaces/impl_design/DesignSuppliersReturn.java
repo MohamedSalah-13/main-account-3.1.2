@@ -1,6 +1,6 @@
 package com.hamza.account.interfaces.impl_design;
 
-import com.hamza.account.config.Style_Sheet;
+import com.hamza.account.config.ThemeManager;
 import com.hamza.account.interfaces.api.DesignInterface;
 import com.hamza.account.type.UserPermissionType;
 import com.hamza.controlsfx.language.Setting_Language;
@@ -11,11 +11,7 @@ public class DesignSuppliersReturn implements DesignInterface {
 
     @Override
     public String styleSheet() {
-        var current = com.hamza.account.config.ThemeManager.getCurrentTheme();
-        if (current == com.hamza.account.config.ThemeManager.Theme.DARK) {
-            return Style_Sheet.getStyle();
-        }
-        return Style_Sheet.CSS_SUB_RETURN;
+        return ThemeManager.getStylesheet();
     }
 
     @Override

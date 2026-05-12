@@ -1,6 +1,6 @@
 package com.hamza.account.openFxml;
 
-import com.hamza.account.config.Style_Sheet;
+import com.hamza.account.config.ThemeManager;
 import com.hamza.controlsfx.others.CssToColorHelper;
 
 public interface MainData {
@@ -11,7 +11,7 @@ public interface MainData {
      * @return the path to the main CSS stylesheet as a String.
      */
     default String styleSheet() {
-        return Style_Sheet.getStyle();
+        return ThemeManager.getStylesheet();
     }
 
     /**

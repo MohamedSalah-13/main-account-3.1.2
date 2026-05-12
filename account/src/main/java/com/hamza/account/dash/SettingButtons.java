@@ -2,7 +2,7 @@ package com.hamza.account.dash;
 
 import com.hamza.account.config.Image_Setting;
 import com.hamza.account.config.SaveDatabaseFile;
-import com.hamza.account.config.Style_Sheet;
+import com.hamza.account.config.ThemeManager;
 import com.hamza.account.controller.main.ButtonWithPerm;
 import com.hamza.account.controller.main.DataPublisher;
 import com.hamza.account.controller.others.DeleteDataController;
@@ -207,7 +207,7 @@ public class SettingButtons {
                 var check = new PassCheckApplication("147852369");
                 DialogPane dialogPane = check.getDialogPane();
                 var scene = dialogPane.getScene();
-                Style_Sheet.changeStyle(scene);
+                ThemeManager.apply(scene);
                 ChangeOrientation.sceneOrientation(scene);
 
                 Button buttonOK = (Button) dialogPane.lookupButton(ButtonType.OK);

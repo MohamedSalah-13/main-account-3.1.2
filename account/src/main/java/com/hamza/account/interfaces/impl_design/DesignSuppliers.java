@@ -1,6 +1,6 @@
 package com.hamza.account.interfaces.impl_design;
 
-import com.hamza.account.config.Style_Sheet;
+import com.hamza.account.config.ThemeManager;
 import com.hamza.account.interfaces.api.DesignInterface;
 import com.hamza.account.type.UserPermissionType;
 import com.hamza.controlsfx.language.Setting_Language;
@@ -9,7 +9,7 @@ public class DesignSuppliers implements DesignInterface {
 
     @Override
     public String styleSheet() {
-        return Style_Sheet.getStyle();
+        return ThemeManager.getStylesheet();
     }
 
     @Override

@@ -1,6 +1,6 @@
 package com.hamza.account.view;
 
-import com.hamza.account.config.Style_Sheet;
+import com.hamza.account.config.ThemeManager;
 import com.hamza.controlsfx.interfaceData.TableViewShowDataInt;
 import com.hamza.controlsfx.interfaceData.ToolbarAccountInt;
 import com.hamza.controlsfx.others.ChangeOrientation;
@@ -15,8 +15,8 @@ public class OpenApplicationWithData<T> {
             , Node node, String title) throws Exception {
         ApplicationDataWithToolbarIndexApp<T> withToolbarIndexApp = new ApplicationDataWithToolbarIndexApp<>(toolbarAccountInt, tableViewShowDataInt, node, title);
         var dialogPane = withToolbarIndexApp.getDialogPane();
-        dialogPane.getStylesheets().add(Style_Sheet.getStyle());
-        Style_Sheet.changeStyle(dialogPane.getScene());
+        dialogPane.getStylesheets().add(ThemeManager.getStylesheet());
+        ThemeManager.apply(dialogPane.getScene());
         ChangeOrientation.sceneOrientation(dialogPane.getScene());
         withToolbarIndexApp.show();
     }

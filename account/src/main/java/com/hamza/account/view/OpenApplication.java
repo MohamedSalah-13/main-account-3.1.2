@@ -1,7 +1,7 @@
 package com.hamza.account.view;
 
 import com.hamza.account.config.Image_Setting;
-import com.hamza.account.config.Style_Sheet;
+import com.hamza.account.config.ThemeManager;
 import com.hamza.account.controller.pos.DialogButtons;
 import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.interfaceData.AppSettingInterface;
@@ -19,7 +19,7 @@ public class OpenApplication<T> {
         var dialogPane = objectDialogApplication.getDialogPane();
         var scene = dialogPane.getScene();
         ChangeOrientation.sceneOrientation(scene);
-        Style_Sheet.changeStyle(scene);
+        ThemeManager.apply(scene);
 
         if (appSettingInterface.addLastPane()) {
             DialogButtons.changeNameAndGraphic(dialogPane);

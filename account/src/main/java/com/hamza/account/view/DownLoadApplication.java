@@ -2,7 +2,7 @@ package com.hamza.account.view;
 
 import com.hamza.account.backup.BackupService;
 import com.hamza.account.config.ConnectionToDatabase;
-import com.hamza.account.config.Style_Sheet;
+import com.hamza.account.config.ThemeManager;
 import com.hamza.account.controller.others.ServiceRegistry;
 import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.service.*;
@@ -31,7 +31,7 @@ public class DownLoadApplication extends Application {
         // change language
         connectionToDatabase = new ConnectionToDatabase();
         daoFactory = getDaoFactory();
-        AlertSetting.stylesheetPath = Style_Sheet.getStyle();
+        AlertSetting.stylesheetPath = ThemeManager.getStylesheet();
 
         System.out.println(1);
         ServiceRegistry.register(ItemsService.class, new ItemsService(daoFactory));

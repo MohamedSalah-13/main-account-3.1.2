@@ -1,7 +1,7 @@
 package com.hamza.account.controller.pos;
 
 import com.hamza.account.config.Image_Setting;
-import com.hamza.account.config.Style_Sheet;
+import com.hamza.account.config.ThemeManager;
 import com.hamza.controlsfx.language.Setting_Language;
 import com.hamza.controlsfx.others.ChangeOrientation;
 import javafx.scene.control.Button;
@@ -29,7 +29,7 @@ public class DialogButtons {
 
         var scene = dialog.getScene();
         ChangeOrientation.sceneOrientation(scene);
-        Style_Sheet.changeStyle(scene);
+        ThemeManager.apply(scene);
 
         Toolkit.getDefaultToolkit().beep();
 
