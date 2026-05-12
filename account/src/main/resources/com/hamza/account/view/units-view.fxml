@@ -70,8 +70,4 @@
          </center>
       </BorderPane>
     </children>
-    <stylesheets>
-        <URL value="@../css/app-theme.css" />
-        <URL value="@../css/theme-light.css" />
-    </stylesheets>
 </StackPane>
