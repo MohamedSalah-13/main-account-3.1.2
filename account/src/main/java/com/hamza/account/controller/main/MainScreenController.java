@@ -4,13 +4,10 @@ import com.hamza.account.config.FxmlConstants;
 import com.hamza.account.controller.others.ServiceRegistry;
 import com.hamza.account.controller.reports.ModernDashboardApp;
 import com.hamza.account.controller.reports.MonthlySalesInterface;
-import com.hamza.account.dash.ReportByDate;
 import com.hamza.account.features.notification.ItemNotifications;
-import com.hamza.account.interfaces.treeAccount.ReportTreeAccountCustom;
-import com.hamza.account.interfaces.treeAccount.ReportTreeAccountSuppliers;
 import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.model.dao.MonthlySalesViewDao;
-import com.hamza.account.model.domain.*;
+import com.hamza.account.model.domain.ItemsMiniQuantity;
 import com.hamza.account.service.ItemMiniQuantityService;
 import com.hamza.account.type.UserPermissionType;
 import com.hamza.account.view.LogApplication;
@@ -30,9 +27,6 @@ import javafx.fxml.FXMLLoader;
 import javafx.fxml.Initializable;
 import javafx.scene.Node;
 import javafx.scene.control.*;
-import javafx.scene.control.Button;
-import javafx.scene.control.MenuBar;
-import javafx.scene.control.MenuItem;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.*;
@@ -42,10 +36,8 @@ import lombok.Getter;
 import lombok.extern.log4j.Log4j2;
 import org.jetbrains.annotations.NotNull;
 
-import java.awt.*;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.URL;
 import java.util.ArrayList;
@@ -62,21 +54,18 @@ public class MainScreenController extends MainItems implements Initializable {
     private MainMenuController menuController;
     @FXML
     private MenuBar menuBar;
+    @FXML
+    private BorderPane borderPane;
     @Getter
     @FXML
     private TabPane tabPane;
-    @FXML
-    private BorderPane borderPane;
     @FXML
     private VBox boxCenter;
     @FXML
     private JFXDrawer drawer;
     @FXML
-    private ImageView imageView;
-    @FXML
-    private Button btnAnyDesk, btnChooseImage;
-    @FXML
-    private BorderPane paneAnyDesk;
+    private VBox box;
+
     private MenuButtonSetting menuButtonSetting;
     private MainToolbarController toolbarController;
     private BackgroundSlideshow slideshow;
@@ -89,14 +78,13 @@ public class MainScreenController extends MainItems implements Initializable {
     @Override
     public void initialize(URL url, ResourceBundle resourceBundle) {
         menuButtonSetting = new MenuButtonSetting(tabPane);
-        mainPane = (Pane) borderPane.getCenter();
-        showImage();
+//        showImage();
         menuBarSetting();
         dontShowData();
         mainToolbarSetting();
         otherSetting();
-        action();
-        setBackgroundImage();
+//        action();
+//        setBackgroundImage();
         addTabContextMenu();
 
         if (LogApplication.usersVo.getId() == 1) {
@@ -114,7 +102,7 @@ public class MainScreenController extends MainItems implements Initializable {
             if (message == true) {
                 firstBoxInMain();
             } else {
-                paneAnyDesk.setCenter(null);
+                box.getChildren().clear();
             }
         });
 
@@ -395,8 +383,8 @@ public class MainScreenController extends MainItems implements Initializable {
 
     private void firstBoxInMain() {
         try {
-            paneAnyDesk.setCenter(null);
-            paneAnyDesk.setCenter(new ModernDashboardApp(daoFactory).getPane());
+            box.getChildren().clear();
+            box.getChildren().add(new ModernDashboardApp(daoFactory).getPane());
         } catch (DaoException e) {
             logException(e);
         }
@@ -449,21 +437,21 @@ public class MainScreenController extends MainItems implements Initializable {
     }
 
     private void action() {
-        btnAnyDesk.setOnAction(e -> {
-            try {
-                var file = new File("program/AnyDesk.exe");
-                if (!file.exists()) {
-                    throw new FileNotFoundException("File not found");
-                }
-                Desktop.getDesktop().open(file);
-            } catch (IOException ex) {
-                logException(ex);
-            }
-        });
+//        btnAnyDesk.setOnAction(e -> {
+//            try {
+//                var file = new File("program/AnyDesk.exe");
+//                if (!file.exists()) {
+//                    throw new FileNotFoundException("File not found");
+//                }
+//                Desktop.getDesktop().open(file);
+//            } catch (IOException ex) {
+//                logException(ex);
+//            }
+//        });
 
-        btnAnyDesk.setTooltip(new Tooltip("Program AnyDesk"));
-        btnChooseImage.setTooltip(new Tooltip("تغيير الخلفية"));
-        btnChooseImage.setOnAction(e -> selectBackgroundImage());
+//        btnAnyDesk.setTooltip(new Tooltip("Program AnyDesk"));
+//        btnChooseImage.setTooltip(new Tooltip("تغيير الخلفية"));
+//        btnChooseImage.setOnAction(e -> selectBackgroundImage());
 //        btnChooseImage.setOnAction(e -> onChooseFolderClick());
     }
 
