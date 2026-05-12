@@ -3,60 +3,52 @@
 <?import javafx.scene.control.Button?>
 <?import javafx.scene.control.ComboBox?>
 <?import javafx.scene.control.Label?>
+<?import javafx.scene.control.ScrollPane?>
 <?import javafx.scene.control.TableView?>
 <?import javafx.scene.layout.AnchorPane?>
+<?import javafx.scene.layout.BorderPane?>
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.Region?>
 <?import javafx.scene.layout.VBox?>
 
-<AnchorPane nodeOrientation="RIGHT_TO_LEFT"
-            styleClass="app-root"
-
-            xmlns="http://javafx.com/javafx/21"
-            xmlns:fx="http://javafx.com/fxml/1">
+<AnchorPane nodeOrientation="RIGHT_TO_LEFT" styleClass="app-root" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1">
     <children>
-        <VBox spacing="16.0"
-              styleClass="app-container"
-              AnchorPane.bottomAnchor="0.0"
-              AnchorPane.leftAnchor="0.0"
-              AnchorPane.rightAnchor="0.0"
-              AnchorPane.topAnchor="0.0">
-            <children>
-                <HBox alignment="CENTER_LEFT" spacing="14.0" styleClass="app-card">
+      <BorderPane styleClass="app-container" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
+         <top>
+                <HBox alignment="CENTER_LEFT" spacing="14.0" styleClass="app-card" BorderPane.alignment="CENTER">
                     <children>
                         <VBox spacing="5.0">
                             <children>
-                                <Label text="التقرير السنوي" styleClass="report-title"/>
-                                <Label text="عرض إجمالي الأرباح والبيانات السنوية" styleClass="report-subtitle"/>
+                                <Label styleClass="report-title" text="التقرير السنوي" />
+                                <Label styleClass="report-subtitle" text="عرض إجمالي الأرباح والبيانات السنوية" />
                             </children>
                         </VBox>
 
-                        <Region HBox.hgrow="ALWAYS"/>
+                              <Region HBox.hgrow="ALWAYS" />
 
-                        <Label text="السنة:" styleClass="form-label"/>
-                        <ComboBox fx:id="comboYear" prefWidth="150.0"/>
+                              <Label styleClass="form-label" text="السنة:" />
+                        <ComboBox fx:id="comboYear" prefWidth="150.0" />
 
-                        <Button fx:id="searchButton"
-                                mnemonicParsing="false"
-                                text="بحث"
-                                styleClass="primary-button"/>
+                              <Button fx:id="searchButton" mnemonicParsing="false" styleClass="primary-button" text="بحث" />
 
-                        <Button fx:id="btnPrintPdf"
-                                mnemonicParsing="false"
-                                text="تصدير PDF"
-                                styleClass="pdf-button"/>
+                              <Button fx:id="btnPrintPdf" mnemonicParsing="false" styleClass="pdf-button" text="تصدير PDF" />
 
-                        <Button fx:id="btnExportExcel"
-                                mnemonicParsing="false"
-                                text="تصدير Excel"
-                                styleClass="excel-button"/>
+                              <Button fx:id="btnExportExcel" mnemonicParsing="false" styleClass="excel-button" text="تصدير Excel" />
                     </children>
                 </HBox>
-
-                <TableView fx:id="tableView"
-                           styleClass="app-table"
-                           VBox.vgrow="ALWAYS"/>
-            </children>
-        </VBox>
+         </top>
+         <center>
+            <ScrollPane fitToHeight="true" fitToWidth="true" BorderPane.alignment="CENTER">
+               <content>
+                    <VBox minHeight="-Infinity" minWidth="-Infinity" spacing="16.0" styleClass="app-container">
+                        <children>
+            
+                            <TableView fx:id="tableView" minHeight="-Infinity" minWidth="-Infinity" prefHeight="250.0" styleClass="app-table" VBox.vgrow="ALWAYS" />
+                        </children>
+                    </VBox>
+               </content>
+            </ScrollPane>
+         </center>
+      </BorderPane>
     </children>
 </AnchorPane>

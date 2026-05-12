@@ -1,68 +1,64 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
+<?import java.net.URL?>
 <?import javafx.scene.control.Button?>
 <?import javafx.scene.control.DatePicker?>
 <?import javafx.scene.control.Label?>
+<?import javafx.scene.control.ScrollPane?>
 <?import javafx.scene.control.TableView?>
 <?import javafx.scene.control.TextField?>
 <?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.layout.ColumnConstraints?>
 <?import javafx.scene.layout.FlowPane?>
+<?import javafx.scene.layout.GridPane?>
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.Region?>
+<?import javafx.scene.layout.RowConstraints?>
 <?import javafx.scene.layout.VBox?>
 
-<BorderPane prefHeight="700.0"
-            prefWidth="1200.0"
-            nodeOrientation="RIGHT_TO_LEFT"
-            styleClass="app-root"
-
-            xmlns:fx="http://javafx.com/fxml/1"
-            xmlns="http://javafx.com/javafx/21">
+<BorderPane nodeOrientation="RIGHT_TO_LEFT" styleClass="app-container" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1">
 
     <top>
-        <VBox spacing="16.0" styleClass="app-container" BorderPane.alignment="CENTER">
+        <VBox minHeight="-Infinity" minWidth="-Infinity" spacing="5.0" BorderPane.alignment="CENTER">
             <children>
-                <HBox alignment="CENTER_LEFT" spacing="14.0" styleClass="app-card">
+                <HBox alignment="CENTER_LEFT" spacing="5.0" styleClass="app-card">
                     <children>
                         <VBox spacing="5.0">
                             <children>
-                                <Label fx:id="title"
-                                       text="الأصناف المشتراة من العميل"
-                                       styleClass="report-title"/>
-                                <Label text="عرض وتحليل الأصناف التي اشتراها العميل خلال فترة محددة"
-                                       styleClass="report-subtitle"/>
+                                <Label fx:id="title" styleClass="report-title" text="الأصناف المشتراة من العميل" />
+                                <Label styleClass="report-subtitle" text="عرض وتحليل الأصناف التي اشتراها العميل خلال فترة محددة" />
                             </children>
                         </VBox>
 
-                        <Region HBox.hgrow="ALWAYS"/>
+                        <Region HBox.hgrow="ALWAYS" />
 
                         <HBox spacing="18.0" styleClass="stats-bar">
                             <children>
                                 <VBox alignment="CENTER" spacing="3.0">
                                     <children>
-                                        <Label text="عدد السطور" styleClass="stat-title"/>
-                                        <Label fx:id="labelCount" text="0" styleClass="stat-value"/>
+                                        <Label styleClass="stat-title" text="عدد السطور" />
+                                        <Label fx:id="labelCount" styleClass="stat-value" text="0" />
                                     </children>
                                 </VBox>
 
                                 <VBox alignment="CENTER" spacing="3.0">
                                     <children>
-                                        <Label text="إجمالي البيع" styleClass="stat-title"/>
-                                        <Label fx:id="labelTotalSales" text="0" styleClass="stat-value"/>
+                                        <Label styleClass="stat-title" text="إجمالي البيع" />
+                                        <Label fx:id="labelTotalSales" styleClass="stat-value" text="0" />
                                     </children>
                                 </VBox>
 
                                 <VBox alignment="CENTER" spacing="3.0">
                                     <children>
-                                        <Label text="إجمالي الكمية" styleClass="stat-title"/>
-                                        <Label fx:id="labelTotalQuantity" text="0" styleClass="stat-value"/>
+                                        <Label styleClass="stat-title" text="إجمالي الكمية" />
+                                        <Label fx:id="labelTotalQuantity" styleClass="stat-value" text="0" />
                                     </children>
                                 </VBox>
 
                                 <VBox alignment="CENTER" spacing="3.0">
                                     <children>
-                                        <Label text="صافي الإجمالي" styleClass="stat-title"/>
-                                        <Label fx:id="labelNetTotal" text="0" styleClass="stat-value"/>
+                                        <Label styleClass="stat-title" text="صافي الإجمالي" />
+                                        <Label fx:id="labelNetTotal" styleClass="stat-value" text="0" />
                                     </children>
                                 </VBox>
                             </children>
@@ -70,46 +66,68 @@
                     </children>
                 </HBox>
 
-                <HBox alignment="CENTER_LEFT" spacing="10.0" styleClass="customer-card">
+                <HBox alignment="CENTER_LEFT" spacing="5.0" styleClass="customer-card">
                     <children>
-                        <Label text="العميل:" styleClass="form-label"/>
-                        <Label fx:id="labelCustomerName" text="" styleClass="customer-name"/>
+                        <Label styleClass="form-label" text="العميل:" />
+                        <Label fx:id="labelCustomerName" styleClass="customer-name" text="" />
+                  <Region HBox.hgrow="SOMETIMES" />
+                        <Button fx:id="btnExportExcel" styleClass="excel-button" text="تصدير Excel" />
+                        <Button fx:id="btnExportPdf" styleClass="pdf-button" text="تصدير PDF" />
                     </children>
                 </HBox>
-
-                <FlowPane hgap="10.0" vgap="10.0" styleClass="flow-filter-card">
-                    <children>
-                        <Label text="من:" styleClass="form-label"/>
-                        <DatePicker fx:id="dateFrom"/>
-
-                        <Label text="إلى:" styleClass="form-label"/>
-                        <DatePicker fx:id="dateTo"/>
-
-                        <Label text="اسم الصنف:" styleClass="form-label"/>
-                        <TextField fx:id="textSearchName"
-                                   promptText="ابحث بالاسم"
-                                   styleClass="modern-input"/>
-
-                        <Button fx:id="btnSearch" text="بحث" styleClass="primary-button"/>
-                        <Button fx:id="btnReset" text="إعادة ضبط" styleClass="neutral-button"/>
-                        <Button fx:id="btnSortDate" text="ترتيب حسب التاريخ" styleClass="warning-button"/>
-                        <Button fx:id="btnExportExcel" text="تصدير Excel" styleClass="excel-button"/>
-                        <Button fx:id="btnExportPdf" text="تصدير PDF" styleClass="pdf-button"/>
-                    </children>
-                </FlowPane>
             </children>
         </VBox>
     </top>
 
     <center>
-        <VBox styleClass="app-container">
-            <children>
-                <TableView fx:id="tableView"
-                           styleClass="app-table"
-                           BorderPane.alignment="CENTER"
-                           VBox.vgrow="ALWAYS"/>
-            </children>
-        </VBox>
+      <ScrollPane fitToHeight="true" fitToWidth="true">
+         <content>
+              <VBox spacing="5.0">
+                  <children>
+                  <VBox styleClass="app-card">
+                     <children>
+                        <GridPane hgap="10.0" minHeight="-Infinity" minWidth="-Infinity" vgap="25.0">
+                          <columnConstraints>
+                            <ColumnConstraints hgrow="SOMETIMES" maxWidth="-Infinity" minWidth="10.0" />
+                            <ColumnConstraints hgrow="SOMETIMES" maxWidth="-Infinity" minWidth="10.0" prefWidth="300.0" />
+                              <ColumnConstraints hgrow="SOMETIMES" maxWidth="-Infinity" minWidth="10.0" />
+                              <ColumnConstraints hgrow="SOMETIMES" maxWidth="-Infinity" minWidth="10.0" prefWidth="300.0" />
+                          </columnConstraints>
+                          <rowConstraints>
+                            <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
+                            <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
+                          </rowConstraints>
+                           <children>
+                                    <Label styleClass="form-label" text="من:" />
+            
+                                    <Label styleClass="form-label" text="إلى:" GridPane.columnIndex="2" />
+                                    <DatePicker fx:id="dateFrom" editable="false" maxWidth="1.7976931348623157E308" GridPane.columnIndex="1" />
+                                    <DatePicker fx:id="dateTo" editable="false" maxWidth="1.7976931348623157E308" GridPane.columnIndex="3" />
+            
+                                    <Label styleClass="form-label" text="اسم الصنف:" GridPane.rowIndex="1" />
+                                    <TextField fx:id="textSearchName" promptText="ابحث بالاسم" styleClass="modern-input" GridPane.columnIndex="1" GridPane.rowIndex="1" />
+                  
+                                  <FlowPane hgap="10.0" styleClass="flow-filter-card" vgap="10.0" GridPane.columnIndex="3" GridPane.rowIndex="1">
+                                      <children>
+                  
+                                          <Button fx:id="btnSearch" styleClass="primary-button" text="بحث" />
+                                          <Button fx:id="btnReset" styleClass="neutral-button" text="إعادة ضبط" />
+                                          <Button fx:id="btnSortDate" styleClass="warning-button" text="ترتيب حسب التاريخ" />
+                                      </children>
+                                  </FlowPane>
+                           </children>
+                        </GridPane>
+                     </children>
+                  </VBox>
+                      <TableView fx:id="tableView" minHeight="-Infinity" minWidth="-Infinity" prefHeight="250.0" styleClass="app-table" BorderPane.alignment="CENTER" VBox.vgrow="ALWAYS" />
+                  </children>
+              </VBox>
+         </content>
+      </ScrollPane>
     </center>
+   <stylesheets>
+      <URL value="@../css/app-theme.css" />
+      <URL value="@../css/theme-light.css" />
+   </stylesheets>
 
 </BorderPane>

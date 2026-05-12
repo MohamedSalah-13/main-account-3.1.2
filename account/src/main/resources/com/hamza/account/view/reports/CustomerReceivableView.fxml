@@ -1,57 +1,61 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<?import javafx.scene.control.*?>
-<?import javafx.scene.layout.*?>
 
-<AnchorPane prefHeight="600.0"
-            prefWidth="900.0"
-            nodeOrientation="RIGHT_TO_LEFT"
-            styleClass="app-root"
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.TableColumn?>
+<?import javafx.scene.control.TableView?>
+<?import javafx.scene.layout.AnchorPane?>
+<?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Region?>
+<?import javafx.scene.layout.VBox?>
 
-            xmlns="http://javafx.com/javafx/17"
-            xmlns:fx="http://javafx.com/fxml/1"
-            fx:controller="com.hamza.account.controller.reports.CustomerReceivableController">
+<AnchorPane nodeOrientation="RIGHT_TO_LEFT" styleClass="app-root" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.hamza.account.controller.reports.CustomerReceivableController">
     <children>
-        <VBox spacing="16.0"
-              styleClass="app-container"
-              AnchorPane.bottomAnchor="0.0"
-              AnchorPane.leftAnchor="0.0"
-              AnchorPane.rightAnchor="0.0"
-              AnchorPane.topAnchor="0.0">
-            <children>
-                <HBox alignment="CENTER_LEFT" spacing="18.0" styleClass="app-card">
+      <BorderPane styleClass="app-container" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
+         <top>
+                <HBox alignment="CENTER_LEFT" spacing="5.0" styleClass="app-card" BorderPane.alignment="CENTER">
                     <children>
                         <VBox spacing="5.0">
                             <children>
-                                <Label text="تقرير أرصدة العملاء" styleClass="report-title"/>
-                                <Label text="الديون والمبالغ المستحقة على العملاء" styleClass="report-subtitle"/>
+                                <Label styleClass="report-title" text="تقرير أرصدة العملاء" />
+                                <Label styleClass="report-subtitle" text="الديون والمبالغ المستحقة على العملاء" />
                             </children>
                         </VBox>
 
-                        <Region HBox.hgrow="ALWAYS"/>
+                        <Region HBox.hgrow="ALWAYS" />
 
-                        <Button onAction="#refreshData" text="تحديث البيانات" styleClass="neutral-button"/>
-                        <Button onAction="#onExportPdf" text="PDF" styleClass="pdf-button"/>
-                        <Button onAction="#onExportExcel" text="Excel" styleClass="excel-button"/>
+                        <Button onAction="#refreshData" styleClass="neutral-button" text="تحديث البيانات" />
+                        <Button onAction="#onExportPdf" styleClass="pdf-button" text="PDF" />
+                        <Button onAction="#onExportExcel" styleClass="excel-button" text="Excel" />
                     </children>
                 </HBox>
+         </top>
+         <bottom>
 
-                <TableView fx:id="tableView" styleClass="app-table" VBox.vgrow="ALWAYS">
-                    <columns>
-                        <TableColumn fx:id="colName" prefWidth="250.0" text="اسم العميل"/>
-                        <TableColumn fx:id="colPhone" prefWidth="150.0" text="رقم الهاتف"/>
-                        <TableColumn fx:id="colInvoices" prefWidth="150.0" text="ديون الفواتير"/>
-                        <TableColumn fx:id="colOpening" prefWidth="150.0" text="مديونية سابقة"/>
-                        <TableColumn fx:id="colTotal" prefWidth="150.0" text="إجمالي المستحق"/>
-                    </columns>
-                </TableView>
-
-                <HBox alignment="CENTER_RIGHT" spacing="8.0" styleClass="summary-card">
+                <HBox alignment="CENTER_RIGHT" spacing="8.0" styleClass="summary-card" BorderPane.alignment="CENTER">
                     <children>
-                        <Label text="إجمالي ديون العملاء طرفكم:" styleClass="summary-label"/>
-                        <Label fx:id="lblGrandTotal" text="0.00" styleClass="summary-value"/>
+                        <Label styleClass="summary-label" text="إجمالي ديون العملاء طرفكم:" />
+                        <Label fx:id="lblGrandTotal" styleClass="summary-value" text="0.00" />
                     </children>
                 </HBox>
-            </children>
-        </VBox>
+         </bottom>
+         <center>
+              <VBox spacing="16.0" styleClass="app-container" BorderPane.alignment="CENTER">
+                  <children>
+      
+                      <TableView fx:id="tableView" minHeight="-Infinity" minWidth="-Infinity" prefHeight="250.0" styleClass="app-table" VBox.vgrow="ALWAYS">
+                          <columns>
+                              <TableColumn fx:id="colName" prefWidth="250.0" text="اسم العميل" />
+                              <TableColumn fx:id="colPhone" prefWidth="150.0" text="رقم الهاتف" />
+                              <TableColumn fx:id="colInvoices" prefWidth="150.0" text="ديون الفواتير" />
+                              <TableColumn fx:id="colOpening" prefWidth="150.0" text="مديونية سابقة" />
+                              <TableColumn fx:id="colTotal" prefWidth="150.0" text="إجمالي المستحق" />
+                          </columns>
+                      </TableView>
+                  </children>
+              </VBox>
+         </center>
+      </BorderPane>
     </children>
 </AnchorPane>

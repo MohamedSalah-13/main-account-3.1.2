@@ -3,8 +3,9 @@
 <?import javafx.scene.control.Button?>
 <?import javafx.scene.control.DatePicker?>
 <?import javafx.scene.control.Label?>
+<?import javafx.scene.control.ScrollPane?>
 <?import javafx.scene.control.TableView?>
-<?import javafx.scene.layout.AnchorPane?>
+<?import javafx.scene.layout.BorderPane?>
 <?import javafx.scene.layout.ColumnConstraints?>
 <?import javafx.scene.layout.GridPane?>
 <?import javafx.scene.layout.HBox?>
@@ -13,78 +14,62 @@
 <?import javafx.scene.layout.VBox?>
 <?import javafx.scene.text.Text?>
 
-<StackPane fx:id="stackPane"
-           nodeOrientation="RIGHT_TO_LEFT"
-           styleClass="app-root"
-
-           xmlns="http://javafx.com/javafx/21"
-           xmlns:fx="http://javafx.com/fxml/1">
+<StackPane fx:id="stackPane" nodeOrientation="RIGHT_TO_LEFT" styleClass="app-root" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1">
     <children>
-        <AnchorPane>
-            <children>
-                <VBox spacing="16.0"
-                      styleClass="app-container"
-                      AnchorPane.bottomAnchor="0.0"
-                      AnchorPane.leftAnchor="0.0"
-                      AnchorPane.rightAnchor="0.0"
-                      AnchorPane.topAnchor="0.0">
-                    <children>
-                        <VBox alignment="TOP_CENTER" spacing="8.0" styleClass="app-card">
-                            <children>
-                                <Label fx:id="textTitle" text="Text" styleClass="report-title"/>
-                            </children>
-                        </VBox>
-
-                        <GridPane hgap="14.0" vgap="12.0" styleClass="app-card" VBox.vgrow="NEVER">
-                            <columnConstraints>
-                                <ColumnConstraints minWidth="90.0"/>
-                                <ColumnConstraints minWidth="150.0" prefWidth="150.0"/>
-                                <ColumnConstraints minWidth="90.0"/>
-                                <ColumnConstraints minWidth="150.0" prefWidth="150.0"/>
-                                <ColumnConstraints minWidth="220.0"/>
-                            </columnConstraints>
-                            <rowConstraints>
-                                <RowConstraints minHeight="35.0" prefHeight="35.0"/>
-                                <RowConstraints minHeight="35.0" prefHeight="35.0"/>
-                            </rowConstraints>
-                            <children>
-                                <Label fx:id="labelFrom" text="Date From" styleClass="form-label"/>
-                                <DatePicker fx:id="dateFrom" GridPane.columnIndex="1"/>
-
-                                <Label fx:id="labelTo" text="Date To" styleClass="form-label" GridPane.columnIndex="2"/>
-                                <DatePicker fx:id="dateTo" GridPane.columnIndex="3"/>
-
-                                <HBox alignment="CENTER_LEFT" spacing="10.0" GridPane.columnIndex="4">
-                                    <children>
-                                        <Button fx:id="btnSearch" mnemonicParsing="false" text="Search" styleClass="primary-button"/>
-                                        <Button fx:id="btnPrint" mnemonicParsing="false" text="Print" styleClass="neutral-button"/>
-                                    </children>
-                                </HBox>
-
-                                <Label fx:id="labelCount" text="Count" styleClass="form-label" GridPane.rowIndex="1"/>
-                                <Text fx:id="textCount"
-                                      strokeType="OUTSIDE"
-                                      strokeWidth="0.0"
-                                      text="0.0"
-                                      styleClass="summary-value info-value"
-                                      GridPane.columnIndex="1"
-                                      GridPane.rowIndex="1"/>
-
-                                <Label fx:id="labelTotal" text="Total" styleClass="form-label" GridPane.columnIndex="2" GridPane.rowIndex="1"/>
-                                <Text fx:id="textTotal"
-                                      strokeType="OUTSIDE"
-                                      strokeWidth="0.0"
-                                      text="0.0"
-                                      styleClass="summary-value success-value"
-                                      GridPane.columnIndex="3"
-                                      GridPane.rowIndex="1"/>
-                            </children>
-                        </GridPane>
-
-                        <TableView fx:id="tableView" styleClass="app-table" VBox.vgrow="ALWAYS"/>
-                    </children>
-                </VBox>
-            </children>
-        </AnchorPane>
+      <BorderPane styleClass="app-container">
+         <top>
+                  <VBox alignment="TOP_CENTER" styleClass="app-card" BorderPane.alignment="CENTER">
+                      <children>
+                          <Label fx:id="textTitle" styleClass="report-title" text="Text" />
+                      </children>
+                  </VBox>
+         </top>
+         <center>
+            <ScrollPane fitToHeight="true" fitToWidth="true" BorderPane.alignment="CENTER">
+               <content>
+                      <VBox spacing="5.0" styleClass="app-container">
+                          <children>
+      
+                              <GridPane hgap="10.0" minHeight="-Infinity" minWidth="-Infinity" styleClass="app-card" vgap="15.0" VBox.vgrow="NEVER">
+                                  <columnConstraints>
+                                      <ColumnConstraints maxWidth="-Infinity" />
+                                      <ColumnConstraints minWidth="150.0" prefWidth="250.0" />
+                                      <ColumnConstraints maxWidth="-Infinity" />
+                                      <ColumnConstraints minWidth="150.0" prefWidth="250.0" />
+                                      <ColumnConstraints minWidth="220.0" />
+                                  </columnConstraints>
+                                  <rowConstraints>
+                                      <RowConstraints minHeight="35.0" prefHeight="35.0" />
+                                      <RowConstraints minHeight="35.0" prefHeight="35.0" />
+                                  </rowConstraints>
+                                  <children>
+                                      <Label fx:id="labelFrom" styleClass="form-label" text="Date From" />
+                                      <DatePicker fx:id="dateFrom" editable="false" GridPane.columnIndex="1" />
+      
+                                      <Label fx:id="labelTo" styleClass="form-label" text="Date To" GridPane.columnIndex="2" />
+                                      <DatePicker fx:id="dateTo" editable="false" GridPane.columnIndex="3" />
+      
+                                      <HBox alignment="CENTER_LEFT" spacing="10.0" GridPane.columnIndex="4">
+                                          <children>
+                                              <Button fx:id="btnSearch" mnemonicParsing="false" styleClass="primary-button" text="Search" />
+                                              <Button fx:id="btnPrint" mnemonicParsing="false" styleClass="neutral-button" text="Print" />
+                                          </children>
+                                      </HBox>
+      
+                                      <Label fx:id="labelCount" styleClass="form-label" text="Count" GridPane.rowIndex="1" />
+                                      <Text fx:id="textCount" strokeType="OUTSIDE" strokeWidth="0.0" styleClass="summary-value info-value" text="0.0" GridPane.columnIndex="1" GridPane.rowIndex="1" />
+      
+                                      <Label fx:id="labelTotal" styleClass="form-label" text="Total" GridPane.columnIndex="2" GridPane.rowIndex="1" />
+                                      <Text fx:id="textTotal" strokeType="OUTSIDE" strokeWidth="0.0" styleClass="summary-value success-value" text="0.0" GridPane.columnIndex="3" GridPane.rowIndex="1" />
+                                  </children>
+                              </GridPane>
+      
+                              <TableView fx:id="tableView" minHeight="-Infinity" minWidth="-Infinity" prefHeight="250.0" styleClass="app-table" VBox.vgrow="ALWAYS" />
+                          </children>
+                      </VBox>
+               </content>
+            </ScrollPane>
+         </center>
+      </BorderPane>
     </children>
 </StackPane>
