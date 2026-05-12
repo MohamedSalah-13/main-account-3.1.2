@@ -108,21 +108,21 @@ public class TotalsButton<T1 extends BasePurchasesAndSales, T2 extends BaseTotal
                 return dataInterface.designInterface().imageButton();
             }
 
-            @Override
-            public void actionAddPaneToTabPane(TabPane tabPane) throws Exception {
-                BuyApplication<T1, T2, T3, T4> buyApp = new BuyApplication<>(dataInterface, dataPublisher, 0);
-
-                var shoppingSales = new Image_Setting().shoppingPurchase;
-                if (textName().equals("sales") || textName().equals("المبيعات"))
-                    shoppingSales = new Image_Setting().shoppingSales;
-
-                addTape(tabPane, buyApp.getPane(), textName(), shoppingSales);
-            }
-
-            @Override
-            public boolean showOnTapPane() {
-                return !getSettingShowInvoiceScreenSeparate();
-            }
+//            @Override
+//            public void actionAddPaneToTabPane(TabPane tabPane) throws Exception {
+//                BuyApplication<T1, T2, T3, T4> buyApp = new BuyApplication<>(dataInterface, dataPublisher, 0);
+//
+//                var shoppingSales = new Image_Setting().shoppingPurchase;
+//                if (textName().equals("sales") || textName().equals("المبيعات"))
+//                    shoppingSales = new Image_Setting().shoppingSales;
+//
+//                addTape(tabPane, buyApp.getPane(), textName(), shoppingSales);
+//            }
+//
+//            @Override
+//            public boolean showOnTapPane() {
+//                return !getSettingShowInvoiceScreenSeparate();
+//            }
 
             @Override
             public boolean addMultiTabWithSameName() {

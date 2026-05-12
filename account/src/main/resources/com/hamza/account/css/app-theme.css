@@ -187,7 +187,7 @@
 .menu-button,
 .primary-button,
 .secondary-button,
-neutral-button,
+.neutral-button,
 .app-button {
     -fx-font-size: 12px;
     -fx-font-weight: bold;

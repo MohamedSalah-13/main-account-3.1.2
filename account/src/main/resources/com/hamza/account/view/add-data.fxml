@@ -3,29 +3,31 @@
 <?import javafx.geometry.Insets?>
 <?import javafx.scene.control.Button?>
 <?import javafx.scene.control.Label?>
-<?import javafx.scene.layout.*?>
+<?import javafx.scene.layout.AnchorPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.VBox?>
 <?import org.controlsfx.control.CheckListView?>
-<AnchorPane xmlns:fx="http://javafx.com/fxml/1" xmlns="http://javafx.com/javafx/21">
+
+<AnchorPane xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1">
     <children>
-        <VBox spacing="5.0" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0"
-              AnchorPane.topAnchor="0.0">
+        <VBox spacing="5.0" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
             <children>
-                <Label fx:id="labelTitle" styleClass="text-sum" text="Stocks"/>
+                <Label fx:id="labelTitle" styleClass="text-sum" text="Stocks" />
                 <HBox spacing="5.0">
                     <children>
-                        <CheckListView fx:id="checkListView" maxHeight="200.0"/>
+                        <CheckListView fx:id="checkListView" maxHeight="200.0" />
                         <VBox spacing="5.0">
                             <children>
-                                <Button fx:id="btnNew" minWidth="80.0" mnemonicParsing="false" text="New"/>
-                                <Button fx:id="btnUpdate" minWidth="80.0" mnemonicParsing="false" text="Update"/>
-                                <Button fx:id="btnDelete" minWidth="80.0" mnemonicParsing="false" text="Delete"/>
+                                <Button fx:id="btnNew" minWidth="80.0" mnemonicParsing="false" styleClass="app-neutral-button" text="New" />
+                                <Button fx:id="btnUpdate" minWidth="80.0" mnemonicParsing="false" styleClass="app-neutral-button" text="Update" />
+                                <Button fx:id="btnDelete" minWidth="80.0" mnemonicParsing="false" styleClass="app-neutral-button" text="Delete" />
                             </children>
                         </VBox>
                     </children>
                 </HBox>
             </children>
             <padding>
-                <Insets bottom="5.0" left="5.0" right="5.0" top="5.0"/>
+                <Insets bottom="5.0" left="5.0" right="5.0" top="5.0" />
             </padding>
         </VBox>
     </children>
