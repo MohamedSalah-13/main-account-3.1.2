@@ -65,7 +65,7 @@
                         <HBox alignment="CENTER_LEFT" spacing="5.0" styleClass="search-card">
                            <children>
                                           <Label styleClass="form-label" text="بحث" />
-                                          <TextField fx:id="txtSearch" promptText="بحث" />
+                                          <TextField fx:id="txtSearch" promptText="بحث" HBox.hgrow="SOMETIMES" />
                            </children>
                         </HBox>
 
