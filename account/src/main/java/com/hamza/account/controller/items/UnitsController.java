@@ -283,6 +283,11 @@ public class UnitsController implements Initializable, AppSettingInterface {
     public String title() {
         return name;
     }
+
+    @Override
+    public boolean resize() {
+        return true;
+    }
 }
 
 record UnitFormData(String name, double value) {

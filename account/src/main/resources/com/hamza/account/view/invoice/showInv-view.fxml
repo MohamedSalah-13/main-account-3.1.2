@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<?import java.net.URL?>
 <?import javafx.scene.control.Button?>
 <?import javafx.scene.control.Label?>
 <?import javafx.scene.control.ScrollPane?>
@@ -51,7 +50,7 @@
                           <children>
                               <VBox styleClass="app-card">
                                   <children>
-                                      <GridPane hgap="5.0" styleClass="grid-pane-style" vgap="5.0">
+                                      <GridPane hgap="10.0" minHeight="-Infinity" minWidth="-Infinity" styleClass="grid-pane-style" vgap="10.0">
                                           <columnConstraints>
                                               <ColumnConstraints hgrow="SOMETIMES" maxWidth="-Infinity" minWidth="10.0" />
                                               <ColumnConstraints hgrow="SOMETIMES" maxWidth="-Infinity" minWidth="10.0" prefWidth="150.0" />
@@ -88,12 +87,12 @@
                                               <Text fx:id="txtName" strokeType="OUTSIDE" strokeWidth="0.0" styleClass="text-sum" GridPane.columnIndex="1" GridPane.rowIndex="1" />
                                               <Text fx:id="txtStock" strokeType="OUTSIDE" strokeWidth="0.0" styleClass="text-sum" GridPane.columnIndex="3" GridPane.rowIndex="1" />
                                               <Text fx:id="textInvoiceProfit" layoutX="565.0" layoutY="93.0" strokeType="OUTSIDE" strokeWidth="0.0" styleClass="text-sum" text="0" GridPane.columnIndex="5" GridPane.rowIndex="3" />
-                                              <Label fx:id="labelProfit" text="gross profit" GridPane.columnIndex="4" GridPane.rowIndex="3" />
+                                              <Label fx:id="labelProfit" styleClass="form-label" text="gross profit" GridPane.columnIndex="4" GridPane.rowIndex="3" />
                                           </children>
                                       </GridPane>
                                   </children>
                               </VBox>
-                              <TableView fx:id="tableView" editable="true" styleClass="app-table" VBox.vgrow="SOMETIMES" />
+                              <TableView fx:id="tableView" editable="true" minHeight="-Infinity" minWidth="-Infinity" prefHeight="250.0" styleClass="app-table" VBox.vgrow="SOMETIMES" />
                           </children>
                       </VBox>
                </content>

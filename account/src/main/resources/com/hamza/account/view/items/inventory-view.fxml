@@ -17,7 +17,7 @@
 
 <VBox nodeOrientation="RIGHT_TO_LEFT" styleClass="app-root" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1">
     <children>
-      <BorderPane styleClass="app-root">
+      <BorderPane styleClass="app-root" VBox.vgrow="ALWAYS">
          <top>
                 <ToolBar styleClass="items-toolbar" BorderPane.alignment="CENTER">
                     <items>
@@ -67,7 +67,7 @@
                                     </children>
                                 </VBox>
 
-                                <Pagination fx:id="pagination" styleClass="modern-pagination" VBox.vgrow="ALWAYS" />
+                                <Pagination fx:id="pagination" styleClass="modern-pagination" VBox.vgrow="SOMETIMES" />
                             </children>
                         </VBox>
                     </content>

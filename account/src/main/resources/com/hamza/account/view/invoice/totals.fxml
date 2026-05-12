@@ -78,7 +78,7 @@
                             <children>
                                 <VBox fx:id="box" styleClass="app-card">
                                     <children>
-                                        <GridPane fx:id="gridPane" hgap="10.0" minHeight="-Infinity" minWidth="-Infinity" vgap="10.0">
+                                        <GridPane fx:id="gridPane" hgap="10.0" minHeight="-Infinity" minWidth="-Infinity" vgap="15.0">
                                             <columnConstraints>
                                                 <ColumnConstraints hgrow="SOMETIMES" maxWidth="-Infinity" minWidth="10.0" />
                                                 <ColumnConstraints hgrow="SOMETIMES" maxWidth="-Infinity" minWidth="10.0" />
