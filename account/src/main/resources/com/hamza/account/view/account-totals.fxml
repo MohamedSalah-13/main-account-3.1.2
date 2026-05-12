@@ -16,34 +16,34 @@
 <?import javafx.scene.layout.VBox?>
 <?import javafx.scene.text.Text?>
 
-<StackPane fx:id="stackPane" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1">
+<StackPane fx:id="stackPane" styleClass="app-root" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1">
     <children>
-        <AnchorPane>
+        <AnchorPane styleClass="app-container">
             <children>
                 <VBox AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
                     <children>
                         <ToolBar>
                             <items>
-                                <Button fx:id="btnNew" mnemonicParsing="false" text="جديد" />
-                                <Button fx:id="btnRefresh" layoutX="10.0" layoutY="10.0" mnemonicParsing="false" text="تحديث" />
-                                <Button fx:id="btnPrint" layoutX="84.0" layoutY="10.0" mnemonicParsing="false" text="طباعة" />
+                                <Button fx:id="btnNew" mnemonicParsing="false" styleClass="app-neutral-button" text="جديد" />
+                                <Button fx:id="btnRefresh" layoutX="10.0" layoutY="10.0" mnemonicParsing="false" styleClass="app-neutral-button" text="تحديث" />
+                                <Button fx:id="btnPrint" layoutX="84.0" layoutY="10.0" mnemonicParsing="false" styleClass="app-neutral-button" text="طباعة" />
                                 <Separator orientation="VERTICAL" />
-                                <Button fx:id="btnExport" layoutX="158.0" layoutY="10.0" mnemonicParsing="false" text="تصدير" />
-                                <ToggleButton fx:id="btnSelected" mnemonicParsing="false" text="تحديد الكل" />
-                                <Button fx:id="btnShow" layoutX="107.0" layoutY="10.0" mnemonicParsing="false" text="كشف حساب" />
-                                <Button fx:id="btnPaidAll" layoutX="158.0" layoutY="10.0" mnemonicParsing="false" text="المدفوعات" />
+                                <Button fx:id="btnExport" layoutX="158.0" layoutY="10.0" mnemonicParsing="false" styleClass="pdf-button" text="تصدير" />
+                                <ToggleButton fx:id="btnSelected" mnemonicParsing="false" styleClass="app-neutral-button" text="تحديد الكل" />
+                                <Button fx:id="btnShow" layoutX="107.0" layoutY="10.0" mnemonicParsing="false" styleClass="app-primary-button" text="كشف حساب" />
+                                <Button fx:id="btnPaidAll" layoutX="158.0" layoutY="10.0" mnemonicParsing="false" styleClass="app-primary-button" text="المدفوعات" />
                             </items>
                         </ToolBar>
                         <ScrollPane fitToHeight="true" fitToWidth="true" VBox.vgrow="SOMETIMES">
                             <content>
-                                <VBox spacing="2.0">
+                                <VBox spacing="5.0">
                                     <children>
-                                        <VBox fx:id="box" styleClass="dashboard-tile">
+                                        <VBox fx:id="box" styleClass="app-card">
                                             <children>
                                     <HBox alignment="CENTER_LEFT" spacing="5.0">
                                        <children>
-                                                        <Label text="بحث" />
-                                                        <TextField fx:id="textSearch" promptText="بحث" />
+                                                        <Label styleClass="form-label" text="بحث" />
+                                                        <TextField fx:id="textSearch" promptText="بحث" HBox.hgrow="SOMETIMES" />
                                                           <CheckBox fx:id="checkByZero" mnemonicParsing="false" text="إظهار الرصيد صفر" />
                                        </children>
                                        <padding>
@@ -52,8 +52,8 @@
                                     </HBox>
                                             </children>
                                         </VBox>
-                                          <TableView fx:id="tableView" VBox.vgrow="SOMETIMES" />
-                                        <HBox alignment="CENTER_LEFT" spacing="10.0" styleClass="pane-box-last">
+                                          <TableView fx:id="tableView" styleClass="app-table" VBox.vgrow="SOMETIMES" />
+                                        <HBox alignment="CENTER_LEFT" spacing="10.0" styleClass="summary-card">
                                             <children>
                                                 <Label text="عدد" />
                                                 <Text fx:id="textCount" strokeType="OUTSIDE" strokeWidth="0.0" styleClass="text-sum" text="0.0" />

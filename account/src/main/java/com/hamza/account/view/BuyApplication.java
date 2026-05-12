@@ -18,8 +18,6 @@ import lombok.Getter;
 import java.util.HashMap;
 import java.util.Map;
 
-// ... الواردات (Imports)
-
 @Getter
 public class BuyApplication<T1 extends BasePurchasesAndSales, T2 extends BaseTotals, T3 extends BaseNames, T4 extends BaseAccount> extends Application {
 
