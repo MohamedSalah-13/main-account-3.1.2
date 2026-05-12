@@ -1,93 +1,81 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<?import javafx.scene.control.*?>
-<?import javafx.scene.layout.*?>
+<?import java.net.URL?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.CheckBox?>
+<?import javafx.scene.control.ScrollPane?>
+<?import javafx.scene.control.ToggleButton?>
+<?import javafx.scene.control.ToolBar?>
+<?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.layout.ColumnConstraints?>
+<?import javafx.scene.layout.GridPane?>
+<?import javafx.scene.layout.RowConstraints?>
+<?import javafx.scene.layout.StackPane?>
+<?import javafx.scene.layout.VBox?>
 <?import javafx.scene.text.Text?>
-<StackPane xmlns:fx="http://javafx.com/fxml/1" fx:id="stackPane" minHeight="-Infinity" minWidth="-Infinity"
-           xmlns="http://javafx.com/javafx/21">
+
+<StackPane fx:id="stackPane" minHeight="-Infinity" minWidth="-Infinity" styleClass="app-root" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1">
     <children>
-        <AnchorPane>
-            <children>
-                <VBox layoutX="5.0" layoutY="5.0" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0"
-                      AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
-                    <children>
-                        <ToolBar>
-                            <items>
-                                <Button fx:id="btnSave" mnemonicParsing="false" text="Save"/>
-                                <Button fx:id="btnClose" layoutX="10.0" layoutY="12.0" mnemonicParsing="false"
-                                        text="Close"/>
-                                <ToggleButton fx:id="btnSelected" mnemonicParsing="false" text="ToggleButton"/>
-                            </items>
-                        </ToolBar>
-                        <VBox styleClass="dashboard-tile">
+      <BorderPane styleClass="app-container">
+         <top>
+                  <ToolBar BorderPane.alignment="CENTER">
+                      <items>
+                          <Button fx:id="btnSave" mnemonicParsing="false" styleClass="app-primary-button" text="Save" />
+                          <Button fx:id="btnClose" layoutX="10.0" layoutY="12.0" mnemonicParsing="false" styleClass="app-danger-button" text="Close" />
+                          <ToggleButton fx:id="btnSelected" mnemonicParsing="false" styleClass="app-neutral-button" text="ToggleButton" />
+                      </items>
+                  </ToolBar>
+         </top>
+         <center>
+            <ScrollPane fitToHeight="true" fitToWidth="true" BorderPane.alignment="CENTER">
+               <content>
+                        <VBox styleClass="app-card">
                             <children>
-                                <GridPane styleClass="grid-pane-style">
+                                <GridPane hgap="10.0" minHeight="-Infinity" minWidth="-Infinity" vgap="10.0">
                                     <columnConstraints>
-                                        <ColumnConstraints hgrow="SOMETIMES" maxWidth="-Infinity" minWidth="10.0"
-                                                           prefWidth="300.0"/>
-                                        <ColumnConstraints hgrow="SOMETIMES" maxWidth="-Infinity" minWidth="10.0"
-                                                           prefWidth="300.0"/>
+                                        <ColumnConstraints hgrow="SOMETIMES" maxWidth="-Infinity" minWidth="10.0" prefWidth="300.0" />
+                                        <ColumnConstraints hgrow="SOMETIMES" maxWidth="-Infinity" minWidth="10.0" prefWidth="300.0" />
                                     </columnConstraints>
                                     <rowConstraints>
-                                        <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES"/>
-                                        <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES"/>
-                                        <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES"/>
-                                        <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES"/>
-                                        <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES"/>
-                                        <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES"/>
-                                        <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES"/>
-                                        <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES"/>
-                                        <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES"/>
-                                        <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES"/>
+                                        <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
+                                        <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
+                                        <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
+                                        <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
+                                        <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
+                                        <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
+                                        <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
+                                        <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
+                                        <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
+                                        <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
                                     </rowConstraints>
                                     <children>
-                                        <Text strokeType="OUTSIDE" strokeWidth="0.0" styleClass="text-explain"
-                                              text="المبيعات"/>
-                                        <CheckBox fx:id="deleteSalesReturn" mnemonicParsing="false"
-                                                  text="مرتجع المبيعات" GridPane.rowIndex="1"/>
-                                        <CheckBox fx:id="deleteSales" mnemonicParsing="false" text="المبيعات"
-                                                  GridPane.rowIndex="2"/>
-                                        <CheckBox fx:id="deleteCustomersAccount" mnemonicParsing="false"
-                                                  text="حسابات العملاء" GridPane.rowIndex="3"/>
-                                        <CheckBox fx:id="deleteCustomers" mnemonicParsing="false" text="العملاء"
-                                                  GridPane.rowIndex="4"/>
-                                        <Text strokeType="OUTSIDE" strokeWidth="0.0" styleClass="text-explain"
-                                              text="الاصناف" GridPane.columnIndex="1"/>
-                                        <CheckBox fx:id="deleteItems" mnemonicParsing="false" text="الاصناف"
-                                                  GridPane.columnIndex="1" GridPane.rowIndex="1"/>
-                                        <CheckBox fx:id="deleteStocks" mnemonicParsing="false" text="المخازن"
-                                                  GridPane.columnIndex="1" GridPane.rowIndex="2"/>
-                                        <CheckBox fx:id="deleteSubGroup" mnemonicParsing="false" text="مجموعات فرعية"
-                                                  GridPane.columnIndex="1" GridPane.rowIndex="3"/>
-                                        <CheckBox fx:id="deleteMainGroup" mnemonicParsing="false" text="مجموعات رئيسية"
-                                                  GridPane.columnIndex="1" GridPane.rowIndex="4"/>
-                                        <Text strokeType="OUTSIDE" strokeWidth="0.0" styleClass="text-explain"
-                                              text="المشتريات" GridPane.rowIndex="5"/>
-                                        <CheckBox fx:id="deletePurchaseReturn" mnemonicParsing="false"
-                                                  text="مرتجع المشتريات" GridPane.rowIndex="6"/>
-                                        <CheckBox fx:id="deletePurchase" mnemonicParsing="false" text="المشتريات"
-                                                  GridPane.rowIndex="7"/>
-                                        <CheckBox fx:id="deleteSuppliersAccount" mnemonicParsing="false"
-                                                  text="حسابات الموردين" GridPane.rowIndex="8"/>
-                                        <CheckBox fx:id="deleteSuppliers" mnemonicParsing="false" text="الموردين"
-                                                  GridPane.rowIndex="9"/>
-                                        <Text strokeType="OUTSIDE" strokeWidth="0.0" styleClass="text-explain"
-                                              text="أخرى" GridPane.columnIndex="1" GridPane.rowIndex="5"/>
-                                        <CheckBox fx:id="deleteExpenses" mnemonicParsing="false" text="المصروفات"
-                                                  GridPane.columnIndex="1" GridPane.rowIndex="6"/>
-                                        <CheckBox fx:id="deleteEmployees" mnemonicParsing="false" text="الموظفين"
-                                                  GridPane.columnIndex="1" GridPane.rowIndex="7"/>
-                                        <CheckBox fx:id="deleteProcesses" mnemonicParsing="false" text="العمليات"
-                                                  GridPane.columnIndex="1" GridPane.rowIndex="8"/>
-                                        <CheckBox fx:id="deleteUsers" mnemonicParsing="false" text="المستخدمين"
-                                                  GridPane.columnIndex="1" GridPane.rowIndex="9"/>
+                                        <Text strokeType="OUTSIDE" strokeWidth="0.0" styleClass="text-explain" text="المبيعات" />
+                                        <CheckBox fx:id="deleteSalesReturn" mnemonicParsing="false" text="مرتجع المبيعات" GridPane.rowIndex="1" />
+                                        <CheckBox fx:id="deleteSales" mnemonicParsing="false" text="المبيعات" GridPane.rowIndex="2" />
+                                        <CheckBox fx:id="deleteCustomersAccount" mnemonicParsing="false" text="حسابات العملاء" GridPane.rowIndex="3" />
+                                        <CheckBox fx:id="deleteCustomers" mnemonicParsing="false" text="العملاء" GridPane.rowIndex="4" />
+                                        <Text strokeType="OUTSIDE" strokeWidth="0.0" styleClass="text-explain" text="الاصناف" GridPane.columnIndex="1" />
+                                        <CheckBox fx:id="deleteItems" mnemonicParsing="false" text="الاصناف" GridPane.columnIndex="1" GridPane.rowIndex="1" />
+                                        <CheckBox fx:id="deleteStocks" mnemonicParsing="false" text="المخازن" GridPane.columnIndex="1" GridPane.rowIndex="2" />
+                                        <CheckBox fx:id="deleteSubGroup" mnemonicParsing="false" text="مجموعات فرعية" GridPane.columnIndex="1" GridPane.rowIndex="3" />
+                                        <CheckBox fx:id="deleteMainGroup" mnemonicParsing="false" text="مجموعات رئيسية" GridPane.columnIndex="1" GridPane.rowIndex="4" />
+                                        <Text strokeType="OUTSIDE" strokeWidth="0.0" styleClass="text-explain" text="المشتريات" GridPane.rowIndex="5" />
+                                        <CheckBox fx:id="deletePurchaseReturn" mnemonicParsing="false" text="مرتجع المشتريات" GridPane.rowIndex="6" />
+                                        <CheckBox fx:id="deletePurchase" mnemonicParsing="false" text="المشتريات" GridPane.rowIndex="7" />
+                                        <CheckBox fx:id="deleteSuppliersAccount" mnemonicParsing="false" text="حسابات الموردين" GridPane.rowIndex="8" />
+                                        <CheckBox fx:id="deleteSuppliers" mnemonicParsing="false" text="الموردين" GridPane.rowIndex="9" />
+                                        <Text strokeType="OUTSIDE" strokeWidth="0.0" styleClass="text-explain" text="أخرى" GridPane.columnIndex="1" GridPane.rowIndex="5" />
+                                        <CheckBox fx:id="deleteExpenses" mnemonicParsing="false" text="المصروفات" GridPane.columnIndex="1" GridPane.rowIndex="6" />
+                                        <CheckBox fx:id="deleteEmployees" mnemonicParsing="false" text="الموظفين" GridPane.columnIndex="1" GridPane.rowIndex="7" />
+                                        <CheckBox fx:id="deleteProcesses" mnemonicParsing="false" text="العمليات" GridPane.columnIndex="1" GridPane.rowIndex="8" />
+                                        <CheckBox fx:id="deleteUsers" mnemonicParsing="false" text="المستخدمين" GridPane.columnIndex="1" GridPane.rowIndex="9" />
                                     </children>
                                 </GridPane>
                             </children>
                         </VBox>
-                    </children>
-                </VBox>
-            </children>
-        </AnchorPane>
+               </content>
+            </ScrollPane>
+         </center>
+      </BorderPane>
     </children>
 </StackPane>

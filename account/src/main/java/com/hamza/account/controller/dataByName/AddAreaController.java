@@ -46,17 +46,18 @@ public class AddAreaController<T> extends VBox {
         Label labelCode = new Label(Setting_Language.WORD_CODE);
         Label labelName = new Label(Setting_Language.WORD_NAME);
         GridPane gridPane = new GridPane();
+        gridPane.setHgap(10);
+        gridPane.setVgap(10);
         gridPane.add(labelCode, 0, 0);
         gridPane.add(textCode, 1, 0);
         gridPane.add(labelName, 0, 1);
         gridPane.add(textName, 1, 1);
-        gridPane.getStyleClass().add("grid-pane-style");
         gridPane.getColumnConstraints().addAll(column1, column2);
         gridPane.minWidth(Region.USE_PREF_SIZE);
         getChildren().addAll(gridPane);
 
 //        this.setPadding(new Insets(10));
-        this.getStyleClass().add("dashboard-tile");
+        this.getStyleClass().add("app-root");
     }
 
     private List<? extends T> getCollection(AreaInterface<T> areaInterface) {
