@@ -4,34 +4,24 @@
 <?import javafx.scene.control.Label?>
 <?import javafx.scene.control.TableView?>
 <?import javafx.scene.control.TextField?>
-<?import javafx.scene.layout.*?>
-<StackPane xmlns:fx="http://javafx.com/fxml/1" fx:id="stackPane" prefHeight="404.0" prefWidth="516.0"
-           xmlns="http://javafx.com/javafx/21">
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.StackPane?>
+<?import javafx.scene.layout.VBox?>
+
+<StackPane fx:id="stackPane" prefHeight="484.0" prefWidth="616.0" styleClass="app-root" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1">
     <children>
-        <VBox>
+        <VBox spacing="5.0" styleClass="app-container">
             <children>
-                <HBox alignment="CENTER_LEFT" spacing="10.0" styleClass="dashboard-tile">
+                <HBox alignment="CENTER_LEFT" spacing="10.0" styleClass="app-card">
                     <children>
-                        <GridPane minHeight="-Infinity" minWidth="-Infinity" styleClass="grid-pane-style"
-                                  HBox.hgrow="SOMETIMES">
-                            <columnConstraints>
-                                <ColumnConstraints hgrow="SOMETIMES" maxWidth="-Infinity" minWidth="10.0"/>
-                                <ColumnConstraints hgrow="SOMETIMES" maxWidth="-Infinity" minWidth="10.0"/>
-                            </columnConstraints>
-                            <rowConstraints>
-                                <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES"/>
-                            </rowConstraints>
-                            <children>
-                                <Label fx:id="labelSearch" text="Search"/>
-                                <TextField fx:id="txtSearch" GridPane.columnIndex="1"/>
-                            </children>
-                        </GridPane>
+                          <Label fx:id="labelSearch" text="Search" />
+                          <TextField fx:id="txtSearch" styleClass="text-field" HBox.hgrow="SOMETIMES" />
                     </children>
                     <padding>
-                        <Insets bottom="5.0" left="5.0" right="5.0" top="5.0"/>
+                        <Insets bottom="5.0" left="5.0" right="5.0" top="5.0" />
                     </padding>
                 </HBox>
-                <TableView fx:id="tableView" VBox.vgrow="SOMETIMES"/>
+                <TableView fx:id="tableView" styleClass="app-table" VBox.vgrow="SOMETIMES" />
             </children>
         </VBox>
     </children>
