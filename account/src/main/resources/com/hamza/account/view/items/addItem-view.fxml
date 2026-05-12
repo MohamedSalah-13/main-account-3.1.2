@@ -1,34 +1,44 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<?import javafx.scene.control.*?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.CheckBox?>
+<?import javafx.scene.control.ComboBox?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.ScrollPane?>
+<?import javafx.scene.control.Separator?>
+<?import javafx.scene.control.Tab?>
+<?import javafx.scene.control.TabPane?>
+<?import javafx.scene.control.TableView?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.control.ToolBar?>
 <?import javafx.scene.image.ImageView?>
-<?import javafx.scene.layout.*?>
+<?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.layout.ColumnConstraints?>
+<?import javafx.scene.layout.GridPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.RowConstraints?>
+<?import javafx.scene.layout.StackPane?>
+<?import javafx.scene.layout.VBox?>
 
-<StackPane fx:id="stackPane"
-           nodeOrientation="RIGHT_TO_LEFT"
-           styleClass="app-root"
-
-           xmlns:fx="http://javafx.com/fxml/1"
-           xmlns="http://javafx.com/javafx/21">
+<StackPane fx:id="stackPane" nodeOrientation="RIGHT_TO_LEFT" styleClass="app-root" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1">
     <children>
-        <VBox fx:id="box" spacing="14.0" styleClass="app-container">
-            <children>
-                <ToolBar prefHeight="40.0" styleClass="items-toolbar">
+      <BorderPane styleClass="app-container">
+         <top>
+                <ToolBar prefHeight="40.0" styleClass="items-toolbar" BorderPane.alignment="CENTER">
                     <items>
-                        <Button fx:id="btnSave" mnemonicParsing="false" text="Save" styleClass="primary-button"/>
-                        <Button fx:id="btnSaveDuplicate" mnemonicParsing="false" text="Save &amp;" styleClass="success-button"/>
-                        <Button fx:id="btnBarcode" mnemonicParsing="false" text="barcode" styleClass="neutral-button"/>
-                        <Button fx:id="btnAddMainGroup" mnemonicParsing="false" text="مجموعة رئيسية" styleClass="neutral-button"/>
-                        <Button fx:id="btnAddSubGroup" mnemonicParsing="false" text="مجموعة فرعية" styleClass="neutral-button"/>
-                        <Separator orientation="VERTICAL"/>
-                        <Button fx:id="btnClose" cancelButton="true" mnemonicParsing="false" text="Close" styleClass="danger-button"/>
+                        <Button fx:id="btnSave" mnemonicParsing="false" styleClass="primary-button" text="Save" />
+                        <Button fx:id="btnSaveDuplicate" mnemonicParsing="false" styleClass="success-button" text="Save &amp;" />
+                        <Button fx:id="btnBarcode" mnemonicParsing="false" styleClass="neutral-button" text="barcode" />
+                        <Button fx:id="btnAddMainGroup" mnemonicParsing="false" styleClass="neutral-button" text="مجموعة رئيسية" />
+                        <Button fx:id="btnAddSubGroup" mnemonicParsing="false" styleClass="neutral-button" text="مجموعة فرعية" />
+                        <Separator orientation="VERTICAL" />
+                        <Button fx:id="btnClose" cancelButton="true" mnemonicParsing="false" styleClass="danger-button" text="Close" />
                     </items>
                 </ToolBar>
+         </top>
+         <center>
 
-                <ScrollPane fitToHeight="true"
-                            fitToWidth="true"
-                            styleClass="items-scroll-pane"
-                            VBox.vgrow="ALWAYS">
+                <ScrollPane fitToHeight="true" fitToWidth="true" styleClass="items-scroll-pane" BorderPane.alignment="CENTER">
                     <content>
                         <VBox spacing="14.0">
                             <children>
@@ -38,70 +48,68 @@
                                             <children>
                                                 <GridPane hgap="12.0" vgap="12.0">
                                                     <columnConstraints>
-                                                        <ColumnConstraints minWidth="120.0"/>
-                                                        <ColumnConstraints minWidth="230.0" hgrow="ALWAYS"/>
-                                                        <ColumnConstraints minWidth="120.0"/>
-                                                        <ColumnConstraints minWidth="230.0" hgrow="ALWAYS"/>
+                                                        <ColumnConstraints minWidth="120.0" />
+                                                        <ColumnConstraints hgrow="ALWAYS" minWidth="230.0" />
+                                                        <ColumnConstraints minWidth="120.0" />
+                                                        <ColumnConstraints hgrow="ALWAYS" minWidth="230.0" />
                                                     </columnConstraints>
 
                                                     <children>
-                                                        <Label fx:id="labelCode" text="Code" styleClass="form-label"/>
-                                                        <TextField fx:id="txtCode" disable="true" promptText="code" GridPane.columnIndex="1"/>
+                                                        <Label fx:id="labelCode" styleClass="form-label" text="Code" />
+                                                        <TextField fx:id="txtCode" disable="true" promptText="code" GridPane.columnIndex="1" />
 
-                                                        <Label fx:id="labelBarcode" text="Barcode" styleClass="form-label" GridPane.columnIndex="2"/>
-                                                        <TextField fx:id="txtBarcode" promptText="barcode" GridPane.columnIndex="3"/>
+                                                        <Label fx:id="labelBarcode" styleClass="form-label" text="Barcode" GridPane.columnIndex="2" />
+                                                        <TextField fx:id="txtBarcode" promptText="barcode" GridPane.columnIndex="3" />
 
-                                                        <Label fx:id="labelName" text="Name" styleClass="form-label" GridPane.rowIndex="1"/>
-                                                        <TextField fx:id="txtItemName" promptText="name" GridPane.columnIndex="1" GridPane.rowIndex="1"/>
+                                                        <Label fx:id="labelName" styleClass="form-label" text="Name" GridPane.rowIndex="1" />
+                                                        <TextField fx:id="txtItemName" promptText="name" GridPane.columnIndex="1" GridPane.rowIndex="1" />
 
-                                                        <Label fx:id="labelBuyPrice" text="Buy Price" styleClass="form-label" GridPane.columnIndex="2" GridPane.rowIndex="1"/>
-                                                        <TextField fx:id="txtBuyPrice" promptText="buy price" GridPane.columnIndex="3" GridPane.rowIndex="1"/>
+                                                        <Label fx:id="labelBuyPrice" styleClass="form-label" text="Buy Price" GridPane.columnIndex="2" GridPane.rowIndex="1" />
+                                                        <TextField fx:id="txtBuyPrice" promptText="buy price" GridPane.columnIndex="3" GridPane.rowIndex="1" />
 
-                                                        <Label fx:id="labelSelPrice" text="Sel Price" styleClass="form-label" GridPane.rowIndex="2"/>
-                                                        <TextField fx:id="txtSelPrice" promptText="sel price" GridPane.columnIndex="1" GridPane.rowIndex="2"/>
+                                                        <Label fx:id="labelSelPrice" styleClass="form-label" text="Sel Price" GridPane.rowIndex="2" />
+                                                        <TextField fx:id="txtSelPrice" promptText="sel price" GridPane.columnIndex="1" GridPane.rowIndex="2" />
 
-                                                        <Label fx:id="labelSelPrice2" text="Sel Price2" styleClass="form-label" GridPane.columnIndex="2" GridPane.rowIndex="2"/>
-                                                        <TextField fx:id="txtSelPrice2" promptText="price2" GridPane.columnIndex="3" GridPane.rowIndex="2"/>
+                                                        <Label fx:id="labelSelPrice2" styleClass="form-label" text="Sel Price2" GridPane.columnIndex="2" GridPane.rowIndex="2" />
+                                                        <TextField fx:id="txtSelPrice2" promptText="price2" GridPane.columnIndex="3" GridPane.rowIndex="2" />
 
-                                                        <Label fx:id="labelSelPrice3" text="Sel Price3" styleClass="form-label" GridPane.rowIndex="3"/>
-                                                        <TextField fx:id="txtSelPrice3" promptText="price3" GridPane.columnIndex="1" GridPane.rowIndex="3"/>
+                                                        <Label fx:id="labelSelPrice3" styleClass="form-label" text="Sel Price3" GridPane.rowIndex="3" />
+                                                        <TextField fx:id="txtSelPrice3" promptText="price3" GridPane.columnIndex="1" GridPane.rowIndex="3" />
 
-                                                        <Label fx:id="labelType" text="Type" styleClass="form-label" GridPane.columnIndex="2" GridPane.rowIndex="3"/>
-                                                        <ComboBox fx:id="comboType" maxWidth="1.7976931348623157E308" GridPane.columnIndex="3" GridPane.rowIndex="3"/>
+                                                        <Label fx:id="labelType" styleClass="form-label" text="Type" GridPane.columnIndex="2" GridPane.rowIndex="3" />
+                                                        <ComboBox fx:id="comboType" maxWidth="1.7976931348623157E308" GridPane.columnIndex="3" GridPane.rowIndex="3" />
 
-                                                        <Label fx:id="labelFirstBalance" text="First Balance" styleClass="form-label" GridPane.rowIndex="4"/>
-                                                        <TextField fx:id="txtBalance" promptText="balance" GridPane.columnIndex="1" GridPane.rowIndex="4"/>
+                                                        <Label fx:id="labelFirstBalance" styleClass="form-label" text="First Balance" GridPane.rowIndex="4" />
+                                                        <TextField fx:id="txtBalance" promptText="balance" GridPane.columnIndex="1" GridPane.rowIndex="4" />
 
-                                                        <Label fx:id="labelMiniQuantity" text="Mini Quantity" styleClass="form-label" GridPane.columnIndex="2" GridPane.rowIndex="4"/>
-                                                        <TextField fx:id="txtMiniQuantity" promptText="mini" GridPane.columnIndex="3" GridPane.rowIndex="4"/>
+                                                        <Label fx:id="labelMiniQuantity" styleClass="form-label" text="Mini Quantity" GridPane.columnIndex="2" GridPane.rowIndex="4" />
+                                                        <TextField fx:id="txtMiniQuantity" promptText="mini" GridPane.columnIndex="3" GridPane.rowIndex="4" />
 
-                                                        <Label fx:id="labelMainGroup" text="Main Group" styleClass="form-label" GridPane.rowIndex="5"/>
-                                                        <ComboBox fx:id="comboMainGroup" maxWidth="1.7976931348623157E308" GridPane.columnIndex="1" GridPane.rowIndex="5"/>
+                                                        <Label fx:id="labelMainGroup" styleClass="form-label" text="Main Group" GridPane.rowIndex="5" />
+                                                        <ComboBox fx:id="comboMainGroup" maxWidth="1.7976931348623157E308" GridPane.columnIndex="1" GridPane.rowIndex="5" />
 
-                                                        <Label fx:id="labelSupGroup" text="Sup Group" styleClass="form-label" GridPane.columnIndex="2" GridPane.rowIndex="5"/>
-                                                        <ComboBox fx:id="comboSupGroup" maxWidth="1.7976931348623157E308" GridPane.columnIndex="3" GridPane.rowIndex="5"/>
+                                                        <Label fx:id="labelSupGroup" styleClass="form-label" text="Sup Group" GridPane.columnIndex="2" GridPane.rowIndex="5" />
+                                                        <ComboBox fx:id="comboSupGroup" maxWidth="1.7976931348623157E308" GridPane.columnIndex="3" GridPane.rowIndex="5" />
                                                     </children>
+                                       <rowConstraints>
+                                          <RowConstraints />
+                                          <RowConstraints />
+                                          <RowConstraints />
+                                          <RowConstraints />
+                                          <RowConstraints />
+                                          <RowConstraints />
+                                       </rowConstraints>
                                                 </GridPane>
                                             </children>
                                         </VBox>
 
                                         <VBox minWidth="260.0" styleClass="image-card">
                                             <children>
-                                                <ImageView fx:id="imageAdd"
-                                                           fitHeight="150.0"
-                                                           fitWidth="200.0"
-                                                           pickOnBounds="true"
-                                                           preserveRatio="true"/>
+                                                <ImageView fx:id="imageAdd" fitHeight="150.0" fitWidth="200.0" pickOnBounds="true" preserveRatio="true" />
                                                 <HBox alignment="CENTER" spacing="8.0">
                                                     <children>
-                                                        <Button fx:id="btnAddImage"
-                                                                mnemonicParsing="false"
-                                                                text="إضافة صورة"
-                                                                styleClass="success-button"/>
-                                                        <Button fx:id="btnClearImage"
-                                                                mnemonicParsing="false"
-                                                                text="حذف"
-                                                                styleClass="danger-button"/>
+                                                        <Button fx:id="btnAddImage" mnemonicParsing="false" styleClass="success-button" text="إضافة صورة" />
+                                                        <Button fx:id="btnClearImage" mnemonicParsing="false" styleClass="danger-button" text="حذف" />
                                                     </children>
                                                 </HBox>
                                             </children>
@@ -109,10 +117,7 @@
                                     </children>
                                 </HBox>
 
-                                <TabPane fx:id="tabPane"
-                                         tabClosingPolicy="UNAVAILABLE"
-                                         styleClass="items-tab-pane"
-                                         VBox.vgrow="ALWAYS">
+                                <TabPane fx:id="tabPane" styleClass="items-tab-pane" tabClosingPolicy="UNAVAILABLE" VBox.vgrow="ALWAYS">
                                     <tabs>
                                         <Tab text="الوحدات">
                                             <content>
@@ -120,36 +125,31 @@
                                                     <children>
                                                         <GridPane hgap="12.0" vgap="12.0">
                                                             <columnConstraints>
-                                                                <ColumnConstraints minWidth="120.0"/>
-                                                                <ColumnConstraints minWidth="220.0" hgrow="ALWAYS"/>
-                                                                <ColumnConstraints minWidth="100.0"/>
-                                                                <ColumnConstraints minWidth="180.0"/>
+                                                                <ColumnConstraints minWidth="120.0" />
+                                                                <ColumnConstraints hgrow="ALWAYS" minWidth="220.0" />
+                                                                <ColumnConstraints minWidth="100.0" />
+                                                                <ColumnConstraints minWidth="180.0" />
                                                             </columnConstraints>
 
                                                             <children>
-                                                                <Label text="الوحدة الكبرى" styleClass="form-label"/>
-                                                                <ComboBox fx:id="comboOtherTypes"
-                                                                          maxWidth="1.7976931348623157E308"
-                                                                          GridPane.columnIndex="1"/>
+                                                                <Label styleClass="form-label" text="الوحدة الكبرى" />
+                                                                <ComboBox fx:id="comboOtherTypes" maxWidth="1.7976931348623157E308" GridPane.columnIndex="1" />
 
-                                                                <Label text="الكمية" styleClass="form-label" GridPane.columnIndex="2"/>
-                                                                <TextField fx:id="textUnitQuantity" prefWidth="80.0" GridPane.columnIndex="3"/>
+                                                                <Label styleClass="form-label" text="الكمية" GridPane.columnIndex="2" />
+                                                                <TextField fx:id="textUnitQuantity" prefWidth="80.0" GridPane.columnIndex="3" />
 
-                                                                <Label text="الباركود" styleClass="form-label" GridPane.rowIndex="1"/>
-                                                                <TextField fx:id="textUnitBarcode" GridPane.columnIndex="1" GridPane.rowIndex="1"/>
+                                                                <Label styleClass="form-label" text="الباركود" GridPane.rowIndex="1" />
+                                                                <TextField fx:id="textUnitBarcode" GridPane.columnIndex="1" GridPane.rowIndex="1" />
 
-                                                                <Button fx:id="btnAdd"
-                                                                        mnemonicParsing="false"
-                                                                        text="إضافة"
-                                                                        styleClass="primary-button"
-                                                                        GridPane.columnIndex="2"
-                                                                        GridPane.rowIndex="1"/>
+                                                                <Button fx:id="btnAdd" mnemonicParsing="false" styleClass="primary-button" text="إضافة" GridPane.columnIndex="2" GridPane.rowIndex="1" />
                                                             </children>
+                                             <rowConstraints>
+                                                <RowConstraints />
+                                                <RowConstraints />
+                                             </rowConstraints>
                                                         </GridPane>
 
-                                                        <TableView fx:id="tableUnits"
-                                                                   styleClass="app-table"
-                                                                   VBox.vgrow="ALWAYS"/>
+                                                        <TableView fx:id="tableUnits" styleClass="app-table" VBox.vgrow="ALWAYS" />
                                                     </children>
                                                 </VBox>
                                             </content>
@@ -161,54 +161,33 @@
                                                     <children>
                                                         <HBox spacing="14.0">
                                                             <children>
-                                                                <CheckBox fx:id="checkItemActive"
-                                                                          minWidth="-Infinity"
-                                                                          mnemonicParsing="false"
-                                                                          text="صنف مفعل"/>
-                                                                <CheckBox fx:id="checkItemActive1"
-                                                                          minWidth="-Infinity"
-                                                                          mnemonicParsing="false"
-                                                                          text="صنف له وزن"/>
+                                                                <CheckBox fx:id="checkItemActive" minWidth="-Infinity" mnemonicParsing="false" text="صنف مفعل" />
+                                                                <CheckBox fx:id="checkItemActive1" minWidth="-Infinity" mnemonicParsing="false" text="صنف له وزن" />
                                                             </children>
                                                         </HBox>
 
-                                                        <CheckBox fx:id="checkItemValidate"
-                                                                  disable="true"
-                                                                  minWidth="-Infinity"
-                                                                  mnemonicParsing="false"
-                                                                  text="تفعيل تاريخ الصلاحية"/>
+                                                        <CheckBox fx:id="checkItemValidate" disable="true" minWidth="-Infinity" mnemonicParsing="false" text="تفعيل تاريخ الصلاحية" />
 
-                                                        <GridPane fx:id="gridValidate"
-                                                                  disable="true"
-                                                                  hgap="12.0"
-                                                                  vgap="12.0">
+                                                        <GridPane fx:id="gridValidate" disable="true" hgap="12.0" vgap="12.0">
                                                             <columnConstraints>
-                                                                <ColumnConstraints minWidth="120.0"/>
-                                                                <ColumnConstraints minWidth="120.0"/>
-                                                                <ColumnConstraints minWidth="220.0"/>
+                                                                <ColumnConstraints minWidth="120.0" />
+                                                                <ColumnConstraints minWidth="120.0" />
+                                                                <ColumnConstraints minWidth="220.0" />
                                                             </columnConstraints>
 
                                                             <children>
-                                                                <Label text="بعد" styleClass="form-label"/>
-                                                                <TextField fx:id="textDaysValidate"
-                                                                           text="0"
-                                                                           GridPane.columnIndex="1"/>
-                                                                <Label text="من تاريخ الإنتاج"
-                                                                       styleClass="form-label"
-                                                                       GridPane.columnIndex="2"/>
+                                                                <Label styleClass="form-label" text="بعد" />
+                                                                <TextField fx:id="textDaysValidate" text="0" GridPane.columnIndex="1" />
+                                                                <Label styleClass="form-label" text="من تاريخ الإنتاج" GridPane.columnIndex="2" />
 
-                                                                <Label text="التنبيه قبل"
-                                                                       styleClass="form-label"
-                                                                       GridPane.rowIndex="1"/>
-                                                                <TextField fx:id="textAlertBefore"
-                                                                           text="0"
-                                                                           GridPane.columnIndex="1"
-                                                                           GridPane.rowIndex="1"/>
-                                                                <Label text="يوم من تاريخ الصلاحية"
-                                                                       styleClass="form-label"
-                                                                       GridPane.columnIndex="2"
-                                                                       GridPane.rowIndex="1"/>
+                                                                <Label styleClass="form-label" text="التنبيه قبل" GridPane.rowIndex="1" />
+                                                                <TextField fx:id="textAlertBefore" text="0" GridPane.columnIndex="1" GridPane.rowIndex="1" />
+                                                                <Label styleClass="form-label" text="يوم من تاريخ الصلاحية" GridPane.columnIndex="2" GridPane.rowIndex="1" />
                                                             </children>
+                                             <rowConstraints>
+                                                <RowConstraints />
+                                                <RowConstraints />
+                                             </rowConstraints>
                                                         </GridPane>
                                                     </children>
                                                 </VBox>
@@ -220,7 +199,7 @@
                         </VBox>
                     </content>
                 </ScrollPane>
-            </children>
-        </VBox>
+         </center>
+      </BorderPane>
     </children>
 </StackPane>

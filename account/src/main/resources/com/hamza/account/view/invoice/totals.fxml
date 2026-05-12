@@ -25,9 +25,9 @@
 <?import javafx.scene.layout.VBox?>
 <?import javafx.scene.text.Text?>
 
-<StackPane fx:id="stackPane" prefHeight="744.0" prefWidth="723.0" styleClass="app-root" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1">
+<StackPane fx:id="stackPane" styleClass="app-root" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1">
     <children>
-      <BorderPane prefHeight="200.0" prefWidth="200.0" styleClass="app-container">
+      <BorderPane styleClass="app-container">
          <top>
                 <ToolBar fx:id="toolBar" BorderPane.alignment="CENTER">
                     <items>
@@ -78,7 +78,7 @@
                             <children>
                                 <VBox fx:id="box" styleClass="app-card">
                                     <children>
-                                        <GridPane fx:id="gridPane" hgap="20.0" vgap="20.0">
+                                        <GridPane fx:id="gridPane" hgap="10.0" minHeight="-Infinity" minWidth="-Infinity" vgap="10.0">
                                             <columnConstraints>
                                                 <ColumnConstraints hgrow="SOMETIMES" maxWidth="-Infinity" minWidth="10.0" />
                                                 <ColumnConstraints hgrow="SOMETIMES" maxWidth="-Infinity" minWidth="10.0" />
@@ -107,7 +107,7 @@
                                                         </RadioButton>
                                                         <RadioButton fx:id="radioCash" layoutX="10.0" layoutY="10.0" mnemonicParsing="false" text="نقدا" toggleGroup="$group" />
                                                         <RadioButton fx:id="radioDeffer" layoutX="97.0" layoutY="10.0" mnemonicParsing="false" text="أجل" toggleGroup="$group" />
-                                                        <Button fx:id="btnSearch" minWidth="-Infinity" mnemonicParsing="false" text="Search" />
+                                                        <Button fx:id="btnSearch" minWidth="-Infinity" mnemonicParsing="false" styleClass="app-neutral-button" text="Search" />
                                                     </children>
                                                 </HBox>
                                                 <Label fx:id="labelTextSearch" styleClass="form-label" text="Search" />
