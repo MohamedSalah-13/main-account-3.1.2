@@ -11,10 +11,23 @@ import javafx.scene.image.Image;
 import javafx.stage.Stage;
 
 import java.awt.*;
+import java.util.ArrayList;
+import java.util.List;
 
 public class AlertSetting extends Alert {
 
-    public static String stylesheetPath;
+    private static final List<String> stylesheetPaths = new ArrayList<>();
+
+    public static void setStylesheets(String... stylesheets) {
+        stylesheetPaths.clear();
+        if (stylesheets == null) return;
+
+        for (String stylesheet : stylesheets) {
+            if (stylesheet != null && !stylesheet.isBlank()) {
+                stylesheetPaths.add(stylesheet);
+            }
+        }
+    }
 
     public AlertSetting(AlertType alertType, String message, String header, String title) {
         super(alertType);
@@ -30,19 +43,15 @@ public class AlertSetting extends Alert {
     private void initializeAlert(String message, String header, String title, boolean b) {
         var dialogPane = getDialogPane();
 
-        if (stylesheetPath != null)
-            dialogPane.getStylesheets().add(stylesheetPath);
+        dialogPane.getStylesheets().setAll(stylesheetPaths);
 
-        dialogPane.getStyleClass().add("dashboard-tile");
+        dialogPane.getStyleClass().add("app-root");
         dialogPane.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
         setContentText(message);
         setHeaderText(header);
         setTitle(title);
         returnImage(this);
 
-//        var cancel = ButtonType.CANCEL;
-//        Button okButton = (Button) getDialogPane().lookupButton(cancel);
-//        okButton.setId("btnClose");
         LanguageManager languageManager = LanguageManager.getInstance();
 
         buttonOk(this, ButtonType.OK, languageManager.getString("ok"));

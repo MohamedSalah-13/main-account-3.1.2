@@ -6,7 +6,6 @@ import com.hamza.account.config.ThemeManager;
 import com.hamza.account.controller.others.ServiceRegistry;
 import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.service.*;
-import com.hamza.controlsfx.alert.AlertSetting;
 import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.util.FontsSetting;
@@ -31,7 +30,8 @@ public class DownLoadApplication extends Application {
         // change language
         connectionToDatabase = new ConnectionToDatabase();
         daoFactory = getDaoFactory();
-        AlertSetting.stylesheetPath = ThemeManager.getStylesheet();
+//        AlertSetting.setStylesheets(ThemeManager.getStylesheet());
+        ThemeManager.initialize();
 
         System.out.println(1);
         ServiceRegistry.register(ItemsService.class, new ItemsService(daoFactory));

@@ -1,6 +1,7 @@
 package com.hamza.account.config;
 
 import com.hamza.account.Main;
+import com.hamza.controlsfx.alert.AlertSetting;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 
@@ -22,6 +23,12 @@ public final class ThemeManager {
     private ThemeManager() {
     }
 
+    public static void initialize() {
+        applyAlertTheme();
+    }
+    private static void applyAlertTheme() {
+        AlertSetting.setStylesheets(getBaseStylesheet(), getStylesheet());
+    }
     public static Theme getCurrentTheme() {
         String name = PREFS.get(KEY_THEME, Theme.LIGHT.name());
         try {

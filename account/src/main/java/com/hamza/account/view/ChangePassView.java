@@ -7,6 +7,7 @@ import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.interfaceData.ChangePassInt;
 import com.hamza.controlsfx.view.ChangePassApplication;
 import javafx.application.Platform;
+import javafx.scene.Scene;
 import lombok.extern.log4j.Log4j2;
 
 @Log4j2
@@ -29,6 +30,8 @@ public class ChangePassView {
         var changePassApplication = new ChangePassApplication(changePassInt);
 
         var dialogApplication = changePassApplication.getDialogApplication();
+        var scene = dialogApplication.getDialogPane().getScene();
+        ThemeManager.apply(scene);
         dialogApplication.getDialogPane().getStylesheets().add(ThemeManager.getStylesheet());
         var b = dialogApplication.showAndWait();
         if (b.isPresent() && b.get()) {
