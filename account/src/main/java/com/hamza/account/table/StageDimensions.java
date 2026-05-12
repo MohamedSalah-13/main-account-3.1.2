@@ -23,8 +23,8 @@ public class StageDimensions {
         final String yKey = baseKey + "y";
 
         // Enforce constraints first
-        stage.setMinWidth(WIDTH);
-        stage.setMinHeight(HEIGHT);
+//        stage.setMinWidth(WIDTH);
+//        stage.setMinHeight(HEIGHT);
         stage.setResizable(true);
         // Apply stored values, falling back to defaults
         applyInitialBounds(stage, prefs, widthKey, heightKey, xKey, yKey);

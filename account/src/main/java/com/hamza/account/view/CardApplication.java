@@ -26,8 +26,8 @@ public class CardApplication extends Application {
         stage.setScene(scene);
         stage.setTitle(Setting_Language.WORD_CARD_ITEM);
         stage.getIcons().add(new javafx.scene.image.Image(new Image_Setting().itemWhite));
-        stage.setResizable(true);
         stage.initModality(javafx.stage.Modality.APPLICATION_MODAL);
+        stage.setResizable(true);
         stage.show();
         StageDimensions.stageDimensions(getClass(), stage);
     }

@@ -36,7 +36,7 @@
                             <children>
                                 <VBox styleClass="app-card">
                                     <children>
-                                        <GridPane hgap="10.0" vgap="10.0" VBox.vgrow="SOMETIMES">
+                                        <GridPane hgap="10.0" minHeight="-Infinity" minWidth="-Infinity" vgap="15.0" VBox.vgrow="SOMETIMES">
                                             <columnConstraints>
                                                 <ColumnConstraints hgrow="SOMETIMES" maxWidth="-Infinity" minWidth="10.0" />
                                                 <ColumnConstraints hgrow="SOMETIMES" maxWidth="-Infinity" minWidth="10.0" />
@@ -65,7 +65,7 @@
                                         </GridPane>
                                     </children>
                                 </VBox>
-                              <TableView fx:id="tableView" VBox.vgrow="SOMETIMES" />
+                              <TableView fx:id="tableView" minHeight="-Infinity" minWidth="-Infinity" prefHeight="250.0" VBox.vgrow="SOMETIMES" />
                             </children>
                         </VBox>
                </content>

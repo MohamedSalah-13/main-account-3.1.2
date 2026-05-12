@@ -4,6 +4,7 @@
 <?import javafx.scene.control.ComboBox?>
 <?import javafx.scene.control.DatePicker?>
 <?import javafx.scene.control.Label?>
+<?import javafx.scene.control.ScrollPane?>
 <?import javafx.scene.control.TableView?>
 <?import javafx.scene.control.TextField?>
 <?import javafx.scene.layout.AnchorPane?>
@@ -20,20 +21,20 @@
       <BorderPane styleClass="app-container" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
          <bottom>
 
-                <HBox alignment="CENTER_LEFT" spacing="8.0" styleClass="summary-bar" BorderPane.alignment="CENTER">
+                <HBox alignment="CENTER_LEFT" spacing="5.0" styleClass="summary-bar" BorderPane.alignment="CENTER">
                     <children>
-                        <GridPane hgap="10.0" vgap="8.0" HBox.hgrow="ALWAYS">
+                        <GridPane hgap="10.0" minHeight="-Infinity" minWidth="-Infinity" vgap="10.0" HBox.hgrow="ALWAYS">
                             <columnConstraints>
-                                <ColumnConstraints minWidth="110.0" />
-                                <ColumnConstraints minWidth="90.0" />
-                                <ColumnConstraints minWidth="110.0" />
-                                <ColumnConstraints minWidth="90.0" />
-                                <ColumnConstraints minWidth="150.0" />
-                                <ColumnConstraints minWidth="90.0" />
-                                <ColumnConstraints minWidth="150.0" />
-                                <ColumnConstraints minWidth="90.0" />
-                                <ColumnConstraints minWidth="110.0" />
-                                <ColumnConstraints minWidth="100.0" />
+                                <ColumnConstraints maxWidth="-Infinity" />
+                                <ColumnConstraints maxWidth="-Infinity" />
+                                <ColumnConstraints maxWidth="-Infinity" />
+                                <ColumnConstraints maxWidth="-Infinity" />
+                                <ColumnConstraints maxWidth="-Infinity" />
+                                <ColumnConstraints maxWidth="-Infinity" />
+                                <ColumnConstraints maxWidth="-Infinity" />
+                                <ColumnConstraints maxWidth="-Infinity" />
+                                <ColumnConstraints maxWidth="-Infinity" />
+                                <ColumnConstraints maxWidth="-Infinity" />
                             </columnConstraints>
 
                             <children>
@@ -76,53 +77,57 @@
                 </HBox>
          </bottom>
          <center>
-              <VBox fx:id="box" spacing="14.0" BorderPane.alignment="CENTER">
-                  <children>
-                      <VBox styleClass="app-card">
-                          <children>
-                              <GridPane hgap="12.0" vgap="12.0">
-                                  <columnConstraints>
-                                      <ColumnConstraints minWidth="110.0" />
-                                      <ColumnConstraints hgrow="ALWAYS" minWidth="220.0" />
-                                      <ColumnConstraints minWidth="110.0" />
-                                      <ColumnConstraints hgrow="ALWAYS" minWidth="220.0" />
-                                  </columnConstraints>
-      
-                                  <children>
-                                      <Label fx:id="labelName" styleClass="form-label" text="Name" />
-                                      <TextField fx:id="textName" editable="false" GridPane.columnIndex="1" />
-      
-                                      <Label fx:id="labelType" styleClass="form-label" text="Type" GridPane.columnIndex="2" />
-                                      <ComboBox fx:id="comboBox" maxWidth="1.7976931348623157E308" GridPane.columnIndex="3" />
-      
-                                      <Label fx:id="labelFrom" styleClass="form-label" text="From" GridPane.rowIndex="1" />
-                                      <DatePicker fx:id="dateFrom" editable="false" maxWidth="1.7976931348623157E308" GridPane.columnIndex="1" GridPane.rowIndex="1" />
-      
-                                      <Label fx:id="labelTo" styleClass="form-label" text="To" GridPane.columnIndex="2" GridPane.rowIndex="1" />
-                                      <DatePicker fx:id="dateTo" editable="false" maxWidth="1.7976931348623157E308" GridPane.columnIndex="3" GridPane.rowIndex="1" />
-      
-                                      <Label styleClass="form-label" text="الوحدة الأساسية" GridPane.rowIndex="2" />
-                                      <Text fx:id="textType" strokeType="OUTSIDE" strokeWidth="0.0" styleClass="summary-value" text="قطعة" GridPane.columnIndex="1" GridPane.rowIndex="2" />
-      
-                                      <HBox alignment="CENTER_LEFT" spacing="8.0" GridPane.columnIndex="3" GridPane.rowIndex="2">
-                                          <children>
-                                              <Button fx:id="btnSearch" mnemonicParsing="false" styleClass="primary-button" text="Search" />
-                                              <Button fx:id="btnPrint" mnemonicParsing="false" styleClass="neutral-button" text="Print" />
-                                          </children>
-                                      </HBox>
-                                  </children>
-                           <rowConstraints>
-                              <RowConstraints />
-                              <RowConstraints />
-                              <RowConstraints />
-                           </rowConstraints>
-                              </GridPane>
-                          </children>
-                      </VBox>
-      
-                      <TableView fx:id="tableView" styleClass="app-table" VBox.vgrow="ALWAYS" />
-                  </children>
-              </VBox>
+            <ScrollPane fitToHeight="true" fitToWidth="true" BorderPane.alignment="CENTER">
+               <content>
+                    <VBox fx:id="box" spacing="5.0">
+                        <children>
+                            <VBox styleClass="app-card">
+                                <children>
+                                    <GridPane hgap="10.0" minHeight="-Infinity" minWidth="-Infinity" vgap="15.0">
+                                        <columnConstraints>
+                                            <ColumnConstraints maxWidth="-Infinity" />
+                                            <ColumnConstraints hgrow="ALWAYS" maxWidth="-Infinity" minWidth="300.0" />
+                                            <ColumnConstraints maxWidth="-Infinity" />
+                                            <ColumnConstraints hgrow="ALWAYS" maxWidth="-Infinity" minWidth="300.0" />
+                                        </columnConstraints>
+            
+                                        <children>
+                                            <Label fx:id="labelName" styleClass="form-label" text="Name" />
+                                            <TextField fx:id="textName" editable="false" GridPane.columnIndex="1" />
+            
+                                            <Label fx:id="labelType" styleClass="form-label" text="Type" GridPane.columnIndex="2" />
+                                            <ComboBox fx:id="comboBox" maxWidth="1.7976931348623157E308" GridPane.columnIndex="3" />
+            
+                                            <Label fx:id="labelFrom" styleClass="form-label" text="From" GridPane.rowIndex="1" />
+                                            <DatePicker fx:id="dateFrom" editable="false" maxWidth="1.7976931348623157E308" GridPane.columnIndex="1" GridPane.rowIndex="1" />
+            
+                                            <Label fx:id="labelTo" styleClass="form-label" text="To" GridPane.columnIndex="2" GridPane.rowIndex="1" />
+                                            <DatePicker fx:id="dateTo" editable="false" maxWidth="1.7976931348623157E308" GridPane.columnIndex="3" GridPane.rowIndex="1" />
+            
+                                            <Label styleClass="form-label" text="الوحدة الأساسية" GridPane.rowIndex="2" />
+                                            <Text fx:id="textType" strokeType="OUTSIDE" strokeWidth="0.0" styleClass="summary-value" text="قطعة" GridPane.columnIndex="1" GridPane.rowIndex="2" />
+            
+                                            <HBox alignment="CENTER_LEFT" spacing="8.0" GridPane.columnIndex="3" GridPane.rowIndex="2">
+                                                <children>
+                                                    <Button fx:id="btnSearch" mnemonicParsing="false" styleClass="primary-button" text="Search" />
+                                                    <Button fx:id="btnPrint" mnemonicParsing="false" styleClass="neutral-button" text="Print" />
+                                                </children>
+                                            </HBox>
+                                        </children>
+                                 <rowConstraints>
+                                    <RowConstraints />
+                                    <RowConstraints />
+                                    <RowConstraints />
+                                 </rowConstraints>
+                                    </GridPane>
+                                </children>
+                            </VBox>
+            
+                            <TableView fx:id="tableView" minHeight="-Infinity" minWidth="-Infinity" prefHeight="250.0" styleClass="app-table" VBox.vgrow="ALWAYS" />
+                        </children>
+                    </VBox>
+               </content>
+            </ScrollPane>
          </center>
       </BorderPane>
     </children>
