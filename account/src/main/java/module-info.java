@@ -142,10 +142,6 @@ module com.hamza.account {
     opens com.hamza.account.controller.pos to javafx.fxml;
     exports com.hamza.account.features.key_setting;
     opens com.hamza.account.features.key_setting to javafx.fxml;
-    exports com.hamza.account.view.calculator;
-    exports com.hamza.account.controller.calculator;
-    opens com.hamza.account.view.calculator to javafx.fxml;
-    opens com.hamza.account.controller.calculator to javafx.fxml;
     exports com.hamza.account.features.export;
     opens com.hamza.account.features.export;
 }

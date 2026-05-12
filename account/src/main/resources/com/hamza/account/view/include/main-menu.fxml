@@ -170,11 +170,6 @@
             </accelerator>
         </MenuItem>
         <MenuItem fx:id="menuItemBackup" mnemonicParsing="false" text="Backup"/>
-        <MenuItem fx:id="menuItemCalculator" mnemonicParsing="false" text="Calculator">
-            <accelerator>
-                <KeyCodeCombination alt="UP" code="C" control="DOWN" meta="UP" shift="UP" shortcut="UP"/>
-            </accelerator>
-        </MenuItem>
         <MenuItem fx:id="menuItemShiftReports" text="إدارة الورديات"/>
         <SeparatorMenuItem mnemonicParsing="false"/>
         <MenuItem fx:id="menuItemCheckUpdate" mnemonicParsing="false" text="التحديث"/>

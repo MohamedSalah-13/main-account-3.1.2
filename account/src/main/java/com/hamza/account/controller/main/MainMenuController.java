@@ -40,7 +40,7 @@ public class MainMenuController {
     @FXML
     private MenuItem menuItemAddExpenseName, menuItemExpensesName, menuItemAddExpense, menuItemAllExpenses, menuItemExpensesDetails;
     @FXML
-    private MenuItem menuItemHome, menuItemSettingUsers, menuItemDeleteData, menuItemBackup, menuItemCalculator, menuItemCheckUpdate, menuItemRegister, menuItemAbout, menuItemClose, menuFontColor, menuNumber;
+    private MenuItem menuItemHome, menuItemSettingUsers, menuItemDeleteData, menuItemBackup, menuItemCheckUpdate, menuItemRegister, menuItemAbout, menuItemClose, menuFontColor, menuNumber;
     @FXML
     private MenuItem menuItemReportSalesByYear, menuItemReportPurchaseByYear;
     @FXML
@@ -58,7 +58,6 @@ public class MainMenuController {
         // disable menu
         menuAccounts.setVisible(false);
         menuExpenses.setVisible(false);
-        menuItemCalculator.setVisible(false);
         menuFontColor.setVisible(false);
         menuNumber.setVisible(false);
         menuItemRegister.setVisible(false);
@@ -83,7 +82,6 @@ public class MainMenuController {
         menuFontColor.setText("Font and Color Settings");
         menuFontColor.setOnAction(event -> openFontColorDialog());
         menuNumber.setOnAction(event -> new NumberGenerator().start(new Stage()));
-        menuItemCalculator.setOnAction(event -> openCalculator());
 
     }
 
@@ -97,14 +95,6 @@ public class MainMenuController {
         }
     }
 
-    private void openCalculator() {
-        try {
-            com.hamza.account.view.calculator.CalculatorApplication calculatorApp = new com.hamza.account.view.calculator.CalculatorApplication();
-            calculatorApp.openCalculator();
-        } catch (Exception e) {
-            AllAlerts.alertError("Error opening calculator: " + e.getMessage());
-        }
-    }
 
     private void setGraphicMenuItems() {
         var images = new Image_Setting();
@@ -112,7 +102,6 @@ public class MainMenuController {
         menuItemSettingUsers.setGraphic(createIcon(images.setting));
         menuItemDeleteData.setGraphic(createIcon(images.cancel));
         menuItemBackup.setGraphic(createIcon(images.database));
-        menuItemCalculator.setGraphic(createIcon(images.calcWhite));
         menuItemCheckUpdate.setGraphic(createIcon(images.update));
         menuItemClose.setGraphic(createIcon(images.exit));
         menuItemRegister.setGraphic(createIcon(images.option));

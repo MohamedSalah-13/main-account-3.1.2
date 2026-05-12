@@ -1,29 +1,46 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <?import javafx.geometry.Insets?>
-<?import javafx.scene.control.*?>
-<?import javafx.scene.layout.*?>
-<?import javafx.scene.text.*?>
-<StackPane xmlns:fx="http://javafx.com/fxml/1" fx:id="stackPane" xmlns="http://javafx.com/javafx/21">
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.CheckBox?>
+<?import javafx.scene.control.ComboBox?>
+<?import javafx.scene.control.DatePicker?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.MenuButton?>
+<?import javafx.scene.control.MenuItem?>
+<?import javafx.scene.control.RadioButton?>
+<?import javafx.scene.control.ScrollPane?>
+<?import javafx.scene.control.Separator?>
+<?import javafx.scene.control.TableView?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.control.ToggleButton?>
+<?import javafx.scene.control.ToggleGroup?>
+<?import javafx.scene.control.ToolBar?>
+<?import javafx.scene.layout.ColumnConstraints?>
+<?import javafx.scene.layout.GridPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.RowConstraints?>
+<?import javafx.scene.layout.StackPane?>
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.text.Text?>
+
+<StackPane fx:id="stackPane" styleClass="app-root" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1">
     <children>
-        <VBox>
+        <VBox styleClass="app-container">
             <children>
-                <ToolBar fx:id="toolBar">
+                <ToolBar fx:id="toolBar" styleClass="app-toolbar">
                     <items>
-                        <Button fx:id="btnUpdate" mnemonicParsing="false" text="Update"/>
-                        <Button fx:id="btnDelete" mnemonicParsing="false" text="Delete"/>
-                        <Button fx:id="btnRefresh" mnemonicParsing="false" text="Refresh"/>
-                        <Separator orientation="VERTICAL"/>
-                        <Button fx:id="btnShowInvoice" layoutX="131.0" layoutY="12.0" mnemonicParsing="false"
-                                text="Show"/>
-                        <Button fx:id="btnToExcel" layoutX="79.0" layoutY="12.0" mnemonicParsing="false"
-                                text="Export Excel"/>
-                        <ToggleButton fx:id="btnSelected" mnemonicParsing="false" text="Select All"/>
-                        <MenuButton fx:id="menuButton" mnemonicParsing="false" styleClass="menu-button-items"
-                                    text="طباعة">
+                        <Button fx:id="btnUpdate" mnemonicParsing="false" text="Update" />
+                        <Button fx:id="btnDelete" mnemonicParsing="false" text="Delete" />
+                        <Button fx:id="btnRefresh" mnemonicParsing="false" text="Refresh" />
+                        <Separator orientation="VERTICAL" />
+                        <Button fx:id="btnShowInvoice" layoutX="131.0" layoutY="12.0" mnemonicParsing="false" text="Show" />
+                        <Button fx:id="btnToExcel" layoutX="79.0" layoutY="12.0" mnemonicParsing="false" text="Export Excel" />
+                        <ToggleButton fx:id="btnSelected" mnemonicParsing="false" text="Select All" />
+                        <MenuButton fx:id="menuButton" mnemonicParsing="false" styleClass="menu-button-items" text="طباعة">
                             <items>
-                                <MenuItem fx:id="menuItemPrintTotals" mnemonicParsing="false" text="طباعة إجمالى"/>
-                                <MenuItem fx:id="menuItemPrintDetailed" mnemonicParsing="false" text="طباعة تفصيلى"/>
+                                <MenuItem fx:id="menuItemPrintTotals" mnemonicParsing="false" text="طباعة إجمالى" />
+                                <MenuItem fx:id="menuItemPrintDetailed" mnemonicParsing="false" text="طباعة تفصيلى" />
                             </items>
                         </MenuButton>
                     </items>
@@ -32,103 +49,72 @@
                     <content>
                         <VBox spacing="5.0">
                             <children>
-                                <VBox fx:id="box" spacing="5.0" styleClass="dashboard-tile">
+                                <VBox fx:id="box" spacing="5.0" styleClass="app-card">
                                     <children>
-                                        <GridPane fx:id="gridPane" minHeight="-Infinity" minWidth="-Infinity"
-                                                  styleClass="grid-pane-style">
+                                        <GridPane fx:id="gridPane" hgap="20.0" vgap="20.0">
                                             <columnConstraints>
-                                                <ColumnConstraints hgrow="SOMETIMES" maxWidth="-Infinity"
-                                                                   minWidth="10.0"/>
-                                                <ColumnConstraints hgrow="SOMETIMES" maxWidth="-Infinity"
-                                                                   minWidth="10.0"/>
-                                                <ColumnConstraints hgrow="SOMETIMES" maxWidth="-Infinity"
-                                                                   minWidth="10.0"/>
-                                                <ColumnConstraints hgrow="SOMETIMES" maxWidth="-Infinity"
-                                                                   minWidth="10.0"/>
+                                                <ColumnConstraints hgrow="SOMETIMES" maxWidth="-Infinity" minWidth="10.0" />
+                                                <ColumnConstraints hgrow="SOMETIMES" maxWidth="-Infinity" minWidth="10.0" />
+                                                <ColumnConstraints hgrow="SOMETIMES" maxWidth="-Infinity" minWidth="10.0" />
+                                                <ColumnConstraints hgrow="SOMETIMES" maxWidth="-Infinity" minWidth="10.0" />
                                             </columnConstraints>
                                             <rowConstraints>
-                                                <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES"/>
-                                                <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES"/>
-                                                <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES"/>
-                                                <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES"/>
+                                                <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
+                                                <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
+                                                <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
+                                                <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
                                             </rowConstraints>
                                             <children>
-                                                <Label fx:id="labelDelegate" text="Delegate" GridPane.columnIndex="2"
-                                                       GridPane.rowIndex="1"/>
-                                                <Label fx:id="labelName" text="Name" GridPane.rowIndex="1"/>
-                                                <Label fx:id="labelFrom" text="From" GridPane.rowIndex="2"/>
-                                                <Label fx:id="labelTo" text="To" GridPane.columnIndex="2"
-                                                       GridPane.rowIndex="2"/>
-                                                <DatePicker fx:id="dateFrom" editable="false"
-                                                            maxWidth="1.7976931348623157E308" GridPane.columnIndex="1"
-                                                            GridPane.rowIndex="2"/>
-                                                <DatePicker fx:id="dateTo" editable="false"
-                                                            maxWidth="1.7976931348623157E308" GridPane.columnIndex="3"
-                                                            GridPane.rowIndex="2"/>
-                                                <HBox alignment="CENTER_LEFT" spacing="10.0" GridPane.columnIndex="1"
-                                                      GridPane.rowIndex="3">
+                                                <Label fx:id="labelDelegate" styleClass="form-label" text="Delegate" GridPane.columnIndex="2" GridPane.rowIndex="1" />
+                                                <Label fx:id="labelName" styleClass="form-label" text="Name" GridPane.rowIndex="1" />
+                                                <Label fx:id="labelFrom" styleClass="form-label" text="From" GridPane.rowIndex="2" />
+                                                <Label fx:id="labelTo" styleClass="form-label" text="To" GridPane.columnIndex="2" GridPane.rowIndex="2" />
+                                                <DatePicker fx:id="dateFrom" editable="false" maxWidth="1.7976931348623157E308" GridPane.columnIndex="1" GridPane.rowIndex="2" />
+                                                <DatePicker fx:id="dateTo" editable="false" maxWidth="1.7976931348623157E308" GridPane.columnIndex="3" GridPane.rowIndex="2" />
+                                                <HBox alignment="CENTER_LEFT" spacing="10.0" GridPane.columnIndex="1" GridPane.rowIndex="3">
                                                     <children>
-                                                        <RadioButton fx:id="radioAll" mnemonicParsing="false"
-                                                                     selected="true" text="الكل">
+                                                        <RadioButton fx:id="radioAll" mnemonicParsing="false" selected="true" text="الكل">
                                                             <toggleGroup>
-                                                                <ToggleGroup fx:id="group"/>
+                                                                <ToggleGroup fx:id="group" />
                                                             </toggleGroup>
                                                         </RadioButton>
-                                                        <RadioButton fx:id="radioCash" layoutX="10.0" layoutY="10.0"
-                                                                     mnemonicParsing="false" text="نقدا"
-                                                                     toggleGroup="$group"/>
-                                                        <RadioButton fx:id="radioDeffer" layoutX="97.0" layoutY="10.0"
-                                                                     mnemonicParsing="false" text="أجل"
-                                                                     toggleGroup="$group"/>
-                                                        <Button fx:id="btnSearch" minWidth="-Infinity"
-                                                                mnemonicParsing="false" text="Search"/>
+                                                        <RadioButton fx:id="radioCash" layoutX="10.0" layoutY="10.0" mnemonicParsing="false" text="نقدا" toggleGroup="$group" />
+                                                        <RadioButton fx:id="radioDeffer" layoutX="97.0" layoutY="10.0" mnemonicParsing="false" text="أجل" toggleGroup="$group" />
+                                                        <Button fx:id="btnSearch" minWidth="-Infinity" mnemonicParsing="false" text="Search" />
                                                     </children>
                                                 </HBox>
-                                                <Label fx:id="labelTextSearch" text="Search"/>
-                                                <TextField fx:id="textSearch" promptText="Search"
-                                                           GridPane.columnIndex="1"/>
-                                                <CheckBox fx:id="checkBoxShowOtherSearch" minWidth="-Infinity"
-                                                          mnemonicParsing="false" text="Show Other Search"
-                                                          GridPane.columnIndex="3"/>
-                                                <ComboBox fx:id="comboDelegate" GridPane.columnIndex="3"
-                                                          GridPane.rowIndex="1"/>
-                                                <ComboBox fx:id="comboName" GridPane.columnIndex="1"
-                                                          GridPane.rowIndex="1"/>
+                                                <Label fx:id="labelTextSearch" styleClass="form-label" text="Search" />
+                                                <TextField fx:id="textSearch" promptText="Search" GridPane.columnIndex="1" />
+                                                <CheckBox fx:id="checkBoxShowOtherSearch" minWidth="-Infinity" mnemonicParsing="false" text="Show Other Search" GridPane.columnIndex="3" />
+                                                <ComboBox fx:id="comboDelegate" GridPane.columnIndex="3" GridPane.rowIndex="1" />
+                                                <ComboBox fx:id="comboName" GridPane.columnIndex="1" GridPane.rowIndex="1" />
                                             </children>
                                         </GridPane>
                                     </children>
                                 </VBox>
-                                <TableView fx:id="tableView" minHeight="-Infinity" VBox.vgrow="SOMETIMES">
+                                <TableView fx:id="tableView" minHeight="-Infinity" styleClass="app-table" VBox.vgrow="SOMETIMES">
                                 </TableView>
-                                <HBox alignment="CENTER_LEFT" spacing="10.0" styleClass="pane-box-last">
+                                <HBox alignment="CENTER_LEFT" spacing="10.0" styleClass="summary-card">
                                     <children>
-                                        <Label fx:id="labelSumTableSize" text="Sum Table"/>
-                                        <Text fx:id="textSumTableSize" strokeType="OUTSIDE" strokeWidth="0.0"
-                                              styleClass="text-sum" text="0"/>
-                                        <Label fx:id="labelSumTotals" text="Totals"/>
-                                        <Text fx:id="textSumTotals" strokeType="OUTSIDE" strokeWidth="0.0"
-                                              styleClass="text-sum" text="0"/>
-                                        <Label fx:id="labelSumDiscount" text="Discount"/>
-                                        <Text fx:id="textSumDiscount" strokeType="OUTSIDE" strokeWidth="0.0"
-                                              styleClass="text-sum" text="0"/>
-                                        <Label fx:id="labelSumAfterDiscount" text="After Discount"/>
-                                        <Text fx:id="textSumAfterDiscount" strokeType="OUTSIDE" strokeWidth="0.0"
-                                              styleClass="text-sum" text="0"/>
-                                        <Label fx:id="labelSumAfterDiscount1" text="مدفوع"/>
-                                        <Text fx:id="textCash" strokeType="OUTSIDE" strokeWidth="0.0"
-                                              styleClass="text-sum" text="0"/>
-                                        <Label fx:id="labelSumAfterDiscount11" text="باقى"/>
-                                        <Text fx:id="textDeffer" strokeType="OUTSIDE" strokeWidth="0.0"
-                                              styleClass="text-sum" text="0"/>
-                                        <Label fx:id="labelSumAfterDiscount111" layoutX="389.0" layoutY="10.0"
-                                               text="الربح"/>
-                                        <Text fx:id="textProfit" layoutX="423.0" layoutY="24.0" strokeType="OUTSIDE"
-                                              strokeWidth="0.0" styleClass="text-sum" text="0"/>
+                                        <Label fx:id="labelSumTableSize" text="Sum Table" />
+                                        <Text fx:id="textSumTableSize" strokeType="OUTSIDE" strokeWidth="0.0" styleClass="text-sum" text="0" />
+                                        <Label fx:id="labelSumTotals" text="Totals" />
+                                        <Text fx:id="textSumTotals" strokeType="OUTSIDE" strokeWidth="0.0" styleClass="text-sum" text="0" />
+                                        <Label fx:id="labelSumDiscount" text="Discount" />
+                                        <Text fx:id="textSumDiscount" strokeType="OUTSIDE" strokeWidth="0.0" styleClass="text-sum" text="0" />
+                                        <Label fx:id="labelSumAfterDiscount" text="After Discount" />
+                                        <Text fx:id="textSumAfterDiscount" strokeType="OUTSIDE" strokeWidth="0.0" styleClass="text-sum" text="0" />
+                                        <Label fx:id="labelSumAfterDiscount1" text="مدفوع" />
+                                        <Text fx:id="textCash" strokeType="OUTSIDE" strokeWidth="0.0" styleClass="text-sum" text="0" />
+                                        <Label fx:id="labelSumAfterDiscount11" text="باقى" />
+                                        <Text fx:id="textDeffer" strokeType="OUTSIDE" strokeWidth="0.0" styleClass="text-sum" text="0" />
+                                        <Label fx:id="labelSumAfterDiscount111" layoutX="389.0" layoutY="10.0" text="الربح" />
+                                        <Text fx:id="textProfit" layoutX="423.0" layoutY="24.0" strokeType="OUTSIDE" strokeWidth="0.0" styleClass="text-sum" text="0" />
                                     </children>
                                 </HBox>
                             </children>
                             <padding>
-                                <Insets bottom="5.0" left="5.0" right="5.0" top="5.0"/>
+                                <Insets bottom="5.0" left="5.0" right="5.0" top="5.0" />
                             </padding>
                         </VBox>
                     </content>
