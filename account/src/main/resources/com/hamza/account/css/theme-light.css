@@ -65,3 +65,167 @@
     -app-side-input-bg: rgba(255, 255, 255, 0.14);
     -app-side-muted: #cbd5e1;
 }
+
+/* =========================================================
+   Invoice Type Colors
+   ========================================================= */
+
+.invoice-sales {
+    -invoice-main: #8b1e3f;
+    -invoice-main-dark: #5f0f2f;
+    -invoice-soft: #f8e7ee;
+    -invoice-row-hover: #f1c7d6;
+    -invoice-selected: #d88aa5;
+    -invoice-text: #4a0b23;
+}
+
+.invoice-purchases {
+    -invoice-main: #16a34a;
+    -invoice-main-dark: #166534;
+    -invoice-soft: #dcfce7;
+    -invoice-row-hover: #bbf7d0;
+    -invoice-selected: #86efac;
+    -invoice-text: #14532d;
+}
+
+.invoice-return {
+    -invoice-main: #ea580c;
+    -invoice-main-dark: #9a3412;
+    -invoice-soft: #ffedd5;
+    -invoice-row-hover: #fed7aa;
+    -invoice-selected: #fdba74;
+    -invoice-text: #7c2d12;
+}
+
+/* Table Header */
+.invoice-sales .table-view .column-header-background,
+.invoice-purchases .table-view .column-header-background,
+.invoice-return .table-view .column-header-background {
+    -fx-background-color: -invoice-main-dark;
+}
+
+.invoice-sales .table-view .column-header,
+.invoice-purchases .table-view .column-header,
+.invoice-return .table-view .column-header {
+    -fx-background-color: transparent;
+}
+
+.invoice-sales .table-view .column-header .label,
+.invoice-purchases .table-view .column-header .label,
+.invoice-return .table-view .column-header .label {
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+}
+
+/* Table Rows */
+.invoice-sales .table-row-cell,
+.invoice-purchases .table-row-cell,
+.invoice-return .table-row-cell {
+    -fx-text-background-color: -invoice-text;
+}
+
+.invoice-sales .table-row-cell:odd,
+.invoice-purchases .table-row-cell:odd,
+.invoice-return .table-row-cell:odd {
+    -fx-background-color: white;
+}
+
+.invoice-sales .table-row-cell:even,
+.invoice-purchases .table-row-cell:even,
+.invoice-return .table-row-cell:even {
+    -fx-background-color: -invoice-soft;
+}
+
+.invoice-sales .table-row-cell:hover,
+.invoice-purchases .table-row-cell:hover,
+.invoice-return .table-row-cell:hover {
+    -fx-background-color: -invoice-row-hover;
+}
+
+.invoice-sales .table-row-cell:selected,
+.invoice-purchases .table-row-cell:selected,
+.invoice-return .table-row-cell:selected {
+    -fx-background-color: -invoice-selected;
+}
+
+/* Labels and Important Text */
+.invoice-sales .label,
+.invoice-purchases .label,
+.invoice-return .label {
+    -fx-text-fill: -invoice-text;
+}
+
+.invoice-sales Text,
+.invoice-purchases Text,
+.invoice-return Text {
+    -fx-fill: -invoice-text;
+}
+
+/* Main invoice total */
+.invoice-sales #textInvoiceTotal,
+.invoice-purchases #textInvoiceTotal,
+.invoice-return #textInvoiceTotal {
+    -fx-fill: -invoice-main-dark;
+    -fx-font-weight: bold;
+}
+
+/* =========================================================
+   Invoice Summary Cards
+   ========================================================= */
+
+.invoice-sales .summary-card,
+.invoice-purchases .summary-card,
+.invoice-return .summary-card {
+    -fx-background-color: linear-gradient(to bottom right, -invoice-main-dark, -invoice-main);
+    -fx-background-radius: 16;
+    -fx-border-radius: 16;
+    -fx-border-color: rgba(255, 255, 255, 0.30);
+    -fx-border-width: 1;
+    -fx-effect: dropshadow(gaussian, rgba(74, 11, 35, 0.28), 16, 0.20, 0, 5);
+}
+
+.invoice-sales .summary-card:hover,
+.invoice-purchases .summary-card:hover,
+.invoice-return .summary-card:hover {
+    -fx-background-color: linear-gradient(to bottom right, -invoice-main, -invoice-main-dark);
+    -fx-effect: dropshadow(gaussian, rgba(74, 11, 35, 0.38), 20, 0.25, 0, 7);
+}
+
+.invoice-sales .summary-card .label,
+.invoice-purchases .summary-card .label,
+.invoice-return .summary-card .label {
+    -fx-text-fill: #fff7fb;
+    -fx-font-weight: bold;
+}
+
+.invoice-sales .summary-card Text,
+.invoice-purchases .summary-card Text,
+.invoice-return .summary-card Text {
+    -fx-fill: #fff7fb;
+    -fx-font-weight: bold;
+}
+
+.invoice-sales .summary-card .text,
+.invoice-purchases .summary-card .text,
+.invoice-return .summary-card .text {
+    -fx-fill: #fff7fb;
+}
+
+.invoice-sales .summary-card .text-field,
+.invoice-purchases .summary-card .text-field,
+.invoice-return .summary-card .text-field {
+    -fx-background-color: rgba(255, 255, 255, 0.92);
+    -fx-background-radius: 10;
+    -fx-border-color: rgba(255, 255, 255, 0.45);
+    -fx-border-radius: 10;
+    -fx-text-fill: -invoice-text;
+    -fx-font-weight: bold;
+}
+
+.invoice-sales .summary-card .text-field:focused,
+.invoice-purchases .summary-card .text-field:focused,
+.invoice-return .summary-card .text-field:focused {
+    -fx-background-color: white;
+    -fx-border-color: #f8c7d8;
+    -fx-effect: dropshadow(gaussian, rgba(248, 199, 216, 0.45), 10, 0.20, 0, 0);
+}

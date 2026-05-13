@@ -138,6 +138,8 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
     private RadioButton radioCash, radioDeffer, radioRate, radioAmount;
     @FXML
     private TextArea txtNotes;
+    @FXML
+    private Label labelTitle;
     private MaskerPaneSetting maskerPaneSetting;
 
     public BuyController2(DataInterface<T1, T2, T3, T4> dataInterface, DataPublisher dataPublisher, int numInvoiceUpdate) throws Exception {
@@ -155,6 +157,7 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
     @Override
     public void initialize(URL location, ResourceBundle resources) {
         maskerPaneSetting = new MaskerPaneSetting(stackPane);
+        applyInvoiceThemeClass();
         labelName();
         tableSetting();
         otherSetting();
@@ -173,6 +176,24 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
         }
     }
 
+    private void applyInvoiceThemeClass() {
+        stackPane.getStyleClass().removeAll(
+                "invoice-sales",
+                "invoice-purchases",
+                "invoice-return"
+        );
+
+        String invoiceName = dataInterface.designInterface().nameTextOfInvoice();
+        labelTitle.setText(invoiceName);
+
+        if (invoiceName != null && invoiceName.contains(Setting_Language.WORD_RE_SALES)) {
+            stackPane.getStyleClass().add("invoice-return");
+        } else if (dataInterface.designInterface().showDataForCustomer()) {
+            stackPane.getStyleClass().add("invoice-sales");
+        } else {
+            stackPane.getStyleClass().add("invoice-purchases");
+        }
+    }
     private void buttonGraphic() {
         var images = new Image_Setting();
         btnNew.setGraphic(createIcon(images.add));
