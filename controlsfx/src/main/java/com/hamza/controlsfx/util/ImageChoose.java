@@ -16,7 +16,7 @@ public class ImageChoose {
     // Extract constant
     //TODO 11/23/2025 6:31 AM Mohamed: show in real time true
     public static final boolean ADD_IMAGE = true;
-    public static final double ICON_SIZE = 25.0;
+    public static final double ICON_SIZE = 20.0;
     @Getter
     private String path;
 

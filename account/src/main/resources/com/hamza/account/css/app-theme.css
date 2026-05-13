@@ -121,6 +121,8 @@
     -fx-font-weight: bold;
     -fx-text-fill: -app-text;
     -fx-fill: -app-text;
+    /*-fx-text-fill: -app-text-label;*/
+    /*-fx-fill: -app-text-label;*/
 }
 
 .info-text,
@@ -423,8 +425,8 @@
 .settings-tab-pane,
 .main-tab-pane {
     -fx-background-color: transparent;
-    -fx-tab-min-height: 32px;
-    -fx-tab-max-height: 32px;
+    /*-fx-tab-min-height: 20px;*/
+    /*-fx-tab-max-height: 20px;*/
 }
 
 .tab-pane .tab-header-background {
@@ -440,7 +442,8 @@
 .tab-pane .tab {
     -fx-background-color: transparent;
     -fx-background-radius: 9px;
-    -fx-padding: 5px 12px;
+    /*-fx-padding: 5px 12px;*/
+    -fx-padding: 4px 10px;
     -fx-cursor: hand;
 }
 

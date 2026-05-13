@@ -62,7 +62,7 @@ public class ItemsController extends LoadData {
     private final ItemsService itemsService = ServiceRegistry.get(ItemsService.class);
     private final StockService stockService = ServiceRegistry.get(StockService.class);
     private final MainGroupService mainGroupService = ServiceRegistry.get(MainGroupService.class);
-    private final SupGroupService supGroupService = ServiceRegistry.get(SupGroupService.class);
+//    private final SupGroupService supGroupService = ServiceRegistry.get(SupGroupService.class);
     private final SelPriceItemService selPriceService = ServiceRegistry.get(SelPriceItemService.class);
 
     @FXML
@@ -205,8 +205,8 @@ public class ItemsController extends LoadData {
         btnDelete.setGraphic(createIcon(images.delete));
         btnRefresh.setGraphic(createIcon(images.refresh));
         btnSelected.setGraphic(createIcon(images.select));
-        menuButtonPrint.setGraphic(createIcon(images.print));
-        menuButtonOther.setGraphic(createIcon(images.reports));
+//        menuButtonPrint.setGraphic(createIcon(images.print));
+//        menuButtonOther.setGraphic(createIcon(images.reports));
     }
 
     private void action() {

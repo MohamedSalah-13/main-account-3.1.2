@@ -31,7 +31,7 @@ public interface ButtonMenuItemAction extends ActionInterface, BasicsSettingInte
         node.minWidth(100);
         tab.setContent(node);
         if (stream != null) {
-            tab.setGraphic(new ImageDesign(stream));
+            tab.setGraphic(new ImageDesign(stream,20));
         }
         tabPane.getTabs().add(tab);
         tabPane.getSelectionModel().select(tab);

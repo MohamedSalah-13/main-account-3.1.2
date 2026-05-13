@@ -85,7 +85,7 @@ public class MainToolbarController implements Initializable {
         menuButtonSetting.configureButton(btnAlarm, imageSetting.alarmWhite, controller.getForAllButtons().alarm());
         menuButtonSetting.configureButton(btnShift, imageSetting.tools, controller.getShiftButtons().openShiftScreen());
 
-        btnYouTube.setGraphic(new ImageDesign(imageSetting.youtube, 36));
+        btnYouTube.setGraphic(new ImageDesign(imageSetting.youtube, 20));
         btnYouTube.setText("شرح البرنامج");
         btnYouTube.setTooltip(new javafx.scene.control.Tooltip("قناة يوتيوب - شرح البرنامج"));
         btnYouTube.setOnAction(e -> {
@@ -98,7 +98,7 @@ public class MainToolbarController implements Initializable {
 
         showButton(btnYouTube, LogApplication.usersVo.getId() == 1);
 
-        menuButton.setGraphic(new ImageDesign(imageSetting.personCustomer, 36));
+//        menuButton.setGraphic(new ImageDesign(imageSetting.personCustomer, 20));
         menuButton.setText(Setting_Language.WELCOME + " " + nameProperty + " !");
         menuButtonSetting.initializeMenuItem(menuItemChangeName, controller.getForAllButtons().changeName());
         menuButtonSetting.initializeMenuItem(menuItemChangePass, controller.getForAllButtons().changePassword());

@@ -147,7 +147,7 @@ public class TotalsController<T1 extends BasePurchasesAndSales, T2 extends BaseT
         btnSearch.setGraphic(createIcon(images.search));
         btnRefresh.setGraphic(createIcon(images.refresh));
         btnSelected.setGraphic(createIcon(images.select));
-        menuButton.setGraphic(createIcon(images.print));
+//        menuButton.setGraphic(createIcon(images.print));
         btnToExcel.setGraphic(createIcon(images.export));
     }
 

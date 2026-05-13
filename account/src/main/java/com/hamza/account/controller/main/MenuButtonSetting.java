@@ -36,7 +36,7 @@ public record MenuButtonSetting(TabPane tabPane) {
     }
 
     public void configureButton(Button button, InputStream stream, ButtonWithPerm action) {
-        button.setGraphic(new ImageDesign(stream, 36));
+        button.setGraphic(new ImageDesign(stream, 20));
         button.setTooltip(new Tooltip(action.textName()));
         button.setText(action.textName());
         disableButton(button::setDisable, action);

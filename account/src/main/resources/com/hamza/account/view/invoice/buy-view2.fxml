@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
+<?import java.net.URL?>
 <?import javafx.geometry.Insets?>
 <?import javafx.scene.control.Button?>
 <?import javafx.scene.control.ComboBox?>
@@ -30,7 +31,7 @@
                     <children>
                         <VBox alignment="CENTER_LEFT" spacing="3.0">
                             <children>
-                                <Label styleClass="app-title" text="فاتورة مشتريات" />
+                                <Label fx:id="labelTitle" styleClass="app-title" text="فاتورة مشتريات" />
                                 <Label styleClass="app-subtitle" text="إدارة بيانات الفاتورة، الأصناف، المدفوعات والإجماليات" />
                             </children>
                         </VBox>
@@ -152,11 +153,11 @@
                                             </padding>
                                             <columnConstraints>
                                                 <ColumnConstraints hgrow="SOMETIMES" maxWidth="-Infinity" minWidth="10.0" />
+                                                <ColumnConstraints hgrow="SOMETIMES" maxWidth="-Infinity" minWidth="10.0" prefWidth="200.0" />
                                                 <ColumnConstraints hgrow="SOMETIMES" maxWidth="-Infinity" minWidth="10.0" />
+                                                <ColumnConstraints hgrow="SOMETIMES" maxWidth="-Infinity" minWidth="10.0" prefWidth="200.0" />
                                                 <ColumnConstraints hgrow="SOMETIMES" maxWidth="-Infinity" minWidth="10.0" />
-                                                <ColumnConstraints hgrow="SOMETIMES" maxWidth="-Infinity" minWidth="10.0" />
-                                                <ColumnConstraints hgrow="SOMETIMES" maxWidth="-Infinity" minWidth="10.0" />
-                                                <ColumnConstraints hgrow="SOMETIMES" maxWidth="-Infinity" minWidth="10.0" />
+                                                <ColumnConstraints hgrow="SOMETIMES" maxWidth="-Infinity" prefWidth="200.0" />
                                             </columnConstraints>
                                             <rowConstraints>
                                                 <RowConstraints minHeight="10.0" prefHeight="34.0" vgrow="SOMETIMES" />
@@ -199,7 +200,7 @@
                                     </children>
                                 </HBox>
 
-                                <TableView fx:id="table" minHeight="350.0" prefWidth="400.0" styleClass="app-table" VBox.vgrow="ALWAYS" />
+                                <TableView fx:id="table" minHeight="-Infinity" minWidth="-Infinity" prefHeight="300.0" styleClass="app-table" VBox.vgrow="ALWAYS" />
                             </children>
                         </VBox>
                     </content>
@@ -207,4 +208,8 @@
          </center>
       </BorderPane>
     </children>
+   <stylesheets>
+      <URL value="@../../css/app-theme.css" />
+      <URL value="@../../css/theme-light.css" />
+   </stylesheets>
 </StackPane>
