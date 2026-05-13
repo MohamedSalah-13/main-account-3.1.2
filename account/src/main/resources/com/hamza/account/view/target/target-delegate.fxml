@@ -22,7 +22,7 @@
                                                 <HBox fx:id="hBox" alignment="CENTER_LEFT" styleClass="dashboard-tile">
                                                     <children>
                                                         <GridPane minHeight="-Infinity" minWidth="-Infinity"
-                                                                  styleClass="grid-pane-style" HBox.hgrow="SOMETIMES">
+                                                                   HBox.hgrow="SOMETIMES">
                                                             <columnConstraints>
                                                                 <ColumnConstraints hgrow="SOMETIMES"
                                                                                    maxWidth="-Infinity"

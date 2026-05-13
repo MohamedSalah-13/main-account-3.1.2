@@ -70,7 +70,7 @@
                                             <content>
                                                 <VBox styleClass="box-name">
                                                     <children>
-                                                        <GridPane minHeight="-Infinity" minWidth="-Infinity" styleClass="grid-pane-style">
+                                                        <GridPane minHeight="-Infinity" minWidth="-Infinity" >
                                                             <columnConstraints>
                                                                 <ColumnConstraints hgrow="SOMETIMES" maxWidth="-Infinity" minWidth="10.0" />
                                                                 <ColumnConstraints hgrow="SOMETIMES" maxWidth="-Infinity" minWidth="10.0" prefWidth="150.0" />
@@ -113,7 +113,7 @@
                                             <children>
                                                 <VBox spacing="10.0">
                                                     <children>
-                                                        <GridPane styleClass="grid-pane-style">
+                                                        <GridPane >
                                                             <columnConstraints>
                                                                 <ColumnConstraints hgrow="SOMETIMES" maxWidth="-Infinity" minWidth="10.0" />
                                                                 <ColumnConstraints hgrow="SOMETIMES" maxWidth="-Infinity" minWidth="10.0" />

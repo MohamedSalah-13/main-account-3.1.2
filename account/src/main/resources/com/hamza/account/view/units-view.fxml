@@ -39,7 +39,7 @@
                                     <children>
                                         <HBox minHeight="-Infinity" minWidth="-Infinity" spacing="5.0">
                                             <children>
-                                                <GridPane hgap="10.0" minHeight="-Infinity" minWidth="-Infinity" styleClass="grid-pane-style" vgap="15.0" HBox.hgrow="SOMETIMES">
+                                                <GridPane hgap="10.0" minHeight="-Infinity" minWidth="-Infinity"  vgap="15.0" HBox.hgrow="SOMETIMES">
                                                     <columnConstraints>
                                                         <ColumnConstraints hgrow="SOMETIMES" maxWidth="-Infinity" minWidth="10.0" />
                                                         <ColumnConstraints hgrow="SOMETIMES" maxWidth="-Infinity" minWidth="10.0" />

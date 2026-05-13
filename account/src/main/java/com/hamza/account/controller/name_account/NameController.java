@@ -208,7 +208,7 @@ public class NameController<T1 extends BasePurchasesAndSales, T2 extends BaseTot
             private final Button btn = new Button(Setting_Language.WORD_SHOW);
 
             {
-                btn.getStyleClass().add("app-button");
+                btn.getStyleClass().add("app-neutral-button");
                 btn.setOnAction(e -> {
                     try {
                         nameData.actionColumnShow(getTableView().getItems().get(getIndex()), daoFactory);

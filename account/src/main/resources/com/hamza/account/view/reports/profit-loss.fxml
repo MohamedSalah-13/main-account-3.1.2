@@ -17,7 +17,7 @@
                                 <VBox spacing="10.0" styleClass="dashboard-tile">
                                     <children>
                                         <GridPane minHeight="-Infinity" minWidth="-Infinity"
-                                                  styleClass="grid-pane-style">
+                                                  >
                                             <columnConstraints>
                                                 <ColumnConstraints hgrow="SOMETIMES" maxWidth="-Infinity"
                                                                    minWidth="10.0"/>
@@ -62,7 +62,7 @@
                                                               AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
                                                             <children>
                                                                 <GridPane minHeight="-Infinity" minWidth="-Infinity"
-                                                                          styleClass="grid-pane-style">
+                                                                          >
                                                                     <columnConstraints>
                                                                         <ColumnConstraints hgrow="SOMETIMES"
                                                                                            maxWidth="-Infinity"

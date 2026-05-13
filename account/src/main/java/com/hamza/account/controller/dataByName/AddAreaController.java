@@ -34,13 +34,13 @@ public class AddAreaController<T> extends VBox {
 
         textName = new TextField();
         textName.setPromptText(Setting_Language.WORD_NAME);
-//        textName.setPrefWidth(200);
+        textName.setPrefWidth(300);
         textCode = new TextField("0");
         textCode.setEditable(false);
         ColumnConstraints column1 = new ColumnConstraints();
         ColumnConstraints column2 = new ColumnConstraints();
-        column2.setPrefWidth(javafx.scene.layout.Region.USE_COMPUTED_SIZE);
-        column2.setMaxWidth(javafx.scene.layout.Region.USE_COMPUTED_SIZE);
+        column2.setPrefWidth(300);
+        column2.setMaxWidth(Region.USE_PREF_SIZE);
 
 
         Label labelCode = new Label(Setting_Language.WORD_CODE);
@@ -57,7 +57,7 @@ public class AddAreaController<T> extends VBox {
         getChildren().addAll(gridPane);
 
 //        this.setPadding(new Insets(10));
-        this.getStyleClass().add("app-root");
+        this.getStyleClass().add("app-card");
     }
 
     private List<? extends T> getCollection(AreaInterface<T> areaInterface) {
