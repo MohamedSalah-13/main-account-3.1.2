@@ -62,6 +62,7 @@ public class MainMenuController {
         menuNumber.setVisible(false);
         menuItemRegister.setVisible(false);
         menuItemCheckUpdate.setVisible(false);
+        menuItemShiftReports.setVisible(false);
 
         menuItemReportCustom.setVisible(false);
         menuItemReportSuppliers.setVisible(false);
