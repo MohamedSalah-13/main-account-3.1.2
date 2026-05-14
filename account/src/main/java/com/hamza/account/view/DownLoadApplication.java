@@ -6,8 +6,6 @@ import com.hamza.account.config.ThemeManager;
 import com.hamza.account.controller.others.ServiceRegistry;
 import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.service.*;
-import com.hamza.account.service.version.DatabaseMigrationService;
-import com.hamza.account.service.version.MigrationResult;
 import com.hamza.account.trial.TrialManager;
 import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.database.DaoException;
@@ -82,21 +80,21 @@ public class DownLoadApplication extends Application {
 
     public static void main(String[] args) {
 
-       /* try {
-            DatabaseMigrationService migrationService = new DatabaseMigrationService();
-            MigrationResult result = migrationService.updateDatabaseIfNeeded();
+//        try {
+//            DatabaseMigrationService migrationService = new DatabaseMigrationService();
+//            MigrationResult result = migrationService.updateDatabaseIfNeeded();
+//
+//            if (result.isUpdated()) {
+//                System.out.println("Database updated from " + result.getOldVersion() + " to " + result.getRequiredVersion());
+//                System.out.println("Executed migrations: " + result.getExecutedVersions());
+//
+//            }
+//
+//        } catch (Exception e) {
+//            e.printStackTrace();
+//            throw e;
+//        }
 
-            if (result.isUpdated()) {
-                System.out.println("Database updated from " + result.getOldVersion() + " to " + result.getRequiredVersion());
-                System.out.println("Executed migrations: " + result.getExecutedVersions());
-
-            }
-
-        } catch (Exception e) {
-            e.printStackTrace();
-            throw e;
-        }
-*/
         launch(args);
     }
 

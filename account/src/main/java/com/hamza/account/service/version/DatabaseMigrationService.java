@@ -97,6 +97,7 @@ public class DatabaseMigrationService {
          * لذلك نضع هنا قائمة التحديثات صراحة.
          * عند إضافة ملف SQL جديد، أضفه هنا.
          */
+        System.out.println("sdfsadsadas");
         List<DatabaseMigration> migrations = new ArrayList<>();
 
         migrations.add(DatabaseMigration.builder()
@@ -134,6 +135,8 @@ public class DatabaseMigrationService {
                 .description("Update user truncate logic")
                 .resourcePath(MIGRATIONS_PATH + "/V4_1_0_6_user_truncate.sql")
                 .build());
+
+        System.out.println(MIGRATIONS_PATH + "/V4_1_0_6_user_truncate.sql");
 
         migrations.add(DatabaseMigration.builder()
                 .version("4.1.0.7")

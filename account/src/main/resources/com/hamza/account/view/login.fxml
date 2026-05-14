@@ -1,22 +1,25 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <?import javafx.geometry.Insets?>
-<?import javafx.scene.control.*?>
-<?import javafx.scene.image.*?>
-<?import javafx.scene.layout.*?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.CheckBox?>
+<?import javafx.scene.control.PasswordField?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.image.Image?>
+<?import javafx.scene.image.ImageView?>
+<?import javafx.scene.layout.AnchorPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.VBox?>
 <?import javafx.scene.text.Text?>
-<?import java.net.URL?>
-<AnchorPane xmlns:fx="http://javafx.com/fxml/1" maxHeight="445.0" maxWidth="315.0" xmlns="http://javafx.com/javafx/21">
+
+<AnchorPane maxHeight="445.0" maxWidth="315.0" styleClass="app-root" stylesheets="@../css/loginStyle.css" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1">
     <children>
-        <VBox fx:id="vBox" alignment="TOP_CENTER" spacing="5.0" AnchorPane.bottomAnchor="0.0"
-              AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
+        <VBox fx:id="vBox" alignment="TOP_CENTER" spacing="5.0" styleClass="app-container" AnchorPane.bottomAnchor="5.0" AnchorPane.leftAnchor="5.0" AnchorPane.rightAnchor="5.0" AnchorPane.topAnchor="5.0">
             <children>
                 <VBox alignment="TOP_CENTER" spacing="5.0">
                     <children>
-                        <ImageView fx:id="imageView" fitHeight="80.0" fitWidth="120.0" pickOnBounds="true"
-                                   preserveRatio="true"/>
-                        <Text fx:id="textLoginName" strokeType="OUTSIDE" strokeWidth="0.0" styleClass="label"
-                              text="%common.login.screen"/>
+                        <ImageView fx:id="imageView" fitHeight="80.0" fitWidth="120.0" pickOnBounds="true" preserveRatio="true" />
+                        <Text fx:id="textLoginName" strokeType="OUTSIDE" strokeWidth="0.0" styleClass="summary-value" text="%common.login.screen" />
                     </children>
                 </VBox>
                 <VBox spacing="20.0">
@@ -25,57 +28,43 @@
                             <children>
                                 <ImageView fitHeight="30.0" fitWidth="25.0" pickOnBounds="true" preserveRatio="true">
                                     <image>
-                                        <Image url="@../image/person.png"/>
+                                        <Image url="@../image/person.png" />
                                     </image>
                                 </ImageView>
                                 <AnchorPane HBox.hgrow="SOMETIMES">
                                     <children>
-                                        <TextField fx:id="txtUsername" maxHeight="-Infinity" maxWidth="-Infinity"
-                                                   prefHeight="30.0" prefWidth="222.0" promptText="%user.username"
-                                                   AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0"/>
+                                        <TextField fx:id="txtUsername" maxHeight="-Infinity" maxWidth="-Infinity" prefHeight="30.0" prefWidth="222.0" promptText="%user.username" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" />
                                     </children>
                                 </AnchorPane>
                             </children>
                         </HBox>
-                        <HBox fx:id="boxPass" alignment="CENTER_LEFT" maxHeight="-Infinity" prefHeight="30.0"
-                              styleClass="box-pass">
+                        <HBox fx:id="boxPass" alignment="CENTER_LEFT" maxHeight="-Infinity" prefHeight="30.0" styleClass="box-pass">
                             <children>
                                 <ImageView fitHeight="30.0" fitWidth="25.0" pickOnBounds="true" preserveRatio="true">
                                     <image>
-                                        <Image url="@../image/password.png"/>
+                                        <Image url="@../image/password.png" />
                                     </image>
                                 </ImageView>
                                 <AnchorPane HBox.hgrow="SOMETIMES">
                                     <children>
-                                        <PasswordField fx:id="pass" maxHeight="-Infinity" maxWidth="-Infinity"
-                                                       prefHeight="28.0" prefWidth="209.0" promptText="%user.password"
-                                                       AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0"
-                                                       AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0"/>
+                                        <PasswordField fx:id="pass" maxHeight="-Infinity" maxWidth="-Infinity" prefHeight="28.0" prefWidth="209.0" promptText="%user.password" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0" />
                                     </children>
                                 </AnchorPane>
                             </children>
                         </HBox>
-                        <CheckBox fx:id="checkShowPass" mnemonicParsing="false" text="%user.show.password"/>
-                        <Button fx:id="btnEnter" defaultButton="true" maxHeight="-Infinity"
-                                maxWidth="1.7976931348623157E308" mnemonicParsing="false" prefHeight="30.0"
-                                text="%common.enter"/>
-                        <Button fx:id="btnClose" cancelButton="true" maxHeight="-Infinity"
-                                maxWidth="1.7976931348623157E308" mnemonicParsing="false" prefHeight="30.0"
-                                text="%common.close"/>
+                        <CheckBox fx:id="checkShowPass" mnemonicParsing="false" text="%user.show.password" />
+                        <Button fx:id="btnEnter" defaultButton="true" maxHeight="-Infinity" maxWidth="1.7976931348623157E308" mnemonicParsing="false" prefHeight="30.0" styleClass="app-primary-button" text="%common.enter" />
+                        <Button fx:id="btnClose" cancelButton="true" maxHeight="-Infinity" maxWidth="1.7976931348623157E308" mnemonicParsing="false" prefHeight="30.0" styleClass="app-danger-button" text="%common.close" />
                     </children>
                     <padding>
-                        <Insets bottom="30.0" left="30.0" right="30.0" top="5.0"/>
+                        <Insets bottom="30.0" left="30.0" right="30.0" top="5.0" />
                     </padding>
                 </VBox>
-                <Text fx:id="textCopyRight" strokeType="OUTSIDE" strokeWidth="0.0" styleClass="label"
-                      text="%common.login.copy.right"/>
+                <Text fx:id="textCopyRight" strokeType="OUTSIDE" strokeWidth="0.0" styleClass="summary-value" text="%common.login.copy.right" />
             </children>
             <padding>
-                <Insets bottom="50.0"/>
+                <Insets bottom="50.0" />
             </padding>
         </VBox>
     </children>
-    <stylesheets>
-        <URL value="@../css/loginStyle.css"/>
-    </stylesheets>
 </AnchorPane>

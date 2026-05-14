@@ -960,3 +960,26 @@ CREATE TABLE database_migrations (
                                      description VARCHAR(255),
                                      executed_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
+
+INSERT INTO system_info (
+    id,
+    client_code,
+    client_name,
+    app_version,
+    database_version,
+    install_date,
+    last_update,
+    notes
+)
+SELECT
+    1,
+    'CLIENT-001',
+    'Default Client',
+    '4.1.0',
+    '4.1.0',
+    NOW(),
+    NOW(),
+    'Initial system info'
+WHERE NOT EXISTS (
+    SELECT 1 FROM system_info WHERE id = 1
+);
