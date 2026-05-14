@@ -41,7 +41,7 @@
 
                     <HBox fx:id="hBox" alignment="CENTER_LEFT" spacing="8.0" styleClass="summary-bar" BorderPane.alignment="CENTER">
                         <children>
-                            <Label fx:id="labelSum" text="Sum" />
+                            <Label fx:id="labelSum" styleClass="summary-label" text="Sum" />
 
                             <Text fx:id="textSum" strokeType="OUTSIDE" strokeWidth="0.0" styleClass="summary-value" text="Text" />
                         </children>

@@ -383,18 +383,26 @@
 /* ---------- Summary bars ---------- */
 
 .summary-bar,
-.summary-card,
-.stats-bar,
-.pane-box-last {
+.summary-card {
     -fx-background-color: linear-gradient(to right, -app-summary-bg, -app-summary-bg-2);
     -fx-background-radius: 12px;
     -fx-padding: 9px 12px;
     -fx-spacing: 8px;
     -fx-effect: dropshadow(gaussian, -app-shadow, 10, 0.12, 0, 3);
 }
+.summary-bar .label,
+.summary-card .label {
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+}
+
+.summary-bar Text,
+.summary-card Text {
+    -fx-fill: -app-summary-value;
+    -fx-font-weight: bold;
+}
 
 .summary-value,
-.stat-value,
 .text-sum {
     -fx-font-size: 14px;
     -fx-font-weight: bold;

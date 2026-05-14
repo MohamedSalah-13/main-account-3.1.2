@@ -979,23 +979,219 @@ CREATE OR REPLACE VIEW view_monthly_sales AS
 SELECT
     YEAR(invoice_date) AS sales_year,
 
-    SUM(CASE WHEN MONTH(invoice_date) = 1 THEN total ELSE 0 END) AS January,
-    SUM(CASE WHEN MONTH(invoice_date) = 2 THEN total ELSE 0 END) AS February,
-    SUM(CASE WHEN MONTH(invoice_date) = 3 THEN total ELSE 0 END) AS March,
-    SUM(CASE WHEN MONTH(invoice_date) = 4 THEN total ELSE 0 END) AS April,
-    SUM(CASE WHEN MONTH(invoice_date) = 5 THEN total ELSE 0 END) AS May,
-    SUM(CASE WHEN MONTH(invoice_date) = 6 THEN total ELSE 0 END) AS June,
-    SUM(CASE WHEN MONTH(invoice_date) = 7 THEN total ELSE 0 END) AS July,
-    SUM(CASE WHEN MONTH(invoice_date) = 8 THEN total ELSE 0 END) AS August,
-    SUM(CASE WHEN MONTH(invoice_date) = 9 THEN total ELSE 0 END) AS September,
-    SUM(CASE WHEN MONTH(invoice_date) = 10 THEN total ELSE 0 END) AS October,
-    SUM(CASE WHEN MONTH(invoice_date) = 11 THEN total ELSE 0 END) AS November,
-    SUM(CASE WHEN MONTH(invoice_date) = 12 THEN total ELSE 0 END) AS December,
+    ROUND(SUM(CASE WHEN MONTH(invoice_date) = 1 THEN total ELSE 0 END), 2) AS January,
+    ROUND(SUM(CASE WHEN MONTH(invoice_date) = 2 THEN total ELSE 0 END), 2) AS February,
+    ROUND(SUM(CASE WHEN MONTH(invoice_date) = 3 THEN total ELSE 0 END), 2) AS March,
+    ROUND(SUM(CASE WHEN MONTH(invoice_date) = 4 THEN total ELSE 0 END), 2) AS April,
+    ROUND(SUM(CASE WHEN MONTH(invoice_date) = 5 THEN total ELSE 0 END), 2) AS May,
+    ROUND(SUM(CASE WHEN MONTH(invoice_date) = 6 THEN total ELSE 0 END), 2) AS June,
+    ROUND(SUM(CASE WHEN MONTH(invoice_date) = 7 THEN total ELSE 0 END), 2) AS July,
+    ROUND(SUM(CASE WHEN MONTH(invoice_date) = 8 THEN total ELSE 0 END), 2) AS August,
+    ROUND(SUM(CASE WHEN MONTH(invoice_date) = 9 THEN total ELSE 0 END), 2) AS September,
+    ROUND(SUM(CASE WHEN MONTH(invoice_date) = 10 THEN total ELSE 0 END), 2) AS October,
+    ROUND(SUM(CASE WHEN MONTH(invoice_date) = 11 THEN total ELSE 0 END), 2) AS November,
+    ROUND(SUM(CASE WHEN MONTH(invoice_date) = 12 THEN total ELSE 0 END), 2) AS December,
 
     -- إجمالي مبيعات السنة بالكامل
-    SUM(total) AS total_yearly_sales
+    ROUND(SUM(total), 2) AS total_yearly_sales
 
 FROM
     total_sales
 GROUP BY
     YEAR(invoice_date);
+
+
+
+CREATE OR REPLACE VIEW view_monthly_purchase AS
+SELECT
+    YEAR(invoice_date) AS sales_year,
+
+    ROUND(SUM(CASE WHEN MONTH(invoice_date) = 1 THEN total ELSE 0 END), 2) AS January,
+    ROUND(SUM(CASE WHEN MONTH(invoice_date) = 2 THEN total ELSE 0 END), 2) AS February,
+    ROUND(SUM(CASE WHEN MONTH(invoice_date) = 3 THEN total ELSE 0 END), 2) AS March,
+    ROUND(SUM(CASE WHEN MONTH(invoice_date) = 4 THEN total ELSE 0 END), 2) AS April,
+    ROUND(SUM(CASE WHEN MONTH(invoice_date) = 5 THEN total ELSE 0 END), 2) AS May,
+    ROUND(SUM(CASE WHEN MONTH(invoice_date) = 6 THEN total ELSE 0 END), 2) AS June,
+    ROUND(SUM(CASE WHEN MONTH(invoice_date) = 7 THEN total ELSE 0 END), 2) AS July,
+    ROUND(SUM(CASE WHEN MONTH(invoice_date) = 8 THEN total ELSE 0 END), 2) AS August,
+    ROUND(SUM(CASE WHEN MONTH(invoice_date) = 9 THEN total ELSE 0 END), 2) AS September,
+    ROUND(SUM(CASE WHEN MONTH(invoice_date) = 10 THEN total ELSE 0 END), 2) AS October,
+    ROUND(SUM(CASE WHEN MONTH(invoice_date) = 11 THEN total ELSE 0 END), 2) AS November,
+    ROUND(SUM(CASE WHEN MONTH(invoice_date) = 12 THEN total ELSE 0 END), 2) AS December,
+
+    -- إجمالي مبيعات السنة بالكامل
+    ROUND(SUM(total), 2) AS total_yearly_sales
+
+FROM
+    total_buy
+GROUP BY
+    YEAR(invoice_date);
+
+
+CREATE OR REPLACE VIEW view_customer_purchased_items AS
+SELECT
+    c.id AS customer_id,
+    c.name AS customer_name,
+    i.nameItem AS item_name,
+    s.quantity,
+    s.price AS selling_price,
+    ts.invoice_date,
+    ts.invoice_number
+FROM custom c
+         JOIN total_sales ts ON c.id = ts.sup_code
+         JOIN sales s ON ts.invoice_number = s.invoice_number
+         JOIN items i ON s.num = i.id;
+
+CREATE OR REPLACE VIEW view_suppliers_sales_items AS
+SELECT
+    c.id AS customer_id,
+    c.name AS customer_name,
+    i.nameItem AS item_name,
+    s.quantity,
+    s.price AS selling_price,
+    ts.invoice_date,
+    ts.invoice_number
+FROM suppliers c
+         JOIN total_buy ts ON c.id = ts.sup_code
+         JOIN purchase s ON ts.invoice_number = s.invoice_number
+         JOIN items i ON s.num = i.id;
+
+
+CREATE OR REPLACE VIEW view_yearly_monthly_report AS
+SELECT
+    t.action_year AS report_year,
+    t.action_month AS report_month,
+
+    ROUND(SUM(t.purchases), 2) AS purchases,
+    ROUND(SUM(t.purchases_discount), 2) AS purchases_discount,
+
+    ROUND(SUM(t.sales), 2) AS sales,
+    ROUND(SUM(t.sales_discount), 2) AS sales_discount,
+
+    ROUND(SUM(t.purchases_return), 2) AS purchases_return,
+    ROUND(SUM(t.purchases_return_discount), 2) AS purchases_return_discount,
+
+    ROUND(SUM(t.sales_return), 2) AS sales_return,
+    ROUND(SUM(t.sales_return_discount), 2) AS sales_return_discount,
+
+    ROUND(SUM(t.expenses), 2) AS expenses,
+
+    -- Net Profit Calculation: (Sales - Sales_RE - Sales_Discount) - (Purchases - Purchases_RE - Purchases_Discount) - Expenses
+    ROUND(
+            (SUM(t.sales) - SUM(t.sales_return) - SUM(t.sales_discount)) -
+            (SUM(t.purchases) - SUM(t.purchases_return) - SUM(t.purchases_discount)) -
+            SUM(t.expenses),
+            2) AS estimated_net_profit
+
+FROM (
+         -- 1. Sales
+         SELECT
+             YEAR(invoice_date) AS action_year, MONTH(invoice_date) AS action_month,
+             0 AS purchases, 0 AS purchases_discount,
+             total AS sales, discount AS sales_discount,
+             0 AS purchases_return, 0 AS purchases_return_discount,
+             0 AS sales_return, 0 AS sales_return_discount,
+             0 AS expenses
+         FROM total_sales
+
+         UNION ALL
+
+         -- 2. Sales Returns
+         SELECT
+             YEAR(invoice_date), MONTH(invoice_date),
+             0, 0,
+             0, 0,
+             0, 0,
+             total, discount,
+             0
+         FROM total_sales_re
+
+         UNION ALL
+
+         -- 3. Purchases
+         SELECT
+             YEAR(invoice_date), MONTH(invoice_date),
+             total, discount,
+             0, 0,
+             0, 0,
+             0, 0,
+             0
+         FROM total_buy
+
+         UNION ALL
+
+         -- 4. Purchases Returns
+         SELECT
+             YEAR(invoice_date), MONTH(invoice_date),
+             0, 0,
+             0, 0,
+             total, discount,
+             0, 0,
+             0
+         FROM total_buy_re
+
+         UNION ALL
+
+         -- 5. Expenses
+         SELECT
+             YEAR(date_insert), MONTH(date_insert),
+             0, 0,
+             0, 0,
+             0, 0,
+             0, 0,
+             amount
+         FROM treasury_transfers
+     ) AS t
+
+GROUP BY
+    t.action_year,
+    t.action_month
+ORDER BY
+    t.action_year DESC,
+    t.action_month ASC;
+
+
+CREATE OR REPLACE VIEW view_item_sales_rank AS
+SELECT
+    num AS item_id,
+    nameItem AS item_name,
+    YEAR(invoice_date) AS sales_year,
+    MONTH(invoice_date) AS sales_month,
+    SUM(quantity) AS total_qty,
+    ROUND(SUM(total_sales), 2) AS total_amount,
+    -- حساب صافي الربح من الصنف (المبيعات - التكلفة)
+    ROUND(SUM(total_sales - (quantity * buy_price)), 2) AS total_profit
+FROM sales_names_table
+GROUP BY num, nameItem, YEAR(invoice_date), MONTH(invoice_date);
+
+
+CREATE OR REPLACE VIEW view_customer_receivables AS
+SELECT
+    c.id AS customer_id,
+    c.name AS customer_name,
+    c.tel AS customer_phone,
+
+    -- رصيد أول المدة (المديونية عند تسجيل العميل)
+    ROUND(c.first_balance, 2) AS opening_balance,
+
+    -- إجمالي المبالغ الآجلة (المتبقية) من فواتير المبيعات
+    ROUND((SELECT IFNULL(SUM((ts.total - ts.discount) - ts.paid_up), 0)
+           FROM total_sales ts
+           WHERE ts.sup_code = c.id), 2) AS total_invoices_debt,
+
+    -- إجمالي التحصيلات والمدفوعات من جدول حسابات العملاء
+    ROUND((SELECT IFNULL(SUM(paid), 0)
+           FROM customers_accounts ca
+           WHERE ca.account_code = c.id), 2) AS total_payments,
+
+    -- صافي المديونية النهائية
+    ROUND((c.first_balance +
+           (SELECT IFNULL(SUM((ts.total - ts.discount) - ts.paid_up), 0) FROM total_sales ts WHERE ts.sup_code = c.id) -
+           (SELECT IFNULL(SUM(paid), 0) FROM customers_accounts ca WHERE ca.account_code = c.id)
+              ), 2) AS final_balance
+
+FROM custom c
+-- إظهار العملاء الذين لديهم تعاملات مادية فقط (اختياري)
+WHERE (c.first_balance <> 0 OR
+       EXISTS (SELECT 1 FROM total_sales WHERE sup_code = c.id) OR
+       EXISTS (SELECT 1 FROM customers_accounts WHERE account_code = c.id));

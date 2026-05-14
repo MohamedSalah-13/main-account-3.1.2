@@ -36,7 +36,7 @@ public class ButtonColumn<T> extends TableColumn<T, String> {
                             setText(null);
                         } else {
                             btn.getStylesheets().add(externalForm);
-                            btn.getStyleClass().add("button-other");
+                            btn.getStyleClass().addAll("button-other","app-neutral-button");
                             btn.setDisable(buttonColumnI.isButtonDisabled(getIndex()));
                             btn.setOnAction(event -> {
                                 try {

@@ -79,7 +79,7 @@
                                     </children>
                                 </VBox>
                                 <TableView fx:id="tableView" VBox.vgrow="SOMETIMES"/>
-                                <HBox alignment="CENTER_LEFT" spacing="10.0" styleClass="pane-box-last">
+                                <HBox alignment="CENTER_LEFT" spacing="10.0" styleClass="summary-card">
                                     <children>
                                         <Label text="عدد الاصناف"/>
                                         <Text fx:id="stockCount" strokeType="OUTSIDE" strokeWidth="0.0"

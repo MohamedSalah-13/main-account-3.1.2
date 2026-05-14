@@ -53,4 +53,5 @@ public class NamesTables {
 
     public static final String SUM_ALL_BALANCE = "الرصيد";
     public static final String DATE_INSERT = "تاريخ الاضافة";
+    public static final String ITEM_NAME = "اسم الصنف";
 }

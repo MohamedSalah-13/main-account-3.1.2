@@ -4,8 +4,10 @@ import javafx.application.Platform;
 import lombok.extern.log4j.Log4j2;
 
 import java.io.File;
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
@@ -31,6 +33,7 @@ public class ScheduledBackup {
         backupTaskHandle = scheduler.scheduleAtFixedRate(() -> {
             try {
                 File dir = new File(BACKUP_PATH);
+                deleteOldBackupFiles(dir, 30);
                 File backup = backupService.backupToFile(dir);
                 Platform.runLater(() -> setStatus("نسخ تلقائي: " + backup.getName()));
             } catch (Exception e) {
@@ -39,6 +42,28 @@ public class ScheduledBackup {
         }, 0, getTime(), TimeUnit.HOURS);
     }
 
+    private static void deleteOldBackupFiles(File backupDir, int days) {
+        if (backupDir == null || !backupDir.exists() || !backupDir.isDirectory()) {
+            return;
+        }
+
+        Instant deleteBefore = Instant.now().minus(days, ChronoUnit.DAYS);
+        File[] oldBackupFiles = backupDir.listFiles(file ->
+                file.isFile()
+                        && file.getName().toLowerCase().endsWith(".enc")
+                        && Instant.ofEpochMilli(file.lastModified()).isBefore(deleteBefore)
+        );
+
+        if (oldBackupFiles == null) {
+            return;
+        }
+
+        for (File file : oldBackupFiles) {
+            if (!file.delete()) {
+                setStatus("تعذر حذف النسخة القديمة: " + file.getName());
+            }
+        }
+    }
     public static void stopScheduler() {
         if (backupTaskHandle != null) backupTaskHandle.cancel(false);
         if (scheduler != null) scheduler.shutdownNow();

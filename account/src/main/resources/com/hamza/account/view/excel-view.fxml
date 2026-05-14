@@ -31,7 +31,7 @@
                 </ToolBar>
          </top>
          <bottom>
-                  <HBox alignment="CENTER_LEFT" spacing="5.0" styleClass="pane-box-last" BorderPane.alignment="CENTER">
+                  <HBox alignment="CENTER_LEFT" spacing="5.0" styleClass="summary-card" BorderPane.alignment="CENTER">
                       <children>
                           <Label text="عدد الاصناف" />
                           <Label fx:id="labelCount" layoutX="10.0" layoutY="10.0" styleClass="text-sum" text="0" />

@@ -67,5 +67,21 @@ public class BuyApplication<T1 extends BasePurchasesAndSales, T2 extends BaseTot
 
         stage.show();
         StageDimensions.stageDimensions(getClass(), stage);
+
+        var btnSave = getController().getBtnSave();
+
+        btnSave.setText(btnSave.getText() + "F10");
+        btnSave.getScene().getAccelerators().put(
+                new javafx.scene.input.KeyCodeCombination(javafx.scene.input.KeyCode.F10),
+                btnSave::fire
+        );
+
+        var btnPrintSave = getController().getBtnPrintSave();
+        btnPrintSave.setText(btnSave.getText() + "F12");
+        btnPrintSave.getScene().getAccelerators().put(
+                new javafx.scene.input.KeyCodeCombination(javafx.scene.input.KeyCode.F12),
+                btnPrintSave::fire
+        );
+
     }
 }

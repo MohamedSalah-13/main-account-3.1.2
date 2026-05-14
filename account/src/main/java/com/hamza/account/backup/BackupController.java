@@ -15,8 +15,10 @@ import javafx.stage.FileChooser;
 
 import java.awt.*;
 import java.io.File;
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
 import java.util.Optional;
 import java.util.prefs.Preferences;
 
@@ -105,6 +107,8 @@ public class BackupController {
         if (backupService == null) updateBackupService();
         File dir = new File(backupPathField.getText());
         if (!dir.exists()) dir.mkdirs();
+
+        deleteOldBackupFiles(dir, 30);
 
         // إنشاء المهمة
         Task<File> task = new Task<>() {
@@ -195,6 +199,29 @@ public class BackupController {
 
             new Thread(task).start();
         });
+    }
+
+    private void deleteOldBackupFiles(File backupDir, int days) {
+        if (backupDir == null || !backupDir.exists() || !backupDir.isDirectory()) {
+            return;
+        }
+
+        Instant deleteBefore = Instant.now().minus(days, ChronoUnit.DAYS);
+        File[] oldBackupFiles = backupDir.listFiles(file ->
+                file.isFile()
+                        && file.getName().toLowerCase().endsWith(".enc")
+                        && Instant.ofEpochMilli(file.lastModified()).isBefore(deleteBefore)
+        );
+
+        if (oldBackupFiles == null) {
+            return;
+        }
+
+        for (File file : oldBackupFiles) {
+            if (!file.delete()) {
+                setStatus("تعذر حذف النسخة القديمة: " + file.getName());
+            }
+        }
     }
 
     // تفعيل / إخفاء واجهة التقدم

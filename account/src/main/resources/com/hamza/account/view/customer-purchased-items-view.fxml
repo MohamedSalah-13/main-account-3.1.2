@@ -94,33 +94,33 @@
     </center>
    <bottom>
 
-            <HBox spacing="18.0" styleClass="stats-bar" BorderPane.alignment="CENTER">
+            <HBox spacing="18.0" styleClass="summary-card" BorderPane.alignment="CENTER">
                 <children>
                     <VBox alignment="CENTER" spacing="3.0">
                         <children>
-                            <Label styleClass="stat-title" text="عدد السطور" />
-                            <Label fx:id="labelCount" styleClass="stat-value" text="0" />
+                            <Label  text="عدد السطور" />
+                            <Label fx:id="labelCount" styleClass="summary-value" text="0" />
                         </children>
                     </VBox>
 
                     <VBox alignment="CENTER" spacing="3.0">
                         <children>
-                            <Label styleClass="stat-title" text="إجمالي البيع" />
-                            <Label fx:id="labelTotalSales" styleClass="stat-value" text="0" />
+                            <Label  text="إجمالي البيع" />
+                            <Label fx:id="labelTotalSales" styleClass="summary-value" text="0" />
                         </children>
                     </VBox>
 
                     <VBox alignment="CENTER" spacing="3.0">
                         <children>
-                            <Label styleClass="stat-title" text="إجمالي الكمية" />
-                            <Label fx:id="labelTotalQuantity" styleClass="stat-value" text="0" />
+                            <Label  text="إجمالي الكمية" />
+                            <Label fx:id="labelTotalQuantity" styleClass="summary-value" text="0" />
                         </children>
                     </VBox>
 
                     <VBox alignment="CENTER" spacing="3.0">
                         <children>
-                            <Label styleClass="stat-title" text="صافي الإجمالي" />
-                            <Label fx:id="labelNetTotal" styleClass="stat-value" text="0" />
+                            <Label  text="صافي الإجمالي" />
+                            <Label fx:id="labelNetTotal" styleClass="summary-value" text="0" />
                         </children>
                     </VBox>
                 </children>

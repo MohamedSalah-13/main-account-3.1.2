@@ -28,11 +28,11 @@ import java.util.Base64;
 @Log4j2
 public class TrialManager {
 
-    private static final int TRIAL_DAYS = 30;
-    private static final int MAX_ITEMS = 100;
-    private static final int MAX_CUSTOMERS = 100;
-    private static final int MAX_SALES = 100;
-    private static final int MAX_PURCHASES = 100;
+    private static final int TRIAL_DAYS = 7;
+    private static final int MAX_ITEMS = 10;
+    private static final int MAX_CUSTOMERS = 5;
+    private static final int MAX_SALES = 10;
+    private static final int MAX_PURCHASES = 10;
     private static final String SECRET_KEY = "HamzaAccountKey!";
     private static final String HMAC_KEY = "HamzaAccountHmacKey!";
     private static final String APP_DATA_FOLDER = System.getenv("APPDATA") + "\\HamzaAccount";

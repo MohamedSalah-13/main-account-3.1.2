@@ -32,7 +32,7 @@
                   </HBox>
          </top>
          <bottom>
-                  <HBox alignment="CENTER_RIGHT" spacing="5.0" styleClass="pane-box-last" BorderPane.alignment="CENTER">
+                  <HBox alignment="CENTER_RIGHT" spacing="5.0" styleClass="summary-card" BorderPane.alignment="CENTER">
                       <children>
                           <Button fx:id="btnSave" mnemonicParsing="false" styleClass="app-neutral-button" text="Save" />
                           <Button fx:id="btnClose" layoutX="15.0" layoutY="16.0" mnemonicParsing="false" styleClass="app-danger-button" text="Close" />

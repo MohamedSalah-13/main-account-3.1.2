@@ -6,6 +6,7 @@ import com.hamza.account.config.ThemeManager;
 import com.hamza.account.controller.others.ServiceRegistry;
 import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.service.*;
+import com.hamza.account.trial.TrialManager;
 import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.util.FontsSetting;
@@ -74,6 +75,7 @@ public class DownLoadApplication extends Application {
         ServiceRegistry.register(SalesReService.class, new SalesReService(daoFactory));
 
         System.out.println(2);
+
     }
 
     public static void main(String[] args) {
@@ -85,7 +87,7 @@ public class DownLoadApplication extends Application {
             DaoFactory daoFactory = DaoFactory.INSTANCE;
             var connection = connectionToDatabase.getDbConnection().getConnection();
             daoFactory.setConnection(connection);
-//            new TrialManager(connection).checkTrialStatus();
+            new TrialManager(connection).checkTrialStatus();
             return daoFactory;
         } catch (DaoException e) {
             AllAlerts.alertError(e.getMessage());
