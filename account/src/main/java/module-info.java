@@ -55,6 +55,8 @@ module com.hamza.account {
 
     exports com.hamza.account.service;
     opens com.hamza.account.service to javafx.fxml;
+    exports com.hamza.account.service.version;
+    opens com.hamza.account.service.version to javafx.fxml;
     exports com.hamza.account.features.choiceDialoge;
     exports com.hamza.account.features.chart;
     opens com.hamza.account.features.chart to javafx.fxml;

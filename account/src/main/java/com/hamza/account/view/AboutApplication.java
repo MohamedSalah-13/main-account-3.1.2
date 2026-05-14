@@ -4,6 +4,7 @@ import com.hamza.account.config.ConnectionToDatabase;
 import com.hamza.account.config.Image_Setting;
 import com.hamza.account.config.PropertiesName;
 import com.hamza.account.config.ThemeManager;
+import com.hamza.account.service.version.SystemInfoDialog;
 import com.hamza.account.trial.TrialManager;
 import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.button.ImageDesign;
@@ -44,9 +45,9 @@ public class AboutApplication extends Application {
     public AboutApplication() {
         var imageSetting = new Image_Setting();
         ImageView imageView = new ImageDesign(imageSetting.tools, 120);
-        Button button = new Button(Setting_Language.WORD_CLOSE);
-        button.setId("btnClose");
-        button.setOnAction(event -> button.getScene().getWindow().hide());
+        Button button = new Button(Setting_Language.WORD_SHOW);
+        button.getStyleClass().add("app-neutral-button");
+        button.setOnAction(event -> new SystemInfoDialog().show());
         button.setGraphic(ImageChoose.createIcon(imageSetting.cancel));
 
         trialManager = createTrialManager();
@@ -133,6 +134,7 @@ public class AboutApplication extends Application {
 
     private HBox buildLicenseActions() {
         Button activate = new Button("تفعيل الترخيص");
+        activate.getStyleClass().add("app-neutral-button");
         activate.setOnAction(event -> {
             FileChooser chooser = new FileChooser();
             chooser.setTitle("اختر ملف الترخيص");

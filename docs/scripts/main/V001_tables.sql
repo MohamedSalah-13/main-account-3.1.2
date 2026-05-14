@@ -937,3 +937,26 @@ CREATE INDEX treasury_movements_reference_idx
 
 CREATE INDEX treasury_movements_date_idx
     ON treasury_movements (movement_date);
+
+
+
+CREATE TABLE IF NOT EXISTS system_info (
+                                           id INT PRIMARY KEY,
+                                           client_code VARCHAR(50),
+                                           client_name VARCHAR(255),
+                                           app_version VARCHAR(50),
+                                           database_version VARCHAR(50),
+                                           install_date DATETIME,
+                                           last_update DATETIME,
+                                           database_name VARCHAR(100),
+                                           server_ip VARCHAR(100),
+                                           license_key VARCHAR(255),
+                                           notes TEXT
+);
+
+CREATE TABLE database_migrations (
+                                     id INT AUTO_INCREMENT PRIMARY KEY,
+                                     version VARCHAR(50) NOT NULL,
+                                     description VARCHAR(255),
+                                     executed_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);

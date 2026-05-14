@@ -13,7 +13,7 @@ DROP PROCEDURE IF EXISTS ManageColumn$$
 CREATE PROCEDURE ManageColumn(IN t_name VARCHAR(255), IN c_name VARCHAR(255), IN col_def TEXT)
 BEGIN
     DECLARE col_exists INT;
-    SELECT COUNT(*) INTO col_exists FROM information_schema.COLUMNS
+    SELECT COUNT(*) INTO col_exists FROM information_schema.COLUMNS 
     WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = t_name AND COLUMN_NAME = c_name;
 
     IF col_exists > 0 THEN

@@ -3,6 +3,7 @@ out/
 logs/
 target/
 backup_data/
+backups
 program/
 suspended_invoices/
 !.mvn/wrapper/maven-wrapper.jar

@@ -438,9 +438,7 @@ public class TrialManager {
         try {
             LicenseCheckResult license = validateLicense(Paths.get(LICENSE_FILE_PATH), false);
             info.licensePresent = license.present;
-            //TODO 5/4/2026 12:05 PM Mohamed: change in other version
-//            info.licenseValid = license.valid;
-            info.licenseValid = true;
+            info.licenseValid = license.valid;
             info.licenseError = license.error;
 
             if (license.valid) {
@@ -633,22 +631,22 @@ public class TrialManager {
 
     public boolean canAddItem() {
         if (getDisplayInfo().licenseValid) return true;
-        return checkLimit("items", MAX_ITEMS, "لقد وصلت للحد الأقصى من الأصناف في النسخة التجريبية (100 صنف).");
+        return checkLimit("items", MAX_ITEMS, "لقد وصلت للحد الأقصى من الأصناف في النسخة التجريبية (10 صنف).");
     }
 
     public boolean canAddCustomer() {
         if (getDisplayInfo().licenseValid) return true;
-        return checkLimit("customers", MAX_CUSTOMERS, "لقد وصلت للحد الأقصى من العملاء في النسخة التجريبية (100 عميل).");
+        return checkLimit("custom", MAX_CUSTOMERS, "لقد وصلت للحد الأقصى من العملاء في النسخة التجريبية (5 عميل).");
     }
 
     public boolean canAddSale() {
         if (getDisplayInfo().licenseValid) return true;
-        return checkLimit("total_sales", MAX_SALES, "لقد وصلت للحد الأقصى من المبيعات في النسخة التجريبية (100 مبيعات).");
+        return checkLimit("total_sales", MAX_SALES, "لقد وصلت للحد الأقصى من المبيعات في النسخة التجريبية (10 مبيعات).");
     }
 
     public boolean canAddPurchase() {
         if (getDisplayInfo().licenseValid) return true;
-        return checkLimit("total_buy", MAX_PURCHASES, "لقد وصلت للحد الأقصى من المشتريات في النسخة التجريبية (100 مشتريات).");
+        return checkLimit("total_buy", MAX_PURCHASES, "لقد وصلت للحد الأقصى من المشتريات في النسخة التجريبية (10 مشتريات).");
     }
 
     private boolean checkLimit(String tableName, int maxLimit, String errorMessage) {
