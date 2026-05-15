@@ -13,6 +13,8 @@ import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.language.Setting_Language;
 import com.hamza.controlsfx.util.ImageChoose;
+import javafx.beans.property.ReadOnlyObjectWrapper;
+import javafx.beans.property.ReadOnlyStringWrapper;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
@@ -27,144 +29,327 @@ import org.jetbrains.annotations.NotNull;
 import java.io.FileNotFoundException;
 import java.util.List;
 
-import static com.hamza.controlsfx.others.Utils.setTextFormatter;
-
 @Log4j2
 @FxmlPath(pathFile = "items/update-some-items.fxml")
 public class UpdateSomeItems {
 
     private final List<ItemsModel> itemsModelList;
+
     private final ImageChoose imageChoose = new ImageChoose();
     private final ImageView imageView = new ImageView();
+
     private final ItemsService itemsService = ServiceRegistry.get(ItemsService.class);
     private final MainGroupService mainGroupService = ServiceRegistry.get(MainGroupService.class);
     private final SupGroupService supGroupService = ServiceRegistry.get(SupGroupService.class);
-    private boolean isActiveProperty = false;
+
     @FXML
-    private CheckBox checkUpdateGroup, checkUpdateActive, checkUpdateBuy, checkUpdateSell, checkDeleteImage, checkMini, checkFirstBalance;
+    private CheckBox checkUpdateGroup;
     @FXML
-    private ComboBox<String> comboActive, comboMainGroup, comboSubGroup;
+    private CheckBox checkUpdateActive;
     @FXML
-    private TextField textBuyPrice, textSellPrice, textFirstBalance, textMini;
+    private CheckBox checkUpdateBuy;
     @FXML
-    private RadioButton radioDeleteImage, radioAddImage;
+    private CheckBox checkUpdateSell;
+    @FXML
+    private CheckBox checkDeleteImage;
+    @FXML
+    private CheckBox checkMini;
+    @FXML
+    private CheckBox checkFirstBalance;
+
+    @FXML
+    private ComboBox<String> comboActive;
+    @FXML
+    private ComboBox<String> comboMainGroup;
+    @FXML
+    private ComboBox<String> comboSubGroup;
+
+    @FXML
+    private TextField textBuyPrice;
+    @FXML
+    private TextField textSellPrice;
+    @FXML
+    private TextField textFirstBalance;
+    @FXML
+    private TextField textMini;
+
+    @FXML
+    private RadioButton radioDeleteImage;
+    @FXML
+    private RadioButton radioAddImage;
     @FXML
     private Text textPath;
     @FXML
     private ImageView imageInformation;
+
     @FXML
-    private Button btnSave, btnClose;
+    private Button btnSave;
+    @FXML
+    private Button btnClose;
+    @FXML
+    private Text textItemsCount;
+    @FXML
+    private TableView<ItemsModel> tableItems;
+
     @FXML
     private StackPane stackPane;
+
     private MaskerPaneSetting maskerPaneSetting;
 
     public UpdateSomeItems(List<ItemsModel> itemsModelList) {
         this.itemsModelList = itemsModelList;
     }
 
-    @NotNull
-    private static TextFormatter<Object> getTextFormatter() {
-        return new TextFormatter<>(change -> {
-            String newText = change.getControlNewText();
-            if (newText.matches("^\\d*\\.?\\d*$")) {
-                return change;
-            }
-            return null;
-        });
-    }
-
     @FXML
     public void initialize() {
         maskerPaneSetting = new MaskerPaneSetting(stackPane);
-        comboSetting();
-        checkSetting();
+
+        setupItemsTable();
+        setupTexts();
+        setupButtons();
+        setupComboBoxes();
+        setupTextFields();
+        setupImageControls();
+        setupCheckBoxes();
+        setupActions();
+    }
+    private void setupItemsTable() {
+        tableItems.getColumns().clear();
+
+        TableColumn<ItemsModel, Number> columnNumber = new TableColumn<>("#");
+        columnNumber.setCellValueFactory(cellData ->
+                new ReadOnlyObjectWrapper<>(tableItems.getItems().indexOf(cellData.getValue()) + 1)
+        );
+        columnNumber.setPrefWidth(55);
+
+        TableColumn<ItemsModel, String> columnName = new TableColumn<>("اسم الصنف");
+        columnName.setCellValueFactory(cellData ->
+                new ReadOnlyStringWrapper(cellData.getValue().getNameItem())
+        );
+        columnName.setPrefWidth(220);
+
+        TableColumn<ItemsModel, Number> columnBuyPrice = new TableColumn<>("سعر الشراء");
+        columnBuyPrice.setCellValueFactory(cellData ->
+                new ReadOnlyObjectWrapper<>(cellData.getValue().getBuyPrice())
+        );
+        columnBuyPrice.setPrefWidth(100);
+
+        TableColumn<ItemsModel, Number> columnSellPrice = new TableColumn<>("سعر البيع");
+        columnSellPrice.setCellValueFactory(cellData ->
+                new ReadOnlyObjectWrapper<>(cellData.getValue().getSelPrice1())
+        );
+        columnSellPrice.setPrefWidth(100);
+
+        TableColumn<ItemsModel, Number> columnMiniQuantity = new TableColumn<>("أقل كمية");
+        columnMiniQuantity.setCellValueFactory(cellData ->
+                new ReadOnlyObjectWrapper<>(cellData.getValue().getMini_quantity())
+        );
+        columnMiniQuantity.setPrefWidth(100);
+
+        TableColumn<ItemsModel, Number> columnFirstBalance = new TableColumn<>("رصيد أول");
+        columnFirstBalance.setCellValueFactory(cellData ->
+                new ReadOnlyObjectWrapper<>(cellData.getValue().getFirstBalanceForStock())
+        );
+        columnFirstBalance.setPrefWidth(100);
+
+        tableItems.getColumns().addAll(
+                columnNumber,
+                columnName,
+                columnBuyPrice,
+                columnSellPrice,
+                columnMiniQuantity,
+                columnFirstBalance
+        );
+
+        tableItems.setItems(FXCollections.observableArrayList(itemsModelList));
+        tableItems.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_FLEX_LAST_COLUMN);
+
+        textItemsCount.setText("عدد الأصناف: " + tableItems.getItems().size());
     }
 
-    private void comboSetting() {
-        btnSave.setText(Setting_Language.WORD_SAVE);
-        btnClose.setText(Setting_Language.WORD_CLOSE);
-        var imageSetting = new Image_Setting();
-        btnSave.setGraphic(ImageChoose.createIcon(imageSetting.save));
-        btnClose.setGraphic(ImageChoose.createIcon(imageSetting.cancel));
-
+    private void setupTexts() {
         checkUpdateGroup.setText("تعديل المجموعة");
         checkUpdateActive.setText("تعديل الحالة");
         checkUpdateBuy.setText("تعديل سعر الشراء");
         checkUpdateSell.setText("تعديل سعر البيع");
-        checkDeleteImage.setText("تعديل الصورة");
-        checkMini.setText("تعديل اقل كمية");
-        checkFirstBalance.setText("تعديل رصيد اول");
+        checkDeleteImage.setText("تعديل صور الأصناف");
+        checkMini.setText("تعديل أقل كمية");
+        checkFirstBalance.setText("تعديل رصيد أول");
 
         comboMainGroup.setPromptText(Setting_Language.WORD_MAIN_G);
         comboSubGroup.setPromptText(Setting_Language.WORD_SUB_G);
-        // combo items
+        comboActive.setPromptText(Setting_Language.WORD_ACTIVE);
 
-        ObservableList<String> observableListMain = FXCollections.observableArrayList(getMainGroupsNames());
-        comboMainGroup.setItems(observableListMain);
+        textBuyPrice.setPromptText("نسبة الزيادة %");
+        textSellPrice.setPromptText("نسبة الزيادة %");
+        textMini.setPromptText("أقل كمية");
+        textFirstBalance.setPromptText("رصيد أول");
 
-        comboMainGroup.valueProperty().addListener((observableValue, string, t1) -> {
+        radioDeleteImage.setText("حذف الصور الحالية");
+        radioAddImage.setText("تعيين صورة واحدة للجميع");
+
+        textPath.setText("لم يتم اختيار صورة");
+
+        btnSave.setText(Setting_Language.WORD_SAVE);
+        btnClose.setText(Setting_Language.WORD_CLOSE);
+    }
+
+    private void setupButtons() {
+        var imageSetting = new Image_Setting();
+
+        btnSave.setGraphic(ImageChoose.createIcon(imageSetting.save));
+        btnClose.setGraphic(ImageChoose.createIcon(imageSetting.cancel));
+    }
+
+    private void setupComboBoxes() {
+        comboMainGroup.setItems(FXCollections.observableArrayList(getMainGroupsNames()));
+
+        comboMainGroup.valueProperty().addListener((observableValue, oldValue, newValue) -> {
             comboSubGroup.getItems().clear();
-            // add items
+
+            if (newValue == null || newValue.isBlank()) {
+                return;
+            }
+
             try {
-                MainGroups mainGroupsByName = mainGroupService.getMainGroupsByName(t1);
-                ObservableList<String> observableListSub = FXCollections.observableArrayList(supGroupService.getSubGroupsNamesByMainId(mainGroupsByName.getId()));
-                comboSubGroup.getItems().addAll(observableListSub);
+                MainGroups mainGroup = mainGroupService.getMainGroupsByName(newValue);
+                ObservableList<String> subGroups =
+                        FXCollections.observableArrayList(
+                                supGroupService.getSubGroupsNamesByMainId(mainGroup.getId())
+                        );
+
+                comboSubGroup.setItems(subGroups);
+                comboSubGroup.getSelectionModel().clearSelection();
             } catch (Exception e) {
                 logError(e);
             }
         });
 
-        comboSubGroup.valueProperty().addListener((observableValue, string, t1) -> {
-            try {
-                for (ItemsModel itemsModel : itemsModelList) {
-                    itemsModel.setSubGroups(supGroupService.getSubGroupsByName(comboSubGroup.getSelectionModel().getSelectedItem()));
-//                    System.out.println(itemsModel.getSubGroups());
-                }
-            } catch (DaoException e) {
-                logError(e);
-            }
-        });
-
-        comboActive.setPromptText(Setting_Language.WORD_ACTIVE);
-        var statusActive = Setting_Language.WORD_ACTIVE;
-        var statusInactive = Setting_Language.WORD_INACTIVE;
-
-        comboActive.setItems(FXCollections.observableArrayList(statusActive, statusInactive));
+        comboActive.setItems(FXCollections.observableArrayList(
+                Setting_Language.WORD_ACTIVE,
+                Setting_Language.WORD_INACTIVE
+        ));
         comboActive.getSelectionModel().selectFirst();
-        setTextFormatter(textBuyPrice, textSellPrice, textMini, textFirstBalance);
-        textBuyPrice.setTextFormatter(getTextFormatter());
-        textSellPrice.setTextFormatter(getTextFormatter());
-        textMini.setTextFormatter(getTextFormatter());
-        textFirstBalance.setTextFormatter(getTextFormatter());
-        radioAddImage.setTooltip(new Tooltip("Click to add an image for the items"));
-        radioDeleteImage.setTooltip(new Tooltip("Click to delete the image for the items"));
+    }
+
+    private void setupTextFields() {
+        textBuyPrice.setTextFormatter(decimalTextFormatter());
+        textSellPrice.setTextFormatter(decimalTextFormatter());
+        textMini.setTextFormatter(decimalTextFormatter());
+        textFirstBalance.setTextFormatter(decimalTextFormatter());
+
+        textBuyPrice.setText("0.0");
+        textSellPrice.setText("0.0");
+        textMini.setText("0.0");
+        textFirstBalance.setText("0.0");
+    }
+
+    private void setupImageControls() {
+        radioDeleteImage.setSelected(true);
+
+        radioAddImage.setTooltip(new Tooltip("اختيار صورة واحدة وتطبيقها على كل الأصناف المحددة"));
+        radioDeleteImage.setTooltip(new Tooltip("حذف الصور من كل الأصناف المحددة"));
+
         radioDeleteImage.disableProperty().bind(checkDeleteImage.selectedProperty().not());
         radioAddImage.disableProperty().bind(checkDeleteImage.selectedProperty().not());
 
-//        radioDeleteImage.setOnAction(actionEvent -> textPath.setText(""));
-        radioAddImage.setOnAction(actionEvent -> {
-            try {
-                imageChoose.onAddImage(imageView);
-                if (imageView.getImage() == null) {
-                    textPath.setText("");
-                    radioDeleteImage.setSelected(true);
-                }
-            } catch (FileNotFoundException e) {
-                logError(e);
-            }
+        radioAddImage.setOnAction(actionEvent -> chooseImage());
+        radioDeleteImage.setOnAction(actionEvent -> {
+            imageView.setImage(null);
+            textPath.setText("سيتم حذف الصور الحالية");
         });
 
+        setupImageInformationPopup();
+    }
+
+    private void setupImageInformationPopup() {
         final Popup popup = new Popup();
         popup.setAutoHide(true);
-        var e = new Text("حذف جميع الصورة \n او إضافة صورة واحدة لجميع الأصناف");
-        e.getStyleClass().add("text-explain");
-        popup.getContent().add(e);
-        imageInformation.setOnMouseEntered(mouseEvent -> popup.show(imageInformation, mouseEvent.getScreenX() - 150, mouseEvent.getScreenY() - 50));
+
+        var text = new Text("يمكنك حذف جميع الصور الحالية\nأو تعيين صورة واحدة لجميع الأصناف المحددة");
+        text.getStyleClass().add("text-explain");
+
+        popup.getContent().add(text);
+
+        imageInformation.setOnMouseEntered(mouseEvent ->
+                popup.show(
+                        imageInformation,
+                        mouseEvent.getScreenX() - 170,
+                        mouseEvent.getScreenY() - 55
+                )
+        );
+
         imageInformation.setOnMouseExited(mouseEvent -> popup.hide());
+    }
 
+    private void setupCheckBoxes() {
+        btnSave.disableProperty().bind(
+                checkUpdateSell.selectedProperty().not()
+                        .and(checkUpdateBuy.selectedProperty().not())
+                        .and(checkMini.selectedProperty().not())
+                        .and(checkFirstBalance.selectedProperty().not())
+                        .and(checkUpdateGroup.selectedProperty().not())
+                        .and(checkUpdateActive.selectedProperty().not())
+                        .and(checkDeleteImage.selectedProperty().not())
+        );
+
+        comboMainGroup.disableProperty().bind(checkUpdateGroup.selectedProperty().not());
+        comboSubGroup.disableProperty().bind(checkUpdateGroup.selectedProperty().not());
+
+        comboActive.disableProperty().bind(checkUpdateActive.selectedProperty().not());
+
+        textBuyPrice.disableProperty().bind(checkUpdateBuy.selectedProperty().not());
+        textSellPrice.disableProperty().bind(checkUpdateSell.selectedProperty().not());
+        textMini.disableProperty().bind(checkMini.selectedProperty().not());
+        textFirstBalance.disableProperty().bind(checkFirstBalance.selectedProperty().not());
+
+        checkUpdateBuy.selectedProperty().addListener((observableValue, oldValue, selected) ->
+                resetFieldIfUnchecked(textBuyPrice, selected)
+        );
+
+        checkUpdateSell.selectedProperty().addListener((observableValue, oldValue, selected) ->
+                resetFieldIfUnchecked(textSellPrice, selected)
+        );
+
+        checkMini.selectedProperty().addListener((observableValue, oldValue, selected) ->
+                resetFieldIfUnchecked(textMini, selected)
+        );
+
+        checkFirstBalance.selectedProperty().addListener((observableValue, oldValue, selected) ->
+                resetFieldIfUnchecked(textFirstBalance, selected)
+        );
+
+        checkDeleteImage.selectedProperty().addListener((observableValue, oldValue, selected) -> {
+            if (!selected) {
+                imageView.setImage(null);
+                radioDeleteImage.setSelected(true);
+                textPath.setText("لم يتم اختيار صورة");
+            } else if (radioDeleteImage.isSelected()) {
+                textPath.setText("سيتم حذف الصور الحالية");
+            }
+        });
+    }
+
+    private void setupActions() {
         btnSave.setOnAction(actionEvent -> saveData());
-        btnClose.setOnAction(actionEvent -> stackPane.getScene().getWindow().hide());
+        btnClose.setOnAction(actionEvent -> closeWindow());
+    }
 
+    @NotNull
+    private TextFormatter<Object> decimalTextFormatter() {
+        return new TextFormatter<>(change -> {
+            String newText = change.getControlNewText();
+
+            if (newText == null || newText.isBlank()) {
+                return change;
+            }
+
+            if (newText.matches("\\d*(\\.\\d*)?")) {
+                return change;
+            }
+
+            return null;
+        });
     }
 
     @NotNull
@@ -177,154 +362,254 @@ public class UpdateSomeItems {
         }
     }
 
-    private void checkSetting() {
-        btnSave.disableProperty().bind(checkUpdateSell.selectedProperty().not()
-                .and(checkUpdateBuy.selectedProperty().not())
-                .and(checkMini.selectedProperty().not())
-                .and(checkFirstBalance.selectedProperty().not())
-                .and(checkUpdateGroup.selectedProperty().not())
-                .and(checkUpdateActive.selectedProperty().not())
-                .and(checkDeleteImage.selectedProperty().not()));
+    private void chooseImage() {
+        try {
+            imageChoose.onAddImage(imageView);
 
-        comboMainGroup.disableProperty().bind(checkUpdateGroup.selectedProperty().not());
-        comboSubGroup.disableProperty().bind(checkUpdateGroup.selectedProperty().not());
-        textBuyPrice.disableProperty().bind(checkUpdateBuy.selectedProperty().not());
-        textSellPrice.disableProperty().bind(checkUpdateSell.selectedProperty().not());
-        textMini.disableProperty().bind(checkMini.selectedProperty().not());
-        textFirstBalance.disableProperty().bind(checkFirstBalance.selectedProperty().not());
-        comboActive.disableProperty().bind(checkUpdateActive.selectedProperty().not());
+            if (imageView.getImage() == null) {
+                textPath.setText("لم يتم اختيار صورة");
+                radioDeleteImage.setSelected(true);
+                return;
+            }
 
-        checkUpdateSell.selectedProperty().addListener((observableValue, aBoolean, t1) -> resetFieldIfFalse(textSellPrice, t1));
-        checkUpdateBuy.selectedProperty().addListener((observableValue, aBoolean, t1) -> resetFieldIfFalse(textBuyPrice, t1));
-        checkMini.selectedProperty().addListener((observableValue, aBoolean, t1) -> resetFieldIfFalse(textMini, t1));
-        checkFirstBalance.selectedProperty().addListener((observableValue, aBoolean, t1) -> resetFieldIfFalse(textFirstBalance, t1));
-
+            textPath.setText("تم اختيار صورة");
+        } catch (FileNotFoundException e) {
+            logError(e);
+            textPath.setText("لم يتم اختيار صورة");
+            radioDeleteImage.setSelected(true);
+        }
     }
 
-    private void resetFieldIfFalse(TextField field, Boolean t1) {
-        if (!t1) {
+    private void resetFieldIfUnchecked(TextField field, boolean selected) {
+        if (!selected) {
             field.setText("0.0");
         }
     }
 
     private void saveData() {
-        try {
-            var i = updateGroups(itemsModelList);
-            log.info("Update groups result: {}", i);
-            if (i == 1) {
-                maskerPaneSetting.showMaskerPane(() -> {
-                    try {
-                        itemsService.updateGroup(itemsModelList);
-                    } catch (Exception e) {
-                        logError(e);
-                    }
-                });
+        if (itemsModelList == null || itemsModelList.isEmpty()) {
+            AllAlerts.alertError("لا توجد أصناف محددة للتعديل");
+            return;
+        }
 
-                maskerPaneSetting.getVoidTask().setOnSucceeded(workerStateEvent -> {
-                    AllAlerts.alertSave();
-                    checkUpdateGroup.setSelected(false);
-                    checkUpdateActive.setSelected(false);
-                    checkUpdateBuy.setSelected(false);
-                    checkUpdateSell.setSelected(false);
-                    checkDeleteImage.setSelected(false);
-                    checkMini.setSelected(false);
-                    checkFirstBalance.setSelected(false);
-                });
+        try {
+            boolean hasUpdates = applySelectedUpdates();
+
+            if (!hasUpdates) {
+                AllAlerts.alertError("من فضلك اختر تعديل واحد على الأقل");
+                return;
             }
+
+            maskerPaneSetting.showMaskerPane(() -> {
+                try {
+                    itemsService.updateGroup(itemsModelList);
+                } catch (Exception e) {
+                    logError(e);
+                }
+            });
+
+            maskerPaneSetting.getVoidTask().setOnSucceeded(workerStateEvent -> {
+                AllAlerts.alertSave();
+                resetScreen();
+            });
+
+            maskerPaneSetting.getVoidTask().setOnFailed(workerStateEvent -> {
+                Throwable exception = maskerPaneSetting.getVoidTask().getException();
+
+                if (exception instanceof Exception e) {
+                    logError(e);
+                } else if (exception != null) {
+                    log.error("Error while updating selected items", exception);
+                    AllAlerts.alertError(exception.getMessage());
+                }
+            });
+
         } catch (Exception e) {
             logError(e);
         }
-
-
     }
 
-    private int updateGroups(List<ItemsModel> itemsModelList) throws Exception {
-        // check groups
+    private boolean applySelectedUpdates() throws Exception {
+        boolean hasUpdates = false;
+
         if (checkUpdateGroup.isSelected()) {
-            if (comboSubGroup.getSelectionModel().isEmpty()) {
-                comboSubGroup.getSelectionModel().selectFirst();
-                throw new Exception("من فضلك حدد المجموعة");
-            }
-            return 1;
+            updateItemsGroup();
+            hasUpdates = true;
         }
 
-        // check activation
-        else if (checkUpdateActive.isSelected()) {
-            var selectionModel = comboActive.getSelectionModel();
-            if (selectionModel.isEmpty()) {
-                throw new Exception("من فضلك حدد الحالة");
-            }
-            if (selectionModel.getSelectedItem().equals(Setting_Language.WORD_ACTIVE)) {
-                isActiveProperty = true;
-            }
-            itemsModelList.forEach(itemsModel -> itemsModel.setActiveItem(isActiveProperty));
-            return 1;
+        if (checkUpdateActive.isSelected()) {
+            updateItemsActiveStatus();
+            hasUpdates = true;
         }
 
-        // check buy
-        else if (checkUpdateBuy.isSelected()) {
-            var percentageIncrease = Double.parseDouble(textBuyPrice.getText());
-            if (percentageIncrease <= 0) {
-                throw new Exception("الزيادة المطلوبة يجب ان تكون اكبر من الصفر");
+        if (checkUpdateBuy.isSelected()) {
+            updateItemsBuyPrice();
+            hasUpdates = true;
+        }
+
+        if (checkUpdateSell.isSelected()) {
+            updateItemsSellPrice();
+            hasUpdates = true;
+        }
+
+        if (checkMini.isSelected()) {
+            updateItemsMiniQuantity();
+            hasUpdates = true;
+        }
+
+        if (checkFirstBalance.isSelected()) {
+            updateItemsFirstBalance();
+            hasUpdates = true;
+        }
+
+        if (checkDeleteImage.isSelected()) {
+            updateItemsImage();
+            hasUpdates = true;
+        }
+
+        return hasUpdates;
+    }
+
+    private void updateItemsGroup() throws Exception {
+        if (comboMainGroup.getSelectionModel().isEmpty()) {
+            throw new Exception("من فضلك حدد المجموعة الرئيسية");
+        }
+
+        if (comboSubGroup.getSelectionModel().isEmpty()) {
+            throw new Exception("من فضلك حدد المجموعة الفرعية");
+        }
+
+        var subGroup = supGroupService.getSubGroupsByName(
+                comboSubGroup.getSelectionModel().getSelectedItem()
+        );
+
+        itemsModelList.forEach(itemsModel -> itemsModel.setSubGroups(subGroup));
+    }
+
+    private void updateItemsActiveStatus() throws Exception {
+        if (comboActive.getSelectionModel().isEmpty()) {
+            throw new Exception("من فضلك حدد الحالة");
+        }
+
+        boolean active = comboActive.getSelectionModel()
+                .getSelectedItem()
+                .equals(Setting_Language.WORD_ACTIVE);
+
+        itemsModelList.forEach(itemsModel -> itemsModel.setActiveItem(active));
+    }
+
+    private void updateItemsBuyPrice() throws Exception {
+        double percentageIncrease = getRequiredPositiveNumber(
+                textBuyPrice,
+                "نسبة زيادة سعر الشراء يجب أن تكون أكبر من الصفر"
+        );
+
+        itemsModelList.forEach(itemsModel -> {
+            double buyPrice = itemsModel.getBuyPrice();
+            double newPrice = buyPrice + ((buyPrice * percentageIncrease) / 100);
+            itemsModel.setBuyPrice(newPrice);
+        });
+    }
+
+    private void updateItemsSellPrice() throws Exception {
+        double percentageIncrease = getRequiredPositiveNumber(
+                textSellPrice,
+                "نسبة زيادة سعر البيع يجب أن تكون أكبر من الصفر"
+        );
+
+        itemsModelList.forEach(itemsModel -> {
+            double sellPrice = itemsModel.getSelPrice1();
+            double newPrice = sellPrice + ((sellPrice * percentageIncrease) / 100);
+            itemsModel.setSelPrice1(newPrice);
+        });
+    }
+
+    private void updateItemsMiniQuantity() throws Exception {
+        double miniQuantity = getRequiredNumber(textMini, "من فضلك أدخل أقل كمية");
+
+        itemsModelList.forEach(itemsModel -> itemsModel.setMini_quantity(miniQuantity));
+    }
+
+    private void updateItemsFirstBalance() throws Exception {
+        double firstBalance = getRequiredNumber(textFirstBalance, "من فضلك أدخل رصيد أول");
+
+        itemsModelList.forEach(itemsModel -> itemsModel.setFirstBalanceForStock(firstBalance));
+    }
+
+    private void updateItemsImage() throws Exception {
+        if (radioDeleteImage.isSelected()) {
+            itemsModelList.forEach(itemsModel -> itemsModel.setItem_image(null));
+            return;
+        }
+
+        if (radioAddImage.isSelected()) {
+            if (imageView.getImage() == null) {
+                throw new Exception("من فضلك اختر صورة أولاً");
             }
 
-            itemsModelList.forEach(itemsModel -> {
-                var buyPrice = itemsModel.getBuyPrice();
-                var v = ((buyPrice * percentageIncrease) / 100) + buyPrice;
-                itemsModel.setBuyPrice(v);
-            });
+            byte[] imageBytes = imageChoose.convertFxImageToBytes(imageView.getImage());
+            itemsModelList.forEach(itemsModel -> itemsModel.setItem_image(imageBytes));
+            return;
         }
 
-        // check sell
-        else if (checkUpdateSell.isSelected()) {
-            var percentageDecrease = Double.parseDouble(textSellPrice.getText());
-            if (percentageDecrease <= 0) {
-                throw new Exception("الزيادة المطلوبة يجب ان تكون اكبر من الصفر");
-            }
+        throw new Exception("من فضلك اختر طريقة تعديل الصورة");
+    }
 
-            itemsModelList.forEach(itemsModel -> {
-                var selPrice1 = itemsModel.getSelPrice1();
-                var v = ((selPrice1 * percentageDecrease) / 100) + selPrice1;
-                itemsModel.setSelPrice1(v);
-            });
-            return 1;
+    private double getRequiredPositiveNumber(TextField field, String errorMessage) throws Exception {
+        double value = getRequiredNumber(field, errorMessage);
+
+        if (value <= 0) {
+            throw new Exception(errorMessage);
         }
 
-        // check mini
-        else if (checkMini.isSelected()) {
-            itemsModelList.forEach(itemsModel -> itemsModel.setMini_quantity(Double.parseDouble(textMini.getText())));
-            return 1;
+        return value;
+    }
+
+    private double getRequiredNumber(TextField field, String errorMessage) throws Exception {
+        String text = field.getText();
+
+        if (text == null || text.isBlank()) {
+            throw new Exception(errorMessage);
         }
 
-        // check first balance
-        else if (checkFirstBalance.isSelected()) {
-            itemsModelList.forEach(itemsModel -> itemsModel.setFirstBalanceForStock(Double.parseDouble(textFirstBalance.getText())));
-            return 1;
+        try {
+            return Double.parseDouble(text);
+        } catch (NumberFormatException e) {
+            throw new Exception(errorMessage, e);
         }
+    }
 
-        // check image
-        else if (checkDeleteImage.isSelected()) {
-            if (radioDeleteImage.isSelected()) {
-                itemsModelList.forEach(itemsModel -> itemsModel.setItem_image(null));
-            }
+    private void resetScreen() {
+        checkUpdateGroup.setSelected(false);
+        checkUpdateActive.setSelected(false);
+        checkUpdateBuy.setSelected(false);
+        checkUpdateSell.setSelected(false);
+        checkDeleteImage.setSelected(false);
+        checkMini.setSelected(false);
+        checkFirstBalance.setSelected(false);
 
-            if (radioAddImage.isSelected()) {
-                itemsModelList.forEach(itemsModel -> {
-                    try {
-                        itemsModel.setItem_image(imageChoose.convertFxImageToBytes(imageView.getImage()));
-                    } catch (Exception e) {
-                        logError(e);
-                    }
-                });
-            }
-            return 1;
+        comboMainGroup.getSelectionModel().clearSelection();
+        comboSubGroup.getItems().clear();
+        comboActive.getSelectionModel().selectFirst();
+
+        textBuyPrice.setText("0.0");
+        textSellPrice.setText("0.0");
+        textMini.setText("0.0");
+        textFirstBalance.setText("0.0");
+
+        radioDeleteImage.setSelected(true);
+        imageView.setImage(null);
+        textPath.setText("لم يتم اختيار صورة");
+    }
+
+    private void closeWindow() {
+        if (stackPane != null && stackPane.getScene() != null) {
+            stackPane.getScene().getWindow().hide();
         }
-        return 0;
     }
 
     private void logError(Exception e) {
-        log.error(e.getMessage(), e.getCause());
+        log.error("Error while updating selected items", e);
         AllAlerts.showExceptionDialog(e);
     }
-
 }

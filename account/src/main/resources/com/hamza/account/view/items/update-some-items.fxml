@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
+<?import javafx.geometry.Insets?>
 <?import javafx.scene.control.*?>
 <?import javafx.scene.image.*?>
 <?import javafx.scene.layout.*?>
@@ -8,150 +9,251 @@
 <StackPane fx:id="stackPane"
            nodeOrientation="RIGHT_TO_LEFT"
            styleClass="app-root"
-
            xmlns:fx="http://javafx.com/fxml/1"
            xmlns="http://javafx.com/javafx/21">
+
     <children>
-        <VBox spacing="14.0" styleClass="app-container">
-            <children>
-                <VBox spacing="14.0" styleClass="app-card">
+        <ScrollPane fitToWidth="true"
+                    fitToHeight="true"
+                    styleClass="modern-scroll-pane">
+            <content>
+                <VBox spacing="14.0" styleClass="app-container">
+
                     <children>
-                        <GridPane hgap="12.0" vgap="12.0">
-                            <columnConstraints>
-                                <ColumnConstraints minWidth="170.0"/>
-                                <ColumnConstraints minWidth="220.0" hgrow="ALWAYS"/>
-                                <ColumnConstraints minWidth="40.0"/>
-                            </columnConstraints>
 
+                        <VBox spacing="6.0" styleClass="app-card">
                             <children>
-                                <CheckBox fx:id="checkUpdateGroup"
-                                          mnemonicParsing="false"
-                                          text="Update Group"/>
+                                <Label text="تعديل جماعي للأصناف"
+                                       styleClass="section-title"/>
 
-                                <ComboBox fx:id="comboMainGroup"
-                                          prefWidth="150.0"
-                                          GridPane.columnIndex="1"/>
+                                <Text text="اختر الحقول التي تريد تعديلها، وسيتم تطبيقها على جميع الأصناف المحددة."
+                                      styleClass="warning-note"/>
+                            </children>
+                        </VBox>
 
-                                <ComboBox fx:id="comboSubGroup"
-                                          prefWidth="150.0"
-                                          GridPane.columnIndex="1"
-                                          GridPane.rowIndex="1"/>
-
-                                <CheckBox fx:id="checkUpdateActive"
-                                          mnemonicParsing="false"
-                                          text="Update Active"
-                                          GridPane.rowIndex="2"/>
-                                <ComboBox fx:id="comboActive"
-                                          prefWidth="150.0"
-                                          GridPane.columnIndex="1"
-                                          GridPane.rowIndex="2"/>
-
-                                <CheckBox fx:id="checkUpdateBuy"
-                                          mnemonicParsing="false"
-                                          text="Update Buy price"
-                                          GridPane.rowIndex="3"/>
-                                <TextField fx:id="textBuyPrice"
-                                           GridPane.columnIndex="1"
-                                           GridPane.rowIndex="3"/>
-                                <ImageView fitHeight="25.0"
-                                           fitWidth="25.0"
-                                           pickOnBounds="true"
-                                           preserveRatio="true"
-                                           GridPane.columnIndex="2"
-                                           GridPane.rowIndex="3">
-                                    <image>
-                                        <Image url="@../../image/percent_24dp_666666_FILL0_wght400_GRAD0_opsz24.png"/>
-                                    </image>
-                                </ImageView>
-
-                                <CheckBox fx:id="checkUpdateSell"
-                                          mnemonicParsing="false"
-                                          text="Update Sel Price"
-                                          GridPane.rowIndex="4"/>
-                                <TextField fx:id="textSellPrice"
-                                           GridPane.columnIndex="1"
-                                           GridPane.rowIndex="4"/>
-                                <ImageView fitHeight="25.0"
-                                           fitWidth="25.0"
-                                           pickOnBounds="true"
-                                           preserveRatio="true"
-                                           GridPane.columnIndex="2"
-                                           GridPane.rowIndex="4">
-                                    <image>
-                                        <Image url="@../../image/percent_24dp_666666_FILL0_wght400_GRAD0_opsz24.png"/>
-                                    </image>
-                                </ImageView>
-
-                                <CheckBox fx:id="checkMini"
-                                          mnemonicParsing="false"
-                                          text="Mini Quantity"
-                                          GridPane.rowIndex="5"/>
-                                <TextField fx:id="textMini"
-                                           GridPane.columnIndex="1"
-                                           GridPane.rowIndex="5"/>
-
-                                <CheckBox fx:id="checkFirstBalance"
-                                          mnemonicParsing="false"
-                                          text="First Balance"
-                                          GridPane.rowIndex="6"/>
-                                <TextField fx:id="textFirstBalance"
-                                           GridPane.columnIndex="1"
-                                           GridPane.rowIndex="6"/>
-
-                                <CheckBox fx:id="checkDeleteImage"
-                                          mnemonicParsing="false"
-                                          text="Delete Image"
-                                          GridPane.rowIndex="7"/>
-                                <HBox alignment="CENTER_LEFT"
-                                      spacing="8.0"
-                                      GridPane.columnIndex="1"
-                                      GridPane.rowIndex="7">
+                        <VBox spacing="8.0" styleClass="app-card">
+                            <children>
+                                <HBox alignment="CENTER_LEFT" spacing="8.0">
                                     <children>
-                                        <RadioButton fx:id="radioDeleteImage"
-                                                     mnemonicParsing="false"
-                                                     selected="true"
-                                                     text="حذف">
-                                            <toggleGroup>
-                                                <ToggleGroup fx:id="group"/>
-                                            </toggleGroup>
-                                        </RadioButton>
-                                        <RadioButton fx:id="radioAddImage"
-                                                     mnemonicParsing="false"
-                                                     text="إضافة"
-                                                     toggleGroup="$group"/>
-                                        <ImageView fx:id="imageInformation"
-                                                   fitHeight="15.0"
-                                                   fitWidth="15.0"
-                                                   pickOnBounds="true"
-                                                   preserveRatio="true">
-                                            <image>
-                                                <Image url="@../../image/icons8-information-48.png"/>
-                                            </image>
-                                        </ImageView>
-                                        <Text fx:id="textPath"
+                                        <Label text="الأصناف المحددة للتعديل"
+                                               styleClass="section-title"/>
+
+                                        <Text fx:id="textItemsCount"
+                                              text="0"
                                               strokeType="OUTSIDE"
                                               strokeWidth="0.0"
-                                              styleClass="info-text"/>
+                                              styleClass="summary-value"/>
                                     </children>
                                 </HBox>
-                            </children>
-                        </GridPane>
 
-                        <HBox alignment="CENTER_RIGHT" spacing="8.0" styleClass="summary-bar">
+                                <TableView fx:id="tableItems"
+                                           prefHeight="180.0"
+                                           minHeight="120.0"
+                                           styleClass="app-table"/>
+                            </children>
+                        </VBox>
+
+                        <VBox spacing="12.0" styleClass="app-card">
+                            <children>
+                                <Label text="المجموعة والحالة"
+                                       styleClass="section-title"/>
+
+                                <GridPane hgap="12.0" vgap="12.0">
+                                    <columnConstraints>
+                                        <ColumnConstraints minWidth="180.0"/>
+                                        <ColumnConstraints minWidth="240.0" hgrow="ALWAYS"/>
+                                    </columnConstraints>
+
+                                    <children>
+                                        <CheckBox fx:id="checkUpdateGroup"
+                                                  mnemonicParsing="false"
+                                                  text="تعديل المجموعة"/>
+
+                                        <VBox spacing="6.0"
+                                              GridPane.columnIndex="1">
+                                            <children>
+                                                <ComboBox fx:id="comboMainGroup"
+                                                          maxWidth="1.7976931348623157E308"
+                                                          promptText="المجموعة الرئيسية"/>
+
+                                                <ComboBox fx:id="comboSubGroup"
+                                                          maxWidth="1.7976931348623157E308"
+                                                          promptText="المجموعة الفرعية"/>
+                                            </children>
+                                        </VBox>
+
+                                        <CheckBox fx:id="checkUpdateActive"
+                                                  mnemonicParsing="false"
+                                                  text="تعديل الحالة"
+                                                  GridPane.rowIndex="1"/>
+
+                                        <ComboBox fx:id="comboActive"
+                                                  maxWidth="1.7976931348623157E308"
+                                                  promptText="الحالة"
+                                                  GridPane.columnIndex="1"
+                                                  GridPane.rowIndex="1"/>
+                                    </children>
+                                </GridPane>
+                            </children>
+                        </VBox>
+
+                        <VBox spacing="12.0" styleClass="app-card">
+                            <children>
+                                <Label text="الأسعار والكميات"
+                                       styleClass="section-title"/>
+
+                                <GridPane hgap="12.0" vgap="12.0">
+                                    <columnConstraints>
+                                        <ColumnConstraints minWidth="180.0"/>
+                                        <ColumnConstraints minWidth="240.0" hgrow="ALWAYS"/>
+                                        <ColumnConstraints minWidth="40.0"/>
+                                    </columnConstraints>
+
+                                    <children>
+                                        <CheckBox fx:id="checkUpdateBuy"
+                                                  mnemonicParsing="false"
+                                                  text="تعديل سعر الشراء"/>
+
+                                        <TextField fx:id="textBuyPrice"
+                                                   promptText="نسبة الزيادة %"
+                                                   GridPane.columnIndex="1"/>
+
+                                        <ImageView fitHeight="24.0"
+                                                   fitWidth="24.0"
+                                                   pickOnBounds="true"
+                                                   preserveRatio="true"
+                                                   GridPane.columnIndex="2">
+                                            <image>
+                                                <Image url="@../../image/percent_24dp_666666_FILL0_wght400_GRAD0_opsz24.png"/>
+                                            </image>
+                                        </ImageView>
+
+                                        <CheckBox fx:id="checkUpdateSell"
+                                                  mnemonicParsing="false"
+                                                  text="تعديل سعر البيع"
+                                                  GridPane.rowIndex="1"/>
+
+                                        <TextField fx:id="textSellPrice"
+                                                   promptText="نسبة الزيادة %"
+                                                   GridPane.columnIndex="1"
+                                                   GridPane.rowIndex="1"/>
+
+                                        <ImageView fitHeight="24.0"
+                                                   fitWidth="24.0"
+                                                   pickOnBounds="true"
+                                                   preserveRatio="true"
+                                                   GridPane.columnIndex="2"
+                                                   GridPane.rowIndex="1">
+                                            <image>
+                                                <Image url="@../../image/percent_24dp_666666_FILL0_wght400_GRAD0_opsz24.png"/>
+                                            </image>
+                                        </ImageView>
+
+                                        <CheckBox fx:id="checkMini"
+                                                  mnemonicParsing="false"
+                                                  text="تعديل أقل كمية"
+                                                  GridPane.rowIndex="2"/>
+
+                                        <TextField fx:id="textMini"
+                                                   promptText="أقل كمية"
+                                                   GridPane.columnIndex="1"
+                                                   GridPane.rowIndex="2"/>
+
+                                        <CheckBox fx:id="checkFirstBalance"
+                                                  mnemonicParsing="false"
+                                                  text="تعديل رصيد أول"
+                                                  GridPane.rowIndex="3"/>
+
+                                        <TextField fx:id="textFirstBalance"
+                                                   promptText="رصيد أول"
+                                                   GridPane.columnIndex="1"
+                                                   GridPane.rowIndex="3"/>
+                                    </children>
+                                </GridPane>
+                            </children>
+                        </VBox>
+
+                        <VBox spacing="12.0" styleClass="app-card">
+                            <children>
+                                <Label text="الصورة"
+                                       styleClass="section-title"/>
+
+                                <GridPane hgap="12.0" vgap="12.0">
+                                    <columnConstraints>
+                                        <ColumnConstraints minWidth="180.0"/>
+                                        <ColumnConstraints minWidth="240.0" hgrow="ALWAYS"/>
+                                    </columnConstraints>
+
+                                    <children>
+                                        <CheckBox fx:id="checkDeleteImage"
+                                                  mnemonicParsing="false"
+                                                  text="تعديل صور الأصناف"/>
+
+                                        <HBox alignment="CENTER_LEFT"
+                                              spacing="10.0"
+                                              GridPane.columnIndex="1">
+                                            <children>
+                                                <RadioButton fx:id="radioDeleteImage"
+                                                             mnemonicParsing="false"
+                                                             selected="true"
+                                                             text="حذف الصور الحالية">
+                                                    <toggleGroup>
+                                                        <ToggleGroup fx:id="group"/>
+                                                    </toggleGroup>
+                                                </RadioButton>
+
+                                                <RadioButton fx:id="radioAddImage"
+                                                             mnemonicParsing="false"
+                                                             text="تعيين صورة واحدة للجميع"
+                                                             toggleGroup="$group"/>
+
+                                                <ImageView fx:id="imageInformation"
+                                                           fitHeight="18.0"
+                                                           fitWidth="18.0"
+                                                           pickOnBounds="true"
+                                                           preserveRatio="true">
+                                                    <image>
+                                                        <Image url="@../../image/icons8-information-48.png"/>
+                                                    </image>
+                                                </ImageView>
+                                            </children>
+                                        </HBox>
+
+                                        <Text fx:id="textPath"
+                                              text="لم يتم اختيار صورة"
+                                              strokeType="OUTSIDE"
+                                              strokeWidth="0.0"
+                                              styleClass="info-text"
+                                              GridPane.columnIndex="1"
+                                              GridPane.rowIndex="1"/>
+                                    </children>
+                                </GridPane>
+                            </children>
+                        </VBox>
+
+                        <HBox alignment="CENTER_RIGHT"
+                              spacing="8.0"
+                              styleClass="summary-bar">
                             <children>
                                 <Button fx:id="btnSave"
                                         mnemonicParsing="false"
-                                        text="Save"
+                                        text="حفظ"
                                         styleClass="primary-button"/>
+
                                 <Button fx:id="btnClose"
                                         mnemonicParsing="false"
-                                        text="Close"
+                                        text="إغلاق"
                                         styleClass="neutral-button"/>
                             </children>
                         </HBox>
+
                     </children>
+
+                    <padding>
+                        <Insets bottom="10.0" left="10.0" right="10.0" top="10.0"/>
+                    </padding>
                 </VBox>
-            </children>
-        </VBox>
+            </content>
+        </ScrollPane>
     </children>
 </StackPane>

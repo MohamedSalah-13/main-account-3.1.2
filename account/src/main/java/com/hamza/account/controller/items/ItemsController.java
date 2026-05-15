@@ -102,7 +102,7 @@ public class ItemsController extends LoadData {
     private void otherSetting() {
 
         menuItemConvertGroup.setText(HEADER_TEXT);
-        menuItemConvertGroup.setDisable(true);
+//        menuItemConvertGroup.setDisable(true);
         // combo items
         ObservableList<String> observableListStock = FXCollections.observableArrayList(getStockNames());
         ObservableList<String> observableListMain = FXCollections.observableArrayList(getMainGroupsNames());
