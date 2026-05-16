@@ -388,6 +388,25 @@ EXECUTE stmt;
 DEALLOCATE PREPARE stmt;
 
 
+SET @index_exists := (
+    SELECT COUNT(*)
+    FROM INFORMATION_SCHEMA.STATISTICS
+    WHERE TABLE_SCHEMA = DATABASE()
+      AND TABLE_NAME = 'items'
+      AND INDEX_NAME = 'items_name_barcode_idx'
+);
+
+SET @sql := IF(
+        @index_exists = 0,
+        'CREATE INDEX items_name_barcode_idx ON items(nameItem, barcode)',
+        'SELECT ''Index items_name_barcode_idx already exists'' AS message'
+            );
+
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+
 -- =====================================================================
 -- 9) تحديث View stock_transfer_view
 -- =====================================================================
@@ -483,7 +502,7 @@ SELECT
     st.cancel_reason,
     st.reversal_transfer_id,
     st.date_insert,
-    st.updated_at,
+    st.date_insert,
     st.user_id,
     u.user_name
 FROM stock_transfer st

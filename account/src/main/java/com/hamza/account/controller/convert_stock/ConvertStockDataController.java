@@ -295,7 +295,7 @@ public class ConvertStockDataController implements AppSettingInterface {
 
     private void openNewTransferScreen() {
         try {
-            new OpenApplication<>(new ConvertStockMainController(daoFactory, publisherAfterInsertData, 0));
+            new OpenApplication<>(new ConvertStockMainController(publisherAfterInsertData, 0));
             publisherAfterInsertData.addObserver(message -> loadData());
         } catch (Exception e) {
             logError(e);

@@ -431,4 +431,65 @@ public class ItemsDao extends AbstractDao<ItemsModel> {
         return queryForInt("SELECT COUNT(*) FROM items");
     }
 
+    public List<ItemsModel> searchAvailableItemsByStockId(int stockId, String searchText, int limit) throws DaoException {
+        String value = searchText == null ? "" : searchText.trim();
+
+        if (limit <= 0) {
+            limit = 100;
+        }
+
+        String sql = """
+                SELECT
+                    items.*,
+                    ist.stock_id,
+                    ist.first_balance,
+                    0 AS quantityPurchase,
+                    0 AS quantitySales,
+                    0 AS quantityPurchaseRe,
+                    0 AS quantitySalesRe,
+                    0 AS fromStock,
+                    0 AS toStock,
+                    ist.current_quantity AS current_quantity
+                FROM items
+                         JOIN items_stock ist
+                              ON ist.item_id = items.id
+                WHERE ist.stock_id = ?
+                  AND ist.current_quantity > 0
+                  AND items.item_active = 1
+                  AND (
+                        ? = ''
+                        OR items.nameItem LIKE ?
+                        OR items.barcode LIKE ?
+                        OR CAST(items.id AS CHAR) = ?
+                  )
+                ORDER BY
+                    CASE
+                        WHEN items.barcode = ? THEN 0
+                        WHEN CAST(items.id AS CHAR) = ? THEN 1
+                        WHEN items.nameItem LIKE ? THEN 2
+                        WHEN items.barcode LIKE ? THEN 3
+                        ELSE 4
+                    END,
+                    items.nameItem
+                LIMIT ?
+                """;
+
+        String startsWith = value + "%";
+        String contains = "%" + value + "%";
+
+        return queryForObjects(
+                sql,
+                this::map,
+                stockId,
+                value,
+                contains,
+                contains,
+                value,
+                value,
+                value,
+                startsWith,
+                startsWith,
+                limit
+        );
+    }
 }

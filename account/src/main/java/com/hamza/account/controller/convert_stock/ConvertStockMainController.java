@@ -2,7 +2,6 @@ package com.hamza.account.controller.convert_stock;
 
 import com.hamza.account.controller.others.AddStockController;
 import com.hamza.account.controller.others.ServiceRegistry;
-import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.model.domain.ItemsModel;
 import com.hamza.account.model.domain.Stock;
 import com.hamza.account.model.domain.StockTransfer;
@@ -20,10 +19,10 @@ import com.hamza.controlsfx.language.Error_Text_Show;
 import com.hamza.controlsfx.language.Setting_Language;
 import com.hamza.controlsfx.observer.Publisher;
 import com.hamza.controlsfx.others.DateSetting;
-import com.hamza.controlsfx.others.Utils;
 import com.hamza.controlsfx.table.TableColumnAnnotation;
 import com.hamza.controlsfx.table.columnEdit.ColumnSetting;
 import com.hamza.controlsfx.util.MaxNumberList;
+import javafx.animation.PauseTransition;
 import javafx.beans.binding.Bindings;
 import javafx.beans.property.ReadOnlyStringWrapper;
 import javafx.beans.value.ObservableValue;
@@ -33,13 +32,7 @@ import javafx.collections.ObservableList;
 import javafx.collections.transformation.FilteredList;
 import javafx.fxml.FXML;
 import javafx.geometry.Pos;
-import javafx.scene.control.Button;
-import javafx.scene.control.DatePicker;
-import javafx.scene.control.SelectionMode;
-import javafx.scene.control.TableCell;
-import javafx.scene.control.TableColumn;
-import javafx.scene.control.TableView;
-import javafx.scene.control.TextField;
+import javafx.scene.control.*;
 import javafx.scene.control.cell.TextFieldTableCell;
 import javafx.scene.input.KeyCode;
 import javafx.scene.layout.GridPane;
@@ -47,6 +40,7 @@ import javafx.scene.layout.Pane;
 import javafx.scene.layout.StackPane;
 import javafx.scene.text.Text;
 import javafx.util.Callback;
+import javafx.util.Duration;
 import javafx.util.converter.DoubleStringConverter;
 import lombok.extern.log4j.Log4j2;
 import org.controlsfx.control.SearchableComboBox;
@@ -62,19 +56,18 @@ import java.util.Set;
 @FxmlPath(pathFile = "convert_stocks.fxml")
 public class ConvertStockMainController implements AppSettingInterface {
 
+    private static final int ITEMS_SEARCH_LIMIT = 100;
+    private static final int MIN_SEARCH_LENGTH = 0;
     private final Publisher<String> publisherAfterInsertData;
     private final Publisher<String> publisherAddStock = new Publisher<>();
-    private final DaoFactory daoFactory;
     private final ObservableList<StockTransferListItems> observableListTable = FXCollections.observableArrayList();
     private final ObservableList<ItemsModel> sourceItems = FXCollections.observableArrayList();
-    private FilteredList<ItemsModel> filteredSourceItems;
-
+    private final PauseTransition itemSearchDelay = new PauseTransition(Duration.millis(300));
     private final int codeUpdate;
-
     private final ItemsService itemsService = ServiceRegistry.get(ItemsService.class);
     private final StockTransferService stockTransferService = ServiceRegistry.get(StockTransferService.class);
     private final StockService stockService = ServiceRegistry.get(StockService.class);
-
+    private FilteredList<ItemsModel> filteredSourceItems;
     @FXML
     private Button btnAddStock;
 
@@ -133,11 +126,9 @@ public class ConvertStockMainController implements AppSettingInterface {
     private GridPane gridPane;
 
     public ConvertStockMainController(
-            DaoFactory daoFactory,
             Publisher<String> publisherAfterInsertData,
             int codeUpdate
     ) {
-        this.daoFactory = daoFactory;
         this.publisherAfterInsertData = publisherAfterInsertData;
         this.codeUpdate = codeUpdate;
     }
@@ -338,7 +329,12 @@ public class ConvertStockMainController implements AppSettingInterface {
 
         btnClearItems.setOnAction(event -> clearTransferItems());
 
-        txtItemsSearch.textProperty().addListener((observable, oldValue, newValue) -> applyItemsFilter());
+        itemSearchDelay.setOnFinished(event -> searchItemsFromDatabase());
+
+        txtItemsSearch.textProperty().addListener((observable, oldValue, newValue) -> {
+            itemSearchDelay.stop();
+            itemSearchDelay.playFromStart();
+        });
 
         observableListTable.addListener((ListChangeListener<StockTransferListItems>) change -> {
             updateSummary();
@@ -374,6 +370,7 @@ public class ConvertStockMainController implements AppSettingInterface {
         comboFromStock.disableProperty().bind(Bindings.isNotEmpty(observableListTable));
     }
 
+
     private void onSourceStockChanged() {
         sourceItems.clear();
         txtItemsSearch.clear();
@@ -382,31 +379,31 @@ public class ConvertStockMainController implements AppSettingInterface {
             return;
         }
 
-        try {
-            Stock selectedStock = getSelectedStock(comboFromStock.getSelectionModel().getSelectedItem());
-            loadItemsByStock(selectedStock.getId());
-            validateSelectedStocks();
-        } catch (DaoException e) {
-            logError(e);
-        }
+        validateSelectedStocks();
+        searchItemsFromDatabase();
     }
 
-    private void loadItemsByStock(int stockId) {
-        try {
-            List<ItemsModel> allItems = itemsService.getProducts(10_000, 0)
-                    .stream()
-                    .map(item -> {
-                        try {
-                            return itemsService.getItemByItemIdAndStockId(item.getId(), stockId);
-                        } catch (DaoException e) {
-                            return null;
-                        }
-                    })
-                    .filter(Objects::nonNull)
-                    .filter(item -> item.getSumAllBalance() > 0)
-                    .toList();
+    private void searchItemsFromDatabase() {
+        if (comboFromStock.getSelectionModel().isEmpty()) {
+            sourceItems.clear();
+            return;
+        }
 
-            sourceItems.setAll(allItems);
+        try {
+            Stock selectedStock = getSelectedStock(comboFromStock.getSelectionModel().getSelectedItem());
+            String searchText = txtItemsSearch.getText() == null ? "" : txtItemsSearch.getText().trim();
+
+            if (searchText.length() < MIN_SEARCH_LENGTH) {
+                searchText = "";
+            }
+
+            List<ItemsModel> items = itemsService.searchAvailableItemsByStockId(
+                    selectedStock.getId(),
+                    searchText,
+                    ITEMS_SEARCH_LIMIT
+            );
+
+            sourceItems.setAll(items);
             applyItemsFilter();
 
         } catch (DaoException e) {
@@ -415,21 +412,7 @@ public class ConvertStockMainController implements AppSettingInterface {
     }
 
     private void applyItemsFilter() {
-        String searchText = txtItemsSearch.getText() == null ? "" : txtItemsSearch.getText().trim().toLowerCase();
-
-        filteredSourceItems.setPredicate(item -> {
-            if (item == null) {
-                return false;
-            }
-
-            boolean matchesSearch = searchText.isBlank()
-                    || containsIgnoreCase(item.getNameItem(), searchText)
-                    || containsIgnoreCase(item.getBarcode(), searchText);
-
-            boolean hasAvailableQuantity = getAvailableAfterTable(item) > 0;
-
-            return matchesSearch && hasAvailableQuantity;
-        });
+        filteredSourceItems.setPredicate(item -> item != null && getAvailableAfterTable(item) > 0);
     }
 
     private void addSelectedSourceItems() {

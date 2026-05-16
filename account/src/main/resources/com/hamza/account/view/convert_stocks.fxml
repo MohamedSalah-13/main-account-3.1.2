@@ -159,7 +159,7 @@
                                     mnemonicParsing="false"
                                     prefWidth="130.0"
                                     styleClass="success-button"
-                                    text="إضافة الكل"/>
+                                    text="إضافة النتائج"/>
                         </HBox>
 
                         <TextField fx:id="txtItemsSearch"

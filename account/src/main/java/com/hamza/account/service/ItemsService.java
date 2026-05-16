@@ -69,4 +69,12 @@ public record ItemsService(DaoFactory daoFactory) {
         return daoFactory.getItemsDao().getItemsByMainGroupId(mainGroupId).stream()
                 .filter(ItemsModel::isActiveItem).toList();
     }
+
+    public List<ItemsModel> searchAvailableItemsByStockId(int stockId, String searchText, int limit) throws DaoException {
+        if (stockId <= 0) {
+            throw new DaoException("رقم المخزن غير صحيح");
+        }
+
+        return daoFactory.getItemsDao().searchAvailableItemsByStockId(stockId, searchText, limit);
+    }
 }

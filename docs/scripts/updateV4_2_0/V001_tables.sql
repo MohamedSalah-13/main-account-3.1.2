@@ -248,6 +248,7 @@ CREATE TABLE IF NOT EXISTS items
     CONSTRAINT items_units_unit_id_fk FOREIGN KEY (unit_id) REFERENCES units (unit_id),
     CONSTRAINT items_users_id_fk FOREIGN KEY (user_id) REFERENCES users (id)
 );
+CREATE INDEX items_name_barcode_idx ON items(nameItem, barcode);
 
 CREATE TABLE IF NOT EXISTS items_package
 (
@@ -285,6 +286,7 @@ CREATE TABLE IF NOT EXISTS items_stock
     CONSTRAINT items_stock_first_balance_chk CHECK (first_balance >= 0),
     CONSTRAINT items_stock_current_quantity_chk CHECK (current_quantity >= 0)
 );
+CREATE INDEX items_stock_stock_item_idx ON items_stock(stock_id, item_id);
 
 CREATE TABLE IF NOT EXISTS items_units
 (
