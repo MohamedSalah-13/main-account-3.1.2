@@ -11,6 +11,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Setter
@@ -25,6 +26,11 @@ public class StockTransfer extends DForColumnTable {
     private ObjectProperty<Stock> stockTo = new SimpleObjectProperty<>();
     @ColumnData(titleName = NamesTables.DATE)
     private LocalDate date;
+    private String status = "POSTED";
+    private LocalDateTime cancelledAt;
+    private Integer cancelledBy;
+    private String cancelReason;
+    private Integer reversalTransferId;
     private List<StockTransferListItems> transferListItems;
 
     public Stock getStockFrom() {

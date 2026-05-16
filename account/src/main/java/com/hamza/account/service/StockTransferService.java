@@ -18,19 +18,84 @@ public record StockTransferService(DaoFactory daoFactory) {
     }
 
     public StockTransfer getStockTransfersById(int id) throws DaoException {
+        validateId(id, "رقم التحويل غير صحيح");
         return getStockTransferDao().getDataById(id);
     }
 
-    public int insertData(StockTransfer transferList) throws DaoException {
-        return getStockTransferDao().insert(transferList);
+    public int insertData(StockTransfer stockTransfer) throws DaoException {
+        validateStockTransferForInsert(stockTransfer);
+        return getStockTransferDao().insert(stockTransfer);
     }
 
-    public int updateData(StockTransfer transferList) throws DaoException {
-        return getStockTransferDao().update(transferList);
+    public int updateData(StockTransfer stockTransfer) throws DaoException {
+        throw new DaoException("لا يمكن تعديل تحويل مخزني بعد ترحيله. قم بإلغاء التحويل ثم أنشئ تحويلًا جديدًا.");
     }
 
-    public int deleteTransfer(StockTransfer transferList) throws DaoException {
-        return getStockTransferDao().deleteById(transferList.getId());
+    public int deleteTransfer(StockTransfer stockTransfer) throws DaoException {
+        throw new DaoException("لا يمكن حذف تحويل مخزني بعد ترحيله. استخدم إلغاء التحويل بتحويل عكسي.");
+    }
+
+    public int deleteTransferById(int transferId) throws DaoException {
+        validateId(transferId, "رقم التحويل غير صحيح");
+        throw new DaoException("لا يمكن حذف تحويل مخزني بعد ترحيله. استخدم إلغاء التحويل بتحويل عكسي.");
+    }
+
+    public int cancelTransfer(int transferId, int userId, String reason) throws DaoException {
+        validateId(transferId, "رقم التحويل غير صحيح");
+        validateId(userId, "رقم المستخدم غير صحيح");
+
+        if (reason == null || reason.trim().isEmpty()) {
+            throw new DaoException("يجب إدخال سبب إلغاء التحويل");
+        }
+
+        return getStockTransferDao().cancelTransfer(transferId, userId, reason.trim());
+    }
+
+    public boolean canCancelTransfer(int transferId) throws DaoException {
+        validateId(transferId, "رقم التحويل غير صحيح");
+
+        StockTransfer stockTransfer = getStockTransferDao().getDataById(transferId);
+
+        if (stockTransfer == null) {
+            return false;
+        }
+
+        return "POSTED".equalsIgnoreCase(stockTransfer.getStatus());
+    }
+
+    public StockTransfer stockTransfer(
+            int id,
+            int stockFrom,
+            int stockTo,
+            LocalDate date,
+            List<StockTransferListItems> transferList
+    ) throws DaoException {
+        validateId(stockFrom, "رقم المخزن المصدر غير صحيح");
+        validateId(stockTo, "رقم المخزن المستلم غير صحيح");
+
+        if (stockFrom == stockTo) {
+            throw new DaoException("لا يمكن التحويل إلى نفس المخزن");
+        }
+
+        if (date == null) {
+            throw new DaoException("يجب اختيار تاريخ التحويل");
+        }
+
+        if (transferList == null || transferList.isEmpty()) {
+            throw new DaoException("يجب إضافة أصناف للتحويل");
+        }
+
+        validateTransferItems(transferList);
+
+        StockTransfer stockTransfer = new StockTransfer();
+        stockTransfer.setId(id);
+        stockTransfer.setStockFrom(new Stock(stockFrom));
+        stockTransfer.setStockTo(new Stock(stockTo));
+        stockTransfer.setDate(date);
+        stockTransfer.setStatus("POSTED");
+        stockTransfer.setTransferListItems(transferList);
+
+        return stockTransfer;
     }
 
     @NotNull
@@ -38,13 +103,53 @@ public record StockTransferService(DaoFactory daoFactory) {
         return daoFactory.stockTransferDao();
     }
 
-    public StockTransfer stockTransfer(int id, int stockFrom, int stockTo, LocalDate date, List<StockTransferListItems> transferList) {
-        StockTransfer stockTransfer = new StockTransfer();
-        stockTransfer.setId(id);
-        stockTransfer.setStockFrom(new Stock(stockFrom));
-        stockTransfer.setStockTo(new Stock(stockTo));
-        stockTransfer.setDate(date);
-        stockTransfer.setTransferListItems(transferList);
-        return stockTransfer;
+    private void validateStockTransferForInsert(StockTransfer stockTransfer) throws DaoException {
+        if (stockTransfer == null) {
+            throw new DaoException("بيانات التحويل غير صحيحة");
+        }
+
+        if (stockTransfer.getStockFrom() == null || stockTransfer.getStockFrom().getId() <= 0) {
+            throw new DaoException("يجب اختيار المخزن المصدر");
+        }
+
+        if (stockTransfer.getStockTo() == null || stockTransfer.getStockTo().getId() <= 0) {
+            throw new DaoException("يجب اختيار المخزن المستلم");
+        }
+
+        if (stockTransfer.getStockFrom().getId() == stockTransfer.getStockTo().getId()) {
+            throw new DaoException("لا يمكن التحويل إلى نفس المخزن");
+        }
+
+        if (stockTransfer.getDate() == null) {
+            throw new DaoException("يجب اختيار تاريخ التحويل");
+        }
+
+        if (stockTransfer.getTransferListItems() == null || stockTransfer.getTransferListItems().isEmpty()) {
+            throw new DaoException("يجب إضافة أصناف للتحويل");
+        }
+
+        validateTransferItems(stockTransfer.getTransferListItems());
+    }
+
+    private void validateTransferItems(List<StockTransferListItems> transferList) throws DaoException {
+        for (StockTransferListItems item : transferList) {
+            if (item == null) {
+                throw new DaoException("يوجد صنف غير صحيح داخل التحويل");
+            }
+
+            if (item.getItem() == null || item.getItem().getId() <= 0) {
+                throw new DaoException("يوجد صنف غير صحيح داخل التحويل");
+            }
+
+            if (item.getQuantity() <= 0) {
+                throw new DaoException("كمية الصنف يجب أن تكون أكبر من صفر: " + item.getItem().getNameItem());
+            }
+        }
+    }
+
+    private void validateId(int id, String message) throws DaoException {
+        if (id <= 0) {
+            throw new DaoException(message);
+        }
     }
 }

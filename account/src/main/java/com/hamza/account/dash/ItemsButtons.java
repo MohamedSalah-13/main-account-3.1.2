@@ -15,7 +15,6 @@ import com.hamza.account.features.notification.NotifyItemAlert;
 import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.model.domain.ItemsMiniQuantity;
 import com.hamza.account.openFxml.OpenFxmlApplication;
-import com.hamza.account.table.TableOpen;
 import com.hamza.account.type.UserPermissionType;
 import com.hamza.account.view.AddGroupApp;
 import com.hamza.account.view.AddItemApplication;
@@ -189,13 +188,13 @@ public class ItemsButtons {
         return new ButtonWithPerm() {
             @Override
             public UserPermissionType getPermissionType() {
-                return UserPermissionType.DISABLE_BUTTON;
+                return null;
             }
 
             @Override
             public void action() throws Exception {
                 ConvertStockDataController itemsController = new ConvertStockDataController(daoFactory);
-                new TableOpen<>(itemsController).start(new Stage());
+                new OpenApplication<>(itemsController);
             }
 
             @NotNull

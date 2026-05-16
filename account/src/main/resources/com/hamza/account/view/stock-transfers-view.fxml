@@ -1,0 +1,150 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.ComboBox?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.Separator?>
+<?import javafx.scene.control.TableView?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.control.ToolBar?>
+<?import javafx.scene.layout.AnchorPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Priority?>
+<?import javafx.scene.layout.Region?>
+<?import javafx.scene.layout.StackPane?>
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.text.Text?>
+
+<StackPane fx:id="stackPane"
+           xmlns="http://javafx.com/javafx/21"
+           xmlns:fx="http://javafx.com/fxml/1"
+           styleClass="page-root">
+
+    <AnchorPane>
+        <VBox spacing="0.0"
+              AnchorPane.bottomAnchor="0.0"
+              AnchorPane.leftAnchor="0.0"
+              AnchorPane.rightAnchor="0.0"
+              AnchorPane.topAnchor="0.0">
+
+            <ToolBar styleClass="main-toolbar">
+                <Button fx:id="btnNew"
+                        mnemonicParsing="false"
+                        prefWidth="110.0"
+                        styleClass="primary-button"
+                        text="تحويل جديد"/>
+
+                <Button fx:id="btnDetails"
+                        mnemonicParsing="false"
+                        prefWidth="110.0"
+                        styleClass="secondary-button"
+                        text="التفاصيل"/>
+
+                <Button fx:id="btnCancelTransfer"
+                        mnemonicParsing="false"
+                        prefWidth="120.0"
+                        styleClass="danger-button"
+                        text="إلغاء التحويل"/>
+
+                <Separator orientation="VERTICAL"/>
+
+                <Button fx:id="btnPrint"
+                        mnemonicParsing="false"
+                        prefWidth="90.0"
+                        styleClass="secondary-button"
+                        text="طباعة"/>
+
+                <Button fx:id="btnRefresh"
+                        mnemonicParsing="false"
+                        prefWidth="90.0"
+                        styleClass="secondary-button"
+                        text="تحديث"/>
+
+                <Region HBox.hgrow="ALWAYS"/>
+
+                <Label styleClass="screen-title" text="عرض تحويلات المخازن"/>
+            </ToolBar>
+
+            <VBox spacing="12.0" VBox.vgrow="ALWAYS">
+                <padding>
+                    <Insets bottom="12.0" left="12.0" right="12.0" top="12.0"/>
+                </padding>
+
+                <HBox alignment="CENTER_LEFT" spacing="10.0" styleClass="dashboard-tile">
+                    <padding>
+                        <Insets bottom="12.0" left="12.0" right="12.0" top="12.0"/>
+                    </padding>
+
+                    <Label styleClass="form-label" text="بحث"/>
+                    <TextField fx:id="txtSearch"
+                               prefWidth="320.0"
+                               promptText="بحث بالكود، التاريخ، اسم المخزن، الحالة..."/>
+
+                    <Label styleClass="form-label" text="الحالة"/>
+                    <ComboBox fx:id="comboStatus"
+                              prefWidth="160.0"
+                              promptText="كل الحالات"/>
+
+                    <Region HBox.hgrow="ALWAYS"/>
+
+                    <Button fx:id="btnClearSearch"
+                            mnemonicParsing="false"
+                            prefWidth="100.0"
+                            styleClass="secondary-button"
+                            text="مسح"/>
+                </HBox>
+
+                <HBox spacing="12.0">
+                    <VBox alignment="CENTER" spacing="4.0" styleClass="summary-card" HBox.hgrow="ALWAYS">
+                        <padding>
+                            <Insets bottom="12.0" left="12.0" right="12.0" top="12.0"/>
+                        </padding>
+                        <Label styleClass="summary-label" text="إجمالي التحويلات"/>
+                        <Text fx:id="txtTotalTransfers"
+                              styleClass="text-sum"
+                              text="0"/>
+                    </VBox>
+
+                    <VBox alignment="CENTER" spacing="4.0" styleClass="summary-card" HBox.hgrow="ALWAYS">
+                        <padding>
+                            <Insets bottom="12.0" left="12.0" right="12.0" top="12.0"/>
+                        </padding>
+                        <Label styleClass="summary-label" text="التحويلات المرحلة"/>
+                        <Text fx:id="txtPostedTransfers"
+                              styleClass="text-sum"
+                              text="0"/>
+                    </VBox>
+
+                    <VBox alignment="CENTER" spacing="4.0" styleClass="summary-card" HBox.hgrow="ALWAYS">
+                        <padding>
+                            <Insets bottom="12.0" left="12.0" right="12.0" top="12.0"/>
+                        </padding>
+                        <Label styleClass="summary-label" text="التحويلات الملغية"/>
+                        <Text fx:id="txtCancelledTransfers"
+                              styleClass="text-sum"
+                              text="0"/>
+                    </VBox>
+
+                    <VBox alignment="CENTER" spacing="4.0" styleClass="summary-card" HBox.hgrow="ALWAYS">
+                        <padding>
+                            <Insets bottom="12.0" left="12.0" right="12.0" top="12.0"/>
+                        </padding>
+                        <Label styleClass="summary-label" text="إجمالي الكميات"/>
+                        <Text fx:id="txtTotalQuantity"
+                              styleClass="text-sum"
+                              text="0"/>
+                    </VBox>
+                </HBox>
+
+                <VBox spacing="8.0" VBox.vgrow="ALWAYS">
+                    <Label styleClass="section-title" text="قائمة التحويلات"/>
+                    <TableView fx:id="tableView"
+                               VBox.vgrow="ALWAYS"
+                               styleClass="modern-table"/>
+                </VBox>
+
+            </VBox>
+        </VBox>
+    </AnchorPane>
+</StackPane>

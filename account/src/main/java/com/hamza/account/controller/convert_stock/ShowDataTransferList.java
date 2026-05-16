@@ -6,6 +6,7 @@ import javafx.scene.control.TableView;
 import java.util.List;
 
 public interface ShowDataTransferList<T> {
+
     Class<T> classOfColumns();
 
     List<T> listTable() throws DaoException;
