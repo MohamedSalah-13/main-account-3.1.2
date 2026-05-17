@@ -1,5 +1,5 @@
 -- ======================================================
--- Migration Script from script.sql (old) to V001_tables.sql (new)
+-- Migration Script from script.sql (old) to V4_1_0_1_tables.sql (new)
 -- Description: Updates database schema and migrates data SAFELY (Idempotent)
 -- ======================================================
 
