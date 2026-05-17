@@ -1195,3 +1195,139 @@ FROM custom c
 WHERE (c.first_balance <> 0 OR
        EXISTS (SELECT 1 FROM total_sales WHERE sup_code = c.id) OR
        EXISTS (SELECT 1 FROM customers_accounts WHERE account_code = c.id));
+
+
+-- =====================================================================
+-- 9) تحديث View stock_transfer_view
+-- =====================================================================
+-- يتم عرض التحويلات المرحلة POSTED فقط.
+-- التحويلات الملغية لا تدخل في حسابات الرصيد.
+-- =====================================================================
+
+CREATE OR REPLACE VIEW stock_transfer_view AS
+SELECT st.id,
+       st.transfer_date,
+       st.stock_from,
+       st.stock_to,
+       st.status,
+       st.cancelled_at,
+       st.cancelled_by,
+       st.cancel_reason,
+       st.reversal_transfer_id,
+       stf.stock_name AS name_from,
+       stt.stock_name AS name_to,
+       stl.id         AS transfer_line_id,
+       stl.item_id,
+       stl.quantity,
+       i.nameItem,
+       i.barcode
+FROM stock_transfer st
+         JOIN stock_transfer_list stl ON st.id = stl.stock_transfer_id
+         JOIN items i ON i.id = stl.item_id
+         JOIN stocks stf ON stf.stock_id = st.stock_from
+         JOIN stocks stt ON stt.stock_id = st.stock_to
+WHERE st.status = 'POSTED';
+
+
+-- =====================================================================
+-- 10) View رصيد كل صنف في كل مخزن
+-- =====================================================================
+
+CREATE OR REPLACE VIEW v_items_stock_balance AS
+SELECT
+    i.id AS item_id,
+    i.barcode,
+    i.nameItem,
+    s.stock_id,
+    s.stock_name,
+    ist.first_balance,
+    ist.current_quantity,
+    u.unit_id,
+    u.unit_name
+FROM items_stock ist
+         JOIN items i ON i.id = ist.item_id
+         JOIN stocks s ON s.stock_id = ist.stock_id
+         JOIN units u ON u.unit_id = i.unit_id;
+
+
+-- =====================================================================
+-- 11) View إجمالي رصيد كل صنف في كل المخازن
+-- =====================================================================
+
+CREATE OR REPLACE VIEW v_items_total_balance AS
+SELECT
+    i.id AS item_id,
+    i.barcode,
+    i.nameItem,
+    COALESCE(SUM(ist.current_quantity), 0) AS total_quantity,
+    u.unit_id,
+    u.unit_name
+FROM items i
+         LEFT JOIN items_stock ist ON ist.item_id = i.id
+         JOIN units u ON u.unit_id = i.unit_id
+GROUP BY
+    i.id,
+    i.barcode,
+    i.nameItem,
+    u.unit_id,
+    u.unit_name;
+
+
+-- =====================================================================
+-- 12) View للتحويلات مع أسماء المستخدمين وحالة الإلغاء
+-- =====================================================================
+
+CREATE OR REPLACE VIEW v_stock_transfer_header AS
+SELECT
+    st.id,
+    st.transfer_date,
+    st.stock_from,
+    sf.stock_name AS stock_from_name,
+    st.stock_to,
+    stt.stock_name AS stock_to_name,
+    st.status,
+    st.cancelled_at,
+    st.cancelled_by,
+    cu.user_name AS cancelled_by_name,
+    st.cancel_reason,
+    st.reversal_transfer_id,
+    st.date_insert,
+    st.date_insert,
+    st.user_id,
+    u.user_name
+FROM stock_transfer st
+         JOIN stocks sf ON sf.stock_id = st.stock_from
+         JOIN stocks stt ON stt.stock_id = st.stock_to
+         JOIN users u ON u.id = st.user_id
+         LEFT JOIN users cu ON cu.id = st.cancelled_by;
+
+
+-- =====================================================================
+-- 13) View تفاصيل التحويلات
+-- =====================================================================
+
+CREATE OR REPLACE VIEW v_stock_transfer_details AS
+SELECT
+    st.id AS transfer_id,
+    st.transfer_date,
+    st.stock_from,
+    sf.stock_name AS stock_from_name,
+    st.stock_to,
+    stt.stock_name AS stock_to_name,
+    st.status,
+    stl.id AS line_id,
+    stl.item_id,
+    i.barcode,
+    i.nameItem,
+    stl.quantity,
+    u.unit_id,
+    u.unit_name,
+    st.user_id,
+    usr.user_name
+FROM stock_transfer st
+         JOIN stock_transfer_list stl ON stl.stock_transfer_id = st.id
+         JOIN stocks sf ON sf.stock_id = st.stock_from
+         JOIN stocks stt ON stt.stock_id = st.stock_to
+         JOIN items i ON i.id = stl.item_id
+         JOIN units u ON u.unit_id = i.unit_id
+         JOIN users usr ON usr.id = st.user_id;

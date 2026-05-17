@@ -990,8 +990,8 @@ SELECT
     1,
     'CLIENT-001',
     'Default Client',
-    '4.1.0',
-    '4.1.0',
+    '4.2.0',
+    '4.2.0',
     NOW(),
     NOW(),
     'Initial system info'
