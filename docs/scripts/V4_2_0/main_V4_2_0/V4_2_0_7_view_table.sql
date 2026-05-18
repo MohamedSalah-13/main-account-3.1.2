@@ -105,65 +105,199 @@ FROM purchase_re pr
          JOIN units        u   ON pr.type = u.unit_id
          JOIN total_buy_re tbr ON tbr.id = pr.invoice_number;
 
--- --------------------------------------stock_transfer_view----------------------------------------
+
+-- =====================================================================
+-- ⚠️ احذف التعريف الأول لـ stock_transfer_view (في بداية الملف)
+-- وأبقِ على هذا التعريف فقط الذي يفلتر التحويلات المرحّلة POSTED
+-- =====================================================================
 
 CREATE OR REPLACE VIEW stock_transfer_view AS
 SELECT st.id,
        st.transfer_date,
        st.stock_from,
        st.stock_to,
+       st.status,
+       st.cancelled_at,
+       st.cancelled_by,
+       st.cancel_reason,
+       st.reversal_transfer_id,
        stf.stock_name AS name_from,
        stt.stock_name AS name_to,
+       stl.id         AS transfer_line_id,
        stl.item_id,
        stl.quantity,
-       i.nameItem
+       i.nameItem,
+       i.barcode
 FROM stock_transfer st
          JOIN stock_transfer_list stl ON st.id = stl.stock_transfer_id
          JOIN items  i   ON i.id = stl.item_id
          JOIN stocks stf ON stf.stock_id = st.stock_from
-         JOIN stocks stt ON stt.stock_id = st.stock_to;
+         JOIN stocks stt ON stt.stock_id = st.stock_to
+WHERE st.status = 'POSTED';
 
--- --------------------------------------quantity_items_table (optimized via JOINs)----------------
+-- =====================================================================
+-- quantity_items_table — نسخة محسّنة
+-- تعتمد على الجداول الأساسية مباشرة (أسرع وأدق)
+-- =====================================================================
 
 CREATE OR REPLACE VIEW quantity_items_table AS
-WITH purchase_agg AS (SELECT stock_id, num AS item_id,
-                             SUM(quantity * type_value) AS qty
-                      FROM purchase_names_table
-                      GROUP BY stock_id, num),
-     sales_agg AS (SELECT stock_id, num AS item_id,
-                          SUM(quantity * type_value) AS qty
-                   FROM sales_names_table
-                   GROUP BY stock_id, num),
-     purchase_re_agg AS (SELECT stock_id, item_id,
-                                SUM(quantity * type_value) AS qty
-                         FROM purchase_return_names_table
-                         GROUP BY stock_id, item_id),
-     sales_re_agg AS (SELECT stock_id, item_id,
-                             SUM(quantity * type_value) AS qty
-                      FROM sales_return_names_table
-                      GROUP BY stock_id, item_id),
-     transfer_from_agg AS (SELECT stock_from AS stock_id, item_id, SUM(quantity) AS qty
-                           FROM stock_transfer_view
-                           GROUP BY stock_from, item_id),
-     transfer_to_agg AS (SELECT stock_to AS stock_id, item_id, SUM(quantity) AS qty
-                         FROM stock_transfer_view
-                         GROUP BY stock_to, item_id)
+WITH purchase_agg AS (
+    SELECT tb.stock_id,
+           p.num AS item_id,
+           SUM(p.quantity * p.type_value) AS qty
+    FROM purchase p
+             JOIN total_buy tb ON tb.invoice_number = p.invoice_number
+    GROUP BY tb.stock_id, p.num
+),
+     sales_agg AS (
+         SELECT ts.stock_id,
+                s.num AS item_id,
+                SUM(s.quantity * s.type_value) AS qty
+         FROM sales s
+                  JOIN total_sales ts ON ts.invoice_number = s.invoice_number
+         GROUP BY ts.stock_id, s.num
+     ),
+     purchase_re_agg AS (
+         SELECT tbr.stock_id,
+                pr.item_id,
+                SUM(pr.quantity * pr.type_value) AS qty
+         FROM purchase_re pr
+                  JOIN total_buy_re tbr ON tbr.id = pr.invoice_number
+         GROUP BY tbr.stock_id, pr.item_id
+     ),
+     sales_re_agg AS (
+         SELECT tsr.stock_id,
+                sr.item_id,
+                SUM(sr.quantity * sr.type_value) AS qty
+         FROM sales_re sr
+                  JOIN total_sales_re tsr ON tsr.id = sr.invoice_number
+         GROUP BY tsr.stock_id, sr.item_id
+     ),
+     transfer_from_agg AS (
+         SELECT st.stock_from AS stock_id,
+                stl.item_id,
+                SUM(stl.quantity) AS qty
+         FROM stock_transfer st
+                  JOIN stock_transfer_list stl ON st.id = stl.stock_transfer_id
+         WHERE st.status = 'POSTED'
+         GROUP BY st.stock_from, stl.item_id
+     ),
+     transfer_to_agg AS (
+         SELECT st.stock_to AS stock_id,
+                stl.item_id,
+                SUM(stl.quantity) AS qty
+         FROM stock_transfer st
+                  JOIN stock_transfer_list stl ON st.id = stl.stock_transfer_id
+         WHERE st.status = 'POSTED'
+         GROUP BY st.stock_to, stl.item_id
+     )
 SELECT ist.item_id,
        ist.stock_id,
        ist.first_balance,
-       COALESCE(pa.qty,   0) AS quantityPurchase,
-       COALESCE(sa.qty,   0) AS quantitySales,
-       COALESCE(pra.qty,  0) AS quantityPurchaseRe,
-       COALESCE(sra.qty,  0) AS quantitySalesRe,
-       COALESCE(tfa.qty,  0) AS fromStock,
-       COALESCE(tta.qty,  0) AS toStock
+       COALESCE(pa.qty,  0) AS quantityPurchase,
+       COALESCE(sa.qty,  0) AS quantitySales,
+       COALESCE(pra.qty, 0) AS quantityPurchaseRe,
+       COALESCE(sra.qty, 0) AS quantitySalesRe,
+       COALESCE(tfa.qty, 0) AS fromStock,
+       COALESCE(tta.qty, 0) AS toStock,
+       -- الرصيد الحالي محسوب جاهز
+       (ist.first_balance
+           + COALESCE(pa.qty, 0)
+           + COALESCE(sra.qty, 0)
+           + COALESCE(tta.qty, 0))
+           - (COALESCE(sa.qty, 0)
+           + COALESCE(pra.qty, 0)
+           + COALESCE(tfa.qty, 0))    AS current_balance
 FROM items_stock ist
-         LEFT JOIN purchase_agg     pa  ON pa.stock_id  = ist.stock_id AND pa.item_id  = ist.item_id
-         LEFT JOIN sales_agg        sa  ON sa.stock_id  = ist.stock_id AND sa.item_id  = ist.item_id
-         LEFT JOIN purchase_re_agg  pra ON pra.stock_id = ist.stock_id AND pra.item_id = ist.item_id
-         LEFT JOIN sales_re_agg     sra ON sra.stock_id = ist.stock_id AND sra.item_id = ist.item_id
+         LEFT JOIN purchase_agg      pa  ON pa.stock_id  = ist.stock_id AND pa.item_id  = ist.item_id
+         LEFT JOIN sales_agg         sa  ON sa.stock_id  = ist.stock_id AND sa.item_id  = ist.item_id
+         LEFT JOIN purchase_re_agg   pra ON pra.stock_id = ist.stock_id AND pra.item_id = ist.item_id
+         LEFT JOIN sales_re_agg      sra ON sra.stock_id = ist.stock_id AND sra.item_id = ist.item_id
          LEFT JOIN transfer_from_agg tfa ON tfa.stock_id = ist.stock_id AND tfa.item_id = ist.item_id
          LEFT JOIN transfer_to_agg   tta ON tta.stock_id = ist.stock_id AND tta.item_id = ist.item_id;
+
+-- =====================================================================
+-- v_stock_inventory — View الجرد الرئيسي (الأكثر استخداماً)
+-- =====================================================================
+-- يعرض رصيد كل صنف في كل مخزن مع كل التفاصيل
+-- =====================================================================
+
+CREATE OR REPLACE VIEW v_stock_inventory AS
+SELECT q.item_id,
+       i.barcode,
+       i.nameItem,
+       i.mini_quantity,
+       q.stock_id,
+       s.stock_name,
+       u.unit_id,
+       u.unit_name,
+       sg.id           AS sub_group_id,
+       sg.name         AS sub_group_name,
+       mg.id           AS main_group_id,
+       mg.name_g       AS main_group_name,
+       q.first_balance,
+       q.quantityPurchase,
+       q.quantitySalesRe,
+       q.toStock,
+       q.quantitySales,
+       q.quantityPurchaseRe,
+       q.fromStock,
+       q.current_balance,
+       i.buy_price,
+       i.sel_price1,
+       -- قيمة المخزون بسعر الشراء
+       ROUND(q.current_balance * i.buy_price, 2)  AS stock_value_cost,
+       -- قيمة المخزون بسعر البيع
+       ROUND(q.current_balance * i.sel_price1, 2) AS stock_value_sell,
+       -- حالة الرصيد
+       CASE
+           WHEN q.current_balance <= 0                   THEN 'OUT_OF_STOCK'
+           WHEN q.current_balance <= i.mini_quantity     THEN 'LOW'
+           ELSE 'OK'
+           END AS stock_status,
+       i.item_active
+FROM quantity_items_table q
+         JOIN items     i  ON i.id = q.item_id
+         JOIN stocks    s  ON s.stock_id = q.stock_id
+         JOIN units     u  ON u.unit_id = i.unit_id
+         JOIN sub_group sg ON sg.id = i.sub_num
+         JOIN main_group mg ON mg.id = sg.main_id;
+
+-- =====================================================================
+-- v_stock_inventory_summary — جرد إجمالي لكل صنف عبر كل المخازن
+-- =====================================================================
+
+CREATE OR REPLACE VIEW v_stock_inventory_summary AS
+SELECT i.id AS item_id,
+       i.barcode,
+       i.nameItem,
+       i.mini_quantity,
+       u.unit_name,
+       sg.name   AS sub_group_name,
+       mg.name_g AS main_group_name,
+       i.buy_price,
+       i.sel_price1,
+       COALESCE(SUM(v.first_balance),       0) AS first_balance_total,
+       COALESCE(SUM(v.quantityPurchase),    0) AS total_purchase,
+       COALESCE(SUM(v.quantitySales),       0) AS total_sales,
+       COALESCE(SUM(v.quantityPurchaseRe),  0) AS total_purchase_re,
+       COALESCE(SUM(v.quantitySalesRe),     0) AS total_sales_re,
+       COALESCE(SUM(v.current_balance),     0) AS total_balance,
+       ROUND(COALESCE(SUM(v.current_balance), 0) * i.buy_price, 2)  AS total_value_cost,
+       ROUND(COALESCE(SUM(v.current_balance), 0) * i.sel_price1, 2) AS total_value_sell,
+       CASE
+           WHEN COALESCE(SUM(v.current_balance), 0) <= 0                 THEN 'OUT_OF_STOCK'
+           WHEN COALESCE(SUM(v.current_balance), 0) <= i.mini_quantity   THEN 'LOW'
+           ELSE 'OK'
+           END AS stock_status
+FROM items i
+         JOIN units      u  ON u.unit_id = i.unit_id
+         JOIN sub_group  sg ON sg.id = i.sub_num
+         JOIN main_group mg ON mg.id = sg.main_id
+         LEFT JOIN v_stock_inventory v ON v.item_id = i.id
+WHERE i.item_active = 1
+GROUP BY i.id, i.barcode, i.nameItem, i.mini_quantity, u.unit_name,
+         sg.name, mg.name_g, i.buy_price, i.sel_price1;
 
 -- --------------------------------------total_sales_names_table------------------------------------
 
@@ -1200,34 +1334,6 @@ WHERE (c.first_balance <> 0 OR
 -- =====================================================================
 -- 9) تحديث View stock_transfer_view
 -- =====================================================================
--- يتم عرض التحويلات المرحلة POSTED فقط.
--- التحويلات الملغية لا تدخل في حسابات الرصيد.
--- =====================================================================
-
-CREATE OR REPLACE VIEW stock_transfer_view AS
-SELECT st.id,
-       st.transfer_date,
-       st.stock_from,
-       st.stock_to,
-       st.status,
-       st.cancelled_at,
-       st.cancelled_by,
-       st.cancel_reason,
-       st.reversal_transfer_id,
-       stf.stock_name AS name_from,
-       stt.stock_name AS name_to,
-       stl.id         AS transfer_line_id,
-       stl.item_id,
-       stl.quantity,
-       i.nameItem,
-       i.barcode
-FROM stock_transfer st
-         JOIN stock_transfer_list stl ON st.id = stl.stock_transfer_id
-         JOIN items i ON i.id = stl.item_id
-         JOIN stocks stf ON stf.stock_id = st.stock_from
-         JOIN stocks stt ON stt.stock_id = st.stock_to
-WHERE st.status = 'POSTED';
-
 
 -- =====================================================================
 -- 10) View رصيد كل صنف في كل مخزن
@@ -1292,7 +1398,6 @@ SELECT
     st.cancel_reason,
     st.reversal_transfer_id,
     st.date_insert,
-    st.date_insert,
     st.user_id,
     u.user_name
 FROM stock_transfer st
@@ -1331,3 +1436,369 @@ FROM stock_transfer st
          JOIN items i ON i.id = stl.item_id
          JOIN units u ON u.unit_id = i.unit_id
          JOIN users usr ON usr.id = st.user_id;
+
+-- =====================================================================
+-- v_item_movements — كل حركات الأصناف (Stock Card) من كل المصادر
+-- =====================================================================
+-- يجمع كل أنواع الحركات في view موحّد:
+--   - الرصيد الافتتاحي (OPENING)
+--   - المشتريات (PURCHASE)
+--   - مرتجع المشتريات (PURCHASE_RETURN)
+--   - المبيعات (SALE)
+--   - مرتجع المبيعات (SALE_RETURN)
+--   - تحويل وارد (TRANSFER_IN)
+--   - تحويل صادر (TRANSFER_OUT)
+-- =====================================================================
+
+CREATE OR REPLACE VIEW v_item_movements AS
+-- 1) الرصيد الافتتاحي
+SELECT ist.item_id,
+       ist.stock_id,
+       NULL                                AS movement_date,
+       NULL                                AS movement_datetime,
+       'OPENING'                           AS movement_type,
+       'الرصيد الافتتاحي'                  AS movement_type_ar,
+       ist.first_balance                   AS quantity_in,
+       0                                   AS quantity_out,
+       NULL                                AS reference_id,
+       NULL                                AS invoice_number,
+       NULL                                AS party_name,
+       NULL                                AS unit_value,
+       NULL                                AS price,
+       'رصيد أول المدة'                    AS notes,
+       NULL                                AS user_id
+FROM items_stock ist
+WHERE ist.first_balance > 0
+
+UNION ALL
+
+-- 2) المشتريات
+SELECT p.num                               AS item_id,
+       tb.stock_id,
+       tb.invoice_date                     AS movement_date,
+       tb.date_insert                      AS movement_datetime,
+       'PURCHASE'                          AS movement_type,
+       'مشتريات'                           AS movement_type_ar,
+       (p.quantity * p.type_value)         AS quantity_in,
+       0                                   AS quantity_out,
+       p.id                                AS reference_id,
+       tb.invoice_number,
+       sup.name                            AS party_name,
+       p.type_value                        AS unit_value,
+       p.price,
+       tb.notes,
+       tb.user_id
+FROM purchase p
+         JOIN total_buy  tb  ON tb.invoice_number = p.invoice_number
+         JOIN suppliers  sup ON sup.id = tb.sup_code
+
+UNION ALL
+
+-- 3) مرتجع المشتريات
+SELECT pr.item_id,
+       tbr.stock_id,
+       tbr.invoice_date,
+       tbr.date_insert,
+       'PURCHASE_RETURN',
+       'مرتجع مشتريات',
+       0                                   AS quantity_in,
+       (pr.quantity * pr.type_value)       AS quantity_out,
+       pr.id,
+       tbr.id                              AS invoice_number,
+       sup.name,
+       pr.type_value,
+       pr.price,
+       tbr.notes,
+       tbr.user_id
+FROM purchase_re pr
+         JOIN total_buy_re tbr ON tbr.id = pr.invoice_number
+         JOIN suppliers    sup ON sup.id = tbr.sup_id
+
+UNION ALL
+
+-- 4) المبيعات
+SELECT s.num                               AS item_id,
+       ts.stock_id,
+       ts.invoice_date,
+       ts.date_insert,
+       'SALE',
+       'مبيعات',
+       0                                   AS quantity_in,
+       (s.quantity * s.type_value)         AS quantity_out,
+       s.id,
+       ts.invoice_number,
+       c.name                              AS party_name,
+       s.type_value,
+       s.price,
+       ts.notes,
+       ts.user_id
+FROM sales s
+         JOIN total_sales ts ON ts.invoice_number = s.invoice_number
+         JOIN custom      c  ON c.id = ts.sup_code
+
+UNION ALL
+
+-- 5) مرتجع المبيعات
+SELECT sr.item_id,
+       tsr.stock_id,
+       tsr.invoice_date,
+       tsr.date_insert,
+       'SALE_RETURN',
+       'مرتجع مبيعات',
+       (sr.quantity * sr.type_value)       AS quantity_in,
+       0                                   AS quantity_out,
+       sr.id,
+       tsr.id                              AS invoice_number,
+       c.name,
+       sr.type_value,
+       sr.price,
+       tsr.notes,
+       tsr.user_id
+FROM sales_re sr
+         JOIN total_sales_re tsr ON tsr.id = sr.invoice_number
+         JOIN custom         c   ON c.id = tsr.sup_id
+
+UNION ALL
+
+-- 6) تحويل صادر من المخزن
+SELECT stl.item_id,
+       st.stock_from                       AS stock_id,
+       st.transfer_date                    AS movement_date,
+       st.date_insert                      AS movement_datetime,
+       'TRANSFER_OUT',
+       'تحويل صادر',
+       0                                   AS quantity_in,
+       stl.quantity                        AS quantity_out,
+       stl.id                              AS reference_id,
+       st.id                               AS invoice_number,
+       stt.stock_name                      AS party_name,
+       1                                   AS unit_value,
+       NULL                                AS price,
+       CONCAT('تحويل إلى مخزن: ', stt.stock_name) AS notes,
+       st.user_id
+FROM stock_transfer st
+         JOIN stock_transfer_list stl ON st.id = stl.stock_transfer_id
+         JOIN stocks stt              ON stt.stock_id = st.stock_to
+WHERE st.status = 'POSTED'
+
+UNION ALL
+
+-- 7) تحويل وارد إلى المخزن
+SELECT stl.item_id,
+       st.stock_to                         AS stock_id,
+       st.transfer_date                    AS movement_date,
+       st.date_insert                      AS movement_datetime,
+       'TRANSFER_IN',
+       'تحويل وارد',
+       stl.quantity                        AS quantity_in,
+       0                                   AS quantity_out,
+       stl.id,
+       st.id,
+       stf.stock_name                      AS party_name,
+       1                                   AS unit_value,
+       NULL                                AS price,
+       CONCAT('تحويل من مخزن: ', stf.stock_name),
+       st.user_id
+FROM stock_transfer st
+         JOIN stock_transfer_list stl ON st.id = stl.stock_transfer_id
+         JOIN stocks stf              ON stf.stock_id = st.stock_from
+WHERE st.status = 'POSTED';
+
+-- =====================================================================
+-- v_item_movements_details — تفاصيل الحركات مع أسماء وأرصدة متراكمة
+-- =====================================================================
+
+CREATE OR REPLACE VIEW v_item_movements_details AS
+SELECT m.item_id,
+       i.barcode,
+       i.nameItem,
+       m.stock_id,
+       s.stock_name,
+       u.unit_name,
+       m.movement_date,
+       m.movement_datetime,
+       m.movement_type,
+       m.movement_type_ar,
+       m.quantity_in,
+       m.quantity_out,
+       -- الرصيد المتراكم (Running Balance) — الرصيد بعد كل حركة
+       SUM(m.quantity_in - m.quantity_out) OVER (
+           PARTITION BY m.item_id, m.stock_id
+           ORDER BY
+               -- نضع OPENING أولاً دائماً
+               CASE WHEN m.movement_type = 'OPENING' THEN 0 ELSE 1 END,
+               m.movement_date,
+               m.movement_datetime,
+               m.reference_id
+           ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW
+           )                                              AS running_balance,
+       m.reference_id,
+       m.invoice_number,
+       m.party_name,
+       m.unit_value,
+       m.price,
+       m.notes,
+       m.user_id,
+       usr.user_name
+FROM v_item_movements m
+         JOIN items  i ON i.id = m.item_id
+         JOIN stocks s ON s.stock_id = m.stock_id
+         JOIN units  u ON u.unit_id = i.unit_id
+         LEFT JOIN users usr ON usr.id = m.user_id;
+
+
+-- =====================================================================
+-- v_stock_balance_as_of — رصيد المخزون حتى تاريخ معين
+-- =====================================================================
+-- ملاحظة: هذا View يعتمد على متغير الجلسة @as_of_date
+-- استخدمه هكذا:
+--   SET @as_of_date = '2025-01-31';
+--   SELECT * FROM v_stock_balance_as_of;
+-- =====================================================================
+
+CREATE OR REPLACE VIEW v_stock_balance_as_of AS
+WITH
+-- الرصيد الافتتاحي (دائماً مشمول)
+opening_agg AS (
+    SELECT item_id, stock_id, first_balance AS qty
+    FROM items_stock
+    WHERE first_balance > 0
+),
+-- المشتريات حتى التاريخ المحدد
+purchase_agg AS (
+    SELECT tb.stock_id, p.num AS item_id,
+           SUM(p.quantity * p.type_value) AS qty
+    FROM purchase p
+             JOIN total_buy tb ON tb.invoice_number = p.invoice_number
+    WHERE tb.invoice_date <= COALESCE(@as_of_date, CURDATE())
+    GROUP BY tb.stock_id, p.num
+),
+-- المبيعات حتى التاريخ المحدد
+sales_agg AS (
+    SELECT ts.stock_id, s.num AS item_id,
+           SUM(s.quantity * s.type_value) AS qty
+    FROM sales s
+             JOIN total_sales ts ON ts.invoice_number = s.invoice_number
+    WHERE ts.invoice_date <= COALESCE(@as_of_date, CURDATE())
+    GROUP BY ts.stock_id, s.num
+),
+-- مرتجع المشتريات حتى التاريخ المحدد
+purchase_re_agg AS (
+    SELECT tbr.stock_id, pr.item_id,
+           SUM(pr.quantity * pr.type_value) AS qty
+    FROM purchase_re pr
+             JOIN total_buy_re tbr ON tbr.id = pr.invoice_number
+    WHERE tbr.invoice_date <= COALESCE(@as_of_date, CURDATE())
+    GROUP BY tbr.stock_id, pr.item_id
+),
+-- مرتجع المبيعات حتى التاريخ المحدد
+sales_re_agg AS (
+    SELECT tsr.stock_id, sr.item_id,
+           SUM(sr.quantity * sr.type_value) AS qty
+    FROM sales_re sr
+             JOIN total_sales_re tsr ON tsr.id = sr.invoice_number
+    WHERE tsr.invoice_date <= COALESCE(@as_of_date, CURDATE())
+    GROUP BY tsr.stock_id, sr.item_id
+),
+-- التحويلات الصادرة حتى التاريخ المحدد
+transfer_from_agg AS (
+    SELECT st.stock_from AS stock_id, stl.item_id,
+           SUM(stl.quantity) AS qty
+    FROM stock_transfer st
+             JOIN stock_transfer_list stl ON st.id = stl.stock_transfer_id
+    WHERE st.status = 'POSTED'
+      AND st.transfer_date <= COALESCE(@as_of_date, CURDATE())
+    GROUP BY st.stock_from, stl.item_id
+),
+-- التحويلات الواردة حتى التاريخ المحدد
+transfer_to_agg AS (
+    SELECT st.stock_to AS stock_id, stl.item_id,
+           SUM(stl.quantity) AS qty
+    FROM stock_transfer st
+             JOIN stock_transfer_list stl ON st.id = stl.stock_transfer_id
+    WHERE st.status = 'POSTED'
+      AND st.transfer_date <= COALESCE(@as_of_date, CURDATE())
+    GROUP BY st.stock_to, stl.item_id
+),
+-- اتحاد كل أزواج (item_id, stock_id) الممكنة
+all_pairs AS (
+    SELECT item_id, stock_id FROM opening_agg
+    UNION
+    SELECT item_id, stock_id FROM purchase_agg
+    UNION
+    SELECT item_id, stock_id FROM sales_agg
+    UNION
+    SELECT item_id, stock_id FROM purchase_re_agg
+    UNION
+    SELECT item_id, stock_id FROM sales_re_agg
+    UNION
+    SELECT item_id, stock_id FROM transfer_from_agg
+    UNION
+    SELECT item_id, stock_id FROM transfer_to_agg
+)
+SELECT ap.item_id,
+       i.barcode,
+       i.nameItem,
+       ap.stock_id,
+       s.stock_name,
+       u.unit_name,
+       COALESCE(@as_of_date, CURDATE())             AS as_of_date,
+       COALESCE(op.qty,  0)                         AS opening_balance,
+       COALESCE(pa.qty,  0)                         AS total_purchase,
+       COALESCE(sra.qty, 0)                         AS total_sales_re,
+       COALESCE(tta.qty, 0)                         AS total_transfer_in,
+       COALESCE(sa.qty,  0)                         AS total_sales,
+       COALESCE(pra.qty, 0)                         AS total_purchase_re,
+       COALESCE(tfa.qty, 0)                         AS total_transfer_out,
+       -- الرصيد في التاريخ المحدد
+       (COALESCE(op.qty, 0)
+           + COALESCE(pa.qty, 0)
+           + COALESCE(sra.qty, 0)
+           + COALESCE(tta.qty, 0))
+           - (COALESCE(sa.qty, 0)
+           + COALESCE(pra.qty, 0)
+           + COALESCE(tfa.qty, 0))                  AS balance_as_of,
+       i.buy_price,
+       i.sel_price1
+FROM all_pairs ap
+         JOIN items  i ON i.id = ap.item_id
+         JOIN stocks s ON s.stock_id = ap.stock_id
+         JOIN units  u ON u.unit_id = i.unit_id
+         LEFT JOIN opening_agg       op  ON op.item_id  = ap.item_id AND op.stock_id  = ap.stock_id
+         LEFT JOIN purchase_agg      pa  ON pa.item_id  = ap.item_id AND pa.stock_id  = ap.stock_id
+         LEFT JOIN sales_agg         sa  ON sa.item_id  = ap.item_id AND sa.stock_id  = ap.stock_id
+         LEFT JOIN purchase_re_agg   pra ON pra.item_id = ap.item_id AND pra.stock_id = ap.stock_id
+         LEFT JOIN sales_re_agg      sra ON sra.item_id = ap.item_id AND sra.stock_id = ap.stock_id
+         LEFT JOIN transfer_from_agg tfa ON tfa.item_id = ap.item_id AND tfa.stock_id = ap.stock_id
+         LEFT JOIN transfer_to_agg   tta ON tta.item_id = ap.item_id AND tta.stock_id = ap.stock_id;
+
+-- =====================================================================
+-- v_historical_stock_value — قيمة المخزون التاريخية
+-- =====================================================================
+-- يعرض قيمة المخزون في تاريخ معين بسعر التكلفة وسعر البيع
+-- =====================================================================
+
+CREATE OR REPLACE VIEW v_historical_stock_value AS
+SELECT b.item_id,
+       b.barcode,
+       b.nameItem,
+       b.stock_id,
+       b.stock_name,
+       b.unit_name,
+       b.as_of_date,
+       b.opening_balance,
+       b.total_purchase,
+       b.total_sales,
+       b.total_purchase_re,
+       b.total_sales_re,
+       b.total_transfer_in,
+       b.total_transfer_out,
+       b.balance_as_of,
+       b.buy_price,
+       b.sel_price1,
+       ROUND(b.balance_as_of * b.buy_price, 2)  AS value_at_cost,
+       ROUND(b.balance_as_of * b.sel_price1, 2) AS value_at_sell,
+       ROUND(b.balance_as_of * (b.sel_price1 - b.buy_price), 2) AS potential_profit
+FROM v_stock_balance_as_of b
+WHERE b.balance_as_of <> 0;
+
