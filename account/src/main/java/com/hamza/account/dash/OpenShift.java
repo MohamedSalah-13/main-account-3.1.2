@@ -3,9 +3,14 @@ package com.hamza.account.dash;
 import com.hamza.account.Main;
 import com.hamza.account.config.ConnectionToDatabase;
 import com.hamza.account.controller.convert_treasury.TreasuryController;
+import com.hamza.account.controller.items.ItemCardController;
+import com.hamza.account.controller.others.ServiceRegistry;
 import com.hamza.account.controller.reports.*;
 import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.model.domain.Users;
+import com.hamza.account.service.ItemCardService;
+import com.hamza.account.service.ItemsService;
+import com.hamza.account.service.StockService;
 import com.hamza.account.view.LogApplication;
 import com.hamza.account.view.SceneAll;
 import javafx.application.Application;
@@ -21,18 +26,22 @@ public class OpenShift extends Application {
         DaoFactory daoFactory = DaoFactory.INSTANCE;
         var connection = new ConnectionToDatabase().getDbConnection().getConnection();
         daoFactory.setConnection(connection);
-
+        
+        ServiceRegistry.register(ItemsService.class, new ItemsService(daoFactory));
+        ServiceRegistry.register(StockService.class, new StockService(daoFactory));
+        ServiceRegistry.register(ItemCardService.class, new ItemCardService(daoFactory));
 
         // مثال لكيفية فتح الشاشة وتمرير الاتصال
 //        FXMLLoader loader = new FXMLLoader(Main.class.getResource("view/reports/CustomerReceivableView.fxml"));
 //        FXMLLoader loader = new FXMLLoader(Main.class.getResource("view/reports/ComprehensiveSalesView.fxml"));
-        FXMLLoader loader = new FXMLLoader(Main.class.getResource("view/treasury/treasuryView.fxml"));
+//        FXMLLoader loader = new FXMLLoader(Main.class.getResource("view/treasury/treasuryView.fxml"));
+        FXMLLoader loader = new FXMLLoader(Main.class.getResource("view/item_card_report.fxml"));
         Parent root = loader.load();
 
 //        CustomerReceivableController controller = loader.getController();
 //        ComprehensiveSalesController controller = loader.getController();
-        TreasuryController controller = loader.getController();
-        controller.setDaoFactory(daoFactory); // تمرير اتصال قاعدة البيانات
+        ItemCardController controller = loader.getController();
+//        controller.setDaoFactory(daoFactory); // تمرير اتصال قاعدة البيانات
 
         Scene scene = new SceneAll(root);
         stage.setScene(scene);

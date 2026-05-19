@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.geometry.Insets?>
+
+<VBox spacing="10" xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.hamza.account.controller.items.ItemCardController">
+    <padding>
+        <Insets top="10" right="10" bottom="10" left="10"/>
+    </padding>
+
+    <!-- شريط الفلترة -->
+    <HBox spacing="10" alignment="CENTER_LEFT">
+        <Label text="الصنف:"/>
+        <ComboBox fx:id="itemCombo" prefWidth="250" editable="true" promptText="ابحث بالباركود أو الاسم..."/>
+        <Label text="المخزن:"/>
+        <ComboBox fx:id="stockCombo" prefWidth="150"/>
+        <Label text="من تاريخ:"/>
+        <DatePicker fx:id="startDatePicker" promptText="اختر تاريخ البداية"/>
+        <Label text="إلى تاريخ:"/>
+        <DatePicker fx:id="endDatePicker" promptText="اختر تاريخ النهاية"/>
+        <Button text="بحث" onAction="#handleSearch"/>
+        <Button text="تصدير Excel" onAction="#handleExportExcel"/>
+    </HBox>
+
+    <!-- الجدول -->
+    <TableView fx:id="tableView" VBox.vgrow="ALWAYS">
+        <columns>
+            <TableColumn text="التاريخ" fx:id="colDate"/>
+            <TableColumn text="نوع الحركة" fx:id="colMovementType"/>
+            <TableColumn text="وارد" fx:id="colIn"/>
+            <TableColumn text="صادر" fx:id="colOut"/>
+            <TableColumn text="الرصيد" fx:id="colBalance"/>
+            <TableColumn text="رقم الفاتورة" fx:id="colInvoiceNo"/>
+            <TableColumn text="الطرف الآخر" fx:id="colParty"/>
+            <TableColumn text="السعر" fx:id="colPrice"/>
+            <TableColumn text="الوحدة" fx:id="colUnit"/>
+            <TableColumn text="المستخدم" fx:id="colUser"/>
+            <TableColumn text="ملاحظات" fx:id="colNotes"/>
+        </columns>
+    </TableView>
+
+    <!-- شريط حالة / إجمالي -->
+    <HBox alignment="CENTER_RIGHT" spacing="20">
+        <Label text="الرصيد الافتتاحي:"/>
+        <Label fx:id="openingBalanceLabel" style="-fx-font-weight: bold;"/>
+        <Label text="الرصيد الختامي:"/>
+        <Label fx:id="closingBalanceLabel" style="-fx-font-weight: bold;"/>
+    </HBox>
+</VBox>

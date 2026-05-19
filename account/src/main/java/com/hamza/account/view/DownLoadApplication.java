@@ -74,6 +74,8 @@ public class DownLoadApplication extends Application {
         ServiceRegistry.register(SalesService.class, new SalesService(daoFactory));
         ServiceRegistry.register(SalesReService.class, new SalesReService(daoFactory));
 
+        ServiceRegistry.register(ItemCardService.class, new ItemCardService(daoFactory));
+
         System.out.println(2);
 
     }

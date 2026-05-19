@@ -1,5 +1,6 @@
 package com.hamza.account.model.dao;
 
+import com.hamza.account.model.domain.ItemCardDao;
 import lombok.Setter;
 
 import java.sql.Connection;
@@ -247,4 +248,7 @@ public enum DaoFactory {
         return new CustomerReceivableDao(connection);
     }
 
+    public ItemCardDao itemCardDao() {
+        return new ItemCardDao(connection);
+    }
 }
