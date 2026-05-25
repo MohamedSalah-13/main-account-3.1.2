@@ -66,8 +66,7 @@ public record ItemsService(DaoFactory daoFactory) {
     }
 
     public List<ItemsModel> getMainItemsListWithoutInactiveByMainGroupId(int mainGroupId) throws DaoException {
-        return daoFactory.getItemsDao().getItemsByMainGroupId(mainGroupId).stream()
-                .filter(ItemsModel::isActiveItem).toList();
+        return daoFactory.getItemsDao().getItemsByMainGroupId(mainGroupId);
     }
 
     public List<ItemsModel> searchAvailableItemsByStockId(int stockId, String searchText, int limit) throws DaoException {

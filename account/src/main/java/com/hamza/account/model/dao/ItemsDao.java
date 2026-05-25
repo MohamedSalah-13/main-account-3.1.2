@@ -8,7 +8,6 @@ import com.hamza.controlsfx.database.AbstractDao;
 import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.database.SqlStatements;
 import lombok.extern.log4j.Log4j2;
-import org.jetbrains.annotations.NotNull;
 
 import java.sql.*;
 import java.util.ArrayList;
@@ -27,7 +26,6 @@ public class ItemsDao extends AbstractDao<ItemsModel> {
     private static final String FILTER_ITEMS_SQL_TEXT_STARTS = """
             SELECT *
             FROM items
-            JOIN quantity_items_table ip ON items.id = ip.item_id
             WHERE items.nameItem LIKE ?
                OR items.barcode LIKE ?
             ORDER BY
@@ -44,7 +42,6 @@ public class ItemsDao extends AbstractDao<ItemsModel> {
     private static final String FILTER_ITEMS_SQL_TEXT_CONTAINS = """
             SELECT *
             FROM items
-            JOIN quantity_items_table ip ON items.id = ip.item_id
             WHERE items.nameItem LIKE ?
                OR items.barcode LIKE ?
             ORDER BY
@@ -59,7 +56,6 @@ public class ItemsDao extends AbstractDao<ItemsModel> {
     private static final String FILTER_ITEMS_SQL_NUMERIC = """
             SELECT *
             FROM items
-            JOIN quantity_items_table ip ON items.id = ip.item_id
             WHERE items.id = ?
                OR items.barcode = ?
             ORDER BY
@@ -71,6 +67,7 @@ public class ItemsDao extends AbstractDao<ItemsModel> {
                 items.id DESC
             LIMIT %d
             """.formatted(FILTER_ITEMS_LIMIT);
+
     private final String ID = "id";
     private final String SUB_NUM = "sub_num";
     private final String BUY_PRICE = "buy_price";
@@ -79,13 +76,7 @@ public class ItemsDao extends AbstractDao<ItemsModel> {
     private final String ITEM_IMAGE = "item_image";
     private final String FIRST_BALANCE = "first_balance";
     private final String TABLE_NAME = "items";
-    private final String QUANTITY_PURCHASE = "quantityPurchase";
-    private final String QUANTITY_SALES = "quantitySales";
-    private final String QUANTITY_PURCHASE_RE = "quantityPurchaseRe";
-    private final String QUANTITY_SALES_RE = "quantitySalesRe";
-    private final String FROM_STOCK = "fromStock";
-    private final String TO_STOCK = "toStock";
-    private final String STOCK_ID = "stock_id";
+
     private final String selPrice1 = "sel_price1";
     private final String selPrice2 = "sel_price2";
     private final String selPrice3 = "sel_price3";
@@ -95,7 +86,9 @@ public class ItemsDao extends AbstractDao<ItemsModel> {
     private final String alertDaysBeforeExpire = "alert_days_before_expire";
     private final String has_package = "item_has_package";
     private final String USER_ID = "user_id";
-    private final String QUERY_ITEMS = "SELECT * from items join quantity_items_table ip on items.id = ip.item_id ";
+    private final String STOCK_ID = "stock_id";
+    private final String CURRENT_QUANTITY = "current_quantity";
+    private final String QUERY_ITEMS = "SELECT * FROM items ";
     private final DaoFactory daoFactory;
     private final Connection connection;
 
@@ -200,32 +193,77 @@ public class ItemsDao extends AbstractDao<ItemsModel> {
 
     @Override
     public ItemsModel map(ResultSet rs) throws DaoException {
-        try {
-            var itemsModel = getItemsModel(rs);
-            // others
-            double purchase = rs.getDouble(QUANTITY_PURCHASE);
-            double sales = rs.getDouble(QUANTITY_SALES);
-            double purRe = rs.getDouble(QUANTITY_PURCHASE_RE);
-            double saleRe = rs.getDouble(QUANTITY_SALES_RE);
-            double fromStock = rs.getDouble(FROM_STOCK);
-            double toStock = rs.getDouble(TO_STOCK);
+        return mapBasic(rs);
+    }
 
-            itemsModel.setItemStock(daoFactory.stockDao().getDataById(rs.getInt(STOCK_ID)));
-            itemsModel.setSumPurchase(purchase);
-            itemsModel.setSumSales(sales);
-            itemsModel.setSumPurchaseRe(purRe);
-            itemsModel.setSumSalesRe(saleRe);
-            itemsModel.setFromStock(fromStock);
-            itemsModel.setToStock(toStock);
-            double sumAllBalance = (itemsModel.getFirstBalanceForStock() + purchase + saleRe + toStock) - (sales + purRe + fromStock);
-            itemsModel.setSumAllBalance(sumAllBalance);
-            itemsModel.setSumAllBalanceByBuyPrice(roundToTwoDecimalPlaces(itemsModel.getBuyPrice() * sumAllBalance));
-            itemsModel.setSumAllBalanceBySelPrice(roundToTwoDecimalPlaces(itemsModel.getSelPrice1() * sumAllBalance));
+    private ItemsModel mapBasic(ResultSet rs) throws DaoException {
+        try {
+            ItemsModel itemsModel = new ItemsModel();
+            double firstBalanceForStock = rs.getDouble(FIRST_BALANCE);
+            int unitId = rs.getInt(UNIT_ID);
+            Blob blob = rs.getBlob(ITEM_IMAGE);
+            int id = rs.getInt(ID);
+
+            itemsModel.setId(id);
+            itemsModel.setBarcode(rs.getString(BARCODE));
+            itemsModel.setNameItem(rs.getString(NAME_ITEM));
+            itemsModel.setMini_quantity(rs.getDouble(MINI_QUANTITY));
+            itemsModel.setFirstBalanceForStock(firstBalanceForStock);
+            itemsModel.setBuyPrice(rs.getDouble(BUY_PRICE));
+            itemsModel.setSelPrice1(rs.getDouble(selPrice1));
+            itemsModel.setSelPrice2(rs.getDouble(selPrice2));
+            itemsModel.setSelPrice3(rs.getDouble(selPrice3));
+            itemsModel.setActiveItem(rs.getBoolean(itemActive));
+            itemsModel.setHasValidate(rs.getBoolean(itemHasValidity));
+            itemsModel.setNumberValidityDays(rs.getInt(numberValidityDays));
+            itemsModel.setAlertDaysBeforeExpiry(rs.getInt(alertDaysBeforeExpire));
+            itemsModel.setHasPackage(rs.getBoolean(has_package));
+
+            if (blob != null) {
+                itemsModel.setItem_image(blob.getBytes(1, (int) blob.length()));
+            }
+
+            itemsModel.setSubGroups(daoFactory.getSupGroupsDao().getDataById(rs.getInt(SUB_NUM)));
+
+            var dataById = daoFactory.unitsDao().getDataById(unitId);
+            itemsModel.setUnitsType(dataById);
+
+            var allUnitsByItemId = daoFactory.getItemsUnitDao().getAllUnitsByItemId(id);
+            var e = new ItemsUnitsModel();
+            e.setUnitsModel(dataById);
+            e.setQuantityForUnit(1.0);
+            e.setItemsId(itemsModel.getId());
+            e.setItemsBarcode(itemsModel.getBarcode());
+            allUnitsByItemId.addFirst(e);
+
+            itemsModel.setItemsUnitsModelList(allUnitsByItemId);
+
+            itemsModel.setSumAllBalance(0);
+            itemsModel.setSumAllBalanceByBuyPrice(0);
+            itemsModel.setSumAllBalanceBySelPrice(0);
+
             return itemsModel;
         } catch (SQLException e) {
             throw new DaoException(e);
         }
+    }
 
+    private ItemsModel mapWithStockBalance(ResultSet rs) throws DaoException {
+        try {
+            ItemsModel itemsModel = mapBasic(rs);
+
+            double currentQuantity = rs.getDouble(CURRENT_QUANTITY);
+            int stockId = rs.getInt(STOCK_ID);
+
+            itemsModel.setItemStock(daoFactory.stockDao().getDataById(stockId));
+            itemsModel.setSumAllBalance(currentQuantity);
+            itemsModel.setSumAllBalanceByBuyPrice(roundToTwoDecimalPlaces(itemsModel.getBuyPrice() * currentQuantity));
+            itemsModel.setSumAllBalanceBySelPrice(roundToTwoDecimalPlaces(itemsModel.getSelPrice1() * currentQuantity));
+
+            return itemsModel;
+        } catch (SQLException e) {
+            throw new DaoException(e);
+        }
     }
 
     @Override
@@ -281,74 +319,50 @@ public class ItemsDao extends AbstractDao<ItemsModel> {
         }
     }
 
-    @NotNull
-    private ItemsModel getItemsModel(ResultSet rs) throws SQLException, DaoException {
-        ItemsModel itemsModel = new ItemsModel();
-        double firstBalanceForStock = rs.getDouble(FIRST_BALANCE);
-        int unitId = rs.getInt(UNIT_ID);
-        Blob blob = rs.getBlob(ITEM_IMAGE);
-        int id = rs.getInt(ID);
-        itemsModel.setId(id);
-        itemsModel.setBarcode(rs.getString(BARCODE));
-        itemsModel.setNameItem(rs.getString(NAME_ITEM));
-        itemsModel.setMini_quantity(rs.getDouble(MINI_QUANTITY));
-        itemsModel.setFirstBalanceForStock(firstBalanceForStock);
-        itemsModel.setBuyPrice(rs.getDouble(BUY_PRICE));
-        itemsModel.setSelPrice1(rs.getDouble(selPrice1));
-        itemsModel.setSelPrice2(rs.getDouble(selPrice2));
-        itemsModel.setSelPrice3(rs.getDouble(selPrice3));
-        itemsModel.setActiveItem(rs.getBoolean(itemActive));
-        itemsModel.setHasValidate(rs.getBoolean(itemHasValidity));
-        itemsModel.setNumberValidityDays(rs.getInt(numberValidityDays));
-        itemsModel.setAlertDaysBeforeExpiry(rs.getInt(alertDaysBeforeExpire));
-        itemsModel.setHasPackage(rs.getBoolean(has_package));
-
-        if (blob != null) {
-            itemsModel.setItem_image(blob.getBytes(1, (int) blob.length()));
-        }
-
-        itemsModel.setSubGroups(daoFactory.getSupGroupsDao().getDataById(rs.getInt(SUB_NUM)));
-        var dataById = daoFactory.unitsDao().getDataById(unitId);
-        itemsModel.setUnitsType(dataById);
-
-        // second add all another units
-        var allUnitsByItemId = daoFactory.getItemsUnitDao().getAllUnitsByItemId(id);
-        var e = new ItemsUnitsModel();
-        e.setUnitsModel(dataById);
-        e.setQuantityForUnit(1.0);
-        e.setItemsId(itemsModel.getId());
-        e.setItemsBarcode(itemsModel.getBarcode());
-        allUnitsByItemId.addFirst(e);
-        // add units to list
-        itemsModel.setItemsUnitsModelList(allUnitsByItemId);
-        return itemsModel;
-    }
-
     public ItemsModel findItemById(Integer itemId) throws DaoException {
-        return queryForObject(QUERY_ITEMS.concat(" where items.id = ? "), this::map, itemId);
+        return queryForObject(QUERY_ITEMS.concat(" where items.id = ? "), this::mapBasic, itemId);
     }
 
     public ItemsModel findItemByIdAndStockId(Integer itemId, Integer stockId) throws DaoException {
-        return queryForObject(QUERY_ITEMS.concat(" where items.id = ? and ip.stock_id = ? "), this::map, itemId, stockId);
+        String sql = """
+                SELECT
+                    items.*,
+                    ist.stock_id,
+                    ist.current_quantity
+                FROM items
+                         JOIN items_stock ist ON ist.item_id = items.id
+                WHERE items.id = ?
+                  AND ist.stock_id = ?
+                """;
+        return queryForObject(sql, this::mapWithStockBalance, itemId, stockId);
     }
 
     public ItemsModel findItemByStockIdAndName(String itemName, Integer stockId) throws DaoException {
-        return queryForObject(QUERY_ITEMS.concat(" where nameItem = ? and ip.stock_id = ? "), this::map, itemName, stockId);
+        String sql = """
+                SELECT
+                    items.*,
+                    ist.stock_id,
+                    ist.current_quantity
+                FROM items
+                         JOIN items_stock ist ON ist.item_id = items.id
+                WHERE items.nameItem = ?
+                  AND ist.stock_id = ?
+                """;
+        return queryForObject(sql, this::mapWithStockBalance, itemName, stockId);
     }
 
     public ItemsModel findItemByStockIdAndBarcode(String barcode, Integer stockId) throws DaoException {
-        return queryForObject(QUERY_ITEMS.concat(" where barcode = ? and ip.stock_id = ? "), this::map, barcode, stockId);
-    }
-
-    public int maxItemId() {
-        try {
-            CallableStatement cs = connection.prepareCall("{CALL max_item_id(?)}");
-            cs.executeUpdate();
-            return cs.getInt(1);
-        } catch (SQLException e) {
-            log.error(e.getMessage(), e.getCause());
-        }
-        return 0;
+        String sql = """
+                SELECT
+                    items.*,
+                    ist.stock_id,
+                    ist.current_quantity
+                FROM items
+                         JOIN items_stock ist ON ist.item_id = items.id
+                WHERE items.barcode = ?
+                  AND ist.stock_id = ?
+                """;
+        return queryForObject(sql, this::mapWithStockBalance, barcode, stockId);
     }
 
     public List<ItemsModel> getItemsByMainGroupId(int mainGroupId) throws DaoException {
@@ -442,13 +456,7 @@ public class ItemsDao extends AbstractDao<ItemsModel> {
                 SELECT
                     items.*,
                     ist.stock_id,
-                    0 AS quantityPurchase,
-                    0 AS quantitySales,
-                    0 AS quantityPurchaseRe,
-                    0 AS quantitySalesRe,
-                    0 AS fromStock,
-                    0 AS toStock,
-                    ist.current_quantity AS current_quantity
+                    ist.current_quantity
                 FROM items
                          JOIN items_stock ist
                               ON ist.item_id = items.id
@@ -478,7 +486,7 @@ public class ItemsDao extends AbstractDao<ItemsModel> {
 
         return queryForObjects(
                 sql,
-                this::map,
+                this::mapWithStockBalance,
                 stockId,
                 value,
                 contains,
@@ -490,5 +498,15 @@ public class ItemsDao extends AbstractDao<ItemsModel> {
                 startsWith,
                 limit
         );
+    }
+    public int maxItemId() {
+        try {
+            CallableStatement cs = connection.prepareCall("{CALL max_item_id(?)}");
+            cs.executeUpdate();
+            return cs.getInt(1);
+        } catch (SQLException e) {
+            log.error(e.getMessage(), e.getCause());
+        }
+        return 0;
     }
 }
