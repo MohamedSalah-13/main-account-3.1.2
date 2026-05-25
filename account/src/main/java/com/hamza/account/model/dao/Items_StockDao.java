@@ -91,6 +91,165 @@ public class Items_StockDao extends AbstractDao<Items_Stock_Model> {
         );
     }
 
+    public int adjustOpeningBalance(Items_Stock_Model model, int userId) throws DaoException {
+        if (model == null || model.getItemsModel() == null || model.getStock() == null) {
+            throw new DaoException("بيانات رصيد المخزن غير صحيحة");
+        }
+
+        if (model.getFirstBalance() < 0) {
+            throw new DaoException("لا يمكن إدخال رصيد أول مدة أقل من صفر");
+        }
+
+        int itemId = model.getItemsModel().getId();
+        int stockId = model.getStock().getId();
+        double newFirstBalance = model.getFirstBalance();
+
+        Items_Stock_Model oldModel = getByItemIdAndStockId(itemId, stockId);
+
+        if (oldModel == null) {
+            insert(new Items_Stock_Model(
+                    itemId,
+                    stockId,
+                    newFirstBalance,
+                    newFirstBalance
+            ));
+
+            if (newFirstBalance > 0) {
+                insertOpeningAdjustmentMovement(
+                        itemId,
+                        stockId,
+                        newFirstBalance,
+                        0,
+                        "إضافة رصيد أول مدة للمخزن",
+                        userId
+                );
+            }
+
+            return 1;
+        }
+
+        double oldFirstBalance = oldModel.getFirstBalance();
+        double difference = newFirstBalance - oldFirstBalance;
+
+        if (difference == 0) {
+            return 0;
+        }
+
+        double newCurrentQuantity = oldModel.getCurrentQuantity() + difference;
+
+        if (newCurrentQuantity < 0) {
+            throw new DaoException("لا يمكن تعديل رصيد أول المدة لأن الرصيد الحالي سيصبح أقل من صفر");
+        }
+
+        String updateSql = """
+                UPDATE items_stock
+                SET first_balance = ?,
+                    current_quantity = current_quantity + ?
+                WHERE item_id = ?
+                  AND stock_id = ?
+                """;
+
+        int result = executeUpdate(updateSql, newFirstBalance, difference, itemId, stockId);
+
+        if (difference > 0) {
+            insertOpeningAdjustmentMovement(
+                    itemId,
+                    stockId,
+                    difference,
+                    0,
+                    "زيادة رصيد أول المدة من " + oldFirstBalance + " إلى " + newFirstBalance,
+                    userId
+            );
+        } else {
+            insertOpeningAdjustmentMovement(
+                    itemId,
+                    stockId,
+                    0,
+                    Math.abs(difference),
+                    "تخفيض رصيد أول المدة من " + oldFirstBalance + " إلى " + newFirstBalance,
+                    userId
+            );
+        }
+
+        return result;
+    }
+
+    public int adjustOpeningBalanceList(List<Items_Stock_Model> list, int userId) throws DaoException {
+        if (list == null || list.isEmpty()) {
+            return 0;
+        }
+
+        int count = 0;
+
+        for (Items_Stock_Model model : list) {
+            if (model == null || model.getItemsModel() == null || model.getStock() == null) {
+                continue;
+            }
+
+            count += adjustOpeningBalance(model, userId);
+        }
+
+        return count;
+    }
+
+    public Items_Stock_Model getByItemIdAndStockId(int itemId, int stockId) throws DaoException {
+        String sql = """
+                SELECT
+                    ist.id,
+                    ist.item_id,
+                    ist.stock_id,
+                    ist.first_balance,
+                    ist.current_quantity,
+                    s.stock_name
+                FROM items_stock ist
+                         JOIN stocks s ON s.stock_id = ist.stock_id
+                WHERE ist.item_id = ?
+                  AND ist.stock_id = ?
+                """;
+
+        return queryForObject(sql, this::map, itemId, stockId);
+    }
+
+    private int insertOpeningAdjustmentMovement(
+            int itemId,
+            int stockId,
+            double quantityIn,
+            double quantityOut,
+            String notes,
+            int userId
+    ) throws DaoException {
+        String sql = """
+                INSERT INTO stock_movements
+                (
+                    item_id,
+                    stock_id,
+                    movement_type,
+                    quantity_in,
+                    quantity_out,
+                    reference_type,
+                    reference_id,
+                    notes,
+                    user_id
+                )
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """;
+
+        String movementType = quantityIn > 0 ? "INVENTORY_ADJUST_IN" : "INVENTORY_ADJUST_OUT";
+
+        return executeUpdate(
+                sql,
+                itemId,
+                stockId,
+                movementType,
+                quantityIn,
+                quantityOut,
+                "INVENTORY",
+                itemId,
+                notes,
+                userId
+        );
+    }
+
     public int insertOrUpdateList(List<Items_Stock_Model> list) throws DaoException {
         if (list == null || list.isEmpty()) {
             return 0;

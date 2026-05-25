@@ -184,7 +184,11 @@ public class ItemsDao extends AbstractDao<ItemsModel> {
                     stockBalance.setItemsModel(new ItemsModel(itemsModel.getId()));
                 }
 
-                daoFactory.getItemsStockDao().insertOrUpdateList(itemsModel.getItemStockBalances());
+//                daoFactory.getItemsStockDao().insertOrUpdateList(itemsModel.getItemStockBalances());
+                daoFactory.getItemsStockDao().adjustOpeningBalanceList(
+                        itemsModel.getItemStockBalances(),
+                        itemsModel.getUsers().getId()
+                );
                 daoFactory.getItemsStockDao().deleteZeroOpeningBalancesByItemId(itemsModel.getId());
             }
 
