@@ -159,11 +159,13 @@ BEGIN
     (
         item_id,
         stock_id,
+        first_balance,
         current_quantity
     )
     SELECT
         stl.item_id,
         st.stock_from,
+        0,
         stl.quantity
     FROM stock_transfer st
              JOIN stock_transfer_list stl ON stl.stock_transfer_id = st.id

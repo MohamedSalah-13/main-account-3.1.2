@@ -2,7 +2,7 @@
 INSERT INTO users(id, user_name, user_pass, user_available)
 VALUES (1, 'admin', 'admin', 1);
 INSERT INTO type_price (name)
-VALUES ('سعر1'),
+VALUES ('سعر بيع 1'),
        ('سعر2'),
        ('سعر3');
 

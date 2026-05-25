@@ -181,14 +181,14 @@ WITH purchase_agg AS (SELECT tb.stock_id,
                          GROUP BY st.stock_to, stl.item_id)
 SELECT ist.item_id,
        ist.stock_id,
-       CASE WHEN ist.stock_id = 1 THEN i.first_balance ELSE 0 END AS first_balance,
-       COALESCE(pa.qty, 0)                                        AS quantityPurchase,
-       COALESCE(sa.qty, 0)                                        AS quantitySales,
-       COALESCE(pra.qty, 0)                                       AS quantityPurchaseRe,
-       COALESCE(sra.qty, 0)                                       AS quantitySalesRe,
-       COALESCE(tfa.qty, 0)                                       AS fromStock,
-       COALESCE(tta.qty, 0)                                       AS toStock,
-       ist.current_quantity                                       AS current_balance
+       ist.first_balance                                      AS first_balance,
+       COALESCE(pa.qty, 0)                                    AS quantityPurchase,
+       COALESCE(sa.qty, 0)                                    AS quantitySales,
+       COALESCE(pra.qty, 0)                                   AS quantityPurchaseRe,
+       COALESCE(sra.qty, 0)                                   AS quantitySalesRe,
+       COALESCE(tfa.qty, 0)                                   AS fromStock,
+       COALESCE(tta.qty, 0)                                   AS toStock,
+       ist.current_quantity                                   AS current_balance
 FROM items_stock ist
          JOIN items i ON i.id = ist.item_id
          LEFT JOIN purchase_agg pa ON pa.stock_id = ist.stock_id AND pa.item_id = ist.item_id
@@ -1359,12 +1359,12 @@ WHERE (c.first_balance <> 0 OR
 -- =====================================================================
 
 CREATE OR REPLACE VIEW v_items_stock_balance AS
-SELECT i.id                                                     AS item_id,
+SELECT i.id                   AS item_id,
        i.barcode,
        i.nameItem,
        s.stock_id,
        s.stock_name,
-       CASE WHEN s.stock_id = 1 THEN i.first_balance ELSE 0 END AS first_balance,
+       ist.first_balance,
        ist.current_quantity,
        u.unit_id,
        u.unit_name
@@ -1466,22 +1466,22 @@ FROM stock_transfer st
 
 CREATE OR REPLACE VIEW v_item_movements AS
 -- 1) الرصيد الافتتاحي
-SELECT ist.id             AS item_id,
-       1                  AS stock_id,
-       NULL               AS movement_date,
-       NULL               AS movement_datetime,
-       'OPENING'          AS movement_type,
-       'الرصيد الافتتاحي' AS movement_type_ar,
-       ist.first_balance  AS quantity_in,
-       0                  AS quantity_out,
-       NULL               AS reference_id,
-       NULL               AS invoice_number,
-       NULL               AS party_name,
-       NULL               AS unit_value,
-       NULL               AS price,
-       'رصيد أول المدة'   AS notes,
-       NULL               AS user_id
-FROM items ist
+SELECT ist.item_id         AS item_id,
+       ist.stock_id        AS stock_id,
+       NULL                AS movement_date,
+       NULL                AS movement_datetime,
+       'OPENING'           AS movement_type,
+       'الرصيد الافتتاحي'  AS movement_type_ar,
+       ist.first_balance   AS quantity_in,
+       0                   AS quantity_out,
+       NULL                AS reference_id,
+       NULL                AS invoice_number,
+       NULL                AS party_name,
+       NULL                AS unit_value,
+       NULL                AS price,
+       'رصيد أول المدة'    AS notes,
+       NULL                AS user_id
+FROM items_stock ist
 WHERE ist.first_balance > 0
 
 UNION ALL
@@ -1673,10 +1673,10 @@ FROM v_item_movements m
 CREATE OR REPLACE VIEW v_stock_balance_as_of AS
 WITH
 -- الرصيد الافتتاحي (دائماً مشمول)
-opening_agg AS (SELECT id            AS item_id,
-                       1             AS stock_id,
+opening_agg AS (SELECT item_id,
+                       stock_id,
                        first_balance AS qty
-                FROM items
+                FROM items_stock
                 WHERE first_balance > 0),
 -- المشتريات حتى تاريخ اليوم
 purchase_agg AS (SELECT tb.stock_id,

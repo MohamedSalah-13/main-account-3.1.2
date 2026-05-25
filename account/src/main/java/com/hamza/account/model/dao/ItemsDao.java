@@ -74,7 +74,7 @@ public class ItemsDao extends AbstractDao<ItemsModel> {
     private final String UNIT_ID = "unit_id";
     private final String MINI_QUANTITY = "mini_quantity";
     private final String ITEM_IMAGE = "item_image";
-    private final String FIRST_BALANCE = "first_balance";
+    //    private final String FIRST_BALANCE = "first_balance";
     private final String TABLE_NAME = "items";
 
     private final String selPrice1 = "sel_price1";
@@ -107,9 +107,15 @@ public class ItemsDao extends AbstractDao<ItemsModel> {
             connection.setAutoCommit(false);
 
             int itemId = insertItem(itemsModel);
+            double openingBalance = itemsModel.getFirstBalanceForStock();
+
             daoFactory.getItemsStockDao().insert(new Items_Stock_Model(
-                    itemsModel.getId(), 1, itemsModel.getFirstBalanceForStock()
+                    itemId,
+                    1,
+                    openingBalance,
+                    openingBalance
             ));
+
 
             connection.setAutoCommit(true);
             return 1;
@@ -134,7 +140,7 @@ public class ItemsDao extends AbstractDao<ItemsModel> {
     public int update(ItemsModel itemsModel) throws DaoException {
         String string = SqlStatements.updateStatement(TABLE_NAME, ID, BARCODE, NAME_ITEM, SUB_NUM, BUY_PRICE
                 , selPrice1, selPrice2, selPrice3, itemActive, itemHasValidity, numberValidityDays, alertDaysBeforeExpire
-                , UNIT_ID, MINI_QUANTITY, FIRST_BALANCE, ITEM_IMAGE, has_package, USER_ID);
+                , UNIT_ID, MINI_QUANTITY, ITEM_IMAGE, has_package, USER_ID);
 
         return insertMultiData(() -> {
             executeUpdateWithException(string, getData(itemsModel));
@@ -183,7 +189,6 @@ public class ItemsDao extends AbstractDao<ItemsModel> {
                 , itemsModel.getAlertDaysBeforeExpiry()
                 , itemsModel.getUnitsType().getUnit_id()
                 , itemsModel.getMini_quantity()
-                , itemsModel.getFirstBalanceForStock()
                 , itemsModel.getItem_image() != null ? itemsModel.getItem_image() : new byte[0]
                 , itemsModel.isHasPackage()
                 , itemsModel.getUsers().getId()
@@ -196,10 +201,22 @@ public class ItemsDao extends AbstractDao<ItemsModel> {
         return mapBasic(rs);
     }
 
+    @Override
+    public int updateList(List<ItemsModel> list) throws DaoException {
+        try {
+            String string = SqlStatements.updateStatement(TABLE_NAME, ID, BARCODE, NAME_ITEM, SUB_NUM, BUY_PRICE
+                    , selPrice1, selPrice2, selPrice3, itemActive, itemHasValidity, numberValidityDays, alertDaysBeforeExpire
+                    , UNIT_ID, MINI_QUANTITY, ITEM_IMAGE, has_package, USER_ID);
+            return executeUpdateListWithException(list, string
+                    , (statement, itemsModel) -> this.setData(statement, getData(itemsModel)));
+        } catch (SQLException e) {
+            throw new DaoException(e);
+        }
+    }
+
     private ItemsModel mapBasic(ResultSet rs) throws DaoException {
         try {
             ItemsModel itemsModel = new ItemsModel();
-            double firstBalanceForStock = rs.getDouble(FIRST_BALANCE);
             int unitId = rs.getInt(UNIT_ID);
             Blob blob = rs.getBlob(ITEM_IMAGE);
             int id = rs.getInt(ID);
@@ -208,7 +225,7 @@ public class ItemsDao extends AbstractDao<ItemsModel> {
             itemsModel.setBarcode(rs.getString(BARCODE));
             itemsModel.setNameItem(rs.getString(NAME_ITEM));
             itemsModel.setMini_quantity(rs.getDouble(MINI_QUANTITY));
-            itemsModel.setFirstBalanceForStock(firstBalanceForStock);
+            itemsModel.setFirstBalanceForStock(0);
             itemsModel.setBuyPrice(rs.getDouble(BUY_PRICE));
             itemsModel.setSelPrice1(rs.getDouble(selPrice1));
             itemsModel.setSelPrice2(rs.getDouble(selPrice2));
@@ -252,28 +269,18 @@ public class ItemsDao extends AbstractDao<ItemsModel> {
         try {
             ItemsModel itemsModel = mapBasic(rs);
 
+
+            double firstBalance = rs.getDouble("stock_first_balance");
             double currentQuantity = rs.getDouble(CURRENT_QUANTITY);
             int stockId = rs.getInt(STOCK_ID);
 
             itemsModel.setItemStock(daoFactory.stockDao().getDataById(stockId));
+            itemsModel.setFirstBalanceForStock(firstBalance);
             itemsModel.setSumAllBalance(currentQuantity);
             itemsModel.setSumAllBalanceByBuyPrice(roundToTwoDecimalPlaces(itemsModel.getBuyPrice() * currentQuantity));
             itemsModel.setSumAllBalanceBySelPrice(roundToTwoDecimalPlaces(itemsModel.getSelPrice1() * currentQuantity));
 
             return itemsModel;
-        } catch (SQLException e) {
-            throw new DaoException(e);
-        }
-    }
-
-    @Override
-    public int updateList(List<ItemsModel> list) throws DaoException {
-        try {
-            String string = SqlStatements.updateStatement(TABLE_NAME, ID, BARCODE, NAME_ITEM, SUB_NUM, BUY_PRICE
-                    , selPrice1, selPrice2, selPrice3, itemActive, itemHasValidity, numberValidityDays, alertDaysBeforeExpire
-                    , UNIT_ID, MINI_QUANTITY, FIRST_BALANCE, ITEM_IMAGE, has_package, USER_ID);
-            return executeUpdateListWithException(list, string
-                    , (statement, itemsModel) -> this.setData(statement, getData(itemsModel)));
         } catch (SQLException e) {
             throw new DaoException(e);
         }
@@ -287,13 +294,13 @@ public class ItemsDao extends AbstractDao<ItemsModel> {
                 , itemsModel.getAlertDaysBeforeExpiry()
                 , itemsModel.getUnitsType().getUnit_id()
                 , itemsModel.getMini_quantity()
-                , itemsModel.getFirstBalanceForStock()
                 , itemsModel.getItem_image() != null ? itemsModel.getItem_image() : new byte[0]
                 , itemsModel.isHasPackage()
                 , itemsModel.getUsers().getId()};
+
         String INSERT_ITEM = SqlStatements.insertStatement(TABLE_NAME, BARCODE, NAME_ITEM, SUB_NUM, BUY_PRICE
                 , selPrice1, selPrice2, selPrice3, itemActive, itemHasValidity, numberValidityDays, alertDaysBeforeExpire
-                , UNIT_ID, MINI_QUANTITY, FIRST_BALANCE, ITEM_IMAGE, has_package, USER_ID);
+                , UNIT_ID, MINI_QUANTITY, ITEM_IMAGE, has_package, USER_ID);
 
         try (PreparedStatement statement = connection.prepareStatement(INSERT_ITEM, Statement.RETURN_GENERATED_KEYS)) {
             for (int i = 1; i < objects.length + 1; i++) {
@@ -328,6 +335,7 @@ public class ItemsDao extends AbstractDao<ItemsModel> {
                 SELECT
                     items.*,
                     ist.stock_id,
+                    ist.first_balance AS stock_first_balance,
                     ist.current_quantity
                 FROM items
                          JOIN items_stock ist ON ist.item_id = items.id
@@ -342,6 +350,7 @@ public class ItemsDao extends AbstractDao<ItemsModel> {
                 SELECT
                     items.*,
                     ist.stock_id,
+                    ist.first_balance AS stock_first_balance,
                     ist.current_quantity
                 FROM items
                          JOIN items_stock ist ON ist.item_id = items.id
@@ -356,6 +365,7 @@ public class ItemsDao extends AbstractDao<ItemsModel> {
                 SELECT
                     items.*,
                     ist.stock_id,
+                    ist.first_balance AS stock_first_balance,
                     ist.current_quantity
                 FROM items
                          JOIN items_stock ist ON ist.item_id = items.id
@@ -456,6 +466,7 @@ public class ItemsDao extends AbstractDao<ItemsModel> {
                 SELECT
                     items.*,
                     ist.stock_id,
+                    ist.first_balance AS stock_first_balance,
                     ist.current_quantity
                 FROM items
                          JOIN items_stock ist
@@ -499,6 +510,7 @@ public class ItemsDao extends AbstractDao<ItemsModel> {
                 limit
         );
     }
+
     public int maxItemId() {
         try {
             CallableStatement cs = connection.prepareCall("{CALL max_item_id(?)}");
