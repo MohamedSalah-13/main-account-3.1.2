@@ -9,6 +9,7 @@ import com.hamza.controlsfx.database.SqlStatements;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.List;
 
 public class Items_StockDao extends AbstractDao<Items_Stock_Model> {
 
@@ -88,5 +89,59 @@ public class Items_StockDao extends AbstractDao<Items_Stock_Model> {
                 model.getFirstBalance(),
                 model.getCurrentQuantity()
         );
+    }
+
+    public int insertOrUpdateList(List<Items_Stock_Model> list) throws DaoException {
+        if (list == null || list.isEmpty()) {
+            return 0;
+        }
+
+        int count = 0;
+        for (Items_Stock_Model model : list) {
+            if (model == null || model.getItemsModel() == null || model.getStock() == null) {
+                continue;
+            }
+
+            if (model.getFirstBalance() < 0 || model.getCurrentQuantity() < 0) {
+                throw new DaoException("لا يمكن إدخال رصيد مخزن أقل من صفر");
+            }
+
+            count += insertOrUpdate(model);
+        }
+
+        return count;
+    }
+
+    public List<Items_Stock_Model> getAllByItemId(int itemId) throws DaoException {
+        String sql = """
+                SELECT
+                    ist.id,
+                    ist.item_id,
+                    ist.stock_id,
+                    ist.first_balance,
+                    ist.current_quantity,
+                    s.stock_name
+                FROM items_stock ist
+                         JOIN stocks s ON s.stock_id = ist.stock_id
+                WHERE ist.item_id = ?
+                ORDER BY s.stock_name
+                """;
+
+        return queryForObjects(sql, this::map, itemId);
+    }
+
+    public int deleteByItemId(int itemId) throws DaoException {
+        String sql = "DELETE FROM items_stock WHERE item_id = ?";
+        return executeUpdate(sql, itemId);
+    }
+
+    public int deleteZeroOpeningBalancesByItemId(int itemId) throws DaoException {
+        String sql = """
+                DELETE FROM items_stock
+                WHERE item_id = ?
+                  AND first_balance = 0
+                  AND current_quantity = 0
+                """;
+        return executeUpdate(sql, itemId);
     }
 }

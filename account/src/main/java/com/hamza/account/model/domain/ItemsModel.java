@@ -47,6 +47,7 @@ public class ItemsModel extends UnitExtends {
 
     private List<ItemsUnitsModel> itemsUnitsModelList=new ArrayList<>();;
     private List<Items_Package> items_packageList=new ArrayList<>();
+    private List<Items_Stock_Model> itemStockBalances = new ArrayList<>();
 
     private DoubleProperty sumAllBalance = new SimpleDoubleProperty();
     private DoubleProperty sumPurchase = new SimpleDoubleProperty();

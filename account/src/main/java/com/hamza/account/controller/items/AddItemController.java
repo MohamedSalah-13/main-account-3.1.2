@@ -6,14 +6,20 @@ import com.hamza.account.controller.dataByName.impl.MainGroupImpl2;
 import com.hamza.account.controller.main.DataPublisher;
 import com.hamza.account.controller.main.DisableButtons;
 import com.hamza.account.controller.others.ServiceRegistry;
-import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.model.domain.ItemsModel;
 import com.hamza.account.model.domain.ItemsUnitsModel;
+import com.hamza.account.model.domain.Items_Stock_Model;
+import com.hamza.account.model.domain.Stock;
 import com.hamza.account.model.domain.SubGroups;
 import com.hamza.account.model.domain.UnitsModel;
 import com.hamza.account.openFxml.FxmlPath;
 import com.hamza.account.openFxml.OpenFxmlApplication;
-import com.hamza.account.service.*;
+import com.hamza.account.service.ItemsService;
+import com.hamza.account.service.MainGroupService;
+import com.hamza.account.service.SelPriceItemService;
+import com.hamza.account.service.StockService;
+import com.hamza.account.service.SupGroupService;
+import com.hamza.account.service.UnitsService;
 import com.hamza.account.type.UserPermissionType;
 import com.hamza.account.view.AddGroupApp;
 import com.hamza.controlsfx.alert.AllAlerts;
@@ -24,17 +30,29 @@ import com.hamza.controlsfx.others.DoubleSetting;
 import com.hamza.controlsfx.util.ImageChoose;
 import javafx.application.Platform;
 import javafx.beans.binding.BooleanBinding;
+import javafx.beans.property.ReadOnlyStringWrapper;
+import javafx.beans.property.SimpleDoubleProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.collections.transformation.FilteredList;
 import javafx.fxml.FXML;
-import javafx.scene.control.*;
+import javafx.scene.control.Button;
+import javafx.scene.control.CheckBox;
+import javafx.scene.control.ComboBox;
+import javafx.scene.control.Label;
+import javafx.scene.control.Tab;
+import javafx.scene.control.TabPane;
+import javafx.scene.control.TableColumn;
+import javafx.scene.control.TableView;
+import javafx.scene.control.TextField;
+import javafx.scene.control.cell.TextFieldTableCell;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.StackPane;
 import javafx.stage.Stage;
+import javafx.util.converter.DoubleStringConverter;
 import lombok.Getter;
 import lombok.extern.log4j.Log4j2;
 
@@ -47,7 +65,9 @@ import java.util.Objects;
 import static com.hamza.account.config.Configs.ADD_PACKAGE_TO_ITEMS;
 import static com.hamza.account.controller.setting.ComboSetting.comboSubSetting;
 import static com.hamza.account.controller.setting.ComboSetting.comboTypeSetting;
-import static com.hamza.controlsfx.others.Utils.*;
+import static com.hamza.controlsfx.others.Utils.clearAll;
+import static com.hamza.controlsfx.others.Utils.setTextFormatter;
+import static com.hamza.controlsfx.others.Utils.whenEnterPressed;
 import static com.hamza.controlsfx.util.ImageChoose.createIcon;
 
 @Log4j2
@@ -58,51 +78,77 @@ public class AddItemController implements AppSettingInterface {
     private final DataPublisher dataPublisher;
     private final ImageChoose imageChoose = new ImageChoose();
     private final ItemsPackageController itemsPackageController;
+
     private final UnitsService unitsService = ServiceRegistry.get(UnitsService.class);
     private final MainGroupService mainGroupService = ServiceRegistry.get(MainGroupService.class);
     private final SupGroupService supGroupService = ServiceRegistry.get(SupGroupService.class);
     private final ItemsService itemsService = ServiceRegistry.get(ItemsService.class);
+    private final StockService stockService = ServiceRegistry.get(StockService.class);
     private final SelPriceItemService selPriceItemService = ServiceRegistry.get(SelPriceItemService.class);
-    private int mainId, subId;
+
+    private final ObservableList<Items_Stock_Model> stockBalances = FXCollections.observableArrayList();
+
+    private int mainId;
+    private int subId;
+
     @FXML
     private ComboBox<String> comboMainGroup, comboSupGroup, comboType;
+
     @FXML
     private TextField txtCode, txtBarcode, txtItemName, txtBuyPrice, txtSelPrice, txtSelPrice2, txtSelPrice3,
             txtMiniQuantity, txtBalance;
+
     @FXML
     private Label labelCode, labelBarcode, labelName, labelBuyPrice, labelSelPrice, labelSelPrice2, labelSelPrice3,
             labelMiniQuantity, labelMainGroup, labelSupGroup, labelType, labelFirstBalance;
+
     @FXML
     private TabPane tabPane;
+
     @FXML
     private HBox boxMain;
+
     @FXML
     @Getter
     private Button btnAddMainGroup, btnAddSubGroup, btnSave, btnSaveDuplicate, btnClose, btnBarcode;
+
     @FXML
     private StackPane stackPane;
+
     @FXML
     private CheckBox checkItemValidate, checkItemActive;
+
     @FXML
     private TextField textDaysValidate, textAlertBefore;
+
     @FXML
     private ComboBox<String> comboOtherTypes;
+
     @FXML
     private TableView<ItemsUnitsModel> tableUnits;
+
+    @FXML
+    private TableView<Items_Stock_Model> tableStockBalances;
+
     @FXML
     private TextField textUnitQuantity, textUnitBarcode;
+
     @FXML
     private Button btnAdd;
+
     @FXML
     private ImageView imageAdd;
+
     @FXML
     private Button btnAddImage, btnClearImage;
+
     private TableUnitsSetting tableUnitsSetting;
 
     public AddItemController(int codeItem, DataPublisher dataPublisher) {
         this.codeItem = codeItem;
         this.dataPublisher = dataPublisher;
         this.itemsPackageController = new ItemsPackageController();
+
         dataPublisher.getPublisherAddMainGroup().addObserver(message -> {
             comboMainGroup.setItems(FXCollections.observableList(getMainGroupsNames()));
             comboMainGroup.getSelectionModel().selectLast();
@@ -112,11 +158,14 @@ public class AddItemController implements AppSettingInterface {
             List<String> groupListByMainId = getSubGroupsNamesByMainId();
             comboSupGroup.setItems(FXCollections.observableList(groupListByMainId));
         });
+
+        dataPublisher.getPublisherAddStock().addObserver(message -> reloadStockBalancesKeepingValues());
     }
 
     @FXML
     public void initialize() {
         unitSetting();
+        stockBalancesTableSetting();
         otherSetting();
         comboTypeOption();
         addValidate();
@@ -125,11 +174,14 @@ public class AddItemController implements AppSettingInterface {
         addBarcode();
         selectGroupSubAndType();
 
-        // add image if insert new before select data
         btnClearImage.fire();
         permButtons();
         buttonGraphic();
-//        if (ADD_PACKAGE_TO_ITEMS) addPackaged();
+
+        if (ADD_PACKAGE_TO_ITEMS) {
+            // addPackaged();
+        }
+
         selectData();
 
         tabPane.getTabs().getFirst().setDisable(true);
@@ -140,12 +192,115 @@ public class AddItemController implements AppSettingInterface {
         this.tableUnitsSetting = new TableUnitsSetting(unitsService, tableUnits);
         tableUnitsSetting.selectedTypeProperty().bind(comboOtherTypes.getSelectionModel().selectedItemProperty());
         tableUnitsSetting.textUnitBarcodeProperty().bindBidirectional(textUnitBarcode.textProperty());
-//        tableUnitsSetting.textUnitQuantityProperty().bindBidirectional(textUnitQuantity.textProperty());
         textUnitQuantity.setDisable(true);
     }
 
+    private void stockBalancesTableSetting() {
+        tableStockBalances.setEditable(true);
+        tableStockBalances.setItems(stockBalances);
+        tableStockBalances.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_ALL_COLUMNS);
+
+        TableColumn<Items_Stock_Model, String> stockColumn = new TableColumn<>("المخزن");
+        stockColumn.setCellValueFactory(cell -> new ReadOnlyStringWrapper(
+                cell.getValue().getStock() == null ? "" : cell.getValue().getStock().getName()
+        ));
+        stockColumn.setPrefWidth(260);
+
+        TableColumn<Items_Stock_Model, Double> firstBalanceColumn = new TableColumn<>("رصيد أول المدة");
+        firstBalanceColumn.setCellValueFactory(cell -> new SimpleDoubleProperty(cell.getValue().getFirstBalance()).asObject());
+        firstBalanceColumn.setCellFactory(TextFieldTableCell.forTableColumn(new DoubleStringConverter()));
+        firstBalanceColumn.setOnEditCommit(event -> {
+            Items_Stock_Model row = event.getRowValue();
+
+            if (row == null) {
+                tableStockBalances.refresh();
+                return;
+            }
+
+            double oldValue = event.getOldValue() == null ? 0 : event.getOldValue();
+            double newValue = event.getNewValue() == null ? 0 : event.getNewValue();
+
+            if (newValue < 0) {
+                AllAlerts.alertError("لا يمكن إدخال رصيد أقل من صفر");
+                row.setFirstBalance(oldValue);
+                row.setCurrentQuantity(oldValue);
+            } else {
+                row.setFirstBalance(newValue);
+                row.setCurrentQuantity(newValue);
+            }
+
+            updateTotalOpeningBalanceText();
+            tableStockBalances.refresh();
+        });
+        firstBalanceColumn.setPrefWidth(180);
+
+        TableColumn<Items_Stock_Model, Double> currentQuantityColumn = new TableColumn<>("الرصيد الحالي");
+        currentQuantityColumn.setCellValueFactory(cell -> new SimpleDoubleProperty(cell.getValue().getCurrentQuantity()).asObject());
+        currentQuantityColumn.setPrefWidth(180);
+
+        tableStockBalances.getColumns().setAll(stockColumn, firstBalanceColumn, currentQuantityColumn);
+
+        loadAllStocksForOpeningBalances();
+    }
+
+    private void loadAllStocksForOpeningBalances() {
+        try {
+            stockBalances.clear();
+
+            for (String stockName : stockService.getStockNames()) {
+                Stock stock = stockService.getStockByName(stockName);
+
+                if (stock == null) {
+                    continue;
+                }
+
+                Items_Stock_Model model = new Items_Stock_Model();
+                model.setStock(stock);
+                model.setFirstBalance(0);
+                model.setCurrentQuantity(0);
+                stockBalances.add(model);
+            }
+
+            updateTotalOpeningBalanceText();
+        } catch (DaoException e) {
+            logError(e);
+        }
+    }
+
+    private void reloadStockBalancesKeepingValues() {
+        List<Items_Stock_Model> oldValues = new ArrayList<>(stockBalances);
+        loadAllStocksForOpeningBalances();
+
+        for (Items_Stock_Model row : stockBalances) {
+            if (row.getStock() == null) {
+                continue;
+            }
+
+            oldValues.stream()
+                    .filter(old -> old.getStock() != null)
+                    .filter(old -> old.getStock().getId() == row.getStock().getId())
+                    .findFirst()
+                    .ifPresent(old -> {
+                        row.setId(old.getId());
+                        row.setItemsModel(old.getItemsModel());
+                        row.setFirstBalance(old.getFirstBalance());
+                        row.setCurrentQuantity(old.getCurrentQuantity());
+                    });
+        }
+
+        updateTotalOpeningBalanceText();
+        tableStockBalances.refresh();
+    }
+
+    private void updateTotalOpeningBalanceText() {
+        double total = stockBalances.stream()
+                .mapToDouble(Items_Stock_Model::getFirstBalance)
+                .sum();
+
+        txtBalance.setText(String.valueOf(total));
+    }
+
     private void buttonGraphic() {
-        // Introduce variable: single instance to access all streams once per call
         var images = new Image_Setting();
         btnAdd.setGraphic(createIcon(images.add));
         btnSave.setGraphic(createIcon(images.save));
@@ -153,14 +308,18 @@ public class AddItemController implements AppSettingInterface {
         btnAddImage.setGraphic(createIcon(images.search));
         btnClose.setGraphic(createIcon(images.cancel));
         btnAddMainGroup.setGraphic(createIcon(images.reports));
-        btnAddSubGroup.setGraphic(createIcon(images.vertical_align_bottom)); // separate ImageView, same Image
+        btnAddSubGroup.setGraphic(createIcon(images.vertical_align_bottom));
         btnSaveDuplicate.setGraphic(createIcon(images.duplicate));
         btnClearImage.setGraphic(createIcon(images.erase));
     }
 
     private void otherSetting() {
-        whenEnterPressed(txtItemName, txtBarcode, txtBuyPrice, txtSelPrice, txtSelPrice2, txtSelPrice3, txtBalance, txtMiniQuantity);
-        setTextFormatter(txtBalance, txtBuyPrice, txtMiniQuantity, txtSelPrice, txtSelPrice2, txtSelPrice3);
+        whenEnterPressed(txtItemName, txtBarcode, txtBuyPrice, txtSelPrice, txtSelPrice2, txtSelPrice3, txtMiniQuantity);
+        setTextFormatter(txtBuyPrice, txtMiniQuantity, txtSelPrice, txtSelPrice2, txtSelPrice3);
+
+        txtBalance.setEditable(false);
+        txtBalance.setFocusTraversable(false);
+
         getFocusToName();
         comboOtherTypes.getItems().addAll(getUnitsModelNames());
         checkItemActive.setSelected(true);
@@ -179,26 +338,30 @@ public class AddItemController implements AppSettingInterface {
         var unitsModelNames = getUnitsModelNames();
         ObservableList<String> unitsModelNamesObservableList = FXCollections.observableArrayList(unitsModelNames);
         FilteredList<String> filteredItems = new FilteredList<>(unitsModelNamesObservableList, s -> true);
+
         comboType.setItems(filteredItems);
         comboType.getSelectionModel().selectFirst();
 
-        comboType.valueProperty().addListener((observableValue, stringSingleSelectionModel, t1) -> {
+        comboType.valueProperty().addListener((observableValue, oldValue, newValue) -> {
             try {
                 var itemsUnitsModelList = tableUnitsSetting.getItemsUnitsModelList();
-                if (!itemsUnitsModelList.isEmpty()) {
 
+                if (!itemsUnitsModelList.isEmpty()) {
                     var unitName = itemsUnitsModelList.stream()
                             .skip(1)
-                            .anyMatch(item -> item.getUnitsModel().getUnit_name().equals(t1));
+                            .anyMatch(item -> item.getUnitsModel().getUnit_name().equals(newValue));
 
                     if (unitName) {
-                        comboType.getSelectionModel().select(stringSingleSelectionModel);
+                        comboType.getSelectionModel().select(oldValue);
                         throw new Exception("لا يمكن إختيار نفس الوحده مرتين");
                     }
 
-                    var unitsModelByName = getUnitsModelByName(t1);
-                    itemsUnitsModelList.getFirst().unitsModelProperty().set(unitsModelByName);
-                    tableUnits.refresh();
+                    var unitsModelByName = getUnitsModelByName(newValue);
+
+                    if (unitsModelByName != null) {
+                        itemsUnitsModelList.getFirst().unitsModelProperty().set(unitsModelByName);
+                        tableUnits.refresh();
+                    }
                 }
             } catch (Exception e) {
                 logError(e);
@@ -222,17 +385,24 @@ public class AddItemController implements AppSettingInterface {
     }
 
     private void action() {
-
         btnSave.disableProperty().bind(checkEnableButton());
+
         btnSaveDuplicate.disableProperty().bind(checkEnableButton().or(new BooleanBinding() {
             @Override
             protected boolean computeValue() {
                 return codeItem > 0;
             }
         }));
+
         comboMainGroup.setItems(FXCollections.observableList(getMainGroupsNames()));
+
         comboMainGroup.valueProperty().addListener((observable, oldValue, newValue) -> {
             try {
+                if (newValue == null) {
+                    comboSupGroup.setItems(null);
+                    return;
+                }
+
                 mainId = mainGroupService.getMainGroupsByName(newValue).getId();
                 List<String> groupListByMainId = getSubGroupsNamesByMainId();
                 comboSupGroup.setItems(FXCollections.observableList(groupListByMainId));
@@ -242,6 +412,7 @@ public class AddItemController implements AppSettingInterface {
                 logError(e);
             }
         });
+
         comboSupGroup.valueProperty().addListener((observable, oldValue, newValue) -> getSubId(newValue));
 
         btnAddMainGroup.setOnAction(actionEvent -> {
@@ -251,6 +422,7 @@ public class AddItemController implements AppSettingInterface {
                 logError(e);
             }
         });
+
         btnAddSubGroup.setOnAction(actionEvent -> {
             try {
                 new AddGroupApp(dataPublisher.getPublisherAddSubGroup());
@@ -259,7 +431,6 @@ public class AddItemController implements AppSettingInterface {
             }
         });
 
-
         btnClose.setOnAction(actionEvent -> ((Stage) btnClose.getScene().getWindow()).close());
         btnSave.setOnAction(actionEvent -> saveData(false));
         btnSaveDuplicate.setOnAction(actionEvent -> saveData(true));
@@ -267,6 +438,7 @@ public class AddItemController implements AppSettingInterface {
 
         txtBarcode.textProperty().addListener((observable, oldValue, newValue) -> {
             var itemsUnitsModelList = tableUnitsSetting.getItemsUnitsModelList();
+
             if (itemsUnitsModelList.isEmpty()) {
                 var e = new ItemsUnitsModel();
                 e.setItemsBarcode(newValue);
@@ -278,14 +450,16 @@ public class AddItemController implements AppSettingInterface {
             }
         });
 
-        comboOtherTypes.valueProperty().addListener((observableValue, stringSingleSelectionModel, t1) -> {
-            var unitsModelByName = getUnitsModelByName(t1);
-            textUnitQuantity.setText(String.valueOf(Objects.requireNonNull(unitsModelByName).getValue()));
+        comboOtherTypes.valueProperty().addListener((observableValue, oldValue, newValue) -> {
+            var unitsModelByName = getUnitsModelByName(newValue);
+
+            if (unitsModelByName != null) {
+                textUnitQuantity.setText(String.valueOf(unitsModelByName.getValue()));
+            }
         });
 
-        // units setting
-//        btnAdd.disableProperty().bind(textUnitQuantity.textProperty().isEmpty());
         btnAdd.setOnAction(actionEvent -> tableUnitsSetting.addUnit());
+
         tableUnits.setOnKeyPressed(keyEvent -> {
             if (keyEvent.getCode() == javafx.scene.input.KeyCode.DELETE) {
                 btnAdd.fire();
@@ -293,7 +467,7 @@ public class AddItemController implements AppSettingInterface {
         });
 
         tableUnits.setOnMouseClicked(mouseEvent -> {
-            if (mouseEvent.getClickCount() == 2) {
+            if (mouseEvent.getClickCount() == 2 && tableUnits.getSelectionModel().getSelectedItem() != null) {
                 var selectedItem = tableUnits.getSelectionModel().getSelectedItem();
                 comboOtherTypes.getSelectionModel().select(selectedItem.getUnitsModel().getUnit_name());
                 textUnitQuantity.setText(String.valueOf(selectedItem.getQuantityForUnit()));
@@ -330,58 +504,96 @@ public class AddItemController implements AppSettingInterface {
     }
 
     private void selectData() {
-        if (codeItem > 0)
-            try {
-                comboType.getSelectionModel().clearSelection();
-                ItemsModel itemsModel = itemsService.getItemByItemIdAndStockId(codeItem, 1);
-                if (itemsModel != null) {
-                    int numItem = itemsModel.getId();
-                    txtCode.setText(String.valueOf(numItem));
-                    txtBarcode.setText(itemsModel.getBarcode());
-                    txtItemName.setText(itemsModel.getNameItem());
-                    txtBuyPrice.setText(String.valueOf(itemsModel.getBuyPrice()));
-                    txtMiniQuantity.setText(String.valueOf(itemsModel.getMini_quantity()));
-                    txtBalance.setText(String.valueOf(itemsModel.getFirstBalanceForStock()));
-                    // combo restore data
-                    mainId = itemsModel.getSubGroups().getMainGroups().getId();
-                    subId = itemsModel.getSubGroups().getId();
-                    comboMainGroup.getSelectionModel().select(mainGroupService.getMainGroupsById(itemsModel.getSubGroups().getMainGroups().getId()).getName());
-                    comboSupGroup.getSelectionModel().select(supGroupService.getSubGroupsById(itemsModel.getSubGroups().getId()).getName());
-                    comboType.getSelectionModel().select(itemsModel.getUnitsType().getUnit_name());
-                    txtSelPrice.setText(String.valueOf(itemsModel.getSelPrice1()));
-                    txtSelPrice2.setText(String.valueOf(itemsModel.getSelPrice2()));
-                    txtSelPrice3.setText(String.valueOf(itemsModel.getSelPrice3()));
+        if (codeItem <= 0) {
+            return;
+        }
 
-                    // check
-                    checkItemActive.setSelected(itemsModel.isActiveItem());
-                    checkItemValidate.setSelected(itemsModel.isHasValidate());
-                    var numberValidityDays = itemsModel.getNumberValidityDays();
-                    textDaysValidate.setText(String.valueOf(numberValidityDays));
-                    textAlertBefore.setText(String.valueOf(itemsModel.getAlertDaysBeforeExpiry()));
-                    tableUnitsSetting.selectTable(itemsModel);
-                    var itemImage = itemsModel.getItem_image();
+        try {
+            comboType.getSelectionModel().clearSelection();
 
-                    if (itemImage != null && itemImage.length > 0) {
-                        imageAdd.setImage(new Image(new ByteArrayInputStream(itemImage)));
-                    }
+            ItemsModel itemsModel = itemsService.findItemWithStockBalancesById(codeItem);
 
-                    if (ADD_PACKAGE_TO_ITEMS) {
-                        // get item package
-                        if (itemsModel.isHasPackage()) {
-                            itemsPackageController.setItemHasPackage(true);
-//                        itemsPackageController.setItemPackageId(itemsModel.getId());
-                            itemsPackageController.selectData(itemsModel.getId());
-                        }
-                    }
-
-                }
-            } catch (DaoException e) {
-                logError(e);
+            if (itemsModel == null) {
+                return;
             }
+
+            int numItem = itemsModel.getId();
+            txtCode.setText(String.valueOf(numItem));
+            txtBarcode.setText(itemsModel.getBarcode());
+            txtItemName.setText(itemsModel.getNameItem());
+            txtBuyPrice.setText(String.valueOf(itemsModel.getBuyPrice()));
+            txtMiniQuantity.setText(String.valueOf(itemsModel.getMini_quantity()));
+            txtBalance.setText(String.valueOf(itemsModel.getFirstBalanceForStock()));
+
+            selectStockBalances(itemsModel);
+
+            mainId = itemsModel.getSubGroups().getMainGroups().getId();
+            subId = itemsModel.getSubGroups().getId();
+
+            comboMainGroup.getSelectionModel().select(
+                    mainGroupService.getMainGroupsById(itemsModel.getSubGroups().getMainGroups().getId()).getName()
+            );
+            comboSupGroup.getSelectionModel().select(
+                    supGroupService.getSubGroupsById(itemsModel.getSubGroups().getId()).getName()
+            );
+            comboType.getSelectionModel().select(itemsModel.getUnitsType().getUnit_name());
+
+            txtSelPrice.setText(String.valueOf(itemsModel.getSelPrice1()));
+            txtSelPrice2.setText(String.valueOf(itemsModel.getSelPrice2()));
+            txtSelPrice3.setText(String.valueOf(itemsModel.getSelPrice3()));
+
+            checkItemActive.setSelected(itemsModel.isActiveItem());
+            checkItemValidate.setSelected(itemsModel.isHasValidate());
+            textDaysValidate.setText(String.valueOf(itemsModel.getNumberValidityDays()));
+            textAlertBefore.setText(String.valueOf(itemsModel.getAlertDaysBeforeExpiry()));
+
+            tableUnitsSetting.selectTable(itemsModel);
+
+            var itemImage = itemsModel.getItem_image();
+
+            if (itemImage != null && itemImage.length > 0) {
+                imageAdd.setImage(new Image(new ByteArrayInputStream(itemImage)));
+            }
+
+            if (ADD_PACKAGE_TO_ITEMS && itemsModel.isHasPackage()) {
+                itemsPackageController.setItemHasPackage(true);
+                itemsPackageController.selectData(itemsModel.getId());
+            }
+
+        } catch (DaoException e) {
+            logError(e);
+        }
+    }
+
+    private void selectStockBalances(ItemsModel itemsModel) {
+        if (itemsModel.getItemStockBalances() == null || itemsModel.getItemStockBalances().isEmpty()) {
+            updateTotalOpeningBalanceText();
+            return;
+        }
+
+        for (Items_Stock_Model tableRow : stockBalances) {
+            if (tableRow.getStock() == null) {
+                continue;
+            }
+
+            itemsModel.getItemStockBalances().stream()
+                    .filter(savedRow -> savedRow.getStock() != null)
+                    .filter(savedRow -> savedRow.getStock().getId() == tableRow.getStock().getId())
+                    .findFirst()
+                    .ifPresent(savedRow -> {
+                        tableRow.setId(savedRow.getId());
+                        tableRow.setItemsModel(savedRow.getItemsModel());
+                        tableRow.setFirstBalance(savedRow.getFirstBalance());
+                        tableRow.setCurrentQuantity(savedRow.getCurrentQuantity());
+                    });
+        }
+
+        updateTotalOpeningBalanceText();
+        tableStockBalances.refresh();
     }
 
     private BooleanBinding checkEnableButton() {
-        return (txtItemName.textProperty().isEmpty())
+        return txtItemName.textProperty().isEmpty()
                 .or(txtBuyPrice.textProperty().lessThanOrEqualTo("0.0"))
                 .or(comboMainGroup.valueProperty().isNull())
                 .or(comboSupGroup.valueProperty().isNull())
@@ -396,12 +608,11 @@ public class AddItemController implements AppSettingInterface {
         double selPrice2 = DoubleSetting.parseDoubleOrDefault(txtSelPrice2.getText());
         double selPrice3 = DoubleSetting.parseDoubleOrDefault(txtSelPrice3.getText());
         double miniQuantity = DoubleSetting.parseDoubleOrDefault(txtMiniQuantity.getText());
-        double firstBalance = DoubleSetting.parseDoubleOrDefault(txtBalance.getText());
+        double firstBalance = getTotalOpeningBalance();
 
-        // add subgroup
         getSubId(comboSupGroup.getSelectionModel().getSelectedItem());
 
-        if (barcode.isEmpty() || barcode.equals("0")) {
+        if (barcode == null || barcode.isEmpty() || barcode.equals("0")) {
             txtBarcode.requestFocus();
             throw new Exception(Setting_Language.PLEASE_INSERT_ALL_DATA);
         }
@@ -420,7 +631,9 @@ public class AddItemController implements AppSettingInterface {
             comboSupGroup.requestFocus();
             throw new Exception("يجب اختيار المجموعة");
         }
+
         var itemsUnitsModelList = tableUnitsSetting.getItemsUnitsModelList();
+
         if (itemsUnitsModelList.isEmpty()) {
             throw new Exception("يجب إدخال وحدات الصنف");
         }
@@ -432,6 +645,7 @@ public class AddItemController implements AppSettingInterface {
         itemsModel.setBuyPrice(buy);
         itemsModel.setMini_quantity(miniQuantity);
         itemsModel.setFirstBalanceForStock(firstBalance);
+        itemsModel.setItemStockBalances(getValidStockBalances());
         itemsModel.setSubGroups(new SubGroups(subId));
         itemsModel.setSelPrice1(selPrice1);
         itemsModel.setSelPrice2(selPrice2);
@@ -441,26 +655,68 @@ public class AddItemController implements AppSettingInterface {
         itemsModel.setNumberValidityDays(Integer.parseInt(textDaysValidate.getText()));
         itemsModel.setAlertDaysBeforeExpiry(Integer.parseInt(textAlertBefore.getText()));
 
-
         if (ADD_PACKAGE_TO_ITEMS) {
             if (itemsPackageController.isItemHasPackage()) {
                 itemsModel.setHasPackage(true);
                 var itemsPackageList = itemsPackageController.getItems_packageList();
                 itemsModel.setItems_packageList(itemsPackageList);
-            } else itemsModel.setItems_packageList(new ArrayList<>());
-        } else itemsModel.setHasPackage(false);
+            } else {
+                itemsModel.setItems_packageList(new ArrayList<>());
+            }
+        } else {
+            itemsModel.setHasPackage(false);
+        }
 
-        // Set image data
         if (imageAdd.getImage() != null) {
             itemsModel.setItem_image(imageChoose.convertFxImageToBytes(imageAdd.getImage()));
         }
 
-        // check this - add to dao
         itemsModel.setUnitsType(getUnitsModelByName(comboType.getSelectionModel().getSelectedItem()));
+
         if (itemsUnitsModelList.size() > 1) {
             itemsModel.setItemsUnitsModelList(itemsUnitsModelList.stream().skip(1).toList());
-        } else itemsModel.setItemsUnitsModelList(new ArrayList<>());
+        } else {
+            itemsModel.setItemsUnitsModelList(new ArrayList<>());
+        }
+
         return itemsModel;
+    }
+
+    private double getTotalOpeningBalance() {
+        double total = stockBalances.stream()
+                .mapToDouble(Items_Stock_Model::getFirstBalance)
+                .sum();
+
+        txtBalance.setText(String.valueOf(total));
+        return total;
+    }
+
+    private List<Items_Stock_Model> getValidStockBalances() throws Exception {
+        List<Items_Stock_Model> result = new ArrayList<>();
+
+        for (Items_Stock_Model row : stockBalances) {
+            if (row == null || row.getStock() == null) {
+                continue;
+            }
+
+            if (row.getFirstBalance() < 0) {
+                throw new Exception("لا يمكن إدخال رصيد أقل من صفر للمخزن: " + row.getStock().getName());
+            }
+
+            Items_Stock_Model model = new Items_Stock_Model();
+            model.setId(row.getId());
+            model.setStock(row.getStock());
+            model.setFirstBalance(row.getFirstBalance());
+            model.setCurrentQuantity(row.getFirstBalance());
+
+            if (codeItem > 0) {
+                model.setItemsModel(new ItemsModel(codeItem));
+            }
+
+            result.add(model);
+        }
+
+        return result;
     }
 
     private void saveData(boolean isDuplicate) {
@@ -468,21 +724,26 @@ public class AddItemController implements AppSettingInterface {
             if (AllAlerts.confirmSave()) {
                 var itemsModel = insertData();
                 var i = itemsService.updateItem(itemsModel);
+
                 if (i == 1) {
                     dataPublisher.getPublisherAddItem().setAvailability(itemsModel);
                     tableUnits.getItems().clear();
+
                     AllAlerts.alertSave();
                     imageAdd.setImage(null);
+
                     if (!isDuplicate) {
                         clearAll(txtCode, txtBarcode, txtItemName, txtBalance, txtBuyPrice, txtSelPrice, txtMiniQuantity);
+                        clearStockBalances();
                     }
+
                     addBarcode();
                     getFocusToName();
 
                     if (ADD_PACKAGE_TO_ITEMS) {
                         itemsPackageController.deleteAllData();
                     }
-                    // close after update
+
                     if (codeItem > 0) {
                         btnClose.fire();
                     }
@@ -493,11 +754,24 @@ public class AddItemController implements AppSettingInterface {
         }
     }
 
+    private void clearStockBalances() {
+        for (Items_Stock_Model row : stockBalances) {
+            row.setId(null);
+            row.setItemsModel(null);
+            row.setFirstBalance(0);
+            row.setCurrentQuantity(0);
+        }
+
+        updateTotalOpeningBalanceText();
+        tableStockBalances.refresh();
+    }
+
     private UnitsModel getUnitsModelByName(String selectedItemType) {
         try {
             if (selectedItemType == null) {
                 return unitsService.getUnitsById(1);
             }
+
             return unitsService.getUnitsByName(selectedItemType);
         } catch (DaoException e) {
             logError(e);
@@ -509,7 +783,9 @@ public class AddItemController implements AppSettingInterface {
         try {
             if (!comboSupGroup.getSelectionModel().isEmpty()) {
                 subId = supGroupService.getSubGroupsByMainID(newValue, mainId).getId();
-            } else subId = 1;
+            } else {
+                subId = 1;
+            }
         } catch (DaoException e) {
             logError(e);
         }
@@ -529,15 +805,16 @@ public class AddItemController implements AppSettingInterface {
         labelType.setText("الوحدة الصغرى");
         labelBuyPrice.setText(Setting_Language.WORD_BUY_PRICE);
         labelMiniQuantity.setText("اقل كمية");
-        labelFirstBalance.setText(Setting_Language.FIRST_BALANCE);
+        labelFirstBalance.setText("إجمالي رصيد أول المدة");
 
         comboMainGroup.setPromptText(Setting_Language.WORD_MAIN_G);
         comboSupGroup.setPromptText(Setting_Language.WORD_SUB_G);
         comboType.setPromptText(Setting_Language.WORD_TYPE);
+
         txtItemName.setPromptText(Setting_Language.WORD_NAME + " " + Setting_Language.WORD_ITEMS);
         txtSelPrice.setPromptText(Setting_Language.WORD_SEL_PRICE);
         txtBuyPrice.setPromptText(Setting_Language.WORD_BUY_PRICE);
-        txtBalance.setPromptText(Setting_Language.FIRST_BALANCE);
+        txtBalance.setPromptText("إجمالي رصيد أول المدة");
         txtMiniQuantity.setPromptText("اقل كمية");
 
         btnSave.setText(Setting_Language.WORD_SAVE + " F10");
@@ -545,9 +822,7 @@ public class AddItemController implements AppSettingInterface {
         btnClose.setText(Setting_Language.WORD_CLOSE);
         btnBarcode.setText(Setting_Language.WORD_BARCODE);
 
-        // sel price names
         loadNamesPrices();
-
     }
 
     private void loadNamesPrices() {
@@ -562,8 +837,8 @@ public class AddItemController implements AppSettingInterface {
     }
 
     private void addBarcode() {
-//        String randomItemBarcode = generateRandomBarcode(itemsService.getMaxItemId() + 1);
         String randomItemBarcode = String.valueOf(itemsService.getMaxItemId() + 1);
+
         if (codeItem == 0) {
             txtBarcode.setText(randomItemBarcode);
             txtCode.setText(Setting_Language.generate);
@@ -571,16 +846,14 @@ public class AddItemController implements AppSettingInterface {
     }
 
     private void addValidate() {
-
         textDaysValidate.disableProperty().bind(checkItemValidate.selectedProperty().not());
         textAlertBefore.disableProperty().bind(checkItemValidate.selectedProperty().not());
+
         textDaysValidate.setText("0");
         textAlertBefore.setText("0");
 
-        textDaysValidate.textProperty().addListener((observable
-                , oldValue, newValue) -> textAction(newValue, textDaysValidate));
-        textAlertBefore.textProperty().addListener((observable
-                , oldValue, newValue) -> textAction(newValue, textAlertBefore));
+        textDaysValidate.textProperty().addListener((observable, oldValue, newValue) -> textAction(newValue, textDaysValidate));
+        textAlertBefore.textProperty().addListener((observable, oldValue, newValue) -> textAction(newValue, textAlertBefore));
     }
 
     private void textAction(String newValue, TextField textField) {
@@ -592,6 +865,7 @@ public class AddItemController implements AppSettingInterface {
         if (newValue.matches("\\d*")) {
             try {
                 int value = Integer.parseInt(newValue);
+
                 if (value < 0) {
                     textField.setText("0");
                 }
@@ -608,7 +882,7 @@ public class AddItemController implements AppSettingInterface {
     }
 
     private void logError(Exception e) {
-        log.error(e.getMessage(), e.getCause());
+        log.error(e.getMessage(), e);
         AllAlerts.alertError(e.getMessage());
     }
 
@@ -620,8 +894,11 @@ public class AddItemController implements AppSettingInterface {
     @Override
     public String title() {
         String title = Setting_Language.WORD_ADD_ITEM;
-        if (codeItem > 0) title = Setting_Language.UPDATE_ITEM;
+
+        if (codeItem > 0) {
+            title = Setting_Language.UPDATE_ITEM;
+        }
+
         return title;
     }
 }
-

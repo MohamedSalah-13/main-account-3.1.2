@@ -52,6 +52,10 @@ public record ItemsService(DaoFactory daoFactory) {
         return daoFactory.getItemsDao().findItemById(id);
     }
 
+    public ItemsModel findItemWithStockBalancesById(int id) throws DaoException {
+        return daoFactory.getItemsDao().findItemById(id);
+    }
+
     public List<ItemsModel> getFilterItems(String newValue) throws DaoException {
         return daoFactory.getItemsDao().getFilterItems(newValue);
     }

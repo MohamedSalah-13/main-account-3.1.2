@@ -107,14 +107,8 @@ public class ItemsDao extends AbstractDao<ItemsModel> {
             connection.setAutoCommit(false);
 
             int itemId = insertItem(itemsModel);
-            double openingBalance = itemsModel.getFirstBalanceForStock();
-
-            daoFactory.getItemsStockDao().insert(new Items_Stock_Model(
-                    itemId,
-                    1,
-                    openingBalance,
-                    openingBalance
-            ));
+//            double openingBalance = itemsModel.getFirstBalanceForStock();
+            insertOpeningBalancesForStocks(itemsModel, itemId);
 
 
             connection.setAutoCommit(true);
@@ -133,7 +127,39 @@ public class ItemsDao extends AbstractDao<ItemsModel> {
                 throw new DaoException(e.getMessage(), e);
             }
         }
+    }
 
+    private void insertOpeningBalancesForStocks(ItemsModel itemsModel, int itemId) throws DaoException {
+        List<Items_Stock_Model> stockBalances = itemsModel.getItemStockBalances();
+
+        if (stockBalances == null || stockBalances.isEmpty()) {
+            double openingBalance = itemsModel.getFirstBalanceForStock();
+
+            daoFactory.getItemsStockDao().insertOrUpdate(new Items_Stock_Model(
+                    itemId,
+                    1,
+                    openingBalance,
+                    openingBalance
+            ));
+            return;
+        }
+
+        for (Items_Stock_Model stockBalance : stockBalances) {
+            if (stockBalance == null || stockBalance.getStock() == null) {
+                continue;
+            }
+
+            double firstBalance = stockBalance.getFirstBalance();
+
+            if (firstBalance < 0) {
+                throw new DaoException("لا يمكن إدخال رصيد أول مدة أقل من صفر");
+            }
+
+            stockBalance.setItemsModel(new ItemsModel(itemId));
+            stockBalance.setCurrentQuantity(firstBalance);
+        }
+
+        daoFactory.getItemsStockDao().insertOrUpdateList(stockBalances);
     }
 
     @Override
@@ -144,6 +170,24 @@ public class ItemsDao extends AbstractDao<ItemsModel> {
 
         return insertMultiData(() -> {
             executeUpdateWithException(string, getData(itemsModel));
+
+            if (itemsModel.getItemStockBalances() != null && !itemsModel.getItemStockBalances().isEmpty()) {
+                for (Items_Stock_Model stockBalance : itemsModel.getItemStockBalances()) {
+                    if (stockBalance == null || stockBalance.getStock() == null) {
+                        continue;
+                    }
+
+                    if (stockBalance.getFirstBalance() < 0 || stockBalance.getCurrentQuantity() < 0) {
+                        throw new DaoException("لا يمكن إدخال رصيد مخزن أقل من صفر");
+                    }
+
+                    stockBalance.setItemsModel(new ItemsModel(itemsModel.getId()));
+                }
+
+                daoFactory.getItemsStockDao().insertOrUpdateList(itemsModel.getItemStockBalances());
+                daoFactory.getItemsStockDao().deleteZeroOpeningBalancesByItemId(itemsModel.getId());
+            }
+
             // إذا كان الصنف يمتلك مجموعة لا يتم إضافة وحدات له
             // update package
             if (!itemsModel.getItems_packageList().isEmpty() || itemsModel.isHasPackage()) {
@@ -327,7 +371,25 @@ public class ItemsDao extends AbstractDao<ItemsModel> {
     }
 
     public ItemsModel findItemById(Integer itemId) throws DaoException {
-        return queryForObject(QUERY_ITEMS.concat(" where items.id = ? "), this::mapBasic, itemId);
+        ItemsModel item = queryForObject(QUERY_ITEMS.concat(" where items.id = ? "), this::mapBasic, itemId);
+
+        if (item != null) {
+            List<Items_Stock_Model> stockBalances = daoFactory.getItemsStockDao().getAllByItemId(itemId);
+            item.setItemStockBalances(stockBalances);
+
+            double totalFirstBalance = stockBalances.stream()
+                    .mapToDouble(Items_Stock_Model::getFirstBalance)
+                    .sum();
+
+            double totalCurrentQuantity = stockBalances.stream()
+                    .mapToDouble(Items_Stock_Model::getCurrentQuantity)
+                    .sum();
+
+            item.setFirstBalanceForStock(totalFirstBalance);
+            item.setSumAllBalance(totalCurrentQuantity);
+        }
+
+        return item;
     }
 
     public ItemsModel findItemByIdAndStockId(Integer itemId, Integer stockId) throws DaoException {
