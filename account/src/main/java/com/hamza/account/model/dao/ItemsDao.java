@@ -286,7 +286,7 @@ public class ItemsDao extends AbstractDao<ItemsModel> {
         }
     }
 
-    private int insertItem(ItemsModel itemsModel) throws DaoException {
+    public int insertItem(ItemsModel itemsModel) throws DaoException {
         Object[] objects = {itemsModel.getBarcode(), itemsModel.getNameItem()
                 , itemsModel.getSubGroups().getId(), itemsModel.getBuyPrice()
                 , itemsModel.getSelPrice1(), itemsModel.getSelPrice2(), itemsModel.getSelPrice3()
@@ -520,5 +520,9 @@ public class ItemsDao extends AbstractDao<ItemsModel> {
             log.error(e.getMessage(), e.getCause());
         }
         return 0;
+    }
+
+    TrialManager createTrialManager() {
+        return new TrialManager(connection);
     }
 }
