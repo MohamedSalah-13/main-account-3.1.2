@@ -41,6 +41,10 @@ public enum DaoFactory {
         return new ItemsDao(connection, this);
     }
 
+    public InventoryDao inventoryDao() {
+        return new InventoryDao(connection);
+    }
+
     public TypeSelPriceDao getItemsSelPriceDao() {
         return new TypeSelPriceDao(connection);
     }

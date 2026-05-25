@@ -28,15 +28,15 @@
          </top>
          <bottom>
 
-                    <HBox alignment="CENTER_LEFT" spacing="14.0" styleClass="summary-bar" BorderPane.alignment="CENTER">
-                        <children>
-                            <Label styleClass="summary-label" text="إجمالي المشتريات" />
-                            <Text fx:id="textSumPurchase" strokeType="OUTSIDE" strokeWidth="0.0" styleClass="summary-value" text="0.0" />
+             <HBox alignment="CENTER_LEFT" spacing="14.0" styleClass="summary-bar" BorderPane.alignment="CENTER">
+                 <children>
+                     <Label styleClass="summary-label" text="إجمالي قيمة المخزون بسعر الشراء" />
+                     <Text fx:id="textSumPurchase" strokeType="OUTSIDE" strokeWidth="0.0" styleClass="summary-value" text="0.0" />
 
-                            <Label styleClass="summary-label" text="إجمالي المبيعات" />
-                            <Text fx:id="textSumSales" strokeType="OUTSIDE" strokeWidth="0.0" styleClass="summary-value" text="0.0" />
-                        </children>
-                    </HBox>
+                     <Label styleClass="summary-label" text="إجمالي قيمة المخزون بسعر البيع" />
+                     <Text fx:id="textSumSales" strokeType="OUTSIDE" strokeWidth="0.0" styleClass="summary-value" text="0.0" />
+                 </children>
+             </HBox>
          </bottom>
          <center>
 

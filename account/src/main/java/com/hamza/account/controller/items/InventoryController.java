@@ -2,34 +2,28 @@ package com.hamza.account.controller.items;
 
 import com.hamza.account.controller.main.DataPublisher;
 import com.hamza.account.controller.others.ServiceRegistry;
-import com.hamza.account.model.domain.ItemsModel;
+import com.hamza.account.model.domain.InventoryItemModel;
 import com.hamza.account.openFxml.FxmlPath;
 import com.hamza.account.reportData.Print_Reports;
-import com.hamza.account.service.ItemsService;
+import com.hamza.account.service.InventoryService;
 import com.hamza.account.service.StockService;
-import com.hamza.account.table.TableSetting;
 import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.language.Setting_Language;
-import com.hamza.controlsfx.table.AddColumnMix;
-import com.hamza.controlsfx.table.ColumnInterface;
-import com.hamza.controlsfx.table.TableColumnAnnotation;
 import com.hamza.controlsfx.util.NumberUtils;
 import javafx.animation.PauseTransition;
-import javafx.beans.value.ObservableValue;
+import javafx.beans.property.ReadOnlyObjectWrapper;
+import javafx.beans.property.ReadOnlyStringWrapper;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
 import javafx.scene.text.Text;
-import javafx.util.Callback;
 import javafx.util.Duration;
 import lombok.extern.log4j.Log4j2;
 
-import java.util.HashMap;
 import java.util.List;
-
-import static com.hamza.controlsfx.language.Setting_Language.*;
+import java.util.function.Function;
 
 @Log4j2
 @FxmlPath(pathFile = "items/inventory-view.fxml")
@@ -37,19 +31,24 @@ public class InventoryController {
 
     private final DataPublisher dataPublisher;
     private final ObservableList<String> observableList = FXCollections.observableArrayList();
-    private final TableView<ItemsModel> tableView = new TableView<>();
+    private final TableView<InventoryItemModel> tableView = new TableView<>();
     private final int ROWS_PER_PAGE = 50;
 
-    private final ItemsService itemsService = ServiceRegistry.get(ItemsService.class);
+    private final InventoryService inventoryService = ServiceRegistry.get(InventoryService.class);
     private final StockService stockService = ServiceRegistry.get(StockService.class);
+
     @FXML
     private ComboBox<String> comboStock;
+
     @FXML
     private TextField textSearch;
+
     @FXML
     private Text textSumPurchase, textSumSales;
+
     @FXML
     private Button btnPrint, btnRefresh;
+
     @FXML
     private Pagination pagination;
 
@@ -60,149 +59,158 @@ public class InventoryController {
     @FXML
     public void initialize() {
         addComboStock();
-        actionButton();
-        getTable();
-        initializePagination();
+        setupTable();
+        setupActions();
+        refreshData();
         dataPublisher.getPublisherAddStock().addObserver(message -> addComboStock());
     }
 
-    private void initializePagination() {
-        int totalItems = itemsService.getCountItems(); // database.getCount();
-        int pageCount = (totalItems / ROWS_PER_PAGE) + 1;
-        pagination.setPageCount(pageCount);
-        // 3. تحديد ماذا يحدث عند تغيير الصفحة (Factory)
-        pagination.setPageFactory((pageIndex) -> {
-            updateTableView(pageIndex);
-            return tableView; // نعيد الجدول ليتم عرضه داخل صفحة الـ Pagination
+    private void setupTable() {
+        tableView.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_ALL_COLUMNS);
+
+        addColumnData("الكود", InventoryItemModel::getItemId);
+        addColumnData("الباركود", InventoryItemModel::getBarcode);
+        addColumnData("اسم الصنف", InventoryItemModel::getNameItem);
+        addColumnData("المخزن", InventoryItemModel::getStockName);
+        addColumnData("الوحدة", InventoryItemModel::getUnitName);
+
+        addColumnData("رصيد أول", InventoryItemModel::getFirstBalance);
+        addColumnData("مشتريات", InventoryItemModel::getQuantityPurchase);
+        addColumnData("مرتجع مبيعات", InventoryItemModel::getQuantitySalesRe);
+        addColumnData("تحويلات واردة", InventoryItemModel::getTransferIn);
+
+        addColumnData("مبيعات", InventoryItemModel::getQuantitySales);
+        addColumnData("مرتجع مشتريات", InventoryItemModel::getQuantityPurchaseRe);
+        addColumnData("تحويلات صادرة", InventoryItemModel::getTransferOut);
+
+        addColumnData("الرصيد", InventoryItemModel::getCurrentBalance);
+        addColumnData("سعر الشراء", InventoryItemModel::getBuyPrice);
+        addColumnData("إجمالي الشراء", InventoryItemModel::getStockValueCost);
+        addColumnData("سعر البيع", InventoryItemModel::getSellPrice);
+        addColumnData("إجمالي البيع", InventoryItemModel::getStockValueSell);
+
+        TableColumn<InventoryItemModel, String> statusColumn = new TableColumn<>("الحالة");
+        statusColumn.setCellValueFactory(cell -> new ReadOnlyStringWrapper(getStockStatusArabic(cell.getValue().getStockStatus())));
+        tableView.getColumns().add(statusColumn);
+    }
+
+    private void setupActions() {
+        comboStock.setItems(observableList);
+
+        comboStock.valueProperty().addListener((observable, oldValue, newValue) -> refreshData());
+
+        btnRefresh.setOnAction(event -> refreshData());
+
+        btnPrint.setOnAction(actionEvent ->
+                new Print_Reports().printInventoryByTable(
+                        FXCollections.observableArrayList(),
+                        comboStock.getSelectionModel().getSelectedItem()
+                )
+        );
+
+        btnPrint.disableProperty().bind(comboStock.valueProperty().isNull());
+
+        PauseTransition pause = new PauseTransition(Duration.millis(500));
+        textSearch.textProperty().addListener((observable, oldValue, newValue) -> {
+            pause.setOnFinished(event -> refreshData());
+            pause.playFromStart();
         });
     }
 
-    private void updateTableView(int pageIndex) {
+    private void refreshData() {
         try {
-            int offset = pageIndex * ROWS_PER_PAGE;
-            // هنا الكود الحقيقي لجلب البيانات من قاعدة البيانات
-            List<ItemsModel> data = itemsService.getProducts(ROWS_PER_PAGE, offset);
-            tableView.setItems(FXCollections.observableArrayList(data));
+            int totalItems = inventoryService.countInventory(getSelectedStockName(), getSearchText());
+            int pageCount = Math.max(1, (int) Math.ceil((double) totalItems / ROWS_PER_PAGE));
+
+            pagination.setPageCount(pageCount);
+            pagination.setCurrentPageIndex(0);
+            pagination.setPageFactory(pageIndex -> {
+                loadPage(pageIndex);
+                return tableView;
+            });
+
+            loadPage(0);
         } catch (DaoException e) {
-            throw new RuntimeException(e);
+            logError(e);
         }
     }
 
-    private void getTable() {
-        new TableColumnAnnotation().getTable(tableView, ItemsModel.class);
+    private void loadPage(int pageIndex) {
+        try {
+            int offset = pageIndex * ROWS_PER_PAGE;
 
-        Callback<TableColumn.CellDataFeatures<ItemsModel, Double>, ObservableValue<Double>> columnFirstBalance = f -> f.getValue().firstBalanceForStockProperty().asObject();
-        addColumnData(FIRST_BALANCE, columnFirstBalance);
+            List<InventoryItemModel> data = inventoryService.getInventory(
+                    getSelectedStockName(),
+                    getSearchText(),
+                    ROWS_PER_PAGE,
+                    offset
+            );
 
-        Callback<TableColumn.CellDataFeatures<ItemsModel, Double>, ObservableValue<Double>> columnPur = f -> f.getValue().sumPurchaseProperty().asObject();
-        addColumnData(Setting_Language.WORD_PUR, columnPur);
-
-        Callback<TableColumn.CellDataFeatures<ItemsModel, Double>, ObservableValue<Double>> columnSales = f -> f.getValue().sumSalesProperty().asObject();
-        addColumnData(Setting_Language.WORD_SALES, columnSales);
-
-        Callback<TableColumn.CellDataFeatures<ItemsModel, Double>, ObservableValue<Double>> columnPurRe = f -> f.getValue().sumPurchaseReProperty().asObject();
-        addColumnData(RETURN + "\n" + Setting_Language.WORD_PUR, columnPurRe);
-
-        Callback<TableColumn.CellDataFeatures<ItemsModel, Double>, ObservableValue<Double>> columnSalesRe = f -> f.getValue().sumSalesReProperty().asObject();
-        addColumnData(RETURN + "\n" + Setting_Language.WORD_SALES, columnSalesRe);
-
-        Callback<TableColumn.CellDataFeatures<ItemsModel, Double>, ObservableValue<Double>> columnRest = f -> f.getValue().fromStockProperty().asObject();
-        addColumnData("تحويلات صادرة", columnRest);
-
-        Callback<TableColumn.CellDataFeatures<ItemsModel, Double>, ObservableValue<Double>> columnTo = f -> f.getValue().toStockProperty().asObject();
-        addColumnData("تحويلات واردة", columnTo);
-
-        Callback<TableColumn.CellDataFeatures<ItemsModel, Double>, ObservableValue<Double>> columnBalance = f -> f.getValue().sumAllBalanceProperty().asObject();
-        addColumnData(BALANCE_NOW, columnBalance);
-
-        // add column price
-        addColumnPrice();
-
-        tableView.getColumns().get(2).setPrefWidth(250);
-        List<Integer> list = List.of(5, 4, 3, 1);
-        tableView.getColumns().removeAll(list.stream().map(tableView.getColumns()::get).toList());
-        TableSetting.tableMenuSetting(getClass(), tableView);
-    }
-
-    private void addColumnPrice() {
-        var columnInterface = new ColumnInterface<ItemsModel, Double>() {
-            @Override
-            public HashMap<String, Callback<TableColumn.CellDataFeatures<ItemsModel, Double>, ObservableValue<Double>>> STRING_CALLBACK_HASH_MAP() {
-                HashMap<String, Callback<TableColumn.CellDataFeatures<ItemsModel, Double>, ObservableValue<Double>>> hashMap = new HashMap<>();
-                hashMap.put(PRICE, f -> f.getValue().buyPriceProperty().asObject());
-                hashMap.put(TOTAL, f -> f.getValue().sumAllBalanceByBuyPriceProperty().asObject());
-                return hashMap;
-            }
-        };
-        tableView.getColumns().add(new AddColumnMix<ItemsModel, Double>().getTableColumn(Setting_Language.PURCHASE, columnInterface));
-
-        var columnInterfaceSales = new ColumnInterface<ItemsModel, Double>() {
-            @Override
-            public HashMap<String, Callback<TableColumn.CellDataFeatures<ItemsModel, Double>, ObservableValue<Double>>> STRING_CALLBACK_HASH_MAP() {
-                HashMap<String, Callback<TableColumn.CellDataFeatures<ItemsModel, Double>, ObservableValue<Double>>> hashMap = new HashMap<>();
-                hashMap.put(PRICE, f -> f.getValue().selPrice1Property().asObject());
-                hashMap.put(TOTAL, f -> f.getValue().sumAllBalanceBySelPriceProperty().asObject());
-                return hashMap;
-            }
-        };
-        tableView.getColumns().add(new AddColumnMix<ItemsModel, Double>().getTableColumn(SALES, columnInterfaceSales));
+            tableView.setItems(FXCollections.observableArrayList(data));
+            calculateTotalBalances();
+        } catch (DaoException e) {
+            logError(e);
+        }
     }
 
     private void addComboStock() {
         try {
             observableList.clear();
+            observableList.add(Setting_Language.WORD_ALL);
             observableList.addAll(stockService.getStockNames());
-            observableList.addFirst(Setting_Language.WORD_ALL);
-            comboStock.getSelectionModel().selectFirst();
+
+            if (comboStock.getSelectionModel().isEmpty()) {
+                comboStock.getSelectionModel().selectFirst();
+            }
         } catch (DaoException e) {
-            log.error(e.getMessage(), e.getCause());
-            AllAlerts.alertError(e.getMessage());
+            logError(e);
         }
     }
 
-    private void actionButton() {
-        comboStock.setItems(observableList);
-//        comboStock.valueProperty().addListener((observableValue, s, t1) -> searchAction());
-//        checkShowZeroBalance.selectedProperty().addListener((observableValue, s, t1) -> searchAction());
-        pagination.currentPageIndexProperty().addListener((observableValue, s, t1) -> updateTableView(t1.intValue()));
-        btnPrint.setOnAction(actionEvent -> new Print_Reports().printInventoryByTable(tableView.getItems(), comboStock.getSelectionModel().getSelectedItem()));
-        btnPrint.disableProperty().bind(comboStock.valueProperty().isNull());
-
-        pagination.currentPageIndexProperty().addListener((observableValue, s, t1) -> {
-            calculateTotalBalances();
-        });
-
-        PauseTransition pause = new PauseTransition(Duration.millis(500));
-        textSearch.textProperty().addListener((observable, oldValue, newValue) -> {
-            pause.setOnFinished(event -> {
-                try {
-                    loadDataFromDB(newValue); // لا يتم الاستدعاء إلا بعد التوقف عن الكتابة
-                    calculateTotalBalances();
-                } catch (DaoException e) {
-                    log.error(e.getMessage(), e.getCause());
-                    AllAlerts.alertError(e.getMessage());
-                }
-            });
-            pause.playFromStart();
-        });
-    }
-
-    private void loadDataFromDB(String newValue) throws DaoException {
-        var filterItems = itemsService.getFilterItems(newValue);
-        tableView.setItems(FXCollections.observableArrayList(filterItems));
-    }
-
-
     private void calculateTotalBalances() {
-        double v2 = tableView.getItems().stream().mapToDouble(ItemsModel::getSumAllBalanceByBuyPrice).sum();
-        double v3 = tableView.getItems().stream().mapToDouble(ItemsModel::getSumAllBalanceBySelPrice).sum();
-        textSumPurchase.setText(String.valueOf(NumberUtils.roundToTwoDecimalPlaces(v2)));
-        textSumSales.setText(String.valueOf(NumberUtils.roundToTwoDecimalPlaces(v3)));
+        double totalCost = tableView.getItems()
+                .stream()
+                .mapToDouble(InventoryItemModel::getStockValueCost)
+                .sum();
+
+        double totalSell = tableView.getItems()
+                .stream()
+                .mapToDouble(InventoryItemModel::getStockValueSell)
+                .sum();
+
+        textSumPurchase.setText(String.valueOf(NumberUtils.roundToTwoDecimalPlaces(totalCost)));
+        textSumSales.setText(String.valueOf(NumberUtils.roundToTwoDecimalPlaces(totalSell)));
     }
 
-    private <T> void addColumnData(String name, Callback<TableColumn.CellDataFeatures<ItemsModel, T>, ObservableValue<T>> column) {
-        TableColumn<ItemsModel, T> colName = new TableColumn<>(name);
-        colName.setCellValueFactory(column);
+    private String getSelectedStockName() {
+        return comboStock.getSelectionModel().getSelectedItem();
+    }
+
+    private String getSearchText() {
+        return textSearch.getText() == null ? "" : textSearch.getText().trim();
+    }
+
+    private String getStockStatusArabic(String status) {
+        if ("OUT_OF_STOCK".equalsIgnoreCase(status)) {
+            return "غير متوفر";
+        }
+
+        if ("LOW".equalsIgnoreCase(status)) {
+            return "منخفض";
+        }
+
+        return "جيد";
+    }
+
+    private <T> void addColumnData(String name, Function<InventoryItemModel, T> valueExtractor) {
+        TableColumn<InventoryItemModel, T> colName = new TableColumn<>(name);
+        colName.setCellValueFactory(cell -> new ReadOnlyObjectWrapper<>(valueExtractor.apply(cell.getValue())));
+        colName.setMinWidth(90);
         tableView.getColumns().add(colName);
+    }
+
+    private void logError(Exception e) {
+        log.error(e.getMessage(), e);
+        AllAlerts.alertError(e.getMessage());
     }
 }
