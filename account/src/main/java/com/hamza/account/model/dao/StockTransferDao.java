@@ -423,27 +423,41 @@ public class StockTransferDao extends AbstractDao<StockTransfer> {
     }
 
     private int increaseTargetStock(int itemId, int stockId, double quantity) throws DaoException, SQLException {
-        String sql = """
+        String updateSql = """
+                UPDATE items_stock
+                SET current_quantity = current_quantity + ?
+                WHERE item_id = ?
+                  AND stock_id = ?
+                """;
+
+        int affectedRows = executeUpdateWithException(
+                updateSql,
+                quantity,
+                itemId,
+                stockId
+        );
+
+        if (affectedRows > 0) {
+            return affectedRows;
+        }
+
+        String insertSql = """
                 INSERT INTO items_stock
                 (
                     item_id,
                     stock_id,
-                    first_balance,
                     current_quantity
                 )
                 VALUES
                 (
                     ?,
                     ?,
-                    0,
                     ?
                 )
-                ON DUPLICATE KEY UPDATE
-                    current_quantity = current_quantity + VALUES(current_quantity)
                 """;
 
         return executeUpdateWithException(
-                sql,
+                insertSql,
                 itemId,
                 stockId,
                 quantity

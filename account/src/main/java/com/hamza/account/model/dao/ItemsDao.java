@@ -115,7 +115,7 @@ public class ItemsDao extends AbstractDao<ItemsModel> {
 
             int itemId = insertItem(itemsModel);
             daoFactory.getItemsStockDao().insert(new Items_Stock_Model(
-                    itemsModel.getId(), 1, itemsModel.getFirstBalanceForStock(), itemsModel.getFirstBalanceForStock()
+                    itemsModel.getId(), 1, itemsModel.getFirstBalanceForStock()
             ));
 
             connection.setAutoCommit(true);
@@ -442,7 +442,6 @@ public class ItemsDao extends AbstractDao<ItemsModel> {
                 SELECT
                     items.*,
                     ist.stock_id,
-                    ist.first_balance,
                     0 AS quantityPurchase,
                     0 AS quantitySales,
                     0 AS quantityPurchaseRe,

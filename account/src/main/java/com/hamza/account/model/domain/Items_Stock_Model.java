@@ -13,14 +13,13 @@ public class Items_Stock_Model extends UnitExtends {
     private Integer id;
     private ItemsModel itemsModel;
     private Stock stock;
-    private double firstBalance;
+//    private double firstBalance;
     private double currentQuantity;
 
-    public Items_Stock_Model(int itemId, int stockId, double firstBalance
-            , double currentQuantity) {
+    public Items_Stock_Model(int itemId, int stockId, double currentQuantity) {
         this.itemsModel = new ItemsModel(itemId);
         this.stock = new Stock(stockId);
-        this.firstBalance = firstBalance;
+//        this.firstBalance = firstBalance;
         this.currentQuantity = currentQuantity;
     }
 

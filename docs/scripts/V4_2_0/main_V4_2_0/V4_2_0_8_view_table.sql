@@ -22,10 +22,10 @@ SELECT p.id,
        tb.invoice_date,
        tb.stock_id
 FROM purchase p
-         JOIN items     i  ON i.id = p.num
-         JOIN units     u  ON p.type = u.unit_id
+         JOIN items i ON i.id = p.num
+         JOIN units u ON p.type = u.unit_id
          JOIN total_buy tb ON tb.invoice_number = p.invoice_number
-         JOIN suppliers t  ON t.id = tb.sup_code;
+         JOIN suppliers t ON t.id = tb.sup_code;
 
 -- --------------------------------------sales_names_table------------------------------------------
 
@@ -52,10 +52,10 @@ SELECT s.id,
        ts.invoice_date,
        ts.stock_id
 FROM sales s
-         JOIN items       i  ON i.id = s.num
-         JOIN units       u  ON s.type = u.unit_id
+         JOIN items i ON i.id = s.num
+         JOIN units u ON s.type = u.unit_id
          JOIN total_sales ts ON ts.invoice_number = s.invoice_number
-         JOIN custom      c  ON c.id = ts.sup_code;
+         JOIN custom c ON c.id = ts.sup_code;
 
 -- --------------------------------------sales_return_names_table-----------------------------------
 
@@ -79,8 +79,8 @@ SELECT sr.id,
        tsr.invoice_date,
        tsr.stock_id
 FROM sales_re sr
-         JOIN items          i   ON i.id = sr.item_id
-         JOIN units          u   ON sr.type = u.unit_id
+         JOIN items i ON i.id = sr.item_id
+         JOIN units u ON sr.type = u.unit_id
          JOIN total_sales_re tsr ON tsr.id = sr.invoice_number;
 
 -- --------------------------------------purchase_return_names_table--------------------------------
@@ -101,8 +101,8 @@ SELECT pr.id,
        tbr.invoice_date,
        tbr.stock_id
 FROM purchase_re pr
-         JOIN items        i   ON i.id = pr.item_id
-         JOIN units        u   ON pr.type = u.unit_id
+         JOIN items i ON i.id = pr.item_id
+         JOIN units u ON pr.type = u.unit_id
          JOIN total_buy_re tbr ON tbr.id = pr.invoice_number;
 
 
@@ -130,7 +130,7 @@ SELECT st.id,
        i.barcode
 FROM stock_transfer st
          JOIN stock_transfer_list stl ON st.id = stl.stock_transfer_id
-         JOIN items  i   ON i.id = stl.item_id
+         JOIN items i ON i.id = stl.item_id
          JOIN stocks stf ON stf.stock_id = st.stock_from
          JOIN stocks stt ON stt.stock_id = st.stock_to
 WHERE st.status = 'POSTED';
@@ -141,80 +141,62 @@ WHERE st.status = 'POSTED';
 -- =====================================================================
 
 CREATE OR REPLACE VIEW quantity_items_table AS
-WITH purchase_agg AS (
-    SELECT tb.stock_id,
-           p.num AS item_id,
-           SUM(p.quantity * p.type_value) AS qty
-    FROM purchase p
-             JOIN total_buy tb ON tb.invoice_number = p.invoice_number
-    GROUP BY tb.stock_id, p.num
-),
-     sales_agg AS (
-         SELECT ts.stock_id,
-                s.num AS item_id,
-                SUM(s.quantity * s.type_value) AS qty
-         FROM sales s
-                  JOIN total_sales ts ON ts.invoice_number = s.invoice_number
-         GROUP BY ts.stock_id, s.num
-     ),
-     purchase_re_agg AS (
-         SELECT tbr.stock_id,
-                pr.item_id,
-                SUM(pr.quantity * pr.type_value) AS qty
-         FROM purchase_re pr
-                  JOIN total_buy_re tbr ON tbr.id = pr.invoice_number
-         GROUP BY tbr.stock_id, pr.item_id
-     ),
-     sales_re_agg AS (
-         SELECT tsr.stock_id,
-                sr.item_id,
-                SUM(sr.quantity * sr.type_value) AS qty
-         FROM sales_re sr
-                  JOIN total_sales_re tsr ON tsr.id = sr.invoice_number
-         GROUP BY tsr.stock_id, sr.item_id
-     ),
-     transfer_from_agg AS (
-         SELECT st.stock_from AS stock_id,
-                stl.item_id,
-                SUM(stl.quantity) AS qty
-         FROM stock_transfer st
-                  JOIN stock_transfer_list stl ON st.id = stl.stock_transfer_id
-         WHERE st.status = 'POSTED'
-         GROUP BY st.stock_from, stl.item_id
-     ),
-     transfer_to_agg AS (
-         SELECT st.stock_to AS stock_id,
-                stl.item_id,
-                SUM(stl.quantity) AS qty
-         FROM stock_transfer st
-                  JOIN stock_transfer_list stl ON st.id = stl.stock_transfer_id
-         WHERE st.status = 'POSTED'
-         GROUP BY st.stock_to, stl.item_id
-     )
+WITH purchase_agg AS (SELECT tb.stock_id,
+                             p.num                          AS item_id,
+                             SUM(p.quantity * p.type_value) AS qty
+                      FROM purchase p
+                               JOIN total_buy tb ON tb.invoice_number = p.invoice_number
+                      GROUP BY tb.stock_id, p.num),
+     sales_agg AS (SELECT ts.stock_id,
+                          s.num                          AS item_id,
+                          SUM(s.quantity * s.type_value) AS qty
+                   FROM sales s
+                            JOIN total_sales ts ON ts.invoice_number = s.invoice_number
+                   GROUP BY ts.stock_id, s.num),
+     purchase_re_agg AS (SELECT tbr.stock_id,
+                                pr.item_id,
+                                SUM(pr.quantity * pr.type_value) AS qty
+                         FROM purchase_re pr
+                                  JOIN total_buy_re tbr ON tbr.id = pr.invoice_number
+                         GROUP BY tbr.stock_id, pr.item_id),
+     sales_re_agg AS (SELECT tsr.stock_id,
+                             sr.item_id,
+                             SUM(sr.quantity * sr.type_value) AS qty
+                      FROM sales_re sr
+                               JOIN total_sales_re tsr ON tsr.id = sr.invoice_number
+                      GROUP BY tsr.stock_id, sr.item_id),
+     transfer_from_agg AS (SELECT st.stock_from     AS stock_id,
+                                  stl.item_id,
+                                  SUM(stl.quantity) AS qty
+                           FROM stock_transfer st
+                                    JOIN stock_transfer_list stl ON st.id = stl.stock_transfer_id
+                           WHERE st.status = 'POSTED'
+                           GROUP BY st.stock_from, stl.item_id),
+     transfer_to_agg AS (SELECT st.stock_to       AS stock_id,
+                                stl.item_id,
+                                SUM(stl.quantity) AS qty
+                         FROM stock_transfer st
+                                  JOIN stock_transfer_list stl ON st.id = stl.stock_transfer_id
+                         WHERE st.status = 'POSTED'
+                         GROUP BY st.stock_to, stl.item_id)
 SELECT ist.item_id,
        ist.stock_id,
-       ist.first_balance,
-       COALESCE(pa.qty,  0) AS quantityPurchase,
-       COALESCE(sa.qty,  0) AS quantitySales,
-       COALESCE(pra.qty, 0) AS quantityPurchaseRe,
-       COALESCE(sra.qty, 0) AS quantitySalesRe,
-       COALESCE(tfa.qty, 0) AS fromStock,
-       COALESCE(tta.qty, 0) AS toStock,
-       -- الرصيد الحالي محسوب جاهز
-       (ist.first_balance
-           + COALESCE(pa.qty, 0)
-           + COALESCE(sra.qty, 0)
-           + COALESCE(tta.qty, 0))
-           - (COALESCE(sa.qty, 0)
-           + COALESCE(pra.qty, 0)
-           + COALESCE(tfa.qty, 0))    AS current_balance
+       CASE WHEN ist.stock_id = 1 THEN i.first_balance ELSE 0 END AS first_balance,
+       COALESCE(pa.qty, 0)                                        AS quantityPurchase,
+       COALESCE(sa.qty, 0)                                        AS quantitySales,
+       COALESCE(pra.qty, 0)                                       AS quantityPurchaseRe,
+       COALESCE(sra.qty, 0)                                       AS quantitySalesRe,
+       COALESCE(tfa.qty, 0)                                       AS fromStock,
+       COALESCE(tta.qty, 0)                                       AS toStock,
+       ist.current_quantity                                       AS current_balance
 FROM items_stock ist
-         LEFT JOIN purchase_agg      pa  ON pa.stock_id  = ist.stock_id AND pa.item_id  = ist.item_id
-         LEFT JOIN sales_agg         sa  ON sa.stock_id  = ist.stock_id AND sa.item_id  = ist.item_id
-         LEFT JOIN purchase_re_agg   pra ON pra.stock_id = ist.stock_id AND pra.item_id = ist.item_id
-         LEFT JOIN sales_re_agg      sra ON sra.stock_id = ist.stock_id AND sra.item_id = ist.item_id
+         JOIN items i ON i.id = ist.item_id
+         LEFT JOIN purchase_agg pa ON pa.stock_id = ist.stock_id AND pa.item_id = ist.item_id
+         LEFT JOIN sales_agg sa ON sa.stock_id = ist.stock_id AND sa.item_id = ist.item_id
+         LEFT JOIN purchase_re_agg pra ON pra.stock_id = ist.stock_id AND pra.item_id = ist.item_id
+         LEFT JOIN sales_re_agg sra ON sra.stock_id = ist.stock_id AND sra.item_id = ist.item_id
          LEFT JOIN transfer_from_agg tfa ON tfa.stock_id = ist.stock_id AND tfa.item_id = ist.item_id
-         LEFT JOIN transfer_to_agg   tta ON tta.stock_id = ist.stock_id AND tta.item_id = ist.item_id;
+         LEFT JOIN transfer_to_agg tta ON tta.stock_id = ist.stock_id AND tta.item_id = ist.item_id;
 
 -- =====================================================================
 -- v_stock_inventory — View الجرد الرئيسي (الأكثر استخداماً)
@@ -231,10 +213,10 @@ SELECT q.item_id,
        s.stock_name,
        u.unit_id,
        u.unit_name,
-       sg.id           AS sub_group_id,
-       sg.name         AS sub_group_name,
-       mg.id           AS main_group_id,
-       mg.name_g       AS main_group_name,
+       sg.id                                      AS sub_group_id,
+       sg.name                                    AS sub_group_name,
+       mg.id                                      AS main_group_id,
+       mg.name_g                                  AS main_group_name,
        q.first_balance,
        q.quantityPurchase,
        q.quantitySalesRe,
@@ -251,15 +233,15 @@ SELECT q.item_id,
        ROUND(q.current_balance * i.sel_price1, 2) AS stock_value_sell,
        -- حالة الرصيد
        CASE
-           WHEN q.current_balance <= 0                   THEN 'OUT_OF_STOCK'
-           WHEN q.current_balance <= i.mini_quantity     THEN 'LOW'
+           WHEN q.current_balance <= 0 THEN 'OUT_OF_STOCK'
+           WHEN q.current_balance <= i.mini_quantity THEN 'LOW'
            ELSE 'OK'
-           END AS stock_status,
+           END                                    AS stock_status,
        i.item_active
 FROM quantity_items_table q
-         JOIN items     i  ON i.id = q.item_id
-         JOIN stocks    s  ON s.stock_id = q.stock_id
-         JOIN units     u  ON u.unit_id = i.unit_id
+         JOIN items i ON i.id = q.item_id
+         JOIN stocks s ON s.stock_id = q.stock_id
+         JOIN units u ON u.unit_id = i.unit_id
          JOIN sub_group sg ON sg.id = i.sub_num
          JOIN main_group mg ON mg.id = sg.main_id;
 
@@ -268,31 +250,31 @@ FROM quantity_items_table q
 -- =====================================================================
 
 CREATE OR REPLACE VIEW v_stock_inventory_summary AS
-SELECT i.id AS item_id,
+SELECT i.id                                                         AS item_id,
        i.barcode,
        i.nameItem,
        i.mini_quantity,
        u.unit_name,
-       sg.name   AS sub_group_name,
-       mg.name_g AS main_group_name,
+       sg.name                                                      AS sub_group_name,
+       mg.name_g                                                    AS main_group_name,
        i.buy_price,
        i.sel_price1,
-       COALESCE(SUM(v.first_balance),       0) AS first_balance_total,
-       COALESCE(SUM(v.quantityPurchase),    0) AS total_purchase,
-       COALESCE(SUM(v.quantitySales),       0) AS total_sales,
-       COALESCE(SUM(v.quantityPurchaseRe),  0) AS total_purchase_re,
-       COALESCE(SUM(v.quantitySalesRe),     0) AS total_sales_re,
-       COALESCE(SUM(v.current_balance),     0) AS total_balance,
+       COALESCE(SUM(v.first_balance), 0)                            AS first_balance_total,
+       COALESCE(SUM(v.quantityPurchase), 0)                         AS total_purchase,
+       COALESCE(SUM(v.quantitySales), 0)                            AS total_sales,
+       COALESCE(SUM(v.quantityPurchaseRe), 0)                       AS total_purchase_re,
+       COALESCE(SUM(v.quantitySalesRe), 0)                          AS total_sales_re,
+       COALESCE(SUM(v.current_balance), 0)                          AS total_balance,
        ROUND(COALESCE(SUM(v.current_balance), 0) * i.buy_price, 2)  AS total_value_cost,
        ROUND(COALESCE(SUM(v.current_balance), 0) * i.sel_price1, 2) AS total_value_sell,
        CASE
-           WHEN COALESCE(SUM(v.current_balance), 0) <= 0                 THEN 'OUT_OF_STOCK'
-           WHEN COALESCE(SUM(v.current_balance), 0) <= i.mini_quantity   THEN 'LOW'
+           WHEN COALESCE(SUM(v.current_balance), 0) <= 0 THEN 'OUT_OF_STOCK'
+           WHEN COALESCE(SUM(v.current_balance), 0) <= i.mini_quantity THEN 'LOW'
            ELSE 'OK'
-           END AS stock_status
+           END                                                      AS stock_status
 FROM items i
-         JOIN units      u  ON u.unit_id = i.unit_id
-         JOIN sub_group  sg ON sg.id = i.sub_num
+         JOIN units u ON u.unit_id = i.unit_id
+         JOIN sub_group sg ON sg.id = i.sub_num
          JOIN main_group mg ON mg.id = sg.main_id
          LEFT JOIN v_stock_inventory v ON v.item_id = i.id
 WHERE i.item_active = 1
@@ -329,17 +311,17 @@ SELECT ts.invoice_number,
        e.column_name,
        t.t_name,
        ts.user_id,
-       ROUND(sip.total_profit, 2)                                   AS total_profit,
+       ROUND(sip.total_profit, 2)                               AS total_profit,
        sip.total_buy_price,
-       ROUND((sip.total_profit * 100) / NULLIF(ts.total, 0), 2)     AS profit_percent,
-       COALESCE(tpa.TotalPaid, 0)                                   AS OtherPaid
+       ROUND((sip.total_profit * 100) / NULLIF(ts.total, 0), 2) AS profit_percent,
+       COALESCE(tpa.TotalPaid, 0)                               AS OtherPaid
 FROM total_sales ts
-         JOIN custom    c  ON c.id = ts.sup_code
-         JOIN stocks    s  ON s.stock_id = ts.stock_id
-         JOIN employees e  ON ts.delegate_id = e.id
-         JOIN treasury  t  ON ts.treasury_id = t.id
+         JOIN custom c ON c.id = ts.sup_code
+         JOIN stocks s ON s.stock_id = ts.stock_id
+         JOIN employees e ON ts.delegate_id = e.id
+         JOIN treasury t ON ts.treasury_id = t.id
          LEFT JOIN sales_invoice_profit sip ON ts.invoice_number = sip.invoice_number
-         LEFT JOIN TotalPaidAmounts     tpa ON ts.invoice_number = tpa.InvoiceNumber;
+         LEFT JOIN TotalPaidAmounts tpa ON ts.invoice_number = tpa.InvoiceNumber;
 
 -- --------------------------------------total_purchase_names_table---------------------------------
 
@@ -366,8 +348,8 @@ SELECT tb.invoice_number,
        COALESCE(pa.total_paid, 0) AS OtherPaid
 FROM total_buy tb
          JOIN suppliers c ON c.id = tb.sup_code
-         JOIN stocks    s ON s.stock_id = tb.stock_id
-         JOIN treasury  t ON tb.treasury_id = t.id
+         JOIN stocks s ON s.stock_id = tb.stock_id
+         JOIN treasury t ON tb.treasury_id = t.id
          LEFT JOIN PaidAmounts pa ON tb.invoice_number = pa.InvoiceNumber;
 
 -- --------------------------------------total_purchase_return_names_table--------------------------
@@ -390,8 +372,8 @@ SELECT tbr.id,
        tbr.user_id
 FROM total_buy_re tbr
          JOIN suppliers c ON c.id = tbr.sup_id
-         JOIN stocks    s ON s.stock_id = tbr.stock_id
-         JOIN treasury  t ON tbr.treasury_id = t.id;
+         JOIN stocks s ON s.stock_id = tbr.stock_id
+         JOIN treasury t ON tbr.treasury_id = t.id;
 
 -- --------------------------------------total_sales_return_names_table-----------------------------
 
@@ -422,9 +404,9 @@ SELECT tsr.id,
        sip.total_buy_price,
        ROUND((sip.total_profit * 100) / NULLIF(tsr.total, 0), 2) AS profit_percent
 FROM total_sales_re tsr
-         JOIN custom    c ON c.id = tsr.sup_id
-         JOIN stocks    s ON s.stock_id = tsr.stock_id
-         JOIN treasury  t ON tsr.treasury_id = t.id
+         JOIN custom c ON c.id = tsr.sup_id
+         JOIN stocks s ON s.stock_id = tsr.stock_id
+         JOIN treasury t ON tsr.treasury_id = t.id
          JOIN employees e ON e.id = tsr.delegate_id
          LEFT JOIN sales_invoice_profit sip ON tsr.id = sip.invoice_number;
 
@@ -449,11 +431,11 @@ SELECT account_num,
        account_code,
        account_date,
        purchase,
-       0        AS discount,
+       0 AS discount,
        paid,
        notes,
-       2        AS information,
-       0        AS type,
+       2 AS information,
+       0 AS type,
        created_at,
        treasury_id,
        numberInv
@@ -466,11 +448,11 @@ SELECT invoice_number,
        discount,
        paid_up,
        notes,
-       3           AS information,
+       3            AS information,
        invoice_type AS type,
        date_insert,
        treasury_id,
-       0           AS numberInv
+       0            AS numberInv
 FROM total_sales
 UNION ALL
 -- إذا كانت الفاتورة نقدا يتم خصم كل المدفوع
@@ -482,11 +464,11 @@ SELECT tsr.id,
        IF(tsr.invoice_type = 1, tsr.discount, 0),
        tsr.paid_from_treasury,
        tsr.notes,
-       4                    AS information,
-       tsr.invoice_type     AS type,
+       4                AS information,
+       tsr.invoice_type AS type,
        tsr.date_insert,
        tsr.treasury_id,
-       0                    AS numberInv
+       0                AS numberInv
 FROM total_sales_re tsr
 ORDER BY created_at;
 
@@ -511,11 +493,11 @@ SELECT account_num,
        account_code,
        account_date,
        purchase,
-       0        AS discount,
+       0 AS discount,
        paid,
        notes,
-       2        AS information,
-       0        AS type,
+       2 AS information,
+       0 AS type,
        date_insert,
        treasury_id,
        numberInv
@@ -556,20 +538,20 @@ CREATE OR REPLACE VIEW card_item_view AS
 WITH sales_data AS (SELECT s.id,
                            s.invoice_number,
                            t.invoice_date,
-                           s.num       AS item_num,
-                           s.type      AS unit_type,
+                           s.num   AS item_num,
+                           s.type  AS unit_type,
                            s.quantity,
                            s.price,
                            s.buy_price,
                            s.discount,
-                           c.name      AS name_custom,
+                           c.name  AS name_custom,
                            t.date_insert,
                            t.delegate_id,
-                           'sales'     AS table_name,
+                           'sales' AS table_name,
                            s.expiration_date
                     FROM sales s
                              JOIN total_sales t ON t.invoice_number = s.invoice_number
-                             JOIN custom      c ON t.sup_code = c.id),
+                             JOIN custom c ON t.sup_code = c.id),
      sales_return_data AS (SELECT sre.id,
                                   sre.invoice_number,
                                   t.invoice_date,
@@ -586,7 +568,7 @@ WITH sales_data AS (SELECT s.id,
                                   sre.expiration_date
                            FROM sales_re sre
                                     JOIN total_sales_re t ON t.id = sre.invoice_number
-                                    JOIN custom         c ON t.sup_id = c.id),
+                                    JOIN custom c ON t.sup_id = c.id),
      purchase_data AS (SELECT p.id,
                               p.invoice_number,
                               t.invoice_date,
@@ -602,32 +584,36 @@ WITH sales_data AS (SELECT s.id,
                               'purchase' AS table_name,
                               p.expiration_date
                        FROM purchase p
-                                JOIN total_buy  t ON t.invoice_number = p.invoice_number
-                                JOIN suppliers  s ON t.sup_code = s.id),
+                                JOIN total_buy t ON t.invoice_number = p.invoice_number
+                                JOIN suppliers s ON t.sup_code = s.id),
      purchase_return_data AS (SELECT pre.id,
                                      pre.invoice_number,
                                      t.invoice_date,
-                                     pre.item_id AS item_num,
-                                     pre.type    AS unit_type,
+                                     pre.item_id   AS item_num,
+                                     pre.type      AS unit_type,
                                      pre.quantity,
                                      pre.price,
-                                     0           AS buy_price,
-                                     0           AS discount,
-                                     s.name      AS name_custom,
+                                     0             AS buy_price,
+                                     0             AS discount,
+                                     s.name        AS name_custom,
                                      t.date_insert,
-                                     0           AS delegate_id,
+                                     0             AS delegate_id,
                                      'purchase_re' AS table_name,
                                      pre.expiration_date
                               FROM purchase_re pre
                                        JOIN total_buy_re t ON t.id = pre.invoice_number
-                                       JOIN suppliers    s ON t.sup_id = s.id)
-SELECT * FROM sales_data
+                                       JOIN suppliers s ON t.sup_id = s.id)
+SELECT *
+FROM sales_data
 UNION ALL
-SELECT * FROM sales_return_data
+SELECT *
+FROM sales_return_data
 UNION ALL
-SELECT * FROM purchase_data
+SELECT *
+FROM purchase_data
 UNION ALL
-SELECT * FROM purchase_return_data;
+SELECT *
+FROM purchase_return_data;
 
 -- --------------------------------------card_item_view_details-------------------------------------
 
@@ -640,20 +626,20 @@ SELECT c.id,
        c.quantity,
        c.price,
        c.buy_price,
-       IF(c.table_name IN ('purchase','purchase_re'), 0,
+       IF(c.table_name IN ('purchase', 'purchase_re'), 0,
           (c.price - c.buy_price) * c.quantity) AS profit,
        c.discount,
        c.name_custom,
        c.date_insert,
        c.delegate_id,
-       em.column_name                            AS delegate_name,
+       em.column_name                           AS delegate_name,
        c.table_name,
        i.barcode,
        i.nameItem,
        un.unit_name,
        c.expiration_date
 FROM card_item_view c
-         JOIN items i  ON c.item_num  = i.id
+         JOIN items i ON c.item_num = i.id
          JOIN units un ON c.unit_type = un.unit_id
          LEFT JOIN employees em ON c.delegate_id = em.id;
 
@@ -672,7 +658,7 @@ SELECT ed.id,
 FROM expenses_details ed
          JOIN expenses e ON e.id = ed.type_code
          LEFT JOIN expense_salary es ON ed.id = es.expenses_details_id
-         LEFT JOIN employees     e2 ON e2.id = es.employee_id;
+         LEFT JOIN employees e2 ON e2.id = es.employee_id;
 
 -- --------------------------------------mini_quantity_view-----------------------------------------
 
@@ -708,19 +694,19 @@ WITH sales_sums AS (SELECT delegate_id,
      sales_data AS (SELECT s.delegate_id,
                            s.sales_year,
                            s.sales_month,
-                           COALESCE(s.total_sales_sum,    0)                                  AS total_sales_sum,
-                           COALESCE(sr.total_sales_re_sum, 0)                                 AS total_sales_re_sum,
-                           COALESCE(s.total_sales_sum, 0) - COALESCE(sr.total_sales_re_sum,0) AS sales_difference
+                           COALESCE(s.total_sales_sum, 0)                                      AS total_sales_sum,
+                           COALESCE(sr.total_sales_re_sum, 0)                                  AS total_sales_re_sum,
+                           COALESCE(s.total_sales_sum, 0) - COALESCE(sr.total_sales_re_sum, 0) AS sales_difference
                     FROM sales_sums s
                              LEFT JOIN sales_re_sums sr
                                        ON sr.delegate_id = s.delegate_id
-                                           AND sr.sales_year  = s.sales_year
+                                           AND sr.sales_year = s.sales_year
                                            AND sr.sales_month = s.sales_month)
-SELECT e.id                                                           AS employee_id,
-       e.column_name                                                  AS employee_name,
+SELECT e.id                                             AS employee_id,
+       e.column_name                                    AS employee_name,
        sd.total_sales_sum,
        sd.total_sales_re_sum,
-       sd.sales_difference                                            AS Amount,
+       sd.sales_difference                              AS Amount,
        tgt.target_ratio1,
        tgt.rate_1,
        tgt.target_ratio2,
@@ -736,8 +722,8 @@ SELECT e.id                                                           AS employe
              (sd.sales_difference * tgt.rate_2) / 100,
              (sd.sales_difference * tgt.rate_3) / 100)) AS commission
 FROM employees e
-         JOIN sales_data      sd  ON e.id = sd.delegate_id
-         JOIN targeted_sales  tgt ON e.id = tgt.delegate_id
+         JOIN sales_data sd ON e.id = sd.delegate_id
+         JOIN targeted_sales tgt ON e.id = tgt.delegate_id
 ORDER BY e.id;
 
 -- --------------------------------------treasury_balance-------------------------------------------
@@ -756,7 +742,7 @@ WITH cte_union_data AS (SELECT invoice_number AS id_no,
                         SELECT id,
                                invoice_date,
                                IF(invoice_type = 1, paid_to_treasury, total - discount - paid_to_treasury) AS income,
-                               0              AS output,
+                               0                                                                           AS output,
                                treasury_id,
                                date_insert,
                                user_id,
@@ -776,7 +762,8 @@ WITH cte_union_data AS (SELECT invoice_number AS id_no,
                         SELECT id,
                                invoice_date,
                                0,
-                               IF(invoice_type = 1, paid_from_treasury, total - discount - paid_from_treasury) AS output,
+                               IF(invoice_type = 1, paid_from_treasury,
+                                  total - discount - paid_from_treasury) AS output,
                                treasury_id,
                                date_insert,
                                user_id,
@@ -834,7 +821,7 @@ SELECT c.id_no,
        u.user_name AS user_name
 FROM cte_union_data c
          JOIN treasury t ON t.id = c.treasury_id
-         JOIN users    u ON u.id = c.user_id
+         JOIN users u ON u.id = c.user_id
 ORDER BY date_val;
 
 -- --------------------------------------treasury_transfers_and_names-------------------------------
@@ -850,7 +837,7 @@ SELECT tt.id,
        tTo.t_name   AS treasury_name_to
 FROM treasury_transfers tt
          JOIN treasury tFrom ON tFrom.id = tt.treasury_from
-         JOIN treasury tTo   ON tTo.id   = tt.treasury_to;
+         JOIN treasury tTo ON tTo.id = tt.treasury_to;
 
 -- --------------------------------------treasury_balance_after_convert-----------------------------
 
@@ -868,22 +855,22 @@ SELECT treasury.*,
            AS amount_after_transfer
 FROM treasury
          LEFT JOIN sum_treasury_amount_from f ON f.treasury_from = treasury.id
-         LEFT JOIN sum_treasury_amount_to   t ON t.treasury_to   = treasury.id;
+         LEFT JOIN sum_treasury_amount_to t ON t.treasury_to = treasury.id;
 
 -- --------------------------------------account_customer_totals------------------------------------
 
 CREATE OR REPLACE VIEW account_customer_totals AS
 SELECT act.account_code,
        c.name,
-       SUM(act.purchase)                                           AS purchase,
-       SUM(act.discount)                                           AS discount,
-       SUM(act.paid)                                               AS paid,
+       SUM(act.purchase)                                               AS purchase,
+       SUM(act.discount)                                               AS discount,
+       SUM(act.paid)                                                   AS paid,
        ROUND(SUM(act.purchase) - SUM(act.discount) - SUM(act.paid), 2) AS amount,
-       MAX(act.account_date)                                       AS account_date,
-       ta.id                                                       AS area_id,
-       ta.area_name                                                AS area_name
+       MAX(act.account_date)                                           AS account_date,
+       ta.id                                                           AS area_id,
+       ta.area_name                                                    AS area_name
 FROM account_customer_table act
-         JOIN custom     c  ON act.account_code = c.id
+         JOIN custom c ON act.account_code = c.id
          JOIN table_area ta ON ta.id = c.area_id
 GROUP BY act.account_code, c.name, ta.id, ta.area_name;
 
@@ -892,11 +879,11 @@ GROUP BY act.account_code, c.name, ta.id, ta.area_name;
 CREATE OR REPLACE VIEW account_suppliers_totals AS
 SELECT ast.account_code,
        c.name,
-       ROUND(SUM(ast.purchase), 2)                                       AS purchase,
-       ROUND(SUM(ast.discount), 2)                                       AS discount,
-       ROUND(SUM(ast.paid), 2)                                           AS paid,
-       ROUND(SUM(ast.purchase) - SUM(ast.discount) - SUM(ast.paid), 2)   AS amount,
-       MAX(ast.account_date)                                             AS account_date
+       ROUND(SUM(ast.purchase), 2)                                     AS purchase,
+       ROUND(SUM(ast.discount), 2)                                     AS discount,
+       ROUND(SUM(ast.paid), 2)                                         AS paid,
+       ROUND(SUM(ast.purchase) - SUM(ast.discount) - SUM(ast.paid), 2) AS amount,
+       MAX(ast.account_date)                                           AS account_date
 FROM account_suppliers_table ast
          JOIN suppliers c ON ast.account_code = c.id
 GROUP BY ast.account_code, c.name;
@@ -961,15 +948,15 @@ WITH computed_profit AS (SELECT ts.invoice_number,
                                  0                AS profit
                           FROM total_buy_re),
      expenses_query AS (SELECT id,
-                               date        AS invoice_date,
-                               amount      AS total,
-                               0           AS discount,
-                               0           AS paid_up,
+                               date       AS invoice_date,
+                               amount     AS total,
+                               0          AS discount,
+                               0          AS paid_up,
                                treasury_id,
                                date_insert,
                                user_id,
-                               'expenses'  AS table_name,
-                               0           AS profit
+                               'expenses' AS table_name,
+                               0          AS profit
                         FROM expenses_details),
      customer_account_query AS (SELECT account_num          AS id,
                                        account_date         AS invoice_date,
@@ -994,15 +981,15 @@ WITH computed_profit AS (SELECT ts.invoice_number,
                                          0                    AS profit
                                   FROM suppliers_accounts),
      treasury_deposit_query AS (SELECT id,
-                                       date_inter  AS invoice_date,
-                                       amount      AS total,
-                                       0           AS discount,
-                                       0           AS paid_up,
+                                       date_inter AS invoice_date,
+                                       amount     AS total,
+                                       0          AS discount,
+                                       0          AS paid_up,
                                        treasury_id,
                                        date_insert,
                                        user_id,
-                                       'deposit'   AS table_name,
-                                       0           AS profit
+                                       'deposit'  AS table_name,
+                                       0          AS profit
                                 FROM treasury_deposit_expenses
                                 WHERE deposit_or_expenses = 1),
      treasury_expenses_query AS (SELECT id,
@@ -1017,52 +1004,73 @@ WITH computed_profit AS (SELECT ts.invoice_number,
                                         0                  AS profit
                                  FROM treasury_deposit_expenses
                                  WHERE deposit_or_expenses = 2)
-SELECT * FROM sales_query
+SELECT *
+FROM sales_query
 UNION ALL
-SELECT * FROM buy_query
+SELECT *
+FROM buy_query
 UNION ALL
-SELECT * FROM sales_return_query
+SELECT *
+FROM sales_return_query
 UNION ALL
-SELECT * FROM buy_return_query
+SELECT *
+FROM buy_return_query
 UNION ALL
-SELECT * FROM expenses_query
+SELECT *
+FROM expenses_query
 UNION ALL
-SELECT * FROM customer_account_query
+SELECT *
+FROM customer_account_query
 UNION ALL
-SELECT * FROM suppliers_accounts_query
+SELECT *
+FROM suppliers_accounts_query
 UNION ALL
-SELECT * FROM treasury_deposit_query
+SELECT *
+FROM treasury_deposit_query
 UNION ALL
-SELECT * FROM treasury_expenses_query;
+SELECT *
+FROM treasury_expenses_query;
 
 CREATE OR REPLACE VIEW daily_dashboard_report AS
 SELECT
     -- ==========================================
     -- 1. المبيعات (اليوم، أمس، الأسبوع، الشهر)
     -- ==========================================
-    (SELECT COUNT(invoice_number) FROM total_sales WHERE invoice_date = CURDATE()) AS sales_count_today,
-    COALESCE((SELECT SUM(total) FROM total_sales WHERE invoice_date = CURDATE()), 0) AS sales_total_today,
-    COALESCE((SELECT SUM(total) FROM total_sales WHERE invoice_date = CURDATE() - INTERVAL 1 DAY), 0) AS sales_total_yesterday,
-    COALESCE((SELECT SUM(total) FROM total_sales WHERE YEARWEEK(invoice_date, 1) = YEARWEEK(CURDATE(), 1)), 0) AS sales_total_week,
-    COALESCE((SELECT SUM(total) FROM total_sales WHERE YEAR(invoice_date) = YEAR(CURDATE()) AND MONTH(invoice_date) = MONTH(CURDATE())), 0) AS sales_total_month,
+    (SELECT COUNT(invoice_number) FROM total_sales WHERE invoice_date = CURDATE())                             AS sales_count_today,
+    COALESCE((SELECT SUM(total) FROM total_sales WHERE invoice_date = CURDATE()),
+             0)                                                                                                AS sales_total_today,
+    COALESCE((SELECT SUM(total) FROM total_sales WHERE invoice_date = CURDATE() - INTERVAL 1 DAY),
+             0)                                                                                                AS sales_total_yesterday,
+    COALESCE((SELECT SUM(total) FROM total_sales WHERE YEARWEEK(invoice_date, 1) = YEARWEEK(CURDATE(), 1)),
+             0)                                                                                                AS sales_total_week,
+    COALESCE((SELECT SUM(total)
+              FROM total_sales
+              WHERE YEAR(invoice_date) = YEAR(CURDATE())
+                AND MONTH(invoice_date) = MONTH(CURDATE())),
+             0)                                                                                                AS sales_total_month,
 
     -- ==========================================
     -- 2. المشتريات (اليوم)
     -- ==========================================
-    (SELECT COUNT(invoice_number) FROM total_buy WHERE invoice_date = CURDATE()) AS purchases_count_today,
-    COALESCE((SELECT SUM(total) FROM total_buy WHERE invoice_date = CURDATE()), 0) AS purchases_total_today,
+    (SELECT COUNT(invoice_number)
+     FROM total_buy
+     WHERE invoice_date = CURDATE())                                                                           AS purchases_count_today,
+    COALESCE((SELECT SUM(total) FROM total_buy WHERE invoice_date = CURDATE()),
+             0)                                                                                                AS purchases_total_today,
 
     -- ==========================================
     -- 3. مرتجعات المبيعات (اليوم)
     -- ==========================================
-    (SELECT COUNT(id) FROM total_sales_re WHERE invoice_date = CURDATE()) AS sales_returns_count_today,
-    COALESCE((SELECT SUM(total) FROM total_sales_re WHERE invoice_date = CURDATE()), 0) AS sales_returns_total_today,
+    (SELECT COUNT(id) FROM total_sales_re WHERE invoice_date = CURDATE())                                      AS sales_returns_count_today,
+    COALESCE((SELECT SUM(total) FROM total_sales_re WHERE invoice_date = CURDATE()),
+             0)                                                                                                AS sales_returns_total_today,
 
     -- ==========================================
     -- 4. مرتجعات المشتريات (اليوم)
     -- ==========================================
-    (SELECT COUNT(id) FROM total_buy_re WHERE invoice_date = CURDATE()) AS purchases_returns_count_today,
-    COALESCE((SELECT SUM(total) FROM total_buy_re WHERE invoice_date = CURDATE()), 0) AS purchases_returns_total_today,
+    (SELECT COUNT(id) FROM total_buy_re WHERE invoice_date = CURDATE())                                        AS purchases_returns_count_today,
+    COALESCE((SELECT SUM(total) FROM total_buy_re WHERE invoice_date = CURDATE()),
+             0)                                                                                                AS purchases_returns_total_today,
 
     -- ==========================================
     -- 5. المقبوضات (النقدية الداخلة للخزينة اليوم)
@@ -1070,8 +1078,10 @@ SELECT
     (
         COALESCE((SELECT SUM(paid_up) FROM total_sales WHERE invoice_date = CURDATE()), 0) +
         COALESCE((SELECT SUM(paid_to_treasury) FROM total_buy_re WHERE invoice_date = CURDATE()), 0) +
-        COALESCE((SELECT SUM(amount) FROM treasury_deposit_expenses WHERE date_inter = CURDATE() AND deposit_or_expenses = 1), 0)
-        ) AS total_receipts_today,
+        COALESCE((SELECT SUM(amount)
+                  FROM treasury_deposit_expenses
+                  WHERE date_inter = CURDATE() AND deposit_or_expenses = 1), 0)
+        )                                                                                                      AS total_receipts_today,
 
     -- ==========================================
     -- 6. المدفوعات والمصروفات (النقدية الخارجة اليوم)
@@ -1079,9 +1089,11 @@ SELECT
     (
         COALESCE((SELECT SUM(paid_up) FROM total_buy WHERE invoice_date = CURDATE()), 0) +
         COALESCE((SELECT SUM(paid_from_treasury) FROM total_sales_re WHERE invoice_date = CURDATE()), 0) +
-        COALESCE((SELECT SUM(amount) FROM treasury_deposit_expenses WHERE date_inter = CURDATE() AND deposit_or_expenses = 2), 0) +
+        COALESCE((SELECT SUM(amount)
+                  FROM treasury_deposit_expenses
+                  WHERE date_inter = CURDATE() AND deposit_or_expenses = 2), 0) +
         COALESCE((SELECT SUM(amount) FROM expenses_details WHERE date = CURDATE()), 0)
-        ) AS total_payments_and_expenses_today,
+        )                                                                                                      AS total_payments_and_expenses_today,
 
     -- ==========================================
     -- 7. الخصومات (إجمالي خصومات اليوم الممنوحة والمكتسبة)
@@ -1091,15 +1103,14 @@ SELECT
         COALESCE((SELECT SUM(discount) FROM total_buy WHERE invoice_date = CURDATE()), 0) +
         COALESCE((SELECT SUM(discount) FROM total_sales_re WHERE invoice_date = CURDATE()), 0) +
         COALESCE((SELECT SUM(discount) FROM total_buy_re WHERE invoice_date = CURDATE()), 0)
-        ) AS total_discounts_today
+        )                                                                                                      AS total_discounts_today
 ;
 
 
 CREATE OR REPLACE VIEW top_selling_items_current_month AS
-SELECT
-    i.nameItem AS item_name,
-    SUM(s.quantity) AS total_quantity,
-    CAST((SUM(s.total_sel_price) / SUM(s.quantity)) AS DECIMAL(14,2)) AS average_price
+SELECT i.nameItem                                                         AS item_name,
+       SUM(s.quantity)                                                    AS total_quantity,
+       CAST((SUM(s.total_sel_price) / SUM(s.quantity)) AS DECIMAL(14, 2)) AS average_price
 FROM sales s
          JOIN total_sales ts ON s.invoice_number = ts.invoice_number
          JOIN items i ON s.num = i.id
@@ -1110,81 +1121,73 @@ ORDER BY total_quantity DESC
 LIMIT 10;
 
 CREATE OR REPLACE VIEW view_monthly_sales AS
-SELECT
-    YEAR(invoice_date) AS sales_year,
+SELECT YEAR(invoice_date)                                                      AS sales_year,
 
-    ROUND(SUM(CASE WHEN MONTH(invoice_date) = 1 THEN total ELSE 0 END), 2) AS January,
-    ROUND(SUM(CASE WHEN MONTH(invoice_date) = 2 THEN total ELSE 0 END), 2) AS February,
-    ROUND(SUM(CASE WHEN MONTH(invoice_date) = 3 THEN total ELSE 0 END), 2) AS March,
-    ROUND(SUM(CASE WHEN MONTH(invoice_date) = 4 THEN total ELSE 0 END), 2) AS April,
-    ROUND(SUM(CASE WHEN MONTH(invoice_date) = 5 THEN total ELSE 0 END), 2) AS May,
-    ROUND(SUM(CASE WHEN MONTH(invoice_date) = 6 THEN total ELSE 0 END), 2) AS June,
-    ROUND(SUM(CASE WHEN MONTH(invoice_date) = 7 THEN total ELSE 0 END), 2) AS July,
-    ROUND(SUM(CASE WHEN MONTH(invoice_date) = 8 THEN total ELSE 0 END), 2) AS August,
-    ROUND(SUM(CASE WHEN MONTH(invoice_date) = 9 THEN total ELSE 0 END), 2) AS September,
-    ROUND(SUM(CASE WHEN MONTH(invoice_date) = 10 THEN total ELSE 0 END), 2) AS October,
-    ROUND(SUM(CASE WHEN MONTH(invoice_date) = 11 THEN total ELSE 0 END), 2) AS November,
-    ROUND(SUM(CASE WHEN MONTH(invoice_date) = 12 THEN total ELSE 0 END), 2) AS December,
+       ROUND(SUM(CASE WHEN MONTH(invoice_date) = 1 THEN total ELSE 0 END), 2)  AS January,
+       ROUND(SUM(CASE WHEN MONTH(invoice_date) = 2 THEN total ELSE 0 END), 2)  AS February,
+       ROUND(SUM(CASE WHEN MONTH(invoice_date) = 3 THEN total ELSE 0 END), 2)  AS March,
+       ROUND(SUM(CASE WHEN MONTH(invoice_date) = 4 THEN total ELSE 0 END), 2)  AS April,
+       ROUND(SUM(CASE WHEN MONTH(invoice_date) = 5 THEN total ELSE 0 END), 2)  AS May,
+       ROUND(SUM(CASE WHEN MONTH(invoice_date) = 6 THEN total ELSE 0 END), 2)  AS June,
+       ROUND(SUM(CASE WHEN MONTH(invoice_date) = 7 THEN total ELSE 0 END), 2)  AS July,
+       ROUND(SUM(CASE WHEN MONTH(invoice_date) = 8 THEN total ELSE 0 END), 2)  AS August,
+       ROUND(SUM(CASE WHEN MONTH(invoice_date) = 9 THEN total ELSE 0 END), 2)  AS September,
+       ROUND(SUM(CASE WHEN MONTH(invoice_date) = 10 THEN total ELSE 0 END), 2) AS October,
+       ROUND(SUM(CASE WHEN MONTH(invoice_date) = 11 THEN total ELSE 0 END), 2) AS November,
+       ROUND(SUM(CASE WHEN MONTH(invoice_date) = 12 THEN total ELSE 0 END), 2) AS December,
 
-    -- إجمالي مبيعات السنة بالكامل
-    ROUND(SUM(total), 2) AS total_yearly_sales
+       -- إجمالي مبيعات السنة بالكامل
+       ROUND(SUM(total), 2)                                                    AS total_yearly_sales
 
-FROM
-    total_sales
-GROUP BY
-    YEAR(invoice_date);
+FROM total_sales
+GROUP BY YEAR(invoice_date);
 
 
 
 CREATE OR REPLACE VIEW view_monthly_purchase AS
-SELECT
-    YEAR(invoice_date) AS sales_year,
+SELECT YEAR(invoice_date)                                                      AS sales_year,
 
-    ROUND(SUM(CASE WHEN MONTH(invoice_date) = 1 THEN total ELSE 0 END), 2) AS January,
-    ROUND(SUM(CASE WHEN MONTH(invoice_date) = 2 THEN total ELSE 0 END), 2) AS February,
-    ROUND(SUM(CASE WHEN MONTH(invoice_date) = 3 THEN total ELSE 0 END), 2) AS March,
-    ROUND(SUM(CASE WHEN MONTH(invoice_date) = 4 THEN total ELSE 0 END), 2) AS April,
-    ROUND(SUM(CASE WHEN MONTH(invoice_date) = 5 THEN total ELSE 0 END), 2) AS May,
-    ROUND(SUM(CASE WHEN MONTH(invoice_date) = 6 THEN total ELSE 0 END), 2) AS June,
-    ROUND(SUM(CASE WHEN MONTH(invoice_date) = 7 THEN total ELSE 0 END), 2) AS July,
-    ROUND(SUM(CASE WHEN MONTH(invoice_date) = 8 THEN total ELSE 0 END), 2) AS August,
-    ROUND(SUM(CASE WHEN MONTH(invoice_date) = 9 THEN total ELSE 0 END), 2) AS September,
-    ROUND(SUM(CASE WHEN MONTH(invoice_date) = 10 THEN total ELSE 0 END), 2) AS October,
-    ROUND(SUM(CASE WHEN MONTH(invoice_date) = 11 THEN total ELSE 0 END), 2) AS November,
-    ROUND(SUM(CASE WHEN MONTH(invoice_date) = 12 THEN total ELSE 0 END), 2) AS December,
+       ROUND(SUM(CASE WHEN MONTH(invoice_date) = 1 THEN total ELSE 0 END), 2)  AS January,
+       ROUND(SUM(CASE WHEN MONTH(invoice_date) = 2 THEN total ELSE 0 END), 2)  AS February,
+       ROUND(SUM(CASE WHEN MONTH(invoice_date) = 3 THEN total ELSE 0 END), 2)  AS March,
+       ROUND(SUM(CASE WHEN MONTH(invoice_date) = 4 THEN total ELSE 0 END), 2)  AS April,
+       ROUND(SUM(CASE WHEN MONTH(invoice_date) = 5 THEN total ELSE 0 END), 2)  AS May,
+       ROUND(SUM(CASE WHEN MONTH(invoice_date) = 6 THEN total ELSE 0 END), 2)  AS June,
+       ROUND(SUM(CASE WHEN MONTH(invoice_date) = 7 THEN total ELSE 0 END), 2)  AS July,
+       ROUND(SUM(CASE WHEN MONTH(invoice_date) = 8 THEN total ELSE 0 END), 2)  AS August,
+       ROUND(SUM(CASE WHEN MONTH(invoice_date) = 9 THEN total ELSE 0 END), 2)  AS September,
+       ROUND(SUM(CASE WHEN MONTH(invoice_date) = 10 THEN total ELSE 0 END), 2) AS October,
+       ROUND(SUM(CASE WHEN MONTH(invoice_date) = 11 THEN total ELSE 0 END), 2) AS November,
+       ROUND(SUM(CASE WHEN MONTH(invoice_date) = 12 THEN total ELSE 0 END), 2) AS December,
 
-    -- إجمالي مبيعات السنة بالكامل
-    ROUND(SUM(total), 2) AS total_yearly_sales
+       -- إجمالي مبيعات السنة بالكامل
+       ROUND(SUM(total), 2)                                                    AS total_yearly_sales
 
-FROM
-    total_buy
-GROUP BY
-    YEAR(invoice_date);
+FROM total_buy
+GROUP BY YEAR(invoice_date);
 
 
 CREATE OR REPLACE VIEW view_customer_purchased_items AS
-SELECT
-    c.id AS customer_id,
-    c.name AS customer_name,
-    i.nameItem AS item_name,
-    s.quantity,
-    s.price AS selling_price,
-    ts.invoice_date,
-    ts.invoice_number
+SELECT c.id       AS customer_id,
+       c.name     AS customer_name,
+       i.nameItem AS item_name,
+       s.quantity,
+       s.price    AS selling_price,
+       ts.invoice_date,
+       ts.invoice_number
 FROM custom c
          JOIN total_sales ts ON c.id = ts.sup_code
          JOIN sales s ON ts.invoice_number = s.invoice_number
          JOIN items i ON s.num = i.id;
 
 CREATE OR REPLACE VIEW view_suppliers_sales_items AS
-SELECT
-    c.id AS customer_id,
-    c.name AS customer_name,
-    i.nameItem AS item_name,
-    s.quantity,
-    s.price AS selling_price,
-    ts.invoice_date,
-    ts.invoice_number
+SELECT c.id       AS customer_id,
+       c.name     AS customer_name,
+       i.nameItem AS item_name,
+       s.quantity,
+       s.price    AS selling_price,
+       ts.invoice_date,
+       ts.invoice_number
 FROM suppliers c
          JOIN total_buy ts ON c.id = ts.sup_code
          JOIN purchase s ON ts.invoice_number = s.invoice_number
@@ -1192,137 +1195,153 @@ FROM suppliers c
 
 
 CREATE OR REPLACE VIEW view_yearly_monthly_report AS
-SELECT
-    t.action_year AS report_year,
-    t.action_month AS report_month,
+SELECT t.action_year                              AS report_year,
+       t.action_month                             AS report_month,
 
-    ROUND(SUM(t.purchases), 2) AS purchases,
-    ROUND(SUM(t.purchases_discount), 2) AS purchases_discount,
+       ROUND(SUM(t.purchases), 2)                 AS purchases,
+       ROUND(SUM(t.purchases_discount), 2)        AS purchases_discount,
 
-    ROUND(SUM(t.sales), 2) AS sales,
-    ROUND(SUM(t.sales_discount), 2) AS sales_discount,
+       ROUND(SUM(t.sales), 2)                     AS sales,
+       ROUND(SUM(t.sales_discount), 2)            AS sales_discount,
 
-    ROUND(SUM(t.purchases_return), 2) AS purchases_return,
-    ROUND(SUM(t.purchases_return_discount), 2) AS purchases_return_discount,
+       ROUND(SUM(t.purchases_return), 2)          AS purchases_return,
+       ROUND(SUM(t.purchases_return_discount), 2) AS purchases_return_discount,
 
-    ROUND(SUM(t.sales_return), 2) AS sales_return,
-    ROUND(SUM(t.sales_return_discount), 2) AS sales_return_discount,
+       ROUND(SUM(t.sales_return), 2)              AS sales_return,
+       ROUND(SUM(t.sales_return_discount), 2)     AS sales_return_discount,
 
-    ROUND(SUM(t.expenses), 2) AS expenses,
+       ROUND(SUM(t.expenses), 2)                  AS expenses,
 
-    -- Net Profit Calculation: (Sales - Sales_RE - Sales_Discount) - (Purchases - Purchases_RE - Purchases_Discount) - Expenses
-    ROUND(
-            (SUM(t.sales) - SUM(t.sales_return) - SUM(t.sales_discount)) -
-            (SUM(t.purchases) - SUM(t.purchases_return) - SUM(t.purchases_discount)) -
-            SUM(t.expenses),
-            2) AS estimated_net_profit
+       -- Net Profit Calculation: (Sales - Sales_RE - Sales_Discount) - (Purchases - Purchases_RE - Purchases_Discount) - Expenses
+       ROUND(
+               (SUM(t.sales) - SUM(t.sales_return) - SUM(t.sales_discount)) -
+               (SUM(t.purchases) - SUM(t.purchases_return) - SUM(t.purchases_discount)) -
+               SUM(t.expenses),
+               2)                                 AS estimated_net_profit
 
 FROM (
          -- 1. Sales
-         SELECT
-             YEAR(invoice_date) AS action_year, MONTH(invoice_date) AS action_month,
-             0 AS purchases, 0 AS purchases_discount,
-             total AS sales, discount AS sales_discount,
-             0 AS purchases_return, 0 AS purchases_return_discount,
-             0 AS sales_return, 0 AS sales_return_discount,
-             0 AS expenses
+         SELECT YEAR(invoice_date)  AS action_year,
+                MONTH(invoice_date) AS action_month,
+                0                   AS purchases,
+                0                   AS purchases_discount,
+                total               AS sales,
+                discount            AS sales_discount,
+                0                   AS purchases_return,
+                0                   AS purchases_return_discount,
+                0                   AS sales_return,
+                0                   AS sales_return_discount,
+                0                   AS expenses
          FROM total_sales
 
          UNION ALL
 
          -- 2. Sales Returns
-         SELECT
-             YEAR(invoice_date), MONTH(invoice_date),
-             0, 0,
-             0, 0,
-             0, 0,
-             total, discount,
-             0
+         SELECT YEAR(invoice_date),
+                MONTH(invoice_date),
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                total,
+                discount,
+                0
          FROM total_sales_re
 
          UNION ALL
 
          -- 3. Purchases
-         SELECT
-             YEAR(invoice_date), MONTH(invoice_date),
-             total, discount,
-             0, 0,
-             0, 0,
-             0, 0,
-             0
+         SELECT YEAR(invoice_date),
+                MONTH(invoice_date),
+                total,
+                discount,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
          FROM total_buy
 
          UNION ALL
 
          -- 4. Purchases Returns
-         SELECT
-             YEAR(invoice_date), MONTH(invoice_date),
-             0, 0,
-             0, 0,
-             total, discount,
-             0, 0,
-             0
+         SELECT YEAR(invoice_date),
+                MONTH(invoice_date),
+                0,
+                0,
+                0,
+                0,
+                total,
+                discount,
+                0,
+                0,
+                0
          FROM total_buy_re
 
          UNION ALL
 
          -- 5. Expenses
-         SELECT
-             YEAR(date_insert), MONTH(date_insert),
-             0, 0,
-             0, 0,
-             0, 0,
-             0, 0,
-             amount
-         FROM treasury_transfers
-     ) AS t
+         SELECT YEAR(date_insert),
+                MONTH(date_insert),
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                amount
+         FROM treasury_transfers) AS t
 
-GROUP BY
-    t.action_year,
-    t.action_month
-ORDER BY
-    t.action_year DESC,
-    t.action_month ASC;
+GROUP BY t.action_year,
+         t.action_month
+ORDER BY t.action_year DESC,
+         t.action_month ASC;
 
 
 CREATE OR REPLACE VIEW view_item_sales_rank AS
-SELECT
-    num AS item_id,
-    nameItem AS item_name,
-    YEAR(invoice_date) AS sales_year,
-    MONTH(invoice_date) AS sales_month,
-    SUM(quantity) AS total_qty,
-    ROUND(SUM(total_sales), 2) AS total_amount,
-    -- حساب صافي الربح من الصنف (المبيعات - التكلفة)
-    ROUND(SUM(total_sales - (quantity * buy_price)), 2) AS total_profit
+SELECT num                                                 AS item_id,
+       nameItem                                            AS item_name,
+       YEAR(invoice_date)                                  AS sales_year,
+       MONTH(invoice_date)                                 AS sales_month,
+       SUM(quantity)                                       AS total_qty,
+       ROUND(SUM(total_sales), 2)                          AS total_amount,
+       -- حساب صافي الربح من الصنف (المبيعات - التكلفة)
+       ROUND(SUM(total_sales - (quantity * buy_price)), 2) AS total_profit
 FROM sales_names_table
 GROUP BY num, nameItem, YEAR(invoice_date), MONTH(invoice_date);
 
 
 CREATE OR REPLACE VIEW view_customer_receivables AS
-SELECT
-    c.id AS customer_id,
-    c.name AS customer_name,
-    c.tel AS customer_phone,
+SELECT c.id                                     AS customer_id,
+       c.name                                   AS customer_name,
+       c.tel                                    AS customer_phone,
 
-    -- رصيد أول المدة (المديونية عند تسجيل العميل)
-    ROUND(c.first_balance, 2) AS opening_balance,
+       -- رصيد أول المدة (المديونية عند تسجيل العميل)
+       ROUND(c.first_balance, 2)                AS opening_balance,
 
-    -- إجمالي المبالغ الآجلة (المتبقية) من فواتير المبيعات
-    ROUND((SELECT IFNULL(SUM((ts.total - ts.discount) - ts.paid_up), 0)
-           FROM total_sales ts
-           WHERE ts.sup_code = c.id), 2) AS total_invoices_debt,
+       -- إجمالي المبالغ الآجلة (المتبقية) من فواتير المبيعات
+       ROUND((SELECT IFNULL(SUM((ts.total - ts.discount) - ts.paid_up), 0)
+              FROM total_sales ts
+              WHERE ts.sup_code = c.id), 2)     AS total_invoices_debt,
 
-    -- إجمالي التحصيلات والمدفوعات من جدول حسابات العملاء
-    ROUND((SELECT IFNULL(SUM(paid), 0)
-           FROM customers_accounts ca
-           WHERE ca.account_code = c.id), 2) AS total_payments,
+       -- إجمالي التحصيلات والمدفوعات من جدول حسابات العملاء
+       ROUND((SELECT IFNULL(SUM(paid), 0)
+              FROM customers_accounts ca
+              WHERE ca.account_code = c.id), 2) AS total_payments,
 
-    -- صافي المديونية النهائية
-    ROUND((c.first_balance +
-           (SELECT IFNULL(SUM((ts.total - ts.discount) - ts.paid_up), 0) FROM total_sales ts WHERE ts.sup_code = c.id) -
-           (SELECT IFNULL(SUM(paid), 0) FROM customers_accounts ca WHERE ca.account_code = c.id)
-              ), 2) AS final_balance
+       -- صافي المديونية النهائية
+       ROUND((c.first_balance +
+              (SELECT IFNULL(SUM((ts.total - ts.discount) - ts.paid_up), 0)
+               FROM total_sales ts
+               WHERE ts.sup_code = c.id) -
+              (SELECT IFNULL(SUM(paid), 0) FROM customers_accounts ca WHERE ca.account_code = c.id)
+                 ), 2)                          AS final_balance
 
 FROM custom c
 -- إظهار العملاء الذين لديهم تعاملات مادية فقط (اختياري)
@@ -1340,16 +1359,15 @@ WHERE (c.first_balance <> 0 OR
 -- =====================================================================
 
 CREATE OR REPLACE VIEW v_items_stock_balance AS
-SELECT
-    i.id AS item_id,
-    i.barcode,
-    i.nameItem,
-    s.stock_id,
-    s.stock_name,
-    ist.first_balance,
-    ist.current_quantity,
-    u.unit_id,
-    u.unit_name
+SELECT i.id                                                     AS item_id,
+       i.barcode,
+       i.nameItem,
+       s.stock_id,
+       s.stock_name,
+       CASE WHEN s.stock_id = 1 THEN i.first_balance ELSE 0 END AS first_balance,
+       ist.current_quantity,
+       u.unit_id,
+       u.unit_name
 FROM items_stock ist
          JOIN items i ON i.id = ist.item_id
          JOIN stocks s ON s.stock_id = ist.stock_id
@@ -1361,22 +1379,20 @@ FROM items_stock ist
 -- =====================================================================
 
 CREATE OR REPLACE VIEW v_items_total_balance AS
-SELECT
-    i.id AS item_id,
-    i.barcode,
-    i.nameItem,
-    COALESCE(SUM(ist.current_quantity), 0) AS total_quantity,
-    u.unit_id,
-    u.unit_name
+SELECT i.id                                   AS item_id,
+       i.barcode,
+       i.nameItem,
+       COALESCE(SUM(ist.current_quantity), 0) AS total_quantity,
+       u.unit_id,
+       u.unit_name
 FROM items i
          LEFT JOIN items_stock ist ON ist.item_id = i.id
          JOIN units u ON u.unit_id = i.unit_id
-GROUP BY
-    i.id,
-    i.barcode,
-    i.nameItem,
-    u.unit_id,
-    u.unit_name;
+GROUP BY i.id,
+         i.barcode,
+         i.nameItem,
+         u.unit_id,
+         u.unit_name;
 
 
 -- =====================================================================
@@ -1384,22 +1400,21 @@ GROUP BY
 -- =====================================================================
 
 CREATE OR REPLACE VIEW v_stock_transfer_header AS
-SELECT
-    st.id,
-    st.transfer_date,
-    st.stock_from,
-    sf.stock_name AS stock_from_name,
-    st.stock_to,
-    stt.stock_name AS stock_to_name,
-    st.status,
-    st.cancelled_at,
-    st.cancelled_by,
-    cu.user_name AS cancelled_by_name,
-    st.cancel_reason,
-    st.reversal_transfer_id,
-    st.date_insert,
-    st.user_id,
-    u.user_name
+SELECT st.id,
+       st.transfer_date,
+       st.stock_from,
+       sf.stock_name  AS stock_from_name,
+       st.stock_to,
+       stt.stock_name AS stock_to_name,
+       st.status,
+       st.cancelled_at,
+       st.cancelled_by,
+       cu.user_name   AS cancelled_by_name,
+       st.cancel_reason,
+       st.reversal_transfer_id,
+       st.date_insert,
+       st.user_id,
+       u.user_name
 FROM stock_transfer st
          JOIN stocks sf ON sf.stock_id = st.stock_from
          JOIN stocks stt ON stt.stock_id = st.stock_to
@@ -1412,23 +1427,22 @@ FROM stock_transfer st
 -- =====================================================================
 
 CREATE OR REPLACE VIEW v_stock_transfer_details AS
-SELECT
-    st.id AS transfer_id,
-    st.transfer_date,
-    st.stock_from,
-    sf.stock_name AS stock_from_name,
-    st.stock_to,
-    stt.stock_name AS stock_to_name,
-    st.status,
-    stl.id AS line_id,
-    stl.item_id,
-    i.barcode,
-    i.nameItem,
-    stl.quantity,
-    u.unit_id,
-    u.unit_name,
-    st.user_id,
-    usr.user_name
+SELECT st.id          AS transfer_id,
+       st.transfer_date,
+       st.stock_from,
+       sf.stock_name  AS stock_from_name,
+       st.stock_to,
+       stt.stock_name AS stock_to_name,
+       st.status,
+       stl.id         AS line_id,
+       stl.item_id,
+       i.barcode,
+       i.nameItem,
+       stl.quantity,
+       u.unit_id,
+       u.unit_name,
+       st.user_id,
+       usr.user_name
 FROM stock_transfer st
          JOIN stock_transfer_list stl ON stl.stock_transfer_id = st.id
          JOIN stocks sf ON sf.stock_id = st.stock_from
@@ -1452,45 +1466,45 @@ FROM stock_transfer st
 
 CREATE OR REPLACE VIEW v_item_movements AS
 -- 1) الرصيد الافتتاحي
-SELECT ist.item_id,
-       ist.stock_id,
-       NULL                                AS movement_date,
-       NULL                                AS movement_datetime,
-       'OPENING'                           AS movement_type,
-       'الرصيد الافتتاحي'                  AS movement_type_ar,
-       ist.first_balance                   AS quantity_in,
-       0                                   AS quantity_out,
-       NULL                                AS reference_id,
-       NULL                                AS invoice_number,
-       NULL                                AS party_name,
-       NULL                                AS unit_value,
-       NULL                                AS price,
-       'رصيد أول المدة'                    AS notes,
-       NULL                                AS user_id
-FROM items_stock ist
+SELECT ist.id             AS item_id,
+       1                  AS stock_id,
+       NULL               AS movement_date,
+       NULL               AS movement_datetime,
+       'OPENING'          AS movement_type,
+       'الرصيد الافتتاحي' AS movement_type_ar,
+       ist.first_balance  AS quantity_in,
+       0                  AS quantity_out,
+       NULL               AS reference_id,
+       NULL               AS invoice_number,
+       NULL               AS party_name,
+       NULL               AS unit_value,
+       NULL               AS price,
+       'رصيد أول المدة'   AS notes,
+       NULL               AS user_id
+FROM items ist
 WHERE ist.first_balance > 0
 
 UNION ALL
 
 -- 2) المشتريات
-SELECT p.num                               AS item_id,
+SELECT p.num                       AS item_id,
        tb.stock_id,
-       tb.invoice_date                     AS movement_date,
-       tb.date_insert                      AS movement_datetime,
-       'PURCHASE'                          AS movement_type,
-       'مشتريات'                           AS movement_type_ar,
-       (p.quantity * p.type_value)         AS quantity_in,
-       0                                   AS quantity_out,
-       p.id                                AS reference_id,
+       tb.invoice_date             AS movement_date,
+       tb.date_insert              AS movement_datetime,
+       'PURCHASE'                  AS movement_type,
+       'مشتريات'                   AS movement_type_ar,
+       (p.quantity * p.type_value) AS quantity_in,
+       0                           AS quantity_out,
+       p.id                        AS reference_id,
        tb.invoice_number,
-       sup.name                            AS party_name,
-       p.type_value                        AS unit_value,
+       sup.name                    AS party_name,
+       p.type_value                AS unit_value,
        p.price,
        tb.notes,
        tb.user_id
 FROM purchase p
-         JOIN total_buy  tb  ON tb.invoice_number = p.invoice_number
-         JOIN suppliers  sup ON sup.id = tb.sup_code
+         JOIN total_buy tb ON tb.invoice_number = p.invoice_number
+         JOIN suppliers sup ON sup.id = tb.sup_code
 
 UNION ALL
 
@@ -1501,10 +1515,10 @@ SELECT pr.item_id,
        tbr.date_insert,
        'PURCHASE_RETURN',
        'مرتجع مشتريات',
-       0                                   AS quantity_in,
-       (pr.quantity * pr.type_value)       AS quantity_out,
+       0                             AS quantity_in,
+       (pr.quantity * pr.type_value) AS quantity_out,
        pr.id,
-       tbr.id                              AS invoice_number,
+       tbr.id                        AS invoice_number,
        sup.name,
        pr.type_value,
        pr.price,
@@ -1512,29 +1526,29 @@ SELECT pr.item_id,
        tbr.user_id
 FROM purchase_re pr
          JOIN total_buy_re tbr ON tbr.id = pr.invoice_number
-         JOIN suppliers    sup ON sup.id = tbr.sup_id
+         JOIN suppliers sup ON sup.id = tbr.sup_id
 
 UNION ALL
 
 -- 4) المبيعات
-SELECT s.num                               AS item_id,
+SELECT s.num                       AS item_id,
        ts.stock_id,
        ts.invoice_date,
        ts.date_insert,
        'SALE',
        'مبيعات',
-       0                                   AS quantity_in,
-       (s.quantity * s.type_value)         AS quantity_out,
+       0                           AS quantity_in,
+       (s.quantity * s.type_value) AS quantity_out,
        s.id,
        ts.invoice_number,
-       c.name                              AS party_name,
+       c.name                      AS party_name,
        s.type_value,
        s.price,
        ts.notes,
        ts.user_id
 FROM sales s
          JOIN total_sales ts ON ts.invoice_number = s.invoice_number
-         JOIN custom      c  ON c.id = ts.sup_code
+         JOIN custom c ON c.id = ts.sup_code
 
 UNION ALL
 
@@ -1545,10 +1559,10 @@ SELECT sr.item_id,
        tsr.date_insert,
        'SALE_RETURN',
        'مرتجع مبيعات',
-       (sr.quantity * sr.type_value)       AS quantity_in,
-       0                                   AS quantity_out,
+       (sr.quantity * sr.type_value) AS quantity_in,
+       0                             AS quantity_out,
        sr.id,
-       tsr.id                              AS invoice_number,
+       tsr.id                        AS invoice_number,
        c.name,
        sr.type_value,
        sr.price,
@@ -1556,52 +1570,52 @@ SELECT sr.item_id,
        tsr.user_id
 FROM sales_re sr
          JOIN total_sales_re tsr ON tsr.id = sr.invoice_number
-         JOIN custom         c   ON c.id = tsr.sup_id
+         JOIN custom c ON c.id = tsr.sup_id
 
 UNION ALL
 
 -- 6) تحويل صادر من المخزن
 SELECT stl.item_id,
-       st.stock_from                       AS stock_id,
-       st.transfer_date                    AS movement_date,
-       st.date_insert                      AS movement_datetime,
+       st.stock_from                              AS stock_id,
+       st.transfer_date                           AS movement_date,
+       st.date_insert                             AS movement_datetime,
        'TRANSFER_OUT',
        'تحويل صادر',
-       0                                   AS quantity_in,
-       stl.quantity                        AS quantity_out,
-       stl.id                              AS reference_id,
-       st.id                               AS invoice_number,
-       stt.stock_name                      AS party_name,
-       1                                   AS unit_value,
-       NULL                                AS price,
+       0                                          AS quantity_in,
+       stl.quantity                               AS quantity_out,
+       stl.id                                     AS reference_id,
+       st.id                                      AS invoice_number,
+       stt.stock_name                             AS party_name,
+       1                                          AS unit_value,
+       NULL                                       AS price,
        CONCAT('تحويل إلى مخزن: ', stt.stock_name) AS notes,
        st.user_id
 FROM stock_transfer st
          JOIN stock_transfer_list stl ON st.id = stl.stock_transfer_id
-         JOIN stocks stt              ON stt.stock_id = st.stock_to
+         JOIN stocks stt ON stt.stock_id = st.stock_to
 WHERE st.status = 'POSTED'
 
 UNION ALL
 
 -- 7) تحويل وارد إلى المخزن
 SELECT stl.item_id,
-       st.stock_to                         AS stock_id,
-       st.transfer_date                    AS movement_date,
-       st.date_insert                      AS movement_datetime,
+       st.stock_to      AS stock_id,
+       st.transfer_date AS movement_date,
+       st.date_insert   AS movement_datetime,
        'TRANSFER_IN',
        'تحويل وارد',
-       stl.quantity                        AS quantity_in,
-       0                                   AS quantity_out,
+       stl.quantity     AS quantity_in,
+       0                AS quantity_out,
        stl.id,
        st.id,
-       stf.stock_name                      AS party_name,
-       1                                   AS unit_value,
-       NULL                                AS price,
+       stf.stock_name   AS party_name,
+       1                AS unit_value,
+       NULL             AS price,
        CONCAT('تحويل من مخزن: ', stf.stock_name),
        st.user_id
 FROM stock_transfer st
          JOIN stock_transfer_list stl ON st.id = stl.stock_transfer_id
-         JOIN stocks stf              ON stf.stock_id = st.stock_from
+         JOIN stocks stf ON stf.stock_id = st.stock_from
 WHERE st.status = 'POSTED';
 
 -- =====================================================================
@@ -1631,7 +1645,7 @@ SELECT m.item_id,
                m.movement_datetime,
                m.reference_id
            ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW
-           )                                              AS running_balance,
+           ) AS running_balance,
        m.reference_id,
        m.invoice_number,
        m.party_name,
@@ -1641,9 +1655,9 @@ SELECT m.item_id,
        m.user_id,
        usr.user_name
 FROM v_item_movements m
-         JOIN items  i ON i.id = m.item_id
+         JOIN items i ON i.id = m.item_id
          JOIN stocks s ON s.stock_id = m.stock_id
-         JOIN units  u ON u.unit_id = i.unit_id
+         JOIN units u ON u.unit_id = i.unit_id
          LEFT JOIN users usr ON usr.id = m.user_id;
 
 
@@ -1659,118 +1673,117 @@ FROM v_item_movements m
 CREATE OR REPLACE VIEW v_stock_balance_as_of AS
 WITH
 -- الرصيد الافتتاحي (دائماً مشمول)
-opening_agg AS (
-    SELECT item_id, stock_id, first_balance AS qty
-    FROM items_stock
-    WHERE first_balance > 0
-),
--- المشتريات حتى التاريخ المحدد
-purchase_agg AS (
-    SELECT tb.stock_id, p.num AS item_id,
-           SUM(p.quantity * p.type_value) AS qty
-    FROM purchase p
-             JOIN total_buy tb ON tb.invoice_number = p.invoice_number
-    WHERE tb.invoice_date <= COALESCE(@as_of_date, CURDATE())
-    GROUP BY tb.stock_id, p.num
-),
--- المبيعات حتى التاريخ المحدد
-sales_agg AS (
-    SELECT ts.stock_id, s.num AS item_id,
-           SUM(s.quantity * s.type_value) AS qty
-    FROM sales s
-             JOIN total_sales ts ON ts.invoice_number = s.invoice_number
-    WHERE ts.invoice_date <= COALESCE(@as_of_date, CURDATE())
-    GROUP BY ts.stock_id, s.num
-),
--- مرتجع المشتريات حتى التاريخ المحدد
-purchase_re_agg AS (
-    SELECT tbr.stock_id, pr.item_id,
-           SUM(pr.quantity * pr.type_value) AS qty
-    FROM purchase_re pr
-             JOIN total_buy_re tbr ON tbr.id = pr.invoice_number
-    WHERE tbr.invoice_date <= COALESCE(@as_of_date, CURDATE())
-    GROUP BY tbr.stock_id, pr.item_id
-),
--- مرتجع المبيعات حتى التاريخ المحدد
-sales_re_agg AS (
-    SELECT tsr.stock_id, sr.item_id,
-           SUM(sr.quantity * sr.type_value) AS qty
-    FROM sales_re sr
-             JOIN total_sales_re tsr ON tsr.id = sr.invoice_number
-    WHERE tsr.invoice_date <= COALESCE(@as_of_date, CURDATE())
-    GROUP BY tsr.stock_id, sr.item_id
-),
--- التحويلات الصادرة حتى التاريخ المحدد
-transfer_from_agg AS (
-    SELECT st.stock_from AS stock_id, stl.item_id,
-           SUM(stl.quantity) AS qty
-    FROM stock_transfer st
-             JOIN stock_transfer_list stl ON st.id = stl.stock_transfer_id
-    WHERE st.status = 'POSTED'
-      AND st.transfer_date <= COALESCE(@as_of_date, CURDATE())
-    GROUP BY st.stock_from, stl.item_id
-),
--- التحويلات الواردة حتى التاريخ المحدد
-transfer_to_agg AS (
-    SELECT st.stock_to AS stock_id, stl.item_id,
-           SUM(stl.quantity) AS qty
-    FROM stock_transfer st
-             JOIN stock_transfer_list stl ON st.id = stl.stock_transfer_id
-    WHERE st.status = 'POSTED'
-      AND st.transfer_date <= COALESCE(@as_of_date, CURDATE())
-    GROUP BY st.stock_to, stl.item_id
-),
+opening_agg AS (SELECT id            AS item_id,
+                       1             AS stock_id,
+                       first_balance AS qty
+                FROM items
+                WHERE first_balance > 0),
+-- المشتريات حتى تاريخ اليوم
+purchase_agg AS (SELECT tb.stock_id,
+                        p.num                          AS item_id,
+                        SUM(p.quantity * p.type_value) AS qty
+                 FROM purchase p
+                          JOIN total_buy tb ON tb.invoice_number = p.invoice_number
+                 WHERE tb.invoice_date <= CURDATE()
+                 GROUP BY tb.stock_id, p.num),
+-- المبيعات حتى تاريخ اليوم
+sales_agg AS (SELECT ts.stock_id,
+                     s.num                          AS item_id,
+                     SUM(s.quantity * s.type_value) AS qty
+              FROM sales s
+                       JOIN total_sales ts ON ts.invoice_number = s.invoice_number
+              WHERE ts.invoice_date <= CURDATE()
+              GROUP BY ts.stock_id, s.num),
+-- مرتجع المشتريات حتى تاريخ اليوم
+purchase_re_agg AS (SELECT tbr.stock_id,
+                           pr.item_id,
+                           SUM(pr.quantity * pr.type_value) AS qty
+                    FROM purchase_re pr
+                             JOIN total_buy_re tbr ON tbr.id = pr.invoice_number
+                    WHERE tbr.invoice_date <= CURDATE()
+                    GROUP BY tbr.stock_id, pr.item_id),
+-- مرتجع المبيعات حتى تاريخ اليوم
+sales_re_agg AS (SELECT tsr.stock_id,
+                        sr.item_id,
+                        SUM(sr.quantity * sr.type_value) AS qty
+                 FROM sales_re sr
+                          JOIN total_sales_re tsr ON tsr.id = sr.invoice_number
+                 WHERE tsr.invoice_date <= CURDATE()
+                 GROUP BY tsr.stock_id, sr.item_id),
+-- التحويلات الصادرة حتى تاريخ اليوم
+transfer_from_agg AS (SELECT st.stock_from     AS stock_id,
+                             stl.item_id,
+                             SUM(stl.quantity) AS qty
+                      FROM stock_transfer st
+                               JOIN stock_transfer_list stl ON st.id = stl.stock_transfer_id
+                      WHERE st.status = 'POSTED'
+                        AND st.transfer_date <= CURDATE()
+                      GROUP BY st.stock_from, stl.item_id),
+-- التحويلات الواردة حتى تاريخ اليوم
+transfer_to_agg AS (SELECT st.stock_to       AS stock_id,
+                           stl.item_id,
+                           SUM(stl.quantity) AS qty
+                    FROM stock_transfer st
+                             JOIN stock_transfer_list stl ON st.id = stl.stock_transfer_id
+                    WHERE st.status = 'POSTED'
+                      AND st.transfer_date <= CURDATE()
+                    GROUP BY st.stock_to, stl.item_id),
 -- اتحاد كل أزواج (item_id, stock_id) الممكنة
-all_pairs AS (
-    SELECT item_id, stock_id FROM opening_agg
-    UNION
-    SELECT item_id, stock_id FROM purchase_agg
-    UNION
-    SELECT item_id, stock_id FROM sales_agg
-    UNION
-    SELECT item_id, stock_id FROM purchase_re_agg
-    UNION
-    SELECT item_id, stock_id FROM sales_re_agg
-    UNION
-    SELECT item_id, stock_id FROM transfer_from_agg
-    UNION
-    SELECT item_id, stock_id FROM transfer_to_agg
-)
+all_pairs AS (SELECT item_id, stock_id
+              FROM opening_agg
+              UNION
+              SELECT item_id, stock_id
+              FROM purchase_agg
+              UNION
+              SELECT item_id, stock_id
+              FROM sales_agg
+              UNION
+              SELECT item_id, stock_id
+              FROM purchase_re_agg
+              UNION
+              SELECT item_id, stock_id
+              FROM sales_re_agg
+              UNION
+              SELECT item_id, stock_id
+              FROM transfer_from_agg
+              UNION
+              SELECT item_id, stock_id
+              FROM transfer_to_agg)
 SELECT ap.item_id,
        i.barcode,
        i.nameItem,
        ap.stock_id,
        s.stock_name,
        u.unit_name,
-       COALESCE(@as_of_date, CURDATE())             AS as_of_date,
-       COALESCE(op.qty,  0)                         AS opening_balance,
-       COALESCE(pa.qty,  0)                         AS total_purchase,
-       COALESCE(sra.qty, 0)                         AS total_sales_re,
-       COALESCE(tta.qty, 0)                         AS total_transfer_in,
-       COALESCE(sa.qty,  0)                         AS total_sales,
-       COALESCE(pra.qty, 0)                         AS total_purchase_re,
-       COALESCE(tfa.qty, 0)                         AS total_transfer_out,
-       -- الرصيد في التاريخ المحدد
+       CURDATE()                   AS as_of_date,
+       COALESCE(op.qty, 0)         AS opening_balance,
+       COALESCE(pa.qty, 0)         AS total_purchase,
+       COALESCE(sra.qty, 0)        AS total_sales_re,
+       COALESCE(tta.qty, 0)        AS total_transfer_in,
+       COALESCE(sa.qty, 0)         AS total_sales,
+       COALESCE(pra.qty, 0)        AS total_purchase_re,
+       COALESCE(tfa.qty, 0)        AS total_transfer_out,
+       -- الرصيد في تاريخ اليوم
        (COALESCE(op.qty, 0)
            + COALESCE(pa.qty, 0)
            + COALESCE(sra.qty, 0)
            + COALESCE(tta.qty, 0))
            - (COALESCE(sa.qty, 0)
            + COALESCE(pra.qty, 0)
-           + COALESCE(tfa.qty, 0))                  AS balance_as_of,
+           + COALESCE(tfa.qty, 0)) AS balance_as_of,
        i.buy_price,
        i.sel_price1
 FROM all_pairs ap
-         JOIN items  i ON i.id = ap.item_id
+         JOIN items i ON i.id = ap.item_id
          JOIN stocks s ON s.stock_id = ap.stock_id
-         JOIN units  u ON u.unit_id = i.unit_id
-         LEFT JOIN opening_agg       op  ON op.item_id  = ap.item_id AND op.stock_id  = ap.stock_id
-         LEFT JOIN purchase_agg      pa  ON pa.item_id  = ap.item_id AND pa.stock_id  = ap.stock_id
-         LEFT JOIN sales_agg         sa  ON sa.item_id  = ap.item_id AND sa.stock_id  = ap.stock_id
-         LEFT JOIN purchase_re_agg   pra ON pra.item_id = ap.item_id AND pra.stock_id = ap.stock_id
-         LEFT JOIN sales_re_agg      sra ON sra.item_id = ap.item_id AND sra.stock_id = ap.stock_id
+         JOIN units u ON u.unit_id = i.unit_id
+         LEFT JOIN opening_agg op ON op.item_id = ap.item_id AND op.stock_id = ap.stock_id
+         LEFT JOIN purchase_agg pa ON pa.item_id = ap.item_id AND pa.stock_id = ap.stock_id
+         LEFT JOIN sales_agg sa ON sa.item_id = ap.item_id AND sa.stock_id = ap.stock_id
+         LEFT JOIN purchase_re_agg pra ON pra.item_id = ap.item_id AND pra.stock_id = ap.stock_id
+         LEFT JOIN sales_re_agg sra ON sra.item_id = ap.item_id AND sra.stock_id = ap.stock_id
          LEFT JOIN transfer_from_agg tfa ON tfa.item_id = ap.item_id AND tfa.stock_id = ap.stock_id
-         LEFT JOIN transfer_to_agg   tta ON tta.item_id = ap.item_id AND tta.stock_id = ap.stock_id;
+         LEFT JOIN transfer_to_agg tta ON tta.item_id = ap.item_id AND tta.stock_id = ap.stock_id;
 
 -- =====================================================================
 -- v_historical_stock_value — قيمة المخزون التاريخية
@@ -1796,8 +1809,8 @@ SELECT b.item_id,
        b.balance_as_of,
        b.buy_price,
        b.sel_price1,
-       ROUND(b.balance_as_of * b.buy_price, 2)  AS value_at_cost,
-       ROUND(b.balance_as_of * b.sel_price1, 2) AS value_at_sell,
+       ROUND(b.balance_as_of * b.buy_price, 2)                  AS value_at_cost,
+       ROUND(b.balance_as_of * b.sel_price1, 2)                 AS value_at_sell,
        ROUND(b.balance_as_of * (b.sel_price1 - b.buy_price), 2) AS potential_profit
 FROM v_stock_balance_as_of b
 WHERE b.balance_as_of <> 0;

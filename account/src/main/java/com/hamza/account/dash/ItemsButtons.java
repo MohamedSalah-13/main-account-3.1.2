@@ -131,7 +131,7 @@ public class ItemsButtons {
 
     public ButtonWithPerm inventory() throws Exception {
         return new ButtonWithPerm() {
-            final InventoryController inventory = new InventoryController(dataPublisher);
+
 
             @Override
             public UserPermissionType getPermissionType() {
@@ -151,6 +151,7 @@ public class ItemsButtons {
 
             @Override
             public void actionAddPaneToTabPane(TabPane tabPane) throws Exception {
+                final InventoryController inventory = new InventoryController(dataPublisher);
                 addTape(tabPane, new OpenFxmlApplication(inventory).getPane(), textName(), new Image_Setting().itemWhite);
             }
 

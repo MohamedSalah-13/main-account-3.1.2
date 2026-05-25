@@ -159,13 +159,11 @@ BEGIN
     (
         item_id,
         stock_id,
-        first_balance,
         current_quantity
     )
     SELECT
         stl.item_id,
         st.stock_from,
-        0,
         stl.quantity
     FROM stock_transfer st
              JOIN stock_transfer_list stl ON stl.stock_transfer_id = st.id
@@ -317,8 +315,7 @@ SELECT
     'items_stock negative quantities' AS check_name,
     COUNT(*) AS invalid_rows
 FROM items_stock
-WHERE first_balance < 0
-   OR current_quantity < 0;
+WHERE current_quantity < 0;
 
 SELECT
     'stock_transfer_list duplicated items' AS check_name,

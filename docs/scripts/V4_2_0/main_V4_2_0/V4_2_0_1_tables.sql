@@ -275,7 +275,7 @@ CREATE TABLE IF NOT EXISTS items_stock
     id               INT AUTO_INCREMENT PRIMARY KEY,
     item_id          INT                      NOT NULL,
     stock_id         INT                      NOT NULL,
-    first_balance    DECIMAL(14, 3) DEFAULT 0 NOT NULL,
+#     first_balance    DECIMAL(14, 3) DEFAULT 0 NOT NULL,
     current_quantity DECIMAL(14, 3) DEFAULT 0 NOT NULL,
     CONSTRAINT items_stock_items_id_fk
         FOREIGN KEY (item_id) REFERENCES items (id)
@@ -283,7 +283,7 @@ CREATE TABLE IF NOT EXISTS items_stock
     CONSTRAINT items_stock_stocks_stock_id_fk
         FOREIGN KEY (stock_id) REFERENCES stocks (stock_id),
     CONSTRAINT items_stock_uk UNIQUE (item_id, stock_id),
-    CONSTRAINT items_stock_first_balance_chk CHECK (first_balance >= 0),
+#     CONSTRAINT items_stock_first_balance_chk CHECK (first_balance >= 0),
     CONSTRAINT items_stock_current_quantity_chk CHECK (current_quantity >= 0)
 );
 CREATE INDEX items_stock_stock_item_idx ON items_stock(stock_id, item_id);
