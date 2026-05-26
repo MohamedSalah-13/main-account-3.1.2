@@ -30,7 +30,7 @@ public record MenuButtonSetting(TabPane tabPane) {
      */
     public void configureButton(Button button, ButtonWithPerm action) {
         setGraphicAndText(button, action);
-        disableButton(button::setDisable, action);
+//        disableButton(button::setDisable, action);
         button.focusTraversableProperty().setValue(FOCUS_TRAVERSABLE);
         setActionEvent(button, action);
     }
@@ -39,7 +39,7 @@ public record MenuButtonSetting(TabPane tabPane) {
         button.setGraphic(new ImageDesign(stream, 20));
         button.setTooltip(new Tooltip(action.textName()));
         button.setText(action.textName());
-        disableButton(button::setDisable, action);
+//        disableButton(button::setDisable, action);
         button.focusTraversableProperty().setValue(FOCUS_TRAVERSABLE);
         setActionEvent(button, action);
     }
@@ -48,7 +48,7 @@ public record MenuButtonSetting(TabPane tabPane) {
     public void initializeMenuItem(MenuItem menuItem, ButtonWithPerm action) {
         setActionEvent(menuItem, action);
         menuItem.setText(action.textName());
-        disableButton(menuItem::setDisable, action);
+//        disableButton(menuItem::setDisable, action);
 
         if (action.acceleratorKey() != null)
             menuItem.setAccelerator(action.acceleratorKey());
@@ -105,9 +105,5 @@ public record MenuButtonSetting(TabPane tabPane) {
         log.error(e.getMessage(), e.getCause());
         AllAlerts.showExceptionDialog(e);
         e.printStackTrace();
-    }
-
-    private void disableButton(DisableButtons.Disableable uiElement, ButtonWithPerm action) {
-        new DisableButtons.PermissionDisableService().applyPermissionBasedDisable(uiElement, action.getPermissionType());
     }
 }

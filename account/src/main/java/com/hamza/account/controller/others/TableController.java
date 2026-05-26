@@ -148,10 +148,6 @@ public class TableController<T> implements Initializable {
     }
 
     private void permButtons() {
-        var permissionDisableService = new DisableButtons.PermissionDisableService();
-        permissionDisableService.applyPermissionBasedDisable(btnNew::setDisable, tableInterface.permAdd());
-        permissionDisableService.applyPermissionBasedDisable(btnUpdate::setDisable, tableInterface.permUpdate());
-        permissionDisableService.applyPermissionBasedDisable(btnDelete::setDisable, tableInterface.permDelete());
     }
 
     private void getTable() {
