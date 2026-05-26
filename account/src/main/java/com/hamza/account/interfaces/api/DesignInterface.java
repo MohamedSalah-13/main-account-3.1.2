@@ -1,6 +1,5 @@
 package com.hamza.account.interfaces.api;
 
-import com.hamza.account.type.UserPermissionType;
 import javafx.scene.Node;
 
 public interface DesignInterface {
@@ -84,13 +83,4 @@ public interface DesignInterface {
         return false;
     }
 
-    UserPermissionType show();
-
-    UserPermissionType update();
-
-    UserPermissionType delete();
-
-    UserPermissionType show_totals();
-
-    UserPermissionType show_totals_invoice();
 }

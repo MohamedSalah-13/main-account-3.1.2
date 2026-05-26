@@ -7,7 +7,6 @@ import com.hamza.account.model.base.BaseAccount;
 import com.hamza.account.model.base.BaseNames;
 import com.hamza.account.model.base.BasePurchasesAndSales;
 import com.hamza.account.model.base.BaseTotals;
-import com.hamza.account.perm.PermAccountAndNameInt;
 import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.observer.Publisher;
 
@@ -51,8 +50,6 @@ public interface DataInterface<T1 extends BasePurchasesAndSales, T2 extends Base
         return new PurchaseSalesInterface() {
         };
     }
-
-    PermAccountAndNameInt permAccountAndNameInt();
 
     void loadNameAndAccount();
 

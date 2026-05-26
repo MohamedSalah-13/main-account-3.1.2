@@ -1820,25 +1820,31 @@ WHERE b.balance_as_of <> 0;
 CREATE OR REPLACE VIEW v_user_effective_permissions AS
 SELECT
     up.user_id,
+    p.id AS permission_id,
     p.code,
     p.name_ar,
     p.module,
     p.action,
-    up.check_status
+    'USER' AS source_type
 FROM user_permission up
          JOIN permission p ON p.id = up.permission_id
-WHERE p.active = 1
+WHERE up.check_status = 1
+  AND p.active = 1
 
 UNION
 
 SELECT
     ur.user_id,
+    p.id AS permission_id,
     p.code,
     p.name_ar,
     p.module,
     p.action,
-    rp.check_status
+    'ROLE' AS source_type
 FROM user_role ur
-         JOIN role_permission rp ON rp.role_id = ur.role_id
+         JOIN roles r ON r.id = ur.role_id
+         JOIN role_permission rp ON rp.role_id = r.id
          JOIN permission p ON p.id = rp.permission_id
-WHERE p.active = 1;
+WHERE rp.check_status = 1
+  AND r.active = 1
+  AND p.active = 1;

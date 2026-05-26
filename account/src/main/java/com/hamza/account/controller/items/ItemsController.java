@@ -2,17 +2,18 @@ package com.hamza.account.controller.items;
 
 import com.hamza.account.config.Image_Setting;
 import com.hamza.account.controller.main.DataPublisher;
-import com.hamza.account.controller.main.DisableButtons;
 import com.hamza.account.controller.main.LoadData;
 import com.hamza.account.controller.others.SelectedButton;
 import com.hamza.account.controller.others.ServiceRegistry;
 import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.model.domain.ItemsModel;
 import com.hamza.account.openFxml.FxmlPath;
-import com.hamza.account.service.*;
+import com.hamza.account.service.ItemsService;
+import com.hamza.account.service.MainGroupService;
+import com.hamza.account.service.SelPriceItemService;
+import com.hamza.account.service.StockService;
 import com.hamza.account.table.EditCell;
 import com.hamza.account.table.TableSetting;
-import com.hamza.account.type.UserPermissionType;
 import com.hamza.account.view.AddItemApplication;
 import com.hamza.account.view.CardApplication;
 import com.hamza.account.view.ConvertItemsGroup;
@@ -62,7 +63,7 @@ public class ItemsController extends LoadData {
     private final ItemsService itemsService = ServiceRegistry.get(ItemsService.class);
     private final StockService stockService = ServiceRegistry.get(StockService.class);
     private final MainGroupService mainGroupService = ServiceRegistry.get(MainGroupService.class);
-//    private final SupGroupService supGroupService = ServiceRegistry.get(SupGroupService.class);
+    //    private final SupGroupService supGroupService = ServiceRegistry.get(SupGroupService.class);
     private final SelPriceItemService selPriceService = ServiceRegistry.get(SelPriceItemService.class);
 
     @FXML
@@ -113,10 +114,7 @@ public class ItemsController extends LoadData {
     }
 
     private void permissionButtons() {
-        var permissionDisableService = new DisableButtons.PermissionDisableService();
-        permissionDisableService.applyPermissionBasedDisable(btnNew::setDisable, UserPermissionType.ITEMS_SHOW);
-        permissionDisableService.applyPermissionBasedDisable(btnUpdate::setDisable, UserPermissionType.ITEMS_UPDATE);
-        permissionDisableService.applyPermissionBasedDisable(btnDelete::setDisable, UserPermissionType.ITEMS_DELETE);
+
     }
 
     private List<String> getMainGroupsNames() {

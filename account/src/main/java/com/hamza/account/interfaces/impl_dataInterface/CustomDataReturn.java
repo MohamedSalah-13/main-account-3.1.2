@@ -18,7 +18,6 @@ import com.hamza.account.model.domain.CustomerAccount;
 import com.hamza.account.model.domain.Customers;
 import com.hamza.account.model.domain.Sales_Return;
 import com.hamza.account.model.domain.Total_Sales_Re;
-import com.hamza.account.perm.PermAccountAndNameInt;
 import com.hamza.account.service.SalesReService;
 import com.hamza.account.service.TotalSalesReturnService;
 import com.hamza.controlsfx.database.DaoException;
@@ -112,12 +111,6 @@ public class CustomDataReturn extends LoadData implements DataInterface<Sales_Re
     public AccountData<CustomerAccount> accountData() {
         return new AccountCustomer(daoFactory);
     }
-
-    @Override
-    public PermAccountAndNameInt permAccountAndNameInt() {
-        return null;
-    }
-
 
     @Override
     public void loadNameAndAccount() {

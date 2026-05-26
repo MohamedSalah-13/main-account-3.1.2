@@ -5,7 +5,6 @@ import com.hamza.account.controller.main.DataPublisher;
 import com.hamza.account.controller.main.LoadData;
 import com.hamza.account.features.choiceDialoge.ChangeUserName;
 import com.hamza.account.model.dao.DaoFactory;
-import com.hamza.account.type.UserPermissionType;
 import com.hamza.account.view.ChangePassView;
 import com.hamza.account.view.LogApplication;
 import com.hamza.controlsfx.alert.AllAlerts;
@@ -26,10 +25,6 @@ public class ForAllButtons extends LoadData {
 
     public ButtonWithPerm calc() {
         return new ButtonWithPerm() {
-            @Override
-            public UserPermissionType getPermissionType() {
-                return null;
-            }
 
             @Override
             public void action() throws Exception {
@@ -54,22 +49,9 @@ public class ForAllButtons extends LoadData {
         };
     }
 
-    /**
-     * Creates a new ButtonWithPerm for changing the user password.
-     * This method sets up the action to open the password change interface
-     * in a new stage, disables the menu item button by default, assigns
-     * a specific text label for the menu item, and sets up an accelerator
-     * key combination for quick activation.
-     *
-     * @return an instance of ButtonWithPerm configured for the password change functionality.
-     */
+
     public ButtonWithPerm changePassword() {
         return new ButtonWithPerm() {
-            @Override
-            public UserPermissionType getPermissionType() {
-                return UserPermissionType.SETTING_UPDATE_PASS;
-            }
-
             @Override
             public void action() throws Exception {
                 new ChangePassView(daoFactory);
@@ -93,19 +75,9 @@ public class ForAllButtons extends LoadData {
         };
     }
 
-    /**
-     * Creates and returns a ButtonWithPerm implementation to handle the change name functionality.
-     * This method sets up a dialog to allow the user to change their name, validates the input,
-     * updates the user object in the data storage, and provides feedback regarding the operation's success or failure.
-     *
-     * @return a ButtonWithPerm that defines the change name operation including its specific behaviors and properties
-     */
+
     public ButtonWithPerm changeName() {
         return new ButtonWithPerm() {
-            @Override
-            public UserPermissionType getPermissionType() {
-                return UserPermissionType.SETTING_UPDATE_NAME;
-            }
 
             @Override
             public void action() {
@@ -130,19 +102,8 @@ public class ForAllButtons extends LoadData {
         };
     }
 
-    /**
-     * Creates and returns a ButtonWithPerm that represents the "Alarm" action.
-     * The returned action includes functionality for responding to specific button actions
-     * as well as providing the associated text name.
-     *
-     * @return a ButtonWithPerm instance configured for the "Alarm" action.
-     */
     public ButtonWithPerm alarm() {
         return new ButtonWithPerm() {
-            @Override
-            public UserPermissionType getPermissionType() {
-                return null;
-            }
 
             @Override
             public void action() {
@@ -161,22 +122,8 @@ public class ForAllButtons extends LoadData {
         };
     }
 
-    /**
-     * Provides a logout action for the application, encapsulated as a button menu item action.
-     * When triggered, this action:
-     * - Sets the availability status of the logout stage to true.
-     * - Initializes and starts the {@code LogApplication} for user re-login.
-     *
-     * @return a {@code ButtonWithPerm} instance that handles the logout process,
-     * including setting the logout stage availability, providing the menu label,
-     * and enabling a specific keyboard shortcut for logout.
-     */
     public ButtonWithPerm logout() {
         return new ButtonWithPerm() {
-            @Override
-            public UserPermissionType getPermissionType() {
-                return null;
-            }
 
             @Override
             public void action() throws Exception {

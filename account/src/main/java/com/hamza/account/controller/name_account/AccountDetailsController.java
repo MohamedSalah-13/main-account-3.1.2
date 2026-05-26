@@ -3,7 +3,6 @@ package com.hamza.account.controller.name_account;
 import com.hamza.account.config.Image_Setting;
 import com.hamza.account.config.PropertiesName;
 import com.hamza.account.controller.main.DataPublisher;
-import com.hamza.account.controller.main.DisableButtons;
 import com.hamza.account.controller.main.LoadOtherData;
 import com.hamza.account.controller.model.TreeAccountModelForPrint;
 import com.hamza.account.interfaces.api.DataInterface;
@@ -110,9 +109,6 @@ public class AccountDetailsController<T1 extends BasePurchasesAndSales, T2 exten
     }
 
     private void permissionButtons() {
-        var permissionDisableService = new DisableButtons.PermissionDisableService();
-        permissionDisableService.applyPermissionBasedDisable(btnUpdate::setDisable, dataInterface.permAccountAndNameInt().updateAccounts());
-        permissionDisableService.applyPermissionBasedDisable(btnDelete::setDisable, dataInterface.permAccountAndNameInt().deleteAccounts());
     }
 
     private void otherSetting() {

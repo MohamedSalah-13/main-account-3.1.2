@@ -18,5 +18,7 @@ public interface RolePermissionDao {
 
     int upsertRolePermissionByCode(int roleId, String permissionCode, boolean checked) throws DaoException;
 
+    int updateRolePermissions(int roleId, List<RolePermission> permissions) throws DaoException;
+
     int insertMissingPermissionsForRole(int roleId) throws DaoException;
 }

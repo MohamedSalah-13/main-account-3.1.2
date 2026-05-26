@@ -6,7 +6,6 @@ import com.hamza.account.controller.main.LoadData;
 import com.hamza.account.controller.users.UserShiftController;
 import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.openFxml.OpenFxmlApplication;
-import com.hamza.account.type.UserPermissionType;
 import javafx.scene.Scene;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyCodeCombination;
@@ -20,15 +19,8 @@ public class ShiftButtons extends LoadData {
         super(daoFactory, dataPublisher);
     }
 
-    /**
-     * Opens the shift management screen
-     */
     public ButtonWithPerm openShiftScreen() {
         return new ButtonWithPerm() {
-            @Override
-            public UserPermissionType getPermissionType() {
-                return UserPermissionType.UNITS_SHOW;
-            }
 
             @Override
             public void action() throws Exception {

@@ -10,7 +10,6 @@ import com.hamza.account.controller.users.AdminShiftsController;
 import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.openFxml.OpenFxmlApplication;
 import com.hamza.account.otherSetting.KeyCodeCombinationSetting;
-import com.hamza.account.type.UserPermissionType;
 import com.hamza.account.view.AboutApplication;
 import com.hamza.account.view.OpenApplication;
 import com.hamza.account.view.SettingApplication;
@@ -48,11 +47,6 @@ public class SettingButtons {
     public ButtonWithPerm setting() {
         return new ButtonWithPerm() {
             @Override
-            public UserPermissionType getPermissionType() {
-                return UserPermissionType.SETTING_SHOW;
-            }
-
-            @Override
             public void action() throws Exception {
                 new SettingApplication(daoFactory, dataPublisher).start(new Stage());
             }
@@ -77,11 +71,6 @@ public class SettingButtons {
 
     public ButtonWithPerm home() {
         return new ButtonWithPerm() {
-            @Override
-            public UserPermissionType getPermissionType() {
-                return UserPermissionType.SETTING_SHOW;
-            }
-
             @Override
             public void action() {
             }
@@ -116,10 +105,6 @@ public class SettingButtons {
 
     public ButtonWithPerm close() {
         return new ButtonWithPerm() {
-            @Override
-            public UserPermissionType getPermissionType() {
-                return null;
-            }
 
             @Override
             public void action() {
@@ -142,10 +127,6 @@ public class SettingButtons {
 
     public ButtonWithPerm about() {
         return new ButtonWithPerm() {
-            @Override
-            public UserPermissionType getPermissionType() {
-                return UserPermissionType.SETTING_SHOW;
-            }
 
             @Override
             public void action() throws Exception {
@@ -167,10 +148,6 @@ public class SettingButtons {
 
     public ButtonWithPerm backup() {
         return new ButtonWithPerm() {
-            @Override
-            public UserPermissionType getPermissionType() {
-                return UserPermissionType.SETTING_SHOW;
-            }
 
             @Override
             public void action() throws Exception {
@@ -197,10 +174,6 @@ public class SettingButtons {
 
     public ButtonWithPerm deleteData() {
         return new ButtonWithPerm() {
-            @Override
-            public UserPermissionType getPermissionType() {
-                return UserPermissionType.SETTING_SHOW;
-            }
 
             @Override
             public void action() throws Exception {
@@ -243,11 +216,6 @@ public class SettingButtons {
 
     public ButtonWithPerm adminShifts() {
         return new ButtonWithPerm() {
-            @Override
-            public UserPermissionType getPermissionType() {
-                return null;
-            }
-
             @Override
             public void action() throws Exception {
                 var pane = new OpenFxmlApplication(new AdminShiftsController()).getPane();

@@ -8,8 +8,6 @@ import com.hamza.account.controller.login.LoginController;
 import com.hamza.account.interfaces.ActionLogin;
 import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.model.domain.Users;
-import com.hamza.account.model.domain.permission.UserPermission;
-import com.hamza.account.service.UserPermissionService;
 import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.language.Error_Text_Show;
@@ -23,15 +21,12 @@ import javafx.scene.image.Image;
 import javafx.stage.Stage;
 import lombok.extern.log4j.Log4j2;
 
-import java.io.IOException;
-import java.util.List;
 import java.util.Optional;
 
 @Log4j2
 public class LogApplication extends Application {
     public static final LanguageManager INSTANCE = LanguageManager.getInstance();
     public static Users usersVo;
-    public static List<UserPermission> usersPermissionList;
     private final LoginController login;
     private final DaoFactory daoFactory;
     private final Scene scene;
@@ -105,49 +100,18 @@ public class LogApplication extends Application {
         return b;
     }
 
-    /**
-     * Alerts the user with an error message and resets all login-related data.
-     * <p>
-     * This method is invoked when the system encounters an error scenario where the
-     * provided username does not exist. It uses the `AllAlerts` utility to show an
-     * error message specified by the `Setting_Language.NO_NAME` constant. Additionally,
-     * it calls the login controller to reset all data to ensure a clean state for
-     * the next login attempt.
-     */
     private void alertErrorAndResetData() {
         AllAlerts.alertError(Setting_Language.NO_NAME);
         login.setResetAllData(true);
     }
 
-    /**
-     * Opens the main screen of the application.
-     * <p>
-     * This method is triggered after a successful login and performs
-     * the following operations:
-     * 1. Updates user data by calling the {@link #updateData()} method.
-     * 2. Initializes and starts the {@link MainScreenApplication}
-     * with the DAO factory and data loader.
-     *
-     * @throws IOException if an I/O error occurs while loading the main screen.
-     */
+
     private void openMainScreen() throws Exception {
         updateData();
-        usersPermissionList = new UserPermissionService(daoFactory).getUsersPermissionById(usersVo.getId());
         var mainScreenApplication = new MainScreenApplication(daoFactory);
         mainScreenApplication.start(new Stage());
     }
 
-    /**
-     * Updates the availability status of the current user in a separate thread.
-     * <p>
-     * The method changes the current user's availability status to available (1)
-     * and attempts to update this change in the persistent storage using the
-     * usersDao. If the update is successful, a log entry indicating successful
-     * reading from the file is recorded. Otherwise, an error message is printed to
-     * the console.
-     * <p>
-     * Handles InterruptedException and DaoException, logging any error messages.
-     */
     private void updateData() {
         Thread thread = new Thread(() -> {
             try {

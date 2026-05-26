@@ -18,7 +18,6 @@ import com.hamza.account.model.domain.Purchase_Return;
 import com.hamza.account.model.domain.SupplierAccount;
 import com.hamza.account.model.domain.Suppliers;
 import com.hamza.account.model.domain.Total_Buy_Re;
-import com.hamza.account.perm.PermAccountAndNameInt;
 import com.hamza.account.service.PurchaseReService;
 import com.hamza.account.service.TotalBuyReturnService;
 import com.hamza.controlsfx.database.DaoException;
@@ -111,11 +110,6 @@ public class SuppliersDataReturn extends LoadData implements DataInterface<Purch
     @Override
     public AccountData<SupplierAccount> accountData() {
         return new AccountSuppliers(daoFactory);
-    }
-
-    @Override
-    public PermAccountAndNameInt permAccountAndNameInt() {
-        return null;
     }
 
     @Override

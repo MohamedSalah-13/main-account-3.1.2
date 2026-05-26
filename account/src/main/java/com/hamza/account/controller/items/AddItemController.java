@@ -4,23 +4,11 @@ import com.hamza.account.config.Image_Setting;
 import com.hamza.account.controller.dataByName.OpenAddAreaApplication;
 import com.hamza.account.controller.dataByName.impl.MainGroupImpl2;
 import com.hamza.account.controller.main.DataPublisher;
-import com.hamza.account.controller.main.DisableButtons;
 import com.hamza.account.controller.others.ServiceRegistry;
-import com.hamza.account.model.domain.ItemsModel;
-import com.hamza.account.model.domain.ItemsUnitsModel;
-import com.hamza.account.model.domain.Items_Stock_Model;
-import com.hamza.account.model.domain.Stock;
-import com.hamza.account.model.domain.SubGroups;
-import com.hamza.account.model.domain.UnitsModel;
+import com.hamza.account.model.domain.*;
 import com.hamza.account.openFxml.FxmlPath;
 import com.hamza.account.openFxml.OpenFxmlApplication;
-import com.hamza.account.service.ItemsService;
-import com.hamza.account.service.MainGroupService;
-import com.hamza.account.service.SelPriceItemService;
-import com.hamza.account.service.StockService;
-import com.hamza.account.service.SupGroupService;
-import com.hamza.account.service.UnitsService;
-import com.hamza.account.type.UserPermissionType;
+import com.hamza.account.service.*;
 import com.hamza.account.view.AddGroupApp;
 import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.database.DaoException;
@@ -36,15 +24,7 @@ import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.collections.transformation.FilteredList;
 import javafx.fxml.FXML;
-import javafx.scene.control.Button;
-import javafx.scene.control.CheckBox;
-import javafx.scene.control.ComboBox;
-import javafx.scene.control.Label;
-import javafx.scene.control.Tab;
-import javafx.scene.control.TabPane;
-import javafx.scene.control.TableColumn;
-import javafx.scene.control.TableView;
-import javafx.scene.control.TextField;
+import javafx.scene.control.*;
 import javafx.scene.control.cell.TextFieldTableCell;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
@@ -60,14 +40,11 @@ import java.io.ByteArrayInputStream;
 import java.io.FileNotFoundException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 
 import static com.hamza.account.config.Configs.ADD_PACKAGE_TO_ITEMS;
 import static com.hamza.account.controller.setting.ComboSetting.comboSubSetting;
 import static com.hamza.account.controller.setting.ComboSetting.comboTypeSetting;
-import static com.hamza.controlsfx.others.Utils.clearAll;
-import static com.hamza.controlsfx.others.Utils.setTextFormatter;
-import static com.hamza.controlsfx.others.Utils.whenEnterPressed;
+import static com.hamza.controlsfx.others.Utils.*;
 import static com.hamza.controlsfx.util.ImageChoose.createIcon;
 
 @Log4j2
@@ -379,9 +356,7 @@ public class AddItemController implements AppSettingInterface {
     }
 
     private void permButtons() {
-        var permissionDisableService = new DisableButtons.PermissionDisableService();
-        permissionDisableService.applyPermissionBasedDisable(btnAddMainGroup::setDisable, UserPermissionType.MAIN_GROUP_SHOW);
-        permissionDisableService.applyPermissionBasedDisable(btnAddSubGroup::setDisable, UserPermissionType.SUB_GROUP_SHOW);
+
     }
 
     private void action() {

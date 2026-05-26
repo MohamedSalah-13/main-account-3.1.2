@@ -18,6 +18,8 @@ public interface UserPermissionDao {
 
     int upsertUserPermissionByCode(int userId, String permissionCode, boolean checked) throws DaoException;
 
+    int updateUserPermissions(int userId, List<UserPermission> permissions) throws DaoException;
+
     int insertMissingPermissionsForUser(int userId) throws DaoException;
 
     int insertPermissionForAllUsers(int permissionId) throws DaoException;

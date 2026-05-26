@@ -10,7 +10,6 @@ import com.hamza.account.model.base.BaseNames;
 import com.hamza.account.model.base.BasePurchasesAndSales;
 import com.hamza.account.model.base.BaseTotals;
 import com.hamza.account.model.dao.DaoFactory;
-import com.hamza.account.type.UserPermissionType;
 import com.hamza.account.view.AccountTotalsApplication;
 import javafx.scene.control.TabPane;
 import org.jetbrains.annotations.NotNull;
@@ -47,9 +46,5 @@ public class AccountButtons<T1 extends BasePurchasesAndSales, T2 extends BaseTot
         return true;
     }
 
-    @Override
-    public UserPermissionType getPermissionType() {
-        return dataInterface.permAccountAndNameInt().showAccounts();
-    }
 }
 

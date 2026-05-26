@@ -12,7 +12,6 @@ import com.hamza.account.model.base.BaseTotals;
 import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.service.EmployeeService;
 import com.hamza.account.service.TotalsService;
-import com.hamza.account.type.UserPermissionType;
 import com.hamza.account.view.BuyApplication;
 import com.hamza.account.view.PosView;
 import com.hamza.account.view.TotalsApplication;
@@ -21,8 +20,6 @@ import javafx.scene.control.TabPane;
 import javafx.stage.Stage;
 import lombok.extern.log4j.Log4j2;
 import org.jetbrains.annotations.NotNull;
-
-import static com.hamza.account.config.PropertiesName.getSettingShowInvoiceScreenSeparate;
 
 @Log4j2
 public class TotalsButton<T1 extends BasePurchasesAndSales, T2 extends BaseTotals, T3 extends BaseNames, T4 extends BaseAccount>
@@ -39,10 +36,6 @@ public class TotalsButton<T1 extends BasePurchasesAndSales, T2 extends BaseTotal
 
     public ButtonWithPerm totals() {
         return new ButtonWithPerm() {
-            @Override
-            public UserPermissionType getPermissionType() {
-                return dataInterface.designInterface().show_totals();
-            }
 
             @Override
             public void action() throws Exception {
@@ -81,10 +74,6 @@ public class TotalsButton<T1 extends BasePurchasesAndSales, T2 extends BaseTotal
     public ButtonWithPerm addInvoice() {
 
         return new ButtonWithPerm() {
-            @Override
-            public UserPermissionType getPermissionType() {
-                return dataInterface.designInterface().show();
-            }
 
             @Override
             public void action() throws Exception {
@@ -108,22 +97,6 @@ public class TotalsButton<T1 extends BasePurchasesAndSales, T2 extends BaseTotal
                 return dataInterface.designInterface().imageButton();
             }
 
-//            @Override
-//            public void actionAddPaneToTabPane(TabPane tabPane) throws Exception {
-//                BuyApplication<T1, T2, T3, T4> buyApp = new BuyApplication<>(dataInterface, dataPublisher, 0);
-//
-//                var shoppingSales = new Image_Setting().shoppingPurchase;
-//                if (textName().equals("sales") || textName().equals("المبيعات"))
-//                    shoppingSales = new Image_Setting().shoppingSales;
-//
-//                addTape(tabPane, buyApp.getPane(), textName(), shoppingSales);
-//            }
-//
-//            @Override
-//            public boolean showOnTapPane() {
-//                return !getSettingShowInvoiceScreenSeparate();
-//            }
-
             @Override
             public boolean addMultiTabWithSameName() {
                 return true;
@@ -134,11 +107,6 @@ public class TotalsButton<T1 extends BasePurchasesAndSales, T2 extends BaseTotal
     public ButtonWithPerm addInvoicePos() {
 
         return new ButtonWithPerm() {
-            @Override
-            public UserPermissionType getPermissionType() {
-                return dataInterface.designInterface().show();
-            }
-
             @Override
             public void action() throws Exception {
                 new PosView(daoFactory, dataPublisher).start(new Stage());

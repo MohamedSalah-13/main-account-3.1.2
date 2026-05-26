@@ -13,7 +13,6 @@ import com.hamza.account.openFxml.AddForAllApplication;
 import com.hamza.account.otherSetting.KeyCodeCombinationSetting;
 import com.hamza.account.service.EmployeeService;
 import com.hamza.account.table.TableOpen;
-import com.hamza.account.type.UserPermissionType;
 import com.hamza.account.view.OpenApplication;
 import com.hamza.controlsfx.button.ImageDesign;
 import com.hamza.controlsfx.language.Setting_Language;
@@ -34,10 +33,6 @@ public class EmployeesButtons extends LoadData {
 
     public ButtonWithPerm addEmployee() {
         return new ButtonWithPerm() {
-            @Override
-            public UserPermissionType getPermissionType() {
-                return UserPermissionType.EMPLOYEE_SHOW;
-            }
 
             @Override
             public void action() throws Exception {
@@ -66,10 +61,6 @@ public class EmployeesButtons extends LoadData {
 
     public ButtonWithPerm employees() {
         return new ButtonWithPerm() {
-            @Override
-            public UserPermissionType getPermissionType() {
-                return UserPermissionType.EMPLOYEE_SHOW;
-            }
 
             @Override
             public void action() throws Exception {
@@ -87,10 +78,6 @@ public class EmployeesButtons extends LoadData {
 
     public ButtonWithPerm addTarget() {
         return new ButtonWithPerm() {
-            @Override
-            public UserPermissionType getPermissionType() {
-                return UserPermissionType.DISABLE_BUTTON;
-            }
 
             @Override
             public void action() throws Exception {

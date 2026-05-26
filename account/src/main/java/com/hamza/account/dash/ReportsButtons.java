@@ -9,7 +9,6 @@ import com.hamza.account.controller.main.MainItems;
 import com.hamza.account.controller.reports.*;
 import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.openFxml.OpenFxmlApplication;
-import com.hamza.account.type.UserPermissionType;
 import com.hamza.account.view.*;
 import com.hamza.controlsfx.interfaceData.AppSettingInterface;
 import com.hamza.controlsfx.language.Setting_Language;
@@ -36,10 +35,6 @@ public class ReportsButtons extends LoadData {
 
     public ButtonWithPerm summaryReport() {
         return new ButtonWithPerm() {
-            @Override
-            public UserPermissionType getPermissionType() {
-                return UserPermissionType.REPORTS_SHOW_SUMMARY;
-            }
 
             @Override
             public void action() throws Exception {
@@ -57,10 +52,6 @@ public class ReportsButtons extends LoadData {
 
     public ButtonWithPerm delegateReport() {
         return new ButtonWithPerm() {
-            @Override
-            public UserPermissionType getPermissionType() {
-                return UserPermissionType.DISABLE_BUTTON;
-            }
 
             @Override
             public void action() throws Exception {
@@ -79,10 +70,6 @@ public class ReportsButtons extends LoadData {
     public ButtonWithPerm reportYearly() throws Exception {
 
         return new ButtonWithPerm() {
-            @Override
-            public UserPermissionType getPermissionType() {
-                return UserPermissionType.REPORTS_SHOW_PROFIT;
-            }
 
             @Override
             public void action() throws Exception {
@@ -101,10 +88,6 @@ public class ReportsButtons extends LoadData {
 
     public ButtonWithPerm profitLossReport() {
         return new ButtonWithPerm() {
-            @Override
-            public UserPermissionType getPermissionType() {
-                return UserPermissionType.REPORTS_SHOW_PROFIT;
-            }
 
             @Override
             public void action() {
@@ -132,10 +115,6 @@ public class ReportsButtons extends LoadData {
 
     public ButtonWithPerm detailsReport() {
         return new ButtonWithPerm() {
-            @Override
-            public UserPermissionType getPermissionType() {
-                return UserPermissionType.DISABLE_BUTTON;
-            }
 
             @NotNull
             @Override
@@ -151,10 +130,6 @@ public class ReportsButtons extends LoadData {
 
     public ButtonWithPerm itemsReport() {
         return new ButtonWithPerm() {
-            @Override
-            public UserPermissionType getPermissionType() {
-                return UserPermissionType.REPORTS_SHOW_ITEMS;
-            }
 
             @Override
             public void action() throws IOException {
@@ -188,10 +163,6 @@ public class ReportsButtons extends LoadData {
 
     public ButtonWithPerm itemsReportDaily() {
         return new ButtonWithPerm() {
-            @Override
-            public UserPermissionType getPermissionType() {
-                return UserPermissionType.REPORTS_SHOW_ITEMS;
-            }
 
             @Override
             public void action() throws IOException {
@@ -224,10 +195,6 @@ public class ReportsButtons extends LoadData {
 
     public ButtonWithPerm reportCustomPaid() {
         return new ButtonWithPerm() {
-            @Override
-            public UserPermissionType getPermissionType() {
-                return UserPermissionType.REPORTS_SHOW_SALES;
-            }
 
             @Override
             public void action() throws Exception {
@@ -260,10 +227,6 @@ public class ReportsButtons extends LoadData {
 
     public ButtonWithPerm reportSupplierPaid() {
         return new ButtonWithPerm() {
-            @Override
-            public UserPermissionType getPermissionType() {
-                return UserPermissionType.REPORTS_SHOW_PURCHASE;
-            }
 
             @Override
             public void action() throws Exception {

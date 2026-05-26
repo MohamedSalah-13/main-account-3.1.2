@@ -39,7 +39,6 @@ module com.hamza.account {
     opens com.hamza.account.backup to javafx.fxml;
     exports com.hamza.account.controller.login;
     opens com.hamza.account.controller.login to javafx.fxml;
-    exports com.hamza.account.perm;
     exports com.hamza.account.model.domain;
     exports com.hamza.account.type;
     exports com.hamza.account.interfaces.impl_invoiceBuy;

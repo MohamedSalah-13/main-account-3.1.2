@@ -1,22 +1,17 @@
-package com.hamza.account.model.dao.permission;
+package com.hamza.account.service.permission;
 
 import com.hamza.account.model.domain.permission.UserRole;
 import com.hamza.controlsfx.database.DaoException;
 
 import java.util.List;
-import java.util.Set;
 
-public interface UserRoleDao {
+public interface UserRoleService {
 
-    List<UserRole> findByUserId(int userId) throws DaoException;
-
-    Set<Integer> findRoleIdsByUserId(int userId) throws DaoException;
+    List<UserRole> getUserRoles(int userId) throws DaoException;
 
     int assignRoleToUser(int userId, int roleId) throws DaoException;
 
     int removeRoleFromUser(int userId, int roleId) throws DaoException;
-
-    int removeAllRolesFromUser(int userId) throws DaoException;
 
     int replaceUserRoles(int userId, List<Integer> roleIds) throws DaoException;
 }

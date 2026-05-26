@@ -1,6 +1,5 @@
 package com.hamza.account.model.dao;
 
-import com.hamza.account.model.dao.permission.UserPermissionDao;
 import com.hamza.account.model.domain.ItemCardDao;
 import lombok.Setter;
 
@@ -34,6 +33,7 @@ public enum DaoFactory {
             statement.execute();
         }
     }
+
     public CompanyDao getCompanyDao() {
         return new CompanyDao(connection);
     }
@@ -194,10 +194,6 @@ public enum DaoFactory {
         return new TreasuryBalanceDao(connection);
     }
 
-    public UserPermissionDao userPermissionDao() {
-        return new UserPermissionDao(connection);
-    }
-
     public AreaDao areaDao() {
         return new AreaDao(connection);
     }
@@ -219,10 +215,11 @@ public enum DaoFactory {
     }
 
     public MonthlySalesViewDao monthlySalesViewDao() {
-        return new MonthlySalesViewDao(connection,"view_monthly_sales");
+        return new MonthlySalesViewDao(connection, "view_monthly_sales");
     }
+
     public MonthlySalesViewDao monthlyPurchaseViewDao() {
-        return new MonthlySalesViewDao(connection,"view_monthly_purchase");
+        return new MonthlySalesViewDao(connection, "view_monthly_purchase");
     }
 
     public CustomerPurchasedItemDao customerPurchasedItemDao() {

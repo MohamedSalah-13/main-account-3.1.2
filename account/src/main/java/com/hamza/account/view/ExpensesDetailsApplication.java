@@ -11,7 +11,6 @@ import com.hamza.account.service.ExpensesDetailsService;
 import com.hamza.account.table.ActionButtonToolBar;
 import com.hamza.account.table.TableInterface;
 import com.hamza.account.table.TableOpen;
-import com.hamza.account.type.UserPermissionType;
 import com.hamza.controlsfx.language.Setting_Language;
 import com.hamza.controlsfx.observer.Publisher;
 import com.hamza.controlsfx.table.columnEdit.ColumnSetting;
@@ -126,21 +125,6 @@ public class ExpensesDetailsApplication extends Application implements TableInte
     @Override
     public Publisher<String> publisherTable() {
         return stringPublisher;
-    }
-
-    @Override
-    public UserPermissionType permAdd() {
-        return UserPermissionType.EXPENSES_SHOW;
-    }
-
-    @Override
-    public UserPermissionType permUpdate() {
-        return UserPermissionType.EXPENSES_UPDATE;
-    }
-
-    @Override
-    public UserPermissionType permDelete() {
-        return UserPermissionType.EXPENSES_DELETE;
     }
 
     @Override

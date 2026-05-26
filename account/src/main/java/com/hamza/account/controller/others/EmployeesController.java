@@ -7,7 +7,6 @@ import com.hamza.account.openFxml.AddForAllApplication;
 import com.hamza.account.service.EmployeeService;
 import com.hamza.account.table.ActionButtonToolBar;
 import com.hamza.account.table.TableInterface;
-import com.hamza.account.type.UserPermissionType;
 import com.hamza.controlsfx.language.Setting_Language;
 import com.hamza.controlsfx.observer.Publisher;
 import javafx.beans.property.BooleanProperty;
@@ -91,21 +90,6 @@ public class EmployeesController implements TableInterface<Employees> {
     @Override
     public Publisher<String> publisherTable() {
         return dataPublisher.getPublisherAddEmployee();
-    }
-
-    @Override
-    public UserPermissionType permAdd() {
-        return UserPermissionType.EMPLOYEE_SHOW;
-    }
-
-    @Override
-    public UserPermissionType permUpdate() {
-        return UserPermissionType.EMPLOYEE_UPDATE;
-    }
-
-    @Override
-    public UserPermissionType permDelete() {
-        return UserPermissionType.EMPLOYEE_DELETE;
     }
 
     @Override

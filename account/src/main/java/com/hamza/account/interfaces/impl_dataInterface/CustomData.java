@@ -19,8 +19,6 @@ import com.hamza.account.model.domain.CustomerAccount;
 import com.hamza.account.model.domain.Customers;
 import com.hamza.account.model.domain.Sales;
 import com.hamza.account.model.domain.Total_Sales;
-import com.hamza.account.perm.PermAccountAndNameInt;
-import com.hamza.account.perm.PermCustomerAccountAndName;
 import com.hamza.account.service.SalesService;
 import com.hamza.account.service.TotalSalesService;
 import com.hamza.controlsfx.database.DaoException;
@@ -133,11 +131,6 @@ public class CustomData extends LoadData implements DataInterface<Sales, Total_S
     @Override
     public AccountData<CustomerAccount> accountData() {
         return new AccountCustomer(daoFactory);
-    }
-
-    @Override
-    public PermAccountAndNameInt permAccountAndNameInt() {
-        return new PermCustomerAccountAndName();
     }
 
     @Override

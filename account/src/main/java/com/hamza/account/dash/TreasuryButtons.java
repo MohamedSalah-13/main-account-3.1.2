@@ -8,7 +8,6 @@ import com.hamza.account.controller.main.DataPublisher;
 import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.openFxml.OpenFxmlApplication;
 import com.hamza.account.table.TableOpen;
-import com.hamza.account.type.UserPermissionType;
 import com.hamza.account.view.*;
 import com.hamza.controlsfx.language.Setting_Language;
 import javafx.fxml.FXMLLoader;
@@ -30,11 +29,6 @@ public class TreasuryButtons {
     public ButtonWithPerm addDeposit() {
         return new ButtonWithPerm() {
             public final String TRANSACTION_TYPE_DEPOSIT_WITHDRAWAL = "إيداع - صرف";
-
-            @Override
-            public UserPermissionType getPermissionType() {
-                return null;
-            }
 
             @Override
             public void action() throws Exception {
@@ -59,11 +53,6 @@ public class TreasuryButtons {
         return new ButtonWithPerm() {
 
             @Override
-            public UserPermissionType getPermissionType() {
-                return UserPermissionType.TREASURY_SHOW;
-            }
-
-            @Override
             public void action() throws Exception {
                 new OpenTreasuryDetailsApplication(daoFactory, dataPublisher).start(new Stage());
             }
@@ -79,10 +68,6 @@ public class TreasuryButtons {
 
     public ButtonWithPerm convertTreasury() {
         return new ButtonWithPerm() {
-            @Override
-            public UserPermissionType getPermissionType() {
-                return null;
-            }
 
             @Override
             public void action() throws Exception {
@@ -109,10 +94,6 @@ public class TreasuryButtons {
 
     public ButtonWithPerm openProcess() {
         return new ButtonWithPerm() {
-            @Override
-            public UserPermissionType getPermissionType() {
-                return UserPermissionType.SETTING_SHOW;
-            }
 
             @Override
             public void action() throws Exception {
@@ -130,11 +111,6 @@ public class TreasuryButtons {
     public ButtonWithPerm openExpenses() {
         return new ButtonWithPerm() {
             final ExpensesDetailsApplication expensesController = new ExpensesDetailsApplication(dataPublisher);
-
-            @Override
-            public UserPermissionType getPermissionType() {
-                return UserPermissionType.TREASURY_SHOW;
-            }
 
             @Override
             public void action() throws Exception {

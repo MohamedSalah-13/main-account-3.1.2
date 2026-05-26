@@ -7,12 +7,9 @@ import com.hamza.account.interfaces.api.DataTable;
 import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.model.domain.Users;
 import com.hamza.account.openFxml.AddForAllApplication;
-import com.hamza.account.service.UserPermissionService;
 import com.hamza.account.service.UsersService;
 import com.hamza.account.table.ActionButtonToolBar;
 import com.hamza.account.table.TableInterface;
-import com.hamza.account.type.UserPermissionType;
-import com.hamza.account.view.OpenApplication;
 import com.hamza.controlsfx.button.ImageDesign;
 import com.hamza.controlsfx.button.api.ButtonColumnBoolean;
 import com.hamza.controlsfx.button.api.ButtonColumnI;
@@ -120,20 +117,6 @@ public class UserController implements TableInterface<Users> {
         return publisherAddUser;
     }
 
-    @Override
-    public UserPermissionType permAdd() {
-        return null;
-    }
-
-    @Override
-    public UserPermissionType permUpdate() {
-        return null;
-    }
-
-    @Override
-    public UserPermissionType permDelete() {
-        return null;
-    }
 
     @Override
     public List<Users> getProducts(int rowsPerPage, int offset) throws Exception {
@@ -154,9 +137,7 @@ public class UserController implements TableInterface<Users> {
         return new ButtonColumnI() {
             @Override
             public void action(int i) throws Exception {
-                int id = table.getItems().get(i).getId();
-                String name_user = table.getItems().get(i).getUsername();
-                new OpenApplication<>(new UserPermissionController(id, name_user, new UserPermissionService(daoFactory)));
+
             }
 
             @NotNull

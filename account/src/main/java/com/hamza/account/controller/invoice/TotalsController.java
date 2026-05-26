@@ -3,7 +3,6 @@ package com.hamza.account.controller.invoice;
 import com.hamza.account.config.Image_Setting;
 import com.hamza.account.config.SaveDatabaseFile;
 import com.hamza.account.controller.main.DataPublisher;
-import com.hamza.account.controller.main.DisableButtons;
 import com.hamza.account.controller.model.PrintPurchaseWithName;
 import com.hamza.account.controller.model.PrintTotalsData;
 import com.hamza.account.interfaces.api.DataInterface;
@@ -17,7 +16,6 @@ import com.hamza.account.service.EmployeeService;
 import com.hamza.account.service.TotalsService;
 import com.hamza.account.table.TableSetting;
 import com.hamza.account.type.InvoiceType;
-import com.hamza.account.type.UserPermissionType;
 import com.hamza.account.view.BuyApplication;
 import com.hamza.account.view.ShowInvoiceApplication;
 import com.hamza.controlsfx.alert.AllAlerts;
@@ -152,16 +150,7 @@ public class TotalsController<T1 extends BasePurchasesAndSales, T2 extends BaseT
     }
 
     private void permissionButtons() {
-        var permissionDisableService = new DisableButtons.PermissionDisableService();
-        permissionDisableService.applyPermissionBasedDisable(checkBoxShowOtherSearch::setDisable, UserPermissionType.SHOW_DATA_BEFORE_MONTH);
-//        permissionDisableService.applyPermissionBasedDisable(btnUpdate::setDisable, UserPermissionType.UPDATE_DATA_BEFORE_MONTH);
-        permissionDisableService.applyPermissionBasedDisable(btnUpdate::setDisable, dataInterface.designInterface().update());
-        permissionDisableService.applyPermissionBasedDisable(btnDelete::setDisable, dataInterface.designInterface().delete());
-        permissionDisableService.applyPermissionBasedDisable(btnShowInvoice::setDisable, dataInterface.designInterface().show_totals_invoice());
 
-        var aBoolean = permissionDisableService.getABoolean(UserPermissionType.UPDATE_DATA_BEFORE_MONTH);
-        if (aBoolean != null)
-            update_data = aBoolean;
     }
 
     private void addTimeSearch() {

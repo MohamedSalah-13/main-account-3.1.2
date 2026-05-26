@@ -15,7 +15,6 @@ import com.hamza.account.otherSetting.AddSumToColumn;
 import com.hamza.account.table.ActionButtonToolBar;
 import com.hamza.account.table.TableInterface;
 import com.hamza.account.table.TableSetting;
-import com.hamza.account.type.UserPermissionType;
 import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.database.DaoList;
 import com.hamza.controlsfx.language.Error_Text_Show;
@@ -151,21 +150,6 @@ public class NameController<T1 extends BasePurchasesAndSales, T2 extends BaseTot
     @Override
     public Publisher<String> publisherTable() {
         return publisherAddName;
-    }
-
-    @Override
-    public UserPermissionType permAdd() {
-        return dataInterface.permAccountAndNameInt().showNames();
-    }
-
-    @Override
-    public UserPermissionType permUpdate() {
-        return dataInterface.permAccountAndNameInt().updateNames();
-    }
-
-    @Override
-    public UserPermissionType permDelete() {
-        return dataInterface.permAccountAndNameInt().deleteNames();
     }
 
     @Override

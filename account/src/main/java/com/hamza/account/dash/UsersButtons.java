@@ -10,7 +10,6 @@ import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.openFxml.AddForAllApplication;
 import com.hamza.account.otherSetting.KeyCodeCombinationSetting;
 import com.hamza.account.table.TableOpen;
-import com.hamza.account.type.UserPermissionType;
 import com.hamza.controlsfx.button.ImageDesign;
 import com.hamza.controlsfx.language.Setting_Language;
 import javafx.scene.Node;
@@ -29,10 +28,6 @@ public class UsersButtons extends LoadData {
 
     public ButtonWithPerm getUsers_all() {
         return new ButtonWithPerm() {
-            @Override
-            public UserPermissionType getPermissionType() {
-                return UserPermissionType.SETTING_SHOW;
-            }
 
             @Override
             public void action() throws Exception {
@@ -50,11 +45,6 @@ public class UsersButtons extends LoadData {
 
     public ButtonWithPerm getUsers_add() {
         return new ButtonWithPerm() {
-            @Override
-            public UserPermissionType getPermissionType() {
-                return UserPermissionType.SETTING_SHOW;
-            }
-
             @Override
             public void action() throws Exception {
                 new AddForAllApplication(0, new AddUserController(0, dataPublisher.getPublisherAddUser()));

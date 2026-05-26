@@ -2,7 +2,6 @@ package com.hamza.account.interfaces.impl_design;
 
 import com.hamza.account.config.ThemeManager;
 import com.hamza.account.interfaces.api.DesignInterface;
-import com.hamza.account.type.UserPermissionType;
 import com.hamza.controlsfx.language.Setting_Language;
 
 import static com.hamza.controlsfx.language.Setting_Language.TOTAL_SALES_RE;
@@ -43,31 +42,5 @@ public class DesignCustomReturn implements DesignInterface {
     public boolean showDataForCustomer() {
         return true;
     }
-
-    @Override
-    public UserPermissionType show() {
-        return UserPermissionType.SALES_RE_SHOW;
-    }
-
-    @Override
-    public UserPermissionType update() {
-        return UserPermissionType.SALES_RE_UPDATE;
-    }
-
-    @Override
-    public UserPermissionType delete() {
-        return UserPermissionType.SALES_RE_DELETE;
-    }
-
-    @Override
-    public UserPermissionType show_totals() {
-        return UserPermissionType.TOTAL_SALES_RE_SHOW;
-    }
-
-    @Override
-    public UserPermissionType show_totals_invoice() {
-        return UserPermissionType.TOTAL_SALES_RE_SHOW_INVOICE;
-    }
-
 
 }

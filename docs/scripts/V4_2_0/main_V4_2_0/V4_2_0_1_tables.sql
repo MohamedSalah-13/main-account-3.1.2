@@ -810,9 +810,9 @@ CREATE TABLE IF NOT EXISTS permission
 (
     id INT AUTO_INCREMENT PRIMARY KEY,
     code VARCHAR(100) NOT NULL,
-    name_ar VARCHAR(100) NOT NULL,
-    module VARCHAR(50) NOT NULL,
-    action VARCHAR(50) NOT NULL,
+    name_ar VARCHAR(150) NOT NULL,
+    module VARCHAR(80) NOT NULL,
+    action VARCHAR(80) NOT NULL,
     description VARCHAR(255) NULL,
     sort_order INT DEFAULT 0 NOT NULL,
     active TINYINT DEFAULT 1 NOT NULL,
@@ -822,11 +822,11 @@ CREATE TABLE IF NOT EXISTS permission
 
 CREATE TABLE IF NOT EXISTS user_permission
 (
-    id            INT AUTO_INCREMENT PRIMARY KEY,
-    permission_id INT                                 NOT NULL,
-    user_id       INT                                 NOT NULL,
-    check_status  TINYINT   DEFAULT 0                 NOT NULL,
-    updated_at    TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL ON UPDATE CURRENT_TIMESTAMP,
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    permission_id INT NOT NULL,
+    user_id INT NOT NULL,
+    check_status TINYINT DEFAULT 0 NOT NULL,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL ON UPDATE CURRENT_TIMESTAMP,
     CONSTRAINT user_permission_permission_id_fk
         FOREIGN KEY (permission_id) REFERENCES permission (id)
             ON UPDATE CASCADE ON DELETE CASCADE,
@@ -837,41 +837,44 @@ CREATE TABLE IF NOT EXISTS user_permission
     CONSTRAINT user_permission_chk CHECK (check_status IN (0, 1))
 );
 
-CREATE TABLE roles
+CREATE TABLE IF NOT EXISTS roles
 (
     id INT AUTO_INCREMENT PRIMARY KEY,
     name VARCHAR(100) NOT NULL,
     description VARCHAR(255) NULL,
     active TINYINT DEFAULT 1 NOT NULL,
-    CONSTRAINT roles_name_uk UNIQUE (name)
+    CONSTRAINT roles_name_uk UNIQUE (name),
+    CONSTRAINT roles_active_chk CHECK (active IN (0, 1))
 );
-
-CREATE TABLE role_permission
+CREATE TABLE IF NOT EXISTS role_permission
 (
     id INT AUTO_INCREMENT PRIMARY KEY,
     role_id INT NOT NULL,
     permission_id INT NOT NULL,
-    check_status TINYINT DEFAULT 1 NOT NULL,
+    check_status TINYINT DEFAULT 0 NOT NULL,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL ON UPDATE CURRENT_TIMESTAMP,
     CONSTRAINT role_permission_role_fk
-        FOREIGN KEY (role_id) REFERENCES roles(id)
-            ON DELETE CASCADE,
+        FOREIGN KEY (role_id) REFERENCES roles (id)
+            ON UPDATE CASCADE ON DELETE CASCADE,
     CONSTRAINT role_permission_permission_fk
-        FOREIGN KEY (permission_id) REFERENCES permission(id)
-            ON DELETE CASCADE,
-    CONSTRAINT role_permission_uk UNIQUE (role_id, permission_id)
+        FOREIGN KEY (permission_id) REFERENCES permission (id)
+            ON UPDATE CASCADE ON DELETE CASCADE,
+    CONSTRAINT role_permission_uk UNIQUE (role_id, permission_id),
+    CONSTRAINT role_permission_chk CHECK (check_status IN (0, 1))
 );
 
-CREATE TABLE user_role
+CREATE TABLE IF NOT EXISTS user_role
 (
     id INT AUTO_INCREMENT PRIMARY KEY,
     user_id INT NOT NULL,
     role_id INT NOT NULL,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL ON UPDATE CURRENT_TIMESTAMP,
     CONSTRAINT user_role_user_fk
-        FOREIGN KEY (user_id) REFERENCES users(id)
-            ON DELETE CASCADE,
+        FOREIGN KEY (user_id) REFERENCES users (id)
+            ON UPDATE CASCADE ON DELETE CASCADE,
     CONSTRAINT user_role_role_fk
-        FOREIGN KEY (role_id) REFERENCES roles(id)
-            ON DELETE CASCADE,
+        FOREIGN KEY (role_id) REFERENCES roles (id)
+            ON UPDATE CASCADE ON DELETE CASCADE,
     CONSTRAINT user_role_uk UNIQUE (user_id, role_id)
 );
 

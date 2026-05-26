@@ -3,7 +3,6 @@ package com.hamza.account.controller.pos;
 
 import com.hamza.account.config.Image_Setting;
 import com.hamza.account.controller.main.DataPublisher;
-import com.hamza.account.controller.main.DisableButtons;
 import com.hamza.account.controller.model.ModelPrintInvoice;
 import com.hamza.account.controller.name_account.NameController;
 import com.hamza.account.controller.others.ServiceRegistry;
@@ -22,7 +21,6 @@ import com.hamza.account.service.*;
 import com.hamza.account.session.ShiftContext;
 import com.hamza.account.table.TableOpen;
 import com.hamza.account.type.InvoiceType;
-import com.hamza.account.type.UserPermissionType;
 import com.hamza.account.view.LogApplication;
 import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.button.button_column.ButtonColumn;
@@ -173,9 +171,6 @@ public class PosController extends ButtonSetting {
     }
 
     private void permissionButtons() {
-        var permissionDisableService = new DisableButtons.PermissionDisableService();
-        permissionDisableService.applyPermissionBasedDisable(btnAddCustom::setDisable, UserPermissionType.CUSTOMER_SHOW);
-        permissionDisableService.applyPermissionBasedDisable(btnCustomers::setDisable, UserPermissionType.CUSTOMER_SHOW);
     }
 
     private void otherSetting() {

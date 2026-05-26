@@ -2,7 +2,6 @@ package com.hamza.account.table;
 
 import com.hamza.account.interfaces.api.DataTable;
 import com.hamza.account.openFxml.MainData;
-import com.hamza.account.type.UserPermissionType;
 import com.hamza.controlsfx.observer.Publisher;
 import javafx.beans.property.BooleanProperty;
 import javafx.scene.control.TableView;
@@ -41,12 +40,6 @@ public interface TableInterface<T> extends MainData {
     default boolean resizeTable() {
         return false;
     }
-
-    UserPermissionType permAdd();
-
-    UserPermissionType permUpdate();
-
-    UserPermissionType permDelete();
 
     List<T> getProducts(int rowsPerPage, int offset) throws Exception;
 

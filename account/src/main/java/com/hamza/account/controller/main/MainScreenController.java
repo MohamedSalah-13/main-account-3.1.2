@@ -9,7 +9,6 @@ import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.model.dao.MonthlySalesViewDao;
 import com.hamza.account.model.domain.ItemsMiniQuantity;
 import com.hamza.account.service.ItemMiniQuantityService;
-import com.hamza.account.type.UserPermissionType;
 import com.hamza.account.view.LogApplication;
 import com.hamza.account.view.MonthlyView;
 import com.hamza.controlsfx.alert.AllAlerts;
@@ -324,12 +323,6 @@ public class MainScreenController extends MainItems implements Initializable {
     private ButtonWithPerm getAction(String name, MonthlySalesInterface monthlySalesInterface) {
         String sales = "مبيعات";
         return new ButtonWithPerm() {
-            @Override
-            public UserPermissionType getPermissionType() {
-                if (name.contains(sales))
-                    return UserPermissionType.REPORTS_SHOW_SALES;
-                else return UserPermissionType.REPORTS_SHOW_PURCHASE;
-            }
 
             @Override
             public void action() throws Exception {
@@ -344,17 +337,8 @@ public class MainScreenController extends MainItems implements Initializable {
 
             @Override
             public void actionAddPaneToTabPane(TabPane tabPane) throws Exception {
-//                var setting24 = new Image_Setting().shoppingPurchase;
-//                if (name.equals(sales))
-//                    setting24 = new Image_Setting().shoppingSales;
-//
-//                addTape(tabPane, new OpenFxmlApplication(controller).getPane(), textName(), setting24);
             }
 
-//            @Override
-//            public boolean showOnTapPane() {
-//                return true;
-//            }
         };
     }
 
@@ -456,9 +440,6 @@ public class MainScreenController extends MainItems implements Initializable {
     }
 
     private void dontShowData() {
-        var permissionDisableService = new DisableButtons.PermissionDisableService();
-        permissionDisableService.applyPermissionBasedDisable(menuController.getMenuEmployees(), UserPermissionType.EMPLOYEE_SHOW);
-        permissionDisableService.applyPermissionBasedDisable(menuController.getMenuSetting(), UserPermissionType.SETTING_SHOW);
 
     }
 

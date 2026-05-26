@@ -15,7 +15,6 @@ import com.hamza.account.features.notification.NotifyItemAlert;
 import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.model.domain.ItemsMiniQuantity;
 import com.hamza.account.openFxml.OpenFxmlApplication;
-import com.hamza.account.type.UserPermissionType;
 import com.hamza.account.view.AddGroupApp;
 import com.hamza.account.view.AddItemApplication;
 import com.hamza.account.view.OpenApplication;
@@ -39,11 +38,6 @@ public class ItemsButtons {
     public ButtonWithPerm addItem() {
         return new ButtonWithPerm() {
             @Override
-            public UserPermissionType getPermissionType() {
-                return UserPermissionType.ITEMS_SHOW;
-            }
-
-            @Override
             public void action() throws Exception {
                 new AddItemApplication(0, dataPublisher).start(new Stage());
             }
@@ -58,11 +52,6 @@ public class ItemsButtons {
 
     public ButtonWithPerm allItems() {
         return new ButtonWithPerm() {
-            @Override
-            public UserPermissionType getPermissionType() {
-                return UserPermissionType.ITEMS_SHOW;
-            }
-
             @Override
             public void action() {
             }
@@ -90,11 +79,6 @@ public class ItemsButtons {
         return new ButtonWithPerm() {
 
             @Override
-            public UserPermissionType getPermissionType() {
-                return UserPermissionType.DISABLE_BUTTON;
-            }
-
-            @Override
             public void action() throws Exception {
                 new OpenApplication<>(new ImportDataFromExcelFileController(dataPublisher.getPublisherAddItem()));
             }
@@ -110,12 +94,6 @@ public class ItemsButtons {
 
     public ButtonWithPerm units() {
         return new ButtonWithPerm() {
-
-            @Override
-            public UserPermissionType getPermissionType() {
-                return UserPermissionType.UNITS_SHOW;
-            }
-
             @Override
             public void action() throws Exception {
                 new OpenApplication<>(new UnitsController(dataPublisher, textName()));
@@ -131,12 +109,6 @@ public class ItemsButtons {
 
     public ButtonWithPerm inventory() throws Exception {
         return new ButtonWithPerm() {
-
-
-            @Override
-            public UserPermissionType getPermissionType() {
-                return UserPermissionType.INVENTORY_SHOW;
-            }
 
             @Override
             public void action() {
@@ -167,11 +139,6 @@ public class ItemsButtons {
         return new ButtonWithPerm() {
 
             @Override
-            public UserPermissionType getPermissionType() {
-                return UserPermissionType.ITEMS_SHOW;
-            }
-
-            @Override
             public void action() throws Exception {
                 notifyItemAlert.action();
             }
@@ -187,10 +154,6 @@ public class ItemsButtons {
 
     public ButtonWithPerm convertStock() {
         return new ButtonWithPerm() {
-            @Override
-            public UserPermissionType getPermissionType() {
-                return null;
-            }
 
             @Override
             public void action() throws Exception {
@@ -210,10 +173,6 @@ public class ItemsButtons {
     public ButtonWithPerm areasList() {
 
         return new ButtonWithPerm() {
-            @Override
-            public UserPermissionType getPermissionType() {
-                return UserPermissionType.ITEMS_SHOW;
-            }
 
             @Override
             public void action() throws Exception {
@@ -231,10 +190,6 @@ public class ItemsButtons {
 
     public ButtonWithPerm addSubGroup() {
         return new ButtonWithPerm() {
-            @Override
-            public UserPermissionType getPermissionType() {
-                return UserPermissionType.SUB_GROUP_SHOW;
-            }
 
             @NotNull
             @Override
@@ -251,11 +206,6 @@ public class ItemsButtons {
 
     public ButtonWithPerm addMainGroup() {
         return new ButtonWithPerm() {
-            @Override
-            public UserPermissionType getPermissionType() {
-                return UserPermissionType.MAIN_GROUP_SHOW;
-            }
-
             @NotNull
             @Override
             public String textName() {
