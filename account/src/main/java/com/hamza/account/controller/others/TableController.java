@@ -50,7 +50,7 @@ public class TableController<T> implements Initializable {
     private final ActionButtonToolBar<T> actionButtonToolBar;
     private final int ROWS_PER_PAGE = 50;
 
-    private TableView<T> tableView = new TableView<>();
+    private final TableView<T> tableView = new TableView<>();
     @FXML
     private Button btnNew, btnUpdate, btnDelete, btnRefresh, btnPrint;
     @FXML

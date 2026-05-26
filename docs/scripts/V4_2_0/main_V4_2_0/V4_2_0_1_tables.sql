@@ -32,14 +32,6 @@ CREATE TABLE IF NOT EXISTS jobs
     CONSTRAINT jobs_pk_2 UNIQUE (job_name)
 );
 
-CREATE TABLE IF NOT EXISTS permission
-(
-    id              INT AUTO_INCREMENT PRIMARY KEY,
-    name_permission VARCHAR(50) NOT NULL,
-    description     VARCHAR(50) NULL,
-    CONSTRAINT users_permission_pk UNIQUE (name_permission)
-);
-
 CREATE TABLE IF NOT EXISTS table_area
 (
     id        INT AUTO_INCREMENT PRIMARY KEY,
@@ -63,24 +55,6 @@ CREATE TABLE IF NOT EXISTS users
 -- =====================================================================
 -- 2) Tables depending mainly on users
 -- =====================================================================
-
-# CREATE TABLE IF NOT EXISTS processes_data
-# (
-#     id             INT AUTO_INCREMENT PRIMARY KEY,
-#     user_id        INT                                 NOT NULL,
-#     processes_name VARCHAR(50)                         NOT NULL,
-#     table_name     VARCHAR(50)                         NOT NULL,
-#     table_id       INT                                 NOT NULL,
-#     date_insert    DATETIME  DEFAULT CURRENT_TIMESTAMP NOT NULL,
-#     updated_at     TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL ON UPDATE CURRENT_TIMESTAMP,
-#     notes          LONGTEXT                            NULL,
-#     CONSTRAINT processes_data_users_id_fk
-#         FOREIGN KEY (user_id) REFERENCES users (id)
-#             ON UPDATE CASCADE ON DELETE CASCADE
-# );
-
-# CREATE INDEX processes_data_table_idx ON processes_data (table_name, table_id);
-# CREATE INDEX processes_data_date_idx ON processes_data (date_insert);
 
 CREATE TABLE IF NOT EXISTS main_group
 (
