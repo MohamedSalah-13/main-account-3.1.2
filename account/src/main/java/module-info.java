@@ -146,4 +146,7 @@ module com.hamza.account {
     opens com.hamza.account.features.key_setting to javafx.fxml;
     exports com.hamza.account.features.export;
     opens com.hamza.account.features.export;
+    exports com.hamza.account.model.domain.permission;
+    opens com.hamza.account.model.domain.permission to javafx.fxml;
+    exports com.hamza.account.model.dao.permission;
 }

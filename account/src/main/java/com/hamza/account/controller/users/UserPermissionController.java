@@ -1,6 +1,6 @@
 package com.hamza.account.controller.users;
 
-import com.hamza.account.model.domain.Users_Permission;
+import com.hamza.account.model.domain.permission.UserPermission;
 import com.hamza.account.openFxml.FxmlPath;
 import com.hamza.account.openFxml.OpenFxmlApplication;
 import com.hamza.account.service.UserPermissionService;
@@ -133,9 +133,9 @@ public class UserPermissionController implements AppSettingInterface {
         }
     }
 
-    private boolean isPermissionGranted(List<Users_Permission> userPermissions, UserPermissionType permissionType) {
+    private boolean isPermissionGranted(List<UserPermission> userPermissions, UserPermissionType permissionType) {
         return userPermissions.stream().filter(permission ->
-                permission.getUserPermissionType().equals(permissionType)).map(Users_Permission::isStatus).findFirst().orElse(false);
+                permission.getUserPermissionType().equals(permissionType)).map(UserPermission::isStatus).findFirst().orElse(false);
     }
 
     private HashMap<CheckBox, UserPermissionType> mapUserPermissionCheckBox() {
@@ -309,10 +309,10 @@ public class UserPermissionController implements AppSettingInterface {
 
     @Override
     public int save() throws DaoException {
-        List<Users_Permission> userPermissions = new ArrayList<>();
+        List<UserPermission> userPermissions = new ArrayList<>();
         HashMap<CheckBox, UserPermissionType> checkBoxMap = mapUserPermissionCheckBox();
         checkBoxMap.forEach((checkBox, userPermissionType) -> {
-            userPermissions.add(new Users_Permission(0, user_id, userPermissionType, checkBox.isSelected()));
+            userPermissions.add(new UserPermission(0, user_id, userPermissionType, checkBox.isSelected()));
         });
         var i = userPermissionService.updateUserPermissionsList(userPermissions);
         log.info("updateUserPermissionsList: {}", i);

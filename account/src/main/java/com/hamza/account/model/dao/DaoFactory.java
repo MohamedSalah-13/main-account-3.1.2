@@ -1,5 +1,6 @@
 package com.hamza.account.model.dao;
 
+import com.hamza.account.model.dao.permission.UserPermissionDao;
 import com.hamza.account.model.domain.ItemCardDao;
 import lombok.Setter;
 

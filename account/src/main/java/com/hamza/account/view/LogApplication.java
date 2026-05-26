@@ -8,7 +8,7 @@ import com.hamza.account.controller.login.LoginController;
 import com.hamza.account.interfaces.ActionLogin;
 import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.model.domain.Users;
-import com.hamza.account.model.domain.Users_Permission;
+import com.hamza.account.model.domain.permission.UserPermission;
 import com.hamza.account.service.UserPermissionService;
 import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.database.DaoException;
@@ -31,7 +31,7 @@ import java.util.Optional;
 public class LogApplication extends Application {
     public static final LanguageManager INSTANCE = LanguageManager.getInstance();
     public static Users usersVo;
-    public static List<Users_Permission> usersPermissionList;
+    public static List<UserPermission> usersPermissionList;
     private final LoginController login;
     private final DaoFactory daoFactory;
     private final Scene scene;

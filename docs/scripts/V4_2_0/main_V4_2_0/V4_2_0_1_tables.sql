@@ -806,6 +806,20 @@ CREATE TABLE IF NOT EXISTS targeted_sales
 -- 11) Users permissions / shifts
 -- =====================================================================
 
+CREATE TABLE IF NOT EXISTS permission
+(
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    code VARCHAR(100) NOT NULL,
+    name_ar VARCHAR(100) NOT NULL,
+    module VARCHAR(50) NOT NULL,
+    action VARCHAR(50) NOT NULL,
+    description VARCHAR(255) NULL,
+    sort_order INT DEFAULT 0 NOT NULL,
+    active TINYINT DEFAULT 1 NOT NULL,
+    CONSTRAINT permission_code_uk UNIQUE (code),
+    CONSTRAINT permission_active_chk CHECK (active IN (0, 1))
+);
+
 CREATE TABLE IF NOT EXISTS user_permission
 (
     id            INT AUTO_INCREMENT PRIMARY KEY,
@@ -821,6 +835,44 @@ CREATE TABLE IF NOT EXISTS user_permission
             ON UPDATE CASCADE ON DELETE CASCADE,
     CONSTRAINT user_permission_uk UNIQUE (permission_id, user_id),
     CONSTRAINT user_permission_chk CHECK (check_status IN (0, 1))
+);
+
+CREATE TABLE roles
+(
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    description VARCHAR(255) NULL,
+    active TINYINT DEFAULT 1 NOT NULL,
+    CONSTRAINT roles_name_uk UNIQUE (name)
+);
+
+CREATE TABLE role_permission
+(
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    role_id INT NOT NULL,
+    permission_id INT NOT NULL,
+    check_status TINYINT DEFAULT 1 NOT NULL,
+    CONSTRAINT role_permission_role_fk
+        FOREIGN KEY (role_id) REFERENCES roles(id)
+            ON DELETE CASCADE,
+    CONSTRAINT role_permission_permission_fk
+        FOREIGN KEY (permission_id) REFERENCES permission(id)
+            ON DELETE CASCADE,
+    CONSTRAINT role_permission_uk UNIQUE (role_id, permission_id)
+);
+
+CREATE TABLE user_role
+(
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    role_id INT NOT NULL,
+    CONSTRAINT user_role_user_fk
+        FOREIGN KEY (user_id) REFERENCES users(id)
+            ON DELETE CASCADE,
+    CONSTRAINT user_role_role_fk
+        FOREIGN KEY (role_id) REFERENCES roles(id)
+            ON DELETE CASCADE,
+    CONSTRAINT user_role_uk UNIQUE (user_id, role_id)
 );
 
 CREATE TABLE IF NOT EXISTS user_shifts

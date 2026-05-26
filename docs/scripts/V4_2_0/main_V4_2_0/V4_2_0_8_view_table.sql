@@ -1815,3 +1815,30 @@ SELECT b.item_id,
 FROM v_stock_balance_as_of b
 WHERE b.balance_as_of <> 0;
 
+-- =========== permissions ====================================
+
+CREATE OR REPLACE VIEW v_user_effective_permissions AS
+SELECT
+    up.user_id,
+    p.code,
+    p.name_ar,
+    p.module,
+    p.action,
+    up.check_status
+FROM user_permission up
+         JOIN permission p ON p.id = up.permission_id
+WHERE p.active = 1
+
+UNION
+
+SELECT
+    ur.user_id,
+    p.code,
+    p.name_ar,
+    p.module,
+    p.action,
+    rp.check_status
+FROM user_role ur
+         JOIN role_permission rp ON rp.role_id = ur.role_id
+         JOIN permission p ON p.id = rp.permission_id
+WHERE p.active = 1;
