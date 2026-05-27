@@ -133,7 +133,6 @@ public class MainScreenController extends MainItems implements Initializable {
 
     private void otherSetting() {
         try {
-            //TODO 5/9/2026 10:15 AM Mohamed:  check when log out
 //            borderPane.setBottom(fxmlTimePane.load());
             tabPane.getTabs().getFirst().setText(Setting_Language.WORD_MAIN);
             tabPane.getTabs().getFirst().setClosable(false);
