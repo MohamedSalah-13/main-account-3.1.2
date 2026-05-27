@@ -1,5 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <?import javafx.scene.layout.StackPane?>
-<StackPane xmlns:fx="http://javafx.com/fxml/1" prefHeight="489.0" prefWidth="804.0" xmlns="http://javafx.com/javafx/21">
+
+<StackPane xmlns:fx="http://javafx.com/fxml/1"
+           fx:id="rootPane"
+           prefHeight="600.0"
+           prefWidth="1000.0"
+           xmlns="http://javafx.com/javafx/21"
+           fx:controller="com.hamza.account.controller.users.UserPermissionController">
 </StackPane>

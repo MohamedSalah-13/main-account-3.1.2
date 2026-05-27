@@ -1,86 +1,82 @@
 package com.hamza.account.controller.users;
 
 import com.hamza.account.model.dao.DaoFactory;
-import com.hamza.account.model.domain.Users;
-import com.hamza.account.model.domain.permission.UserPermission;
-import com.hamza.account.openFxml.FxmlPath;
-import com.hamza.account.service.permission.UserPermissionManagementService;
-import com.hamza.account.service.permission.impl.UserPermissionManagementServiceImpl;
+import com.hamza.account.model.domain.permission.Role;
+import com.hamza.account.model.domain.permission.RolePermission;
+import com.hamza.account.service.permission.RolePermissionService;
+import com.hamza.account.service.permission.impl.RolePermissionServiceImpl;
 import com.hamza.account.type.PermissionCode;
 import com.hamza.controlsfx.database.DaoException;
 import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
-import javafx.fxml.FXML;
-import javafx.fxml.Initializable;
+import javafx.geometry.Insets;
+import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.CheckBoxTableCell;
+import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
-import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
+import javafx.stage.Modality;
+import javafx.stage.Stage;
 import lombok.extern.log4j.Log4j2;
 
-import java.net.URL;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.ResourceBundle;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Log4j2
-@FxmlPath(pathFile = "user-permission.fxml")
-public class UserPermissionController implements Initializable {
+public class RolePermissionsController {
 
-    @FXML
-    private StackPane rootPane;
-
-    private TableView<UserPermission> permissionsTable;
+    private final Role role;
+    private final RolePermissionService rolePermissionService;
+    private final ObservableList<RolePermission> permissionsList = FXCollections.observableArrayList();
+    private TableView<RolePermission> permissionsTable;
     private TextField searchField;
     private ComboBox<String> moduleFilterComboBox;
     private Label statsLabel;
-    private Button saveButton;
+    private Stage dialog;
 
-    private final UserPermissionManagementService userPermissionService;
-    private final ObservableList<UserPermission> permissionsList = FXCollections.observableArrayList();
-    private Users currentUser;
-
-    public UserPermissionController() {
+    public RolePermissionsController(Role role) {
+        this.role = role;
         DaoFactory daoFactory = DaoFactory.INSTANCE;
-        this.userPermissionService = new UserPermissionManagementServiceImpl(daoFactory.userPermissionDao());
+        this.rolePermissionService = new RolePermissionServiceImpl(daoFactory.rolePermissionDao());
     }
 
-    @Override
-    public void initialize(URL url, ResourceBundle resourceBundle) {
-        setupUI();
-    }
+    public void showDialog() {
+        dialog = new Stage();
+        dialog.initModality(Modality.APPLICATION_MODAL);
+        dialog.setTitle("صلاحيات الدور: " + role.getName());
 
-    public void setUser(Users user) {
-        this.currentUser = user;
-        loadPermissions();
-    }
-
-    private void setupUI() {
-        VBox mainContainer = new VBox(15);
-        mainContainer.setStyle("-fx-padding: 20;");
+        BorderPane root = new BorderPane();
+        root.setPadding(new Insets(15));
 
         // القسم العلوي
         VBox topSection = createTopSection();
+        root.setTop(topSection);
 
         // الجدول
         permissionsTable = createPermissionsTable();
+        root.setCenter(permissionsTable);
 
-        // القسم السفلي
+        // القسم السفلي (الأزرار)
         HBox bottomSection = createBottomSection();
+        root.setBottom(bottomSection);
 
-        mainContainer.getChildren().addAll(topSection, permissionsTable, bottomSection);
-        rootPane.getChildren().add(mainContainer);
+        Scene scene = new Scene(root, 1000, 700);
+        dialog.setScene(scene);
+
+        loadPermissions();
+
+        dialog.showAndWait();
     }
 
     private VBox createTopSection() {
         VBox vbox = new VBox(10);
+        vbox.setPadding(new Insets(0, 0, 15, 0));
 
         // العنوان
-        Label titleLabel = new Label("صلاحيات المستخدم");
+        Label titleLabel = new Label("إدارة صلاحيات الدور: " + role.getName());
         titleLabel.setStyle("-fx-font-size: 18px; -fx-font-weight: bold;");
 
         // شريط البحث والتصفية
@@ -102,11 +98,9 @@ public class UserPermissionController implements Initializable {
 
         Button selectAllButton = new Button("تحديد الكل");
         selectAllButton.setOnAction(e -> selectAll(true));
-        selectAllButton.getStyleClass().add("app-button");
 
         Button deselectAllButton = new Button("إلغاء تحديد الكل");
         deselectAllButton.setOnAction(e -> selectAll(false));
-        deselectAllButton.getStyleClass().add("app-button");
 
         statsLabel = new Label();
         statsLabel.setStyle("-fx-font-weight: bold;");
@@ -115,27 +109,26 @@ public class UserPermissionController implements Initializable {
         HBox.setHgrow(spacer, javafx.scene.layout.Priority.ALWAYS);
 
         searchBox.getChildren().addAll(
-                searchField,
-                moduleFilterComboBox,
-                selectAllButton,
-                deselectAllButton,
-                spacer,
-                statsLabel
+            searchField,
+            moduleFilterComboBox,
+            selectAllButton,
+            deselectAllButton,
+            spacer,
+            statsLabel
         );
 
         vbox.getChildren().addAll(titleLabel, searchBox);
         return vbox;
     }
 
-    private TableView<UserPermission> createPermissionsTable() {
-        TableView<UserPermission> table = new TableView<>();
-        table.setPrefHeight(500);
+    private TableView<RolePermission> createPermissionsTable() {
+        TableView<RolePermission> table = new TableView<>();
 
         // عمود التحديد
-        TableColumn<UserPermission, Boolean> checkColumn = new TableColumn<>("تفعيل");
+        TableColumn<RolePermission, Boolean> checkColumn = new TableColumn<>("تفعيل");
         checkColumn.setPrefWidth(80);
         checkColumn.setCellValueFactory(cellData -> {
-            UserPermission perm = cellData.getValue();
+            RolePermission perm = cellData.getValue();
             SimpleBooleanProperty property = new SimpleBooleanProperty(perm.isChecked());
             property.addListener((obs, oldVal, newVal) -> {
                 perm.setChecked(newVal);
@@ -147,21 +140,21 @@ public class UserPermissionController implements Initializable {
         checkColumn.setEditable(true);
 
         // عمود الكود
-        TableColumn<UserPermission, String> codeColumn = new TableColumn<>("الكود");
+        TableColumn<RolePermission, String> codeColumn = new TableColumn<>("الكود");
         codeColumn.setPrefWidth(250);
-        codeColumn.setCellValueFactory(cellData ->
-                new SimpleStringProperty(cellData.getValue().getPermissionCode())
+        codeColumn.setCellValueFactory(cellData -> 
+            new SimpleStringProperty(cellData.getValue().getPermissionCode())
         );
 
         // عمود الاسم
-        TableColumn<UserPermission, String> nameColumn = new TableColumn<>("اسم الصلاحية");
+        TableColumn<RolePermission, String> nameColumn = new TableColumn<>("اسم الصلاحية");
         nameColumn.setPrefWidth(350);
-        nameColumn.setCellValueFactory(cellData ->
-                new SimpleStringProperty(cellData.getValue().getPermissionNameAr())
+        nameColumn.setCellValueFactory(cellData -> 
+            new SimpleStringProperty(cellData.getValue().getPermissionNameAr())
         );
 
         // عمود الوحدة
-        TableColumn<UserPermission, String> moduleColumn = new TableColumn<>("الوحدة");
+        TableColumn<RolePermission, String> moduleColumn = new TableColumn<>("الوحدة");
         moduleColumn.setPrefWidth(150);
         moduleColumn.setCellValueFactory(cellData -> {
             String code = cellData.getValue().getPermissionCode();
@@ -169,7 +162,16 @@ public class UserPermissionController implements Initializable {
             return new SimpleStringProperty(permCode != null ? permCode.getModule() : "");
         });
 
-        table.getColumns().addAll(checkColumn, codeColumn, nameColumn, moduleColumn);
+        // عمود الإجراء
+        TableColumn<RolePermission, String> actionColumn = new TableColumn<>("الإجراء");
+        actionColumn.setPrefWidth(120);
+        actionColumn.setCellValueFactory(cellData -> {
+            String code = cellData.getValue().getPermissionCode();
+            PermissionCode permCode = PermissionCode.fromCode(code);
+            return new SimpleStringProperty(permCode != null ? permCode.getAction() : "");
+        });
+
+        table.getColumns().addAll(checkColumn, codeColumn, nameColumn, moduleColumn, actionColumn);
         table.setItems(permissionsList);
         table.setEditable(true);
 
@@ -178,28 +180,25 @@ public class UserPermissionController implements Initializable {
 
     private HBox createBottomSection() {
         HBox hbox = new HBox(10);
+        hbox.setPadding(new Insets(15, 0, 0, 0));
         hbox.setAlignment(javafx.geometry.Pos.CENTER_RIGHT);
 
-        saveButton = new Button("حفظ التغييرات");
-        saveButton.getStyleClass().add("app-success-button");
+        Button saveButton = new Button("حفظ التغييرات");
+        saveButton.setStyle("-fx-background-color: #4CAF50; -fx-text-fill: white; -fx-font-size: 14px;");
         saveButton.setOnAction(e -> savePermissions());
 
-        Button refreshButton = new Button("تحديث");
-        refreshButton.getStyleClass().add("app-neutral-button");
-        refreshButton.setOnAction(e -> loadPermissions());
+        Button cancelButton = new Button("إلغاء");
+        cancelButton.setStyle("-fx-background-color: #f44336; -fx-text-fill: white; -fx-font-size: 14px;");
+        cancelButton.setOnAction(e -> dialog.close());
 
-        hbox.getChildren().addAll(saveButton, refreshButton);
+        hbox.getChildren().addAll(saveButton, cancelButton);
         return hbox;
     }
 
     private void loadPermissions() {
-        if (currentUser == null) {
-            return;
-        }
-
         try {
             permissionsList.clear();
-            List<UserPermission> permissions = userPermissionService.getUserPermissions(currentUser.getId());
+            List<RolePermission> permissions = rolePermissionService.getRolePermissions(role.getId());
             permissionsList.addAll(permissions);
             updateStats();
         } catch (DaoException e) {
@@ -209,28 +208,24 @@ public class UserPermissionController implements Initializable {
     }
 
     private void filterPermissions() {
-        if (currentUser == null) {
-            return;
-        }
-
         String searchText = searchField.getText().toLowerCase();
         String selectedModule = moduleFilterComboBox.getValue();
 
         try {
-            List<UserPermission> allPermissions = userPermissionService.getUserPermissions(currentUser.getId());
+            List<RolePermission> allPermissions = rolePermissionService.getRolePermissions(role.getId());
 
-            List<UserPermission> filtered = allPermissions.stream()
-                    .filter(perm -> {
-                        boolean matchesSearch = searchText.isEmpty() ||
-                                perm.getPermissionCode().toLowerCase().contains(searchText) ||
-                                perm.getPermissionNameAr().contains(searchText);
+            List<RolePermission> filtered = allPermissions.stream()
+                .filter(perm -> {
+                    boolean matchesSearch = searchText.isEmpty() ||
+                        perm.getPermissionCode().toLowerCase().contains(searchText) ||
+                        perm.getPermissionNameAr().contains(searchText);
 
-                        boolean matchesModule = selectedModule.equals("الكل") ||
-                                perm.getPermissionCode().startsWith(selectedModule);
+                    boolean matchesModule = selectedModule.equals("الكل") ||
+                        perm.getPermissionCode().startsWith(selectedModule);
 
-                        return matchesSearch && matchesModule;
-                    })
-                    .collect(Collectors.toList());
+                    return matchesSearch && matchesModule;
+                })
+                .collect(Collectors.toList());
 
             permissionsList.clear();
             permissionsList.addAll(filtered);
@@ -248,19 +243,16 @@ public class UserPermissionController implements Initializable {
     }
 
     private void updateStats() {
-        long checkedCount = permissionsList.stream().filter(UserPermission::isChecked).count();
+        long checkedCount = permissionsList.stream().filter(RolePermission::isChecked).count();
         long totalCount = permissionsList.size();
         statsLabel.setText(String.format("محدد: %d من %d", checkedCount, totalCount));
     }
 
     private void savePermissions() {
-        if (currentUser == null) {
-            return;
-        }
-
         try {
-            userPermissionService.saveUserPermissions(currentUser.getId(), new ArrayList<>(permissionsList));
+            rolePermissionService.saveRolePermissions(role.getId(), new ArrayList<>(permissionsList));
             showSuccess("تم حفظ الصلاحيات بنجاح");
+            dialog.close();
         } catch (DaoException e) {
             log.error("خطأ في حفظ الصلاحيات", e);
             showError("خطأ في حفظ الصلاحيات: " + e.getMessage());

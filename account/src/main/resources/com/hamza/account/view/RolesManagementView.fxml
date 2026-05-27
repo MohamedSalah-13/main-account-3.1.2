@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<BorderPane xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
+            fx:controller="com.hamza.account.controller.users.RolesManagementController"
+            prefHeight="600.0" prefWidth="900.0">
+
+    <top>
+        <VBox spacing="10" styleClass="header-section">
+            <padding>
+                <Insets top="15" right="15" bottom="15" left="15"/>
+            </padding>
+
+            <!-- العنوان -->
+            <Label text="إدارة الأدوار" styleClass="header-title"/>
+
+            <!-- شريط البحث والأزرار -->
+            <HBox spacing="10" alignment="CENTER_LEFT">
+                <TextField fx:id="searchField" promptText="بحث في الأدوار..." 
+                          prefWidth="300" styleClass="search-field"/>
+
+                <Region HBox.hgrow="ALWAYS"/>
+
+                <Button fx:id="addButton" text="إضافة دور جديد" styleClass="app-button"/>
+                <Button fx:id="editButton" text="تعديل" styleClass="app-button"/>
+                <Button fx:id="deleteButton" text="حذف" styleClass="app-button-danger"/>
+                <Button fx:id="permissionsButton" text="إدارة الصلاحيات" styleClass="app-success-button"/>
+                <Button fx:id="refreshButton" text="تحديث" styleClass="app-neutral-button"/>
+            </HBox>
+        </VBox>
+    </top>
+
+    <center>
+        <TableView fx:id="rolesTable" styleClass="app-table">
+            <columns>
+                <TableColumn fx:id="idColumn" text="المعرف" prefWidth="80" styleClass="table-column"/>
+                <TableColumn fx:id="nameColumn" text="اسم الدور" prefWidth="200" styleClass="table-column"/>
+                <TableColumn fx:id="descriptionColumn" text="الوصف" prefWidth="400" styleClass="table-column"/>
+                <TableColumn fx:id="activeColumn" text="نشط" prefWidth="100" styleClass="table-column"/>
+            </columns>
+            <columnResizePolicy>
+                <TableView fx:constant="CONSTRAINED_RESIZE_POLICY"/>
+            </columnResizePolicy>
+        </TableView>
+    </center>
+
+    <padding>
+        <Insets top="10" right="10" bottom="10" left="10"/>
+    </padding>
+</BorderPane>
