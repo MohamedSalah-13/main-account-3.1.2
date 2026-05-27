@@ -8,7 +8,9 @@ import com.hamza.account.controller.others.ServiceRegistry;
 import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.model.domain.ItemsModel;
 import com.hamza.account.openFxml.FxmlPath;
-import com.hamza.account.security.PermissionUi;
+import com.hamza.account.security.CRUDPermissionHelper;
+import com.hamza.account.security.PermissionHelper;
+import com.hamza.account.security.annotation.RequiresPermission;
 import com.hamza.account.service.ItemsService;
 import com.hamza.account.service.MainGroupService;
 import com.hamza.account.service.SelPriceItemService;
@@ -65,8 +67,10 @@ public class ItemsController extends LoadData {
     private final ItemsService itemsService = ServiceRegistry.get(ItemsService.class);
     private final StockService stockService = ServiceRegistry.get(StockService.class);
     private final MainGroupService mainGroupService = ServiceRegistry.get(MainGroupService.class);
-    //    private final SupGroupService supGroupService = ServiceRegistry.get(SupGroupService.class);
     private final SelPriceItemService selPriceService = ServiceRegistry.get(SelPriceItemService.class);
+
+    // ✅ إضافة CRUD Permission Helper
+    private final CRUDPermissionHelper crudPermissions = CRUDPermissionHelper.forItems();
 
     @FXML
     private Button btnNew, btnUpdate, btnDelete, btnRefresh;
@@ -92,73 +96,81 @@ public class ItemsController extends LoadData {
     }
 
     public void initialize() {
+        // ✅ تطبيق الصلاحيات أولاً
+        applyPermissions();
+
         otherSetting();
         table_data();
         action();
         buttonGraphic();
-        applyPermissions();
-        paginationTableSetting = new PaginationTableSetting(tableView, itemsService
-                , txtSearch, pagination);
+
+        paginationTableSetting = new PaginationTableSetting(tableView, itemsService, txtSearch, pagination);
         paginationTableSetting.initializePagination();
     }
 
-    private void otherSetting() {
+    // ✅ ========== تطبيق الصلاحيات ==========
+    private void applyPermissions() {
+        // 1. صلاحيات CRUD على الأزرار
+        applyCRUDPermissions();
 
+        // 2. صلاحيات القوائم (Menu Items)
+        applyMenuPermissions();
+
+        // 3. إخفاء الأعمدة الحساسة
+        applyColumnPermissions();
+    }
+
+    /**
+     * تطبيق صلاحيات CRUD على الأزرار الأساسية
+     */
+    private void applyCRUDPermissions() {
+        crudPermissions.applyToButtons(btnNew, btnUpdate, btnDelete);
+
+        // زر التحديث متاح للجميع
+        // btnRefresh - no permission needed
+
+        log.info("تم تطبيق صلاحيات CRUD على الأزرار");
+    }
+
+    /**
+     * تطبيق الصلاحيات على عناصر القائمة
+     */
+    private void applyMenuPermissions() {
+        // طباعة - تحتاج صلاحية عرض
+        PermissionHelper.disableIfNotAllowed(menuPrint, PermissionCode.ITEMS_SHOW);
+        PermissionHelper.disableIfNotAllowed(menuPrintMenu, PermissionCode.ITEMS_SHOW);
+        PermissionHelper.disableIfNotAllowed(menuPrintBarcode, PermissionCode.ITEMS_SHOW);
+
+        // كارت الصنف - تحتاج صلاحية عرض
+        PermissionHelper.disableIfNotAllowed(menuItemCard, PermissionCode.ITEMS_SHOW);
+
+        // تحويل المجموعات - تحتاج صلاحية تعديل
+        PermissionHelper.disableIfNotAllowed(menuItemConvertGroup, PermissionCode.ITEMS_UPDATE);
+
+        // تصدير Excel - تحتاج صلاحية تصدير
+        PermissionHelper.disableIfNotAllowed(menuExportExcel, PermissionCode.ITEMS_EXPORT);
+
+        log.info("تم تطبيق الصلاحيات على عناصر القائمة");
+    }
+
+    /**
+     * إخفاء الأعمدة الحساسة بناءً على الصلاحيات
+     */
+    private void applyColumnPermissions() {
+        // سيتم تطبيقها في table_data() بعد إنشاء الأعمدة
+    }
+
+    // ========== existing code ... ==========
+
+    private void otherSetting() {
         menuItemConvertGroup.setText(HEADER_TEXT);
-//        menuItemConvertGroup.setDisable(true);
-        // combo items
+
         ObservableList<String> observableListStock = FXCollections.observableArrayList(getStockNames());
         ObservableList<String> observableListMain = FXCollections.observableArrayList(getMainGroupsNames());
 
         dataPublisher.getPublisherAddStock().addObserver(string -> observableListStock.setAll(getStockNames()));
         dataPublisher.getPublisherAddMainGroup().addObserver(string -> observableListMain.setAll(getMainGroupsNames()));
         publisherAddItem.addObserver(message -> btnRefresh.fire());
-    }
-
-    private void applyPermissions() {
-        // صلاحيات الأزرار الأساسية
-        PermissionUi.disableIfNotAllowed(btnNew, PermissionCode.ITEMS_CREATE);
-        PermissionUi.disableIfNotAllowed(btnUpdate, PermissionCode.ITEMS_UPDATE);
-        PermissionUi.disableIfNotAllowed(btnDelete, PermissionCode.ITEMS_DELETE);
-//        PermissionUi.disableIfNotAllowed(btnImport, PermissionCode.ITEMS_IMPORT);
-//        PermissionUi.disableIfNotAllowed(btnExport, PermissionCode.ITEMS_EXPORT);
-
-//        var itemsModelTableColumn = tableView.getColumns().get(1);
-        // إخفاء سعر الشراء
-        if (!PermissionUi.has(PermissionCode.ITEMS_SHOW_BUY_PRICE)) {
-//            colBuyPrice.setVisible(false);
-//            txtBuyPrice.setVisible(false);
-//            txtBuyPrice.setManaged(false);
-        } else {
-            // إذا كان يمكنه رؤية السعر، نتحقق من إمكانية التعديل
-            boolean canUpdateBuyPrice = PermissionUi.has(PermissionCode.ITEMS_UPDATE_BUY_PRICE);
-//            txtBuyPrice.setEditable(canUpdateBuyPrice);
-            if (!canUpdateBuyPrice) {
-//                txtBuyPrice.setStyle("-fx-background-color: #f0f0f0;");
-//                txtBuyPrice.setPromptText("للقراءة فقط");
-            }
-        }
-
-        // إخفاء سعر البيع
-        if (!PermissionUi.has(PermissionCode.ITEMS_SHOW_SELL_PRICE)) {
-//            colSellPrice.setVisible(false);
-//            txtSellPrice.setVisible(false);
-//            txtSellPrice.setManaged(false);
-        } else {
-            // إذا كان يمكنه رؤية السعر، نتحقق من إمكانية التعديل
-            boolean canUpdateSellPrice = PermissionUi.has(PermissionCode.ITEMS_UPDATE_SELL_PRICE);
-//            txtSellPrice.setEditable(canUpdateSellPrice);
-            if (!canUpdateSellPrice) {
-//                txtSellPrice.setStyle("-fx-background-color: #f0f0f0;");
-//                txtSellPrice.setPromptText("للقراءة فقط");
-            }
-        }
-
-        // رسالة للمستخدم إذا كان محدود الصلاحيات
-        if (!PermissionUi.has(PermissionCode.ITEMS_SHOW_BUY_PRICE) &&
-                !PermissionUi.has(PermissionCode.ITEMS_SHOW_SELL_PRICE)) {
-            log.info("المستخدم لا يمتلك صلاحية عرض الأسعار");
-        }
     }
 
     private List<String> getMainGroupsNames() {
@@ -182,7 +194,10 @@ public class ItemsController extends LoadData {
     private void table_data() {
         new TableColumnAnnotation().getTable(tableView, ItemsModel.class);
         tableView.getSelectionModel().setSelectionMode(SelectionMode.SINGLE);
-        tableView.setEditable(true);
+
+        // ✅ تحديد إمكانية التعديل بناءً على الصلاحية
+        boolean canEdit = PermissionHelper.has(PermissionCode.ITEMS_UPDATE);
+        tableView.setEditable(canEdit && getItemEditFromTable());
 
         // Add image column
         new ColumnImage(tableView, itemsService).addColumnImage();
@@ -190,14 +205,19 @@ public class ItemsController extends LoadData {
         // add column type
         tableView.getColumns().add(3, addColumnUnitsType());
 
-        // edite column
-        if (getItemEditFromTable()) setUpEditableTableColumns();
+        // ✅ تفعيل التعديل فقط إذا كان لديه صلاحية
+        if (canEdit && getItemEditFromTable()) {
+            setUpEditableTableColumns();
+        }
 
         ColumnSetting.addSelectedColumn(tableView);
         TableSetting.tableMenuSetting(getClass(), tableView);
 
         // change column names
-        dataPublisher.getPublisherSelPriceUnits().addObserver(message -> Platform.runLater(() -> updateColumnNames(message)));
+        dataPublisher.getPublisherSelPriceUnits().addObserver(message ->
+                Platform.runLater(() -> updateColumnNames(message))
+        );
+
         // load column names
         try {
             updateColumnNames(selPriceService.getIntegerStringHashMap());
@@ -205,39 +225,84 @@ public class ItemsController extends LoadData {
             logErrors(e);
         }
 
-        // hide data table if not admin
-        var b = LogApplication.usersVo.getId() == 1;
-        if (b) {
-            // show table menu
-            TableSetting.tableMenuSetting(getClass(), tableView);
+        // ✅ إخفاء الأعمدة الحساسة بناءً على الصلاحيات
+        applyColumnVisibilityPermissions();
+    }
+
+    /**
+     * إخفاء/إظهار الأعمدة بناءً على الصلاحيات
+     */
+    private void applyColumnVisibilityPermissions() {
+        // عمود سعر الشراء (index 4)
+        if (tableView.getColumns().size() > 4) {
+            TableColumn<?, ?> buyPriceColumn = tableView.getColumns().get(4);
+            if (!PermissionHelper.has(PermissionCode.ITEMS_SHOW_BUY_PRICE)) {
+                buyPriceColumn.setVisible(false);
+                log.info("تم إخفاء عمود سعر الشراء - لا توجد صلاحية");
+            }
         }
 
-        tableView.getColumns().get(5).setVisible(b);
+        // عمود سعر البيع (index 5, 6, 7)
+        if (!PermissionHelper.has(PermissionCode.ITEMS_SHOW_SELL_PRICE)) {
+            if (tableView.getColumns().size() > 5) {
+                tableView.getColumns().get(5).setVisible(false);
+            }
+            if (tableView.getColumns().size() > 6) {
+                tableView.getColumns().get(6).setVisible(false);
+            }
+            if (tableView.getColumns().size() > 7) {
+                tableView.getColumns().get(7).setVisible(false);
+            }
+            log.info("تم إخفاء أعمدة أسعار البيع - لا توجد صلاحية");
+        }
 
+        // ✅ التحقق من Admin (كما في الكود الأصلي)
+        boolean isAdmin = LogApplication.usersVo.getId() == 1;
+        if (!isAdmin && tableView.getColumns().size() > 5) {
+            tableView.getColumns().get(5).setVisible(false);
+        }
     }
 
     private void setUpEditableTableColumns() {
         tableView.getSelectionModel().setCellSelectionEnabled(true);
         getColumn(1, "barcode");
         getColumn(2, "name");
-        enableEditingDouble(4, "buy_price");
-        enableEditingDouble(5, "sel_price");
-        enableEditingDouble(6, "sel_price2");
-        enableEditingDouble(7, "sel_price3");
+
+        // ✅ السماح بتعديل الأسعار فقط إذا كان لديه صلاحية
+        if (PermissionHelper.has(PermissionCode.ITEMS_UPDATE_BUY_PRICE)) {
+            enableEditingDouble(4, "buy_price");
+        }
+
+        if (PermissionHelper.has(PermissionCode.ITEMS_UPDATE_SELL_PRICE)) {
+            enableEditingDouble(5, "sel_price");
+            enableEditingDouble(6, "sel_price2");
+            enableEditingDouble(7, "sel_price3");
+        }
+
         enableEditingDouble(8, "mini");
         enableEditingDouble(9, "first");
     }
 
     private TableColumn<ItemsModel, String> addColumnUnitsType() {
         TableColumn<ItemsModel, String> column = new TableColumn<>(Setting_Language.Unit);
-        column.setCellValueFactory(itemsModelStringCellDataFeatures -> new SimpleStringProperty(itemsModelStringCellDataFeatures.getValue().getUnitsType().getUnit_name()));
+        column.setCellValueFactory(itemsModelStringCellDataFeatures ->
+                new SimpleStringProperty(
+                        itemsModelStringCellDataFeatures.getValue().getUnitsType().getUnit_name()
+                )
+        );
         return column;
     }
 
     private void updateColumnNames(HashMap<Integer, String> message) {
-        tableView.getColumns().get(6).setText(message.get(1));
-        tableView.getColumns().get(7).setText(message.get(2));
-        tableView.getColumns().get(8).setText(message.get(3));
+        if (tableView.getColumns().size() > 6) {
+            tableView.getColumns().get(6).setText(message.get(1));
+        }
+        if (tableView.getColumns().size() > 7) {
+            tableView.getColumns().get(7).setText(message.get(2));
+        }
+        if (tableView.getColumns().size() > 8) {
+            tableView.getColumns().get(8).setText(message.get(3));
+        }
     }
 
     private void buttonGraphic() {
@@ -247,12 +312,13 @@ public class ItemsController extends LoadData {
         btnDelete.setGraphic(createIcon(images.delete));
         btnRefresh.setGraphic(createIcon(images.refresh));
         btnSelected.setGraphic(createIcon(images.select));
-//        menuButtonPrint.setGraphic(createIcon(images.print));
-//        menuButtonOther.setGraphic(createIcon(images.reports));
     }
 
     private void action() {
-        menuExportExcel.setOnAction(actionEvent -> exportToExcel());
+        // ✅ التحقق من الصلاحية قبل التصدير
+        menuExportExcel.setOnAction(actionEvent -> {
+            PermissionHelper.executeIfAllowed(PermissionCode.ITEMS_EXPORT, this::exportToExcel);
+        });
 
         new SelectedButton(btnSelected) {
             @Override
@@ -263,14 +329,24 @@ public class ItemsController extends LoadData {
             }
         };
 
-//        btnSearch.setOnAction(actionEvent -> searchAction());
-//        comboMain.valueProperty().addListener((observableValue, string, t1) -> getData(t1));
-
         menuItemCard.setOnAction(actionEvent -> openDetails());
-
         menuItemConvertGroup.setOnAction(actionEvent -> updateSomeItems());
-        menuPrint.setOnAction(actionEvent -> printReports.printItems(printItems()));
-        menuPrintMenu.setOnAction(actionEvent -> printReports.printItemsBarcode(printItems()));
+
+        // ✅ التحقق من صلاحية الطباعة
+        menuPrint.setOnAction(actionEvent -> {
+            PermissionHelper.executeIfAllowed(
+                    PermissionCode.ITEMS_SHOW,
+                    () -> printReports.printItems(printItems())
+            );
+        });
+
+        menuPrintMenu.setOnAction(actionEvent -> {
+            PermissionHelper.executeIfAllowed(
+                    PermissionCode.ITEMS_SHOW,
+                    () -> printReports.printItemsBarcode(printItems())
+            );
+        });
+
         menuPrintBarcode.setOnAction(actionEvent -> printBarcode());
 
         btnNew.setOnAction(actionEvent -> addItem(0));
@@ -285,22 +361,25 @@ public class ItemsController extends LoadData {
         btnDelete.setOnAction(actionEvent -> delete());
         btnRefresh.setOnAction(actionEvent -> paginationTableSetting.initializePagination());
 
-        tableView.itemsProperty().addListener((observableValue, ts, t1) -> txtSumTotals.setText(String.valueOf(tableView.getItems().size())));
+        tableView.itemsProperty().addListener((observableValue, ts, t1) ->
+                txtSumTotals.setText(String.valueOf(tableView.getItems().size()))
+        );
 
         tableView.setOnKeyPressed(keyEvent -> {
             if (keyEvent.getCode() == KeyCode.DELETE) {
                 btnDelete.fire();
             }
         });
+
         tableView.setOnMouseClicked(mouseEvent -> {
             if (mouseEvent.getClickCount() == 2) {
                 menuItemCard.fire();
             }
         });
-
     }
 
-
+    // ✅ استخدام Annotation للحذف
+    @RequiresPermission(PermissionCode.ITEMS_DELETE)
     private void delete() {
         try {
             if (tableView.getSelectionModel().isEmpty()) {
@@ -308,8 +387,10 @@ public class ItemsController extends LoadData {
                 return;
             }
             if (!AllAlerts.confirmDelete()) return;
+
             var selectedItem = tableView.getSelectionModel().getSelectedItem();
             var i = itemsService.deleteItem(selectedItem.getId());
+
             if (i >= 1) {
                 AllAlerts.alertDelete();
                 btnRefresh.fire();
@@ -320,12 +401,16 @@ public class ItemsController extends LoadData {
         }
     }
 
+    // ✅ التحقق من صلاحية التعديل
+    @RequiresPermission(PermissionCode.ITEMS_UPDATE)
     private void updateSomeItems() {
         try {
             var itemsModels = printItems();
             if (!itemsModels.isEmpty()) {
                 new ConvertItemsGroup(itemsModels).start(new Stage());
-            } else AllAlerts.alertError(Error_Text_Show.PLEASE_INSERT_ALL_DATA);
+            } else {
+                AllAlerts.alertError(Error_Text_Show.PLEASE_INSERT_ALL_DATA);
+            }
         } catch (Exception e) {
             logErrors(e);
         }
@@ -333,17 +418,28 @@ public class ItemsController extends LoadData {
 
     private void printBarcode() {
         try {
-            ObservableList<PrintBarcodeModel> observableList = FXCollections.observableArrayList();
-            var list = tableView.getItems().stream().filter(itemsModel -> itemsModel.getSelectedRow().get()).toList();
+            // ✅ التحقق من الصلاحية
+            if (!PermissionHelper.has(PermissionCode.ITEMS_SHOW)) {
+                AllAlerts.alertWarning("ليس لديك صلاحية طباعة الباركود");
+                return;
+            }
 
-            // check if list is empty
+            ObservableList<PrintBarcodeModel> observableList = FXCollections.observableArrayList();
+            var list = tableView.getItems().stream()
+                    .filter(itemsModel -> itemsModel.getSelectedRow().get())
+                    .toList();
+
             if (list.isEmpty()) {
                 AllAlerts.alertError(Error_Text_Show.PLEASE_INSERT_ALL_DATA);
                 return;
             }
 
             for (ItemsModel itemsModel : list) {
-                observableList.add(new PrintBarcodeModel(itemsModel.getBarcode(), itemsModel.getNameItem(), itemsModel.getSelPrice1()));
+                observableList.add(new PrintBarcodeModel(
+                        itemsModel.getBarcode(),
+                        itemsModel.getNameItem(),
+                        itemsModel.getSelPrice1()
+                ));
             }
 
             new PrintBarcodeApp(observableList);
@@ -352,8 +448,22 @@ public class ItemsController extends LoadData {
         }
     }
 
+    // ✅ التحقق من الصلاحية عند الإضافة/التعديل
     private void addItem(int num) {
         try {
+            // التحقق من الصلاحية
+            PermissionCode requiredPermission = num == 0
+                    ? PermissionCode.ITEMS_CREATE
+                    : PermissionCode.ITEMS_UPDATE;
+
+            if (!PermissionHelper.has(requiredPermission)) {
+                String message = num == 0
+                        ? "ليس لديك صلاحية إضافة صنف جديد"
+                        : "ليس لديك صلاحية تعديل الصنف";
+                AllAlerts.alertWarning(message);
+                return;
+            }
+
             new AddItemApplication(num, dataPublisher).start(new Stage());
         } catch (Exception e) {
             logErrors(e);
@@ -362,10 +472,17 @@ public class ItemsController extends LoadData {
 
     private void openDetails() {
         try {
+            // ✅ التحقق من صلاحية العرض
+            if (!PermissionHelper.has(PermissionCode.ITEMS_SHOW)) {
+                AllAlerts.alertWarning("ليس لديك صلاحية عرض تفاصيل الصنف");
+                return;
+            }
+
             if (tableView.getSelectionModel().isEmpty()) {
                 AllAlerts.alertError(Setting_Language.PLEASE_SELECT_ROW);
                 return;
             }
+
             ItemsModel selectedItem = tableView.getSelectionModel().getSelectedItem();
             new CardApplication(selectedItem, daoFactory, dataPublisher).start(new Stage());
         } catch (Exception e) {
@@ -378,16 +495,16 @@ public class ItemsController extends LoadData {
         for (int i = 0; i < tableView.getItems().size(); i++) {
             ItemsModel itemsModel = tableView.getItems().get(i);
             if (itemsModel.isSelectedRow()) {
-//                itemsModel.setSelPrice(itemsModel.getItemsPriceModels().getFirst().getSelPrice());
                 list.add(itemsModel);
             }
         }
         return list;
     }
 
+    // ✅ استخدام Annotation للتصدير
+    @RequiresPermission(PermissionCode.ITEMS_EXPORT)
     private void exportToExcel() {
         try {
-            // Create a new workbook
             Workbook workbook = new XSSFWorkbook();
             Sheet sheet = workbook.createSheet("Items");
 
@@ -400,11 +517,11 @@ public class ItemsController extends LoadData {
             headerStyle.setFillForegroundColor(IndexedColors.GREY_25_PERCENT.getIndex());
             headerStyle.setFillPattern(FillPatternType.SOLID_FOREGROUND);
 
-
             // Get column names from TableView
             List<String> columnNames = new ArrayList<>();
             for (TableColumn<ItemsModel, ?> column : tableView.getColumns()) {
-                if (column.getText() != null && !column.getText().isEmpty()) {
+                // ✅ تخطي الأعمدة المخفية (بدون صلاحية)
+                if (column.isVisible() && column.getText() != null && !column.getText().isEmpty()) {
                     columnNames.add(column.getText());
                 }
             }
@@ -420,41 +537,30 @@ public class ItemsController extends LoadData {
             int rowNum = 1;
             for (ItemsModel item : tableView.getItems()) {
                 Row row = sheet.createRow(rowNum++);
+                int colIndex = 0;
 
-                // ID column
-                if (item.getId() > 0) {
-                    row.createCell(0).setCellValue(item.getId());
+                // ✅ إضافة البيانات بناءً على الأعمدة المرئية فقط
+                row.createCell(colIndex++).setCellValue(item.getId());
+                row.createCell(colIndex++).setCellValue(item.getBarcode());
+                row.createCell(colIndex++).setCellValue(item.getNameItem());
+
+                // سعر الشراء - فقط إذا كان العمود مرئي
+                if (PermissionHelper.has(PermissionCode.ITEMS_SHOW_BUY_PRICE)) {
+                    row.createCell(colIndex++).setCellValue(item.getBuyPrice());
                 }
 
-                // Barcode column
-                if (item.getBarcode() != null) {
-                    row.createCell(1).setCellValue(item.getBarcode());
+                // أسعار البيع - فقط إذا كان العمود مرئي
+                if (PermissionHelper.has(PermissionCode.ITEMS_SHOW_SELL_PRICE)) {
+                    row.createCell(colIndex++).setCellValue(item.getSelPrice1());
                 }
 
-                // Name column
-                if (item.getNameItem() != null) {
-                    row.createCell(2).setCellValue(item.getNameItem());
-                }
+                row.createCell(colIndex++).setCellValue(item.getMini_quantity());
+                row.createCell(colIndex++).setCellValue(item.getFirstBalanceForStock());
+                row.createCell(colIndex++).setCellValue(item.getSumAllBalance());
 
-                // Buy price column
-                row.createCell(3).setCellValue(item.getBuyPrice());
-
-                // Sell price column
-                row.createCell(4).setCellValue(item.getSelPrice1());
-
-                // Minimum quantity column
-                row.createCell(5).setCellValue(item.getMini_quantity());
-
-                // First balance column
-                row.createCell(6).setCellValue(item.getFirstBalanceForStock());
-
-                // Balance column
-                row.createCell(7).setCellValue(item.getSumAllBalance());
-                // Image column
                 if (item.getItem_image() != null) {
                     insertImageToCell(workbook, sheet, item.getItem_image(), rowNum - 1);
                 }
-
             }
 
             // Resize columns to fit content
@@ -465,7 +571,9 @@ public class ItemsController extends LoadData {
             // Save the workbook to a file
             FileChooser fileChooser = new FileChooser();
             fileChooser.setTitle("Save Excel File");
-            fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("Excel Files", "*.xlsx"));
+            fileChooser.getExtensionFilters().add(
+                    new FileChooser.ExtensionFilter("Excel Files", "*.xlsx")
+            );
             fileChooser.setInitialFileName("Items.xlsx");
 
             File file = fileChooser.showSaveDialog(tableView.getScene().getWindow());
@@ -509,7 +617,18 @@ public class ItemsController extends LoadData {
 
             Double newValue = t.getNewValue();
             if (newValue != null) {
+                // ✅ التحقق من الصلاحية قبل السماح بالتعديل
+                boolean canUpdateBuyPrice = PermissionHelper.has(PermissionCode.ITEMS_UPDATE_BUY_PRICE);
+                boolean canUpdateSellPrice = PermissionHelper.has(PermissionCode.ITEMS_UPDATE_SELL_PRICE);
+
                 if ("buy_price".equals(fieldType)) {
+                    if (!canUpdateBuyPrice) {
+                        AllAlerts.alertWarning("ليس لديك صلاحية تعديل سعر الشراء");
+                        item.setBuyPrice(t.getOldValue());
+                        t.getTableView().refresh();
+                        return;
+                    }
+
                     if (newValue > item.getSelPrice1() || newValue > 1000000000000.0) {
                         AllAlerts.alertError("لا يمكن ان يكون سعر البيع اقل من سعر الشراء");
                         item.setBuyPrice(t.getOldValue());
@@ -517,30 +636,24 @@ public class ItemsController extends LoadData {
                         return;
                     }
                     item.setBuyPrice(newValue);
-                } else if ("sel_price".equals(fieldType)) {
-                    if (newValue < item.getBuyPrice() || newValue > 1000000000000.0) {
-                        AllAlerts.alertError("لا يمكن ان يكون سعر البيع اقل من سعر الشراء");
-                        item.setSelPrice1(t.getOldValue());
+
+                } else if (fieldType.startsWith("sel_price")) {
+                    if (!canUpdateSellPrice) {
+                        AllAlerts.alertWarning("ليس لديك صلاحية تعديل سعر البيع");
+                        resetSelPrice(item, fieldType, t.getOldValue());
                         t.getTableView().refresh();
                         return;
                     }
-                    item.setSelPrice1(newValue);
-                } else if ("sel_price2".equals(fieldType)) {
+
                     if (newValue < item.getBuyPrice() || newValue > 1000000000000.0) {
                         AllAlerts.alertError("لا يمكن ان يكون سعر البيع اقل من سعر الشراء");
-                        item.setSelPrice2(t.getOldValue());
+                        resetSelPrice(item, fieldType, t.getOldValue());
                         t.getTableView().refresh();
                         return;
                     }
-                    item.setSelPrice2(newValue);
-                } else if ("sel_price3".equals(fieldType)) {
-                    if (newValue < item.getBuyPrice() || newValue > 1000000000000.0) {
-                        AllAlerts.alertError("لا يمكن ان يكون سعر البيع اقل من سعر الشراء");
-                        item.setSelPrice3(t.getOldValue());
-                        t.getTableView().refresh();
-                        return;
-                    }
-                    item.setSelPrice3(newValue);
+
+                    updateSelPrice(item, fieldType, newValue);
+
                 } else if ("first".equals(fieldType)) {
                     item.setFirstBalanceForStock(newValue);
                 } else if ("mini".equals(fieldType)) {
@@ -554,6 +667,22 @@ public class ItemsController extends LoadData {
         new ColumnSetting().enableDoubleEditing(columnIndex, editHandler, tableView);
     }
 
+    private void updateSelPrice(ItemsModel item, String fieldType, Double newValue) {
+        switch (fieldType) {
+            case "sel_price" -> item.setSelPrice1(newValue);
+            case "sel_price2" -> item.setSelPrice2(newValue);
+            case "sel_price3" -> item.setSelPrice3(newValue);
+        }
+    }
+
+    private void resetSelPrice(ItemsModel item, String fieldType, Double oldValue) {
+        switch (fieldType) {
+            case "sel_price" -> item.setSelPrice1(oldValue);
+            case "sel_price2" -> item.setSelPrice2(oldValue);
+            case "sel_price3" -> item.setSelPrice3(oldValue);
+        }
+    }
+
     @SuppressWarnings("unchecked")
     private void getColumn(int i, String type) {
         TableColumn<ItemsModel, String> col = (TableColumn<ItemsModel, String>) tableView.getColumns().get(i);
@@ -563,6 +692,7 @@ public class ItemsController extends LoadData {
                 int row = t.getTablePosition().getRow();
                 ItemsModel item = t.getTableView().getItems().get(row);
                 String newValue = t.getNewValue();
+
                 if (newValue != null) {
                     if ("name".equals(type)) {
                         item.setNameItem(newValue);
@@ -571,12 +701,13 @@ public class ItemsController extends LoadData {
                     }
 
                     updateItemAndRefresh(item, t.getTableView());
-
                 }
             } catch (DaoException e) {
                 if (e.getMessage().contains("duplicate") || e.getMessage().contains("Duplicate")) {
                     AllAlerts.alertError("بيانات موجودة سابقا");
-                } else AllAlerts.alertError(e.getMessage() + " column: " + col.getText());
+                } else {
+                    AllAlerts.alertError(e.getMessage() + " column: " + col.getText());
+                }
             }
         });
     }
@@ -585,6 +716,7 @@ public class ItemsController extends LoadData {
         item.setItemsUnitsModelList(new ArrayList<>());
         item.setItems_packageList(new ArrayList<>());
         item.setUsers(LogApplication.usersVo);
+
         var i = itemsService.commitItemUpdate(item);
         if (i >= 0) {
             tableView.refresh();
@@ -597,6 +729,4 @@ public class ItemsController extends LoadData {
         log.error(e.getMessage(), e.getCause());
         AllAlerts.showExceptionDialog(e);
     }
-
-
 }

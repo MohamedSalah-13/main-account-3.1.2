@@ -31,6 +31,14 @@ public class PermissionHelper {
      * التحقق من وجود صلاحية واحدة
      */
     public static boolean has(PermissionCode permission) {
+        // ✅ Add null check with clear error message
+        if (authorizationService == null) {
+            log.error("AuthorizationService is not initialized. Make sure it's registered in ServiceRegistry.");
+            throw new IllegalStateException(
+                    "AuthorizationService not initialized. Please register it in ServiceRegistry before using PermissionHelper."
+            );
+        }
+
         try {
             int userId = LogApplication.usersVo.getId();
             return authorizationService.hasPermission(userId, permission);

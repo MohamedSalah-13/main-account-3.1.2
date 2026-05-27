@@ -95,4 +95,12 @@ public class AllAlerts {
         Toolkit.getDefaultToolkit().beep();
         alert.showAndWait();
     }
+
+    public static void alertWarning(String message) {
+        Alert alert = new Alert(Alert.AlertType.WARNING);
+        alert.setTitle("تحذير");
+        alert.setHeaderText("تحذير");
+        alert.setContentText(message);
+        alert.showAndWait();
+    }
 }

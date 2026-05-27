@@ -25,12 +25,25 @@ import java.lang.reflect.Method;
 @Log4j2
 public class PermissionAspect {
 
+    private static PermissionAspect instance;
+
     private final AuthorizationService authorizationService;
     private final PermissionCache permissionCache;
 
     public PermissionAspect() {
         this.authorizationService = ServiceRegistry.get(AuthorizationService.class);
         this.permissionCache = PermissionCache.getInstance();
+        instance = this;
+    }
+
+    /**
+     * الحصول على Singleton instance
+     */
+    public static PermissionAspect aspectOf() {
+        if (instance == null) {
+            instance = new PermissionAspect();
+        }
+        return instance;
     }
 
     /**

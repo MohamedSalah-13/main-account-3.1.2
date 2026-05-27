@@ -6,6 +6,8 @@ import com.hamza.account.config.ThemeManager;
 import com.hamza.account.controller.others.ServiceRegistry;
 import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.service.*;
+import com.hamza.account.service.permission.AuthorizationService;
+import com.hamza.account.service.permission.impl.AuthorizationServiceImpl;
 import com.hamza.account.trial.TrialManager;
 import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.database.DaoException;
@@ -33,6 +35,15 @@ public class DownLoadApplication extends Application {
         daoFactory = getDaoFactory();
 //        AlertSetting.setStylesheets(ThemeManager.getStylesheet());
         ThemeManager.initialize();
+
+        // ✅ Register AuthorizationService FIRST (before any controller initialization)
+        ServiceRegistry.register(
+                AuthorizationService.class,
+                new AuthorizationServiceImpl(
+                        daoFactory.userPermissionDao(),
+                        daoFactory.rolePermissionDao()
+                )
+        );
 
         System.out.println(1);
         ServiceRegistry.register(ItemsService.class, new ItemsService(daoFactory));

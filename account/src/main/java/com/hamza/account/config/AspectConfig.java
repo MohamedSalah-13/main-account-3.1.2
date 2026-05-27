@@ -11,6 +11,7 @@ import org.aspectj.lang.Aspects;
 public class AspectConfig {
 
     private static boolean initialized = false;
+    private static PermissionAspect permissionAspectInstance;
 
     /**
      * تهيئة Aspects
@@ -21,13 +22,23 @@ public class AspectConfig {
         }
 
         try {
-            // تفعيل PermissionAspect
-            PermissionAspect aspect = Aspects.aspectOf(PermissionAspect.class);
+            // إنشاء instance من PermissionAspect يدوياً
+            permissionAspectInstance = new PermissionAspect();
             log.info("تم تفعيل PermissionAspect بنجاح");
-            
+
             initialized = true;
         } catch (Exception e) {
             log.error("خطأ في تهيئة Aspects", e);
         }
+    }
+
+    /**
+     * الحصول على instance من PermissionAspect
+     */
+    public static PermissionAspect getPermissionAspect() {
+        if (!initialized) {
+            initialize();
+        }
+        return permissionAspectInstance;
     }
 }
