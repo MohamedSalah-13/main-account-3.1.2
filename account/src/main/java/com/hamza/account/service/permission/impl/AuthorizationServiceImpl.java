@@ -19,8 +19,16 @@ public class AuthorizationServiceImpl implements AuthorizationService {
     private final RolePermissionDao rolePermissionDao;
     private final PermissionCache permissionCache = PermissionCache.getInstance();
 
+    // ✅ Admin User ID
+    private static final int ADMIN_USER_ID = 1;
+
     @Override
     public boolean hasPermission(int userId, String permissionCode) throws DaoException {
+        // ✅ Admin له كل الصلاحيات
+        if (userId == ADMIN_USER_ID) {
+            return true;
+        }
+
         // التحقق من الـ Cache أولاً
         PermissionCode permission = PermissionCode.fromCode(permissionCode);
         if (permission != null) {
@@ -48,6 +56,11 @@ public class AuthorizationServiceImpl implements AuthorizationService {
 
     @Override
     public boolean hasAnyPermission(int userId, PermissionCode... permissionCodes) throws DaoException {
+        // ✅ Admin له كل الصلاحيات
+        if (userId == ADMIN_USER_ID) {
+            return true;
+        }
+
         for (PermissionCode permissionCode : permissionCodes) {
             if (hasPermission(userId, permissionCode)) {
                 return true;
@@ -58,6 +71,11 @@ public class AuthorizationServiceImpl implements AuthorizationService {
 
     @Override
     public boolean hasAllPermissions(int userId, PermissionCode... permissionCodes) throws DaoException {
+        // ✅ Admin له كل الصلاحيات
+        if (userId == ADMIN_USER_ID) {
+            return true;
+        }
+
         for (PermissionCode permissionCode : permissionCodes) {
             if (!hasPermission(userId, permissionCode)) {
                 return false;

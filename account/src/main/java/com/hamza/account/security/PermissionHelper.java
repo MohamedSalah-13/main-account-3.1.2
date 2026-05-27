@@ -23,6 +23,9 @@ public class PermissionHelper {
     private static final AuthorizationService authorizationService =
             ServiceRegistry.get(AuthorizationService.class);
 
+    // ✅ Admin User ID
+    private static final int ADMIN_USER_ID = 1;
+
     // =====================================================================
     // التحقق من الصلاحيات
     // =====================================================================
@@ -31,6 +34,12 @@ public class PermissionHelper {
      * التحقق من وجود صلاحية واحدة
      */
     public static boolean has(PermissionCode permission) {
+        // ✅ Check if user is Admin first
+        int userId = LogApplication.usersVo.getId();
+        if (userId == ADMIN_USER_ID) {
+            return true;
+        }
+
         // ✅ Add null check with clear error message
         if (authorizationService == null) {
             log.error("AuthorizationService is not initialized. Make sure it's registered in ServiceRegistry.");
@@ -40,7 +49,6 @@ public class PermissionHelper {
         }
 
         try {
-            int userId = LogApplication.usersVo.getId();
             return authorizationService.hasPermission(userId, permission);
         } catch (DaoException e) {
             log.error("خطأ في التحقق من الصلاحية: " + permission.getCode(), e);
@@ -52,8 +60,13 @@ public class PermissionHelper {
      * التحقق من وجود أي صلاحية من القائمة
      */
     public static boolean hasAny(PermissionCode... permissions) {
+        // ✅ Admin has all permissions
+        int userId = LogApplication.usersVo.getId();
+        if (userId == ADMIN_USER_ID) {
+            return true;
+        }
+
         try {
-            int userId = LogApplication.usersVo.getId();
             return authorizationService.hasAnyPermission(userId, permissions);
         } catch (DaoException e) {
             log.error("خطأ في التحقق من الصلاحيات", e);
@@ -65,8 +78,13 @@ public class PermissionHelper {
      * التحقق من وجود جميع الصلاحيات
      */
     public static boolean hasAll(PermissionCode... permissions) {
+        // ✅ Admin has all permissions
+        int userId = LogApplication.usersVo.getId();
+        if (userId == ADMIN_USER_ID) {
+            return true;
+        }
+
         try {
-            int userId = LogApplication.usersVo.getId();
             return authorizationService.hasAllPermissions(userId, permissions);
         } catch (DaoException e) {
             log.error("خطأ في التحقق من الصلاحيات", e);
