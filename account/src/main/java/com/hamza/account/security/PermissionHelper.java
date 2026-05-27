@@ -105,6 +105,25 @@ public class PermissionHelper {
     // =====================================================================
 
     /**
+     * إخفاء MenuItem إذا لم يكن لديه أي صلاحية من القائمة
+     */
+    public static void hideIfNotAllowedAny(MenuItem menuItem, PermissionCode... permissions) {
+        if (!hasAny(permissions)) {
+            menuItem.setVisible(false);
+        }
+    }
+
+    /**
+     * إخفاء Control إذا لم يكن لديه أي صلاحية من القائمة
+     */
+    public static void hideIfNotAllowedAny(Control control, PermissionCode... permissions) {
+        if (!hasAny(permissions)) {
+            control.setVisible(false);
+            control.setManaged(false);
+        }
+    }
+
+    /**
      * تعطيل Control إذا لم يكن لديه الصلاحية
      */
     public static void disableIfNotAllowed(Control control, PermissionCode permission) {

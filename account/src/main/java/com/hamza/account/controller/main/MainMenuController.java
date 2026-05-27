@@ -2,9 +2,12 @@ package com.hamza.account.controller.main;
 
 import com.hamza.account.config.Image_Setting;
 import com.hamza.account.controller.setting.FontColorDialog;
+import com.hamza.account.security.PermissionHelper;
+import com.hamza.account.type.PermissionCode;
 import com.hamza.account.view.NumberGenerator;
 import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.language.Setting_Language;
+import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.scene.control.Menu;
 import javafx.scene.control.MenuBar;
@@ -12,9 +15,11 @@ import javafx.scene.control.MenuItem;
 import javafx.scene.input.KeyCombination;
 import javafx.stage.Stage;
 import lombok.Getter;
+import lombok.extern.log4j.Log4j2;
 
 import static com.hamza.controlsfx.util.ImageChoose.createIcon;
 
+@Log4j2
 @Getter
 public class MainMenuController {
 
@@ -66,6 +71,149 @@ public class MainMenuController {
 
         menuItemReportCustom.setVisible(false);
         menuItemReportSuppliers.setVisible(false);
+
+        // ✅ تطبيق الصلاحيات على عناصر القائمة
+        applyPermissions();
+
+        // ✅ تأجيل إخفاء القوائم الفارغة إلى بعد اكتمال التحميل
+        Platform.runLater(this::hideEmptyMenus);
+    }
+
+    /**
+     * ✅ تطبيق الصلاحيات على جميع عناصر القائمة
+     */
+    private void applyPermissions() {
+        // قائمة المبيعات
+        applySalesPermissions();
+
+        // قائمة المشتريات
+        applyPurchasePermissions();
+
+        // قائمة الأصناف
+        applyItemsPermissions();
+
+        // قائمة العملاء
+        applyCustomerPermissions();
+
+        // قائمة الموردين
+        applySupplierPermissions();
+
+        // قائمة التقارير
+        applyReportsPermissions();
+
+        // قائمة الموظفين
+        applyEmployeesPermissions();
+
+        // قائمة الإعدادات
+        applySettingsPermissions();
+
+        log.info("تم تطبيق الصلاحيات على القائمة الرئيسية");
+    }
+
+    private void applySalesPermissions() {
+        PermissionHelper.hideIfNotAllowed(menuItemSales, PermissionCode.SALES_CREATE);
+        PermissionHelper.hideIfNotAllowed(menuItemSalesReturn, PermissionCode.TOTAL_SALES_RE_CREATE);
+        PermissionHelper.hideIfNotAllowed(menuItemTotalSales, PermissionCode.TOTAL_SALES_SHOW);
+        PermissionHelper.hideIfNotAllowed(menuItemTotalSalesReturn, PermissionCode.TOTAL_SALES_RE_SHOW);
+    }
+
+    private void applyPurchasePermissions() {
+        PermissionHelper.hideIfNotAllowed(menuItemPurchase, PermissionCode.TOTAL_PURCHASE_CREATE);
+        PermissionHelper.hideIfNotAllowed(menuItemPurchaseReturn, PermissionCode.TOTAL_PURCHASE_RE_CREATE);
+        PermissionHelper.hideIfNotAllowed(menuItemTotalPurchase, PermissionCode.TOTAL_PURCHASE_SHOW);
+        PermissionHelper.hideIfNotAllowed(menuItemTotalPurchaseReturn, PermissionCode.TOTAL_PURCHASE_RE_SHOW);
+    }
+
+    private void applyItemsPermissions() {
+        PermissionHelper.hideIfNotAllowed(menuItemItems, PermissionCode.ITEMS_CREATE);
+        PermissionHelper.hideIfNotAllowed(menuItemAddItem, PermissionCode.ITEMS_SHOW);
+        PermissionHelper.hideIfNotAllowed(menuItemAddItemFromExcel, PermissionCode.ITEMS_IMPORT);
+        PermissionHelper.hideIfNotAllowed(menuItemUnit, PermissionCode.UNITS_SHOW);
+        PermissionHelper.hideIfNotAllowed(menuItemArea, PermissionCode.SETTINGS_AREAS);
+        PermissionHelper.hideIfNotAllowed(menuItemInventory, PermissionCode.STOCK_ADJUSTMENT);
+        PermissionHelper.hideIfNotAllowed(menuItemMiniQuantity, PermissionCode.REPORTS_INVENTORY_MIN_QUANTITY);
+        PermissionHelper.hideIfNotAllowed(menuItemMainGroup, PermissionCode.MAIN_GROUP_SHOW);
+        PermissionHelper.hideIfNotAllowed(menuItemSupGroup, PermissionCode.SUB_GROUP_SHOW);
+        PermissionHelper.hideIfNotAllowed(menuItemConvertStock, PermissionCode.STOCK_TRANSFER);
+    }
+
+    private void applyCustomerPermissions() {
+        PermissionHelper.hideIfNotAllowed(menuItemAddCustomName, PermissionCode.CUSTOMERS_CREATE);
+        PermissionHelper.hideIfNotAllowed(menuItemCustomName, PermissionCode.CUSTOMERS_SHOW);
+        PermissionHelper.hideIfNotAllowed(menuItemCustomAccount, PermissionCode.CUSTOMERS_ACCOUNT_SHOW);
+    }
+
+    private void applySupplierPermissions() {
+        PermissionHelper.hideIfNotAllowed(menuItemAddSupplierName, PermissionCode.SUPPLIERS_CREATE);
+        PermissionHelper.hideIfNotAllowed(menuItemSuppliersName, PermissionCode.SUPPLIERS_SHOW);
+        PermissionHelper.hideIfNotAllowed(menuItemSuppliersAccount, PermissionCode.SUPPLIERS_ACCOUNT_SHOW);
+    }
+
+    private void applyReportsPermissions() {
+        PermissionHelper.hideIfNotAllowed(menuItemSummary, PermissionCode.REPORTS_DASHBOARD);
+        PermissionHelper.hideIfNotAllowed(menuItemReportItems, PermissionCode.REPORTS_INVENTORY);
+        PermissionHelper.hideIfNotAllowed(menuItemReportItemsDaily, PermissionCode.REPORTS_INVENTORY_MOVEMENT);
+        PermissionHelper.hideIfNotAllowed(menuItemReportSalesByYear, PermissionCode.REPORTS_SALES_MONTHLY);
+        PermissionHelper.hideIfNotAllowed(menuItemReportPurchaseByYear, PermissionCode.REPORTS_PURCHASES_MONTHLY);
+        PermissionHelper.hideIfNotAllowed(menuItemCustomPaid, PermissionCode.REPORTS_CUSTOMERS_RECEIVABLES);
+        PermissionHelper.hideIfNotAllowed(menuItemSuppliersPaid, PermissionCode.REPORTS_SUPPLIERS_PAYABLES);
+        PermissionHelper.hideIfNotAllowed(menuItemReportDetails, PermissionCode.REPORTS_ACCOUNT_STATEMENT);
+        PermissionHelper.hideIfNotAllowed(menuItemReportDelegate, PermissionCode.REPORTS_PROFIT_BY_ITEM);
+        PermissionHelper.hideIfNotAllowed(menuItemReportYearly, PermissionCode.REPORTS_SALES_COMPREHENSIVE);
+        PermissionHelper.hideIfNotAllowed(menuItemReportProfitLoss, PermissionCode.REPORTS_PROFIT);
+        PermissionHelper.hideIfNotAllowed(menuItemAllExpenses, PermissionCode.EXPENSES_SHOW);
+    }
+
+    private void applyEmployeesPermissions() {
+        PermissionHelper.hideIfNotAllowed(menuItemUsers, PermissionCode.USERS_SHOW);
+        PermissionHelper.hideIfNotAllowed(menuItemAddUser, PermissionCode.USERS_CREATE);
+        PermissionHelper.hideIfNotAllowed(menuItemAddEmployee, PermissionCode.EMPLOYEES_CREATE);
+        PermissionHelper.hideIfNotAllowed(menuItemEmployees, PermissionCode.EMPLOYEES_SHOW);
+        PermissionHelper.hideIfNotAllowed(menuItemAddTargetDelegate, PermissionCode.TARGETS_CREATE);
+    }
+
+    private void applySettingsPermissions() {
+        // menuItemHome - متاح للجميع
+        PermissionHelper.hideIfNotAllowed(menuItemSettingUsers, PermissionCode.SETTINGS_SYSTEM);
+        PermissionHelper.hideIfNotAllowed(menuItemDeleteData, PermissionCode.SETTINGS_SYSTEM);
+        PermissionHelper.hideIfNotAllowed(menuItemBackup, PermissionCode.SETTINGS_BACKUP);
+        // menuItemAbout, menuItemClose - متاح للجميع
+
+        // الورديات
+        if (PermissionHelper.has(PermissionCode.SHIFTS_REPORTS) || PermissionHelper.has(PermissionCode.SHIFTS_ADMIN)) {
+            menuItemShiftReports.setVisible(true);
+        }
+    }
+
+    /**
+     * إخفاء القوائم الرئيسية التي لا تحتوي على عناصر مرئية
+     * ✅ يتم استدعاؤها بعد اكتمال تحميل جميع القوائم
+     */
+    private void hideEmptyMenus() {
+        hideMenuIfEmpty(menuSales);
+        hideMenuIfEmpty(menuPurchase);
+        hideMenuIfEmpty(menuItems);
+        hideMenuIfEmpty(menuCustomer);
+        hideMenuIfEmpty(menuSupplier);
+        hideMenuIfEmpty(menuEmployees);
+        hideMenuIfEmpty(menuReport);
+        hideMenuIfEmpty(menuExpenses);
+        // menuSetting - دائماً مرئي (على الأقل يحتوي على Home & About & Close)
+
+        log.info("تم إخفاء القوائم الفارغة");
+    }
+
+    /**
+     * إخفاء القائمة إذا كانت جميع عناصرها مخفية
+     */
+    private void hideMenuIfEmpty(Menu menu) {
+        boolean hasVisibleItem = menu.getItems().stream()
+                .anyMatch(MenuItem::isVisible);
+
+        if (!hasVisibleItem) {
+            menu.setVisible(false);
+            log.debug("تم إخفاء القائمة: {}", menu.getText());
+        }
     }
 
     private void otherSetting() {
@@ -91,7 +239,6 @@ public class MainMenuController {
             FontColorDialog dialog = new FontColorDialog();
             dialog.showAndWait();
         } catch (Exception e) {
-//            log.error("Error opening font and color dialog", e);
             AllAlerts.alertError("Error opening font and color settings : " + e.getMessage());
         }
     }
@@ -122,6 +269,13 @@ public class MainMenuController {
         menuSetting.setGraphic(createIcon(images.setting));
         menuSupplier.setGraphic(createIcon(images.personSup));
         menuCustomer.setGraphic(createIcon(images.personCustomer));
-//        menuEmployees.setGraphic(createIcon(images.personCustomer));
+    }
+
+    /**
+     * ✅ دالة عامة لإعادة فحص وإخفاء القوائم الفارغة
+     * يمكن استدعاؤها من MainScreenController بعد اكتمال التحميل
+     */
+    public void finalizeMenuVisibility() {
+        Platform.runLater(this::hideEmptyMenus);
     }
 }

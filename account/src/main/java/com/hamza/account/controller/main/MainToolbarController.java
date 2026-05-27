@@ -1,7 +1,10 @@
+
 package com.hamza.account.controller.main;
 
 import com.hamza.account.config.Image_Setting;
 import com.hamza.account.config.PropertiesName;
+import com.hamza.account.security.PermissionHelper;
+import com.hamza.account.type.PermissionCode;
 import com.hamza.account.view.LogApplication;
 import com.hamza.controlsfx.button.ImageDesign;
 import com.hamza.controlsfx.language.Setting_Language;
@@ -57,14 +60,44 @@ public class MainToolbarController implements Initializable {
     @Override
     public void initialize(URL url, ResourceBundle resourceBundle) {
         otherSetting();
+
+        // ✅ تطبيق الصلاحيات على أزرار الـ Toolbar
+        applyPermissions();
+
         dataPublisher.getPublisherAddUser().addObserver(message -> menuButton.setText(Setting_Language.WELCOME + " " + message + " !"));
         dataPublisher.getShowLoginScreen().addObserver(message -> menuItemLogout.setDisable(!message));
-//        toolBar.getItems().remove(btnAlarm);
-//        toolBar.getItems().remove(btnPosSales);
 
         showButton(btnPosSales, false);
         showButton(btnAlarm, false);
         showButton(btnShift, false);
+    }
+
+    /**
+     * ✅ تطبيق الصلاحيات على أزرار الـ Toolbar
+     */
+    private void applyPermissions() {
+        // زر الرئيسية - متاح للجميع
+        // btnHome - no permission needed
+
+        // أزرار المبيعات
+        PermissionHelper.hideIfNotAllowed(btnSales, PermissionCode.SALES_CREATE);
+        PermissionHelper.hideIfNotAllowed(btnPosSales, PermissionCode.POS_SALE);
+
+        // أزرار المشتريات
+        PermissionHelper.hideIfNotAllowed(btnPurchase, PermissionCode.PURCHASE_CREATE);
+
+        // أزرار الأصناف
+        PermissionHelper.hideIfNotAllowed(btnItems, PermissionCode.ITEMS_SHOW);
+
+        // أزرار الورديات
+        if (PermissionHelper.has(PermissionCode.SHIFTS_OPEN) || PermissionHelper.has(PermissionCode.SHIFTS_CLOSE)) {
+            showButton(btnShift, true);
+        }
+
+        // الآلة الحاسبة والمنبه - متاح للجميع
+        // btnCalc, btnAlarm - no permission needed
+
+        log.info("تم تطبيق الصلاحيات على Toolbar");
     }
 
     private void showButton(Button button, boolean show) {
@@ -98,7 +131,6 @@ public class MainToolbarController implements Initializable {
 
         showButton(btnYouTube, LogApplication.usersVo.getId() == 1);
 
-//        menuButton.setGraphic(new ImageDesign(imageSetting.personCustomer, 20));
         menuButton.setText(Setting_Language.WELCOME + " " + nameProperty + " !");
         menuButtonSetting.initializeMenuItem(menuItemChangeName, controller.getForAllButtons().changeName());
         menuButtonSetting.initializeMenuItem(menuItemChangePass, controller.getForAllButtons().changePassword());
