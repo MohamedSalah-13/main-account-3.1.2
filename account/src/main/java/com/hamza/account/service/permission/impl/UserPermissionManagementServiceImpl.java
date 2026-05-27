@@ -2,6 +2,7 @@ package com.hamza.account.service.permission.impl;
 
 import com.hamza.account.model.dao.permission.UserPermissionDao;
 import com.hamza.account.model.domain.permission.UserPermission;
+import com.hamza.account.security.cache.PermissionCacheManager;
 import com.hamza.account.service.permission.UserPermissionManagementService;
 import com.hamza.controlsfx.database.DaoException;
 import lombok.RequiredArgsConstructor;
@@ -21,7 +22,12 @@ public class UserPermissionManagementServiceImpl implements UserPermissionManage
 
     @Override
     public int saveUserPermissions(int userId, List<UserPermission> permissions) throws DaoException {
-        return userPermissionDao.updateUserPermissions(userId, permissions);
+        int result = userPermissionDao.updateUserPermissions(userId, permissions);
+
+        // مسح Cache للمستخدم فقط
+        PermissionCacheManager.invalidateUserCache(userId);
+
+        return result;
     }
 
     @Override
