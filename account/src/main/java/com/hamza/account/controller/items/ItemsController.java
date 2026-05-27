@@ -8,12 +8,14 @@ import com.hamza.account.controller.others.ServiceRegistry;
 import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.model.domain.ItemsModel;
 import com.hamza.account.openFxml.FxmlPath;
+import com.hamza.account.security.PermissionUi;
 import com.hamza.account.service.ItemsService;
 import com.hamza.account.service.MainGroupService;
 import com.hamza.account.service.SelPriceItemService;
 import com.hamza.account.service.StockService;
 import com.hamza.account.table.EditCell;
 import com.hamza.account.table.TableSetting;
+import com.hamza.account.type.PermissionCode;
 import com.hamza.account.view.AddItemApplication;
 import com.hamza.account.view.CardApplication;
 import com.hamza.account.view.ConvertItemsGroup;
@@ -94,7 +96,7 @@ public class ItemsController extends LoadData {
         table_data();
         action();
         buttonGraphic();
-        permissionButtons();
+        applyPermissions();
         paginationTableSetting = new PaginationTableSetting(tableView, itemsService
                 , txtSearch, pagination);
         paginationTableSetting.initializePagination();
@@ -113,8 +115,50 @@ public class ItemsController extends LoadData {
         publisherAddItem.addObserver(message -> btnRefresh.fire());
     }
 
-    private void permissionButtons() {
+    private void applyPermissions() {
+        // صلاحيات الأزرار الأساسية
+        PermissionUi.disableIfNotAllowed(btnNew, PermissionCode.ITEMS_CREATE);
+        PermissionUi.disableIfNotAllowed(btnUpdate, PermissionCode.ITEMS_UPDATE);
+        PermissionUi.disableIfNotAllowed(btnDelete, PermissionCode.ITEMS_DELETE);
+//        PermissionUi.disableIfNotAllowed(btnImport, PermissionCode.ITEMS_IMPORT);
+//        PermissionUi.disableIfNotAllowed(btnExport, PermissionCode.ITEMS_EXPORT);
 
+//        var itemsModelTableColumn = tableView.getColumns().get(1);
+        // إخفاء سعر الشراء
+        if (!PermissionUi.has(PermissionCode.ITEMS_SHOW_BUY_PRICE)) {
+//            colBuyPrice.setVisible(false);
+//            txtBuyPrice.setVisible(false);
+//            txtBuyPrice.setManaged(false);
+        } else {
+            // إذا كان يمكنه رؤية السعر، نتحقق من إمكانية التعديل
+            boolean canUpdateBuyPrice = PermissionUi.has(PermissionCode.ITEMS_UPDATE_BUY_PRICE);
+//            txtBuyPrice.setEditable(canUpdateBuyPrice);
+            if (!canUpdateBuyPrice) {
+//                txtBuyPrice.setStyle("-fx-background-color: #f0f0f0;");
+//                txtBuyPrice.setPromptText("للقراءة فقط");
+            }
+        }
+
+        // إخفاء سعر البيع
+        if (!PermissionUi.has(PermissionCode.ITEMS_SHOW_SELL_PRICE)) {
+//            colSellPrice.setVisible(false);
+//            txtSellPrice.setVisible(false);
+//            txtSellPrice.setManaged(false);
+        } else {
+            // إذا كان يمكنه رؤية السعر، نتحقق من إمكانية التعديل
+            boolean canUpdateSellPrice = PermissionUi.has(PermissionCode.ITEMS_UPDATE_SELL_PRICE);
+//            txtSellPrice.setEditable(canUpdateSellPrice);
+            if (!canUpdateSellPrice) {
+//                txtSellPrice.setStyle("-fx-background-color: #f0f0f0;");
+//                txtSellPrice.setPromptText("للقراءة فقط");
+            }
+        }
+
+        // رسالة للمستخدم إذا كان محدود الصلاحيات
+        if (!PermissionUi.has(PermissionCode.ITEMS_SHOW_BUY_PRICE) &&
+                !PermissionUi.has(PermissionCode.ITEMS_SHOW_SELL_PRICE)) {
+            log.info("المستخدم لا يمتلك صلاحية عرض الأسعار");
+        }
     }
 
     private List<String> getMainGroupsNames() {

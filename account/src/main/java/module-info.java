@@ -30,6 +30,7 @@ module com.hamza.account {
     requires org.json;
     requires com.ibm.icu;
     requires eu.hansolo.tilesfx;
+    requires org.aspectj.weaver;
 //    requires spring.context;
 //    requires spring.beans;
 //    requires licensing.base;

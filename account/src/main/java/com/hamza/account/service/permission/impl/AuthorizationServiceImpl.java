@@ -3,6 +3,7 @@ package com.hamza.account.service.permission.impl;
 
 import com.hamza.account.model.dao.permission.RolePermissionDao;
 import com.hamza.account.model.dao.permission.UserPermissionDao;
+import com.hamza.account.security.cache.PermissionCache;
 import com.hamza.account.service.permission.AuthorizationService;
 import com.hamza.account.type.PermissionCode;
 import com.hamza.controlsfx.database.DaoException;
@@ -16,12 +17,26 @@ public class AuthorizationServiceImpl implements AuthorizationService {
 
     private final UserPermissionDao userPermissionDao;
     private final RolePermissionDao rolePermissionDao;
+    private final PermissionCache permissionCache = PermissionCache.getInstance();
 
     @Override
     public boolean hasPermission(int userId, String permissionCode) throws DaoException {
+        // التحقق من الـ Cache أولاً
+        PermissionCode permission = PermissionCode.fromCode(permissionCode);
+        if (permission != null) {
+            Boolean cachedResult = permissionCache.hasPermission(userId, permission);
+            if (cachedResult != null) {
+                return cachedResult;
+            }
+        }
+
+        // جلب من قاعدة البيانات
         Set<String> permissions = new HashSet<>();
         permissions.addAll(userPermissionDao.findGrantedPermissionCodesByUserId(userId));
         permissions.addAll(rolePermissionDao.findGrantedPermissionCodesByUserId(userId));
+
+        // حفظ في الـ Cache
+        permissionCache.cacheUserPermissions(userId, permissions);
 
         return permissions.contains(permissionCode);
     }
