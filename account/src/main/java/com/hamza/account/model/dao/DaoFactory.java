@@ -1,5 +1,7 @@
 package com.hamza.account.model.dao;
 
+import com.hamza.account.model.dao.permission.*;
+import com.hamza.account.model.dao.permission.impl.*;
 import com.hamza.account.model.domain.ItemCardDao;
 import lombok.Setter;
 
@@ -252,5 +254,25 @@ public enum DaoFactory {
 
     public ItemCardDao itemCardDao() {
         return new ItemCardDao(connection);
+    }
+
+    public PermissionDao permissionDao() {
+        return new PermissionDaoImpl(connection);
+    }
+
+    public RoleDao roleDao() {
+        return new RoleDaoImpl(connection);
+    }
+
+    public UserPermissionDao userPermissionDao() {
+        return new UserPermissionDaoImpl(connection);
+    }
+
+    public RolePermissionDao rolePermissionDao() {
+        return new RolePermissionDaoImpl(connection);
+    }
+
+    public UserRoleDao userRoleDao() {
+        return new UserRoleDaoImpl(connection);
     }
 }

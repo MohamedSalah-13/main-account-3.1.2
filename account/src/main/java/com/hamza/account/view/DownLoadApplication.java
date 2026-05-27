@@ -5,15 +5,7 @@ import com.hamza.account.config.ConnectionToDatabase;
 import com.hamza.account.config.ThemeManager;
 import com.hamza.account.controller.others.ServiceRegistry;
 import com.hamza.account.model.dao.DaoFactory;
-import com.hamza.account.model.dao.permission.*;
-import com.hamza.account.model.dao.permission.impl.PermissionDaoImpl;
 import com.hamza.account.service.*;
-import com.hamza.account.service.permission.AuthorizationService;
-import com.hamza.account.service.permission.PermissionService;
-import com.hamza.account.service.permission.RoleService;
-import com.hamza.account.service.permission.impl.AuthorizationServiceImpl;
-import com.hamza.account.service.permission.impl.PermissionServiceImpl;
-import com.hamza.account.service.permission.impl.RoleServiceImpl;
 import com.hamza.account.trial.TrialManager;
 import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.database.DaoException;
@@ -85,18 +77,6 @@ public class DownLoadApplication extends Application {
 
         ServiceRegistry.register(ItemCardService.class, new ItemCardService(daoFactory));
 
-        PermissionDao permissionDao = new PermissionDaoImpl(connectionToDatabase.getDbConnection().getConnection());
-//        UserPermissionDao userPermissionDao = new UserPermissionDaoImpl(connection);
-//        RolePermissionDao rolePermissionDao = new RolePermissionDaoImpl(connection);
-//        RoleDao roleDao = new RoleDaoImpl(connection);
-//        UserRoleDao userRoleDao = new UserRoleDaoImpl(connection);
-
-        PermissionService permissionService = new PermissionServiceImpl(permissionDao);
-//        AuthorizationService authorizationService = new AuthorizationServiceImpl(userPermissionDao, rolePermissionDao);
-//        RoleService roleService = new RoleServiceImpl(roleDao);
-
-//        PermissionService permissionService = ServiceRegistry.get(PermissionService.class);
-        permissionService.syncPermissionsFromCode();
         System.out.println(2);
 
     }
