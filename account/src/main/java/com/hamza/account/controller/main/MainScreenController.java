@@ -142,7 +142,7 @@ public class MainScreenController extends MainItems implements Initializable {
             // مثال على إضافة قائمة الصلاحيات
             Menu permissionsMenu = new Menu("الصلاحيات");
 
-// إضافة عناصر القائمة
+            // إدارة الأدوار
             MenuItem rolesMenuItem = new MenuItem("إدارة الأدوار");
             rolesMenuItem.setOnAction(e -> {
                 try {
@@ -152,6 +152,7 @@ public class MainScreenController extends MainItems implements Initializable {
                 }
             });
 
+            // صلاحيات المستخدمين
             MenuItem userPermissionsMenuItem = new MenuItem("صلاحيات المستخدمين");
             userPermissionsMenuItem.setOnAction(e -> {
                 try {
@@ -161,6 +162,7 @@ public class MainScreenController extends MainItems implements Initializable {
                 }
             });
 
+            // أدوار المستخدمين
             MenuItem userRolesMenuItem = new MenuItem("أدوار المستخدمين");
             userRolesMenuItem.setOnAction(e -> {
                 try {
@@ -170,12 +172,37 @@ public class MainScreenController extends MainItems implements Initializable {
                 }
             });
 
+            // فاصل
+            SeparatorMenuItem separator = new SeparatorMenuItem();
+
+            // مزامنة الصلاحيات
+            MenuItem syncPermissionsMenuItem = new MenuItem("مزامنة الصلاحيات من الكود");
+            syncPermissionsMenuItem.setOnAction(e -> {
+                try {
+                    getPermissionsButtons().syncPermissions().action();
+                } catch (Exception ex) {
+                    log.error("خطأ في مزامنة الصلاحيات", ex);
+                }
+            });
+
+            // عرض الصلاحيات
+            MenuItem viewPermissionsMenuItem = new MenuItem("عرض معلومات الصلاحيات");
+            viewPermissionsMenuItem.setOnAction(e -> {
+                try {
+                    getPermissionsButtons().viewAllPermissions().action();
+                } catch (Exception ex) {
+                    log.error("خطأ في عرض الصلاحيات", ex);
+                }
+            });
+
             permissionsMenu.getItems().addAll(
                     rolesMenuItem,
                     userPermissionsMenuItem,
-                    userRolesMenuItem
+                    userRolesMenuItem,
+                    separator,
+                    syncPermissionsMenuItem,
+                    viewPermissionsMenuItem
             );
-
 
             menuController.getMenuBar().getMenus().add(permissionsMenu);
 
