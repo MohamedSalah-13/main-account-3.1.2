@@ -15,13 +15,13 @@ import java.util.concurrent.TimeUnit;
 public class PermissionCache {
 
     private static final PermissionCache INSTANCE = new PermissionCache();
-    
+
     // Cache لصلاحيات كل مستخدم
     private final Map<Integer, UserPermissionCache> userCaches = new ConcurrentHashMap<>();
-    
+
     // مدة صلاحية الـ Cache (بالدقائق)
     private static final long CACHE_EXPIRY_MINUTES = 30;
-    
+
     private PermissionCache() {
         // إنشاء Thread لتنظيف الـ Cache المنتهي
         startCacheCleanupThread();
@@ -70,6 +70,23 @@ public class PermissionCache {
         log.info("تم مسح جميع cache الصلاحيات");
     }
 
+    // ✅ إضافة الدالتين الجديدتين هنا
+    /**
+     * مسح كل الـ Cache (اسم بديل)
+     */
+    public void clearAll() {
+        userCaches.clear();
+        log.info("تم مسح Cache الصلاحيات بالكامل");
+    }
+
+    /**
+     * مسح Cache لمستخدم محدد
+     */
+    public void clearUserCache(int userId) {
+        userCaches.remove(userId);
+        log.info("تم مسح Cache الصلاحيات للمستخدم: {}", userId);
+    }
+
     /**
      * مسح الـ Cache المنتهي
      */
@@ -92,7 +109,7 @@ public class PermissionCache {
         long totalPermissions = userCaches.values().stream()
                 .mapToLong(UserPermissionCache::getPermissionCount)
                 .sum();
-        
+
         return new CacheStats(totalUsers, totalPermissions);
     }
 
@@ -134,9 +151,9 @@ public class PermissionCache {
             if (isExpired()) {
                 return null; // يحتاج إعادة تحميل
             }
-            
-            return permissionChecks.computeIfAbsent(permission.getCode(), code -> 
-                permissions != null && permissions.contains(code)
+
+            return permissionChecks.computeIfAbsent(permission.getCode(), code ->
+                    permissions != null && permissions.contains(code)
             );
         }
 

@@ -1,12 +1,15 @@
 package com.hamza.account;
 
 import com.hamza.account.config.AspectConfig;
+import com.hamza.account.security.cache.PermissionCache;
 import com.hamza.account.security.cache.PermissionCacheManager;
 import com.hamza.account.view.DownLoadApplication;
 
 public class Main {
 
     public static void main(String[] args) throws Exception {
+        // ✅ مسح الـ Cache عند البدء
+        PermissionCache.getInstance().clearAll();
 
         // تهيئة Aspects
         AspectConfig.initialize();
