@@ -6,7 +6,8 @@
 
 <BorderPane xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
             fx:controller="com.hamza.account.controller.users.RolesManagementController"
-            prefHeight="600.0" prefWidth="900.0">
+            prefHeight="600.0" prefWidth="900.0"
+            styleClass="app-container">
 
     <top>
         <VBox spacing="10" styleClass="header-section">
@@ -15,12 +16,13 @@
             </padding>
 
             <!-- العنوان -->
-            <Label text="إدارة الأدوار" styleClass="header-title"/>
+            <Label text="إدارة الأدوار" styleClass="header-title"
+                   style="-fx-font-size: 20px; -fx-font-weight: bold;"/>
 
             <!-- شريط البحث والأزرار -->
             <HBox spacing="10" alignment="CENTER_LEFT">
-                <TextField fx:id="searchField" promptText="بحث في الأدوار..." 
-                          prefWidth="300" styleClass="search-field"/>
+                <TextField fx:id="searchField" promptText="بحث في الأدوار..."
+                           prefWidth="300" styleClass="search-field"/>
 
                 <Region HBox.hgrow="ALWAYS"/>
 

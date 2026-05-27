@@ -138,6 +138,49 @@ public class MainScreenController extends MainItems implements Initializable {
             tabPane.getTabs().getFirst().setText(Setting_Language.WORD_MAIN);
             tabPane.getTabs().getFirst().setClosable(false);
             getRightPane();
+
+
+            // مثال على إضافة قائمة الصلاحيات
+            Menu permissionsMenu = new Menu("الصلاحيات");
+
+// إضافة عناصر القائمة
+            MenuItem rolesMenuItem = new MenuItem("إدارة الأدوار");
+            rolesMenuItem.setOnAction(e -> {
+                try {
+                    getPermissionsButtons().rolesManagement().action();
+                } catch (Exception ex) {
+                    log.error("خطأ في فتح إدارة الأدوار", ex);
+                }
+            });
+
+            MenuItem userPermissionsMenuItem = new MenuItem("صلاحيات المستخدمين");
+            userPermissionsMenuItem.setOnAction(e -> {
+                try {
+                    getUsersAll().userPermissions().action();
+                } catch (Exception ex) {
+                    log.error("خطأ في فتح صلاحيات المستخدمين", ex);
+                }
+            });
+
+            MenuItem userRolesMenuItem = new MenuItem("أدوار المستخدمين");
+            userRolesMenuItem.setOnAction(e -> {
+                try {
+                    getUsersAll().userRoles().action();
+                } catch (Exception ex) {
+                    log.error("خطأ في فتح أدوار المستخدمين", ex);
+                }
+            });
+
+            permissionsMenu.getItems().addAll(
+                    rolesMenuItem,
+                    userPermissionsMenuItem,
+                    userRolesMenuItem
+            );
+
+
+            menuController.getMenuBar().getMenus().add(permissionsMenu);
+
+
         } catch (Exception e) {
             logException(e);
         }

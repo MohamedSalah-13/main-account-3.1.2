@@ -68,4 +68,44 @@ public class UsersButtons extends LoadData {
         };
     }
 
+    /**
+     * زر إدارة صلاحيات المستخدم
+     */
+    public ButtonWithPerm userPermissions() {
+        return new ButtonWithPerm() {
+
+            @Override
+            public void action() throws Exception {
+                // سيتم فتح شاشة اختيار المستخدم ثم صلاحياته
+                log.info("فتح إدارة صلاحيات المستخدم");
+            }
+
+            @NotNull
+            @Override
+            public String textName() {
+                return "صلاحيات المستخدم";
+            }
+        };
+    }
+
+    /**
+     * زر إدارة أدوار المستخدم
+     */
+    public ButtonWithPerm userRoles() {
+        return new ButtonWithPerm() {
+
+            @Override
+            public void action() throws Exception {
+                // سيتم فتح شاشة اختيار المستخدم ثم أدواره
+                log.info("فتح إدارة أدوار المستخدم");
+            }
+
+            @NotNull
+            @Override
+            public String textName() {
+                return "أدوار المستخدم";
+            }
+        };
+    }
+
 }
