@@ -1848,3 +1848,274 @@ FROM user_role ur
 WHERE rp.check_status = 1
   AND r.active = 1
   AND p.active = 1;
+
+-- =====================================================================
+-- 4) Views للورديات المحسّنة
+-- =====================================================================
+
+-- View تقرير الورديات الشامل
+CREATE OR REPLACE VIEW v_user_shifts_report AS
+SELECT
+    us.id,
+    us.user_id,
+    u.user_name,
+    us.treasury_id,
+    t.t_name AS treasury_name,
+    us.open_time,
+    us.close_time,
+    us.open_balance,
+    us.close_balance,
+    us.total_sales,
+    us.total_sales_returns,
+    us.total_expenses,
+    us.total_deposits,
+    us.total_withdrawals,
+    us.expected_balance,
+    us.difference,
+    us.invoices_count,
+    us.is_open,
+    us.shift_status,
+    us.notes,
+    -- حسابات إضافية
+    (us.total_sales - us.total_sales_returns) AS net_sales,
+    (us.close_balance - us.open_balance) AS net_change,
+    CASE
+        WHEN us.difference = 0 THEN 'متوازن'
+        WHEN us.difference > 0 THEN 'زيادة'
+        ELSE 'عجز'
+        END AS balance_status,
+    -- مدة الوردية بالساعات
+    CASE
+        WHEN us.close_time IS NOT NULL THEN
+            TIMESTAMPDIFF(HOUR, us.open_time, us.close_time)
+        ELSE
+            TIMESTAMPDIFF(HOUR, us.open_time, NOW())
+        END AS shift_duration_hours,
+    us.created_at,
+    us.updated_at
+FROM user_shifts us
+         JOIN users u ON u.id = us.user_id
+         JOIN treasury t ON t.id = us.treasury_id;
+
+-- View تفاصيل فواتير الوردية
+CREATE OR REPLACE VIEW v_shift_invoices_details AS
+SELECT
+    us.id AS shift_id,
+    us.user_id,
+    u.user_name,
+    us.treasury_id,
+    'SALE' AS transaction_type,
+    ts.invoice_number AS reference_number,
+    ts.invoice_date AS transaction_date,
+    ts.total AS amount,
+    ts.discount,
+    ts.paid_up AS cash_amount,
+    c.name AS customer_name,
+    ts.notes
+FROM user_shifts us
+         JOIN users u ON u.id = us.user_id
+         JOIN total_sales ts ON ts.shift_id = us.id
+         JOIN custom c ON c.id = ts.sup_code
+
+UNION ALL
+
+SELECT
+    us.id,
+    us.user_id,
+    u.user_name,
+    us.treasury_id,
+    'SALE_RETURN',
+    tsr.id,
+    tsr.invoice_date,
+    tsr.total,
+    tsr.discount,
+    tsr.paid_from_treasury,
+    c.name,
+    tsr.notes
+FROM user_shifts us
+         JOIN users u ON u.id = us.user_id
+         JOIN total_sales_re tsr ON tsr.shift_id = us.id
+         JOIN custom c ON c.id = tsr.sup_id
+
+UNION ALL
+
+SELECT
+    us.id,
+    us.user_id,
+    u.user_name,
+    us.treasury_id,
+    'EXPENSE',
+    ed.id,
+    ed.date,
+    ed.amount,
+    0,
+    ed.amount,
+    e.expenses_name,
+    ed.notes
+FROM user_shifts us
+         JOIN users u ON u.id = us.user_id
+         JOIN expenses_details ed ON ed.shift_id = us.id
+         JOIN expenses e ON e.id = ed.type_code
+
+UNION ALL
+
+SELECT
+    us.id,
+    us.user_id,
+    u.user_name,
+    us.treasury_id,
+    CASE WHEN tde.deposit_or_expenses = 1 THEN 'DEPOSIT' ELSE 'WITHDRAWAL' END,
+    tde.id,
+    tde.date_inter,
+    tde.amount,
+    0,
+    tde.amount,
+    tde.statement,
+    tde.description_data
+FROM user_shifts us
+         JOIN users u ON u.id = us.user_id
+         JOIN treasury_deposit_expenses tde ON tde.shift_id = us.id
+
+ORDER BY transaction_date DESC;
+
+-- =====================================================================
+-- 5) Views لرأس المال والشركاء
+-- =====================================================================
+
+-- View ملخص رأس المال
+CREATE OR REPLACE VIEW v_capital_summary AS
+SELECT
+    c.id,
+    c.capital_name,
+    c.total_capital,
+    c.start_date,
+    c.end_date,
+    c.is_active,
+    COUNT(DISTINCT ps.partner_id) AS partners_count,
+    COALESCE(SUM(ps.share_amount), 0) AS total_shares,
+    COALESCE(SUM(cm.amount_in), 0) AS total_investments,
+    COALESCE(SUM(cm.amount_out), 0) AS total_withdrawals,
+    (c.total_capital + COALESCE(SUM(cm.amount_in), 0) - COALESCE(SUM(cm.amount_out), 0)) AS current_capital,
+    c.notes,
+    c.created_at
+FROM capital c
+         LEFT JOIN partner_shares ps ON ps.capital_id = c.id
+         LEFT JOIN capital_movements cm ON cm.capital_id = c.id
+GROUP BY c.id, c.capital_name, c.total_capital, c.start_date, c.end_date,
+         c.is_active, c.notes, c.created_at;
+
+-- View تفاصيل حصص الشركاء
+CREATE OR REPLACE VIEW v_partner_shares_details AS
+SELECT
+    ps.id,
+    ps.capital_id,
+    c.capital_name,
+    ps.partner_id,
+    p.partner_name,
+    p.partner_code,
+    ps.share_amount,
+    ps.share_percentage,
+    ps.profit_percentage,
+    ps.loss_percentage,
+    ps.is_managing_partner,
+    ps.contribution_date,
+    -- حساب رأس المال الحالي للشريك
+    ps.share_amount +
+    COALESCE((SELECT SUM(cm.amount_in - cm.amount_out)
+              FROM capital_movements cm
+              WHERE cm.capital_id = ps.capital_id
+                AND cm.partner_id = ps.partner_id), 0) AS current_share_value,
+    p.is_active AS partner_active,
+    p.phone,
+    p.email,
+    ps.notes
+FROM partner_shares ps
+         JOIN capital c ON c.id = ps.capital_id
+         JOIN partners p ON p.id = ps.partner_id;
+
+-- View حركات رأس المال مع التفاصيل
+CREATE OR REPLACE VIEW v_capital_movements_details AS
+SELECT
+    cm.id,
+    cm.capital_id,
+    c.capital_name,
+    cm.partner_id,
+    p.partner_name,
+    cm.movement_date,
+    cm.movement_type,
+    cm.amount_in,
+    cm.amount_out,
+    cm.balance_after,
+    cm.reference_type,
+    cm.reference_id,
+    cm.notes,
+    u.user_name AS created_by,
+    cm.created_at
+FROM capital_movements cm
+         JOIN capital c ON c.id = cm.capital_id
+         LEFT JOIN partners p ON p.id = cm.partner_id
+         JOIN users u ON u.id = cm.user_id;
+
+-- View توزيع الأرباح والخسائر
+CREATE OR REPLACE VIEW v_profit_loss_distribution_report AS
+SELECT
+    pld.id,
+    pld.capital_id,
+    c.capital_name,
+    pld.distribution_date,
+    pld.period_from,
+    pld.period_to,
+    DATEDIFF(pld.period_to, pld.period_from) + 1 AS period_days,
+    pld.total_revenue,
+    pld.total_expenses,
+    pld.net_profit_loss,
+    pld.is_profit,
+    CASE WHEN pld.is_profit = 1 THEN 'ربح' ELSE 'خسارة' END AS profit_loss_type,
+    pld.distribution_status,
+    pld.distributed_at,
+    -- عدد الشركاء المستفيدين
+    COUNT(pldd.id) AS partners_count,
+    -- المبلغ الموزع
+    COALESCE(SUM(pldd.partner_amount), 0) AS total_distributed,
+    -- المبلغ المدفوع
+    COALESCE(SUM(pldd.paid_amount), 0) AS total_paid,
+    -- المتبقي
+    COALESCE(SUM(pldd.partner_amount - pldd.paid_amount), 0) AS remaining,
+    pld.notes,
+    pld.created_at
+FROM profit_loss_distribution pld
+         JOIN capital c ON c.id = pld.capital_id
+         LEFT JOIN profit_loss_distribution_details pldd ON pldd.distribution_id = pld.id
+GROUP BY pld.id, pld.capital_id, c.capital_name, pld.distribution_date,
+         pld.period_from, pld.period_to, pld.total_revenue, pld.total_expenses,
+         pld.net_profit_loss, pld.is_profit, pld.distribution_status,
+         pld.distributed_at, pld.notes, pld.created_at;
+
+-- View تفاصيل توزيع الأرباح على الشركاء
+CREATE OR REPLACE VIEW v_partner_profit_distribution AS
+SELECT
+    pldd.id,
+    pldd.distribution_id,
+    pld.distribution_date,
+    pld.period_from,
+    pld.period_to,
+    pldd.partner_id,
+    p.partner_name,
+    p.partner_code,
+    pldd.partner_share_percent,
+    pldd.partner_profit_percent,
+    pld.net_profit_loss AS total_profit_loss,
+    pldd.partner_amount,
+    pldd.paid_amount,
+    (pldd.partner_amount - pldd.paid_amount) AS remaining_amount,
+    pldd.payment_status,
+    pldd.payment_date,
+    pldd.treasury_id,
+    t.t_name AS treasury_name,
+    CASE WHEN pld.is_profit = 1 THEN 'ربح' ELSE 'خسارة' END AS type,
+    pldd.notes
+FROM profit_loss_distribution_details pldd
+         JOIN profit_loss_distribution pld ON pld.id = pldd.distribution_id
+         JOIN partners p ON p.id = pldd.partner_id
+         LEFT JOIN treasury t ON t.id = pldd.treasury_id;
+

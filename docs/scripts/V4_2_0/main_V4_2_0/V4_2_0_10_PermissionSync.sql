@@ -331,99 +331,41 @@ VALUES ('audit.view', 'عرض سجل المراجعة', 'audit', 'view', 'عرض
 
 -- Capital Management
 INSERT INTO permission (code, name_ar, module, action, description, sort_order, active)
-VALUES ('capital.show', 'عرض رأس المال', 'capital', 'show', 'عرض قائمة رأس المال', 220, 1),
-       ('capital.create', 'إضافة رأس المال', 'capital', 'create', 'إضافة رأس مال جديد', 221, 1),
-       ('capital.update', 'تعديل رأس المال', 'capital', 'update', 'تعديل رأس مال موجود', 222, 1),
-       ('capital.delete', 'حذف رأس المال', 'capital', 'delete', 'حذف رأس مال', 223, 1),
+VALUES ('capital.show', 'عرض رأس المال', 'capital', 'show', 'عرض قائمة رأس المال', 182, 1),
+       ('capital.create', 'إضافة رأس المال', 'capital', 'create', 'إضافة رأس مال جديد', 183, 1),
+       ('capital.update', 'تعديل رأس المال', 'capital', 'update', 'تعديل رأس مال موجود', 184, 1),
+       ('capital.delete', 'حذف رأس المال', 'capital', 'delete', 'حذف رأس مال', 185, 1),
 
-       ('partner.show', 'عرض الشركاء', 'capital', 'show', 'عرض قائمة الشركاء', 224, 1),
-       ('partner.create', 'إضافة شريك', 'capital', 'create', 'إضافة شريك جديد', 225, 1),
-       ('partner.update', 'تعديل شريك', 'capital', 'update', 'تعديل بيانات شريك', 226, 1),
-       ('partner.delete', 'حذف شريك', 'capital', 'delete', 'حذف شريك', 227, 1),
+       ('partner.show', 'عرض الشركاء', 'capital', 'show', 'عرض قائمة الشركاء', 186, 1),
+       ('partner.create', 'إضافة شريك', 'capital', 'create', 'إضافة شريك جديد', 187, 1),
+       ('partner.update', 'تعديل شريك', 'capital', 'update', 'تعديل بيانات شريك', 188, 1),
+       ('partner.delete', 'حذف شريك', 'capital', 'delete', 'حذف شريك', 189, 1),
 
-       ('partner.share.show', 'عرض حصص الشركاء', 'capital', 'show', 'عرض حصص الشركاء', 228, 1),
-       ('partner.share.create', 'إضافة حصة', 'capital', 'create', 'إضافة حصة لشريك', 229, 1),
-       ('partner.share.update', 'تعديل حصة', 'capital', 'update', 'تعديل حصة شريك', 230, 1),
-       ('partner.share.delete', 'حذف حصة', 'capital', 'delete', 'حذف حصة', 231, 1),
+       ('partner.share.show', 'عرض حصص الشركاء', 'capital', 'show', 'عرض حصص الشركاء', 190, 1),
+       ('partner.share.create', 'إضافة حصة', 'capital', 'create', 'إضافة حصة لشريك', 191, 1),
+       ('partner.share.update', 'تعديل حصة', 'capital', 'update', 'تعديل حصة شريك', 192, 1),
+       ('partner.share.delete', 'حذف حصة', 'capital', 'delete', 'حذف حصة', 193, 1),
 
 -- Profit & Loss Distribution
-       ('profit.show', 'عرض توزيع الأرباح', 'profit', 'show', 'عرض قائمة توزيعات الأرباح', 232, 1),
-       ('profit.create', 'إنشاء توزيع', 'profit', 'create', 'إنشاء توزيع جديد', 233, 1),
-       ('profit.update', 'تعديل توزيع', 'profit', 'update', 'تعديل توزيع', 234, 1),
-       ('profit.delete', 'حذف توزيع', 'profit', 'delete', 'حذف توزيع', 235, 1),
-       ('profit.calculate', 'حساب الأرباح/الخسائر', 'profit', 'calculate', 'حساب الأرباح والخسائر', 236, 1),
-       ('profit.distribute', 'توزيع على الشركاء', 'profit', 'distribute', 'توزيع الأرباح على الشركاء', 237, 1),
-       ('profit.view.details', 'عرض تفاصيل التوزيع', 'profit', 'show', 'عرض تفاصيل توزيع الأرباح', 238, 1),
+       ('profit.show', 'عرض توزيع الأرباح', 'profit', 'show', 'عرض قائمة توزيعات الأرباح', 194, 1),
+       ('profit.create', 'إنشاء توزيع', 'profit', 'create', 'إنشاء توزيع جديد', 195, 1),
+       ('profit.update', 'تعديل توزيع', 'profit', 'update', 'تعديل توزيع', 196, 1),
+       ('profit.delete', 'حذف توزيع', 'profit', 'delete', 'حذف توزيع', 197, 1),
+       ('profit.calculate', 'حساب الأرباح/الخسائر', 'profit', 'calculate', 'حساب الأرباح والخسائر', 198, 1),
+       ('profit.distribute', 'توزيع على الشركاء', 'profit', 'distribute', 'توزيع الأرباح على الشركاء', 199, 1),
+       ('profit.view.details', 'عرض تفاصيل التوزيع', 'profit', 'show', 'عرض تفاصيل توزيع الأرباح', 200, 1),
 
 -- Reports
-       ('reports.capital', 'تقارير رأس المال', 'reports', 'show', 'عرض تقارير رأس المال', 239, 1),
-       ('reports.partners', 'تقارير الشركاء', 'reports', 'show', 'عرض تقارير الشركاء', 240, 1),
-       ('reports.profit.distribution', 'تقرير توزيع الأرباح', 'reports', 'show', 'تقرير توزيع الأرباح والخسائر', 241, 1)
+       ('reports.capital', 'تقارير رأس المال', 'reports', 'show', 'عرض تقارير رأس المال', 201, 1),
+       ('reports.partners', 'تقارير الشركاء', 'reports', 'show', 'عرض تقارير الشركاء', 202, 1),
+       ('reports.profit.distribution', 'تقرير توزيع الأرباح', 'reports', 'show', 'تقرير توزيع الأرباح والخسائر', 203, 1)
 ON DUPLICATE KEY UPDATE name_ar     = VALUES(name_ar),
                         description = VALUES(description);
 
 -- =====================================================================
--- 2) منح الصلاحيات لـ Admin
--- =====================================================================
-
-INSERT INTO role_permission (role_id, permission_id, check_status)
-SELECT 1, id, 1
-FROM permission
-WHERE code LIKE 'capital.%'
-   OR code LIKE 'partner.%'
-   OR code LIKE 'profit.%'
-   OR code IN ('reports.capital', 'reports.partners', 'reports.profit.distribution')
-ON DUPLICATE KEY UPDATE check_status = 1;
-
--- =====================================================================
--- 3) منح الصلاحيات للمستخدم Admin مباشرة
--- =====================================================================
-
-INSERT INTO user_permission (user_id, permission_id, check_status)
-SELECT 1, id, 1
-FROM permission
-WHERE code LIKE 'capital.%'
-   OR code LIKE 'partner.%'
-   OR code LIKE 'profit.%'
-   OR code IN ('reports.capital', 'reports.partners', 'reports.profit.distribution')
-ON DUPLICATE KEY UPDATE check_status = 1;
-
--- =====================================================================
--- 4) منح صلاحيات محدودة للمحاسب (Role ID = 6)
--- =====================================================================
-
-INSERT INTO role_permission (role_id, permission_id, check_status)
-SELECT 6, id, 1
-FROM permission
-WHERE code IN (
-               'capital.show',
-               'partner.show',
-               'partner.share.show',
-               'profit.show',
-               'profit.view.details',
-               'reports.capital',
-               'reports.partners',
-               'reports.profit.distribution'
-    )
-ON DUPLICATE KEY UPDATE check_status = 1;
-
--- =====================================================================
--- 5) إضافة الوحدات الجديدة إلى قائمة الوحدات (للمرجعية)
--- =====================================================================
-
-SELECT 'تم إضافة صلاحيات رأس المال والأرباح بنجاح!' AS status;
-
-SELECT module,
-       COUNT(*) AS permissions_count
-FROM permission
-WHERE code LIKE 'capital.%'
-   OR code LIKE 'partner.%'
-   OR code LIKE 'profit.%'
-GROUP BY module;
--- =====================================================================
 -- نهاية السكريبت
 -- =====================================================================
--- المجموع الكلي: 181 صلاحية
+-- المجموع الكلي: 203 صلاحية
 -- =====================================================================
 
 SELECT 'تم إضافة الصلاحيات بنجاح!' AS status, COUNT(*) AS total_permissions

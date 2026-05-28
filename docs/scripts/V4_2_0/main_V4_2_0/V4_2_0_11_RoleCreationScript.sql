@@ -296,6 +296,66 @@ AND (
 ON DUPLICATE KEY UPDATE check_status = 1;
 
 -- =====================================================================
+-- 2) منح الصلاحيات لـ Admin
+-- =====================================================================
+
+INSERT INTO role_permission (role_id, permission_id, check_status)
+SELECT 1, id, 1
+FROM permission
+WHERE code LIKE 'capital.%'
+   OR code LIKE 'partner.%'
+   OR code LIKE 'profit.%'
+   OR code IN ('reports.capital', 'reports.partners', 'reports.profit.distribution')
+ON DUPLICATE KEY UPDATE check_status = 1;
+
+-- =====================================================================
+-- 3) منح الصلاحيات للمستخدم Admin مباشرة
+-- =====================================================================
+
+INSERT INTO user_permission (user_id, permission_id, check_status)
+SELECT 1, id, 1
+FROM permission
+WHERE code LIKE 'capital.%'
+   OR code LIKE 'partner.%'
+   OR code LIKE 'profit.%'
+   OR code IN ('reports.capital', 'reports.partners', 'reports.profit.distribution')
+ON DUPLICATE KEY UPDATE check_status = 1;
+
+-- =====================================================================
+-- 4) منح صلاحيات محدودة للمحاسب (Role ID = 6)
+-- =====================================================================
+
+INSERT INTO role_permission (role_id, permission_id, check_status)
+SELECT 6, id, 1
+FROM permission
+WHERE code IN (
+               'capital.show',
+               'partner.show',
+               'partner.share.show',
+               'profit.show',
+               'profit.view.details',
+               'reports.capital',
+               'reports.partners',
+               'reports.profit.distribution'
+    )
+ON DUPLICATE KEY UPDATE check_status = 1;
+
+-- =====================================================================
+-- 5) إضافة الوحدات الجديدة إلى قائمة الوحدات (للمرجعية)
+-- =====================================================================
+
+SELECT 'تم إضافة صلاحيات رأس المال والأرباح بنجاح!' AS status;
+
+SELECT module,
+       COUNT(*) AS permissions_count
+FROM permission
+WHERE code LIKE 'capital.%'
+   OR code LIKE 'partner.%'
+   OR code LIKE 'profit.%'
+GROUP BY module;
+
+
+-- =====================================================================
 -- 11) تعيين دور Admin للمستخدم الأول (ID = 1)
 -- =====================================================================
 

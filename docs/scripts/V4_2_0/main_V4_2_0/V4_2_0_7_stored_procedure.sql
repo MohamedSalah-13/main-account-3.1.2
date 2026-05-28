@@ -334,3 +334,232 @@ FROM (
 
 SELECT
     'V019_stock_transfer_updates.sql executed successfully' AS message;
+
+-- =====================================================================
+-- 6) Stored Procedures للورديات
+-- =====================================================================
+
+DROP PROCEDURE IF EXISTS sp_get_shift_summary;
+
+DELIMITER $$
+
+CREATE PROCEDURE sp_get_shift_summary(
+    IN p_shift_id INT
+)
+BEGIN
+    SELECT
+        us.*,
+        u.user_name,
+        t.t_name AS treasury_name,
+        (us.total_sales - us.total_sales_returns) AS net_sales,
+        (us.close_balance - us.open_balance) AS net_change,
+        -- عدد الفواتير حسب النوع
+        (SELECT COUNT(*) FROM total_sales WHERE shift_id = p_shift_id) AS sales_count,
+        (SELECT COUNT(*) FROM total_sales_re WHERE shift_id = p_shift_id) AS sales_return_count,
+        (SELECT COUNT(*) FROM expenses_details WHERE shift_id = p_shift_id) AS expenses_count
+    FROM user_shifts us
+             JOIN users u ON u.id = us.user_id
+             JOIN treasury t ON t.id = us.treasury_id
+    WHERE us.id = p_shift_id;
+END$$
+
+DELIMITER ;
+
+-- =====================================================================
+-- 7) Stored Procedures لرأس المال
+-- =====================================================================
+
+DROP PROCEDURE IF EXISTS sp_calculate_partner_profit;
+
+DELIMITER $$
+
+-- حساب حصة شريك من الأرباح/الخسائر
+CREATE PROCEDURE sp_calculate_partner_profit(
+    IN p_partner_id INT,
+    IN p_capital_id INT,
+    IN p_net_profit_loss DECIMAL(16,2),
+    IN p_is_profit TINYINT,
+    OUT p_partner_amount DECIMAL(16,2),
+    OUT p_partner_percentage DECIMAL(6,3)
+)
+BEGIN
+    DECLARE v_profit_percentage DECIMAL(6,3);
+    DECLARE v_loss_percentage DECIMAL(6,3);
+
+    -- الحصول على نسب الشريك
+    SELECT profit_percentage, loss_percentage
+    INTO v_profit_percentage, v_loss_percentage
+    FROM partner_shares
+    WHERE partner_id = p_partner_id
+      AND capital_id = p_capital_id;
+
+    -- حساب المبلغ حسب نوع التوزيع
+    IF p_is_profit = 1 THEN
+        SET p_partner_percentage = v_profit_percentage;
+        SET p_partner_amount = (p_net_profit_loss * v_profit_percentage) / 100;
+    ELSE
+        SET p_partner_percentage = v_loss_percentage;
+        SET p_partner_amount = (p_net_profit_loss * v_loss_percentage) / 100;
+    END IF;
+END$$
+
+DELIMITER ;
+
+-- =====================================================================
+
+DROP PROCEDURE IF EXISTS sp_distribute_profit_loss;
+
+DELIMITER $$
+
+-- توزيع الأرباح/الخسائر على الشركاء
+CREATE PROCEDURE sp_distribute_profit_loss(
+    IN p_distribution_id INT,
+    IN p_user_id INT
+)
+BEGIN
+    DECLARE v_capital_id INT;
+    DECLARE v_net_profit_loss DECIMAL(16,2);
+    DECLARE v_is_profit TINYINT;
+    DECLARE v_partner_id INT;
+    DECLARE v_partner_amount DECIMAL(16,2);
+    DECLARE v_partner_percentage DECIMAL(6,3);
+    DECLARE v_done INT DEFAULT FALSE;
+
+    DECLARE partner_cursor CURSOR FOR
+        SELECT ps.partner_id
+        FROM partner_shares ps
+                 JOIN profit_loss_distribution pld ON pld.capital_id = ps.capital_id
+        WHERE pld.id = p_distribution_id;
+
+    DECLARE CONTINUE HANDLER FOR NOT FOUND SET v_done = TRUE;
+
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION
+        BEGIN
+            ROLLBACK;
+            RESIGNAL;
+        END;
+
+    START TRANSACTION;
+
+    -- الحصول على بيانات التوزيع
+    SELECT capital_id, net_profit_loss, is_profit
+    INTO v_capital_id, v_net_profit_loss, v_is_profit
+    FROM profit_loss_distribution
+    WHERE id = p_distribution_id;
+
+    -- فتح المؤشر
+    OPEN partner_cursor;
+
+    read_loop: LOOP
+        FETCH partner_cursor INTO v_partner_id;
+        IF v_done THEN
+            LEAVE read_loop;
+        END IF;
+
+        -- حساب حصة الشريك
+        CALL sp_calculate_partner_profit(
+                v_partner_id,
+                v_capital_id,
+                v_net_profit_loss,
+                v_is_profit,
+                v_partner_amount,
+                v_partner_percentage
+             );
+
+        -- إدخال التفاصيل
+        INSERT INTO profit_loss_distribution_details (
+            distribution_id,
+            partner_id,
+            partner_share_percent,
+            partner_profit_percent,
+            partner_amount,
+            paid_amount,
+            payment_status
+        ) VALUES (
+                     p_distribution_id,
+                     v_partner_id,
+                     (SELECT share_percentage FROM partner_shares
+                      WHERE partner_id = v_partner_id AND capital_id = v_capital_id),
+                     v_partner_percentage,
+                     v_partner_amount,
+                     0,
+                     'UNPAID'
+                 );
+
+        -- تسجيل الحركة في رأس المال
+        INSERT INTO capital_movements (
+            capital_id,
+            partner_id,
+            movement_date,
+            movement_type,
+            amount_in,
+            amount_out,
+            balance_after,
+            reference_type,
+            reference_id,
+            notes,
+            user_id
+        ) VALUES (
+                     v_capital_id,
+                     v_partner_id,
+                     CURDATE(),
+                     IF(v_is_profit = 1, 'PROFIT_DISTRIBUTION', 'LOSS_DISTRIBUTION'),
+                     IF(v_is_profit = 1, v_partner_amount, 0),
+                     IF(v_is_profit = 0, v_partner_amount, 0),
+                     0, -- سيتم حسابه في trigger
+                     'PROFIT_LOSS_DISTRIBUTION',
+                     p_distribution_id,
+                     CONCAT('توزيع ', IF(v_is_profit = 1, 'أرباح', 'خسائر'), ' فترة ',
+                            (SELECT CONCAT(period_from, ' إلى ', period_to)
+                             FROM profit_loss_distribution WHERE id = p_distribution_id)),
+                     p_user_id
+                 );
+
+    END LOOP;
+
+    CLOSE partner_cursor;
+
+    -- تحديث حالة التوزيع
+    UPDATE profit_loss_distribution
+    SET distribution_status = 'DISTRIBUTED',
+        distributed_at = NOW()
+    WHERE id = p_distribution_id;
+
+    COMMIT;
+
+    SELECT 'تم توزيع الأرباح/الخسائر بنجاح' AS message;
+END$$
+
+DELIMITER ;
+
+-- =====================================================================
+-- 8) إضافة بيانات تجريبية (اختياري)
+-- =====================================================================
+
+-- إدخال شريك تجريبي
+INSERT IGNORE INTO partners (id, partner_name, partner_code, join_date, is_active, user_id)
+VALUES (1, 'الشريك الأول', 'P001', CURDATE(), 1, 1);
+
+-- إدخال رأس مال تجريبي
+INSERT IGNORE INTO capital (id, capital_name, total_capital, start_date, is_active, user_id)
+VALUES (1, 'رأس المال الأساسي', 100000.00, CURDATE(), 1, 1);
+
+-- إدخال حصة تجريبية
+INSERT IGNORE INTO partner_shares (
+    capital_id, partner_id, share_amount, share_percentage,
+    profit_percentage, loss_percentage, contribution_date, user_id
+)
+VALUES (1, 1, 100000.00, 100.00, 100.00, 100.00, CURDATE(), 1);
+
+-- =====================================================================
+-- 9) تسجيل نسخة التحديث
+-- =====================================================================
+
+INSERT INTO database_migrations (version, description, executed_at)
+VALUES ('4.2.0.2', 'Shifts-Capital-Partners Integration', NOW());
+
+-- =====================================================================
+-- نهاية السكريبت
+-- =====================================================================
+
+SELECT 'تم تنفيذ تحديث الورديات ورأس المال والشركاء بنجاح!' AS status;

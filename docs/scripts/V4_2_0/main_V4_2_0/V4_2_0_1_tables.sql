@@ -856,6 +856,7 @@ CREATE TABLE IF NOT EXISTS user_shifts
 (
     id                  INT AUTO_INCREMENT PRIMARY KEY,
     user_id             INT                      NOT NULL,
+    treasury_id INT DEFAULT 1 NOT NULL,
     open_time           DATETIME                 NOT NULL,
     close_time          DATETIME                 NULL,
     open_balance        DECIMAL(14, 2) DEFAULT 0 NOT NULL,
@@ -869,7 +870,14 @@ CREATE TABLE IF NOT EXISTS user_shifts
     difference          DECIMAL(14, 2) DEFAULT 0 NOT NULL,
     invoices_count      INT            DEFAULT 0 NOT NULL,
     is_open             BOOLEAN        DEFAULT TRUE,
+    shift_status VARCHAR(20) DEFAULT 'OPEN' NOT NULL,
     notes               TEXT                     NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL ON UPDATE CURRENT_TIMESTAMP,
+    CONSTRAINT user_shifts_treasury_fk
+        FOREIGN KEY (treasury_id) REFERENCES treasury(id),
+    CONSTRAINT user_shifts_status_chk
+        CHECK (shift_status IN ('OPEN', 'CLOSED', 'FORCE_CLOSED')),
     CONSTRAINT user_shifts_users_id_fk
         FOREIGN KEY (user_id) REFERENCES users (id)
             ON DELETE CASCADE
@@ -877,6 +885,8 @@ CREATE TABLE IF NOT EXISTS user_shifts
 
 CREATE INDEX idx_user_shifts_user_open ON user_shifts (user_id, is_open);
 CREATE INDEX idx_user_shifts_open_time ON user_shifts (open_time);
+CREATE INDEX idx_user_shifts_treasury ON user_shifts(treasury_id, open_time);
+CREATE INDEX idx_user_shifts_status ON user_shifts(shift_status, is_open);
 
 -- =====================================================================
 -- 12) Audit log
@@ -1028,3 +1038,178 @@ SELECT
 WHERE NOT EXISTS (
     SELECT 1 FROM system_info WHERE id = 1
 );
+
+-- =====================================================================
+-- 3) جدول رأس المال والشركاء
+-- =====================================================================
+
+-- جدول الشركاء
+CREATE TABLE IF NOT EXISTS partners
+(
+    id              INT AUTO_INCREMENT PRIMARY KEY,
+    partner_name    VARCHAR(100)                             NOT NULL,
+    partner_code    VARCHAR(50)                              NULL,
+    national_id     VARCHAR(50)                              NULL,
+    phone           VARCHAR(50)                              NULL,
+    email           VARCHAR(100)                             NULL,
+    address         VARCHAR(255)                             NULL,
+    join_date       DATE                                     NOT NULL,
+    exit_date       DATE                                     NULL,
+    is_active       TINYINT        DEFAULT 1                 NOT NULL,
+    notes           TEXT                                     NULL,
+    created_at      DATETIME       DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    updated_at      TIMESTAMP      DEFAULT CURRENT_TIMESTAMP NOT NULL ON UPDATE CURRENT_TIMESTAMP,
+    user_id         INT            DEFAULT 1                 NOT NULL,
+
+    CONSTRAINT partners_name_uk UNIQUE (partner_name),
+    CONSTRAINT partners_code_uk UNIQUE (partner_code),
+    CONSTRAINT partners_active_chk CHECK (is_active IN (0, 1)),
+    CONSTRAINT partners_users_fk FOREIGN KEY (user_id) REFERENCES users(id)
+);
+
+-- جدول رأس المال
+CREATE TABLE IF NOT EXISTS capital
+(
+    id               INT AUTO_INCREMENT PRIMARY KEY,
+    capital_name     VARCHAR(100)                             NOT NULL,
+    total_capital    DECIMAL(16, 2)                           NOT NULL,
+    start_date       DATE                                     NOT NULL,
+    end_date         DATE                                     NULL,
+    is_active        TINYINT        DEFAULT 1                 NOT NULL,
+    notes            TEXT                                     NULL,
+    created_at       DATETIME       DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    updated_at       TIMESTAMP      DEFAULT CURRENT_TIMESTAMP NOT NULL ON UPDATE CURRENT_TIMESTAMP,
+    user_id          INT            DEFAULT 1                 NOT NULL,
+
+    CONSTRAINT capital_name_uk UNIQUE (capital_name),
+    CONSTRAINT capital_active_chk CHECK (is_active IN (0, 1)),
+    CONSTRAINT capital_amount_chk CHECK (total_capital > 0),
+    CONSTRAINT capital_users_fk FOREIGN KEY (user_id) REFERENCES users(id)
+);
+
+-- جدول حصص الشركاء
+CREATE TABLE IF NOT EXISTS partner_shares
+(
+    id                   INT AUTO_INCREMENT PRIMARY KEY,
+    capital_id           INT                                      NOT NULL,
+    partner_id           INT                                      NOT NULL,
+    share_amount         DECIMAL(16, 2)                           NOT NULL,
+    share_percentage     DECIMAL(6, 3)                            NOT NULL,
+    profit_percentage    DECIMAL(6, 3)                            NOT NULL,
+    loss_percentage      DECIMAL(6, 3)                            NOT NULL,
+    contribution_date    DATE                                     NOT NULL,
+    is_managing_partner  TINYINT        DEFAULT 0                 NOT NULL,
+    notes                TEXT                                     NULL,
+    created_at           DATETIME       DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    updated_at           TIMESTAMP      DEFAULT CURRENT_TIMESTAMP NOT NULL ON UPDATE CURRENT_TIMESTAMP,
+    user_id              INT            DEFAULT 1                 NOT NULL,
+
+    CONSTRAINT partner_shares_capital_fk FOREIGN KEY (capital_id) REFERENCES capital(id) ON DELETE CASCADE,
+    CONSTRAINT partner_shares_partner_fk FOREIGN KEY (partner_id) REFERENCES partners(id) ON DELETE CASCADE,
+    CONSTRAINT partner_shares_uk UNIQUE (capital_id, partner_id),
+    CONSTRAINT partner_shares_amount_chk CHECK (share_amount > 0),
+    CONSTRAINT partner_shares_percentage_chk CHECK (share_percentage > 0 AND share_percentage <= 100),
+    CONSTRAINT partner_shares_profit_chk CHECK (profit_percentage >= 0 AND profit_percentage <= 100),
+    CONSTRAINT partner_shares_loss_chk CHECK (loss_percentage >= 0 AND loss_percentage <= 100),
+    CONSTRAINT partner_shares_managing_chk CHECK (is_managing_partner IN (0, 1)),
+    CONSTRAINT partner_shares_users_fk FOREIGN KEY (user_id) REFERENCES users(id)
+);
+
+CREATE INDEX idx_partner_shares_capital ON partner_shares(capital_id);
+CREATE INDEX idx_partner_shares_partner ON partner_shares(partner_id);
+
+-- جدول حركات رأس المال
+CREATE TABLE IF NOT EXISTS capital_movements
+(
+    id               BIGINT AUTO_INCREMENT PRIMARY KEY,
+    capital_id       INT                                      NOT NULL,
+    partner_id       INT                                      NULL,
+    movement_date    DATE                                     NOT NULL,
+    movement_type    VARCHAR(30)                              NOT NULL,
+    amount_in        DECIMAL(16, 2) DEFAULT 0                 NOT NULL,
+    amount_out       DECIMAL(16, 2) DEFAULT 0                 NOT NULL,
+    balance_after    DECIMAL(16, 2) DEFAULT 0                 NOT NULL,
+    reference_type   VARCHAR(50)                              NULL,
+    reference_id     BIGINT                                   NULL,
+    notes            TEXT                                     NULL,
+    created_at       DATETIME       DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    updated_at       TIMESTAMP      DEFAULT CURRENT_TIMESTAMP NOT NULL ON UPDATE CURRENT_TIMESTAMP,
+    user_id          INT            DEFAULT 1                 NOT NULL,
+
+    CONSTRAINT capital_movements_capital_fk FOREIGN KEY (capital_id) REFERENCES capital(id) ON DELETE CASCADE,
+    CONSTRAINT capital_movements_partner_fk FOREIGN KEY (partner_id) REFERENCES partners(id),
+    CONSTRAINT capital_movements_users_fk FOREIGN KEY (user_id) REFERENCES users(id),
+    CONSTRAINT capital_movements_amount_chk
+        CHECK ((amount_in > 0 AND amount_out = 0) OR (amount_in = 0 AND amount_out > 0)),
+    CONSTRAINT capital_movements_type_chk
+        CHECK (movement_type IN (
+                                 'INITIAL_CAPITAL',
+                                 'ADDITIONAL_INVESTMENT',
+                                 'WITHDRAWAL',
+                                 'PROFIT_DISTRIBUTION',
+                                 'LOSS_DISTRIBUTION',
+                                 'PARTNER_EXIT',
+                                 'PARTNER_JOIN',
+                                 'ADJUSTMENT'
+            ))
+);
+
+CREATE INDEX idx_capital_movements_capital ON capital_movements(capital_id, movement_date);
+CREATE INDEX idx_capital_movements_partner ON capital_movements(partner_id, movement_date);
+CREATE INDEX idx_capital_movements_reference ON capital_movements(reference_type, reference_id);
+
+-- جدول توزيع الأرباح والخسائر
+CREATE TABLE IF NOT EXISTS profit_loss_distribution
+(
+    id                    INT AUTO_INCREMENT PRIMARY KEY,
+    capital_id            INT                                      NOT NULL,
+    distribution_date     DATE                                     NOT NULL,
+    period_from           DATE                                     NOT NULL,
+    period_to             DATE                                     NOT NULL,
+    total_revenue         DECIMAL(16, 2) DEFAULT 0                 NOT NULL,
+    total_expenses        DECIMAL(16, 2) DEFAULT 0                 NOT NULL,
+    net_profit_loss       DECIMAL(16, 2) DEFAULT 0                 NOT NULL,
+    is_profit             TINYINT        DEFAULT 1                 NOT NULL,
+    distribution_status   VARCHAR(20)    DEFAULT 'PENDING'         NOT NULL,
+    distributed_at        DATETIME                                 NULL,
+    notes                 TEXT                                     NULL,
+    created_at            DATETIME       DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    updated_at            TIMESTAMP      DEFAULT CURRENT_TIMESTAMP NOT NULL ON UPDATE CURRENT_TIMESTAMP,
+    user_id               INT            DEFAULT 1                 NOT NULL,
+
+    CONSTRAINT profit_loss_distribution_capital_fk FOREIGN KEY (capital_id) REFERENCES capital(id) ON DELETE CASCADE,
+    CONSTRAINT profit_loss_distribution_users_fk FOREIGN KEY (user_id) REFERENCES users(id),
+    CONSTRAINT profit_loss_distribution_is_profit_chk CHECK (is_profit IN (0, 1)),
+    CONSTRAINT profit_loss_distribution_status_chk
+        CHECK (distribution_status IN ('PENDING', 'DISTRIBUTED', 'CANCELLED'))
+);
+
+CREATE INDEX idx_profit_loss_distribution_capital ON profit_loss_distribution(capital_id, distribution_date);
+
+-- جدول تفاصيل توزيع الأرباح/الخسائر على الشركاء
+CREATE TABLE IF NOT EXISTS profit_loss_distribution_details
+(
+    id                     INT AUTO_INCREMENT PRIMARY KEY,
+    distribution_id        INT                                      NOT NULL,
+    partner_id             INT                                      NOT NULL,
+    partner_share_percent  DECIMAL(6, 3)                            NOT NULL,
+    partner_profit_percent DECIMAL(6, 3)                            NOT NULL,
+    partner_amount         DECIMAL(16, 2)                           NOT NULL,
+    paid_amount            DECIMAL(16, 2) DEFAULT 0                 NOT NULL,
+    payment_status         VARCHAR(20)    DEFAULT 'UNPAID'          NOT NULL,
+    payment_date           DATE                                     NULL,
+    treasury_id            INT                                      NULL,
+    notes                  TEXT                                     NULL,
+
+    CONSTRAINT profit_loss_details_distribution_fk
+        FOREIGN KEY (distribution_id) REFERENCES profit_loss_distribution(id) ON DELETE CASCADE,
+    CONSTRAINT profit_loss_details_partner_fk
+        FOREIGN KEY (partner_id) REFERENCES partners(id),
+    CONSTRAINT profit_loss_details_treasury_fk
+        FOREIGN KEY (treasury_id) REFERENCES treasury(id),
+    CONSTRAINT profit_loss_details_payment_status_chk
+        CHECK (payment_status IN ('UNPAID', 'PARTIAL', 'PAID'))
+);
+
+CREATE INDEX idx_profit_loss_details_distribution ON profit_loss_distribution_details(distribution_id);
+CREATE INDEX idx_profit_loss_details_partner ON profit_loss_distribution_details(partner_id);
