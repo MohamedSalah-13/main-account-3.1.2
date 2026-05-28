@@ -3,7 +3,7 @@ package com.hamza.account.controller.capital;
 import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.model.domain.Capital;
 import com.hamza.account.model.domain.ProfitLossDistribution;
-import com.hamza.account.session.UserSession;
+import com.hamza.account.view.LogApplication;
 import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.database.DaoException;
 import javafx.beans.property.SimpleStringProperty;
@@ -13,6 +13,7 @@ import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
+import lombok.Setter;
 import lombok.extern.log4j.Log4j2;
 
 import java.net.URL;
@@ -68,13 +69,14 @@ public class ProfitLossDistributionController implements Initializable {
 
     // Data
     private final ObservableList<ProfitLossDistribution> distributionList = FXCollections.observableArrayList();
+    @Setter
     private DaoFactory daoFactory;
     private ProfitLossDistribution selectedDistribution;
+    private final int userId = LogApplication.usersVo.getId();
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
         try {
-            daoFactory = DaoFactory.getInstance();
             setupTable();
             setupForm();
             loadData();
@@ -86,6 +88,7 @@ public class ProfitLossDistributionController implements Initializable {
             AllAlerts.alertError("خطأ في تهيئة الشاشة: " + e.getMessage());
         }
     }
+    
 
     private void setupTable() {
         idColumn.setCellValueFactory(new PropertyValueFactory<>("id"));
@@ -254,7 +257,7 @@ public class ProfitLossDistributionController implements Initializable {
 
             ProfitLossDistribution distribution = new ProfitLossDistribution();
             fillDistributionFromForm(distribution);
-            distribution.setUserId(UserSession.getInstance().getUser().getId());
+            distribution.setUserId(userId);
 
             int result = daoFactory.profitLossDistributionDao().insert(distribution);
             if (result > 0) {
@@ -343,7 +346,7 @@ public class ProfitLossDistributionController implements Initializable {
             if (result.isPresent() && result.get() == ButtonType.OK) {
                 daoFactory.profitLossDistributionDao().distributeProfit(
                         selectedDistribution.getId(),
-                        UserSession.getInstance().getUser().getId()
+                        userId
                 );
 
                 AllAlerts.showSuccessAlert("تم توزيع " + 

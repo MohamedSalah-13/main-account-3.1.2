@@ -242,7 +242,39 @@ public enum PermissionCode {
 
     // ============= AUDIT (المراجعة) =============
     AUDIT_VIEW("audit.view", "عرض سجل المراجعة", "audit", "view"),
-    AUDIT_EXPORT("audit.export", "تصدير سجل المراجعة", "audit", "export");
+    AUDIT_EXPORT("audit.export", "تصدير سجل المراجعة", "audit", "export"),
+
+    // إضافة هذه الصلاحيات إلى PermissionCode enum الموجود
+
+    // ===== Capital & Partners Management (رأس المال والشركاء) =====
+    CAPITAL_SHOW("capital.show", "عرض رأس المال", "capital", "show"),
+    CAPITAL_CREATE("capital.create", "إضافة رأس المال", "capital", "create"),
+    CAPITAL_UPDATE("capital.update", "تعديل رأس المال", "capital", "update"),
+    CAPITAL_DELETE("capital.delete", "حذف رأس المال", "capital", "delete"),
+
+    PARTNER_SHOW("partner.show", "عرض الشركاء", "capital", "show"),
+    PARTNER_CREATE("partner.create", "إضافة شريك", "capital", "create"),
+    PARTNER_UPDATE("partner.update", "تعديل شريك", "capital", "update"),
+    PARTNER_DELETE("partner.delete", "حذف شريك", "capital", "delete"),
+
+    PARTNER_SHARE_SHOW("partner.share.show", "عرض حصص الشركاء", "capital", "show"),
+    PARTNER_SHARE_CREATE("partner.share.create", "إضافة حصة", "capital", "create"),
+    PARTNER_SHARE_UPDATE("partner.share.update", "تعديل حصة", "capital", "update"),
+    PARTNER_SHARE_DELETE("partner.share.delete", "حذف حصة", "capital", "delete"),
+
+    // ===== Profit & Loss Distribution (توزيع الأرباح والخسائر) =====
+    PROFIT_SHOW("profit.show", "عرض توزيع الأرباح", "profit", "show"),
+    PROFIT_CREATE("profit.create", "إنشاء توزيع", "profit", "create"),
+    PROFIT_UPDATE("profit.update", "تعديل توزيع", "profit", "update"),
+    PROFIT_DELETE("profit.delete", "حذف توزيع", "profit", "delete"),
+    PROFIT_CALCULATE("profit.calculate", "حساب الأرباح/الخسائر", "profit", "calculate"),
+    PROFIT_DISTRIBUTE("profit.distribute", "توزيع على الشركاء", "profit", "distribute"),
+    PROFIT_VIEW_DETAILS("profit.view.details", "عرض تفاصيل التوزيع", "profit", "show"),
+
+    // ===== Reports (التقارير) =====
+    REPORTS_CAPITAL("reports.capital", "تقارير رأس المال", "reports", "show"),
+    REPORTS_PARTNERS("reports.partners", "تقارير الشركاء", "reports", "show"),
+    REPORTS_PROFIT_DISTRIBUTION("reports.profit.distribution", "تقرير توزيع الأرباح", "reports", "show");
 
     private final String code;
     private final String titleAr;

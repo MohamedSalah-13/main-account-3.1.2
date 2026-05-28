@@ -661,3 +661,130 @@
     -fx-font-weight: bold;
     -fx-background-radius: 10px;
 }
+
+/* Capital Management Styles */
+
+.summary-card {
+    -fx-background-color: white;
+    -fx-border-color: #e0e0e0;
+    -fx-border-width: 1px;
+    -fx-border-radius: 8px;
+    -fx-background-radius: 8px;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.1), 5, 0, 0, 2);
+    -fx-min-width: 180px;
+}
+
+.success-card {
+    -fx-border-color: #4caf50;
+    -fx-border-width: 2px;
+}
+
+.danger-card {
+    -fx-border-color: #f44336;
+    -fx-border-width: 2px;
+}
+
+.warning-card {
+    -fx-border-color: #ff9800;
+    -fx-border-width: 2px;
+}
+
+.card-label {
+    -fx-font-size: 12px;
+    -fx-text-fill: #666;
+}
+
+.card-value {
+    -fx-font-size: 24px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #333;
+}
+
+.section-title {
+    -fx-font-size: 16px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #2c3e50;
+}
+
+.section-subtitle {
+    -fx-font-size: 14px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #34495e;
+}
+
+.form-container {
+    -fx-background-color: #f9f9f9;
+    -fx-padding: 15px;
+    -fx-max-width: 350px;
+}
+
+.btn-success {
+    -fx-background-color: #4caf50;
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+    -fx-cursor: hand;
+}
+
+.btn-success:hover {
+    -fx-background-color: #45a049;
+}
+
+.btn-primary {
+    -fx-background-color: #2196F3;
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+    -fx-cursor: hand;
+}
+
+.btn-primary:hover {
+    -fx-background-color: #0b7dda;
+}
+
+.btn-danger {
+    -fx-background-color: #f44336;
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+    -fx-cursor: hand;
+}
+
+.btn-danger:hover {
+    -fx-background-color: #da190b;
+}
+
+.btn-warning {
+    -fx-background-color: #ff9800;
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+    -fx-cursor: hand;
+}
+
+.btn-warning:hover {
+    -fx-background-color: #e68900;
+}
+
+.btn-info {
+    -fx-background-color: #00bcd4;
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+    -fx-cursor: hand;
+}
+
+.btn-info:hover {
+    -fx-background-color: #00acc1;
+}
+
+.btn-secondary {
+    -fx-background-color: #607d8b;
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+    -fx-cursor: hand;
+}
+
+.btn-secondary:hover {
+    -fx-background-color: #546e7a;
+}
+
+.summary-value {
+    -fx-font-size: 14px;
+    -fx-font-weight: bold;
+}

@@ -1,0 +1,204 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.text.Font?>
+
+<BorderPane xmlns="http://javafx.com/javafx"
+            xmlns:fx="http://javafx.com/fxml"
+            fx:controller="com.hamza.account.controller.capital.ProfitLossDistributionController"
+            prefHeight="850.0" prefWidth="1400.0"
+            styleClass="root-pane">
+
+    <!-- Top Bar with Summary -->
+    <top>
+        <VBox spacing="10">
+            <!-- Header -->
+            <HBox styleClass="header-bar" spacing="15" alignment="CENTER_LEFT">
+                <padding>
+                    <Insets top="15" right="20" bottom="15" left="20"/>
+                </padding>
+                <Label text="توزيع الأرباح والخسائر" styleClass="header-title">
+                    <font>
+                        <Font name="Arial" size="24.0" />
+                    </font>
+                </Label>
+            </HBox>
+            
+            <!-- Summary Cards -->
+            <HBox spacing="15" alignment="CENTER">
+                <padding>
+                    <Insets top="10" right="20" bottom="10" left="20"/>
+                </padding>
+                
+                <!-- Card 1: Total Distributions -->
+                <VBox styleClass="summary-card" spacing="5" alignment="CENTER">
+                    <padding>
+                        <Insets top="10" right="15" bottom="10" left="15"/>
+                    </padding>
+                    <Label text="إجمالي التوزيعات" styleClass="card-label"/>
+                    <Label fx:id="totalDistributionsLabel" text="0" styleClass="card-value"/>
+                </VBox>
+                
+                <!-- Card 2: Total Profit -->
+                <VBox styleClass="summary-card success-card" spacing="5" alignment="CENTER">
+                    <padding>
+                        <Insets top="10" right="15" bottom="10" left="15"/>
+                    </padding>
+                    <Label text="إجمالي الأرباح" styleClass="card-label"/>
+                    <Label fx:id="totalProfitLabel" text="0.00" styleClass="card-value"/>
+                </VBox>
+                
+                <!-- Card 3: Total Loss -->
+                <VBox styleClass="summary-card danger-card" spacing="5" alignment="CENTER">
+                    <padding>
+                        <Insets top="10" right="15" bottom="10" left="15"/>
+                    </padding>
+                    <Label text="إجمالي الخسائر" styleClass="card-label"/>
+                    <Label fx:id="totalLossLabel" text="0.00" styleClass="card-value"/>
+                </VBox>
+                
+                <!-- Card 4: Pending -->
+                <VBox styleClass="summary-card warning-card" spacing="5" alignment="CENTER">
+                    <padding>
+                        <Insets top="10" right="15" bottom="10" left="15"/>
+                    </padding>
+                    <Label text="المعلقة" styleClass="card-label"/>
+                    <Label fx:id="pendingCountLabel" text="0" styleClass="card-value"/>
+                </VBox>
+            </HBox>
+        </VBox>
+    </top>
+
+    <!-- Center Content -->
+    <center>
+        <BorderPane>
+            <!-- Left: Form -->
+            <left>
+                <ScrollPane fitToWidth="true" fitToHeight="true">
+                    <VBox spacing="10" styleClass="form-container">
+                        <padding>
+                            <Insets top="15" right="15" bottom="15" left="15"/>
+                        </padding>
+                        
+                        <Label text="بيانات التوزيع" styleClass="section-title">
+                            <font>
+                                <Font name="Arial" size="16.0" />
+                            </font>
+                        </Label>
+                        <Separator/>
+                        
+                        <!-- Capital Selection -->
+                        <Label text="رأس المال:"/>
+                        <ComboBox fx:id="capitalComboBox" prefWidth="300" promptText="اختر رأس المال"/>
+                        
+                        <!-- Distribution Date -->
+                        <Label text="تاريخ التوزيع:"/>
+                        <DatePicker fx:id="distributionDatePicker" prefWidth="300"/>
+                        
+                        <!-- Period -->
+                        <Label text="من تاريخ:"/>
+                        <DatePicker fx:id="periodFromPicker" prefWidth="300"/>
+                        
+                        <Label text="إلى تاريخ:"/>
+                        <DatePicker fx:id="periodToPicker" prefWidth="300"/>
+                        
+                        <Separator/>
+                        
+                        <!-- Calculate Section -->
+                        <HBox spacing="10" alignment="CENTER_LEFT">
+                            <Button fx:id="calculateBtn" text="حساب الأرباح/الخسائر" 
+                                    styleClass="btn-primary"/>
+                        </HBox>
+                        
+                        <Separator/>
+                        
+                        <!-- Financial Data -->
+                        <Label text="البيانات المالية:" styleClass="section-subtitle"/>
+                        
+                        <Label text="إجمالي الإيرادات:"/>
+                        <TextField fx:id="totalRevenueField" promptText="0.00"/>
+                        
+                        <Label text="إجمالي المصروفات:"/>
+                        <TextField fx:id="totalExpensesField" promptText="0.00"/>
+                        
+                        <Label text="صافي الربح/الخسارة:"/>
+                        <TextField fx:id="netProfitLossField" promptText="0.00" editable="false"
+                                   style="-fx-font-weight: bold; -fx-font-size: 14px;"/>
+                        
+                        <!-- Type -->
+                        <Label text="النوع:"/>
+                        <HBox spacing="20">
+                            <RadioButton fx:id="profitRadio" text="ربح" selected="true"/>
+                            <RadioButton fx:id="lossRadio" text="خسارة"/>
+                        </HBox>
+                        
+                        <!-- Status -->
+                        <Label text="الحالة:"/>
+                        <ComboBox fx:id="statusComboBox" prefWidth="300"/>
+                        
+                        <!-- Notes -->
+                        <Label text="ملاحظات:"/>
+                        <TextArea fx:id="notesArea" prefRowCount="3" promptText="أدخل ملاحظات"/>
+                        
+                        <Separator/>
+                        
+                        <!-- Action Buttons -->
+                        <VBox spacing="10">
+                            <HBox spacing="10">
+                                <Button fx:id="saveBtn" text="حفظ" styleClass="btn-success" 
+                                        prefWidth="140"/>
+                                <Button fx:id="updateBtn" text="تعديل" styleClass="btn-primary" 
+                                        prefWidth="140"/>
+                            </HBox>
+                            <HBox spacing="10">
+                                <Button fx:id="deleteBtn" text="حذف" styleClass="btn-danger" 
+                                        prefWidth="140"/>
+                                <Button fx:id="newBtn" text="جديد" styleClass="btn-secondary" 
+                                        prefWidth="140"/>
+                            </HBox>
+                            <Separator/>
+                            <Button fx:id="distributeBtn" text="⚡ توزيع على الشركاء" 
+                                    styleClass="btn-warning" prefWidth="290"
+                                    style="-fx-font-size: 14px; -fx-font-weight: bold;"/>
+                            <Button fx:id="viewDetailsBtn" text="📊 عرض التفاصيل" 
+                                    styleClass="btn-info" prefWidth="290"/>
+                        </VBox>
+                    </VBox>
+                </ScrollPane>
+            </left>
+            
+            <!-- Center: Table -->
+            <center>
+                <VBox spacing="10">
+                    <padding>
+                        <Insets top="15" right="15" bottom="15" left="15"/>
+                    </padding>
+                    
+                    <Label text="قائمة التوزيعات" styleClass="section-title">
+                        <font>
+                            <Font name="Arial" size="16.0" />
+                        </font>
+                    </Label>
+                    
+                    <TableView fx:id="distributionTable" VBox.vgrow="ALWAYS">
+                        <columns>
+                            <TableColumn fx:id="idColumn" text="الكود" prefWidth="60"/>
+                            <TableColumn fx:id="capitalNameColumn" text="رأس المال" prefWidth="120"/>
+                            <TableColumn fx:id="distributionDateColumn" text="تاريخ التوزيع" prefWidth="100"/>
+                            <TableColumn fx:id="periodFromColumn" text="من" prefWidth="90"/>
+                            <TableColumn fx:id="periodToColumn" text="إلى" prefWidth="90"/>
+                            <TableColumn fx:id="revenueColumn" text="الإيرادات" prefWidth="110"/>
+                            <TableColumn fx:id="expensesColumn" text="المصروفات" prefWidth="110"/>
+                            <TableColumn fx:id="netColumn" text="الصافي" prefWidth="110"/>
+                            <TableColumn fx:id="typeColumn" text="النوع" prefWidth="70"/>
+                            <TableColumn fx:id="statusColumn" text="الحالة" prefWidth="90"/>
+                        </columns>
+                    </TableView>
+                </VBox>
+            </center>
+        </BorderPane>
+    </center>
+
+</BorderPane>

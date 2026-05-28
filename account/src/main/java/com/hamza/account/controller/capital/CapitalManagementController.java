@@ -4,6 +4,7 @@ import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.model.domain.Capital;
 import com.hamza.account.model.domain.Partner;
 import com.hamza.account.model.domain.PartnerShare;
+import com.hamza.account.view.LogApplication;
 import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.database.DaoException;
 import javafx.beans.property.SimpleStringProperty;
@@ -13,6 +14,7 @@ import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
+import lombok.Setter;
 import lombok.extern.log4j.Log4j2;
 
 import java.net.URL;
@@ -24,87 +26,137 @@ import java.util.ResourceBundle;
 @Log4j2
 public class CapitalManagementController implements Initializable {
 
-    // ===== Capital Section =====
-    @FXML private TableView<Capital> capitalTable;
-    @FXML private TableColumn<Capital, Integer> capitalIdColumn;
-    @FXML private TableColumn<Capital, String> capitalNameColumn;
-    @FXML private TableColumn<Capital, Double> totalCapitalColumn;
-    @FXML private TableColumn<Capital, LocalDate> startDateColumn;
-    @FXML private TableColumn<Capital, String> capitalStatusColumn;
-
-    @FXML private TextField capitalNameField;
-    @FXML private TextField totalCapitalField;
-    @FXML private DatePicker startDatePicker;
-    @FXML private DatePicker endDatePicker;
-    @FXML private CheckBox activeCheckBox;
-    @FXML private TextArea capitalNotesArea;
-    @FXML private Button saveCapitalBtn;
-    @FXML private Button updateCapitalBtn;
-    @FXML private Button deleteCapitalBtn;
-    @FXML private Button newCapitalBtn;
-
-    // ===== Partner Section =====
-    @FXML private TableView<Partner> partnerTable;
-    @FXML private TableColumn<Partner, Integer> partnerIdColumn;
-    @FXML private TableColumn<Partner, String> partnerNameColumn;
-    @FXML private TableColumn<Partner, String> partnerCodeColumn;
-    @FXML private TableColumn<Partner, String> partnerPhoneColumn;
-    @FXML private TableColumn<Partner, String> partnerStatusColumn;
-
-    @FXML private TextField partnerNameField;
-    @FXML private TextField partnerCodeField;
-    @FXML private TextField nationalIdField;
-    @FXML private TextField phoneField;
-    @FXML private TextField emailField;
-    @FXML private TextField addressField;
-    @FXML private DatePicker joinDatePicker;
-    @FXML private CheckBox partnerActiveCheckBox;
-    @FXML private TextArea partnerNotesArea;
-    @FXML private Button savePartnerBtn;
-    @FXML private Button updatePartnerBtn;
-    @FXML private Button deletePartnerBtn;
-    @FXML private Button newPartnerBtn;
-
-    // ===== Partner Shares Section =====
-    @FXML private TableView<PartnerShare> sharesTable;
-    @FXML private TableColumn<PartnerShare, Integer> shareIdColumn;
-    @FXML private TableColumn<PartnerShare, String> shareCapitalColumn;
-    @FXML private TableColumn<PartnerShare, String> sharePartnerColumn;
-    @FXML private TableColumn<PartnerShare, Double> shareAmountColumn;
-    @FXML private TableColumn<PartnerShare, Double> sharePercentColumn;
-    @FXML private TableColumn<PartnerShare, Double> profitPercentColumn;
-
-    @FXML private ComboBox<Capital> capitalComboBox;
-    @FXML private ComboBox<Partner> partnerComboBox;
-    @FXML private TextField shareAmountField;
-    @FXML private TextField sharePercentField;
-    @FXML private TextField profitPercentField;
-    @FXML private TextField lossPercentField;
-    @FXML private DatePicker contributionDatePicker;
-    @FXML private CheckBox managingPartnerCheckBox;
-    @FXML private TextArea shareNotesArea;
-    @FXML private Button saveShareBtn;
-    @FXML private Button updateShareBtn;
-    @FXML private Button deleteShareBtn;
-    @FXML private Button newShareBtn;
-
-    @FXML private Label totalSharesLabel;
-    @FXML private Label remainingCapitalLabel;
-
     // Data
     private final ObservableList<Capital> capitalList = FXCollections.observableArrayList();
     private final ObservableList<Partner> partnerList = FXCollections.observableArrayList();
     private final ObservableList<PartnerShare> sharesList = FXCollections.observableArrayList();
-
-    private DaoFactory daoFactory;
+    private final int userId = LogApplication.usersVo.getId();
+    // ===== Capital Section =====
+    @FXML
+    private TableView<Capital> capitalTable;
+    @FXML
+    private TableColumn<Capital, Integer> capitalIdColumn;
+    @FXML
+    private TableColumn<Capital, String> capitalNameColumn;
+    @FXML
+    private TableColumn<Capital, Double> totalCapitalColumn;
+    @FXML
+    private TableColumn<Capital, LocalDate> startDateColumn;
+    @FXML
+    private TableColumn<Capital, String> capitalStatusColumn;
+    @FXML
+    private TextField capitalNameField;
+    @FXML
+    private TextField totalCapitalField;
+    @FXML
+    private DatePicker startDatePicker;
+    @FXML
+    private DatePicker endDatePicker;
+    @FXML
+    private CheckBox activeCheckBox;
+    @FXML
+    private TextArea capitalNotesArea;
+    @FXML
+    private Button saveCapitalBtn;
+    @FXML
+    private Button updateCapitalBtn;
+    @FXML
+    private Button deleteCapitalBtn;
+    @FXML
+    private Button newCapitalBtn;
+    // ===== Partner Section =====
+    @FXML
+    private TableView<Partner> partnerTable;
+    @FXML
+    private TableColumn<Partner, Integer> partnerIdColumn;
+    @FXML
+    private TableColumn<Partner, String> partnerNameColumn;
+    @FXML
+    private TableColumn<Partner, String> partnerCodeColumn;
+    @FXML
+    private TableColumn<Partner, String> partnerPhoneColumn;
+    @FXML
+    private TableColumn<Partner, String> partnerStatusColumn;
+    @FXML
+    private TextField partnerNameField;
+    @FXML
+    private TextField partnerCodeField;
+    @FXML
+    private TextField nationalIdField;
+    @FXML
+    private TextField phoneField;
+    @FXML
+    private TextField emailField;
+    @FXML
+    private TextField addressField;
+    @FXML
+    private DatePicker joinDatePicker;
+    @FXML
+    private CheckBox partnerActiveCheckBox;
+    @FXML
+    private TextArea partnerNotesArea;
+    @FXML
+    private Button savePartnerBtn;
+    @FXML
+    private Button updatePartnerBtn;
+    @FXML
+    private Button deletePartnerBtn;
+    @FXML
+    private Button newPartnerBtn;
+    // ===== Partner Shares Section =====
+    @FXML
+    private TableView<PartnerShare> sharesTable;
+    @FXML
+    private TableColumn<PartnerShare, Integer> shareIdColumn;
+    @FXML
+    private TableColumn<PartnerShare, String> shareCapitalColumn;
+    @FXML
+    private TableColumn<PartnerShare, String> sharePartnerColumn;
+    @FXML
+    private TableColumn<PartnerShare, Double> shareAmountColumn;
+    @FXML
+    private TableColumn<PartnerShare, Double> sharePercentColumn;
+    @FXML
+    private TableColumn<PartnerShare, Double> profitPercentColumn;
+    @FXML
+    private ComboBox<Capital> capitalComboBox;
+    @FXML
+    private ComboBox<Partner> partnerComboBox;
+    @FXML
+    private TextField shareAmountField;
+    @FXML
+    private TextField sharePercentField;
+    @FXML
+    private TextField profitPercentField;
+    @FXML
+    private TextField lossPercentField;
+    @FXML
+    private DatePicker contributionDatePicker;
+    @FXML
+    private CheckBox managingPartnerCheckBox;
+    @FXML
+    private TextArea shareNotesArea;
+    @FXML
+    private Button saveShareBtn;
+    @FXML
+    private Button updateShareBtn;
+    @FXML
+    private Button deleteShareBtn;
+    @FXML
+    private Button newShareBtn;
+    @FXML
+    private Label totalSharesLabel;
+    @FXML
+    private Label remainingCapitalLabel;
     private Capital selectedCapital;
     private Partner selectedPartner;
     private PartnerShare selectedShare;
+    @Setter
+    private DaoFactory daoFactory;
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
         try {
-            daoFactory = DaoFactory.getInstance();
             setupTables();
             setupComboBoxes();
             loadAllData();
@@ -302,7 +354,7 @@ public class CapitalManagementController implements Initializable {
             capital.setEndDate(endDatePicker.getValue());
             capital.setActive(activeCheckBox.isSelected());
             capital.setNotes(capitalNotesArea.getText());
-            capital.setUserId(UserSession.getInstance().getUser().getId());
+            capital.setUserId(userId);
 
             int result = daoFactory.capitalDao().insert(capital);
             if (result > 0) {
@@ -438,7 +490,7 @@ public class CapitalManagementController implements Initializable {
             partner.setJoinDate(joinDatePicker.getValue());
             partner.setActive(partnerActiveCheckBox.isSelected());
             partner.setNotes(partnerNotesArea.getText());
-            partner.setUserId(UserSession.getInstance().getUser().getId());
+            partner.setUserId(userId);
 
             int result = daoFactory.partnerDao().insert(partner);
             if (result > 0) {
@@ -569,7 +621,7 @@ public class CapitalManagementController implements Initializable {
             share.setContributionDate(contributionDatePicker.getValue());
             share.setManagingPartner(managingPartnerCheckBox.isSelected());
             share.setNotes(shareNotesArea.getText());
-            share.setUserId(UserSession.getInstance().getUser().getId());
+            share.setUserId(userId);
 
             int result = daoFactory.partnerShareDao().insert(share);
             if (result > 0) {
@@ -640,19 +692,19 @@ public class CapitalManagementController implements Initializable {
 
     private void selectShare(PartnerShare share) {
         this.selectedShare = share;
-        
+
         // Find and select capital
         capitalComboBox.getItems().stream()
                 .filter(c -> c.getId() == share.getCapitalId())
                 .findFirst()
                 .ifPresent(capitalComboBox::setValue);
-        
+
         // Find and select partner
         partnerComboBox.getItems().stream()
                 .filter(p -> p.getId() == share.getPartnerId())
                 .findFirst()
                 .ifPresent(partnerComboBox::setValue);
-        
+
         shareAmountField.setText(String.valueOf(share.getShareAmount()));
         sharePercentField.setText(String.valueOf(share.getSharePercentage()));
         profitPercentField.setText(String.valueOf(share.getProfitPercentage()));
@@ -660,7 +712,7 @@ public class CapitalManagementController implements Initializable {
         contributionDatePicker.setValue(share.getContributionDate());
         managingPartnerCheckBox.setSelected(share.isManagingPartner());
         shareNotesArea.setText(share.getNotes());
-        
+
         setFormState(FormState.EDIT_SHARE);
     }
 
@@ -704,7 +756,7 @@ public class CapitalManagementController implements Initializable {
             AllAlerts.alertWarning("الرجاء اختيار تاريخ المساهمة");
             return false;
         }
-        
+
         try {
             double percentage = Double.parseDouble(sharePercentField.getText());
             if (percentage <= 0 || percentage > 100) {
@@ -715,7 +767,7 @@ public class CapitalManagementController implements Initializable {
             AllAlerts.alertWarning("نسبة الحصة غير صحيحة");
             return false;
         }
-        
+
         return true;
     }
 
@@ -726,7 +778,7 @@ public class CapitalManagementController implements Initializable {
                 double totalCapital = capitalComboBox.getValue().getTotalCapital();
                 double percentage = (shareAmount / totalCapital) * 100;
                 sharePercentField.setText(String.format("%.2f", percentage));
-                
+
                 // Set profit and loss percentage same as share percentage by default
                 if (profitPercentField.getText().trim().isEmpty()) {
                     profitPercentField.setText(String.format("%.2f", percentage));
@@ -751,20 +803,20 @@ public class CapitalManagementController implements Initializable {
             Capital selectedCap = capitalComboBox.getValue();
             List<PartnerShare> capitalShares = daoFactory.partnerShareDao()
                     .getSharesByCapitalId(selectedCap.getId());
-            
+
             double totalPercentage = capitalShares.stream()
                     .mapToDouble(PartnerShare::getSharePercentage)
                     .sum();
-            
+
             double totalAmount = capitalShares.stream()
                     .mapToDouble(PartnerShare::getShareAmount)
                     .sum();
-            
+
             double remaining = selectedCap.getTotalCapital() - totalAmount;
-            
+
             totalSharesLabel.setText(String.format("%.2f%%", totalPercentage));
             remainingCapitalLabel.setText(String.format("%.2f", remaining));
-            
+
             // Color coding
             if (totalPercentage > 100) {
                 totalSharesLabel.setStyle("-fx-text-fill: red; -fx-font-weight: bold;");
