@@ -43,16 +43,20 @@ public class CapitalDao extends AbstractDao<Capital> {
                 ) VALUES (?, ?, ?, ?, ?, ?, ?)
                 """;
 
-        return executeUpdateWithException(
-                sql,
-                capital.getCapitalName(),
-                capital.getTotalCapital(),
-                capital.getStartDate(),
-                capital.getEndDate(),
-                capital.isActive() ? 1 : 0,
-                capital.getNotes(),
-                capital.getUserId()
-        );
+        try {
+            return executeUpdateWithException(
+                    sql,
+                    capital.getCapitalName(),
+                    capital.getTotalCapital(),
+                    capital.getStartDate(),
+                    capital.getEndDate(),
+                    capital.isActive() ? 1 : 0,
+                    capital.getNotes(),
+                    capital.getUserId()
+            );
+        } catch (SQLException e) {
+            throw new DaoException(e);
+        }
     }
 
     @Override
@@ -69,25 +73,33 @@ public class CapitalDao extends AbstractDao<Capital> {
                 WHERE id = ?
                 """;
 
-        return executeUpdateWithException(
-                sql,
-                capital.getCapitalName(),
-                capital.getTotalCapital(),
-                capital.getStartDate(),
-                capital.getEndDate(),
-                capital.isActive() ? 1 : 0,
-                capital.getNotes(),
-                capital.getUserId(),
-                capital.getId()
-        );
+        try {
+            return executeUpdateWithException(
+                    sql,
+                    capital.getCapitalName(),
+                    capital.getTotalCapital(),
+                    capital.getStartDate(),
+                    capital.getEndDate(),
+                    capital.isActive() ? 1 : 0,
+                    capital.getNotes(),
+                    capital.getUserId(),
+                    capital.getId()
+            );
+        } catch (SQLException e) {
+            throw new DaoException(e);
+        }
     }
 
     @Override
     public int deleteById(int id) throws DaoException {
-        return executeUpdateWithException(
-                SqlStatements.deleteStatementByColumnWhere(TABLE_NAME, ID),
-                id
-        );
+        try {
+            return executeUpdateWithException(
+                    SqlStatements.deleteStatement(TABLE_NAME, ID),
+                    id
+            );
+        } catch (SQLException e) {
+            throw new DaoException(e);
+        }
     }
 
     @Override

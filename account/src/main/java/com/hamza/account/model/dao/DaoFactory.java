@@ -275,4 +275,37 @@ public enum DaoFactory {
     public UserRoleDao userRoleDao() {
         return new UserRoleDaoImpl(connection);
     }
+
+    private PartnerDao partnerDao;
+    private CapitalDao capitalDao;
+    private PartnerShareDao partnerShareDao;
+    private ProfitLossDistributionDao profitLossDistributionDao;
+
+    public PartnerDao partnerDao() {
+        if (partnerDao == null) {
+            partnerDao = new PartnerDao(connection);
+        }
+        return partnerDao;
+    }
+
+    public CapitalDao capitalDao() {
+        if (capitalDao == null) {
+            capitalDao = new CapitalDao(connection);
+        }
+        return capitalDao;
+    }
+
+    public PartnerShareDao partnerShareDao() {
+        if (partnerShareDao == null) {
+            partnerShareDao = new PartnerShareDao(connection);
+        }
+        return partnerShareDao;
+    }
+
+    public ProfitLossDistributionDao profitLossDistributionDao() {
+        if (profitLossDistributionDao == null) {
+            profitLossDistributionDao = new ProfitLossDistributionDao(connection);
+        }
+        return profitLossDistributionDao;
+    }
 }

@@ -1,0 +1,254 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.text.Font?>
+
+<BorderPane xmlns="http://javafx.com/javafx"
+            xmlns:fx="http://javafx.com/fxml"
+            fx:controller="com.hamza.account.controller.capital.CapitalManagementController"
+            prefHeight="800.0" prefWidth="1400.0"
+            styleClass="root-pane">
+
+    <!-- Top Bar -->
+    <top>
+        <HBox styleClass="header-bar" spacing="15" alignment="CENTER_LEFT">
+            <padding>
+                <Insets top="15" right="20" bottom="15" left="20"/>
+            </padding>
+            <Label text="إدارة رأس المال والشركاء" styleClass="header-title">
+                <font>
+                    <Font name="Arial" size="24.0" />
+                </font>
+            </Label>
+        </HBox>
+    </top>
+
+    <!-- Center Content -->
+    <center>
+        <TabPane tabClosingPolicy="UNAVAILABLE">
+            
+            <!-- Tab 1: Capital -->
+            <Tab text="رأس المال">
+                <BorderPane>
+                    <left>
+                        <!-- Capital Form -->
+                        <VBox spacing="10" styleClass="form-container">
+                            <padding>
+                                <Insets top="15" right="15" bottom="15" left="15"/>
+                            </padding>
+                            
+                            <Label text="بيانات رأس المال" styleClass="section-title"/>
+                            <Separator/>
+                            
+                            <Label text="اسم رأس المال:"/>
+                            <TextField fx:id="capitalNameField" promptText="أدخل اسم رأس المال"/>
+                            
+                            <Label text="إجمالي رأس المال:"/>
+                            <TextField fx:id="totalCapitalField" promptText="0.00"/>
+                            
+                            <Label text="تاريخ البداية:"/>
+                            <DatePicker fx:id="startDatePicker" promptText="اختر تاريخ البداية"/>
+                            
+                            <Label text="تاريخ النهاية:"/>
+                            <DatePicker fx:id="endDatePicker" promptText="اختر تاريخ النهاية (اختياري)"/>
+                            
+                            <CheckBox fx:id="activeCheckBox" text="نشط" selected="true"/>
+                            
+                            <Label text="ملاحظات:"/>
+                            <TextArea fx:id="capitalNotesArea" prefRowCount="3" promptText="أدخل ملاحظات"/>
+                            
+                            <!-- Buttons -->
+                            <HBox spacing="10">
+                                <Button fx:id="saveCapitalBtn" text="حفظ" styleClass="btn-success"/>
+                                <Button fx:id="updateCapitalBtn" text="تعديل" styleClass="btn-primary"/>
+                                <Button fx:id="deleteCapitalBtn" text="حذف" styleClass="btn-danger"/>
+                                <Button fx:id="newCapitalBtn" text="جديد" styleClass="btn-secondary"/>
+                            </HBox>
+                        </VBox>
+                    </left>
+                    
+                    <center>
+                        <!-- Capital Table -->
+                        <VBox spacing="10">
+                            <padding>
+                                <Insets top="15" right="15" bottom="15" left="15"/>
+                            </padding>
+                            
+                            <Label text="قائمة رأس المال" styleClass="section-title"/>
+                            
+                            <TableView fx:id="capitalTable" VBox.vgrow="ALWAYS">
+                                <columns>
+                                    <TableColumn fx:id="capitalIdColumn" text="الكود" prefWidth="80"/>
+                                    <TableColumn fx:id="capitalNameColumn" text="الاسم" prefWidth="200"/>
+                                    <TableColumn fx:id="totalCapitalColumn" text="المبلغ" prefWidth="150"/>
+                                    <TableColumn fx:id="startDateColumn" text="تاريخ البداية" prefWidth="120"/>
+                                    <TableColumn fx:id="capitalStatusColumn" text="الحالة" prefWidth="100"/>
+                                </columns>
+                            </TableView>
+                        </VBox>
+                    </center>
+                </BorderPane>
+            </Tab>
+            
+            <!-- Tab 2: Partners -->
+            <Tab text="الشركاء">
+                <BorderPane>
+                    <left>
+                        <!-- Partner Form -->
+                        <VBox spacing="10" styleClass="form-container">
+                            <padding>
+                                <Insets top="15" right="15" bottom="15" left="15"/>
+                            </padding>
+                            
+                            <Label text="بيانات الشريك" styleClass="section-title"/>
+                            <Separator/>
+                            
+                            <Label text="اسم الشريك:"/>
+                            <TextField fx:id="partnerNameField" promptText="أدخل اسم الشريك"/>
+                            
+                            <Label text="كود الشريك:"/>
+                            <TextField fx:id="partnerCodeField" promptText="أدخل الكود"/>
+                            
+                            <Label text="الرقم القومي:"/>
+                            <TextField fx:id="nationalIdField" promptText="أدخل الرقم القومي"/>
+                            
+                            <Label text="الهاتف:"/>
+                            <TextField fx:id="phoneField" promptText="أدخل رقم الهاتف"/>
+                            
+                            <Label text="البريد الإلكتروني:"/>
+                            <TextField fx:id="emailField" promptText="أدخل البريد الإلكتروني"/>
+                            
+                            <Label text="العنوان:"/>
+                            <TextField fx:id="addressField" promptText="أدخل العنوان"/>
+                            
+                            <Label text="تاريخ الانضمام:"/>
+                            <DatePicker fx:id="joinDatePicker"/>
+                            
+                            <CheckBox fx:id="partnerActiveCheckBox" text="نشط" selected="true"/>
+                            
+                            <Label text="ملاحظات:"/>
+                            <TextArea fx:id="partnerNotesArea" prefRowCount="2"/>
+                            
+                            <!-- Buttons -->
+                            <HBox spacing="10">
+                                <Button fx:id="savePartnerBtn" text="حفظ" styleClass="btn-success"/>
+                                <Button fx:id="updatePartnerBtn" text="تعديل" styleClass="btn-primary"/>
+                                <Button fx:id="deletePartnerBtn" text="حذف" styleClass="btn-danger"/>
+                                <Button fx:id="newPartnerBtn" text="جديد" styleClass="btn-secondary"/>
+                            </HBox>
+                        </VBox>
+                    </left>
+                    
+                    <center>
+                        <!-- Partner Table -->
+                        <VBox spacing="10">
+                            <padding>
+                                <Insets top="15" right="15" bottom="15" left="15"/>
+                            </padding>
+                            
+                            <Label text="قائمة الشركاء" styleClass="section-title"/>
+                            
+                            <TableView fx:id="partnerTable" VBox.vgrow="ALWAYS">
+                                <columns>
+                                    <TableColumn fx:id="partnerIdColumn" text="الكود" prefWidth="60"/>
+                                    <TableColumn fx:id="partnerNameColumn" text="الاسم" prefWidth="200"/>
+                                    <TableColumn fx:id="partnerCodeColumn" text="الكود" prefWidth="100"/>
+                                    <TableColumn fx:id="partnerPhoneColumn" text="الهاتف" prefWidth="120"/>
+                                    <TableColumn fx:id="partnerStatusColumn" text="الحالة" prefWidth="80"/>
+                                </columns>
+                            </TableView>
+                        </VBox>
+                    </center>
+                </BorderPane>
+            </Tab>
+            
+            <!-- Tab 3: Partner Shares -->
+            <Tab text="حصص الشركاء">
+                <BorderPane>
+                    <left>
+                        <!-- Share Form -->
+                        <VBox spacing="10" styleClass="form-container">
+                            <padding>
+                                <Insets top="15" right="15" bottom="15" left="15"/>
+                            </padding>
+                            
+                            <Label text="بيانات الحصة" styleClass="section-title"/>
+                            <Separator/>
+                            
+                            <Label text="رأس المال:"/>
+                            <ComboBox fx:id="capitalComboBox" prefWidth="250"/>
+                            
+                            <Label text="الشريك:"/>
+                            <ComboBox fx:id="partnerComboBox" prefWidth="250"/>
+                            
+                            <Label text="مبلغ الحصة:"/>
+                            <TextField fx:id="shareAmountField" promptText="0.00"/>
+                            
+                            <Label text="نسبة الحصة %:"/>
+                            <TextField fx:id="sharePercentField" promptText="0.00" editable="false"/>
+                            
+                            <Label text="نسبة الربح %:"/>
+                            <TextField fx:id="profitPercentField" promptText="0.00"/>
+                            
+                            <Label text="نسبة الخسارة %:"/>
+                            <TextField fx:id="lossPercentField" promptText="0.00"/>
+                            
+                            <Label text="تاريخ المساهمة:"/>
+                            <DatePicker fx:id="contributionDatePicker"/>
+                            
+                            <CheckBox fx:id="managingPartnerCheckBox" text="شريك مدير"/>
+                            
+                            <Label text="ملاحظات:"/>
+                            <TextArea fx:id="shareNotesArea" prefRowCount="2"/>
+                            
+                            <!-- Summary -->
+                            <Separator/>
+                            <HBox spacing="10">
+                                <Label text="إجمالي النسب:"/>
+                                <Label fx:id="totalSharesLabel" text="0.00%" styleClass="summary-value"/>
+                            </HBox>
+                            <HBox spacing="10">
+                                <Label text="المتبقي:"/>
+                                <Label fx:id="remainingCapitalLabel" text="0.00" styleClass="summary-value"/>
+                            </HBox>
+                            
+                            <!-- Buttons -->
+                            <HBox spacing="10">
+                                <Button fx:id="saveShareBtn" text="حفظ" styleClass="btn-success"/>
+                                <Button fx:id="updateShareBtn" text="تعديل" styleClass="btn-primary"/>
+                                <Button fx:id="deleteShareBtn" text="حذف" styleClass="btn-danger"/>
+                                <Button fx:id="newShareBtn" text="جديد" styleClass="btn-secondary"/>
+                            </HBox>
+                        </VBox>
+                    </left>
+                    
+                    <center>
+                        <!-- Shares Table -->
+                        <VBox spacing="10">
+                            <padding>
+                                <Insets top="15" right="15" bottom="15" left="15"/>
+                            </padding>
+                            
+                            <Label text="قائمة حصص الشركاء" styleClass="section-title"/>
+                            
+                            <TableView fx:id="sharesTable" VBox.vgrow="ALWAYS">
+                                <columns>
+                                    <TableColumn fx:id="shareIdColumn" text="الكود" prefWidth="60"/>
+                                    <TableColumn fx:id="shareCapitalColumn" text="رأس المال" prefWidth="150"/>
+                                    <TableColumn fx:id="sharePartnerColumn" text="الشريك" prefWidth="150"/>
+                                    <TableColumn fx:id="shareAmountColumn" text="المبلغ" prefWidth="120"/>
+                                    <TableColumn fx:id="sharePercentColumn" text="النسبة %" prefWidth="80"/>
+                                    <TableColumn fx:id="profitPercentColumn" text="نسبة الربح %" prefWidth="100"/>
+                                </columns>
+                            </TableView>
+                        </VBox>
+                    </center>
+                </BorderPane>
+            </Tab>
+            
+        </TabPane>
+    </center>
+
+</BorderPane>

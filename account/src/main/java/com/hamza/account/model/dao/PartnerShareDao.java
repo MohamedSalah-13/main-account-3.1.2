@@ -38,16 +38,6 @@ public class PartnerShareDao extends AbstractDao<PartnerShare> {
         return queryForObjects("SELECT * FROM " + VIEW_NAME, this::map);
     }
 
-    public List<PartnerShare> getSharesByCapitalId(int capitalId) throws DaoException {
-        String sql = "SELECT * FROM " + VIEW_NAME + " WHERE capital_id = ?";
-        return queryForObjects(sql, this::map, capitalId);
-    }
-
-    public List<PartnerShare> getSharesByPartnerId(int partnerId) throws DaoException {
-        String sql = "SELECT * FROM " + VIEW_NAME + " WHERE partner_id = ?";
-        return queryForObjects(sql, this::map, partnerId);
-    }
-
     @Override
     public int insert(PartnerShare share) throws DaoException {
         String sql = """
@@ -58,19 +48,23 @@ public class PartnerShareDao extends AbstractDao<PartnerShare> {
                 ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """;
 
-        return executeUpdateWithException(
-                sql,
-                share.getCapitalId(),
-                share.getPartnerId(),
-                share.getShareAmount(),
-                share.getSharePercentage(),
-                share.getProfitPercentage(),
-                share.getLossPercentage(),
-                share.getContributionDate(),
-                share.isManagingPartner() ? 1 : 0,
-                share.getNotes(),
-                share.getUserId()
-        );
+        try {
+            return executeUpdateWithException(
+                    sql,
+                    share.getCapitalId(),
+                    share.getPartnerId(),
+                    share.getShareAmount(),
+                    share.getSharePercentage(),
+                    share.getProfitPercentage(),
+                    share.getLossPercentage(),
+                    share.getContributionDate(),
+                    share.isManagingPartner() ? 1 : 0,
+                    share.getNotes(),
+                    share.getUserId()
+            );
+        } catch (SQLException e) {
+            throw new DaoException(e);
+        }
     }
 
     @Override
@@ -87,25 +81,33 @@ public class PartnerShareDao extends AbstractDao<PartnerShare> {
                 WHERE id = ?
                 """;
 
-        return executeUpdateWithException(
-                sql,
-                share.getShareAmount(),
-                share.getSharePercentage(),
-                share.getProfitPercentage(),
-                share.getLossPercentage(),
-                share.getContributionDate(),
-                share.isManagingPartner() ? 1 : 0,
-                share.getNotes(),
-                share.getId()
-        );
+        try {
+            return executeUpdateWithException(
+                    sql,
+                    share.getShareAmount(),
+                    share.getSharePercentage(),
+                    share.getProfitPercentage(),
+                    share.getLossPercentage(),
+                    share.getContributionDate(),
+                    share.isManagingPartner() ? 1 : 0,
+                    share.getNotes(),
+                    share.getId()
+            );
+        } catch (SQLException e) {
+            throw new DaoException(e);
+        }
     }
 
     @Override
     public int deleteById(int id) throws DaoException {
-        return executeUpdateWithException(
-                SqlStatements.deleteStatementByColumnWhere(TABLE_NAME, ID),
-                id
-        );
+        try {
+            return executeUpdateWithException(
+                    SqlStatements.deleteStatement(TABLE_NAME, ID),
+                    id
+            );
+        } catch (SQLException e) {
+            throw new DaoException(e);
+        }
     }
 
     @Override
@@ -115,37 +117,6 @@ public class PartnerShareDao extends AbstractDao<PartnerShare> {
                 this::map,
                 id
         );
-    }
-
-    @Override
-    public PartnerShare map(ResultSet rs) throws DaoException {
-        try {
-            PartnerShare share = new PartnerShare();
-            share.setId(rs.getInt(ID));
-            share.setCapitalId(rs.getInt(CAPITAL_ID));
-            share.setPartnerId(rs.getInt(PARTNER_ID));
-            
-            // From view
-            share.setCapitalName(rs.getString("capital_name"));
-            share.setPartnerName(rs.getString("partner_name"));
-            
-            share.setShareAmount(rs.getDouble(SHARE_AMOUNT));
-            share.setSharePercentage(rs.getDouble(SHARE_PERCENTAGE));
-            share.setProfitPercentage(rs.getDouble(PROFIT_PERCENTAGE));
-            share.setLossPercentage(rs.getDouble(LOSS_PERCENTAGE));
-            
-            if (rs.getDate(CONTRIBUTION_DATE) != null) {
-                share.setContributionDate(rs.getDate(CONTRIBUTION_DATE).toLocalDate());
-            }
-            
-            share.setManagingPartner(rs.getInt(IS_MANAGING_PARTNER) == 1);
-            share.setNotes(rs.getString(NOTES));
-            
-            return share;
-        } catch (SQLException e) {
-            log.error("Error mapping PartnerShare: {}", e.getMessage());
-            throw new DaoException(e.getMessage());
-        }
     }
 
     @Override
@@ -160,5 +131,46 @@ public class PartnerShareDao extends AbstractDao<PartnerShare> {
                 share.getLossPercentage(),
                 share.isManagingPartner() ? "نعم" : "لا"
         };
+    }
+
+    @Override
+    public PartnerShare map(ResultSet rs) throws DaoException {
+        try {
+            PartnerShare share = new PartnerShare();
+            share.setId(rs.getInt(ID));
+            share.setCapitalId(rs.getInt(CAPITAL_ID));
+            share.setPartnerId(rs.getInt(PARTNER_ID));
+
+            // From view
+            share.setCapitalName(rs.getString("capital_name"));
+            share.setPartnerName(rs.getString("partner_name"));
+
+            share.setShareAmount(rs.getDouble(SHARE_AMOUNT));
+            share.setSharePercentage(rs.getDouble(SHARE_PERCENTAGE));
+            share.setProfitPercentage(rs.getDouble(PROFIT_PERCENTAGE));
+            share.setLossPercentage(rs.getDouble(LOSS_PERCENTAGE));
+
+            if (rs.getDate(CONTRIBUTION_DATE) != null) {
+                share.setContributionDate(rs.getDate(CONTRIBUTION_DATE).toLocalDate());
+            }
+
+            share.setManagingPartner(rs.getInt(IS_MANAGING_PARTNER) == 1);
+            share.setNotes(rs.getString(NOTES));
+
+            return share;
+        } catch (SQLException e) {
+            log.error("Error mapping PartnerShare: {}", e.getMessage());
+            throw new DaoException(e.getMessage());
+        }
+    }
+
+    public List<PartnerShare> getSharesByCapitalId(int capitalId) throws DaoException {
+        String sql = "SELECT * FROM " + VIEW_NAME + " WHERE capital_id = ?";
+        return queryForObjects(sql, this::map, capitalId);
+    }
+
+    public List<PartnerShare> getSharesByPartnerId(int partnerId) throws DaoException {
+        String sql = "SELECT * FROM " + VIEW_NAME + " WHERE partner_id = ?";
+        return queryForObjects(sql, this::map, partnerId);
     }
 }

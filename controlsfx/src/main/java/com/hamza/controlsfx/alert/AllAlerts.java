@@ -103,4 +103,20 @@ public class AllAlerts {
         alert.setContentText(message);
         alert.showAndWait();
     }
+
+    public static void showSuccessAlert(String message) {
+        Alert alert = new Alert(Alert.AlertType.INFORMATION);
+        alert.setTitle("نجاح");
+        alert.setHeaderText("نجاح");
+        alert.setContentText(message);
+        alert.showAndWait();
+    }
+
+    public static Optional<ButtonType> showConfirmation(String string, String s) {
+        Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
+        alert.setTitle("تأكيد");
+        alert.setHeaderText("تأكيد");
+        alert.setContentText(string);
+        return alert.showAndWait();
+    }
 }

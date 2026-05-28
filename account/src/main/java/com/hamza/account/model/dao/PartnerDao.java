@@ -47,20 +47,24 @@ public class PartnerDao extends AbstractDao<Partner> {
                 ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """;
 
-        return executeUpdateWithException(
-                sql,
-                partner.getPartnerName(),
-                partner.getPartnerCode(),
-                partner.getNationalId(),
-                partner.getPhone(),
-                partner.getEmail(),
-                partner.getAddress(),
-                partner.getJoinDate(),
-                partner.getExitDate(),
-                partner.isActive() ? 1 : 0,
-                partner.getNotes(),
-                partner.getUserId()
-        );
+        try {
+            return executeUpdateWithException(
+                    sql,
+                    partner.getPartnerName(),
+                    partner.getPartnerCode(),
+                    partner.getNationalId(),
+                    partner.getPhone(),
+                    partner.getEmail(),
+                    partner.getAddress(),
+                    partner.getJoinDate(),
+                    partner.getExitDate(),
+                    partner.isActive() ? 1 : 0,
+                    partner.getNotes(),
+                    partner.getUserId()
+            );
+        } catch (SQLException e) {
+            throw new DaoException(e);
+        }
     }
 
     @Override
@@ -81,29 +85,37 @@ public class PartnerDao extends AbstractDao<Partner> {
                 WHERE id = ?
                 """;
 
-        return executeUpdateWithException(
-                sql,
-                partner.getPartnerName(),
-                partner.getPartnerCode(),
-                partner.getNationalId(),
-                partner.getPhone(),
-                partner.getEmail(),
-                partner.getAddress(),
-                partner.getJoinDate(),
-                partner.getExitDate(),
-                partner.isActive() ? 1 : 0,
-                partner.getNotes(),
-                partner.getUserId(),
-                partner.getId()
-        );
+        try {
+            return executeUpdateWithException(
+                    sql,
+                    partner.getPartnerName(),
+                    partner.getPartnerCode(),
+                    partner.getNationalId(),
+                    partner.getPhone(),
+                    partner.getEmail(),
+                    partner.getAddress(),
+                    partner.getJoinDate(),
+                    partner.getExitDate(),
+                    partner.isActive() ? 1 : 0,
+                    partner.getNotes(),
+                    partner.getUserId(),
+                    partner.getId()
+            );
+        } catch (SQLException e) {
+            throw new DaoException(e);
+        }
     }
 
     @Override
     public int deleteById(int id) throws DaoException {
-        return executeUpdateWithException(
-                SqlStatements.deleteStatementByColumnWhere(TABLE_NAME, ID),
-                id
-        );
+        try {
+            return executeUpdateWithException(
+                    SqlStatements.deleteStatement(TABLE_NAME, ID),
+                    id
+            );
+        } catch (SQLException e) {
+            throw new DaoException(e);
+        }
     }
 
     @Override
