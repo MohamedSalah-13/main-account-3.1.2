@@ -47,17 +47,38 @@ public class StageDimensions {
 
     private static void bindToPreferences(Stage stage, Preferences prefs,
                                           String widthKey, String heightKey, String xKey, String yKey) {
-        stage.widthProperty().addListener((obs, oldVal, newVal) -> prefs.putDouble(widthKey, newVal.doubleValue()));
-        stage.heightProperty().addListener((obs, oldVal, newVal) -> prefs.putDouble(heightKey, newVal.doubleValue()));
-        stage.xProperty().addListener((obs, oldVal, newVal) -> prefs.putDouble(xKey, newVal.doubleValue()));
-        stage.yProperty().addListener((obs, oldVal, newVal) -> prefs.putDouble(yKey, newVal.doubleValue()));
+        stage.widthProperty().addListener((obs, oldVal, newVal) -> {
+            if (newVal.doubleValue() > 0)
+                prefs.putDouble(widthKey, newVal.doubleValue());
+        });
+        stage.heightProperty().addListener((obs, oldVal, newVal) -> {
+            if (newVal.doubleValue() > 0)
+                prefs.putDouble(heightKey, newVal.doubleValue());
+        });
+        stage.xProperty().addListener((obs, oldVal, newVal) -> {
+            // تجاهل قيم Minimize التي يضعها Windows (-32000)
+            if (newVal.doubleValue() > -10000)
+                prefs.putDouble(xKey, newVal.doubleValue());
+        });
+        stage.yProperty().addListener((obs, oldVal, newVal) -> {
+            // تجاهل قيم Minimize التي يضعها Windows (-32000)
+            if (newVal.doubleValue() > -10000)
+                prefs.putDouble(yKey, newVal.doubleValue());
+        });
     }
 
     private static void saveStageBounds(Stage stage, Preferences prefs,
                                         String widthKey, String heightKey, String xKey, String yKey) {
-        prefs.putDouble(widthKey, stage.getWidth());
-        prefs.putDouble(heightKey, stage.getHeight());
-        prefs.putDouble(xKey, stage.getX());
-        prefs.putDouble(yKey, stage.getY());
+        // لا نحفظ إذا كانت النافذة مصغّرة
+        if (stage.isIconified()) return;
+
+        if (stage.getWidth() > 0)
+            prefs.putDouble(widthKey, stage.getWidth());
+        if (stage.getHeight() > 0)
+            prefs.putDouble(heightKey, stage.getHeight());
+        if (stage.getX() > -10000)
+            prefs.putDouble(xKey, stage.getX());
+        if (stage.getY() > -10000)
+            prefs.putDouble(yKey, stage.getY());
     }
 }

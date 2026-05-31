@@ -1,6 +1,12 @@
 # this use after create table and triggers
-INSERT INTO users(id, user_name, user_pass, user_available)
-VALUES (1, 'admin', 'admin', 1);
+INSERT INTO users (id, user_name, user_pass, user_activity, user_available) VALUES
+    (1, 'admin', 'admin', 1, 1)
+ON DUPLICATE KEY UPDATE
+                     user_name = VALUES(user_name),
+                     user_pass = VALUES(user_pass),
+                     user_activity = VALUES(user_activity),
+                     user_available = VALUES(user_available);
+
 INSERT INTO type_price (name)
 VALUES ('سعر بيع 1'),
        ('سعر2'),

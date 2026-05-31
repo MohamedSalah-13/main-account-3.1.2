@@ -415,6 +415,43 @@ CREATE INDEX stock_transfer_list_item_idx ON stock_transfer_list (item_id);
 -- 6) Treasury / Expenses
 -- =====================================================================
 
+CREATE TABLE IF NOT EXISTS user_shifts
+(
+    id                  INT AUTO_INCREMENT PRIMARY KEY,
+    user_id             INT                      NOT NULL,
+    treasury_id INT DEFAULT 1 NOT NULL,
+    open_time           DATETIME                 NOT NULL,
+    close_time          DATETIME                 NULL,
+    open_balance        DECIMAL(14, 2) DEFAULT 0 NOT NULL,
+    close_balance       DECIMAL(14, 2) DEFAULT 0 NOT NULL,
+    total_sales         DECIMAL(14, 2) DEFAULT 0 NOT NULL,
+    total_sales_returns DECIMAL(14, 2) DEFAULT 0 NOT NULL,
+    total_expenses      DECIMAL(14, 2) DEFAULT 0 NOT NULL,
+    total_deposits      DECIMAL(14, 2) DEFAULT 0 NOT NULL,
+    total_withdrawals   DECIMAL(14, 2) DEFAULT 0 NOT NULL,
+    expected_balance    DECIMAL(14, 2) DEFAULT 0 NOT NULL,
+    difference          DECIMAL(14, 2) DEFAULT 0 NOT NULL,
+    invoices_count      INT            DEFAULT 0 NOT NULL,
+    is_open             BOOLEAN        DEFAULT TRUE,
+    shift_status VARCHAR(20) DEFAULT 'OPEN' NOT NULL,
+    notes               TEXT                     NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL ON UPDATE CURRENT_TIMESTAMP,
+    CONSTRAINT user_shifts_treasury_fk
+        FOREIGN KEY (treasury_id) REFERENCES treasury(id),
+    CONSTRAINT user_shifts_status_chk
+        CHECK (shift_status IN ('OPEN', 'CLOSED', 'FORCE_CLOSED')),
+    CONSTRAINT user_shifts_users_id_fk
+        FOREIGN KEY (user_id) REFERENCES users (id)
+            ON DELETE CASCADE
+);
+
+CREATE INDEX idx_user_shifts_user_open ON user_shifts (user_id, is_open);
+CREATE INDEX idx_user_shifts_open_time ON user_shifts (open_time);
+CREATE INDEX idx_user_shifts_treasury ON user_shifts(treasury_id, open_time);
+CREATE INDEX idx_user_shifts_status ON user_shifts(shift_status, is_open);
+
+
 CREATE TABLE IF NOT EXISTS treasury_deposit_expenses
 (
     id                  INT AUTO_INCREMENT PRIMARY KEY,
@@ -427,13 +464,18 @@ CREATE TABLE IF NOT EXISTS treasury_deposit_expenses
     date_insert         DATETIME  DEFAULT CURRENT_TIMESTAMP NOT NULL,
     updated_at          TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL ON UPDATE CURRENT_TIMESTAMP,
     user_id             INT       DEFAULT 1                 NOT NULL,
+    shift_id INT NULL,
     CONSTRAINT treasury_deposit_expenses_treasury_id_fk FOREIGN KEY (treasury_id) REFERENCES treasury (id),
     CONSTRAINT treasury_deposit_expenses_users_id_fk FOREIGN KEY (user_id) REFERENCES users (id),
-    CONSTRAINT treasury_deposit_expenses_type_chk CHECK (deposit_or_expenses IN (1, 2))
+    CONSTRAINT treasury_deposit_expenses_type_chk CHECK (deposit_or_expenses IN (1, 2)),
+    CONSTRAINT treasury_deposit_expenses_shift_fk
+        FOREIGN KEY (shift_id) REFERENCES user_shifts(id)
+            ON DELETE SET NULL
 );
 
 CREATE INDEX treasury_deposit_expenses_date_idx ON treasury_deposit_expenses (date_inter);
 CREATE INDEX treasury_deposit_expenses_treasury_idx ON treasury_deposit_expenses (treasury_id, date_inter);
+CREATE INDEX idx_treasury_deposit_expenses_shift ON treasury_deposit_expenses(shift_id);
 
 CREATE TABLE IF NOT EXISTS treasury_transfers
 (
@@ -467,14 +509,19 @@ CREATE TABLE IF NOT EXISTS expenses_details
     date_insert DATETIME       DEFAULT CURRENT_TIMESTAMP NOT NULL,
     updated_at  TIMESTAMP      DEFAULT CURRENT_TIMESTAMP NOT NULL ON UPDATE CURRENT_TIMESTAMP,
     user_id     INT            DEFAULT 1                 NOT NULL,
+    shift_id INT NULL,
     CONSTRAINT expenses_details_expenses_id_fk FOREIGN KEY (type_code) REFERENCES expenses (id),
     CONSTRAINT expenses_details_treasury_id_fk FOREIGN KEY (treasury_id) REFERENCES treasury (id),
     CONSTRAINT expenses_details_users_id_fk FOREIGN KEY (user_id) REFERENCES users (id),
-    CONSTRAINT expenses_details_amount_chk CHECK (amount >= 0)
+    CONSTRAINT expenses_details_amount_chk CHECK (amount >= 0),
+    CONSTRAINT expenses_details_shift_fk
+        FOREIGN KEY (shift_id) REFERENCES user_shifts(id)
+            ON DELETE SET NULL
 );
 
 CREATE INDEX expenses_details_date_idx ON expenses_details (date);
 CREATE INDEX expenses_details_treasury_idx ON expenses_details (treasury_id, date);
+CREATE INDEX idx_expenses_details_shift ON expenses_details(shift_id);
 
 CREATE TABLE IF NOT EXISTS expense_salary
 (
@@ -561,18 +608,23 @@ CREATE TABLE IF NOT EXISTS total_sales
     date_insert    DATETIME  DEFAULT CURRENT_TIMESTAMP NOT NULL,
     updated_at     TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL ON UPDATE CURRENT_TIMESTAMP,
     user_id        INT       DEFAULT 1                 NOT NULL,
+    shift_id INT NULL,
     CONSTRAINT total_sales_custom_sup_id_fk FOREIGN KEY (sup_code) REFERENCES custom (id),
     CONSTRAINT total_sales_employees_id_fk FOREIGN KEY (delegate_id) REFERENCES employees (id),
     CONSTRAINT total_sales_stocks_stock_id_fk FOREIGN KEY (stock_id) REFERENCES stocks (stock_id),
     CONSTRAINT total_sales_treasury_id_fk FOREIGN KEY (treasury_id) REFERENCES treasury (id),
     CONSTRAINT total_sales_users_id_fk FOREIGN KEY (user_id) REFERENCES users (id),
-    CONSTRAINT total_sales_invoice_type_chk CHECK (invoice_type IN (1, 2))
+    CONSTRAINT total_sales_invoice_type_chk CHECK (invoice_type IN (1, 2)),
+    CONSTRAINT total_sales_shift_fk
+        FOREIGN KEY (shift_id) REFERENCES user_shifts(id)
+            ON DELETE SET NULL
 );
 
 CREATE INDEX total_sales_sup_code_fk ON total_sales (sup_code);
 CREATE INDEX total_sales_users_id_fk2 ON total_sales (delegate_id);
 CREATE INDEX total_sales_date_idx ON total_sales (invoice_date);
 CREATE INDEX total_sales_treasury_idx ON total_sales (treasury_id, invoice_date);
+CREATE INDEX idx_total_sales_shift ON total_sales(shift_id);
 
 CREATE TABLE IF NOT EXISTS total_sales_re
 (
@@ -591,18 +643,23 @@ CREATE TABLE IF NOT EXISTS total_sales_re
     date_insert        DATETIME  DEFAULT CURRENT_TIMESTAMP NOT NULL,
     updated_at         TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL ON UPDATE CURRENT_TIMESTAMP,
     user_id            INT       DEFAULT 1                 NOT NULL,
+    shift_id INT NULL,
     CONSTRAINT total_sales_re_custom_id_fk FOREIGN KEY (sup_id) REFERENCES custom (id),
     CONSTRAINT total_sales_re_employees_id_fk FOREIGN KEY (delegate_id) REFERENCES employees (id),
     CONSTRAINT total_sales_re_stocks_stock_id_fk FOREIGN KEY (stock_id) REFERENCES stocks (stock_id),
     CONSTRAINT total_sales_re_treasury_id_fk FOREIGN KEY (treasury_id) REFERENCES treasury (id),
     CONSTRAINT total_sales_re_users_id_fk FOREIGN KEY (user_id) REFERENCES users (id),
-    CONSTRAINT total_sales_re_invoice_type_chk CHECK (invoice_type IN (1, 2))
+    CONSTRAINT total_sales_re_invoice_type_chk CHECK (invoice_type IN (1, 2)),
+    CONSTRAINT total_sales_re_shift_fk
+        FOREIGN KEY (shift_id) REFERENCES user_shifts(id)
+            ON DELETE SET NULL
 );
 
 CREATE INDEX total_sales_re_date_idx ON total_sales_re (invoice_date);
 CREATE INDEX total_sales_re_treasury_idx ON total_sales_re (treasury_id, invoice_date);
 CREATE INDEX total_sales_re_sup_idx ON total_sales_re (sup_id);
 CREATE INDEX total_sales_re_delegate_idx ON total_sales_re (delegate_id);
+CREATE INDEX idx_total_sales_re_shift ON total_sales_re(shift_id);
 
 -- =====================================================================
 -- 8) Accounts
@@ -645,14 +702,19 @@ CREATE TABLE IF NOT EXISTS customers_accounts
     created_at            TIMESTAMP      DEFAULT CURRENT_TIMESTAMP NOT NULL,
     updated_at            TIMESTAMP      DEFAULT CURRENT_TIMESTAMP NOT NULL ON UPDATE CURRENT_TIMESTAMP,
     user_id               INT            DEFAULT 1                 NOT NULL,
+    shift_id INT NULL,
     invoice_number_return BIGINT         DEFAULT 0                 NOT NULL COMMENT 'This column for number invoice for returns',
     CONSTRAINT customers_accounts_custom_id_fk FOREIGN KEY (account_code) REFERENCES custom (id),
     CONSTRAINT customers_accounts_treasury_id_fk FOREIGN KEY (treasury_id) REFERENCES treasury (id),
-    CONSTRAINT customers_accounts_users_id_fk FOREIGN KEY (user_id) REFERENCES users (id)
+    CONSTRAINT customers_accounts_users_id_fk FOREIGN KEY (user_id) REFERENCES users (id),
+    CONSTRAINT customers_accounts_shift_fk
+        FOREIGN KEY (shift_id) REFERENCES user_shifts(id)
+            ON DELETE SET NULL
 );
 
 CREATE INDEX customers_accounts_numberInv_idx ON customers_accounts (numberInv);
 CREATE INDEX customers_accounts_date_idx ON customers_accounts (account_date);
+CREATE INDEX idx_customers_accounts_shift ON customers_accounts(shift_id);
 
 -- =====================================================================
 -- 9) Invoice lines
@@ -851,42 +913,6 @@ CREATE TABLE IF NOT EXISTS user_role
             ON UPDATE CASCADE ON DELETE CASCADE,
     CONSTRAINT user_role_uk UNIQUE (user_id, role_id)
 );
-
-CREATE TABLE IF NOT EXISTS user_shifts
-(
-    id                  INT AUTO_INCREMENT PRIMARY KEY,
-    user_id             INT                      NOT NULL,
-    treasury_id INT DEFAULT 1 NOT NULL,
-    open_time           DATETIME                 NOT NULL,
-    close_time          DATETIME                 NULL,
-    open_balance        DECIMAL(14, 2) DEFAULT 0 NOT NULL,
-    close_balance       DECIMAL(14, 2) DEFAULT 0 NOT NULL,
-    total_sales         DECIMAL(14, 2) DEFAULT 0 NOT NULL,
-    total_sales_returns DECIMAL(14, 2) DEFAULT 0 NOT NULL,
-    total_expenses      DECIMAL(14, 2) DEFAULT 0 NOT NULL,
-    total_deposits      DECIMAL(14, 2) DEFAULT 0 NOT NULL,
-    total_withdrawals   DECIMAL(14, 2) DEFAULT 0 NOT NULL,
-    expected_balance    DECIMAL(14, 2) DEFAULT 0 NOT NULL,
-    difference          DECIMAL(14, 2) DEFAULT 0 NOT NULL,
-    invoices_count      INT            DEFAULT 0 NOT NULL,
-    is_open             BOOLEAN        DEFAULT TRUE,
-    shift_status VARCHAR(20) DEFAULT 'OPEN' NOT NULL,
-    notes               TEXT                     NULL,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL ON UPDATE CURRENT_TIMESTAMP,
-    CONSTRAINT user_shifts_treasury_fk
-        FOREIGN KEY (treasury_id) REFERENCES treasury(id),
-    CONSTRAINT user_shifts_status_chk
-        CHECK (shift_status IN ('OPEN', 'CLOSED', 'FORCE_CLOSED')),
-    CONSTRAINT user_shifts_users_id_fk
-        FOREIGN KEY (user_id) REFERENCES users (id)
-            ON DELETE CASCADE
-);
-
-CREATE INDEX idx_user_shifts_user_open ON user_shifts (user_id, is_open);
-CREATE INDEX idx_user_shifts_open_time ON user_shifts (open_time);
-CREATE INDEX idx_user_shifts_treasury ON user_shifts(treasury_id, open_time);
-CREATE INDEX idx_user_shifts_status ON user_shifts(shift_status, is_open);
 
 -- =====================================================================
 -- 12) Audit log

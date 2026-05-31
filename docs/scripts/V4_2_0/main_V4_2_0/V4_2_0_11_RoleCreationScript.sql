@@ -15,6 +15,17 @@
 USE account_system_db;
 
 -- =====================================================================
+-- التأكد من وجود مستخدم Admin قبل إضافة أي صلاحيات مباشرة له
+-- =====================================================================
+INSERT INTO users (id, user_name, user_pass, user_activity, user_available) VALUES
+    (1, 'admin', 'admin', 1, 1)
+ON DUPLICATE KEY UPDATE
+                     user_name = VALUES(user_name),
+                     user_pass = VALUES(user_pass),
+                     user_activity = VALUES(user_activity),
+                     user_available = VALUES(user_available);
+
+-- =====================================================================
 -- 1) حذف الأدوار القديمة (اختياري)
 -- =====================================================================
 -- DELETE FROM user_role;
@@ -359,10 +370,6 @@ GROUP BY module;
 -- 11) تعيين دور Admin للمستخدم الأول (ID = 1)
 -- =====================================================================
 
--- التأكد من وجود مستخدم Admin
-INSERT INTO users (id, user_name, user_pass, user_activity, user_available) VALUES 
-(1, 'admin', 'admin', 1, 1)
-ON DUPLICATE KEY UPDATE user_name = VALUES(user_name);
 
 -- تعيين دور Admin
 INSERT INTO user_role (user_id, role_id) VALUES 
