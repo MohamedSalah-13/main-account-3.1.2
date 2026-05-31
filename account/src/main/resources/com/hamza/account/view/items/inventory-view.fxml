@@ -1,78 +1,89 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
+<?import javafx.geometry.Insets?>
 <?import javafx.scene.control.Button?>
 <?import javafx.scene.control.ComboBox?>
 <?import javafx.scene.control.Label?>
 <?import javafx.scene.control.Pagination?>
 <?import javafx.scene.control.ScrollPane?>
 <?import javafx.scene.control.TextField?>
-<?import javafx.scene.control.ToolBar?>
+<?import javafx.scene.layout.AnchorPane?>
 <?import javafx.scene.layout.BorderPane?>
 <?import javafx.scene.layout.ColumnConstraints?>
 <?import javafx.scene.layout.GridPane?>
 <?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Region?>
 <?import javafx.scene.layout.RowConstraints?>
 <?import javafx.scene.layout.VBox?>
 <?import javafx.scene.text.Text?>
 
-<VBox nodeOrientation="RIGHT_TO_LEFT" styleClass="app-root" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1">
-    <children>
-      <BorderPane styleClass="app-root" VBox.vgrow="ALWAYS">
-         <top>
-                <ToolBar styleClass="items-toolbar" BorderPane.alignment="CENTER">
-                    <items>
-                        <Button fx:id="btnRefresh" mnemonicParsing="false" styleClass="neutral-button" text="تحديث" />
-                        <Button fx:id="btnPrint" mnemonicParsing="false" styleClass="primary-button" text="طباعة" />
-                    </items>
-                </ToolBar>
-         </top>
-         <bottom>
 
+<AnchorPane styleClass="app-root" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1">
+   <children>
+      <BorderPane prefHeight="221.0" prefWidth="434.0" styleClass="app-container" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
+         <bottom>
+      
              <HBox alignment="CENTER_LEFT" spacing="14.0" styleClass="summary-bar" BorderPane.alignment="CENTER">
                  <children>
                      <Label styleClass="summary-label" text="إجمالي قيمة المخزون بسعر الشراء" />
                      <Text fx:id="textSumPurchase" strokeType="OUTSIDE" strokeWidth="0.0" styleClass="summary-value" text="0.0" />
-
+      
                      <Label styleClass="summary-label" text="إجمالي قيمة المخزون بسعر البيع" />
                      <Text fx:id="textSumSales" strokeType="OUTSIDE" strokeWidth="0.0" styleClass="summary-value" text="0.0" />
                  </children>
              </HBox>
          </bottom>
          <center>
-
+      
                 <ScrollPane fitToHeight="true" fitToWidth="true" styleClass="items-scroll-pane" BorderPane.alignment="CENTER">
                     <content>
                         <VBox spacing="5.0">
                             <children>
-                                <VBox styleClass="app-card">
-                                    <children>
-                                        <GridPane hgap="12.0" vgap="12.0">
-                                            <columnConstraints>
-                                                <ColumnConstraints minWidth="110.0" />
-                                                <ColumnConstraints hgrow="ALWAYS" minWidth="280.0" />
-                                            </columnConstraints>
-
-                                            <children>
-                                                <Label styleClass="form-label" text="المخزن" />
-                                                <ComboBox fx:id="comboStock" maxWidth="1.7976931348623157E308" promptText="المخزن" GridPane.columnIndex="1" />
-
-                                                <Label styleClass="form-label" text="بحث" GridPane.rowIndex="1" />
-                                                <TextField fx:id="textSearch" promptText="بحث" GridPane.columnIndex="1" GridPane.rowIndex="1" />
-                                            </children>
-                                 <rowConstraints>
-                                    <RowConstraints />
-                                    <RowConstraints />
-                                 </rowConstraints>
-                                        </GridPane>
-                                    </children>
-                                </VBox>
-
+      
                                 <Pagination fx:id="pagination" styleClass="modern-pagination" VBox.vgrow="SOMETIMES" />
                             </children>
                         </VBox>
                     </content>
                 </ScrollPane>
          </center>
+         <top>
+            <HBox styleClass="app-card" BorderPane.alignment="CENTER">
+               <children>
+                          <VBox HBox.hgrow="SOMETIMES">
+                              <children>
+                                  <GridPane hgap="12.0" vgap="12.0">
+                                      <columnConstraints>
+                                          <ColumnConstraints />
+                                          <ColumnConstraints minWidth="300.0" />
+                                      </columnConstraints>
+      
+                                            <children>
+                                          <Label styleClass="form-label" text="المخزن" />
+                                          <ComboBox fx:id="comboStock" maxWidth="1.7976931348623157E308" promptText="المخزن" GridPane.columnIndex="1" />
+      
+                                                <Label styleClass="form-label" text="بحث" GridPane.rowIndex="1" />
+                                          <TextField fx:id="textSearch" promptText="بحث" GridPane.columnIndex="1" GridPane.rowIndex="1" />
+                                      </children>
+                           <rowConstraints>
+                              <RowConstraints />
+                              <RowConstraints />
+                           </rowConstraints>
+                                  </GridPane>
+                              </children>
+                          </VBox>
+                  <Region HBox.hgrow="SOMETIMES" />
+                  <HBox alignment="BOTTOM_LEFT" spacing="10.0">
+                     <children>
+                              <Button fx:id="btnRefresh" mnemonicParsing="false" styleClass="neutral-button" text="تحديث" />
+                              <Button fx:id="btnPrint" mnemonicParsing="false" styleClass="primary-button" text="طباعة" />
+                     </children>
+                  </HBox>
+               </children>
+               <padding>
+                  <Insets bottom="5.0" left="5.0" right="5.0" top="5.0" />
+               </padding>
+            </HBox>
+         </top>
       </BorderPane>
-    </children>
-</VBox>
+   </children>
+</AnchorPane>

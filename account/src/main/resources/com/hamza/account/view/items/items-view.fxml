@@ -9,9 +9,9 @@
 <?import javafx.scene.control.Separator?>
 <?import javafx.scene.control.TextField?>
 <?import javafx.scene.control.ToggleButton?>
-<?import javafx.scene.control.ToolBar?>
 <?import javafx.scene.layout.BorderPane?>
 <?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Region?>
 <?import javafx.scene.layout.StackPane?>
 <?import javafx.scene.layout.VBox?>
 <?import javafx.scene.text.Text?>
@@ -20,32 +20,43 @@
     <children>
       <BorderPane styleClass="app-container">
          <top>
-                <ToolBar BorderPane.alignment="CENTER">
-                    <items>
-                        <Button fx:id="btnNew" mnemonicParsing="false" styleClass="success-button" text="جديد" />
-                        <Button fx:id="btnUpdate" mnemonicParsing="false" styleClass="warning-button" text="تعديل" />
-                        <Button fx:id="btnDelete" mnemonicParsing="false" styleClass="danger-button" text="حذف" />
-                        <Separator orientation="VERTICAL" />
-                        <Button fx:id="btnRefresh" mnemonicParsing="false" styleClass="neutral-button" text="تحديث" />
-                        <ToggleButton fx:id="btnSelected" mnemonicParsing="false" styleClass="items-toggle" text="تحديد" />
-
-                        <MenuButton fx:id="menuButtonPrint" mnemonicParsing="false" styleClass="modern-menu-button" text="طباعة">
-                            <items>
-                                <MenuItem fx:id="menuPrint" mnemonicParsing="false" text="الكل" />
-                                <MenuItem fx:id="menuPrintMenu" mnemonicParsing="false" text="الأصناف قوائم" />
-                                <MenuItem fx:id="menuPrintBarcode" mnemonicParsing="false" text="باركود" />
-                            </items>
-                        </MenuButton>
-
-                        <MenuButton fx:id="menuButtonOther" mnemonicParsing="false" styleClass="modern-menu-button" text="أخرى">
-                            <items>
-                                <MenuItem fx:id="menuItemConvertGroup" mnemonicParsing="false" text="تحويل المجموعات" />
-                                <MenuItem fx:id="menuItemCard" mnemonicParsing="false" text="كارت صنف" />
-                                <MenuItem fx:id="menuExportExcel" mnemonicParsing="false" text="تصدير إلى Excel" />
-                            </items>
-                        </MenuButton>
-                    </items>
-                </ToolBar>
+            <HBox styleClass="app-card">
+               <children>
+                  <HBox alignment="CENTER_LEFT" spacing="5.0" HBox.hgrow="SOMETIMES">
+                     <children>
+                                    <Label styleClass="form-label" text="بحث" />
+                                    <TextField fx:id="txtSearch" promptText="بحث" HBox.hgrow="SOMETIMES" />
+                     </children>
+                  </HBox>
+                  <Region HBox.hgrow="SOMETIMES" />
+                  <HBox alignment="CENTER_LEFT" spacing="5.0">
+                     <children>
+                              <Button fx:id="btnNew" mnemonicParsing="false" styleClass="success-button" text="جديد" />
+                              <Button fx:id="btnUpdate" mnemonicParsing="false" styleClass="warning-button" text="تعديل" />
+                              <Button fx:id="btnDelete" mnemonicParsing="false" styleClass="danger-button" text="حذف" />
+                              <Separator orientation="VERTICAL" />
+                              <Button fx:id="btnRefresh" mnemonicParsing="false" styleClass="neutral-button" text="تحديث" />
+                              <ToggleButton fx:id="btnSelected" mnemonicParsing="false" styleClass="items-toggle" text="تحديد" />
+      
+                                    <MenuButton fx:id="menuButtonPrint" mnemonicParsing="false" styleClass="modern-menu-button" text="طباعة">
+                                  <items>
+                                      <MenuItem fx:id="menuPrint" mnemonicParsing="false" text="الكل" />
+                                      <MenuItem fx:id="menuPrintMenu" mnemonicParsing="false" text="الأصناف قوائم" />
+                                      <MenuItem fx:id="menuPrintBarcode" mnemonicParsing="false" text="باركود" />
+                                  </items>
+                              </MenuButton>
+      
+                                    <MenuButton fx:id="menuButtonOther" mnemonicParsing="false" styleClass="modern-menu-button" text="أخرى">
+                                  <items>
+                                      <MenuItem fx:id="menuItemConvertGroup" mnemonicParsing="false" text="تحويل المجموعات" />
+                                      <MenuItem fx:id="menuItemCard" mnemonicParsing="false" text="كارت صنف" />
+                                      <MenuItem fx:id="menuExportExcel" mnemonicParsing="false" text="تصدير إلى Excel" />
+                                  </items>
+                              </MenuButton>
+                     </children>
+                  </HBox>
+               </children>
+            </HBox>
          </top>
          <bottom>
 
@@ -62,12 +73,6 @@
                     <content>
                         <VBox spacing="5.0">
                             <children>
-                        <HBox alignment="CENTER_LEFT" spacing="5.0" styleClass="search-card">
-                           <children>
-                                          <Label styleClass="form-label" text="بحث" />
-                                          <TextField fx:id="txtSearch" promptText="بحث" HBox.hgrow="SOMETIMES" />
-                           </children>
-                        </HBox>
 
                                 <Pagination fx:id="pagination" styleClass="modern-pagination" VBox.vgrow="ALWAYS" />
                             </children>
