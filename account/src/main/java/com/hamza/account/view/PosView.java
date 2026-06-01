@@ -4,9 +4,7 @@ import com.hamza.account.config.Image_Setting;
 import com.hamza.account.controller.main.DataPublisher;
 import com.hamza.account.controller.pos.PosController;
 import com.hamza.account.model.dao.DaoFactory;
-import com.hamza.account.model.domain.Users;
 import com.hamza.account.openFxml.OpenFxmlApplication;
-import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.others.ChangeOrientation;
 import javafx.application.Application;
 import javafx.scene.Scene;
@@ -15,12 +13,6 @@ import javafx.scene.input.KeyCodeCombination;
 import javafx.stage.Screen;
 import javafx.stage.Stage;
 import lombok.RequiredArgsConstructor;
-
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-
-import static com.hamza.account.controller.pos.PosInvoiceSetting.SUSPENDED_DIR_NAME;
 
 @RequiredArgsConstructor
 public class PosView extends Application {
@@ -31,11 +23,6 @@ public class PosView extends Application {
     public PosView() {
         this.daoFactory = DownLoadApplication.getDaoFactory();
         this.dataPublisher = new DataPublisher();
-    }
-
-    public static void main(String[] args) throws Exception {
-        LogApplication.usersVo = new Users(1);
-        launch(args);
     }
 
     @Override
@@ -59,33 +46,6 @@ public class PosView extends Application {
             if (message) {
                 stage.close();
             }
-        });
-    }
-
-    private void getAVoid(Stage stage) {
-        stage.setOnCloseRequest(event -> {
-
-            Path suspendedDir = Path.of(SUSPENDED_DIR_NAME);
-            String NO_SUSPENDED_MSG = "لا توجد فواتير معلقة";
-            if (!Files.exists(suspendedDir)) {
-                AllAlerts.alertError(NO_SUSPENDED_MSG);
-                return;
-            }
-
-            try (var paths = Files.list(suspendedDir)) {
-                paths.forEach(path -> {
-                    try {
-                        Files.deleteIfExists(path);
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
-                });
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-
-            event.consume();
-            stage.close();
         });
     }
 }

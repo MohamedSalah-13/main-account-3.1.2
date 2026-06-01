@@ -61,6 +61,27 @@ public class SalesDao extends AbstractDao<Sales> {
     }
 
     @Override
+    public int insert(Sales sales) throws DaoException {
+        String query = SqlStatements.insertStatement(TABLE_NAME, INVOICE_NUMBER
+                , NUM, TYPE, QUANTITY, PRICE, buyPrice, "total_sel_price", "total_buy_price", "total_profit"
+                , discount, TYPE_VALUE, expirationDate, itemHasPackage);
+        return executeUpdate(query, getData(sales));
+    }
+
+    @Override
+    public int update(Sales sales) throws DaoException {
+        String query = SqlStatements.updateStatement(TABLE_NAME, NUM
+                , TYPE, QUANTITY, PRICE, buyPrice, "total_sel_price", "total_buy_price", "total_profit"
+                , discount, TYPE_VALUE, expirationDate, itemHasPackage);
+        Object[] params = new Object[]{sales.getUnitsType().getUnit_id()
+                , sales.getQuantity(), sales.getPrice(), sales.getBuy_price(), sales.getTotalSelPrice()
+                , sales.getTotal_buy_price(), sales.getTotal_profit(), sales.getDiscount()
+                , sales.getUnitsType().getValue(), sales.getExpiration_date(), sales.isItem_has_package()
+                , sales.getItems().getId()};
+        return executeUpdate(query, params);
+    }
+
+    @Override
     public int deleteById(int id) throws DaoException {
         return executeUpdate(SqlStatements.deleteStatement(TABLE_NAME, ID), id);
     }

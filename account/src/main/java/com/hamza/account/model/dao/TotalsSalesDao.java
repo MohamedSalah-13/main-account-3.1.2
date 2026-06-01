@@ -16,6 +16,9 @@ import java.sql.SQLException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import static com.hamza.controlsfx.util.NumberUtils.roundToTwoDecimalPlaces;
 
@@ -78,34 +81,58 @@ public class TotalsSalesDao extends AbstractDao<Total_Sales> {
 
     @Override
     public int update(Total_Sales totalSales) throws DaoException {
-        String query = SqlStatements.updateStatement(TABLE_NAME, INVOICE_NUMBER, SUP_CODE, INVOICE_TYPE, INVOICE_DATE
-                , TOTAL, DISCOUNT, PAID_UP, STOCK_ID, DELEGATE_ID, TREASURY_ID, NOTES);
+        String query = SqlStatements.updateStatement(TABLE_NAME, INVOICE_NUMBER, SUP_CODE, INVOICE_TYPE, INVOICE_DATE,
+                TOTAL, DISCOUNT, PAID_UP, STOCK_ID, DELEGATE_ID, TREASURY_ID, NOTES);
+
         return insertMultiData(() -> {
-            Object[] data = new Object[]{totalSales.getCustomers().getId()
-                    , totalSales.getInvoiceType().getId()
-                    , totalSales.getDate()
-                    , totalSales.getTotal()
-                    , totalSales.getDiscount()
-//                    , totalSales.getDiscountType().getId()
-                    , totalSales.getPaid()
-                    , totalSales.getStockData().getId()
-                    , totalSales.getEmployeeObject().getId()
-                    , totalSales.getTreasuryModel().getId()
-                    , totalSales.getNotes()
-                    , totalSales.getId()};
+            Object[] data = new Object[]{
+                    totalSales.getCustomers().getId(),
+                    totalSales.getInvoiceType().getId(),
+                    totalSales.getDate(),
+                    totalSales.getTotal(),
+                    totalSales.getDiscount(),
+                    totalSales.getPaid(),
+                    totalSales.getStockData().getId(),
+                    totalSales.getEmployeeObject().getId(),
+                    totalSales.getTreasuryModel().getId(),
+                    totalSales.getNotes(),
+                    totalSales.getId()
+            };
 
-            //TODO 11/24/2025 6:14 AM Mohamed: update without delete
-            // first, delete data from sales
-            executeUpdateWithException(SqlStatements.deleteStatement(SalesDao.TABLE_NAME, SalesDao.INVOICE_NUMBER)
-                    , totalSales.getId());
-            // Secondly, enter the sales data.
-            salesDao.insertList(totalSales.getSalesList());
+            syncSalesForInvoice(totalSales);
 
-            // finally, insert data in total
             executeUpdateWithException(query, data);
         });
     }
 
+    private void syncSalesForInvoice(Total_Sales totalSales) throws DaoException {
+        List<Sales> oldSalesList = salesDao.loadAllById(totalSales.getId());
+        List<Sales> newSalesList = totalSales.getSalesList();
+
+        Map<Integer, Sales> oldSalesMap = oldSalesList.stream()
+                .collect(Collectors.toMap(Sales::getId, sale -> sale));
+
+        Set<Integer> newSalesIds = newSalesList.stream()
+                .filter(sale -> sale.getId() > 0)
+                .map(Sales::getId)
+                .collect(Collectors.toSet());
+
+        for (Sales newSale : newSalesList) {
+            newSale.setInvoiceNumber(totalSales.getId());
+
+            if (newSale.getId() <= 0 || !oldSalesMap.containsKey(newSale.getId())) {
+                salesDao.insert(newSale);
+            } else {
+                salesDao.update(newSale);
+            }
+        }
+
+        for (Sales oldSale : oldSalesList) {
+            if (!newSalesIds.contains(oldSale.getId())) {
+                salesDao.deleteById(oldSale.getId());
+            }
+        }
+    }
     @Override
     public int deleteById(int id) throws DaoException {
         return executeUpdate(SqlStatements.deleteStatement(TABLE_NAME, INVOICE_NUMBER), id);

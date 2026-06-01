@@ -2,9 +2,7 @@
 
 <?import javafx.scene.control.Button?>
 <?import javafx.scene.control.Label?>
-<?import javafx.scene.control.ScrollPane?>
 <?import javafx.scene.control.TableView?>
-<?import javafx.scene.control.ToolBar?>
 <?import javafx.scene.layout.AnchorPane?>
 <?import javafx.scene.layout.BorderPane?>
 <?import javafx.scene.layout.ColumnConstraints?>
@@ -18,15 +16,63 @@
     <children>
       <BorderPane styleClass="app-container" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
          <top>
-                <ToolBar prefHeight="40.0" prefWidth="200.0" BorderPane.alignment="CENTER">
-                    <items>
-                        <Button fx:id="btnPrint" mnemonicParsing="false" styleClass="app-neutral-button" text="Print" />
-                        <Button fx:id="btnPrintBarcode" layoutX="10.0" layoutY="10.0" mnemonicParsing="false" styleClass="app-neutral-button" text="Print Barcode" />
-                    </items>
-                </ToolBar>
+            <HBox spacing="5.0" styleClass="app-card">
+               <children>
+                        <VBox>
+                            <children>
+                                <GridPane hgap="10.0" minHeight="-Infinity" minWidth="-Infinity" vgap="10.0">
+                                    <columnConstraints>
+                                        <ColumnConstraints hgrow="SOMETIMES" maxWidth="-Infinity" minWidth="10.0" />
+                                        <ColumnConstraints hgrow="SOMETIMES" maxWidth="-Infinity" minWidth="10.0" prefWidth="80.0" />
+                                        <ColumnConstraints hgrow="SOMETIMES" maxWidth="-Infinity" minWidth="10.0" />
+                                        <ColumnConstraints hgrow="SOMETIMES" maxWidth="-Infinity" minWidth="10.0" prefWidth="80.0" />
+                                        <ColumnConstraints hgrow="SOMETIMES" maxWidth="-Infinity" minWidth="10.0" />
+                                        <ColumnConstraints hgrow="SOMETIMES" maxWidth="-Infinity" minWidth="10.0" prefWidth="80.0" />
+                                    </columnConstraints>
+                                    <rowConstraints>
+                                        <RowConstraints />
+                                        <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
+                                        <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
+                                        <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
+                                    </rowConstraints>
+                                    <children>
+                                        <Label fx:id="labelCode" styleClass="form-label" text="Code" />
+                                        <Label fx:id="labelDate" styleClass="form-label" text="Date" GridPane.columnIndex="2" />
+                                        <Label fx:id="labelName" styleClass="form-label" text="Name" GridPane.rowIndex="1" />
+                                        <Label fx:id="labelStock" styleClass="form-label" text="Stock" GridPane.columnIndex="2" GridPane.rowIndex="1" />
+                                        <Label fx:id="labelType" styleClass="form-label" text="Type" GridPane.columnIndex="4" />
+                                        <Label fx:id="labelTotal" styleClass="form-label" text="Total" GridPane.rowIndex="2" />
+                                        <Label fx:id="labelOtherDiscount" styleClass="form-label" text="Other Discount" GridPane.columnIndex="2" GridPane.rowIndex="2" />
+                                        <Label fx:id="labelTotalAfterDiscount" styleClass="form-label" text="After Discount" GridPane.columnIndex="4" GridPane.rowIndex="2" />
+                                        <Label fx:id="labelPaid" styleClass="form-label" text="Paid" GridPane.rowIndex="3" />
+                                        <Label fx:id="labelRest" styleClass="form-label" text="Rest" GridPane.columnIndex="2" GridPane.rowIndex="3" />
+                                        <Text fx:id="textPaid" strokeType="OUTSIDE" strokeWidth="0.0" styleClass="text-sum" text="0.0" GridPane.columnIndex="1" GridPane.rowIndex="3" />
+                                        <Text fx:id="textRest" strokeType="OUTSIDE" strokeWidth="0.0" styleClass="text-sum" text="0.0" GridPane.columnIndex="3" GridPane.rowIndex="3" />
+                                        <Text fx:id="textInvoiceTotal" strokeType="OUTSIDE" strokeWidth="0.0" styleClass="text-sum" text="0" GridPane.columnIndex="1" GridPane.rowIndex="2" />
+                                        <Text fx:id="textInvoiceDiscount" strokeType="OUTSIDE" strokeWidth="0.0" styleClass="text-sum" text="0" GridPane.columnIndex="3" GridPane.rowIndex="2" />
+                                        <Text fx:id="textInvoiceAfterDiscount" strokeType="OUTSIDE" strokeWidth="0.0" styleClass="text-sum" text="0" GridPane.columnIndex="5" GridPane.rowIndex="2" />
+                                        <Text fx:id="textType" strokeType="OUTSIDE" strokeWidth="0.0" styleClass="text-sum" GridPane.columnIndex="5" />
+                                        <Text fx:id="txtDate" strokeType="OUTSIDE" strokeWidth="0.0" styleClass="text-sum" GridPane.columnIndex="3" />
+                                        <Text fx:id="txtCode" strokeType="OUTSIDE" strokeWidth="0.0" styleClass="text-sum" GridPane.columnIndex="1" />
+                                        <Text fx:id="txtName" strokeType="OUTSIDE" strokeWidth="0.0" styleClass="text-sum" GridPane.columnIndex="1" GridPane.rowIndex="1" />
+                                        <Text fx:id="txtStock" strokeType="OUTSIDE" strokeWidth="0.0" styleClass="text-sum" GridPane.columnIndex="3" GridPane.rowIndex="1" />
+                                        <Text fx:id="textInvoiceProfit" layoutX="565.0" layoutY="93.0" strokeType="OUTSIDE" strokeWidth="0.0" styleClass="text-sum" text="0" GridPane.columnIndex="5" GridPane.rowIndex="3" />
+                                        <Label fx:id="labelProfit" styleClass="form-label" text="gross profit" GridPane.columnIndex="4" GridPane.rowIndex="3" />
+                                    </children>
+                                </GridPane>
+                            </children>
+                        </VBox>
+                  <HBox alignment="BOTTOM_LEFT" spacing="5.0">
+                     <children>
+                              <Button fx:id="btnPrint" mnemonicParsing="false" styleClass="app-neutral-button" text="Print" />
+                              <Button fx:id="btnPrintBarcode" mnemonicParsing="false" styleClass="app-neutral-button" text="Print Barcode" />
+                     </children>
+                  </HBox>
+               </children>
+            </HBox>
          </top>
          <bottom>
-                  <HBox alignment="CENTER_LEFT" spacing="5.0" styleClass="summary-card" BorderPane.alignment="CENTER">
+                  <HBox alignment="CENTER_LEFT" spacing="5.0" styleClass="summary-bar" BorderPane.alignment="CENTER">
                       <children>
                           <Label fx:id="labelCount" styleClass="summary-label" text="Count" />
                           <Text fx:id="textCount" strokeType="OUTSIDE" strokeWidth="0.0" styleClass="text-sum" text="0.0" />
@@ -44,59 +90,11 @@
                   </HBox>
          </bottom>
          <center>
-            <ScrollPane fitToHeight="true" fitToWidth="true" BorderPane.alignment="CENTER">
-               <content>
-                      <VBox spacing="5.0">
-                          <children>
-                              <VBox styleClass="app-card">
-                                  <children>
-                                      <GridPane hgap="10.0" minHeight="-Infinity" minWidth="-Infinity"  vgap="10.0">
-                                          <columnConstraints>
-                                              <ColumnConstraints hgrow="SOMETIMES" maxWidth="-Infinity" minWidth="10.0" />
-                                              <ColumnConstraints hgrow="SOMETIMES" maxWidth="-Infinity" minWidth="10.0" prefWidth="150.0" />
-                                              <ColumnConstraints hgrow="SOMETIMES" maxWidth="-Infinity" minWidth="10.0" />
-                                              <ColumnConstraints hgrow="SOMETIMES" maxWidth="-Infinity" minWidth="10.0" prefWidth="150.0" />
-                                              <ColumnConstraints hgrow="SOMETIMES" maxWidth="-Infinity" minWidth="10.0" />
-                                              <ColumnConstraints hgrow="SOMETIMES" maxWidth="-Infinity" minWidth="10.0" prefWidth="150.0" />
-                                          </columnConstraints>
-                                          <rowConstraints>
-                                              <RowConstraints />
-                                              <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
-                                              <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
-                                              <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
-                                          </rowConstraints>
-                                          <children>
-                                              <Label fx:id="labelCode" styleClass="form-label" text="Code" />
-                                              <Label fx:id="labelDate" styleClass="form-label" text="Date" GridPane.columnIndex="2" />
-                                              <Label fx:id="labelName" styleClass="form-label" text="Name" GridPane.rowIndex="1" />
-                                              <Label fx:id="labelStock" styleClass="form-label" text="Stock" GridPane.columnIndex="2" GridPane.rowIndex="1" />
-                                              <Label fx:id="labelType" styleClass="form-label" text="Type" GridPane.columnIndex="4" />
-                                              <Label fx:id="labelTotal" styleClass="form-label" text="Total" GridPane.rowIndex="2" />
-                                              <Label fx:id="labelOtherDiscount" styleClass="form-label" text="Other Discount" GridPane.columnIndex="2" GridPane.rowIndex="2" />
-                                              <Label fx:id="labelTotalAfterDiscount" styleClass="form-label" text="After Discount" GridPane.columnIndex="4" GridPane.rowIndex="2" />
-                                              <Label fx:id="labelPaid" styleClass="form-label" text="Paid" GridPane.rowIndex="3" />
-                                              <Label fx:id="labelRest" styleClass="form-label" text="Rest" GridPane.columnIndex="2" GridPane.rowIndex="3" />
-                                              <Text fx:id="textPaid" strokeType="OUTSIDE" strokeWidth="0.0" styleClass="text-sum" text="0.0" GridPane.columnIndex="1" GridPane.rowIndex="3" />
-                                              <Text fx:id="textRest" strokeType="OUTSIDE" strokeWidth="0.0" styleClass="text-sum" text="0.0" GridPane.columnIndex="3" GridPane.rowIndex="3" />
-                                              <Text fx:id="textInvoiceTotal" strokeType="OUTSIDE" strokeWidth="0.0" styleClass="text-sum" text="0" GridPane.columnIndex="1" GridPane.rowIndex="2" />
-                                              <Text fx:id="textInvoiceDiscount" strokeType="OUTSIDE" strokeWidth="0.0" styleClass="text-sum" text="0" GridPane.columnIndex="3" GridPane.rowIndex="2" />
-                                              <Text fx:id="textInvoiceAfterDiscount" strokeType="OUTSIDE" strokeWidth="0.0" styleClass="text-sum" text="0" GridPane.columnIndex="5" GridPane.rowIndex="2" />
-                                              <Text fx:id="textType" strokeType="OUTSIDE" strokeWidth="0.0" styleClass="text-sum" GridPane.columnIndex="5" />
-                                              <Text fx:id="txtDate" strokeType="OUTSIDE" strokeWidth="0.0" styleClass="text-sum" GridPane.columnIndex="3" />
-                                              <Text fx:id="txtCode" strokeType="OUTSIDE" strokeWidth="0.0" styleClass="text-sum" GridPane.columnIndex="1" />
-                                              <Text fx:id="txtName" strokeType="OUTSIDE" strokeWidth="0.0" styleClass="text-sum" GridPane.columnIndex="1" GridPane.rowIndex="1" />
-                                              <Text fx:id="txtStock" strokeType="OUTSIDE" strokeWidth="0.0" styleClass="text-sum" GridPane.columnIndex="3" GridPane.rowIndex="1" />
-                                              <Text fx:id="textInvoiceProfit" layoutX="565.0" layoutY="93.0" strokeType="OUTSIDE" strokeWidth="0.0" styleClass="text-sum" text="0" GridPane.columnIndex="5" GridPane.rowIndex="3" />
-                                              <Label fx:id="labelProfit" styleClass="form-label" text="gross profit" GridPane.columnIndex="4" GridPane.rowIndex="3" />
-                                          </children>
-                                      </GridPane>
-                                  </children>
-                              </VBox>
-                              <TableView fx:id="tableView" editable="true" minHeight="-Infinity" minWidth="-Infinity" prefHeight="250.0" styleClass="app-table" VBox.vgrow="SOMETIMES" />
-                          </children>
-                      </VBox>
-               </content>
-            </ScrollPane>
+                <VBox spacing="5.0">
+                    <children>
+                        <TableView fx:id="tableView" editable="true" minHeight="-Infinity" minWidth="-Infinity" prefHeight="250.0" styleClass="app-table" VBox.vgrow="SOMETIMES" />
+                    </children>
+                </VBox>
          </center>
       </BorderPane>
     </children>
