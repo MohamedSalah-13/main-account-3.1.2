@@ -224,25 +224,6 @@ CREATE TABLE IF NOT EXISTS items
 );
 CREATE INDEX items_name_barcode_idx ON items(nameItem, barcode);
 
-CREATE TABLE IF NOT EXISTS items_package
-(
-    id         INT AUTO_INCREMENT PRIMARY KEY,
-    item_id    INT                                NOT NULL,
-    package_id INT                                NOT NULL,
-    quantity   DECIMAL(14, 3)                     NOT NULL,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP NULL,
-    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP NULL ON UPDATE CURRENT_TIMESTAMP,
-    CONSTRAINT items_package_item_id_fk
-        FOREIGN KEY (item_id) REFERENCES items (id)
-            ON UPDATE CASCADE ON DELETE CASCADE,
-    CONSTRAINT items_package_package_id_fk
-        FOREIGN KEY (package_id) REFERENCES items (id)
-            ON UPDATE CASCADE ON DELETE CASCADE,
-    CONSTRAINT items_package_quantity_chk CHECK (quantity > 0)
-);
-
-CREATE INDEX items_package_item_idx ON items_package (item_id);
-CREATE INDEX items_package_package_idx ON items_package (package_id);
 
 CREATE TABLE IF NOT EXISTS items_stock
 (

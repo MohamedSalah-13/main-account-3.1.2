@@ -200,10 +200,6 @@ public enum DaoFactory {
         return new AreaDao(connection);
     }
 
-    public ItemsPackageDao getItemsPackageDao() {
-        return new ItemsPackageDao(connection);
-    }
-
     public UserShiftDao userShiftDao() {
         return new UserShiftDao(connection);
     }

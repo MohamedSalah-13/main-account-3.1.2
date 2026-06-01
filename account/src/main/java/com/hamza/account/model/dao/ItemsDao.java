@@ -129,39 +129,6 @@ public class ItemsDao extends AbstractDao<ItemsModel> {
         }
     }
 
-    private void insertOpeningBalancesForStocks(ItemsModel itemsModel, int itemId) throws DaoException {
-        List<Items_Stock_Model> stockBalances = itemsModel.getItemStockBalances();
-
-        if (stockBalances == null || stockBalances.isEmpty()) {
-            double openingBalance = itemsModel.getFirstBalanceForStock();
-
-            daoFactory.getItemsStockDao().insertOrUpdate(new Items_Stock_Model(
-                    itemId,
-                    1,
-                    openingBalance,
-                    openingBalance
-            ));
-            return;
-        }
-
-        for (Items_Stock_Model stockBalance : stockBalances) {
-            if (stockBalance == null || stockBalance.getStock() == null) {
-                continue;
-            }
-
-            double firstBalance = stockBalance.getFirstBalance();
-
-            if (firstBalance < 0) {
-                throw new DaoException("لا يمكن إدخال رصيد أول مدة أقل من صفر");
-            }
-
-            stockBalance.setItemsModel(new ItemsModel(itemId));
-            stockBalance.setCurrentQuantity(firstBalance);
-        }
-
-        daoFactory.getItemsStockDao().insertOrUpdateList(stockBalances);
-    }
-
     @Override
     public int update(ItemsModel itemsModel) throws DaoException {
         String string = SqlStatements.updateStatement(TABLE_NAME, ID, BARCODE, NAME_ITEM, SUB_NUM, BUY_PRICE
@@ -190,24 +157,6 @@ public class ItemsDao extends AbstractDao<ItemsModel> {
                         itemsModel.getUsers().getId()
                 );
                 daoFactory.getItemsStockDao().deleteZeroOpeningBalancesByItemId(itemsModel.getId());
-            }
-
-            // إذا كان الصنف يمتلك مجموعة لا يتم إضافة وحدات له
-            // update package
-            if (!itemsModel.getItems_packageList().isEmpty() || itemsModel.isHasPackage()) {
-                itemsModel.getItems_packageList().forEach(itemsPackage -> itemsPackage.setPackage_id(itemsModel.getId()));
-                daoFactory.getItemsPackageDao().updateList(itemsModel.getItems_packageList());
-            } else {
-                //TODO 11/24/2025 6:13 AM Mohamed: not delete , update
-                // update units
-                if (!itemsModel.getItemsUnitsModelList().isEmpty()) {
-                    // first delete all units
-                    daoFactory.getItemsUnitDao().deleteByItemId(itemsModel.getId());
-                    // update list if existing
-                    itemsModel.getItemsUnitsModelList().forEach(itemsUnitsModel -> itemsUnitsModel.setItemsId(itemsModel.getId()));
-                    // add new units
-                    daoFactory.getItemsUnitDao().insertList(itemsModel.getItemsUnitsModelList());
-                }
             }
         });
     }
@@ -260,6 +209,39 @@ public class ItemsDao extends AbstractDao<ItemsModel> {
         } catch (SQLException e) {
             throw new DaoException(e);
         }
+    }
+
+    private void insertOpeningBalancesForStocks(ItemsModel itemsModel, int itemId) throws DaoException {
+        List<Items_Stock_Model> stockBalances = itemsModel.getItemStockBalances();
+
+        if (stockBalances == null || stockBalances.isEmpty()) {
+            double openingBalance = itemsModel.getFirstBalanceForStock();
+
+            daoFactory.getItemsStockDao().insertOrUpdate(new Items_Stock_Model(
+                    itemId,
+                    1,
+                    openingBalance,
+                    openingBalance
+            ));
+            return;
+        }
+
+        for (Items_Stock_Model stockBalance : stockBalances) {
+            if (stockBalance == null || stockBalance.getStock() == null) {
+                continue;
+            }
+
+            double firstBalance = stockBalance.getFirstBalance();
+
+            if (firstBalance < 0) {
+                throw new DaoException("لا يمكن إدخال رصيد أول مدة أقل من صفر");
+            }
+
+            stockBalance.setItemsModel(new ItemsModel(itemId));
+            stockBalance.setCurrentQuantity(firstBalance);
+        }
+
+        daoFactory.getItemsStockDao().insertOrUpdateList(stockBalances);
     }
 
     private ItemsModel mapBasic(ResultSet rs) throws DaoException {

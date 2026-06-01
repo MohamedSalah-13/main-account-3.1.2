@@ -41,7 +41,6 @@ import java.io.FileNotFoundException;
 import java.util.ArrayList;
 import java.util.List;
 
-import static com.hamza.account.config.Configs.ADD_PACKAGE_TO_ITEMS;
 import static com.hamza.account.controller.setting.ComboSetting.comboSubSetting;
 import static com.hamza.account.controller.setting.ComboSetting.comboTypeSetting;
 import static com.hamza.controlsfx.others.Utils.*;
@@ -54,7 +53,7 @@ public class AddItemController implements AppSettingInterface {
     private final int codeItem;
     private final DataPublisher dataPublisher;
     private final ImageChoose imageChoose = new ImageChoose();
-    private final ItemsPackageController itemsPackageController;
+
 
     private final UnitsService unitsService = ServiceRegistry.get(UnitsService.class);
     private final MainGroupService mainGroupService = ServiceRegistry.get(MainGroupService.class);
@@ -81,10 +80,8 @@ public class AddItemController implements AppSettingInterface {
 
     @FXML
     private TabPane tabPane;
-
     @FXML
     private HBox boxMain;
-
     @FXML
     @Getter
     private Button btnAddMainGroup, btnAddSubGroup, btnSave, btnSaveDuplicate, btnClose, btnBarcode;
@@ -99,19 +96,7 @@ public class AddItemController implements AppSettingInterface {
     private TextField textDaysValidate, textAlertBefore;
 
     @FXML
-    private ComboBox<String> comboOtherTypes;
-
-    @FXML
-    private TableView<ItemsUnitsModel> tableUnits;
-
-    @FXML
     private TableView<Items_Stock_Model> tableStockBalances;
-
-    @FXML
-    private TextField textUnitQuantity, textUnitBarcode;
-
-    @FXML
-    private Button btnAdd;
 
     @FXML
     private ImageView imageAdd;
@@ -124,7 +109,6 @@ public class AddItemController implements AppSettingInterface {
     public AddItemController(int codeItem, DataPublisher dataPublisher) {
         this.codeItem = codeItem;
         this.dataPublisher = dataPublisher;
-        this.itemsPackageController = new ItemsPackageController();
 
         dataPublisher.getPublisherAddMainGroup().addObserver(message -> {
             comboMainGroup.setItems(FXCollections.observableList(getMainGroupsNames()));
@@ -141,7 +125,6 @@ public class AddItemController implements AppSettingInterface {
 
     @FXML
     public void initialize() {
-        unitSetting();
         stockBalancesTableSetting();
         otherSetting();
         comboTypeOption();
@@ -154,23 +137,9 @@ public class AddItemController implements AppSettingInterface {
         btnClearImage.fire();
         permButtons();
         buttonGraphic();
-
-        if (ADD_PACKAGE_TO_ITEMS) {
-            // addPackaged();
-        }
-
         selectData();
-
-        tabPane.getTabs().getFirst().setDisable(true);
-        tabPane.getSelectionModel().select(1);
     }
 
-    private void unitSetting() {
-        this.tableUnitsSetting = new TableUnitsSetting(unitsService, tableUnits);
-        tableUnitsSetting.selectedTypeProperty().bind(comboOtherTypes.getSelectionModel().selectedItemProperty());
-        tableUnitsSetting.textUnitBarcodeProperty().bindBidirectional(textUnitBarcode.textProperty());
-        textUnitQuantity.setDisable(true);
-    }
 
     private void stockBalancesTableSetting() {
         tableStockBalances.setEditable(true);
@@ -279,7 +248,6 @@ public class AddItemController implements AppSettingInterface {
 
     private void buttonGraphic() {
         var images = new Image_Setting();
-        btnAdd.setGraphic(createIcon(images.add));
         btnSave.setGraphic(createIcon(images.save));
         btnBarcode.setGraphic(createIcon(images.barcode));
         btnAddImage.setGraphic(createIcon(images.search));
@@ -298,18 +266,9 @@ public class AddItemController implements AppSettingInterface {
         txtBalance.setFocusTraversable(false);
 
         getFocusToName();
-        comboOtherTypes.getItems().addAll(getUnitsModelNames());
         checkItemActive.setSelected(true);
     }
 
-    private void addPackaged() {
-        try {
-            var pane = new OpenFxmlApplication(itemsPackageController).getPane();
-            tabPane.getTabs().add(1, new Tab(Setting_Language.ADD_PACKAGE, pane));
-        } catch (Exception e) {
-            log.error("Failed to load packaged items view", e);
-        }
-    }
 
     private void comboTypeOption() {
         var unitsModelNames = getUnitsModelNames();
@@ -337,7 +296,6 @@ public class AddItemController implements AppSettingInterface {
 
                     if (unitsModelByName != null) {
                         itemsUnitsModelList.getFirst().unitsModelProperty().set(unitsModelByName);
-                        tableUnits.refresh();
                     }
                 }
             } catch (Exception e) {
@@ -425,29 +383,6 @@ public class AddItemController implements AppSettingInterface {
             }
         });
 
-        comboOtherTypes.valueProperty().addListener((observableValue, oldValue, newValue) -> {
-            var unitsModelByName = getUnitsModelByName(newValue);
-
-            if (unitsModelByName != null) {
-                textUnitQuantity.setText(String.valueOf(unitsModelByName.getValue()));
-            }
-        });
-
-        btnAdd.setOnAction(actionEvent -> tableUnitsSetting.addUnit());
-
-        tableUnits.setOnKeyPressed(keyEvent -> {
-            if (keyEvent.getCode() == javafx.scene.input.KeyCode.DELETE) {
-                btnAdd.fire();
-            }
-        });
-
-        tableUnits.setOnMouseClicked(mouseEvent -> {
-            if (mouseEvent.getClickCount() == 2 && tableUnits.getSelectionModel().getSelectedItem() != null) {
-                var selectedItem = tableUnits.getSelectionModel().getSelectedItem();
-                comboOtherTypes.getSelectionModel().select(selectedItem.getUnitsModel().getUnit_name());
-                textUnitQuantity.setText(String.valueOf(selectedItem.getQuantityForUnit()));
-            }
-        });
 
         btnAddImage.setOnAction(actionEvent -> {
             try {
@@ -528,11 +463,6 @@ public class AddItemController implements AppSettingInterface {
 
             if (itemImage != null && itemImage.length > 0) {
                 imageAdd.setImage(new Image(new ByteArrayInputStream(itemImage)));
-            }
-
-            if (ADD_PACKAGE_TO_ITEMS && itemsModel.isHasPackage()) {
-                itemsPackageController.setItemHasPackage(true);
-                itemsPackageController.selectData(itemsModel.getId());
             }
 
         } catch (DaoException e) {
@@ -629,18 +559,7 @@ public class AddItemController implements AppSettingInterface {
         itemsModel.setHasValidate(checkItemValidate.isSelected());
         itemsModel.setNumberValidityDays(Integer.parseInt(textDaysValidate.getText()));
         itemsModel.setAlertDaysBeforeExpiry(Integer.parseInt(textAlertBefore.getText()));
-
-        if (ADD_PACKAGE_TO_ITEMS) {
-            if (itemsPackageController.isItemHasPackage()) {
-                itemsModel.setHasPackage(true);
-                var itemsPackageList = itemsPackageController.getItems_packageList();
-                itemsModel.setItems_packageList(itemsPackageList);
-            } else {
-                itemsModel.setItems_packageList(new ArrayList<>());
-            }
-        } else {
-            itemsModel.setHasPackage(false);
-        }
+        itemsModel.setHasPackage(false);
 
         if (imageAdd.getImage() != null) {
             itemsModel.setItem_image(imageChoose.convertFxImageToBytes(imageAdd.getImage()));
@@ -702,7 +621,6 @@ public class AddItemController implements AppSettingInterface {
 
                 if (i == 1) {
                     dataPublisher.getPublisherAddItem().setAvailability(itemsModel);
-                    tableUnits.getItems().clear();
 
                     AllAlerts.alertSave();
                     imageAdd.setImage(null);
@@ -714,10 +632,6 @@ public class AddItemController implements AppSettingInterface {
 
                     addBarcode();
                     getFocusToName();
-
-                    if (ADD_PACKAGE_TO_ITEMS) {
-                        itemsPackageController.deleteAllData();
-                    }
 
                     if (codeItem > 0) {
                         btnClose.fire();
