@@ -96,17 +96,27 @@ public abstract class AbstractDao<T> implements DaoList<T> {
      */
     public int executeUpdateListWithException(@NotNull final List<T> list, @NotNull String query, final GenericMapperList<T> mapper) throws SQLException, DaoException {
         int count = 0;
-        PreparedStatement statement = connection.prepareStatement(query);
-//        System.out.println(statement.toString());
-        for (T t : list) {
-            mapper.setData(statement, t);
-            statement.addBatch();
-            count++;
-            // execute every 100 rows or le
-            if (count % 100 == 0 || count == list.size()) {
-                statement.executeBatch();
+
+        try (PreparedStatement statement = connection.prepareStatement(query)) {
+            for (T t : list) {
+                mapper.setData(statement, t);
+                statement.addBatch();
+                count++;
+
+                // execute every 100 rows or less
+                if (count % 100 == 0 || count == list.size()) {
+                    try {
+                        statement.executeBatch();
+                        statement.clearBatch();
+                    } catch (BatchUpdateException e) {
+                        log.error("Batch update failed at item number {} of {}. Query: {}. Item: {}",
+                                count, list.size(), query, t, e);
+                        throw e;
+                    }
+                }
             }
         }
+
         return count;
     }
 

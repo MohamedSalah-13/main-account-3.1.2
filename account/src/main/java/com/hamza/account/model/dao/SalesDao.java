@@ -152,6 +152,9 @@ public class SalesDao extends AbstractDao<Sales> {
                     , discount, TYPE_VALUE, expirationDate, itemHasPackage);
             return executeUpdateListWithException(list, query, (statement, sales) -> setData(statement, getData(sales)));
         } catch (SQLException e) {
+            if (e.getMessage() != null && e.getMessage().contains("items_stock_current_quantity_chk")) {
+                throw new DaoException("Not enough stock quantity for one or more sold items.", e);
+            }
             throw new DaoException(e);
         }
     }
