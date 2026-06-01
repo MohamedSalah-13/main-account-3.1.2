@@ -45,7 +45,7 @@
             </HBox>
          </top>
          <bottom>
-                      <HBox alignment="CENTER_LEFT" spacing="10.0" styleClass="summary-card" BorderPane.alignment="CENTER">
+                      <HBox alignment="CENTER_LEFT" spacing="10.0" styleClass="summary-bar" BorderPane.alignment="CENTER">
                           <children>
                               <Label styleClass="form-label" text="عدد" />
                               <Text fx:id="textCount" strokeType="OUTSIDE" strokeWidth="0.0" styleClass="text-sum" text="0.0" />

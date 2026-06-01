@@ -52,7 +52,7 @@
                 </ToolBar>
          </top>
          <bottom>
-                    <HBox alignment="CENTER_LEFT" spacing="10.0" styleClass="summary-card" BorderPane.alignment="CENTER">
+                    <HBox alignment="CENTER_LEFT" spacing="10.0" styleClass="summary-bar" BorderPane.alignment="CENTER">
                         <children>
                             <Label fx:id="labelSumTableSize" text="Sum Table" />
                             <Text fx:id="textSumTableSize" strokeType="OUTSIDE" strokeWidth="0.0" styleClass="text-sum" text="0" />

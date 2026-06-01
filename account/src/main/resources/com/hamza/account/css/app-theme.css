@@ -186,7 +186,7 @@
 
 .button,
 .toggle-button,
-.menu-button,
+/*.menu-button,*/
 .primary-button,
 .secondary-button,
 .neutral-button,
@@ -196,6 +196,15 @@
     -fx-background-radius: 9px;
     -fx-border-radius: 9px;
     -fx-padding: 6px 10px;
+    -fx-cursor: hand;
+}
+
+.menu-button{
+    -fx-font-size: 11px;
+    -fx-font-weight: bold;
+    -fx-background-radius: 9px;
+    -fx-border-radius: 9px;
+    -fx-padding: 3px 5px;
     -fx-cursor: hand;
 }
 
@@ -216,6 +225,7 @@
     -fx-effect: dropshadow(gaussian, -app-focus-shadow, 14, 0.18, 0, 4);
 }
 
+.toggle-button,
 .secondary-button,
 .success-button,
 .excel-button,
