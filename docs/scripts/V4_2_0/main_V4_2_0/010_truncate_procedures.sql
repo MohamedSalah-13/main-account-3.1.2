@@ -1,46 +1,60 @@
-/*------------------------------------ truncateTableSales - 6 tables ------------------------------------ */
-DROP procedure if exists truncateTableSales;
+USE account_system_db;
 
-DELIMITER |
-create
-    definer = root@localhost procedure truncateTableSales(IN salesReturn tinyint(1), IN deleteSales tinyint(1),
-                                                          IN deleteAccount tinyint(1), IN deleteName tinyint(1))
-begin
+-- =====================================================================
+-- 010_truncate_procedures.sql
+-- Procedures تفريغ وإعادة تهيئة الجداول
+-- =====================================================================
+
+DROP PROCEDURE IF EXISTS truncateTableSales;
+
+DELIMITER $$
+
+CREATE PROCEDURE truncateTableSales(
+    IN salesReturn TINYINT(1),
+    IN deleteSales TINYINT(1),
+    IN deleteAccount TINYINT(1),
+    IN deleteName TINYINT(1)
+)
+BEGIN
     SET FOREIGN_KEY_CHECKS = 0;
-    if (salesReturn) THEN
-        TRUNCATE table total_sales_re;
-        TRUNCATE table sales_re;
-    End IF;
 
-    if (deleteSales) THEN
-        TRUNCATE table total_sales;
-        TRUNCATE table sales;
-    End IF;
+    IF (salesReturn) THEN
+        TRUNCATE TABLE sales_re;
+        TRUNCATE TABLE total_sales_re;
+    END IF;
 
-    IF (deleteAccount) Then
-        TRUNCATE table customers_accounts;
-    End IF;
+    IF (deleteSales) THEN
+        TRUNCATE TABLE sales;
+        TRUNCATE TABLE total_sales;
+    END IF;
 
-    IF (deleteName) Then
-        # this use for customer
-        TRUNCATE table custom;
+    IF (deleteAccount) THEN
+        TRUNCATE TABLE customers_accounts;
+    END IF;
+
+    IF (deleteName) THEN
+        TRUNCATE TABLE custom;
         INSERT INTO custom(id, name, limit_num, price_id)
-        VALUES (1, 'بيع نقدى', 5000, 1);
-    End IF;
+        VALUES (1, 'بيع نقدى', 5000, 1)
+        ON DUPLICATE KEY UPDATE name      = VALUES(name),
+                                limit_num = VALUES(limit_num),
+                                price_id  = VALUES(price_id);
+    END IF;
 
     SET FOREIGN_KEY_CHECKS = 1;
-END
-|
+END$$
+
 DELIMITER ;
+
+-- ... انقل باقي Procedures التفريغ هنا بعد إزالة DEFINER ...
 
 /*------------------------------------ truncateTablePurchase - 6 tables ------------------------------------ */
 DROP procedure if exists truncateTablePurchase;
 
 DELIMITER |
-create
-    definer = root@localhost procedure truncateTablePurchase(IN deletePurchaseReturn tinyint(1),
-                                                             IN deletePurchase tinyint(1),
-                                                             IN deleteAccount tinyint(1), IN deleteName tinyint(1))
+create procedure truncateTablePurchase(IN deletePurchaseReturn tinyint(1),
+                                       IN deletePurchase tinyint(1),
+                                       IN deleteAccount tinyint(1), IN deleteName tinyint(1))
 begin
     SET FOREIGN_KEY_CHECKS = 0;
     if (deletePurchaseReturn) THEN
@@ -151,10 +165,9 @@ DELIMITER ;
 DROP procedure if exists truncateTableOthers;
 
 DELIMITER |
-create
-    definer = root@localhost procedure truncateTableOthers(IN deleteEmployees tinyint(1),
-                                                           IN deleteProcesses tinyint(1),
-                                                           IN deleteExpenses tinyint(1), IN deleteUsers tinyint(1))
+create procedure truncateTableOthers(IN deleteEmployees tinyint(1),
+                                     IN deleteProcesses tinyint(1),
+                                     IN deleteExpenses tinyint(1), IN deleteUsers tinyint(1))
 begin
     SET FOREIGN_KEY_CHECKS = 0;
 

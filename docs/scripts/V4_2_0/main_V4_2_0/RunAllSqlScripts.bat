@@ -1,8 +1,11 @@
 @echo off
-REM Run all .sql files in scripts\main against a MySQL database
-REM Usage: run_all_sql.bat localhost 3306 root secret mydb
-
 setlocal enabledelayedexpansion
+
+REM ==================================================
+REM Run all main SQL migration files in correct order
+REM Usage:
+REM   RunAllSqlScripts.bat localhost 3306 root password account_system_db
+REM ==================================================
 
 set "HOST=%~1"
 if "%HOST%"=="" set "HOST=localhost"
@@ -19,10 +22,8 @@ if "%PASS%"=="" set "PASS=m13ido"
 set "DB=%~5"
 if "%DB%"=="" set "DB=account_system_db"
 
-REM Path to mysql client (assumed on PATH). Override by setting MYSQL_BIN env var.
 if not defined MYSQL_BIN set "MYSQL_BIN=mysql"
 
-REM Compute scripts\main relative to this .bat location
 set "SCRIPT_DIR=%~dp0"
 for %%I in ("%SCRIPT_DIR%") do set "SQL_DIR=%%~fI"
 
@@ -31,45 +32,43 @@ if not exist "%SQL_DIR%" (
   exit /b 1
 )
 
-REM ==============================================================
-REM --- بداية الجزء الخاص بتنظيف قاعدة البيانات (Triggers & Views) ---
-REM ==============================================================
+set "LOG_FILE=%SQL_DIR%\migration_log.txt"
 
-REM 1. حذف جميع الـ Triggers
-echo Dropping all existing triggers in %DB% ...
-"%MYSQL_BIN%" --host=%HOST% --port=%PORT% --user=%USER% --password=%PASS% -sN -e "SELECT CONCAT('DROP TRIGGER IF EXISTS `', trigger_name, '`;') FROM information_schema.triggers WHERE trigger_schema = '%DB%';" > temp_drop_triggers.sql
-"%MYSQL_BIN%" --host=%HOST% --port=%PORT% --user=%USER% --password=%PASS% %DB% < temp_drop_triggers.sql
-del temp_drop_triggers.sql
-echo Triggers dropped successfully.
-
-REM 2. حذف جميع الـ Views
-echo Dropping all existing views in %DB% ...
-"%MYSQL_BIN%" --host=%HOST% --port=%PORT% --user=%USER% --password=%PASS% -sN -e "SELECT CONCAT('DROP VIEW IF EXISTS `', table_name, '`;') FROM information_schema.VIEWS WHERE table_schema = '%DB%';" > temp_drop_views.sql
-"%MYSQL_BIN%" --host=%HOST% --port=%PORT% --user=%USER% --password=%PASS% %DB% < temp_drop_views.sql
-del temp_drop_views.sql
-echo Views dropped successfully.
-
-REM ==============================================================
-REM --- نهاية الجزء الخاص بتنظيف قاعدة البيانات ---
-REM ==============================================================
+echo ================================================== > "%LOG_FILE%"
+echo Migration started at %DATE% %TIME% >> "%LOG_FILE%"
+echo Database: %DB% >> "%LOG_FILE%"
+echo Folder: %SQL_DIR% >> "%LOG_FILE%"
+echo ================================================== >> "%LOG_FILE%"
 
 pushd "%SQL_DIR%"
+
 for /f "delims=" %%F in ('dir /b /on *.sql') do (
   echo Running %%F ...
-  call :run_sql "%%F"
+  echo. >> "%LOG_FILE%"
+  echo ================================================== >> "%LOG_FILE%"
+  echo Running %%F at %DATE% %TIME% >> "%LOG_FILE%"
+  echo ================================================== >> "%LOG_FILE%"
+
+  "%MYSQL_BIN%" ^
+    --host=%HOST% ^
+    --port=%PORT% ^
+    --user=%USER% ^
+    --password=%PASS% ^
+    --default-character-set=utf8mb4 ^
+    --force ^
+    -vvv ^
+    < "%%F" >> "%LOG_FILE%" 2>&1
+
   if errorlevel 1 (
     echo Failed on %%F
+    echo Failed on %%F >> "%LOG_FILE%"
     popd
     exit /b 1
   )
 )
+
 popd
 
 echo Done.
+echo Migration finished at %DATE% %TIME% >> "%LOG_FILE%"
 exit /b 0
-
-:run_sql
-set "FILE=%~1"
-REM Note: passing password on CLI; consider MYSQL_PWD env var if preferred.
-"%MYSQL_BIN%" --host=%HOST% --port=%PORT% --user=%USER% --default-character-set=utf8mb4 --password=%PASS% -vvv %DB% < "%FILE%" >> migration_log.txt 2>&1
-exit /b %errorlevel%

@@ -1,6 +1,17 @@
+USE account_system_db;
+
+-- =====================================================================
+-- 006_audit_log.sql
+-- Audit procedure and item triggers
+-- =====================================================================
+
+DROP TRIGGER IF EXISTS audit_items_insert;
+DROP TRIGGER IF EXISTS audit_items_update;
+DROP TRIGGER IF EXISTS audit_items_delete;
 DROP PROCEDURE IF EXISTS write_audit_log;
 
-DELIMITER |
+DELIMITER $$
+
 CREATE PROCEDURE write_audit_log(
     IN p_table_name VARCHAR(100),
     IN p_record_id VARCHAR(100),
@@ -31,12 +42,8 @@ BEGIN
             p_new_data,
             p_notes
         );
-END;
-|
-DELIMITER ;
+END$$
 
-###############################################
-DELIMITER |
 CREATE TRIGGER audit_items_insert
     AFTER INSERT ON items
     FOR EACH ROW
@@ -55,11 +62,8 @@ BEGIN
             ),
             NULL
          );
-END;
-|
-DELIMITER ;
+END$$
 
-DELIMITER |
 CREATE TRIGGER audit_items_update
     AFTER UPDATE ON items
     FOR EACH ROW
@@ -83,11 +87,8 @@ BEGIN
             ),
             NULL
          );
-END;
-|
-DELIMITER ;
+END$$
 
-DELIMITER |
 CREATE TRIGGER audit_items_delete
     AFTER DELETE ON items
     FOR EACH ROW
@@ -106,6 +107,8 @@ BEGIN
             NULL,
             NULL
          );
-END;
-|
+END$$
+
 DELIMITER ;
+
+SELECT '006_audit_log.sql executed successfully' AS status;

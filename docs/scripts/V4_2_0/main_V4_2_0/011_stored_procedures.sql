@@ -532,34 +532,17 @@ END$$
 
 DELIMITER ;
 
--- =====================================================================
--- 8) إضافة بيانات تجريبية (اختياري)
--- =====================================================================
-
--- إدخال شريك تجريبي
-INSERT IGNORE INTO partners (id, partner_name, partner_code, join_date, is_active, user_id)
-VALUES (1, 'الشريك الأول', 'P001', CURDATE(), 1, 1);
-
--- إدخال رأس مال تجريبي
-INSERT IGNORE INTO capital (id, capital_name, total_capital, start_date, is_active, user_id)
-VALUES (1, 'رأس المال الأساسي', 100000.00, CURDATE(), 1, 1);
-
--- إدخال حصة تجريبية
-INSERT IGNORE INTO partner_shares (
-    capital_id, partner_id, share_amount, share_percentage,
-    profit_percentage, loss_percentage, contribution_date, user_id
-)
-VALUES (1, 1, 100000.00, 100.00, 100.00, 100.00, CURDATE(), 1);
 
 -- =====================================================================
--- 9) تسجيل نسخة التحديث
+-- تسجيل نسخة التحديث بدون تكرار
 -- =====================================================================
 
 INSERT INTO database_migrations (version, description, executed_at)
-VALUES ('4.2.0.2', 'Shifts-Capital-Partners Integration', NOW());
+SELECT '4.2.0', 'Main database schema and procedures', NOW()
+WHERE NOT EXISTS (
+    SELECT 1
+    FROM database_migrations
+    WHERE version = '4.2.0'
+);
 
--- =====================================================================
--- نهاية السكريبت
--- =====================================================================
-
-SELECT 'تم تنفيذ تحديث الورديات ورأس المال والشركاء بنجاح!' AS status;
+SELECT '011_stored_procedures.sql executed successfully' AS status;
