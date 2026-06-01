@@ -650,7 +650,7 @@ public class PosController extends ButtonSetting {
                     Thread thread = new Thread(() -> {
                         try {
                             Thread.sleep(5000);
-                            dataInterface.publisherPurchaseOrSales().notifyObservers();
+//                            dataInterface.publisherPurchaseOrSales().notifyObservers();
                         } catch (InterruptedException e) {
                             logError(e);
                         }

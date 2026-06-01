@@ -36,6 +36,7 @@ module com.hamza.account {
 //    requires licensing.base;
 //    requires typography;
 
+    exports com.hamza.account.event;
     exports com.hamza.account.backup;
     opens com.hamza.account.backup to javafx.fxml;
     exports com.hamza.account.controller.login;

@@ -1,5 +1,6 @@
 package com.hamza.account.controller.main;
 
+import com.hamza.account.event.AppEventBus;
 import com.hamza.account.model.domain.ItemsModel;
 import com.hamza.controlsfx.observer.Publisher;
 import lombok.Getter;
@@ -9,6 +10,7 @@ import java.util.HashMap;
 @Getter
 public class DataPublisher {
 
+    private final AppEventBus eventBus = new AppEventBus();
     // for database
     private final Publisher<String> publisherBuy = new Publisher<>();
     private final Publisher<String> publisherSales = new Publisher<>();

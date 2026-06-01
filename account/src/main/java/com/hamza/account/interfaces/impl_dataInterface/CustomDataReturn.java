@@ -4,6 +4,7 @@ import com.hamza.account.controller.main.DataPublisher;
 import com.hamza.account.controller.main.LoadData;
 import com.hamza.account.controller.model.PrintPurchaseWithName;
 import com.hamza.account.controller.others.ServiceRegistry;
+import com.hamza.account.event.EventType;
 import com.hamza.account.interfaces.FilterDateInterface;
 import com.hamza.account.interfaces.api.*;
 import com.hamza.account.interfaces.impl_account.AccountCustomer;
@@ -22,7 +23,6 @@ import com.hamza.account.service.SalesReService;
 import com.hamza.account.service.TotalSalesReturnService;
 import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.database.DaoList;
-import com.hamza.controlsfx.observer.Publisher;
 
 import java.util.List;
 
@@ -43,11 +43,6 @@ public class CustomDataReturn extends LoadData implements DataInterface<Sales_Re
     @Override
     public TotalDesignInterface<Total_Sales_Re> totalDesignInterface() {
         return new TotalSalesReturnImplDesign(this, daoFactory, totalSalesReturnService);
-    }
-
-    @Override
-    public Publisher<String> publisherPurchaseOrSales() {
-        return dataPublisher.getPublisherSales();
     }
 
     @Override
@@ -135,5 +130,10 @@ public class CustomDataReturn extends LoadData implements DataInterface<Sales_Re
                 printPurchaseWithNames.add(purchase);
             }
         }
+    }
+
+    @Override
+    public EventType getEventType() {
+        return EventType.SALES_INVOICE;
     }
 }

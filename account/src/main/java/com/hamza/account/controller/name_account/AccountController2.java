@@ -82,7 +82,13 @@ public class AccountController2<T1 extends BasePurchasesAndSales, T2 extends Bas
                 throw new RuntimeException(e);
             }
         });
-        dataInterface.publisherPurchaseOrSales().addObserver(message -> btnRefresh.fire());
+//        dataInterface.publisherPurchaseOrSales().addObserver(message -> btnRefresh.fire());
+
+        dataPublisher.getEventBus().subscribe(event -> {
+            if (event.type() == dataInterface.getEventType()) {
+                btnRefresh.fire();
+            }
+        });
     }
 
     @FXML

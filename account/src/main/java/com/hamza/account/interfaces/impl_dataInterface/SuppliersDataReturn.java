@@ -4,6 +4,7 @@ import com.hamza.account.controller.main.DataPublisher;
 import com.hamza.account.controller.main.LoadData;
 import com.hamza.account.controller.model.PrintPurchaseWithName;
 import com.hamza.account.controller.others.ServiceRegistry;
+import com.hamza.account.event.EventType;
 import com.hamza.account.interfaces.FilterDateInterface;
 import com.hamza.account.interfaces.api.*;
 import com.hamza.account.interfaces.impl_account.AccountSuppliers;
@@ -22,7 +23,6 @@ import com.hamza.account.service.PurchaseReService;
 import com.hamza.account.service.TotalBuyReturnService;
 import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.database.DaoList;
-import com.hamza.controlsfx.observer.Publisher;
 
 import java.util.List;
 
@@ -43,11 +43,6 @@ public class SuppliersDataReturn extends LoadData implements DataInterface<Purch
     @Override
     public TotalDesignInterface<Total_Buy_Re> totalDesignInterface() {
         return new TotalsPurchaseReturnImplDesign(this, totalBuyReturnService);
-    }
-
-    @Override
-    public Publisher<String> publisherPurchaseOrSales() {
-        return dataPublisher.getPublisherBuy();
     }
 
     @Override
@@ -135,5 +130,10 @@ public class SuppliersDataReturn extends LoadData implements DataInterface<Purch
                 printPurchaseWithNames.add(purchase);
             }
         }
+    }
+
+    @Override
+    public EventType getEventType() {
+        return EventType.PURCHASE_INVOICE;
     }
 }

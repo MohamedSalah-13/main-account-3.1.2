@@ -216,8 +216,7 @@ public class AddDepositController {
 
             @Override
             public Publisher<String> publisherTable() {
-                //TODO 9/29/2025 7:48 AM Mohamed: add publisher
-                return new Publisher<>();
+                return null;
             }
         };
     }

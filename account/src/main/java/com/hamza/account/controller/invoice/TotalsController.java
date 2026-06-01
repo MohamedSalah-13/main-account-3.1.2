@@ -5,6 +5,8 @@ import com.hamza.account.config.SaveDatabaseFile;
 import com.hamza.account.controller.main.DataPublisher;
 import com.hamza.account.controller.model.PrintPurchaseWithName;
 import com.hamza.account.controller.model.PrintTotalsData;
+import com.hamza.account.event.AppEvent;
+import com.hamza.account.event.EventAction;
 import com.hamza.account.interfaces.api.DataInterface;
 import com.hamza.account.interfaces.api.NameAndAccountInterface;
 import com.hamza.account.interfaces.api.TotalsDataInterface;
@@ -128,7 +130,15 @@ public class TotalsController<T1 extends BasePurchasesAndSales, T2 extends BaseT
         addDataToComboName();
 //        gridPane.add(pane, 4, 2);
         // publisher data
-        this.stringPublisher.addObserver(message -> btnRefresh.fire());
+//        this.stringPublisher.addObserver(message -> btnRefresh.fire());
+
+
+        dataPublisher.getEventBus().subscribe(event -> {
+            if (event.type() == dataInterface.getEventType()) {
+                btnRefresh.fire();
+            }
+        });
+
         dataPublisher.getPublisherAddEmployee().addObserver(message -> comboDelegateSetting(comboDelegate, getDelegateNames()));
         nameAndAccountInterface.addNamePublisher().addObserver(message -> addDataToComboName());
         addTimeSearch();
@@ -303,7 +313,15 @@ public class TotalsController<T1 extends BasePurchasesAndSales, T2 extends BaseT
                     maskerPaneSetting.getVoidTask().setOnSucceeded(workerStateEvent -> {
 //                        log.info("delete multi data success , {}", sb.toString());
                         btnRefresh.fire();
-                        dataInterface.publisherPurchaseOrSales().notifyObservers();
+//                        dataInterface.publisherPurchaseOrSales().notifyObservers();
+
+                        dataPublisher.getEventBus().publish(new AppEvent(
+                                dataInterface.getEventType(),
+                                EventAction.DELETED,
+                                0,
+                                null
+                        ));
+
                         AllAlerts.alertDelete();
                     });
                     maskerPaneSetting.getVoidTask().setOnFailed(workerStateEvent -> AllAlerts.alertError("لا يمكن الحذف"));

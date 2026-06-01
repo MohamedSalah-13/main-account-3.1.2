@@ -7,6 +7,9 @@ import com.hamza.account.controller.model.ModelPrintInvoice;
 import com.hamza.account.controller.others.ServiceRegistry;
 import com.hamza.account.controller.search.ItemsSearch;
 import com.hamza.account.controller.setting.SettingTabLanguageController;
+import com.hamza.account.event.AppEvent;
+import com.hamza.account.event.EventAction;
+import com.hamza.account.event.EventType;
 import com.hamza.account.features.key_setting.MoveRow;
 import com.hamza.account.features.key_setting.UpdateInterface;
 import com.hamza.account.features.key_setting.UpdateQuantity;
@@ -780,7 +783,18 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
         Thread thread = new Thread(() -> {
             try {
                 Thread.sleep(5000);
-                dataInterface.publisherPurchaseOrSales().notifyObservers();
+//                dataInterface.publisherPurchaseOrSales().notifyObservers();
+
+
+                Platform.runLater(() -> {
+                    dataPublisher.getEventBus().publish(new AppEvent(
+                            dataInterface.getEventType(),
+                            EventAction.SAVED,
+                            invNumber,
+                            null
+                    ));
+                });
+
                 if (getInvoiceBackupAfterSave())
                     SaveDatabaseFile.saveBeforeClose(false);
             } catch (Exception e) {

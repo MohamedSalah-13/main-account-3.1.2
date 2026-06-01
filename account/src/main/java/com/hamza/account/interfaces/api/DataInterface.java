@@ -1,6 +1,7 @@
 package com.hamza.account.interfaces.api;
 
 import com.hamza.account.controller.model.PrintPurchaseWithName;
+import com.hamza.account.event.EventType;
 import com.hamza.account.interfaces.FilterDateInterface;
 import com.hamza.account.interfaces.spinner.SpinnerInterface;
 import com.hamza.account.model.base.BaseAccount;
@@ -8,7 +9,6 @@ import com.hamza.account.model.base.BaseNames;
 import com.hamza.account.model.base.BasePurchasesAndSales;
 import com.hamza.account.model.base.BaseTotals;
 import com.hamza.controlsfx.database.DaoException;
-import com.hamza.controlsfx.observer.Publisher;
 
 import java.util.List;
 
@@ -28,7 +28,7 @@ public interface DataInterface<T1 extends BasePurchasesAndSales, T2 extends Base
 
     TotalDesignInterface<T2> totalDesignInterface();
 
-    Publisher<String> publisherPurchaseOrSales();
+//    Publisher<String> publisherPurchaseOrSales();
 
     List<T1> listForAllPurchase(int id) throws DaoException;
 
@@ -54,4 +54,6 @@ public interface DataInterface<T1 extends BasePurchasesAndSales, T2 extends Base
     void loadNameAndAccount();
 
     void addList(List<T2> items, List<PrintPurchaseWithName> printPurchaseWithNames) throws DaoException;
+
+    EventType getEventType();
 }

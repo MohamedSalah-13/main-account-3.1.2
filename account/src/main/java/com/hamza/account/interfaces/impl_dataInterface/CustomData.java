@@ -4,6 +4,7 @@ import com.hamza.account.controller.main.DataPublisher;
 import com.hamza.account.controller.main.LoadData;
 import com.hamza.account.controller.model.PrintPurchaseWithName;
 import com.hamza.account.controller.others.ServiceRegistry;
+import com.hamza.account.event.EventType;
 import com.hamza.account.interfaces.FilterDateInterface;
 import com.hamza.account.interfaces.api.*;
 import com.hamza.account.interfaces.impl_account.AccountCustomer;
@@ -49,11 +50,6 @@ public class CustomData extends LoadData implements DataInterface<Sales, Total_S
     @Override
     public TotalDesignInterface<Total_Sales> totalDesignInterface() {
         return new TotalSalesImpDesign(this, totalSalesService);
-    }
-
-    @Override
-    public Publisher<String> publisherPurchaseOrSales() {
-        return dataPublisher.getPublisherSales();
     }
 
     @Override
@@ -156,5 +152,10 @@ public class CustomData extends LoadData implements DataInterface<Sales, Total_S
                 printPurchaseWithNames.add(purchase);
             }
         }
+    }
+
+    @Override
+    public EventType getEventType() {
+        return EventType.SALES_INVOICE;
     }
 }
