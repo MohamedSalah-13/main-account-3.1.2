@@ -9,7 +9,10 @@ import com.hamza.account.controller.main.MainItems;
 import com.hamza.account.controller.reports.*;
 import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.openFxml.OpenFxmlApplication;
-import com.hamza.account.view.*;
+import com.hamza.account.view.OpenApplication;
+import com.hamza.account.view.ReportTotalYearlyApplication;
+import com.hamza.account.view.SceneAll;
+import com.hamza.account.view.StageManager;
 import com.hamza.controlsfx.interfaceData.AppSettingInterface;
 import com.hamza.controlsfx.language.Setting_Language;
 import javafx.fxml.FXMLLoader;
@@ -55,7 +58,7 @@ public class ReportsButtons extends LoadData {
 
             @Override
             public void action() throws Exception {
-                new TargetApplication(daoFactory, dataPublisher, textName()).start(new Stage());
+
             }
 
             @NotNull

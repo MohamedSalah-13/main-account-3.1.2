@@ -135,8 +135,6 @@ module com.hamza.account {
     opens com.hamza.account.controller.dataByName.impl to javafx.fxml;
     exports com.hamza.account.model.base;
     opens com.hamza.account.model.base to javafx.fxml;
-    exports com.hamza.account.controller.target;
-    opens com.hamza.account.controller.target to javafx.fxml;
     exports com.hamza.account;
     opens com.hamza.account to javafx.fxml;
     opens com.hamza.account.config;

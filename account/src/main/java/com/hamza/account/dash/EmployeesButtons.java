@@ -7,13 +7,11 @@ import com.hamza.account.controller.main.LoadData;
 import com.hamza.account.controller.others.AddEmployeeController;
 import com.hamza.account.controller.others.EmployeesController;
 import com.hamza.account.controller.others.ServiceRegistry;
-import com.hamza.account.controller.target.AddTargetController;
 import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.openFxml.AddForAllApplication;
 import com.hamza.account.otherSetting.KeyCodeCombinationSetting;
 import com.hamza.account.service.EmployeeService;
 import com.hamza.account.table.TableOpen;
-import com.hamza.account.view.OpenApplication;
 import com.hamza.controlsfx.button.ImageDesign;
 import com.hamza.controlsfx.language.Setting_Language;
 import javafx.scene.Node;
@@ -81,7 +79,7 @@ public class EmployeesButtons extends LoadData {
 
             @Override
             public void action() throws Exception {
-                new OpenApplication<>(new AddTargetController(dataPublisher.getAfterAddTarget(), textName()));
+
             }
 
             @NotNull

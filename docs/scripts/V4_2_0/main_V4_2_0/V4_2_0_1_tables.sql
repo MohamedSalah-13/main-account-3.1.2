@@ -817,26 +817,6 @@ CREATE INDEX sales_re_item_idx ON sales_re (item_id);
 -- 10) Targets
 -- =====================================================================
 
-CREATE TABLE IF NOT EXISTS targeted_sales
-(
-    id            INT AUTO_INCREMENT PRIMARY KEY,
-    delegate_id   INT                                     NOT NULL,
-    target        DECIMAL(14, 2)                          NOT NULL,
-    target_ratio1 DECIMAL(6, 2) DEFAULT 100               NOT NULL,
-    rate_1        DECIMAL(6, 2) DEFAULT 0                 NOT NULL,
-    target_ratio2 DECIMAL(6, 2) DEFAULT 0                 NOT NULL,
-    rate_2        DECIMAL(6, 2) DEFAULT 0                 NOT NULL,
-    target_ratio3 DECIMAL(6, 2) DEFAULT 0                 NOT NULL,
-    rate_3        DECIMAL(6, 2) DEFAULT 0                 NOT NULL,
-    notes         VARCHAR(200)                            NULL,
-    date_insert   DATETIME      DEFAULT CURRENT_TIMESTAMP NOT NULL,
-    updated_at    TIMESTAMP     DEFAULT CURRENT_TIMESTAMP NOT NULL ON UPDATE CURRENT_TIMESTAMP,
-    user_id       INT           DEFAULT 1                 NOT NULL,
-    CONSTRAINT targeted_sales_employees_id_fk
-        FOREIGN KEY (delegate_id) REFERENCES employees (id)
-            ON UPDATE CASCADE ON DELETE CASCADE,
-    CONSTRAINT targeted_sales_users_id_fk FOREIGN KEY (user_id) REFERENCES users (id)
-);
 
 -- =====================================================================
 -- 11) Users permissions / shifts
