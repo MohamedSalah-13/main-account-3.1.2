@@ -1,15 +1,11 @@
 package com.hamza.account.controller.main;
 
 import com.hamza.account.config.FxmlConstants;
-import com.hamza.account.controller.others.ServiceRegistry;
 import com.hamza.account.controller.reports.ModernDashboardApp;
 import com.hamza.account.controller.reports.MonthlySalesInterface;
-import com.hamza.account.features.notification.ItemNotifications;
 import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.model.dao.MonthlySalesViewDao;
-import com.hamza.account.model.domain.ItemsMiniQuantity;
 import com.hamza.account.security.PermissionHelper;
-import com.hamza.account.service.ItemMiniQuantityService;
 import com.hamza.account.type.PermissionCode;
 import com.hamza.account.view.LogApplication;
 import com.hamza.account.view.MonthlyView;
@@ -79,21 +75,16 @@ public class MainScreenController extends MainItems implements Initializable {
     @Override
     public void initialize(URL url, ResourceBundle resourceBundle) {
         menuButtonSetting = new MenuButtonSetting(tabPane);
-//        showImage();
         menuBarSetting();
         dontShowData();
         mainToolbarSetting();
         otherSetting();
-//        action();
-//        setBackgroundImage();
         addTabContextMenu();
 
         if (LogApplication.usersVo.getId() == 1) {
             if (getShowMainTotals()) firstBoxInMain();
         }
 
-        // check to show
-        notifyItems();
 
         // data publisher
         var name = LogApplication.usersVo.getUsername();
@@ -109,29 +100,6 @@ public class MainScreenController extends MainItems implements Initializable {
 
     }
 
-    private void notifyItems() {
-        Thread thread = new Thread(() -> {
-
-            if (getItemShowAlert()) {
-                var size = getItemsMiniQuantities().size();
-                if (size > 0) {
-                    new ItemNotifications(getItemsMiniQuantities());
-                }
-            }
-        });
-
-        thread.start();
-    }
-
-    private java.util.List<ItemsMiniQuantity> getItemsMiniQuantities() {
-        try {
-            ItemMiniQuantityService itemMiniQuantityService = ServiceRegistry.get(ItemMiniQuantityService.class);
-            return itemMiniQuantityService.itemsMiniQuantityList();
-        } catch (DaoException e) {
-            logException(e);
-            return new ArrayList<>();
-        }
-    }
 
     private void otherSetting() {
         try {
@@ -326,7 +294,6 @@ public class MainScreenController extends MainItems implements Initializable {
         menuButtonSetting.initializeMenuItem(menuController.getMenuItemAddItemFromExcel(), getItemsButtons().addItemsFromExcel());
         menuButtonSetting.initializeMenuItem(menuController.getMenuItemUnit(), getItemsButtons().units());
         menuButtonSetting.initializeMenuItem(menuController.getMenuItemInventory(), getItemsButtons().inventory());
-        menuButtonSetting.initializeMenuItem(menuController.getMenuItemMiniQuantity(), getItemsButtons().miniQuantityItems(getItemsMiniQuantities()));
         menuButtonSetting.initializeMenuItem(menuController.getMenuItemMainGroup(), getItemsButtons().addMainGroup());
         menuButtonSetting.initializeMenuItem(menuController.getMenuItemSupGroup(), getItemsButtons().addSubGroup());
         menuButtonSetting.initializeMenuItem(menuController.getMenuItemConvertStock(), getItemsButtons().convertStock());

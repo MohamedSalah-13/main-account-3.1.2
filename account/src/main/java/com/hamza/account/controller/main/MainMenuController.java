@@ -32,7 +32,7 @@ public class MainMenuController {
     @FXML
     private MenuItem menuItemPurchase, menuItemPurchaseReturn, menuItemTotalPurchase, menuItemTotalPurchaseReturn;
     @FXML
-    private MenuItem menuItemItems, menuItemAddItem, menuItemAddItemFromExcel, menuItemUnit, menuItemArea, menuItemInventory, menuItemMiniQuantity, menuItemMainGroup, menuItemSupGroup, menuItemConvertStock;
+    private MenuItem menuItemItems, menuItemAddItem, menuItemAddItemFromExcel, menuItemUnit, menuItemArea, menuItemInventory, menuItemMainGroup, menuItemSupGroup, menuItemConvertStock;
     @FXML
     private MenuItem menuItemAddCustomName, menuItemCustomName, menuItemCustomAccount;
     @FXML
@@ -131,7 +131,6 @@ public class MainMenuController {
         PermissionHelper.hideIfNotAllowed(menuItemUnit, PermissionCode.UNITS_SHOW);
         PermissionHelper.hideIfNotAllowed(menuItemArea, PermissionCode.SETTINGS_AREAS);
         PermissionHelper.hideIfNotAllowed(menuItemInventory, PermissionCode.STOCK_ADJUSTMENT);
-        PermissionHelper.hideIfNotAllowed(menuItemMiniQuantity, PermissionCode.REPORTS_INVENTORY_MIN_QUANTITY);
         PermissionHelper.hideIfNotAllowed(menuItemMainGroup, PermissionCode.MAIN_GROUP_SHOW);
         PermissionHelper.hideIfNotAllowed(menuItemSupGroup, PermissionCode.SUB_GROUP_SHOW);
         PermissionHelper.hideIfNotAllowed(menuItemConvertStock, PermissionCode.STOCK_TRANSFER);
