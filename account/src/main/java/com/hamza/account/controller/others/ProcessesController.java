@@ -54,7 +54,7 @@ public class ProcessesController implements Initializable {
     @FXML
     private Label labelAdmin, labelProcess, labelSearch, labelTable, labelFrom, labelTo, labelSortBy;
     @FXML
-    private Button btnSearch, btnDelete, btnClose;
+    private Button btnSearch, btnDelete;
     @FXML
     private StackPane stackPane;
     @FXML
@@ -85,7 +85,6 @@ public class ProcessesController implements Initializable {
         labelSortBy.setText("فرز بواسطة");
         btnSearch.setText(Setting_Language.WORD_SEARCH);
         btnDelete.setText(Setting_Language.WORD_DELETE);
-        btnClose.setText(Setting_Language.WORD_CLOSE);
         boxAdmin.setPromptText(Setting_Language.WORD_ADMIN);
         DateSetting.dateAction(dateFrom);
         DateSetting.dateAction(dateTo);
@@ -144,7 +143,6 @@ public class ProcessesController implements Initializable {
 
     private void buttonGraphics() {
         var image = new Image_Setting();
-        btnClose.setGraphic(ImageChoose.createIcon(image.cancel));
         btnDelete.setGraphic(ImageChoose.createIcon(image.delete));
         btnSearch.setGraphic(ImageChoose.createIcon(image.search));
     }
@@ -217,7 +215,6 @@ public class ProcessesController implements Initializable {
     private void action() {
         txtSearch.setOnKeyReleased(event -> searchTableFromExitedText(tableView, txtSearch.getText(), observableListTable));
         btnDelete.setOnAction(actionEvent -> deleteProcessesData());
-        btnClose.setOnAction(actionEvent -> btnClose.getScene().getWindow().hide());
         btnDelete.disableProperty().bind(tableView.getSelectionModel().selectedItemProperty().isNull());
         btnSearch.setOnAction(actionEvent -> searchAction());
     }

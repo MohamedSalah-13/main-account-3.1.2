@@ -6,11 +6,9 @@
 <?import javafx.scene.control.DatePicker?>
 <?import javafx.scene.control.Label?>
 <?import javafx.scene.control.RadioButton?>
-<?import javafx.scene.control.ScrollPane?>
 <?import javafx.scene.control.TableView?>
 <?import javafx.scene.control.TextField?>
 <?import javafx.scene.control.ToggleGroup?>
-<?import javafx.scene.control.ToolBar?>
 <?import javafx.scene.layout.BorderPane?>
 <?import javafx.scene.layout.ColumnConstraints?>
 <?import javafx.scene.layout.GridPane?>
@@ -22,74 +20,65 @@
 <StackPane fx:id="stackPane" styleClass="app-root" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1">
     <children>
       <BorderPane styleClass="app-container">
-         <top>
-                  <ToolBar prefHeight="40.0" prefWidth="200.0" BorderPane.alignment="CENTER">
-                      <items>
-                          <Button fx:id="btnDelete" layoutX="10.0" layoutY="10.0" mnemonicParsing="false" styleClass="app-danger-button" text="Delete" />
-                          <Button fx:id="btnClose" cancelButton="true" mnemonicParsing="false" styleClass="app-danger-button" text="Close" />
-                      </items>
-                  </ToolBar>
-         </top>
          <center>
-            <ScrollPane fitToHeight="true" fitToWidth="true" BorderPane.alignment="CENTER">
-               <content>
-                        <VBox spacing="2.0">
-                            <children>
-                                <VBox styleClass="app-card">
-                                    <children>
-                                        <GridPane hgap="10.0" minHeight="-Infinity" minWidth="-Infinity" vgap="15.0">
-                                            <columnConstraints>
-                                                <ColumnConstraints hgrow="SOMETIMES" maxWidth="-Infinity" minWidth="10.0" />
-                                                <ColumnConstraints hgrow="SOMETIMES" maxWidth="-Infinity" minWidth="10.0" prefWidth="300.0" />
-                                                <ColumnConstraints hgrow="SOMETIMES" maxWidth="-Infinity" minWidth="10.0" />
-                                                <ColumnConstraints hgrow="SOMETIMES" maxWidth="-Infinity" minWidth="10.0" prefWidth="300.0" />
-                                            </columnConstraints>
-                                            <rowConstraints>
-                                                <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
-                                                <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
-                                                <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
-                                                <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
-                                                <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
-                                            </rowConstraints>
-                                            <children>
-                                                <Label fx:id="labelAdmin" styleClass="form-label" text="Admin" />
-                                                <ComboBox fx:id="boxAdmin" maxWidth="1.7976931348623157E308" GridPane.columnIndex="1" />
-                                                <Label fx:id="labelProcess" styleClass="form-label" text="Process" GridPane.columnIndex="2" />
-                                                <ComboBox fx:id="boxProcess" maxWidth="1.7976931348623157E308" GridPane.columnIndex="3" />
-                                                <ComboBox fx:id="boxTable" maxWidth="1.7976931348623157E308" GridPane.columnIndex="1" GridPane.rowIndex="1" />
-                                                <Label fx:id="labelTable" styleClass="form-label" text="Table" GridPane.rowIndex="1" />
-                                                <Label fx:id="labelSearch" styleClass="form-label" text="Search" GridPane.rowIndex="4" />
-                                                <TextField fx:id="txtSearch" minWidth="-Infinity" prefWidth="300.0" GridPane.columnIndex="1" GridPane.rowIndex="4" />
-                                                <Label fx:id="labelFrom" styleClass="form-label" text="From" GridPane.rowIndex="2" />
-                                                <Label fx:id="labelTo" styleClass="form-label" text="To" GridPane.columnIndex="2" GridPane.rowIndex="2" />
-                                                <Label fx:id="labelSortBy" styleClass="form-label" text="Sorted By" GridPane.rowIndex="3" />
-                                                <ComboBox fx:id="comboSortedBy" disable="true" maxWidth="1.7976931348623157E308" GridPane.columnIndex="1" GridPane.rowIndex="3" />
-                                                <HBox alignment="CENTER_LEFT" minWidth="-Infinity" spacing="20.0" GridPane.columnIndex="3" GridPane.rowIndex="3">
-                                                    <children>
-                                                        <RadioButton fx:id="sortAscending" disable="true" mnemonicParsing="false" selected="true" text="تصاعديا">
-                                                            <toggleGroup>
-                                                                <ToggleGroup fx:id="group" />
-                                                            </toggleGroup>
-                                                        </RadioButton>
-                                                        <RadioButton fx:id="sortDescending" disable="true" mnemonicParsing="false" text="تنازلبا" toggleGroup="$group" />
-                                                        <Button fx:id="btnSearch" mnemonicParsing="false" styleClass="app-primary-button" text="Search" />
-                                                    </children>
-                                                </HBox>
-                                                <DatePicker fx:id="dateFrom" maxWidth="1.7976931348623157E308" GridPane.columnIndex="1" GridPane.rowIndex="2" />
-                                                <DatePicker fx:id="dateTo" maxWidth="1.7976931348623157E308" GridPane.columnIndex="3" GridPane.rowIndex="2" />
-                                            </children>
-                                        </GridPane>
-                                    </children>
-                                </VBox>
-                                <TableView fx:id="tableView" minHeight="-Infinity" minWidth="-Infinity" prefHeight="250.0" VBox.vgrow="SOMETIMES" />
-                            </children>
-                            <padding>
-                                <Insets bottom="5.0" left="5.0" right="5.0" />
-                            </padding>
-                        </VBox>
-               </content>
-            </ScrollPane>
+                  <VBox spacing="2.0">
+                      <children>
+                          <TableView fx:id="tableView" minHeight="-Infinity" minWidth="-Infinity" prefHeight="250.0" VBox.vgrow="SOMETIMES" />
+                      </children>
+                      <padding>
+                          <Insets bottom="5.0" left="5.0" right="5.0" />
+                      </padding>
+                  </VBox>
          </center>
+         <top>
+                    <VBox styleClass="app-card" BorderPane.alignment="CENTER">
+                        <children>
+                            <GridPane hgap="10.0" minHeight="-Infinity" minWidth="-Infinity" vgap="15.0">
+                                <columnConstraints>
+                                    <ColumnConstraints hgrow="SOMETIMES" maxWidth="-Infinity" minWidth="10.0" />
+                                    <ColumnConstraints hgrow="SOMETIMES" maxWidth="-Infinity" minWidth="10.0" prefWidth="300.0" />
+                                    <ColumnConstraints hgrow="SOMETIMES" maxWidth="-Infinity" minWidth="10.0" />
+                                    <ColumnConstraints hgrow="SOMETIMES" maxWidth="-Infinity" minWidth="10.0" prefWidth="300.0" />
+                                </columnConstraints>
+                                <rowConstraints>
+                                    <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
+                                    <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
+                                    <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
+                                    <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
+                                    <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
+                                </rowConstraints>
+                                <children>
+                                    <Label fx:id="labelAdmin" styleClass="form-label" text="Admin" />
+                                    <ComboBox fx:id="boxAdmin" maxWidth="1.7976931348623157E308" GridPane.columnIndex="1" />
+                                    <Label fx:id="labelProcess" styleClass="form-label" text="Process" GridPane.columnIndex="2" />
+                                    <ComboBox fx:id="boxProcess" maxWidth="1.7976931348623157E308" GridPane.columnIndex="3" />
+                                    <ComboBox fx:id="boxTable" maxWidth="1.7976931348623157E308" GridPane.columnIndex="1" GridPane.rowIndex="1" />
+                                    <Label fx:id="labelTable" styleClass="form-label" text="Table" GridPane.rowIndex="1" />
+                                    <Label fx:id="labelSearch" styleClass="form-label" text="Search" GridPane.rowIndex="4" />
+                                    <TextField fx:id="txtSearch" minWidth="-Infinity" prefWidth="300.0" GridPane.columnIndex="1" GridPane.rowIndex="4" />
+                                    <Label fx:id="labelFrom" styleClass="form-label" text="From" GridPane.rowIndex="2" />
+                                    <Label fx:id="labelTo" styleClass="form-label" text="To" GridPane.columnIndex="2" GridPane.rowIndex="2" />
+                                    <Label fx:id="labelSortBy" styleClass="form-label" text="Sorted By" GridPane.rowIndex="3" />
+                                    <ComboBox fx:id="comboSortedBy" disable="true" maxWidth="1.7976931348623157E308" GridPane.columnIndex="1" GridPane.rowIndex="3" />
+                                    <HBox alignment="CENTER_LEFT" minWidth="-Infinity" spacing="5.0" GridPane.columnIndex="3" GridPane.rowIndex="3">
+                                        <children>
+                                            <RadioButton fx:id="sortAscending" disable="true" mnemonicParsing="false" selected="true" text="تصاعديا">
+                                                <toggleGroup>
+                                                    <ToggleGroup fx:id="group" />
+                                                </toggleGroup>
+                                            </RadioButton>
+                                            <RadioButton fx:id="sortDescending" disable="true" mnemonicParsing="false" text="تنازلبا" toggleGroup="$group" />
+                                            <Button fx:id="btnSearch" mnemonicParsing="false" styleClass="app-primary-button" text="Search" />
+                                      <Button fx:id="btnDelete" mnemonicParsing="false" styleClass="app-danger-button" text="Delete" />
+                                        </children>
+                                    </HBox>
+                                    <DatePicker fx:id="dateFrom" maxWidth="1.7976931348623157E308" GridPane.columnIndex="1" GridPane.rowIndex="2" />
+                                    <DatePicker fx:id="dateTo" maxWidth="1.7976931348623157E308" GridPane.columnIndex="3" GridPane.rowIndex="2" />
+                                </children>
+                            </GridPane>
+                        </children>
+                    </VBox>
+         </top>
       </BorderPane>
     </children>
 </StackPane>

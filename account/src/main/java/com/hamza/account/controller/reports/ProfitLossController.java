@@ -51,8 +51,6 @@ public class ProfitLossController {
     private StackPane stackPane;
     @FXML
     private Text searchByDate;
-    @FXML
-    private ToolbarReportsNameController toolbarReportsNameController;
     private MaskerPaneSetting maskerPaneSetting;
 
     @FXML
@@ -200,23 +198,6 @@ public class ProfitLossController {
         labelPaymentFees.setText("مدفوع ح/ الموردين");
         labelTotalCost.setText(Setting_Language.TOTAL_COST);
 
-
-        toolbarReportsNameController.setReportToolbar(new ToolbarReportsNameInterface() {
-            @Override
-            public String setTitle() {
-                return Setting_Language.WORD_PROFIT_LOSS;
-            }
-
-            @Override
-            public void print() throws Exception {
-
-            }
-
-            @Override
-            public void refresh() throws Exception {
-                searchTable();
-            }
-        });
     }
 
     private void action() {
