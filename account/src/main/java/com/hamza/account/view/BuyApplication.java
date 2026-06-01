@@ -42,12 +42,17 @@ public class BuyApplication<T1 extends BasePurchasesAndSales, T2 extends BaseTot
 
         // --- الجزء الجديد: التحقق من رقم الفاتورة ---
         if (numInvoiceUpdate != 0) { // نفترض أن 0 تعني فاتورة جديدة وليس تعديل
-            if (openInvoices.containsKey(numInvoiceUpdate)) {
-                Stage existingStage = openInvoices.get(numInvoiceUpdate);
-                existingStage.toFront();    // إحضارها للمقدمة
+            Stage existingStage = openInvoices.get(numInvoiceUpdate);
+
+            if (existingStage != null && existingStage.isShowing()) {
+                existingStage.toFront();      // إحضارها للمقدمة
                 existingStage.requestFocus(); // التركيز عليها
-                return; // الخروج وعدم إظهار نافذة جديدة
+                return;                       // الخروج وعدم إظهار نافذة جديدة
             }
+
+            // إذا كانت موجودة لكنها مغلقة/مخفية، نحذفها
+            openInvoices.remove(numInvoiceUpdate);
+
             // إذا لم تكن مفتوحة، نضيفها للقائمة
             openInvoices.put(numInvoiceUpdate, stage);
         }
@@ -58,8 +63,8 @@ public class BuyApplication<T1 extends BasePurchasesAndSales, T2 extends BaseTot
         stage.setResizable(true);
         stage.getIcons().add(new javafx.scene.image.Image(new Image_Setting().tools));
 
-        // --- الجزء الجديد: مسح رقم الفاتورة من القائمة عند إغلاق النافذة ---
-        stage.setOnCloseRequest(event -> {
+        // حذف رقم الفاتورة عند اختفاء النافذة بأي طريقة
+        stage.setOnHidden(event -> {
             if (numInvoiceUpdate != 0) {
                 openInvoices.remove(numInvoiceUpdate);
             }
