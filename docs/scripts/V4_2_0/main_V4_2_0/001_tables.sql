@@ -342,6 +342,10 @@ CREATE INDEX idx_stock_movements_reference
 CREATE INDEX idx_stock_movements_stock_date
     ON stock_movements (stock_id, movement_date);
 
+-- إضافة index لتحسين الأداء عند البحث عن حركات Opening
+CREATE INDEX idx_stock_movements_type_item
+    ON stock_movements(movement_type, item_id, stock_id);
+
 CREATE TABLE IF NOT EXISTS stock_transfer
 (
     id                   INT AUTO_INCREMENT PRIMARY KEY,

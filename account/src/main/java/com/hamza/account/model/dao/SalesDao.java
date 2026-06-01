@@ -146,6 +146,9 @@ public class SalesDao extends AbstractDao<Sales> {
 
     @Override
     public int insertList(List<Sales> list) throws DaoException {
+        // Validate stock availability before attempting insert
+        validateStockAvailability(list);
+
         try {
             String query = SqlStatements.insertStatement(TABLE_NAME, INVOICE_NUMBER
                     , NUM, TYPE, QUANTITY, PRICE, buyPrice, "total_sel_price", "total_buy_price", "total_profit"
@@ -156,6 +159,71 @@ public class SalesDao extends AbstractDao<Sales> {
                 throw new DaoException("Not enough stock quantity for one or more sold items.", e);
             }
             throw new DaoException(e);
+        }
+    }
+
+    /**
+     * Validates that there is sufficient stock for all items in the sales list.
+     * Groups quantities by item ID and stock to check total required quantity.
+     *
+     * @param salesList the list of sales to validate
+     * @throws DaoException if any item has insufficient stock
+     */
+    private void validateStockAvailability(List<Sales> salesList) throws DaoException {
+        // Group sales by item ID and sum quantities (converted to base unit)
+        java.util.Map<Integer, Double> requiredQuantities = new java.util.HashMap<>();
+
+        for (Sales sale : salesList) {
+            int itemId = sale.getItems().getId();
+            double quantityInBaseUnit = sale.getQuantity() * sale.getUnitsType().getValue();
+            requiredQuantities.merge(itemId, quantityInBaseUnit, Double::sum);
+        }
+
+        // Check each item's stock availability
+        StringBuilder insufficientItems = new StringBuilder();
+        for (java.util.Map.Entry<Integer, Double> entry : requiredQuantities.entrySet()) {
+            int itemId = entry.getKey();
+            double requiredQty = entry.getValue();
+
+            try {
+                // Query current stock quantity (assuming stock_id = 1 or get from sale)
+                String stockQuery = "SELECT current_quantity FROM items_stock WHERE item_id = ? AND stock_id = ?";
+                double currentQty = queryForDouble(stockQuery, itemId, 1);
+
+                if (currentQty < requiredQty) {
+                    if (insufficientItems.length() > 0) {
+                        insufficientItems.append(", ");
+                    }
+                    insufficientItems.append(String.format("Item ID %d (available: %.2f, required: %.2f)",
+                            itemId, currentQty, requiredQty));
+                }
+            } catch (Exception e) {
+                log.warn("Could not verify stock for item {}: {}", itemId, e.getMessage());
+            }
+        }
+
+        if (insufficientItems.length() > 0) {
+            throw new DaoException("Insufficient stock for: " + insufficientItems);
+        }
+    }
+
+    /**
+     * Executes a query and returns a double value from the first column.
+     */
+    private double queryForDouble(String query, Object... parameters) {
+        try {
+            java.sql.PreparedStatement statement = connection.prepareStatement(query);
+            for (int i = 0; i < parameters.length; i++) {
+                statement.setObject(i + 1, parameters[i]);
+            }
+            java.sql.ResultSet rs = statement.executeQuery();
+            if (rs.next()) {
+                return rs.getDouble(1);
+            }
+            return 0.0;
+        } catch (java.sql.SQLException e) {
+            log.error("Error executing query: {}", e.getMessage());
+            return 0.0;
         }
     }
 

@@ -171,6 +171,9 @@ public abstract class AbstractDao<T> implements DaoList<T> {
         }
         if (e.getMessage().contains("Data truncation: Value too long for column")) {
             return new DaoException("Value too long for column");
+        }
+        if (e.getMessage().contains("items_stock_current_quantity_chk")) {
+            return new DaoException("Not enough stock quantity for one or more items.");
         } else
             return new DaoException(e);
     }

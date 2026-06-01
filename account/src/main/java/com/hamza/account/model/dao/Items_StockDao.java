@@ -1,5 +1,6 @@
 package com.hamza.account.model.dao;
 
+import com.hamza.account.model.domain.ItemsModel;
 import com.hamza.account.model.domain.Items_Stock_Model;
 import com.hamza.account.model.domain.Stock;
 import com.hamza.controlsfx.database.AbstractDao;
@@ -27,7 +28,6 @@ public class Items_StockDao extends AbstractDao<Items_Stock_Model> {
         this.daoFactory = daoFactory;
     }
 
-
     @Override
     public int insert(Items_Stock_Model model) throws DaoException {
         String sql = SqlStatements.insertStatement(
@@ -51,14 +51,15 @@ public class Items_StockDao extends AbstractDao<Items_Stock_Model> {
         };
     }
 
-
     @Override
     public Items_Stock_Model map(ResultSet rs) throws DaoException {
         Items_Stock_Model stockModel = new Items_Stock_Model();
         try {
             int stockId = rs.getInt(STOCK_ID);
             stockModel.setId(rs.getInt(ID));
-            stockModel.setItemsModel(daoFactory.getItemsDao().findItemByIdAndStockId(rs.getInt(ITEMS_ID), stockId));
+//            stockModel.setItemsModel(daoFactory.getItemsDao().findItemByIdAndStockId(rs.getInt(ITEMS_ID), stockId));
+            // تجنب استدعاء findItemByIdAndStockId لمنع الدورة اللانهائية والأداء السيء
+            stockModel.setItemsModel(new ItemsModel(rs.getInt(ITEMS_ID)));
             stockModel.setStock(new Stock(stockId, rs.getString(StockDao.STOCK_NAME)));
             stockModel.setFirstBalance(rs.getDouble(FIRST_BALANCE));
             stockModel.setCurrentQuantity(rs.getDouble(currentQuantity));
@@ -107,12 +108,13 @@ public class Items_StockDao extends AbstractDao<Items_Stock_Model> {
         Items_Stock_Model oldModel = getByItemIdAndStockId(itemId, stockId);
 
         if (oldModel == null) {
-            insert(new Items_Stock_Model(
-                    itemId,
-                    stockId,
-                    newFirstBalance,
-                    newFirstBalance
-            ));
+            // إدراج السجل أولاً بدون current_quantity
+            // سيتم تحديث current_quantity من خلال الـ Trigger
+            String insertSql = """
+                    INSERT INTO items_stock (item_id, stock_id, first_balance, current_quantity)
+                    VALUES (?, ?, ?, 0)
+                    """;
+            executeUpdate(insertSql, itemId, stockId, newFirstBalance);
 
             if (newFirstBalance > 0) {
                 insertOpeningAdjustmentMovement(
@@ -141,15 +143,15 @@ public class Items_StockDao extends AbstractDao<Items_Stock_Model> {
             throw new DaoException("لا يمكن تعديل رصيد أول المدة لأن الرصيد الحالي سيصبح أقل من صفر");
         }
 
+        // تحديث first_balance فقط - الـ Trigger سيتولى current_quantity
         String updateSql = """
                 UPDATE items_stock
-                SET first_balance = ?,
-                    current_quantity = current_quantity + ?
+                SET first_balance = ?
                 WHERE item_id = ?
                   AND stock_id = ?
                 """;
 
-        int result = executeUpdate(updateSql, newFirstBalance, difference, itemId, stockId);
+        int result = executeUpdate(updateSql, newFirstBalance, itemId, stockId);
 
         if (difference > 0) {
             insertOpeningAdjustmentMovement(
@@ -287,11 +289,6 @@ public class Items_StockDao extends AbstractDao<Items_Stock_Model> {
                 """;
 
         return queryForObjects(sql, this::map, itemId);
-    }
-
-    public int deleteByItemId(int itemId) throws DaoException {
-        String sql = "DELETE FROM items_stock WHERE item_id = ?";
-        return executeUpdate(sql, itemId);
     }
 
     public int deleteZeroOpeningBalancesByItemId(int itemId) throws DaoException {
