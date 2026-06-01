@@ -51,7 +51,7 @@ public class UnitsController implements Initializable, AppSettingInterface {
     @FXML
     private TableView<UnitsModel> tableView;
     @FXML
-    private Button btnSave, btnRefresh, btnClear, btnClose;
+    private Button btnSave, btnRefresh, btnClear;
     @FXML
     private Label labelName, labelCode, labelQuantity;
     @FXML
@@ -76,7 +76,6 @@ public class UnitsController implements Initializable, AppSettingInterface {
         var images = new Image_Setting();
         btnSave.setGraphic(createIcon(images.save));
         btnClear.setGraphic(createIcon(images.erase));
-        btnClose.setGraphic(createIcon(images.cancel));
         btnRefresh.setGraphic(createIcon(images.refresh));
     }
 
@@ -93,7 +92,6 @@ public class UnitsController implements Initializable, AppSettingInterface {
         labelCode.setText(Setting_Language.WORD_CODE);
         labelQuantity.setText(Setting_Language.WORD_QUANTITY);
         btnSave.setText(Setting_Language.WORD_SAVE);
-        btnClose.setText(Setting_Language.WORD_CLOSE);
         btnRefresh.setText(Setting_Language.WORD_REFRESH);
         btnClear.setText(CLEAR);
         textCode.setText(generate);
@@ -103,7 +101,6 @@ public class UnitsController implements Initializable, AppSettingInterface {
         btnSave.disableProperty().bind(textCount.textProperty().lessThanOrEqualTo("0.0"));
         btnSave.setOnAction(actionEvent -> insertData());
         btnClear.setOnAction(actionEvent -> resetData());
-        btnClose.setOnAction(actionEvent -> btnClose.getScene().getWindow().hide());
         btnRefresh.setOnAction(actionEvent -> refreshTable());
         tableView.setOnKeyPressed(keyEvent -> {
             if (keyEvent.getCode() == KeyCode.DELETE) {

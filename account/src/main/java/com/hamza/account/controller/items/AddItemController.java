@@ -104,8 +104,6 @@ public class AddItemController implements AppSettingInterface {
     @FXML
     private Button btnAddImage, btnClearImage;
 
-    private TableUnitsSetting tableUnitsSetting;
-
     public AddItemController(int codeItem, DataPublisher dataPublisher) {
         this.codeItem = codeItem;
         this.dataPublisher = dataPublisher;
@@ -278,30 +276,6 @@ public class AddItemController implements AppSettingInterface {
         comboType.setItems(filteredItems);
         comboType.getSelectionModel().selectFirst();
 
-        comboType.valueProperty().addListener((observableValue, oldValue, newValue) -> {
-            try {
-                var itemsUnitsModelList = tableUnitsSetting.getItemsUnitsModelList();
-
-                if (!itemsUnitsModelList.isEmpty()) {
-                    var unitName = itemsUnitsModelList.stream()
-                            .skip(1)
-                            .anyMatch(item -> item.getUnitsModel().getUnit_name().equals(newValue));
-
-                    if (unitName) {
-                        comboType.getSelectionModel().select(oldValue);
-                        throw new Exception("لا يمكن إختيار نفس الوحده مرتين");
-                    }
-
-                    var unitsModelByName = getUnitsModelByName(newValue);
-
-                    if (unitsModelByName != null) {
-                        itemsUnitsModelList.getFirst().unitsModelProperty().set(unitsModelByName);
-                    }
-                }
-            } catch (Exception e) {
-                logError(e);
-            }
-        });
     }
 
     private List<String> getUnitsModelNames() {
@@ -370,17 +344,12 @@ public class AddItemController implements AppSettingInterface {
         btnBarcode.setOnAction(actionEvent -> addBarcode());
 
         txtBarcode.textProperty().addListener((observable, oldValue, newValue) -> {
-            var itemsUnitsModelList = tableUnitsSetting.getItemsUnitsModelList();
 
-            if (itemsUnitsModelList.isEmpty()) {
-                var e = new ItemsUnitsModel();
-                e.setItemsBarcode(newValue);
-                e.setUnitsModel(getUnitsModelByName(comboType.getSelectionModel().getSelectedItem()));
-                e.setQuantityForUnit(1);
-                itemsUnitsModelList.add(e);
-            } else {
-                itemsUnitsModelList.getFirst().setItemsBarcode(newValue);
-            }
+            var e = new ItemsUnitsModel();
+            e.setItemsBarcode(newValue);
+            e.setUnitsModel(getUnitsModelByName(comboType.getSelectionModel().getSelectedItem()));
+            e.setQuantityForUnit(1);
+
         });
 
 
@@ -456,8 +425,6 @@ public class AddItemController implements AppSettingInterface {
             checkItemValidate.setSelected(itemsModel.isHasValidate());
             textDaysValidate.setText(String.valueOf(itemsModel.getNumberValidityDays()));
             textAlertBefore.setText(String.valueOf(itemsModel.getAlertDaysBeforeExpiry()));
-
-            tableUnitsSetting.selectTable(itemsModel);
 
             var itemImage = itemsModel.getItem_image();
 
@@ -537,11 +504,6 @@ public class AddItemController implements AppSettingInterface {
             throw new Exception("يجب اختيار المجموعة");
         }
 
-        var itemsUnitsModelList = tableUnitsSetting.getItemsUnitsModelList();
-
-        if (itemsUnitsModelList.isEmpty()) {
-            throw new Exception("يجب إدخال وحدات الصنف");
-        }
 
         var itemsModel = new ItemsModel();
         itemsModel.setId(codeItem);
@@ -566,12 +528,7 @@ public class AddItemController implements AppSettingInterface {
         }
 
         itemsModel.setUnitsType(getUnitsModelByName(comboType.getSelectionModel().getSelectedItem()));
-
-        if (itemsUnitsModelList.size() > 1) {
-            itemsModel.setItemsUnitsModelList(itemsUnitsModelList.stream().skip(1).toList());
-        } else {
-            itemsModel.setItemsUnitsModelList(new ArrayList<>());
-        }
+        itemsModel.setItemsUnitsModelList(new ArrayList<>());
 
         return itemsModel;
     }
