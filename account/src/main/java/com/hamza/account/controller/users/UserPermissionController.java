@@ -7,7 +7,7 @@ import com.hamza.account.openFxml.FxmlPath;
 import com.hamza.account.service.permission.UserPermissionManagementService;
 import com.hamza.account.service.permission.impl.UserPermissionManagementServiceImpl;
 import com.hamza.account.type.PermissionCode;
-import com.hamza.controlsfx.database.DaoException;
+import com.hamza.account.database.DaoException;
 import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;

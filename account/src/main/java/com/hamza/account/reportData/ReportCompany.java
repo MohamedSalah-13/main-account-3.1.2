@@ -3,7 +3,6 @@ package com.hamza.account.reportData;
 import com.hamza.account.config.Image_Setting;
 import com.hamza.account.model.domain.Company;
 import com.hamza.account.view.DownLoadApplication;
-import com.hamza.controlsfx.jasperData.JasperData;
 import com.hamza.controlsfx.language.LanguageManager;
 import com.hamza.controlsfx.language.Setting_Language;
 import com.hamza.controlsfx.others.CssToColorHelper;

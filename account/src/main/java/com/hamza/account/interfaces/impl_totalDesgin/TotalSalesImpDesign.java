@@ -11,7 +11,7 @@ import com.hamza.account.model.domain.Total_Sales;
 import com.hamza.account.service.TotalSalesService;
 import com.hamza.account.type.InvoiceType;
 import com.hamza.account.view.LogApplication;
-import com.hamza.controlsfx.database.DaoException;
+import com.hamza.account.database.DaoException;
 import com.hamza.controlsfx.excel.WriteExcelInterface;
 import com.hamza.controlsfx.language.Setting_Language;
 import javafx.beans.property.SimpleDoubleProperty;

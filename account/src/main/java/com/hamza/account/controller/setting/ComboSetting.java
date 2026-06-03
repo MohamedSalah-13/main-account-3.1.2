@@ -2,7 +2,7 @@ package com.hamza.account.controller.setting;
 
 import com.hamza.account.service.SupGroupService;
 import com.hamza.account.service.UnitsService;
-import com.hamza.controlsfx.database.DaoException;
+import com.hamza.account.database.DaoException;
 import javafx.scene.control.ComboBox;
 import lombok.extern.log4j.Log4j2;
 

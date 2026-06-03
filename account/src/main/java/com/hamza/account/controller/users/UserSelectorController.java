@@ -2,7 +2,7 @@ package com.hamza.account.controller.users;
 
 import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.model.domain.Users;
-import com.hamza.controlsfx.database.DaoException;
+import com.hamza.account.database.DaoException;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;

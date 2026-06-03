@@ -1,7 +1,7 @@
 package com.hamza.account.model.dao;
 
-import com.hamza.controlsfx.database.AbstractDao;
-import com.hamza.controlsfx.database.DaoException;
+import com.hamza.account.database.AbstractDao;
+import com.hamza.account.database.DaoException;
 import lombok.extern.log4j.Log4j2;
 
 import java.sql.CallableStatement;

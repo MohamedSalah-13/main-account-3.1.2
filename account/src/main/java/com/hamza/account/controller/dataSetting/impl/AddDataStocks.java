@@ -5,7 +5,7 @@ import com.hamza.account.controller.others.AddStockController;
 import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.openFxml.AddForAllApplication;
 import com.hamza.account.service.StockService;
-import com.hamza.controlsfx.database.DaoException;
+import com.hamza.account.database.DaoException;
 import com.hamza.controlsfx.observer.Publisher;
 import lombok.Setter;
 

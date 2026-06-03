@@ -6,7 +6,7 @@ import com.hamza.account.model.domain.permission.RolePermission;
 import com.hamza.account.service.permission.RolePermissionService;
 import com.hamza.account.service.permission.impl.RolePermissionServiceImpl;
 import com.hamza.account.type.PermissionCode;
-import com.hamza.controlsfx.database.DaoException;
+import com.hamza.account.database.DaoException;
 import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;

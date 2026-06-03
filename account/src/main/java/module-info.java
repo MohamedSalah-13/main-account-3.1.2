@@ -31,13 +31,11 @@ module com.hamza.account {
     requires com.ibm.icu;
     requires eu.hansolo.tilesfx;
     requires org.aspectj.weaver;
-//    requires spring.context;
-//    requires spring.beans;
-//    requires licensing.base;
-//    requires typography;
+    requires com.zaxxer.hikari;
 
     exports com.hamza.account.event;
     exports com.hamza.account.backup;
+    exports com.hamza.account.database;
     opens com.hamza.account.backup to javafx.fxml;
     exports com.hamza.account.controller.login;
     opens com.hamza.account.controller.login to javafx.fxml;

@@ -3,9 +3,9 @@ package com.hamza.account.model.dao;
 import com.hamza.account.model.domain.Area;
 import com.hamza.account.model.domain.Customers;
 import com.hamza.account.trial.TrialManager;
-import com.hamza.controlsfx.database.AbstractDao;
-import com.hamza.controlsfx.database.DaoException;
-import com.hamza.controlsfx.database.SqlStatements;
+import com.hamza.account.database.AbstractDao;
+import com.hamza.account.database.DaoException;
+import com.hamza.account.database.SqlStatements;
 
 import java.sql.Connection;
 import java.sql.ResultSet;

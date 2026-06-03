@@ -4,7 +4,7 @@ import com.hamza.account.interfaces.impl_account.AccountCustomer;
 import com.hamza.account.model.dao.CustomerAccountDao;
 import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.model.domain.CustomerAccount;
-import com.hamza.controlsfx.database.DaoException;
+import com.hamza.account.database.DaoException;
 import lombok.extern.log4j.Log4j2;
 
 import java.util.ArrayList;

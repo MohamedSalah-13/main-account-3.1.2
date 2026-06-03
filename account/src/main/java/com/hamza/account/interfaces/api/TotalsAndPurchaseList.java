@@ -2,7 +2,7 @@ package com.hamza.account.interfaces.api;
 
 import com.hamza.account.model.base.BasePurchasesAndSales;
 import com.hamza.account.model.base.BaseTotals;
-import com.hamza.controlsfx.database.DaoList;
+import com.hamza.account.database.DaoList;
 
 import java.util.List;
 

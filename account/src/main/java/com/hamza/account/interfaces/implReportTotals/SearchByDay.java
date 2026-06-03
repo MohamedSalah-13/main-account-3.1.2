@@ -9,7 +9,7 @@ import com.hamza.account.model.base.BaseNames;
 import com.hamza.account.model.base.BasePurchasesAndSales;
 import com.hamza.account.model.base.BaseTotals;
 import com.hamza.controlsfx.alert.AllAlerts;
-import com.hamza.controlsfx.database.DaoException;
+import com.hamza.account.database.DaoException;
 import com.hamza.controlsfx.dateTime.DateUtils;
 import javafx.collections.ObservableList;
 import lombok.extern.log4j.Log4j2;

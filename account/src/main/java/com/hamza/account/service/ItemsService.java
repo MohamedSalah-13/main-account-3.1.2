@@ -2,7 +2,7 @@ package com.hamza.account.service;
 
 import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.model.domain.ItemsModel;
-import com.hamza.controlsfx.database.DaoException;
+import com.hamza.account.database.DaoException;
 
 import java.util.List;
 

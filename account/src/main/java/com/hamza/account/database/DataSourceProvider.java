@@ -1,4 +1,4 @@
-package com.hamza.controlsfx.database;
+package com.hamza.account.database;
 
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;

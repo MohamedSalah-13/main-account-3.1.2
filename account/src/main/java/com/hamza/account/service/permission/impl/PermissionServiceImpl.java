@@ -4,7 +4,7 @@ import com.hamza.account.model.dao.permission.PermissionDao;
 import com.hamza.account.model.domain.permission.Permission;
 import com.hamza.account.service.permission.PermissionService;
 import com.hamza.account.type.PermissionCode;
-import com.hamza.controlsfx.database.DaoException;
+import com.hamza.account.database.DaoException;
 import lombok.RequiredArgsConstructor;
 
 import java.util.List;

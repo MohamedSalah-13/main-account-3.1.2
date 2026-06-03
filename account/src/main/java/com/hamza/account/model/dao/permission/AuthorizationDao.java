@@ -1,6 +1,6 @@
 package com.hamza.account.model.dao.permission;
 
-import com.hamza.controlsfx.database.DaoException;
+import com.hamza.account.database.DaoException;
 
 import java.util.Set;
 

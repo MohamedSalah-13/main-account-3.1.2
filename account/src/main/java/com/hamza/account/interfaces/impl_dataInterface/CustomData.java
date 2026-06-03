@@ -19,8 +19,8 @@ import com.hamza.account.model.domain.Sales;
 import com.hamza.account.model.domain.Total_Sales;
 import com.hamza.account.service.SalesService;
 import com.hamza.account.service.TotalSalesService;
-import com.hamza.controlsfx.database.DaoException;
-import com.hamza.controlsfx.database.DaoList;
+import com.hamza.account.database.DaoException;
+import com.hamza.account.database.DaoList;
 
 import java.util.List;
 
@@ -94,7 +94,7 @@ public class CustomData extends LoadData implements DataInterface<Sales, Total_S
     public AccountData<CustomerAccount> accountData() {
         return new AccountCustomer(daoFactory);
     }
-    
+
     @Override
     public void addList(List<Total_Sales> items, List<PrintPurchaseWithName> printPurchaseWithNames) throws DaoException {
         for (Total_Sales totalSales : items) {

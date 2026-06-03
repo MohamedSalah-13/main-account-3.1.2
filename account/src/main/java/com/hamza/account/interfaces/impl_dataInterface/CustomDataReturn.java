@@ -19,8 +19,8 @@ import com.hamza.account.model.domain.Sales_Return;
 import com.hamza.account.model.domain.Total_Sales_Re;
 import com.hamza.account.service.SalesReService;
 import com.hamza.account.service.TotalSalesReturnService;
-import com.hamza.controlsfx.database.DaoException;
-import com.hamza.controlsfx.database.DaoList;
+import com.hamza.account.database.DaoException;
+import com.hamza.account.database.DaoList;
 
 import java.util.List;
 

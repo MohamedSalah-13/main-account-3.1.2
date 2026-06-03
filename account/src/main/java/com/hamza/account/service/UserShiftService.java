@@ -3,7 +3,7 @@ package com.hamza.account.service;
 import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.model.domain.ShiftSummary;
 import com.hamza.account.model.domain.UserShift;
-import com.hamza.controlsfx.database.DaoException;
+import com.hamza.account.database.DaoException;
 
 import java.time.LocalDateTime;
 import java.util.List;

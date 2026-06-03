@@ -7,7 +7,7 @@ import com.hamza.account.model.base.BaseTotals;
 import com.hamza.account.model.domain.*;
 import com.hamza.account.type.DiscountType;
 import com.hamza.account.type.InvoiceType;
-import com.hamza.controlsfx.database.DaoException;
+import com.hamza.account.database.DaoException;
 
 import java.time.LocalDate;
 import java.util.List;

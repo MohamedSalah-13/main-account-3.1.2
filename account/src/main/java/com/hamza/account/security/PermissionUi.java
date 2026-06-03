@@ -4,7 +4,7 @@ import com.hamza.account.controller.others.ServiceRegistry;
 import com.hamza.account.service.permission.AuthorizationService;
 import com.hamza.account.type.PermissionCode;
 import com.hamza.account.view.LogApplication;
-import com.hamza.controlsfx.database.DaoException;
+import com.hamza.account.database.DaoException;
 import javafx.scene.control.Control;
 
 public class PermissionUi {

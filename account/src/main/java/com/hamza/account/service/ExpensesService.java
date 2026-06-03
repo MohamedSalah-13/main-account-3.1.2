@@ -3,7 +3,7 @@ package com.hamza.account.service;
 import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.model.dao.ExpensesDao;
 import com.hamza.account.model.domain.Expenses;
-import com.hamza.controlsfx.database.DaoException;
+import com.hamza.account.database.DaoException;
 
 public record ExpensesService(DaoFactory daoFactory) {
 

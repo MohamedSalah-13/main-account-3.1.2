@@ -4,9 +4,9 @@ import com.hamza.account.model.domain.Audit_log;
 import com.hamza.account.model.domain.Users;
 import com.hamza.account.type.ProcessesDataType;
 import com.hamza.account.type.TableType;
-import com.hamza.controlsfx.database.AbstractDao;
-import com.hamza.controlsfx.database.DaoException;
-import com.hamza.controlsfx.database.SqlStatements;
+import com.hamza.account.database.AbstractDao;
+import com.hamza.account.database.DaoException;
+import com.hamza.account.database.SqlStatements;
 
 import java.sql.Connection;
 import java.sql.ResultSet;

@@ -3,7 +3,7 @@ package com.hamza.account.service;
 import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.model.dao.TotalsBuyDao;
 import com.hamza.account.model.domain.Total_buy;
-import com.hamza.controlsfx.database.DaoException;
+import com.hamza.account.database.DaoException;
 import org.jetbrains.annotations.NotNull;
 
 import java.time.LocalDate;

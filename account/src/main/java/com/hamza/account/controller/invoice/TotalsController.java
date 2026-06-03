@@ -21,7 +21,7 @@ import com.hamza.account.type.InvoiceType;
 import com.hamza.account.view.BuyApplication;
 import com.hamza.account.view.ShowInvoiceApplication;
 import com.hamza.controlsfx.alert.AllAlerts;
-import com.hamza.controlsfx.database.DaoException;
+import com.hamza.account.database.DaoException;
 import com.hamza.controlsfx.excel.ExportData;
 import com.hamza.controlsfx.language.Setting_Language;
 import com.hamza.controlsfx.notifications.NotificationAction;

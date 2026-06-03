@@ -4,7 +4,7 @@ import com.hamza.account.interfaces.api.InvoiceBuy;
 import com.hamza.account.model.domain.*;
 import com.hamza.account.type.DiscountType;
 import com.hamza.account.type.InvoiceType;
-import com.hamza.controlsfx.database.DaoException;
+import com.hamza.account.database.DaoException;
 import lombok.extern.log4j.Log4j2;
 
 import java.time.LocalDate;

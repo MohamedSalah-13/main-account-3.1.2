@@ -1,7 +1,6 @@
 package com.hamza.controlsfx.table.columnEdit;
 
 import com.hamza.controlsfx.alert.AllAlerts;
-import com.hamza.controlsfx.database.DaoException;
 import javafx.beans.value.ObservableValue;
 import javafx.collections.ObservableList;
 import javafx.scene.control.TableCell;
@@ -93,7 +92,7 @@ public class ColumnSetting {
         column.setOnEditCommit(event -> {
             try {
                 columnEdite.updateColumn(event);
-            } catch (DaoException e) {
+            } catch (Exception e) {
                 AllAlerts.showExceptionDialog(e);
                 log.error(e.getMessage(), e.getCause());
             }

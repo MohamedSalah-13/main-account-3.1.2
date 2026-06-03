@@ -5,7 +5,7 @@ import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.model.domain.SupplierAccount;
 import com.hamza.account.model.domain.Suppliers;
 import com.hamza.account.model.domain.Treasury;
-import com.hamza.controlsfx.database.DaoException;
+import com.hamza.account.database.DaoException;
 import com.hamza.controlsfx.excel.WriteExcelInterface;
 import com.hamza.controlsfx.language.Setting_Language;
 import com.hamza.controlsfx.table.columnEdit.ColumnSetting;

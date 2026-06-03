@@ -3,7 +3,7 @@ package com.hamza.account.service;
 import com.hamza.account.model.dao.AreaDao;
 import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.model.domain.Area;
-import com.hamza.controlsfx.database.DaoException;
+import com.hamza.account.database.DaoException;
 import com.hamza.controlsfx.language.Error_Text_Show;
 
 import java.util.List;

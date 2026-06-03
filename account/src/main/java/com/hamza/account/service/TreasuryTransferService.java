@@ -2,7 +2,7 @@ package com.hamza.account.service;
 
 import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.model.domain.TreasuryTransfer;
-import com.hamza.controlsfx.database.DaoException;
+import com.hamza.account.database.DaoException;
 
 public record TreasuryTransferService(DaoFactory daoFactory) {
 

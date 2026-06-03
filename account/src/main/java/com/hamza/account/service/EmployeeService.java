@@ -4,7 +4,7 @@ import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.model.dao.EmployeesDao;
 import com.hamza.account.model.domain.Employees;
 import com.hamza.account.type.UsersType;
-import com.hamza.controlsfx.database.DaoException;
+import com.hamza.account.database.DaoException;
 import com.hamza.controlsfx.language.Error_Text_Show;
 import org.jetbrains.annotations.NotNull;
 

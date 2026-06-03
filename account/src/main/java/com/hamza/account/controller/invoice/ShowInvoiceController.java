@@ -18,7 +18,7 @@ import com.hamza.account.view.LogApplication;
 import com.hamza.account.view.barcode.PrintBarcodeApp;
 import com.hamza.account.view.barcode.PrintBarcodeModel;
 import com.hamza.controlsfx.alert.AllAlerts;
-import com.hamza.controlsfx.database.DaoException;
+import com.hamza.account.database.DaoException;
 import com.hamza.controlsfx.interfaceData.AppSettingInterface;
 import com.hamza.controlsfx.language.Error_Text_Show;
 import com.hamza.controlsfx.language.Setting_Language;

@@ -8,7 +8,7 @@ import com.hamza.account.reportData.Print_Reports;
 import com.hamza.account.service.InventoryService;
 import com.hamza.account.service.StockService;
 import com.hamza.controlsfx.alert.AllAlerts;
-import com.hamza.controlsfx.database.DaoException;
+import com.hamza.account.database.DaoException;
 import com.hamza.controlsfx.language.Setting_Language;
 import com.hamza.controlsfx.util.NumberUtils;
 import javafx.animation.PauseTransition;

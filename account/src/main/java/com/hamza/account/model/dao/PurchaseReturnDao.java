@@ -3,9 +3,9 @@ package com.hamza.account.model.dao;
 import com.hamza.account.model.domain.ItemsModel;
 import com.hamza.account.model.domain.Purchase_Return;
 import com.hamza.account.model.domain.UnitsModel;
-import com.hamza.controlsfx.database.AbstractDao;
-import com.hamza.controlsfx.database.DaoException;
-import com.hamza.controlsfx.database.SqlStatements;
+import com.hamza.account.database.AbstractDao;
+import com.hamza.account.database.DaoException;
+import com.hamza.account.database.SqlStatements;
 import lombok.extern.log4j.Log4j2;
 
 import java.sql.Connection;

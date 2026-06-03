@@ -1,7 +1,6 @@
 package com.hamza.controlsfx.view;
 
 import com.hamza.controlsfx.controller.ToolbarAccountController;
-import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.interfaceData.TableViewShowDataInt;
 import com.hamza.controlsfx.interfaceData.ToolbarAccountInt;
 import com.hamza.controlsfx.language.Setting_Language;
@@ -44,7 +43,7 @@ public class ApplicationDataWithToolbarIndexApp<T> extends Dialog<T> {
                 tableView.getItems().clear();
                 tableView.setItems(FXCollections.observableArrayList(tableViewShowDataInt.dataList()));
                 tableView.refresh();
-            } catch (DaoException e) {
+            } catch (Exception e) {
                 log.error(e.getMessage());
                 e.printStackTrace();
             }

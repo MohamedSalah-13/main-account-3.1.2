@@ -10,7 +10,7 @@ import com.hamza.account.service.permission.AuthorizationService;
 import com.hamza.account.service.permission.impl.AuthorizationServiceImpl;
 import com.hamza.account.trial.TrialManager;
 import com.hamza.controlsfx.alert.AllAlerts;
-import com.hamza.controlsfx.database.DaoException;
+import com.hamza.account.database.DaoException;
 import com.hamza.controlsfx.util.FontsSetting;
 import javafx.application.Application;
 import javafx.stage.Stage;

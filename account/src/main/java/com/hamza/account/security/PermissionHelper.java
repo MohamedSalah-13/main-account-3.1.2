@@ -5,7 +5,7 @@ import com.hamza.account.service.permission.AuthorizationService;
 import com.hamza.account.type.PermissionCode;
 import com.hamza.account.view.LogApplication;
 import com.hamza.controlsfx.alert.AllAlerts;
-import com.hamza.controlsfx.database.DaoException;
+import com.hamza.account.database.DaoException;
 import javafx.scene.control.*;
 import javafx.scene.layout.Pane;
 import lombok.extern.log4j.Log4j2;

@@ -8,7 +8,7 @@ import com.hamza.account.model.domain.TableDataReports;
 import com.hamza.account.openFxml.FxmlPath;
 import com.hamza.account.service.TotalBuyService;
 import com.hamza.account.table.TableSetting;
-import com.hamza.controlsfx.database.DaoException;
+import com.hamza.account.database.DaoException;
 import com.hamza.controlsfx.language.Setting_Language;
 import com.hamza.controlsfx.table.TableColumnAnnotation;
 import javafx.collections.FXCollections;

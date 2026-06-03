@@ -1,4 +1,4 @@
-package com.hamza.controlsfx.database;
+package com.hamza.account.database;
 
 import java.sql.ResultSet;
 import java.util.List;

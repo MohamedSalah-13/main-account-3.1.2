@@ -1,14 +1,13 @@
 package com.hamza.account.model.dao;
 
 import com.hamza.account.model.domain.DailyItemSales;
-import com.hamza.controlsfx.database.AbstractDao;
-import com.hamza.controlsfx.database.DaoException;
+import com.hamza.account.database.AbstractDao;
+import com.hamza.account.database.DaoException;
 
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 public class DailyItemSalesDao extends AbstractDao<DailyItemSales> {

@@ -4,7 +4,7 @@ import com.hamza.account.config.Image_Setting;
 import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.model.domain.DailyDashboardReport;
 import com.hamza.account.model.domain.TopSellingItem;
-import com.hamza.controlsfx.database.DaoException;
+import com.hamza.account.database.DaoException;
 import eu.hansolo.tilesfx.Tile;
 import eu.hansolo.tilesfx.TileBuilder;
 import eu.hansolo.tilesfx.chart.ChartData;

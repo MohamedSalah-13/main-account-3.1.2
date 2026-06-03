@@ -1,7 +1,7 @@
 package com.hamza.account.config;
 
-import com.hamza.controlsfx.database.DBConnection;
-import com.hamza.controlsfx.database.DataSourceProvider;
+import com.hamza.account.database.DBConnection;
+import com.hamza.account.database.DataSourceProvider;
 import com.hamza.controlsfx.util.crypto.CryptoDatabaseConfig;
 import lombok.Getter;
 import lombok.extern.log4j.Log4j2;

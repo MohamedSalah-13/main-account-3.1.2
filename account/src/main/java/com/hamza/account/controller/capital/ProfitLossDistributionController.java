@@ -5,7 +5,7 @@ import com.hamza.account.model.domain.Capital;
 import com.hamza.account.model.domain.ProfitLossDistribution;
 import com.hamza.account.view.LogApplication;
 import com.hamza.controlsfx.alert.AllAlerts;
-import com.hamza.controlsfx.database.DaoException;
+import com.hamza.account.database.DaoException;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;

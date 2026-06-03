@@ -10,7 +10,7 @@ import com.hamza.account.type.PermissionCode;
 import com.hamza.account.view.LogApplication;
 import com.hamza.account.view.MonthlyView;
 import com.hamza.controlsfx.alert.AllAlerts;
-import com.hamza.controlsfx.database.DaoException;
+import com.hamza.account.database.DaoException;
 import com.hamza.controlsfx.language.Setting_Language;
 import com.hamza.controlsfx.observer.Publisher;
 import com.jfoenix.controls.JFXDrawer;

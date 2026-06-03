@@ -2,7 +2,7 @@ package com.hamza.account.interfaces.api;
 
 import com.hamza.account.model.base.BaseAccount;
 import com.hamza.account.model.domain.Treasury;
-import com.hamza.controlsfx.database.DaoException;
+import com.hamza.account.database.DaoException;
 import com.hamza.controlsfx.excel.WriteExcelInterface;
 import javafx.scene.control.TableView;
 

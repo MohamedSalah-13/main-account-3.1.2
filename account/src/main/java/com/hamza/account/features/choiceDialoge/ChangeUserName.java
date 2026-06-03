@@ -8,7 +8,7 @@ import com.hamza.account.model.domain.Users;
 import com.hamza.account.view.LogApplication;
 import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.button.ImageDesign;
-import com.hamza.controlsfx.database.DaoException;
+import com.hamza.account.database.DaoException;
 import com.hamza.controlsfx.language.Setting_Language;
 import javafx.application.Platform;
 import javafx.scene.Scene;

@@ -1,6 +1,6 @@
 package com.hamza.account.interfaces;
 
-import com.hamza.controlsfx.database.DaoException;
+import com.hamza.account.database.DaoException;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.HashMap;

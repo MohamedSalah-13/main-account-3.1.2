@@ -3,7 +3,7 @@ package com.hamza.account.service;
 import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.model.domain.InventoryItemModel;
 import com.hamza.account.model.domain.Stock;
-import com.hamza.controlsfx.database.DaoException;
+import com.hamza.account.database.DaoException;
 
 import java.util.List;
 

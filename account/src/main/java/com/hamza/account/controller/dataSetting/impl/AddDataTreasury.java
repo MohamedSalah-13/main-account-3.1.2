@@ -2,7 +2,7 @@ package com.hamza.account.controller.dataSetting.impl;
 
 import com.hamza.account.controller.dataSetting.AddDataInterface;
 import com.hamza.account.service.TreasuryService;
-import com.hamza.controlsfx.database.DaoException;
+import com.hamza.account.database.DaoException;
 import com.hamza.controlsfx.observer.Publisher;
 import lombok.Setter;
 

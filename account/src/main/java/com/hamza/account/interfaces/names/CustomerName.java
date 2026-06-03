@@ -8,7 +8,7 @@ import com.hamza.account.model.domain.CustomerPurchasedItem;
 import com.hamza.account.model.domain.Customers;
 import com.hamza.account.model.domain.SelPriceTypeModel;
 import com.hamza.account.view.CustomerPurchasedItemsApplication;
-import com.hamza.controlsfx.database.DaoException;
+import com.hamza.account.database.DaoException;
 import com.hamza.controlsfx.language.Setting_Language;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.scene.control.TableColumn;

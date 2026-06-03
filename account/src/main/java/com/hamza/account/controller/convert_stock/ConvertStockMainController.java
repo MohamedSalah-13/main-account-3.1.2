@@ -13,7 +13,7 @@ import com.hamza.account.service.ItemsService;
 import com.hamza.account.service.StockService;
 import com.hamza.account.service.StockTransferService;
 import com.hamza.controlsfx.alert.AllAlerts;
-import com.hamza.controlsfx.database.DaoException;
+import com.hamza.account.database.DaoException;
 import com.hamza.controlsfx.interfaceData.AppSettingInterface;
 import com.hamza.controlsfx.language.Error_Text_Show;
 import com.hamza.controlsfx.language.Setting_Language;
@@ -21,7 +21,6 @@ import com.hamza.controlsfx.observer.Publisher;
 import com.hamza.controlsfx.others.DateSetting;
 import com.hamza.controlsfx.table.TableColumnAnnotation;
 import com.hamza.controlsfx.table.columnEdit.ColumnSetting;
-import com.hamza.controlsfx.util.MaxNumberList;
 import javafx.animation.PauseTransition;
 import javafx.beans.binding.Bindings;
 import javafx.beans.property.ReadOnlyStringWrapper;
@@ -674,14 +673,16 @@ public class ConvertStockMainController implements AppSettingInterface {
     }
 
     private int retrieveStockTransferNextCode() {
-        try {
+       /* try {
             MaxNumberList<StockTransfer> maxNumberList =
                     new MaxNumberList<>(StockTransfer::getId, stockTransferService.getStockTransferList());
             return maxNumberList.getCode();
         } catch (DaoException e) {
             AllAlerts.alertError(Error_Text_Show.NO_DATA + e.getMessage());
             return 1;
-        }
+        }*/
+
+        return 1;
     }
 
     private void selectData(int id) {

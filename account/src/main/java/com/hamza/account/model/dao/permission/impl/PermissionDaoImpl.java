@@ -2,7 +2,7 @@ package com.hamza.account.model.dao.permission.impl;
 
 import com.hamza.account.model.dao.permission.PermissionDao;
 import com.hamza.account.model.domain.permission.Permission;
-import com.hamza.controlsfx.database.DaoException;
+import com.hamza.account.database.DaoException;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;

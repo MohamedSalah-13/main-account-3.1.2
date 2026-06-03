@@ -4,10 +4,10 @@ import com.hamza.account.model.domain.SupplierAccount;
 import com.hamza.account.model.domain.Suppliers;
 import com.hamza.account.model.domain.Treasury;
 import com.hamza.account.type.TableName;
-import com.hamza.controlsfx.database.AbstractDao;
-import com.hamza.controlsfx.database.DaoException;
-import com.hamza.controlsfx.database.GenericMapper;
-import com.hamza.controlsfx.database.SqlStatements;
+import com.hamza.account.database.AbstractDao;
+import com.hamza.account.database.DaoException;
+import com.hamza.account.database.GenericMapper;
+import com.hamza.account.database.SqlStatements;
 
 import java.sql.Connection;
 import java.sql.ResultSet;

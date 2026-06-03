@@ -8,7 +8,7 @@ import com.hamza.account.openFxml.AddForAllApplication;
 import com.hamza.account.service.UsersService;
 import com.hamza.account.table.ActionButtonToolBar;
 import com.hamza.account.table.TableInterface;
-import com.hamza.controlsfx.database.DaoException;
+import com.hamza.account.database.DaoException;
 import com.hamza.controlsfx.observer.Publisher;
 import javafx.beans.property.BooleanProperty;
 import javafx.scene.control.TableView;

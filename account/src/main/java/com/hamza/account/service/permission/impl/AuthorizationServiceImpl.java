@@ -5,8 +5,7 @@ import com.hamza.account.model.dao.permission.UserPermissionDao;
 import com.hamza.account.security.cache.PermissionCache;
 import com.hamza.account.service.permission.AuthorizationService;
 import com.hamza.account.type.PermissionCode;
-import com.hamza.account.view.LogApplication;
-import com.hamza.controlsfx.database.DaoException;
+import com.hamza.account.database.DaoException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 

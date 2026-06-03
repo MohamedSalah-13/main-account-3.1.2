@@ -5,7 +5,7 @@ import com.hamza.account.model.dao.StockTransferDao;
 import com.hamza.account.model.domain.Stock;
 import com.hamza.account.model.domain.StockTransfer;
 import com.hamza.account.model.domain.StockTransferListItems;
-import com.hamza.controlsfx.database.DaoException;
+import com.hamza.account.database.DaoException;
 import org.jetbrains.annotations.NotNull;
 
 import java.time.LocalDate;

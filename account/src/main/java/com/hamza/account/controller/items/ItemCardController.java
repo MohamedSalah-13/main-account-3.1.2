@@ -6,7 +6,7 @@ import com.hamza.account.model.domain.ItemsModel;
 import com.hamza.account.service.ItemCardService;
 import com.hamza.account.service.ItemsService;
 import com.hamza.account.service.StockService;
-import com.hamza.controlsfx.database.DaoException;
+import com.hamza.account.database.DaoException;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;

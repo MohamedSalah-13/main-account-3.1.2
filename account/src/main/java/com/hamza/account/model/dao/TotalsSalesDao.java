@@ -4,9 +4,9 @@ import com.hamza.account.model.domain.*;
 import com.hamza.account.trial.TrialManager;
 import com.hamza.account.type.InvoiceStatus;
 import com.hamza.account.type.InvoiceType;
-import com.hamza.controlsfx.database.AbstractDao;
-import com.hamza.controlsfx.database.DaoException;
-import com.hamza.controlsfx.database.SqlStatements;
+import com.hamza.account.database.AbstractDao;
+import com.hamza.account.database.DaoException;
+import com.hamza.account.database.SqlStatements;
 import lombok.extern.log4j.Log4j2;
 
 import java.math.BigDecimal;

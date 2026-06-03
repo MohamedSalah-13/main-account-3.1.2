@@ -3,7 +3,7 @@ package com.hamza.account.controller.invoice;
 import com.hamza.account.controller.pos.DialogButtons;
 import com.hamza.account.model.domain.ItemsModel;
 import com.hamza.account.service.SelPriceItemService;
-import com.hamza.controlsfx.database.DaoException;
+import com.hamza.account.database.DaoException;
 import com.hamza.controlsfx.others.Utils;
 import javafx.application.Platform;
 import javafx.scene.control.*;

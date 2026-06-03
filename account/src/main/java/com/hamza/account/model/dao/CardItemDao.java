@@ -2,9 +2,9 @@ package com.hamza.account.model.dao;
 
 import com.hamza.account.model.domain.CardItems;
 import com.hamza.account.type.ProcessType;
-import com.hamza.controlsfx.database.AbstractDao;
-import com.hamza.controlsfx.database.DaoException;
-import com.hamza.controlsfx.database.SqlStatements;
+import com.hamza.account.database.AbstractDao;
+import com.hamza.account.database.DaoException;
+import com.hamza.account.database.SqlStatements;
 import com.hamza.controlsfx.dateTime.DateUtils;
 
 import java.sql.Connection;

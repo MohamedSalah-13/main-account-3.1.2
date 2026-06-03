@@ -2,7 +2,7 @@ package com.hamza.account.features.key_setting;
 
 import com.hamza.account.model.base.BasePurchasesAndSales;
 import com.hamza.controlsfx.alert.AllAlerts;
-import com.hamza.controlsfx.database.DaoException;
+import com.hamza.account.database.DaoException;
 import javafx.event.EventHandler;
 import javafx.scene.control.TablePosition;
 import javafx.scene.input.*;

@@ -15,7 +15,7 @@ import com.hamza.account.type.OperationType;
 import com.hamza.account.view.LogApplication;
 import com.hamza.account.view.OpenTreasuryDetailsApplication;
 import com.hamza.controlsfx.alert.AllAlerts;
-import com.hamza.controlsfx.database.DaoException;
+import com.hamza.account.database.DaoException;
 import com.hamza.controlsfx.interfaceData.TableViewShowDataInt;
 import com.hamza.controlsfx.interfaceData.ToolbarAccountInt;
 import com.hamza.controlsfx.language.Error_Text_Show;
@@ -23,7 +23,6 @@ import com.hamza.controlsfx.observer.Publisher;
 import com.hamza.controlsfx.others.DateSetting;
 import com.hamza.controlsfx.others.Utils;
 import com.hamza.controlsfx.table.TableColumnAnnotation;
-import com.hamza.controlsfx.util.MaxNumberList;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
@@ -296,8 +295,8 @@ public class AddDepositController {
     }
 
     private void selectNextId() {
-        MaxNumberList<AddDeposit> tMaxNumberList = new MaxNumberList<>(AddDeposit::getId, getAllDeposits());
-        txtCode.setText(String.valueOf(tMaxNumberList.getCode()));
+//        MaxNumberList<AddDeposit> tMaxNumberList = new MaxNumberList<>(AddDeposit::getId, getAllDeposits());
+//        txtCode.setText(String.valueOf(tMaxNumberList.getCode()));
     }
 
     public TableViewShowDataInt<AddDeposit> createTable() {

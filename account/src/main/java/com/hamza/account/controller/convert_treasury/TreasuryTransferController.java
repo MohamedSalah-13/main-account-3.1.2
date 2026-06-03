@@ -5,7 +5,7 @@ import com.hamza.account.model.dao.TreasuryDao;
 import com.hamza.account.model.dao.TreasuryTransferDao;
 import com.hamza.account.model.domain.Treasury;
 import com.hamza.account.model.domain.TreasuryTransfer;
-import com.hamza.controlsfx.database.DaoException;
+import com.hamza.account.database.DaoException;
 import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;

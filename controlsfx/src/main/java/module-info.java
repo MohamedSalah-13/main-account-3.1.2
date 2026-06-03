@@ -13,10 +13,9 @@ module com.hamza.controlsfx {
     requires junrar;
     requires org.apache.logging.log4j;
     requires zip4j;
-    requires jasperreports;
+
     requires org.apache.commons.io;
     requires javafx.swing;
-    requires com.zaxxer.hikari;
     requires java.prefs;
 
     opens com.hamza.controlsfx.controller to javafx.fxml;
@@ -39,15 +38,12 @@ module com.hamza.controlsfx {
     exports com.hamza.controlsfx.table.columnEdit;
     opens com.hamza.controlsfx to javafx.fxml;
     exports com.hamza.controlsfx;
-    exports com.hamza.controlsfx.database;
-    exports com.hamza.controlsfx.backupPane;
     exports com.hamza.controlsfx.util.crypto;
     exports com.hamza.controlsfx.dateTime;
     exports com.hamza.controlsfx.excel;
 
     exports com.hamza.controlsfx.language;
     opens com.hamza.controlsfx.language to javafx.fxml;
-    exports com.hamza.controlsfx.jasperData;
     opens com.hamza.controlsfx.interfaceData to javafx.fxml;
     opens com.hamza.controlsfx.util to javafx.fxml;
 }

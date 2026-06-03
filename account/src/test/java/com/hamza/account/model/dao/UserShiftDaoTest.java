@@ -1,7 +1,7 @@
 package com.hamza.account.model.dao;
 
 import com.hamza.account.model.domain.UserShift;
-import com.hamza.controlsfx.database.DaoException;
+import com.hamza.account.database.DaoException;
 import org.junit.jupiter.api.Test;
 
 import java.sql.*;

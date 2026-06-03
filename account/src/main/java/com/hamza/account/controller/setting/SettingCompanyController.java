@@ -14,7 +14,7 @@ import com.hamza.account.openFxml.OpenFxmlApplication;
 import com.hamza.account.service.StockService;
 import com.hamza.account.service.TreasuryService;
 import com.hamza.controlsfx.alert.AllAlerts;
-import com.hamza.controlsfx.database.DaoException;
+import com.hamza.account.database.DaoException;
 import com.hamza.controlsfx.language.Setting_Language;
 import com.hamza.controlsfx.observer.Publisher;
 import com.hamza.controlsfx.util.ImageChoose;

@@ -3,7 +3,7 @@ package com.hamza.account.service.permission.impl;
 import com.hamza.account.model.dao.permission.RoleDao;
 import com.hamza.account.model.domain.permission.Role;
 import com.hamza.account.service.permission.RoleService;
-import com.hamza.controlsfx.database.DaoException;
+import com.hamza.account.database.DaoException;
 import lombok.RequiredArgsConstructor;
 
 import java.util.List;

@@ -3,7 +3,7 @@ package com.hamza.account.interfaces.api;
 import com.hamza.account.controller.search.SearchInterface;
 import com.hamza.account.model.base.BaseAccount;
 import com.hamza.account.model.base.BaseNames;
-import com.hamza.controlsfx.database.DaoList;
+import com.hamza.account.database.DaoList;
 import com.hamza.controlsfx.observer.Publisher;
 
 import java.util.List;

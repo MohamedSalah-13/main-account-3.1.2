@@ -1,4 +1,4 @@
-package com.hamza.controlsfx.database;
+package com.hamza.account.database;
 
 public class DaoException extends Exception {
 

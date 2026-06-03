@@ -1,7 +1,7 @@
 package com.hamza.account.service.permission;
 
 import com.hamza.account.type.PermissionCode;
-import com.hamza.controlsfx.database.DaoException;
+import com.hamza.account.database.DaoException;
 
 public interface AuthorizationService {
 
