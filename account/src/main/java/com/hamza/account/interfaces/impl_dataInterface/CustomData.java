@@ -5,7 +5,6 @@ import com.hamza.account.controller.main.LoadData;
 import com.hamza.account.controller.model.PrintPurchaseWithName;
 import com.hamza.account.controller.others.ServiceRegistry;
 import com.hamza.account.event.EventType;
-import com.hamza.account.interfaces.FilterDateInterface;
 import com.hamza.account.interfaces.api.*;
 import com.hamza.account.interfaces.impl_account.AccountCustomer;
 import com.hamza.account.interfaces.impl_design.DesignCustom;
@@ -13,8 +12,6 @@ import com.hamza.account.interfaces.impl_invoiceBuy.SalesInvoice;
 import com.hamza.account.interfaces.impl_namesDao.CustomerAndAccount;
 import com.hamza.account.interfaces.impl_totalDesgin.TotalSalesImpDesign;
 import com.hamza.account.interfaces.names.CustomerName;
-import com.hamza.account.interfaces.spinner.CustomSpinner;
-import com.hamza.account.interfaces.spinner.SpinnerInterface;
 import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.model.domain.CustomerAccount;
 import com.hamza.account.model.domain.Customers;
@@ -24,14 +21,8 @@ import com.hamza.account.service.SalesService;
 import com.hamza.account.service.TotalSalesService;
 import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.database.DaoList;
-import com.hamza.controlsfx.dateTime.DateUtils;
-import com.hamza.controlsfx.observer.Publisher;
 
 import java.util.List;
-import java.util.function.Predicate;
-
-import static com.hamza.controlsfx.dateTime.DateUtils.extractDay;
-import static com.hamza.controlsfx.dateTime.DateUtils.extractMonth;
 
 public class CustomData extends LoadData implements DataInterface<Sales, Total_Sales, Customers, CustomerAccount> {
 
@@ -100,40 +91,10 @@ public class CustomData extends LoadData implements DataInterface<Sales, Total_S
     }
 
     @Override
-    public FilterDateInterface<Total_Sales> filterDateInterface() {
-        return new FilterDateInterface<>() {
-            @Override
-            public Predicate<Total_Sales> predicateByYear(int year) {
-                return totalBuy -> DateUtils.extractYear(totalBuy.getDate()) == year;
-            }
-
-            @Override
-            public Predicate<Total_Sales> predicateByMonth(int month) {
-                return totalBuy -> extractMonth(totalBuy.getDate()) == month;
-            }
-
-            @Override
-            public Predicate<Total_Sales> predicateByDay(int day) {
-                return totalBuy -> extractDay(totalBuy.getDate()) == day;
-            }
-        };
-    }
-
-    @Override
-    public SpinnerInterface<Customers, CustomerAccount> spinnerInterface() {
-        return new CustomSpinner();
-    }
-
-    @Override
     public AccountData<CustomerAccount> accountData() {
         return new AccountCustomer(daoFactory);
     }
-
-    @Override
-    public void loadNameAndAccount() {
-//        LoadDataAndList.get2ListCustomers();
-    }
-
+    
     @Override
     public void addList(List<Total_Sales> items, List<PrintPurchaseWithName> printPurchaseWithNames) throws DaoException {
         for (Total_Sales totalSales : items) {

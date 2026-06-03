@@ -5,7 +5,6 @@ import com.hamza.account.controller.main.LoadData;
 import com.hamza.account.controller.model.PrintPurchaseWithName;
 import com.hamza.account.controller.others.ServiceRegistry;
 import com.hamza.account.event.EventType;
-import com.hamza.account.interfaces.FilterDateInterface;
 import com.hamza.account.interfaces.api.*;
 import com.hamza.account.interfaces.impl_account.AccountCustomer;
 import com.hamza.account.interfaces.impl_design.DesignCustomReturn;
@@ -13,7 +12,6 @@ import com.hamza.account.interfaces.impl_invoiceBuy.SalesInvoiceReturn;
 import com.hamza.account.interfaces.impl_namesDao.CustomerAndAccount;
 import com.hamza.account.interfaces.impl_totalDesgin.TotalSalesReturnImplDesign;
 import com.hamza.account.interfaces.names.CustomerName;
-import com.hamza.account.interfaces.spinner.SpinnerInterface;
 import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.model.domain.CustomerAccount;
 import com.hamza.account.model.domain.Customers;
@@ -93,24 +91,10 @@ public class CustomDataReturn extends LoadData implements DataInterface<Sales_Re
     }
 
     @Override
-    public FilterDateInterface<Total_Sales_Re> filterDateInterface() {
-        return null;
-    }
-
-    @Override
-    public SpinnerInterface<Customers, CustomerAccount> spinnerInterface() {
-        return null;
-    }
-
-    @Override
     public AccountData<CustomerAccount> accountData() {
         return new AccountCustomer(daoFactory);
     }
 
-    @Override
-    public void loadNameAndAccount() {
-//        LoadDataAndList.get2ListCustomers();
-    }
 
     @Override
     public void addList(List<Total_Sales_Re> items, List<PrintPurchaseWithName> printPurchaseWithNames) throws DaoException {

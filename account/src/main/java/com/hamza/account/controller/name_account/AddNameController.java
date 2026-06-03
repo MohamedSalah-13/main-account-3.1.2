@@ -163,7 +163,6 @@ public class AddNameController<T1 extends BasePurchasesAndSales, T2 extends Base
     public void afterSaved() {
         Thread thread = new Thread(() -> {
             try {
-                dataInterface.loadNameAndAccount();
                 Thread.sleep(1000);
                 publisherAddName.setAvailability(dataInterface.designInterface().nameTextOfData());
                 publisherAddAccount.setAvailability(dataInterface.designInterface().nameTextOfInvoice());

@@ -5,7 +5,7 @@ import com.hamza.account.openFxml.FxmlPath;
 import com.hamza.account.table.ActionButtonToolBar;
 import com.hamza.account.table.TableInterface;
 import com.hamza.controlsfx.alert.AllAlerts;
-import com.hamza.controlsfx.button.ButtonGraphics;
+import com.hamza.controlsfx.button.ImageDesign;
 import com.hamza.controlsfx.language.Setting_Language;
 import com.hamza.controlsfx.others.CssToColorHelper;
 import com.hamza.controlsfx.table.TableColumnAnnotation;
@@ -184,7 +184,7 @@ public class TableController<T> implements Initializable {
 //        if (LogApplication.usersVo.getId() != 1) button.setDisable(!b);
 
         if (stream != null) {
-            ButtonGraphics.buttonGraphic(button, stream);
+            button.setGraphic(new ImageDesign(stream));
             button.setContentDisplay(ContentDisplay.RIGHT);
         }
 

@@ -8,10 +8,13 @@ import com.hamza.controlsfx.database.SqlStatements;
 import lombok.extern.log4j.Log4j2;
 
 import java.sql.Connection;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.LocalDate;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import static com.hamza.controlsfx.util.NumberUtils.roundToTwoDecimalPlaces;
 
@@ -146,7 +149,12 @@ public class SalesDao extends AbstractDao<Sales> {
 
     @Override
     public int insertList(List<Sales> list) throws DaoException {
+        if (list == null || list.isEmpty()) {
+            return 0;
+        }
+
         // Validate stock availability before attempting insert
+        // This now checks cumulative quantities per item
         validateStockAvailability(list);
 
         try {
@@ -154,57 +162,107 @@ public class SalesDao extends AbstractDao<Sales> {
                     , NUM, TYPE, QUANTITY, PRICE, buyPrice, "total_sel_price", "total_buy_price", "total_profit"
                     , discount, TYPE_VALUE, expirationDate, itemHasPackage);
             return executeUpdateListWithException(list, query, (statement, sales) -> setData(statement, getData(sales)));
+        } catch (DaoException e) {
+            // Re-throw DaoException as-is (including our validation exceptions)
+            throw e;
         } catch (SQLException e) {
-            if (e.getMessage() != null && e.getMessage().contains("items_stock_current_quantity_chk")) {
-                throw new DaoException("Not enough stock quantity for one or more sold items.", e);
+            // Check if this is a stock constraint violation
+            if (isStockConstraintViolation(e)) {
+                throw new DaoException("الكمية المطلوبة غير متوفرة في المخزون. يرجى التحقق من الكميات المتاحة.");
             }
-            throw new DaoException(e);
+            throw mapSqlExceptionForSales(e);
         }
     }
 
     /**
-     * Validates that there is sufficient stock for all items in the sales list.
-     * Groups quantities by item ID and stock to check total required quantity.
-     *
-     * @param salesList the list of sales to validate
-     * @throws DaoException if any item has insufficient stock
+     * Validates that sufficient stock is available for all items in the sales list.
+     * This method aggregates quantities per item to handle multiple sales of the same item.
      */
-    private void validateStockAvailability(List<Sales> salesList) throws DaoException {
-        // Group sales by item ID and sum quantities (converted to base unit)
-        java.util.Map<Integer, Double> requiredQuantities = new java.util.HashMap<>();
+    private void validateStockAvailability(List<Sales> list) throws DaoException {
+        // Group quantities by item number to check cumulative demand
+        Map<Integer, Double> totalQuantityPerItem = new HashMap<>();
 
-        for (Sales sale : salesList) {
-            int itemId = sale.getItems().getId();
-            double quantityInBaseUnit = sale.getQuantity() * sale.getUnitsType().getValue();
-            requiredQuantities.merge(itemId, quantityInBaseUnit, Double::sum);
+        for (Sales sale : list) {
+            int itemNum = sale.getNumItem();
+            double quantity = sale.getQuantity();
+            totalQuantityPerItem.merge(itemNum, quantity, Double::sum);
         }
 
-        // Check each item's stock availability
-        StringBuilder insufficientItems = new StringBuilder();
-        for (java.util.Map.Entry<Integer, Double> entry : requiredQuantities.entrySet()) {
-            int itemId = entry.getKey();
-            double requiredQty = entry.getValue();
+        // Validate each item's total requested quantity against available stock
+        for (Map.Entry<Integer, Double> entry : totalQuantityPerItem.entrySet()) {
+            int itemNum = entry.getKey();
+            double requestedQuantity = entry.getValue();
 
-            try {
-                // Query current stock quantity (assuming stock_id = 1 or get from sale)
-                String stockQuery = "SELECT current_quantity FROM items_stock WHERE item_id = ? AND stock_id = ?";
-                double currentQty = queryForDouble(stockQuery, itemId, 1);
+            double availableStock = getAvailableStockForItem(itemNum);
 
-                if (currentQty < requiredQty) {
-                    if (insufficientItems.length() > 0) {
-                        insufficientItems.append(", ");
-                    }
-                    insufficientItems.append(String.format("Item ID %d (available: %.2f, required: %.2f)",
-                            itemId, currentQty, requiredQty));
-                }
-            } catch (Exception e) {
-                log.warn("Could not verify stock for item {}: {}", itemId, e.getMessage());
+            if (requestedQuantity > availableStock) {
+                throw new DaoException(String.format(
+                        "الكمية المطلوبة (%.2f) للصنف رقم %d أكبر من المتاح في المخزون (%.2f)",
+                        requestedQuantity, itemNum, availableStock));
             }
         }
+    }
 
-        if (insufficientItems.length() > 0) {
-            throw new DaoException("Insufficient stock for: " + insufficientItems);
+    /**
+     * Gets the current available stock for an item.
+     * This should query the database for the latest stock value.
+     */
+    private double getAvailableStockForItem(int itemNum) throws DaoException {
+        String query = "SELECT current_quantity FROM items_stock WHERE item_id = ?";
+        try (PreparedStatement stmt = connection.prepareStatement(query)) {
+            stmt.setInt(1, itemNum);
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getDouble("current_quantity");
+                }
+                return 0.0;
+            }
+        } catch (SQLException e) {
+            throw new DaoException("خطأ في التحقق من كمية المخزون", e);
         }
+    }
+
+    /**
+     * Checks if the SQLException is related to stock constraint violation.
+     */
+    private boolean isStockConstraintViolation(SQLException e) {
+        String message = e.getMessage();
+        return message != null && message.contains("items_stock_current_quantity_chk");
+    }
+
+    /**
+     * Maps SQLException to a user-friendly DaoException for sales operations.
+     */
+    private DaoException mapSqlExceptionForSales(SQLException e) {
+        String message = e.getMessage();
+        if (message != null) {
+            if (message.contains("items_stock_current_quantity_chk")) {
+                return new DaoException("Insufficient stock: The requested quantity exceeds available stock for one or more items. Please verify stock levels and try again.", e);
+            }
+            if (message.contains("Duplicate entry")) {
+                return new DaoException("Duplicate invoice entry detected.", e);
+            }
+        }
+        log.error("Sales insert failed: {}", message, e);
+        return new DaoException("Failed to save sales: " + message, e);
+    }
+
+    /**
+     * Gets the item name by ID for better error messages.
+     */
+    private String getItemName(int itemId) {
+        try {
+            String query = "SELECT nameItem FROM items WHERE id = ?";
+            java.sql.PreparedStatement statement = connection.prepareStatement(query);
+            statement.setInt(1, itemId);
+            java.sql.ResultSet rs = statement.executeQuery();
+            if (rs.next()) {
+                return rs.getString(1);
+            }
+        } catch (java.sql.SQLException e) {
+            log.debug("Could not get item name for id {}: {}", itemId, e.getMessage());
+        }
+        return null;
     }
 
     /**

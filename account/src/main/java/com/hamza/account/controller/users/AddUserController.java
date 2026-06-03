@@ -9,7 +9,6 @@ import com.hamza.controlsfx.language.Setting_Language;
 import com.hamza.controlsfx.observer.Publisher;
 import com.hamza.controlsfx.others.ShowPassService;
 import com.hamza.controlsfx.others.Utils;
-import com.hamza.controlsfx.type.ActivityType;
 import javafx.application.Platform;
 import javafx.beans.binding.BooleanBinding;
 import javafx.beans.property.SimpleBooleanProperty;
@@ -65,7 +64,7 @@ public class AddUserController implements AddInterface {
 
         Platform.runLater(() -> txtName.requestFocus());
 
-        List<String> items = Arrays.asList(ActivityType.ACTIVE.getType(), ActivityType.NOT_ACTIVE.getType());
+        List<String> items = Arrays.asList("active", "inactive");
         comboActive.setItems(FXCollections.observableArrayList(items));
 
         // show password

@@ -1,25 +1,16 @@
 package com.hamza.account.controller.users;
 
-import com.hamza.account.config.Image_Setting;
 import com.hamza.account.controller.main.DataPublisher;
 import com.hamza.account.controller.others.ServiceRegistry;
 import com.hamza.account.interfaces.api.DataTable;
-import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.model.domain.Users;
 import com.hamza.account.openFxml.AddForAllApplication;
 import com.hamza.account.service.UsersService;
 import com.hamza.account.table.ActionButtonToolBar;
 import com.hamza.account.table.TableInterface;
-import com.hamza.controlsfx.button.ImageDesign;
-import com.hamza.controlsfx.button.api.ButtonColumnBoolean;
-import com.hamza.controlsfx.button.api.ButtonColumnI;
-import com.hamza.controlsfx.button.button_column.ButtonColumn;
-import com.hamza.controlsfx.button.button_column.Button_Toggle_Table;
 import com.hamza.controlsfx.database.DaoException;
-import com.hamza.controlsfx.language.Setting_Language;
 import com.hamza.controlsfx.observer.Publisher;
 import javafx.beans.property.BooleanProperty;
-import javafx.scene.Node;
 import javafx.scene.control.TableView;
 import lombok.extern.log4j.Log4j2;
 import org.jetbrains.annotations.NotNull;
@@ -31,13 +22,11 @@ public class UserController implements TableInterface<Users> {
 
     private final String title;
     private final Publisher<String> publisherAddUser;
-    private final DaoFactory daoFactory;
     private final UsersService usersService;
     private TableView<Users> table;
 
-    public UserController(DaoFactory daoFactory, DataPublisher dataPublisher
+    public UserController(DataPublisher dataPublisher
             , String title) {
-        this.daoFactory = daoFactory;
         this.title = title;
         this.publisherAddUser = dataPublisher.getPublisherAddUser();
         this.usersService = ServiceRegistry.get(UsersService.class);
@@ -82,16 +71,6 @@ public class UserController implements TableInterface<Users> {
                 // dont show column pass
                 tableView.setTableMenuButtonVisible(true);
                 tableView.getColumns().get(2).setVisible(false);
-
-//                TableColumn<Users, String> columnActiveName = new TableColumn<>(Setting_Language.WORD_CASE);
-//                columnActiveName.setCellValueFactory(f -> f.getValue().getActivity().typeProperty());
-//                table.getColumns().add(columnActiveName);
-
-                // add button evaluation
-                table.getColumns().add(new ButtonColumn<>(getButtonColumnI()));
-                // add button toggle
-                table.getColumns().add(getUsersButtonToggleTable());
-
             }
 
             @Override
@@ -131,86 +110,6 @@ public class UserController implements TableInterface<Users> {
     @Override
     public int getCountItems() {
         return usersService.getCountItems();
-    }
-
-    private ButtonColumnI getButtonColumnI() {
-        return new ButtonColumnI() {
-            @Override
-            public void action(int i) throws Exception {
-
-            }
-
-            @NotNull
-            @Override
-            public String columnTitle() {
-                return "";
-            }
-
-            @Override
-            public boolean isButtonDisabled(int index) {
-                if (table.getItems().get(index).getId() == 1)
-                    return true;
-                return !table.getItems().get(index).isActive();
-            }
-
-            @NotNull
-            @Override
-            public String textName() {
-                return "";
-            }
-
-            @Override
-            public Node imageNode() {
-                return new ImageDesign(new Image_Setting().evaluation);
-            }
-        };
-    }
-
-    @NotNull
-    private Button_Toggle_Table<Users> getUsersButtonToggleTable() {
-        return new Button_Toggle_Table<>(new ButtonColumnBoolean() {
-
-            @NotNull
-            @Override
-            public String textName() {
-                return "";
-            }
-
-            @Override
-            public void action(int index, boolean b) throws Exception {
-                int id = table.getItems().get(index).getId();
-                if (id != 1) {
-                    Users users = new Users();
-                    users.setId(id);
-                    users.setActive(b);
-                    int update = daoFactory.usersDao().updateCase(users);
-                    if (update == 1) {
-                        publisherAddUser.notifyObservers();
-                    }
-                }
-            }
-
-            @Override
-            public boolean selectButton(int index) {
-                return table.getItems().get(index).isActive();
-            }
-
-            @Override
-            public void action(int i) {
-
-            }
-
-            @NotNull
-            @Override
-            public String columnTitle() {
-                return Setting_Language.WORD_CASE;
-            }
-
-            @Override
-            public boolean isButtonDisabled(int index) {
-                return table.getItems().get(index).getId() == 1;
-            }
-        });
     }
 
     private void openAddUser(int code) throws Exception {

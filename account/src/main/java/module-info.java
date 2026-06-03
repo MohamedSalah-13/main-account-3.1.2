@@ -81,8 +81,6 @@ module com.hamza.account {
     exports com.hamza.account.model.dao;
     exports com.hamza.account.interfaces.impl_namesDao;
     opens com.hamza.account.interfaces.impl_namesDao to javafx.fxml;
-    exports com.hamza.account.interfaces.spinner;
-    opens com.hamza.account.interfaces.spinner to javafx.fxml;
     exports com.hamza.account.interfaces.impl_account;
     opens com.hamza.account.interfaces.impl_account to javafx.fxml;
     exports com.hamza.account.interfaces.names;

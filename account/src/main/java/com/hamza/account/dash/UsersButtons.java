@@ -37,7 +37,7 @@ public class UsersButtons extends LoadData {
 
             @Override
             public void action() throws Exception {
-                new TableOpen<>(new UserController(daoFactory, dataPublisher, textName())).start(new Stage());
+                new TableOpen<>(new UserController(dataPublisher, textName())).start(new Stage());
             }
 
             @NotNull

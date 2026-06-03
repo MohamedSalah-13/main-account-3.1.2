@@ -5,7 +5,6 @@ import com.hamza.account.controller.main.LoadData;
 import com.hamza.account.controller.model.PrintPurchaseWithName;
 import com.hamza.account.controller.others.ServiceRegistry;
 import com.hamza.account.event.EventType;
-import com.hamza.account.interfaces.FilterDateInterface;
 import com.hamza.account.interfaces.api.*;
 import com.hamza.account.interfaces.impl_account.AccountSuppliers;
 import com.hamza.account.interfaces.impl_design.DesignSuppliersReturn;
@@ -13,7 +12,6 @@ import com.hamza.account.interfaces.impl_invoiceBuy.PurchaseInvoiceReturn;
 import com.hamza.account.interfaces.impl_namesDao.SupplierAndAccount;
 import com.hamza.account.interfaces.impl_totalDesgin.TotalsPurchaseReturnImplDesign;
 import com.hamza.account.interfaces.names.SupplierName;
-import com.hamza.account.interfaces.spinner.SpinnerInterface;
 import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.model.domain.Purchase_Return;
 import com.hamza.account.model.domain.SupplierAccount;
@@ -93,23 +91,8 @@ public class SuppliersDataReturn extends LoadData implements DataInterface<Purch
     }
 
     @Override
-    public FilterDateInterface<Total_Buy_Re> filterDateInterface() {
-        return null;
-    }
-
-    @Override
-    public SpinnerInterface<Suppliers, SupplierAccount> spinnerInterface() {
-        return null;
-    }
-
-    @Override
     public AccountData<SupplierAccount> accountData() {
         return new AccountSuppliers(daoFactory);
-    }
-
-    @Override
-    public void loadNameAndAccount() {
-//        LoadDataAndList.get2ListSuppliers();
     }
 
     @Override

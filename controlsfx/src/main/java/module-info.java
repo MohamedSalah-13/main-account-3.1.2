@@ -37,7 +37,6 @@ module com.hamza.controlsfx {
     opens com.hamza.controlsfx.menu to javafx.fxml;
     exports com.hamza.controlsfx.table.colorRow;
     exports com.hamza.controlsfx.table.columnEdit;
-    exports com.hamza.controlsfx.tasks;
     opens com.hamza.controlsfx to javafx.fxml;
     exports com.hamza.controlsfx;
     exports com.hamza.controlsfx.database;
@@ -45,8 +44,6 @@ module com.hamza.controlsfx {
     exports com.hamza.controlsfx.util.crypto;
     exports com.hamza.controlsfx.dateTime;
     exports com.hamza.controlsfx.excel;
-
-    exports com.hamza.controlsfx.type;
 
     exports com.hamza.controlsfx.language;
     opens com.hamza.controlsfx.language to javafx.fxml;
