@@ -178,7 +178,7 @@ public class ItemsButtons {
 
             @Override
             public void action() throws Exception {
-                new AddGroupApp(dataPublisher.getPublisherAddSubGroup());
+                new AddGroupApp(dataPublisher.getPublisherAddSubGroup()).start(new Stage());
             }
         };
     }

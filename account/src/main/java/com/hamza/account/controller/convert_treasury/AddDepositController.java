@@ -2,11 +2,11 @@ package com.hamza.account.controller.convert_treasury;
 
 import com.hamza.account.controller.main.DataPublisher;
 import com.hamza.account.controller.others.ServiceRegistry;
+import com.hamza.account.database.DaoException;
 import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.model.domain.AddDeposit;
 import com.hamza.account.model.domain.TreasuryBalance;
 import com.hamza.account.openFxml.FxmlPath;
-import com.hamza.account.reportData.Print_Reports;
 import com.hamza.account.service.DepositService;
 import com.hamza.account.service.TreasuryBalanceService;
 import com.hamza.account.service.TreasuryService;
@@ -15,11 +15,8 @@ import com.hamza.account.type.OperationType;
 import com.hamza.account.view.LogApplication;
 import com.hamza.account.view.OpenTreasuryDetailsApplication;
 import com.hamza.controlsfx.alert.AllAlerts;
-import com.hamza.account.database.DaoException;
 import com.hamza.controlsfx.interfaceData.TableViewShowDataInt;
-import com.hamza.controlsfx.interfaceData.ToolbarAccountInt;
 import com.hamza.controlsfx.language.Error_Text_Show;
-import com.hamza.controlsfx.observer.Publisher;
 import com.hamza.controlsfx.others.DateSetting;
 import com.hamza.controlsfx.others.Utils;
 import com.hamza.controlsfx.table.TableColumnAnnotation;
@@ -138,86 +135,6 @@ public class AddDepositController {
                 log.error(e.getMessage(), e.getCause());
             }
         });
-    }
-
-    public ToolbarAccountInt<AddDeposit> getToolbarAccountActionInterface() {
-        return new ToolbarAccountInt<>() {
-            @Override
-            public void addNewAccount() {
-                resetAll();
-            }
-
-            @Override
-            public int deleteAccount() throws DaoException {
-                if (txtCode.getText().isEmpty()) {
-                    return 0;
-                }
-                if (isRecordeExit) {
-                    return depositService.deleteDeposit(Integer.parseInt(txtCode.getText()));
-                }
-                return 0;
-            }
-
-            @Override
-            public void printAccount() {
-                if (txtStatement.getText().isEmpty() || txtAmount.getText().isEmpty() || txtAmount.getText().equals("0.0") || txtCode.getText().isEmpty()) {
-                    AllAlerts.alertError(Error_Text_Show.PLEASE_INSERT_ALL_DATA);
-                    return;
-                }
-                int i = Integer.parseInt(txtCode.getText());
-                double amount = Double.parseDouble(txtAmount.getText());
-                String statement = txtStatement.getText();
-                String description = txtDescription.getText();
-                String treasuryName = comboTreasury.getSelectionModel().getSelectedItem();
-                String date = dateAdd.getValue().toString();
-                OperationType operationType = radioDeposit.isSelected() ? OperationType.DEPOSIT : OperationType.EXCHANGE;
-                new Print_Reports().printDeposit(amount, i, operationType.getType(), statement, description, operationType.getType(), treasuryName, "", date);
-            }
-
-            @Override
-            public AddDeposit saveAccount() throws Exception {
-                return insertData();
-            }
-
-            @Override
-            public void firstPage(AddDeposit addDeposit) {
-                selectData(addDeposit);
-            }
-
-            @Override
-            public void previousPage(AddDeposit addDeposit) {
-//                navigatePage(() -> Integer.parseInt(txtCode.getText()) - 1);
-                selectData(addDeposit);
-            }
-
-            @Override
-            public void nextPage(AddDeposit addDeposit) {
-//                navigatePage(() -> Integer.parseInt(txtCode.getText()) + 1);
-                selectData(addDeposit);
-            }
-
-            @Override
-            public void lastPage(AddDeposit addDeposit) {
-//                navigatePage(() -> depositService.getAllDeposits().getLast().getId());
-                selectData(addDeposit);
-            }
-
-            @Override
-            public ObservableList<AddDeposit> observableList() {
-                return FXCollections.observableArrayList(getAllDeposits());
-            }
-
-            @Override
-            public void afterSaveOrDelete() {
-                resetAll();
-                refreshTableView();
-            }
-
-            @Override
-            public Publisher<String> publisherTable() {
-                return null;
-            }
-        };
     }
 
     private List<AddDeposit> getAllDeposits() {

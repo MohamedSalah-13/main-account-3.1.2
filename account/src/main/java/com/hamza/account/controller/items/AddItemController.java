@@ -332,7 +332,7 @@ public class AddItemController implements AppSettingInterface {
 
         btnAddSubGroup.setOnAction(actionEvent -> {
             try {
-                new AddGroupApp(dataPublisher.getPublisherAddSubGroup());
+                new AddGroupApp(dataPublisher.getPublisherAddSubGroup()).start(new Stage());
             } catch (Exception e) {
                 logError(e);
             }

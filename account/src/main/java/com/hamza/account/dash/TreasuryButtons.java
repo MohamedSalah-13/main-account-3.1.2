@@ -34,9 +34,7 @@ public class TreasuryButtons {
             public void action() throws Exception {
                 var controller = new AddDepositController(daoFactory, dataPublisher);
                 OpenFxmlApplication application = new OpenFxmlApplication(controller);
-                new OpenApplicationWithData<>(controller.getToolbarAccountActionInterface()
-                        , controller.createTable()
-                        , application.getPane(), textName());
+
             }
 
             @NotNull

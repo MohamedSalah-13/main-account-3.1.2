@@ -699,6 +699,7 @@
     -fx-border-width: 2px;
 }
 
+
 .card-label {
     -fx-font-size: 12px;
     -fx-text-fill: #666;
@@ -797,4 +798,16 @@
 .summary-value {
     -fx-font-size: 14px;
     -fx-font-weight: bold;
+}
+
+/*----------------last card --------------*/
+.last-card {
+    -fx-border-color: #666;
+    -fx-border-width: .5 0 0 0;
+    -fx-spacing: 5px;
+    -fx-padding: 5px;
+}
+
+.last-card > .button {
+    -fx-min-width: 80px;
 }
