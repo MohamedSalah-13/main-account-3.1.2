@@ -4,14 +4,17 @@ import com.hamza.account.config.Image_Setting;
 import com.hamza.account.controller.main.ButtonWithPerm;
 import com.hamza.account.controller.main.DataPublisher;
 import com.hamza.account.controller.main.LoadOtherData;
+import com.hamza.account.controller.name_account.AccountController2;
 import com.hamza.account.interfaces.api.DataInterface;
 import com.hamza.account.model.base.BaseAccount;
 import com.hamza.account.model.base.BaseNames;
 import com.hamza.account.model.base.BasePurchasesAndSales;
 import com.hamza.account.model.base.BaseTotals;
 import com.hamza.account.model.dao.DaoFactory;
-import com.hamza.account.view.AccountTotalsApplication;
+import com.hamza.account.openFxml.OpenFxmlApplication;
+import com.hamza.controlsfx.others.CssToColorHelper;
 import javafx.scene.control.TabPane;
+import javafx.scene.layout.Pane;
 import org.jetbrains.annotations.NotNull;
 
 
@@ -37,8 +40,12 @@ public class AccountButtons<T1 extends BasePurchasesAndSales, T2 extends BaseTot
 
     @Override
     public void actionAddPaneToTabPane(TabPane tabPane) throws Exception {
-        AccountTotalsApplication<T1, T2, T3, T4> design = new AccountTotalsApplication<>(daoFactory, dataPublisher, dataInterface);
-        addTape(tabPane, design.getPane(), textName(), new Image_Setting().account);
+        CssToColorHelper helper = new CssToColorHelper();
+        AccountController2<T1, T2, T3, T4> accountDetailsController = new AccountController2<>(daoFactory, dataPublisher, dataInterface);
+        Pane pane = new OpenFxmlApplication(accountDetailsController).getPane();
+        pane.getChildren().add(helper);
+        pane.getStylesheets().add(dataInterface.designInterface().styleSheet());
+        addTape(tabPane, pane, textName(), new Image_Setting().account);
     }
 
     @Override

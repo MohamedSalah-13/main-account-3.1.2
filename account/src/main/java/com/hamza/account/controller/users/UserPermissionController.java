@@ -28,7 +28,7 @@ import java.util.ResourceBundle;
 import java.util.stream.Collectors;
 
 @Log4j2
-@FxmlPath(pathFile = "user-permission.fxml")
+@FxmlPath(pathFile = "users/user-permission.fxml")
 public class UserPermissionController implements Initializable {
 
     @FXML

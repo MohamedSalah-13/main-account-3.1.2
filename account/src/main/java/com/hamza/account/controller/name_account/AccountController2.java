@@ -17,13 +17,13 @@ import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.openFxml.FxmlPath;
 import com.hamza.account.otherSetting.MaskerPaneSetting;
 import com.hamza.account.table.TableSetting;
-import com.hamza.account.view.AccountDetailsApplication;
 import com.hamza.account.view.AddAccountApplication;
 import com.hamza.account.view.OpenApplication;
 import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.excel.ExcelException;
 import com.hamza.controlsfx.excel.ExportData;
 import com.hamza.controlsfx.language.Error_Text_Show;
+import com.hamza.controlsfx.others.CssToColorHelper;
 import com.hamza.controlsfx.table.TableColumnAnnotation;
 import com.hamza.controlsfx.table.columnEdit.ColumnSetting;
 import javafx.collections.FXCollections;
@@ -283,7 +283,10 @@ public class AccountController2<T1 extends BasePurchasesAndSales, T2 extends Bas
                 T4 selectedItem = tableView.getSelectionModel().getSelectedItem();
                 int code_id = accountData.getIdName(selectedItem);
                 String name = accountData.getName(selectedItem);
-                new AccountDetailsApplication<>(daoFactory, dataPublisher, dataInterface, name, code_id);
+
+                CssToColorHelper helper = new CssToColorHelper();
+                AccountDetailsController<T1, T2, T3, T4> accountDetailsController = new AccountDetailsController<>(daoFactory, dataPublisher, dataInterface, name, code_id, helper);
+                new OpenApplication<>(accountDetailsController);
             } catch (Exception e) {
                 logError(e);
             }

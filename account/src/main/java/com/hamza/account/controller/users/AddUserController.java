@@ -22,7 +22,7 @@ import java.util.Arrays;
 import java.util.List;
 
 @Log4j2
-@FxmlPath(pathFile = "add-user.fxml")
+@FxmlPath(pathFile = "users/add-user.fxml")
 public class AddUserController implements AddInterface {
 
 

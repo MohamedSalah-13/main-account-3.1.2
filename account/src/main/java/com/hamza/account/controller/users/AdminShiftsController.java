@@ -19,7 +19,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 @Log4j2
-@FxmlPath(pathFile = "admin-shifts-view.fxml")
+@FxmlPath(pathFile = "users/admin-shifts-view.fxml")
 public class AdminShiftsController {
 
     private static final DateTimeFormatter DATE_TIME_FORMATTER =

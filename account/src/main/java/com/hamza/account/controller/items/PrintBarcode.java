@@ -1,6 +1,8 @@
-package com.hamza.account.view.barcode;
+package com.hamza.account.controller.items;
 
+import com.hamza.account.Main;
 import com.hamza.account.config.Image_Setting;
+import com.hamza.account.controller.model.PrintBarcodeModel;
 import com.hamza.account.otherSetting.ButtonDeleteRow;
 import com.hamza.account.reportData.Print_Reports;
 import com.hamza.account.table.TableSetting;
@@ -82,7 +84,7 @@ public class PrintBarcode implements AppSettingInterface {
 
     @Override
     public Pane pane() throws Exception {
-        FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource("print_barcode.fxml"));
+        FXMLLoader fxmlLoader = new FXMLLoader(Main.class.getResource("view/items/print_barcode.fxml"));
         fxmlLoader.setController(this);
         return fxmlLoader.load();
     }

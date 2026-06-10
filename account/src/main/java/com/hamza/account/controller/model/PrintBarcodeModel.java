@@ -1,4 +1,4 @@
-package com.hamza.account.view.barcode;
+package com.hamza.account.controller.model;
 
 import com.hamza.controlsfx.table.ColumnData;
 import javafx.beans.property.DoubleProperty;

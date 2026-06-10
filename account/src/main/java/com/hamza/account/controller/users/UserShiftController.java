@@ -24,7 +24,7 @@ import java.time.format.DateTimeFormatter;
 import static com.hamza.controlsfx.others.Utils.setTextFormatter;
 
 @Log4j2
-@FxmlPath(pathFile = "user-shift-view.fxml")
+@FxmlPath(pathFile = "users/user-shift-view.fxml")
 public class UserShiftController {
 
     private static final DateTimeFormatter DATE_TIME_FORMATTER =

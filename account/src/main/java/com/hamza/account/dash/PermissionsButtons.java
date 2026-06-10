@@ -41,7 +41,7 @@ public class PermissionsButtons {
 
             @Override
             public void action() throws Exception {
-                FXMLLoader loader = new FXMLLoader(Main.class.getResource("view/roles-management.fxml"));
+                FXMLLoader loader = new FXMLLoader(Main.class.getResource("view/users/roles-management.fxml"));
                 Parent root = loader.load();
 
                 RolesManagementController controller = loader.getController();

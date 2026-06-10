@@ -4,13 +4,12 @@ import com.hamza.account.config.ConnectionToDatabase;
 import com.hamza.account.controller.invoice.ShowInvoiceNameData;
 import com.hamza.account.controller.model.ModelPrintInvoice;
 import com.hamza.account.controller.model.PrintPurchaseWithName;
-import com.hamza.account.controller.model.TableTotals;
+import com.hamza.account.database.DaoException;
 import com.hamza.account.features.checkbox.impl.setting.BarcodePrintDoubleLabel;
 import com.hamza.account.model.domain.*;
 import com.hamza.account.otherSetting.BarcodeDetails;
 import com.hamza.account.service.ShiftReportService;
 import com.hamza.account.view.LogApplication;
-import com.hamza.account.database.DaoException;
 import com.hamza.controlsfx.language.Setting_Language;
 import com.hamza.controlsfx.others.CssToColorHelper;
 import lombok.extern.log4j.Log4j2;
@@ -93,13 +92,6 @@ public class Print_Reports extends ReportCompany {
         company.put("reportName", reportName);
         addHeaderToReports(company, reportName);
         jasperData.printJasperPrint(JasperReportPaths.Report.ITEMS_BY_DELEGATE, Setting_Language.WORD_REPORT_ITEMS, company, 1, "");
-    }
-
-
-    public void printReportByMonth(@NotNull List<TableTotals> list, @NotNull String title) {
-        HashMap<String, Object> map = getStringObjectHashMap(list, null);
-        map.put("title", title);
-        jasperData.printJasperPrint(JasperReportPaths.Report.MONTHLY, Setting_Language.MONTHS, map, 1, "");
     }
 
     public void printTotalsInvoice(@NotNull List<?> list, @NotNull String name, @NotNull String date1, @NotNull String date2, CssToColorHelper helper) {

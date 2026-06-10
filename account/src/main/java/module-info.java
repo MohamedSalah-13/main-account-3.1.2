@@ -118,8 +118,6 @@ module com.hamza.account {
     exports com.hamza.account.controller.users;
     opens com.hamza.account.controller.users to javafx.fxml;
     opens com.hamza.account.table;
-    exports com.hamza.account.view.barcode;
-    opens com.hamza.account.view.barcode to javafx.fxml;
     exports com.hamza.account.controller.dataSetting;
     opens com.hamza.account.controller.dataSetting to javafx.fxml;
     exports com.hamza.account.controller.dataSetting.impl;
