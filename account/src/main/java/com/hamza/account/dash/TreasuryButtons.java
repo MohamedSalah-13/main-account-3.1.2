@@ -1,12 +1,19 @@
 package com.hamza.account.dash;
 
 import com.hamza.account.Main;
+import com.hamza.account.config.Image_Setting;
 import com.hamza.account.controller.convert_treasury.TreasuryTransferController;
 import com.hamza.account.controller.main.ButtonWithPerm;
 import com.hamza.account.controller.main.DataPublisher;
+import com.hamza.account.controller.others.ProcessesController;
 import com.hamza.account.model.dao.DaoFactory;
+import com.hamza.account.openFxml.OpenFxmlApplication;
+import com.hamza.account.table.StageDimensions;
 import com.hamza.account.table.TableOpen;
-import com.hamza.account.view.*;
+import com.hamza.account.view.ExpensesDetailsApplication;
+import com.hamza.account.view.OpenTreasuryDetailsApplication;
+import com.hamza.account.view.SceneAll;
+import com.hamza.account.view.StageManager;
 import com.hamza.controlsfx.language.Setting_Language;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
@@ -72,7 +79,15 @@ public class TreasuryButtons {
 
             @Override
             public void action() throws Exception {
-                new ProcessorApplication().start(new Stage());
+                var stage = new Stage();
+                Scene scene = new SceneAll(new OpenFxmlApplication(new ProcessesController()).getPane());
+                stage.setScene(scene);
+                stage.setTitle(Setting_Language.PROCESS);
+                stage.getIcons().add(new javafx.scene.image.Image(new Image_Setting().setting));
+                stage.setResizable(true);
+                stage.initModality(javafx.stage.Modality.APPLICATION_MODAL);
+                stage.show();
+                StageDimensions.stageDimensions(getClass(), stage);
             }
 
             @NotNull

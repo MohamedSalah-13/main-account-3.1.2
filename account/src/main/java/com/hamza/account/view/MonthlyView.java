@@ -18,7 +18,7 @@ public class MonthlyView extends Application {
     private final MonthlySalesInterface monthlySalesInterface;
     @Override
     public void start(Stage primaryStage) throws Exception {
-        FXMLLoader loader = new FXMLLoader(Main.class.getResource("view/MonthlySalesView.fxml"));
+        FXMLLoader loader = new FXMLLoader(Main.class.getResource("view/reports/MonthlySalesView.fxml"));
         Parent root = loader.load();
 //
         MonthlySalesController controller = loader.getController();

@@ -35,7 +35,7 @@ public class OpenShift extends Application {
 //        FXMLLoader loader = new FXMLLoader(Main.class.getResource("view/reports/CustomerReceivableView.fxml"));
 //        FXMLLoader loader = new FXMLLoader(Main.class.getResource("view/reports/ComprehensiveSalesView.fxml"));
 //        FXMLLoader loader = new FXMLLoader(Main.class.getResource("view/treasury/treasuryView.fxml"));
-        FXMLLoader loader = new FXMLLoader(Main.class.getResource("view/item_card_report.fxml"));
+        FXMLLoader loader = new FXMLLoader(Main.class.getResource("view/reports/item_card_report.fxml"));
         Parent root = loader.load();
 
 //        CustomerReceivableController controller = loader.getController();
