@@ -79,8 +79,6 @@
         <MenuItem fx:id="menuItemSupGroup" mnemonicParsing="false" text="Sup Group"/>
         <SeparatorMenuItem mnemonicParsing="false"/>
         <MenuItem fx:id="menuItemConvertStock" mnemonicParsing="false" text="Transfer Stocks"/>
-        <MenuItem fx:id="menuItemArea" mnemonicParsing="false" text="Area"/>
-        <SeparatorMenuItem mnemonicParsing="false"/>
         <MenuItem fx:id="menuItemInventory" mnemonicParsing="false" text="Inventory"/>
     </Menu>
 

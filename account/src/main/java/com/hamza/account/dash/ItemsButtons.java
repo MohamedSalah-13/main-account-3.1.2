@@ -2,9 +2,6 @@ package com.hamza.account.dash;
 
 import com.hamza.account.config.Image_Setting;
 import com.hamza.account.controller.convert_stock.ConvertStockDataController;
-import com.hamza.account.controller.dataByName.OpenAddAreaApplication;
-import com.hamza.account.controller.dataByName.impl.AreaImpl;
-import com.hamza.account.controller.dataByName.impl.MainGroupImpl2;
 import com.hamza.account.controller.items.InventoryController;
 import com.hamza.account.controller.items.ItemsController;
 import com.hamza.account.controller.items.UnitsController;
@@ -149,24 +146,6 @@ public class ItemsButtons {
         };
     }
 
-    public ButtonWithPerm areasList() {
-
-        return new ButtonWithPerm() {
-
-            @Override
-            public void action() throws Exception {
-                var area = new AreaImpl(dataPublisher);
-                new OpenAddAreaApplication<>(area, textName());
-            }
-
-            @NotNull
-            @Override
-            public String textName() {
-                return Setting_Language.AREA;
-            }
-        };
-    }
-
     public ButtonWithPerm addSubGroup() {
         return new ButtonWithPerm() {
 
@@ -193,7 +172,7 @@ public class ItemsButtons {
 
             @Override
             public void action() throws Exception {
-                new OpenAddAreaApplication<>(new MainGroupImpl2(dataPublisher), Setting_Language.WORD_MAIN_G);
+
             }
         };
     }

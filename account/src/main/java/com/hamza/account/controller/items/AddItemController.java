@@ -1,17 +1,15 @@
 package com.hamza.account.controller.items;
 
 import com.hamza.account.config.Image_Setting;
-import com.hamza.account.controller.dataByName.OpenAddAreaApplication;
-import com.hamza.account.controller.dataByName.impl.MainGroupImpl2;
 import com.hamza.account.controller.main.DataPublisher;
 import com.hamza.account.controller.others.ServiceRegistry;
+import com.hamza.account.database.DaoException;
 import com.hamza.account.model.domain.*;
 import com.hamza.account.openFxml.FxmlPath;
 import com.hamza.account.openFxml.OpenFxmlApplication;
 import com.hamza.account.service.*;
 import com.hamza.account.view.AddGroupApp;
 import com.hamza.controlsfx.alert.AllAlerts;
-import com.hamza.account.database.DaoException;
 import com.hamza.controlsfx.interfaceData.AppSettingInterface;
 import com.hamza.controlsfx.language.Setting_Language;
 import com.hamza.controlsfx.others.DoubleSetting;
@@ -323,11 +321,7 @@ public class AddItemController implements AppSettingInterface {
         comboSupGroup.valueProperty().addListener((observable, oldValue, newValue) -> getSubId(newValue));
 
         btnAddMainGroup.setOnAction(actionEvent -> {
-            try {
-                new OpenAddAreaApplication<>(new MainGroupImpl2(dataPublisher), Setting_Language.WORD_MAIN_G);
-            } catch (Exception e) {
-                logError(e);
-            }
+
         });
 
         btnAddSubGroup.setOnAction(actionEvent -> {

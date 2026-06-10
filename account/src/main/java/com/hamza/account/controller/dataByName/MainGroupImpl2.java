@@ -1,6 +1,5 @@
-package com.hamza.account.controller.dataByName.impl;
+package com.hamza.account.controller.dataByName;
 
-import com.hamza.account.controller.dataByName.AreaInterface;
 import com.hamza.account.controller.main.DataPublisher;
 import com.hamza.account.controller.others.ServiceRegistry;
 import com.hamza.account.model.base.BaseGroups;

@@ -297,7 +297,6 @@ public class MainScreenController extends MainItems implements Initializable {
         menuButtonSetting.initializeMenuItem(menuController.getMenuItemMainGroup(), getItemsButtons().addMainGroup());
         menuButtonSetting.initializeMenuItem(menuController.getMenuItemSupGroup(), getItemsButtons().addSubGroup());
         menuButtonSetting.initializeMenuItem(menuController.getMenuItemConvertStock(), getItemsButtons().convertStock());
-        menuButtonSetting.initializeMenuItem(menuController.getMenuItemArea(), getItemsButtons().areasList());
     }
 
     private void customers(MainMenuController menuController) {
