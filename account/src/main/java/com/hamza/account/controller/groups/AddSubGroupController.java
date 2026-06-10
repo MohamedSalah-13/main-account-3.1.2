@@ -1,20 +1,15 @@
-package com.hamza.account.controller.others;
+package com.hamza.account.controller.groups;
 
-import com.hamza.account.model.base.BaseGroups;
+import com.hamza.account.controller.others.ServiceRegistry;
+import com.hamza.account.database.DaoException;
 import com.hamza.account.model.domain.SubGroups;
 import com.hamza.account.openFxml.FxmlPath;
 import com.hamza.account.service.MainGroupService;
 import com.hamza.account.service.SupGroupService;
-import com.hamza.controlsfx.alert.AllAlerts;
-import com.hamza.account.database.DaoException;
-import com.hamza.controlsfx.interfaceData.Disable;
-import com.hamza.controlsfx.interfaceData.TableViewShowDataInt;
-import com.hamza.controlsfx.interfaceData.ToolbarAccountInt;
 import com.hamza.controlsfx.language.Setting_Language;
 import com.hamza.controlsfx.observer.Publisher;
 import com.hamza.controlsfx.others.Utils;
 import javafx.collections.FXCollections;
-import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
@@ -29,8 +24,7 @@ import java.util.List;
 @FxmlPath(pathFile = "addSubGroup.fxml")
 public class AddSubGroupController {
 
-    private final Publisher<String> publisherAddGroup;
-    private final ObservableList<SubGroups> subGroupsObservableList;
+
     private final MainGroupService mainGroupService = ServiceRegistry.get(MainGroupService.class);
     private final SupGroupService supGroupService = ServiceRegistry.get(SupGroupService.class);
     @FXML
@@ -43,8 +37,6 @@ public class AddSubGroupController {
     private VBox box;
 
     public AddSubGroupController(Publisher<String> publisherAddGroup) throws Exception {
-        this.publisherAddGroup = publisherAddGroup;
-        subGroupsObservableList = FXCollections.observableArrayList(supGroupService.getSubGroupsList());
     }
 
     @FXML
@@ -53,94 +45,94 @@ public class AddSubGroupController {
         resetData();
     }
 
-    public TableViewShowDataInt<SubGroups> createAreaTableView() {
-        return new TableViewShowDataInt<>() {
-            @Override
-            public List<SubGroups> dataList() {
-                return subGroupsObservableList;
-            }
+//    public TableViewShowDataInt<SubGroups> createAreaTableView() {
+//        return new TableViewShowDataInt<>() {
+//            @Override
+//            public List<SubGroups> dataList() {
+//                return subGroupsObservableList;
+//            }
+//
+//            @Override
+//            public Class<? super SubGroups> classForColumn() {
+//                return BaseGroups.class;
+//            }
+//        };
+//    }
 
-            @Override
-            public Class<? super SubGroups> classForColumn() {
-                return BaseGroups.class;
-            }
-        };
-    }
+    /* public ToolbarAccountInt<SubGroups> getToolbarAccountActionInterface() {
+         return new ToolbarAccountInt<>() {
+             @Override
+             public void addNewAccount() {
+                 resetData();
+             }
 
-    public ToolbarAccountInt<SubGroups> getToolbarAccountActionInterface() {
-        return new ToolbarAccountInt<>() {
-            @Override
-            public void addNewAccount() {
-                resetData();
-            }
+             @Override
+             public int deleteAccount() throws Exception {
+                 if (!txtCode.getText().equals(Setting_Language.generate) || !txtCode.getText().isEmpty()) {
+                     var text = Integer.parseInt(txtCode.getText());
+                     if (text > 0) {
+                         return supGroupService.deleteSubGroup(text);
+                     }
+                 }
+                 return 0;
+             }
 
-            @Override
-            public int deleteAccount() throws Exception {
-                if (!txtCode.getText().equals(Setting_Language.generate) || !txtCode.getText().isEmpty()) {
-                    var text = Integer.parseInt(txtCode.getText());
-                    if (text > 0) {
-                        return supGroupService.deleteSubGroup(text);
-                    }
-                }
-                return 0;
-            }
+             @Disable
+             @Override
+             public void printAccount() {
 
-            @Disable
-            @Override
-            public void printAccount() {
+             }
 
-            }
+             @Override
+             public SubGroups saveAccount() throws Exception {
+                 return insertData();
+             }
 
-            @Override
-            public SubGroups saveAccount() throws Exception {
-                return insertData();
-            }
+             @Override
+             public void firstPage(SubGroups subGroups) {
+                 selectData(subGroups);
+             }
 
-            @Override
-            public void firstPage(SubGroups subGroups) {
-                selectData(subGroups);
-            }
+             @Override
+             public void previousPage(SubGroups subGroups) {
+                 selectData(subGroups);
+             }
 
-            @Override
-            public void previousPage(SubGroups subGroups) {
-                selectData(subGroups);
-            }
+             @Override
+             public void nextPage(SubGroups subGroups) {
+                 selectData(subGroups);
+             }
 
-            @Override
-            public void nextPage(SubGroups subGroups) {
-                selectData(subGroups);
-            }
+             @Override
+             public void lastPage(SubGroups subGroups) {
+                 selectData(subGroups);
+             }
 
-            @Override
-            public void lastPage(SubGroups subGroups) {
-                selectData(subGroups);
-            }
+             @Override
+             public ObservableList<SubGroups> observableList() {
+                 return subGroupsObservableList;
+             }
 
-            @Override
-            public ObservableList<SubGroups> observableList() {
-                return subGroupsObservableList;
-            }
+             @Override
+             public void afterSaveOrDelete() {
+                 try {
+                     publisherAddGroup.setAvailability(Setting_Language.WORD_SUB_G);
+                     resetData();
+                     subGroupsObservableList.clear();
+                     subGroupsObservableList.setAll(supGroupService.getSubGroupsList());
+                 } catch (Exception e) {
+                     log.error(e.getMessage());
+                     AllAlerts.alertError(e.getMessage());
+                 }
+             }
 
-            @Override
-            public void afterSaveOrDelete() {
-                try {
-                    publisherAddGroup.setAvailability(Setting_Language.WORD_SUB_G);
-                    resetData();
-                    subGroupsObservableList.clear();
-                    subGroupsObservableList.setAll(supGroupService.getSubGroupsList());
-                } catch (Exception e) {
-                    log.error(e.getMessage());
-                    AllAlerts.alertError(e.getMessage());
-                }
-            }
-
-            @Override
-            public Publisher<String> publisherTable() {
-                return publisherAddGroup;
-            }
-        };
-    }
-
+             @Override
+             public Publisher<String> publisherTable() {
+                 return publisherAddGroup;
+             }
+         };
+     }
+ */
     private void otherSetting() {
         comboMainSetting();
         labelCode.setText(Setting_Language.WORD_CODE);

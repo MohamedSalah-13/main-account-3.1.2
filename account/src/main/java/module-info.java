@@ -92,8 +92,6 @@ module com.hamza.account {
     opens com.hamza.account.openFxml;
     exports com.hamza.account.otherSetting;
     opens com.hamza.account.otherSetting to javafx.fxml;
-    exports com.hamza.account.controller.dataByName;
-    opens com.hamza.account.controller.dataByName to javafx.fxml;
     opens com.hamza.account.controller.invoice to javafx.fxml;
     exports com.hamza.account.controller.invoice;
     exports com.hamza.account.controller.convert_stock;
@@ -140,4 +138,6 @@ module com.hamza.account {
     exports com.hamza.account.model.domain.permission;
     opens com.hamza.account.model.domain.permission to javafx.fxml;
     exports com.hamza.account.model.dao.permission;
+    exports com.hamza.account.controller.groups;
+    opens com.hamza.account.controller.groups to javafx.fxml;
 }

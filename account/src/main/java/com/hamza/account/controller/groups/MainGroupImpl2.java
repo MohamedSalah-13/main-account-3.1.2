@@ -1,4 +1,4 @@
-package com.hamza.account.controller.dataByName;
+package com.hamza.account.controller.groups;
 
 import com.hamza.account.controller.main.DataPublisher;
 import com.hamza.account.controller.others.ServiceRegistry;

@@ -237,7 +237,6 @@ public class MainScreenController extends MainItems implements Initializable {
         menuButtonSetting.configureButton(mainRightPaneController.getBtnSuppliers(), getNameSup().namesData());
         menuButtonSetting.configureButton(mainRightPaneController.getBtnAccountSuppliers(), getAccountButtonsSup());
         /*----------------------------------------------- Employees -----------------------------------------------*/
-        menuButtonSetting.configureButton(mainRightPaneController.getBtnAddDeposit(), getTreasuryButtons().addDeposit());
         menuButtonSetting.configureButton(mainRightPaneController.getBtnTreasuryDetails(), getTreasuryButtons().treasuryDetails());
         menuButtonSetting.configureButton(mainRightPaneController.getBtnConvertTreasury(), getTreasuryButtons().convertTreasury());
         menuButtonSetting.configureButton(mainRightPaneController.getBtnProcess(), getTreasuryButtons().openProcess());

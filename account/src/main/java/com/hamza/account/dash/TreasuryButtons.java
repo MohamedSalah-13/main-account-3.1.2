@@ -1,12 +1,10 @@
 package com.hamza.account.dash;
 
 import com.hamza.account.Main;
-import com.hamza.account.controller.convert_treasury.AddDepositController;
 import com.hamza.account.controller.convert_treasury.TreasuryTransferController;
 import com.hamza.account.controller.main.ButtonWithPerm;
 import com.hamza.account.controller.main.DataPublisher;
 import com.hamza.account.model.dao.DaoFactory;
-import com.hamza.account.openFxml.OpenFxmlApplication;
 import com.hamza.account.table.TableOpen;
 import com.hamza.account.view.*;
 import com.hamza.controlsfx.language.Setting_Language;
@@ -24,27 +22,6 @@ public class TreasuryButtons {
     public TreasuryButtons(DaoFactory daoFactory, DataPublisher dataPublisher) {
         this.daoFactory = daoFactory;
         this.dataPublisher = dataPublisher;
-    }
-
-    public ButtonWithPerm addDeposit() {
-        return new ButtonWithPerm() {
-            public final String TRANSACTION_TYPE_DEPOSIT_WITHDRAWAL = "إيداع - صرف";
-
-            @Override
-            public void action() throws Exception {
-                var controller = new AddDepositController(daoFactory, dataPublisher);
-                OpenFxmlApplication application = new OpenFxmlApplication(controller);
-
-            }
-
-            @NotNull
-            @Override
-            public String textName() {
-                return TRANSACTION_TYPE_DEPOSIT_WITHDRAWAL;
-            }
-
-
-        };
     }
 
     public ButtonWithPerm treasuryDetails() {

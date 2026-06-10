@@ -36,7 +36,7 @@ public class MainRightPaneController implements Initializable {
     private Button btnSales, btnTotalSale, btnPurchase, btnTotalPurchase, btnPurchaseRe, btnTotalPurchaseRe, btnItems,
             btnAddItem, btnUnits, btnMainGroup, btnInventory, btnCustomer, btnAccountCustom, btnSuppliers,
             btnAccountSuppliers,
-            btnAddDeposit, btnTreasuryDetails, btnConvertTreasury, btnProcess, btnExpenses, btnHome, btnUsers, btnBackup, btnClose;
+            btnTreasuryDetails, btnConvertTreasury, btnProcess, btnExpenses, btnHome, btnUsers, btnBackup, btnClose;
     @FXML
     private TitledPane paneSales, panePurchase, paneItems, paneCustom, paneSuppliers, paneTreasury, paneSetting;
     @FXML
@@ -85,7 +85,6 @@ public class MainRightPaneController implements Initializable {
         PermissionHelper.hideIfNotAllowed(btnAccountSuppliers, PermissionCode.SUPPLIERS_ACCOUNT_SHOW);
 
         // الخزائن
-        PermissionHelper.hideIfNotAllowed(btnAddDeposit, PermissionCode.TREASURY_DEPOSIT);
         PermissionHelper.hideIfNotAllowed(btnTreasuryDetails, PermissionCode.TREASURY_SHOW);
         PermissionHelper.hideIfNotAllowed(btnConvertTreasury, PermissionCode.TREASURY_TRANSFER);
         PermissionHelper.hideIfNotAllowed(btnProcess, PermissionCode.TREASURY_WITHDRAW);

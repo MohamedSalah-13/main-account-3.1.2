@@ -1,6 +1,6 @@
 package com.hamza.account.view;
 
-import com.hamza.account.controller.others.AddSubGroupController;
+import com.hamza.account.controller.groups.AddSubGroupController;
 import com.hamza.account.openFxml.OpenFxmlApplication;
 import com.hamza.controlsfx.language.Setting_Language;
 import com.hamza.controlsfx.observer.Publisher;

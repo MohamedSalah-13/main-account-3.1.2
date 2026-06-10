@@ -114,7 +114,6 @@
                                     <content>
                                         <VBox styleClass="side-button-box">
                                             <children>
-                                                <Button fx:id="btnAddDeposit" mnemonicParsing="false" text="إيداع / صرف"/>
                                                 <Button fx:id="btnTreasuryDetails" mnemonicParsing="false" text="كشف حساب"/>
                                                 <Button fx:id="btnConvertTreasury" mnemonicParsing="false" text="Convert Treasury"/>
                                                 <Button fx:id="btnProcess" mnemonicParsing="false" text="Process"/>
