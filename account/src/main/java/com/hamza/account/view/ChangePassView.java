@@ -5,9 +5,8 @@ import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.model.domain.Users;
 import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.interfaceData.ChangePassInt;
-import com.hamza.controlsfx.view.ChangePassApplication;
+import com.hamza.controlsfx.ChangePassApplication;
 import javafx.application.Platform;
-import javafx.scene.Scene;
 import lombok.extern.log4j.Log4j2;
 
 @Log4j2

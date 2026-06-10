@@ -188,10 +188,6 @@ public enum DaoFactory {
         return new EarningsDao(connection);
     }
 
-    public DepositDao depositDao() {
-        return new DepositDao(connection, this);
-    }
-
     public TreasuryBalanceDao treasuryBalanceDao() {
         return new TreasuryBalanceDao(connection);
     }

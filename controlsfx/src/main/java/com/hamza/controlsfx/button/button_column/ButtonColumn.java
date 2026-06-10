@@ -1,6 +1,6 @@
 package com.hamza.controlsfx.button.button_column;
 
-import com.hamza.controlsfx.HelloApplication;
+import com.hamza.controlsfx.DialogApplication;
 import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.button.api.ButtonColumnI;
 import javafx.scene.control.Button;
@@ -20,7 +20,7 @@ public class ButtonColumn<T> extends TableColumn<T, String> {
         setText(buttonColumnI.columnTitle());
         setCellValueFactory(new PropertyValueFactory<>(buttonColumnI.columnName()));
 
-        String externalForm = Objects.requireNonNull(HelloApplication.class.getResource("css/style.css")).toExternalForm();
+        String externalForm = Objects.requireNonNull(DialogApplication.class.getResource("css/style.css")).toExternalForm();
 
         Callback<TableColumn<T, String>, TableCell<T, String>> cellFactory = new Callback<>() {
             @Override
@@ -36,7 +36,7 @@ public class ButtonColumn<T> extends TableColumn<T, String> {
                             setText(null);
                         } else {
                             btn.getStylesheets().add(externalForm);
-                            btn.getStyleClass().addAll("button-other","app-neutral-button");
+                            btn.getStyleClass().addAll("button-other", "app-neutral-button");
                             btn.setDisable(buttonColumnI.isButtonDisabled(getIndex()));
                             btn.setOnAction(event -> {
                                 try {

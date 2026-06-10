@@ -1,4 +1,4 @@
-package com.hamza.controlsfx.view;
+package com.hamza.controlsfx;
 
 import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.interfaceData.AppSettingInterface;

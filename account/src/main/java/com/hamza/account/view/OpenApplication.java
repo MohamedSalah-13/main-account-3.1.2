@@ -6,7 +6,7 @@ import com.hamza.account.controller.pos.DialogButtons;
 import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.interfaceData.AppSettingInterface;
 import com.hamza.controlsfx.others.ChangeOrientation;
-import com.hamza.controlsfx.view.DialogApplication;
+import com.hamza.controlsfx.DialogApplication;
 import javafx.scene.image.Image;
 import javafx.stage.Stage;
 import lombok.extern.log4j.Log4j2;

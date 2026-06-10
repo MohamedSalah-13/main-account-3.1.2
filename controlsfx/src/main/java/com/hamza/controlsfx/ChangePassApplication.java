@@ -1,4 +1,4 @@
-package com.hamza.controlsfx.view;
+package com.hamza.controlsfx;
 
 import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.controller.ChangePassController;
@@ -43,7 +43,7 @@ public class ChangePassApplication {
 
             @Override
             public Pane pane() throws Exception {
-                FXMLLoader fxmlLoader = new FXMLLoader(this.getClass().getResource("changePass-view.fxml"));
+                FXMLLoader fxmlLoader = new FXMLLoader(this.getClass().getResource("view/changePass-view.fxml"));
                 fxmlLoader.setController(controller);
                 return fxmlLoader.load();
             }

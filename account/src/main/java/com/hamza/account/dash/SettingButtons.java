@@ -2,7 +2,6 @@ package com.hamza.account.dash;
 
 import com.hamza.account.config.Image_Setting;
 import com.hamza.account.config.SaveDatabaseFile;
-import com.hamza.account.config.ThemeManager;
 import com.hamza.account.controller.main.ButtonWithPerm;
 import com.hamza.account.controller.main.DataPublisher;
 import com.hamza.account.controller.others.DeleteDataController;
@@ -16,21 +15,13 @@ import com.hamza.account.view.SettingApplication;
 import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.button.ImageDesign;
 import com.hamza.controlsfx.language.Setting_Language;
-import com.hamza.controlsfx.others.ChangeOrientation;
-import com.hamza.controlsfx.view.PassCheckApplication;
 import javafx.scene.Node;
 import javafx.scene.Scene;
-import javafx.scene.control.Button;
-import javafx.scene.control.ButtonType;
-import javafx.scene.control.DialogPane;
 import javafx.scene.control.TabPane;
 import javafx.scene.input.KeyCodeCombination;
-import javafx.scene.input.KeyCombination;
 import javafx.stage.Stage;
 import lombok.extern.log4j.Log4j2;
 import org.jetbrains.annotations.NotNull;
-
-import java.util.Optional;
 
 @Log4j2
 public class SettingButtons {
@@ -177,33 +168,7 @@ public class SettingButtons {
 
             @Override
             public void action() throws Exception {
-                var check = new PassCheckApplication("147852369");
-                DialogPane dialogPane = check.getDialogPane();
-                var scene = dialogPane.getScene();
-                ThemeManager.apply(scene);
-                ChangeOrientation.sceneOrientation(scene);
-
-                Button buttonOK = (Button) dialogPane.lookupButton(ButtonType.OK);
-                buttonOK.setDefaultButton(false);
-                Button buttonCancel = (Button) dialogPane.lookupButton(ButtonType.CANCEL);
-                buttonCancel.setId("btnClose");
-                buttonOK.setText(Setting_Language.OK + " F10");
-                buttonCancel.setText(Setting_Language.WORD_CANCEL);
-                buttonCancel.setCancelButton(true);
-                scene.getAccelerators().put(KeyCombination.keyCombination("F10"), buttonOK::fire);
-
-                Optional<Boolean> optionalS = check.showAndWait();
-                optionalS.ifPresent(aBoolean -> {
-                    if (aBoolean) {
-                        try {
-                            Stage stage = new Stage();
-                            stage.setTitle(textName());
-                            new OpenApplication<>(new DeleteDataController(daoFactory, dataPublisher));
-                        } catch (Exception e) {
-                            AllAlerts.alertError(e.getMessage());
-                        }
-                    } else AllAlerts.alertError(Setting_Language.THE_PASSWORD_IS_INCORRECT);
-                });
+                new OpenApplication<>(new DeleteDataController(daoFactory, dataPublisher));
             }
 
             @NotNull
