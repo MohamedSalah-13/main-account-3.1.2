@@ -4,7 +4,7 @@ import com.hamza.account.config.Image_Setting;
 import com.hamza.account.config.PropertiesName;
 import com.hamza.account.controller.main.DataPublisher;
 import com.hamza.account.controller.main.LoadOtherData;
-import com.hamza.account.controller.model.TreeAccountModelForPrint;
+import com.hamza.account.controller.viewmodel.TreeAccountModelForPrint;
 import com.hamza.account.interfaces.api.DataInterface;
 import com.hamza.account.model.base.BaseAccount;
 import com.hamza.account.model.base.BaseNames;

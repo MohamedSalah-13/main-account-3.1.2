@@ -1,6 +1,6 @@
 package com.hamza.account.interfaces.api;
 
-import com.hamza.account.controller.model.PrintPurchaseWithName;
+import com.hamza.account.controller.viewmodel.PrintPurchaseWithName;
 import com.hamza.account.event.EventType;
 import com.hamza.account.model.base.BaseAccount;
 import com.hamza.account.model.base.BaseNames;
@@ -25,8 +25,6 @@ public interface DataInterface<T1 extends BasePurchasesAndSales, T2 extends Base
     DesignInterface designInterface();
 
     TotalDesignInterface<T2> totalDesignInterface();
-
-//    Publisher<String> publisherPurchaseOrSales();
 
     List<T1> listForAllPurchase(int id) throws DaoException;
 

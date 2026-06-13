@@ -516,14 +516,14 @@ FROM total_sales_re tsr;
 CREATE OR REPLACE VIEW account_suppliers_table AS
 SELECT 0                                      AS account_num,
        c.id                                   AS account_code,
-       DATE_FORMAT(c.date_insert, '%Y-%m-%d') AS account_date,
+       DATE_FORMAT(c.created_at, '%Y-%m-%d') AS account_date,
        c.first_balance                        AS purchase,
        0                                      AS discount,
        0                                      AS paid,
        'رصيد اول'                             AS notes,
        1                                      AS information,
        0                                      AS type,
-       c.date_insert                          AS date_insert,
+       c.created_at                          AS date_insert,
        0                                      AS treasury_id,
        0                                      AS numberInv
 FROM suppliers c

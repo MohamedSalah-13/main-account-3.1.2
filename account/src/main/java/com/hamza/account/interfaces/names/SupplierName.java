@@ -15,6 +15,7 @@ import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import org.jetbrains.annotations.NotNull;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 public class SupplierName implements NameData<Suppliers> {
@@ -31,7 +32,8 @@ public class SupplierName implements NameData<Suppliers> {
         suppliers.setTel(tel);
         suppliers.setAddress(address);
         suppliers.setNotes(notes);
-        suppliers.setFirst_balance(firstBalance);
+        suppliers.setFirstBalance(BigDecimal.valueOf(firstBalance));
+        suppliers.setSelPriceType(priceTypeModel);
         suppliers.setArea(area);
         return suppliers;
     }
@@ -39,7 +41,7 @@ public class SupplierName implements NameData<Suppliers> {
     @Override
     public void addColumns(TableView<Suppliers> tableView) {
         TableColumn<Suppliers, String> tableColumnArea = addColumn(Setting_Language.AREA
-                , f -> new SimpleStringProperty(f.getValue().areaProperty().get().getArea_name()));
+                , f -> new SimpleStringProperty(f.getValue().getArea().getArea_name()));
         tableView.getColumns().add(tableColumnArea);
     }
 

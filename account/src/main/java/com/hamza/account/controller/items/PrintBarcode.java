@@ -2,7 +2,7 @@ package com.hamza.account.controller.items;
 
 import com.hamza.account.Main;
 import com.hamza.account.config.Image_Setting;
-import com.hamza.account.controller.model.PrintBarcodeModel;
+import com.hamza.account.controller.viewmodel.PrintBarcodeModel;
 import com.hamza.account.otherSetting.ButtonDeleteRow;
 import com.hamza.account.reportData.Print_Reports;
 import com.hamza.account.table.TableSetting;

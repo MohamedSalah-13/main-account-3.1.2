@@ -1,4 +1,4 @@
-package com.hamza.account.controller.model;
+package com.hamza.account.controller.viewmodel;
 
 import com.hamza.account.config.NamesTables;
 import com.hamza.controlsfx.table.ColumnData;

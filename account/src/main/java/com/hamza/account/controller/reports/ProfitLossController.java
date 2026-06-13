@@ -1,6 +1,6 @@
 package com.hamza.account.controller.reports;
 
-import com.hamza.account.controller.model.TableData;
+import com.hamza.account.controller.viewmodel.TableData;
 import com.hamza.account.controller.others.ServiceRegistry;
 import com.hamza.account.model.domain.Earnings;
 import com.hamza.account.openFxml.FxmlPath;

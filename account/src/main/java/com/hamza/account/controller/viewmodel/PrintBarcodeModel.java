@@ -1,4 +1,4 @@
-package com.hamza.account.controller.model;
+package com.hamza.account.controller.viewmodel;
 
 import com.hamza.controlsfx.table.ColumnData;
 import javafx.beans.property.DoubleProperty;

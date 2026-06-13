@@ -3,7 +3,7 @@ package com.hamza.account.controller.pos;
 
 import com.hamza.account.config.Image_Setting;
 import com.hamza.account.controller.main.DataPublisher;
-import com.hamza.account.controller.model.ModelPrintInvoice;
+import com.hamza.account.controller.viewmodel.ModelPrintInvoice;
 import com.hamza.account.controller.name_account.NameController;
 import com.hamza.account.controller.others.ServiceRegistry;
 import com.hamza.account.features.key_setting.UpdateInterface;
@@ -71,11 +71,9 @@ import static com.hamza.controlsfx.util.NumberUtils.roundToTwoDecimalPlaces;
 public class PosController extends ButtonSetting {
 
     private static final int PAGE_SIZE = 100;
-    private final Publisher<String> publisherAddCustomer;
     private final DaoFactory daoFactory;
     private final List<Button> paneList = new ArrayList<>();
     private final DataPublisher dataPublisher;
-    private final NameController<Sales, Total_Sales, Customers, CustomerAccount> nameController;
     private final DataInterface<Sales, Total_Sales, Customers, CustomerAccount> dataInterface;
     private final Map<BasePurchasesAndSales, String> originalNames = new HashMap<>();
     private final Map<Integer, List<Button>> groupButtonsCache = new HashMap<>();
@@ -139,9 +137,7 @@ public class PosController extends ButtonSetting {
     public PosController(DaoFactory daoFactory, DataPublisher dataPublisher) throws Exception {
         this.daoFactory = daoFactory;
         this.dataPublisher = dataPublisher;
-        this.publisherAddCustomer = dataPublisher.getPublisherAddNameCustomer();
         this.dataInterface = new CustomData(daoFactory, dataPublisher);
-        this.nameController = new NameController<>(dataInterface, daoFactory, dataPublisher);
     }
 
     @FXML
@@ -284,8 +280,6 @@ public class PosController extends ButtonSetting {
 
         });
 
-        btnAddCustom.setOnAction(event -> addCustomer());
-        btnCustomers.setOnAction(event -> getCustomers());
 
         splitPane.getDividers().getFirst().positionProperty().addListener(
                 (obs, oldPos, newPos) ->
@@ -569,8 +563,8 @@ public class PosController extends ButtonSetting {
                 throw new Exception("لا يمكن ان يكون الكمية والسعر يساوى صفر ...؟");
             }
 
-            var customers = new Customers(customerId);
-
+            var customers = new Customers();
+            customers.setId(customerId);
             // insert
             if (AllAlerts.confirmSave()) {
                 Total_Sales totalSales = new Total_Sales();
@@ -720,74 +714,6 @@ public class PosController extends ButtonSetting {
         textDiscount.setText("0");
 //        comboArea.getSelectionModel().clearSelection();
         getTextCode();
-    }
-
-    private void addCustomer() {
-        try {
-            if (customerId == 1) {
-                throw new Exception("لا يمكن التعديل");
-            }
-
-            if (customerId > 0) {
-                var b = AllAlerts.confirm_all("update", "هل تريد تعديل البيانات");
-                if (!b) return;
-            }
-
-            if (textCustomName.getText().isEmpty()) {
-                textCustomName.requestFocus();
-                throw new Exception("من فضلك ادخل الاسم...؟");
-            }
-            if (comboArea.getSelectionModel().getSelectedItem() == null) {
-                comboArea.requestFocus();
-                throw new Exception("من فضلك ادخل جميع البيانات...");
-            }
-
-            if (!AllAlerts.confirmSave()) {
-                return;
-            }
-
-            Customers customers = new Customers();
-            customers.setId(customerId);
-            customers.setName(textCustomName.getText());
-            customers.setTel(textTel.getText());
-            customers.setAddress(textAddress.getText());
-            customers.setSelPriceObject(new SelPriceTypeModel(1));
-            customers.setUsers(new Users(1));
-            customers.setArea(getAreas().stream().filter(area -> area.getArea_name().equals(comboArea.getSelectionModel().getSelectedItem())).findFirst().orElseThrow());
-
-            var insert = 0;
-            if (customerId > 0)
-                insert = customerService.nameDao().update(customers);
-            else insert = customerService.nameDao().insert(customers);
-            if (insert == 1) {
-                AllAlerts.alertSave();
-                publisherAddCustomer.notifyObservers();
-            }
-
-        } catch (Exception e) {
-            logError(e);
-        }
-    }
-
-    private void getCustomers() {
-        try {
-            var stage = new Stage();
-            var customersTableOpen = new TableOpen<>(nameController);
-            nameController.objectPropertyProperty().addListener((observable, oldValue, newValue) -> {
-                if (newValue != null) {
-                    customerId = newValue.getId();
-                    textCustomName.setText(newValue.getName());
-                    textTel.setText(newValue.getTel());
-                    textAddress.setText(newValue.getAddress());
-                    comboArea.getSelectionModel().select(newValue.areaProperty().get().getArea_name());
-                    stage.close();
-                }
-            });
-
-            customersTableOpen.start(stage);
-        } catch (Exception e) {
-            logError(e);
-        }
     }
 
     private void searchAndSortNodes(String newValue) {

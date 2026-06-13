@@ -1,6 +1,5 @@
 package com.hamza.account.model.domain;
 
-import com.hamza.account.model.base.BaseEntity;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -10,8 +9,9 @@ import lombok.Setter;
 @Getter
 @NoArgsConstructor
 @AllArgsConstructor
-public class Company extends BaseEntity {
+public class Company {
 
+    private int id;
     private String name, tel, address, tax, commercial;
     private byte[] image;
 }

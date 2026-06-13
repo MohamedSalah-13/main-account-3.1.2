@@ -3,7 +3,7 @@ package com.hamza.account.controller.name_account;
 import com.hamza.account.config.Image_Setting;
 import com.hamza.account.controller.main.DataPublisher;
 import com.hamza.account.controller.main.LoadOtherData;
-import com.hamza.account.controller.model.AccountCard;
+import com.hamza.account.controller.viewmodel.AccountCard;
 import com.hamza.account.features.export.CustomerAccountData;
 import com.hamza.account.features.export.ReportExportService;
 import com.hamza.account.interfaces.api.DataInterface;
@@ -359,10 +359,10 @@ public class AccountDetailsWithItemsController<T1 extends BasePurchasesAndSales,
         try {
             list_items = new ArrayList<>();
             var customerById = dataInterface.nameAndAccountInterface().getNameById(num_id);
-            var firstBalance = customerById.getFirst_balance();
+            var firstBalance = customerById.getFirstBalance();
             AccountCard accountName = new AccountCard(0, BALANCE_TITLE
-                    , customerById.getCreated_at().toLocalDate().toString()
-                    , firstBalance > 0 ? firstBalance : 0, firstBalance < 0 ? firstBalance : 0
+                    , customerById.getCreatedAt().toLocalDate().toString()
+                    , firstBalance.doubleValue() > 0 ? firstBalance.doubleValue() : 0, firstBalance.doubleValue() < 0 ? firstBalance.doubleValue() : 0
                     , 0, customerById.getNotes(), BALANCE_TITLE);
             list_items.add(accountName);
 

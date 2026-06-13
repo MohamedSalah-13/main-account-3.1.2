@@ -1,11 +1,11 @@
 package com.hamza.account.model.dao;
 
-import com.hamza.account.model.domain.Area;
-import com.hamza.account.model.domain.Customers;
-import com.hamza.account.trial.TrialManager;
 import com.hamza.account.database.AbstractDao;
 import com.hamza.account.database.DaoException;
 import com.hamza.account.database.SqlStatements;
+import com.hamza.account.model.domain.Area;
+import com.hamza.account.model.domain.Customers;
+import com.hamza.account.trial.TrialManager;
 
 import java.sql.Connection;
 import java.sql.ResultSet;
@@ -56,7 +56,7 @@ public class CustomerDao extends AbstractDao<Customers> {
     private final String TEL = "tel";
     private final String ADDRESS = "address";
     private final String NOTES = "notes";
-    private final String LIMIT_NUM = "limit_num";
+    //    private final String LIMIT_NUM = "limit_num";
     private final String FIRST_BALANCE = "first_balance";
     private final String ITEMS_SEL_PRICE_ID = "price_id";
     private final String TABLE = "custom";
@@ -85,18 +85,17 @@ public class CustomerDao extends AbstractDao<Customers> {
                 , model.getTel()
                 , model.getAddress()
                 , model.getNotes()
-                , model.getCredit_limit()
-                , model.getFirst_balance()
-                , model.getSelPriceObject().getId()
-                , model.getUsers().getId()
+                , model.getFirstBalance()
+                , model.getSelPriceType().getId()
+                , model.getUser().getId()
                 , model.getArea().getId()
         };
-        return executeUpdate(SqlStatements.insertStatement(TABLE, NAME, TEL, ADDRESS, NOTES, LIMIT_NUM, FIRST_BALANCE, ITEMS_SEL_PRICE_ID, USER_ID, AREA_ID), objects);
+        return executeUpdate(SqlStatements.insertStatement(TABLE, NAME, TEL, ADDRESS, NOTES, FIRST_BALANCE, ITEMS_SEL_PRICE_ID, USER_ID, AREA_ID), objects);
     }
 
     @Override
     public int update(Customers model) throws DaoException {
-        String query = SqlStatements.updateStatement(TABLE, ID, NAME, TEL, ADDRESS, NOTES, LIMIT_NUM, FIRST_BALANCE, ITEMS_SEL_PRICE_ID, AREA_ID);
+        String query = SqlStatements.updateStatement(TABLE, ID, NAME, TEL, ADDRESS, NOTES, FIRST_BALANCE, ITEMS_SEL_PRICE_ID, AREA_ID);
         return executeUpdate(query, getData(model));
     }
 
@@ -125,9 +124,9 @@ public class CustomerDao extends AbstractDao<Customers> {
                 , model.getTel()
                 , model.getAddress()
                 , model.getNotes()
-                , model.getCredit_limit()
-                , model.getFirst_balance()
-                , model.getSelPriceObject().getId()
+                , model.getFirstBalance()
+                , model.getSelPriceType().getId()
+                , model.getUser().getId()
                 , model.getArea().getId()
                 , model.getId()};
     }
@@ -144,11 +143,11 @@ public class CustomerDao extends AbstractDao<Customers> {
             customers.setAddress(address == null ? "" : address);
             String notes = rs.getString(NOTES);
             customers.setNotes(notes == null ? "" : notes);
-            customers.setCredit_limit(rs.getInt(LIMIT_NUM));
-            customers.setFirst_balance(rs.getDouble(FIRST_BALANCE));
-            customers.setSelPriceObject(daoFactory.getItemsSelPriceDao().getDataById(rs.getInt(ITEMS_SEL_PRICE_ID)));
+            customers.setFirstBalance(rs.getBigDecimal(FIRST_BALANCE));
+            customers.setSelPriceType(daoFactory.getItemsSelPriceDao().getDataById(rs.getInt(ITEMS_SEL_PRICE_ID)));
+//            customers.setUser(daoFactory.getUsersDao().getDataById(rs.getInt(USER_ID)));
             customers.setArea(new Area(rs.getInt(AREA_ID), rs.getString(AREA_NAME)));
-            customers.setCreated_at(LocalDateTime.parse(rs.getString(DATE_INSERT), DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
+            customers.setCreatedAt(LocalDateTime.parse(rs.getString(DATE_INSERT), DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
         } catch (SQLException e) {
             throw new DaoException(e);
         }

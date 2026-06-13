@@ -2,8 +2,8 @@ package com.hamza.account.reportData;
 
 import com.hamza.account.config.ConnectionToDatabase;
 import com.hamza.account.controller.invoice.ShowInvoiceNameData;
-import com.hamza.account.controller.model.ModelPrintInvoice;
-import com.hamza.account.controller.model.PrintPurchaseWithName;
+import com.hamza.account.controller.viewmodel.ModelPrintInvoice;
+import com.hamza.account.controller.viewmodel.PrintPurchaseWithName;
 import com.hamza.account.database.DaoException;
 import com.hamza.account.features.checkbox.impl.setting.BarcodePrintDoubleLabel;
 import com.hamza.account.model.domain.*;

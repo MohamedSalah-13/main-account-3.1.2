@@ -119,7 +119,7 @@ public class SalesDao extends AbstractDao<Sales> {
             sales.setTotal_after_discount(roundToTwoDecimalPlaces(round - aDoubleDiscount));
             var unitsModel = daoFactory.unitsDao().getDataById(rs.getInt(TYPE));
             sales.setUnitsType(unitsModel);
-            sales.setCustomers(new Customers(rs.getString(name), 0, 0));
+            sales.setCustomers(new Customers(0,rs.getString(name)));
 
             sales.setQuantityByUnit(rs.getDouble(TYPE_VALUE) * saleQuantity);
 

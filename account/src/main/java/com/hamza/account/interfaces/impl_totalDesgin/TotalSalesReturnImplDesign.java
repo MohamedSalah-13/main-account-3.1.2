@@ -35,7 +35,7 @@ public class TotalSalesReturnImplDesign implements TotalDesignInterface<Total_Sa
 
     @Override
     public void getTable(TableView<Total_Sales_Re> tableView) {
-        Callback<TableColumn.CellDataFeatures<Total_Sales_Re, String>, ObservableValue<String>> cellName = f -> f.getValue().getCustomer().nameProperty();
+        Callback<TableColumn.CellDataFeatures<Total_Sales_Re, String>, ObservableValue<String>> cellName = f -> null;
         addColumn(tableView, Setting_Language.WORD_NAME, 2, cellName);
 
         Callback<TableColumn.CellDataFeatures<Total_Sales_Re, String>, ObservableValue<String>> colNameType = f -> f.getValue().getInvoiceType().typeProperty();

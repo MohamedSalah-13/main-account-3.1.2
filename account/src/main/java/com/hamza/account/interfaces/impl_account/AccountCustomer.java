@@ -48,11 +48,11 @@ public record AccountCustomer(DaoFactory daoFactory) implements AccountData<Cust
     @Override
     public void updateTableView(TableView<CustomerAccount> tableView) {
         // add column code
-        Callback<TableColumn.CellDataFeatures<CustomerAccount, String>, ObservableValue<String>> callback = f -> f.getValue().getCustomers().idProperty().asString();
+        Callback<TableColumn.CellDataFeatures<CustomerAccount, String>, ObservableValue<String>> callback = f -> null;
         ColumnSetting.addColumn(tableView, "كود العميل", 0, callback);
 
         // add column name
-        Callback<TableColumn.CellDataFeatures<CustomerAccount, String>, ObservableValue<String>> callback_name = f -> f.getValue().getCustomers().nameProperty();
+        Callback<TableColumn.CellDataFeatures<CustomerAccount, String>, ObservableValue<String>> callback_name = f -> null;
         ColumnSetting.addColumn(tableView, Setting_Language.WORD_NAME, 1, callback_name);
     }
 

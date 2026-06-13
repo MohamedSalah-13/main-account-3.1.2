@@ -56,7 +56,7 @@ public class SuppliersDao extends AbstractDao<Suppliers> {
     private final String USER_ID = "user_id";
     private final String AREA_ID = "area_id";
     private final String AREA_NAME = "area_name";
-    private final String DATE_INSERT = "date_insert";
+    private final String DATE_INSERT = "created_at";
     private final DaoFactory daoFactory;
 
     SuppliersDao(Connection connection, DaoFactory daoFactory) {
@@ -76,8 +76,8 @@ public class SuppliersDao extends AbstractDao<Suppliers> {
                 , model.getTel()
                 , model.getAddress()
                 , model.getNotes()
-                , model.getFirst_balance()
-                , model.getUsers().getId()
+                , model.getFirstBalance()
+                , model.getUser().getId()
                 , model.getArea().getId()};
 
         String query = SqlStatements.insertStatement(TABLE_NAME, NAME, TEL, ADDRESS, NOTES, FIRST_BALANCE, USER_ID, AREA_ID);
@@ -107,7 +107,7 @@ public class SuppliersDao extends AbstractDao<Suppliers> {
                 , model.getTel()
                 , model.getAddress()
                 , model.getNotes()
-                , model.getFirst_balance()
+                , model.getFirstBalance()
                 , model.getArea().getId()
                 , model.getId()};
     }
@@ -127,10 +127,10 @@ public class SuppliersDao extends AbstractDao<Suppliers> {
             String notes = resultSet.getString(NOTES);
             suppliers.setNotes(notes == null ? "" : notes);
 
-            suppliers.setFirst_balance(resultSet.getDouble(FIRST_BALANCE));
+            suppliers.setFirstBalance(resultSet.getBigDecimal(FIRST_BALANCE));
 //            suppliers.setArea(new Area(resultSet.getInt(AREA_ID), resultSet.getString(AREA_NAME)));
             suppliers.setArea(daoFactory.areaDao().getDataById(resultSet.getInt(AREA_ID)));
-            suppliers.setCreated_at(LocalDateTime.parse(resultSet.getString(DATE_INSERT), DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
+            suppliers.setCreatedAt(LocalDateTime.parse(resultSet.getString(DATE_INSERT), DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
         } catch (SQLException e) {
             throw new DaoException(e);
         }

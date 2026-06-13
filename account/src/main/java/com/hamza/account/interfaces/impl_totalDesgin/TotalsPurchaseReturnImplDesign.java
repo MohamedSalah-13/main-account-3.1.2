@@ -34,7 +34,7 @@ public class TotalsPurchaseReturnImplDesign implements TotalDesignInterface<Tota
 
     @Override
     public void getTable(TableView<Total_Buy_Re> tableView) {
-        Callback<TableColumn.CellDataFeatures<Total_Buy_Re, String>, ObservableValue<String>> cellName = f -> f.getValue().getSuppliers().nameProperty();
+        Callback<TableColumn.CellDataFeatures<Total_Buy_Re, String>, ObservableValue<String>> cellName = f -> null;
         addColumn(tableView, Setting_Language.WORD_NAME, 2, cellName);
 
         Callback<TableColumn.CellDataFeatures<Total_Buy_Re, String>, ObservableValue<String>> colNameType = f -> f.getValue().getInvoiceType().typeProperty();

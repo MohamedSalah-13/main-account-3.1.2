@@ -2,7 +2,7 @@ package com.hamza.account.interfaces.impl_dataInterface;
 
 import com.hamza.account.controller.main.DataPublisher;
 import com.hamza.account.controller.main.LoadData;
-import com.hamza.account.controller.model.PrintPurchaseWithName;
+import com.hamza.account.controller.viewmodel.PrintPurchaseWithName;
 import com.hamza.account.controller.others.ServiceRegistry;
 import com.hamza.account.event.EventType;
 import com.hamza.account.interfaces.api.*;

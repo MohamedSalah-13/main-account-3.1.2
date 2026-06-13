@@ -19,11 +19,11 @@ public class SuppliersSalesItemDao extends AbstractDao<CustomerPurchasedItem> {
     public CustomerPurchasedItem map(ResultSet rs) throws DaoException {
        CustomerPurchasedItem customerPurchasedItem = new CustomerPurchasedItem();
         try {
-            customerPurchasedItem.setCustomerId(rs.getInt("customer_id"));
-            customerPurchasedItem.setCustomerName(rs.getString("customer_name"));
+            customerPurchasedItem.setCustomerId(rs.getInt("supplier_id"));
+            customerPurchasedItem.setCustomerName(rs.getString("supplier_name"));
             customerPurchasedItem.setItemName(rs.getString("item_name"));
             customerPurchasedItem.setQuantity(rs.getBigDecimal("quantity"));
-            customerPurchasedItem.setSellingPrice(rs.getBigDecimal("selling_price"));
+            customerPurchasedItem.setSellingPrice(rs.getBigDecimal("purchase_price"));
             customerPurchasedItem.setInvoiceDate(rs.getDate("invoice_date").toLocalDate());
             customerPurchasedItem.setInvoiceNumber(rs.getLong("invoice_number"));
         } catch (SQLException e) {
@@ -34,6 +34,6 @@ public class SuppliersSalesItemDao extends AbstractDao<CustomerPurchasedItem> {
     }
 
     public List<CustomerPurchasedItem> findBySupplierId(int supId) throws DaoException {
-        return queryForObjects("SELECT * FROM view_suppliers_sales_items WHERE customer_id = ?", this::map, supId);
+        return queryForObjects("SELECT * FROM view_suppliers_sales_items WHERE supplier_id = ?", this::map, supId);
     }
 }

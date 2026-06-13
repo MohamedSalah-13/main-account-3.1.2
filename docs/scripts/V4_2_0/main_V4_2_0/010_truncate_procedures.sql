@@ -34,10 +34,9 @@ BEGIN
 
     IF (deleteName) THEN
         TRUNCATE TABLE custom;
-        INSERT INTO custom(id, name, limit_num, price_id)
-        VALUES (1, 'بيع نقدى', 5000, 1)
+        INSERT INTO custom(id, name, price_id)
+        VALUES (1, 'بيع نقدي',1 )
         ON DUPLICATE KEY UPDATE name      = VALUES(name),
-                                limit_num = VALUES(limit_num),
                                 price_id  = VALUES(price_id);
     END IF;
 
@@ -117,16 +116,15 @@ DROP PROCEDURE IF EXISTS truncateAndInitializeItemsTables;
 CREATE PROCEDURE truncateAndInitializeItemsTables()
 BEGIN
     TRUNCATE TABLE units;
-    INSERT INTO units(unit_name) VALUES ('قطعة'), ('كرتونة');
+    INSERT INTO units(unit_name) VALUES ('قطعة'), ('كرتونه');
 
     TRUNCATE TABLE type_price;
     INSERT INTO type_price (name)
-    VALUES ('سعر1'),
-           ('سعر2'),
-           ('سعر3');
+    VALUES ('سعر بيع1'),
+           ('سعر بيع2'),
+           ('سعر بيع3');
 
     TRUNCATE TABLE items;
-    TRUNCATE TABLE items_package;
     TRUNCATE TABLE items_units;
     TRUNCATE TABLE items_stock;
     TRUNCATE TABLE stock_movements;
@@ -187,8 +185,6 @@ begin
         TRUNCATE table treasury;
         INSERT INTO treasury(t_name, amount)
         VALUES ('الخزينة الرئيسية', 0);
-
-        TRUNCATE table targeted_sales;
 
     End IF;
 

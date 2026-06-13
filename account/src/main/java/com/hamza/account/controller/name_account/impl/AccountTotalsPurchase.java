@@ -1,6 +1,6 @@
 package com.hamza.account.controller.name_account.impl;
 
-import com.hamza.account.controller.model.AccountCard;
+import com.hamza.account.controller.viewmodel.AccountCard;
 import com.hamza.account.controller.name_account.AccountDetailsInterface;
 import com.hamza.account.controller.others.ServiceRegistry;
 import com.hamza.account.model.base.BasePurchasesAndSales;

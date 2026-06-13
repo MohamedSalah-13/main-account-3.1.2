@@ -59,8 +59,6 @@ public class DownLoadApplication extends Application {
         ServiceRegistry.register(SupGroupService.class, new SupGroupService(daoFactory));
         ServiceRegistry.register(TreasuryTransferService.class, new TreasuryTransferService(daoFactory));
         ServiceRegistry.register(CardItemService.class, new CardItemService(daoFactory));
-        ServiceRegistry.register(TargetDetailsService.class, new TargetDetailsService(daoFactory));
-        ServiceRegistry.register(TargetService.class, new TargetService(daoFactory));
         ServiceRegistry.register(ExpensesService.class, new ExpensesService(daoFactory));
         ServiceRegistry.register(ExpensesDetailsService.class, new ExpensesDetailsService(daoFactory));
         ServiceRegistry.register(TotalSalesService.class, new TotalSalesService(daoFactory));

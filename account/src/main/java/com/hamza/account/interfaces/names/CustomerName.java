@@ -15,6 +15,7 @@ import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import org.jetbrains.annotations.NotNull;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.function.Function;
 
@@ -34,9 +35,8 @@ public class CustomerName implements NameData<Customers> {
         customers.setTel(tel);
         customers.setAddress(address);
         customers.setNotes(notes);
-        customers.setCredit_limit(limit);
-        customers.setFirst_balance(firstBalance);
-        customers.setSelPriceObject(priceTypeModel);
+        customers.setFirstBalance(BigDecimal.valueOf(firstBalance));
+        customers.setSelPriceType(priceTypeModel);
         customers.setArea(area);
         return customers;
     }
@@ -44,10 +44,10 @@ public class CustomerName implements NameData<Customers> {
     @Override
     public void addColumns(TableView<Customers> tableView) {
         TableColumn<Customers, String> tableColumnSelPriceType = addColumn(Setting_Language.WORD_SEL_PRICE
-                , f -> f.getValue().getSelPriceObject().nameProperty());
+                , f -> f.getValue().getSelPriceType().nameProperty());
 
         TableColumn<Customers, String> tableColumnArea = addColumn(Setting_Language.AREA
-                , f -> new SimpleStringProperty(f.getValue().areaProperty().get().getArea_name()));
+                , f -> new SimpleStringProperty(f.getValue().getArea().getArea_name()));
 
         tableView.getColumns().add(tableColumnSelPriceType);
         tableView.getColumns().add(tableColumnArea);
@@ -55,22 +55,22 @@ public class CustomerName implements NameData<Customers> {
 
     @Override
     public Function<Customers, Double> getCreditLimit() {
-        return Customers::getCredit_limit;
+        return null;
     }
 
     @Override
     public String getPriceType(Customers customers) {
-        return customers.getSelPriceObject().getName();
+        return customers.getSelPriceType().getName();
     }
 
     @Override
     public double limit(Customers customers) {
-        return customers.getCredit_limit();
+        return 0;
     }
 
     @Override
     public int priceId(Customers customers) {
-        return customers.getSelPriceObject().getId();
+        return customers.getSelPriceType().getId();
     }
 
     @Override

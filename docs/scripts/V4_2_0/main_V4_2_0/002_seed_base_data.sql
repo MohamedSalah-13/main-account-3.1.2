@@ -26,11 +26,10 @@ VALUES (1, 'القاهرة')
 ON DUPLICATE KEY UPDATE
     area_name = VALUES(area_name);
 
-INSERT INTO custom (id, name, limit_num, price_id)
-VALUES (1, 'بيع نقدي', 5000, 1)
+INSERT INTO custom (id, name, price_id)
+VALUES (1, 'بيع نقدي', 1)
 ON DUPLICATE KEY UPDATE
                      name = VALUES(name),
-                     limit_num = VALUES(limit_num),
                      price_id = VALUES(price_id);
 
 INSERT INTO suppliers (id, name)

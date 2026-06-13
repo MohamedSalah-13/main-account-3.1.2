@@ -59,10 +59,6 @@ module com.hamza.account {
     exports com.hamza.account.features.choiceDialoge;
     exports com.hamza.account.features.chart;
     opens com.hamza.account.features.chart to javafx.fxml;
-    exports com.hamza.account.interfaces.treeAccount;
-    opens com.hamza.account.interfaces.treeAccount to javafx.fxml;
-    exports com.hamza.account.interfaces.implReportTotals;
-    opens com.hamza.account.interfaces.implReportTotals to javafx.fxml;
 
     exports com.hamza.account.config;
     exports com.hamza.account.interfaces.impl_totalDesgin;
@@ -96,8 +92,8 @@ module com.hamza.account {
     exports com.hamza.account.controller.invoice;
     exports com.hamza.account.controller.convert_stock;
     opens com.hamza.account.controller.convert_stock to javafx.fxml;
-    opens com.hamza.account.controller.model to javafx.fxml;
-    exports com.hamza.account.controller.model;
+    opens com.hamza.account.controller.viewmodel to javafx.fxml;
+    exports com.hamza.account.controller.viewmodel;
     exports com.hamza.account.controller.convert_treasury;
     opens com.hamza.account.controller.convert_treasury to javafx.fxml;
     exports com.hamza.account.dash;

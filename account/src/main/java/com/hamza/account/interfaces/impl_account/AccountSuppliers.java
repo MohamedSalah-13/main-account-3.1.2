@@ -48,11 +48,11 @@ public record AccountSuppliers(DaoFactory daoFactory) implements AccountData<Sup
     @Override
     public void updateTableView(TableView<SupplierAccount> tableView) {
         // add column code
-        Callback<TableColumn.CellDataFeatures<SupplierAccount, String>, ObservableValue<String>> callback = f -> f.getValue().getSuppliers().idProperty().asString();
+        Callback<TableColumn.CellDataFeatures<SupplierAccount, String>, ObservableValue<String>> callback = f -> null;
         ColumnSetting.addColumn(tableView, Setting_Language.WORD_CODE, 0, callback);
 
         // add column name
-        Callback<TableColumn.CellDataFeatures<SupplierAccount, String>, ObservableValue<String>> callback_name = f -> f.getValue().getSuppliers().nameProperty();
+        Callback<TableColumn.CellDataFeatures<SupplierAccount, String>, ObservableValue<String>> callback_name = f -> null;
         ColumnSetting.addColumn(tableView, Setting_Language.WORD_NAME, 1, callback_name);
     }
 

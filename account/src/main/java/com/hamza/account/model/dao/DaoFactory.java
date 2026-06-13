@@ -14,6 +14,10 @@ public enum DaoFactory {
 
     @Setter
     private Connection connection;
+    private PartnerDao partnerDao;
+    private CapitalDao capitalDao;
+    private PartnerShareDao partnerShareDao;
+    private ProfitLossDistributionDao profitLossDistributionDao;
 
     public void setAuditUserId(int userId) throws SQLException {
         if (connection == null || connection.isClosed()) {
@@ -168,18 +172,6 @@ public enum DaoFactory {
         return new ExpensesDao(connection);
     }
 
-    public ItemMiniDao itemMiniDao() {
-        return new ItemMiniDao(connection);
-    }
-
-    public TargetDetailsDao targetDetailsDao() {
-        return new TargetDetailsDao(connection);
-    }
-
-    public TargetDao targetDao() {
-        return new TargetDao(connection);
-    }
-
     public TruncateDao truncateDao() {
         return new TruncateDao(connection);
     }
@@ -267,11 +259,6 @@ public enum DaoFactory {
     public UserRoleDao userRoleDao() {
         return new UserRoleDaoImpl(connection);
     }
-
-    private PartnerDao partnerDao;
-    private CapitalDao capitalDao;
-    private PartnerShareDao partnerShareDao;
-    private ProfitLossDistributionDao profitLossDistributionDao;
 
     public PartnerDao partnerDao() {
         if (partnerDao == null) {

@@ -9,6 +9,7 @@ import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.util.Callback;
 
+import java.math.BigDecimal;
 import java.util.function.Function;
 
 /**
@@ -47,8 +48,8 @@ public interface NameData<T extends BaseNames> extends DataTable<T> {
         return t.getNotes();
     }
 
-    default double firstBalance(T t) {
-        return t.getFirst_balance();
+    default BigDecimal firstBalance(T t) {
+        return t.getFirstBalance();
     }
 
     default void setId(T t, int i) {
