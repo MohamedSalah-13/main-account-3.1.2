@@ -43,7 +43,7 @@ public class AuditLogDao extends AbstractDao<Audit_log> {
             auditLog.setCode(rs.getLong(record_id));
 
             String string = rs.getString(action_time);
-            auditLog.setCreated_at(LocalDateTime.parse(string, DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
+            auditLog.setCreatedAt(LocalDateTime.parse(string, DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
             auditLog.setNotes(rs.getString(NOTES));
             auditLog.setRecord_id(rs.getString(record_id));
             auditLog.setOld_data(rs.getString("old_data"));

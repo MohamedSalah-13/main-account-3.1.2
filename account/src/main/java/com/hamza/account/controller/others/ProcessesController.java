@@ -125,7 +125,7 @@ public class ProcessesController implements Initializable {
 //        tableView.setItems(observableListTable);
         tableView.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
 
-        Callback<TableColumn.CellDataFeatures<Audit_log, String>, ObservableValue<String>> columnDate = f -> new SimpleStringProperty(f.getValue().getCreated_at().toString());
+        Callback<TableColumn.CellDataFeatures<Audit_log, String>, ObservableValue<String>> columnDate = f -> new SimpleStringProperty(f.getValue().getCreatedAt().toString());
         ColumnSetting.addColumn(tableView, Setting_Language.WORD_DATE, 1, columnDate);
 
         Callback<TableColumn.CellDataFeatures<Audit_log, String>, ObservableValue<String>> column = f -> f.getValue().getUsersObject().usernameProperty();
@@ -182,7 +182,7 @@ public class ProcessesController implements Initializable {
         LocalDate dateFromValue = parseDate(dateFrom.getValue().toString());
         LocalDate dateToValue = parseDate(dateTo.getValue().toString());
         return t2 -> {
-            LocalDate date = parseDate(t2.getCreated_at().toString().substring(0, 10));
+            LocalDate date = parseDate(t2.getCreatedAt().toString().substring(0, 10));
             return (isDateInRange(date, dateFromValue, dateToValue));
         };
     }

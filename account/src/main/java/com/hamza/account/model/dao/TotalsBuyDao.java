@@ -157,7 +157,7 @@ public class TotalsBuyDao extends AbstractDao<Total_buy> {
             total_buy.setOtherPaid(rs.getDouble(OTHER_PAID));
             total_buy.setAmountAfterOtherPaid(roundToTwoDecimalPlaces(total_amount - total_buy.getOtherPaid() - total_buy.getPaid()));
             total_buy.setInvoice_status(total_buy.getAmountAfterOtherPaid() == 0 ? InvoiceStatus.CLOSE : InvoiceStatus.OPEN);
-            total_buy.setCreated_at(LocalDateTime.parse(rs.getString(DATE_INSERT), DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
+            total_buy.setCreatedAt(LocalDateTime.parse(rs.getString(DATE_INSERT), DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
             total_buy.setUsers(daoFactory.usersDao().getDataById(rs.getInt(USER_ID)));
         } catch (SQLException e) {
             throw new DaoException(e);

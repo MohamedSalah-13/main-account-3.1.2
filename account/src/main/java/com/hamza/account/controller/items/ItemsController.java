@@ -5,6 +5,7 @@ import com.hamza.account.controller.main.DataPublisher;
 import com.hamza.account.controller.main.LoadData;
 import com.hamza.account.controller.others.SelectedButton;
 import com.hamza.account.controller.others.ServiceRegistry;
+import com.hamza.account.model.base.DForColumnTable;
 import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.model.domain.ItemsModel;
 import com.hamza.account.openFxml.FxmlPath;
@@ -426,7 +427,7 @@ public class ItemsController extends LoadData {
 
             ObservableList<PrintBarcodeModel> observableList = FXCollections.observableArrayList();
             var list = tableView.getItems().stream()
-                    .filter(itemsModel -> itemsModel.getSelectedRow().get())
+                    .filter(DForColumnTable::isSelectedRow)
                     .toList();
 
             if (list.isEmpty()) {

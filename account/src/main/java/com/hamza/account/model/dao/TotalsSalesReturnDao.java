@@ -169,7 +169,7 @@ public class TotalsSalesReturnDao extends AbstractDao<Total_Sales_Re> {
             totalSalesRe.setEmployeeObject(new Employees(rs.getInt(DELEGATE_ID), delegate_name));
             totalSalesRe.setTreasuryModel(treasury);
             totalSalesRe.setInvoiceType(InvoiceType.getInvoiceTypeById(type_id));
-            totalSalesRe.setCreated_at(LocalDateTime.parse(rs.getString(DATE_INSERT), DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
+            totalSalesRe.setCreatedAt(LocalDateTime.parse(rs.getString(DATE_INSERT), DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
             totalSalesRe.setUsers(daoFactory.usersDao().getDataById(rs.getInt(USER_ID)));
             totalSalesRe.setTotal_profit(rs.getDouble(TOTAL_PROFIT));
             totalSalesRe.setProfit_percent(rs.getDouble(PROFIT_PERCENT));

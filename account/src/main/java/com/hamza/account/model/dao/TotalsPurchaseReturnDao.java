@@ -143,7 +143,7 @@ public class TotalsPurchaseReturnDao extends AbstractDao<Total_Buy_Re> {
             double paidToTreasuryAmount = rs.getDouble(PAID_TO_TREASURY);
             var invoiceTypeById = InvoiceType.getInvoiceTypeById(type_id);
             totalBuyRe = new Total_Buy_Re(id, date, total, discount, paidToTreasuryAmount, notes, suppliers, stock, treasury, invoiceTypeById, null);
-            totalBuyRe.setCreated_at(LocalDateTime.parse(rs.getString(DATE_INSERT), DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
+            totalBuyRe.setCreatedAt(LocalDateTime.parse(rs.getString(DATE_INSERT), DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
             totalBuyRe.setUsers(daoFactory.usersDao().getDataById(rs.getInt(USER_ID)));
         } catch (SQLException e) {
             throw new DaoException(e);

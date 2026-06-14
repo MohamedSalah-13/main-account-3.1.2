@@ -227,7 +227,7 @@ public class TotalsController<T1 extends BasePurchasesAndSales, T2 extends BaseT
         addColumn(tableView, Setting_Language.WORD_USERS, tableView.getColumns().size(), colUser);
 
         Callback<TableColumn.CellDataFeatures<T2, String>, ObservableValue<String>> totalTime =
-                cellData -> new SimpleStringProperty(cellData.getValue().getCreated_at().toString());
+                cellData -> new SimpleStringProperty(cellData.getValue().getCreatedAt().toString());
         addColumn(tableView, "وقت الدخول", tableView.getColumns().size(), totalTime);
 
 

@@ -23,8 +23,8 @@ public abstract class DForColumnTable {
     private String buttonColumnName;
     private BooleanProperty selectedRow = new SimpleBooleanProperty();
     private Users users = LogApplication.usersVo;
-    private LocalDateTime created_at;
-    private LocalDateTime updated_at;
+    private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
 
     public boolean isSelectedRow() {
         return selectedRow.get();

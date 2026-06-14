@@ -16,7 +16,7 @@ public interface TotalsDataInterface<T extends BaseTotals> {
     }
 
     default LocalDateTime getDateInsert(T t2) {
-        return t2.getCreated_at() == null ? LocalDateTime.now() : t2.getCreated_at();
+        return t2.getCreatedAt() == null ? LocalDateTime.now() : t2.getCreatedAt();
     }
 
     default Function<T, String> getDateFunction() {

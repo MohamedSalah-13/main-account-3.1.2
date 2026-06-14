@@ -198,7 +198,7 @@ public class TotalsSalesDao extends AbstractDao<Total_Sales> {
             totalSales.setOtherPaid(rs.getDouble(OTHER_PAID));
             totalSales.setAmountAfterOtherPaid(roundToTwoDecimalPlaces(total_amount - totalSales.getOtherPaid() - totalSales.getPaid()));
             totalSales.setInvoice_status(totalSales.getAmountAfterOtherPaid() == 0 ? InvoiceStatus.CLOSE : InvoiceStatus.OPEN);
-            totalSales.setCreated_at(LocalDateTime.parse(rs.getString(DATE_INSERT), DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
+            totalSales.setCreatedAt(LocalDateTime.parse(rs.getString(DATE_INSERT), DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
             totalSales.setUsers(daoFactory.usersDao().getDataById(rs.getInt(USER_ID)));
             totalSales.setTotal_profit(rs.getDouble(TOTAL_PROFIT));
             totalSales.setProfit_percent(rs.getDouble(PROFIT_PERCENT));

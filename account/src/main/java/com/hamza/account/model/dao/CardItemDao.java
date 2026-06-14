@@ -73,7 +73,7 @@ public class CardItemDao extends AbstractDao<CardItems> {
             cardItems.setProfit(rs.getDouble(PROFIT));
             cardItems.setDiscount(rs.getDouble(DISCOUNT));
             cardItems.setTotals(rs.getDouble(QUANTITY) * rs.getDouble(PRICE) - rs.getDouble(DISCOUNT));
-            cardItems.setCreated_at(LocalDateTime.parse(rs.getString(DATE), DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
+            cardItems.setCreatedAt(LocalDateTime.parse(rs.getString(DATE), DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
             cardItems.setNameItem(rs.getString(NAME));
             cardItems.setType_name(type);
             cardItems.setTypeCode(rs.getInt(TYPE_ID));

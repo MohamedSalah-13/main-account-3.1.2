@@ -101,12 +101,12 @@ public class TreasuryDao extends AbstractDao<Treasury> {
 
             String dateInsert = rs.getString(DATE_INSERT);
             if (dateInsert != null) {
-                treasury.setCreated_at(LocalDateTime.parse(dateInsert, DATE_TIME_FORMATTER));
+                treasury.setCreatedAt(LocalDateTime.parse(dateInsert, DATE_TIME_FORMATTER));
             }
 
             String updatedAt = rs.getString(UPDATED_AT);
             if (updatedAt != null) {
-                treasury.setUpdated_at(LocalDateTime.parse(updatedAt, DATE_TIME_FORMATTER));
+                treasury.setUpdatedAt(LocalDateTime.parse(updatedAt, DATE_TIME_FORMATTER));
             }
 
             treasury.setUserId(rs.getInt(USER_ID));

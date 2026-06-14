@@ -144,8 +144,7 @@ public class NameController<T1 extends BasePurchasesAndSales, T2 extends BaseTot
 
     @Override
     public BooleanProperty getColumnSelected(BaseNames t3) {
-//        return t3.getSelectedRow();
-        return null;
+        return new SimpleBooleanProperty(t3.isSelectedRow());
     }
 
     @Override

@@ -128,7 +128,7 @@ public class CustomerAccountDao extends AbstractDao<CustomerAccount> {
             model.setNotes(rs.getString(NOTES));
             model.setTreasury(new Treasury(rs.getInt(TREASURY_ID)));
             var createdAt = rs.getString(dateInsert) == null ? rs.getString("created_at") : rs.getString(dateInsert);
-            model.setCreated_at(LocalDateTime.parse(createdAt, DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
+            model.setCreatedAt(LocalDateTime.parse(createdAt, DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
             String customerName = adjustPurchase ? rs.getString(NAME) : "";
             model.setCustomers(new Customers(codeSup, customerName));
             if (adjustPurchase) {

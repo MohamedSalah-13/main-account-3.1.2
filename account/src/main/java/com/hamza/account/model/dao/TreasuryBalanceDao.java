@@ -52,7 +52,7 @@ public class TreasuryBalanceDao extends AbstractDao<TreasuryBalance> {
             treasuryBalance.setInformation(rs.getString(INFORMATION));
             treasuryBalance.setUser_id(rs.getInt(USER_ID));
             treasuryBalance.setUser_name(rs.getString(USER_NAME));
-            treasuryBalance.setCreated_at(LocalDateTime.parse(rs.getString(DATE_INSERT), DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
+            treasuryBalance.setCreatedAt(LocalDateTime.parse(rs.getString(DATE_INSERT), DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
         } catch (SQLException e) {
             throw new DaoException(e);
         }

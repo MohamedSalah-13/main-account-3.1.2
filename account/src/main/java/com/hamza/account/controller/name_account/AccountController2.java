@@ -9,10 +9,7 @@ import com.hamza.account.controller.name_account.impl.AccountTotalsPurchase;
 import com.hamza.account.controller.name_account.impl.AccountTotalsSales;
 import com.hamza.account.controller.others.SelectedButton;
 import com.hamza.account.interfaces.api.DataInterface;
-import com.hamza.account.model.base.BaseAccount;
-import com.hamza.account.model.base.BaseNames;
-import com.hamza.account.model.base.BasePurchasesAndSales;
-import com.hamza.account.model.base.BaseTotals;
+import com.hamza.account.model.base.*;
 import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.openFxml.FxmlPath;
 import com.hamza.account.otherSetting.MaskerPaneSetting;
@@ -205,7 +202,7 @@ public class AccountController2<T1 extends BasePurchasesAndSales, T2 extends Bas
             public void clearSelection(boolean b) {
                 for (int i = 0; i < tableView.getItems().size(); i++) {
                     T4 t1 = tableView.getItems().get(i);
-                    t1.getSelectedRow().setValue(b);
+                    t1.setSelectedRow(b);
                 }
             }
         };
@@ -311,7 +308,7 @@ public class AccountController2<T1 extends BasePurchasesAndSales, T2 extends Bas
     private void printAccount() {
         try {
             List<TreeAccountModelForPrint> accountModelForPrints = new ArrayList<>();
-            List<T4> list = tableView.getItems().stream().filter(t4 -> t4.getSelectedRow().get()).toList();
+            List<T4> list = tableView.getItems().stream().filter(DForColumnTable::isSelectedRow).toList();
             if (list.isEmpty()) throw new Exception(Error_Text_Show.PLEASE_INSERT_ALL_DATA);
             list.forEach(t4 -> {
                 TreeAccountModelForPrint e = new TreeAccountModelForPrint();
@@ -334,7 +331,7 @@ public class AccountController2<T1 extends BasePurchasesAndSales, T2 extends Bas
     private void exportTo() {
         try {
             if (tableView.getItems().isEmpty()) throw new ExcelException(Error_Text_Show.PLEASE_INSERT_ALL_DATA);
-            List<T4> items = tableView.getItems().stream().filter(t4 -> t4.getSelectedRow().get()).toList();
+            List<T4> items = tableView.getItems().stream().filter(DForColumnTable::isSelectedRow).toList();
             var i = ExportData.exportDataToExcel(items, accountData.writeExcelInterface(items));
             if (i >= 1) AllAlerts.alertSave();
             else throw new ExcelException("لا يمكن الحفظ");

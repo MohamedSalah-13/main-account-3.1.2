@@ -131,7 +131,7 @@ public class SupplierAccountDao extends AbstractDao<SupplierAccount> {
             model.setInvoice_number(rs.getInt(NUMBER_INV));
             model.setNotes(rs.getString(NOTES));
             model.setTreasury(new Treasury(rs.getInt(TREASURY_ID)));
-            model.setCreated_at(LocalDateTime.parse(rs.getString(DATE_INSERT), DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
+            model.setCreatedAt(LocalDateTime.parse(rs.getString(DATE_INSERT), DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
             String nameSup = adjustPurchase ? rs.getString(NAME) : "";
             model.setSuppliers(new Suppliers(codeSup, nameSup));
             if (adjustPurchase) {
