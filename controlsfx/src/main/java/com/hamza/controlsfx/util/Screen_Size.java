@@ -42,10 +42,34 @@ public class Screen_Size {
     }
 
     /**
+     * Adjusts the given stage to take two thirds of the primary screen size
+     * and centers it on the screen.
+     *
+     * @param stage the stage to be adjusted
+     */
+    public static void adjustStageToTwoThirdsScreen(Stage stage) {
+        double width = BOUNDS_WIDTH * 2 / 3;
+        double height = BOUNDS_HEIGHT * 2 / 3;
+        double x = BOUNDS.getMinX() + (BOUNDS_WIDTH - width) / 2;
+        double y = BOUNDS.getMinY() + (BOUNDS_HEIGHT - height) / 2;
+
+        setStageBounds(stage, x, y, width, height);
+    }
+
+    public static void adjustStageToQuaScreen(Stage stage) {
+        double width = BOUNDS_WIDTH / 4;
+        double height = BOUNDS_HEIGHT / 4;
+        double x = BOUNDS.getMinX() + (BOUNDS_WIDTH - width) / 2;
+        double y = BOUNDS.getMinY() + (BOUNDS_HEIGHT - height) / 2;
+
+        setStageBounds(stage, x, y, width, height);
+    }
+
+    /**
      * Sets the preferred size of the specified pane based on specified width and height divisors.
      *
-     * @param pane the Pane whose preferred size is to be set
-     * @param widthDivisor the divisor for the width calculation
+     * @param pane          the Pane whose preferred size is to be set
+     * @param widthDivisor  the divisor for the width calculation
      * @param heightDivisor the divisor for the height calculation
      */
     public static void setPanePreferredSize(Pane pane, double widthDivisor, double heightDivisor) {
@@ -55,10 +79,10 @@ public class Screen_Size {
     /**
      * Sets the position and size of the given Stage.
      *
-     * @param stage the Stage to be positioned and resized
-     * @param x the x-coordinate position of the Stage
-     * @param y the y-coordinate position of the Stage
-     * @param width the width of the Stage
+     * @param stage  the Stage to be positioned and resized
+     * @param x      the x-coordinate position of the Stage
+     * @param y      the y-coordinate position of the Stage
+     * @param width  the width of the Stage
      * @param height the height of the Stage
      */
     private static void setStageBounds(Stage stage, double x, double y, double width, double height) {

@@ -6,8 +6,8 @@ import com.hamza.account.controller.main.DataPublisher;
 import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.model.domain.ItemsModel;
 import com.hamza.account.openFxml.OpenFxmlApplication;
-import com.hamza.account.table.StageDimensions;
 import com.hamza.controlsfx.language.Setting_Language;
+import com.hamza.controlsfx.util.Screen_Size;
 import javafx.application.Application;
 import javafx.scene.Scene;
 import javafx.stage.Stage;
@@ -29,6 +29,7 @@ public class CardApplication extends Application {
         stage.initModality(javafx.stage.Modality.APPLICATION_MODAL);
         stage.setResizable(true);
         stage.show();
-        StageDimensions.stageDimensions(getClass(), stage);
+//        StageDimensions.stageDimensions(getClass(), stage);
+        Screen_Size.adjustStageToTwoThirdsScreen(stage);
     }
 }

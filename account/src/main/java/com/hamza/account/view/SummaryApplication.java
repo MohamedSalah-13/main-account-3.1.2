@@ -3,7 +3,6 @@ package com.hamza.account.view;
 import com.hamza.account.config.Image_Setting;
 import com.hamza.account.controller.reports.SummaryController;
 import com.hamza.account.model.dao.DaoFactory;
-import com.hamza.account.table.StageDimensions;
 import javafx.application.Application;
 import javafx.scene.Scene;
 import javafx.stage.Modality;
@@ -25,6 +24,7 @@ public class SummaryApplication extends Application {
         stage.setResizable(true);
         stage.initModality(Modality.APPLICATION_MODAL);
         stage.show();
-        StageDimensions.stageDimensions(getClass(), stage);
+//        StageDimensions.stageDimensions(getClass(), stage);
+//        Screen_Size.adjustStageToTwoThirdsScreen(stage);
     }
 }

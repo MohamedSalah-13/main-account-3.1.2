@@ -197,7 +197,7 @@ public class TotalsController<T1 extends BasePurchasesAndSales, T2 extends BaseT
         labelDelegate.setText(Setting_Language.NAME_DELEGATE);
         btnSearch.setText(Setting_Language.WORD_SEARCH);
         menuButton.setText(Setting_Language.WORD_PRINT);
-        btnRefresh.setText(Setting_Language.WORD_REFRESH);
+        btnRefresh.setText("تحديث");
         btnUpdate.setText(Setting_Language.WORD_UPDATE);
         btnDelete.setText(Setting_Language.WORD_DELETE);
         btnShowInvoice.setText(Setting_Language.WORD_SHOW);

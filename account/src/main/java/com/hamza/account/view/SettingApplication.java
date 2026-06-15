@@ -4,8 +4,8 @@ import com.hamza.account.config.Image_Setting;
 import com.hamza.account.controller.main.DataPublisher;
 import com.hamza.account.controller.setting.SettingController;
 import com.hamza.account.model.dao.DaoFactory;
-import com.hamza.account.table.StageDimensions;
 import com.hamza.controlsfx.language.Setting_Language;
+import com.hamza.controlsfx.util.Screen_Size;
 import javafx.application.Application;
 import javafx.scene.Scene;
 import javafx.stage.Stage;
@@ -25,7 +25,10 @@ public class SettingApplication extends Application {
         stage.getIcons().add(new javafx.scene.image.Image(new Image_Setting().setting));
         stage.setResizable(true);
         stage.initModality(javafx.stage.Modality.APPLICATION_MODAL);
+
+        Screen_Size.adjustStageToTwoThirdsScreen(stage);
         stage.show();
-        StageDimensions.stageDimensions(getClass(), stage);
+//        StageDimensions.stageDimensions(getClass(), stage);
+
     }
 }
