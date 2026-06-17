@@ -8,8 +8,8 @@ import com.hamza.account.model.base.BaseNames;
 import com.hamza.account.model.base.BasePurchasesAndSales;
 import com.hamza.account.model.base.BaseTotals;
 import com.hamza.account.openFxml.OpenFxmlApplication;
-import com.hamza.account.table.StageDimensions;
 import com.hamza.controlsfx.language.Setting_Language;
+import com.hamza.controlsfx.util.Screen_Size;
 import javafx.application.Application;
 import javafx.scene.Scene;
 import javafx.stage.Stage;
@@ -36,7 +36,7 @@ public class SearchItemsApplication<T1 extends BasePurchasesAndSales, T2 extends
         stage.setResizable(true);
         stage.initModality(javafx.stage.Modality.APPLICATION_MODAL);
         stage.show();
-        StageDimensions.stageDimensions(getClass(), stage);
+        Screen_Size.adjustStageToTwoThirdsScreen(stage);
     }
 
 }

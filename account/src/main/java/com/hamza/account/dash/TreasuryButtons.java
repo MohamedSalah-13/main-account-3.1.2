@@ -8,13 +8,13 @@ import com.hamza.account.controller.main.DataPublisher;
 import com.hamza.account.controller.others.ProcessesController;
 import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.openFxml.OpenFxmlApplication;
-import com.hamza.account.table.StageDimensions;
 import com.hamza.account.table.TableOpen;
 import com.hamza.account.view.ExpensesDetailsApplication;
 import com.hamza.account.view.OpenTreasuryDetailsApplication;
 import com.hamza.account.view.SceneAll;
 import com.hamza.account.view.StageManager;
 import com.hamza.controlsfx.language.Setting_Language;
+import com.hamza.controlsfx.util.Screen_Size;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
@@ -87,7 +87,7 @@ public class TreasuryButtons {
                 stage.setResizable(true);
                 stage.initModality(javafx.stage.Modality.APPLICATION_MODAL);
                 stage.show();
-                StageDimensions.stageDimensions(getClass(), stage);
+                Screen_Size.adjustStageToTwoThirdsScreen(stage);
             }
 
             @NotNull

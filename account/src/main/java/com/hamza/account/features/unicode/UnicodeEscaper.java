@@ -69,7 +69,7 @@ public final class UnicodeEscaper {
 
     // Quick test
     public static void main(String[] args) {
-        String arabic = "تعديل";
+        String arabic = "تحديث";
         String escaped = toUnicodeEscapes(arabic);
         System.out.println(escaped);
         System.out.println(fromUnicodeEscapes(escaped));

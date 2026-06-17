@@ -42,6 +42,21 @@ public class Screen_Size {
     }
 
     /**
+     * Adjusts the given stage to take two thirds of the primary screen size
+     * and centers it on the screen.
+     *
+     * @param stage the stage to be adjusted
+     */
+    public static void adjustStageToTwoThirdsScreen(Stage stage) {
+        double width = BOUNDS_WIDTH * 2 / 3;
+        double height = BOUNDS_HEIGHT * 2 / 3;
+        double x = BOUNDS.getMinX() + (BOUNDS_WIDTH - width) / 2;
+        double y = BOUNDS.getMinY() + (BOUNDS_HEIGHT - height) / 2;
+
+        setStageBounds(stage, x, y, width, height);
+    }
+
+    /**
      * Sets the preferred size of the specified pane based on specified width and height divisors.
      *
      * @param pane the Pane whose preferred size is to be set

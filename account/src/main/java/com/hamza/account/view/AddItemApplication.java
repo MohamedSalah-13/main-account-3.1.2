@@ -3,7 +3,7 @@ package com.hamza.account.view;
 import com.hamza.account.config.Image_Setting;
 import com.hamza.account.controller.items.AddItemController;
 import com.hamza.account.controller.main.DataPublisher;
-import com.hamza.account.table.StageDimensions;
+import com.hamza.controlsfx.util.Screen_Size;
 import javafx.application.Application;
 import javafx.scene.Scene;
 import javafx.scene.input.KeyCode;
@@ -30,7 +30,8 @@ public class AddItemApplication extends Application {
         stage.setResizable(true);
         stage.initModality(Modality.APPLICATION_MODAL);
         stage.show();
-        StageDimensions.stageDimensions(getClass(), stage);
+//        StageDimensions.stageDimensions(getClass(), stage);
+        Screen_Size.adjustStageToTwoThirdsScreen(stage);
 
         KeyCodeCombination KEY_BTN_SAVE = new KeyCodeCombination(KeyCode.F10);
         var btnSave = addItemController.getBtnSave();
