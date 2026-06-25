@@ -83,6 +83,12 @@ public class DownLoadApplication extends Application {
 
         ServiceRegistry.register(ItemCardService.class, new ItemCardService(daoFactory));
 
+        ServiceRegistry.register(UserShiftService.class, new UserShiftService(daoFactory));
+        ServiceRegistry.register(DelegateService.class, new DelegateService(daoFactory));
+        ServiceRegistry.register(DelegateTargetService.class, new DelegateTargetService(daoFactory));
+        ServiceRegistry.register(DelegateReportService.class, new DelegateReportService(daoFactory));
+        ServiceRegistry.register(DelegateCommissionService.class, new DelegateCommissionService(daoFactory));
+
         System.out.println(2);
 
     }

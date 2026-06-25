@@ -34,7 +34,7 @@ public class DelegateDao extends AbstractDao<DelegateProfile> {
 
     public List<String> getDelegateNames() throws DaoException {
         String sql = "SELECT delegate_name FROM " + VIEW_NAME + " WHERE is_active = 1 ORDER BY delegate_name";
-        return queryForObjects(sql, rs -> rs.getString("delegate_name"));
+        return queryForStringList(sql);
     }
 
     public DelegateProfile getDelegateByName(String delegateName) throws DaoException {

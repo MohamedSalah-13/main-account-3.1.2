@@ -1,9 +1,9 @@
 package com.hamza.account.model.dao;
 
-import com.hamza.account.model.domain.Earnings;
-import com.hamza.account.model.domain.Users;
 import com.hamza.account.database.AbstractDao;
 import com.hamza.account.database.DaoException;
+import com.hamza.account.model.domain.Earnings;
+import com.hamza.account.model.domain.Users;
 import com.hamza.controlsfx.util.NumberUtils;
 
 import java.sql.Connection;
@@ -33,34 +33,6 @@ public class EarningsDao extends AbstractDao<Earnings> {
     public EarningsDao(Connection connection) {
         super(connection);
     }
-
-  /*  @Override
-    public List<Earnings> loadAll() throws DaoException {
-        return queryForObjects(SqlStatements.selectStatement(TABLE_VIEW), this::map);
-    }
-
-    @Override
-    public Earnings map(ResultSet rs) throws DaoException {
-        Earnings earnings = new Earnings();
-        try {
-            earnings.setId(rs.getInt(ID));
-            earnings.setCode_id(rs.getInt(CODE_ID));
-            earnings.setInvoice_date(LocalDate.parse(rs.getString(INVOICE_DATE)));
-            earnings.setInvoice_type(rs.getInt(INVOICE_TYPE));
-            earnings.setTotal(NumberUtils.roundToTwoDecimalPlaces(rs.getDouble(TOTAL)));
-            earnings.setDiscount(NumberUtils.roundToTwoDecimalPlaces(rs.getDouble(DISCOUNT)));
-            earnings.setPaid(NumberUtils.roundToTwoDecimalPlaces(rs.getDouble(PAID)));
-            earnings.setStock_id(rs.getInt(STOCK_ID));
-            earnings.setDelegate_id(rs.getInt(DELEGATE_ID));
-            earnings.setTreasury_id(rs.getInt(TREASURY_ID));
-            earnings.setDate_insert(LocalDateTime.parse(rs.getString(DATE_INSERT), DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
-            earnings.setUsers(new Users(rs.getInt(USER_ID)));
-            earnings.setTable_id(rs.getString(TABLE_NAME));
-        } catch (SQLException e) {
-            throw new DaoException(e);
-        }
-        return earnings;
-    }*/
 
     public Earnings mapTotals(ResultSet rs) throws DaoException {
         Earnings earnings = new Earnings();

@@ -294,7 +294,7 @@ public abstract class AbstractDao<T> implements DaoList<T> {
         }
     }
 
-    public int queryForInt(@NotNull String query, @NotNull Object... parameters){
+    public int queryForInt(@NotNull String query, @NotNull Object... parameters) {
         try {
             PreparedStatement statement = connection.prepareStatement(query);
             fillStatement(statement, parameters);
@@ -314,6 +314,20 @@ public abstract class AbstractDao<T> implements DaoList<T> {
             ResultSet resultSet = statement.executeQuery();
             while (resultSet.next()) {
                 list.add(resultSet.getInt(1));
+            }
+        } catch (SQLException e) {
+            log.error(e.getMessage(), e.getCause());
+        }
+        return list;
+    }
+
+    public List<String> queryForStringList(String query) {
+        List<String> list = new ArrayList<>();
+        try {
+            PreparedStatement statement = connection.prepareStatement(query);
+            ResultSet resultSet = statement.executeQuery();
+            while (resultSet.next()) {
+                list.add(resultSet.getString(1));
             }
         } catch (SQLException e) {
             log.error(e.getMessage(), e.getCause());
