@@ -85,9 +85,9 @@ public class CustomerDao extends AbstractDao<Customers> {
                 , model.getTel()
                 , model.getAddress()
                 , model.getNotes()
-                , model.getFirstBalance()
-                , model.getSelPriceType().getId()
-                , model.getUser().getId()
+                , model.getFirst_balance()
+                , model.getSelPriceObject().getId()
+                , model.getUsers().getId()
                 , model.getArea().getId()
         };
         return executeUpdate(SqlStatements.insertStatement(TABLE, NAME, TEL, ADDRESS, NOTES, FIRST_BALANCE, ITEMS_SEL_PRICE_ID, USER_ID, AREA_ID), objects);
@@ -124,9 +124,9 @@ public class CustomerDao extends AbstractDao<Customers> {
                 , model.getTel()
                 , model.getAddress()
                 , model.getNotes()
-                , model.getFirstBalance()
-                , model.getSelPriceType().getId()
-                , model.getUser().getId()
+                , model.getFirst_balance()
+                , model.getSelPriceObject().getId()
+                , model.getUsers().getId()
                 , model.getArea().getId()
                 , model.getId()};
     }
@@ -143,8 +143,8 @@ public class CustomerDao extends AbstractDao<Customers> {
             customers.setAddress(address == null ? "" : address);
             String notes = rs.getString(NOTES);
             customers.setNotes(notes == null ? "" : notes);
-            customers.setFirstBalance(rs.getBigDecimal(FIRST_BALANCE));
-            customers.setSelPriceType(daoFactory.getItemsSelPriceDao().getDataById(rs.getInt(ITEMS_SEL_PRICE_ID)));
+            customers.setFirst_balance(rs.getDouble(FIRST_BALANCE));
+            customers.setSelPriceObject(daoFactory.getItemsSelPriceDao().getDataById(rs.getInt(ITEMS_SEL_PRICE_ID)));
 //            customers.setUser(daoFactory.getUsersDao().getDataById(rs.getInt(USER_ID)));
             customers.setArea(new Area(rs.getInt(AREA_ID), rs.getString(AREA_NAME)));
             customers.setCreatedAt(LocalDateTime.parse(rs.getString(DATE_INSERT), DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));

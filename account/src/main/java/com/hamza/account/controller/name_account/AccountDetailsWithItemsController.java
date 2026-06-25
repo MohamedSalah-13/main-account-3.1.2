@@ -18,13 +18,13 @@ import com.hamza.account.otherSetting.MaskerPaneSetting;
 import com.hamza.account.table.EditCellTree;
 import com.hamza.account.table.TableSetting;
 import com.hamza.controlsfx.alert.AllAlerts;
-import com.hamza.controlsfx.util.ImageChoose;
 import com.hamza.controlsfx.interfaceData.AppSettingInterface;
 import com.hamza.controlsfx.language.Error_Text_Show;
 import com.hamza.controlsfx.language.Setting_Language;
 import com.hamza.controlsfx.others.DateSetting;
 import com.hamza.controlsfx.table.Column;
 import com.hamza.controlsfx.table.TreeTable;
+import com.hamza.controlsfx.util.ImageChoose;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
@@ -74,7 +74,7 @@ public class AccountDetailsWithItemsController<T1 extends BasePurchasesAndSales,
     @FXML
     private Label labelName, labelFirstBalance, labelLastBalance, labelFrom, labelTo;
     @FXML
-    private Button btnPrint,btnExport, btnRefresh, btnSearch;
+    private Button btnPrint, btnExport, btnRefresh, btnSearch;
     @FXML
     private TextField txtLimit, txtLast, txtName;
     @FXML
@@ -241,16 +241,16 @@ public class AccountDetailsWithItemsController<T1 extends BasePurchasesAndSales,
                     accountTreeItem.expandedProperty().addListener((observable, oldValue, newValue) -> {
                         if (newValue && !lazyLoadedItems.contains(accountTreeItem)) {
 //                            maskerPaneSetting.showMaskerPane(() -> {
-                                accountTreeItem.getChildren().clear();
-                                try {
-                                    accountDetailsInterface.addTreeItemTotals(t4, accountTreeItem);
-                                } catch (Exception e) {
-                                    errorLog(e);
-                                }
-                                lazyLoadedItems.add(accountTreeItem);
-                                if (checkShowAll.isSelected()) {
-                                    expandAllChildren(accountTreeItem);
-                                }
+                            accountTreeItem.getChildren().clear();
+                            try {
+                                accountDetailsInterface.addTreeItemTotals(t4, accountTreeItem);
+                            } catch (Exception e) {
+                                errorLog(e);
+                            }
+                            lazyLoadedItems.add(accountTreeItem);
+                            if (checkShowAll.isSelected()) {
+                                expandAllChildren(accountTreeItem);
+                            }
 //                            });
                         }
                     });
@@ -359,10 +359,10 @@ public class AccountDetailsWithItemsController<T1 extends BasePurchasesAndSales,
         try {
             list_items = new ArrayList<>();
             var customerById = dataInterface.nameAndAccountInterface().getNameById(num_id);
-            var firstBalance = customerById.getFirstBalance();
+            var firstBalance = customerById.getFirst_balance();
             AccountCard accountName = new AccountCard(0, BALANCE_TITLE
                     , customerById.getCreatedAt().toLocalDate().toString()
-                    , firstBalance.doubleValue() > 0 ? firstBalance.doubleValue() : 0, firstBalance.doubleValue() < 0 ? firstBalance.doubleValue() : 0
+                    , firstBalance > 0 ? firstBalance : 0, firstBalance < 0 ? firstBalance : 0
                     , 0, customerById.getNotes(), BALANCE_TITLE);
             list_items.add(accountName);
 
@@ -423,6 +423,7 @@ public class AccountDetailsWithItemsController<T1 extends BasePurchasesAndSales,
         }
         return items;
     }
+
     private void exportToPdf() {
         String textStart = "report";
         String year = "2025";

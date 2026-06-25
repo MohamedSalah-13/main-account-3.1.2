@@ -76,8 +76,8 @@ public class SuppliersDao extends AbstractDao<Suppliers> {
                 , model.getTel()
                 , model.getAddress()
                 , model.getNotes()
-                , model.getFirstBalance()
-                , model.getUser().getId()
+                , model.getFirst_balance()
+                , model.getUsers().getId()
                 , model.getArea().getId()};
 
         String query = SqlStatements.insertStatement(TABLE_NAME, NAME, TEL, ADDRESS, NOTES, FIRST_BALANCE, USER_ID, AREA_ID);
@@ -107,7 +107,7 @@ public class SuppliersDao extends AbstractDao<Suppliers> {
                 , model.getTel()
                 , model.getAddress()
                 , model.getNotes()
-                , model.getFirstBalance()
+                , model.getFirst_balance()
                 , model.getArea().getId()
                 , model.getId()};
     }
@@ -127,7 +127,7 @@ public class SuppliersDao extends AbstractDao<Suppliers> {
             String notes = resultSet.getString(NOTES);
             suppliers.setNotes(notes == null ? "" : notes);
 
-            suppliers.setFirstBalance(resultSet.getBigDecimal(FIRST_BALANCE));
+            suppliers.setFirst_balance(resultSet.getDouble(FIRST_BALANCE));
 //            suppliers.setArea(new Area(resultSet.getInt(AREA_ID), resultSet.getString(AREA_NAME)));
             suppliers.setArea(daoFactory.areaDao().getDataById(resultSet.getInt(AREA_ID)));
             suppliers.setCreatedAt(LocalDateTime.parse(resultSet.getString(DATE_INSERT), DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));

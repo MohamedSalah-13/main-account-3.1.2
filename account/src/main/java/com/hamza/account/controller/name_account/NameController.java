@@ -144,7 +144,7 @@ public class NameController<T1 extends BasePurchasesAndSales, T2 extends BaseTot
 
     @Override
     public BooleanProperty getColumnSelected(BaseNames t3) {
-        return new SimpleBooleanProperty(t3.isSelectedRow());
+        return t3.getSelectedRow();
     }
 
     @Override
@@ -182,7 +182,7 @@ public class NameController<T1 extends BasePurchasesAndSales, T2 extends BaseTot
     }
 
     private void sumTable() {
-        double purchase = table.getItems().stream().mapToDouble(value -> value.getFirstBalance().doubleValue()).sum();
+        double purchase = table.getItems().stream().mapToDouble(BaseNames::getFirst_balance).sum();
         sumBalance.setSum(purchase);
     }
 

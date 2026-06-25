@@ -1,5 +1,6 @@
 package com.hamza.account.interfaces.names;
 
+import com.hamza.account.database.DaoException;
 import com.hamza.account.interfaces.CustomerPurchaseInterface;
 import com.hamza.account.interfaces.api.NameData;
 import com.hamza.account.model.dao.DaoFactory;
@@ -8,14 +9,12 @@ import com.hamza.account.model.domain.CustomerPurchasedItem;
 import com.hamza.account.model.domain.Customers;
 import com.hamza.account.model.domain.SelPriceTypeModel;
 import com.hamza.account.view.CustomerPurchasedItemsApplication;
-import com.hamza.account.database.DaoException;
 import com.hamza.controlsfx.language.Setting_Language;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import org.jetbrains.annotations.NotNull;
 
-import java.math.BigDecimal;
 import java.util.List;
 import java.util.function.Function;
 
@@ -35,8 +34,8 @@ public class CustomerName implements NameData<Customers> {
         customers.setTel(tel);
         customers.setAddress(address);
         customers.setNotes(notes);
-        customers.setFirstBalance(BigDecimal.valueOf(firstBalance));
-        customers.setSelPriceType(priceTypeModel);
+        customers.setFirst_balance(firstBalance);
+        customers.setSelPriceObject(priceTypeModel);
         customers.setArea(area);
         return customers;
     }
@@ -44,7 +43,7 @@ public class CustomerName implements NameData<Customers> {
     @Override
     public void addColumns(TableView<Customers> tableView) {
         TableColumn<Customers, String> tableColumnSelPriceType = addColumn(Setting_Language.WORD_SEL_PRICE
-                , f -> f.getValue().getSelPriceType().nameProperty());
+                , f -> f.getValue().getSelPriceObject().nameProperty());
 
         TableColumn<Customers, String> tableColumnArea = addColumn(Setting_Language.AREA
                 , f -> new SimpleStringProperty(f.getValue().getArea().getArea_name()));
@@ -60,7 +59,7 @@ public class CustomerName implements NameData<Customers> {
 
     @Override
     public String getPriceType(Customers customers) {
-        return customers.getSelPriceType().getName();
+        return customers.getSelPriceObject().getName();
     }
 
     @Override
@@ -70,7 +69,7 @@ public class CustomerName implements NameData<Customers> {
 
     @Override
     public int priceId(Customers customers) {
-        return customers.getSelPriceType().getId();
+        return customers.getSelPriceObject().getId();
     }
 
     @Override

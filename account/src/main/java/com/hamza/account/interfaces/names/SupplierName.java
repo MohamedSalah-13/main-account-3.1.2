@@ -32,8 +32,8 @@ public class SupplierName implements NameData<Suppliers> {
         suppliers.setTel(tel);
         suppliers.setAddress(address);
         suppliers.setNotes(notes);
-        suppliers.setFirstBalance(BigDecimal.valueOf(firstBalance));
-        suppliers.setSelPriceType(priceTypeModel);
+        suppliers.setFirst_balance(firstBalance);
+//        suppliers.setSelPriceObject(priceTypeModel);
         suppliers.setArea(area);
         return suppliers;
     }
