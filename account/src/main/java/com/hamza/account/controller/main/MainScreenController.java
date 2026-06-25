@@ -81,6 +81,8 @@ public class MainScreenController extends MainItems implements Initializable {
         otherSetting();
         addTabContextMenu();
 
+        addDelegatesMenu();
+
         if (LogApplication.usersVo.getId() == 1) {
             if (getShowMainTotals()) firstBoxInMain();
         }
@@ -193,6 +195,74 @@ public class MainScreenController extends MainItems implements Initializable {
             }
         } catch (Exception e) {
             logException(e);
+        }
+    }
+
+    private void addDelegatesMenu() {
+        Menu delegatesMenu = new Menu("المندوبين");
+
+        if (PermissionHelper.has(PermissionCode.DELEGATES_SHOW)) {
+            MenuItem delegatesItem = new MenuItem("بيانات المندوبين");
+            delegatesItem.setOnAction(event -> {
+                try {
+                    getDelegatesButtons().delegates().actionAddPaneToTabPane(tabPane);
+                } catch (Exception e) {
+                    logException(e);
+                }
+            });
+            delegatesMenu.getItems().add(delegatesItem);
+        }
+
+        if (PermissionHelper.has(PermissionCode.TARGETS_SHOW)) {
+            MenuItem targetsItem = new MenuItem("أهداف المندوبين");
+            targetsItem.setOnAction(event -> {
+                try {
+                    getDelegatesButtons().targets().actionAddPaneToTabPane(tabPane);
+                } catch (Exception e) {
+                    logException(e);
+                }
+            });
+            delegatesMenu.getItems().add(targetsItem);
+        }
+
+        if (PermissionHelper.has(PermissionCode.DELEGATES_REPORTS)) {
+            MenuItem performanceReportItem = new MenuItem("تقرير أداء المندوبين");
+            performanceReportItem.setOnAction(event -> {
+                try {
+                    getDelegatesButtons().performanceReport().actionAddPaneToTabPane(tabPane);
+                } catch (Exception e) {
+                    logException(e);
+                }
+            });
+            delegatesMenu.getItems().add(performanceReportItem);
+        }
+
+        if (PermissionHelper.has(PermissionCode.TARGETS_REPORTS)) {
+            MenuItem targetReportItem = new MenuItem("تقرير تحقيق الأهداف");
+            targetReportItem.setOnAction(event -> {
+                try {
+                    getDelegatesButtons().targetReport().actionAddPaneToTabPane(tabPane);
+                } catch (Exception e) {
+                    logException(e);
+                }
+            });
+            delegatesMenu.getItems().add(targetReportItem);
+        }
+
+        if (PermissionHelper.has(PermissionCode.DELEGATES_COMMISSIONS)) {
+            MenuItem commissionsItem = new MenuItem("عمولات المندوبين");
+            commissionsItem.setOnAction(event -> {
+                try {
+                    getDelegatesButtons().commissions().actionAddPaneToTabPane(tabPane);
+                } catch (Exception e) {
+                    logException(e);
+                }
+            });
+            delegatesMenu.getItems().add(commissionsItem);
+        }
+
+        if (!delegatesMenu.getItems().isEmpty()) {
+            menuController.getMenuBar().getMenus().add(delegatesMenu);
         }
     }
 
@@ -316,6 +386,9 @@ public class MainScreenController extends MainItems implements Initializable {
         menuButtonSetting.initializeMenuItem(menuController.getMenuItemAddEmployee(), getAddEmployee().addEmployee());
         menuButtonSetting.initializeMenuItem(menuController.getMenuItemEmployees(), getAddEmployee().employees());
         menuButtonSetting.initializeMenuItem(menuController.getMenuItemAddTargetDelegate(), getAddEmployee().addTarget());
+
+        menuButtonSetting.initializeMenuItem(menuController.getMenuItemReportDelegate(), getDelegatesButtons().performanceReport());
+
     }
 
     private void initializeReports(MainMenuController menuController) throws Exception {

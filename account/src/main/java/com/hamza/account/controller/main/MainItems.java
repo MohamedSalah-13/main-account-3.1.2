@@ -32,6 +32,7 @@ public class MainItems extends DataPublisher {
     private final TreasuryButtons treasuryButtons;
     private final ShiftButtons shiftButtons;
     private final PermissionsButtons permissionsButtons; // ← إضافة جديدة
+    private final DelegatesButtons delegatesButtons;
 
     protected DaoFactory daoFactory;
     protected DataInterface<Purchase, Total_buy, Suppliers, SupplierAccount> dataInterfacePurchase;
@@ -56,6 +57,7 @@ public class MainItems extends DataPublisher {
         this.treasuryButtons = new TreasuryButtons(daoFactory, this);
         this.shiftButtons = new ShiftButtons(daoFactory, this);
         this.permissionsButtons = new PermissionsButtons(daoFactory, this);
+        this.delegatesButtons = new DelegatesButtons(daoFactory, this);
 
         this.nameSup = new NameButtons<>(daoFactory, this, suppliersData);
         this.nameCustomer = new NameButtons<>(daoFactory, this, customData);

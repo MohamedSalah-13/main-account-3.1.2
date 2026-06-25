@@ -155,11 +155,13 @@ public class MainMenuController {
         PermissionHelper.hideIfNotAllowed(menuItemReportPurchaseByYear, PermissionCode.REPORTS_PURCHASES_MONTHLY);
         PermissionHelper.hideIfNotAllowed(menuItemCustomPaid, PermissionCode.REPORTS_CUSTOMERS_RECEIVABLES);
         PermissionHelper.hideIfNotAllowed(menuItemSuppliersPaid, PermissionCode.REPORTS_SUPPLIERS_PAYABLES);
+        PermissionHelper.hideIfNotAllowed(menuItemAllExpenses, PermissionCode.EXPENSES_SHOW);
+
         PermissionHelper.hideIfNotAllowed(menuItemReportDetails, PermissionCode.REPORTS_ACCOUNT_STATEMENT);
-        PermissionHelper.hideIfNotAllowed(menuItemReportDelegate, PermissionCode.REPORTS_PROFIT_BY_ITEM);
+        PermissionHelper.hideIfNotAllowed(menuItemReportDelegate, PermissionCode.DELEGATES_REPORTS);
         PermissionHelper.hideIfNotAllowed(menuItemReportYearly, PermissionCode.REPORTS_SALES_COMPREHENSIVE);
         PermissionHelper.hideIfNotAllowed(menuItemReportProfitLoss, PermissionCode.REPORTS_PROFIT);
-        PermissionHelper.hideIfNotAllowed(menuItemAllExpenses, PermissionCode.EXPENSES_SHOW);
+
     }
 
     private void applyEmployeesPermissions() {

@@ -2,6 +2,7 @@ package com.hamza.account.dash;
 
 import com.hamza.account.Main;
 import com.hamza.account.config.Image_Setting;
+import com.hamza.account.controller.delegates.DelegatePerformanceReportController;
 import com.hamza.account.controller.main.ButtonWithPerm;
 import com.hamza.account.controller.main.DataPublisher;
 import com.hamza.account.controller.main.LoadData;
@@ -56,8 +57,7 @@ public class ReportsButtons extends LoadData {
         return new ButtonWithPerm() {
 
             @Override
-            public void action() throws Exception {
-
+            public void action() {
             }
 
             @NotNull
@@ -66,6 +66,16 @@ public class ReportsButtons extends LoadData {
                 return Setting_Language.REPORT_DELEGATE;
             }
 
+            @Override
+            public void actionAddPaneToTabPane(TabPane tabPane) throws Exception {
+                Pane pane = new OpenFxmlApplication(new DelegatePerformanceReportController()).getPane();
+                addTape(tabPane, pane, textName(), new Image_Setting().reports);
+            }
+
+            @Override
+            public boolean showOnTapPane() {
+                return true;
+            }
         };
     }
 

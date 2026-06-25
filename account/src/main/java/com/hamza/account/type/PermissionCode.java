@@ -274,7 +274,13 @@ public enum PermissionCode {
     // ===== Reports (التقارير) =====
     REPORTS_CAPITAL("reports.capital", "تقارير رأس المال", "reports", "show"),
     REPORTS_PARTNERS("reports.partners", "تقارير الشركاء", "reports", "show"),
-    REPORTS_PROFIT_DISTRIBUTION("reports.profit.distribution", "تقرير توزيع الأرباح", "reports", "show");
+    REPORTS_PROFIT_DISTRIBUTION("reports.profit.distribution", "تقرير توزيع الأرباح", "reports", "show"),
+
+    DELEGATES_SHOW("delegates.show", "عرض المندوبين", "delegates", "show"),
+    DELEGATES_UPDATE_PROFILE("delegates.update.profile", "تعديل بيانات المندوب", "delegates", "update.profile"),
+    DELEGATES_REPORTS("delegates.reports", "تقارير المندوبين", "delegates", "reports"),
+    DELEGATES_COMMISSIONS("delegates.commissions", "عمولات المندوبين", "delegates", "commissions"),
+    DELEGATES_TARGETS("delegates.targets", "أهداف المندوبين", "delegates", "targets");
 
     private final String code;
     private final String titleAr;

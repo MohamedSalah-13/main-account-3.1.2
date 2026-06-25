@@ -1,6 +1,7 @@
 package com.hamza.account.dash;
 
 import com.hamza.account.config.Image_Setting;
+import com.hamza.account.controller.delegates.DelegateTargetsController;
 import com.hamza.account.controller.main.ButtonWithPerm;
 import com.hamza.account.controller.main.DataPublisher;
 import com.hamza.account.controller.main.LoadData;
@@ -9,13 +10,16 @@ import com.hamza.account.controller.others.EmployeesController;
 import com.hamza.account.controller.others.ServiceRegistry;
 import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.openFxml.AddForAllApplication;
+import com.hamza.account.openFxml.OpenFxmlApplication;
 import com.hamza.account.otherSetting.KeyCodeCombinationSetting;
 import com.hamza.account.service.EmployeeService;
 import com.hamza.account.table.TableOpen;
 import com.hamza.controlsfx.button.ImageDesign;
 import com.hamza.controlsfx.language.Setting_Language;
 import javafx.scene.Node;
+import javafx.scene.control.TabPane;
 import javafx.scene.input.KeyCodeCombination;
+import javafx.scene.layout.Pane;
 import javafx.stage.Stage;
 import lombok.extern.log4j.Log4j2;
 import org.jetbrains.annotations.NotNull;
@@ -85,7 +89,18 @@ public class EmployeesButtons extends LoadData {
             @NotNull
             @Override
             public String textName() {
-                return "إضافة هدف المندوب";
+                return "أهداف المندوبين";
+            }
+
+            @Override
+            public void actionAddPaneToTabPane(TabPane tabPane) throws Exception {
+                Pane pane = new OpenFxmlApplication(new DelegateTargetsController()).getPane();
+                addTape(tabPane, pane, textName(), new Image_Setting().reports);
+            }
+
+            @Override
+            public boolean showOnTapPane() {
+                return true;
             }
         };
     }
