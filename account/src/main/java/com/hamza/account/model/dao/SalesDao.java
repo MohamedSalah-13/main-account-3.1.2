@@ -174,43 +174,71 @@ public class SalesDao extends AbstractDao<Sales> {
         }
     }
 
-    /**
-     * Validates that sufficient stock is available for all items in the sales list.
-     * This method aggregates quantities per item to handle multiple sales of the same item.
-     */
     private void validateStockAvailability(List<Sales> list) throws DaoException {
         // Group quantities by item number to check cumulative demand
+        // Also keep track of the stock id per item (invoice stock)
         Map<Integer, Double> totalQuantityPerItem = new HashMap<>();
+        Map<Integer, Integer> stockIdPerItem = new HashMap<>();
 
         for (Sales sale : list) {
             int itemNum = sale.getNumItem();
-            double quantity = sale.getQuantity();
+            // use quantity expressed in the base unit (quantity * unit value)
+            double quantity = sale.getQuantity() * sale.getUnitsType().getValue();
             totalQuantityPerItem.merge(itemNum, quantity, Double::sum);
+
+            int stockId = sale.getStock_id();
+            if (stockId <= 0) {
+                stockId = getStockIdBySalesInvoiceNumber(sale.getInvoiceNumber());
+            }
+
+            stockIdPerItem.putIfAbsent(itemNum, stockId);
         }
 
         // Validate each item's total requested quantity against available stock
         for (Map.Entry<Integer, Double> entry : totalQuantityPerItem.entrySet()) {
             int itemNum = entry.getKey();
             double requestedQuantity = entry.getValue();
+            int stockId = stockIdPerItem.getOrDefault(itemNum, 1);
 
-            double availableStock = getAvailableStockForItem(itemNum);
+            double availableStock = getAvailableStockForItem(itemNum, stockId);
 
             if (requestedQuantity > availableStock) {
+                String itemName = getItemName(itemNum);
                 throw new DaoException(String.format(
-                        "الكمية المطلوبة (%.2f) للصنف رقم %d أكبر من المتاح في المخزون (%.2f)",
-                        requestedQuantity, itemNum, availableStock));
+                        "الكمية المطلوبة (%.2f) للصنف %s رقم %d أكبر من المتاح في المخزن رقم %d (%.2f)",
+                        requestedQuantity,
+                        itemName == null ? "" : itemName,
+                        itemNum,
+                        stockId,
+                        availableStock));
             }
         }
     }
 
+    private int getStockIdBySalesInvoiceNumber(long invoiceNumber) throws DaoException {
+        String query = "SELECT stock_id FROM total_sales WHERE invoice_number = ?";
+        try (PreparedStatement stmt = connection.prepareStatement(query)) {
+            stmt.setLong(1, invoiceNumber);
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getInt("stock_id");
+                }
+            }
+            return 1;
+        } catch (SQLException e) {
+            throw new DaoException("خطأ في تحديد مخزن فاتورة البيع", e);
+        }
+    }
+
     /**
-     * Gets the current available stock for an item.
+     * Gets the current available stock for an item in a specific stock.
      * This should query the database for the latest stock value.
      */
-    private double getAvailableStockForItem(int itemNum) throws DaoException {
-        String query = "SELECT current_quantity FROM items_stock WHERE item_id = ?";
+    private double getAvailableStockForItem(int itemNum, int stockId) throws DaoException {
+        String query = "SELECT current_quantity FROM items_stock WHERE item_id = ? AND stock_id = ?";
         try (PreparedStatement stmt = connection.prepareStatement(query)) {
             stmt.setInt(1, itemNum);
+            stmt.setInt(2, stockId);
             try (ResultSet rs = stmt.executeQuery()) {
                 if (rs.next()) {
                     return rs.getDouble("current_quantity");

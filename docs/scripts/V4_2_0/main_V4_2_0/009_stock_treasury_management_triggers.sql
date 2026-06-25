@@ -6,6 +6,33 @@
 USE account_system_db;
 
 -- =====================================================================
+-- 0) حذف كل Triggers هذا الملف مسبقاً لضمان إعادة الإنشاء بشكل صحيح
+-- =====================================================================
+DROP TRIGGER IF EXISTS after_purchase_insert;
+DROP TRIGGER IF EXISTS after_sales_insert;
+DROP TRIGGER IF EXISTS after_purchase_return_insert;
+DROP TRIGGER IF EXISTS after_sales_return_insert;
+DROP TRIGGER IF EXISTS after_stock_movements_insert;
+DROP TRIGGER IF EXISTS before_sales_insert_check_stock;
+DROP TRIGGER IF EXISTS after_total_sales_insert;
+DROP TRIGGER IF EXISTS after_total_buy_insert;
+DROP TRIGGER IF EXISTS after_total_sales_re_insert;
+DROP TRIGGER IF EXISTS after_total_buy_re_insert;
+DROP TRIGGER IF EXISTS after_expenses_details_insert;
+DROP TRIGGER IF EXISTS after_treasury_deposit_expenses_insert;
+DROP TRIGGER IF EXISTS after_customers_accounts_insert;
+DROP TRIGGER IF EXISTS after_suppliers_accounts_insert;
+DROP TRIGGER IF EXISTS before_treasury_movements_insert;
+DROP TRIGGER IF EXISTS after_treasury_movements_insert;
+DROP TRIGGER IF EXISTS before_total_sales_insert_shift;
+DROP TRIGGER IF EXISTS before_total_sales_re_insert_shift;
+DROP TRIGGER IF EXISTS before_expenses_details_insert_shift;
+DROP TRIGGER IF EXISTS before_treasury_deposit_expenses_insert_shift;
+DROP TRIGGER IF EXISTS before_customers_accounts_insert_shift;
+DROP TRIGGER IF EXISTS before_stock_movements_delete;
+DROP TRIGGER IF EXISTS before_treasury_movements_delete;
+DROP TRIGGER IF EXISTS after_user_shifts_update;
+-- =====================================================================
 -- 1) Triggers لتسجيل حركات المخزون تلقائياً
 -- =====================================================================
 
@@ -313,7 +340,6 @@ BEGIN
     DECLARE v_new_qty DECIMAL(14,3) DEFAULT 0;
     DECLARE v_item_name VARCHAR(200);
 
-    -- جلب الرصيد الحالي (إن وُجد)
     SELECT COALESCE(current_quantity, 0)
     INTO v_current
     FROM items_stock
@@ -322,7 +348,6 @@ BEGIN
 
     SET v_new_qty = v_current + NEW.quantity_in - NEW.quantity_out;
 
-    -- التحقق المسبق برسالة واضحة
     IF v_new_qty < 0 THEN
         SELECT nameItem INTO v_item_name FROM items WHERE id = NEW.item_id;
         SIGNAL SQLSTATE '45000'
@@ -936,3 +961,31 @@ SELECT 'تم إنشاء جميع Triggers التلقائية بنجاح!' AS sta
 SELECT COUNT(*) AS triggers_count
 FROM information_schema.triggers
 WHERE trigger_schema = DATABASE();
+
+-- التحقق من وجود الـ triggers الأساسية لإدارة المخزون والخزينة
+SELECT expected.trigger_name,
+       CASE WHEN t.trigger_name IS NULL THEN 'مفقود ❌' ELSE 'موجود ✅' END AS status
+FROM (
+         SELECT 'after_purchase_insert' AS trigger_name
+         UNION ALL SELECT 'after_sales_insert'
+         UNION ALL SELECT 'after_purchase_return_insert'
+         UNION ALL SELECT 'after_sales_return_insert'
+         UNION ALL SELECT 'after_stock_movements_insert'
+         UNION ALL SELECT 'before_sales_insert_check_stock'
+         UNION ALL SELECT 'after_total_sales_insert'
+         UNION ALL SELECT 'after_total_buy_insert'
+         UNION ALL SELECT 'after_total_sales_re_insert'
+         UNION ALL SELECT 'after_total_buy_re_insert'
+         UNION ALL SELECT 'after_expenses_details_insert'
+         UNION ALL SELECT 'after_treasury_deposit_expenses_insert'
+         UNION ALL SELECT 'after_customers_accounts_insert'
+         UNION ALL SELECT 'after_suppliers_accounts_insert'
+         UNION ALL SELECT 'before_treasury_movements_insert'
+         UNION ALL SELECT 'after_treasury_movements_insert'
+         UNION ALL SELECT 'before_stock_movements_delete'
+         UNION ALL SELECT 'before_treasury_movements_delete'
+     ) AS expected
+         LEFT JOIN information_schema.triggers t
+                   ON t.trigger_name = expected.trigger_name
+                       AND t.trigger_schema = DATABASE()
+ORDER BY status, expected.trigger_name;
