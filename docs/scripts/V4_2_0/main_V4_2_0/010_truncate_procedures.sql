@@ -84,8 +84,7 @@ DELIMITER ;
 /*------------------------------------ truncateTableItems -12 tables ------------------------------------ */
 DROP procedure IF EXISTS truncateTableItems;
 DELIMITER |
-CREATE
-    DEFINER = root@localhost PROCEDURE truncateTableItems(IN deleteItems TINYINT(1),
+CREATE PROCEDURE truncateTableItems(IN deleteItems TINYINT(1),
                                                           IN deleteStock TINYINT(1),
                                                           IN deleteSubGroup TINYINT(1),
                                                           IN deleteMainGroup TINYINT(1))

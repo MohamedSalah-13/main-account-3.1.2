@@ -233,7 +233,7 @@ CREATE TABLE IF NOT EXISTS items_stock
     current_quantity DECIMAL(14, 3) DEFAULT 0 NOT NULL,
     CONSTRAINT items_stock_items_id_fk
         FOREIGN KEY (item_id) REFERENCES items (id)
-            ON UPDATE CASCADE ON DELETE CASCADE,
+            ON UPDATE CASCADE ON DELETE RESTRICT,
     CONSTRAINT items_stock_stocks_stock_id_fk
         FOREIGN KEY (stock_id) REFERENCES stocks (stock_id),
     CONSTRAINT items_stock_uk UNIQUE (item_id, stock_id),

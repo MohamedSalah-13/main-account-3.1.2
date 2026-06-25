@@ -309,17 +309,32 @@ CREATE TRIGGER after_stock_movements_insert
     AFTER INSERT ON stock_movements
     FOR EACH ROW
 BEGIN
-    INSERT INTO items_stock (
-        item_id,
-        stock_id,
-        first_balance,
-        current_quantity
-    ) VALUES (
-                 NEW.item_id,
-                 NEW.stock_id,
-                 0,
-                 NEW.quantity_in - NEW.quantity_out
-             )
+    DECLARE v_current DECIMAL(14,3) DEFAULT 0;
+    DECLARE v_new_qty DECIMAL(14,3) DEFAULT 0;
+    DECLARE v_item_name VARCHAR(200);
+
+    -- جلب الرصيد الحالي (إن وُجد)
+    SELECT COALESCE(current_quantity, 0)
+    INTO v_current
+    FROM items_stock
+    WHERE item_id = NEW.item_id AND stock_id = NEW.stock_id
+    LIMIT 1;
+
+    SET v_new_qty = v_current + NEW.quantity_in - NEW.quantity_out;
+
+    -- التحقق المسبق برسالة واضحة
+    IF v_new_qty < 0 THEN
+        SELECT nameItem INTO v_item_name FROM items WHERE id = NEW.item_id;
+        SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = CONCAT(
+                    'لا يوجد رصيد كافٍ للصنف: ', COALESCE(v_item_name, CONCAT('ID=', NEW.item_id)),
+                    ' | المتاح: ', v_current,
+                    ' | المطلوب: ', NEW.quantity_out
+                               );
+    END IF;
+
+    INSERT INTO items_stock (item_id, stock_id, first_balance, current_quantity)
+    VALUES (NEW.item_id, NEW.stock_id, 0, v_new_qty)
     ON DUPLICATE KEY UPDATE
         current_quantity = current_quantity + NEW.quantity_in - NEW.quantity_out;
 END$$
@@ -327,9 +342,47 @@ END$$
 DELIMITER ;
 
 -- =====================================================================
--- 3) Triggers لتسجيل حركات الخزينة تلقائياً
+-- 3) Triggers ضف trigger BEFORE INSERT على جدول sales يتحقق من توفر الكمية قبل أن تصل إلى stock_movements:
 -- =====================================================================
+DROP TRIGGER IF EXISTS before_sales_insert_check_stock;
 
+DELIMITER $$
+
+CREATE TRIGGER before_sales_insert_check_stock
+    BEFORE INSERT ON sales
+    FOR EACH ROW
+BEGIN
+    DECLARE v_stock_id INT;
+    DECLARE v_available DECIMAL(14,3) DEFAULT 0;
+    DECLARE v_required DECIMAL(14,3);
+    DECLARE v_item_name VARCHAR(200);
+
+    SET v_required = NEW.quantity * NEW.type_value;
+
+    SELECT stock_id INTO v_stock_id
+    FROM total_sales
+    WHERE invoice_number = NEW.invoice_number
+    LIMIT 1;
+
+    IF v_stock_id IS NOT NULL THEN
+        SELECT COALESCE(current_quantity, 0)
+        INTO v_available
+        FROM items_stock
+        WHERE item_id = NEW.num AND stock_id = v_stock_id
+        LIMIT 1;
+
+        IF v_required > v_available THEN
+            SELECT nameItem INTO v_item_name FROM items WHERE id = NEW.num;
+            SIGNAL SQLSTATE '45000'
+                SET MESSAGE_TEXT = CONCAT(
+                        'الكمية المطلوبة (', v_required, ') أكبر من المتاح (', v_available,
+                        ') للصنف: ', COALESCE(v_item_name, '')
+                                   );
+        END IF;
+    END IF;
+END$$
+
+DELIMITER ;
 -- ---------------------------------------------------------------------
 -- A) Trigger عند فاتورة مبيعات نقدية
 -- ---------------------------------------------------------------------
