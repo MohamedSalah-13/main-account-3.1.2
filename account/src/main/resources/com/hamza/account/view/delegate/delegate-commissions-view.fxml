@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.ComboBox?>
+<?import javafx.scene.control.DatePicker?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.TableView?>
+<?import javafx.scene.control.TextArea?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.layout.ColumnConstraints?>
+<?import javafx.scene.layout.GridPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Region?>
+<?import javafx.scene.layout.RowConstraints?>
+<?import javafx.scene.layout.StackPane?>
+<?import javafx.scene.layout.VBox?>
+
+<StackPane fx:id="stackPane" styleClass="app-root" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1">
+    <children>
+        <BorderPane styleClass="app-container">
+
+            <top>
+                <VBox spacing="5.0" styleClass="app-card">
+                    <children>
+                        <GridPane hgap="10.0" vgap="10.0">
+                            <columnConstraints>
+                                <ColumnConstraints hgrow="SOMETIMES" maxWidth="-Infinity" minWidth="10.0" />
+                                <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="220.0" />
+                                <ColumnConstraints hgrow="SOMETIMES" maxWidth="-Infinity" minWidth="10.0" />
+                                <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="220.0" />
+                            </columnConstraints>
+                            <rowConstraints>
+                                <RowConstraints minHeight="10.0" prefHeight="30.0" />
+                                <RowConstraints minHeight="10.0" prefHeight="30.0" />
+                                <RowConstraints minHeight="10.0" prefHeight="30.0" />
+                                <RowConstraints minHeight="10.0" prefHeight="70.0" />
+                            </rowConstraints>
+                            <children>
+                                <Label styleClass="form-label" text="كود العمولة" />
+                                <TextField fx:id="txtCommissionId" editable="false" promptText="كود العمولة" GridPane.columnIndex="1" />
+
+                                <Label styleClass="form-label" text="المندوب" GridPane.columnIndex="2" />
+                                <ComboBox fx:id="comboDelegate" maxWidth="1.7976931348623157E308" promptText="اختر المندوب" GridPane.columnIndex="3" />
+
+                                <Label styleClass="form-label" text="تاريخ العمولة" GridPane.rowIndex="1" />
+                                <DatePicker fx:id="dateCommission" maxWidth="1.7976931348623157E308" GridPane.columnIndex="1" GridPane.rowIndex="1" />
+
+                                <Label styleClass="form-label" text="نوع العمولة" GridPane.columnIndex="2" GridPane.rowIndex="1" />
+                                <ComboBox fx:id="comboCommissionType" maxWidth="1.7976931348623157E308" promptText="نوع العمولة" GridPane.columnIndex="3" GridPane.rowIndex="1" />
+
+                                <Label styleClass="form-label" text="قيمة المبيعات" GridPane.rowIndex="2" />
+                                <TextField fx:id="txtSalesAmount" promptText="0.00" GridPane.columnIndex="1" GridPane.rowIndex="2" />
+
+                                <Label styleClass="form-label" text="قيمة العمولة" GridPane.columnIndex="2" GridPane.rowIndex="2" />
+                                <TextField fx:id="txtCommissionAmount" promptText="0.00" GridPane.columnIndex="3" GridPane.rowIndex="2" />
+
+                                <Label styleClass="form-label" text="ملاحظات" GridPane.rowIndex="3" />
+                                <TextArea fx:id="txtNotes" prefRowCount="3" promptText="ملاحظات" GridPane.columnIndex="1" GridPane.columnSpan="3" GridPane.rowIndex="3" />
+                            </children>
+                        </GridPane>
+
+                        <HBox alignment="CENTER_RIGHT" spacing="5.0">
+                            <children>
+                                <Button fx:id="btnCalculate" mnemonicParsing="false" styleClass="app-neutral-button" text="حساب العمولة" />
+                                <Button fx:id="btnShow" mnemonicParsing="false" styleClass="app-neutral-button" text="عرض" />
+                                <Region HBox.hgrow="SOMETIMES" />
+                                <Button fx:id="btnSave" mnemonicParsing="false" styleClass="app-primary-button" text="حفظ" />
+                                <Button fx:id="btnPay" mnemonicParsing="false" styleClass="app-primary-button" text="صرف العمولة" />
+                                <Button fx:id="btnDelete" mnemonicParsing="false" styleClass="app-danger-button" text="حذف" />
+                                <Button fx:id="btnClear" mnemonicParsing="false" styleClass="app-neutral-button" text="تفريغ" />
+                            </children>
+                        </HBox>
+                    </children>
+                    <padding>
+                        <Insets bottom="5.0" left="5.0" right="5.0" top="5.0" />
+                    </padding>
+                </VBox>
+            </top>
+
+            <center>
+                <VBox spacing="5.0">
+                    <children>
+                        <TableView fx:id="tableCommissions" prefHeight="400.0" VBox.vgrow="SOMETIMES" />
+                    </children>
+                    <padding>
+                        <Insets bottom="5.0" left="5.0" right="5.0" top="5.0" />
+                    </padding>
+                </VBox>
+            </center>
+
+            <bottom>
+                <HBox alignment="CENTER_LEFT" spacing="15.0" styleClass="summary-bar">
+                    <children>
+                        <Label text="إجمالي العمولات" />
+                        <Label fx:id="labelTotalCommissions" styleClass="text-sum" text="0.00" />
+
+                        <Label text="المدفوع" />
+                        <Label fx:id="labelPaidCommissions" styleClass="text-sum" text="0.00" />
+
+                        <Label text="المتبقي" />
+                        <Label fx:id="labelRemainingCommissions" styleClass="text-sum" text="0.00" />
+
+                        <Region HBox.hgrow="SOMETIMES" />
+
+                        <Label text="عدد السجلات" />
+                        <Label fx:id="labelCount" styleClass="text-sum" text="0" />
+                    </children>
+                </HBox>
+            </bottom>
+
+        </BorderPane>
+    </children>
+</StackPane>

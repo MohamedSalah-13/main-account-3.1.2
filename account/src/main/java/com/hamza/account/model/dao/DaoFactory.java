@@ -18,6 +18,10 @@ public enum DaoFactory {
     private CapitalDao capitalDao;
     private PartnerShareDao partnerShareDao;
     private ProfitLossDistributionDao profitLossDistributionDao;
+    private DelegateDao delegateDao;
+    private DelegateTargetDao delegateTargetDao;
+    private DelegateReportDao delegateReportDao;
+    private DelegateCommissionDao delegateCommissionDao;
 
     public void setAuditUserId(int userId) throws SQLException {
         if (connection == null || connection.isClosed()) {
@@ -286,5 +290,33 @@ public enum DaoFactory {
             profitLossDistributionDao = new ProfitLossDistributionDao(connection);
         }
         return profitLossDistributionDao;
+    }
+
+    public DelegateDao delegateDao() {
+        if (delegateDao == null) {
+            delegateDao = new DelegateDao(connection);
+        }
+        return delegateDao;
+    }
+
+    public DelegateTargetDao delegateTargetDao() {
+        if (delegateTargetDao == null) {
+            delegateTargetDao = new DelegateTargetDao(connection);
+        }
+        return delegateTargetDao;
+    }
+
+    public DelegateReportDao delegateReportDao() {
+        if (delegateReportDao == null) {
+            delegateReportDao = new DelegateReportDao(connection);
+        }
+        return delegateReportDao;
+    }
+
+    public DelegateCommissionDao delegateCommissionDao() {
+        if (delegateCommissionDao == null) {
+            delegateCommissionDao = new DelegateCommissionDao(connection);
+        }
+        return delegateCommissionDao;
     }
 }

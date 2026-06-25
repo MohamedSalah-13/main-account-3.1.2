@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.ComboBox?>
+<?import javafx.scene.control.DatePicker?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.TableView?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.layout.ColumnConstraints?>
+<?import javafx.scene.layout.GridPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Region?>
+<?import javafx.scene.layout.RowConstraints?>
+<?import javafx.scene.layout.StackPane?>
+<?import javafx.scene.layout.VBox?>
+
+<StackPane fx:id="stackPane" styleClass="app-root" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1">
+    <children>
+        <BorderPane styleClass="app-container">
+
+            <top>
+                <VBox spacing="5.0" styleClass="app-card">
+                    <children>
+                        <GridPane hgap="10.0" vgap="10.0">
+                            <columnConstraints>
+                                <ColumnConstraints hgrow="SOMETIMES" maxWidth="-Infinity" minWidth="10.0" />
+                                <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="220.0" />
+                                <ColumnConstraints hgrow="SOMETIMES" maxWidth="-Infinity" minWidth="10.0" />
+                                <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="220.0" />
+                                <ColumnConstraints hgrow="SOMETIMES" maxWidth="-Infinity" minWidth="10.0" />
+                                <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="220.0" />
+                            </columnConstraints>
+                            <rowConstraints>
+                                <RowConstraints minHeight="10.0" prefHeight="30.0" />
+                                <RowConstraints minHeight="10.0" prefHeight="30.0" />
+                            </rowConstraints>
+                            <children>
+                                <Label styleClass="form-label" text="من تاريخ" />
+                                <DatePicker fx:id="dateFrom" maxWidth="1.7976931348623157E308" GridPane.columnIndex="1" />
+
+                                <Label styleClass="form-label" text="إلى تاريخ" GridPane.columnIndex="2" />
+                                <DatePicker fx:id="dateTo" maxWidth="1.7976931348623157E308" GridPane.columnIndex="3" />
+
+                                <Label styleClass="form-label" text="المندوب" GridPane.columnIndex="4" />
+                                <ComboBox fx:id="comboDelegate" maxWidth="1.7976931348623157E308" promptText="كل المندوبين" GridPane.columnIndex="5" />
+
+                                <Label styleClass="form-label" text="المنطقة" GridPane.rowIndex="1" />
+                                <ComboBox fx:id="comboArea" maxWidth="1.7976931348623157E308" promptText="كل المناطق" GridPane.columnIndex="1" GridPane.rowIndex="1" />
+
+                                <Label styleClass="form-label" text="بحث" GridPane.columnIndex="2" GridPane.rowIndex="1" />
+                                <TextField fx:id="txtSearch" promptText="بحث" GridPane.columnIndex="3" GridPane.rowIndex="1" />
+
+                                <HBox alignment="CENTER_LEFT" spacing="5.0" GridPane.columnIndex="5" GridPane.rowIndex="1">
+                                    <children>
+                                        <Button fx:id="btnSearch" mnemonicParsing="false" styleClass="app-primary-button" text="بحث" />
+                                        <Button fx:id="btnPrint" mnemonicParsing="false" styleClass="app-neutral-button" text="طباعة" />
+                                        <Button fx:id="btnExport" mnemonicParsing="false" styleClass="app-neutral-button" text="تصدير" />
+                                    </children>
+                                </HBox>
+                            </children>
+                        </GridPane>
+                    </children>
+                    <padding>
+                        <Insets bottom="5.0" left="5.0" right="5.0" top="5.0" />
+                    </padding>
+                </VBox>
+            </top>
+
+            <center>
+                <VBox spacing="5.0">
+                    <children>
+                        <TableView fx:id="tablePerformance" prefHeight="450.0" VBox.vgrow="SOMETIMES" />
+                    </children>
+                    <padding>
+                        <Insets bottom="5.0" left="5.0" right="5.0" top="5.0" />
+                    </padding>
+                </VBox>
+            </center>
+
+            <bottom>
+                <HBox alignment="CENTER_LEFT" spacing="15.0" styleClass="summary-bar">
+                    <children>
+                        <Label text="إجمالي المبيعات" />
+                        <Label fx:id="labelTotalSales" styleClass="text-sum" text="0.00" />
+
+                        <Label text="صافي المبيعات" />
+                        <Label fx:id="labelNetSales" styleClass="text-sum" text="0.00" />
+
+                        <Label text="إجمالي التحصيل" />
+                        <Label fx:id="labelTotalCollected" styleClass="text-sum" text="0.00" />
+
+                        <Label text="إجمالي الربح" />
+                        <Label fx:id="labelTotalProfit" styleClass="text-sum" text="0.00" />
+
+                        <Region HBox.hgrow="SOMETIMES" />
+
+                        <Label text="عدد الفواتير" />
+                        <Label fx:id="labelInvoicesCount" styleClass="text-sum" text="0" />
+                    </children>
+                </HBox>
+            </bottom>
+
+        </BorderPane>
+    </children>
+</StackPane>
