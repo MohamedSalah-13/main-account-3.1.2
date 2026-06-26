@@ -17,7 +17,6 @@ import javafx.beans.binding.Bindings;
 import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
-import javafx.scene.layout.StackPane;
 import lombok.extern.log4j.Log4j2;
 
 import java.util.ArrayList;
@@ -31,9 +30,6 @@ public class DelegatesController {
 
     private final DelegateService delegateService = ServiceRegistry.get(DelegateService.class);
     private final EmployeeService employeeService = ServiceRegistry.get(EmployeeService.class);
-
-    @FXML
-    private StackPane stackPane;
 
     @FXML
     private TextField txtDelegateId;

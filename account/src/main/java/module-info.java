@@ -47,6 +47,9 @@ module com.hamza.account {
     exports com.hamza.account.features.checkbox.api;
     opens com.hamza.account.features.checkbox.api to javafx.fxml;
 
+    exports com.hamza.account.controller.delegates;
+    opens com.hamza.account.controller.delegates to javafx.fxml;
+
     exports com.hamza.account.interfaces.impl_dataInterface;
     opens com.hamza.account.interfaces.impl_dataInterface to javafx.fxml;
     exports com.hamza.account.interfaces.api;

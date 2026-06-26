@@ -207,6 +207,7 @@ public class MainScreenController extends MainItems implements Initializable {
                 try {
                     getDelegatesButtons().delegates().actionAddPaneToTabPane(tabPane);
                 } catch (Exception e) {
+                    e.printStackTrace();
                     logException(e);
                 }
             });
