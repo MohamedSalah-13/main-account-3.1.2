@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+  workflow_dispatch:
 
 jobs:
   backup:
@@ -11,16 +12,23 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Install rclone
         run: |
-          curl https://rclone.org/install.sh | sudo bash
+          sudo apt-get update
+          sudo apt-get install -y rclone zip
 
       - name: Configure rclone
         run: |
           mkdir -p ~/.config/rclone
-          echo "${{ secrets.RCLONE_CONFIG }}" > ~/.config/rclone/rclone.conf
+          printf '%s' "${{ secrets.RCLONE_CONFIG }}" > ~/.config/rclone/rclone.conf
+          chmod 600 ~/.config/rclone/rclone.conf
+
+      - name: Test rclone config
+        run: |
+          rclone listremotes
+          rclone about gdrive:
 
       - name: Create backup filename
         run: |
@@ -32,9 +40,12 @@ jobs:
             -x ".git/*" \
             -x ".github/*" \
             -x "target/*" \
-            -x "*.class"
+            -x "*.class" \
+            -x "$BACKUP_FILE"
 
       - name: Upload backup to Google Drive
         run: |
+          rclone mkdir gdrive:/GithubBackups/${{ github.event.repository.name }}
           rclone copy "$BACKUP_FILE" \
-            gdrive:/GithubBackups/${{ github.event.repository.name }}
+            gdrive:/GithubBackups/${{ github.event.repository.name }} \
+            --progress
