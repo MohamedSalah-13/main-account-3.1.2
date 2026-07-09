@@ -22,7 +22,7 @@ jobs:
       - name: Configure rclone
         run: |
           mkdir -p ~/.config/rclone
-          printf '%s' "${{ secrets.RCLONE_CONFIG }}" > ~/.config/rclone/rclone.conf
+          echo "${{ secrets.RCLONE_CONFIG_BASE64 }}" | base64 --decode > ~/.config/rclone/rclone.conf
           chmod 600 ~/.config/rclone/rclone.conf
 
       - name: Test rclone config
