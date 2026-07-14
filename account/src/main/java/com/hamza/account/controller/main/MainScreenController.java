@@ -3,14 +3,17 @@ package com.hamza.account.controller.main;
 import com.hamza.account.config.FxmlConstants;
 import com.hamza.account.controller.reports.ModernDashboardApp;
 import com.hamza.account.controller.reports.MonthlySalesInterface;
+import com.hamza.account.database.DaoException;
 import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.model.dao.MonthlySalesViewDao;
+import com.hamza.account.module.AppModules;
+import com.hamza.account.module.ModuleContext;
+import com.hamza.account.module.ModuleRegistry;
 import com.hamza.account.security.PermissionHelper;
 import com.hamza.account.type.PermissionCode;
 import com.hamza.account.view.LogApplication;
 import com.hamza.account.view.MonthlyView;
 import com.hamza.controlsfx.alert.AllAlerts;
-import com.hamza.account.database.DaoException;
 import com.hamza.controlsfx.language.Setting_Language;
 import com.hamza.controlsfx.observer.Publisher;
 import com.jfoenix.controls.JFXDrawer;
@@ -80,8 +83,6 @@ public class MainScreenController extends MainItems implements Initializable {
         mainToolbarSetting();
         otherSetting();
         addTabContextMenu();
-
-        addDelegatesMenu();
 
         if (LogApplication.usersVo.getId() == 1) {
             if (getShowMainTotals()) firstBoxInMain();
@@ -198,75 +199,6 @@ public class MainScreenController extends MainItems implements Initializable {
         }
     }
 
-    private void addDelegatesMenu() {
-        Menu delegatesMenu = new Menu("المندوبين");
-
-        if (PermissionHelper.has(PermissionCode.DELEGATES_SHOW)) {
-            MenuItem delegatesItem = new MenuItem("بيانات المندوبين");
-            delegatesItem.setOnAction(event -> {
-                try {
-                    getDelegatesButtons().delegates().actionAddPaneToTabPane(tabPane);
-                } catch (Exception e) {
-                    e.printStackTrace();
-                    logException(e);
-                }
-            });
-            delegatesMenu.getItems().add(delegatesItem);
-        }
-
-        if (PermissionHelper.has(PermissionCode.TARGETS_SHOW)) {
-            MenuItem targetsItem = new MenuItem("أهداف المندوبين");
-            targetsItem.setOnAction(event -> {
-                try {
-                    getDelegatesButtons().targets().actionAddPaneToTabPane(tabPane);
-                } catch (Exception e) {
-                    logException(e);
-                }
-            });
-            delegatesMenu.getItems().add(targetsItem);
-        }
-
-        if (PermissionHelper.has(PermissionCode.DELEGATES_REPORTS)) {
-            MenuItem performanceReportItem = new MenuItem("تقرير أداء المندوبين");
-            performanceReportItem.setOnAction(event -> {
-                try {
-                    getDelegatesButtons().performanceReport().actionAddPaneToTabPane(tabPane);
-                } catch (Exception e) {
-                    logException(e);
-                }
-            });
-            delegatesMenu.getItems().add(performanceReportItem);
-        }
-
-        if (PermissionHelper.has(PermissionCode.TARGETS_REPORTS)) {
-            MenuItem targetReportItem = new MenuItem("تقرير تحقيق الأهداف");
-            targetReportItem.setOnAction(event -> {
-                try {
-                    getDelegatesButtons().targetReport().actionAddPaneToTabPane(tabPane);
-                } catch (Exception e) {
-                    logException(e);
-                }
-            });
-            delegatesMenu.getItems().add(targetReportItem);
-        }
-
-        if (PermissionHelper.has(PermissionCode.DELEGATES_COMMISSIONS)) {
-            MenuItem commissionsItem = new MenuItem("عمولات المندوبين");
-            commissionsItem.setOnAction(event -> {
-                try {
-                    getDelegatesButtons().commissions().actionAddPaneToTabPane(tabPane);
-                } catch (Exception e) {
-                    logException(e);
-                }
-            });
-            delegatesMenu.getItems().add(commissionsItem);
-        }
-
-        if (!delegatesMenu.getItems().isEmpty()) {
-            menuController.getMenuBar().getMenus().add(delegatesMenu);
-        }
-    }
-
     private void mainToolbarSetting() {
         try {
             FXMLLoader fxmlLoader = new FxmlConstants().mainToolbar;
@@ -336,6 +268,17 @@ public class MainScreenController extends MainItems implements Initializable {
             initializeReports(menuController);
             initializeMainMenuItemsSetting(menuController);
 
+            AppModules.registerModules();
+
+            ModuleContext moduleContext = new ModuleContext(
+                    this,
+                    daoFactory,
+                    menuController.getMenuBar(),
+                    tabPane
+            );
+
+            ModuleRegistry.initializeModules(moduleContext);
+
             // ✅ إعادة فحص القوائم بعد اكتمال الإعدادات
             menuController.finalizeMenuVisibility();
         } catch (Exception e) {
@@ -386,7 +329,6 @@ public class MainScreenController extends MainItems implements Initializable {
         menuButtonSetting.initializeMenuItem(menuController.getMenuItemAddUser(), getUsersAll().getUsers_add());
         menuButtonSetting.initializeMenuItem(menuController.getMenuItemAddEmployee(), getAddEmployee().addEmployee());
         menuButtonSetting.initializeMenuItem(menuController.getMenuItemEmployees(), getAddEmployee().employees());
-        menuButtonSetting.initializeMenuItem(menuController.getMenuItemAddTargetDelegate(), getAddEmployee().addTarget());
 
         menuButtonSetting.initializeMenuItem(menuController.getMenuItemReportDelegate(), getDelegatesButtons().performanceReport());
 

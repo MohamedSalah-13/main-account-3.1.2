@@ -154,8 +154,6 @@
         <SeparatorMenuItem mnemonicParsing="false"/>
         <MenuItem fx:id="menuItemAddEmployee" mnemonicParsing="false" text="Add Employee"/>
         <MenuItem fx:id="menuItemEmployees" mnemonicParsing="false" text="Employees"/>
-        <SeparatorMenuItem mnemonicParsing="false"/>
-        <MenuItem fx:id="menuItemAddTargetDelegate" mnemonicParsing="false" text="Employees"/>
     </Menu>
 
     <Menu fx:id="menuSetting" mnemonicParsing="false" text="Setting">

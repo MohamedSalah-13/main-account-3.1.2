@@ -137,4 +137,6 @@ module com.hamza.account {
     exports com.hamza.account.model.dao.permission;
     exports com.hamza.account.controller.groups;
     opens com.hamza.account.controller.groups to javafx.fxml;
+    exports com.hamza.account.module;
+    opens com.hamza.account.module;
 }

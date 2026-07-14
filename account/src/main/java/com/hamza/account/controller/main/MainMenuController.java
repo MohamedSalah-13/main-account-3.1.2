@@ -41,7 +41,7 @@ public class MainMenuController {
     private MenuItem menuItemSummary, menuItemReportItems,
             menuItemReportItemsDaily, menuItemReportCustom, menuItemCustomPaid, menuItemReportSuppliers, menuItemSuppliersPaid, menuItemReportSales, menuItemReportPurchase, menuItemReportDetails, menuItemReportDelegate, menuItemReportYearly, menuItemReportProfitLoss;
     @FXML
-    private MenuItem menuItemAddUser, menuItemUsers, menuItemAddEmployee, menuItemEmployees, menuItemAddTargetDelegate;
+    private MenuItem menuItemAddUser, menuItemUsers, menuItemAddEmployee, menuItemEmployees;
     @FXML
     private MenuItem menuItemAddExpenseName, menuItemExpensesName, menuItemAddExpense, menuItemAllExpenses, menuItemExpensesDetails;
     @FXML
@@ -169,7 +169,6 @@ public class MainMenuController {
         PermissionHelper.hideIfNotAllowed(menuItemAddUser, PermissionCode.USERS_CREATE);
         PermissionHelper.hideIfNotAllowed(menuItemAddEmployee, PermissionCode.EMPLOYEES_CREATE);
         PermissionHelper.hideIfNotAllowed(menuItemEmployees, PermissionCode.EMPLOYEES_SHOW);
-        PermissionHelper.hideIfNotAllowed(menuItemAddTargetDelegate, PermissionCode.TARGETS_CREATE);
     }
 
     private void applySettingsPermissions() {

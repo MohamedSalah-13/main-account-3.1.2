@@ -9,18 +9,13 @@
 <?import javafx.scene.control.TextField?>
 <?import javafx.scene.layout.AnchorPane?>
 <?import javafx.scene.layout.BorderPane?>
-<?import javafx.scene.layout.ColumnConstraints?>
-<?import javafx.scene.layout.GridPane?>
 <?import javafx.scene.layout.HBox?>
-<?import javafx.scene.layout.Region?>
-<?import javafx.scene.layout.RowConstraints?>
 <?import javafx.scene.layout.VBox?>
 <?import javafx.scene.text.Text?>
 
-
 <AnchorPane styleClass="app-root" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1">
    <children>
-      <BorderPane prefHeight="221.0" prefWidth="434.0" styleClass="app-container" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
+      <BorderPane styleClass="app-container" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
          <bottom>
       
              <HBox alignment="CENTER_LEFT" spacing="14.0" styleClass="summary-bar" BorderPane.alignment="CENTER">
@@ -47,37 +42,15 @@
                 </ScrollPane>
          </center>
          <top>
-            <HBox styleClass="app-card" BorderPane.alignment="CENTER">
+            <HBox alignment="CENTER_LEFT" spacing="5.0" styleClass="app-card" BorderPane.alignment="CENTER">
                <children>
-                          <VBox HBox.hgrow="SOMETIMES">
-                              <children>
-                                  <GridPane hgap="12.0" vgap="12.0">
-                                      <columnConstraints>
-                                          <ColumnConstraints />
-                                          <ColumnConstraints minWidth="300.0" />
-                                      </columnConstraints>
-      
-                                            <children>
-                                          <Label styleClass="form-label" text="المخزن" />
-                                          <ComboBox fx:id="comboStock" maxWidth="1.7976931348623157E308" promptText="المخزن" GridPane.columnIndex="1" />
-      
-                                                <Label styleClass="form-label" text="بحث" GridPane.rowIndex="1" />
-                                          <TextField fx:id="textSearch" promptText="بحث" GridPane.columnIndex="1" GridPane.rowIndex="1" />
-                                      </children>
-                           <rowConstraints>
-                              <RowConstraints />
-                              <RowConstraints />
-                           </rowConstraints>
-                                  </GridPane>
-                              </children>
-                          </VBox>
-                  <Region HBox.hgrow="SOMETIMES" />
-                  <HBox alignment="BOTTOM_LEFT" spacing="10.0">
-                     <children>
-                              <Button fx:id="btnRefresh" mnemonicParsing="false" styleClass="neutral-button" text="تحديث" />
-                              <Button fx:id="btnPrint" mnemonicParsing="false" styleClass="primary-button" text="طباعة" />
-                     </children>
-                  </HBox>
+                              <Label styleClass="form-label" text="المخزن" />
+                              <ComboBox fx:id="comboStock" minWidth="200.0" promptText="المخزن" />
+
+                                          <Label styleClass="form-label" text="بحث" />
+                              <TextField fx:id="textSearch" minWidth="200.0" promptText="بحث" />
+                        <Button fx:id="btnRefresh" mnemonicParsing="false" styleClass="neutral-button" text="تحديث" />
+                        <Button fx:id="btnPrint" mnemonicParsing="false" styleClass="primary-button" text="طباعة" />
                </children>
                <padding>
                   <Insets bottom="5.0" left="5.0" right="5.0" top="5.0" />
