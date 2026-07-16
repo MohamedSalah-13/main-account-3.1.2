@@ -1,19 +1,14 @@
-
 package com.hamza.account.controller.main;
 
 import com.hamza.account.config.Image_Setting;
-import com.hamza.account.config.PropertiesName;
 import com.hamza.account.security.PermissionHelper;
 import com.hamza.account.type.PermissionCode;
 import com.hamza.account.view.LogApplication;
 import com.hamza.controlsfx.button.ImageDesign;
-import com.hamza.controlsfx.language.Setting_Language;
 import com.jfoenix.controls.JFXHamburger;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.control.Button;
-import javafx.scene.control.MenuButton;
-import javafx.scene.control.MenuItem;
 import javafx.scene.control.ToolBar;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -29,7 +24,6 @@ import java.util.ResourceBundle;
 public class MainToolbarController implements Initializable {
 
     private final MainScreenController controller;
-    private final DataPublisher dataPublisher;
     @Getter
     @FXML
     private JFXHamburger hamburger;
@@ -50,12 +44,7 @@ public class MainToolbarController implements Initializable {
     @FXML
     private Button btnShift;
     @FXML
-    private MenuItem menuItemChangeName, menuItemChangePass, menuItemLogout;
-    @FXML
-    private MenuButton menuButton;
-    @FXML
     private ToolBar toolBar;
-    private String nameProperty;
 
     @Override
     public void initialize(URL url, ResourceBundle resourceBundle) {
@@ -63,9 +52,6 @@ public class MainToolbarController implements Initializable {
 
         // ✅ تطبيق الصلاحيات على أزرار الـ Toolbar
         applyPermissions();
-
-        dataPublisher.getPublisherAddUser().addObserver(message -> menuButton.setText(Setting_Language.WELCOME + " " + message + " !"));
-        dataPublisher.getShowLoginScreen().addObserver(message -> menuItemLogout.setDisable(!message));
 
         showButton(btnPosSales, false);
         showButton(btnAlarm, false);
@@ -96,8 +82,6 @@ public class MainToolbarController implements Initializable {
 
         // الآلة الحاسبة والمنبه - متاح للجميع
         // btnCalc, btnAlarm - no permission needed
-
-        log.info("تم تطبيق الصلاحيات على Toolbar");
     }
 
     private void showButton(Button button, boolean show) {
@@ -130,12 +114,6 @@ public class MainToolbarController implements Initializable {
         });
 
         showButton(btnYouTube, LogApplication.usersVo.getId() == 1);
-
-        menuButton.setText(Setting_Language.WELCOME + " " + nameProperty + " !");
-        menuButtonSetting.initializeMenuItem(menuItemChangeName, controller.getForAllButtons().changeName());
-        menuButtonSetting.initializeMenuItem(menuItemChangePass, controller.getForAllButtons().changePassword());
-        menuButtonSetting.initializeMenuItem(menuItemLogout, controller.getForAllButtons().logout());
-        menuItemLogout.setDisable(!PropertiesName.getSettingLoginShow());
 
     }
 
