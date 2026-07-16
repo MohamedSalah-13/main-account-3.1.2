@@ -5,6 +5,8 @@ import com.hamza.account.controller.main.DataPublisher;
 import com.hamza.account.controller.main.LoadData;
 import com.hamza.account.controller.others.SelectedButton;
 import com.hamza.account.controller.others.ServiceRegistry;
+import com.hamza.account.controller.viewmodel.PrintBarcodeModel;
+import com.hamza.account.database.DaoException;
 import com.hamza.account.model.base.DForColumnTable;
 import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.model.domain.ItemsModel;
@@ -19,14 +21,8 @@ import com.hamza.account.service.StockService;
 import com.hamza.account.table.EditCell;
 import com.hamza.account.table.TableSetting;
 import com.hamza.account.type.PermissionCode;
-import com.hamza.account.view.AddItemApplication;
-import com.hamza.account.view.CardApplication;
-import com.hamza.account.view.ConvertItemsGroup;
-import com.hamza.account.view.LogApplication;
-import com.hamza.account.view.PrintBarcodeApp;
-import com.hamza.account.controller.viewmodel.PrintBarcodeModel;
+import com.hamza.account.view.*;
 import com.hamza.controlsfx.alert.AllAlerts;
-import com.hamza.account.database.DaoException;
 import com.hamza.controlsfx.language.Error_Text_Show;
 import com.hamza.controlsfx.language.Setting_Language;
 import com.hamza.controlsfx.observer.Publisher;
@@ -41,7 +37,6 @@ import javafx.fxml.FXML;
 import javafx.scene.control.*;
 import javafx.scene.input.KeyCode;
 import javafx.scene.layout.StackPane;
-import javafx.scene.text.Text;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 import lombok.extern.log4j.Log4j2;
@@ -79,8 +74,6 @@ public class ItemsController extends LoadData {
     private MenuItem menuPrint, menuPrintBarcode, menuPrintMenu, menuItemCard, menuItemConvertGroup, menuExportExcel;
     @FXML
     private TextField txtSearch;
-    @FXML
-    private Text txtSumTotals;
     @FXML
     private StackPane stackPane;
     @FXML
@@ -361,10 +354,6 @@ public class ItemsController extends LoadData {
         });
         btnDelete.setOnAction(actionEvent -> delete());
         btnRefresh.setOnAction(actionEvent -> paginationTableSetting.initializePagination());
-
-        tableView.itemsProperty().addListener((observableValue, ts, t1) ->
-                txtSumTotals.setText(String.valueOf(tableView.getItems().size()))
-        );
 
         tableView.setOnKeyPressed(keyEvent -> {
             if (keyEvent.getCode() == KeyCode.DELETE) {

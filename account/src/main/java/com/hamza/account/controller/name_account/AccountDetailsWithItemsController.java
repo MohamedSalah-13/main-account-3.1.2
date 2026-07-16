@@ -333,7 +333,7 @@ public class AccountDetailsWithItemsController<T1 extends BasePurchasesAndSales,
         btnExport.setText("export to pdf");
         btnSearch.setText(Setting_Language.WORD_SEARCH);
         btnRefresh.setText(Setting_Language.WORD_REFRESH);
-        txtLimit.setText(String.valueOf(nameService.getCredit(customersList, num_id)));
+//        txtLimit.setText(String.valueOf(nameService.getCredit(customersList, num_id)));
         txtName.setText(name_account);
         checkPrintDetails.setText("إظهار التفاصيل فى الطباعة");
         checkShowColor.setText("إظهار اللون");

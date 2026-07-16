@@ -17,7 +17,6 @@ import javafx.fxml.Initializable;
 import javafx.scene.control.*;
 import javafx.scene.input.KeyCode;
 import javafx.scene.layout.GridPane;
-import javafx.scene.layout.HBox;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.scene.text.Text;
@@ -54,13 +53,9 @@ public class TableController<T> implements Initializable {
     @FXML
     private Button btnNew, btnUpdate, btnDelete, btnRefresh, btnPrint;
     @FXML
-    private Label labelSearch, labelSum;
-    @FXML
-    private Text textSum;
+    private Label labelSearch;
     @FXML
     private TextField txtSearch;
-    @FXML
-    private HBox hBox;
     @FXML
     private StackPane root;
     @FXML
@@ -86,9 +81,6 @@ public class TableController<T> implements Initializable {
         getTable();
         initializePagination();
         otherSetting();
-        sumTable();
-
-        tableInterface.addToLastPane(gridPane, hBox, toolBar);
 
         if (tableInterface.styleSheet() != null) {
             root.getStylesheets().add(tableInterface.styleSheet());
@@ -160,9 +152,7 @@ public class TableController<T> implements Initializable {
     }
 
     private void otherSetting() {
-        textSum.setText("0");
         labelSearch.setText(Setting_Language.WORD_SEARCH);
-        labelSum.setText(Setting_Language.WORD_TOTAL.concat(" : "));
         txtSearch.setPromptText(Setting_Language.WORD_SEARCH);
 //        btnSelected.setText(Setting_Language.SELECT_ALL);
 
@@ -173,10 +163,6 @@ public class TableController<T> implements Initializable {
         buttonSetting(btnRefresh, Setting_Language.WORD_REFRESH, imageSetting.refresh);
         buttonSetting(btnPrint, Setting_Language.WORD_PRINT, imageSetting.print);
         btnSelected.setGraphic(createIcon(imageSetting.select));
-    }
-
-    private void sumTable() {
-        textSum.setText(String.valueOf(tableView.getItems().size()));
     }
 
     private void buttonSetting(Button button, String title, InputStream stream) {
@@ -202,7 +188,6 @@ public class TableController<T> implements Initializable {
             }
         };
 
-        tableView.itemsProperty().addListener((observableValue, ts, t1) -> sumTable());
         tableView.setOnKeyPressed(keyEvent -> {
             if (keyEvent.getCode() == KeyCode.DELETE) {
                 btnDelete.fire();

@@ -11,24 +11,15 @@
 <?import javafx.scene.control.ToggleButton?>
 <?import javafx.scene.layout.BorderPane?>
 <?import javafx.scene.layout.HBox?>
-<?import javafx.scene.layout.Region?>
 <?import javafx.scene.layout.StackPane?>
 <?import javafx.scene.layout.VBox?>
-<?import javafx.scene.text.Text?>
 
-<StackPane fx:id="stackPane" nodeOrientation="RIGHT_TO_LEFT" styleClass="app-root" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1">
+<StackPane fx:id="stackPane" styleClass="app-root" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1">
     <children>
       <BorderPane styleClass="app-container">
          <top>
-            <HBox styleClass="app-card">
+            <HBox spacing="5.0" styleClass="app-card">
                <children>
-                  <HBox alignment="CENTER_LEFT" spacing="5.0" HBox.hgrow="SOMETIMES">
-                     <children>
-                                    <Label styleClass="form-label" text="بحث" />
-                                    <TextField fx:id="txtSearch" promptText="بحث" HBox.hgrow="SOMETIMES" />
-                     </children>
-                  </HBox>
-                  <Region HBox.hgrow="SOMETIMES" />
                   <HBox alignment="CENTER_LEFT" spacing="5.0">
                      <children>
                               <Button fx:id="btnNew" mnemonicParsing="false" styleClass="success-button" text="جديد" />
@@ -55,18 +46,15 @@
                               </MenuButton>
                      </children>
                   </HBox>
+                  <HBox alignment="CENTER_LEFT" spacing="5.0" HBox.hgrow="SOMETIMES">
+                     <children>
+                                    <Label styleClass="form-label" text="بحث" />
+                                    <TextField fx:id="txtSearch" promptText="بحث" HBox.hgrow="SOMETIMES" />
+                     </children>
+                  </HBox>
                </children>
             </HBox>
          </top>
-         <bottom>
-
-                    <HBox alignment="CENTER_LEFT" spacing="10.0" styleClass="summary-bar" BorderPane.alignment="CENTER">
-                        <children>
-                            <Label styleClass="summary-label" text="الإجمالي" />
-                            <Text fx:id="txtSumTotals" strokeType="OUTSIDE" strokeWidth="0.0" styleClass="summary-value" text="0.0" />
-                        </children>
-                    </HBox>
-         </bottom>
          <center>
 
                 <ScrollPane fitToHeight="true" fitToWidth="true" styleClass="items-scroll-pane" BorderPane.alignment="CENTER">

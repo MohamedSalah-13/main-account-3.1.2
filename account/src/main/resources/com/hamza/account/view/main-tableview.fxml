@@ -9,25 +9,15 @@
 <?import javafx.scene.control.ToggleButton?>
 <?import javafx.scene.layout.BorderPane?>
 <?import javafx.scene.layout.HBox?>
-<?import javafx.scene.layout.Region?>
 <?import javafx.scene.layout.StackPane?>
 <?import javafx.scene.layout.VBox?>
-<?import javafx.scene.text.Text?>
 
-<StackPane fx:id="root" minHeight="400.0" minWidth="700.0" nodeOrientation="RIGHT_TO_LEFT" prefHeight="472.0" prefWidth="750.0" styleClass="app-root" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1">
+<StackPane fx:id="root" minHeight="400.0" minWidth="700.0" prefHeight="472.0" prefWidth="750.0" styleClass="app-root" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1">
     <children>
       <BorderPane styleClass="app-container">
          <top>
-            <HBox alignment="CENTER_LEFT" styleClass="app-card">
+            <HBox alignment="CENTER_LEFT" spacing="5.0" styleClass="app-card">
                <children>
-                  <HBox alignment="CENTER_LEFT" spacing="5.0" HBox.hgrow="SOMETIMES">
-                     <children>
-                                    <Label fx:id="labelSearch" styleClass="form-label" text="Search" />
-
-                                          <TextField fx:id="txtSearch" focusTraversable="false" promptText="اكتب للبحث..." styleClass="modern-input" HBox.hgrow="SOMETIMES" />
-                     </children>
-                  </HBox>
-                  <Region HBox.hgrow="SOMETIMES" />
                   <HBox alignment="CENTER_LEFT" spacing="5.0">
                      <children>
                               <Button fx:id="btnNew" mnemonicParsing="false" styleClass="success-action-button" text="new" />
@@ -45,19 +35,16 @@
                                     <ToggleButton fx:id="btnSelected" mnemonicParsing="false" styleClass="app-neutral-button" text="select/deselect" />
                      </children>
                   </HBox>
+                  <HBox alignment="CENTER_LEFT" spacing="5.0" HBox.hgrow="SOMETIMES">
+                     <children>
+                                    <Label fx:id="labelSearch" styleClass="form-label" text="Search" />
+
+                                          <TextField fx:id="txtSearch" focusTraversable="false" promptText="اكتب للبحث..." styleClass="modern-input" HBox.hgrow="SOMETIMES" />
+                     </children>
+                  </HBox>
                </children>
             </HBox>
          </top>
-         <bottom>
-
-                    <HBox fx:id="hBox" alignment="CENTER_LEFT" spacing="8.0" styleClass="summary-bar" BorderPane.alignment="CENTER">
-                        <children>
-                            <Label fx:id="labelSum" styleClass="summary-label" text="Sum" />
-
-                            <Text fx:id="textSum" strokeType="OUTSIDE" strokeWidth="0.0" styleClass="summary-value" text="Text" />
-                        </children>
-                    </HBox>
-         </bottom>
          <center>
 
                 <ScrollPane fitToHeight="true" fitToWidth="true" styleClass="modern-scroll-pane" BorderPane.alignment="CENTER">

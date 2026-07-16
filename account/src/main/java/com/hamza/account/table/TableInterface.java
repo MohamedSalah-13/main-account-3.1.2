@@ -6,9 +6,6 @@ import com.hamza.controlsfx.observer.Publisher;
 import javafx.beans.property.BooleanProperty;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TextField;
-import javafx.scene.control.ToolBar;
-import javafx.scene.layout.GridPane;
-import javafx.scene.layout.HBox;
 
 import java.util.List;
 
@@ -17,9 +14,6 @@ public interface TableInterface<T> extends MainData {
 
     default String titleName() {
         return "";
-    }
-
-    default void addToLastPane(GridPane gridPane, HBox hBox, ToolBar toolBar) {
     }
 
     default void textData(TableView<T> tableView, TextField textField) {

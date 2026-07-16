@@ -2,6 +2,8 @@ package com.hamza.account.controller.name_account;
 
 import com.hamza.account.controller.main.DataPublisher;
 import com.hamza.account.controller.main.LoadOtherData;
+import com.hamza.account.database.DaoException;
+import com.hamza.account.database.DaoList;
 import com.hamza.account.interfaces.api.DataInterface;
 import com.hamza.account.interfaces.api.DataTable;
 import com.hamza.account.interfaces.api.DesignInterface;
@@ -15,8 +17,6 @@ import com.hamza.account.otherSetting.AddSumToColumn;
 import com.hamza.account.table.ActionButtonToolBar;
 import com.hamza.account.table.TableInterface;
 import com.hamza.account.table.TableSetting;
-import com.hamza.account.database.DaoException;
-import com.hamza.account.database.DaoList;
 import com.hamza.controlsfx.language.Error_Text_Show;
 import com.hamza.controlsfx.language.Setting_Language;
 import com.hamza.controlsfx.observer.Publisher;
@@ -24,8 +24,6 @@ import com.hamza.controlsfx.others.CssToColorHelper;
 import javafx.beans.property.*;
 import javafx.scene.control.*;
 import javafx.scene.input.MouseButton;
-import javafx.scene.layout.GridPane;
-import javafx.scene.layout.HBox;
 import lombok.extern.log4j.Log4j2;
 import org.jetbrains.annotations.NotNull;
 
@@ -53,12 +51,6 @@ public class NameController<T1 extends BasePurchasesAndSales, T2 extends BaseTot
         this.nameInterface = nameAndAccountInterface.nameDao();
         this.publisherAddName = nameAndAccountInterface.addNamePublisher();
         this.publisherAddAccount = nameAndAccountInterface.addAccountPublisher();
-    }
-
-    @Override
-    public void addToLastPane(GridPane gridPane, HBox hBox, ToolBar toolBar) {
-        hBox.getChildren().addAll(sumBalance);
-        sumTable();
     }
 
     @Override
@@ -181,10 +173,6 @@ public class NameController<T1 extends BasePurchasesAndSales, T2 extends BaseTot
         new AddForAllApplication(id, new AddNameController<>(dataInterface, daoFactory, dataPublisher, id));
     }
 
-    private void sumTable() {
-        double purchase = table.getItems().stream().mapToDouble(BaseNames::getFirst_balance).sum();
-        sumBalance.setSum(purchase);
-    }
 
     private void addColumnShow() {
         TableColumn<T3, String> column = new TableColumn<>("Show");

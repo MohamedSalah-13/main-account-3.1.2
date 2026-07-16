@@ -6,7 +6,6 @@ import com.hamza.account.controller.others.ServiceRegistry;
 import com.hamza.account.interfaces.api.DataTable;
 import com.hamza.account.model.domain.ExpensesDetails;
 import com.hamza.account.openFxml.AddForAllApplication;
-import com.hamza.account.otherSetting.AddSumToColumn;
 import com.hamza.account.service.ExpensesDetailsService;
 import com.hamza.account.table.ActionButtonToolBar;
 import com.hamza.account.table.TableInterface;
@@ -19,17 +18,12 @@ import javafx.beans.property.BooleanProperty;
 import javafx.beans.value.ObservableValue;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
-import javafx.scene.control.ToolBar;
-import javafx.scene.layout.GridPane;
-import javafx.scene.layout.HBox;
 import javafx.stage.Stage;
 import javafx.util.Callback;
 import lombok.extern.log4j.Log4j2;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
-
-import static com.hamza.controlsfx.language.Setting_Language.TOTAL;
 
 @Log4j2
 public class ExpensesDetailsApplication extends Application implements TableInterface<ExpensesDetails> {
@@ -53,18 +47,6 @@ public class ExpensesDetailsApplication extends Application implements TableInte
         return Setting_Language.EXPENSES;
     }
 
-    @Override
-    public void addToLastPane(GridPane gridPane, HBox hBox, ToolBar toolBar) {
-        AddSumToColumn boxActive = new AddSumToColumn(TOTAL);
-        double v = tableView.getItems().stream().mapToDouble(ExpensesDetails::getAmount).sum();
-        boxActive.setSum(v);
-
-        tableView.itemsProperty().addListener((observableValue, itemsPrices, t1) -> {
-            double v2 = t1.stream().mapToDouble(ExpensesDetails::getAmount).sum();
-            boxActive.setSum(v2);
-        });
-        hBox.getChildren().addAll(boxActive);
-    }
 
     @Override
     public ActionButtonToolBar<ExpensesDetails> actionButton() {

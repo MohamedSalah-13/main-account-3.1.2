@@ -10,7 +10,6 @@
 <?import javafx.scene.control.ToggleButton?>
 <?import javafx.scene.layout.BorderPane?>
 <?import javafx.scene.layout.HBox?>
-<?import javafx.scene.layout.Region?>
 <?import javafx.scene.layout.StackPane?>
 <?import javafx.scene.layout.VBox?>
 <?import javafx.scene.text.Text?>
@@ -19,16 +18,8 @@
     <children>
       <BorderPane styleClass="app-container">
          <top>
-            <HBox styleClass="app-card">
+            <HBox alignment="CENTER_LEFT" spacing="5.0" styleClass="app-card">
                <children>
-                  <HBox alignment="CENTER_LEFT" spacing="5.0" HBox.hgrow="SOMETIMES">
-                     <children>
-                                      <Label styleClass="form-label" text="بحث" />
-                                      <TextField fx:id="textSearch" promptText="بحث" HBox.hgrow="SOMETIMES" />
-                                        <CheckBox fx:id="checkByZero" mnemonicParsing="false" text="إظهار الرصيد صفر" />
-                     </children>
-                  </HBox>
-                  <Region HBox.hgrow="SOMETIMES" />
                   <HBox alignment="CENTER_LEFT" spacing="5.0">
                      <children>
                                 <Button fx:id="btnNew" mnemonicParsing="false" styleClass="app-neutral-button" text="جديد" />
@@ -39,6 +30,13 @@
                                 <ToggleButton fx:id="btnSelected" mnemonicParsing="false" styleClass="app-neutral-button" text="تحديد الكل" />
                                 <Button fx:id="btnShow" mnemonicParsing="false" styleClass="app-primary-button" text="كشف حساب" />
                                 <Button fx:id="btnPaidAll" mnemonicParsing="false" styleClass="app-primary-button" text="المدفوعات" />
+                     </children>
+                  </HBox>
+                  <HBox alignment="CENTER_LEFT" spacing="5.0" HBox.hgrow="SOMETIMES">
+                     <children>
+                                      <Label styleClass="form-label" text="بحث" />
+                                      <TextField fx:id="textSearch" promptText="بحث" HBox.hgrow="SOMETIMES" />
+                                        <CheckBox fx:id="checkByZero" mnemonicParsing="false" text="إظهار الرصيد صفر" />
                      </children>
                   </HBox>
                </children>

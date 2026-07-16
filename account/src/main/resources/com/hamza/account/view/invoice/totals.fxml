@@ -31,12 +31,6 @@
          <top>
             <HBox alignment="CENTER_LEFT" spacing="5.0" styleClass="app-card">
                <children>
-                  <HBox alignment="CENTER_LEFT" spacing="5.0" HBox.hgrow="SOMETIMES">
-                     <children>
-                                    <Label fx:id="labelTextSearch" styleClass="form-label" text="Search" />
-                                    <TextField fx:id="textSearch" promptText="Search" HBox.hgrow="SOMETIMES" />
-                     </children>
-                  </HBox>
                   <HBox alignment="CENTER_LEFT" spacing="5.0">
                      <children>
                               <Button fx:id="btnUpdate" mnemonicParsing="false" styleClass="app-neutral-button" text="Update" />
@@ -56,6 +50,12 @@
                               <String fx:value="menu-button" />
                            </styleClass>
                               </MenuButton>
+                     </children>
+                  </HBox>
+                  <HBox alignment="CENTER_LEFT" spacing="5.0" HBox.hgrow="ALWAYS">
+                     <children>
+                                    <Label fx:id="labelTextSearch" styleClass="form-label" text="Search" />
+                                    <TextField fx:id="textSearch" promptText="Search" HBox.hgrow="SOMETIMES" />
                      </children>
                   </HBox>
                </children>
