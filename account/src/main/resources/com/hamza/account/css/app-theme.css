@@ -615,6 +615,11 @@
 .main-accordion,
 .main-accordion .titled-pane > *.content {
     -fx-background-color: transparent;
+    -fx-spacing: 5px;
+}
+
+.titled-pane {
+    -fx-padding: 2px;
 }
 
 .main-accordion .titled-pane > .title {

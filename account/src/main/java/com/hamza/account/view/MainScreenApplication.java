@@ -63,7 +63,7 @@ public class MainScreenApplication extends Application {
         Scene scene = new SceneAll(load);
         sceneMainScreen = scene;
 
-        Screen_Size.adjustStageToFullScreen(stage);
+//        Screen_Size.adjustStageToFullScreen(stage);
 
         String version = getAppVersion(); // اجلب رقم النسخة تلقائياً
         stage.setTitle(Setting_Language.PROGRAM_TITLE + " - version: " + version);

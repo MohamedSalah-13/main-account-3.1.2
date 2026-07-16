@@ -16,58 +16,58 @@
 
 <StackPane fx:id="stackPane" styleClass="app-root" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1">
     <children>
-      <BorderPane styleClass="app-container">
-         <top>
-            <HBox alignment="CENTER_LEFT" spacing="5.0" styleClass="app-card">
-               <children>
-                  <HBox alignment="CENTER_LEFT" spacing="5.0">
+      <ScrollPane fitToHeight="true" fitToWidth="true">
+         <content>
+            <BorderPane styleClass="app-container">
+               <top>
+                  <HBox alignment="CENTER_LEFT" minHeight="-Infinity" minWidth="-Infinity" spacing="5.0" styleClass="app-card">
                      <children>
-                                <Button fx:id="btnNew" mnemonicParsing="false" styleClass="app-neutral-button" text="جديد" />
-                                <Button fx:id="btnRefresh" mnemonicParsing="false" styleClass="app-neutral-button" text="تحديث" />
-                                <Button fx:id="btnPrint" mnemonicParsing="false" styleClass="app-neutral-button" text="طباعة" />
-                                <Separator orientation="VERTICAL" />
-                                <Button fx:id="btnExport" mnemonicParsing="false" styleClass="pdf-button" text="تصدير" />
-                                <ToggleButton fx:id="btnSelected" mnemonicParsing="false" styleClass="app-neutral-button" text="تحديد الكل" />
-                                <Button fx:id="btnShow" mnemonicParsing="false" styleClass="app-primary-button" text="كشف حساب" />
-                                <Button fx:id="btnPaidAll" mnemonicParsing="false" styleClass="app-primary-button" text="المدفوعات" />
+                        <HBox alignment="CENTER_LEFT" spacing="5.0">
+                           <children>
+                                      <Button fx:id="btnNew" mnemonicParsing="false" styleClass="app-neutral-button" text="جديد" />
+                                      <Button fx:id="btnRefresh" mnemonicParsing="false" styleClass="app-neutral-button" text="تحديث" />
+                                      <Button fx:id="btnPrint" mnemonicParsing="false" styleClass="app-neutral-button" text="طباعة" />
+                                      <Separator orientation="VERTICAL" />
+                                      <Button fx:id="btnExport" mnemonicParsing="false" styleClass="pdf-button" text="تصدير" />
+                                      <ToggleButton fx:id="btnSelected" mnemonicParsing="false" styleClass="app-neutral-button" text="تحديد الكل" />
+                                      <Button fx:id="btnShow" mnemonicParsing="false" styleClass="app-primary-button" text="كشف حساب" />
+                                      <Button fx:id="btnPaidAll" mnemonicParsing="false" styleClass="app-primary-button" text="المدفوعات" />
+                           </children>
+                        </HBox>
+                        <HBox alignment="CENTER_LEFT" spacing="5.0" HBox.hgrow="SOMETIMES">
+                           <children>
+                                            <Label styleClass="form-label" text="بحث" />
+                                            <TextField fx:id="textSearch" promptText="بحث" HBox.hgrow="SOMETIMES" />
+                                              <CheckBox fx:id="checkByZero" mnemonicParsing="false" text="إظهار الرصيد صفر" />
+                           </children>
+                        </HBox>
                      </children>
                   </HBox>
-                  <HBox alignment="CENTER_LEFT" spacing="5.0" HBox.hgrow="SOMETIMES">
-                     <children>
-                                      <Label styleClass="form-label" text="بحث" />
-                                      <TextField fx:id="textSearch" promptText="بحث" HBox.hgrow="SOMETIMES" />
-                                        <CheckBox fx:id="checkByZero" mnemonicParsing="false" text="إظهار الرصيد صفر" />
-                     </children>
-                  </HBox>
-               </children>
-            </HBox>
-         </top>
-         <bottom>
-                      <HBox alignment="CENTER_LEFT" spacing="10.0" styleClass="summary-bar" BorderPane.alignment="CENTER">
-                          <children>
-                              <Label styleClass="form-label" text="عدد" />
-                              <Text fx:id="textCount" strokeType="OUTSIDE" strokeWidth="0.0" styleClass="text-sum" text="0.0" />
-                              <Label layoutX="10.0" layoutY="10.0" styleClass="form-label" text="مدين" />
-                              <Text fx:id="textTotalPurchase" layoutX="38.0" layoutY="23.0" strokeType="OUTSIDE" strokeWidth="0.0" styleClass="text-sum" text="0.0" />
-                              <Label layoutX="38.0" layoutY="10.0" styleClass="form-label" text="دائن" />
-                              <Text fx:id="textTotalPaid" layoutX="145.0" layoutY="23.0" strokeType="OUTSIDE" strokeWidth="0.0" styleClass="text-sum" text="0.0" />
-                              <Label layoutX="10.0" layoutY="10.0" styleClass="form-label" text="الباقى" />
-                              <Text fx:id="textTotalRest" layoutX="168.0" layoutY="23.0" strokeType="OUTSIDE" strokeWidth="0.0" styleClass="text-sum" text="0.0" />
-                          </children>
-                      </HBox>
-         </bottom>
-         <center>
-                  <ScrollPane fitToHeight="true" fitToWidth="true" BorderPane.alignment="CENTER">
-                      <content>
+               </top>
+               <bottom>
+                            <HBox alignment="CENTER_LEFT" minHeight="-Infinity" minWidth="-Infinity" spacing="10.0" styleClass="summary-bar" BorderPane.alignment="CENTER">
+                                <children>
+                                    <Label styleClass="form-label" text="عدد" />
+                                    <Text fx:id="textCount" strokeType="OUTSIDE" strokeWidth="0.0" styleClass="text-sum" text="0.0" />
+                                    <Label layoutX="10.0" layoutY="10.0" styleClass="form-label" text="مدين" />
+                                    <Text fx:id="textTotalPurchase" layoutX="38.0" layoutY="23.0" strokeType="OUTSIDE" strokeWidth="0.0" styleClass="text-sum" text="0.0" />
+                                    <Label layoutX="38.0" layoutY="10.0" styleClass="form-label" text="دائن" />
+                                    <Text fx:id="textTotalPaid" layoutX="145.0" layoutY="23.0" strokeType="OUTSIDE" strokeWidth="0.0" styleClass="text-sum" text="0.0" />
+                                    <Label layoutX="10.0" layoutY="10.0" styleClass="form-label" text="الباقى" />
+                                    <Text fx:id="textTotalRest" layoutX="168.0" layoutY="23.0" strokeType="OUTSIDE" strokeWidth="0.0" styleClass="text-sum" text="0.0" />
+                                </children>
+                            </HBox>
+               </bottom>
+               <center>
                           <VBox spacing="5.0">
                               <children>
                                   <VBox fx:id="box" spacing="5.0" />
                                     <TableView fx:id="tableView" styleClass="app-table" VBox.vgrow="SOMETIMES" />
                               </children>
                           </VBox>
-                      </content>
-                  </ScrollPane>
-         </center>
-      </BorderPane>
+               </center>
+            </BorderPane>
+         </content>
+      </ScrollPane>
     </children>
 </StackPane>

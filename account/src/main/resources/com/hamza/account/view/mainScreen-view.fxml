@@ -1,48 +1,36 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<?import com.jfoenix.controls.JFXDrawer?>
 <?import javafx.scene.control.Tab?>
 <?import javafx.scene.control.TabPane?>
+<?import javafx.scene.image.Image?>
+<?import javafx.scene.image.ImageView?>
 <?import javafx.scene.layout.AnchorPane?>
 <?import javafx.scene.layout.BorderPane?>
-<?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.VBox?>
 
-<?import javafx.scene.image.ImageView?>
-<?import javafx.scene.image.Image?>
-<BorderPane fx:id="borderPane" nodeOrientation="RIGHT_TO_LEFT" prefHeight="478.0" prefWidth="723.0" styleClass="app-root" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1">
+<BorderPane fx:id="borderPane" minHeight="600.0" minWidth="850.0" nodeOrientation="RIGHT_TO_LEFT" styleClass="app-root" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1">
 
     <center>
-        <HBox styleClass="main-content" BorderPane.alignment="CENTER">
-            <children>
-                <JFXDrawer fx:id="drawer" defaultDrawerSize="0.0" />
-
-                <VBox fx:id="boxCenter" spacing="0.0" HBox.hgrow="ALWAYS">
-                    <children>
-                        <TabPane fx:id="tabPane" styleClass="main-tab-pane" tabClosingPolicy="ALL_TABS" VBox.vgrow="ALWAYS">
-                            <tabs>
-                                <Tab text="الرئيسية">
-                                    <content>
-                                        <AnchorPane>
-                                            <children>
-                                    <VBox fx:id="box" AnchorPane.bottomAnchor="10.0" AnchorPane.leftAnchor="10.0" AnchorPane.rightAnchor="10.0" AnchorPane.topAnchor="10.0" />
-                                            </children>
-                                        </AnchorPane>
-                                    </content>
+            <TabPane fx:id="tabPane" styleClass="main-tab-pane" tabClosingPolicy="ALL_TABS">
+                <tabs>
+                    <Tab text="الرئيسية">
+                        <content>
+                            <AnchorPane>
+                                <children>
+                        <VBox fx:id="box" AnchorPane.bottomAnchor="5.0" AnchorPane.leftAnchor="5.0" AnchorPane.rightAnchor="5.0" AnchorPane.topAnchor="5.0" />
+                                </children>
+                            </AnchorPane>
+                        </content>
 
                                     <graphic>
-                                        <ImageView fitHeight="20.0" fitWidth="20.0" pickOnBounds="true" preserveRatio="true">
-                                            <image>
-                                                <Image url="@../image/icons8-home-page-80.png" />
-                                            </image>
-                                        </ImageView>
-                                    </graphic>
-                                </Tab>
-                            </tabs>
-                        </TabPane>
-                    </children>
-                </VBox>
-            </children>
-        </HBox>
+                            <ImageView fitHeight="20.0" fitWidth="20.0" pickOnBounds="true" preserveRatio="true">
+                                <image>
+                                    <Image url="@../image/icons8-home-page-80.png" />
+                                </image>
+                            </ImageView>
+                        </graphic>
+                    </Tab>
+                </tabs>
+            </TabPane>
     </center>
 </BorderPane>

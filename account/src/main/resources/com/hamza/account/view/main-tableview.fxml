@@ -12,52 +12,51 @@
 <?import javafx.scene.layout.StackPane?>
 <?import javafx.scene.layout.VBox?>
 
-<StackPane fx:id="root" minHeight="400.0" minWidth="700.0" prefHeight="472.0" prefWidth="750.0" styleClass="app-root" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1">
+<StackPane fx:id="root" minHeight="500.0" minWidth="700.0" styleClass="app-root" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1">
     <children>
-      <BorderPane styleClass="app-container">
-         <top>
-            <HBox alignment="CENTER_LEFT" spacing="5.0" styleClass="app-card">
-               <children>
-                  <HBox alignment="CENTER_LEFT" spacing="5.0">
+      <ScrollPane fitToHeight="true" fitToWidth="true">
+         <content>
+            <BorderPane styleClass="app-container">
+               <top>
+                  <HBox alignment="CENTER_LEFT" minHeight="-Infinity" minWidth="-Infinity" spacing="5.0" styleClass="app-card">
                      <children>
-                              <Button fx:id="btnNew" mnemonicParsing="false" styleClass="success-action-button" text="new" />
+                        <HBox alignment="CENTER_LEFT" spacing="5.0">
+                           <children>
+                                    <Button fx:id="btnNew" mnemonicParsing="false" styleClass="success-action-button" text="new" />
+            
+                                          <Button fx:id="btnUpdate" mnemonicParsing="false" styleClass="warning-action-button" text="update" />
+            
+                                          <Button fx:id="btnDelete" mnemonicParsing="false" styleClass="danger-action-button" text="delete" />
+            
+                                          <Separator orientation="VERTICAL" styleClass="modern-separator" />
+            
+                                          <Button fx:id="btnRefresh" mnemonicParsing="false" styleClass="neutral-action-button" text="refresh" />
+            
+                                          <Button fx:id="btnPrint" mnemonicParsing="false" styleClass="primary-action-button" text="print" />
+            
+                                          <ToggleButton fx:id="btnSelected" mnemonicParsing="false" styleClass="app-neutral-button" text="select/deselect" />
+                           </children>
+                        </HBox>
+                        <HBox alignment="CENTER_LEFT" spacing="5.0" HBox.hgrow="SOMETIMES">
+                           <children>
+                                          <Label fx:id="labelSearch" styleClass="form-label" text="Search" />
       
-                                    <Button fx:id="btnUpdate" mnemonicParsing="false" styleClass="warning-action-button" text="update" />
-      
-                                    <Button fx:id="btnDelete" mnemonicParsing="false" styleClass="danger-action-button" text="delete" />
-      
-                                    <Separator orientation="VERTICAL" styleClass="modern-separator" />
-      
-                                    <Button fx:id="btnRefresh" mnemonicParsing="false" styleClass="neutral-action-button" text="refresh" />
-      
-                                    <Button fx:id="btnPrint" mnemonicParsing="false" styleClass="primary-action-button" text="print" />
-      
-                                    <ToggleButton fx:id="btnSelected" mnemonicParsing="false" styleClass="app-neutral-button" text="select/deselect" />
+                                                <TextField fx:id="txtSearch" focusTraversable="false" promptText="اكتب للبحث..." styleClass="modern-input" HBox.hgrow="SOMETIMES" />
+                           </children>
+                        </HBox>
                      </children>
                   </HBox>
-                  <HBox alignment="CENTER_LEFT" spacing="5.0" HBox.hgrow="SOMETIMES">
-                     <children>
-                                    <Label fx:id="labelSearch" styleClass="form-label" text="Search" />
-
-                                          <TextField fx:id="txtSearch" focusTraversable="false" promptText="اكتب للبحث..." styleClass="modern-input" HBox.hgrow="SOMETIMES" />
-                     </children>
-                  </HBox>
-               </children>
-            </HBox>
-         </top>
-         <center>
-
-                <ScrollPane fitToHeight="true" fitToWidth="true" styleClass="modern-scroll-pane" BorderPane.alignment="CENTER">
-                    <content>
+               </top>
+               <center>
                         <VBox spacing="5.0">
                             <children>
 
-                                <Pagination fx:id="pagination" styleClass="modern-pagination" VBox.vgrow="ALWAYS" />
+                                      <Pagination fx:id="pagination" minHeight="-Infinity" minWidth="-Infinity" styleClass="modern-pagination" VBox.vgrow="ALWAYS" />
                             </children>
                         </VBox>
-                    </content>
-                </ScrollPane>
-         </center>
-      </BorderPane>
+               </center>
+            </BorderPane>
+         </content>
+      </ScrollPane>
     </children>
 </StackPane>

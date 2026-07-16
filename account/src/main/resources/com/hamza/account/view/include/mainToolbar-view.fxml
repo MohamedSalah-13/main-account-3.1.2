@@ -1,22 +1,19 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <?import com.jfoenix.controls.JFXHamburger?>
-<?import java.net.URL?>
+<?import javafx.geometry.Insets?>
 <?import javafx.scene.control.Button?>
 <?import javafx.scene.control.MenuButton?>
 <?import javafx.scene.control.MenuItem?>
-<?import javafx.scene.control.ToolBar?>
 <?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Region?>
 
-<ToolBar fx:id="toolBar" nodeOrientation="RIGHT_TO_LEFT" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1">
-    <items>
-        <HBox alignment="CENTER" styleClass="hamburger-box">
-            <children>
-                <JFXHamburger fx:id="hamburger" />
-            </children>
-        </HBox>
 
-        <Button fx:id="btnHome" mnemonicParsing="false" styleClass="app-primary-button" text="Home" />
+  <HBox alignment="CENTER_LEFT" spacing="2.0" styleClass="hamburger-box" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1">
+      <children>
+          <JFXHamburger fx:id="hamburger" />
+
+              <Button fx:id="btnHome" mnemonicParsing="false" styleClass="app-neutral-button" text="Home" />
         <Button fx:id="btnPosSales" mnemonicParsing="false" styleClass="app-neutral-button" text="Pos Sales" />
         <Button fx:id="btnSales" mnemonicParsing="false" styleClass="app-neutral-button" text="Sales" />
         <Button fx:id="btnPurchase" mnemonicParsing="false" styleClass="app-neutral-button" text="Purchase" />
@@ -24,18 +21,17 @@
         <Button fx:id="btnCalc" mnemonicParsing="false" styleClass="app-neutral-button" text="Calc" />
         <Button fx:id="btnAlarm" mnemonicParsing="false" styleClass="warning-button" text="Alarm" />
         <Button fx:id="btnShift" mnemonicParsing="false" styleClass="app-neutral-button" text="الوردية" />
+      <Region HBox.hgrow="SOMETIMES" />
         <Button fx:id="btnYouTube" mnemonicParsing="false" styleClass="danger-button" text="YouTube" />
-
-        <HBox alignment="CENTER_RIGHT">
-            <children>
-                <MenuButton fx:id="menuButton" mnemonicParsing="false" styleClass="modern-menu-button" text="MenuButton">
-                    <items>
-                        <MenuItem fx:id="menuItemChangeName" mnemonicParsing="false" text="Change Name" />
-                        <MenuItem fx:id="menuItemChangePass" mnemonicParsing="false" text="Change Password" />
-                        <MenuItem fx:id="menuItemLogout" mnemonicParsing="false" text="Logout" />
-                    </items>
-                </MenuButton>
-            </children>
-        </HBox>
-    </items>
-</ToolBar>
+          <MenuButton fx:id="menuButton" mnemonicParsing="false" styleClass="modern-menu-button" text="MenuButton">
+              <items>
+                  <MenuItem fx:id="menuItemChangeName" mnemonicParsing="false" text="Change Name" />
+                  <MenuItem fx:id="menuItemChangePass" mnemonicParsing="false" text="Change Password" />
+                  <MenuItem fx:id="menuItemLogout" mnemonicParsing="false" text="Logout" />
+              </items>
+          </MenuButton>
+      </children>
+   <padding>
+      <Insets bottom="2.0" left="2.0" right="2.0" top="2.0" />
+   </padding>
+  </HBox>

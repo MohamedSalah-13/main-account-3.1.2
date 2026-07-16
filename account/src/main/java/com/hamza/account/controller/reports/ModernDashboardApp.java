@@ -133,7 +133,7 @@ public class ModernDashboardApp {
         pane = new GridPane();
         pane.setHgap(20);
         pane.setVgap(20);
-        pane.setPadding(new Insets(20));
+        pane.setPadding(new Insets(10));
         pane.setBackground(new Background(new BackgroundFill(MAIN_BACKGROUND, CornerRadii.EMPTY, Insets.EMPTY)));
 
         salesComparisonTile.setPrefSize(520, 250);

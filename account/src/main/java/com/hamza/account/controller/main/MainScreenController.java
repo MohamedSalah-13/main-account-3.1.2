@@ -59,10 +59,10 @@ public class MainScreenController extends MainItems implements Initializable {
     @Getter
     @FXML
     private TabPane tabPane;
-    @FXML
-    private VBox boxCenter;
-    @FXML
-    private JFXDrawer drawer;
+//    @FXML
+//    private VBox boxCenter;
+//    @FXML
+//    private JFXDrawer drawer;
     @FXML
     private VBox box;
 
@@ -80,9 +80,10 @@ public class MainScreenController extends MainItems implements Initializable {
         menuButtonSetting = new MenuButtonSetting(tabPane);
 //        menuBarSetting();
         dontShowData();
-        mainToolbarSetting();
+//        mainToolbarSetting();
         otherSetting();
         addTabContextMenu();
+        getRightPane();
 
         if (LogApplication.usersVo.getId() == 1) {
             if (getShowMainTotals()) firstBoxInMain();
@@ -109,8 +110,6 @@ public class MainScreenController extends MainItems implements Initializable {
 //            borderPane.setBottom(fxmlTimePane.load());
             tabPane.getTabs().getFirst().setText(Setting_Language.WORD_MAIN);
             tabPane.getTabs().getFirst().setClosable(false);
-            getRightPane();
-
         } catch (Exception e) {
             logException(e);
         }
@@ -121,51 +120,57 @@ public class MainScreenController extends MainItems implements Initializable {
             FXMLLoader fxmlLoader = new FxmlConstants().mainToolbar;
             toolbarController = new MainToolbarController(this, this);
             fxmlLoader.setController(toolbarController);
-            ToolBar pane = fxmlLoader.load();
-            boxCenter.getChildren().addFirst(pane);
+            HBox pane = fxmlLoader.load();
+//            boxCenter.getChildren().addFirst(pane);
+            borderPane.setTop(pane);
         } catch (IOException e) {
             logException(e);
         }
     }
 
-    private void getRightPane() throws Exception {
-        FXMLLoader fxmlLoader = new FxmlConstants().rightPane;
-        Pane pane = fxmlLoader.load();
-        // add to drawer
-        hamburgerAction(drawer, pane);
-        // button action
-        MainRightPaneController mainRightPaneController = fxmlLoader.getController();
+    private void getRightPane() {
+        try {
+            FXMLLoader fxmlLoader = new FxmlConstants().rightPane;
+            Pane pane = fxmlLoader.load();
+            // add to drawer
+//        hamburgerAction(drawer, pane);
+            borderPane.setLeft(pane);
+            // button action
+            MainRightPaneController mainRightPaneController = fxmlLoader.getController();
 
-        /*----------------------------------------------- Sales -----------------------------------------------*/
-        menuButtonSetting.configureButton(mainRightPaneController.getBtnSales(), getTotalSales().addInvoice());
-        menuButtonSetting.configureButton(mainRightPaneController.getBtnTotalSale(), getTotalSales().totals());
-        /*----------------------------------------------- Purchase -----------------------------------------------*/
-        menuButtonSetting.configureButton(mainRightPaneController.getBtnPurchase(), getTotalPurchase().addInvoice());
-        menuButtonSetting.configureButton(mainRightPaneController.getBtnTotalPurchase(), getTotalPurchase().totals());
-        menuButtonSetting.configureButton(mainRightPaneController.getBtnPurchaseRe(), getTotalPurchaseReturn().addInvoice());
-        menuButtonSetting.configureButton(mainRightPaneController.getBtnTotalPurchaseRe(), getTotalPurchaseReturn().totals());
-        /*----------------------------------------------- Items -----------------------------------------------*/
-        menuButtonSetting.configureButton(mainRightPaneController.getBtnItems(), getItemsButtons().allItems());
-        menuButtonSetting.configureButton(mainRightPaneController.getBtnAddItem(), getItemsButtons().addItem());
-        menuButtonSetting.configureButton(mainRightPaneController.getBtnUnits(), getItemsButtons().units());
-        menuButtonSetting.configureButton(mainRightPaneController.getBtnMainGroup(), getItemsButtons().addMainGroup());
-        menuButtonSetting.configureButton(mainRightPaneController.getBtnInventory(), getItemsButtons().inventory());
-        /*----------------------------------------------- Custom -----------------------------------------------*/
-        menuButtonSetting.configureButton(mainRightPaneController.getBtnCustomer(), getNameCustomer().namesData());
-        menuButtonSetting.configureButton(mainRightPaneController.getBtnAccountCustom(), getAccountButtonsCustom());
-        /*----------------------------------------------- Suppliers -----------------------------------------------*/
-        menuButtonSetting.configureButton(mainRightPaneController.getBtnSuppliers(), getNameSup().namesData());
-        menuButtonSetting.configureButton(mainRightPaneController.getBtnAccountSuppliers(), getAccountButtonsSup());
-        /*----------------------------------------------- Employees -----------------------------------------------*/
-        menuButtonSetting.configureButton(mainRightPaneController.getBtnTreasuryDetails(), getTreasuryButtons().treasuryDetails());
-        menuButtonSetting.configureButton(mainRightPaneController.getBtnConvertTreasury(), getTreasuryButtons().convertTreasury());
-        menuButtonSetting.configureButton(mainRightPaneController.getBtnProcess(), getTreasuryButtons().openProcess());
-        menuButtonSetting.configureButton(mainRightPaneController.getBtnExpenses(), getTreasuryButtons().openExpenses());
-        /*----------------------------------------------- Setting -----------------------------------------------*/
-        menuButtonSetting.configureButton(mainRightPaneController.getBtnHome(), getSettingButtons().home());
-        menuButtonSetting.configureButton(mainRightPaneController.getBtnBackup(), getSettingButtons().backup());
-        menuButtonSetting.configureButton(mainRightPaneController.getBtnUsers(), getUsersAll().getUsers_all());
-        menuButtonSetting.configureButton(mainRightPaneController.getBtnClose(), getSettingButtons().close());
+            /*----------------------------------------------- Sales -----------------------------------------------*/
+            menuButtonSetting.configureButton(mainRightPaneController.getBtnSales(), getTotalSales().addInvoice());
+            menuButtonSetting.configureButton(mainRightPaneController.getBtnTotalSale(), getTotalSales().totals());
+            /*----------------------------------------------- Purchase -----------------------------------------------*/
+            menuButtonSetting.configureButton(mainRightPaneController.getBtnPurchase(), getTotalPurchase().addInvoice());
+            menuButtonSetting.configureButton(mainRightPaneController.getBtnTotalPurchase(), getTotalPurchase().totals());
+            menuButtonSetting.configureButton(mainRightPaneController.getBtnPurchaseRe(), getTotalPurchaseReturn().addInvoice());
+            menuButtonSetting.configureButton(mainRightPaneController.getBtnTotalPurchaseRe(), getTotalPurchaseReturn().totals());
+            /*----------------------------------------------- Items -----------------------------------------------*/
+            menuButtonSetting.configureButton(mainRightPaneController.getBtnItems(), getItemsButtons().allItems());
+            menuButtonSetting.configureButton(mainRightPaneController.getBtnAddItem(), getItemsButtons().addItem());
+            menuButtonSetting.configureButton(mainRightPaneController.getBtnUnits(), getItemsButtons().units());
+            menuButtonSetting.configureButton(mainRightPaneController.getBtnMainGroup(), getItemsButtons().addMainGroup());
+            menuButtonSetting.configureButton(mainRightPaneController.getBtnInventory(), getItemsButtons().inventory());
+            /*----------------------------------------------- Custom -----------------------------------------------*/
+            menuButtonSetting.configureButton(mainRightPaneController.getBtnCustomer(), getNameCustomer().namesData());
+            menuButtonSetting.configureButton(mainRightPaneController.getBtnAccountCustom(), getAccountButtonsCustom());
+            /*----------------------------------------------- Suppliers -----------------------------------------------*/
+            menuButtonSetting.configureButton(mainRightPaneController.getBtnSuppliers(), getNameSup().namesData());
+            menuButtonSetting.configureButton(mainRightPaneController.getBtnAccountSuppliers(), getAccountButtonsSup());
+            /*----------------------------------------------- Employees -----------------------------------------------*/
+            menuButtonSetting.configureButton(mainRightPaneController.getBtnTreasuryDetails(), getTreasuryButtons().treasuryDetails());
+            menuButtonSetting.configureButton(mainRightPaneController.getBtnConvertTreasury(), getTreasuryButtons().convertTreasury());
+            menuButtonSetting.configureButton(mainRightPaneController.getBtnProcess(), getTreasuryButtons().openProcess());
+            menuButtonSetting.configureButton(mainRightPaneController.getBtnExpenses(), getTreasuryButtons().openExpenses());
+            /*----------------------------------------------- Setting -----------------------------------------------*/
+            menuButtonSetting.configureButton(mainRightPaneController.getBtnHome(), getSettingButtons().home());
+            menuButtonSetting.configureButton(mainRightPaneController.getBtnBackup(), getSettingButtons().backup());
+            menuButtonSetting.configureButton(mainRightPaneController.getBtnUsers(), getUsersAll().getUsers_all());
+            menuButtonSetting.configureButton(mainRightPaneController.getBtnClose(), getSettingButtons().close());
+        } catch (Exception e) {
+            logException(e);
+        }
     }
 
     private void menuBarSetting() {
@@ -437,6 +442,7 @@ public class MainScreenController extends MainItems implements Initializable {
         try {
             box.getChildren().clear();
             box.getChildren().add(new ModernDashboardApp(daoFactory).getPane());
+            VBox.setVgrow(box, Priority.ALWAYS);
         } catch (DaoException e) {
             logException(e);
         }

@@ -16,58 +16,57 @@
 
 <StackPane fx:id="stackPane" styleClass="app-root" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1">
     <children>
-      <BorderPane styleClass="app-container">
-         <top>
-            <HBox spacing="5.0" styleClass="app-card">
-               <children>
-                  <HBox alignment="CENTER_LEFT" spacing="5.0">
+      <ScrollPane fitToHeight="true" fitToWidth="true">
+         <content>
+            <BorderPane styleClass="app-container">
+               <top>
+                  <HBox minHeight="-Infinity" minWidth="-Infinity" spacing="5.0" styleClass="app-card">
                      <children>
-                              <Button fx:id="btnNew" mnemonicParsing="false" styleClass="success-button" text="جديد" />
-                              <Button fx:id="btnUpdate" mnemonicParsing="false" styleClass="warning-button" text="تعديل" />
-                              <Button fx:id="btnDelete" mnemonicParsing="false" styleClass="danger-button" text="حذف" />
-                              <Separator orientation="VERTICAL" />
-                              <Button fx:id="btnRefresh" mnemonicParsing="false" styleClass="neutral-button" text="تحديث" />
-                              <ToggleButton fx:id="btnSelected" mnemonicParsing="false" styleClass="items-toggle" text="تحديد" />
-      
-                                    <MenuButton fx:id="menuButtonPrint" mnemonicParsing="false" styleClass="modern-menu-button" text="طباعة">
-                                  <items>
-                                      <MenuItem fx:id="menuPrint" mnemonicParsing="false" text="الكل" />
-                                      <MenuItem fx:id="menuPrintMenu" mnemonicParsing="false" text="الأصناف قوائم" />
-                                      <MenuItem fx:id="menuPrintBarcode" mnemonicParsing="false" text="باركود" />
-                                  </items>
-                              </MenuButton>
-      
-                                    <MenuButton fx:id="menuButtonOther" mnemonicParsing="false" styleClass="modern-menu-button" text="أخرى">
-                                  <items>
-                                      <MenuItem fx:id="menuItemConvertGroup" mnemonicParsing="false" text="تحويل المجموعات" />
-                                      <MenuItem fx:id="menuItemCard" mnemonicParsing="false" text="كارت صنف" />
-                                      <MenuItem fx:id="menuExportExcel" mnemonicParsing="false" text="تصدير إلى Excel" />
-                                  </items>
-                              </MenuButton>
+                        <HBox alignment="CENTER_LEFT" spacing="5.0">
+                           <children>
+                                    <Button fx:id="btnNew" mnemonicParsing="false" styleClass="success-button" text="جديد" />
+                                    <Button fx:id="btnUpdate" mnemonicParsing="false" styleClass="warning-button" text="تعديل" />
+                                    <Button fx:id="btnDelete" mnemonicParsing="false" styleClass="danger-button" text="حذف" />
+                                    <Separator orientation="VERTICAL" />
+                                    <Button fx:id="btnRefresh" mnemonicParsing="false" styleClass="neutral-button" text="تحديث" />
+                                    <ToggleButton fx:id="btnSelected" mnemonicParsing="false" styleClass="items-toggle" text="تحديد" />
+            
+                                          <MenuButton fx:id="menuButtonPrint" mnemonicParsing="false" styleClass="modern-menu-button" text="طباعة">
+                                        <items>
+                                            <MenuItem fx:id="menuPrint" mnemonicParsing="false" text="الكل" />
+                                            <MenuItem fx:id="menuPrintMenu" mnemonicParsing="false" text="الأصناف قوائم" />
+                                            <MenuItem fx:id="menuPrintBarcode" mnemonicParsing="false" text="باركود" />
+                                        </items>
+                                    </MenuButton>
+            
+                                          <MenuButton fx:id="menuButtonOther" mnemonicParsing="false" styleClass="modern-menu-button" text="أخرى">
+                                        <items>
+                                            <MenuItem fx:id="menuItemConvertGroup" mnemonicParsing="false" text="تحويل المجموعات" />
+                                            <MenuItem fx:id="menuItemCard" mnemonicParsing="false" text="كارت صنف" />
+                                            <MenuItem fx:id="menuExportExcel" mnemonicParsing="false" text="تصدير إلى Excel" />
+                                        </items>
+                                    </MenuButton>
+                           </children>
+                        </HBox>
+                        <HBox alignment="CENTER_LEFT" spacing="5.0" HBox.hgrow="SOMETIMES">
+                           <children>
+                                          <Label styleClass="form-label" text="بحث" />
+                                          <TextField fx:id="txtSearch" promptText="بحث" HBox.hgrow="SOMETIMES" />
+                           </children>
+                        </HBox>
                      </children>
                   </HBox>
-                  <HBox alignment="CENTER_LEFT" spacing="5.0" HBox.hgrow="SOMETIMES">
-                     <children>
-                                    <Label styleClass="form-label" text="بحث" />
-                                    <TextField fx:id="txtSearch" promptText="بحث" HBox.hgrow="SOMETIMES" />
-                     </children>
-                  </HBox>
-               </children>
-            </HBox>
-         </top>
-         <center>
-
-                <ScrollPane fitToHeight="true" fitToWidth="true" styleClass="items-scroll-pane" BorderPane.alignment="CENTER">
-                    <content>
+               </top>
+               <center>
                         <VBox spacing="5.0">
                             <children>
-
+      
                                 <Pagination fx:id="pagination" styleClass="modern-pagination" VBox.vgrow="ALWAYS" />
                             </children>
                         </VBox>
-                    </content>
-                </ScrollPane>
-         </center>
-      </BorderPane>
+               </center>
+            </BorderPane>
+         </content>
+      </ScrollPane>
     </children>
 </StackPane>
