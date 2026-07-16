@@ -52,7 +52,7 @@
                                 <children>
                                     <VBox spacing="5.0" HBox.hgrow="ALWAYS">
                                         <children>
-                                            <GridPane hgap="10.0" vgap="8.0">
+                                            <GridPane hgap="10.0" vgap="5.0">
                                                 <columnConstraints>
                                                     <ColumnConstraints hgrow="SOMETIMES" maxWidth="-Infinity" minWidth="10.0" />
                                                     <ColumnConstraints hgrow="SOMETIMES" maxWidth="-Infinity" minWidth="10.0" />
@@ -146,7 +146,7 @@
                             <children>
                                 <HBox styleClass="app-card">
                                     <children>
-                                        <GridPane fx:id="gridPane" hgap="18.0" minHeight="-Infinity" minWidth="-Infinity" vgap="14.0" HBox.hgrow="ALWAYS">
+                                        <GridPane fx:id="gridPane" hgap="5.0" minHeight="-Infinity" minWidth="-Infinity" vgap="5.0" HBox.hgrow="ALWAYS">
                                             <padding>
                                                 <Insets bottom="4.0" left="4.0" right="4.0" top="4.0" />
                                             </padding>

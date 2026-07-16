@@ -19,6 +19,7 @@ import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.Alert;
+import javafx.scene.control.TabPane;
 import javafx.scene.input.KeyCodeCombination;
 import javafx.stage.Stage;
 import lombok.extern.log4j.Log4j2;
@@ -37,7 +38,6 @@ public class UsersButtons extends LoadData {
 
             @Override
             public void action() throws Exception {
-                new TableOpen<>(new UserController(dataPublisher, textName())).start(new Stage());
             }
 
             @NotNull
@@ -46,7 +46,20 @@ public class UsersButtons extends LoadData {
                 return Setting_Language.WORD_USERS;
             }
 
+            @Override
+            public void actionAddPaneToTabPane(TabPane tabPane) throws Exception {
+                UserController employeesController = new UserController(dataPublisher, textName());
+//                Pane pane = new OpenFxmlApplication(employeesController).getPane();
+                var pane = new TableOpen<>(employeesController).getPane();
+                addTape(tabPane, pane, textName(), new Image_Setting().evaluation);
+            }
+
+            @Override
+            public boolean showOnTapPane() {
+                return true;
+            }
         };
+
     }
 
     public ButtonWithPerm getUsers_add() {

@@ -4,7 +4,6 @@ import com.hamza.account.config.Image_Setting;
 import com.hamza.account.controller.reports.ReportTotalByYearController;
 import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.openFxml.OpenFxmlApplication;
-import com.hamza.controlsfx.util.Screen_Size;
 import javafx.application.Application;
 import javafx.scene.Scene;
 import javafx.scene.layout.Pane;
@@ -33,6 +32,6 @@ public class ReportTotalYearlyApplication extends Application {
         stage.setResizable(true);
 //        stage.initModality(javafx.stage.Modality.APPLICATION_MODAL);
         stage.show();
-        Screen_Size.adjustStageToTwoThirdsScreen(stage);
+//        Screen_Size.adjustStageToTwoThirdsScreen(stage);
     }
 }

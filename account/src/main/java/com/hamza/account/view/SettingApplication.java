@@ -5,7 +5,6 @@ import com.hamza.account.controller.main.DataPublisher;
 import com.hamza.account.controller.setting.SettingController;
 import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.controlsfx.language.Setting_Language;
-import com.hamza.controlsfx.util.Screen_Size;
 import javafx.application.Application;
 import javafx.scene.Scene;
 import javafx.stage.Stage;
@@ -26,6 +25,6 @@ public class SettingApplication extends Application {
         stage.setResizable(true);
         stage.initModality(javafx.stage.Modality.APPLICATION_MODAL);
         stage.show();
-        Screen_Size.adjustStageToTwoThirdsScreen(stage);
+//        Screen_Size.adjustStageToTwoThirdsScreen(stage);
     }
 }

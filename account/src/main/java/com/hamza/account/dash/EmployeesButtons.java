@@ -9,14 +9,15 @@ import com.hamza.account.controller.others.EmployeesController;
 import com.hamza.account.controller.others.ServiceRegistry;
 import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.openFxml.AddForAllApplication;
+import com.hamza.account.openFxml.OpenFxmlApplication;
 import com.hamza.account.otherSetting.KeyCodeCombinationSetting;
 import com.hamza.account.service.EmployeeService;
-import com.hamza.account.table.TableOpen;
 import com.hamza.controlsfx.button.ImageDesign;
 import com.hamza.controlsfx.language.Setting_Language;
 import javafx.scene.Node;
+import javafx.scene.control.TabPane;
 import javafx.scene.input.KeyCodeCombination;
-import javafx.stage.Stage;
+import javafx.scene.layout.Pane;
 import lombok.extern.log4j.Log4j2;
 import org.jetbrains.annotations.NotNull;
 
@@ -62,14 +63,24 @@ public class EmployeesButtons extends LoadData {
 
             @Override
             public void action() throws Exception {
-                EmployeesController employeesController = new EmployeesController(dataPublisher, employeeService);
-                new TableOpen<>(employeesController).start(new Stage());
             }
 
             @NotNull
             @Override
             public String textName() {
                 return Setting_Language.EMPLOYEES;
+            }
+
+            @Override
+            public void actionAddPaneToTabPane(TabPane tabPane) throws Exception {
+                EmployeesController employeesController = new EmployeesController(dataPublisher, employeeService);
+                Pane pane = new OpenFxmlApplication(employeesController).getPane();
+                addTape(tabPane, pane, textName(), new Image_Setting().evaluation);
+            }
+
+            @Override
+            public boolean showOnTapPane() {
+                return true;
             }
         };
     }

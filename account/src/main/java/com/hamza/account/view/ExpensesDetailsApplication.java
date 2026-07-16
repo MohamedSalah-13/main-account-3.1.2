@@ -132,4 +132,9 @@ public class ExpensesDetailsApplication extends Application implements TableInte
     public void start(Stage stage) throws Exception {
         new TableOpen<>(this).start(stage);
     }
+
+    @Override
+    public boolean resizeTable() {
+        return true;
+    }
 }

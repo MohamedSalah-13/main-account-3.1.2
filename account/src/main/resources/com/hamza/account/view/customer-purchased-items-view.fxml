@@ -9,17 +9,15 @@
 <?import javafx.scene.layout.AnchorPane?>
 <?import javafx.scene.layout.BorderPane?>
 <?import javafx.scene.layout.ColumnConstraints?>
-<?import javafx.scene.layout.FlowPane?>
 <?import javafx.scene.layout.GridPane?>
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.Region?>
 <?import javafx.scene.layout.RowConstraints?>
 <?import javafx.scene.layout.VBox?>
 
-
 <AnchorPane styleClass="app-root" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1">
    <children>
-      <BorderPane layoutX="765.0" nodeOrientation="RIGHT_TO_LEFT" styleClass="app-container" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
+      <BorderPane layoutX="765.0" styleClass="app-container" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
       
           <top>
               <VBox minHeight="-Infinity" minWidth="-Infinity" spacing="5.0" BorderPane.alignment="CENTER">
@@ -57,12 +55,12 @@
                         <children>
                         <VBox styleClass="app-card">
                            <children>
-                              <GridPane hgap="10.0" minHeight="-Infinity" minWidth="-Infinity" vgap="25.0">
+                              <GridPane hgap="5.0" minHeight="-Infinity" minWidth="-Infinity" vgap="8.0">
                                 <columnConstraints>
                                   <ColumnConstraints hgrow="SOMETIMES" maxWidth="-Infinity" minWidth="10.0" />
-                                  <ColumnConstraints hgrow="SOMETIMES" maxWidth="-Infinity" minWidth="10.0" prefWidth="300.0" />
+                                  <ColumnConstraints hgrow="SOMETIMES" maxWidth="-Infinity" minWidth="10.0" />
                                     <ColumnConstraints hgrow="SOMETIMES" maxWidth="-Infinity" minWidth="10.0" />
-                                    <ColumnConstraints hgrow="SOMETIMES" maxWidth="-Infinity" minWidth="10.0" prefWidth="300.0" />
+                                    <ColumnConstraints hgrow="SOMETIMES" maxWidth="-Infinity" minWidth="10.0" />
                                 </columnConstraints>
                                 <rowConstraints>
                                   <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
@@ -77,15 +75,14 @@
                   
                                           <Label styleClass="form-label" text="اسم الصنف:" GridPane.rowIndex="1" />
                                           <TextField fx:id="textSearchName" promptText="ابحث بالاسم" styleClass="modern-input" GridPane.columnIndex="1" GridPane.rowIndex="1" />
+                                    <HBox spacing="5.0" GridPane.columnIndex="3" GridPane.rowIndex="1">
+                                       <children>
                         
-                                        <FlowPane hgap="10.0" vgap="10.0" GridPane.columnIndex="3" GridPane.rowIndex="1">
-                                            <children>
-                        
-                                                <Button fx:id="btnSearch" styleClass="primary-button" text="بحث" />
+                                                      <Button fx:id="btnSearch" styleClass="primary-button" text="بحث" />
                                                 <Button fx:id="btnReset" styleClass="neutral-button" text="إعادة ضبط" />
                                                 <Button fx:id="btnSortDate" styleClass="warning-button" text="ترتيب حسب التاريخ" />
-                                            </children>
-                                        </FlowPane>
+                                       </children>
+                                    </HBox>
                                  </children>
                               </GridPane>
                            </children>

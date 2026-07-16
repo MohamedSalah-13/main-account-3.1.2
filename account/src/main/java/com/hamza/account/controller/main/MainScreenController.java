@@ -78,7 +78,7 @@ public class MainScreenController extends MainItems implements Initializable {
     @Override
     public void initialize(URL url, ResourceBundle resourceBundle) {
         menuButtonSetting = new MenuButtonSetting(tabPane);
-        menuBarSetting();
+//        menuBarSetting();
         dontShowData();
         mainToolbarSetting();
         otherSetting();
@@ -111,89 +111,6 @@ public class MainScreenController extends MainItems implements Initializable {
             tabPane.getTabs().getFirst().setClosable(false);
             getRightPane();
 
-            // ✅ مثال على إضافة قائمة الصلاحيات (مع التحقق من الصلاحية)
-            if (PermissionHelper.hasAny(
-                    PermissionCode.USERS_PERMISSIONS,
-                    PermissionCode.ROLES_SHOW,
-                    PermissionCode.USERS_ROLES
-            )) {
-                Menu permissionsMenu = new Menu("الصلاحيات");
-
-                // إدارة الأدوار - فقط إذا كان لديه الصلاحية
-                if (PermissionHelper.has(PermissionCode.ROLES_SHOW)) {
-                    MenuItem rolesMenuItem = new MenuItem("إدارة الأدوار");
-                    rolesMenuItem.setOnAction(e -> {
-                        try {
-                            getPermissionsButtons().rolesManagement().action();
-                        } catch (Exception ex) {
-                            log.error("خطأ في فتح إدارة الأدوار", ex);
-                        }
-                    });
-                    permissionsMenu.getItems().add(rolesMenuItem);
-                }
-
-                // صلاحيات المستخدمين
-                if (PermissionHelper.has(PermissionCode.USERS_PERMISSIONS)) {
-                    MenuItem userPermissionsMenuItem = new MenuItem("صلاحيات المستخدمين");
-                    userPermissionsMenuItem.setOnAction(e -> {
-                        try {
-                            getUsersAll().userPermissions().action();
-                        } catch (Exception ex) {
-                            log.error("خطأ في فتح صلاحيات المستخدمين", ex);
-                        }
-                    });
-                    permissionsMenu.getItems().add(userPermissionsMenuItem);
-                }
-
-                // أدوار المستخدمين
-                if (PermissionHelper.has(PermissionCode.USERS_ROLES)) {
-                    MenuItem userRolesMenuItem = new MenuItem("أدوار المستخدمين");
-                    userRolesMenuItem.setOnAction(e -> {
-                        try {
-                            getUsersAll().userRoles().action();
-                        } catch (Exception ex) {
-                            log.error("خطأ في فتح أدوار المستخدمين", ex);
-                        }
-                    });
-                    permissionsMenu.getItems().add(userRolesMenuItem);
-                }
-
-                // فاصل (فقط إذا كان Admin)
-                if (LogApplication.usersVo.getId() == 1) {
-                    SeparatorMenuItem separator = new SeparatorMenuItem();
-
-                    // مزامنة الصلاحيات
-                    MenuItem syncPermissionsMenuItem = new MenuItem("مزامنة الصلاحيات من الكود");
-                    syncPermissionsMenuItem.setOnAction(e -> {
-                        try {
-                            getPermissionsButtons().syncPermissions().action();
-                        } catch (Exception ex) {
-                            log.error("خطأ في مزامنة الصلاحيات", ex);
-                        }
-                    });
-
-                    // عرض الصلاحيات
-                    MenuItem viewPermissionsMenuItem = new MenuItem("عرض معلومات الصلاحيات");
-                    viewPermissionsMenuItem.setOnAction(e -> {
-                        try {
-                            getPermissionsButtons().viewAllPermissions().action();
-                        } catch (Exception ex) {
-                            log.error("خطأ في عرض الصلاحيات", ex);
-                        }
-                    });
-
-                    permissionsMenu.getItems().addAll(
-                            separator,
-                            syncPermissionsMenuItem,
-                            viewPermissionsMenuItem
-                    );
-                }
-
-                // إضافة القائمة فقط إذا كان لديها عناصر
-                if (!permissionsMenu.getItems().isEmpty()) {
-                    menuController.getMenuBar().getMenus().add(permissionsMenu);
-                }
-            }
         } catch (Exception e) {
             logException(e);
         }
@@ -281,6 +198,8 @@ public class MainScreenController extends MainItems implements Initializable {
 
             // ✅ إعادة فحص القوائم بعد اكتمال الإعدادات
             menuController.finalizeMenuVisibility();
+
+            initializePermissionsMenu();
         } catch (Exception e) {
             logException(e);
         }
@@ -310,6 +229,92 @@ public class MainScreenController extends MainItems implements Initializable {
         menuButtonSetting.initializeMenuItem(menuController.getMenuItemMainGroup(), getItemsButtons().addMainGroup());
         menuButtonSetting.initializeMenuItem(menuController.getMenuItemSupGroup(), getItemsButtons().addSubGroup());
         menuButtonSetting.initializeMenuItem(menuController.getMenuItemConvertStock(), getItemsButtons().convertStock());
+    }
+
+    private void initializePermissionsMenu() {
+        // ✅ مثال على إضافة قائمة الصلاحيات (مع التحقق من الصلاحية)
+        if (PermissionHelper.hasAny(
+                PermissionCode.USERS_PERMISSIONS,
+                PermissionCode.ROLES_SHOW,
+                PermissionCode.USERS_ROLES
+        )) {
+            Menu permissionsMenu = new Menu("الصلاحيات");
+
+            // إدارة الأدوار - فقط إذا كان لديه الصلاحية
+            if (PermissionHelper.has(PermissionCode.ROLES_SHOW)) {
+                MenuItem rolesMenuItem = new MenuItem("إدارة الأدوار");
+                rolesMenuItem.setOnAction(e -> {
+                    try {
+                        getPermissionsButtons().rolesManagement().action();
+                    } catch (Exception ex) {
+                        log.error("خطأ في فتح إدارة الأدوار", ex);
+                    }
+                });
+                permissionsMenu.getItems().add(rolesMenuItem);
+            }
+
+            // صلاحيات المستخدمين
+            if (PermissionHelper.has(PermissionCode.USERS_PERMISSIONS)) {
+                MenuItem userPermissionsMenuItem = new MenuItem("صلاحيات المستخدمين");
+                userPermissionsMenuItem.setOnAction(e -> {
+                    try {
+                        getUsersAll().userPermissions().action();
+                    } catch (Exception ex) {
+                        log.error("خطأ في فتح صلاحيات المستخدمين", ex);
+                    }
+                });
+                permissionsMenu.getItems().add(userPermissionsMenuItem);
+            }
+
+            // أدوار المستخدمين
+            if (PermissionHelper.has(PermissionCode.USERS_ROLES)) {
+                MenuItem userRolesMenuItem = new MenuItem("أدوار المستخدمين");
+                userRolesMenuItem.setOnAction(e -> {
+                    try {
+                        getUsersAll().userRoles().action();
+                    } catch (Exception ex) {
+                        log.error("خطأ في فتح أدوار المستخدمين", ex);
+                    }
+                });
+                permissionsMenu.getItems().add(userRolesMenuItem);
+            }
+
+            // فاصل (فقط إذا كان Admin)
+            if (LogApplication.usersVo.getId() == 1) {
+                SeparatorMenuItem separator = new SeparatorMenuItem();
+
+                // مزامنة الصلاحيات
+                MenuItem syncPermissionsMenuItem = new MenuItem("مزامنة الصلاحيات من الكود");
+                syncPermissionsMenuItem.setOnAction(e -> {
+                    try {
+                        getPermissionsButtons().syncPermissions().action();
+                    } catch (Exception ex) {
+                        log.error("خطأ في مزامنة الصلاحيات", ex);
+                    }
+                });
+
+                // عرض الصلاحيات
+                MenuItem viewPermissionsMenuItem = new MenuItem("عرض معلومات الصلاحيات");
+                viewPermissionsMenuItem.setOnAction(e -> {
+                    try {
+                        getPermissionsButtons().viewAllPermissions().action();
+                    } catch (Exception ex) {
+                        log.error("خطأ في عرض الصلاحيات", ex);
+                    }
+                });
+
+                permissionsMenu.getItems().addAll(
+                        separator,
+                        syncPermissionsMenuItem,
+                        viewPermissionsMenuItem
+                );
+            }
+
+            // إضافة القائمة فقط إذا كان لديها عناصر
+            if (!permissionsMenu.getItems().isEmpty()) {
+                menuController.getMenuBar().getMenus().add(permissionsMenu);
+            }
+        }
     }
 
     private void customers(MainMenuController menuController) {
@@ -390,7 +395,6 @@ public class MainScreenController extends MainItems implements Initializable {
     }
 
     private ButtonWithPerm getAction(String name, MonthlySalesInterface monthlySalesInterface) {
-        String sales = "مبيعات";
         return new ButtonWithPerm() {
 
             @Override
@@ -403,11 +407,6 @@ public class MainScreenController extends MainItems implements Initializable {
             public String textName() {
                 return name;
             }
-
-            @Override
-            public void actionAddPaneToTabPane(TabPane tabPane) throws Exception {
-            }
-
         };
     }
 

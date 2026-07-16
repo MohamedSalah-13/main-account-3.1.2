@@ -33,7 +33,7 @@
          <top>
                     <VBox styleClass="app-card" BorderPane.alignment="CENTER">
                         <children>
-                            <GridPane hgap="10.0" minHeight="-Infinity" minWidth="-Infinity" vgap="15.0">
+                            <GridPane hgap="5.0" minHeight="-Infinity" minWidth="-Infinity" vgap="8.0">
                                 <columnConstraints>
                                     <ColumnConstraints hgrow="SOMETIMES" maxWidth="-Infinity" minWidth="10.0" />
                                     <ColumnConstraints hgrow="SOMETIMES" maxWidth="-Infinity" minWidth="10.0" prefWidth="300.0" />

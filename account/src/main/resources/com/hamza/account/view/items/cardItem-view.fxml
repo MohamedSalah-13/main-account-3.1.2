@@ -16,14 +16,14 @@
 <?import javafx.scene.layout.VBox?>
 <?import javafx.scene.text.Text?>
 
-<AnchorPane nodeOrientation="RIGHT_TO_LEFT" styleClass="app-root" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1">
+<AnchorPane styleClass="app-root" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1">
     <children>
       <BorderPane styleClass="app-container" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
          <bottom>
 
-                <HBox alignment="CENTER_LEFT" spacing="5.0" styleClass="summary-bar" BorderPane.alignment="CENTER">
+                <HBox alignment="CENTER_LEFT" minHeight="-Infinity" minWidth="-Infinity" spacing="5.0" styleClass="summary-bar" BorderPane.alignment="CENTER">
                     <children>
-                        <GridPane hgap="10.0" minHeight="-Infinity" minWidth="-Infinity" vgap="10.0" HBox.hgrow="ALWAYS">
+                        <GridPane hgap="10.0" minHeight="-Infinity" minWidth="-Infinity" vgap="10.0">
                             <columnConstraints>
                                 <ColumnConstraints maxWidth="-Infinity" />
                                 <ColumnConstraints maxWidth="-Infinity" />
@@ -83,12 +83,12 @@
                         <children>
                             <VBox styleClass="app-card">
                                 <children>
-                                    <GridPane hgap="10.0" minHeight="-Infinity" minWidth="-Infinity" vgap="15.0">
+                                    <GridPane hgap="5.0" minHeight="-Infinity" minWidth="-Infinity" vgap="5.0">
                                         <columnConstraints>
                                             <ColumnConstraints maxWidth="-Infinity" />
-                                            <ColumnConstraints hgrow="ALWAYS" maxWidth="-Infinity" minWidth="300.0" />
+                                            <ColumnConstraints hgrow="ALWAYS" maxWidth="-Infinity" />
                                             <ColumnConstraints maxWidth="-Infinity" />
-                                            <ColumnConstraints hgrow="ALWAYS" maxWidth="-Infinity" minWidth="300.0" />
+                                            <ColumnConstraints hgrow="ALWAYS" maxWidth="-Infinity" />
                                         </columnConstraints>
             
                                         <children>

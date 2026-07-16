@@ -14,10 +14,11 @@ import com.hamza.account.view.OpenTreasuryDetailsApplication;
 import com.hamza.account.view.SceneAll;
 import com.hamza.account.view.StageManager;
 import com.hamza.controlsfx.language.Setting_Language;
-import com.hamza.controlsfx.util.Screen_Size;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
+import javafx.scene.control.TabPane;
+import javafx.scene.layout.Pane;
 import javafx.stage.Stage;
 import org.jetbrains.annotations.NotNull;
 
@@ -79,21 +80,23 @@ public class TreasuryButtons {
 
             @Override
             public void action() throws Exception {
-                var stage = new Stage();
-                Scene scene = new SceneAll(new OpenFxmlApplication(new ProcessesController()).getPane());
-                stage.setScene(scene);
-                stage.setTitle(Setting_Language.PROCESS);
-                stage.getIcons().add(new javafx.scene.image.Image(new Image_Setting().setting));
-                stage.setResizable(true);
-                stage.initModality(javafx.stage.Modality.APPLICATION_MODAL);
-                stage.show();
-                Screen_Size.adjustStageToTwoThirdsScreen(stage);
             }
 
             @NotNull
             @Override
             public String textName() {
                 return Setting_Language.PROCESS;
+            }
+
+            @Override
+            public void actionAddPaneToTabPane(TabPane tabPane) throws Exception {
+                Pane pane = new OpenFxmlApplication(new ProcessesController()).getPane();
+                addTape(tabPane, pane, textName(), new Image_Setting().setting);
+            }
+
+            @Override
+            public boolean showOnTapPane() {
+                return true;
             }
         };
     }
