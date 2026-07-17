@@ -16,6 +16,9 @@ import javafx.collections.ListChangeListener;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.control.*;
+import javafx.scene.control.Button;
+import javafx.scene.control.MenuBar;
+import javafx.scene.control.MenuItem;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.*;
@@ -23,8 +26,10 @@ import javafx.scene.text.Text;
 import lombok.Getter;
 import lombok.extern.log4j.Log4j2;
 
+import java.awt.*;
 import java.io.FileInputStream;
 import java.io.InputStream;
+import java.net.URI;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.ResourceBundle;
@@ -54,7 +59,8 @@ public class MainScreenController extends MainItems implements Initializable {
     private Button btnSales, btnTotalSale, btnPurchase, btnTotalPurchase, btnPurchaseRe, btnTotalPurchaseRe, btnItems,
             btnAddItem, btnUnits, btnMainGroup, btnInventory, btnCustomer, btnAccountCustom, btnSuppliers,
             btnAccountSuppliers,
-            btnTreasuryDetails, btnConvertTreasury, btnProcess, btnExpenses, btnHome, btnUsers, btnBackup, btnClose;
+            btnTreasuryDetails, btnConvertTreasury, btnProcess, btnExpenses,
+            btnHome, btnSetting, btnUsers, btnBackup, btnClose;
     @FXML
     private TitledPane paneSales, panePurchase, paneItems, paneCustom, paneSuppliers, paneTreasury, paneSetting;
     @FXML
@@ -63,6 +69,8 @@ public class MainScreenController extends MainItems implements Initializable {
     private MenuItem menuItemChangeName, menuItemChangePass, menuItemLogout;
     @FXML
     private MenuButton menuButton;
+    @FXML
+    private Button btnYouTube;
 
     private BackgroundSlideshow slideshow;
 
@@ -79,6 +87,7 @@ public class MainScreenController extends MainItems implements Initializable {
         addTabContextMenu();
         getRightPane();
         applyPermissions();
+        addYoutube();
 
         if (LogApplication.usersVo.getId() == 1) {
             if (getShowMainTotals()) firstBoxInMain();
@@ -98,6 +107,27 @@ public class MainScreenController extends MainItems implements Initializable {
 
     }
 
+    private void addYoutube() {
+        var imageSetting = new Image_Setting();
+        btnYouTube.setGraphic(new ImageDesign(imageSetting.youtube, 20));
+        btnYouTube.setText("شرح البرنامج");
+        btnYouTube.setTooltip(new javafx.scene.control.Tooltip("قناة يوتيوب - شرح البرنامج"));
+        btnYouTube.setOnAction(e -> {
+            try {
+                Desktop.getDesktop().browse(new URI("https://www.youtube.com/playlist?list=PL2fs9t9FGXhoSOJ5UFsAWm2tLS_EfOvAE"));
+            } catch (Exception ex) {
+                log.error("Error opening YouTube link", ex);
+            }
+        });
+
+        showButton(btnYouTube, LogApplication.usersVo.getId() == 1);
+
+    }
+
+    private void showButton(Button button, boolean show) {
+        button.setVisible(show);
+        button.setManaged(show);
+    }
 
     private void getRightPane() {
         try {
@@ -140,6 +170,7 @@ public class MainScreenController extends MainItems implements Initializable {
             menuButtonSetting.configureButton(btnExpenses, getTreasuryButtons().openExpenses());
             /*----------------------------------------------- Setting -----------------------------------------------*/
             menuButtonSetting.configureButton(btnHome, getSettingButtons().home());
+            menuButtonSetting.configureButton(btnSetting, getSettingButtons().setting());
             menuButtonSetting.configureButton(btnBackup, getSettingButtons().backup());
             menuButtonSetting.configureButton(btnUsers, getUsersAll().getUsers_all());
             menuButtonSetting.configureButton(btnClose, getSettingButtons().close());
@@ -394,7 +425,7 @@ public class MainScreenController extends MainItems implements Initializable {
 //        drawer.prefWidthProperty().bind(doubleProperty);
 //        drawer.setDefaultDrawerSize(doubleProperty.doubleValue());
 
-    ////        HamburgerBasicCloseTransition transition = new HamburgerBasicCloseTransition(hamburger);
+    /// /        HamburgerBasicCloseTransition transition = new HamburgerBasicCloseTransition(hamburger);
 //        JFXHamburger hamburger = toolbarController.getHamburger();
 //        HamburgerBackArrowBasicTransition transition = new HamburgerBackArrowBasicTransition(hamburger);
 //        transition.setRate(-1);

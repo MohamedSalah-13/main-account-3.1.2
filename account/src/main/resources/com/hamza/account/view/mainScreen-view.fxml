@@ -13,6 +13,7 @@
 <?import javafx.scene.image.ImageView?>
 <?import javafx.scene.layout.AnchorPane?>
 <?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.VBox?>
 <?import javafx.scene.text.Font?>
 <?import javafx.scene.text.Text?>
@@ -26,7 +27,16 @@
                         <content>
                             <AnchorPane>
                                 <children>
-                        <VBox fx:id="box" AnchorPane.bottomAnchor="5.0" AnchorPane.leftAnchor="5.0" AnchorPane.rightAnchor="5.0" AnchorPane.topAnchor="5.0" />
+                        <VBox layoutX="5.0" layoutY="5.0" AnchorPane.bottomAnchor="5.0" AnchorPane.leftAnchor="5.0" AnchorPane.rightAnchor="5.0" AnchorPane.topAnchor="5.0">
+                           <children>
+                              <VBox fx:id="box" VBox.vgrow="SOMETIMES" />
+                              <HBox>
+                                 <children>
+                                    <Button fx:id="btnYouTube" mnemonicParsing="false" styleClass="danger-button" text="YouTube" />
+                                 </children>
+                              </HBox>
+                           </children>
+                        </VBox>
                                 </children>
                             </AnchorPane>
                         </content>
@@ -154,6 +164,7 @@
                                     <VBox styleClass="side-button-box">
                                        <children>
                                           <Button fx:id="btnHome" mnemonicParsing="false" text="Home" />
+                                          <Button fx:id="btnSetting" mnemonicParsing="false" text="Setting" />
                                           <Button fx:id="btnUsers" mnemonicParsing="false" text="Users" />
                                           <Button fx:id="btnBackup" mnemonicParsing="false" text="Backup" />
                                           <Button fx:id="btnClose" mnemonicParsing="false" text="Close" />

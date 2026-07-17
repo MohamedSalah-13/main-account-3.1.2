@@ -1,185 +1,105 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<?import javafx.scene.control.*?>
-<?import javafx.scene.layout.*?>
+<?import javafx.scene.control.CheckBox?>
+<?import javafx.scene.control.ComboBox?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.ScrollPane?>
+<?import javafx.scene.control.Separator?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.layout.AnchorPane?>
+<?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.layout.ColumnConstraints?>
+<?import javafx.scene.layout.GridPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.RowConstraints?>
+<?import javafx.scene.layout.VBox?>
 
-<AnchorPane nodeOrientation="RIGHT_TO_LEFT"
-            styleClass="app-root"
-
-            xmlns:fx="http://javafx.com/fxml/1"
-            xmlns="http://javafx.com/javafx/21">
+<AnchorPane nodeOrientation="RIGHT_TO_LEFT" styleClass="app-root" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1">
     <children>
-        <ScrollPane fitToHeight="true"
-                    fitToWidth="true"
-                    styleClass="settings-scroll-pane"
-                    AnchorPane.bottomAnchor="0.0"
-                    AnchorPane.leftAnchor="0.0"
-                    AnchorPane.rightAnchor="0.0"
-                    AnchorPane.topAnchor="0.0">
+        <ScrollPane fitToHeight="true" fitToWidth="true" styleClass="settings-scroll-pane" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
             <content>
                 <VBox spacing="18.0" styleClass="app-container">
                     <children>
                         <VBox spacing="5.0">
                             <children>
-                                <Label text="إعدادات الباركود" styleClass="settings-title"/>
-                                <Label text="ضبط الأسعار والمجموعات وباركود الميزان وطريقة عرض الملصق"
-                                       styleClass="settings-subtitle"/>
+                                <Label styleClass="settings-title" text="إعدادات الباركود" />
+                                <Label styleClass="settings-subtitle" text="ضبط الأسعار والمجموعات وباركود الميزان وطريقة عرض الملصق" />
                             </children>
                         </VBox>
 
                         <VBox spacing="18.0" styleClass="app-card">
                             <children>
-                                <GridPane hgap="14.0" vgap="14.0">
+                                <GridPane hgap="5.0" vgap="10.0">
                                     <columnConstraints>
-                                        <ColumnConstraints minWidth="140.0"/>
-                                        <ColumnConstraints minWidth="220.0" hgrow="ALWAYS"/>
-                                        <ColumnConstraints minWidth="140.0"/>
-                                        <ColumnConstraints minWidth="220.0" hgrow="ALWAYS"/>
+                                        <ColumnConstraints minWidth="140.0" />
+                                        <ColumnConstraints hgrow="ALWAYS" minWidth="220.0" />
+                                        <ColumnConstraints minWidth="140.0" />
+                                        <ColumnConstraints hgrow="ALWAYS" minWidth="220.0" />
                                     </columnConstraints>
 
                                     <children>
-                                        <Label fx:id="labelSub1" text="سعر1" styleClass="form-label"/>
-                                        <TextField fx:id="textPrice1"
-                                                   styleClass="modern-input"
-                                                   GridPane.columnIndex="1"/>
+                                        <Label fx:id="labelSub1" styleClass="form-label" text="سعر1" />
+                                        <TextField fx:id="textPrice1" styleClass="modern-input" GridPane.columnIndex="1" />
 
-                                        <Label fx:id="labelType1"
-                                               text="سعر2"
-                                               styleClass="form-label"
-                                               GridPane.columnIndex="2"/>
-                                        <TextField fx:id="textPrice2"
-                                                   styleClass="modern-input"
-                                                   GridPane.columnIndex="3"/>
+                                        <Label fx:id="labelType1" styleClass="form-label" text="سعر2" GridPane.columnIndex="2" />
+                                        <TextField fx:id="textPrice2" styleClass="modern-input" GridPane.columnIndex="3" />
 
-                                        <Label fx:id="labelMain1"
-                                               text="سعر3"
-                                               styleClass="form-label"
-                                               GridPane.rowIndex="1"/>
-                                        <TextField fx:id="textPrice3"
-                                                   styleClass="modern-input"
-                                                   GridPane.columnIndex="1"
-                                                   GridPane.rowIndex="1"/>
+                                        <Label fx:id="labelMain1" styleClass="form-label" text="سعر3" GridPane.rowIndex="1" />
+                                        <TextField fx:id="textPrice3" styleClass="modern-input" GridPane.columnIndex="1" GridPane.rowIndex="1" />
 
-                                        <Label fx:id="labelMain"
-                                               text="Main Group"
-                                               styleClass="form-label"
-                                               GridPane.rowIndex="2"/>
-                                        <ComboBox fx:id="comboMain"
-                                                  disable="true"
-                                                  maxWidth="1.7976931348623157E308"
-                                                  promptText="Main"
-                                                  GridPane.columnIndex="1"
-                                                  GridPane.rowIndex="2"/>
+                                        <Label fx:id="labelMain" styleClass="form-label" text="Main Group" GridPane.rowIndex="2" />
+                                        <ComboBox fx:id="comboMain" disable="true" maxWidth="1.7976931348623157E308" promptText="Main" GridPane.columnIndex="1" GridPane.rowIndex="2" />
 
-                                        <Label fx:id="labelSub"
-                                               text="Sub Group"
-                                               styleClass="form-label"
-                                               GridPane.rowIndex="3"/>
-                                        <ComboBox fx:id="comboSub"
-                                                  maxWidth="1.7976931348623157E308"
-                                                  promptText="Sub"
-                                                  GridPane.columnIndex="1"
-                                                  GridPane.rowIndex="3"/>
+                                        <Label fx:id="labelSub" styleClass="form-label" text="Sub Group" GridPane.rowIndex="3" />
+                                        <ComboBox fx:id="comboSub" maxWidth="1.7976931348623157E308" promptText="Sub" GridPane.columnIndex="1" GridPane.rowIndex="3" />
 
-                                        <Label fx:id="labelType"
-                                               text="Typ"
-                                               styleClass="form-label"
-                                               GridPane.columnIndex="2"
-                                               GridPane.rowIndex="3"/>
-                                        <ComboBox fx:id="comboType"
-                                                  maxWidth="1.7976931348623157E308"
-                                                  promptText="Type"
-                                                  GridPane.columnIndex="3"
-                                                  GridPane.rowIndex="3"/>
+                                        <Label fx:id="labelType" styleClass="form-label" text="Typ" GridPane.columnIndex="2" GridPane.rowIndex="3" />
+                                        <ComboBox fx:id="comboType" maxWidth="1.7976931348623157E308" promptText="Type" GridPane.columnIndex="3" GridPane.rowIndex="3" />
 
-                                        <CheckBox fx:id="checkActivateBarcodeScale"
-                                                  mnemonicParsing="false"
-                                                  text="تفعيل ميزان الباركود"
-                                                  styleClass="modern-check-box"
-                                                  GridPane.columnIndex="1"
-                                                  GridPane.rowIndex="4"/>
+                                        <CheckBox fx:id="checkActivateBarcodeScale" mnemonicParsing="false" styleClass="modern-check-box" text="تفعيل ميزان الباركود" GridPane.columnIndex="1" GridPane.rowIndex="4" />
 
-                                        <Label text="باركود يبدأ برقم"
-                                               styleClass="form-label"
-                                               GridPane.rowIndex="5"/>
-                                        <TextField fx:id="textBarcodeStart"
-                                                   text="00"
-                                                   styleClass="modern-input"
-                                                   GridPane.columnIndex="1"
-                                                   GridPane.rowIndex="5"/>
+                                        <Label styleClass="form-label" text="باركود يبدأ برقم" GridPane.rowIndex="5" />
+                                        <TextField fx:id="textBarcodeStart" styleClass="modern-input" text="00" GridPane.columnIndex="1" GridPane.rowIndex="5" />
 
-                                        <Label text="عدد أرقام الباركود"
-                                               styleClass="form-label"
-                                               GridPane.columnIndex="2"
-                                               GridPane.rowIndex="5"/>
-                                        <TextField fx:id="textCountBarcode"
-                                                   text="13"
-                                                   styleClass="modern-input"
-                                                   GridPane.columnIndex="3"
-                                                   GridPane.rowIndex="5"/>
+                                        <Label styleClass="form-label" text="عدد أرقام الباركود" GridPane.columnIndex="2" GridPane.rowIndex="5" />
+                                        <TextField fx:id="textCountBarcode" styleClass="modern-input" text="13" GridPane.columnIndex="3" GridPane.rowIndex="5" />
 
-                                        <Label text="عدد أرقام الوزن"
-                                               styleClass="form-label"
-                                               GridPane.rowIndex="6"/>
-                                        <TextField fx:id="textCountScale"
-                                                   text="5"
-                                                   styleClass="modern-input"
-                                                   GridPane.columnIndex="1"
-                                                   GridPane.rowIndex="6"/>
+                                        <Label styleClass="form-label" text="عدد أرقام الوزن" GridPane.rowIndex="6" />
+                                        <TextField fx:id="textCountScale" styleClass="modern-input" text="5" GridPane.columnIndex="1" GridPane.rowIndex="6" />
 
-                                        <Label text="عدد أرقام الصنف"
-                                               styleClass="form-label"
-                                               GridPane.columnIndex="2"
-                                               GridPane.rowIndex="6"/>
-                                        <TextField fx:id="textCountItem"
-                                                   text="5"
-                                                   styleClass="modern-input"
-                                                   GridPane.columnIndex="3"
-                                                   GridPane.rowIndex="6"/>
+                                        <Label styleClass="form-label" text="عدد أرقام الصنف" GridPane.columnIndex="2" GridPane.rowIndex="6" />
+                                        <TextField fx:id="textCountItem" styleClass="modern-input" text="5" GridPane.columnIndex="3" GridPane.rowIndex="6" />
                                     </children>
+                           <rowConstraints>
+                              <RowConstraints />
+                              <RowConstraints />
+                              <RowConstraints />
+                              <RowConstraints />
+                              <RowConstraints />
+                              <RowConstraints />
+                              <RowConstraints />
+                           </rowConstraints>
                                 </GridPane>
 
                                 <HBox spacing="18.0">
                                     <children>
                                         <VBox spacing="12.0" styleClass="settings-section-card">
                                             <children>
-                                                <CheckBox fx:id="show2"
-                                                          mnemonicParsing="false"
-                                                          text="Show Tow Label"
-                                                          styleClass="modern-check-box"/>
-                                                <CheckBox fx:id="showName"
-                                                          mnemonicParsing="false"
-                                                          selected="true"
-                                                          text="Show Name"
-                                                          styleClass="modern-check-box"/>
-                                                <CheckBox fx:id="showPrice"
-                                                          mnemonicParsing="false"
-                                                          selected="true"
-                                                          text="Show Price"
-                                                          styleClass="modern-check-box"/>
-                                                <CheckBox fx:id="showCurrency"
-                                                          mnemonicParsing="false"
-                                                          selected="true"
-                                                          text="Show Currency"
-                                                          styleClass="modern-check-box"/>
-                                                <CheckBox fx:id="showBarcode"
-                                                          mnemonicParsing="false"
-                                                          selected="true"
-                                                          text="Show Barcode"
-                                                          styleClass="modern-check-box"/>
+                                                <CheckBox fx:id="show2" mnemonicParsing="false" styleClass="modern-check-box" text="Show Tow Label" />
+                                                <CheckBox fx:id="showName" mnemonicParsing="false" selected="true" styleClass="modern-check-box" text="Show Name" />
+                                                <CheckBox fx:id="showPrice" mnemonicParsing="false" selected="true" styleClass="modern-check-box" text="Show Price" />
+                                                <CheckBox fx:id="showCurrency" mnemonicParsing="false" selected="true" styleClass="modern-check-box" text="Show Currency" />
+                                                <CheckBox fx:id="showBarcode" mnemonicParsing="false" selected="true" styleClass="modern-check-box" text="Show Barcode" />
                                             </children>
                                         </VBox>
 
-                                        <Separator orientation="VERTICAL" styleClass="settings-separator"/>
+                                        <Separator orientation="VERTICAL" styleClass="settings-separator" />
 
-                                        <VBox alignment="TOP_CENTER" HBox.hgrow="ALWAYS" styleClass="preview-card">
+                                        <VBox alignment="TOP_CENTER" styleClass="preview-card" HBox.hgrow="ALWAYS">
                                             <children>
                                                 <BorderPane fx:id="borderPane">
                                                     <center>
-                                                        <VBox fx:id="box"
-                                                              alignment="TOP_CENTER"
-                                                              fillWidth="false"
-                                                              spacing="5.0"/>
+                                                        <VBox fx:id="box" alignment="TOP_CENTER" fillWidth="false" spacing="5.0" />
                                                     </center>
                                                 </BorderPane>
                                             </children>
