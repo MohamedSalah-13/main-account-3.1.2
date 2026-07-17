@@ -31,9 +31,9 @@
                             <children>
                                 <GridPane hgap="5.0" vgap="10.0">
                                     <columnConstraints>
-                                        <ColumnConstraints minWidth="140.0" />
+                                        <ColumnConstraints maxWidth="-Infinity" minWidth="-Infinity" />
                                         <ColumnConstraints hgrow="ALWAYS" minWidth="220.0" />
-                                        <ColumnConstraints minWidth="140.0" />
+                                        <ColumnConstraints maxWidth="-Infinity" minWidth="-Infinity" />
                                         <ColumnConstraints hgrow="ALWAYS" minWidth="220.0" />
                                     </columnConstraints>
 

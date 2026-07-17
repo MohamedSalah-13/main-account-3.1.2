@@ -186,7 +186,7 @@
 
 .button,
 .toggle-button,
-/*.menu-button,*/
+    /*.menu-button,*/
 .primary-button,
 .secondary-button,
 .neutral-button,
@@ -199,7 +199,7 @@
     -fx-cursor: hand;
 }
 
-.menu-button{
+.menu-button {
     -fx-font-size: 11px;
     -fx-font-weight: bold;
     -fx-background-radius: 9px;
@@ -400,6 +400,7 @@
     -fx-spacing: 8px;
     -fx-effect: dropshadow(gaussian, -app-shadow, 10, 0.12, 0, 3);
 }
+
 .summary-bar .label,
 .summary-card .label {
     -fx-text-fill: white;
@@ -638,6 +639,10 @@
     -fx-fill: white;
 }
 
+.side-button-box {
+    -fx-spacing: 2px;
+}
+
 .side-button-box .button {
     -fx-background-color: -app-side-button;
     -fx-text-fill: white;
@@ -648,7 +653,7 @@
     -fx-border-color: -app-side-border;
     -fx-padding: 6px 9px;
     -fx-max-width: Infinity;
-    -fx-alignment: CENTER_RIGHT;
+    -fx-alignment: CENTER;
 }
 
 .side-button-box .button:hover {
@@ -685,7 +690,7 @@
     -fx-border-width: 1px;
     -fx-border-radius: 8px;
     -fx-background-radius: 8px;
-    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.1), 5, 0, 0, 2);
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.1), 5, 0, 0, 2);
     -fx-min-width: 180px;
 }
 

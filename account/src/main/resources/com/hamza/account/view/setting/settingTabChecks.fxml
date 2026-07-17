@@ -130,14 +130,14 @@
                                             <columnConstraints>
                                                 <ColumnConstraints minWidth="95.0" />
                                                 <ColumnConstraints minWidth="90.0" />
-                                                <ColumnConstraints maxWidth="-Infinity" />
+                                                <ColumnConstraints maxWidth="-Infinity" minWidth="-Infinity" />
                                                 <ColumnConstraints minWidth="90.0" />
-                                                <ColumnConstraints maxWidth="-Infinity" />
+                                                <ColumnConstraints maxWidth="-Infinity" minWidth="-Infinity" />
                                                 <ColumnConstraints minWidth="90.0" />
-                                                <ColumnConstraints maxWidth="-Infinity" />
-                                                <ColumnConstraints maxWidth="-Infinity" />
+                                                <ColumnConstraints maxWidth="-Infinity" minWidth="-Infinity" />
+                                                <ColumnConstraints maxWidth="-Infinity" minWidth="-Infinity" />
                                                 <ColumnConstraints minWidth="90.0" />
-                                                <ColumnConstraints maxWidth="-Infinity" />
+                                                <ColumnConstraints maxWidth="-Infinity" minWidth="-Infinity" />
                                             </columnConstraints>
 
                                             <children>

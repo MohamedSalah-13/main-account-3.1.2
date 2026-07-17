@@ -35,7 +35,7 @@
                                        <children>
                                           <GridPane hgap="10.0" vgap="10.0">
                                              <columnConstraints>
-                                                <ColumnConstraints maxWidth="-Infinity" minWidth="50.0" />
+                                                <ColumnConstraints maxWidth="-Infinity" minWidth="-Infinity" />
                                                 <ColumnConstraints maxWidth="-Infinity" minWidth="300.0" />
                                              </columnConstraints>
                                              <children>
@@ -49,7 +49,11 @@
                                                 <TextField fx:id="textTax" styleClass="modern-input" GridPane.columnIndex="1" GridPane.rowIndex="3" />
                                                 <Label fx:id="labelCom" styleClass="form-label" text="Comm" GridPane.rowIndex="4" />
                                                 <TextField fx:id="textCom" styleClass="modern-input" GridPane.columnIndex="1" GridPane.rowIndex="4" />
-                                                <Button fx:id="btnSave" mnemonicParsing="false" styleClass="primary-button" text="Save" GridPane.columnIndex="1" GridPane.rowIndex="5" />
+                                                <HBox alignment="CENTER_RIGHT" GridPane.columnIndex="1" GridPane.rowIndex="5">
+                                                   <children>
+                                                      <Button fx:id="btnSave" mnemonicParsing="false" styleClass="primary-button" text="Save" />
+                                                   </children>
+                                                </HBox>
                                              </children>
                                              <rowConstraints>
                                                 <RowConstraints />
