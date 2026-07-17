@@ -44,7 +44,7 @@ import static com.hamza.account.controller.setting.ComboSetting.comboSubSetting;
 import static com.hamza.account.controller.setting.ComboSetting.comboTypeSetting;
 
 @Log4j2
-@FxmlPath(pathFile = "include/settingTabBarcode.fxml")
+@FxmlPath(pathFile = "setting/settingTabBarcode.fxml")
 @RequiredArgsConstructor
 public class SettingTabBarcodeController implements Initializable {
 

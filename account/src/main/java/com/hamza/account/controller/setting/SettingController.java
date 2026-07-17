@@ -47,7 +47,7 @@ import static com.hamza.controlsfx.util.ImageChoose.createIcon;
 
 
 @Log4j2
-@FxmlPath(pathFile = "setting-view.fxml")
+@FxmlPath(pathFile = "setting/setting-view.fxml")
 public class SettingController implements Initializable, AppSettingInterface {
 
     private final DataPublisher dataPublisher;
@@ -151,7 +151,7 @@ public class SettingController implements Initializable, AppSettingInterface {
     }
 
     private Parent backup() throws IOException {
-        FXMLLoader loader = new FXMLLoader(Main.class.getResource("view/BackupView.fxml"));
+        FXMLLoader loader = new FXMLLoader(Main.class.getResource("view/setting/BackupView.fxml"));
         Parent root = loader.load();
         com.hamza.account.backup.BackupController controller = loader.getController();
         var connection = new ConnectionToDatabase();

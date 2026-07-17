@@ -21,7 +21,7 @@ import static com.hamza.account.config.PropertiesName.getInvoiceAddItemDirect;
 import static com.hamza.account.config.PropertiesName.setInvoiceAddItemsDirect;
 
 @Log4j2
-@FxmlPath(pathFile = "include/settingTabChecks.fxml")
+@FxmlPath(pathFile = "setting/settingTabChecks.fxml")
 @RequiredArgsConstructor
 public class SettingTabCheckController implements Initializable {
 

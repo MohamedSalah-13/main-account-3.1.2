@@ -43,7 +43,7 @@ import static com.hamza.controlsfx.others.Utils.setTextFormatter;
 
 
 @Log4j2
-@FxmlPath(pathFile = "include/settingTabLanguage.fxml")
+@FxmlPath(pathFile = "setting/settingTabLanguage.fxml")
 public class SettingTabLanguageController implements Initializable {
 
     private final Publisher<String> changeImage;
