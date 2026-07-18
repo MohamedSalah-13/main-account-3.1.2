@@ -139,7 +139,12 @@ public class Print_Reports extends ReportCompany {
         map.put("p1", s);
         map.put("accountName", accountName);
         addHeaderToReports(map, reportName);
-        jasperData.printJasperPrint(JasperReportPaths.Account.ACCOUNT_STATEMENT, reportName, map, 1, "");
+
+        if (getPrintPaperReceiptAccount()) {
+            jasperData.printJasperPrint(JasperReportPaths.Account.ACCOUNT_STATEMENT_80mm, reportName, map, 1, "");
+        } else {
+            jasperData.printJasperPrint(JasperReportPaths.Account.ACCOUNT_STATEMENT, reportName, map, 1, "");
+        }
     }
 
     public void printReceiptAccount(@NotNull List<?> list, @NotNull String name, double total) {
@@ -186,9 +191,18 @@ public class Print_Reports extends ReportCompany {
         company.put("amount", amount);
         company.put("dateFrom", dateFrom);
         company.put("dateTo", dateTo);
+
+        var ref = new Object() {
+            String cardItems = JasperReportPaths.Report.CARD_ITEMS;
+        };
+
+        if (getPrintPaperReceiptAccount()) {
+            ref.cardItems = JasperReportPaths.Report.CARD_ITEMS_80mm;
+        }
+
         withConnection(connection ->
                 jasperData.printJasperPrintWithConnection(
-                        JasperReportPaths.Report.CARD_ITEMS,
+                        ref.cardItems,
                         Setting_Language.WORD_CARD_ITEM,
                         company,
                         1,

@@ -122,7 +122,7 @@ public class AccountDetailsController<T1 extends BasePurchasesAndSales, T2 exten
         btnUpdate.setText(Setting_Language.WORD_UPDATE);
         btnRefresh.setText(Setting_Language.WORD_REFRESH);
         btnDelete.setText(Setting_Language.WORD_DELETE);
-        txtLimit.setText(String.valueOf(nameService.getCredit(customersList, num_id)));
+//        txtLimit.setText(String.valueOf(nameService.getCredit(customersList, num_id)));
         txtName.setText(name_account);
 
 

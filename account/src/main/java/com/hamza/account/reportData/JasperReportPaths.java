@@ -25,6 +25,7 @@ public final class JasperReportPaths {
         public static final String ACCOUNT_DETAILS_REPORT_TEMPLATE = BASE_PATH + "account-details-80mm.jrxml";
         public static final String ACCOUNT_DETAILS_REPORT_PATH = BASE_PATH + "account-details-A4.jrxml";
         public static final String ACCOUNT_STATEMENT = BASE_PATH + "account-statement-A4.jrxml";
+        public static final String ACCOUNT_STATEMENT_80mm = BASE_PATH + "account-statement-80mm.jrxml";
         public static final String TOTALS = BASE_PATH + "accounts-totals-A4.jrxml";
         public static final String TOTALS_80 = BASE_PATH + "accounts-totals-80mm.jrxml";
     }
@@ -37,6 +38,7 @@ public final class JasperReportPaths {
         public static final String DELEGATE = BASE_PATH + "report-by-delegate-A4.jrxml";
         public static final String NAMES_DATA = BASE_PATH + "name-customer-by-area-A4.jrxml";
         public static final String CARD_ITEMS = BASE_PATH + "items-card-A4.jrxml";
+        public static final String CARD_ITEMS_80mm = BASE_PATH + "items-card-80mm.jrxml";
         public static final String EXPENSE_RECEIPT = BASE_PATH + "receipt-payment-A4.jrxml";
         public static final String INVENTORY_BY_TABLE = BASE_PATH + "items-inventory-A4.jrxml";
         public static final String CONVERT_STOCK = BASE_PATH + "convert-stock-A4.jrxml";
