@@ -3,11 +3,14 @@ package com.hamza.account.controller.main;
 import com.hamza.account.config.Image_Setting;
 import com.hamza.account.config.PropertiesName;
 import com.hamza.account.controller.reports.ModernDashboardApp;
+import com.hamza.account.controller.reports.MonthlySalesInterface;
 import com.hamza.account.database.DaoException;
 import com.hamza.account.model.dao.DaoFactory;
+import com.hamza.account.model.dao.MonthlySalesViewDao;
 import com.hamza.account.security.PermissionHelper;
 import com.hamza.account.type.PermissionCode;
 import com.hamza.account.view.LogApplication;
+import com.hamza.account.view.MonthlyView;
 import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.button.ImageDesign;
 import com.hamza.controlsfx.language.Setting_Language;
@@ -15,6 +18,7 @@ import com.hamza.controlsfx.observer.Publisher;
 import javafx.collections.ListChangeListener;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
+import javafx.scene.Node;
 import javafx.scene.control.*;
 import javafx.scene.control.Button;
 import javafx.scene.control.MenuBar;
@@ -23,8 +27,10 @@ import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.*;
 import javafx.scene.text.Text;
+import javafx.stage.Stage;
 import lombok.Getter;
 import lombok.extern.log4j.Log4j2;
+import org.jetbrains.annotations.NotNull;
 
 import java.awt.*;
 import java.io.FileInputStream;
@@ -56,13 +62,22 @@ public class MainScreenController extends MainItems implements Initializable {
     private VBox box;
     private String nameProperty;
     @FXML
-    private Button btnSales, btnTotalSale, btnPurchase, btnTotalPurchase, btnPurchaseRe, btnTotalPurchaseRe, btnItems,
-            btnAddItem, btnUnits, btnMainGroup, btnInventory, btnCustomer, btnAccountCustom, btnSuppliers,
-            btnAccountSuppliers,
-            btnTreasuryDetails, btnConvertTreasury, btnProcess, btnExpenses,
-            btnHome, btnSetting, btnUsers, btnBackup, btnClose;
+    private Button btnSales, btnTotalSale, btnSalesRe, btnTotalSalesRe;
     @FXML
-    private TitledPane paneSales, panePurchase, paneItems, paneCustom, paneSuppliers, paneTreasury, paneSetting;
+    private Button btnPurchase, btnTotalPurchase, btnPurchaseRe, btnTotalPurchaseRe;
+    @FXML
+    private Button btnItems, btnAddItem, btnItemFromExcel, btnUnits, btnMainGroup, btnSupGroup, btnInventory, btnConvertStock;
+    @FXML
+    private Button btnAddCustomer, btnCustomer, btnAccountCustom, btnAddSuppliers, btnSuppliers, btnAccountSuppliers;
+    @FXML
+    private Button btnAddUsers, btnUsers, btnAddEmployee, btnEmployees,
+            btnTreasuryDetails, btnConvertTreasury, btnProcess, btnExpenses;
+    @FXML
+    private Button btnItemSummary, btnReportItems, btnReportItemsDaily, btnReportSalesByYear, btnReportPurchaseByYear, btnCustomPaid, btnSuppliersPaid, btnReportDetails, btnReportDelegate, btnReportYearly, btnReportProfitLoss;
+    @FXML
+    private Button btnHome, btnSetting, btnDeleteData, btnBackup, btnAbout, btnClose;
+    @FXML
+    private TitledPane paneSales, panePurchase, paneItems, paneCustom, paneSuppliers, paneTreasury, paneReports, paneSetting;
     @FXML
     private Text txtNameProject, txtName, txtTel;
     @FXML
@@ -146,36 +161,90 @@ public class MainScreenController extends MainItems implements Initializable {
             /*----------------------------------------------- Sales -----------------------------------------------*/
             menuButtonSetting.configureButton(btnSales, getTotalSales().addInvoice());
             menuButtonSetting.configureButton(btnTotalSale, getTotalSales().totals());
+            menuButtonSetting.configureButton(btnSalesRe, getTotalSalesReturn().addInvoice());
+            menuButtonSetting.configureButton(btnTotalSalesRe, getTotalSalesReturn().totals());
             /*----------------------------------------------- Purchase -----------------------------------------------*/
             menuButtonSetting.configureButton(btnPurchase, getTotalPurchase().addInvoice());
             menuButtonSetting.configureButton(btnTotalPurchase, getTotalPurchase().totals());
             menuButtonSetting.configureButton(btnPurchaseRe, getTotalPurchaseReturn().addInvoice());
             menuButtonSetting.configureButton(btnTotalPurchaseRe, getTotalPurchaseReturn().totals());
             /*----------------------------------------------- Items -----------------------------------------------*/
-            menuButtonSetting.configureButton(btnItems, getItemsButtons().allItems());
             menuButtonSetting.configureButton(btnAddItem, getItemsButtons().addItem());
+            menuButtonSetting.configureButton(btnItems, getItemsButtons().allItems());
+            menuButtonSetting.configureButton(btnItemFromExcel, getItemsButtons().addItemsFromExcel());
             menuButtonSetting.configureButton(btnUnits, getItemsButtons().units());
-            menuButtonSetting.configureButton(btnMainGroup, getItemsButtons().addMainGroup());
             menuButtonSetting.configureButton(btnInventory, getItemsButtons().inventory());
+            menuButtonSetting.configureButton(btnMainGroup, getItemsButtons().addMainGroup());
+            menuButtonSetting.configureButton(btnSupGroup, getItemsButtons().addSubGroup());
+            menuButtonSetting.configureButton(btnConvertStock, getItemsButtons().convertStock());
             /*----------------------------------------------- Custom -----------------------------------------------*/
+            menuButtonSetting.configureButton(btnAddCustomer, getNameCustomer().addName());
             menuButtonSetting.configureButton(btnCustomer, getNameCustomer().namesData());
             menuButtonSetting.configureButton(btnAccountCustom, getAccountButtonsCustom());
             /*----------------------------------------------- Suppliers -----------------------------------------------*/
+            menuButtonSetting.configureButton(btnAddSuppliers, getNameSup().addName());
             menuButtonSetting.configureButton(btnSuppliers, getNameSup().namesData());
             menuButtonSetting.configureButton(btnAccountSuppliers, getAccountButtonsSup());
             /*----------------------------------------------- Employees -----------------------------------------------*/
+            menuButtonSetting.configureButton(btnAddUsers, getUsersAll().getUsers_add());
+            menuButtonSetting.configureButton(btnUsers, getUsersAll().getUsers_all());
+            menuButtonSetting.configureButton(btnAddEmployee, getAddEmployee().addEmployee());
+            menuButtonSetting.configureButton(btnEmployees, getAddEmployee().employees());
+
             menuButtonSetting.configureButton(btnTreasuryDetails, getTreasuryButtons().treasuryDetails());
             menuButtonSetting.configureButton(btnConvertTreasury, getTreasuryButtons().convertTreasury());
             menuButtonSetting.configureButton(btnProcess, getTreasuryButtons().openProcess());
             menuButtonSetting.configureButton(btnExpenses, getTreasuryButtons().openExpenses());
+            /*----------------------------------------------- Reports -----------------------------------------------*/
+            menuButtonSetting.configureButton(btnItemSummary, getReportsButtons().summaryReport());
+            menuButtonSetting.configureButton(btnReportItems, getReportsButtons().itemsReport());
+            menuButtonSetting.configureButton(btnReportItemsDaily, getReportsButtons().itemsReportDaily());
+
+            var monthlySalesInterface = new MonthlySalesInterface() {
+            };
+
+            var monthlyPurchaseInterface = new MonthlySalesInterface() {
+                @Override
+                public String reportName() {
+                    return "تقرير المشتريات السنوي";
+                }
+
+                @Override
+                public String reportTitle() {
+                    return "تقرير إجمالي المشتريات الشهرية لكل سنة";
+                }
+
+                @Override
+                public MonthlySalesViewDao getMonthlySalesViewDao(DaoFactory daoFactory) {
+                    return daoFactory.monthlyPurchaseViewDao();
+                }
+
+                @Override
+                public String chartTitle() {
+                    return "مقارنة المشتريات بين الشهور";
+                }
+            };
+//
+//
+            menuButtonSetting.configureButton(btnReportSalesByYear, getAction(monthlySalesInterface.reportName(), monthlySalesInterface));
+            menuButtonSetting.configureButton(btnReportPurchaseByYear, getAction(monthlyPurchaseInterface.reportName(), monthlyPurchaseInterface));
+            menuButtonSetting.configureButton(btnCustomPaid, getReportsButtons().reportCustomPaid());
+            menuButtonSetting.configureButton(btnSuppliersPaid, getReportsButtons().reportSupplierPaid());
+            menuButtonSetting.configureButton(btnReportDetails, getReportsButtons().detailsReport());
+            menuButtonSetting.configureButton(btnReportDelegate, getReportsButtons().delegateReport());
+            menuButtonSetting.configureButton(btnReportYearly, getReportsButtons().reportYearly());
+            menuButtonSetting.configureButton(btnReportProfitLoss, getReportsButtons().profitLossReport());
+
             /*----------------------------------------------- Setting -----------------------------------------------*/
             menuButtonSetting.configureButton(btnHome, getSettingButtons().home());
             menuButtonSetting.configureButton(btnSetting, getSettingButtons().setting());
+            menuButtonSetting.configureButton(btnDeleteData, getSettingButtons().deleteData());
             menuButtonSetting.configureButton(btnBackup, getSettingButtons().backup());
-            menuButtonSetting.configureButton(btnUsers, getUsersAll().getUsers_all());
+            menuButtonSetting.configureButton(btnAbout, getSettingButtons().about());
             menuButtonSetting.configureButton(btnClose, getSettingButtons().close());
 
 
+            //--------------------------------------------------------------------------------
             var imageSetting = new Image_Setting();
             titlePaneSetting(paneSales, Setting_Language.WORD_SALES, imageSetting.shoppingSales);
             titlePaneSetting(panePurchase, Setting_Language.WORD_PUR, imageSetting.shoppingPurchase);
@@ -183,6 +252,7 @@ public class MainScreenController extends MainItems implements Initializable {
             titlePaneSetting(paneCustom, Setting_Language.WORD_CUSTOM, imageSetting.personCustomer);
             titlePaneSetting(paneSuppliers, Setting_Language.WORD_SUP, imageSetting.personSup);
             titlePaneSetting(paneTreasury, Setting_Language.TREASURY, imageSetting.treasuryWhite);
+            titlePaneSetting(paneReports, WORD_REPORT, imageSetting.reports);
             titlePaneSetting(paneSetting, Setting_Language.WORD_SETTING, imageSetting.setting);
 
             txtNameProject.setText(PROGRAM_TITLE);
@@ -398,10 +468,8 @@ public class MainScreenController extends MainItems implements Initializable {
 //
 //        menuButtonSetting.initializeMenuItem(menuController.getMenuItemReportSalesByYear(), getAction(monthlySalesInterface.reportName(), monthlySalesInterface));
 //        menuButtonSetting.initializeMenuItem(menuController.getMenuItemReportPurchaseByYear(), getAction(monthlyPurchaseInterface.reportName(), monthlyPurchaseInterface));
-//
-////        menuButtonSetting.initializeMenuItem(menuController.getMenuItemReportCustom(), null);
+
 //        menuButtonSetting.initializeMenuItem(menuController.getMenuItemCustomPaid(), getReportsButtons().reportCustomPaid());
-////        menuButtonSetting.initializeMenuItem(menuController.getMenuItemReportSuppliers(), null);
 //        menuButtonSetting.initializeMenuItem(menuController.getMenuItemSuppliersPaid(), getReportsButtons().reportSupplierPaid());
 //        // details
 //        menuButtonSetting.initializeMenuItem(menuController.getMenuItemReportDetails(), getReportsButtons().detailsReport());
@@ -443,22 +511,22 @@ public class MainScreenController extends MainItems implements Initializable {
 //            }
 //        });
 //    }
+    private ButtonWithPerm getAction(String name, MonthlySalesInterface monthlySalesInterface) {
+        return new ButtonWithPerm() {
 
-//    private ButtonWithPerm getAction(String name, MonthlySalesInterface monthlySalesInterface) {
-//        return new ButtonWithPerm() {
-//
-//            @Override
-//            public void action() throws Exception {
-//                new MonthlyView(daoFactory, monthlySalesInterface).start(new Stage());
-//            }
-//
-//            @NotNull
-//            @Override
-//            public String textName() {
-//                return name;
-//            }
-//        };
-//    }
+            @Override
+            public void action() throws Exception {
+                new MonthlyView(daoFactory, monthlySalesInterface).start(new Stage());
+            }
+
+            @NotNull
+            @Override
+            public String textName() {
+                return name;
+            }
+        };
+    }
+
     private void firstBoxInMain() {
         try {
             box.getChildren().clear();
@@ -616,6 +684,7 @@ public class MainScreenController extends MainItems implements Initializable {
         checkAndHidePaneIfEmpty(paneCustom);
         checkAndHidePaneIfEmpty(paneSuppliers);
         checkAndHidePaneIfEmpty(paneTreasury);
+        checkAndHidePaneIfEmpty(paneReports);
         checkAndHidePaneIfEmpty(paneSetting);
     }
 
@@ -626,7 +695,7 @@ public class MainScreenController extends MainItems implements Initializable {
         if (pane.getContent() instanceof javafx.scene.layout.Pane contentPane) {
             boolean hasVisibleButton = contentPane.getChildren().stream()
                     .filter(node -> node instanceof Button)
-                    .anyMatch(node -> node.isVisible());
+                    .anyMatch(Node::isVisible);
 
             if (!hasVisibleButton) {
                 pane.setVisible(false);

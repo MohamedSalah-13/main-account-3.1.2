@@ -75,7 +75,7 @@
                                        <children>
                                           <Button fx:id="btnSales" mnemonicParsing="false" text="Sales" />
                                           <Button fx:id="btnTotalSale" mnemonicParsing="false" text="Total Sales" />
-                                          <Button fx:id="btnTotalSales" mnemonicParsing="false" text="Total Sales" />
+                                          <Button fx:id="btnSalesRe" mnemonicParsing="false" text="Sales Re" />
                                           <Button fx:id="btnTotalSalesRe" mnemonicParsing="false" text="Total Sales Re" />
                                        </children>
                                     </VBox>
@@ -156,6 +156,16 @@
                                     <VBox styleClass="side-button-box">
                                        <children>
                                           <Button fx:id="btnItemSummary" mnemonicParsing="false" text="Summary" />
+                                          <Button fx:id="btnReportItems" mnemonicParsing="false" text="ReportItems" />
+                                          <Button fx:id="btnReportItemsDaily" mnemonicParsing="false" text="ReportItemsDaily" />
+                                          <Button fx:id="btnReportSalesByYear" mnemonicParsing="false" text="ReportSalesByYear" />
+                                          <Button fx:id="btnReportPurchaseByYear" mnemonicParsing="false" text="ReportPurchaseByYear" />
+                                          <Button fx:id="btnCustomPaid" mnemonicParsing="false" text="CustomPaid" />
+                                          <Button fx:id="btnSuppliersPaid" mnemonicParsing="false" text="SuppliersPaid" />
+                                          <Button fx:id="btnReportDetails" mnemonicParsing="false" text="ReportDetails" />
+                                          <Button fx:id="btnReportDelegate" mnemonicParsing="false" text="ReportDelegate" />
+                                          <Button fx:id="btnReportYearly" mnemonicParsing="false" text="ReportYearly" />
+                                          <Button fx:id="btnReportProfitLoss" mnemonicParsing="false" text="ReportProfitLoss" />
                                        </children>
                                     </VBox>
                                  </content>
@@ -168,6 +178,10 @@
                                  <content>
                                     <VBox styleClass="side-button-box">
                                        <children>
+                                          <Button fx:id="btnAddUsers" mnemonicParsing="false" text="Add Users" />
+                                          <Button fx:id="btnUsers" mnemonicParsing="false" text="Users" />
+                                          <Button fx:id="btnAddEmployee" mnemonicParsing="false" text="Add Employee" />
+                                          <Button fx:id="btnEmployees" mnemonicParsing="false" text="Employees" />
                                           <Button fx:id="btnTreasuryDetails" mnemonicParsing="false" text="كشف حساب" />
                                           <Button fx:id="btnConvertTreasury" mnemonicParsing="false" text="Convert Treasury" />
                                           <Button fx:id="btnProcess" mnemonicParsing="false" text="Process" />
@@ -186,8 +200,9 @@
                                        <children>
                                           <Button fx:id="btnHome" mnemonicParsing="false" text="Home" />
                                           <Button fx:id="btnSetting" mnemonicParsing="false" text="Setting" />
-                                          <Button fx:id="btnUsers" mnemonicParsing="false" text="Users" />
+                                          <Button fx:id="btnDeleteData" mnemonicParsing="false" text="Delete Data" />
                                           <Button fx:id="btnBackup" mnemonicParsing="false" text="Backup" />
+                                          <Button fx:id="btnAbout" mnemonicParsing="false" text="about" />
                                           <Button fx:id="btnClose" mnemonicParsing="false" text="Close" />
                                        </children>
                                     </VBox>
