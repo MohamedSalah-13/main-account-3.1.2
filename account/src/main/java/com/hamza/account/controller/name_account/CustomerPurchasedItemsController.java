@@ -1,14 +1,15 @@
 package com.hamza.account.controller.name_account;
 
+import com.hamza.account.database.DaoException;
 import com.hamza.account.features.export.PdfExportService;
 import com.hamza.account.interfaces.CustomerPurchaseInterface;
 import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.model.domain.CustomerPurchasedItem;
 import com.hamza.account.openFxml.FxmlPath;
+import com.hamza.account.reportData.Print_Reports;
 import com.hamza.account.service.CustomerPurchasedItemsService;
 import com.hamza.account.table.TableSetting;
 import com.hamza.controlsfx.alert.AllAlerts;
-import com.hamza.account.database.DaoException;
 import com.hamza.controlsfx.excel.ExcelException;
 import com.hamza.controlsfx.excel.ExportData;
 import com.hamza.controlsfx.interfaceData.AppSettingInterface;
@@ -69,7 +70,7 @@ public class CustomerPurchasedItemsController implements Initializable, AppSetti
     @FXML
     private Button btnExportPdf;
     @FXML
-    private Button btnSortDate;
+    private Button btnSortDate, btnPrint;
 
     public CustomerPurchasedItemsController(DaoFactory daoFactory, int customerId, String customerName
             , CustomerPurchaseInterface customerPurchaseInterface) {
@@ -173,6 +174,11 @@ public class CustomerPurchasedItemsController implements Initializable, AppSetti
         if (textSearchName != null) textSearchName.clear();
         filteredData.setAll(masterData);
         updateSummary();
+    }
+
+    private void print() {
+        new Print_Reports().printItemsFrom(tableView.getItems(),"print", dateFrom.getValue().toString()
+                , dateTo.getValue().toString(), null);
     }
 
     private void exportExcel() {

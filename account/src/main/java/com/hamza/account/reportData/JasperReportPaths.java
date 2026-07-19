@@ -15,6 +15,7 @@ public final class JasperReportPaths {
         public static final String THERMAL_KITCHEN_TEST = BASE_PATH + "invoice-kitchen-80mm.jrxml";
         public static final String STANDARD = BASE_PATH + "invoice-A4.jrxml";
         public static final String DETAILS = BASE_PATH + "invoice-details-A4.jrxml";
+        public static final String DETAILS_80mm = BASE_PATH + "invoice-details-80mm.jrxml";
         public static final String MULTI = BASE_PATH + "invoice-multi-A4.jrxml";
         public static final String MULTI_80mm = BASE_PATH + "invoice-multi-80mm.jrxml";
 
@@ -38,6 +39,7 @@ public final class JasperReportPaths {
         public static final String DELEGATE = BASE_PATH + "report-by-delegate-A4.jrxml";
         public static final String NAMES_DATA = BASE_PATH + "name-customer-by-area-A4.jrxml";
         public static final String CARD_ITEMS = BASE_PATH + "items-card-A4.jrxml";
+        public static final String ITEMS_FROM_80mm = BASE_PATH + "items-from-80mm.jrxml";
         public static final String CARD_ITEMS_80mm = BASE_PATH + "items-card-80mm.jrxml";
         public static final String EXPENSE_RECEIPT = BASE_PATH + "receipt-payment-A4.jrxml";
         public static final String INVENTORY_BY_TABLE = BASE_PATH + "items-inventory-A4.jrxml";

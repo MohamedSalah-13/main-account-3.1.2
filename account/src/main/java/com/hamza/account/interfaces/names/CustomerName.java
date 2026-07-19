@@ -88,7 +88,7 @@ public class CustomerName implements NameData<Customers> {
 
             @Override
             public String title() {
-                return "الأصناف المشتراة من العميل";
+                return "الأصناف المباعة للعميل";
             }
         });
         app.start(new javafx.stage.Stage());

@@ -81,6 +81,7 @@
                                                       <Button fx:id="btnSearch" styleClass="primary-button" text="بحث" />
                                                 <Button fx:id="btnReset" styleClass="neutral-button" text="إعادة ضبط" />
                                                 <Button fx:id="btnSortDate" styleClass="warning-button" text="ترتيب حسب التاريخ" />
+                                          <Button fx:id="btnPrint" layoutX="130.0" layoutY="10.0" styleClass="warning-button" text="طباعة" />
                                        </children>
                                     </HBox>
                                  </children>

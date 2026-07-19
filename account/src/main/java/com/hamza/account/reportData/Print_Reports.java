@@ -107,7 +107,29 @@ public class Print_Reports extends ReportCompany {
         }
         String reportName = Setting_Language.WORD_TOTAL;
         addHeaderToReports(map, reportName);
-        jasperData.printJasperPrint(JasperReportPaths.Invoice.DETAILS, reportName, map, 1, "");
+        var details = JasperReportPaths.Invoice.DETAILS;
+
+        if (getPrintPaperReceiptAccount()){
+            details = JasperReportPaths.Invoice.DETAILS_80mm;
+        }
+        jasperData.printJasperPrint(details, reportName, map, 1, "");
+    }
+
+    public void printItemsFrom(@NotNull List<?> list, @NotNull String name, @NotNull String date1, @NotNull String date2, CssToColorHelper helper) {
+        HashMap<String, Object> map = getStringObjectHashMap(list, helper);
+        if (!name.isEmpty()) {
+            map.put("name", name);
+            map.put("date_from", date1);
+            map.put("date_to", date2);
+        } else {
+            map.put("name", Setting_Language.WORD_ALL);
+            map.put("date_from", " ");
+            map.put("date_to", " ");
+        }
+        String reportName = Setting_Language.WORD_TOTAL;
+        addHeaderToReports(map, reportName);
+
+        jasperData.printJasperPrint(JasperReportPaths.Report.ITEMS_FROM_80mm, reportName, map, 1, "");
     }
 
     public void printMultiInvoice(@NotNull List<PrintPurchaseWithName> list, @NotNull String reportName, @NotNull String from, @NotNull String to, CssToColorHelper helper) {
