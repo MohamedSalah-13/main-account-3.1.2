@@ -47,6 +47,7 @@ public class ItemsModel extends UnitExtends {
 
     private List<ItemsUnitsModel> itemsUnitsModelList=new ArrayList<>();;
     private List<Items_Package> items_packageList=new ArrayList<>();
+    private List<String> extraBarcodes = new ArrayList<>();
 
     @ColumnData(titleName = NamesTables.SUM_ALL_BALANCE)
     private DoubleProperty sumAllBalance = new SimpleDoubleProperty();

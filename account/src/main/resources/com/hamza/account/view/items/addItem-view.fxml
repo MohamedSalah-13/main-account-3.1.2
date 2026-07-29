@@ -4,6 +4,7 @@
 <?import javafx.scene.control.CheckBox?>
 <?import javafx.scene.control.ComboBox?>
 <?import javafx.scene.control.Label?>
+<?import javafx.scene.control.ListView?>
 <?import javafx.scene.control.ScrollPane?>
 <?import javafx.scene.control.Separator?>
 <?import javafx.scene.control.Tab?>
@@ -189,6 +190,24 @@
                                                 <RowConstraints />
                                              </rowConstraints>
                                                         </GridPane>
+                                                    </children>
+                                                </VBox>
+                                            </content>
+                                        </Tab>
+
+                                        <Tab text="باركودات إضافية">
+                                            <content>
+                                                <VBox spacing="12.0" styleClass="app-card">
+                                                    <children>
+                                                        <HBox spacing="12.0" alignment="CENTER_LEFT">
+                                                            <children>
+                                                                <TextField fx:id="textExtraBarcode" promptText="باركود إضافي" HBox.hgrow="ALWAYS" />
+                                                                <Button fx:id="btnAddExtraBarcode" mnemonicParsing="false" styleClass="primary-button" text="إضافة" />
+                                                                <Button fx:id="btnRemoveExtraBarcode" mnemonicParsing="false" styleClass="danger-button" text="حذف المحدد" />
+                                                            </children>
+                                                        </HBox>
+
+                                                        <ListView fx:id="listExtraBarcodes" styleClass="app-table" VBox.vgrow="ALWAYS" />
                                                     </children>
                                                 </VBox>
                                             </content>

@@ -30,12 +30,15 @@ public class ItemsDao extends AbstractDao<ItemsModel> {
             JOIN quantity_items_table ip ON items.id = ip.item_id
             WHERE items.nameItem LIKE ?
                OR items.barcode LIKE ?
+               OR items.id IN (SELECT item_id FROM item_barcodes WHERE barcode LIKE ?)
             ORDER BY
                 CASE
                     WHEN items.barcode = ? THEN 0
                     WHEN items.id = ? THEN 1
+                    WHEN items.id IN (SELECT item_id FROM item_barcodes WHERE barcode = ?) THEN 1
                     WHEN items.nameItem LIKE ? THEN 2
                     WHEN items.barcode LIKE ? THEN 3
+                    WHEN items.id IN (SELECT item_id FROM item_barcodes WHERE barcode LIKE ?) THEN 3
                     ELSE 4
                 END,
                 items.id DESC
@@ -47,10 +50,12 @@ public class ItemsDao extends AbstractDao<ItemsModel> {
             JOIN quantity_items_table ip ON items.id = ip.item_id
             WHERE items.nameItem LIKE ?
                OR items.barcode LIKE ?
+               OR items.id IN (SELECT item_id FROM item_barcodes WHERE barcode LIKE ?)
             ORDER BY
                 CASE
                     WHEN items.barcode = ? THEN 0
                     WHEN items.id = ? THEN 1
+                    WHEN items.id IN (SELECT item_id FROM item_barcodes WHERE barcode = ?) THEN 1
                     ELSE 2
                 END,
                 items.id DESC
@@ -62,10 +67,12 @@ public class ItemsDao extends AbstractDao<ItemsModel> {
             JOIN quantity_items_table ip ON items.id = ip.item_id
             WHERE items.id = ?
                OR items.barcode = ?
+               OR items.id IN (SELECT item_id FROM item_barcodes WHERE barcode = ?)
             ORDER BY
                 CASE
                     WHEN items.id = ? THEN 0
                     WHEN items.barcode = ? THEN 1
+                    WHEN items.id IN (SELECT item_id FROM item_barcodes WHERE barcode = ?) THEN 1
                     ELSE 2
                 END,
                 items.id DESC
@@ -118,6 +125,10 @@ public class ItemsDao extends AbstractDao<ItemsModel> {
                     itemsModel.getId(), 1, itemsModel.getFirstBalanceForStock(), itemsModel.getFirstBalanceForStock()
             ));
 
+            if (!itemsModel.getExtraBarcodes().isEmpty()) {
+                daoFactory.getItemBarcodesDao().insertBarcodesForItem(itemId, itemsModel.getExtraBarcodes());
+            }
+
             connection.setAutoCommit(true);
             return 1;
         } catch (Exception e) {
@@ -161,6 +172,11 @@ public class ItemsDao extends AbstractDao<ItemsModel> {
                     // add new units
                     daoFactory.getItemsUnitDao().insertList(itemsModel.getItemsUnitsModelList());
                 }
+            }
+            // update extra barcodes: delete then re-insert
+            daoFactory.getItemBarcodesDao().deleteByItemId(itemsModel.getId());
+            if (!itemsModel.getExtraBarcodes().isEmpty()) {
+                daoFactory.getItemBarcodesDao().insertBarcodesForItem(itemsModel.getId(), itemsModel.getExtraBarcodes());
             }
         });
     }
@@ -321,6 +337,8 @@ public class ItemsDao extends AbstractDao<ItemsModel> {
         allUnitsByItemId.addFirst(e);
         // add units to list
         itemsModel.setItemsUnitsModelList(allUnitsByItemId);
+        // load additional barcodes for this item
+        itemsModel.setExtraBarcodes(daoFactory.getItemBarcodesDao().getBarcodesByItemId(id));
         return itemsModel;
     }
 
@@ -337,7 +355,9 @@ public class ItemsDao extends AbstractDao<ItemsModel> {
     }
 
     public ItemsModel findItemByStockIdAndBarcode(String barcode, Integer stockId) throws DaoException {
-        return queryForObject(QUERY_ITEMS.concat(" where barcode = ? and ip.stock_id = ? "), this::map, barcode, stockId);
+        String query = QUERY_ITEMS.concat(
+                " where (items.barcode = ? or items.id in (select item_id from item_barcodes where barcode = ?)) and ip.stock_id = ? ");
+        return queryForObject(query, this::map, barcode, barcode, stockId);
     }
 
     public int maxItemId() {
@@ -377,7 +397,7 @@ public class ItemsDao extends AbstractDao<ItemsModel> {
                 // باركود طويل جداً => اعتبره باركود فقط
                 id = -1;
             }
-            return queryForObjects(FILTER_ITEMS_SQL_NUMERIC, this::map, id, q, id, q);
+            return queryForObjects(FILTER_ITEMS_SQL_NUMERIC, this::map, id, q, q, id, q, q);
         }
 
         // 2) نص/مختلط: مرحلتين startsWith ثم contains
@@ -391,9 +411,9 @@ public class ItemsDao extends AbstractDao<ItemsModel> {
         List<ItemsModel> starts = queryForObjects(
                 FILTER_ITEMS_SQL_TEXT_STARTS,
                 this::map,
-                likeStarts, likeStarts, // WHERE
-                q, 0,                   // ORDER BY (barcode exact, id exact disabled)
-                likeStarts, likeStarts  // ORDER BY (name starts, barcode starts)
+                likeStarts, likeStarts, likeStarts, // WHERE
+                q, 0, q,                             // ORDER BY (barcode exact, id exact disabled, extra barcode exact)
+                likeStarts, likeStarts, likeStarts   // ORDER BY (name starts, barcode starts, extra barcode starts)
         );
         putUniqueById(result, starts, FILTER_ITEMS_LIMIT);
 
@@ -402,8 +422,8 @@ public class ItemsDao extends AbstractDao<ItemsModel> {
             List<ItemsModel> contains = queryForObjects(
                     FILTER_ITEMS_SQL_TEXT_CONTAINS,
                     this::map,
-                    likeContains, likeContains, // WHERE (contains)
-                    q, 0                        // ORDER BY (barcode exact, id exact disabled)
+                    likeContains, likeContains, likeContains, // WHERE (contains)
+                    q, 0, q                                    // ORDER BY (barcode exact, id exact disabled, extra barcode exact)
             );
             putUniqueById(result, contains, FILTER_ITEMS_LIMIT);
         }

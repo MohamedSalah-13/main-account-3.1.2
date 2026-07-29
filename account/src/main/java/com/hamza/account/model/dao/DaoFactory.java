@@ -48,6 +48,10 @@ public enum DaoFactory {
         return new ItemsUnitDao(connection, this);
     }
 
+    public ItemBarcodesDao getItemBarcodesDao() {
+        return new ItemBarcodesDao(connection);
+    }
+
     public Items_StockDao getItemsStockDao() {
         return new Items_StockDao(connection, this);
     }

@@ -94,6 +94,12 @@ public class AddItemController implements AppSettingInterface {
     @FXML
     private Button btnAdd;
     @FXML
+    private TextField textExtraBarcode;
+    @FXML
+    private Button btnAddExtraBarcode, btnRemoveExtraBarcode;
+    @FXML
+    private ListView<String> listExtraBarcodes;
+    @FXML
     private ImageView imageAdd;
     @FXML
     private Button btnAddImage, btnClearImage;
@@ -122,6 +128,7 @@ public class AddItemController implements AppSettingInterface {
         addValidate();
         nameSetting();
         action();
+        extraBarcodesSetting();
         addBarcode();
         selectGroupSubAndType();
 
@@ -134,6 +141,45 @@ public class AddItemController implements AppSettingInterface {
 
         tabPane.getTabs().getFirst().setDisable(true);
         tabPane.getSelectionModel().select(1);
+    }
+
+    private void extraBarcodesSetting() {
+        listExtraBarcodes.setItems(FXCollections.observableArrayList());
+
+        btnAddExtraBarcode.setOnAction(actionEvent -> addExtraBarcode());
+        textExtraBarcode.setOnKeyPressed(keyEvent -> {
+            if (keyEvent.getCode() == javafx.scene.input.KeyCode.ENTER) {
+                addExtraBarcode();
+            }
+        });
+
+        btnRemoveExtraBarcode.setOnAction(actionEvent -> {
+            var selected = listExtraBarcodes.getSelectionModel().getSelectedItem();
+            if (selected != null) {
+                listExtraBarcodes.getItems().remove(selected);
+            }
+        });
+    }
+
+    private void addExtraBarcode() {
+        try {
+            String barcode = textExtraBarcode.getText().trim();
+            if (barcode.isEmpty()) {
+                return;
+            }
+            if (barcode.length() > 14) {
+                throw new Exception(Setting_Language.ALERT_ERROR);
+            }
+            if (barcode.equals(txtBarcode.getText()) || listExtraBarcodes.getItems().contains(barcode)) {
+                throw new Exception("هذا الباركود مُضاف بالفعل لهذا الصنف");
+            }
+
+            listExtraBarcodes.getItems().add(barcode);
+            textExtraBarcode.clear();
+            textExtraBarcode.requestFocus();
+        } catch (Exception e) {
+            logError(e);
+        }
     }
 
     private void unitSetting() {
@@ -359,6 +405,7 @@ public class AddItemController implements AppSettingInterface {
                     textDaysValidate.setText(String.valueOf(numberValidityDays));
                     textAlertBefore.setText(String.valueOf(itemsModel.getAlertDaysBeforeExpiry()));
                     tableUnitsSetting.selectTable(itemsModel);
+                    listExtraBarcodes.setItems(FXCollections.observableArrayList(itemsModel.getExtraBarcodes()));
                     var itemImage = itemsModel.getItem_image();
 
                     if (itemImage != null && itemImage.length > 0) {
@@ -460,6 +507,7 @@ public class AddItemController implements AppSettingInterface {
         if (itemsUnitsModelList.size() > 1) {
             itemsModel.setItemsUnitsModelList(itemsUnitsModelList.stream().skip(1).toList());
         } else itemsModel.setItemsUnitsModelList(new ArrayList<>());
+        itemsModel.setExtraBarcodes(new ArrayList<>(listExtraBarcodes.getItems()));
         return itemsModel;
     }
 
@@ -471,6 +519,7 @@ public class AddItemController implements AppSettingInterface {
                 if (i == 1) {
                     dataPublisher.getPublisherAddItem().setAvailability(itemsModel);
                     tableUnits.getItems().clear();
+                    listExtraBarcodes.getItems().clear();
                     AllAlerts.alertSave();
                     imageAdd.setImage(null);
                     if (!isDuplicate) {
