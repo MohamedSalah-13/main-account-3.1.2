@@ -60,7 +60,7 @@ module com.hamza.account {
     exports com.hamza.account.features.choiceDialoge;
     exports com.hamza.account.features.chart;
     opens com.hamza.account.features.chart to javafx.fxml;
-    
+
     exports com.hamza.account.config;
     exports com.hamza.account.interfaces.impl_totalDesgin;
     opens com.hamza.account.interfaces.impl_totalDesgin to javafx.fxml;

@@ -9,6 +9,7 @@ import com.hamza.account.model.base.BaseNames;
 import com.hamza.account.model.base.BasePurchasesAndSales;
 import com.hamza.account.model.base.BaseTotals;
 import com.hamza.account.table.StageDimensions;
+import com.hamza.controlsfx.language.Setting_Language;
 import javafx.application.Application;
 import javafx.scene.Scene;
 import javafx.scene.layout.Pane;
@@ -70,14 +71,14 @@ public class BuyApplication<T1 extends BasePurchasesAndSales, T2 extends BaseTot
 
         var btnSave = getController().getBtnSave();
 
-        btnSave.setText(btnSave.getText() + "F10");
+        btnSave.setText(btnSave.getText() + " F10");
         btnSave.getScene().getAccelerators().put(
                 new javafx.scene.input.KeyCodeCombination(javafx.scene.input.KeyCode.F10),
                 btnSave::fire
         );
 
         var btnPrintSave = getController().getBtnPrintSave();
-        btnPrintSave.setText(btnSave.getText() + "F12");
+        btnPrintSave.setText("حفظ وطباعة F12");
         btnPrintSave.getScene().getAccelerators().put(
                 new javafx.scene.input.KeyCodeCombination(javafx.scene.input.KeyCode.F12),
                 btnPrintSave::fire
