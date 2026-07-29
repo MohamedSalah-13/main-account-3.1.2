@@ -16,7 +16,6 @@ public class AppVersionInfo {
     private final String appName;
     private final String appVersion;
     private final String buildDate;
-    private final String requiredDatabaseVersion;
 
     public AppVersionInfo() {
         Properties properties = new Properties();
@@ -31,7 +30,6 @@ public class AppVersionInfo {
             this.appName = properties.getProperty("app.name", "Main Account");
             this.appVersion = properties.getProperty("app.version", "unknown");
             this.buildDate = properties.getProperty("build.date", "unknown");
-            this.requiredDatabaseVersion = properties.getProperty("db.required.version", "0.0.0");
 
         } catch (IOException e) {
             log.error("Failed to read version.properties", e);

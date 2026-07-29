@@ -38,4 +38,17 @@ public class MigrationResult {
                 .message("Database updated successfully")
                 .build();
     }
+
+    public static MigrationResult freshInstall(
+            String requiredVersion,
+            List<String> executedVersions
+    ) {
+        return MigrationResult.builder()
+                .updated(true)
+                .oldVersion("0.0.0")
+                .requiredVersion(requiredVersion)
+                .executedVersions(executedVersions)
+                .message("Fresh database initialized")
+                .build();
+    }
 }

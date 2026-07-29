@@ -32,6 +32,7 @@ public class DownLoadApplication extends Application {
 
         // change language
         connectionToDatabase = new ConnectionToDatabase();
+        updateDatabaseIfNeeded();
         daoFactory = getDaoFactory();
 //        AlertSetting.setStylesheets(ThemeManager.getStylesheet());
         ThemeManager.initialize();
@@ -81,23 +82,32 @@ public class DownLoadApplication extends Application {
     }
 
     public static void main(String[] args) {
+        launch(args);
+    }
 
-       /* try {
-            DatabaseMigrationService migrationService = new DatabaseMigrationService();
-            MigrationResult result = migrationService.updateDatabaseIfNeeded();
+    private void updateDatabaseIfNeeded() {
+        try {
+            MigrationResult result = new DatabaseMigrationService().updateDatabaseIfNeeded();
 
             if (result.isUpdated()) {
-                System.out.println("Database updated from " + result.getOldVersion() + " to " + result.getRequiredVersion());
-                System.out.println("Executed migrations: " + result.getExecutedVersions());
+                log.info("Database updated from {} to {}. Executed migrations: {}",
+                        result.getOldVersion(), result.getRequiredVersion(), result.getExecutedVersions());
 
+                String message = "من الإصدار: %s\nإلى الإصدار: %s\nعدد التحديثات: %d"
+                        .formatted(result.getOldVersion(), result.getRequiredVersion(),
+                                result.getExecutedVersions().size());
+
+                var alert = new javafx.scene.control.Alert(javafx.scene.control.Alert.AlertType.INFORMATION);
+                alert.setTitle("تحديث قاعدة البيانات");
+                alert.setHeaderText("تم تحديث قاعدة البيانات بنجاح");
+                alert.setContentText(message);
+                alert.showAndWait();
             }
-
         } catch (Exception e) {
-            e.printStackTrace();
-            throw e;
+            log.error("Database update failed on startup", e);
+            AllAlerts.alertError("تعذر تحديث قاعدة البيانات، لا يمكن فتح البرنامج:\n" + e.getMessage());
+            System.exit(0);
         }
-*/
-        launch(args);
     }
 
     public static DaoFactory getDaoFactory() {

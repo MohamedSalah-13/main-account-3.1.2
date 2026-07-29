@@ -11,10 +11,12 @@ public class SystemInfoDialog {
 
     private final SystemInfoService systemInfoService;
     private final AppVersionInfo appVersionInfo;
+    private final DatabaseMigrationService migrationService;
 
     public SystemInfoDialog() {
         this.systemInfoService = new SystemInfoService();
         this.appVersionInfo = new AppVersionInfo();
+        this.migrationService = new DatabaseMigrationService();
     }
 
     public void show() {
@@ -51,7 +53,7 @@ public class SystemInfoDialog {
                     value(systemInfo.getClientName()),
 
                     value(systemInfo.getDatabaseVersion()),
-                    appVersionInfo.getRequiredDatabaseVersion(),
+                    migrationService.getLatestAvailableDatabaseVersion(),
 
                     value(systemInfo.getDatabaseName()),
                     value(systemInfo.getServerIp()),
