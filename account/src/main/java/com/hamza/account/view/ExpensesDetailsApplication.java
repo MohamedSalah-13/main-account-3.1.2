@@ -22,7 +22,6 @@ import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.ToolBar;
 import javafx.scene.layout.GridPane;
-import javafx.scene.layout.HBox;
 import javafx.stage.Stage;
 import javafx.util.Callback;
 import lombok.extern.log4j.Log4j2;
@@ -55,7 +54,7 @@ public class ExpensesDetailsApplication extends Application implements TableInte
     }
 
     @Override
-    public void addToLastPane(GridPane gridPane, HBox hBox, ToolBar toolBar) {
+    public void addToLastPane(GridPane gridPane, ToolBar toolBar) {
         AddSumToColumn boxActive = new AddSumToColumn(TOTAL);
         double v = tableView.getItems().stream().mapToDouble(ExpensesDetails::getAmount).sum();
         boxActive.setSum(v);
@@ -64,7 +63,6 @@ public class ExpensesDetailsApplication extends Application implements TableInte
             double v2 = t1.stream().mapToDouble(ExpensesDetails::getAmount).sum();
             boxActive.setSum(v2);
         });
-        hBox.getChildren().addAll(boxActive);
     }
 
     @Override

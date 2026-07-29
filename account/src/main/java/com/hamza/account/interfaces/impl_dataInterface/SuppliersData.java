@@ -4,7 +4,6 @@ import com.hamza.account.controller.main.DataPublisher;
 import com.hamza.account.controller.main.LoadData;
 import com.hamza.account.controller.model.PrintPurchaseWithName;
 import com.hamza.account.controller.others.ServiceRegistry;
-import com.hamza.account.interfaces.FilterDateInterface;
 import com.hamza.account.interfaces.api.*;
 import com.hamza.account.interfaces.impl_account.AccountSuppliers;
 import com.hamza.account.interfaces.impl_design.DesignSuppliers;
@@ -12,8 +11,6 @@ import com.hamza.account.interfaces.impl_invoiceBuy.PurchaseInvoice;
 import com.hamza.account.interfaces.impl_namesDao.SupplierAndAccount;
 import com.hamza.account.interfaces.impl_totalDesgin.TotalsPurchaseImplDesign;
 import com.hamza.account.interfaces.names.SupplierName;
-import com.hamza.account.interfaces.spinner.SpinnerInterface;
-import com.hamza.account.interfaces.spinner.SupplierSpinner;
 import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.model.domain.Purchase;
 import com.hamza.account.model.domain.SupplierAccount;
@@ -28,9 +25,6 @@ import com.hamza.controlsfx.database.DaoList;
 import com.hamza.controlsfx.observer.Publisher;
 
 import java.util.List;
-import java.util.function.Predicate;
-
-import static com.hamza.controlsfx.dateTime.DateUtils.*;
 
 public class SuppliersData
         extends LoadData implements DataInterface<Purchase, Total_buy, Suppliers, SupplierAccount> {
@@ -102,31 +96,6 @@ public class SuppliersData
     @Override
     public NameAndAccountInterface<Suppliers, SupplierAccount> nameAndAccountInterface() throws Exception {
         return new SupplierAndAccount(dataPublisher);
-    }
-
-    @Override
-    public FilterDateInterface<Total_buy> filterDateInterface() {
-        return new FilterDateInterface<>() {
-            @Override
-            public Predicate<Total_buy> predicateByYear(int year) {
-                return totalBuy -> extractYear(totalBuy.getDate()) == year;
-            }
-
-            @Override
-            public Predicate<Total_buy> predicateByMonth(int month) {
-                return totalBuy -> extractMonth(totalBuy.getDate()) == month;
-            }
-
-            @Override
-            public Predicate<Total_buy> predicateByDay(int day) {
-                return totalBuy -> extractDay(totalBuy.getDate()) == day;
-            }
-        };
-    }
-
-    @Override
-    public SpinnerInterface<Suppliers, SupplierAccount> spinnerInterface() {
-        return new SupplierSpinner();
     }
 
     @Override

@@ -4,7 +4,6 @@ import com.hamza.account.config.Image_Setting;
 import com.hamza.account.view.OpenApplication;
 import com.hamza.controlsfx.interfaceData.AppSettingInterface;
 import com.hamza.controlsfx.language.Setting_Language;
-import javafx.beans.binding.BooleanBinding;
 import javafx.scene.layout.Pane;
 import lombok.extern.log4j.Log4j2;
 
@@ -33,19 +32,10 @@ public class AddForAllApplication {
             }
 
             @Override
-            public BooleanBinding checkDataToEnableButton() {
-                return controller.checkDataToEnableButton();
-            }
-
-            @Override
             public boolean resize() {
                 return controller.resize();
             }
 
-            @Override
-            public boolean closeAfterSave() {
-                return codeId > 0;
-            }
 
             @Override
             public boolean addLastPane() {

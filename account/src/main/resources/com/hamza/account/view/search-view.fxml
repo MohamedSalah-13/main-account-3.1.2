@@ -18,52 +18,52 @@
 
 <StackPane fx:id="stackPane" minHeight="-Infinity" minWidth="-Infinity" styleClass="app-root" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1">
     <children>
-      <BorderPane styleClass="app-container">
-         <top>
-                  <HBox alignment="CENTER_LEFT" spacing="10.0" styleClass="search-card" BorderPane.alignment="CENTER">
-                      <children>
-                          <Label fx:id="labelSearch" text="Search" />
-                          <TextField fx:id="txtSearch" HBox.hgrow="SOMETIMES" />
-                          <CheckBox fx:id="checkAddDirect" mnemonicParsing="false" text="إضافة مباشرة" />
-                      </children>
-                      <padding>
-                          <Insets bottom="5.0" left="5.0" right="5.0" top="5.0" />
-                      </padding>
-                  </HBox>
-         </top>
-         <bottom>
-                  <HBox alignment="CENTER_RIGHT" spacing="5.0" styleClass="summary-card" BorderPane.alignment="CENTER">
-                      <children>
-                          <Button fx:id="btnSave" mnemonicParsing="false" styleClass="app-neutral-button" text="Save" />
-                          <Button fx:id="btnClose" layoutX="15.0" layoutY="16.0" mnemonicParsing="false" styleClass="app-danger-button" text="Close" />
-                      </children>
-                  </HBox>
-         </bottom>
-         <center>
-            <ScrollPane fitToHeight="true" fitToWidth="true" BorderPane.alignment="CENTER">
-               <content>
-                    <SplitPane fx:id="splitPane" dividerPositions="0.5" orientation="VERTICAL">
-                        <items>
-                              <Pagination fx:id="pagination" minHeight="-Infinity" minWidth="-Infinity" prefHeight="250.0" prefWidth="500.0" />
-                            <VBox>
-                                <children>
-                                    <ToolBar styleClass="search-card">
-                                        <items>
-                                            <Button fx:id="btnAdd2" mnemonicParsing="false" styleClass="app-neutral-button" text="إضافة" />
-                                        </items>
-                                    </ToolBar>
-                                    <TableView fx:id="tableView" minHeight="-Infinity" minWidth="-Infinity" prefHeight="250.0" prefWidth="500.0" VBox.vgrow="SOMETIMES">
-                        </TableView>
-                                </children>
-                                <padding>
-                                    <Insets bottom="5.0" left="5.0" right="5.0" />
-                                </padding>
-                            </VBox>
-                        </items>
-                    </SplitPane>
-               </content>
-            </ScrollPane>
-         </center>
-      </BorderPane>
+        <BorderPane styleClass="app-container">
+            <top>
+                <HBox alignment="CENTER_LEFT" spacing="10.0" styleClass="search-card" BorderPane.alignment="CENTER">
+                    <children>
+                        <Label fx:id="labelSearch" text="Search" />
+                        <TextField fx:id="txtSearch" HBox.hgrow="SOMETIMES" />
+                        <CheckBox fx:id="checkAddDirect" mnemonicParsing="false" text="إضافة مباشرة" />
+                    </children>
+                    <padding>
+                        <Insets bottom="5.0" left="5.0" right="5.0" top="5.0" />
+                    </padding>
+                </HBox>
+            </top>
+            <bottom>
+                <HBox alignment="CENTER_RIGHT" spacing="5.0" styleClass="summary-card" BorderPane.alignment="CENTER">
+                    <children>
+                        <Button fx:id="btnSave" mnemonicParsing="false" styleClass="app-neutral-button" text="Save" />
+                        <Button fx:id="btnClose" layoutX="15.0" layoutY="16.0" mnemonicParsing="false" styleClass="app-danger-button" text="Close" />
+                    </children>
+                </HBox>
+            </bottom>
+            <center>
+                <ScrollPane fitToHeight="true" fitToWidth="true" BorderPane.alignment="CENTER">
+                    <content>
+                        <SplitPane fx:id="splitPane" dividerPositions="0.5" orientation="VERTICAL">
+                            <items>
+                                <Pagination fx:id="pagination" minHeight="-Infinity" minWidth="-Infinity" prefHeight="250.0" prefWidth="500.0" />
+                                <VBox>
+                                    <children>
+                                        <ToolBar styleClass="search-card">
+                                            <items>
+                                                <Button fx:id="btnAdd2" mnemonicParsing="false" styleClass="app-neutral-button" text="إضافة" />
+                                            </items>
+                                        </ToolBar>
+                                        <TableView fx:id="tableView" minHeight="-Infinity" minWidth="-Infinity" prefHeight="250.0" prefWidth="500.0" VBox.vgrow="SOMETIMES">
+                                        </TableView>
+                                    </children>
+                                    <padding>
+                                        <Insets bottom="5.0" left="5.0" right="5.0" />
+                                    </padding>
+                                </VBox>
+                            </items>
+                        </SplitPane>
+                    </content>
+                </ScrollPane>
+            </center>
+        </BorderPane>
     </children>
 </StackPane>

@@ -79,9 +79,9 @@ public final class StageManager {
         OPEN_STAGES.put(key, stage);
         stage.show();
 
-        if (dimensionsOwner != null) {
-            StageDimensions.stageDimensions(dimensionsOwner, stage);
-        }
+//        if (dimensionsOwner != null) {
+//            StageDimensions.stageDimensions(dimensionsOwner, stage);
+//        }
 
         return stage;
     }

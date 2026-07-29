@@ -3,7 +3,6 @@ package com.hamza.account.view;
 import com.hamza.account.config.Image_Setting;
 import com.hamza.account.controller.others.ProcessesController;
 import com.hamza.account.openFxml.OpenFxmlApplication;
-import com.hamza.account.table.StageDimensions;
 import com.hamza.controlsfx.language.Setting_Language;
 import javafx.application.Application;
 import javafx.scene.Scene;
@@ -22,6 +21,6 @@ public class ProcessorApplication extends Application {
         stage.setResizable(true);
         stage.initModality(javafx.stage.Modality.APPLICATION_MODAL);
         stage.show();
-        StageDimensions.stageDimensions(getClass(), stage);
+//        StageDimensions.stageDimensions(getClass(), stage);
     }
 }

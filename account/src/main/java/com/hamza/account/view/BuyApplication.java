@@ -8,8 +8,6 @@ import com.hamza.account.model.base.BaseAccount;
 import com.hamza.account.model.base.BaseNames;
 import com.hamza.account.model.base.BasePurchasesAndSales;
 import com.hamza.account.model.base.BaseTotals;
-import com.hamza.account.table.StageDimensions;
-import com.hamza.controlsfx.language.Setting_Language;
 import javafx.application.Application;
 import javafx.scene.Scene;
 import javafx.scene.layout.Pane;
@@ -67,7 +65,7 @@ public class BuyApplication<T1 extends BasePurchasesAndSales, T2 extends BaseTot
         });
 
         stage.show();
-        StageDimensions.stageDimensions(getClass(), stage);
+//        StageDimensions.stageDimensions(getClass(), stage);
 
         var btnSave = getController().getBtnSave();
 

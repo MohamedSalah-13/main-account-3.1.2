@@ -26,7 +26,6 @@ import javafx.beans.property.*;
 import javafx.scene.control.*;
 import javafx.scene.input.MouseButton;
 import javafx.scene.layout.GridPane;
-import javafx.scene.layout.HBox;
 import lombok.extern.log4j.Log4j2;
 import org.jetbrains.annotations.NotNull;
 
@@ -57,8 +56,7 @@ public class NameController<T1 extends BasePurchasesAndSales, T2 extends BaseTot
     }
 
     @Override
-    public void addToLastPane(GridPane gridPane, HBox hBox, ToolBar toolBar) {
-        hBox.getChildren().addAll(sumBalance);
+    public void addToLastPane(GridPane gridPane, ToolBar toolBar) {
         sumTable();
     }
 

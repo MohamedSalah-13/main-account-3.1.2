@@ -1,8 +1,6 @@
 package com.hamza.account.interfaces.api;
 
 import com.hamza.account.controller.model.PrintPurchaseWithName;
-import com.hamza.account.interfaces.FilterDateInterface;
-import com.hamza.account.interfaces.spinner.SpinnerInterface;
 import com.hamza.account.model.base.BaseAccount;
 import com.hamza.account.model.base.BaseNames;
 import com.hamza.account.model.base.BasePurchasesAndSales;
@@ -40,10 +38,6 @@ public interface DataInterface<T1 extends BasePurchasesAndSales, T2 extends Base
     TotalsAndPurchaseList<T1, T2> totalsAndPurchaseList();
 
     NameAndAccountInterface<T3, T4> nameAndAccountInterface() throws Exception;
-
-    FilterDateInterface<T2> filterDateInterface();
-
-    SpinnerInterface<T3, T4> spinnerInterface();
 
     AccountData<T4> accountData();
 

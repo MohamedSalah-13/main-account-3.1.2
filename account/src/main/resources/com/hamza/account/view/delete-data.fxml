@@ -16,19 +16,19 @@
 
 <StackPane fx:id="stackPane" minHeight="-Infinity" minWidth="-Infinity" styleClass="app-root" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1">
     <children>
-      <BorderPane styleClass="app-container">
-         <top>
-                  <ToolBar BorderPane.alignment="CENTER">
-                      <items>
-                          <Button fx:id="btnSave" mnemonicParsing="false" styleClass="app-primary-button" text="Save" />
-                          <Button fx:id="btnClose" layoutX="10.0" layoutY="12.0" mnemonicParsing="false" styleClass="app-danger-button" text="Close" />
-                          <ToggleButton fx:id="btnSelected" mnemonicParsing="false" styleClass="app-neutral-button" text="ToggleButton" />
-                      </items>
-                  </ToolBar>
-         </top>
-         <center>
-            <ScrollPane fitToHeight="true" fitToWidth="true" BorderPane.alignment="CENTER">
-               <content>
+        <BorderPane styleClass="app-container">
+            <top>
+                <ToolBar BorderPane.alignment="CENTER">
+                    <items>
+                        <Button fx:id="btnSave" mnemonicParsing="false" styleClass="app-primary-button" text="Save" />
+                        <Button fx:id="btnClose" layoutX="10.0" layoutY="12.0" mnemonicParsing="false" styleClass="app-danger-button" text="Close" />
+                        <ToggleButton fx:id="btnSelected" mnemonicParsing="false" styleClass="app-neutral-button" text="ToggleButton" />
+                    </items>
+                </ToolBar>
+            </top>
+            <center>
+                <ScrollPane fitToHeight="true" fitToWidth="true" BorderPane.alignment="CENTER">
+                    <content>
                         <VBox styleClass="app-card">
                             <children>
                                 <GridPane hgap="10.0" minHeight="-Infinity" minWidth="-Infinity" vgap="10.0">
@@ -73,9 +73,9 @@
                                 </GridPane>
                             </children>
                         </VBox>
-               </content>
-            </ScrollPane>
-         </center>
-      </BorderPane>
+                    </content>
+                </ScrollPane>
+            </center>
+        </BorderPane>
     </children>
 </StackPane>

@@ -121,6 +121,11 @@ public class UserController implements TableInterface<Users> {
     }
 
     @Override
+    public boolean resizeTable() {
+        return true;
+    }
+
+    @Override
     public UserPermissionType permAdd() {
         return null;
     }

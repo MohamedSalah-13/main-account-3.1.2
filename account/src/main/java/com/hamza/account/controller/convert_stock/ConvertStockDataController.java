@@ -22,7 +22,6 @@ import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.ToolBar;
 import javafx.scene.layout.GridPane;
-import javafx.scene.layout.HBox;
 import javafx.util.Callback;
 import lombok.extern.log4j.Log4j2;
 import org.jetbrains.annotations.NotNull;
@@ -48,7 +47,7 @@ public class ConvertStockDataController implements TableInterface<StockTransfer>
     }
 
     @Override
-    public void addToLastPane(GridPane gridPane, HBox hBox, ToolBar toolBar) {
+    public void addToLastPane(GridPane gridPane, ToolBar toolBar) {
         tableView.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
     }
 

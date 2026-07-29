@@ -5,7 +5,6 @@ import com.hamza.account.controller.convert_treasury.TreasureDetailsController;
 import com.hamza.account.controller.main.DataPublisher;
 import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.openFxml.OpenFxmlApplication;
-import com.hamza.account.table.StageDimensions;
 import javafx.application.Application;
 import javafx.scene.Scene;
 import javafx.stage.Stage;
@@ -26,6 +25,6 @@ public class OpenTreasuryDetailsApplication extends Application {
         stage.getIcons().add(new javafx.scene.image.Image(new Image_Setting().tools));
         stage.setResizable(true);
         stage.show();
-        StageDimensions.stageDimensions(getClass(), stage);
+//        StageDimensions.stageDimensions(getClass(), stage);
     }
 }

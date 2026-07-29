@@ -21,7 +21,7 @@
 <?import javafx.scene.layout.StackPane?>
 <?import javafx.scene.layout.VBox?>
 
-<StackPane fx:id="stackPane" nodeOrientation="RIGHT_TO_LEFT" styleClass="app-root" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1">
+<StackPane fx:id="stackPane" nodeOrientation="RIGHT_TO_LEFT" prefHeight="500.0" styleClass="app-root" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1">
     <children>
       <BorderPane styleClass="app-container">
          <top>
@@ -47,11 +47,11 @@
                                     <children>
                                         <VBox styleClass="app-card" HBox.hgrow="ALWAYS">
                                             <children>
-                                                <GridPane hgap="12.0" vgap="12.0">
+                                                <GridPane hgap="5.0" vgap="5.0">
                                                     <columnConstraints>
-                                                        <ColumnConstraints minWidth="120.0" />
+                                                        <ColumnConstraints maxWidth="-Infinity" />
                                                         <ColumnConstraints hgrow="ALWAYS" minWidth="230.0" />
-                                                        <ColumnConstraints minWidth="120.0" />
+                                                        <ColumnConstraints maxWidth="-Infinity" />
                                                         <ColumnConstraints hgrow="ALWAYS" minWidth="230.0" />
                                                     </columnConstraints>
 
@@ -118,18 +118,18 @@
                                     </children>
                                 </HBox>
 
-                                <TabPane fx:id="tabPane" styleClass="items-tab-pane" tabClosingPolicy="UNAVAILABLE" VBox.vgrow="ALWAYS">
+                                <TabPane fx:id="tabPane" styleClass="items-tab-pane" tabClosingPolicy="UNAVAILABLE">
                                     <tabs>
                                         <Tab text="الوحدات">
                                             <content>
                                                 <VBox spacing="12.0" styleClass="app-card">
                                                     <children>
-                                                        <GridPane hgap="12.0" vgap="12.0">
+                                                        <GridPane hgap="5.0" vgap="5.0">
                                                             <columnConstraints>
-                                                                <ColumnConstraints minWidth="120.0" />
-                                                                <ColumnConstraints hgrow="ALWAYS" minWidth="220.0" />
-                                                                <ColumnConstraints minWidth="100.0" />
-                                                                <ColumnConstraints minWidth="180.0" />
+                                                                <ColumnConstraints />
+                                                                <ColumnConstraints hgrow="ALWAYS" maxWidth="-Infinity" />
+                                                                <ColumnConstraints />
+                                                                <ColumnConstraints />
                                                             </columnConstraints>
 
                                                             <children>
@@ -199,7 +199,7 @@
                                             <content>
                                                 <VBox spacing="12.0" styleClass="app-card">
                                                     <children>
-                                                        <HBox spacing="12.0" alignment="CENTER_LEFT">
+                                                        <HBox alignment="CENTER_LEFT" spacing="12.0">
                                                             <children>
                                                                 <TextField fx:id="textExtraBarcode" promptText="باركود إضافي" HBox.hgrow="ALWAYS" />
                                                                 <Button fx:id="btnAddExtraBarcode" mnemonicParsing="false" styleClass="primary-button" text="إضافة" />
@@ -207,7 +207,7 @@
                                                             </children>
                                                         </HBox>
 
-                                                        <ListView fx:id="listExtraBarcodes" styleClass="app-table" VBox.vgrow="ALWAYS" />
+                                                        <ListView fx:id="listExtraBarcodes" styleClass="app-table" />
                                                     </children>
                                                 </VBox>
                                             </content>

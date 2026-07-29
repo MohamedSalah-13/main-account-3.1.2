@@ -72,8 +72,6 @@ public class ItemsController extends LoadData {
     @FXML
     private TextField txtSearch;
     @FXML
-    private Text txtSumTotals;
-    @FXML
     private StackPane stackPane;
     @FXML
     private ToggleButton btnSelected;
@@ -242,8 +240,6 @@ public class ItemsController extends LoadData {
         });
         btnDelete.setOnAction(actionEvent -> delete());
         btnRefresh.setOnAction(actionEvent -> paginationTableSetting.initializePagination());
-
-        tableView.itemsProperty().addListener((observableValue, ts, t1) -> txtSumTotals.setText(String.valueOf(tableView.getItems().size())));
 
         tableView.setOnKeyPressed(keyEvent -> {
             if (keyEvent.getCode() == KeyCode.DELETE) {

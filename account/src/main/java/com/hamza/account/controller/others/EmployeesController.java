@@ -94,6 +94,11 @@ public class EmployeesController implements TableInterface<Employees> {
     }
 
     @Override
+    public boolean resizeTable() {
+        return true;
+    }
+
+    @Override
     public UserPermissionType permAdd() {
         return UserPermissionType.EMPLOYEE_SHOW;
     }
