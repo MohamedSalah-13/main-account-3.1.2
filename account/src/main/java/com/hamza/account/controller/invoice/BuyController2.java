@@ -308,7 +308,9 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
 
         btnAdd.setOnAction(actionEvent -> addData());
         btnNew.setOnAction(actionEvent -> {
-            reset_all();
+            if (table.getItems().isEmpty() || AllAlerts.confirm_all("تأكيد", "هل تريد إلغاء الفاتورة الحالية والبدء من جديد؟ سيتم فقد كل الأصناف المُضافة غير المحفوظة.")) {
+                reset_all();
+            }
         });
         btnSave.setOnAction(event -> saveInvoice(false));
         btnPrintSave.setOnAction(actionEvent -> saveInvoice(true));
@@ -328,7 +330,16 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
         });
         txtPrice.textProperty().addListener(observable -> totalItemQuantityAndPrice());
 
-        table.editingCellProperty().addListener(observable -> sumTotals());
+        table.editingCellProperty().addListener((observable, oldPosition, newPosition) -> {
+            sumTotals();
+            // when a cell edit ends (Enter/Tab/focus-out), the editor TextField is removed
+            // from the scene and JavaFX hands focus to the first focus-traversable control
+            // instead - which is btnNew - so a second Enter would otherwise fire btnNew and
+            // wipe the whole table. Reclaim focus on the table itself once the edit is done.
+            if (newPosition == null) {
+                Platform.runLater(table::requestFocus);
+            }
+        });
         myObservableList.addListener((ListChangeListener<BasePurchasesAndSales>) change -> {
             sumTotals();
             comboStock.setDisable(!table.getItems().isEmpty());
@@ -595,22 +606,33 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
                 throw new Exception(Error_Text_Show.PLEASE_INSERT_ALL_DATA);
             }
 
-            // check quantity before add row: compare against the item's real available
-            // balance, counting quantity already added for this item elsewhere in the
-            // same invoice (converted to the item's base unit, since rows can use
-            // different units)
-            if (designInterface.showDataForCustomer() && !getSelWithoutBalance()) {
+            if (designInterface.showDataForCustomer()) {
                 var model = itemsModel.get();
                 UnitsModel selectedUnit = unitsService.getUnitsByName(comboType.getSelectionModel().getSelectedItem());
-                double newBaseQuantity = quantity * selectedUnit.getValue();
 
-                double alreadyInTableBaseQuantity = table.getItems().stream()
-                        .filter(t1 -> purchaseSalesInterface.getItems(t1).getId() == model.getId())
-                        .mapToDouble(t1 -> purchaseSalesInterface.getQuantity(t1) * purchaseSalesInterface.getUnitsType(t1).getValue())
-                        .sum();
+                // never sell below cost - buy price is per base unit, so scale it to
+                // whichever unit this row is being sold in
+                double buyPriceForUnit = model.getBuyPrice() * selectedUnit.getValue();
+                if (price < buyPriceForUnit) {
+                    txtPrice.requestFocus();
+                    throw new Exception("لا يمكن البيع بسعر أقل من سعر الشراء");
+                }
 
-                if (alreadyInTableBaseQuantity + newBaseQuantity > model.getSumAllBalance()) {
-                    throw new Exception(Error_Text_Show.NO_BALANCE);
+                // check quantity before add row: compare against the item's real available
+                // balance, counting quantity already added for this item elsewhere in the
+                // same invoice (converted to the item's base unit, since rows can use
+                // different units)
+                if (!getSelWithoutBalance()) {
+                    double newBaseQuantity = quantity * selectedUnit.getValue();
+
+                    double alreadyInTableBaseQuantity = table.getItems().stream()
+                            .filter(t1 -> purchaseSalesInterface.getItems(t1).getId() == model.getId())
+                            .mapToDouble(t1 -> purchaseSalesInterface.getQuantity(t1) * purchaseSalesInterface.getUnitsType(t1).getValue())
+                            .sum();
+
+                    if (alreadyInTableBaseQuantity + newBaseQuantity > model.getSumAllBalance()) {
+                        throw new Exception(Error_Text_Show.NO_BALANCE);
+                    }
                 }
             }
 
@@ -1067,7 +1089,18 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
         new ColumnSetting().enableDoubleEditing(4, t -> {
             int row = t.getTablePosition().getRow();
             BasePurchasesAndSales purchase = t.getTableView().getItems().get(row);
-            purchase.setPrice(t.getNewValue() == null ? 0.0 : t.getNewValue());
+            double newPrice = t.getNewValue() == null ? 0.0 : t.getNewValue();
+
+            if (designInterface.showDataForCustomer()) {
+                double buyPriceForUnit = purchase.getItems().getBuyPrice() * purchase.getUnitsType().getValue();
+                if (newPrice < buyPriceForUnit) {
+                    AllAlerts.alertError("لا يمكن البيع بسعر أقل من سعر الشراء");
+                    table.refresh();
+                    return;
+                }
+            }
+
+            purchase.setPrice(newPrice);
             updateData(purchase);
             if (getInvoiceUpdatePrice()) {
                 updateItem(purchase);
