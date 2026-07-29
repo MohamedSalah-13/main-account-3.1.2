@@ -587,7 +587,6 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
             double quantity = DoubleSetting.parseDoubleOrDefault(txtQuantity.getText());
             double price = DoubleSetting.parseDoubleOrDefault(txtPrice.getText());
             double total = DoubleSetting.parseDoubleOrDefault(txtTotals.getText());
-            double balance = DoubleSetting.parseDoubleOrDefault(txtItemBalance.getText());
             double discount = 0;
 
             // check quantity
@@ -596,12 +595,24 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
                 throw new Exception(Error_Text_Show.PLEASE_INSERT_ALL_DATA);
             }
 
-            // check quantity before add row
-            // don`t use condition if item id =1
-            if (designInterface.showDataForCustomer())
-                if (!getSelWithoutBalance()) {
-                    if (quantity > balance) throw new Exception(Error_Text_Show.NO_BALANCE);
+            // check quantity before add row: compare against the item's real available
+            // balance, counting quantity already added for this item elsewhere in the
+            // same invoice (converted to the item's base unit, since rows can use
+            // different units)
+            if (designInterface.showDataForCustomer() && !getSelWithoutBalance()) {
+                var model = itemsModel.get();
+                UnitsModel selectedUnit = unitsService.getUnitsByName(comboType.getSelectionModel().getSelectedItem());
+                double newBaseQuantity = quantity * selectedUnit.getValue();
+
+                double alreadyInTableBaseQuantity = table.getItems().stream()
+                        .filter(t1 -> purchaseSalesInterface.getItems(t1).getId() == model.getId())
+                        .mapToDouble(t1 -> purchaseSalesInterface.getQuantity(t1) * purchaseSalesInterface.getUnitsType(t1).getValue())
+                        .sum();
+
+                if (alreadyInTableBaseQuantity + newBaseQuantity > model.getSumAllBalance()) {
+                    throw new Exception(Error_Text_Show.NO_BALANCE);
                 }
+            }
 
 
             //TODO 5/4/2026 12:48 PM Mohamed: check this to load speed

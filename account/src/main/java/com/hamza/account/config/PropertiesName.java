@@ -192,7 +192,7 @@ public class PropertiesName extends PreferencesSetting {
     }
 
     public static boolean getSelWithoutBalance() {
-        return getBoolean(SEL_WITHOUT_BALANCE, true);
+        return getBoolean(SEL_WITHOUT_BALANCE, false);
     }
 
     public static void setSelWithoutBalance(boolean value) {

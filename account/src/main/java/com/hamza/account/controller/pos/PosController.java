@@ -27,6 +27,7 @@ import com.hamza.account.view.LogApplication;
 import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.button.button_column.ButtonColumn;
 import com.hamza.controlsfx.database.DaoException;
+import com.hamza.controlsfx.language.Error_Text_Show;
 import com.hamza.controlsfx.language.Setting_Language;
 import com.hamza.controlsfx.observer.Publisher;
 import com.hamza.controlsfx.others.DateSetting;
@@ -572,6 +573,29 @@ public class PosController extends ButtonSetting {
 
             if (!basePurchasesAndSalesList.isEmpty()) {
                 throw new Exception("لا يمكن ان يكون الكمية والسعر يساوى صفر ...؟");
+            }
+
+            if (!getSelWithoutBalance()) {
+                // POS rows never carry a per-row unit selection, so every row for an item
+                // uses that item's own default unit - convert to the item's base unit the
+                // same way quantity_items_table does (quantity * unit value) before summing.
+                Map<Integer, Double> requestedBaseQuantityByItem = new HashMap<>();
+                Map<Integer, ItemsModel> itemById = new HashMap<>();
+                for (BasePurchasesAndSales row : tableView.getItems()) {
+                    ItemsModel item = row.getItems();
+                    double baseQuantity = row.getQuantity() * item.getUnitsType().getValue();
+                    requestedBaseQuantityByItem.merge(item.getId(), baseQuantity, Double::sum);
+                    itemById.putIfAbsent(item.getId(), item);
+                }
+
+                List<String> insufficientItems = requestedBaseQuantityByItem.entrySet().stream()
+                        .filter(entry -> entry.getValue() > itemById.get(entry.getKey()).getSumAllBalance())
+                        .map(entry -> itemById.get(entry.getKey()).getNameItem())
+                        .toList();
+
+                if (!insufficientItems.isEmpty()) {
+                    throw new Exception(Error_Text_Show.NO_BALANCE + ": " + String.join(", ", insufficientItems));
+                }
             }
 
             var customers = new Customers(customerId);
