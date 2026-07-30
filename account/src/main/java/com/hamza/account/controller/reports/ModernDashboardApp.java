@@ -1,9 +1,19 @@
 package com.hamza.account.controller.reports;
 
+import com.hamza.account.Main;
 import com.hamza.account.config.Image_Setting;
+import com.hamza.account.config.ThemeManager;
+import com.hamza.account.controller.main.DataPublisher;
+import com.hamza.account.features.notification.NotifyItemAlert;
 import com.hamza.account.model.dao.DaoFactory;
+import com.hamza.account.model.domain.CustomerReceivable;
 import com.hamza.account.model.domain.DailyDashboardReport;
+import com.hamza.account.model.domain.ItemsMiniQuantity;
 import com.hamza.account.model.domain.TopSellingItem;
+import com.hamza.account.model.domain.TreasuryBalance;
+import com.hamza.account.view.OpenTreasuryDetailsApplication;
+import com.hamza.account.view.SceneAll;
+import com.hamza.account.view.StageManager;
 import com.hamza.controlsfx.database.DaoException;
 import eu.hansolo.tilesfx.Tile;
 import eu.hansolo.tilesfx.TileBuilder;
@@ -13,12 +23,12 @@ import javafx.animation.FadeTransition;
 import javafx.animation.ParallelTransition;
 import javafx.animation.TranslateTransition;
 import javafx.application.Platform;
+import javafx.fxml.FXMLLoader;
 import javafx.geometry.Insets;
+import javafx.scene.Cursor;
 import javafx.scene.Node;
+import javafx.scene.Parent;
 import javafx.scene.Scene;
-import javafx.scene.layout.Background;
-import javafx.scene.layout.BackgroundFill;
-import javafx.scene.layout.CornerRadii;
 import javafx.scene.layout.GridPane;
 import javafx.scene.paint.Color;
 import javafx.scene.text.TextAlignment;
@@ -36,18 +46,34 @@ import java.util.concurrent.TimeUnit;
 @Log4j2
 public class ModernDashboardApp {
 
-    private static final Color TILE_BACKGROUND = Color.web("#2a2a2a");
-    private static final Color MAIN_BACKGROUND = Color.web("#1d1d1d");
-    //    private static final Color MAIN_BACKGROUND = Color.WHEAT;
     // مرجع ثابت للنافذة لمنع تكرارها
     private static Stage dashboardStage = null;
+    private final DaoFactory daoFactory;
+    private final DataPublisher dataPublisher;
+    private final Color tileBackground;
+    private final Color tileTitleColor;
+    private final Color tileTextColor;
+    private final Color tileValueColor;
     @Getter
     private final GridPane pane;
     private final ScheduledExecutorService scheduler;
 
-    public ModernDashboardApp(DaoFactory daoFactory) throws DaoException {
+    public ModernDashboardApp(DaoFactory daoFactory, DataPublisher dataPublisher) throws DaoException {
+        this.daoFactory = daoFactory;
+        this.dataPublisher = dataPublisher;
+
+        // ألوان متوافقة مع ثيم التطبيق الحالي (فاتح/غامق/زجاجي) بدل ألوان ثابتة
+        var theme = ThemeManager.getCurrentTheme();
+        tileBackground = switch (theme) {
+            case DARK -> Color.web("#1e293b");
+            case GLASS -> Color.web("#ffffff", 0.12);
+            case LIGHT -> Color.web("#ffffff");
+        };
+        tileTitleColor = theme == ThemeManager.Theme.LIGHT ? Color.web("#172554") : Color.web("#e2e8f0");
+        tileTextColor = theme == ThemeManager.Theme.LIGHT ? Color.web("#64748b") : Color.web("#94a3b8");
+        tileValueColor = theme == ThemeManager.Theme.LIGHT ? Color.web("#172554") : Color.web("#f1f5f9");
+
         // 1. جلب البيانات من قاعدة البيانات
-//        DaoFactory daoFactory = getDummyReport();
         DailyDashboardReport report = daoFactory.dailyDashboardReportDao().loadAll().getFirst();
         // 2. إنشاء البطاقات (Tiles)
 
@@ -58,7 +84,10 @@ public class ModernDashboardApp {
                 .value(report.getSalesTotalToday().doubleValue())
                 .unit("ج.م")
                 .decimals(2)
-                .backgroundColor(TILE_BACKGROUND)
+                .backgroundColor(tileBackground)
+                .titleColor(tileTitleColor)
+                .textColor(tileTextColor)
+                .valueColor(tileValueColor)
                 .barColor(Tile.BLUE)
                 .build();
 
@@ -69,7 +98,10 @@ public class ModernDashboardApp {
                 .value(report.getPurchasesTotalToday().doubleValue())
                 .unit("ج.م")
                 .decimals(2)
-                .backgroundColor(TILE_BACKGROUND)
+                .backgroundColor(tileBackground)
+                .titleColor(tileTitleColor)
+                .textColor(tileTextColor)
+                .valueColor(tileValueColor)
                 .barColor(Tile.ORANGE)
                 .build();
 
@@ -79,10 +111,12 @@ public class ModernDashboardApp {
                 .titleAlignment(TextAlignment.CENTER)
                 .description("فاتورة مبيعات اليوم")
                 .value(report.getSalesCountToday().doubleValue())
-                .backgroundColor(TILE_BACKGROUND)
+                .backgroundColor(tileBackground)
+                .titleColor(tileTitleColor)
+                .textColor(tileTextColor)
+                .valueColor(tileValueColor)
                 .barColor(Tile.ORANGE)
                 .build();
-
 
         // 1. استخدام BarChartItem بدلاً من ChartData
         BarChartItem todayData = new BarChartItem("اليوم", report.getSalesTotalToday().doubleValue(), Tile.BLUE);
@@ -90,19 +124,18 @@ public class ModernDashboardApp {
         BarChartItem weekData = new BarChartItem("الأسبوع", report.getSalesTotalWeek().doubleValue(), Tile.GREEN);
         BarChartItem monthData = new BarChartItem("الشهر", report.getSalesTotalMonth().doubleValue(), Tile.YELLOW);
 
-// 2. إنشاء البطاقة وتمرير المتغيرات إليها
+        // 2. إنشاء البطاقة وتمرير المتغيرات إليها
         Tile salesComparisonTile = TileBuilder.create()
                 .skinType(Tile.SkinType.BAR_CHART)
                 .title("مقارنة المبيعات")
                 .text("تحديث حي للفترات الزمنية")
                 .animated(true)
                 .animationDuration(800)
-                // 👇 هنا التغيير الأهم: نستخدم barChartItems بدلاً من chartData
                 .barChartItems(todayData, yesterdayData, weekData, monthData)
-                .backgroundColor(TILE_BACKGROUND)
-                // .barColor(Tile.ORANGE) <-- (اختياري) يمكنك إزالتها لأننا حددنا لوناً لكل عنصر بالأعلى
+                .backgroundColor(tileBackground)
+                .titleColor(tileTitleColor)
+                .textColor(tileTextColor)
                 .build();
-
 
         var data = new ChartData("مقبوضات", report.getTotalReceiptsToday().doubleValue(), Tile.GREEN);
         var data1 = new ChartData("مدفوعات ومصروفات", report.getTotalPaymentsAndExpensesToday().doubleValue(), Tile.RED);
@@ -111,11 +144,10 @@ public class ModernDashboardApp {
                 .skinType(Tile.SkinType.DONUT_CHART)
                 .title("حركة الخزينة")
                 .text("المقبوضات vs المصروفات")
-                .chartData(
-                        data,
-                        data1
-                )
-                .backgroundColor(TILE_BACKGROUND)
+                .chartData(data, data1)
+                .backgroundColor(tileBackground)
+                .titleColor(tileTitleColor)
+                .textColor(tileTextColor)
                 .build();
 
         Tile discountsTile = TileBuilder.create()
@@ -125,18 +157,73 @@ public class ModernDashboardApp {
                 .value(report.getTotalDiscountsToday().doubleValue())
                 .unit("ج.م")
                 .decimals(2)
-                .backgroundColor(TILE_BACKGROUND)
+                .backgroundColor(tileBackground)
+                .titleColor(tileTitleColor)
+                .textColor(tileTextColor)
+                .valueColor(tileValueColor)
                 .barColor(Tile.MAGENTA)
                 .build();
 
-        // 3. إعداد الـ Layout (الشبكة)
+        // بطاقات تفاعلية جديدة: كل واحدة قابلة للنقر لفتح التقرير التفصيلي بتاعها
+        List<ItemsMiniQuantity> lowStockItems = daoFactory.itemMiniDao().loadAll();
+        Tile lowStockTile = TileBuilder.create()
+                .skinType(Tile.SkinType.NUMBER)
+                .title("أصناف ناقصة الرصيد")
+                .text("اضغط لعرض القائمة")
+                .value(lowStockItems.size())
+                .backgroundColor(tileBackground)
+                .titleColor(tileTitleColor)
+                .textColor(tileTextColor)
+                .valueColor(lowStockItems.isEmpty() ? tileValueColor : Tile.RED)
+                .barColor(Tile.RED)
+                .build();
+        makeClickable(lowStockTile, this::openLowStockItems);
+
+        List<CustomerReceivable> receivables = daoFactory.customerReceivableDao().getReceivablesReport();
+        double totalReceivable = receivables.stream().mapToDouble(CustomerReceivable::getTotalReceivable).sum();
+        Tile receivablesTile = TileBuilder.create()
+                .skinType(Tile.SkinType.NUMBER)
+                .title("مستحقات العملاء")
+                .text(receivables.size() + " عميل مدين - اضغط للتفاصيل")
+                .value(totalReceivable)
+                .unit("ج.م")
+                .decimals(2)
+                .backgroundColor(tileBackground)
+                .titleColor(tileTitleColor)
+                .textColor(tileTextColor)
+                .valueColor(tileValueColor)
+                .barColor(Tile.MAGENTA)
+                .build();
+        makeClickable(receivablesTile, this::openCustomerReceivables);
+
+        List<TreasuryBalance> treasuryBalances = daoFactory.treasuryBalanceDao().getSumTreasuryBalance();
+        double totalCash = treasuryBalances.stream().mapToDouble(TreasuryBalance::getBalance).sum();
+        Tile treasuryTile = TileBuilder.create()
+                .skinType(Tile.SkinType.NUMBER)
+                .title("رصيد الخزينة")
+                .text("إجمالي كل الخزائن - اضغط للتفاصيل")
+                .value(totalCash)
+                .unit("ج.م")
+                .decimals(2)
+                .backgroundColor(tileBackground)
+                .titleColor(tileTitleColor)
+                .textColor(tileTextColor)
+                .valueColor(tileValueColor)
+                .barColor(Tile.GREEN)
+                .build();
+        makeClickable(treasuryTile, this::openTreasuryDetails);
+
+        Tile topSellersTile = maxItems(daoFactory);
+        makeClickable(topSellersTile, this::openItemSalesRank);
+
+        // 3. إعداد الـ Layout (الشبكة) - بدون خلفية ثابتة عشان يورث خلفية الثيم الحالي
         pane = new GridPane();
         pane.setHgap(20);
         pane.setVgap(20);
         pane.setPadding(new Insets(20));
-        pane.setBackground(new Background(new BackgroundFill(MAIN_BACKGROUND, CornerRadii.EMPTY, Insets.EMPTY)));
 
         salesComparisonTile.setPrefSize(520, 250);
+        topSellersTile.setPrefSize(520, 250);
 
         pane.add(salesTodayTile, 0, 0);
         pane.add(purchasesTodayTile, 1, 0);
@@ -146,12 +233,15 @@ public class ModernDashboardApp {
         pane.add(cashFlowTile, 2, 1);
 
         pane.add(discountsTile, 0, 2);
-//        pane.add(maxItems(daoFactory), 1, 2,2,1);
+        pane.add(lowStockTile, 1, 2);
+        pane.add(receivablesTile, 2, 2);
+
+        pane.add(topSellersTile, 0, 3, 2, 1);
+        pane.add(treasuryTile, 2, 3);
 
         // ==========================================
         // 4. تطبيق حركة الدخول المتسلسل (Cascade Animation)
         // ==========================================
-        // تأخير متزايد لكل بطاقة لتعطي تأثير الدخول المتتالي
         int delay = 100;
         animateTile(salesTodayTile, delay);
         animateTile(purchasesTodayTile, delay += 150);
@@ -159,18 +249,23 @@ public class ModernDashboardApp {
         animateTile(salesComparisonTile, delay += 150);
         animateTile(cashFlowTile, delay += 150);
         animateTile(discountsTile, delay += 150);
+        animateTile(lowStockTile, delay += 150);
+        animateTile(receivablesTile, delay += 150);
+        animateTile(topSellersTile, delay += 150);
+        animateTile(treasuryTile, delay += 150);
 
-        // إنشاء مؤقت يعمل في الخلفية
+        // إنشاء مؤقت يعمل في الخلفية - تحديث حي كل 5 ثواني
         scheduler = Executors.newScheduledThreadPool(1);
 
-// تشغيل دالة كل 5 ثواني
         scheduler.scheduleAtFixedRate(() -> {
             try {
-                // 1. جلب التقرير الجديد من قاعدة البيانات
-//                DailyDashboardReport freshReport = getDummyReport();
                 var first = daoFactory.dailyDashboardReportDao().loadAll().getFirst();
+                var freshLowStockCount = daoFactory.itemMiniDao().loadAll().size();
+                var freshReceivables = daoFactory.customerReceivableDao().getReceivablesReport();
+                var freshReceivableTotal = freshReceivables.stream().mapToDouble(CustomerReceivable::getTotalReceivable).sum();
+                var freshCash = daoFactory.treasuryBalanceDao().getSumTreasuryBalance().stream()
+                        .mapToDouble(TreasuryBalance::getBalance).sum();
 
-                // 2. تحديث الواجهة (يجب أن يتم دائماً داخل Platform.runLater في JavaFX)
                 Platform.runLater(() -> {
                     todayData.setValue(first.getSalesTotalToday().doubleValue());
                     yesterdayData.setValue(first.getSalesTotalYesterday().doubleValue());
@@ -185,6 +280,10 @@ public class ModernDashboardApp {
                     data1.setValue(first.getTotalPaymentsAndExpensesToday().doubleValue());
 
                     discountsTile.setValue(first.getTotalDiscountsToday().doubleValue());
+
+                    lowStockTile.setValue(freshLowStockCount);
+                    receivablesTile.setValue(freshReceivableTotal);
+                    treasuryTile.setValue(freshCash);
                 });
 
             } catch (Exception e) {
@@ -206,9 +305,8 @@ public class ModernDashboardApp {
         if (dashboardStage == null) {
             dashboardStage = new Stage();
 
-            // إعداد المحتوى (Pane) والـ Scene
-            // ملاحظة: تأكد من تعريف 'pane' و 'scheduler' في الكلاس
             Scene scene = new Scene(pane, 850, 850);
+            ThemeManager.apply(scene);
 
             dashboardStage.setTitle("لوحة المتابعة اليومية - Dashboard");
             dashboardStage.setScene(scene);
@@ -248,6 +346,57 @@ public class ModernDashboardApp {
         animation.play();
     }
 
+    /**
+     * يجعل البطاقة قابلة للنقر: مؤشر يد، وتكبير بسيط عند المرور عليها، مع تنفيذ
+     * الإجراء عند الضغط.
+     */
+    private void makeClickable(Tile tile, TileAction action) {
+        tile.setCursor(Cursor.HAND);
+        tile.setOnMouseEntered(e -> {
+            tile.setScaleX(1.02);
+            tile.setScaleY(1.02);
+        });
+        tile.setOnMouseExited(e -> {
+            tile.setScaleX(1.0);
+            tile.setScaleY(1.0);
+        });
+        tile.setOnMouseClicked(e -> {
+            try {
+                action.run();
+            } catch (Exception ex) {
+                log.error("Failed to open dashboard tile detail screen", ex);
+            }
+        });
+    }
+
+    private void openLowStockItems() throws Exception {
+        new NotifyItemAlert(daoFactory.itemMiniDao().loadAll()).action();
+    }
+
+    private void openCustomerReceivables() throws Exception {
+        FXMLLoader loader = new FXMLLoader(Main.class.getResource("view/reports/CustomerReceivableView.fxml"));
+        Parent root = loader.load();
+
+        CustomerReceivableController controller = loader.getController();
+        controller.setDaoFactory(daoFactory);
+
+        StageManager.show("customer-receivables", new SceneAll(root), "مستحقات العملاء");
+    }
+
+    private void openTreasuryDetails() throws Exception {
+        new OpenTreasuryDetailsApplication(daoFactory, dataPublisher).start(new Stage());
+    }
+
+    private void openItemSalesRank() throws Exception {
+        FXMLLoader loader = new FXMLLoader(Main.class.getResource("view/reports/ItemSalesRankView.fxml"));
+        Parent root = loader.load();
+
+        ItemSalesRankController controller = loader.getController();
+        controller.setDaoFactory(daoFactory);
+
+        StageManager.show("item-sales-rank", new SceneAll(root), "تقرير حركة الأصناف (الأكثر والأقل مبيعاً)");
+    }
+
     private Tile maxItems(DaoFactory daoFactory) throws DaoException {
         var topSellingItems = daoFactory.topSellingItemDao().loadAll()
                 .stream().limit(5).toList();
@@ -256,22 +405,26 @@ public class ModernDashboardApp {
 
         for (int i = 0; i < topSellingItems.size(); i++) {
             TopSellingItem item = topSellingItems.get(i);
-            BarChartItem todayData = new BarChartItem(item.getItemName(), item.getTotalQuantity().doubleValue(), colors.get(i));
-            barChartItems.add(todayData);
+            BarChartItem itemData = new BarChartItem(item.getItemName(), item.getTotalQuantity().doubleValue(), colors.get(i % colors.size()));
+            barChartItems.add(itemData);
         }
 
-// 2. إنشاء البطاقة وتمرير المتغيرات إليها
         return TileBuilder.create()
                 .skinType(Tile.SkinType.BAR_CHART)
-                .title("اكثر الاصناف مبيعا")
-                .text("تحديث حي للفترات الزمنية")
+                .title("أكثر الأصناف مبيعاً هذا الشهر")
+                .text("اضغط لعرض التقرير الكامل")
                 .animated(true)
                 .animationDuration(800)
-                // 👇 هنا التغيير الأهم: نستخدم barChartItems بدلاً من chartData
                 .barChartItems(barChartItems)
-                .backgroundColor(TILE_BACKGROUND)
-                // .barColor(Tile.ORANGE) <-- (اختياري) يمكنك إزالتها لأننا حددنا لوناً لكل عنصر بالأعلى
+                .backgroundColor(tileBackground)
+                .titleColor(tileTitleColor)
+                .textColor(tileTextColor)
                 .build();
+    }
+
+    @FunctionalInterface
+    private interface TileAction {
+        void run() throws Exception;
     }
 
 }

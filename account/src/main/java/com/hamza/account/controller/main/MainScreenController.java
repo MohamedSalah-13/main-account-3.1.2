@@ -384,7 +384,7 @@ public class MainScreenController extends MainItems implements Initializable {
     private void firstBoxInMain() {
         try {
             box.getChildren().clear();
-            box.getChildren().add(new ModernDashboardApp(daoFactory).getPane());
+            box.getChildren().add(new ModernDashboardApp(daoFactory, this).getPane());
         } catch (DaoException e) {
             logException(e);
         }

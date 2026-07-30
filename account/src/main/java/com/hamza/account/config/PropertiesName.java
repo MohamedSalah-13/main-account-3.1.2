@@ -218,6 +218,7 @@ public class PropertiesName extends PreferencesSetting {
     public static boolean getItemEditFromTable() {
         return getBoolean(ITEM_EDIT_FROM_TABLE, false);
     }
+
     public static void setItemEditFromTable(boolean value) {
         putBoolean(ITEM_EDIT_FROM_TABLE, value);
     }
@@ -479,16 +480,16 @@ public class PropertiesName extends PreferencesSetting {
         return getBoolean(POS_INVOICE_SHOW_SELECT_PRICE, false);
     }
 
+    public static void setPosInvoiceShowSelectPrice(boolean value) {
+        putBoolean(POS_INVOICE_SHOW_SELECT_PRICE, value);
+    }
+
     public static boolean getInvoiceAddItemDirect() {
         return getBoolean(INVOICE_ADD_ITEMS_DIRECT, false);
     }
 
     public static void setInvoiceAddItemsDirect(boolean value) {
         putBoolean(INVOICE_ADD_ITEMS_DIRECT, value);
-    }
-
-    public static void setPosInvoiceShowSelectPrice(boolean value) {
-        putBoolean(POS_INVOICE_SHOW_SELECT_PRICE, value);
     }
 
     public static int getPosInvoiceFontNameSize() {
@@ -546,8 +547,9 @@ public class PropertiesName extends PreferencesSetting {
     public static void setFontColorActive(boolean value) {
         putBoolean(FONT_COLOR_ACTIVE, value);
     }
+
     public static boolean getShowMainTotals() {
-        return getBoolean(SHOW_MAIN_TOTALS, false);
+        return getBoolean(SHOW_MAIN_TOTALS, true);
     }
 
     public static void setShowMainTotals(boolean value) {
