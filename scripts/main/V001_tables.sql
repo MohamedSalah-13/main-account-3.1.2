@@ -938,25 +938,22 @@ CREATE INDEX treasury_movements_reference_idx
 CREATE INDEX treasury_movements_date_idx
     ON treasury_movements (movement_date);
 
+-- =====================================================
+-- 13) Item barcodes (multiple barcodes per item)
+-- =====================================================
 
+-- ======================================================
+-- Migration: add support for multiple barcodes per item
+-- ======================================================
 
-CREATE TABLE IF NOT EXISTS system_info (
-                                           id INT PRIMARY KEY,
-                                           client_code VARCHAR(50),
-                                           client_name VARCHAR(255),
-                                           app_version VARCHAR(50),
-                                           database_version VARCHAR(50),
-                                           install_date DATETIME,
-                                           last_update DATETIME,
-                                           database_name VARCHAR(100),
-                                           server_ip VARCHAR(100),
-                                           license_key VARCHAR(255),
-                                           notes TEXT
+CREATE TABLE IF NOT EXISTS item_barcodes
+(
+    id         INT AUTO_INCREMENT PRIMARY KEY,
+    item_id    INT                                NOT NULL,
+    barcode    VARCHAR(200)                       NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    CONSTRAINT item_barcodes_barcode_uindex UNIQUE (barcode),
+    CONSTRAINT item_barcodes_items_id_fk FOREIGN KEY (item_id) REFERENCES items (id) ON UPDATE CASCADE ON DELETE CASCADE
 );
 
-CREATE TABLE database_migrations (
-                                     id INT AUTO_INCREMENT PRIMARY KEY,
-                                     version VARCHAR(50) NOT NULL,
-                                     description VARCHAR(255),
-                                     executed_at DATETIME DEFAULT CURRENT_TIMESTAMP
-);
+CREATE INDEX item_barcodes_item_id_idx ON item_barcodes (item_id);

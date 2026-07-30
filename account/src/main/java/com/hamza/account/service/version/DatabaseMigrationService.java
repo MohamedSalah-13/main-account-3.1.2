@@ -179,52 +179,10 @@ public class DatabaseMigrationService {
          */
         List<DatabaseMigration> migrations = new ArrayList<>();
 
-//        migrations.add(DatabaseMigration.builder()
-//                .version("4.1.0.1")
-//                .description("Create/update foreign keys")
-//                .resourcePath(MIGRATIONS_PATH + "/V4_1_0_1_forrienKey.sql")
-//                .build());
-
-//        migrations.add(DatabaseMigration.builder()
-//                .version("4.1.0.2")
-//                .description("Update database schema")
-//                .resourcePath(MIGRATIONS_PATH + "/V4_1_0_2_update_database.sql")
-//                .build());
-
-//        migrations.add(DatabaseMigration.builder()
-//                .version("4.1.0.3")
-//                .description("Create audit log")
-//                .resourcePath(MIGRATIONS_PATH + "/V4_1_0_3_audit_log.sql")
-//                .build());
-
-//        migrations.add(DatabaseMigration.builder()
-//                .version("4.1.0.4")
-//                .description("Create company triggers")
-//                .resourcePath(MIGRATIONS_PATH + "/V4_1_0_4_trigger_company.sql")
-//                .build());
-
-//        migrations.add(DatabaseMigration.builder()
-//                .version("4.1.0.5")
-//                .description("Create items triggers")
-//                .resourcePath(MIGRATIONS_PATH + "/V4_1_0_5_trigger_items.sql")
-//                .build());
-
-//        migrations.add(DatabaseMigration.builder()
-//                .version("4.1.0.6")
-//                .description("Update user truncate logic")
-//                .resourcePath(MIGRATIONS_PATH + "/V4_1_0_6_user_truncate.sql")
-//                .build());
-
-//        migrations.add(DatabaseMigration.builder()
-//                .version("4.1.0.7")
-//                .description("Create/update views")
-//                .resourcePath(MIGRATIONS_PATH + "/V4_1_0_7_view_table.sql")
-//                .build());
-
         migrations.add(DatabaseMigration.builder()
-                .version("4.1.0.8")
+                .version("4.2.0.1")
                 .description("Add item_barcodes table for multiple barcodes per item")
-                .resourcePath(MIGRATIONS_PATH + "/V4_1_0_8_item_barcodes.sql")
+                .resourcePath(MIGRATIONS_PATH + "/V4_2_0_1_item_barcodes.sql")
                 .build());
 
 
