@@ -1,39 +1,40 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <?import javafx.geometry.Insets?>
-<?import javafx.scene.control.*?>
-<?import javafx.scene.layout.*?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.Separator?>
+<?import javafx.scene.control.TableView?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.layout.AnchorPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.VBox?>
 <?import javafx.scene.text.Text?>
-<AnchorPane xmlns:fx="http://javafx.com/fxml/1" stylesheets="@../css/style.css" xmlns="http://javafx.com/javafx/21">
+
+<AnchorPane stylesheets="@../css/style.css" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1">
     <children>
-        <VBox AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0"
-              AnchorPane.topAnchor="0.0">
+        <VBox AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
             <children>
-                <ToolBar prefHeight="40.0" prefWidth="200.0">
-                    <items>
-                        <Button fx:id="btnPrint" mnemonicParsing="false" text="طباعة"/>
-                        <Button fx:id="btnClose" cancelButton="true" layoutX="10.0" layoutY="10.0"
-                                mnemonicParsing="false" text="إغلاق"/>
-                    </items>
-                </ToolBar>
                 <VBox spacing="5.0" VBox.vgrow="SOMETIMES">
                     <children>
                         <HBox alignment="CENTER_LEFT" spacing="10.0" styleClass="dashboard-tile">
                             <children>
-                                <Label text="بحث"/>
-                                <TextField fx:id="textSearch" minWidth="300.0" promptText="بحث"/>
-                                <Separator orientation="VERTICAL"/>
-                                <Text strokeType="OUTSIDE" strokeWidth="0.0" text="الاجمالى"/>
-                                <Text fx:id="textCount" strokeType="OUTSIDE" strokeWidth="0.0" text="0.0"/>
+                                <Label text="بحث" />
+                                <TextField fx:id="textSearch" minWidth="300.0" promptText="بحث" />
+                                <Separator orientation="VERTICAL" />
+                                <Text strokeType="OUTSIDE" strokeWidth="0.0" text="الاجمالى" />
+                                <Text fx:id="textCount" strokeType="OUTSIDE" strokeWidth="0.0" text="0.0" />
+                              <Button fx:id="btnPrint" mnemonicParsing="false" text="طباعة" />
+                              <Button fx:id="btnClose" cancelButton="true" mnemonicParsing="false" text="إغلاق" />
                             </children>
                             <padding>
-                                <Insets bottom="5.0" left="5.0" right="5.0" top="5.0"/>
+                                <Insets bottom="5.0" left="5.0" right="5.0" top="5.0" />
                             </padding>
                         </HBox>
-                        <TableView fx:id="tableView" VBox.vgrow="SOMETIMES"/>
+                        <TableView fx:id="tableView" VBox.vgrow="SOMETIMES" />
                     </children>
                     <padding>
-                        <Insets bottom="5.0" left="5.0" right="5.0" top="5.0"/>
+                        <Insets bottom="5.0" left="5.0" right="5.0" top="5.0" />
                     </padding>
                 </VBox>
             </children>
