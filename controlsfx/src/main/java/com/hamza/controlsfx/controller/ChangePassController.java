@@ -56,8 +56,7 @@ public class ChangePassController implements Initializable {
 
     public int saveData() throws Exception {
         String expectedPass = txtPassOld.getText();
-        var anObject = changePassInt.actualPass();
-        if (expectedPass.equals(anObject)) {
+        if (changePassInt.verifyCurrentPassword(expectedPass)) {
             String passNew = txtPassNew.getText();
             String passNewRe = txtPassRe.getText();
             if (passNew.isEmpty() || passNewRe.isEmpty()) {

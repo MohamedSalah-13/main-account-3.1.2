@@ -1,6 +1,7 @@
 package com.hamza.account.model.dao;
 
 import com.hamza.account.model.domain.Users;
+import com.hamza.account.security.PasswordHasher;
 import com.hamza.controlsfx.database.AbstractDao;
 import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.database.SqlStatements;
@@ -108,9 +109,18 @@ public class UsersDao extends AbstractDao<Users> {
     }
 
     public Optional<Users> getUserByNameAndPassword(String username, String password) throws DaoException {
-        String query = "SELECT * FROM users WHERE user_name = ? AND user_pass = ?";
-        var users = queryForObject(query, this::map, username, password);
-        return Optional.ofNullable(users);
+        Users users = getDataByString(username);
+        if (users == null) return Optional.empty();
+
+        PasswordHasher.Result result = PasswordHasher.matches(password, users.getPasswordHash());
+        if (!result.matched()) return Optional.empty();
+
+        if (result.legacyPlaintext()) {
+            // self-heal: upgrade the legacy plaintext password to a bcrypt hash now that we know it's correct
+            users.setPasswordHash(PasswordHasher.hash(password));
+            update(users);
+        }
+        return Optional.of(users);
     }
 
     public List<Users> getFilterUsers(String searchText) throws DaoException {

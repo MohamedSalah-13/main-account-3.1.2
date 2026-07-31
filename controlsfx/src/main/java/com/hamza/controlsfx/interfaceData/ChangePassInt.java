@@ -3,11 +3,12 @@ package com.hamza.controlsfx.interfaceData;
 public interface ChangePassInt {
 
     /**
-     * Retrieves the current actual password.
+     * Verifies a candidate password against the currently stored password.
      *
-     * @return the actual password as a String
+     * @param candidatePassword the password entered by the user to verify
+     * @return true if it matches the current password
      */
-    String actualPass();
+    boolean verifyCurrentPassword(String candidatePassword);
 
     /**
      * Updates the current password with a new password.

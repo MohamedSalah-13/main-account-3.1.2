@@ -4,6 +4,7 @@ import com.hamza.account.controller.others.ServiceRegistry;
 import com.hamza.account.model.domain.Users;
 import com.hamza.account.openFxml.AddInterface;
 import com.hamza.account.openFxml.FxmlPath;
+import com.hamza.account.security.PasswordHasher;
 import com.hamza.account.service.UsersService;
 import com.hamza.controlsfx.language.Setting_Language;
 import com.hamza.controlsfx.observer.Publisher;
@@ -78,13 +79,20 @@ public class AddUserController implements AddInterface {
     public int insertData() throws Exception {
         Users users = new Users();
         users.setUsername(txtName.getText());
-        users.setPasswordHash(txtPass.getText());
 //        var byType = ActivityType.getByType(comboActive.getSelectionModel().getSelectedItem());
         users.setActive(true);
+        String newPass = txtPass.getText();
         if (codeId > 0) {
             users.setId(codeId);
+            if (newPass == null || newPass.isBlank()) {
+                // password field left empty while editing: keep the current password unchanged
+                users.setPasswordHash(usersService.getUsersById(codeId).getPasswordHash());
+            } else {
+                users.setPasswordHash(PasswordHasher.hash(newPass));
+            }
             return usersService.update(users);
         } else {
+            users.setPasswordHash(PasswordHasher.hash(newPass));
             return usersService.insert(users);
         }
     }
@@ -103,7 +111,8 @@ public class AddUserController implements AddInterface {
                 if (dataById != null) {
                     txtCode.setText(String.valueOf(dataById.getId()));
                     txtName.setText(dataById.getUsername());
-                    txtPass.setText(dataById.getPasswordHash());
+                    txtPass.clear();
+                    txtPass.setPromptText("اتركه فارغًا للإبقاء على كلمة المرور الحالية");
                     comboActive.getSelectionModel().selectFirst();
                 }
             } catch (Exception e) {
@@ -122,6 +131,10 @@ public class AddUserController implements AddInterface {
     @NotNull
     @Override
     public BooleanBinding checkDataToEnableButton() {
+        if (codeId > 0) {
+            // editing: password is optional (blank = keep current password)
+            return txtName.textProperty().isEmpty();
+        }
         return (txtName.textProperty().isEmpty()).or(txtPass.textProperty().isEmpty());
     }
 
