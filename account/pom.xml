@@ -70,6 +70,10 @@
                 <version>3.5.1</version>
                 <configuration>
                     <archive>
+                        <manifest>
+                            <!-- استبدل السطر التالي بمسار الكلاس الرئيسي لمشروعك -->
+                            <mainClass>com.hamza.account.Main</mainClass>
+                        </manifest>
                         <manifestEntries>
                             <Implementation-Title>${project.name}</Implementation-Title>
                             <Implementation-Version>${project.version}</Implementation-Version>
