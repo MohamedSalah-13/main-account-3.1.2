@@ -1,5 +1,6 @@
 package com.hamza.account.controller.items;
 
+import com.codejava.commons.fx.validation.InputValidator;
 import com.hamza.account.config.Image_Setting;
 import com.hamza.account.controller.dataByName.OpenAddAreaApplication;
 import com.hamza.account.controller.dataByName.impl.MainGroupImpl2;
@@ -141,6 +142,8 @@ public class AddItemController implements AppSettingInterface {
 
         tabPane.getTabs().getFirst().setDisable(true);
         tabPane.getSelectionModel().select(1);
+
+        InputValidator.makeNumericOnly(textExtraBarcode);
     }
 
     private void extraBarcodesSetting() {

@@ -9,27 +9,21 @@
     <parent>
         <groupId>com.hamza</groupId>
         <artifactId>main</artifactId>
-        <version>4.2.0</version>
+        <version>4.2.1</version>
     </parent>
 
     <properties>
-        <maven.build.timestamp.format>yyyy-MM-dd HH:mm:ss</maven.build.timestamp.format>
+        <maven.build.timestamp.format>yyyy-MM-dd_HH-mm-ss</maven.build.timestamp.format>
         <build.timestamp.display>${maven.build.timestamp}</build.timestamp.display>
-        <hamza.version>4.2.0</hamza.version>
+        <hamza.version>4.2.1</hamza.version>
     </properties>
 
     <dependencies>
         <dependency>
             <groupId>com.hamza</groupId>
             <artifactId>controlsfx</artifactId>
-            <version>4.2.0</version>
+            <version>${hamza.version}</version>
             <scope>compile</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>com.hamza</groupId>
-            <artifactId>main</artifactId>
-            <version>4.2.0</version>
         </dependency>
 
         <dependency>
@@ -73,7 +67,7 @@
             </plugin>
             <plugin>
                 <artifactId>maven-jar-plugin</artifactId>
-                <version>3.3.0</version>
+                <version>3.5.1</version>
                 <configuration>
                     <archive>
                         <manifestEntries>
@@ -88,7 +82,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-shade-plugin</artifactId>
-                <version>3.5.3</version>
+                <version>3.6.2</version>
                 <executions>
                     <execution>
                         <phase>package</phase>
@@ -104,12 +98,7 @@
 
             <plugin>
                 <artifactId>maven-resources-plugin</artifactId>
-                <version>3.3.1</version>
-                <configuration>
-                    <filters>
-                        <filter>src/main/filters/filter.properties</filter>
-                    </filters>
-                </configuration>
+                <version>3.5.0</version>
             </plugin>
         </plugins>
 

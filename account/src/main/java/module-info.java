@@ -5,7 +5,6 @@ module com.hamza.account {
     requires org.apache.poi.ooxml;
     requires jasperreports;
     requires org.slf4j;
-    requires commons.beanutils;
     requires com.hamza.controlsfx;
     requires lombok;
     requires annotations;
@@ -30,6 +29,7 @@ module com.hamza.account {
     requires org.json;
     requires com.ibm.icu;
     requires eu.hansolo.tilesfx;
+    requires fx.commons;
 //    requires spring.context;
 //    requires spring.beans;
 //    requires licensing.base;

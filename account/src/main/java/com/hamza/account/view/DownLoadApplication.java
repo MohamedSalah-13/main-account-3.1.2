@@ -32,7 +32,7 @@ public class DownLoadApplication extends Application {
 
         // change language
         connectionToDatabase = new ConnectionToDatabase();
-        updateDatabaseIfNeeded();
+//        updateDatabaseIfNeeded();
         daoFactory = getDaoFactory();
 //        AlertSetting.setStylesheets(ThemeManager.getStylesheet());
         ThemeManager.initialize();

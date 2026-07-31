@@ -75,8 +75,7 @@ public abstract class AbstractDao<T> implements DaoList<T> {
      * @throws SQLException if a database access error occurs or the SQL statement is invalid
      */
     protected int executeUpdateWithException(@NotNull String query, @NotNull Object... parameters) throws SQLException {
-        try {
-            PreparedStatement statement = connection.prepareStatement(query);
+        try (PreparedStatement statement = connection.prepareStatement(query)) {
             fillStatement(statement, parameters);
             return statement.executeUpdate();
         } catch (SQLIntegrityConstraintViolationException e) {
@@ -96,15 +95,15 @@ public abstract class AbstractDao<T> implements DaoList<T> {
      */
     public int executeUpdateListWithException(@NotNull final List<T> list, @NotNull String query, final GenericMapperList<T> mapper) throws SQLException, DaoException {
         int count = 0;
-        PreparedStatement statement = connection.prepareStatement(query);
-//        System.out.println(statement.toString());
-        for (T t : list) {
-            mapper.setData(statement, t);
-            statement.addBatch();
-            count++;
-            // execute every 100 rows or le
-            if (count % 100 == 0 || count == list.size()) {
-                statement.executeBatch();
+        try (PreparedStatement statement = connection.prepareStatement(query)) {
+            for (T t : list) {
+                mapper.setData(statement, t);
+                statement.addBatch();
+                count++;
+                // execute every 100 rows or le
+                if (count % 100 == 0 || count == list.size()) {
+                    statement.executeBatch();
+                }
             }
         }
         return count;
@@ -270,9 +269,8 @@ public abstract class AbstractDao<T> implements DaoList<T> {
     }
 
     public int queryForInt(String query) {
-        try {
-            PreparedStatement statement = connection.prepareStatement(query);
-            ResultSet resultSet = statement.executeQuery();
+        try (PreparedStatement statement = connection.prepareStatement(query);
+             ResultSet resultSet = statement.executeQuery()) {
             resultSet.next();
             return resultSet.getInt(1);
         } catch (SQLException e) {
@@ -283,9 +281,8 @@ public abstract class AbstractDao<T> implements DaoList<T> {
 
     public List<Integer> queryForIntList(String query) {
         List<Integer> list = new ArrayList<>();
-        try {
-            PreparedStatement statement = connection.prepareStatement(query);
-            ResultSet resultSet = statement.executeQuery();
+        try (PreparedStatement statement = connection.prepareStatement(query);
+             ResultSet resultSet = statement.executeQuery()) {
             while (resultSet.next()) {
                 list.add(resultSet.getInt(1));
             }

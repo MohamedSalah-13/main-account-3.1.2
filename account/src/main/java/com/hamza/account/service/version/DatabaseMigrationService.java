@@ -179,11 +179,11 @@ public class DatabaseMigrationService {
          */
         List<DatabaseMigration> migrations = new ArrayList<>();
 
-        migrations.add(DatabaseMigration.builder()
-                .version("4.2.0.1")
-                .description("Add item_barcodes table for multiple barcodes per item")
-                .resourcePath(MIGRATIONS_PATH + "/V4_2_0_1_item_barcodes.sql")
-                .build());
+//        migrations.add(DatabaseMigration.builder()
+//                .version("4.2.0.1")
+//                .description("Add item_barcodes table for multiple barcodes per item")
+//                .resourcePath(MIGRATIONS_PATH + "/V4_2_0_1_item_barcodes.sql")
+//                .build());
 
 
         /*
