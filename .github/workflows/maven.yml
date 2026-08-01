@@ -47,4 +47,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: my-application-jar # الاسم الذي سيظهر لك للتحميل
-          path: target/*.jar # مسار الملفات التي سيتم حفظها
+          path: '**/target/*.jar' # مسار الملفات التي سيتم حفظها
