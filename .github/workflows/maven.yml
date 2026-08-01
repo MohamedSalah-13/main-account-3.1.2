@@ -3,32 +3,46 @@ name: Java CI with Maven
 # 1. متى يتم تشغيل هذا البناء؟
 on:
   push:
-    branches: [ "main", "master" ,"hotfix/4.1.x" ] # عند الرفع على هذه الفروع
+    branches: [ "main", "master", "hotfix/4.1.x" ]
   pull_request:
-    branches: [ "main", "master" ,"hotfix/4.1.x" ]
+    branches: [ "main", "master", "hotfix/4.1.x" ]
 
 jobs:
   build:
     runs-on: ubuntu-latest # الخادم الذي سيعمل عليه الكود
 
     steps:
-      # 2. جلب الكود الخاص بك من المستودع
-      - name: Checkout repository
+      # 2. جلب كود مشروعك الأساسي (في المجلد الرئيسي)
+      - name: Checkout main repository
         uses: actions/checkout@v4
 
-      # 3. إعداد بيئة الجافا
-      - name: Set up JDK 17
+      # 3. جلب كود مكتبة fx-commons من GitHub ووضعها في مجلد فرعي
+      - name: Checkout fx-commons library
+        uses: actions/checkout@v4
+        with:
+          # ⚠️ هام: استبدل السطر التالي باسم الحساب/المستودع الصحيح للمكتبة
+          repository: MohamedSalah-13/fx-commons
+          path: fx-commons-lib
+
+      # 4. إعداد بيئة الجافا
+      - name: Set up JDK 21
         uses: actions/setup-java@v4
         with:
-          java-version: '21' # ⚠️ قم بتغيير هذا الرقم لإصدار الجافا الذي تستخدمه (مثلاً 8, 11, 17, 21)
+          java-version: '21'
           distribution: 'temurin'
-          cache: maven # هذه الميزة تسرع البناء مستقبلاً بتخزين المكتبات
+          cache: maven # لتسريع البناء مستقبلاً
 
-      # 4. تشغيل أمر البناء
-      - name: Build with Maven
+      # 5. بناء وتثبيت المكتبة (fx-commons) أولاً على الخادم
+      - name: Install fx-commons library locally
+        run: mvn clean install -DskipTests
+        working-directory: ./fx-commons-lib
+
+      # 6. تشغيل أمر البناء لمشروعك الأساسي
+      - name: Build main project with Maven
         run: mvn clean package
+        # سيعمل هذا الأمر في المجلد الرئيسي للمشروع بشكل افتراضي
 
-      # 5. حفظ ملف الـ JAR الناتج لتتمكن من تحميله
+      # 7. حفظ ملف الـ JAR الناتج لتتمكن من تحميله
       - name: Upload JAR artifact
         uses: actions/upload-artifact@v4
         with:
