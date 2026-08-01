@@ -1,12 +1,12 @@
 name: Auto Release JAR
 
-# 1. متى يتم تشغيل هذا البناء؟ (عند رفع Tag يبدأ بحرف v)
+# 1. يعمل فقط عند رفع Tag يبدأ بحرف v
 on:
   push:
     tags:
-      - 'v*' # سيتم التشغيل عند رفع tag مثل: v1.0.0 أو v2.3
+      - 'v*'
 
-# 2. إعطاء الصلاحيات للبوت لإنشاء Release ورفع الملفات
+# 2. إعطاء الصلاحيات لإنشاء صفحة الإصدار ورفع الملفات
 permissions:
   contents: write
 
@@ -15,25 +15,39 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repository
+      # 3. جلب كود مشروعك الأساسي (في المسار الرئيسي)
+      - name: Checkout main repository
         uses: actions/checkout@v4
 
-      - name: Set up JDK 17
+      # 4. جلب كود مكتبة fx-commons
+      - name: Checkout fx-commons library
+        uses: actions/checkout@v4
+        with:
+          # ⚠️ هام: استبدل السطر التالي باسم الحساب/المستودع الصحيح
+          repository: account-name/fx-commons
+          path: fx-commons-lib
+
+      # 5. إعداد الجافا
+      - name: Set up JDK 21
         uses: actions/setup-java@v4
         with:
-          java-version: '21' # تأكد من مطابقة إصدار الجافا لمشروعك
+          java-version: '21'
           distribution: 'temurin'
           cache: maven
 
-      # 3. بناء المشروع وتوليد الـ JAR
-      - name: Build with Maven
+      # 6. تثبيت مكتبة fx-commons أولاً
+      - name: Install fx-commons locally
+        run: mvn clean install -DskipTests
+        working-directory: ./fx-commons-lib
+
+      # 7. بناء مشروعك الأساسي
+      - name: Build main project
         run: mvn clean package
 
-      # 4. إنشاء الإصدار (Release) ورفع ملفات الـ JAR إليه
+      # 8. إنشاء الإصدار التلقائي ورفع الـ JAR
       - name: Create GitHub Release and Upload JAR
         uses: softprops/action-gh-release@v2
         with:
-          # رفع كل ملفات الـ JAR الموجودة في مجلد target
-          files: target/*.jar
-          # توليد ملاحظات الإصدار (Release Notes) تلقائياً بناءً على الـ Commits
+          # البحث عن ملف الـ JAR في أي مجلد target ورفعه
+          files: '**/target/*.jar'
           generate_release_notes: true
