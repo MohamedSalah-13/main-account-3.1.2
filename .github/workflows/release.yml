@@ -42,13 +42,24 @@ jobs:
       # 2. خطوة إنشاء الـ EXE باستخدام سطر أوامر PowerShell
       - name: Create EXE with jpackage
         run: |
-          # البحث عن ملف الـ JAR الذي تم بناؤه وتجاهل الملفات الأخرى
-          $jarFile = Get-ChildItem -Path target -Filter "*.jar" | Where-Object { $_.Name -notmatch "original" } | Select-Object -First 1
+          # البحث الذكي عن ملف الـ JAR في كل المجلدات وتجاهل مجلد مكتبة fx-commons والملفات الأصلية
+          $jarFile = Get-ChildItem -Path . -Recurse -Filter "*.jar" | Where-Object { 
+              $_.DirectoryName -match "target" -and 
+              $_.Name -notmatch "original" -and 
+              $_.FullName -notmatch "fx-commons-lib" 
+          } | Select-Object -First 1
+          
+          if ($null -eq $jarFile) {
+              Write-Error "لم يتم العثور على ملف JAR! تأكد من نجاح خطوة البناء."
+              exit 1
+          }
+
           $jarName = $jarFile.Name
-          Write-Host "Found JAR: $jarName"
+          $jarDir = $jarFile.DirectoryName
+          Write-Host "تم العثور على الملف: $jarName في المسار $jarDir"
 
           # ⚠️ هام: استبدل com.yourpackage.MainClassName بمسار الكلاس الرئيسي الخاص بك
-          jpackage --type exe --name AccountApp --input target --main-jar $jarName --main-class com.hamza.account.Main --dest output-exe --win-shortcut --win-menu --icon src/main/resources/tools.ico
+          jpackage --type exe --name AccountApp --input "$jarDir" --main-jar "$jarName" --main-class com.hamza.account.Main --dest output-exe --win-shortcut --win-menu
         shell: pwsh
 
       # 3. رفع ملف الـ EXE إلى صفحة الإصدارات
