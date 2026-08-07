@@ -11,15 +11,21 @@ customers/suppliers, treasury, reporting), backed by MySQL. User-facing strings 
 
 ```bash
 mvn clean compile -DskipTests      # build both modules
+mvn clean test                     # run the tests
 mvn -pl account javafx:run         # run the app (needs a reachable MySQL + a config.xml)
 mvn clean package -DskipTests      # shaded jar in account/target/
+
+mvn -o -pl controlsfx test -Dtest=CryptoDatabaseConfigTest              # one class
+mvn -o -pl controlsfx test -Dtest='CryptoDatabaseConfigTest$KeyFile'    # one nested class
 ```
 
 `mvn -o` (offline) works — the local repository is populated.
 
-**There are no tests.** No `src/test` anywhere, and no surefire configuration. Do not claim a change is
-verified because the build passed; say what was and was not checked. Verifying behaviour means running the
-app against a database.
+**Test coverage is almost nothing.** JUnit 5 and Mockito are declared in the root pom and inherited by both
+modules, and surefire needs no configuration, but the only suite is `CryptoDatabaseConfigTest` in
+`controlsfx`. Everything else — the DAO layer, the controllers, the trial logic — has none. A passing build
+therefore says very little: do not describe a change as verified on that basis, state what was and was not
+checked, and remember that verifying most behaviour still means running the app against a database.
 
 **Always `clean` when verifying a change.** Incremental builds frequently report
 `Nothing to compile - all classes are up to date` and silently skip your edits, so a plain `mvn compile`

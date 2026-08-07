@@ -151,7 +151,9 @@ public class CryptoDatabaseConfig {
      * is detected from the mark instead. Only the first non-blank line is used,
      * so a file that also caught surrounding output still works.
      */
-    private static String readKeyFile(File keyFile) {
+    // Package-private rather than private so the encoding handling can be tested
+    // directly; it is the part that broke on a key file a Windows shell wrote.
+    static String readKeyFile(File keyFile) {
         byte[] bytes;
         try {
             bytes = Files.readAllBytes(keyFile.toPath());
