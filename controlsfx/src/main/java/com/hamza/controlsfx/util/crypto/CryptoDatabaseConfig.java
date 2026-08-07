@@ -290,14 +290,14 @@ public class CryptoDatabaseConfig {
         Element root = doc.getDocumentElement();
         HashMap<String, String> map = new HashMap<>();
         // Decrypt and print each value
-        String url = decrypt(getElementValue(root, URL));
-        String dbName = decrypt(getElementValue(root, DBNAME));
-        String host = decrypt(getElementValue(root, HOST));
-        String username = decrypt(getElementValue(root, USERNAME));
-        String password = decrypt(getElementValue(root, PASSWORD));
-        String port = decrypt(getElementValue(root, PORT));
+        String url = decryptElement(root, URL);
+        String dbName = decryptElement(root, DBNAME);
+        String host = decryptElement(root, HOST);
+        String username = decryptElement(root, USERNAME);
+        String password = decryptElement(root, PASSWORD);
+        String port = decryptElement(root, PORT);
 //        String key = getElementValue(root, KEY);
-        String driver = decrypt(getElementValue(root, DRIVER));
+        String driver = decryptElement(root, DRIVER);
         map.put(URL, url);
         map.put(DBNAME, dbName);
         map.put(HOST, host);
@@ -307,6 +307,23 @@ public class CryptoDatabaseConfig {
 //        map.put(KEY, key);
         map.put(DRIVER, driver);
         return map;
+    }
+
+    /**
+     * Decrypts one element, naming it when the file does not carry it. Going
+     * straight to {@link #decrypt} would hand a null to the Base64 decoder and
+     * fail with a bare NullPointerException, which says nothing about which
+     * setting is missing.
+     */
+    private String decryptElement(Element root, String tagName) throws Exception {
+        String value = getElementValue(root, tagName);
+        if (value == null) {
+            throw new IllegalStateException("config.xml has no <" + tagName + "> element.");
+        }
+        if (value.isBlank()) {
+            throw new IllegalStateException("The <" + tagName + "> element in config.xml is empty.");
+        }
+        return decrypt(value);
     }
 
     private String getElementValue(Element parent, String tagName) {
