@@ -3,9 +3,9 @@ name: Java CI with Maven
 # 1. متى يتم تشغيل هذا البناء؟
 on:
   push:
-    branches: [ "main", "master", "hotfix/4.1.x" ]
+    branches: [ "main", "master" ]
   pull_request:
-    branches: [ "main", "master", "hotfix/4.1.x" ]
+    branches: [ "main", "master" ]
   # إضافة التشغيل اليدوي مع خيار الرفع
   workflow_dispatch:
     inputs:
