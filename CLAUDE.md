@@ -26,8 +26,9 @@ mvn -o -pl account -am test -Dtest=ScheduledBackupTest -Dsurefire.failIfNoSpecif
 `mvn -o` (offline) works — the local repository is populated.
 
 **Test coverage is almost nothing.** JUnit 5 and Mockito are declared in the root pom and inherited by both
-modules, and surefire needs no configuration, but the only suite is `CryptoDatabaseConfigTest` in
-`controlsfx`. Everything else — the DAO layer, the controllers, the trial logic — has none. A passing build
+modules, and surefire needs no configuration, but the whole suite is `CryptoDatabaseConfigTest` and
+`NotificationCenterTest` in `controlsfx`, plus `ScheduledBackupTest` and `PasswordHasherTest` in
+`account`. Everything else — the DAO layer, the controllers, the trial logic — has none. A passing build
 therefore says very little: do not describe a change as verified on that basis, state what was and was not
 checked, and remember that verifying most behaviour still means running the app against a database.
 
@@ -96,6 +97,57 @@ dispatches on the JavaFX thread itself — background callers do not need `Platf
 Controllers carry `@FxmlPath(pathFile = "...")`; `OpenFxmlApplication` loads the FXML for a controller
 instance. The ~69 FXML files live under `account/src/main/resources/com/hamza/account/view/`, and the
 annotation's path is relative to that directory.
+
+### Notifications
+
+Engine in `controlsfx.notifications`, business rules in `account.features.notification`.
+
+`NotificationCenter` (process-wide `getInstance()`) is the inbox. Publishing is safe from any thread —
+it marshals to the FX thread like `Publisher` does. `NotificationPolicy` decides what happens *before*
+anything reaches the inbox: a repeat of a key already there is folded into that entry (counter bumped,
+moved to the top) rather than appended, and is not re-announced inside its cooldown. `CRITICAL` is exempt.
+Mute is per-category, snooze is per-key. This is why the same low-stock condition polled every 30 minutes
+produces one row, not one row per poll.
+
+Two ways in:
+
+- **A condition someone has to go and check** — implement `NotificationSource` (id, category, interval,
+  `poll()`) and add it to `NotificationBootstrap.sources()`. It is then scheduled, mutable from the
+  settings tab and listed there, with nothing else to change. `poll()` runs on a background daemon
+  thread, may hit the database, must not touch JavaFX.
+- **An event the code already knows about** — call `AppNotifications.info/success/warn/error/critical` or
+  `withAction`. Constant key means repeats collapse into one entry; unique key means a row each. An event
+  has no rule object, so its on/off switch goes in `NotificationPreferences.isEventEnabled(id, default)`
+  and it routes by category.
+
+`StockLevelAlert` is the event worth knowing about: it fires from `BuyController2.addData` and
+`PosController.addDataToTable` when an item goes onto a **sales** invoice at or below its minimum, at
+zero, or negative. Two things it gets right that are easy to get wrong when touching it — the balance it
+judges is what remains *after* everything already on the unsaved invoice (each call site converts its own
+rows to base units), and it is sales only, told apart from sales-returns by
+`designInterface.show() == SALES_SHOW`, since `showDataForCustomer()` is true for both. Boundary logic
+lives in `StockLevel.of(balance, miniQuantity)` and is covered by `StockLevelTest`; a minimum of zero
+means "none set", not "everything is low".
+
+Presentation is listeners, so a new channel does not touch the centre. Two ship: `NotificationToaster`
+(in-app corner toast) and `WindowsNotifier` (AWT `SystemTray` balloon — tray icon created lazily on first
+use, not at startup). `NotificationChannel` picks between them, resolved most-specific-first by
+`NotificationPolicy.channelFor`: rule id → category → global default. Rule ids get onto notifications
+because `NotificationScheduler` stamps them as they leave the source; anything published through
+`AppNotifications` has none and routes by category.
+
+Poll intervals are per rule and user-editable: `NotificationSource.interval()` is only the default, and
+`NotificationScheduler.setInterval` overrides it and re-schedules live. Read the effective value with
+`effectiveInterval(sourceId)` — `source.interval()` would show the built-in default even where it has been
+overridden. Floor is `NotificationScheduler.MINIMUM_INTERVAL`.
+
+`NotificationBootstrap.start()` is called from `MainToolbarController` after login — not from
+`DownLoadApplication`, because the rules check the signed-in user's permissions. Re-entering it (logout →
+login) clears the inbox, since the entries were produced under the previous user's permissions.
+
+Settings live in Java `Preferences` via `NotificationPreferences`; nothing is persisted to the database.
+`NotificationCenterTest` covers the policy, routing and interval resolution without a JavaFX toolkit — the
+centre takes its UI executor and clock as constructor arguments for exactly that.
 
 ## Configuration and secrets
 

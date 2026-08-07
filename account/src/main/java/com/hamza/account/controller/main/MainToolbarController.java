@@ -2,6 +2,7 @@ package com.hamza.account.controller.main;
 
 import com.hamza.account.config.Image_Setting;
 import com.hamza.account.config.PropertiesName;
+import com.hamza.account.features.notification.NotificationBootstrap;
 import com.hamza.account.view.LogApplication;
 import com.hamza.controlsfx.button.ImageDesign;
 import com.hamza.controlsfx.language.Setting_Language;
@@ -63,8 +64,22 @@ public class MainToolbarController implements Initializable {
 //        toolBar.getItems().remove(btnPosSales);
 
         showButton(btnPosSales, false);
-        showButton(btnAlarm, false);
         showButton(btnShift, false);
+        replaceAlarmWithNotificationBell();
+    }
+
+    /**
+     * The alarm button was a placeholder with an empty action, permanently hidden
+     * and permanently disabled. The bell takes its slot rather than being appended,
+     * so it lands where the toolbar already had room for it.
+     */
+    private void replaceAlarmWithNotificationBell() {
+        int slot = toolBar.getItems().indexOf(btnAlarm);
+        if (slot < 0) {
+            log.warn("The alarm slot is missing from the toolbar; the notification bell was not added");
+            return;
+        }
+        toolBar.getItems().set(slot, NotificationBootstrap.start().createBell());
     }
 
     private void showButton(Button button, boolean show) {
@@ -82,7 +97,6 @@ public class MainToolbarController implements Initializable {
         menuButtonSetting.configureButton(btnPurchase, imageSetting.shoppingPurchase, controller.getTotalPurchase().addInvoice());
         menuButtonSetting.configureButton(btnItems, imageSetting.itemWhite, controller.getItemsButtons().allItems());
         menuButtonSetting.configureButton(btnCalc, imageSetting.calcWhite, controller.getForAllButtons().calc());
-        menuButtonSetting.configureButton(btnAlarm, imageSetting.alarmWhite, controller.getForAllButtons().alarm());
         menuButtonSetting.configureButton(btnShift, imageSetting.tools, controller.getShiftButtons().openShiftScreen());
 
         btnYouTube.setGraphic(new ImageDesign(imageSetting.youtube, 20));

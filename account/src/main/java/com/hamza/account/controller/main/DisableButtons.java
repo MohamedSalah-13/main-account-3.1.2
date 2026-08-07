@@ -35,8 +35,14 @@ public class DisableButtons {
         }
 
         public Boolean getABoolean(UserPermissionType permissionType) {
-            var id = LogApplication.usersVo.getId();
             if (permissionType == UserPermissionType.DISABLE_BUTTON) return false;
+            // Deny rather than throw when nobody is signed in. This used to
+            // dereference usersVo straight away, so any caller reached before login -
+            // a background rule, a screen opened early - died on an NPE instead of
+            // simply being refused.
+            if (LogApplication.usersVo == null) return false;
+
+            var id = LogApplication.usersVo.getId();
             if (permissionType == null || id == 1) return true;
 
             var permissionValue = LogApplication.usersPermissionList.stream()

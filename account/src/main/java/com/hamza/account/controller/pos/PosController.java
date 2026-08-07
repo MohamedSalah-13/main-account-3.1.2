@@ -9,6 +9,7 @@ import com.hamza.account.controller.name_account.NameController;
 import com.hamza.account.controller.others.ServiceRegistry;
 import com.hamza.account.features.key_setting.UpdateInterface;
 import com.hamza.account.features.key_setting.UpdateQuantity;
+import com.hamza.account.features.notification.StockLevelAlert;
 import com.hamza.account.interfaces.api.DataInterface;
 import com.hamza.account.interfaces.impl_dataInterface.CustomData;
 import com.hamza.account.model.base.BasePurchasesAndSales;
@@ -920,6 +921,31 @@ public class PosController extends ButtonSetting {
             basePurchasesAndSales.setDiscount(0);
             basePurchasesAndSales.setTotal(selectedPrice);
             tableView.getItems().add(basePurchasesAndSales);
+        }
+        warnIfStockIsLow(itemsModel);
+    }
+
+    /**
+     * Raises the low-stock alert after an item goes onto the till receipt.
+     * <p>
+     * Both branches above go through here, because scanning the same item a fifth
+     * time is exactly when it crosses zero. POS rows are always in the item's base
+     * unit, so unlike the invoice screen there is no conversion to do.
+     */
+    private void warnIfStockIsLow(ItemsModel itemsModel) {
+        if (itemsModel == null) {
+            return;
+        }
+        try {
+            double alreadyOnInvoice = tableView.getItems().stream()
+                    .filter(row -> row.getItems().getId() == itemsModel.getId())
+                    .mapToDouble(BasePurchasesAndSales::getQuantity)
+                    .sum();
+
+            StockLevelAlert.check(itemsModel, StockLevelAlert.remainingAfter(itemsModel, alreadyOnInvoice));
+        } catch (Exception e) {
+            // The item is on the receipt and the sale is fine; only the warning failed.
+            log.error("Could not check the stock level after adding item {}", itemsModel.getId(), e);
         }
     }
 

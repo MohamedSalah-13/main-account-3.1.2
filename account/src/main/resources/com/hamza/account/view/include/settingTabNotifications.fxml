@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.CheckBox?>
+<?import javafx.scene.control.ComboBox?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.ScrollPane?>
+<?import javafx.scene.control.Separator?>
+<?import javafx.scene.control.Spinner?>
+<?import javafx.scene.layout.AnchorPane?>
+<?import javafx.scene.layout.ColumnConstraints?>
+<?import javafx.scene.layout.GridPane?>
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.text.Text?>
+
+<!--
+  Two columns rather than one tall stack. The three sections stacked vertically
+  ran well past the height of a POS screen, so the two short ones sit side by
+  side and only the rules table - the one that grows as rules are added - gets
+  the full width. SettingTabNotificationsController collapses this back to a
+  single column on a narrow window.
+-->
+<AnchorPane styleClass="app-root" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1">
+    <children>
+        <ScrollPane fitToHeight="true" fitToWidth="true" styleClass="settings-scroll-pane"
+                    AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0"
+                    AnchorPane.topAnchor="0.0">
+            <content>
+                <VBox fx:id="root" spacing="14.0" styleClass="app-container">
+                    <children>
+                        <VBox spacing="2.0">
+                            <children>
+                                <Label styleClass="settings-title" text="إعدادات الإشعارات"/>
+                                <Label styleClass="settings-subtitle" text="التحكم فيما ينبهك إليه البرنامج ومتى"/>
+                            </children>
+                        </VBox>
+
+                        <GridPane fx:id="layout" hgap="14.0" vgap="14.0">
+                            <columnConstraints>
+                                <ColumnConstraints fx:id="leftColumn" percentWidth="50.0" minWidth="320.0"/>
+                                <ColumnConstraints fx:id="rightColumn" percentWidth="50.0" minWidth="320.0"/>
+                            </columnConstraints>
+
+                            <children>
+                                <!-- General -->
+                                <VBox fx:id="cardGeneral" spacing="10.0" styleClass="app-card"
+                                      GridPane.columnIndex="0" GridPane.rowIndex="0">
+                                    <children>
+                                        <Text strokeType="OUTSIDE" strokeWidth="0.0" styleClass="section-title"
+                                              text="عام"/>
+                                        <CheckBox fx:id="checkEnabled" mnemonicParsing="false"
+                                                  styleClass="modern-check-box" text="تفعيل الإشعارات"/>
+                                        <CheckBox fx:id="checkSound" mnemonicParsing="false"
+                                                  styleClass="modern-check-box" text="تشغيل صوت مع التنبيهات المهمة"/>
+
+                                        <GridPane hgap="10.0" vgap="8.0">
+                                            <columnConstraints>
+                                                <ColumnConstraints hgrow="ALWAYS"/>
+                                                <ColumnConstraints minWidth="170.0"/>
+                                            </columnConstraints>
+                                            <children>
+                                                <Label styleClass="form-label" text="أقل مستوى يظهر كتنبيه منبثق"
+                                                       GridPane.columnIndex="0" GridPane.rowIndex="0"/>
+                                                <ComboBox fx:id="comboThreshold" maxWidth="Infinity"
+                                                          GridPane.columnIndex="1" GridPane.rowIndex="0"/>
+
+                                                <Label styleClass="form-label" text="طريقة عرض التنبيه المنبثق"
+                                                       GridPane.columnIndex="0" GridPane.rowIndex="1"/>
+                                                <ComboBox fx:id="comboDefaultChannel" maxWidth="Infinity"
+                                                          GridPane.columnIndex="1" GridPane.rowIndex="1"/>
+
+                                                <Label styleClass="form-label" text="أقل فترة بين تكرار نفس التنبيه (دقيقة)"
+                                                       GridPane.columnIndex="0" GridPane.rowIndex="2"/>
+                                                <Spinner fx:id="spinnerCooldown" maxWidth="Infinity"
+                                                         GridPane.columnIndex="1" GridPane.rowIndex="2"/>
+                                            </children>
+                                        </GridPane>
+
+                                        <Label fx:id="labelWindowsSupport" styleClass="settings-subtitle"
+                                               wrapText="true"/>
+                                    </children>
+                                </VBox>
+
+                                <!-- Categories -->
+                                <VBox fx:id="cardCategories" spacing="10.0" styleClass="app-card"
+                                      GridPane.columnIndex="1" GridPane.rowIndex="0">
+                                    <children>
+                                        <Text strokeType="OUTSIDE" strokeWidth="0.0" styleClass="section-title"
+                                              text="أنواع الإشعارات"/>
+                                        <Label styleClass="settings-subtitle" wrapText="true"
+                                               text="أزل العلامة لإيقاف نوع بعينه دون إيقاف الباقي"/>
+                                        <VBox fx:id="boxCategories" spacing="8.0"/>
+                                        <Separator styleClass="settings-separator"/>
+                                        <CheckBox fx:id="checkStockOnSale" mnemonicParsing="false" wrapText="true"
+                                                  styleClass="modern-check-box"
+                                                  text="تنبيه فوري عند بيع صنف وصل للحد الأدنى أو نفد أو رصيده سالب"/>
+                                    </children>
+                                </VBox>
+
+                                <!-- Rules: full width, it is the one that grows -->
+                                <VBox fx:id="cardRules" spacing="10.0" styleClass="app-card"
+                                      GridPane.columnIndex="0" GridPane.rowIndex="1" GridPane.columnSpan="2">
+                                    <children>
+                                        <Text strokeType="OUTSIDE" strokeWidth="0.0" styleClass="section-title"
+                                              text="القواعد وتوقيتها"/>
+                                        <Label styleClass="settings-subtitle" wrapText="true"
+                                               text="حدد كل كم دقيقة يفحص البرنامج كل قاعدة، وأين يظهر تنبيهها"/>
+                                        <GridPane fx:id="gridSources" hgap="14.0" vgap="8.0"/>
+                                    </children>
+                                </VBox>
+                            </children>
+                        </GridPane>
+                    </children>
+                </VBox>
+            </content>
+        </ScrollPane>
+    </children>
+</AnchorPane>
