@@ -58,6 +58,14 @@ public class ConnectionToDatabase {
                     + ". Copy config.xml.example and fill it in with CryptoDatabaseConfig encrypt.");
         }
 
+        if (CryptoDatabaseConfig.usingBuiltInKey()) {
+            // The built-in key is in the source, and a config.xml was committed to
+            // this repository once, so anything it protects should be assumed known.
+            log.warn("config.xml is being read with the built-in encryption key, which is published in the"
+                    + " source. Generate a key of this install's own and re-encrypt the file, and change the"
+                    + " database password: run CryptoDatabaseConfig genkey, then migrate.");
+        }
+
         CryptoDatabaseConfig encryptor = new CryptoDatabaseConfig(CryptoDatabaseConfig.resolveConfigKey());
         try {
             return encryptor.loadAndDecryptConfig(configFile.getAbsolutePath());

@@ -9,24 +9,39 @@
   working directory, so the file belongs next to whatever you launch: the repo
   root when running from the root, account/ when running that module directly.
 
-  Every value below is AES-encrypted and Base64-encoded, not plain text - the
-  loader decrypts each element before use, so plain values fail at startup.
-  Generate a real file with the CLI, which prints which key it used:
+  Every value below is encrypted and Base64-encoded, not plain text - the loader
+  decrypts each element before use, so plain values fail at startup. Values
+  written now begin with "v2:" and are AES/GCM, with a random IV each and an
+  authentication tag, so an edited file is rejected instead of yielding altered
+  settings. Values without that prefix are the older unauthenticated format and
+  are still read, so existing installs keep starting.
+
+  First set a key of this install's own. Writing a config.xml requires one: the
+  built-in fallback key is published in the source, so anything encrypted with it
+  can be read by anyone holding the repository.
+
+    java -cp controlsfx/target/classes \
+      com.hamza.controlsfx.util.crypto.CryptoDatabaseConfig genkey
+
+  Put the printed value in the ACCOUNT_CONFIG_KEY environment variable, or in a
+  file named config.key. config.key and config.xml are both resolved against the
+  JVM working directory, so run the CLI from wherever the application launches.
+  Keep the key out of version control and back it up - without it config.xml
+  cannot be read.
+
+  Then write the file:
 
     java -cp controlsfx/target/classes \
       com.hamza.controlsfx.util.crypto.CryptoDatabaseConfig \
       encrypt <port> <host> <dbname> <username> <password> config.xml
 
-  The CLI and the application now resolve the same key through
-  CryptoDatabaseConfig.resolveConfigKey: the ACCOUNT_CONFIG_KEY environment
-  variable if set, otherwise a config.key file next to config.xml, otherwise the
-  built-in default. Both are read in the JVM working directory, so run the CLI
-  from wherever the application launches and the file it writes will load.
-  Installs that predate config.key keep working on the built-in default.
+  To convert a config.xml that predates all this, install a new key as above and
+  run "migrate config.xml". It reads the file under whichever key it was written
+  with and rewrites it under the new one. Any credentials that were protected
+  only by the built-in key should be changed on the database server as well:
+  re-encrypting the file does not un-publish what the old file exposed.
 
-  secret_key.txt records the key each run encrypted with, for diagnosing a
-  config.xml that stopped loading. It is never read back automatically - to
-  switch keys, put the value in ACCOUNT_CONFIG_KEY or config.key and re-encrypt.
+  Other commands: "decrypt config.xml" prints the settings back.
 
   url is "jdbc:mysql://<host>:<port>/<dbname>" and driver is
   "com.mysql.cj.jdbc.Driver" before encryption.
