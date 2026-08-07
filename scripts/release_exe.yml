@@ -1,0 +1,71 @@
+name: Auto Release Windows EXE
+
+# يعمل عند رفع Tag يبدأ بحرف v
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-release-exe:
+    # 1. تغيير الخادم إلى ويندوز لكي نتمكن من بناء ملف EXE
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout main repository
+        uses: actions/checkout@v4
+
+      - name: Checkout fx-commons library
+        uses: actions/checkout@v4
+        with:
+          # ⚠️ لا تنسَ تغيير هذا المسار
+          repository: MohamedSalah-13/fx-commons
+          path: fx-commons-lib
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: maven
+
+      - name: Install fx-commons locally
+        run: mvn clean install -DskipTests
+        working-directory: ./fx-commons-lib
+
+      - name: Build main project
+        run: mvn clean package
+
+      # 2. خطوة إنشاء الـ EXE باستخدام سطر أوامر PowerShell
+      - name: Create EXE with jpackage
+        run: |
+          # البحث الذكي عن ملف الـ JAR في كل المجلدات وتجاهل مجلد مكتبة fx-commons والملفات الأصلية
+          $jarFile = Get-ChildItem -Path . -Recurse -Filter "*.jar" | Where-Object { 
+              $_.DirectoryName -match "target" -and 
+              $_.Name -notmatch "original" -and 
+              $_.FullName -notmatch "fx-commons-lib" 
+          } | Select-Object -First 1
+          
+          if ($null -eq $jarFile) {
+              Write-Error "لم يتم العثور على ملف JAR! تأكد من نجاح خطوة البناء."
+              exit 1
+          }
+
+          $jarName = $jarFile.Name
+          $jarDir = $jarFile.DirectoryName
+          Write-Host "تم العثور على الملف: $jarName في المسار $jarDir"
+
+          # ⚠️ هام: استبدل com.yourpackage.MainClassName بمسار الكلاس الرئيسي الخاص بك
+          jpackage --type exe --name AccountApp --input "$jarDir" --main-jar "$jarName" --main-class com.hamza.account.Main --dest output-exe --win-shortcut --win-menu
+        shell: pwsh
+
+      # 3. رفع ملف الـ EXE إلى صفحة الإصدارات
+      - name: Create GitHub Release and Upload EXE
+        uses: softprops/action-gh-release@v2
+        with:
+          # البحث عن ملف الـ EXE في المجلد الذي تم إنشاؤه
+          files: output-exe/*.exe
+          generate_release_notes: true
