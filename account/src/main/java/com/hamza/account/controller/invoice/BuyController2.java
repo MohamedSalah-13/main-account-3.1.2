@@ -662,7 +662,7 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
 
             // تحويل النانو ثانية إلى مللي ثانية لسهولة القراءة
             long duration = (endTime - startTime) / 1_000_000;
-            System.out.println("Execution time: " + duration + " ms");
+            log.debug("Loaded the invoice screen in {} ms", duration);
         } catch (Exception e) {
             logError(e);
         }
@@ -787,10 +787,8 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
                             }
                     }
 
-                    System.out.println(num_invoice_update);
                     // close stage if open when update
                     if (num_invoice_update > 0) {
-                        System.out.println("update");
                         table.getScene().getWindow().hide();
                     }
 

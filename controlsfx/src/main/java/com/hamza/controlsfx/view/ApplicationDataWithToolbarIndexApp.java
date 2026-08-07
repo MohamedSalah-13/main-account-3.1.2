@@ -45,8 +45,7 @@ public class ApplicationDataWithToolbarIndexApp<T> extends Dialog<T> {
                 tableView.setItems(FXCollections.observableArrayList(tableViewShowDataInt.dataList()));
                 tableView.refresh();
             } catch (DaoException e) {
-                log.error(e.getMessage());
-                e.printStackTrace();
+                log.error(e.getMessage(), e);
             }
         });
     }

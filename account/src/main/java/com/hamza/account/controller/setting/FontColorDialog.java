@@ -1,5 +1,6 @@
 package com.hamza.account.controller.setting;
 
+import lombok.extern.log4j.Log4j2;
 import com.hamza.account.controller.pos.DialogButtons;
 import javafx.application.Application;
 import javafx.application.Platform;
@@ -15,6 +16,7 @@ import java.io.IOException;
 /**
  * A dialog for customizing font and color settings in the application.
  */
+@Log4j2
 public class FontColorDialog extends Dialog<Boolean> {
 
     /**
@@ -60,14 +62,14 @@ public class FontColorDialog extends Dialog<Boolean> {
                 FontColorDialog dialog = new FontColorDialog();
                 dialog.showAndWait().ifPresent(result -> {
                     if (result) {
-                        System.out.println("Settings applied successfully");
+                        log.info("Settings applied successfully");
                     } else {
-                        System.out.println("Settings cancelled");
+                        log.info("Settings cancelled");
                     }
                 });
                 Platform.exit();
             } catch (IOException e) {
-                e.printStackTrace();
+                log.error("Could not open the font and colour dialog", e);
                 Platform.exit();
             }
         }

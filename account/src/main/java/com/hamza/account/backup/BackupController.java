@@ -1,5 +1,6 @@
 package com.hamza.account.backup;
 
+import lombok.extern.log4j.Log4j2;
 import com.hamza.account.controller.main.DataPublisher;
 import com.hamza.account.controller.main.LoadDataAndList;
 import javafx.application.Platform;
@@ -21,6 +22,7 @@ import java.util.Optional;
 import java.util.prefs.Preferences;
 
 
+@Log4j2
 public class BackupController {
     @FXML
     private TextField backupPathField;
@@ -184,8 +186,10 @@ public class BackupController {
 
             task.setOnFailed(e -> {
                 Throwable ex = task.getException();
-                ex.printStackTrace();
-                String msg = ex.getMessage();
+                log.error("Restore failed", ex);
+                // A failure with no message - an NPE inside mysql, say - used to throw
+                // a second time here while reporting the first.
+                String msg = ex.getMessage() == null ? ex.getClass().getSimpleName() : ex.getMessage();
                 if (msg.contains("كلمة مرور خاطئة") || msg.contains("تالف")) {
                     setStatus("✗ " + msg);
                 } else {

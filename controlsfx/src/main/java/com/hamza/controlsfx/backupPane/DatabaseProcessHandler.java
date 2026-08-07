@@ -27,10 +27,19 @@ public class DatabaseProcessHandler {
 
     /**
      * Constructs a DatabaseProcessHandler that executes the given backup command.
+     * <p>
+     * Prefer {@link #DatabaseProcessHandler(String[])}. A whole command line as one
+     * string is split on whitespace, so any argument containing a space - a backup
+     * path under {@code C:\Users\...\My Documents}, for instance - arrives as
+     * several arguments and the command fails or writes to the wrong place.
+     * Quoting does not help: the quotes are passed through as ordinary characters.
      *
      * @param backup the command to execute for performing a database backup
      * @throws IOException if an I/O error occurs during the execution of the command
+     * @deprecated pass the command as separate arguments instead.
      */
+    @Deprecated
+    @SuppressWarnings("deprecation")
     public DatabaseProcessHandler(String backup) throws IOException {
         this(Runtime.getRuntime().exec(backup));
     }

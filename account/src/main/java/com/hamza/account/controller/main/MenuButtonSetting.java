@@ -104,7 +104,6 @@ public record MenuButtonSetting(TabPane tabPane) {
     private void logException(Exception e) {
         log.error(e.getMessage(), e);
         AllAlerts.showExceptionDialog(e);
-        e.printStackTrace();
     }
 
     private void disableButton(DisableButtons.Disableable uiElement, ButtonWithPerm action) {

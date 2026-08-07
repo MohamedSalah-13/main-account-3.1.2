@@ -17,7 +17,7 @@ public class LanguageManager {
 
     private final Preferences preferences;
 
-    public static final Locale ARABIC = new Locale("ar");
+    public static final Locale ARABIC = Locale.of("ar");
     public static final Locale ENGLISH = Locale.ENGLISH;
 
     private LanguageManager() {

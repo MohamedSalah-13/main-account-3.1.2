@@ -232,6 +232,14 @@ public abstract class AbstractDao<T> implements DaoList<T> {
     public T queryForObject(@NotNull String query, @NotNull final GenericMapper<T> mapper, @NotNull Object... parameters) throws DaoException {
         List<T> list = queryForObjects(query, mapper, parameters);
         if (list.size() == 1) return list.getFirst();
+        if (!list.isEmpty()) {
+            // Null here is indistinguishable from "no such row", so a query that
+            // matches several rows looks to every caller like a missing record and
+            // the duplicate goes unnoticed. The return value is left alone because
+            // callers treat null as not-found and picking a row arbitrarily would be
+            // worse, but the data problem is no longer silent.
+            log.warn("Expected at most one row but {} matched, returning none: {}", list.size(), query);
+        }
         return null;
     }
 

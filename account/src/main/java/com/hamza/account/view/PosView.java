@@ -1,5 +1,6 @@
 package com.hamza.account.view;
 
+import lombok.extern.log4j.Log4j2;
 import com.hamza.account.config.Image_Setting;
 import com.hamza.account.controller.main.DataPublisher;
 import com.hamza.account.controller.pos.PosController;
@@ -23,6 +24,7 @@ import java.nio.file.Path;
 import static com.hamza.account.controller.pos.PosInvoiceSetting.SUSPENDED_DIR_NAME;
 
 @RequiredArgsConstructor
+@Log4j2
 public class PosView extends Application {
 
     private final DaoFactory daoFactory;
@@ -77,11 +79,11 @@ public class PosView extends Application {
                     try {
                         Files.deleteIfExists(path);
                     } catch (IOException e) {
-                        e.printStackTrace();
+                        log.error("Could not delete the suspended invoice {}", path, e);
                     }
                 });
             } catch (IOException e) {
-                e.printStackTrace();
+                log.error("Could not list the suspended invoices folder", e);
             }
 
             event.consume();

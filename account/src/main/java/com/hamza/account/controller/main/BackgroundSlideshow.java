@@ -1,5 +1,6 @@
 package com.hamza.account.controller.main;
 
+import lombok.extern.log4j.Log4j2;
 import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
 import javafx.application.Platform;
@@ -16,6 +17,7 @@ import java.nio.file.Path;
 import java.util.*;
 import java.util.stream.Collectors;
 
+@Log4j2
 public final class BackgroundSlideshow {
     private final Pane targetPane;
     private final boolean shuffle;          // set true if you want random order
@@ -43,7 +45,7 @@ public final class BackgroundSlideshow {
                         .collect(Collectors.toList());
             }
         } catch (IOException e) {
-            e.printStackTrace();
+            log.error("Could not read the slideshow images from {}", folder, e);
             return List.of();
         }
     }
@@ -69,7 +71,7 @@ public final class BackgroundSlideshow {
 
         this.images = readImages(folder);
         if (images.isEmpty()) {
-            System.out.println("No images found in: " + folder);
+            log.warn("No images found in: {}", folder);
             return;
         }
         if (shuffle) Collections.shuffle(images);

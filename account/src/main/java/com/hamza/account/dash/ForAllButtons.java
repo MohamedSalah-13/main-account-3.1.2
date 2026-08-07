@@ -33,7 +33,7 @@ public class ForAllButtons extends LoadData {
 
             @Override
             public void action() throws Exception {
-                Runtime.getRuntime().exec("Calc");
+                new ProcessBuilder("calc.exe").start();
             }
 
             @NotNull
@@ -49,7 +49,7 @@ public class ForAllButtons extends LoadData {
 
             @Override
             public void actionAddPaneToTabPane(TabPane tabPane) throws Exception {
-                Runtime.getRuntime().exec("Calc");
+                new ProcessBuilder("calc.exe").start();
             }
         };
     }

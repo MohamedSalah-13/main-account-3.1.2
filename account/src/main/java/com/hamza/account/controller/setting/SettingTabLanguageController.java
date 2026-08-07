@@ -259,7 +259,11 @@ public class SettingTabLanguageController implements Initializable {
 
     private void openSettingPrinter(String printerName) {
         try {
-            Runtime.getRuntime().exec("rundll32 printui.dll,PrintUIEntry /e /n \"" + printerName + "\"");
+            // Passed as separate arguments rather than one command line. exec(String)
+            // splits on whitespace and keeps the quotes as literal characters, so a
+            // printer whose name contains a space was never reached; ProcessBuilder
+            // hands each argument over whole and needs no quoting.
+            new ProcessBuilder("rundll32", "printui.dll,PrintUIEntry", "/e", "/n", printerName).start();
         } catch (IOException e) {
             log.error("Failed to open printer settings: {}", e.getMessage());
             AllAlerts.showExceptionDialog(e);
