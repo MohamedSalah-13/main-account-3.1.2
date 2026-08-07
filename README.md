@@ -1,5 +1,58 @@
 # main-account
 
+برنامج محاسبة ونقاط بيع لسطح المكتب، مبني على **JavaFX 21** وقاعدة بيانات **MySQL**.
+يغطي الفوترة (مبيعات ومشتريات ومرتجعات)، والمخازن والأصناف، وحسابات العملاء والموردين،
+والخزائن والمصروفات، والتقارير، مع واجهة عربية من اليمين إلى اليسار.
+
+## المتطلبات
+
+- Java 21
+- Maven
+- MySQL
+
+## البدء السريع
+
+```bash
+# 1. بناء المشروع
+mvn -o clean compile -DskipTests
+
+# 2. إعداد الاتصال بقاعدة البيانات (مطلوب قبل أول تشغيل)
+#    راجع docs/CONNECTION_SETUP.md
+
+# 3. التشغيل
+mvn -pl account javafx:run
+```
+
+**إعداد الاتصال:** يقرأ البرنامج بيانات الاتصال من ملف `config.xml` مشفَّر يجب إنشاؤه أولًا.
+الخطوات الكاملة — توليد المفتاح، إنشاء الملف، ترقية ملف قديم، وحلّ المشكلات — في
+**[docs/CONNECTION_SETUP.md](docs/CONNECTION_SETUP.md)**.
+
+**مخطّط قاعدة البيانات:** `account/src/main/resources/db/migrations/V000_genesis_baseline.sql`.
+
+### الأوامر الشائعة
+
+| الأمر | الوظيفة |
+|---|---|
+| `mvn -o clean compile -DskipTests` | بناء الوحدتين |
+| `mvn -pl account javafx:run` | تشغيل البرنامج |
+| `mvn clean package -DskipTests` | إنشاء ملف jar في `account/target/` |
+
+## بنية المشروع
+
+| الوحدة | الوصف |
+|---|---|
+| `account` | التطبيق: الواجهات، المتحكّمات، الخدمات، طبقة الوصول للبيانات |
+| `controlsfx` | مكتبة داخلية مشتركة: أصناف DAO الأساسية، إدارة الاتصال، التنبيهات، الجداول، الترجمة، التشفير |
+
+يعتمد المشروع أيضًا على مكتبة خارجية `fx-commons` تُبنى من مستودع منفصل.
+
+## الملفات الحسّاسة
+
+هذه الملفات **غير متتبَّعة في Git** ويجب أن تبقى كذلك:
+`config.xml` · `config.key` · `private_key.pem` · `license.dat` · `secret_key.txt`
+
+---
+
 ## توثيق تحديثات نظام النسخة التجريبية
 
 ### ملخص عام
@@ -87,26 +140,14 @@ echo "$payload_b64.$sig_b64" > license.dat
 reg query "HKLM\SOFTWARE\Microsoft\Cryptography" /v MachineGuid
 ```
 
-#### سكربت جاهز لجلب MachineGuid تلقائيًا
-```
-powershell -ExecutionPolicy Bypass -File scripts\get_machine_guid.ps1
-```
-
-#### سكربت جاهز لتوليد الترخيص
-استخدم:
-```
-powershell -ExecutionPolicy Bypass -File scripts\generate_license.ps1 -PrivateKeyPath .\private_key.pem -OutputPath .\license.dat
-```
-يمكن تمرير `-MachineGuid` يدويًا إن لزم.
-يمكن تمرير مسار OpenSSL إن لم يكن في PATH:
-```
-powershell -ExecutionPolicy Bypass -File scripts\generate_license.ps1 -PrivateKeyPath .\private_key.pem -OutputPath .\license.dat -OpenSslPath "C:\Program Files\OpenSSL-Win64\bin\openssl.exe"
-```
-للتحقق التلقائي بعد التوليد:
-```
-powershell -ExecutionPolicy Bypass -File scripts\generate_license.ps1 -PrivateKeyPath .\private_key.pem -OutputPath .\license.dat -Verify
-```
-التحقق يستخدم المفتاح العام المستخرج من المفتاح الخاص ويتأكد أن التوقيع صالح قبل حفظ الملف.
+> ℹ️ **ملاحظة:** كان هذا القسم يوثّق سكربتَي `scripts\get_machine_guid.ps1` و`scripts\generate_license.ps1`،
+> لكنهما لم يعودا موجودين في المستودع (حُذفا في `416cd00`). استخدم خطوات OpenSSL اليدوية أعلاه إلى أن
+> يُعاد إضافتهما. يمكن استرجاع نسخة منهما من التاريخ عند الحاجة:
+>
+> ```bash
+> git show 416cd00^:scripts/generate_license.ps1 > scripts/generate_license.ps1
+> git show 416cd00^:scripts/get_machine_guid.ps1 > scripts/get_machine_guid.ps1
+> ```
 
 ### تحديثات الترخيص (2026-03-01)
 - تم إصلاح توليد التوقيع لمنع تلف البايتات عند تمرير النتائج عبر الـ pipeline في PowerShell.
@@ -119,7 +160,7 @@ powershell -ExecutionPolicy Bypass -File scripts\generate_license.ps1 -PrivateKe
 
 ### الملفات المتأثرة
 - `account/src/main/java/com/hamza/account/trial/TrialManager.java`
-- `scripts/generate_license.ps1`
+- `scripts/generate_license.ps1` (محذوف حاليًا — راجع الملاحظة أعلاه)
 
 ### ملاحظات تشغيل
 1. إذا كان ملف النسخة التجريبية غير موجود بعد أول تشغيل، يتم منع فتح البرنامج.
