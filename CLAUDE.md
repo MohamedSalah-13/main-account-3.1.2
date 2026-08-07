@@ -17,6 +17,10 @@ mvn clean package -DskipTests      # shaded jar in account/target/
 
 mvn -o -pl controlsfx test -Dtest=CryptoDatabaseConfigTest              # one class
 mvn -o -pl controlsfx test -Dtest='CryptoDatabaseConfigTest$KeyFile'    # one nested class
+
+# account depends on controlsfx, so -pl account needs -am or it compiles against
+# whatever stale controlsfx is in ~/.m2 and fails on anything added since:
+mvn -o -pl account -am test -Dtest=ScheduledBackupTest -Dsurefire.failIfNoSpecifiedTests=false
 ```
 
 `mvn -o` (offline) works — the local repository is populated.
