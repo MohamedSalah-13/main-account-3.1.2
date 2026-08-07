@@ -82,7 +82,6 @@
         <MenuItem fx:id="menuItemArea" mnemonicParsing="false" text="Area"/>
         <SeparatorMenuItem mnemonicParsing="false"/>
         <MenuItem fx:id="menuItemInventory" mnemonicParsing="false" text="Inventory"/>
-        <MenuItem fx:id="menuItemMiniQuantity" mnemonicParsing="false" text="Mini Quantity Items"/>
     </Menu>
 
     <Menu fx:id="menuCustomer" mnemonicParsing="false" text="Customer">

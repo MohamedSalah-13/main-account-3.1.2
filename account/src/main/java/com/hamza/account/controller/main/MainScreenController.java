@@ -4,7 +4,6 @@ import com.hamza.account.config.FxmlConstants;
 import com.hamza.account.controller.others.ServiceRegistry;
 import com.hamza.account.controller.reports.ModernDashboardApp;
 import com.hamza.account.controller.reports.MonthlySalesInterface;
-import com.hamza.account.features.notification.ItemNotifications;
 import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.model.dao.MonthlySalesViewDao;
 import com.hamza.account.model.domain.ItemsMiniQuantity;
@@ -30,20 +29,19 @@ import javafx.scene.control.*;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.*;
-import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 import lombok.Getter;
 import lombok.extern.log4j.Log4j2;
 import org.jetbrains.annotations.NotNull;
 
-import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.ResourceBundle;
 
-import static com.hamza.account.config.PropertiesName.*;
+import static com.hamza.account.config.PropertiesName.getPathImageMainScreen;
+import static com.hamza.account.config.PropertiesName.getShowMainTotals;
 
 @Log4j2
 public class MainScreenController extends MainItems implements Initializable {
@@ -91,9 +89,6 @@ public class MainScreenController extends MainItems implements Initializable {
             if (getShowMainTotals()) firstBoxInMain();
         }
 
-        // check to show
-        notifyItems();
-
         // data publisher
         var name = LogApplication.usersVo.getUsername();
         publisherAddUser.setAvailability(name);
@@ -108,20 +103,6 @@ public class MainScreenController extends MainItems implements Initializable {
 
     }
 
-    private void notifyItems() {
-        Thread thread = new Thread(() -> {
-
-            if (getItemShowAlert()) {
-                var size = getItemsMiniQuantities().size();
-                if (size > 0) {
-                    new ItemNotifications(getItemsMiniQuantities());
-                }
-            }
-        });
-
-        thread.start();
-    }
-
     private java.util.List<ItemsMiniQuantity> getItemsMiniQuantities() {
         try {
             ItemMiniQuantityService itemMiniQuantityService = ServiceRegistry.get(ItemMiniQuantityService.class);
@@ -134,8 +115,6 @@ public class MainScreenController extends MainItems implements Initializable {
 
     private void otherSetting() {
         try {
-            //TODO 5/9/2026 10:15 AM Mohamed:  check when log out
-//            borderPane.setBottom(fxmlTimePane.load());
             tabPane.getTabs().getFirst().setText(Setting_Language.WORD_MAIN);
             tabPane.getTabs().getFirst().setClosable(false);
             getRightPane();
@@ -239,7 +218,6 @@ public class MainScreenController extends MainItems implements Initializable {
         menuButtonSetting.initializeMenuItem(menuController.getMenuItemAddItemFromExcel(), getItemsButtons().addItemsFromExcel());
         menuButtonSetting.initializeMenuItem(menuController.getMenuItemUnit(), getItemsButtons().units());
         menuButtonSetting.initializeMenuItem(menuController.getMenuItemInventory(), getItemsButtons().inventory());
-        menuButtonSetting.initializeMenuItem(menuController.getMenuItemMiniQuantity(), getItemsButtons().miniQuantityItems(getItemsMiniQuantities()));
         menuButtonSetting.initializeMenuItem(menuController.getMenuItemMainGroup(), getItemsButtons().addMainGroup());
         menuButtonSetting.initializeMenuItem(menuController.getMenuItemSupGroup(), getItemsButtons().addSubGroup());
         menuButtonSetting.initializeMenuItem(menuController.getMenuItemConvertStock(), getItemsButtons().convertStock());
@@ -344,17 +322,8 @@ public class MainScreenController extends MainItems implements Initializable {
 
             @Override
             public void actionAddPaneToTabPane(TabPane tabPane) throws Exception {
-//                var setting24 = new Image_Setting().shoppingPurchase;
-//                if (name.equals(sales))
-//                    setting24 = new Image_Setting().shoppingSales;
-//
-//                addTape(tabPane, new OpenFxmlApplication(controller).getPane(), textName(), setting24);
             }
 
-//            @Override
-//            public boolean showOnTapPane() {
-//                return true;
-//            }
         };
     }
 
@@ -415,45 +384,11 @@ public class MainScreenController extends MainItems implements Initializable {
         }
     }
 
-    private void selectBackgroundImage() {
-        FileChooser fileChooser = new FileChooser();
-        fileChooser.getExtensionFilters().add(
-                new FileChooser.ExtensionFilter("Image Files", "*.jpg", "*.png")
-        );
-        File selectedFile = fileChooser.showOpenDialog(null);
-        if (selectedFile != null) {
-            try {
-                setPathImageMainScreen(selectedFile.getPath());
-                setBackgroundImage();
-            } catch (Exception e) {
-                logException(e);
-            }
-        }
-    }
-
     private void logException(Exception e) {
         log.error("{} - {}", e.getMessage(), this.getClass().getName(), e);
         AllAlerts.showExceptionDialog(e);
     }
 
-    private void action() {
-//        btnAnyDesk.setOnAction(e -> {
-//            try {
-//                var file = new File("program/AnyDesk.exe");
-//                if (!file.exists()) {
-//                    throw new FileNotFoundException("File not found");
-//                }
-//                Desktop.getDesktop().open(file);
-//            } catch (IOException ex) {
-//                logException(ex);
-//            }
-//        });
-
-//        btnAnyDesk.setTooltip(new Tooltip("Program AnyDesk"));
-//        btnChooseImage.setTooltip(new Tooltip("تغيير الخلفية"));
-//        btnChooseImage.setOnAction(e -> selectBackgroundImage());
-//        btnChooseImage.setOnAction(e -> onChooseFolderClick());
-    }
 
     private void dontShowData() {
         var permissionDisableService = new DisableButtons.PermissionDisableService();
@@ -462,16 +397,6 @@ public class MainScreenController extends MainItems implements Initializable {
 
     }
 
-    private void showImage() {
-        slideshow = new BackgroundSlideshow(mainPane, /*shuffle*/ false, /*refreshEachCycle*/ true);
-        // Create context menu for slideshow control
-        MenuItem nextImageItem = new MenuItem("Next Image");
-        nextImageItem.setOnAction(e -> slideshow.showNextImage());
-        slideshowMenu.getItems().add(nextImageItem);
-        mainPane.setOnContextMenuRequested(e ->
-                slideshowMenu.show(mainPane, e.getScreenX(), e.getScreenY())
-        );
-    }
 
     private void addTabContextMenu() {
         tabPane.getTabs().forEach(this::addContextMenuToTab);

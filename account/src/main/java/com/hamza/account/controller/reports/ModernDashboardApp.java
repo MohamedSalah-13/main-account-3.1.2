@@ -4,13 +4,8 @@ import com.hamza.account.Main;
 import com.hamza.account.config.Image_Setting;
 import com.hamza.account.config.ThemeManager;
 import com.hamza.account.controller.main.DataPublisher;
-import com.hamza.account.features.notification.NotifyItemAlert;
 import com.hamza.account.model.dao.DaoFactory;
-import com.hamza.account.model.domain.CustomerReceivable;
-import com.hamza.account.model.domain.DailyDashboardReport;
-import com.hamza.account.model.domain.ItemsMiniQuantity;
-import com.hamza.account.model.domain.TopSellingItem;
-import com.hamza.account.model.domain.TreasuryBalance;
+import com.hamza.account.model.domain.*;
 import com.hamza.account.view.OpenTreasuryDetailsApplication;
 import com.hamza.account.view.SceneAll;
 import com.hamza.account.view.StageManager;
@@ -177,7 +172,7 @@ public class ModernDashboardApp {
                 .valueColor(lowStockItems.isEmpty() ? tileValueColor : Tile.RED)
                 .barColor(Tile.RED)
                 .build();
-        makeClickable(lowStockTile, this::openLowStockItems);
+//        makeClickable(lowStockTile, this::openLowStockItems);
 
         List<CustomerReceivable> receivables = daoFactory.customerReceivableDao().getReceivablesReport();
         double totalReceivable = receivables.stream().mapToDouble(CustomerReceivable::getTotalReceivable).sum();
@@ -367,10 +362,6 @@ public class ModernDashboardApp {
                 log.error("Failed to open dashboard tile detail screen", ex);
             }
         });
-    }
-
-    private void openLowStockItems() throws Exception {
-        new NotifyItemAlert(daoFactory.itemMiniDao().loadAll()).action();
     }
 
     private void openCustomerReceivables() throws Exception {

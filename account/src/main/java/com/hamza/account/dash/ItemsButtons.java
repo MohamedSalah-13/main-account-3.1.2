@@ -11,9 +11,7 @@ import com.hamza.account.controller.items.UnitsController;
 import com.hamza.account.controller.main.ButtonWithPerm;
 import com.hamza.account.controller.main.DataPublisher;
 import com.hamza.account.controller.others.ImportDataFromExcelFileController;
-import com.hamza.account.features.notification.NotifyItemAlert;
 import com.hamza.account.model.dao.DaoFactory;
-import com.hamza.account.model.domain.ItemsMiniQuantity;
 import com.hamza.account.openFxml.OpenFxmlApplication;
 import com.hamza.account.table.TableOpen;
 import com.hamza.account.type.UserPermissionType;
@@ -24,8 +22,6 @@ import com.hamza.controlsfx.language.Setting_Language;
 import javafx.scene.control.TabPane;
 import javafx.stage.Stage;
 import org.jetbrains.annotations.NotNull;
-
-import java.util.List;
 
 public class ItemsButtons {
 
@@ -159,29 +155,6 @@ public class ItemsButtons {
             public boolean showOnTapPane() {
                 return true;
             }
-        };
-    }
-
-    public ButtonWithPerm miniQuantityItems(List<ItemsMiniQuantity> itemsMiniQuantityList) {
-        var notifyItemAlert = new NotifyItemAlert(itemsMiniQuantityList);
-        return new ButtonWithPerm() {
-
-            @Override
-            public UserPermissionType getPermissionType() {
-                return UserPermissionType.ITEMS_SHOW;
-            }
-
-            @Override
-            public void action() throws Exception {
-                notifyItemAlert.action();
-            }
-
-            @NotNull
-            @Override
-            public String textName() {
-                return notifyItemAlert.runningOutItemsMessage;
-            }
-
         };
     }
 

@@ -24,8 +24,6 @@ import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.excel.ExportData;
 import com.hamza.controlsfx.language.Setting_Language;
-import com.hamza.controlsfx.notifications.NotificationAction;
-import com.hamza.controlsfx.notifications.NotificationAdd;
 import com.hamza.controlsfx.others.CssToColorHelper;
 import com.hamza.controlsfx.others.DateSetting;
 import com.hamza.controlsfx.table.TableColumnAnnotation;
@@ -38,7 +36,6 @@ import javafx.collections.transformation.FilteredList;
 import javafx.collections.transformation.SortedList;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
-import javafx.scene.Node;
 import javafx.scene.control.*;
 import javafx.scene.input.Clipboard;
 import javafx.scene.input.ClipboardContent;
@@ -372,28 +369,6 @@ public class TotalsController<T1 extends BasePurchasesAndSales, T2 extends BaseT
             final ClipboardContent clipboardContent = new ClipboardContent();
             clipboardContent.putString(content);
             clipboard.setContent(clipboardContent);
-
-            new NotificationAdd(new NotificationAction() {
-                @Override
-                public String titleName() {
-                    return "تم نسخ بيانات الفاتورة ";
-                }
-
-                @Override
-                public String text() {
-                    return content;
-                }
-
-                @Override
-                public Node graphic_design() {
-                    return null;
-                }
-
-                @Override
-                public void action() {
-
-                }
-            });
         }
     }
 

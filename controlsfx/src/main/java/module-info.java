@@ -28,7 +28,6 @@ module com.hamza.controlsfx {
     exports com.hamza.controlsfx.button;
     exports com.hamza.controlsfx.button.api;
     exports com.hamza.controlsfx.button.button_column;
-    exports com.hamza.controlsfx.notifications;
     exports com.hamza.controlsfx.table;
     exports com.hamza.controlsfx.interfaceData;
     exports com.hamza.controlsfx.view;

@@ -40,8 +40,6 @@ import com.hamza.controlsfx.database.DaoList;
 import com.hamza.controlsfx.interfaceData.AppSettingInterface;
 import com.hamza.controlsfx.language.Error_Text_Show;
 import com.hamza.controlsfx.language.Setting_Language;
-import com.hamza.controlsfx.notifications.NotificationAction;
-import com.hamza.controlsfx.notifications.NotificationAdd;
 import com.hamza.controlsfx.others.DateSetting;
 import com.hamza.controlsfx.others.DoubleSetting;
 import com.hamza.controlsfx.others.Utils;
@@ -194,6 +192,7 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
             stackPane.getStyleClass().add("invoice-purchases");
         }
     }
+
     private void buttonGraphic() {
         var images = new Image_Setting();
         btnNew.setGraphic(createIcon(images.add));
@@ -557,39 +556,9 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
             myObservableList.add(object);
         }
 
-        if (dataInterface.designInterface().showDataForCustomer()) {
-            notifyItems(model);
-        }
-
         sumTotals();
 //        numItem = 0;
         return 1;
-    }
-
-    private void notifyItems(ItemsModel itemsModel) {
-        if (itemsModel.getSumAllBalance() == itemsModel.getMini_quantity())
-            new NotificationAdd(new NotificationAction() {
-                @Override
-                public String titleName() {
-                    return " رصيد قارب على الانتهاء";
-                }
-
-                @Override
-                public String text() {
-                    return itemsModel.getNameItem() + " :" + itemsModel.getSumAllBalance();
-                }
-
-                @Override
-                public Node graphic_design() {
-                    return null;
-                }
-
-                @Override
-                public void action() {
-
-                }
-            });
-
     }
 
     private void addData() {
