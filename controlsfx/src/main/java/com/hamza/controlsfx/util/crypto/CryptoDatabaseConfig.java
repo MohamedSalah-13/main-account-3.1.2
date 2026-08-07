@@ -15,7 +15,9 @@ import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
 import java.io.File;
 import java.io.FileWriter;
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.util.Base64;
 import java.util.HashMap;
 import java.util.Scanner;
@@ -31,8 +33,27 @@ public class CryptoDatabaseConfig {
     public static final String PORT = "port";
     public static final String KEY = "key";
     private static final String ALGORITHM = "AES";
+
+    /** Environment variable holding the Base64 AES key, checked first. */
+    public static final String KEY_ENV_VAR = "ACCOUNT_CONFIG_KEY";
+    /** Key file resolved against the working directory, like config.xml itself. */
+    public static final String KEY_FILE = "config.key";
+    /**
+     * The key every config.xml already in the field was encrypted with. It is the
+     * last fallback rather than the only option: changing this value would make
+     * those files unreadable, so it stays put until each install has been
+     * re-encrypted under a key of its own.
+     */
+    private static final String FALLBACK_KEY = "nZdjCubzMZs+/RU1XDr/7g==";
+
     private final SecretKey secretKey;
 
+    /**
+     * Mints a brand new random key. Only useful for generating a key to hand to
+     * {@link #KEY_ENV_VAR} or {@value #KEY_FILE}: anything encrypted with it is
+     * unreadable by the application unless that key is installed there too, so
+     * do not use this to write a config.xml.
+     */
     public CryptoDatabaseConfig() throws Exception {
         // Generate a secret key for AES encryption
         KeyGenerator keyGenerator = KeyGenerator.getInstance(ALGORITHM);
@@ -48,10 +69,65 @@ public class CryptoDatabaseConfig {
 //                .digest("nZdjCubzMZs+/RU1XDr/7g==".getBytes()), "AES");
     }
 
+    /**
+     * The key both the CLI and the running application encrypt and decrypt
+     * config.xml with, so that a file written here loads at startup. Looked up in
+     * the environment first, then in {@value #KEY_FILE} next to the working
+     * directory, then falling back to the key existing installs already use.
+     */
+    public static String resolveConfigKey() {
+        String fromEnv = System.getenv(KEY_ENV_VAR);
+        if (fromEnv != null && !fromEnv.isBlank()) {
+            return validateKey(fromEnv.trim(), "environment variable " + KEY_ENV_VAR);
+        }
+
+        File keyFile = new File(KEY_FILE);
+        if (keyFile.isFile()) {
+            String fromFile;
+            try {
+                fromFile = Files.readString(keyFile.toPath(), StandardCharsets.UTF_8).trim();
+            } catch (IOException e) {
+                throw new IllegalStateException("Could not read the AES key from " + keyFile.getAbsolutePath(), e);
+            }
+            if (!fromFile.isEmpty()) {
+                return validateKey(fromFile, "key file " + keyFile.getAbsolutePath());
+            }
+        }
+
+        return FALLBACK_KEY;
+    }
+
+    /** Where {@link #resolveConfigKey()} is about to read the key from, for logging. */
+    public static String describeConfigKeySource() {
+        String fromEnv = System.getenv(KEY_ENV_VAR);
+        if (fromEnv != null && !fromEnv.isBlank()) {
+            return "environment variable " + KEY_ENV_VAR;
+        }
+        File keyFile = new File(KEY_FILE);
+        if (keyFile.isFile()) {
+            return "key file " + keyFile.getAbsolutePath();
+        }
+        return "the built-in default key";
+    }
+
+    private static String validateKey(String base64Key, String source) {
+        byte[] decoded;
+        try {
+            decoded = Base64.getDecoder().decode(base64Key);
+        } catch (IllegalArgumentException e) {
+            throw new IllegalStateException("The AES key from " + source + " is not valid Base64", e);
+        }
+        if (decoded.length != 16 && decoded.length != 24 && decoded.length != 32) {
+            throw new IllegalStateException("The AES key from " + source + " decodes to " + decoded.length
+                    + " bytes; AES needs 16, 24 or 32.");
+        }
+        return base64Key;
+    }
+
     public static void main(String[] args) {
         try {
 
-            CryptoDatabaseConfig encryptor = new CryptoDatabaseConfig();
+            CryptoDatabaseConfig encryptor = new CryptoDatabaseConfig(resolveConfigKey());
             if (args.length < 1) {
                 System.out.println("Usage: java CryptoDatabaseConfig <encrypt|decrypt>");
                 System.exit(1);
@@ -83,7 +159,8 @@ public class CryptoDatabaseConfig {
                         "com.mysql.cj.jdbc.Driver"
                 );
 
-                System.out.println("Encrypted database configuration saved to XML file.");
+                System.out.println("Encrypted database configuration saved to " + fileName
+                        + ", using " + describeConfigKeySource() + ".");
             }
 
             if (encrypt.equals("decrypt")) {
@@ -195,7 +272,9 @@ public class CryptoDatabaseConfig {
         StreamResult result = new StreamResult(new File(filePath));
         transformer.transform(source, result);
 
-        // Write the secret key into a separate file
+        // Record which key this file was encrypted under, so a config.xml that
+        // stops loading can be matched against the key in use. Reading it back is
+        // deliberately not automatic: see resolveConfigKey.
         try (FileWriter writer = new FileWriter("secret_key.txt", false)) {
             writer.write(Base64.getEncoder().encodeToString(secretKey.getEncoded()));
         }

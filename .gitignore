@@ -14,6 +14,8 @@ license.dat
 secret_key.txt
 # database credentials, resolved against the working directory at startup
 config.xml
+# per-install AES key for config.xml, when overriding the built-in default
+config.key
 
 ### STS ###
 .apt_generated

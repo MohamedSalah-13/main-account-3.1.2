@@ -11,11 +11,22 @@
 
   Every value below is AES-encrypted and Base64-encoded, not plain text - the
   loader decrypts each element before use, so plain values fail at startup.
-  CryptoDatabaseConfig.saveEncryptedConfigToXML writes a file in this shape.
-  Note that its main() builds the encryptor with the no-arg constructor, which
-  generates a fresh random key and dumps it to secret_key.txt, while
-  ConnectionToDatabase decrypts with a key hardcoded in its source. Those two
-  keys have to match, or the generated file will not load.
+  Generate a real file with the CLI, which prints which key it used:
+
+    java -cp controlsfx/target/classes \
+      com.hamza.controlsfx.util.crypto.CryptoDatabaseConfig \
+      encrypt <port> <host> <dbname> <username> <password> config.xml
+
+  The CLI and the application now resolve the same key through
+  CryptoDatabaseConfig.resolveConfigKey: the ACCOUNT_CONFIG_KEY environment
+  variable if set, otherwise a config.key file next to config.xml, otherwise the
+  built-in default. Both are read in the JVM working directory, so run the CLI
+  from wherever the application launches and the file it writes will load.
+  Installs that predate config.key keep working on the built-in default.
+
+  secret_key.txt records the key each run encrypted with, for diagnosing a
+  config.xml that stopped loading. It is never read back automatically - to
+  switch keys, put the value in ACCOUNT_CONFIG_KEY or config.key and re-encrypt.
 
   url is "jdbc:mysql://<host>:<port>/<dbname>" and driver is
   "com.mysql.cj.jdbc.Driver" before encryption.
