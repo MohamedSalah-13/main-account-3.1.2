@@ -1,5 +1,6 @@
 package com.hamza.account.security;
 
+import lombok.extern.log4j.Log4j2;
 import org.mindrot.jbcrypt.BCrypt;
 
 /**
@@ -7,6 +8,7 @@ import org.mindrot.jbcrypt.BCrypt;
  * introduced keep working; {@link #matches} reports that case via
  * {@link Result#legacyPlaintext()} so the caller can re-hash and persist it.
  */
+@Log4j2
 public final class PasswordHasher {
 
     private PasswordHasher() {
@@ -19,7 +21,17 @@ public final class PasswordHasher {
     public static Result matches(String plainPassword, String storedValue) {
         if (storedValue == null) return new Result(false, false);
         if (isBcryptHash(storedValue)) {
-            return new Result(BCrypt.checkpw(plainPassword, storedValue), false);
+            try {
+                return new Result(BCrypt.checkpw(plainPassword, storedValue), false);
+            } catch (IllegalArgumentException e) {
+                // isBcryptHash recognises the $2b$ and $2y$ revisions, which jBCrypt
+                // cannot verify - it rejects them with "Invalid salt revision". Such a
+                // hash reaches here only if it was written by something other than this
+                // application, but letting the exception out turns a failed sign-in into
+                // a crash. Refusing the attempt is the safe reading.
+                log.error("Stored password hash cannot be verified: {}", e.getMessage());
+                return new Result(false, false);
+            }
         }
         boolean matched = storedValue.equals(plainPassword);
         return new Result(matched, matched);
