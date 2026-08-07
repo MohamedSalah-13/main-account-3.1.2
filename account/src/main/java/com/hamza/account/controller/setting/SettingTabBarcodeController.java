@@ -1,6 +1,5 @@
 package com.hamza.account.controller.setting;
 
-import com.hamza.account.config.FxmlConstants;
 import com.hamza.account.controller.others.ServiceRegistry;
 import com.hamza.account.features.checkbox.api.CheckBox_Setting;
 import com.hamza.account.features.checkbox.impl.setting.BarcodePrintDoubleLabel;
@@ -17,23 +16,19 @@ import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.language.Setting_Language;
 import com.hamza.controlsfx.observer.Publisher;
-import javafx.beans.property.DoubleProperty;
-import javafx.beans.property.SimpleDoubleProperty;
 import javafx.collections.FXCollections;
-import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
-import javafx.fxml.FXMLLoader;
 import javafx.fxml.Initializable;
-import javafx.geometry.Pos;
-import javafx.scene.control.*;
+import javafx.scene.control.CheckBox;
+import javafx.scene.control.ComboBox;
+import javafx.scene.control.Label;
+import javafx.scene.control.TextField;
 import javafx.scene.layout.BorderPane;
-import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.jetbrains.annotations.NotNull;
 
-import java.io.IOException;
 import java.net.URL;
 import java.util.HashMap;
 import java.util.List;
@@ -52,10 +47,7 @@ public class SettingTabBarcodeController implements Initializable {
     private final CheckPrintBarcode checkPrintBarcode = new CheckPrintBarcode();
     private final BarcodePrintDoubleLabel barcodePrintDoubleLabel = new BarcodePrintDoubleLabel();
     private final BarcodePrintName barcodePrintName = new BarcodePrintName();
-    private final DoubleProperty v1 = new SimpleDoubleProperty(0);
-    private final DoubleProperty v2 = new SimpleDoubleProperty(0);
-    private final DoubleProperty v3 = new SimpleDoubleProperty(0);
-    private final DoubleProperty v4 = new SimpleDoubleProperty(0);
+
     private final DaoFactory daoFactory;
     private final Publisher<HashMap<Integer, String>> publisher;
     @FXML
@@ -72,7 +64,6 @@ public class SettingTabBarcodeController implements Initializable {
     private TextField textBarcodeStart, textCountScale, textCountBarcode, textCountItem;
     @FXML
     private TextField textPrice1, textPrice2, textPrice3;
-    private VBox boxFirst;
 
     @Override
     public void initialize(URL url, ResourceBundle resourceBundle) {
@@ -85,13 +76,6 @@ public class SettingTabBarcodeController implements Initializable {
     }
 
     private void otherSetting() {
-        boxFirst = getLabelBarcode();
-//        boxLast = getLabelBarcode();
-        box.getChildren().add(boxFirst);
-        borderPane.setTop(boxSpinner(Setting_Language.TOP, v1));
-        borderPane.setBottom(boxSpinner(Setting_Language.BOTTOM, v3));
-        borderPane.setLeft(boxSpinner(Setting_Language.RIGHT, v4));
-        borderPane.setRight(boxSpinner(Setting_Language.LEFT, v2));
         labelMain.setText(Setting_Language.WORD_MAIN_G);
         labelSub.setText(Setting_Language.WORD_SUB_G);
         labelType.setText(Setting_Language.UNITS);
@@ -146,38 +130,6 @@ public class SettingTabBarcodeController implements Initializable {
         new CheckBox_Setting(showBarcode, checkPrintBarcode);
     }
 
-    private HBox boxSpinner(String string, DoubleProperty v) {
-        HBox hBox = new HBox(5);
-        hBox.setSpacing(5);
-        hBox.setAlignment(Pos.CENTER);
-        ObservableList<VBox> children = FXCollections.observableArrayList();
-        children.addAll(boxFirst);
-        hBox.getChildren().addAll(new Label(string), integerSpinner(children, v));
-        return hBox;
-    }
-
-    private Spinner<Integer> integerSpinner(ObservableList<VBox> node, DoubleProperty v) {
-        Spinner<Integer> spinner = new Spinner<>();
-        spinner.setPrefWidth(80);
-        spinner.setValueFactory(new SpinnerValueFactory.IntegerSpinnerValueFactory(1, 10));
-        return spinner;
-    }
-
-    private VBox getLabelBarcode() {
-        try {
-            FXMLLoader fxmlLoader = new FxmlConstants().labelBarcode;
-            VBox load = fxmlLoader.load();
-            LabelBarcodeController barcodeController = fxmlLoader.getController();
-            barcodeController.showNameProperty().bind(showName.selectedProperty().not());
-            barcodeController.showBarcodeProperty().bind(showBarcode.selectedProperty().not());
-            barcodeController.showPriceProperty().bind(showPrice.selectedProperty().not());
-            return load;
-        } catch (IOException e) {
-            AllAlerts.showExceptionDialog(e);
-            log.error(e.getMessage(), e);
-        }
-        return null;
-    }
 
     private void comboSetting(DaoFactory daoFactory) {
         SupGroupService supGroupService = new SupGroupService(daoFactory);
