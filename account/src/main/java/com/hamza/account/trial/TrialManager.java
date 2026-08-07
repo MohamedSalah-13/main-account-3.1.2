@@ -94,19 +94,29 @@ public class TrialManager {
                 }
             }
 
-            if (!trialFileExists && dbExists) {
-                failAndExit("Trial data not found in file but exists in database. Please contact support.");
-                return;
-            }
-
-            if (trialFileExists && !dbExists) {
-                failAndExit("Trial data exists in file but not in database. Please contact support.");
-                return;
-            }
-
             if (!trialFileExists && !dbExists) {
                 LocalDate now = LocalDate.now();
                 saveInstallationData(now, machineId);
+                dbData = getTrialDataFromDb();
+                fileData = getTrialDataFromFile();
+            } else if (trialFileExists != dbExists) {
+                /*
+                 * One side is missing while the other still holds the trial. This used
+                 * to end the trial permanently, but it is the ordinary result of
+                 * reinstalling the application, of a new Windows profile, or of
+                 * restoring a database backup - none of which are tampering, and all of
+                 * which a customer can reach without trying.
+                 *
+                 * The surviving side is rewritten to both, keeping the installation date
+                 * it already carries. Deleting either side therefore restores the same
+                 * trial rather than starting a new one, which is the property the
+                 * two-sided check existed to protect. Erasing both is still a fresh
+                 * trial, but that is indistinguishable from a first run and always was.
+                 */
+                LocalDate knownDate = dbExists ? dbData.date : fileData.date;
+                log.warn("Trial data found on only one side ({}); restoring it from the installation date {}",
+                        dbExists ? "database" : "file", knownDate);
+                saveInstallationData(knownDate, machineId);
                 dbData = getTrialDataFromDb();
                 fileData = getTrialDataFromFile();
             } else {

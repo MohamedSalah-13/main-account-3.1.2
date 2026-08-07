@@ -10,11 +10,13 @@ import com.hamza.account.service.version.DatabaseMigrationService;
 import com.hamza.account.service.version.MigrationResult;
 import com.hamza.account.trial.TrialManager;
 import com.hamza.controlsfx.alert.AllAlerts;
+import com.hamza.controlsfx.database.ConnectionManager;
 import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.util.FontsSetting;
 import javafx.application.Application;
 import javafx.stage.Stage;
 
+import java.sql.Connection;
 import java.sql.SQLException;
 import lombok.extern.log4j.Log4j2;
 
@@ -36,10 +38,10 @@ public class DownLoadApplication extends Application {
         connectionToDatabase = new ConnectionToDatabase();
 //        updateDatabaseIfNeeded();
         daoFactory = getDaoFactory();
+        checkTrialStatus();
 //        AlertSetting.setStylesheets(ThemeManager.getStylesheet());
         ThemeManager.initialize();
 
-        System.out.println(1);
         ServiceRegistry.register(ItemsService.class, new ItemsService(daoFactory));
         ServiceRegistry.register(StockService.class, new StockService(daoFactory));
         ServiceRegistry.register(StockTransferService.class, new StockTransferService(daoFactory));
@@ -79,7 +81,6 @@ public class DownLoadApplication extends Application {
         ServiceRegistry.register(SalesService.class, new SalesService(daoFactory));
         ServiceRegistry.register(SalesReService.class, new SalesReService(daoFactory));
 
-        System.out.println(2);
 
     }
 
@@ -129,6 +130,31 @@ public class DownLoadApplication extends Application {
             System.exit(0);
         }
         return null;
+    }
+
+    /**
+     * Enforces the trial before the UI opens. A valid license.dat short-circuits
+     * the whole check, so a licensed install never reaches the trial rules.
+     * <p>
+     * The per-record limits in the DAOs - items, customers, sales, purchases -
+     * were being enforced the whole time this was switched off, which left an
+     * unlicensed copy running forever but capped at ten items. Running the check
+     * again puts the time limit back alongside them.
+     */
+    private static void checkTrialStatus() {
+        Connection connection = null;
+        try {
+            connection = ConnectionManager.acquire();
+            new TrialManager(connection).checkTrialStatus();
+        } catch (SQLException e) {
+            // Reachability was just confirmed by getDaoFactory, so this is not the
+            // database being down. TrialManager swallows its own errors rather than
+            // locking the user out of a program they may have paid for, and this
+            // follows it.
+            log.error("Could not verify the trial status", e);
+        } finally {
+            ConnectionManager.release(connection);
+        }
     }
 
     public static BackupService loadBackupService() {
