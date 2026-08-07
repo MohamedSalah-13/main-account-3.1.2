@@ -15,15 +15,11 @@ import javafx.stage.FileChooser;
 
 import java.awt.*;
 import java.io.File;
-import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.time.temporal.ChronoUnit;
 import java.util.Optional;
 import java.util.prefs.Preferences;
 
-import static com.hamza.account.backup.ScheduledBackup.BACKUP_PATH;
-import static com.hamza.account.backup.ScheduledBackup.ENCRYPTION_PASSWORD;
 
 public class BackupController {
     @FXML
@@ -55,20 +51,20 @@ public class BackupController {
     public void initialize() {
         prefs = Preferences.userNodeForPackage(BackupController.class);
         // تعبئة القيم المحفوظة
-        backupPathField.setText(BACKUP_PATH);
-        encryptionPasswordField.setText(ENCRYPTION_PASSWORD);
+        backupPathField.setText(ScheduledBackup.backupPath());
+        encryptionPasswordField.setText(ScheduledBackup.encryptionPassword());
         intervalCombo.getItems().addAll("معطل", "كل ساعة", "كل ساعتين", "كل 6 ساعات", "كل يوم");
-        String savedInterval = prefs.get("interval", "معطل");
-        intervalCombo.setValue(savedInterval);
+        intervalCombo.setValue(ScheduledBackup.interval());
 
-        // تهيئة BackupService عند توفر المعلومات (يمكن تمريرها عبر setter)
-        // مثلاً: backupService = new BackupService(dbHost,dbPort,dbName,dbUser,dbPassword, encryptionPasswordField.getText());
-
-        // عند تغيير كلمة المرور نحدث الخدمة (بسيط)
+        // عند تغيير كلمة المرور نحفظها ونحدث الخدمة
         encryptionPasswordField.textProperty().addListener((obs, oldVal, newVal) -> {
+            // Saving used to be skipped whenever backupService was still null, which
+            // is its state until initConnection runs - so a password typed before
+            // then was silently dropped. The stored password also has to reach the
+            // running service, which kept using the one it was built with.
+            prefs.put("encryptionPassword", newVal);
             if (backupService != null) {
-                // تحديث كلمة المرور في BackupService (يمكن إضافة setter)
-                prefs.put("encryptionPassword", newVal);
+                updateBackupService();
             }
         });
     }
@@ -108,8 +104,6 @@ public class BackupController {
         File dir = new File(backupPathField.getText());
         if (!dir.exists()) dir.mkdirs();
 
-        deleteOldBackupFiles(dir, 30);
-
         // إنشاء المهمة
         Task<File> task = new Task<>() {
             @Override
@@ -126,6 +120,9 @@ public class BackupController {
 
         task.setOnSucceeded(e -> {
             File result = task.getValue();
+            // Only once the new copy exists, so a failed backup cannot take the
+            // existing ones down with it.
+            ScheduledBackup.pruneOldBackups(dir, ScheduledBackup.MAX_BACKUP_FILES);
             setStatus("✓ تم إنشاء النسخة: " + result.getName());
             resetUIAfterTask();
         });
@@ -201,29 +198,6 @@ public class BackupController {
         });
     }
 
-    private void deleteOldBackupFiles(File backupDir, int days) {
-        if (backupDir == null || !backupDir.exists() || !backupDir.isDirectory()) {
-            return;
-        }
-
-        Instant deleteBefore = Instant.now().minus(days, ChronoUnit.DAYS);
-        File[] oldBackupFiles = backupDir.listFiles(file ->
-                file.isFile()
-                        && file.getName().toLowerCase().endsWith(".enc")
-                        && Instant.ofEpochMilli(file.lastModified()).isBefore(deleteBefore)
-        );
-
-        if (oldBackupFiles == null) {
-            return;
-        }
-
-        for (File file : oldBackupFiles) {
-            if (!file.delete()) {
-                setStatus("تعذر حذف النسخة القديمة: " + file.getName());
-            }
-        }
-    }
-
     // تفعيل / إخفاء واجهة التقدم
     private void setUIForTask(boolean running, String message) {
         progressBox.setVisible(running);
@@ -242,6 +216,9 @@ public class BackupController {
         prefs.put("interval", selected);
 
         if (ScheduledBackup.getTime() > 0) {
+            // Scheduling a null service only surfaces later, as an NPE inside the
+            // scheduler thread at the first run.
+            if (backupService == null) updateBackupService();
             ScheduledBackup.startScheduler(backupService);
             setStatus("تم تفعيل النسخ التلقائي كل " + selected);
         } else {

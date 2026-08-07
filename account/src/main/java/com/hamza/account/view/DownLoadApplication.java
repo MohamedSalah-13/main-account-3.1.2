@@ -18,7 +18,7 @@ import javafx.stage.Stage;
 import java.sql.SQLException;
 import lombok.extern.log4j.Log4j2;
 
-import static com.hamza.account.backup.ScheduledBackup.ENCRYPTION_PASSWORD;
+import com.hamza.account.backup.ScheduledBackup;
 
 @Log4j2
 public class DownLoadApplication extends Application {
@@ -135,7 +135,7 @@ public class DownLoadApplication extends Application {
         var connection = connectionToDatabase;
         return new BackupService(connection.getHost()
                 , connection.getPort(), connection.getDbName(), connection.getUsername(), connection.getPass()
-                , ENCRYPTION_PASSWORD);
+                , ScheduledBackup.encryptionPassword());
     }
 
     @Override

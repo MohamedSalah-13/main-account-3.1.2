@@ -27,6 +27,16 @@ public class BackupService {
 
     // إجراء نسخ احتياطي كامل إلى ملف مشفر
     public File backupToFile(File backupDir) throws Exception {
+        // The encryption password defaults to empty when none was ever set. Restore
+        // already refuses an empty password, so a backup taken with one is a file
+        // that cannot be restored through the application - and its contents are
+        // readable by anyone, since the key comes from an empty passphrase. Better
+        // to say so now than to hand back a file that looks like a backup.
+        if (encryptionPassword == null || encryptionPassword.isBlank()) {
+            throw new IllegalStateException(
+                    "لم يتم تعيين كلمة مرور التشفير. من فضلك اضبطها في إعدادات النسخ الاحتياطي أولاً.");
+        }
+
         // إنشاء اسم فريد للملف المؤقت والمشفر
         String timestamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
         File tempSqlFile = File.createTempFile("backup_" + timestamp, ".sql");
