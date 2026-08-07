@@ -132,18 +132,55 @@ public class CryptoDatabaseConfig {
 
         File keyFile = new File(KEY_FILE);
         if (keyFile.isFile()) {
-            String fromFile;
-            try {
-                fromFile = Files.readString(keyFile.toPath(), StandardCharsets.UTF_8).trim();
-            } catch (IOException e) {
-                throw new IllegalStateException("Could not read the AES key from " + keyFile.getAbsolutePath(), e);
-            }
+            String fromFile = readKeyFile(keyFile);
             if (!fromFile.isEmpty()) {
                 return validateKey(fromFile, "key file " + keyFile.getAbsolutePath());
             }
         }
 
         return null;
+    }
+
+    /**
+     * Reads the key out of {@value #KEY_FILE}.
+     * <p>
+     * The documented way to create this file is to redirect the output of
+     * {@code genkey} into it, and a Windows shell writes UTF-16LE or UTF-8 with a
+     * byte order mark when it does that. Insisting on plain UTF-8 rejected the
+     * file the instructions had just told the reader to produce, so the encoding
+     * is detected from the mark instead. Only the first non-blank line is used,
+     * so a file that also caught surrounding output still works.
+     */
+    private static String readKeyFile(File keyFile) {
+        byte[] bytes;
+        try {
+            bytes = Files.readAllBytes(keyFile.toPath());
+        } catch (IOException e) {
+            throw new IllegalStateException("Could not read the AES key from " + keyFile.getAbsolutePath()
+                    + ": " + e.getMessage(), e);
+        }
+
+        String text = decodeWithByteOrderMark(bytes);
+        for (String line : text.split("\\R")) {
+            String trimmed = line.trim();
+            if (!trimmed.isEmpty()) {
+                return trimmed;
+            }
+        }
+        return "";
+    }
+
+    private static String decodeWithByteOrderMark(byte[] bytes) {
+        if (bytes.length >= 2 && (bytes[0] & 0xFF) == 0xFF && (bytes[1] & 0xFF) == 0xFE) {
+            return new String(bytes, 2, bytes.length - 2, StandardCharsets.UTF_16LE);
+        }
+        if (bytes.length >= 2 && (bytes[0] & 0xFF) == 0xFE && (bytes[1] & 0xFF) == 0xFF) {
+            return new String(bytes, 2, bytes.length - 2, StandardCharsets.UTF_16BE);
+        }
+        if (bytes.length >= 3 && (bytes[0] & 0xFF) == 0xEF && (bytes[1] & 0xFF) == 0xBB && (bytes[2] & 0xFF) == 0xBF) {
+            return new String(bytes, 3, bytes.length - 3, StandardCharsets.UTF_8);
+        }
+        return new String(bytes, StandardCharsets.UTF_8);
     }
 
     /** Whether config.xml is being read with the key that ships in the source. */
@@ -187,11 +224,14 @@ public class CryptoDatabaseConfig {
 
             switch (args[0]) {
                 case "genkey" -> {
+                    // Only the key goes to stdout, so "genkey > config.key" writes a
+                    // file containing the key and nothing else. The advice goes to
+                    // stderr, where a redirect leaves it on screen.
                     System.out.println(new CryptoDatabaseConfig().getSecretKeyBase64());
-                    System.out.println();
-                    System.out.println("Put this in " + KEY_ENV_VAR + ", or in a file named " + KEY_FILE
+                    System.err.println();
+                    System.err.println("Put this in " + KEY_ENV_VAR + ", or in a file named " + KEY_FILE
                             + " in the directory the application starts from.");
-                    System.out.println("Keep it out of version control, and back it up: without it, config.xml"
+                    System.err.println("Keep it out of version control, and back it up: without it, config.xml"
                             + " cannot be read.");
                 }
                 case "encrypt" -> {
@@ -219,11 +259,15 @@ public class CryptoDatabaseConfig {
                         printUsage();
                         System.exit(1);
                     }
-                    CryptoDatabaseConfig encryptor = new CryptoDatabaseConfig(resolveConfigKey());
-                    HashMap<String, String> map = encryptor.loadAndDecryptConfig(args[1]);
-                    System.out.println("Decrypted using " + describeConfigKeySource() + ":");
+                    OpenedConfig opened = openConfig(args[1]);
+                    System.out.println("Decrypted using " + opened.keyDescription() + ":");
                     for (String field : new String[]{URL, DBNAME, HOST, USERNAME, PASSWORD, PORT, DRIVER}) {
-                        System.out.println("  " + field + ": " + map.get(field));
+                        System.out.println("  " + field + ": " + opened.values().get(field));
+                    }
+                    if (opened.usedBuiltInKey() && explicitConfigKey() != null) {
+                        System.out.println();
+                        System.out.println("Note: this file is still encrypted with the built-in key, not the"
+                                + " key installed here. Run \"migrate " + args[1] + "\" to re-encrypt it.");
                     }
                 }
                 case "migrate" -> {
@@ -234,7 +278,7 @@ public class CryptoDatabaseConfig {
                     String fileName = args[1];
                     // Read before demanding the new key, so a missing new key is
                     // reported before the existing file has been touched.
-                    HashMap<String, String> current = readForMigration(fileName);
+                    HashMap<String, String> current = openConfig(fileName).values();
                     CryptoDatabaseConfig target = new CryptoDatabaseConfig(requireConfigKey());
                     target.saveEncryptedConfigToXML(fileName,
                             current.get(URL), current.get(DBNAME), current.get(HOST),
@@ -255,25 +299,30 @@ public class CryptoDatabaseConfig {
         }
     }
 
+    /** A config.xml that was opened, and the key that turned out to open it. */
+    private record OpenedConfig(HashMap<String, String> values, String keyDescription, boolean usedBuiltInKey) {
+    }
+
     /**
-     * Reads a config.xml that is about to be re-encrypted.
+     * Opens a config.xml with whichever key it was actually written under.
      * <p>
      * The key configured for this install is tried first, then the built-in one.
-     * By the time anyone runs a migration the new key is normally already
-     * installed while the file is still under the old one - which is precisely the
-     * state migration exists to resolve, so resolving the key the ordinary way
-     * would pick the key the file is not encrypted with.
+     * Having a new key installed while the file is still under the old one is the
+     * normal state before a migration, and taking the configured key as the answer
+     * produces only a padding error that says nothing about what is wrong.
      */
-    private static HashMap<String, String> readForMigration(String fileName) throws Exception {
+    private static OpenedConfig openConfig(String fileName) throws Exception {
         String configured = explicitConfigKey();
         if (configured != null) {
             try {
-                return new CryptoDatabaseConfig(configured).loadAndDecryptConfig(fileName);
+                return new OpenedConfig(new CryptoDatabaseConfig(configured).loadAndDecryptConfig(fileName),
+                        describeConfigKeySource(), false);
             } catch (Exception e) {
                 // Not encrypted with this install's key; try the one it shipped under.
             }
         }
-        return new CryptoDatabaseConfig(FALLBACK_KEY).loadAndDecryptConfig(fileName);
+        return new OpenedConfig(new CryptoDatabaseConfig(FALLBACK_KEY).loadAndDecryptConfig(fileName),
+                "the built-in default key", true);
     }
 
     private static void printUsage() {

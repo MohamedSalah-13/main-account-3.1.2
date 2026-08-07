@@ -42,10 +42,11 @@ Xw4+b2QIwkqGJqZhUHgXxbZYxhsHLx5J0QbfrjERHPw=
 
 ### 2. ثبّت المفتاح
 
-إمّا في ملف `config.key` داخل مجلد التشغيل:
+إمّا في ملف `config.key` داخل مجلد التشغيل — يمكن التوجيه مباشرة، فالأمر يطبع المفتاح وحده على
+`stdout` بينما تذهب الإرشادات إلى `stderr`:
 
 ```bash
-echo "المفتاح_المولَّد" > config.key
+java -cp controlsfx/target/classes com.hamza.controlsfx.util.crypto.CryptoDatabaseConfig genkey > config.key
 ```
 
 أو في متغيّر بيئة (له الأولوية على الملف):
@@ -53,6 +54,9 @@ echo "المفتاح_المولَّد" > config.key
 ```bash
 setx ACCOUNT_CONFIG_KEY "المفتاح_المولَّد"
 ```
+
+> ℹ️ لا تقلق بشأن ترميز الملف. PowerShell يكتب عند التوجيه بترميز UTF-16LE أو UTF-8 مع BOM، والبرنامج
+> يتعرّف على الترميز من علامة BOM ويقرأ أول سطر غير فارغ فقط.
 
 > 🔑 **احتفظ بنسخة من المفتاح في مكان آمن.** بدونه لا يمكن قراءة `config.xml` إطلاقًا — لا يوجد استرجاع.
 > ولا تضعه في Git.
@@ -145,6 +149,15 @@ java -cp controlsfx/target/classes com.hamza.controlsfx.util.crypto.CryptoDataba
 **`config.xml not found at ...`**
 البرنامج يبحث في مجلد التشغيل. تأكّد أن الملف بجوار مكان تشغيلك — جذر المستودع عند التشغيل من الجذر، أو
 `account/` عند تشغيل تلك الوحدة مباشرة. المسار الكامل يظهر في الرسالة نفسها.
+
+**`Could not read the AES key from ...\config.key`**
+الملف موجود لكن تعذّرت قراءته. الترميزات الشائعة (UTF-16 و UTF-8 مع BOM) مدعومة، فتحقّق من صلاحيات
+الملف أو من كونه تالفًا. أعد إنشاءه بـ `genkey` عند الشك.
+
+**`Given final block not properly padded`**
+الملف مشفَّر بمفتاح غير المفتاح المثبَّت حاليًا — عادةً `config.xml` قديم بالمفتاح المدمج بينما ثبّتّ
+مفتاحًا جديدًا في `config.key`. شغّل `decrypt config.xml`: سيفتح الملف بالمفتاح الصحيح تلقائيًا ويخبرك
+بالمفتاح الذي استُخدم، ثم شغّل `migrate config.xml` لإعادة تشفيره بمفتاحك.
 
 **`Could not decrypt ... with the key from ...`**
 المفتاح الحالي ليس المفتاح الذي شُفّر به الملف. تحقّق من `ACCOUNT_CONFIG_KEY` (له الأولوية) ومن محتوى
