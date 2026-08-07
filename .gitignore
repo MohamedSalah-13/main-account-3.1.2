@@ -11,7 +11,9 @@ suspended_invoices/
 !**/src/test/**/target/
 private_key.pem
 license.dat
-account/config.xml
+secret_key.txt
+# database credentials, resolved against the working directory at startup
+config.xml
 
 ### STS ###
 .apt_generated

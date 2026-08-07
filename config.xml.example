@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!--
+  Template for config.xml, the database settings the application reads on startup.
+
+  config.xml is not tracked in git because it holds the credentials of whichever
+  database a given machine talks to. Copy this file to config.xml and fill it in.
+
+  ConnectionToDatabase resolves the plain name "config.xml" against the JVM
+  working directory, so the file belongs next to whatever you launch: the repo
+  root when running from the root, account/ when running that module directly.
+
+  Every value below is AES-encrypted and Base64-encoded, not plain text - the
+  loader decrypts each element before use, so plain values fail at startup.
+  CryptoDatabaseConfig.saveEncryptedConfigToXML writes a file in this shape.
+  Note that its main() builds the encryptor with the no-arg constructor, which
+  generates a fresh random key and dumps it to secret_key.txt, while
+  ConnectionToDatabase decrypts with a key hardcoded in its source. Those two
+  keys have to match, or the generated file will not load.
+
+  url is "jdbc:mysql://<host>:<port>/<dbname>" and driver is
+  "com.mysql.cj.jdbc.Driver" before encryption.
+-->
+<DatabaseConfig>
+    <url>ENCRYPTED_JDBC_URL</url>
+    <dbname>ENCRYPTED_DATABASE_NAME</dbname>
+    <host>ENCRYPTED_HOST</host>
+    <username>ENCRYPTED_USERNAME</username>
+    <password>ENCRYPTED_PASSWORD</password>
+    <port>ENCRYPTED_PORT</port>
+    <driver>ENCRYPTED_DRIVER_CLASS</driver>
+</DatabaseConfig>
