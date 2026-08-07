@@ -10,6 +10,7 @@ import com.hamza.account.controller.setting.SettingTabLanguageController;
 import com.hamza.account.features.key_setting.MoveRow;
 import com.hamza.account.features.key_setting.UpdateInterface;
 import com.hamza.account.features.key_setting.UpdateQuantity;
+import com.hamza.account.features.notification.StockLevelAlert;
 import com.hamza.account.interfaces.api.DataInterface;
 import com.hamza.account.interfaces.api.TotalsDataInterface;
 import com.hamza.account.model.base.BaseAccount;
@@ -29,6 +30,7 @@ import com.hamza.account.table.TableSetting;
 import com.hamza.account.type.DiscountType;
 import com.hamza.account.type.InvoiceType;
 import com.hamza.account.type.ProcessType;
+import com.hamza.account.type.UserPermissionType;
 import com.hamza.account.view.AddItemApplication;
 import com.hamza.account.view.LogApplication;
 import com.hamza.account.view.SearchItemsApplication;
@@ -606,6 +608,10 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
             }
 
 
+            // Captured before the row is added: clearData() resets itemsModel, and the
+            // lambda below runs after a modal date dialog has closed.
+            final ItemsModel addedItem = itemsModel.get();
+
             //TODO 5/4/2026 12:48 PM Mohamed: check this to load speed
             if (itemsModel.get().isHasValidate()) {
                 ExpireDateInterface anInterface = getDatePicker();
@@ -617,6 +623,7 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
                 s.ifPresentOrElse(choiceItemExpireDate1 -> {
                     try {
                         if (actionTextBuy.addRowToTable(itemsModel.get().getBarcode(), quantity, price, discount, total, choiceItemExpireDate1) == 1) {
+                            warnIfStockIsLow(addedItem);
                             clearData();
                         }
                     } catch (Exception e) {
@@ -624,6 +631,7 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
                     }
                 }, () -> AllAlerts.alertError("من فضلك حدد تاريخ الانتهاء"));
             } else if (actionTextBuy.addRowToTable(itemsModel.get().getBarcode(), quantity, price, discount, total, null) == 1) {
+                warnIfStockIsLow(addedItem);
                 clearData();
             }
 
@@ -634,6 +642,38 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
             log.debug("Loaded the invoice screen in {} ms", duration);
         } catch (Exception e) {
             logError(e);
+        }
+    }
+
+    /**
+     * Raises the low-stock alert for a row that has just been added to a sales
+     * invoice.
+     * <p>
+     * Sales only, and not sales returns: a return puts stock back, so a low balance
+     * there is not something to warn about. {@code showDataForCustomer()} is true for
+     * both, which is why the permission type is used to tell them apart - it is the
+     * one thing that actually differs between {@code DesignCustom} and
+     * {@code DesignCustomReturn}.
+     * <p>
+     * The balance is read after the row is in the table, so the quantity just added
+     * is already part of {@code alreadyOnInvoice} and the figure reported is what
+     * the sale leaves behind.
+     */
+    private void warnIfStockIsLow(ItemsModel item) {
+        if (item == null || dataInterface.designInterface().show() != UserPermissionType.SALES_SHOW) {
+            return;
+        }
+        try {
+            double alreadyOnInvoice = table.getItems().stream()
+                    .filter(t1 -> purchaseSalesInterface.getItems(t1).getId() == item.getId())
+                    .mapToDouble(t1 -> purchaseSalesInterface.getQuantity(t1)
+                            * purchaseSalesInterface.getUnitsType(t1).getValue())
+                    .sum();
+
+            StockLevelAlert.check(item, StockLevelAlert.remainingAfter(item, alreadyOnInvoice));
+        } catch (Exception e) {
+            // The row is already added and the sale is fine; only the warning failed.
+            log.error("Could not check the stock level after adding item {}", item.getId(), e);
         }
     }
 
@@ -693,6 +733,19 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
         try {
             if (table.getItems().isEmpty()) {
                 throw new Exception(Error_Text_Show.PLEASE_INSERT_ALL_DATA);
+            }
+
+            if (date.getValue() == null) {
+                Platform.runLater(() -> date.requestFocus());
+                throw new Exception("من فضلك حدد تاريخ الفاتورة");
+            }
+
+            // Checked here as well as being greyed out in the calendar: the value can
+            // come from an existing invoice saved before this rule, and a till left
+            // open past midnight would otherwise keep yesterday's "today".
+            if (DateSetting.isInTheFuture(date.getValue())) {
+                Platform.runLater(() -> date.requestFocus());
+                throw new Exception("لا يمكن حفظ فاتورة بتاريخ بعد تاريخ اليوم");
             }
 
             if (dataInterface.designInterface().showDataForCustomer())
@@ -878,6 +931,10 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
 
         // others
         DateSetting.dateAction(date);
+        // An invoice cannot be dated after today. Greyed out in the calendar here and
+        // checked again in saveInvoice, because the value can also arrive from an
+        // existing record rather than from the user picking it.
+        DateSetting.noFutureDates(date);
         whenEnterPressed(txtBarcode, txtPrice, txtQuantity, btnAdd);
         setTextFormatter(txtPaid, txtOtherDiscount, txtItemBalance, txtPrice, txtQuantity, txtTotals);
         Utils.replaceNonDigitChar(txtBarcode);

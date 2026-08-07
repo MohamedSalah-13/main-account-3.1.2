@@ -1,13 +1,10 @@
 package com.hamza.account.controller.main;
 
 import com.hamza.account.config.FxmlConstants;
-import com.hamza.account.controller.others.ServiceRegistry;
 import com.hamza.account.controller.reports.ModernDashboardApp;
 import com.hamza.account.controller.reports.MonthlySalesInterface;
 import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.model.dao.MonthlySalesViewDao;
-import com.hamza.account.model.domain.ItemsMiniQuantity;
-import com.hamza.account.service.ItemMiniQuantityService;
 import com.hamza.account.type.UserPermissionType;
 import com.hamza.account.view.LogApplication;
 import com.hamza.account.view.MonthlyView;
@@ -101,16 +98,6 @@ public class MainScreenController extends MainItems implements Initializable {
             }
         });
 
-    }
-
-    private java.util.List<ItemsMiniQuantity> getItemsMiniQuantities() {
-        try {
-            ItemMiniQuantityService itemMiniQuantityService = ServiceRegistry.get(ItemMiniQuantityService.class);
-            return itemMiniQuantityService.itemsMiniQuantityList();
-        } catch (DaoException e) {
-            logException(e);
-            return new ArrayList<>();
-        }
     }
 
     private void otherSetting() {

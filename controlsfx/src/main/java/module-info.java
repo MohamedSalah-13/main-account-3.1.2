@@ -45,6 +45,7 @@ module com.hamza.controlsfx {
     exports com.hamza.controlsfx.excel;
 
     exports com.hamza.controlsfx.type;
+    exports com.hamza.controlsfx.notifications;
 
     exports com.hamza.controlsfx.language;
     opens com.hamza.controlsfx.language to javafx.fxml;

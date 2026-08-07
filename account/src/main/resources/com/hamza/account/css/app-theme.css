@@ -821,3 +821,145 @@
 .last-card > .button {
     -fx-min-width: 80px;
 }
+/* =========================================================
+   Notifications
+
+   Colours come from the -app-* variables the themes define, so
+   the bell, the panel and the toasts follow light/dark/glass
+   without a per-theme rule here.
+   ========================================================= */
+
+.notification-bell-button {
+    -fx-padding: 4 10 4 10;
+}
+
+.notification-bell-icon {
+    -fx-fill: -app-text;
+}
+
+.notification-bell-alert .notification-bell-icon {
+    -fx-fill: -app-warning;
+}
+
+/* Sits over the top corner of the bell, so it must not take part in layout. */
+.notification-badge {
+    -fx-background-color: -app-danger;
+    -fx-text-fill: white;
+    -fx-font-size: 9px;
+    -fx-font-weight: bold;
+    -fx-padding: 1 4 1 4;
+    -fx-background-radius: 8;
+    -fx-translate-x: -4;
+    -fx-translate-y: 2;
+}
+
+.notification-panel {
+    -fx-background-color: -app-surface;
+    -fx-background-radius: 8;
+}
+
+.notification-panel-header {
+    -fx-background-color: -app-surface-2;
+    -fx-border-color: transparent transparent -app-border transparent;
+    -fx-border-width: 0 0 1 0;
+}
+
+.notification-panel-title {
+    -fx-font-size: 14px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -app-text-strong;
+}
+
+.notification-link-button {
+    -fx-background-color: transparent;
+    -fx-text-fill: -app-primary;
+    -fx-font-size: 11px;
+    -fx-padding: 2 6 2 6;
+    -fx-cursor: hand;
+}
+
+.notification-link-button:hover {
+    -fx-underline: true;
+}
+
+.notification-list {
+    -fx-background-color: transparent;
+}
+
+.notification-row {
+    -fx-background-color: transparent;
+    -fx-padding: 0;
+}
+
+.notification-row:hover {
+    -fx-background-color: -app-neutral-soft;
+}
+
+/* An unread entry gets a bar down its leading edge - the panel is RTL, so that
+   is the right-hand side. */
+.notification-row.notification-unread {
+    -fx-border-color: transparent -app-primary transparent transparent;
+    -fx-border-width: 0 3 0 0;
+}
+
+.notification-item {
+    -fx-cursor: hand;
+}
+
+.notification-item-title {
+    -fx-font-size: 12px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -app-text-strong;
+}
+
+.notification-item-message {
+    -fx-font-size: 11px;
+    -fx-text-fill: -app-text;
+}
+
+.notification-item-time {
+    -fx-font-size: 10px;
+    -fx-text-fill: -app-text-muted;
+}
+
+.notification-item-counter {
+    -fx-font-size: 9px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -app-text-muted;
+    -fx-background-color: -app-neutral-soft;
+    -fx-background-radius: 6;
+    -fx-padding: 0 4 0 4;
+}
+
+.notification-item-action {
+    -fx-background-color: transparent;
+    -fx-padding: 2 4 2 4;
+    -fx-cursor: hand;
+}
+
+.notification-item-action:hover {
+    -fx-background-color: -app-neutral-hover;
+    -fx-background-radius: 4;
+}
+
+/* Severity. Applied to the row icon and, by the toaster, to the popup itself. */
+.notification-info {
+    -fx-fill: -app-primary;
+}
+
+.notification-success {
+    -fx-fill: -app-success;
+}
+
+.notification-warning {
+    -fx-fill: -app-warning;
+}
+
+.notification-error,
+.notification-critical {
+    -fx-fill: -app-danger;
+}
+
+.notification-row.notification-critical {
+    -fx-background-color: -app-danger-soft;
+}

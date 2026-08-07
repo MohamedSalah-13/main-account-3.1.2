@@ -85,9 +85,15 @@ public class SettingController implements Initializable, AppSettingInterface {
         Tab tabChecks = pane.getTabs().get(3);
         tabChecks.setContent(getTabChecks());
         tabChecks.setText(Setting_Language.WORD_SHOW);
+        // add tab notifications
+        pane.getTabs().add(new Tab("الإشعارات", getTabNotifications()));
         // add tab backup
 //        Pane backupAppPane = backupSetting();
         pane.getTabs().add(new Tab(Setting_Language.WORD_BACKUP, backup()));
+    }
+
+    private Pane getTabNotifications() throws Exception {
+        return new OpenFxmlApplication(new SettingTabNotificationsController()).getPane();
     }
 
     private Pane getTabCompany() throws IOException {

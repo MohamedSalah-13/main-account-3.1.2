@@ -131,37 +131,6 @@ public class ForAllButtons extends LoadData {
     }
 
     /**
-     * Creates and returns a ButtonWithPerm that represents the "Alarm" action.
-     * The returned action includes functionality for responding to specific button actions
-     * as well as providing the associated text name.
-     *
-     * @return a ButtonWithPerm instance configured for the "Alarm" action.
-     */
-    public ButtonWithPerm alarm() {
-        return new ButtonWithPerm() {
-            @Override
-            public UserPermissionType getPermissionType() {
-                return null;
-            }
-
-            @Override
-            public void action() {
-            }
-
-            @NotNull
-            @Override
-            public String textName() {
-                return Setting_Language.Alerts;
-            }
-
-            @Override
-            public boolean disableBoolean() {
-                return true;
-            }
-        };
-    }
-
-    /**
      * Provides a logout action for the application, encapsulated as a button menu item action.
      * When triggered, this action:
      * - Sets the availability status of the logout stage to true.

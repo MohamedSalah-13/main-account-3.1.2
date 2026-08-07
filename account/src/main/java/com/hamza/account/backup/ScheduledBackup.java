@@ -1,5 +1,7 @@
 package com.hamza.account.backup;
 
+import com.hamza.account.features.notification.AppNotifications;
+import com.hamza.account.features.notification.NotificationCategories;
 import lombok.extern.log4j.Log4j2;
 
 import java.io.File;
@@ -22,6 +24,14 @@ public class ScheduledBackup {
     public static final int MAX_BACKUP_FILES = 30;
 
     private static final String BACKUP_FILE_SUFFIX = ".enc";
+
+    /*
+     * Constant keys, so consecutive successes collapse into one inbox entry with a
+     * counter rather than a row per hour, and a run that keeps failing stays a
+     * single entry the user can act on.
+     */
+    private static final String SUCCESS_KEY = "backup.scheduled.success";
+    private static final String FAILURE_KEY = "backup.scheduled.failure";
 
     public static Preferences prefsBackup = Preferences.userNodeForPackage(BackupController.class);
     private static ScheduledExecutorService scheduler;
@@ -66,9 +76,15 @@ public class ScheduledBackup {
                 // to delete the copies that are still the most recent ones we have.
                 pruneOldBackups(dir, MAX_BACKUP_FILES);
                 setStatus("نسخ تلقائي: " + backup.getName());
+                AppNotifications.success(SUCCESS_KEY, NotificationCategories.BACKUP,
+                        "تم عمل نسخة احتياطية", backup.getName());
             } catch (Exception e) {
                 log.error("Scheduled backup failed", e);
                 setStatus("فشل النسخ التلقائي: " + e.getMessage());
+                // A log line was the only trace of this, which is how a folder that
+                // has been unwritable for weeks goes unnoticed.
+                AppNotifications.error(FAILURE_KEY, NotificationCategories.BACKUP,
+                        "فشل النسخ الاحتياطي التلقائي", String.valueOf(e.getMessage()));
             }
         }, 0, getTime(), TimeUnit.HOURS);
     }
