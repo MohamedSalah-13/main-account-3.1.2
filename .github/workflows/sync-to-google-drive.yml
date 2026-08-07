@@ -1,0 +1,51 @@
+name: Backup Project to Google Drive
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Install rclone
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y rclone zip
+
+      - name: Configure rclone
+        run: |
+          mkdir -p ~/.config/rclone
+          echo "${{ secrets.RCLONE_CONFIG_BASE64 }}" | base64 --decode > ~/.config/rclone/rclone.conf
+          chmod 600 ~/.config/rclone/rclone.conf
+
+      - name: Test rclone config
+        run: |
+          rclone listremotes
+          rclone about gdrive:
+
+      - name: Create backup filename
+        run: |
+          echo "BACKUP_FILE=${{ github.event.repository.name }}-$(date +'%Y-%m-%d_%H-%M-%S')-${{ github.sha }}.zip" >> $GITHUB_ENV
+
+      - name: Create ZIP backup
+        run: |
+          zip -r "$BACKUP_FILE" . \
+            -x ".git/*" \
+            -x ".github/*" \
+            -x "target/*" \
+            -x "*.class" \
+            -x "$BACKUP_FILE"
+
+      - name: Upload backup to Google Drive
+        run: |
+          rclone mkdir gdrive:/GithubBackups/${{ github.event.repository.name }}
+          rclone copy "$BACKUP_FILE" \
+            gdrive:/GithubBackups/${{ github.event.repository.name }} \
+            --progress
