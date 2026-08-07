@@ -6,7 +6,6 @@ import com.hamza.controlsfx.database.AbstractDao;
 import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.database.SqlStatements;
 
-import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.List;
@@ -41,8 +40,8 @@ public class UsersDao extends AbstractDao<Users> {
     private final String USER_ACTIVITY = "user_activity";
     private final String USER_AVAILABLE = "user_available";
 
-    UsersDao(Connection connection) {
-        super(connection);
+    UsersDao() {
+        super();
     }
 
     @Override
@@ -167,6 +166,6 @@ public class UsersDao extends AbstractDao<Users> {
     }
 
     public int getCountItems() {
-        return queryForInt("SELECT COUNT(*) FROM users");
+        return queryForIntOrDefault("SELECT COUNT(*) FROM users", 0);
     }
 }

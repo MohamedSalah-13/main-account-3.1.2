@@ -7,8 +7,9 @@ import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.database.SqlStatements;
 import lombok.extern.log4j.Log4j2;
 
-import java.sql.Connection;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.sql.Statement;
 import java.sql.SQLException;
 import java.time.LocalDate;
 import java.util.List;
@@ -23,12 +24,10 @@ public class StockTransferDao extends AbstractDao<StockTransfer> {
     private final String STOCK_TO = "stock_to";
     private final String USER_ID = "user_id";
     private final DaoFactory daoFactory;
-    private final Connection connection;
 
 
-    StockTransferDao(Connection connection, DaoFactory daoFactory) {
-        super(connection);
-        this.connection = connection;
+    StockTransferDao(DaoFactory daoFactory) {
+        super();
         this.daoFactory = daoFactory;
     }
 
@@ -37,11 +36,48 @@ public class StockTransferDao extends AbstractDao<StockTransfer> {
         return queryForObjects(SqlStatements.selectStatement(TABLE_NAME), this::map);
     }
 
+    /**
+     * The body of this was empty: the statement was built, nothing ran it, and the
+     * method still reported success, so every new transfer was silently discarded.
+     * It now writes the header and its items together, mirroring {@link #update}.
+     */
     @Override
     public int insert(StockTransfer stockTransfer) throws DaoException {
         String insert = SqlStatements.insertStatement(TABLE_NAME, STOCK_FROM, STOCK_TO, TRANSFER_DATE, USER_ID);
         return insertMultiData(() -> {
+            int transferId = insertHeader(insert, stockTransfer);
+            stockTransfer.setId(transferId);
 
+            List<StockTransferListItems> transferListItems = stockTransfer.getTransferListItems();
+            transferListItems.forEach(item -> item.setStock_transfer_id(transferId));
+            daoFactory.stockTransferListDao().insertList(transferListItems);
+        });
+    }
+
+    /**
+     * Writes the transfer row and reads back the id the database generated for it.
+     * The list rows carry that id as their foreign key, so it has to be known
+     * before they can be written.
+     */
+    private int insertHeader(String insert, StockTransfer stockTransfer) throws DaoException {
+        return withConnection(connection -> {
+            try (PreparedStatement statement = connection.prepareStatement(insert, Statement.RETURN_GENERATED_KEYS)) {
+                Object[] data = getData(stockTransfer);
+                for (int i = 0; i < data.length; i++) {
+                    statement.setObject(i + 1, data[i]);
+                }
+
+                if (statement.executeUpdate() == 0) {
+                    throw new DaoException("لم يتم حفظ تحويل المخزن");
+                }
+
+                try (ResultSet generatedKeys = statement.getGeneratedKeys()) {
+                    if (generatedKeys.next()) {
+                        return generatedKeys.getInt(1);
+                    }
+                    throw new DaoException("لم يتم الحصول على رقم تحويل المخزن الجديد");
+                }
+            }
         });
     }
 

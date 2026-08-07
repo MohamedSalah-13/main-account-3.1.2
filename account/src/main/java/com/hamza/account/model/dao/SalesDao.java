@@ -7,7 +7,6 @@ import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.database.SqlStatements;
 import lombok.extern.log4j.Log4j2;
 
-import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.LocalDate;
@@ -45,8 +44,8 @@ public class SalesDao extends AbstractDao<Sales> {
     private final String nameId = "name_id";
     private final DaoFactory daoFactory;
 
-    public SalesDao(Connection connection, DaoFactory daoFactory) {
-        super(connection);
+    public SalesDao(DaoFactory daoFactory) {
+        super();
         this.daoFactory = daoFactory;
     }
 

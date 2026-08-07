@@ -5,7 +5,6 @@ import com.hamza.account.model.domain.TreasuryDepositExpenses;
 import com.hamza.controlsfx.database.AbstractDao;
 import com.hamza.controlsfx.database.DaoException;
 
-import java.sql.Connection;
 import java.sql.ResultSet;
 import java.time.LocalDate;
 import java.util.List;
@@ -19,9 +18,9 @@ public class TreasuryDepositExpensesDao extends AbstractDao<TreasuryDepositExpen
 
     private final TreasuryDao treasuryDao;
 
-    public TreasuryDepositExpensesDao(Connection connection) {
-        super(connection);
-        this.treasuryDao = new TreasuryDao(connection);
+    public TreasuryDepositExpensesDao() {
+        super();
+        this.treasuryDao = new TreasuryDao();
     }
 
     @Override

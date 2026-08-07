@@ -4,15 +4,14 @@ import com.hamza.account.model.domain.ItemSalesRank;
 import com.hamza.controlsfx.database.AbstractDao;
 import com.hamza.controlsfx.database.DaoException;
 
-import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.List;
 
 public class ItemSalesRankDao extends AbstractDao<ItemSalesRank> {
 
-    public ItemSalesRankDao(Connection connection) {
-        super(connection);
+    public ItemSalesRankDao() {
+        super();
     }
 
     // جلب تقرير حسب السنة والشهر (تقرير شهري)

@@ -4,7 +4,6 @@ import com.hamza.account.model.domain.DailyItemSales;
 import com.hamza.controlsfx.database.AbstractDao;
 import com.hamza.controlsfx.database.DaoException;
 
-import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.LocalDate;
@@ -13,8 +12,8 @@ import java.util.List;
 
 public class DailyItemSalesDao extends AbstractDao<DailyItemSales> {
 
-    public DailyItemSalesDao(Connection connection) {
-        super(connection);
+    public DailyItemSalesDao() {
+        super();
     }
 
     // الدالة الرئيسية لجلب مبيعات اليوم

@@ -7,7 +7,6 @@ import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.database.SqlStatements;
 import com.hamza.controlsfx.dateTime.DateUtils;
 
-import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.LocalDate;
@@ -39,8 +38,8 @@ public class CardItemDao extends AbstractDao<CardItems> {
     private final String DELEGATE_ID = "delegate_id";
     private final String DELEGATE_NAME = "delegate_name";
 
-    public CardItemDao(Connection connection) {
-        super(connection);
+    public CardItemDao() {
+        super();
     }
 
     @Override

@@ -823,13 +823,17 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
         thread.start();
     }
 
-    private int getInvNumber() {
+    /**
+     * Falling back to a fixed number here used to let a failed lookup save the
+     * invoice as number 1, on top of whatever already held that number. The save
+     * has to stop instead, so the failure is propagated to {@link #saveInvoice}.
+     */
+    private int getInvNumber() throws Exception {
         try {
             return dataInterface.totalsAndPurchaseList().getMaxId();
         } catch (Exception e) {
-            AllAlerts.alertError(Error_Text_Show.NO_DATA + e.getMessage());
+            throw new DaoException(Error_Text_Show.NO_DATA + e.getMessage(), e);
         }
-        return 1;
     }
 
     private List<T1> listOfItemsPurchase(int num_invoice) {
@@ -1281,7 +1285,7 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
 
     private void logError(Exception e) {
         AllAlerts.alertError(e.getMessage());
-        log.error(e.getMessage(), e.getCause());
+        log.error(e.getMessage(), e);
     }
 
     private void addColumnType() {

@@ -168,7 +168,7 @@ public class AddNameController<T1 extends BasePurchasesAndSales, T2 extends Base
                 publisherAddName.setAvailability(dataInterface.designInterface().nameTextOfData());
                 publisherAddAccount.setAvailability(dataInterface.designInterface().nameTextOfInvoice());
             } catch (InterruptedException e) {
-                log.error(e.getMessage(), e.getCause());
+                log.error(e.getMessage(), e);
             }
         });
         thread.setDaemon(true);
@@ -233,7 +233,7 @@ public class AddNameController<T1 extends BasePurchasesAndSales, T2 extends Base
         try {
             return areaService.fetchAllAreas();
         } catch (DaoException e) {
-            log.error(e.getMessage(), e.getCause());
+            log.error(e.getMessage(), e);
             return List.of();
         }
     }
@@ -247,7 +247,7 @@ public class AddNameController<T1 extends BasePurchasesAndSales, T2 extends Base
         try {
             return selPriceItemService.getSelPriceTypeList();
         } catch (DaoException e) {
-            log.error(e.getMessage(), e.getCause());
+            log.error(e.getMessage(), e);
             return List.of();
         }
     }

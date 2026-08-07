@@ -125,7 +125,7 @@ public class AddDepositController {
             return treasuryService.listTreasuryModelNames();
         } catch (DaoException e) {
             AllAlerts.alertError(e.getMessage());
-            log.error(e.getMessage(), e.getCause());
+            log.error(e.getMessage(), e);
             return List.of();
         }
     }
@@ -136,7 +136,7 @@ public class AddDepositController {
                 new OpenTreasuryDetailsApplication(daoFactory, dataPublisher).start(new Stage());
             } catch (Exception e) {
                 AllAlerts.alertError(e.getMessage());
-                log.error(e.getMessage(), e.getCause());
+                log.error(e.getMessage(), e);
             }
         });
     }

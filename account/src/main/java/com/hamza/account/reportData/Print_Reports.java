@@ -1,6 +1,6 @@
 package com.hamza.account.reportData;
 
-import com.hamza.account.config.ConnectionToDatabase;
+import com.hamza.controlsfx.database.ConnectionManager;
 import com.hamza.account.controller.invoice.ShowInvoiceNameData;
 import com.hamza.account.controller.model.ModelPrintInvoice;
 import com.hamza.account.controller.model.PrintPurchaseWithName;
@@ -40,9 +40,18 @@ public class Print_Reports extends ReportCompany {
         super();
     }
 
+    /**
+     * Takes a connection from the pool for the length of one report. Building a
+     * ConnectionToDatabase here re-read and decrypted config.xml on every report
+     * just to reach the pool that was already open.
+     */
     private <E extends Exception> void withConnection(ThrowingConsumer<Connection, E> action) throws E, DaoException, SQLException {
-        try (Connection connection = new ConnectionToDatabase().getDbConnection().getConnection()) {
+        Connection connection = null;
+        try {
+            connection = ConnectionManager.acquire();
             action.accept(connection);
+        } finally {
+            ConnectionManager.release(connection);
         }
     }
 

@@ -19,7 +19,7 @@ public class ComboSetting {
                 comboSub.getSelectionModel().select(subGroupsById.getName());
                 comboMain.getSelectionModel().select(subGroupsById.getMainGroups().getName());
             } catch (DaoException e) {
-                log.error(e.getMessage(), e.getCause());
+                log.error(e.getMessage(), e);
             }
         } else comboSub.getSelectionModel().selectFirst();
 
@@ -30,7 +30,7 @@ public class ComboSetting {
                     setItemsSubGroup(String.valueOf(subGroupsById.getId()));
 
                 } catch (DaoException e) {
-                    log.error(e.getMessage(), e.getCause());
+                    log.error(e.getMessage(), e);
                 }
             });
         }
@@ -43,7 +43,7 @@ public class ComboSetting {
                 var unitsModelById = unitsService.getUnitsById(Integer.parseInt(proTypGroup));
                 comboType.getSelectionModel().select(unitsModelById.getUnit_name());
             } catch (DaoException e) {
-                log.error(e.getMessage(), e.getCause());
+                log.error(e.getMessage(), e);
             }
         } else comboType.getSelectionModel().selectFirst();
 
@@ -53,7 +53,7 @@ public class ComboSetting {
                     var unitsModelById = unitsService.getUnitsByName(t1);
                     setItemsTypeGroup(String.valueOf(unitsModelById.getValue()));
                 } catch (DaoException e) {
-                    log.error(e.getMessage(), e.getCause());
+                    log.error(e.getMessage(), e);
                 }
             });
         }

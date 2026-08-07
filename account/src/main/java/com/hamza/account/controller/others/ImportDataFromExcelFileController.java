@@ -128,7 +128,7 @@ public class ImportDataFromExcelFileController implements Initializable, AppSett
                         myObservableList.clear();
                         myObservableList.addAll(fetchDataFromExcel(file));
                     } catch (Exception e) {
-                        log.error(e.getMessage(), e.getCause());
+                        log.error(e.getMessage(), e);
                         AllAlerts.alertError(e.getMessage());
                     }
                 });
@@ -138,7 +138,7 @@ public class ImportDataFromExcelFileController implements Initializable, AppSett
             try {
                 saveItems();
             } catch (DaoException e) {
-                log.error(e.getMessage(), e.getCause());
+                log.error(e.getMessage(), e);
                 AllAlerts.alertError(e.getMessage());
             }
         });
@@ -153,7 +153,7 @@ public class ImportDataFromExcelFileController implements Initializable, AppSett
                 if (export == 1) AllAlerts.alertSave();
                 else AllAlerts.alertError("لم يتم الحفظ");
             } catch (ExcelException e) {
-                log.error(e.getMessage(), e.getCause());
+                log.error(e.getMessage(), e);
             }
         });
 

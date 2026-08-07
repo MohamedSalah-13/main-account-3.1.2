@@ -102,7 +102,7 @@ public record MenuButtonSetting(TabPane tabPane) {
      * @param e the exception to log and display
      */
     private void logException(Exception e) {
-        log.error(e.getMessage(), e.getCause());
+        log.error(e.getMessage(), e);
         AllAlerts.showExceptionDialog(e);
         e.printStackTrace();
     }

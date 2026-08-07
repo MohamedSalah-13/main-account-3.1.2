@@ -9,7 +9,6 @@ import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.database.GenericMapper;
 import com.hamza.controlsfx.database.SqlStatements;
 
-import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.LocalDateTime;
@@ -55,8 +54,8 @@ public class SupplierAccountDao extends AbstractDao<SupplierAccount> {
     private final String USER_ID = "user_id";
     private final String NAME = "name";
 
-    SupplierAccountDao(Connection connection) {
-        super(connection);
+    SupplierAccountDao() {
+        super();
     }
 
     @Override

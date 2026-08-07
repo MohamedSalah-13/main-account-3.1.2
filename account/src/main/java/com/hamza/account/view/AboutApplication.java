@@ -1,6 +1,7 @@
 package com.hamza.account.view;
 
-import com.hamza.account.config.ConnectionToDatabase;
+import java.sql.Connection;
+import com.hamza.controlsfx.database.ConnectionManager;
 import com.hamza.account.config.Image_Setting;
 import com.hamza.account.config.PropertiesName;
 import com.hamza.account.config.ThemeManager;
@@ -37,7 +38,6 @@ public class AboutApplication extends Application {
     private static final String NEW_ROCKER = "New Rocker";
     private static final String BUILD_DATE = "${buildDate}";
     private final VBox box;
-    private final TrialManager trialManager;
     private Text statusText;
     private Text remainingText;
     private Text licenseText;
@@ -49,8 +49,6 @@ public class AboutApplication extends Application {
         button.getStyleClass().add("app-neutral-button");
         button.setOnAction(event -> new SystemInfoDialog().show());
         button.setGraphic(ImageChoose.createIcon(imageSetting.cancel));
-
-        trialManager = createTrialManager();
 
         box = new VBox(20);
         box.getChildren().addAll(imageView, getLabel(), buildLicenseActions(), button);
@@ -159,13 +157,23 @@ public class AboutApplication extends Application {
         return box;
     }
 
-    private TrialManager createTrialManager() {
+    /**
+     * Reads the trial state against a pooled connection and returns that
+     * connection as soon as the read is done. Keeping a TrialManager - and with it
+     * an open connection - for the lifetime of this window leaked one pooled
+     * connection every time the window was opened, and opened a second
+     * ConnectionToDatabase, re-reading and decrypting config.xml, to get it.
+     */
+    private TrialManager.TrialDisplayInfo loadDisplayInfo() {
+        Connection connection = null;
         try {
-            var connection = new ConnectionToDatabase().getDbConnection().getConnection();
-            return new TrialManager(connection);
+            connection = ConnectionManager.acquire();
+            return new TrialManager(connection).getDisplayInfo();
         } catch (Exception e) {
-            log.error("Error creating TrialManager", e);
+            log.error("Error reading the trial status", e);
             return null;
+        } finally {
+            ConnectionManager.release(connection);
         }
     }
 
@@ -175,7 +183,8 @@ public class AboutApplication extends Application {
         String warn = "orange";
         String bad = "red";
 
-        if (trialManager == null) {
+        TrialManager.TrialDisplayInfo info = loadDisplayInfo();
+        if (info == null) {
             statusText.setText("الحالة: غير متاح\n");
             remainingText.setText("الوقت المتبقي: غير متاح\n");
             licenseText.setText("الترخيص: غير متاح\n");
@@ -185,7 +194,6 @@ public class AboutApplication extends Application {
             return;
         }
 
-        TrialManager.TrialDisplayInfo info = trialManager.getDisplayInfo();
         if (info.licenseValid) {
             statusText.setText("الحالة: مفعلة\n");
             remainingText.setText("الوقت المتبقي: غير محدود\n");

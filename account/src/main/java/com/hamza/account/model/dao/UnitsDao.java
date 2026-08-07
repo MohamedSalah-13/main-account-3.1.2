@@ -5,7 +5,6 @@ import com.hamza.controlsfx.database.AbstractDao;
 import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.database.SqlStatements;
 
-import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.List;
@@ -18,8 +17,8 @@ public class UnitsDao extends AbstractDao<UnitsModel> {
     private final String VALUE_D = "value_d";
     private final String USER_ID = "user_id";
 
-    protected UnitsDao(Connection connection) {
-        super(connection);
+    protected UnitsDao() {
+        super();
     }
 
     @Override

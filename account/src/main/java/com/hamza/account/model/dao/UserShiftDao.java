@@ -34,8 +34,8 @@ public class UserShiftDao extends AbstractDao<UserShift> {
     private static final String DIFFERENCE = "difference";
     private static final String INVOICES_COUNT = "invoices_count";
 
-    UserShiftDao(Connection connection) {
-        super(connection);
+    UserShiftDao() {
+        super();
     }
 
     @Override
@@ -170,15 +170,17 @@ public class UserShiftDao extends AbstractDao<UserShift> {
     public boolean hasOpenShift(int userId) throws DaoException {
         String sql = "SELECT COUNT(*) FROM " + TABLE_NAME +
                 " WHERE " + USER_ID + " = ? AND " + IS_OPEN + " = TRUE";
-        try (PreparedStatement ps = connection.prepareStatement(sql)) {
-            ps.setInt(1, userId);
-            try (ResultSet rs = ps.executeQuery()) {
-                return rs.next() && rs.getInt(1) > 0;
+        return withConnection(connection -> {
+            try (PreparedStatement ps = connection.prepareStatement(sql)) {
+                ps.setInt(1, userId);
+                try (ResultSet rs = ps.executeQuery()) {
+                    return rs.next() && rs.getInt(1) > 0;
+                }
+            } catch (SQLException e) {
+                log.error("Error checking open shift for user ID: {}", userId, e);
+                throw new DaoException(e);
             }
-        } catch (SQLException e) {
-            log.error("Error checking open shift for user ID: {}", userId, e);
-            throw new DaoException(e);
-        }
+        });
     }
 
     // =========================================================
@@ -243,32 +245,34 @@ public class UserShiftDao extends AbstractDao<UserShift> {
     }
 
     private double sumDouble(String sql, Object... params) throws DaoException {
-        try (PreparedStatement ps = connection.prepareStatement(sql)) {
-            bindParams(ps, params);
-            System.out.println("sumDouble SQL: " + ps.toString());
-            try (ResultSet rs = ps.executeQuery()) {
-                return rs.next() ? rs.getDouble(1) : 0.0;
+        return withConnection(connection -> {
+            try (PreparedStatement ps = connection.prepareStatement(sql)) {
+                bindParams(ps, params);
+                try (ResultSet rs = ps.executeQuery()) {
+                    return rs.next() ? rs.getDouble(1) : 0.0;
+                }
+            } catch (SQLException e) {
+                log.error("sumDouble failed: {}", sql, e);
+                throw new DaoException(e);
             }
-        } catch (SQLException e) {
-            log.error("sumDouble failed: {}", sql, e);
-            throw new DaoException(e);
-        }
+        });
     }
 
     private int countInt(String sql, Object... params) throws DaoException {
-        try (PreparedStatement ps = connection.prepareStatement(sql)) {
-            bindParams(ps, params);
-//            System.out.println("countInt SQL: " + ps.toString());
-            try (ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) {
-                    return rs.getInt(1);
+        return withConnection(connection -> {
+            try (PreparedStatement ps = connection.prepareStatement(sql)) {
+                bindParams(ps, params);
+                try (ResultSet rs = ps.executeQuery()) {
+                    if (rs.next()) {
+                        return rs.getInt(1);
+                    }
+                    return 0;
                 }
-                return 0;
+            } catch (SQLException e) {
+                log.error("countInt failed: {}", sql, e);
+                throw new DaoException(e);
             }
-        } catch (SQLException e) {
-            log.error("countInt failed: {}", sql, e);
-            throw new DaoException(e);
-        }
+        });
     }
 
     private void bindParams(PreparedStatement ps, Object... params) throws SQLException {

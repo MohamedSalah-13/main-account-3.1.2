@@ -123,7 +123,7 @@ public class NameController<T1 extends BasePurchasesAndSales, T2 extends BaseTot
                                 open(selectedItem.getId());
                             }
                         } catch (Exception e) {
-                            log.error(e.getMessage(), e.getCause());
+                            log.error(e.getMessage(), e);
                         }
                     }
                 });

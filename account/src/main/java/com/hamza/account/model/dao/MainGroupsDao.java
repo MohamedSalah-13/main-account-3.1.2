@@ -5,7 +5,6 @@ import com.hamza.controlsfx.database.AbstractDao;
 import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.database.SqlStatements;
 
-import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.List;
@@ -18,8 +17,8 @@ public class MainGroupsDao extends AbstractDao<MainGroups> {
     private final String NAME_G = "name_g";
     private final String USER_ID = "user_id";
 
-    MainGroupsDao(Connection connection) {
-        super(connection);
+    MainGroupsDao() {
+        super();
     }
 
     @Override

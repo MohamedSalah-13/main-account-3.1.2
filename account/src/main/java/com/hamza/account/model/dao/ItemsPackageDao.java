@@ -8,7 +8,6 @@ import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.database.SqlStatements;
 import lombok.extern.log4j.Log4j2;
 
-import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -25,8 +24,8 @@ public class ItemsPackageDao extends AbstractDao<Items_Package> {
     private static final String CREATED_AT = "created_at";
     private static final String UPDATED_AT = "updated_at";
 
-    ItemsPackageDao(Connection connection) {
-        super(connection);
+    ItemsPackageDao() {
+        super();
     }
 
     @Override
@@ -86,7 +85,7 @@ public class ItemsPackageDao extends AbstractDao<Items_Package> {
                 try {
                     deleteById(item);
                 } catch (DaoException e) {
-                    log.error(e.getMessage(), e.getCause());
+                    log.error(e.getMessage(), e);
                 }
             });
         }

@@ -4,7 +4,6 @@ import com.hamza.account.model.domain.ComprehensiveSalesReport;
 import com.hamza.controlsfx.database.AbstractDao;
 import com.hamza.controlsfx.database.DaoException;
 
-import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.LocalDate;
@@ -12,8 +11,8 @@ import java.util.List;
 
 public class ComprehensiveSalesDao extends AbstractDao<ComprehensiveSalesReport> {
 
-    public ComprehensiveSalesDao(Connection connection) {
-        super(connection);
+    public ComprehensiveSalesDao() {
+        super();
     }
 
     // دالة البحث بين تاريخين (يومي أو فترة)

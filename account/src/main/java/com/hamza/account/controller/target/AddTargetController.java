@@ -111,7 +111,7 @@ public class AddTargetController implements AppSettingInterface {
         try {
             return new OpenFxmlApplication(targetRateController).getPane();
         } catch (IOException e) {
-            log.error(e.getMessage(), e.getCause());
+            log.error(e.getMessage(), e);
             AllAlerts.alertError(e.getMessage());
             return new Pane();
         }
@@ -168,7 +168,7 @@ public class AddTargetController implements AppSettingInterface {
             List<String> delegateNames = employeeService.getDelegateNames();
             searchableComboBox.setItems(FXCollections.observableArrayList(delegateNames));
         } catch (DaoException e) {
-            log.error(e.getMessage(), e.getCause());
+            log.error(e.getMessage(), e);
             AllAlerts.alertError(e.getMessage());
         }
     }
@@ -203,7 +203,7 @@ public class AddTargetController implements AppSettingInterface {
         try {
             return targetService.targetList();
         } catch (DaoException e) {
-            log.error(e.getMessage(), e.getCause());
+            log.error(e.getMessage(), e);
             AllAlerts.alertError(e.getMessage());
         }
         return new ArrayList<>();
@@ -222,7 +222,7 @@ public class AddTargetController implements AppSettingInterface {
                 }
             }
         } catch (DaoException e) {
-            log.error(e.getMessage(), e.getCause());
+            log.error(e.getMessage(), e);
             AllAlerts.alertError(e.getMessage());
         }
     }
@@ -264,7 +264,7 @@ public class AddTargetController implements AppSettingInterface {
 
             }
         } catch (DaoException e) {
-            log.error(e.getMessage(), e.getCause());
+            log.error(e.getMessage(), e);
             AllAlerts.alertError(e.getMessage());
         }
     }
@@ -288,7 +288,7 @@ public class AddTargetController implements AppSettingInterface {
             targetRate3Controller.setAmount();
 
         } catch (DaoException e) {
-            log.error(e.getMessage(), e.getCause());
+            log.error(e.getMessage(), e);
             AllAlerts.alertError(e.getMessage());
         }
     }

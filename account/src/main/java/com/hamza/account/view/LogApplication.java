@@ -98,7 +98,7 @@ public class LogApplication extends Application {
                 b = true;
             } catch (Exception e) {
                 login.setResetAllData(true);
-                log.error(e.getMessage(), e.getCause());
+                log.error(e.getMessage(), e);
                 AllAlerts.alertError(e.getMessage());
             }
         }, this::alertErrorAndResetData);
@@ -158,7 +158,7 @@ public class LogApplication extends Application {
                 if (i == 1) log.info(Error_Text_Show.DONE_READING_FROM_FILE, "user login");
                 else log.error("User not found");
             } catch (InterruptedException | DaoException e) {
-                log.error(e.getMessage(), e.getCause());
+                log.error(e.getMessage(), e);
             }
 
         });

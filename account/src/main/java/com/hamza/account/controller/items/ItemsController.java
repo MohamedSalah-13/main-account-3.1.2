@@ -548,7 +548,7 @@ public class ItemsController extends LoadData {
     }
 
     private void logErrors(Exception e) {
-        log.error(e.getMessage(), e.getCause());
+        log.error(e.getMessage(), e);
         AllAlerts.showExceptionDialog(e);
     }
 

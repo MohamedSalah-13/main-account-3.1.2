@@ -17,7 +17,7 @@ public record AccountCustomerService(DaoFactory daoFactory) {
         try {
             return daoFactory.customerAccountDao().getTotalsAccount(dateFrom, dateTo);
         } catch (DaoException e) {
-            log.error(e.getMessage(), e.getCause());
+            log.error(e.getMessage(), e);
         }
         return new ArrayList<>();
     }

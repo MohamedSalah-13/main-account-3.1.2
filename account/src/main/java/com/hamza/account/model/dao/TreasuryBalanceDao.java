@@ -6,7 +6,6 @@ import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.database.SqlStatements;
 import com.hamza.controlsfx.util.NumberUtils;
 
-import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.LocalDateTime;
@@ -27,8 +26,8 @@ public class TreasuryBalanceDao extends AbstractDao<TreasuryBalance> {
     private final String INFORMATION = "information";
     private final String TREASURY_NAME = "treasury_name";
 
-    protected TreasuryBalanceDao(Connection connection) {
-        super(connection);
+    protected TreasuryBalanceDao() {
+        super();
     }
 
     @Override

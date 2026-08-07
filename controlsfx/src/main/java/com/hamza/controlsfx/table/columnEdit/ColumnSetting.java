@@ -95,7 +95,7 @@ public class ColumnSetting {
                 columnEdite.updateColumn(event);
             } catch (DaoException e) {
                 AllAlerts.showExceptionDialog(e);
-                log.error(e.getMessage(), e.getCause());
+                log.error(e.getMessage(), e);
             }
         });
     }

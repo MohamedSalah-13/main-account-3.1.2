@@ -125,7 +125,7 @@ public class CustomerPurchasedItemsController implements Initializable, AppSetti
             masterData.setAll(customerPurchaseInterface.getPurchasedItemsByCustomerId(customerId));
             labelCustomerName.setText(customerName);
         } catch (DaoException e) {
-            log.error(e.getMessage(), e.getCause());
+            log.error(e.getMessage(), e);
             AllAlerts.showExceptionDialog(e);
         }
     }
@@ -189,7 +189,7 @@ public class CustomerPurchasedItemsController implements Initializable, AppSetti
                 AllAlerts.alertSaveWithMessage("تم تصدير ملف Excel بنجاح");
             }
         } catch (ExcelException e) {
-            log.error(e.getMessage(), e.getCause());
+            log.error(e.getMessage(), e);
             AllAlerts.alertError(e.getMessage());
         }
     }
@@ -246,7 +246,7 @@ public class CustomerPurchasedItemsController implements Initializable, AppSetti
                 AllAlerts.alertError("حدث خطأ أثناء التصدير");
             }
         } catch (Exception e) {
-            log.error(e.getMessage(), e.getCause());
+            log.error(e.getMessage(), e);
             AllAlerts.alertError(e.getMessage());
         }
     }

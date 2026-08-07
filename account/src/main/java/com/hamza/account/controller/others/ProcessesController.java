@@ -240,7 +240,7 @@ public class ProcessesController implements Initializable {
                 }
             }
         } catch (DaoException e) {
-            log.error(e.getMessage(), e.getCause());
+            log.error(e.getMessage(), e);
             AllAlerts.alertError(e.getMessage());
         }
     }

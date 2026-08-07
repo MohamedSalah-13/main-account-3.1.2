@@ -8,7 +8,6 @@ import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.database.SqlStatements;
 import lombok.extern.log4j.Log4j2;
 
-import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.List;
@@ -22,8 +21,8 @@ public class UserPermissionDao extends AbstractDao<Users_Permission> {
     private final String USER_ID = "user_id";
     private final String CHECK_STATUS = "check_status";
 
-    UserPermissionDao(Connection connection) {
-        super(connection);
+    UserPermissionDao() {
+        super();
     }
 
 

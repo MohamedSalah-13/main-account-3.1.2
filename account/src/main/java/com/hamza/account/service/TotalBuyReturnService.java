@@ -44,7 +44,7 @@ public record TotalBuyReturnService(DaoFactory daoFactory) {
         return getTotalsPurchaseReturnDao().getTotalBuyByYear(year);
     }
 
-    public int getMaxId() {
+    public int getMaxId() throws DaoException {
         return getTotalsPurchaseReturnDao().getMaxId();
     }
 

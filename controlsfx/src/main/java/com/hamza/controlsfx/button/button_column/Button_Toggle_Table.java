@@ -35,7 +35,7 @@ public class Button_Toggle_Table<T> extends TableColumn<T, String> {
                                 try {
                                     buttonColumnI.action(getIndex(), btn.selectedProperty().getValue());
                                 } catch (Exception e) {
-                                    log.error(e.getMessage(), e.getCause());
+                                    log.error(e.getMessage(), e);
                                     AllAlerts.alertError(e.getMessage());
                                 }
                             });

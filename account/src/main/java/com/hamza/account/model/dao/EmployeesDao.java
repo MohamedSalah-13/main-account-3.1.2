@@ -7,7 +7,6 @@ import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.database.SqlStatements;
 
 import java.sql.Blob;
-import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.LocalDate;
@@ -60,8 +59,8 @@ public class EmployeesDao extends AbstractDao<Employees> {
     private final String ID = "id";
     private final String USER_ID = "user_id";
 
-    public EmployeesDao(Connection connection) {
-        super(connection);
+    public EmployeesDao() {
+        super();
     }
 
     @Override
@@ -217,6 +216,6 @@ public class EmployeesDao extends AbstractDao<Employees> {
     }
 
     public int getCountItems() {
-        return queryForInt("SELECT COUNT(*) FROM employees");
+        return queryForIntOrDefault("SELECT COUNT(*) FROM employees", 0);
     }
 }

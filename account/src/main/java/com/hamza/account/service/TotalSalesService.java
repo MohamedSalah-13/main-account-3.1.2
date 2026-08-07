@@ -22,7 +22,7 @@ public record TotalSalesService(DaoFactory daoFactory) {
         return getTotalsSalesDao().loadDataBetweenDate(startDate, endDate);
     }
 
-    public int getMaxId() {
+    public int getMaxId() throws DaoException {
         return getTotalsSalesDao().getMaxId();
     }
 

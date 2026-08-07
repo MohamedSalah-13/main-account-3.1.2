@@ -128,7 +128,7 @@ public class UserPermissionController implements AppSettingInterface {
             checkBoxMap.forEach((checkBox, userPermissionType) ->
                     checkBox.setSelected(isPermissionGranted(userPermissions, userPermissionType)));
         } catch (DaoException e) {
-            log.error(e.getMessage(), e.getCause());
+            log.error(e.getMessage(), e);
             AllAlerts.alertError(e.getMessage());
         }
     }

@@ -6,7 +6,6 @@ import com.hamza.controlsfx.database.AbstractDao;
 import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.util.NumberUtils;
 
-import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.LocalDate;
@@ -30,8 +29,8 @@ public class EarningsDao extends AbstractDao<Earnings> {
     private final String PROFIT = "profit";
     private final String TABLE_NAME = "table_name";
 
-    public EarningsDao(Connection connection) {
-        super(connection);
+    public EarningsDao() {
+        super();
     }
 
   /*  @Override

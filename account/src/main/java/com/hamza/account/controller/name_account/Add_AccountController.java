@@ -325,6 +325,6 @@ public class Add_AccountController<T1 extends BasePurchasesAndSales, T2 extends 
 
     private void logException(Exception e) {
         AllAlerts.showExceptionDialog(e);
-        log.error(getClass().getName(), e.getCause());
+        log.error(getClass().getName(), e);
     }
 }

@@ -127,7 +127,7 @@ public class ProfitLossController {
 
                 tableView.setItems(FXCollections.observableArrayList(tableData));
             } catch (DaoException e) {
-                log.error(e.getMessage(), e.getCause());
+                log.error(e.getMessage(), e);
                 AllAlerts.alertError(e.getMessage());
                 return;
             }

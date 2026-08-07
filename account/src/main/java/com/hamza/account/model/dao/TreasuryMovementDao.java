@@ -8,7 +8,6 @@ import com.hamza.controlsfx.database.AbstractDao;
 import com.hamza.controlsfx.database.DaoException;
 
 import java.math.BigDecimal;
-import java.sql.Connection;
 import java.sql.ResultSet;
 import java.time.LocalDate;
 import java.util.List;
@@ -17,9 +16,9 @@ public class TreasuryMovementDao extends AbstractDao<TreasuryMovement> {
 
     private final TreasuryDao treasuryDao;
 
-    public TreasuryMovementDao(Connection connection) {
-        super(connection);
-        this.treasuryDao = new TreasuryDao(connection);
+    public TreasuryMovementDao() {
+        super();
+        this.treasuryDao = new TreasuryDao();
     }
 
     @Override

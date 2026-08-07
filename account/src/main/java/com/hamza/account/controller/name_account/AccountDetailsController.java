@@ -312,7 +312,7 @@ public class AccountDetailsController<T1 extends BasePurchasesAndSales, T2 exten
 
     private void errorLog(Exception e) {
         AllAlerts.alertError(e.getMessage());
-        log.error(e.getMessage(), e.getCause());
+        log.error(e.getMessage(), e);
     }
 
     @Override

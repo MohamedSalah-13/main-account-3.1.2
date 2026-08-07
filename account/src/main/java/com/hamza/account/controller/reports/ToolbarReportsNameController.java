@@ -35,7 +35,7 @@ public class ToolbarReportsNameController {
             try {
                 toolbarReportsNameInterface.print();
             } catch (Exception e) {
-                log.error(e.getMessage(), e.getCause());
+                log.error(e.getMessage(), e);
                 AllAlerts.alertError(e.getMessage());
             }
         });
@@ -43,7 +43,7 @@ public class ToolbarReportsNameController {
             try {
                 toolbarReportsNameInterface.refresh();
             } catch (Exception e) {
-                log.error(e.getMessage(), e.getCause());
+                log.error(e.getMessage(), e);
                 AllAlerts.alertError(e.getMessage());
             }
         });

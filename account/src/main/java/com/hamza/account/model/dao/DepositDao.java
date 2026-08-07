@@ -7,7 +7,6 @@ import com.hamza.controlsfx.database.AbstractDao;
 import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.database.SqlStatements;
 
-import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.LocalDate;
@@ -25,8 +24,8 @@ public class DepositDao extends AbstractDao<AddDeposit> {
     private final String TREASURY_ID = "treasury_id";
     private final String USER_ID = "user_id";
 
-    DepositDao(Connection connection, DaoFactory daoFactory) {
-        super(connection);
+    DepositDao(DaoFactory daoFactory) {
+        super();
     }
 
     @Override

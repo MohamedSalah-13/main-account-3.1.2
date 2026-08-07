@@ -127,7 +127,7 @@ public class DeleteDataController implements AppSettingInterface {
             daoFactory.truncateDao().truncateTableOthers(deleteEmployees.isSelected(), deleteProcesses.isSelected(), deleteExpenses.isSelected(), deleteUsers.isSelected());
 
         } catch (Exception e) {
-            log.error(e.getMessage(), e.getCause());
+            log.error(e.getMessage(), e);
             AllAlerts.alertError(e.getMessage());
         }
     }

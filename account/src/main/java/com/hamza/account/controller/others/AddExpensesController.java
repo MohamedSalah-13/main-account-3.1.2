@@ -153,7 +153,7 @@ public class AddExpensesController implements AddInterface {
             }
         } catch (DaoException e) {
             AllAlerts.showExceptionDialog(e);
-            log.error(e.getMessage(), e.getCause());
+            log.error(e.getMessage(), e);
         }
     }
 

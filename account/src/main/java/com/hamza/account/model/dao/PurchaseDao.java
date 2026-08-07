@@ -9,7 +9,6 @@ import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.database.SqlStatements;
 import lombok.extern.log4j.Log4j2;
 
-import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.List;
@@ -33,8 +32,8 @@ public class PurchaseDao extends AbstractDao<Purchase> {
     private final String NAME = "name";
     private final String EXPIRATION_DATE = "expiration_date";
 
-    public PurchaseDao(Connection connection, DaoFactory daoFactory) {
-        super(connection);
+    public PurchaseDao(DaoFactory daoFactory) {
+        super();
         this.daoFactory = daoFactory;
     }
 

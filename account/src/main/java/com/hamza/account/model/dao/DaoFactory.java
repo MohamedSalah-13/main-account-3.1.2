@@ -1,254 +1,236 @@
 package com.hamza.account.model.dao;
 
-import lombok.Setter;
-
-import java.sql.Connection;
-import java.sql.SQLException;
-
+/**
+ * Creates DAOs. It no longer holds a {@link java.sql.Connection}: each DAO call
+ * borrows one from the pool for the length of that call, so there is nothing
+ * here to hand out or to keep alive.
+ * <p>
+ * The {@code setAuditUserId}/{@code clearAuditUserId} pair that used to live here
+ * was removed with it. Both set a MySQL session variable, which belongs to one
+ * connection and so cannot survive pooling - and nothing called them: no code
+ * referenced either method and no trigger in the schema read {@code @app_user_id}.
+ */
 public enum DaoFactory {
 
     INSTANCE;
 
-    @Setter
-    private Connection connection;
-
-    public void setAuditUserId(int userId) throws SQLException {
-        if (connection == null || connection.isClosed()) {
-            return;
-        }
-
-        try (var statement = connection.prepareStatement("SET @app_user_id = ?")) {
-            statement.setInt(1, userId);
-            statement.execute();
-        }
-    }
-
-    public void clearAuditUserId() throws SQLException {
-        if (connection == null || connection.isClosed()) {
-            return;
-        }
-
-        try (var statement = connection.prepareStatement("SET @app_user_id = NULL")) {
-            statement.execute();
-        }
-    }
     public CompanyDao getCompanyDao() {
-        return new CompanyDao(connection);
+        return new CompanyDao();
     }
 
     public ItemsDao getItemsDao() {
-        return new ItemsDao(connection, this);
+        return new ItemsDao(this);
     }
 
     public TypeSelPriceDao getItemsSelPriceDao() {
-        return new TypeSelPriceDao(connection);
+        return new TypeSelPriceDao();
     }
 
     public ItemsUnitDao getItemsUnitDao() {
-        return new ItemsUnitDao(connection, this);
+        return new ItemsUnitDao(this);
     }
 
     public ItemBarcodesDao getItemBarcodesDao() {
-        return new ItemBarcodesDao(connection);
+        return new ItemBarcodesDao();
     }
 
     public Items_StockDao getItemsStockDao() {
-        return new Items_StockDao(connection, this);
+        return new Items_StockDao(this);
     }
 
     public MainGroupsDao getMainGroups() {
-        return new MainGroupsDao(connection);
+        return new MainGroupsDao();
     }
 
     public SubGroupsDao getSupGroupsDao() {
-        return new SubGroupsDao(connection, this);
+        return new SubGroupsDao(this);
     }
 
     public EmployeesDao employeesDao() {
-        return new EmployeesDao(connection);
+        return new EmployeesDao();
     }
 
     public CustomerDao customersDao() {
-        return new CustomerDao(connection, this);
+        return new CustomerDao(this);
     }
 
     public SuppliersDao getSuppliersDao() {
-        return new SuppliersDao(connection, this);
+        return new SuppliersDao(this);
     }
 
     public PurchaseDao purchaseDao() {
-        return new PurchaseDao(connection, this);
+        return new PurchaseDao(this);
     }
 
     public PurchaseReturnDao purchaseReturnsDao() {
-        return new PurchaseReturnDao(connection, this);
+        return new PurchaseReturnDao(this);
     }
 
     public SalesDao salesDao() {
-        return new SalesDao(connection, this);
+        return new SalesDao(this);
     }
 
     public SalesReturnDao salesReturnsDao() {
-        return new SalesReturnDao(connection, this);
+        return new SalesReturnDao(this);
     }
 
     public TotalsBuyDao totalsPurchaseDao() {
-        return new TotalsBuyDao(connection, this);
+        return new TotalsBuyDao(this);
     }
 
     public TotalsSalesDao totalsSalesDao() {
-        return new TotalsSalesDao(connection, this);
+        return new TotalsSalesDao(this);
     }
 
     public StockDao stockDao() {
-        return new StockDao(connection);
+        return new StockDao();
     }
 
     public StockTransferDao stockTransferDao() {
-        return new StockTransferDao(connection, this);
+        return new StockTransferDao(this);
     }
 
     public StockTransferListDao stockTransferListDao() {
-        return new StockTransferListDao(connection, this);
+        return new StockTransferListDao(this);
     }
 
     public UsersDao usersDao() {
-        return new UsersDao(connection);
+        return new UsersDao();
     }
 
     public UnitsDao unitsDao() {
-        return new UnitsDao(connection);
+        return new UnitsDao();
     }
 
     public TreasuryDao treasuryDao() {
-        return new TreasuryDao(connection);
+        return new TreasuryDao();
     }
 
     public TreasuryDepositExpensesDao getTreasuryDepositExpensesDao() {
-        return new TreasuryDepositExpensesDao(connection);
+        return new TreasuryDepositExpensesDao();
     }
 
     public TreasuryTransferDao treasuryTransferDao() {
-        return new TreasuryTransferDao(connection);
+        return new TreasuryTransferDao();
     }
 
     public CustomerAccountDao customerAccountDao() {
-        return new CustomerAccountDao(connection);
+        return new CustomerAccountDao();
     }
 
     public SupplierAccountDao suppliersAccountDao() {
-        return new SupplierAccountDao(connection);
+        return new SupplierAccountDao();
     }
 
     public CardItemDao cardItemDao() {
-        return new CardItemDao(connection);
+        return new CardItemDao();
     }
 
     public TotalsPurchaseReturnDao totalsBuyReturnDao() {
-        return new TotalsPurchaseReturnDao(connection, this);
+        return new TotalsPurchaseReturnDao(this);
     }
 
     public TotalsSalesReturnDao totalsSalesReturnDao() {
-        return new TotalsSalesReturnDao(connection, this);
+        return new TotalsSalesReturnDao(this);
     }
 
     public AuditLogDao processesDao() {
-        return new AuditLogDao(connection);
+        return new AuditLogDao();
     }
 
     public ExpensesDetailsDao expensesDetailsDao() {
-        return new ExpensesDetailsDao(connection);
+        return new ExpensesDetailsDao();
     }
 
     public ExpensesDao expensesDao() {
-        return new ExpensesDao(connection);
+        return new ExpensesDao();
     }
 
     public ItemMiniDao itemMiniDao() {
-        return new ItemMiniDao(connection);
+        return new ItemMiniDao();
     }
 
     public TargetDetailsDao targetDetailsDao() {
-        return new TargetDetailsDao(connection);
+        return new TargetDetailsDao();
     }
 
     public TargetDao targetDao() {
-        return new TargetDao(connection);
+        return new TargetDao();
     }
 
     public TruncateDao truncateDao() {
-        return new TruncateDao(connection);
+        return new TruncateDao();
     }
 
     public EarningsDao earningsDao() {
-        return new EarningsDao(connection);
+        return new EarningsDao();
     }
 
     public DepositDao depositDao() {
-        return new DepositDao(connection, this);
+        return new DepositDao(this);
     }
 
     public TreasuryBalanceDao treasuryBalanceDao() {
-        return new TreasuryBalanceDao(connection);
+        return new TreasuryBalanceDao();
     }
 
     public UserPermissionDao userPermissionDao() {
-        return new UserPermissionDao(connection);
+        return new UserPermissionDao();
     }
 
     public AreaDao areaDao() {
-        return new AreaDao(connection);
+        return new AreaDao();
     }
 
     public ItemsPackageDao getItemsPackageDao() {
-        return new ItemsPackageDao(connection);
+        return new ItemsPackageDao();
     }
 
     public UserShiftDao userShiftDao() {
-        return new UserShiftDao(connection);
+        return new UserShiftDao();
     }
 
     public DailyDashboardReportDao dailyDashboardReportDao() {
-        return new DailyDashboardReportDao(connection);
+        return new DailyDashboardReportDao();
     }
 
     public TopSellingItemDao topSellingItemDao() {
-        return new TopSellingItemDao(connection);
+        return new TopSellingItemDao();
     }
 
     public MonthlySalesViewDao monthlySalesViewDao() {
-        return new MonthlySalesViewDao(connection,"view_monthly_sales");
+        return new MonthlySalesViewDao("view_monthly_sales");
     }
     public MonthlySalesViewDao monthlyPurchaseViewDao() {
-        return new MonthlySalesViewDao(connection,"view_monthly_purchase");
+        return new MonthlySalesViewDao("view_monthly_purchase");
     }
 
     public CustomerPurchasedItemDao customerPurchasedItemDao() {
-        return new CustomerPurchasedItemDao(connection);
+        return new CustomerPurchasedItemDao();
     }
 
     public SuppliersSalesItemDao suppliersSalesItemDao() {
-        return new SuppliersSalesItemDao(connection);
+        return new SuppliersSalesItemDao();
     }
 
     public TableDataReportsDao tableDataReportsDao() {
-        return new TableDataReportsDao(connection);
+        return new TableDataReportsDao();
     }
 
     public ItemSalesRankDao itemSalesRankDao() {
-        return new ItemSalesRankDao(connection);
+        return new ItemSalesRankDao();
     }
 
     public DailyItemSalesDao dailyItemSalesDao() {
-        return new DailyItemSalesDao(connection);
+        return new DailyItemSalesDao();
     }
 
     public ComprehensiveSalesDao comprehensiveSalesDao() {
-        return new ComprehensiveSalesDao(connection);
+        return new ComprehensiveSalesDao();
     }
 
     public CustomerReceivableDao customerReceivableDao() {
-        return new CustomerReceivableDao(connection);
+        return new CustomerReceivableDao();
     }
 
 }

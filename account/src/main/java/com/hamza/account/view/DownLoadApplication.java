@@ -14,6 +14,8 @@ import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.util.FontsSetting;
 import javafx.application.Application;
 import javafx.stage.Stage;
+
+import java.sql.SQLException;
 import lombok.extern.log4j.Log4j2;
 
 import static com.hamza.account.backup.ScheduledBackup.ENCRYPTION_PASSWORD;
@@ -110,14 +112,19 @@ public class DownLoadApplication extends Application {
         }
     }
 
+    /**
+     * This used to borrow a connection from the pool and hand it to the DaoFactory
+     * to keep forever. The DAOs now take a connection per call, so all that is
+     * needed here is to confirm the database is reachable before the UI opens -
+     * the connection this opens is returned to the pool immediately.
+     */
     public static DaoFactory getDaoFactory() {
-        try {
-            DaoFactory daoFactory = DaoFactory.INSTANCE;
-            var connection = connectionToDatabase.getDbConnection().getConnection();
-            daoFactory.setConnection(connection);
-            new TrialManager(connection).checkTrialStatus();
-            return daoFactory;
-        } catch (DaoException e) {
+        try (var connection = connectionToDatabase.getDbConnection().getConnection()) {
+            if (!connection.isValid(5)) {
+                throw new DaoException("تعذر الاتصال بقاعدة البيانات");
+            }
+            return DaoFactory.INSTANCE;
+        } catch (DaoException | SQLException e) {
             AllAlerts.alertError(e.getMessage());
             System.exit(0);
         }

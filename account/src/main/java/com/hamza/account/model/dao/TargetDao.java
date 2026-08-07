@@ -6,7 +6,6 @@ import com.hamza.controlsfx.database.AbstractDao;
 import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.database.SqlStatements;
 
-import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.List;
@@ -27,8 +26,8 @@ public class TargetDao extends AbstractDao<Target> {
     private final String EMPLOYEE_NAME = "column_name";
     private final String USER_ID = "user_id";
 
-    public TargetDao(Connection connection) {
-        super(connection);
+    public TargetDao() {
+        super();
     }
 
     @Override

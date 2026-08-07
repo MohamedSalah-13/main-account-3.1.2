@@ -20,7 +20,7 @@ public class NotificationAdd {
                     try {
                         notificationAction.action();
                     } catch (Exception e) {
-                        log.error(e.getMessage(), e.getCause());
+                        log.error(e.getMessage(), e);
                     }
                 });
         Toolkit.getDefaultToolkit().beep();

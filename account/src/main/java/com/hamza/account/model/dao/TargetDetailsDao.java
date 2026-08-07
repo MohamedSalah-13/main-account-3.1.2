@@ -5,7 +5,6 @@ import com.hamza.controlsfx.database.AbstractDao;
 import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.database.SqlStatements;
 
-import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.List;
@@ -29,8 +28,8 @@ public class TargetDetailsDao extends AbstractDao<TargetsDetails> {
     private final String SALES_MONTH = "sales_month";
     private final String COMMISSION_MONTH = "commission";
 
-    public TargetDetailsDao(Connection connection) {
-        super(connection);
+    public TargetDetailsDao() {
+        super();
     }
 
     @Override

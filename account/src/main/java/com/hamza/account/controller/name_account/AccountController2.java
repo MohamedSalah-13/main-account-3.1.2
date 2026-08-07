@@ -335,7 +335,7 @@ public class AccountController2<T1 extends BasePurchasesAndSales, T2 extends Bas
     }
 
     private void logError(Exception e) {
-        log.error(e.getMessage(), e.getCause());
+        log.error(e.getMessage(), e);
         AllAlerts.alertError(e.getMessage());
     }
 }

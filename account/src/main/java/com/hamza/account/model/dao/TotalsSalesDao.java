@@ -44,8 +44,8 @@ public class TotalsSalesDao extends AbstractDao<Total_Sales> {
     private final DaoFactory daoFactory;
     private final SalesDao salesDao;
 
-    TotalsSalesDao(Connection connection, DaoFactory daoFactory) {
-        super(connection);
+    TotalsSalesDao(DaoFactory daoFactory) {
+        super();
         this.daoFactory = daoFactory;
         this.salesDao = daoFactory.salesDao();
     }
@@ -63,7 +63,7 @@ public class TotalsSalesDao extends AbstractDao<Total_Sales> {
 
     @Override
     public int insert(Total_Sales totalSales) throws DaoException {
-        if (!new TrialManager(connection).canAddSale()) return 0;
+        if (!withConnection(c -> new TrialManager(c).canAddSale())) return 0;
         String query = SqlStatements.insertStatement(TABLE_NAME, SUP_CODE, INVOICE_TYPE, INVOICE_DATE, TOTAL, DISCOUNT
                 , PAID_UP, STOCK_ID, DELEGATE_ID, TREASURY_ID, NOTES, INVOICE_NUMBER, USER_ID);
         return insertMultiData(() -> {
@@ -196,7 +196,7 @@ public class TotalsSalesDao extends AbstractDao<Total_Sales> {
         return queryForObjects(query, this::map, year);
     }
 
-    public int getMaxId() {
+    public int getMaxId() throws DaoException {
         return queryForInt("SELECT COALESCE(MAX(invoice_number), 0) + 1 FROM " + TABLE_NAME);
     }
 }

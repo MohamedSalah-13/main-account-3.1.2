@@ -77,7 +77,7 @@ public class JasperData {
      * @param e the JRException to be handled
      */
     private void handleJrException(JRException e) {
-        log.error(e.getMessage(), e.getCause());
+        log.error(e.getMessage(), e);
         AllAlerts.showExceptionDialog(e);
     }
 

@@ -5,7 +5,6 @@ import com.hamza.controlsfx.database.AbstractDao;
 import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.database.SqlStatements;
 
-import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.List;
@@ -29,8 +28,8 @@ public class MonthlySalesViewDao extends AbstractDao<MonthlySalesViewModel> {
     //    private final String TABLE_NAME = "view_monthly_sales";
     private String TABLE_NAME;
 
-    public MonthlySalesViewDao(Connection connection, String tableName) {
-        super(connection);
+    public MonthlySalesViewDao(String tableName) {
+        super();
         TABLE_NAME = tableName;
     }
 

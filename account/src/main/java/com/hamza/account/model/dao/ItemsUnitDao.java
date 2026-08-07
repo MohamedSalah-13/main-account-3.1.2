@@ -6,7 +6,6 @@ import com.hamza.controlsfx.database.AbstractDao;
 import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.database.SqlStatements;
 
-import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.List;
@@ -26,8 +25,8 @@ public class ItemsUnitDao extends AbstractDao<ItemsUnitsModel> {
     private final String INSERT = SqlStatements.insertStatement(ITEMS_UNITS, ITEMS_ID, ITEMS_BARCODE, UNIT, QUANTITY
             , BUY_PRICE, SEL_PRICE, USER_ID);
 
-    public ItemsUnitDao(Connection connection, DaoFactory daoFactory) {
-        super(connection);
+    public ItemsUnitDao(DaoFactory daoFactory) {
+        super();
         this.daoFactory = daoFactory;
     }
 

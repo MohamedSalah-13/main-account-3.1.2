@@ -99,7 +99,7 @@ public class AddStockController implements AddInterface {
     }
 
     private void errorLog(Exception e) {
-        log.error(e.getMessage(), e.getCause());
+        log.error(e.getMessage(), e);
         AllAlerts.alertError(e.getMessage());
     }
 }

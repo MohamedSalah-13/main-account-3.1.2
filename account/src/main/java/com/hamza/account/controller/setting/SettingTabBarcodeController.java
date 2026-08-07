@@ -135,7 +135,7 @@ public class SettingTabBarcodeController implements Initializable {
             }
         } catch (DaoException e) {
             AllAlerts.showExceptionDialog(e);
-            log.error(e.getMessage(), e.getCause());
+            log.error(e.getMessage(), e);
         }
     }
 
@@ -174,7 +174,7 @@ public class SettingTabBarcodeController implements Initializable {
             return load;
         } catch (IOException e) {
             AllAlerts.showExceptionDialog(e);
-            log.error(e.getMessage(), e.getCause());
+            log.error(e.getMessage(), e);
         }
         return null;
     }
@@ -195,7 +195,7 @@ public class SettingTabBarcodeController implements Initializable {
         try {
             return unitsService.getUnitsModelNames();
         } catch (DaoException e) {
-            log.error(e.getMessage(), e.getCause());
+            log.error(e.getMessage(), e);
             return List.of();
         }
     }
@@ -204,7 +204,7 @@ public class SettingTabBarcodeController implements Initializable {
         try {
             return supGroupService.getSubGroupsNames();
         } catch (Exception e) {
-            log.error(e.getMessage(), e.getCause());
+            log.error(e.getMessage(), e);
             return List.of();
         }
     }

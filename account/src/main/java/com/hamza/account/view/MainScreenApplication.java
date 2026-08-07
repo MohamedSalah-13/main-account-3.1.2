@@ -107,7 +107,7 @@ public class MainScreenApplication extends Application {
                     if (b) System.exit(0);
                 } else log.error("User not found");
             } catch (Exception e) {
-                log.error(e.getMessage(), e.getCause());
+                log.error(e.getMessage(), e);
                 System.exit(0);
             }
         });

@@ -4,15 +4,14 @@ import com.hamza.account.model.domain.TopSellingItem;
 import com.hamza.controlsfx.database.AbstractDao;
 import com.hamza.controlsfx.database.DaoException;
 
-import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.List;
 
 public class TopSellingItemDao extends AbstractDao<TopSellingItem> {
 
-    public TopSellingItemDao(Connection connection) {
-        super(connection);
+    public TopSellingItemDao() {
+        super();
     }
 
     @Override

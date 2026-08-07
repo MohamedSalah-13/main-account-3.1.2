@@ -582,7 +582,7 @@ public class TotalsController<T1 extends BasePurchasesAndSales, T2 extends BaseT
 
     private void exceptionHandle(Exception e) {
         AllAlerts.alertError(e.getMessage());
-        log.error(e.getMessage(), e.getCause());
+        log.error(e.getMessage(), e);
     }
 
 }
@@ -598,7 +598,7 @@ class OpenMethod<T> {
             action(tableView.getSelectionModel().getSelectedItem());
         } catch (Exception e) {
             AllAlerts.alertError(e.getMessage());
-            log.error(e.getMessage(), e.getCause());
+            log.error(e.getMessage(), e);
         }
     }
 

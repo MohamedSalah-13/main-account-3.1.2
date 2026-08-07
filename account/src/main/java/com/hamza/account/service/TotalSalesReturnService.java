@@ -42,7 +42,7 @@ public record TotalSalesReturnService(DaoFactory daoFactory) {
         return daoFactory.totalsSalesReturnDao();
     }
 
-    public int getMaxId() {
+    public int getMaxId() throws DaoException {
         return getTotalsSalesReturnDao().getMaxId();
     }
 }

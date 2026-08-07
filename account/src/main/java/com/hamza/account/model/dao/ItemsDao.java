@@ -104,22 +104,24 @@ public class ItemsDao extends AbstractDao<ItemsModel> {
     private final String USER_ID = "user_id";
     private final String QUERY_ITEMS = "SELECT * from items join quantity_items_table ip on items.id = ip.item_id ";
     private final DaoFactory daoFactory;
-    private final Connection connection;
 
-    ItemsDao(Connection connection, DaoFactory daoFactory) {
-        super(connection);
-        this.connection = connection;
+    ItemsDao(DaoFactory daoFactory) {
+        super();
         this.daoFactory = daoFactory;
     }
 
+    /**
+     * The item, its opening stock row and its extra barcodes go in together or not
+     * at all. This used to drive auto-commit by hand and relied on
+     * {@code setAutoCommit(true)} to flush the work, with no explicit commit;
+     * insertMultiData commits it properly and keeps the three statements on one
+     * connection.
+     */
     @Override
     public int insert(ItemsModel itemsModel) throws DaoException {
-        if (!new TrialManager(connection).canAddItem()) return 0;
+        if (!withConnection(c -> new TrialManager(c).canAddItem())) return 0;
 
-
-        try {
-            connection.setAutoCommit(false);
-
+        return insertMultiData(() -> {
             int itemId = insertItem(itemsModel);
             daoFactory.getItemsStockDao().insert(new Items_Stock_Model(
                     itemsModel.getId(), 1, itemsModel.getFirstBalanceForStock(), itemsModel.getFirstBalanceForStock()
@@ -128,24 +130,7 @@ public class ItemsDao extends AbstractDao<ItemsModel> {
             if (!itemsModel.getExtraBarcodes().isEmpty()) {
                 daoFactory.getItemBarcodesDao().insertBarcodesForItem(itemId, itemsModel.getExtraBarcodes());
             }
-
-            connection.setAutoCommit(true);
-            return 1;
-        } catch (Exception e) {
-            try {
-                connection.rollback();
-            } catch (Exception rollbackException) {
-                throw new DaoException(rollbackException.getMessage(), rollbackException);
-            }
-            throw new DaoException(e.getMessage(), e);
-        } finally {
-            try {
-                connection.setAutoCommit(true);
-            } catch (Exception e) {
-                throw new DaoException(e.getMessage(), e);
-            }
-        }
-
+        });
     }
 
     @Override
@@ -273,28 +258,30 @@ public class ItemsDao extends AbstractDao<ItemsModel> {
                 , selPrice1, selPrice2, selPrice3, itemActive, itemHasValidity, numberValidityDays, alertDaysBeforeExpire
                 , UNIT_ID, MINI_QUANTITY, FIRST_BALANCE, ITEM_IMAGE, has_package, USER_ID);
 
-        try (PreparedStatement statement = connection.prepareStatement(INSERT_ITEM, Statement.RETURN_GENERATED_KEYS)) {
-            for (int i = 1; i < objects.length + 1; i++) {
-                statement.setObject(i, objects[i - 1]);
-            }
-
-            int affectedRows = statement.executeUpdate();
-            if (affectedRows == 0) {
-                throw new DaoException("لم يتم إضافة الصنف");
-            }
-
-            try (ResultSet generatedKeys = statement.getGeneratedKeys()) {
-                if (generatedKeys.next()) {
-                    int generatedId = generatedKeys.getInt(1);
-                    itemsModel.setId(generatedId);
-                    return generatedId;
+        return withConnection(connection -> {
+            try (PreparedStatement statement = connection.prepareStatement(INSERT_ITEM, Statement.RETURN_GENERATED_KEYS)) {
+                for (int i = 1; i < objects.length + 1; i++) {
+                    statement.setObject(i, objects[i - 1]);
                 }
-                throw new DaoException("لم يتم الحصول على رقم الصنف الجديد");
-            }
 
-        } catch (Exception e) {
-            throw new DaoException(e.getMessage(), e);
-        }
+                int affectedRows = statement.executeUpdate();
+                if (affectedRows == 0) {
+                    throw new DaoException("لم يتم إضافة الصنف");
+                }
+
+                try (ResultSet generatedKeys = statement.getGeneratedKeys()) {
+                    if (generatedKeys.next()) {
+                        int generatedId = generatedKeys.getInt(1);
+                        itemsModel.setId(generatedId);
+                        return generatedId;
+                    }
+                    throw new DaoException("لم يتم الحصول على رقم الصنف الجديد");
+                }
+
+            } catch (SQLException e) {
+                throw new DaoException(e.getMessage(), e);
+            }
+        });
     }
 
     @NotNull
@@ -362,11 +349,14 @@ public class ItemsDao extends AbstractDao<ItemsModel> {
 
     public int maxItemId() {
         try {
-            CallableStatement cs = connection.prepareCall("{CALL max_item_id(?)}");
-            cs.executeUpdate();
-            return cs.getInt(1);
-        } catch (SQLException e) {
-            log.error(e.getMessage(), e.getCause());
+            return withConnection(connection -> {
+                try (CallableStatement cs = connection.prepareCall("{CALL max_item_id(?)}")) {
+                    cs.executeUpdate();
+                    return cs.getInt(1);
+                }
+            });
+        } catch (DaoException e) {
+            log.error(e.getMessage(), e);
         }
         return 0;
     }
@@ -448,7 +438,7 @@ public class ItemsDao extends AbstractDao<ItemsModel> {
     }
 
     public int getCountItems() {
-        return queryForInt("SELECT COUNT(*) FROM items");
+        return queryForIntOrDefault("SELECT COUNT(*) FROM items", 0);
     }
 
 }

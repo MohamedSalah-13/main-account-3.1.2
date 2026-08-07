@@ -6,7 +6,6 @@ import com.hamza.controlsfx.database.AbstractDao;
 import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.database.SqlStatements;
 
-import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Optional;
@@ -22,8 +21,8 @@ public class Items_StockDao extends AbstractDao<Items_Stock_Model> {
     private final DaoFactory daoFactory;
 
 
-    public Items_StockDao(Connection connection, DaoFactory daoFactory) {
-        super(connection);
+    public Items_StockDao(DaoFactory daoFactory) {
+        super();
         this.daoFactory = daoFactory;
     }
 

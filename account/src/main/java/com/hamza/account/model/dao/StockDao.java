@@ -5,7 +5,6 @@ import com.hamza.controlsfx.database.AbstractDao;
 import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.database.SqlStatements;
 
-import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.List;
@@ -18,8 +17,8 @@ public class StockDao extends AbstractDao<Stock> {
     private final String STOCK_ADDRESS = "stock_address";
     private final String USER_ID = "user_id";
 
-    StockDao(Connection connection) {
-        super(connection);
+    StockDao() {
+        super();
     }
 
     @Override

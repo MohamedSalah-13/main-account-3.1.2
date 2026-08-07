@@ -55,7 +55,7 @@ public class SettingController implements Initializable, AppSettingInterface {
         try {
             addTabs();
         } catch (Exception e) {
-            log.error(e.getMessage(), e.getCause());
+            log.error(e.getMessage(), e);
             AllAlerts.showExceptionDialog(e);
         }
 

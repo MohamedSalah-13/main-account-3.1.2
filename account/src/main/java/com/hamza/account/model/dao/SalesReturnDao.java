@@ -8,7 +8,6 @@ import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.database.SqlStatements;
 import lombok.extern.log4j.Log4j2;
 
-import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -32,8 +31,8 @@ public class SalesReturnDao extends AbstractDao<Sales_Return> {
     private final String DISCOUNT = "discount";
     private final String EXPIRATION_DATE = "expiration_date";
 
-    public SalesReturnDao(Connection connection, DaoFactory daofactory) {
-        super(connection);
+    public SalesReturnDao(DaoFactory daofactory) {
+        super();
         this.daofactory = daofactory;
     }
 
@@ -114,7 +113,7 @@ public class SalesReturnDao extends AbstractDao<Sales_Return> {
                 statement.setObject(i + 1, objects[i]);
             }
         } catch (SQLException e) {
-            log.error(e.getClass().getName(), e.getCause());
+            log.error(e.getClass().getName(), e);
         }
     }
 

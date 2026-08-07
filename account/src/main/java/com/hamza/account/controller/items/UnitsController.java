@@ -152,7 +152,7 @@ public class UnitsController implements Initializable, AppSettingInterface {
                 afterData();
             }
         } catch (Exception e) {
-            log.error(e.getMessage(), e.getCause());
+            log.error(e.getMessage(), e);
             AllAlerts.alertError(e.getMessage());
         }
     }
@@ -171,7 +171,7 @@ public class UnitsController implements Initializable, AppSettingInterface {
                 afterData();
             }
         } catch (Exception e) {
-            log.error(e.getMessage(), e.getCause());
+            log.error(e.getMessage(), e);
             AllAlerts.alertError(e.getMessage());
         }
     }
@@ -244,7 +244,7 @@ public class UnitsController implements Initializable, AppSettingInterface {
         try {
             return unitsService.getUnitsModelList();
         } catch (DaoException e) {
-            log.error(e.getMessage(), e.getCause());
+            log.error(e.getMessage(), e);
             return List.of();
         }
     }

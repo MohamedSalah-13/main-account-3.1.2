@@ -3,15 +3,14 @@ package com.hamza.account.model.dao;
 import com.hamza.account.model.domain.CustomerReceivable;
 import com.hamza.controlsfx.database.AbstractDao;
 import com.hamza.controlsfx.database.DaoException;
-import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.List;
 
 public class CustomerReceivableDao extends AbstractDao<CustomerReceivable> {
 
-    public CustomerReceivableDao(Connection connection) {
-        super(connection);
+    public CustomerReceivableDao() {
+        super();
     }
 
     public List<CustomerReceivable> getReceivablesReport() throws DaoException {

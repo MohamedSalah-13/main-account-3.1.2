@@ -124,7 +124,7 @@ public class TreasureDetailsController {
                 dateFrom.setValue(LocalDate.now());
                 filteredList.setPredicate(filterByDate().and(filterByDetails()).and(filterByUsers()).and(filterByTime()));
             } catch (DaoException e) {
-                log.error(e.getMessage(), e.getCause());
+                log.error(e.getMessage(), e);
                 AllAlerts.alertError(e.getMessage());
             }
         }
@@ -178,7 +178,7 @@ public class TreasureDetailsController {
                             new ShowInvoiceApplication<>(dataPublisher, dataInterface(processType, daoFactory, dataPublisher), daoFactory, id, "");
                         }
                     } catch (Exception ex) {
-                        log.error(ex.getMessage(), ex.getCause());
+                        log.error(ex.getMessage(), ex);
                     }
 
                 });
@@ -216,7 +216,7 @@ public class TreasureDetailsController {
         try {
             return treasuryService.listTreasuryModelNames();
         } catch (DaoException e) {
-            log.error(e.getMessage(), e.getCause());
+            log.error(e.getMessage(), e);
             AllAlerts.alertError(e.getMessage());
             return List.of();
         }
@@ -226,7 +226,7 @@ public class TreasureDetailsController {
         try {
             return userService.getUsersNames();
         } catch (DaoException e) {
-            log.error(e.getMessage(), e.getCause());
+            log.error(e.getMessage(), e);
             AllAlerts.alertError(e.getMessage());
             return List.of();
         }
@@ -267,7 +267,7 @@ public class TreasureDetailsController {
                 treasuryBalances.clear();
                 treasuryBalances.addAll(treasuryBalanceSummary);
             } catch (DaoException e) {
-                log.error(e.getMessage(), e.getCause());
+                log.error(e.getMessage(), e);
                 AllAlerts.alertError(e.getMessage());
             }
         });
@@ -307,7 +307,7 @@ public class TreasureDetailsController {
         try {
             return userService.getUsersByName(comboUsers.getSelectionModel().getSelectedItem());
         } catch (DaoException e) {
-            log.error(e.getMessage(), e.getCause());
+            log.error(e.getMessage(), e);
             AllAlerts.alertError(e.getMessage());
         }
         return new Users();

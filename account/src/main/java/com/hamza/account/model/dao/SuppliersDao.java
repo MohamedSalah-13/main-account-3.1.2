@@ -5,7 +5,6 @@ import com.hamza.controlsfx.database.AbstractDao;
 import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.database.SqlStatements;
 
-import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.LocalDateTime;
@@ -59,8 +58,8 @@ public class SuppliersDao extends AbstractDao<Suppliers> {
     private final String DATE_INSERT = "date_insert";
     private final DaoFactory daoFactory;
 
-    SuppliersDao(Connection connection, DaoFactory daoFactory) {
-        super(connection);
+    SuppliersDao(DaoFactory daoFactory) {
+        super();
         this.daoFactory = daoFactory;
     }
 
@@ -195,7 +194,7 @@ public class SuppliersDao extends AbstractDao<Suppliers> {
     }
 
     public int getCountItems() {
-        return queryForInt("SELECT COUNT(*) FROM suppliers");
+        return queryForIntOrDefault("SELECT COUNT(*) FROM suppliers", 0);
     }
 
 }

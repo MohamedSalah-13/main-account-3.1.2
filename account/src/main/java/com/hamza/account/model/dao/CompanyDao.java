@@ -8,7 +8,6 @@ import com.hamza.controlsfx.language.Setting_Language;
 import lombok.extern.log4j.Log4j2;
 
 import java.sql.Blob;
-import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.List;
@@ -25,8 +24,8 @@ public class CompanyDao extends AbstractDao<Company> {
     private final String COMP_IMAGE = "comp_image";
     private final String COMP_ID = "comp_id";
 
-    CompanyDao(Connection connection) {
-        super(connection);
+    CompanyDao() {
+        super();
     }
 
     @Override

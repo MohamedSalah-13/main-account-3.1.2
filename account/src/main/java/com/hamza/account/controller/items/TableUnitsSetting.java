@@ -68,7 +68,7 @@ public class TableUnitsSetting extends TableUnitsSettingProperty {
             tableUnits.getItems().add(e);
 
         } catch (Exception e) {
-            log.error(e.getMessage(), e.getCause());
+            log.error(e.getMessage(), e);
             AllAlerts.alertError(e.getMessage());
         }
     }

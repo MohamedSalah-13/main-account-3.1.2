@@ -66,8 +66,8 @@ public class CustomerDao extends AbstractDao<Customers> {
     private final String DATE_INSERT = "created_at";
     private final DaoFactory daoFactory;
 
-    CustomerDao(Connection connection, DaoFactory daoFactory) {
-        super(connection);
+    CustomerDao(DaoFactory daoFactory) {
+        super();
         this.daoFactory = daoFactory;
     }
 
@@ -80,7 +80,7 @@ public class CustomerDao extends AbstractDao<Customers> {
 
     @Override
     public int insert(Customers model) throws DaoException {
-        if (!new TrialManager(connection).canAddCustomer()) return 0;
+        if (!withConnection(c -> new TrialManager(c).canAddCustomer())) return 0;
         Object[] objects = {model.getName()
                 , model.getTel()
                 , model.getAddress()
@@ -213,6 +213,6 @@ public class CustomerDao extends AbstractDao<Customers> {
     }
 
     public int getCountItems() {
-        return queryForInt("SELECT COUNT(*) FROM custom");
+        return queryForIntOrDefault("SELECT COUNT(*) FROM custom", 0);
     }
 }

@@ -8,7 +8,6 @@ import com.hamza.controlsfx.database.AbstractDao;
 import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.database.SqlStatements;
 
-import java.sql.Connection;
 import java.sql.ResultSet;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -26,8 +25,8 @@ public class AuditLogDao extends AbstractDao<Audit_log> {
     private final String action_time = "action_time";
     private final String NOTES = "notes";
 
-    public AuditLogDao(Connection connection) {
-        super(connection);
+    public AuditLogDao() {
+        super();
     }
 
     @Override

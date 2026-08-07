@@ -4,7 +4,6 @@ import com.hamza.account.model.domain.TableDataReports;
 import com.hamza.controlsfx.database.AbstractDao;
 import com.hamza.controlsfx.database.DaoException;
 
-import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.Month;
@@ -13,8 +12,8 @@ import java.util.List;
 import java.util.Locale;
 
 public class TableDataReportsDao extends AbstractDao<TableDataReports> {
-    public TableDataReportsDao(Connection connection) {
-        super(connection);
+    public TableDataReportsDao() {
+        super();
     }
 
     @Override

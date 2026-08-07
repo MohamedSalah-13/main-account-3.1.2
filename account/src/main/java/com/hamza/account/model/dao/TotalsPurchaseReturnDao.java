@@ -7,7 +7,6 @@ import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.database.SqlStatements;
 
 import java.math.BigDecimal;
-import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.LocalDateTime;
@@ -34,8 +33,8 @@ public class TotalsPurchaseReturnDao extends AbstractDao<Total_Buy_Re> {
     private final PurchaseReturnDao returnPurchaseDao;
     private final DaoFactory daoFactory;
 
-    TotalsPurchaseReturnDao(Connection connection, DaoFactory daoFactory) {
-        super(connection);
+    TotalsPurchaseReturnDao(DaoFactory daoFactory) {
+        super();
         this.daoFactory = daoFactory;
         this.returnPurchaseDao = daoFactory.purchaseReturnsDao();
     }
@@ -166,7 +165,7 @@ public class TotalsPurchaseReturnDao extends AbstractDao<Total_Buy_Re> {
         return queryForObjects(query, this::map, year);
     }
 
-    public int getMaxId() {
+    public int getMaxId() throws DaoException {
         return queryForInt("SELECT COALESCE(MAX(id), 0) + 1 FROM " + TABLE_NAME);
     }
 }

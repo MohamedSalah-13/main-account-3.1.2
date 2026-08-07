@@ -8,7 +8,6 @@ import com.hamza.controlsfx.database.SqlStatements;
 import lombok.extern.log4j.Log4j2;
 
 import java.math.BigDecimal;
-import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.SQLIntegrityConstraintViolationException;
@@ -40,9 +39,8 @@ public class TotalsSalesReturnDao extends AbstractDao<Total_Sales_Re> {
     private final String PROFIT_PERCENT = "profit_percent";
     private final DaoFactory daoFactory;
 
-    TotalsSalesReturnDao(Connection connection
-            , DaoFactory daoFactory) {
-        super(connection);
+    TotalsSalesReturnDao(DaoFactory daoFactory) {
+        super();
         this.daoFactory = daoFactory;
     }
 
@@ -194,7 +192,7 @@ public class TotalsSalesReturnDao extends AbstractDao<Total_Sales_Re> {
         return queryForObjects(query, this::map, year);
     }
 
-    public int getMaxId() {
+    public int getMaxId() throws DaoException {
         return queryForInt("SELECT COALESCE(MAX(id), 0) + 1 FROM " + TABLE_NAME);
     }
 }

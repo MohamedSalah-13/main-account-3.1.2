@@ -4,15 +4,14 @@ import com.hamza.account.model.domain.DailyDashboardReport;
 import com.hamza.controlsfx.database.AbstractDao;
 import com.hamza.controlsfx.database.DaoException;
 
-import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.List;
 
 public class DailyDashboardReportDao extends AbstractDao<DailyDashboardReport> {
 
-    public DailyDashboardReportDao(Connection connection) {
-        super(connection);
+    public DailyDashboardReportDao() {
+        super();
     }
 
     @Override

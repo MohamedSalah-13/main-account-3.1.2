@@ -6,7 +6,6 @@ import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.database.SqlStatements;
 import lombok.SneakyThrows;
 
-import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.List;
@@ -22,8 +21,8 @@ public class StockTransferListDao extends AbstractDao<StockTransferListItems> {
     private final String QUANTITY = "quantity";
     private final DaoFactory daoFactory;
 
-    StockTransferListDao(Connection connection, DaoFactory daoFactory) {
-        super(connection);
+    StockTransferListDao(DaoFactory daoFactory) {
+        super();
         this.daoFactory = daoFactory;
     }
 

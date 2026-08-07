@@ -5,7 +5,6 @@ import com.hamza.controlsfx.database.AbstractDao;
 import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.database.SqlStatements;
 
-import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.List;
@@ -16,8 +15,8 @@ public class AreaDao extends AbstractDao<Area> {
     private final String ID = "id";
     private final String NAME = "area_name";
 
-    public AreaDao(Connection connection) {
-        super(connection);
+    public AreaDao() {
+        super();
     }
 
     @Override

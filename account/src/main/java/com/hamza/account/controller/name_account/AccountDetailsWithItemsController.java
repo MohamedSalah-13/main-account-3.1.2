@@ -463,7 +463,7 @@ public class AccountDetailsWithItemsController<T1 extends BasePurchasesAndSales,
 
     private void errorLog(Exception e) {
         AllAlerts.alertError(e.getMessage());
-        log.error(e.getMessage(), e.getCause());
+        log.error(e.getMessage(), e);
         e.printStackTrace();
     }
 

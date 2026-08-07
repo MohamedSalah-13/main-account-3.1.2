@@ -432,7 +432,7 @@ public class MainScreenController extends MainItems implements Initializable {
     }
 
     private void logException(Exception e) {
-        log.error(e.getMessage(), e.getCause() + " - " + this.getClass().getName());
+        log.error("{} - {}", e.getMessage(), this.getClass().getName(), e);
         AllAlerts.showExceptionDialog(e);
     }
 

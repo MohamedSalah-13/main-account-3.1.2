@@ -155,7 +155,7 @@ public class InventoryController {
             observableList.addFirst(Setting_Language.WORD_ALL);
             comboStock.getSelectionModel().selectFirst();
         } catch (DaoException e) {
-            log.error(e.getMessage(), e.getCause());
+            log.error(e.getMessage(), e);
             AllAlerts.alertError(e.getMessage());
         }
     }
@@ -179,7 +179,7 @@ public class InventoryController {
                     loadDataFromDB(newValue); // لا يتم الاستدعاء إلا بعد التوقف عن الكتابة
                     calculateTotalBalances();
                 } catch (DaoException e) {
-                    log.error(e.getMessage(), e.getCause());
+                    log.error(e.getMessage(), e);
                     AllAlerts.alertError(e.getMessage());
                 }
             });

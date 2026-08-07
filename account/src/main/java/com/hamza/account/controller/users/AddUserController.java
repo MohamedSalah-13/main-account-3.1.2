@@ -116,7 +116,7 @@ public class AddUserController implements AddInterface {
                     comboActive.getSelectionModel().selectFirst();
                 }
             } catch (Exception e) {
-                log.error(this.getClass().getCanonicalName(), e.getCause());
+                log.error(this.getClass().getCanonicalName(), e);
             }
     }
 

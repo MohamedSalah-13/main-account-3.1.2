@@ -71,7 +71,7 @@ public class AddDataController implements Initializable {
             try {
                 addDataInterface.addData();
             } catch (Exception e) {
-                log.error(e.getMessage(), e.getCause());
+                log.error(e.getMessage(), e);
             }
         });
         btnUpdate.setOnAction(event -> {
@@ -111,7 +111,7 @@ public class AddDataController implements Initializable {
     }
 
     private void log(Exception e) {
-        log.error(e.getMessage(), e.getCause());
+        log.error(e.getMessage(), e);
         AllAlerts.alertError(e.getMessage());
     }
 }

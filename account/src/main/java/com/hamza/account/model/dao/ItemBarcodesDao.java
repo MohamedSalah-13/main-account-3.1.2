@@ -18,8 +18,8 @@ public class ItemBarcodesDao extends AbstractDao<String> {
     private static final String BARCODE = "barcode";
     private static final String INSERT = SqlStatements.insertStatement(TABLE_NAME, ITEM_ID, BARCODE);
 
-    public ItemBarcodesDao(Connection connection) {
-        super(connection);
+    public ItemBarcodesDao() {
+        super();
     }
 
     public List<String> getBarcodesByItemId(int itemId) throws DaoException {
@@ -30,20 +30,22 @@ public class ItemBarcodesDao extends AbstractDao<String> {
     public int insertBarcodesForItem(int itemId, List<String> barcodes) throws DaoException {
         if (barcodes == null || barcodes.isEmpty()) return 0;
 
-        try (PreparedStatement statement = connection.prepareStatement(INSERT)) {
-            for (String barcode : barcodes) {
-                statement.setObject(1, itemId);
-                statement.setObject(2, barcode);
-                statement.addBatch();
+        return withConnection(connection -> {
+            try (PreparedStatement statement = connection.prepareStatement(INSERT)) {
+                for (String barcode : barcodes) {
+                    statement.setObject(1, itemId);
+                    statement.setObject(2, barcode);
+                    statement.addBatch();
+                }
+                int[] results = statement.executeBatch();
+                return results.length;
+            } catch (SQLException e) {
+                if (e.getMessage() != null && e.getMessage().contains("Duplicate entry")) {
+                    throw new DaoException(Error_Text_Show.DUPLICATE_ENTRY, e);
+                }
+                throw new DaoException(e);
             }
-            int[] results = statement.executeBatch();
-            return results.length;
-        } catch (SQLException e) {
-            if (e.getMessage() != null && e.getMessage().contains("Duplicate entry")) {
-                throw new DaoException(Error_Text_Show.DUPLICATE_ENTRY, e);
-            }
-            throw new DaoException(e);
-        }
+        });
     }
 
     public int deleteByItemId(int itemId) throws DaoException {
