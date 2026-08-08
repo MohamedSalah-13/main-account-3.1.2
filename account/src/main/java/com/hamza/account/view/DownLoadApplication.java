@@ -36,7 +36,9 @@ public class DownLoadApplication extends Application {
 
         // change language
         connectionToDatabase = new ConnectionToDatabase();
-//        updateDatabaseIfNeeded();
+        // Must stay ahead of getDaoFactory(): the DAOs assume the current schema, and on a new
+        // machine there is no database to connect to until this has created it.
+        updateDatabaseIfNeeded();
         daoFactory = getDaoFactory();
         checkTrialStatus();
 //        AlertSetting.setStylesheets(ThemeManager.getStylesheet());

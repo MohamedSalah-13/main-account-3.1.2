@@ -22,6 +22,7 @@
         <openjfx.version>21.0.12</openjfx.version>
         <lombok.version>1.18.46</lombok.version>
         <poi.version>5.5.1</poi.version>
+        <flyway.version>11.14.0</flyway.version>
     </properties>
 
     <dependencies>
@@ -204,6 +205,20 @@
             <artifactId>mysql-connector-j</artifactId>
             <version>8.4.0</version>
             <scope>runtime</scope>
+        </dependency>
+
+        <!-- Schema migrations. flyway-mysql is the MySQL dialect module and is loaded
+             by service discovery: without it flyway-core cannot talk to MySQL at all. -->
+        <dependency>
+            <groupId>org.flywaydb</groupId>
+            <artifactId>flyway-core</artifactId>
+            <version>${flyway.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.flywaydb</groupId>
+            <artifactId>flyway-mysql</artifactId>
+            <version>${flyway.version}</version>
         </dependency>
 
         <!--       use for some dependency     -->

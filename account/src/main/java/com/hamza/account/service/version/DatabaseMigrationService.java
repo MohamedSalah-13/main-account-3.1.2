@@ -2,28 +2,55 @@ package com.hamza.account.service.version;
 
 import com.hamza.account.config.ConnectionToDatabase;
 import lombok.extern.log4j.Log4j2;
+import org.flywaydb.core.Flyway;
+import org.flywaydb.core.api.MigrationInfo;
+import org.flywaydb.core.api.output.MigrateResult;
 
-import java.io.BufferedReader;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.nio.charset.StandardCharsets;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.Statement;
-import java.util.ArrayList;
-import java.util.Comparator;
+import java.util.Arrays;
 import java.util.List;
-import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
+/**
+ * Brings a client database up to the schema this build expects, on every start.
+ *
+ * <p>The migrations themselves live in {@code db/migration} and are run by Flyway. What this class
+ * adds around it is the three things Flyway cannot know about this application:
+ *
+ * <ol>
+ *   <li>the database may not exist yet on a brand-new machine (Flyway needs to connect to it);</li>
+ *   <li>an existing client database has never been touched by Flyway, so it has to be baselined -
+ *       and baselining the wrong schema would silently skip real changes, so the shape is checked
+ *       first;</li>
+ *   <li>a client database is real data, so it gets dumped before anything is applied to it.</li>
+ * </ol>
+ *
+ * <p>Concurrency is Flyway's problem, not ours: it locks the history table for the duration, so two
+ * machines starting the app against one server cannot both apply the same migration.
+ */
 @Log4j2
 public class DatabaseMigrationService {
 
-    private static final String MIGRATIONS_PATH = "/db/migrations";
-    private static final String GENESIS_RESOURCE_PATH = MIGRATIONS_PATH + "/V000_genesis_baseline.sql";
-    private static final Pattern DELIMITER_PATTERN = Pattern.compile("(?i)^DELIMITER\\s+(\\S+)$");
+    private static final String MIGRATIONS_LOCATION = "classpath:db/migration";
+
+    /**
+     * The version {@code V1__baseline.sql} carries. An existing client database is stamped with it
+     * rather than having it executed, because the database already <em>is</em> that schema.
+     */
+    private static final String BASELINE_VERSION = "1";
+
+    /**
+     * Tables every v4.1.3 install has. A non-empty database missing any of them is not the schema
+     * V1 describes, so baselining it would mark V1 as applied over a schema that never had it.
+     */
+    private static final List<String> BASELINE_MARKER_TABLES =
+            List.of("items", "users", "custom", "suppliers", "total_sales", "total_buy", "treasury");
+
+    private static final Pattern SAFE_DATABASE_NAME = Pattern.compile("[A-Za-z0-9_$]+");
 
     private final ConnectionToDatabase database;
     private final SystemInfoService systemInfoService;
@@ -36,281 +63,188 @@ public class DatabaseMigrationService {
     }
 
     public MigrationResult updateDatabaseIfNeeded() {
-        systemInfoService.createSystemTablesIfNotExists();
+        createDatabaseIfMissing();
 
-        if (isFreshInstall()) {
-            return runFreshInstall();
+        // Emptiness has to be sampled before anything writes to the schema - Flyway treats a
+        // non-empty schema with no history table as "baseline me", so creating so much as the
+        // system_info table first would make a genuinely new database skip V1.
+        boolean freshInstall = isEmptyDatabase();
+
+        if (!freshInstall) {
+            verifyLooksLikeBaseline();
         }
 
-        String currentDatabaseVersion = systemInfoService.getCurrentDatabaseVersion();
-        String requiredDatabaseVersion = getLatestAvailableDatabaseVersion();
+        Flyway flyway = buildFlyway();
 
-        List<DatabaseMigration> pendingMigrations = getPendingMigrations(
-                currentDatabaseVersion,
-                requiredDatabaseVersion
-        );
+        List<MigrationInfo> pending = Arrays.asList(flyway.info().pending());
 
-        if (pendingMigrations.isEmpty()) {
-            return MigrationResult.noUpdateRequired(currentDatabaseVersion, requiredDatabaseVersion);
+        if (!freshInstall && pending.isEmpty()) {
+            String current = currentVersion(flyway);
+            systemInfoService.createSystemTablesIfNotExists();
+            systemInfoService.updateDatabaseVersion(current);
+            return MigrationResult.noUpdateRequired(current, current);
         }
 
-        backupService.createBackup();
+        if (!freshInstall) {
+            // Only a database with data in it is worth dumping, and only when something is
+            // actually about to be applied to it.
+            backupService.createBackup();
+        }
 
-        List<String> executedVersions = new ArrayList<>();
-
-        try (Connection connection = getConnection()) {
-            connection.setAutoCommit(false);
-
-            try {
-                for (DatabaseMigration migration : pendingMigrations) {
-                    executeMigration(connection, migration);
-                    registerMigration(connection, migration);
-                    systemInfoService.updateDatabaseVersion(migration.getVersion());
-                    executedVersions.add(migration.getVersion());
-                }
-
-                connection.commit();
-
-                return MigrationResult.updated(
-                        currentDatabaseVersion,
-                        requiredDatabaseVersion,
-                        executedVersions
-                );
-
-            } catch (Exception e) {
-                connection.rollback();
-                throw e;
-            }
-
+        MigrateResult result;
+        try {
+            result = flyway.migrate();
         } catch (Exception e) {
             log.error("Database migration failed", e);
-            throw new RuntimeException("Database migration failed", e);
+            throw new RuntimeException("Database migration failed: " + e.getMessage(), e);
         }
+
+        List<String> executedVersions = result.getSuccessfulMigrations().stream()
+                .map(migration -> migration.version)
+                .collect(Collectors.toList());
+
+        String versionAfter = currentVersion(flyway);
+
+        // Flyway reports where it actually started from, which on a client being adopted is the
+        // baseline it just stamped. Asking before the migration would say "0", since the history
+        // table did not exist yet - and the user would be told they upgraded from nothing.
+        String versionBefore = result.initialSchemaVersion == null
+                ? BASELINE_VERSION
+                : result.initialSchemaVersion;
+
+        systemInfoService.createSystemTablesIfNotExists();
+        systemInfoService.updateDatabaseVersion(versionAfter);
+
+        log.info("Flyway applied {} migration(s): {}", result.migrationsExecuted, executedVersions);
+
+        return freshInstall
+                ? MigrationResult.freshInstall(versionAfter, executedVersions)
+                : MigrationResult.updated(versionBefore, versionAfter, executedVersions);
     }
 
     /**
-     * The migration engine used to gate execution on a `db.required.version` value that was
-     * maintained by hand in version.properties and routinely drifted out of sync with the
-     * migrations actually registered below (some shipped for months without ever running).
-     * The required version is now derived directly from this list, so it can never drift.
+     * The highest migration version this build carries, for the "about" screen.
+     *
+     * <p>Flyway can only enumerate migrations with a connection open, so this needs a reachable
+     * database even though the answer comes from the shipped files. It is only ever called from a
+     * running application, where that holds - but it reports rather than throws if it does not,
+     * because a version label is not worth failing a screen over.
      */
     public String getLatestAvailableDatabaseVersion() {
-        return getAvailableMigrations().stream()
-                .map(DatabaseMigration::getVersion)
-                .max(DatabaseMigration::compareVersions)
-                .orElse("0.0.0");
+        try {
+            return Arrays.stream(buildFlyway().info().all())
+                    .filter(info -> info.getVersion() != null)
+                    .map(info -> info.getVersion().getVersion())
+                    .reduce((first, second) -> second)
+                    .orElse("0");
+        } catch (Exception e) {
+            log.warn("Could not read the available schema version", e);
+            return "unknown";
+        }
+    }
+
+    private Flyway buildFlyway() {
+        return Flyway.configure()
+                .dataSource(jdbcUrl(database.getDbName()), database.getUsername(), database.getPass())
+                .locations(MIGRATIONS_LOCATION)
+                .baselineOnMigrate(true)
+                .baselineVersion(BASELINE_VERSION)
+                .baselineDescription("Schema as shipped to clients in v4.1.3")
+                // Client databases have been edited by hand over the years; a checksum mismatch on
+                // a migration that already ran should not stop the app from opening.
+                .validateOnMigrate(false)
+                .cleanDisabled(true)
+                .load();
+    }
+
+    private String currentVersion(Flyway flyway) {
+        MigrationInfo current = flyway.info().current();
+        return current == null || current.getVersion() == null ? "0" : current.getVersion().getVersion();
     }
 
     /**
-     * A brand-new client database (no `items` table yet) can't run the incremental ALTER-based
-     * migrations below — several of them assume older, pre-migration column shapes that were
-     * never created. For a verified-empty database we instead run one consolidated baseline
-     * script that builds the full current schema directly, then mark migration history as
-     * fully applied (the standard "baseline" approach used by migration tools).
+     * A first-ever install has an empty MySQL server, and Flyway cannot connect to a schema that
+     * does not exist yet. Created with the same charset the old V001_tables.sql used.
      */
-    private boolean isFreshInstall() {
-        try (Connection connection = getConnection();
+    private void createDatabaseIfMissing() {
+        String databaseName = database.getDbName();
+
+        if (databaseName == null || !SAFE_DATABASE_NAME.matcher(databaseName).matches()) {
+            throw new IllegalStateException(
+                    "Database name in config.xml is not a plain identifier: " + databaseName);
+        }
+
+        String sql = "CREATE DATABASE IF NOT EXISTS `%s` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci"
+                .formatted(databaseName);
+
+        try (Connection connection = DriverManager.getConnection(
+                jdbcUrl(""), database.getUsername(), database.getPass());
+             Statement statement = connection.createStatement()) {
+            statement.execute(sql);
+        } catch (Exception e) {
+            log.error("Failed to create database {}", databaseName, e);
+            throw new RuntimeException("Failed to create database " + databaseName, e);
+        }
+    }
+
+    private boolean isEmptyDatabase() {
+        return countExistingTables(List.of()) == 0;
+    }
+
+    /**
+     * Guards the baseline. Stamping V1 over a database that is not the v4.1.3 schema would record
+     * it as applied without applying it, and every table V1 creates would then be missing for good.
+     */
+    private void verifyLooksLikeBaseline() {
+        int found = countExistingTables(BASELINE_MARKER_TABLES);
+
+        if (found == BASELINE_MARKER_TABLES.size()) {
+            return;
+        }
+
+        // Already under Flyway's control - the history table decides, not the marker tables.
+        if (countExistingTables(List.of("flyway_schema_history")) == 1) {
+            return;
+        }
+
+        throw new IllegalStateException(
+                ("Database '%s' is not empty but does not look like the v4.1.3 schema: only %d of the %d "
+                        + "expected core tables are present. Refusing to baseline it, because that would "
+                        + "record the base schema as applied without creating it. Point config.xml at the "
+                        + "right database, or start from an empty one.")
+                        .formatted(database.getDbName(), found, BASELINE_MARKER_TABLES.size()));
+    }
+
+    /**
+     * @param tableNames the tables to look for, or an empty list to count every table in the schema
+     */
+    private int countExistingTables(List<String> tableNames) {
+        String sql = "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = DATABASE()";
+
+        if (!tableNames.isEmpty()) {
+            String inList = tableNames.stream()
+                    .map(name -> "'" + name + "'")
+                    .collect(Collectors.joining(", "));
+            sql += " AND table_name IN (" + inList + ")";
+        }
+
+        try (Connection connection = DriverManager.getConnection(
+                jdbcUrl(database.getDbName()), database.getUsername(), database.getPass());
              Statement statement = connection.createStatement();
-             ResultSet resultSet = statement.executeQuery(
-                     "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = DATABASE() AND table_name = 'items'")) {
+             ResultSet resultSet = statement.executeQuery(sql)) {
             resultSet.next();
-            return resultSet.getInt(1) == 0;
+            return resultSet.getInt(1);
         } catch (Exception e) {
-            log.error("Failed to check database state", e);
-            throw new RuntimeException("Failed to check database state", e);
-        }
-    }
-
-    private MigrationResult runFreshInstall() {
-        DatabaseMigration genesis = DatabaseMigration.builder()
-                .version("0.0.1")
-                .description("Genesis: base schema for a new/empty database")
-                .resourcePath(GENESIS_RESOURCE_PATH)
-                .build();
-
-        List<String> executedVersions = new ArrayList<>();
-
-        try (Connection connection = getConnection()) {
-            connection.setAutoCommit(false);
-
-            try {
-                executeMigration(connection, genesis);
-                registerMigration(connection, genesis);
-                executedVersions.add(genesis.getVersion());
-
-                for (DatabaseMigration migration : getAvailableMigrations()) {
-                    registerMigration(connection, migration);
-                    executedVersions.add(migration.getVersion());
-                }
-
-                connection.commit();
-
-            } catch (Exception e) {
-                connection.rollback();
-                throw e;
-            }
-
-        } catch (Exception e) {
-            log.error("Fresh database initialization failed", e);
-            throw new RuntimeException("Fresh database initialization failed", e);
-        }
-
-        String latestVersion = getLatestAvailableDatabaseVersion();
-        systemInfoService.updateDatabaseVersion(latestVersion);
-
-        return MigrationResult.freshInstall(latestVersion, executedVersions);
-    }
-
-    private List<DatabaseMigration> getPendingMigrations(String currentVersion, String requiredVersion) {
-        return getAvailableMigrations().stream()
-                .filter(migration -> DatabaseMigration.compareVersions(migration.getVersion(), currentVersion) > 0)
-                .filter(migration -> DatabaseMigration.compareVersions(migration.getVersion(), requiredVersion) <= 0)
-                .sorted()
-                .collect(Collectors.toList());
-    }
-
-    private List<DatabaseMigration> getAvailableMigrations() {
-        /*
-         * ملاحظة:
-         * Java لا يستطيع دائمًا قراءة أسماء الملفات داخل resources بعد التغليف jar بسهولة.
-         * لذلك نضع هنا قائمة التحديثات صراحة.
-         * عند إضافة ملف SQL جديد، أضفه هنا فقط - هذه هي القائمة الوحيدة التي يعتمد عليها
-         * كل من: تحديد الإصدار المطلوب، وترتيب التنفيذ، وشاشة "عن البرنامج".
-         */
-        List<DatabaseMigration> migrations = new ArrayList<>();
-
-//        migrations.add(DatabaseMigration.builder()
-//                .version("4.2.0.1")
-//                .description("Add item_barcodes table for multiple barcodes per item")
-//                .resourcePath(MIGRATIONS_PATH + "/V4_2_0_1_item_barcodes.sql")
-//                .build());
-
-
-        /*
-         * مثال عند إضافة تحديث جديد:
-         *
-         * migrations.add(DatabaseMigration.builder()
-         *         .version("4.1.1")
-         *         .description("Add new customer fields")
-         *         .resourcePath(MIGRATIONS_PATH + "/V4_1_1__add_new_customer_fields.sql")
-         *         .build());
-         *
-         * ملحوظة: لو الميزة الجديدة بتضيف جدول جديد بالكامل (مش تعديل جدول موجود)،
-         * ضيف نفس تعريف الجدول (CREATE TABLE IF NOT EXISTS) لملف
-         * V000_genesis_baseline.sql كمان، عشان العميل الجديد (قاعدة بيانات فاضية)
-         * ياخد الجدول ده من أول تشغيل بدل ما يستناه.
-         */
-
-        return migrations.stream()
-                .sorted(Comparator.naturalOrder())
-                .collect(Collectors.toList());
-    }
-
-    private void executeMigration(Connection connection, DatabaseMigration migration) throws Exception {
-        String sqlScript = readResourceFile(migration.getResourcePath());
-
-        List<String> statements = splitSqlStatements(sqlScript);
-
-        try (Statement statement = connection.createStatement()) {
-            for (String sql : statements) {
-                if (!sql.isBlank()) {
-                    statement.execute(sql);
-                }
-            }
-        }
-
-        log.info("Executed database migration: {}", migration.getVersion());
-    }
-
-    private void registerMigration(Connection connection, DatabaseMigration migration) throws Exception {
-        String sql = """
-                INSERT INTO database_migrations (
-                    version,
-                    description,
-                    executed_at
-                ) VALUES (
-                    '%s',
-                    '%s',
-                    NOW()
-                )
-                ON DUPLICATE KEY UPDATE
-                    description = VALUES(description)
-                """.formatted(
-                escape(migration.getVersion()),
-                escape(migration.getDescription())
-        );
-
-        try (Statement statement = connection.createStatement()) {
-            statement.executeUpdate(sql);
-        }
-    }
-
-    private String readResourceFile(String resourcePath) throws Exception {
-        try (InputStream inputStream = DatabaseMigrationService.class.getResourceAsStream(resourcePath)) {
-            if (inputStream == null) {
-                throw new IllegalStateException("Migration file not found: " + resourcePath);
-            }
-
-            try (BufferedReader reader = new BufferedReader(
-                    new InputStreamReader(inputStream, StandardCharsets.UTF_8)
-            )) {
-                return reader.lines().collect(Collectors.joining("\n"));
-            }
+            log.error("Failed to inspect database state", e);
+            throw new RuntimeException("Failed to inspect database state", e);
         }
     }
 
     /**
-     * Splits a SQL script into individually-executable statements, honoring MySQL CLI-style
-     * `DELIMITER` directives (used by the stored-procedure-based migration scripts to define
-     * procedure bodies containing internal semicolons). JDBC has no notion of `DELIMITER` - it's
-     * a client-side convention - so the directive itself is stripped out and never sent to the
-     * server; only the statement text between delimiters is executed.
+     * @param databaseName the schema to connect to, or an empty string to reach the server itself
      */
-    private List<String> splitSqlStatements(String sqlScript) {
-        List<String> statements = new ArrayList<>();
-        StringBuilder currentStatement = new StringBuilder();
-        String delimiter = ";";
-
-        String[] lines = sqlScript.split("\\R");
-
-        for (String line : lines) {
-            String trimmedLine = line.trim();
-
-            if (trimmedLine.startsWith("--") || trimmedLine.startsWith("#") || trimmedLine.isBlank()) {
-                continue;
-            }
-
-            Matcher delimiterMatcher = DELIMITER_PATTERN.matcher(trimmedLine);
-            if (delimiterMatcher.matches()) {
-                delimiter = delimiterMatcher.group(1);
-                continue;
-            }
-
-            currentStatement.append(line).append("\n");
-
-            if (trimmedLine.endsWith(delimiter)) {
-                String statement = currentStatement.toString()
-                        .replaceFirst(Pattern.quote(delimiter) + "\\s*$", "");
-                statements.add(statement);
-                currentStatement.setLength(0);
-            }
-        }
-
-        if (!currentStatement.toString().isBlank()) {
-            statements.add(currentStatement.toString());
-        }
-
-        return statements;
-    }
-
-    private Connection getConnection() throws Exception {
-        String url = "jdbc:mysql://%s:%s/%s?useUnicode=true&characterEncoding=UTF-8&serverTimezone=UTC&allowMultiQueries=true"
-                .formatted(database.getHost(), database.getPort(), database.getDbName());
-
-        return DriverManager.getConnection(url, database.getUsername(), database.getPass());
-    }
-
-    private String escape(String value) {
-        return value == null ? "" : value.replace("'", "''");
+    private String jdbcUrl(String databaseName) {
+        return "jdbc:mysql://%s:%s/%s?useUnicode=true&characterEncoding=UTF-8&serverTimezone=UTC"
+                .formatted(database.getHost(), database.getPort(), databaseName);
     }
 }

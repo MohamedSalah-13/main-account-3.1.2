@@ -95,6 +95,15 @@
                         </goals>
                         <configuration>
                             <finalName>${project.artifactId}-${project.version}-${maven.build.timestamp}</finalName>
+                            <transformers>
+                                <!-- flyway-core and flyway-mysql both contribute
+                                     META-INF/services/org.flywaydb.core.extensibility.Plugin.
+                                     Without merging them one file silently replaces the other and
+                                     the shaded jar loses MySQL support - which only shows up at a
+                                     client, as "no database found to handle jdbc:mysql://...". -->
+                                <transformer
+                                        implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
+                            </transformers>
                         </configuration>
                     </execution>
                 </executions>
