@@ -137,21 +137,15 @@ public class SystemInfoService {
                 )
                 """;
 
-        String createMigrations = """
-                CREATE TABLE IF NOT EXISTS database_migrations (
-                    id INT AUTO_INCREMENT PRIMARY KEY,
-                    version VARCHAR(50) NOT NULL UNIQUE,
-                    description VARCHAR(255),
-                    executed_at DATETIME DEFAULT CURRENT_TIMESTAMP
-                )
-                """;
+        // Migration history is Flyway's flyway_schema_history table now. The old
+        // database_migrations table is left alone where it already exists, but is no longer
+        // created or written to.
 
         try (
                 Connection connection = getConnection();
                 Statement statement = connection.createStatement()
         ) {
             statement.execute(createSystemInfo);
-            statement.execute(createMigrations);
             insertDefaultSystemInfoIfMissing(statement);
         } catch (Exception e) {
             log.error("Failed to create system tables", e);

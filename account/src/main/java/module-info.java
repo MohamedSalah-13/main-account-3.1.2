@@ -30,6 +30,18 @@ module com.hamza.account {
     requires com.ibm.icu;
     requires eu.hansolo.tilesfx;
     requires fx.commons;
+    // Automatic modules (the Flyway jars carry no module-info). flyway.mysql is never
+    // referenced in code - it is found through ServiceLoader - but it has to be named here
+    // so the module graph actually resolves it, or MySQL support goes missing at runtime.
+    requires flyway.core;
+    requires flyway.mysql;
+
+    // The migration scripts live in db/migration, which reads as the package name "db.migration",
+    // so on the module path they are encapsulated and Flyway's loader gets null back
+    // ("Unable to obtain inputstream for resource"). This has to stay unqualified: a qualified
+    // "opens ... to flyway.core" is not enough, because Flyway reads them through the class
+    // loader, and ClassLoader.getResourceAsStream only sees packages opened unconditionally.
+    opens db.migration;
 //    requires spring.context;
 //    requires spring.beans;
 //    requires licensing.base;

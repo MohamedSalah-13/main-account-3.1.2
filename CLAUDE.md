@@ -165,10 +165,42 @@ Never commit `config.xml`, `config.key`, `private_key.pem`, `license.dat`, or `s
 
 ## Database schema
 
-`account/src/main/resources/db/migrations/V000_genesis_baseline.sql` is the whole schema — one consolidated
-baseline, no triggers. `DatabaseMigrationService` exists but its startup call in `DownLoadApplication` is
-**deliberately commented out** (the schema was folded into the baseline); do not "fix" that without asking.
-`scripts/main/*.sql` are older standalone scripts.
+Schema changes are **Flyway migrations**, in `account/src/main/resources/db/migration/`, applied by
+`DatabaseMigrationService` from the `DownLoadApplication` constructor before anything touches the DAOs.
+
+- `V1__baseline.sql` is the schema as shipped to clients in v4.1.3 — tables, indexes, 32 views, 8
+  triggers, 6 procedures and the seed data (including the `admin` user, without which nobody can log in).
+  It is the Flyway baseline: an existing client database is **stamped** with it, never executed, because
+  it already is that schema. A new database executes it and continues with `V2`, `V3`, …
+- Everything after it is one file per change. **Never fold a migration back into `V1`** and never edit a
+  migration that has shipped — a client that already ran it will not run it again, so the change would
+  reach new installs only.
+
+Adding a schema change is therefore one file: `V<n>__what_it_does.sql`. Both the upgrade path and the
+fresh-install path pick it up, and Flyway derives the version — nothing to register in Java.
+
+Three things the service adds around Flyway, all of which have bitten before:
+
+- It creates the database if it does not exist, so a first-ever install needs only a reachable MySQL.
+  `DataSourceProvider` sets `initializationFailTimeout(-1)` for the same reason — a fail-fast pool would
+  throw on the missing schema before the migration could create it.
+- It refuses to baseline a non-empty database that does not carry the v4.1.3 core tables, since stamping
+  `V1` over a foreign schema records it as applied without creating anything.
+- It runs `mysqldump` first when there is anything to apply to an existing database, and aborts if that
+  fails.
+
+Two traps in the tooling. Flyway must stay on the **11.x** line: 12.x pulls Jackson 3, which collides with
+the Jackson 2 that `jasperreports` requires over the same `jackson-annotations` coordinates, and Flyway
+dies at `Flyway.configure()`. And the shade plugin needs `ServicesResourceTransformer` — `flyway-core` and
+`flyway-mysql` both register `META-INF/services/org.flywaydb.core.extensibility.Plugin`, and unmerged, the
+packaged jar silently loses MySQL support.
+
+Statements inside a `DELIMITER |` block are sent as one statement, so a bare `DROP PROCEDURE x;` sitting
+between procedure definitions arrives glued to the `CREATE` after it. Close the block (`DELIMITER ;`)
+around such statements; the old engine only got away with it via `allowMultiQueries=true`.
+
+`scripts/main/*.sql` are the superseded manual bundle, kept for reference; `RunAllSqlScripts.bat` is no
+longer the install path.
 
 ## Licensing
 

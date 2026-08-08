@@ -78,6 +78,9 @@
             </goals>
             <configuration>
               <finalName>${project.artifactId}-${project.version}-${maven.build.timestamp}</finalName>
+              <transformers>
+                <transformer />
+              </transformers>
             </configuration>
           </execution>
         </executions>

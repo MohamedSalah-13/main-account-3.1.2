@@ -44,6 +44,12 @@ public final class DataSourceProvider {
                 config.setMaxLifetime(30 * 60_000);
                 config.setValidationTimeout(5_000);
 
+                // Do not open a connection while building the pool. On a first-ever install the
+                // database does not exist yet - it is created by the migration step, which runs
+                // after this - and failing fast here would make the app unable to ever install
+                // itself. Unreachable-database errors still surface, at the first borrow.
+                config.setInitializationFailTimeout(-1);
+
                 Properties dsProps = new Properties();
                 dsProps.setProperty("cachePrepStmts", "true");
                 dsProps.setProperty("prepStmtCacheSize", "250");
