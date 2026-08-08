@@ -182,6 +182,30 @@
     -fx-background-color: -app-disabled-bg;
 }
 
+/* ---------- Date picker popup (calendar) ----------
+   The popup keeps its default light chrome in every theme, but two of the
+   rules above reach inside it and used to hide the month and the year:
+   the month/year bar is an HBox with style class .spinner, so it was painted
+   with -app-input-bg (nearly black in the dark theme), and the month and the
+   year themselves are plain .label nodes, so the glass theme turned them
+   white. The day numbers were unaffected because they are .day-cell, which
+   carries its own text colour - hence only the month and the year vanished.
+   The colours here are deliberately fixed rather than taken from -app-*:
+   they sit on the popup's own light background, not on the app surface. */
+
+.date-picker-popup > * > .spinner {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+    -fx-border-width: 0;
+    -fx-padding: 0;
+}
+
+.date-picker-popup > * > .spinner > .label {
+    -fx-text-fill: #172554;
+    -fx-font-size: 13px;
+    -fx-font-weight: bold;
+}
+
 /* ---------- Buttons ---------- */
 
 .button,
