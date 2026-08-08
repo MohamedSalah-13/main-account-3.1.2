@@ -1,19 +1,113 @@
-.button-white {
-    -fx-min-width: 60px;
-    -fx-max-width: 70px;
-    -fx-background-color: transparent;
-    -fx-border-color: transparent;
-    -fx-text-fill: black;
+/* =========================================================
+   Record toolbar (toolbar-account.fxml)
+
+   The eight buttons get one fixed size, so the row stays even whatever the
+   label length, and one shared surface, so the toolbar reads as a single
+   control. What a button does is carried by its text colour and by the tint
+   that appears on hover - never by a different size or a different shape.
+
+   Colours come from the -app-* variables the theme files define, so the
+   toolbar follows the light and dark themes. Two things this depends on:
+
+   - every rule is scoped under .account-toolbar, so it outranks the plain
+     .button rules the themes define, whatever order the sheets load in;
+   - the sheet has to be attached to the same node as the theme sheet (the
+     dialog pane - see ApplicationDataWithToolbarIndexApp). Attached to the
+     toolbar itself, the -app-* lookups do not resolve and every colour here
+     is silently dropped.
+   ========================================================= */
+
+.account-toolbar {
+    -fx-padding: 8px 12px;
+    -fx-spacing: 8px;
+}
+
+.account-toolbar .separator:vertical .line {
+    -fx-border-color: -app-border;
+    -fx-border-width: 0 1px 0 0;
+}
+
+/* ---------- Shared button shape ---------- */
+
+.account-toolbar .toolbar-btn {
+    -fx-min-width: 78px;
+    -fx-pref-width: 78px;
+    -fx-max-width: 78px;
+    -fx-min-height: 54px;
+    -fx-pref-height: 54px;
+    -fx-max-height: 54px;
+
     -fx-content-display: top;
-    /*-fx-font-size: 11px;*/
+    -fx-graphic-text-gap: 4px;
+    -fx-alignment: center;
+    -fx-text-alignment: center;
+    -fx-font-size: 11px;
+    -fx-font-weight: bold;
+    -fx-padding: 5px 4px;
+
+    -fx-background-color: -app-neutral-soft;
+    -fx-background-radius: 10px;
+    -fx-border-color: transparent;
+    -fx-border-radius: 10px;
+    -fx-border-width: 1px;
+    -fx-text-fill: -app-text;
+    -fx-cursor: hand;
 }
 
-.button-white:hover {
-    -fx-background-color: transparent;
-    -fx-border-color: gray;
-    /*-fx-border-width: .5;*/
+.account-toolbar .toolbar-btn:hover {
+    -fx-background-color: -app-neutral-hover;
+    -fx-border-color: -app-border;
 }
 
-.button-white:focused {
-    -fx-background-color: transparent;
+.account-toolbar .toolbar-btn:armed {
+    -fx-background-color: -app-neutral-hover;
+    -fx-scale-x: 0.97;
+    -fx-scale-y: 0.97;
+}
+
+.account-toolbar .toolbar-btn:focused {
+    -fx-border-color: -app-primary;
+    -fx-effect: dropshadow(gaussian, -app-focus-shadow, 8, 0.16, 0, 1);
+}
+
+.account-toolbar .toolbar-btn:disabled {
+    -fx-opacity: 0.4;
+    -fx-cursor: default;
+}
+
+/* ---------- Meaning: text colour at rest, tint on hover ---------- */
+
+.account-toolbar .toolbar-btn-primary {
+    -fx-text-fill: -app-primary;
+}
+
+/* The primary tint is the one strong enough to swallow its own text colour,
+   so this is the one hover that also switches the label. */
+.account-toolbar .toolbar-btn-primary:hover {
+    -fx-background-color: -app-focus-shadow;
+    -fx-border-color: -app-primary;
+    -fx-text-fill: -app-text-strong;
+}
+
+.account-toolbar .toolbar-btn-success {
+    -fx-text-fill: -app-success;
+}
+
+.account-toolbar .toolbar-btn-success:hover {
+    -fx-background-color: -app-success-soft;
+    -fx-border-color: -app-success-border;
+}
+
+.account-toolbar .toolbar-btn-danger {
+    -fx-text-fill: -app-danger;
+}
+
+.account-toolbar .toolbar-btn-danger:hover {
+    -fx-background-color: -app-danger-soft;
+    -fx-border-color: -app-danger-border;
+}
+
+/* The four paging buttons are a quieter group than the four actions. */
+.account-toolbar .toolbar-btn-nav {
+    -fx-text-fill: -app-text-muted;
 }

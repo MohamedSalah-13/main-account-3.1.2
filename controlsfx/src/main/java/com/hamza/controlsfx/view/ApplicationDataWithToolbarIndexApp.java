@@ -15,14 +15,22 @@ import javafx.scene.layout.VBox;
 import lombok.extern.log4j.Log4j2;
 
 import java.io.IOException;
+import java.util.Objects;
 
 @Log4j2
 public class ApplicationDataWithToolbarIndexApp<T> extends Dialog<T> {
+
+    private static final String TOOLBAR_STYLESHEET = Objects.requireNonNull(
+            ApplicationDataWithToolbarIndexApp.class.getResource("/com/hamza/controlsfx/css/toolbar-account.css")).toExternalForm();
 
     public ApplicationDataWithToolbarIndexApp(ToolbarAccountInt<T> toolbarAccountInt, TableViewShowDataInt<T> tableViewShowDataInt
             , Node node, String title) throws Exception {
         super();
         DialogPane dialogPane = this.getDialogPane();
+        // On the dialog pane rather than on the toolbar itself: the sheet reads the
+        // -app-* theme colours, and those only resolve for a sheet attached to the
+        // same node as the theme sheet the caller adds.
+        dialogPane.getStylesheets().add(TOOLBAR_STYLESHEET);
         VBox vBox = new VBox();
         vBox.getChildren().addAll(getToolBar(toolbarAccountInt), node);
         dialogPane.setContent(vBox);
