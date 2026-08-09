@@ -2,7 +2,7 @@ package com.hamza.account.controller.setting;
 
 import com.hamza.account.controller.main.DataPublisher;
 import com.hamza.account.openFxml.FxmlPath;
-import com.hamza.account.view.LogApplication;
+import com.hamza.account.view.app.LogApplication;
 import com.hamza.controlsfx.language.Setting_Language;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;

@@ -7,7 +7,7 @@ import com.hamza.account.model.domain.CustomerReceivable;
 import com.hamza.account.model.domain.Customers;
 import com.hamza.account.service.CustomerService;
 import com.hamza.account.type.UserPermissionType;
-import com.hamza.account.view.OpenApplication;
+import com.hamza.account.view.common.OpenApplication;
 import com.hamza.controlsfx.interfaceData.AppSettingInterface;
 import com.hamza.controlsfx.interfaceData.TableViewShowDataInt;
 import com.hamza.controlsfx.notifications.AppNotification;

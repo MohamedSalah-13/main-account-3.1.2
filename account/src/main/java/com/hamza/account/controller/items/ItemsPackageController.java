@@ -9,7 +9,7 @@ import com.hamza.account.otherSetting.ButtonDeleteRow;
 import com.hamza.account.service.ItemPackageService;
 import com.hamza.account.service.ItemsService;
 import com.hamza.account.table.TableSetting;
-import com.hamza.account.view.TextSearchApplication;
+import com.hamza.account.view.common.TextSearchApplication;
 import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.button.button_column.ButtonColumn;
 import com.hamza.controlsfx.database.DaoException;

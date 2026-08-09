@@ -9,13 +9,19 @@ import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.openFxml.OpenFxmlApplication;
 import com.hamza.account.table.TableOpen;
 import com.hamza.account.type.UserPermissionType;
-import com.hamza.account.view.*;
+
 import com.hamza.controlsfx.language.Setting_Language;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.stage.Stage;
 import org.jetbrains.annotations.NotNull;
+import com.hamza.account.view.common.OpenApplicationWithData;
+import com.hamza.account.view.common.SceneAll;
+import com.hamza.account.view.common.StageManager;
+import com.hamza.account.view.window.treasury.ExpensesDetailsApplication;
+import com.hamza.account.view.window.treasury.OpenTreasuryDetailsApplication;
+import com.hamza.account.view.window.treasury.ProcessorApplication;
 
 public class TreasuryButtons {
 

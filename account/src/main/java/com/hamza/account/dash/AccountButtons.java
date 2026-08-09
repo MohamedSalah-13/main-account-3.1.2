@@ -11,7 +11,7 @@ import com.hamza.account.model.base.BasePurchasesAndSales;
 import com.hamza.account.model.base.BaseTotals;
 import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.type.UserPermissionType;
-import com.hamza.account.view.AccountTotalsApplication;
+import com.hamza.account.view.window.name_account.AccountTotalsApplication;
 import javafx.scene.control.TabPane;
 import org.jetbrains.annotations.NotNull;
 

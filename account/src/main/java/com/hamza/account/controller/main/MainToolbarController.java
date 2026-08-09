@@ -3,7 +3,7 @@ package com.hamza.account.controller.main;
 import com.hamza.account.config.Image_Setting;
 import com.hamza.account.config.PropertiesName;
 import com.hamza.account.features.notification.NotificationBootstrap;
-import com.hamza.account.view.LogApplication;
+import com.hamza.account.view.app.LogApplication;
 import com.hamza.controlsfx.button.ImageDesign;
 import com.hamza.controlsfx.language.Setting_Language;
 import com.jfoenix.controls.JFXHamburger;

@@ -1,6 +1,6 @@
 package com.hamza.account;
 
-import com.hamza.account.view.DownLoadApplication;
+import com.hamza.account.view.app.DownLoadApplication;
 
 public class Main {
 

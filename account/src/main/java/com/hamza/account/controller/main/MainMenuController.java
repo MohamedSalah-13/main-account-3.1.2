@@ -2,7 +2,7 @@ package com.hamza.account.controller.main;
 
 import com.hamza.account.config.Image_Setting;
 import com.hamza.account.controller.setting.FontColorDialog;
-import com.hamza.account.view.NumberGenerator;
+import com.hamza.account.view.tool.NumberGenerator;
 import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.language.Setting_Language;
 import javafx.fxml.FXML;

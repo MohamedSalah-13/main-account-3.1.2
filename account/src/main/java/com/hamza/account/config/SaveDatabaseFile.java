@@ -1,6 +1,6 @@
 package com.hamza.account.config;
 
-import com.hamza.account.view.DownLoadApplication;
+import com.hamza.account.view.app.DownLoadApplication;
 import com.hamza.controlsfx.alert.AllAlerts;
 import lombok.extern.log4j.Log4j2;
 

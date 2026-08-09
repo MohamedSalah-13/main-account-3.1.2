@@ -24,7 +24,7 @@ import com.hamza.account.session.ShiftContext;
 import com.hamza.account.table.TableOpen;
 import com.hamza.account.type.InvoiceType;
 import com.hamza.account.type.UserPermissionType;
-import com.hamza.account.view.LogApplication;
+import com.hamza.account.view.app.LogApplication;
 import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.button.button_column.ButtonColumn;
 import com.hamza.controlsfx.database.DaoException;
