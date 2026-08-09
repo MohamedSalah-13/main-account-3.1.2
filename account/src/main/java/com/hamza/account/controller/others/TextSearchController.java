@@ -2,7 +2,7 @@ package com.hamza.account.controller.others;
 
 import com.hamza.account.controller.search.SearchInterface;
 import com.hamza.account.openFxml.FxmlPath;
-import com.hamza.account.view.common.TableWithTextSearchApplication;
+import com.hamza.account.view.TableWithTextSearchApplication;
 import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.language.Setting_Language;
 import javafx.beans.property.*;

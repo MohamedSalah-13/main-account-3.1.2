@@ -10,7 +10,10 @@ import com.hamza.account.controller.reports.*;
 import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.openFxml.OpenFxmlApplication;
 import com.hamza.account.type.UserPermissionType;
-
+import com.hamza.account.view.OpenApplication;
+import com.hamza.account.view.ReportTotalYearlyApplication;
+import com.hamza.account.view.SceneAll;
+import com.hamza.account.view.StageManager;
 import com.hamza.controlsfx.interfaceData.AppSettingInterface;
 import com.hamza.controlsfx.language.Setting_Language;
 import javafx.fxml.FXMLLoader;
@@ -23,12 +26,7 @@ import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
 
-import static com.hamza.account.view.window.reports.ReportTotalYearlyApplication.YEARLY_REPORT_NAME;
-import com.hamza.account.view.common.OpenApplication;
-import com.hamza.account.view.common.SceneAll;
-import com.hamza.account.view.common.StageManager;
-import com.hamza.account.view.window.reports.ReportTotalYearlyApplication;
-import com.hamza.account.view.window.reports.TargetApplication;
+import static com.hamza.account.view.ReportTotalYearlyApplication.YEARLY_REPORT_NAME;
 
 public class ReportsButtons extends LoadData {
 
@@ -57,27 +55,6 @@ public class ReportsButtons extends LoadData {
             public String textName() {
                 return "ملخص الحسابات";
             }
-        };
-    }
-
-    public ButtonWithPerm delegateReport() {
-        return new ButtonWithPerm() {
-            @Override
-            public UserPermissionType getPermissionType() {
-                return UserPermissionType.DISABLE_BUTTON;
-            }
-
-            @Override
-            public void action() throws Exception {
-                new TargetApplication(daoFactory, dataPublisher, textName()).start(new Stage());
-            }
-
-            @NotNull
-            @Override
-            public String textName() {
-                return Setting_Language.REPORT_DELEGATE;
-            }
-
         };
     }
 

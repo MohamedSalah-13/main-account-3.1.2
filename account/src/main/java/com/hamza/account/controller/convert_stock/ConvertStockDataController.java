@@ -9,7 +9,7 @@ import com.hamza.account.reportData.Print_Reports;
 import com.hamza.account.table.ActionButtonToolBar;
 import com.hamza.account.table.TableInterface;
 import com.hamza.account.type.UserPermissionType;
-import com.hamza.account.view.common.OpenApplication;
+import com.hamza.account.view.OpenApplication;
 import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.language.Setting_Language;

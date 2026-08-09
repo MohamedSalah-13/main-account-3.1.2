@@ -7,7 +7,7 @@ import com.hamza.account.controller.others.ServiceRegistry;
 import com.hamza.account.model.domain.ItemsMiniQuantity;
 import com.hamza.account.service.ItemMiniQuantityService;
 import com.hamza.account.type.UserPermissionType;
-import com.hamza.account.view.common.OpenApplication;
+import com.hamza.account.view.OpenApplication;
 import com.hamza.controlsfx.interfaceData.AppSettingInterface;
 import com.hamza.controlsfx.interfaceData.TableViewShowDataInt;
 import com.hamza.controlsfx.notifications.AppNotification;

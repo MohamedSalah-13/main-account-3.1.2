@@ -7,7 +7,7 @@ import com.hamza.account.model.domain.Area;
 import com.hamza.account.model.domain.CustomerPurchasedItem;
 import com.hamza.account.model.domain.SelPriceTypeModel;
 import com.hamza.account.model.domain.Suppliers;
-import com.hamza.account.view.window.name_account.CustomerPurchasedItemsApplication;
+import com.hamza.account.view.CustomerPurchasedItemsApplication;
 import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.language.Setting_Language;
 import javafx.beans.property.SimpleStringProperty;

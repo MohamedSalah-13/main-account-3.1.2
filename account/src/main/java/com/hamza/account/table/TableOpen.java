@@ -2,7 +2,7 @@ package com.hamza.account.table;
 
 import com.hamza.account.controller.others.TableController;
 import com.hamza.account.openFxml.OpenFxmlApplication;
-import com.hamza.account.view.common.OpenApplication;
+import com.hamza.account.view.OpenApplication;
 import com.hamza.controlsfx.interfaceData.AppSettingInterface;
 import javafx.application.Application;
 import javafx.scene.layout.Pane;

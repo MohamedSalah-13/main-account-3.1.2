@@ -8,8 +8,6 @@ public class FxmlConstants {
     public final FXMLLoader rightPane = fxmlLoader("include/mainRightPane-view.fxml");
     public final FXMLLoader menuBar = fxmlLoader("include/main-menu.fxml");
     public final FXMLLoader mainToolbar = fxmlLoader("include/mainToolbar-view.fxml");
-    public final FXMLLoader toolbarReports = fxmlLoader("include/toolbar-reports.fxml");
-
 
     private FXMLLoader fxmlLoader(String s) {
         return new FXMLLoader(Main.class.getResource("view/" + s));

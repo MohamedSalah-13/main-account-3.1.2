@@ -1,7 +1,7 @@
 package com.hamza.account.controller.main;
 
 import com.hamza.account.type.UserPermissionType;
-import com.hamza.account.view.app.LogApplication;
+import com.hamza.account.view.LogApplication;
 import javafx.scene.Node;
 import javafx.scene.control.Menu;
 import lombok.RequiredArgsConstructor;

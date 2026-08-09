@@ -16,12 +16,12 @@ import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.stage.Stage;
 import org.jetbrains.annotations.NotNull;
-import com.hamza.account.view.common.OpenApplicationWithData;
-import com.hamza.account.view.common.SceneAll;
-import com.hamza.account.view.common.StageManager;
-import com.hamza.account.view.window.treasury.ExpensesDetailsApplication;
-import com.hamza.account.view.window.treasury.OpenTreasuryDetailsApplication;
-import com.hamza.account.view.window.treasury.ProcessorApplication;
+import com.hamza.account.view.OpenApplicationWithData;
+import com.hamza.account.view.SceneAll;
+import com.hamza.account.view.StageManager;
+import com.hamza.account.view.ExpensesDetailsApplication;
+import com.hamza.account.view.OpenTreasuryDetailsApplication;
+import com.hamza.account.view.ProcessorApplication;
 
 public class TreasuryButtons {
 

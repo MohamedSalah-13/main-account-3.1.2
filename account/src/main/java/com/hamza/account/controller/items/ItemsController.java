@@ -13,10 +13,10 @@ import com.hamza.account.service.*;
 import com.hamza.account.table.EditCell;
 import com.hamza.account.table.TableSetting;
 import com.hamza.account.type.UserPermissionType;
-import com.hamza.account.view.window.items.AddItemApplication;
-import com.hamza.account.view.window.items.CardApplication;
-import com.hamza.account.view.window.items.ConvertItemsGroup;
-import com.hamza.account.view.app.LogApplication;
+import com.hamza.account.view.AddItemApplication;
+import com.hamza.account.view.CardApplication;
+import com.hamza.account.view.ConvertItemsGroup;
+import com.hamza.account.view.LogApplication;
 import com.hamza.account.view.barcode.PrintBarcodeApp;
 import com.hamza.account.view.barcode.PrintBarcodeModel;
 import com.hamza.controlsfx.alert.AllAlerts;
@@ -35,7 +35,6 @@ import javafx.fxml.FXML;
 import javafx.scene.control.*;
 import javafx.scene.input.KeyCode;
 import javafx.scene.layout.StackPane;
-import javafx.scene.text.Text;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 import lombok.extern.log4j.Log4j2;
@@ -50,7 +49,7 @@ import java.util.HashMap;
 import java.util.List;
 
 import static com.hamza.account.config.PropertiesName.getItemEditFromTable;
-import static com.hamza.account.view.window.items.ConvertItemsGroup.HEADER_TEXT;
+import static com.hamza.account.view.ConvertItemsGroup.HEADER_TEXT;
 import static com.hamza.controlsfx.util.ImageChoose.createIcon;
 
 @Log4j2

@@ -1,6 +1,6 @@
 package com.hamza.account.controller.dataByName;
 
-import com.hamza.account.view.common.OpenApplicationWithData;
+import com.hamza.account.view.OpenApplicationWithData;
 
 public class OpenAddAreaApplication<T> {
 

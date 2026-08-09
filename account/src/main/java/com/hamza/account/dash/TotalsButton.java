@@ -13,16 +13,14 @@ import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.service.EmployeeService;
 import com.hamza.account.service.TotalsService;
 import com.hamza.account.type.UserPermissionType;
-import com.hamza.account.view.window.invoice.BuyApplication;
-import com.hamza.account.view.window.pos.PosView;
-import com.hamza.account.view.window.invoice.TotalsApplication;
+import com.hamza.account.view.BuyApplication;
+import com.hamza.account.view.PosView;
+import com.hamza.account.view.TotalsApplication;
 import javafx.scene.Node;
 import javafx.scene.control.TabPane;
 import javafx.stage.Stage;
 import lombok.extern.log4j.Log4j2;
 import org.jetbrains.annotations.NotNull;
-
-import static com.hamza.account.config.PropertiesName.getSettingShowInvoiceScreenSeparate;
 
 @Log4j2
 public class TotalsButton<T1 extends BasePurchasesAndSales, T2 extends BaseTotals, T3 extends BaseNames, T4 extends BaseAccount>

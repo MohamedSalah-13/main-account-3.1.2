@@ -20,7 +20,7 @@ import com.hamza.account.service.ItemsService;
 import com.hamza.account.service.UnitsService;
 import com.hamza.account.table.TableSetting;
 import com.hamza.account.type.ProcessType;
-import com.hamza.account.view.window.invoice.ShowInvoiceApplication;
+import com.hamza.account.view.ShowInvoiceApplication;
 import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.button.api.ButtonColumnI;
 import com.hamza.controlsfx.button.button_column.ButtonColumn;

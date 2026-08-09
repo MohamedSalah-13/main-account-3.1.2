@@ -13,7 +13,7 @@ import com.hamza.account.model.domain.Employees;
 import com.hamza.account.openFxml.FxmlPath;
 import com.hamza.account.service.CustomerService;
 import com.hamza.account.service.EmployeeService;
-import com.hamza.account.view.common.TableWithTextSearchApplication;
+import com.hamza.account.view.TableWithTextSearchApplication;
 import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.language.Setting_Language;

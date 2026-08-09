@@ -16,7 +16,7 @@ import com.hamza.account.openFxml.FxmlPath;
 import com.hamza.account.openFxml.OpenFxmlApplication;
 import com.hamza.account.otherSetting.SearchAccountByDate;
 import com.hamza.account.table.TableSetting;
-import com.hamza.account.view.window.name_account.AddAccountApplication;
+import com.hamza.account.view.AddAccountApplication;
 import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.dateTime.SearchInTwoDate;
 import com.hamza.controlsfx.interfaceData.AppSettingInterface;

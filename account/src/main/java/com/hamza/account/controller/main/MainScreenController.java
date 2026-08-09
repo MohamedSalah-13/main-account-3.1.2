@@ -6,8 +6,8 @@ import com.hamza.account.controller.reports.MonthlySalesInterface;
 import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.model.dao.MonthlySalesViewDao;
 import com.hamza.account.type.UserPermissionType;
-import com.hamza.account.view.app.LogApplication;
-import com.hamza.account.view.window.reports.MonthlyView;
+import com.hamza.account.view.LogApplication;
+import com.hamza.account.view.MonthlyView;
 import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.language.Setting_Language;
@@ -176,7 +176,6 @@ public class MainScreenController extends MainItems implements Initializable {
             customers(menuController);
             suppliers(menuController);
             employees(menuController);
-            menuButtonSetting.initializeMenuItem(menuController.getMenuItemAllExpenses(), getTreasuryButtons().openExpenses());
             initializeReports(menuController);
             initializeMainMenuItemsSetting(menuController);
         } catch (Exception e) {
@@ -228,7 +227,6 @@ public class MainScreenController extends MainItems implements Initializable {
         menuButtonSetting.initializeMenuItem(menuController.getMenuItemAddUser(), getUsersAll().getUsers_add());
         menuButtonSetting.initializeMenuItem(menuController.getMenuItemAddEmployee(), getAddEmployee().addEmployee());
         menuButtonSetting.initializeMenuItem(menuController.getMenuItemEmployees(), getAddEmployee().employees());
-        menuButtonSetting.initializeMenuItem(menuController.getMenuItemAddTargetDelegate(), getAddEmployee().addTarget());
     }
 
     private void initializeReports(MainMenuController menuController) throws Exception {
@@ -271,7 +269,6 @@ public class MainScreenController extends MainItems implements Initializable {
         menuButtonSetting.initializeMenuItem(menuController.getMenuItemSuppliersPaid(), getReportsButtons().reportSupplierPaid());
         // details
         menuButtonSetting.initializeMenuItem(menuController.getMenuItemReportDetails(), getReportsButtons().detailsReport());
-        menuButtonSetting.initializeMenuItem(menuController.getMenuItemReportDelegate(), getReportsButtons().delegateReport());
         menuButtonSetting.initializeMenuItem(menuController.getMenuItemReportYearly(), getReportsButtons().reportYearly());
         menuButtonSetting.initializeMenuItem(menuController.getMenuItemReportProfitLoss(), getReportsButtons().profitLossReport());
     }

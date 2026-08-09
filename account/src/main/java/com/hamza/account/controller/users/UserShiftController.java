@@ -8,7 +8,7 @@ import com.hamza.account.reportData.Print_Reports;
 import com.hamza.account.service.ShiftReportService;
 import com.hamza.account.service.UserShiftService;
 import com.hamza.account.session.ShiftContext;
-import com.hamza.account.view.app.LogApplication;
+import com.hamza.account.view.LogApplication;
 import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.database.DaoException;
 import javafx.beans.property.SimpleIntegerProperty;

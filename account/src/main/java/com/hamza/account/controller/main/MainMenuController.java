@@ -1,16 +1,11 @@
 package com.hamza.account.controller.main;
 
 import com.hamza.account.config.Image_Setting;
-import com.hamza.account.controller.setting.FontColorDialog;
-import com.hamza.account.view.tool.NumberGenerator;
-import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.language.Setting_Language;
 import javafx.fxml.FXML;
 import javafx.scene.control.Menu;
 import javafx.scene.control.MenuBar;
 import javafx.scene.control.MenuItem;
-import javafx.scene.input.KeyCombination;
-import javafx.stage.Stage;
 import lombok.Getter;
 
 import static com.hamza.controlsfx.util.ImageChoose.createIcon;
@@ -19,9 +14,8 @@ import static com.hamza.controlsfx.util.ImageChoose.createIcon;
 public class MainMenuController {
 
     @FXML
-    private Menu menuAccounts, menuSales, menuPurchase, menuCustomer, menuSupplier, menuEmployees, menuSetting, menuItems, menuReport, menuExpenses;
-    @FXML
-    private MenuItem menuItemTreeAccounts, menuItemAllAccounts, menuItemGroupAccounts, menuItemBillExchange;
+    private Menu menuSales, menuPurchase, menuCustomer, menuSupplier, menuEmployees, menuSetting, menuItems, menuReport;
+
     @FXML
     private MenuItem menuItemSales, menuItemSalesReturn, menuItemTotalSales, menuItemTotalSalesReturn;
     @FXML
@@ -34,13 +28,12 @@ public class MainMenuController {
     private MenuItem menuItemAddSupplierName, menuItemSuppliersName, menuItemSuppliersAccount;
     @FXML
     private MenuItem menuItemSummary, menuItemReportItems,
-            menuItemReportItemsDaily, menuItemReportCustom, menuItemCustomPaid, menuItemReportSuppliers, menuItemSuppliersPaid, menuItemReportSales, menuItemReportPurchase, menuItemReportDetails, menuItemReportDelegate, menuItemReportYearly, menuItemReportProfitLoss;
+            menuItemReportItemsDaily, menuItemReportCustom, menuItemCustomPaid, menuItemReportSuppliers, menuItemSuppliersPaid, menuItemReportSales, menuItemReportPurchase, menuItemReportDetails, menuItemReportYearly, menuItemReportProfitLoss;
     @FXML
-    private MenuItem menuItemAddUser, menuItemUsers, menuItemAddEmployee, menuItemEmployees, menuItemAddTargetDelegate;
+    private MenuItem menuItemAddUser, menuItemUsers, menuItemAddEmployee, menuItemEmployees;
+
     @FXML
-    private MenuItem menuItemAddExpenseName, menuItemExpensesName, menuItemAddExpense, menuItemAllExpenses, menuItemExpensesDetails;
-    @FXML
-    private MenuItem menuItemHome, menuItemSettingUsers, menuItemDeleteData, menuItemBackup, menuItemCheckUpdate, menuItemRegister, menuItemAbout, menuItemClose, menuFontColor, menuNumber;
+    private MenuItem menuItemHome, menuItemSettingUsers, menuItemDeleteData, menuItemBackup, menuItemAbout, menuItemClose;
     @FXML
     private MenuItem menuItemReportSalesByYear, menuItemReportPurchaseByYear;
     @FXML
@@ -56,12 +49,6 @@ public class MainMenuController {
         setGraphicMenuItems();
 
         // disable menu
-        menuAccounts.setVisible(false);
-        menuExpenses.setVisible(false);
-        menuFontColor.setVisible(false);
-        menuNumber.setVisible(false);
-        menuItemRegister.setVisible(false);
-        menuItemCheckUpdate.setVisible(false);
         menuItemShiftReports.setVisible(false);
 
         menuItemReportCustom.setVisible(false);
@@ -69,7 +56,7 @@ public class MainMenuController {
     }
 
     private void otherSetting() {
-        menuAccounts.setText(Setting_Language.WORD_ACCOUNT);
+
         menuSales.setText(Setting_Language.WORD_SALES);
         menuPurchase.setText(Setting_Language.WORD_PUR);
         menuItems.setText(Setting_Language.WORD_ITEMS);
@@ -78,22 +65,6 @@ public class MainMenuController {
         menuSetting.setText(Setting_Language.WORD_SETTING);
         menuEmployees.setText(Setting_Language.EMPLOYEES);
         menuReport.setText(Setting_Language.WORD_REPORT);
-        menuExpenses.setText(Setting_Language.EXPENSES);
-
-        menuFontColor.setText("Font and Color Settings");
-        menuFontColor.setOnAction(event -> openFontColorDialog());
-        menuNumber.setOnAction(event -> new NumberGenerator().start(new Stage()));
-
-    }
-
-    private void openFontColorDialog() {
-        try {
-            FontColorDialog dialog = new FontColorDialog();
-            dialog.showAndWait();
-        } catch (Exception e) {
-//            log.error("Error opening font and color dialog", e);
-            AllAlerts.alertError("Error opening font and color settings : " + e.getMessage());
-        }
     }
 
 
@@ -103,14 +74,9 @@ public class MainMenuController {
         menuItemSettingUsers.setGraphic(createIcon(images.setting));
         menuItemDeleteData.setGraphic(createIcon(images.cancel));
         menuItemBackup.setGraphic(createIcon(images.database));
-        menuItemCheckUpdate.setGraphic(createIcon(images.update));
-        menuItemClose.setGraphic(createIcon(images.exit));
-        menuItemRegister.setGraphic(createIcon(images.option));
-        menuItemAbout.setGraphic(createIcon(images.about));
-        menuFontColor.setGraphic(createIcon(images.font));
-        menuNumber.setGraphic(createIcon(images.show));
 
-        menuFontColor.setAccelerator(KeyCombination.keyCombination("Ctrl+F"));
+        menuItemClose.setGraphic(createIcon(images.exit));
+        menuItemAbout.setGraphic(createIcon(images.about));
     }
 
     private void setGraphicMenu() {

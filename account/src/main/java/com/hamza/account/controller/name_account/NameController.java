@@ -11,7 +11,6 @@ import com.hamza.account.model.base.BasePurchasesAndSales;
 import com.hamza.account.model.base.BaseTotals;
 import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.openFxml.AddForAllApplication;
-import com.hamza.account.otherSetting.AddSumToColumn;
 import com.hamza.account.table.ActionButtonToolBar;
 import com.hamza.account.table.TableInterface;
 import com.hamza.account.table.TableSetting;
@@ -25,7 +24,6 @@ import com.hamza.controlsfx.others.CssToColorHelper;
 import javafx.beans.property.*;
 import javafx.scene.control.*;
 import javafx.scene.input.MouseButton;
-import javafx.scene.layout.GridPane;
 import lombok.extern.log4j.Log4j2;
 import org.jetbrains.annotations.NotNull;
 
@@ -41,7 +39,6 @@ public class NameController<T1 extends BasePurchasesAndSales, T2 extends BaseTot
     private final Publisher<String> publisherAddAccount;
     private final DesignInterface designInterface;
     private final StringProperty textSearchData = new SimpleStringProperty("");
-    private final AddSumToColumn sumBalance = new AddSumToColumn(Setting_Language.WORD_BALANCE);
     private final ObjectProperty<T3> objectProperty = new SimpleObjectProperty<>();
     private TableView<T3> table;
     private CssToColorHelper helper;
@@ -55,10 +52,6 @@ public class NameController<T1 extends BasePurchasesAndSales, T2 extends BaseTot
         this.publisherAddAccount = nameAndAccountInterface.addAccountPublisher();
     }
 
-    @Override
-    public void addToLastPane(GridPane gridPane, ToolBar toolBar) {
-        sumTable();
-    }
 
     @Override
     public void textData(TableView<T3> tableView, TextField textField) {
@@ -193,11 +186,6 @@ public class NameController<T1 extends BasePurchasesAndSales, T2 extends BaseTot
 
     private void open(int id) throws Exception {
         new AddForAllApplication(id, new AddNameController<>(dataInterface, daoFactory, dataPublisher, id));
-    }
-
-    private void sumTable() {
-        double purchase = table.getItems().stream().mapToDouble(BaseNames::getFirst_balance).sum();
-        sumBalance.setSum(purchase);
     }
 
     private void addColumnShow() {

@@ -13,7 +13,7 @@ import com.hamza.account.model.domain.Treasury;
 import com.hamza.account.openFxml.AddInterface;
 import com.hamza.account.openFxml.FxmlPath;
 import com.hamza.account.service.TreasuryService;
-import com.hamza.account.view.common.NoteText;
+import com.hamza.account.view.NoteText;
 import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.database.DaoList;

@@ -150,14 +150,6 @@ public enum DaoFactory {
         return new ItemMiniDao();
     }
 
-    public TargetDetailsDao targetDetailsDao() {
-        return new TargetDetailsDao();
-    }
-
-    public TargetDao targetDao() {
-        return new TargetDao();
-    }
-
     public TruncateDao truncateDao() {
         return new TruncateDao();
     }
@@ -201,6 +193,7 @@ public enum DaoFactory {
     public MonthlySalesViewDao monthlySalesViewDao() {
         return new MonthlySalesViewDao("view_monthly_sales");
     }
+
     public MonthlySalesViewDao monthlyPurchaseViewDao() {
         return new MonthlySalesViewDao("view_monthly_purchase");
     }
