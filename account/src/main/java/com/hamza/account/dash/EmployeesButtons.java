@@ -14,7 +14,7 @@ import com.hamza.account.otherSetting.KeyCodeCombinationSetting;
 import com.hamza.account.service.EmployeeService;
 import com.hamza.account.table.TableOpen;
 import com.hamza.account.type.UserPermissionType;
-import com.hamza.account.view.OpenApplication;
+import com.hamza.account.view.common.OpenApplication;
 import com.hamza.controlsfx.button.ImageDesign;
 import com.hamza.controlsfx.language.Setting_Language;
 import javafx.scene.Node;

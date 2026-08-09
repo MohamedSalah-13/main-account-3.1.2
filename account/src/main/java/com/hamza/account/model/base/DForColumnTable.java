@@ -1,7 +1,7 @@
 package com.hamza.account.model.base;
 
 import com.hamza.account.model.domain.Users;
-import com.hamza.account.view.LogApplication;
+import com.hamza.account.view.app.LogApplication;
 import com.hamza.controlsfx.button.api.ButtonColumnI;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.SimpleBooleanProperty;

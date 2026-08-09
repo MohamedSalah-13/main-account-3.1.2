@@ -1,6 +1,6 @@
 package com.hamza.account.view.barcode;
 
-import com.hamza.account.view.OpenApplication;
+import com.hamza.account.view.common.OpenApplication;
 import javafx.collections.ObservableList;
 
 public class PrintBarcodeApp {

@@ -14,7 +14,7 @@ import com.hamza.account.openFxml.OpenFxmlApplication;
 import com.hamza.account.service.ItemsService;
 import com.hamza.account.service.StockService;
 import com.hamza.account.service.StockTransferService;
-import com.hamza.account.view.TextSearchApplication;
+import com.hamza.account.view.common.TextSearchApplication;
 import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.interfaceData.AppSettingInterface;

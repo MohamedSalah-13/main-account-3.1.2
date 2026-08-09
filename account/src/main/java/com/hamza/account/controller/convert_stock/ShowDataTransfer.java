@@ -1,6 +1,6 @@
 package com.hamza.account.controller.convert_stock;
 
-import com.hamza.account.view.OpenApplication;
+import com.hamza.account.view.common.OpenApplication;
 import com.hamza.controlsfx.interfaceData.AppSettingInterface;
 import com.hamza.controlsfx.table.TableColumnAnnotation;
 import javafx.collections.FXCollections;

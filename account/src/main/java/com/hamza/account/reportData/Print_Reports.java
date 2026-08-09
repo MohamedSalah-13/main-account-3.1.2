@@ -9,7 +9,7 @@ import com.hamza.account.features.checkbox.impl.setting.BarcodePrintDoubleLabel;
 import com.hamza.account.model.domain.*;
 import com.hamza.account.otherSetting.BarcodeDetails;
 import com.hamza.account.service.ShiftReportService;
-import com.hamza.account.view.LogApplication;
+import com.hamza.account.view.app.LogApplication;
 import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.language.Setting_Language;
 import com.hamza.controlsfx.others.CssToColorHelper;

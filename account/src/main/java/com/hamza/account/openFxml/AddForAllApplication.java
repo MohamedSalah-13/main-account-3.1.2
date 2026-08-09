@@ -1,7 +1,7 @@
 package com.hamza.account.openFxml;
 
 import com.hamza.account.config.Image_Setting;
-import com.hamza.account.view.OpenApplication;
+import com.hamza.account.view.common.OpenApplication;
 import com.hamza.controlsfx.interfaceData.AppSettingInterface;
 import com.hamza.controlsfx.language.Setting_Language;
 import javafx.scene.layout.Pane;

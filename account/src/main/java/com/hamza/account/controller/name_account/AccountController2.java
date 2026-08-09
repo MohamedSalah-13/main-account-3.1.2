@@ -17,9 +17,9 @@ import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.openFxml.FxmlPath;
 import com.hamza.account.otherSetting.MaskerPaneSetting;
 import com.hamza.account.table.TableSetting;
-import com.hamza.account.view.AccountDetailsApplication;
-import com.hamza.account.view.AddAccountApplication;
-import com.hamza.account.view.OpenApplication;
+import com.hamza.account.view.window.name_account.AccountDetailsApplication;
+import com.hamza.account.view.window.name_account.AddAccountApplication;
+import com.hamza.account.view.common.OpenApplication;
 import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.excel.ExcelException;
 import com.hamza.controlsfx.excel.ExportData;
@@ -42,7 +42,7 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
-import static com.hamza.account.view.OpenTreasuryDetailsApplication.ACCOUNT_STATEMENT_TITLE;
+import static com.hamza.account.view.window.treasury.OpenTreasuryDetailsApplication.ACCOUNT_STATEMENT_TITLE;
 import static com.hamza.controlsfx.util.ImageChoose.createIcon;
 
 

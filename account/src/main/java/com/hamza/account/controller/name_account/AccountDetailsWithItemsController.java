@@ -51,7 +51,7 @@ import static com.hamza.account.controller.name_account.impl.AccountTotalsSales.
 import static com.hamza.account.controller.name_account.impl.AccountTotalsSales.salesTitle;
 import static com.hamza.account.table.TreeTableSetting.initializeColumnCellFactory;
 import static com.hamza.account.table.TreeTableSetting.initializeColumnCellFactoryInteger;
-import static com.hamza.account.view.OpenTreasuryDetailsApplication.ACCOUNT_STATEMENT_TITLE;
+import static com.hamza.account.view.window.treasury.OpenTreasuryDetailsApplication.ACCOUNT_STATEMENT_TITLE;
 import static com.hamza.controlsfx.util.NumberUtils.roundToTwoDecimalPlaces;
 
 @Log4j2

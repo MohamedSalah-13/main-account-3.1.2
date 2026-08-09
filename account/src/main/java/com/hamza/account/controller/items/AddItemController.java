@@ -16,7 +16,7 @@ import com.hamza.account.openFxml.FxmlPath;
 import com.hamza.account.openFxml.OpenFxmlApplication;
 import com.hamza.account.service.*;
 import com.hamza.account.type.UserPermissionType;
-import com.hamza.account.view.AddGroupApp;
+import com.hamza.account.view.window.items.AddGroupApp;
 import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.interfaceData.AppSettingInterface;
