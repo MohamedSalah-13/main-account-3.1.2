@@ -39,7 +39,6 @@ module com.hamza.controlsfx {
     opens com.hamza.controlsfx to javafx.fxml;
     exports com.hamza.controlsfx;
     exports com.hamza.controlsfx.database;
-    exports com.hamza.controlsfx.backupPane;
     exports com.hamza.controlsfx.util.crypto;
     exports com.hamza.controlsfx.dateTime;
     exports com.hamza.controlsfx.excel;
