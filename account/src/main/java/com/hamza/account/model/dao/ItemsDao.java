@@ -100,7 +100,7 @@ public class ItemsDao extends AbstractDao<ItemsModel> {
     private final String itemHasValidity = "item_has_validity";
     private final String numberValidityDays = "number_validity_days";
     private final String alertDaysBeforeExpire = "alert_days_before_expire";
-    private final String has_package = "item_has_package";
+
     private final String USER_ID = "user_id";
     private final String QUERY_ITEMS = "SELECT * from items join quantity_items_table ip on items.id = ip.item_id ";
     private final DaoFactory daoFactory;
@@ -137,27 +137,21 @@ public class ItemsDao extends AbstractDao<ItemsModel> {
     public int update(ItemsModel itemsModel) throws DaoException {
         String string = SqlStatements.updateStatement(TABLE_NAME, ID, BARCODE, NAME_ITEM, SUB_NUM, BUY_PRICE
                 , selPrice1, selPrice2, selPrice3, itemActive, itemHasValidity, numberValidityDays, alertDaysBeforeExpire
-                , UNIT_ID, MINI_QUANTITY, FIRST_BALANCE, ITEM_IMAGE, has_package, USER_ID);
+                , UNIT_ID, MINI_QUANTITY, FIRST_BALANCE, ITEM_IMAGE, USER_ID);
 
         return insertMultiData(() -> {
             executeUpdateWithException(string, getData(itemsModel));
-            // إذا كان الصنف يمتلك مجموعة لا يتم إضافة وحدات له
+
             // update package
-            if (!itemsModel.getItems_packageList().isEmpty() || itemsModel.isHasPackage()) {
-                itemsModel.getItems_packageList().forEach(itemsPackage -> itemsPackage.setPackage_id(itemsModel.getId()));
-                daoFactory.getItemsPackageDao().updateList(itemsModel.getItems_packageList());
-            } else {
-                //TODO 11/24/2025 6:13 AM Mohamed: not delete , update
-                // update units
-                if (!itemsModel.getItemsUnitsModelList().isEmpty()) {
-                    // first delete all units
-                    daoFactory.getItemsUnitDao().deleteByItemId(itemsModel.getId());
-                    // update list if existing
-                    itemsModel.getItemsUnitsModelList().forEach(itemsUnitsModel -> itemsUnitsModel.setItemsId(itemsModel.getId()));
-                    // add new units
-                    daoFactory.getItemsUnitDao().insertList(itemsModel.getItemsUnitsModelList());
-                }
+            if (!itemsModel.getItemsUnitsModelList().isEmpty()) {
+                // first delete all units
+                daoFactory.getItemsUnitDao().deleteByItemId(itemsModel.getId());
+                // update list if existing
+                itemsModel.getItemsUnitsModelList().forEach(itemsUnitsModel -> itemsUnitsModel.setItemsId(itemsModel.getId()));
+                // add new units
+                daoFactory.getItemsUnitDao().insertList(itemsModel.getItemsUnitsModelList());
             }
+
             // update extra barcodes: delete then re-insert
             daoFactory.getItemBarcodesDao().deleteByItemId(itemsModel.getId());
             if (!itemsModel.getExtraBarcodes().isEmpty()) {
@@ -193,7 +187,6 @@ public class ItemsDao extends AbstractDao<ItemsModel> {
                 , itemsModel.getMini_quantity()
                 , itemsModel.getFirstBalanceForStock()
                 , itemsModel.getItem_image() != null ? itemsModel.getItem_image() : new byte[0]
-                , itemsModel.isHasPackage()
                 , itemsModel.getUsers().getId()
                 , itemsModel.getId()};
 
@@ -234,7 +227,7 @@ public class ItemsDao extends AbstractDao<ItemsModel> {
         try {
             String string = SqlStatements.updateStatement(TABLE_NAME, ID, BARCODE, NAME_ITEM, SUB_NUM, BUY_PRICE
                     , selPrice1, selPrice2, selPrice3, itemActive, itemHasValidity, numberValidityDays, alertDaysBeforeExpire
-                    , UNIT_ID, MINI_QUANTITY, FIRST_BALANCE, ITEM_IMAGE, has_package, USER_ID);
+                    , UNIT_ID, MINI_QUANTITY, FIRST_BALANCE, ITEM_IMAGE, USER_ID);
             return executeUpdateListWithException(list, string
                     , (statement, itemsModel) -> this.setData(statement, getData(itemsModel)));
         } catch (SQLException e) {
@@ -252,11 +245,10 @@ public class ItemsDao extends AbstractDao<ItemsModel> {
                 , itemsModel.getMini_quantity()
                 , itemsModel.getFirstBalanceForStock()
                 , itemsModel.getItem_image() != null ? itemsModel.getItem_image() : new byte[0]
-                , itemsModel.isHasPackage()
                 , itemsModel.getUsers().getId()};
         String INSERT_ITEM = SqlStatements.insertStatement(TABLE_NAME, BARCODE, NAME_ITEM, SUB_NUM, BUY_PRICE
                 , selPrice1, selPrice2, selPrice3, itemActive, itemHasValidity, numberValidityDays, alertDaysBeforeExpire
-                , UNIT_ID, MINI_QUANTITY, FIRST_BALANCE, ITEM_IMAGE, has_package, USER_ID);
+                , UNIT_ID, MINI_QUANTITY, FIRST_BALANCE, ITEM_IMAGE, USER_ID);
 
         return withConnection(connection -> {
             try (PreparedStatement statement = connection.prepareStatement(INSERT_ITEM, Statement.RETURN_GENERATED_KEYS)) {
@@ -304,7 +296,6 @@ public class ItemsDao extends AbstractDao<ItemsModel> {
         itemsModel.setHasValidate(rs.getBoolean(itemHasValidity));
         itemsModel.setNumberValidityDays(rs.getInt(numberValidityDays));
         itemsModel.setAlertDaysBeforeExpiry(rs.getInt(alertDaysBeforeExpire));
-        itemsModel.setHasPackage(rs.getBoolean(has_package));
 
         if (blob != null) {
             itemsModel.setItem_image(blob.getBytes(1, (int) blob.length()));

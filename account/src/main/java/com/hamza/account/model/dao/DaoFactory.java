@@ -174,10 +174,6 @@ public enum DaoFactory {
         return new AreaDao();
     }
 
-    public ItemsPackageDao getItemsPackageDao() {
-        return new ItemsPackageDao();
-    }
-
     public UserShiftDao userShiftDao() {
         return new UserShiftDao();
     }

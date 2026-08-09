@@ -24,6 +24,31 @@ public class TreasuryDepositExpensesDao extends AbstractDao<TreasuryDepositExpen
     }
 
     @Override
+    public List<TreasuryDepositExpenses> loadAll() throws DaoException {
+        String query = """
+                SELECT tde.id,
+                       tde.statement,
+                       tde.date_inter,
+                       tde.amount,
+                       tde.description_data,
+                       tde.deposit_or_expenses,
+                       tde.treasury_id,
+                       tde.user_id,
+                       tr.t_name,
+                       tr.amount AS treasury_amount
+                FROM treasury_deposit_expenses tde
+                JOIN treasury tr ON tr.id = tde.treasury_id
+                ORDER BY tde.date_inter DESC, tde.id DESC
+                """;
+        return queryForObjects(query, this::map);
+    }
+
+    @Override
+    public int insert(TreasuryDepositExpenses item) throws DaoException {
+        return insertWithBalanceUpdate(item);
+    }
+
+    @Override
     public TreasuryDepositExpenses map(ResultSet rs) throws DaoException {
         try {
             TreasuryDepositExpenses item = new TreasuryDepositExpenses();
@@ -51,26 +76,6 @@ public class TreasuryDepositExpensesDao extends AbstractDao<TreasuryDepositExpen
         } catch (Exception e) {
             throw new DaoException(e);
         }
-    }
-
-    @Override
-    public List<TreasuryDepositExpenses> loadAll() throws DaoException {
-        String query = """
-                SELECT tde.id,
-                       tde.statement,
-                       tde.date_inter,
-                       tde.amount,
-                       tde.description_data,
-                       tde.deposit_or_expenses,
-                       tde.treasury_id,
-                       tde.user_id,
-                       tr.t_name,
-                       tr.amount AS treasury_amount
-                FROM treasury_deposit_expenses tde
-                JOIN treasury tr ON tr.id = tde.treasury_id
-                ORDER BY tde.date_inter DESC, tde.id DESC
-                """;
-        return queryForObjects(query, this::map);
     }
 
     public List<TreasuryDepositExpenses> loadBetweenDates(LocalDate startDate, LocalDate endDate) throws DaoException {
@@ -116,11 +121,6 @@ public class TreasuryDepositExpensesDao extends AbstractDao<TreasuryDepositExpen
                 }
             }
         });
-    }
-
-    @Override
-    public int insert(TreasuryDepositExpenses item) throws DaoException {
-        return insertWithBalanceUpdate(item);
     }
 
     private int insertOnly(TreasuryDepositExpenses item) throws DaoException {

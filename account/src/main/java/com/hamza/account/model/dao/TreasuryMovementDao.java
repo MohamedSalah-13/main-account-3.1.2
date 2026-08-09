@@ -22,6 +22,30 @@ public class TreasuryMovementDao extends AbstractDao<TreasuryMovement> {
     }
 
     @Override
+    public List<TreasuryMovement> loadAll() throws DaoException {
+        String query = """
+                SELECT tm.id,
+                       tm.treasury_id,
+                       tm.movement_date,
+                       tm.movement_type,
+                       tm.amount_in,
+                       tm.amount_out,
+                       tm.balance_after,
+                       tm.reference_type,
+                       tm.reference_id,
+                       tm.notes,
+                       tm.user_id,
+                       t.t_name,
+                       t.amount AS treasury_amount
+                FROM treasury_movements tm
+                JOIN treasury t ON t.id = tm.treasury_id
+                ORDER BY tm.movement_date DESC, tm.id DESC
+                """;
+
+        return queryForObjects(query, this::map);
+    }
+
+    @Override
     public TreasuryMovement map(ResultSet rs) throws DaoException {
         try {
             TreasuryMovement movement = new TreasuryMovement();
@@ -61,30 +85,6 @@ public class TreasuryMovementDao extends AbstractDao<TreasuryMovement> {
         } catch (Exception e) {
             throw new DaoException(e);
         }
-    }
-
-    @Override
-    public List<TreasuryMovement> loadAll() throws DaoException {
-        String query = """
-                SELECT tm.id,
-                       tm.treasury_id,
-                       tm.movement_date,
-                       tm.movement_type,
-                       tm.amount_in,
-                       tm.amount_out,
-                       tm.balance_after,
-                       tm.reference_type,
-                       tm.reference_id,
-                       tm.notes,
-                       tm.user_id,
-                       t.t_name,
-                       t.amount AS treasury_amount
-                FROM treasury_movements tm
-                JOIN treasury t ON t.id = tm.treasury_id
-                ORDER BY tm.movement_date DESC, tm.id DESC
-                """;
-
-        return queryForObjects(query, this::map);
     }
 
     public List<TreasuryMovement> loadByTreasuryId(int treasuryId) throws DaoException {

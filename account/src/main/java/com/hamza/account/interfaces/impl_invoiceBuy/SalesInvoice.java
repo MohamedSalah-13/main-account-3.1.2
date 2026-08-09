@@ -32,7 +32,6 @@ public class SalesInvoice implements InvoiceBuy<Sales, Total_Sales, Customers, C
         sales.setBuy_price(roundToTwoDecimalPlaces(itemsModel.getBuyPrice() * type.getValue()));
         sales.setItems(itemsModel);
         sales.setExpiration_date(expireDate);
-        sales.setItem_has_package(itemsModel.isHasPackage());
         return sales;
     }
 

@@ -41,7 +41,7 @@ public class ItemsModel extends UnitExtends {
 
     private BooleanProperty activeItem = new SimpleBooleanProperty();
     private boolean hasValidate;
-    private boolean hasPackage;
+
     private int numberValidityDays;
     private int alertDaysBeforeExpiry;
 

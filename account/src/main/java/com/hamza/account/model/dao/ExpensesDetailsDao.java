@@ -1,6 +1,9 @@
 package com.hamza.account.model.dao;
 
-import com.hamza.account.model.domain.*;
+import com.hamza.account.model.domain.Employees;
+import com.hamza.account.model.domain.Expenses;
+import com.hamza.account.model.domain.ExpensesDetails;
+import com.hamza.account.model.domain.Treasury;
 import com.hamza.controlsfx.database.AbstractDao;
 import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.database.SqlStatements;

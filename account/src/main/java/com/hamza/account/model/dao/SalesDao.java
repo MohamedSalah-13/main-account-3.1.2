@@ -20,7 +20,6 @@ public class SalesDao extends AbstractDao<Sales> {
     public static final String TABLE_NAME = "sales";
     public static final String INVOICE_NUMBER = "invoice_number";
     // for returned
-//    public static final String RETURNED_QUANTITY = "amount";
     private final String TABLE_VIEW = "sales_names_table";
     // for sales
     private final String ID = "id";
@@ -40,8 +39,6 @@ public class SalesDao extends AbstractDao<Sales> {
     private final String invoiceDate = "invoice_date";
     private final String stockId = "stock_id";
     private final String expirationDate = "expiration_date";
-    private final String itemHasPackage = "item_has_package";
-    private final String nameId = "name_id";
     private final DaoFactory daoFactory;
 
     public SalesDao(DaoFactory daoFactory) {
@@ -69,7 +66,7 @@ public class SalesDao extends AbstractDao<Sales> {
         return new Object[]{sales.getInvoiceNumber(), sales.getItems().getId(), sales.getUnitsType().getUnit_id()
                 , sales.getQuantity(), sales.getPrice(), sales.getBuy_price(), sales.getTotalSelPrice()
                 , sales.getTotal_buy_price(), sales.getTotal_profit(), sales.getDiscount()
-                , sales.getUnitsType().getValue(), sales.getExpiration_date(), sales.isItem_has_package()};
+                , sales.getUnitsType().getValue(), sales.getExpiration_date()};
     }
 
     @Override
@@ -108,7 +105,6 @@ public class SalesDao extends AbstractDao<Sales> {
             // for totals
             sales.setInvoiceDate(LocalDate.parse(rs.getString(invoiceDate)));
             sales.setStock_id(rs.getInt(stockId));
-            sales.setItem_has_package(rs.getBoolean(itemHasPackage));
 
             var date = rs.getDate(expirationDate);
             if (date != null) {
@@ -127,7 +123,7 @@ public class SalesDao extends AbstractDao<Sales> {
         try {
             String query = SqlStatements.insertStatement(TABLE_NAME, INVOICE_NUMBER
                     , NUM, TYPE, QUANTITY, PRICE, buyPrice, "total_sel_price", "total_buy_price", "total_profit"
-                    , discount, TYPE_VALUE, expirationDate, itemHasPackage);
+                    , discount, TYPE_VALUE, expirationDate);
             return executeUpdateListWithException(list, query, (statement, sales) -> setData(statement, getData(sales)));
         } catch (SQLException e) {
             throw new DaoException(e);

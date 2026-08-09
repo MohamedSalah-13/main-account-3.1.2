@@ -16,7 +16,7 @@ public class CustomerPurchasedItemDao extends AbstractDao<CustomerPurchasedItem>
 
     @Override
     public CustomerPurchasedItem map(ResultSet rs) throws DaoException {
-       CustomerPurchasedItem customerPurchasedItem = new CustomerPurchasedItem();
+        CustomerPurchasedItem customerPurchasedItem = new CustomerPurchasedItem();
         try {
             customerPurchasedItem.setCustomerId(rs.getInt("customer_id"));
             customerPurchasedItem.setCustomerName(rs.getString("customer_name"));

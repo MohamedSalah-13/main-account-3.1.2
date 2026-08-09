@@ -22,7 +22,6 @@ import com.hamza.controlsfx.language.Setting_Language;
 import com.hamza.controlsfx.observer.Publisher;
 import com.hamza.controlsfx.others.DateSetting;
 import com.hamza.controlsfx.others.DoubleSetting;
-import com.hamza.controlsfx.others.TextFormat;
 import javafx.application.Platform;
 import javafx.beans.binding.BooleanBinding;
 import javafx.collections.FXCollections;
@@ -61,17 +60,13 @@ public class Add_AccountController<T1 extends BasePurchasesAndSales, T2 extends 
     @FXML
     private DatePicker date;
     @FXML
-    private TextField txtCode, txtBalance, txtPaid, txtAmount, txtNumberInvoice, txtBalanceInvoice, txtAmountInv;
+    private TextField txtCode, txtBalance, txtPaid, txtAmount, txtAmountInv;
     @FXML
     private TextArea txtNotes;
     @FXML
-    private Label labelCode, labelName, labelDate, labelBalance, labelPaid, labelDetails, labelAmount, labelTreasure, labelNumberInvoice, labelBalanceInvoice, lAmountInv;
+    private Label labelCode, labelName, labelDate, labelBalance, labelPaid, labelDetails, labelAmount, labelTreasure, lAmountInv;
     @FXML
     private ComboBox<String> comboTreasury;
-    @FXML
-    private Button btnChooseInvoicePaid;
-    @FXML
-    private CheckBox checkBoxPaidFromInvoice;
 
     public Add_AccountController(DaoFactory daoFactory, DataPublisher dataPublisher
             , DataInterface<T1, T2, T3, T4> dataInterface
@@ -92,8 +87,6 @@ public class Add_AccountController<T1 extends BasePurchasesAndSales, T2 extends 
         addTreasurySetting();
         // for update account select data by code num invoice
         if (numInvoice > 0) selectData();
-
-        checkBoxPaidFromInvoice.setDisable(true);
     }
 
     @Override
@@ -102,21 +95,18 @@ public class Add_AccountController<T1 extends BasePurchasesAndSales, T2 extends 
         labelName.setText(Setting_Language.WORD_NAME);
         labelDate.setText(Setting_Language.WORD_DATE);
         labelBalance.setText(Setting_Language.WORD_BALANCE);
-        labelBalanceInvoice.setText("رصيد الفاتورة");
+
         lAmountInv.setText("باقي الرصيد");
         labelPaid.setText(Setting_Language.WORD_PAID);
         labelDetails.setText(Setting_Language.NOTES);
         labelAmount.setText(Setting_Language.WORD_REST);
-        labelNumberInvoice.setText(Setting_Language.WORD_NUM_INV);
         labelTreasure.setText(Setting_Language.TREASURY);
-        checkBoxPaidFromInvoice.setText("دفع من فاتورة");
         txtNotes.setPromptText(Setting_Language.NOTES);
         comboTreasury.setPromptText(Setting_Language.TREASURY);
 
         DateSetting.dateAction(date);
         whenEnterPressed(txtPaid, txtNotes);
-        setTextFormatter(txtPaid, txtBalance, txtAmount, txtBalanceInvoice, txtAmountInv);
-        txtNumberInvoice.setTextFormatter(new TextFormatter<>(TextFormat.integerStringConverter, 0, TextFormat.TEXT_FORMATTER_FILTER));
+        setTextFormatter(txtPaid, txtBalance, txtAmount, txtAmountInv);
 
         // add searchableName to pane
         searchableName.setItems(FXCollections.observableArrayList(names));
@@ -140,24 +130,7 @@ public class Add_AccountController<T1 extends BasePurchasesAndSales, T2 extends 
             getAmount(paid);
         });
 
-        checkBoxPaidFromInvoice.selectedProperty().addListener((observableValue, aBoolean, t1) -> {
-            if (!t1) {
-                txtNumberInvoice.setText("0");
-                txtBalanceInvoice.setText("0.0");
-            }
-        });
 
-        txtBalanceInvoice.textProperty().addListener((observableValue, s, t1) -> {
-            double paid = DoubleSetting.parseDoubleOrDefault(txtPaid.getText());
-            getAmount(paid);
-        });
-
-
-        btnChooseInvoicePaid.disableProperty().bind((searchableName.valueProperty().isNull()).or(checkBoxPaidFromInvoice.selectedProperty().not()));
-        txtNumberInvoice.disableProperty().bind(checkBoxPaidFromInvoice.selectedProperty().not());
-        txtBalanceInvoice.disableProperty().bind(checkBoxPaidFromInvoice.selectedProperty().not());
-        txtAmountInv.visibleProperty().bind(checkBoxPaidFromInvoice.selectedProperty());
-        lAmountInv.visibleProperty().bind(checkBoxPaidFromInvoice.selectedProperty());
         txtPaid.disableProperty().bind(searchableName.valueProperty().isNull());
 
         txtNotes.setOnMouseClicked(event -> {
@@ -173,12 +146,6 @@ public class Add_AccountController<T1 extends BasePurchasesAndSales, T2 extends 
 
     @Override
     public int insertData() throws Exception {
-        // check invoice number
-        if (txtNumberInvoice.getText().isEmpty()) {
-            Platform.runLater(() -> txtNumberInvoice.requestFocus());
-            throw new Exception(Error_Text_Show.PLEASE_INSERT_ALL_DATA);
-        }
-
         // check date before insert data
         LocalDate value = date.getValue();
         if (value.isAfter(LocalDate.now())) {
@@ -203,9 +170,7 @@ public class Add_AccountController<T1 extends BasePurchasesAndSales, T2 extends 
         // get treasury data
         Treasury treasury = treasuryService.getTreasuryByName(comboTreasury.getSelectionModel().getSelectedItem());
 
-        String text = txtNumberInvoice.getText();
-
-        T4 t4 = accountData.objectData(code, value.toString(), paid, txtNotes.getText(), Integer.valueOf(text), code_id, treasury);
+        T4 t4 = accountData.objectData(code, value.toString(), paid, txtNotes.getText(), 0, code_id, treasury);
 
         if (numInvoice > 0)
             return interFace.update(t4);
@@ -219,7 +184,6 @@ public class Add_AccountController<T1 extends BasePurchasesAndSales, T2 extends 
         txtPaid.setText("0.0");
         txtNotes.clear();
         getBalance(searchableName.getSelectionModel().getSelectedItem());
-        checkBoxPaidFromInvoice.setSelected(false);
     }
 
     @Override
@@ -300,11 +264,6 @@ public class Add_AccountController<T1 extends BasePurchasesAndSales, T2 extends 
     private void getAmount(double paid) {
         double balance = Double.parseDouble(txtBalance.getText());
         txtAmount.setText(String.valueOf(roundToTwoDecimalPlaces(balance - paid)));
-
-        if (checkBoxPaidFromInvoice.isSelected() && !txtNumberInvoice.getText().isEmpty() && Integer.parseInt(txtNumberInvoice.getText()) != 0) {
-            double balanceInvoice = Double.parseDouble(txtBalanceInvoice.getText());
-            txtAmountInv.setText(String.valueOf(roundToTwoDecimalPlaces(balanceInvoice - paid)));
-        }
     }
 
     private Integer generateNextAccountCode() {

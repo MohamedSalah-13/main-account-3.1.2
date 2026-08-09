@@ -77,15 +77,13 @@ public class SupplierAccountDao extends AbstractDao<SupplierAccount> {
 
     @Override
     public int update(SupplierAccount supplierAccount) throws DaoException {
-        return executeUpdate(SqlStatements.updateStatement(TABLE_NAME, ACCOUNT_NUM, ACCOUNT_CODE, ACCOUNT_DATE, PAID, NOTES, NUMBER_INV, TREASURY_ID), new Object[]{
-                supplierAccount.getSuppliers().getId()
+        return executeUpdate(SqlStatements.updateStatement(TABLE_NAME, ACCOUNT_NUM, ACCOUNT_CODE, ACCOUNT_DATE, PAID, NOTES, NUMBER_INV, TREASURY_ID), supplierAccount.getSuppliers().getId()
                 , supplierAccount.getDate()
                 , supplierAccount.getPaid()
                 , supplierAccount.getNotes()
                 , supplierAccount.getInvoice_number()
                 , supplierAccount.getTreasury().getId()
-                , supplierAccount.getId()
-        });
+                , supplierAccount.getId());
     }
 
     @Override

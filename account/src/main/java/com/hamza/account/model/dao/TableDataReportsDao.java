@@ -23,7 +23,7 @@ public class TableDataReportsDao extends AbstractDao<TableDataReports> {
 
     @Override
     public TableDataReports map(ResultSet rs) throws DaoException {
-        TableDataReports tableDataReports=new TableDataReports();
+        TableDataReports tableDataReports = new TableDataReports();
         try {
             tableDataReports.setReport_month_name(Month.of(rs.getInt("report_month")).getDisplayName(TextStyle.FULL, Locale.getDefault()));
             tableDataReports.setReport_year(rs.getInt("report_year"));

@@ -73,7 +73,6 @@ public class DownLoadApplication extends Application {
         ServiceRegistry.register(ItemMiniQuantityService.class, new ItemMiniQuantityService(daoFactory));
         ServiceRegistry.register(AreaService.class, new AreaService(daoFactory));
         ServiceRegistry.register(SelPriceItemService.class, new SelPriceItemService(daoFactory));
-        ServiceRegistry.register(ItemPackageService.class, new ItemPackageService(daoFactory));
         ServiceRegistry.register(UserShiftService.class, new UserShiftService(daoFactory));
 
         ServiceRegistry.register(PurchaseService.class, new PurchaseService(daoFactory));

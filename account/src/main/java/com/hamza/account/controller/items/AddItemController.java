@@ -44,7 +44,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
-import static com.hamza.account.config.Configs.ADD_PACKAGE_TO_ITEMS;
 import static com.hamza.account.controller.setting.ComboSetting.comboSubSetting;
 import static com.hamza.account.controller.setting.ComboSetting.comboTypeSetting;
 import static com.hamza.controlsfx.others.Utils.*;
@@ -57,7 +56,7 @@ public class AddItemController implements AppSettingInterface {
     private final int codeItem;
     private final DataPublisher dataPublisher;
     private final ImageChoose imageChoose = new ImageChoose();
-    private final ItemsPackageController itemsPackageController;
+
     private final UnitsService unitsService = ServiceRegistry.get(UnitsService.class);
     private final MainGroupService mainGroupService = ServiceRegistry.get(MainGroupService.class);
     private final SupGroupService supGroupService = ServiceRegistry.get(SupGroupService.class);
@@ -108,7 +107,7 @@ public class AddItemController implements AppSettingInterface {
     public AddItemController(int codeItem, DataPublisher dataPublisher) {
         this.codeItem = codeItem;
         this.dataPublisher = dataPublisher;
-        this.itemsPackageController = new ItemsPackageController();
+
         dataPublisher.getPublisherAddMainGroup().addObserver(message -> {
             comboMainGroup.setItems(FXCollections.observableList(getMainGroupsNames()));
             comboMainGroup.getSelectionModel().selectLast();
@@ -212,15 +211,6 @@ public class AddItemController implements AppSettingInterface {
         getFocusToName();
         comboOtherTypes.getItems().addAll(getUnitsModelNames());
         checkItemActive.setSelected(true);
-    }
-
-    private void addPackaged() {
-        try {
-            var pane = new OpenFxmlApplication(itemsPackageController).getPane();
-            tabPane.getTabs().add(1, new Tab(Setting_Language.ADD_PACKAGE, pane));
-        } catch (Exception e) {
-            log.error("Failed to load packaged items view", e);
-        }
     }
 
     private void comboTypeOption() {
@@ -414,15 +404,6 @@ public class AddItemController implements AppSettingInterface {
                         imageAdd.setImage(new Image(new ByteArrayInputStream(itemImage)));
                     }
 
-                    if (ADD_PACKAGE_TO_ITEMS) {
-                        // get item package
-                        if (itemsModel.isHasPackage()) {
-                            itemsPackageController.setItemHasPackage(true);
-//                        itemsPackageController.setItemPackageId(itemsModel.getId());
-                            itemsPackageController.selectData(itemsModel.getId());
-                        }
-                    }
-
                 }
             } catch (DaoException e) {
                 logError(e);
@@ -490,15 +471,6 @@ public class AddItemController implements AppSettingInterface {
         itemsModel.setNumberValidityDays(Integer.parseInt(textDaysValidate.getText()));
         itemsModel.setAlertDaysBeforeExpiry(Integer.parseInt(textAlertBefore.getText()));
 
-
-        if (ADD_PACKAGE_TO_ITEMS) {
-            if (itemsPackageController.isItemHasPackage()) {
-                itemsModel.setHasPackage(true);
-                var itemsPackageList = itemsPackageController.getItems_packageList();
-                itemsModel.setItems_packageList(itemsPackageList);
-            } else itemsModel.setItems_packageList(new ArrayList<>());
-        } else itemsModel.setHasPackage(false);
-
         // Set image data
         if (imageAdd.getImage() != null) {
             itemsModel.setItem_image(imageChoose.convertFxImageToBytes(imageAdd.getImage()));
@@ -530,9 +502,6 @@ public class AddItemController implements AppSettingInterface {
                     addBarcode();
                     getFocusToName();
 
-                    if (ADD_PACKAGE_TO_ITEMS) {
-                        itemsPackageController.deleteAllData();
-                    }
                     // close after update
                     if (codeItem > 0) {
                         btnClose.fire();

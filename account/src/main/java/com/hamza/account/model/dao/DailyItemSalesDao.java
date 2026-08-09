@@ -7,7 +7,6 @@ import com.hamza.controlsfx.database.DaoException;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 public class DailyItemSalesDao extends AbstractDao<DailyItemSales> {

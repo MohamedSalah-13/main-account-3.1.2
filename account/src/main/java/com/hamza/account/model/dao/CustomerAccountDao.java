@@ -1,6 +1,9 @@
 package com.hamza.account.model.dao;
 
-import com.hamza.account.model.domain.*;
+import com.hamza.account.model.domain.Area;
+import com.hamza.account.model.domain.CustomerAccount;
+import com.hamza.account.model.domain.Customers;
+import com.hamza.account.model.domain.Treasury;
 import com.hamza.account.type.TableName;
 import com.hamza.controlsfx.database.AbstractDao;
 import com.hamza.controlsfx.database.DaoException;

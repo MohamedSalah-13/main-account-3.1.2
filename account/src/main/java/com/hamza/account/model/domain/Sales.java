@@ -18,7 +18,6 @@ import java.time.LocalDate;
 public class Sales extends BasePurchasesAndSales implements Serializable {
     @Serial
     private static final long serialVersionUID = 1L;
-    private boolean item_has_package;
     private ObjectProperty<Customers> customers = new SimpleObjectProperty<>();
 
     private BigDecimal totalSelPrice;
@@ -44,7 +43,6 @@ public class Sales extends BasePurchasesAndSales implements Serializable {
     public String toString() {
         return "Sales{" +
                 "id=" + getId() +
-                ", item_has_package=" + item_has_package +
                 ", invoiceDate=" + invoiceDate +
                 ", stock_id=" + stock_id +
                 '}';

@@ -10,7 +10,6 @@ import com.hamza.controlsfx.database.SqlStatements;
 import lombok.extern.log4j.Log4j2;
 
 import java.math.BigDecimal;
-import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.LocalDateTime;

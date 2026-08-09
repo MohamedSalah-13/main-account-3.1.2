@@ -1,6 +1,9 @@
 package com.hamza.account.model.dao;
 
-import com.hamza.account.model.domain.*;
+import com.hamza.account.model.domain.Stock;
+import com.hamza.account.model.domain.Suppliers;
+import com.hamza.account.model.domain.Total_Buy_Re;
+import com.hamza.account.model.domain.Treasury;
 import com.hamza.account.type.InvoiceType;
 import com.hamza.controlsfx.database.AbstractDao;
 import com.hamza.controlsfx.database.DaoException;

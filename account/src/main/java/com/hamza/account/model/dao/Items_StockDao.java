@@ -33,15 +33,15 @@ public class Items_StockDao extends AbstractDao<Items_Stock_Model> {
     }
 
     public int insertWithException(Items_Stock_Model itemsStockModel) throws SQLException {
-        String insert = SqlStatements.insertStatement(TABLE_NAME, ITEMS_ID, STOCK_ID, FIRST_BALANCE,currentQuantity);
-        Object[] objects = new Object[]{itemsStockModel.getItemsModel().getId(), itemsStockModel.getStock().getId(), itemsStockModel.getFirstBalance(),itemsStockModel.getCurrentQuantity()};
+        String insert = SqlStatements.insertStatement(TABLE_NAME, ITEMS_ID, STOCK_ID, FIRST_BALANCE, currentQuantity);
+        Object[] objects = new Object[]{itemsStockModel.getItemsModel().getId(), itemsStockModel.getStock().getId(), itemsStockModel.getFirstBalance(), itemsStockModel.getCurrentQuantity()};
         return executeUpdateWithException(insert, objects);
     }
 
     @Override
     public int insert(Items_Stock_Model itemsStockModel) throws DaoException {
-        return executeUpdate(SqlStatements.insertStatement(TABLE_NAME, ITEMS_ID, STOCK_ID, FIRST_BALANCE,currentQuantity)
-                , itemsStockModel.getItemsModel().getId(), itemsStockModel.getStock().getId(), itemsStockModel.getFirstBalance(),itemsStockModel.getCurrentQuantity());
+        return executeUpdate(SqlStatements.insertStatement(TABLE_NAME, ITEMS_ID, STOCK_ID, FIRST_BALANCE, currentQuantity)
+                , itemsStockModel.getItemsModel().getId(), itemsStockModel.getStock().getId(), itemsStockModel.getFirstBalance(), itemsStockModel.getCurrentQuantity());
     }
 
     @Override

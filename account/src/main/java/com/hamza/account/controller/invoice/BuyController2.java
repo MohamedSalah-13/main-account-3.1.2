@@ -464,9 +464,6 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
                     throw new Exception(Error_Text_Show.PLEASE_INSERT_ALL_DATA);
                 }
 
-                // إذا كانت فاتورة مشتريات لا يمكن إضافة اصناف التى تحتها مجموعات
-                checkItemCompatibility(itemByItemNameAndStockId);
-
                 txtBarcode.setText(itemByItemNameAndStockId.getBarcode());
                 itemsModel.set(itemByItemNameAndStockId);
             } else {
@@ -477,8 +474,6 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
                     throw new Exception("لا يوجد هذا الباركود: " + itemName);
                 }
 
-                // إذا كانت فاتورة مشتريات لا يمكن إضافة اصناف التى تحتها مجموعات
-                checkItemCompatibility(itemByBarcodeAndStockId);
 
                 itemsModel.set(itemByBarcodeAndStockId);
                 textSearchItems.set(itemsModel.get().getNameItem());
@@ -511,14 +506,6 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
             txtQuantity.setText("1");
         } catch (Exception e) {
             logError(e);
-        }
-    }
-
-    private void checkItemCompatibility(ItemsModel itemByItemNameAndStockId) throws Exception {
-        // إذا كانت فاتورة مشتريات لا يمكن إضافة اصناف التى تحتها مجموعات
-        if (!dataInterface.designInterface().showDataForCustomer()) {
-            if (itemByItemNameAndStockId.isHasPackage())
-                throw new Exception("لا يمكن إضافة اصناف تحتها مجموعات فى فاتورة مشتريات");
         }
     }
 
@@ -612,7 +599,6 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
             // lambda below runs after a modal date dialog has closed.
             final ItemsModel addedItem = itemsModel.get();
 
-            //TODO 5/4/2026 12:48 PM Mohamed: check this to load speed
             if (itemsModel.get().isHasValidate()) {
                 ExpireDateInterface anInterface = getDatePicker();
                 if (dataInterface.designInterface().showDataForCustomer()) {

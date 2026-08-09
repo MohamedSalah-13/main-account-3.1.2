@@ -20,6 +20,49 @@ public class TreasuryTransferDao extends AbstractDao<TreasuryTransfer> {
     }
 
     @Override
+    public List<TreasuryTransfer> loadAll() throws DaoException {
+        String query = """
+                SELECT tt.id,
+                       tt.treasury_from,
+                       tt.treasury_to,
+                       tt.amount,
+                       tt.transfer_date,
+                       tt.notes,
+                       tt.user_id,
+                       tf.t_name AS from_name,
+                       tt2.t_name AS to_name
+                FROM treasury_transfers tt
+                JOIN treasury tf ON tf.id = tt.treasury_from
+                JOIN treasury tt2 ON tt2.id = tt.treasury_to
+                ORDER BY tt.transfer_date DESC, tt.id DESC
+                """;
+        return queryForObjects(query, this::map);
+    }
+
+    @Override
+    public int insert(TreasuryTransfer transfer) throws DaoException {
+        validateTransfer(transfer);
+
+        return insertMultiData(() -> {
+            int affectedRows = treasuryDao.decreaseAmount(
+                    transfer.getTreasuryFrom().getId(),
+                    transfer.getAmount()
+            );
+
+            if (affectedRows == 0) {
+                throw new DaoException("رصيد الخزينة المحول منها غير كافٍ");
+            }
+
+            treasuryDao.increaseAmount(
+                    transfer.getTreasuryTo().getId(),
+                    transfer.getAmount()
+            );
+
+            insertTransferOnly(transfer);
+        });
+    }
+
+    @Override
     public TreasuryTransfer map(ResultSet rs) throws DaoException {
         try {
             TreasuryTransfer transfer = new TreasuryTransfer();
@@ -51,26 +94,6 @@ public class TreasuryTransferDao extends AbstractDao<TreasuryTransfer> {
         }
     }
 
-    @Override
-    public List<TreasuryTransfer> loadAll() throws DaoException {
-        String query = """
-                SELECT tt.id,
-                       tt.treasury_from,
-                       tt.treasury_to,
-                       tt.amount,
-                       tt.transfer_date,
-                       tt.notes,
-                       tt.user_id,
-                       tf.t_name AS from_name,
-                       tt2.t_name AS to_name
-                FROM treasury_transfers tt
-                JOIN treasury tf ON tf.id = tt.treasury_from
-                JOIN treasury tt2 ON tt2.id = tt.treasury_to
-                ORDER BY tt.transfer_date DESC, tt.id DESC
-                """;
-        return queryForObjects(query, this::map);
-    }
-
     public List<TreasuryTransfer> loadBetweenDates(LocalDate startDate, LocalDate endDate) throws DaoException {
         String query = """
                 SELECT tt.id,
@@ -89,29 +112,6 @@ public class TreasuryTransferDao extends AbstractDao<TreasuryTransfer> {
                 ORDER BY tt.transfer_date DESC, tt.id DESC
                 """;
         return queryForObjects(query, this::map, startDate, endDate);
-    }
-
-    @Override
-    public int insert(TreasuryTransfer transfer) throws DaoException {
-        validateTransfer(transfer);
-
-        return insertMultiData(() -> {
-            int affectedRows = treasuryDao.decreaseAmount(
-                    transfer.getTreasuryFrom().getId(),
-                    transfer.getAmount()
-            );
-
-            if (affectedRows == 0) {
-                throw new DaoException("رصيد الخزينة المحول منها غير كافٍ");
-            }
-
-            treasuryDao.increaseAmount(
-                    transfer.getTreasuryTo().getId(),
-                    transfer.getAmount()
-            );
-
-            insertTransferOnly(transfer);
-        });
     }
 
     private int insertTransferOnly(TreasuryTransfer transfer) throws DaoException {

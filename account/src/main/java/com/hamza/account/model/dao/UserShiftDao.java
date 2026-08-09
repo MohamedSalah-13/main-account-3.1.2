@@ -7,7 +7,10 @@ import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.database.SqlStatements;
 import lombok.extern.log4j.Log4j2;
 
-import java.sql.*;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -191,9 +194,9 @@ public class UserShiftDao extends AbstractDao<UserShift> {
      * يحسب الملخص المالي للوردية اعتماداً على نطاق الوقت ومعرف المستخدم.
      * يُستخدم لحظياً (X-Report) أو عند الغلق (Z-Report).
      *
-     * @param userId  معرّف المستخدم
-     * @param from    بداية الفترة (open_time)
-     * @param to      نهاية الفترة (الآن أو close_time)
+     * @param userId معرّف المستخدم
+     * @param from   بداية الفترة (open_time)
+     * @param to     نهاية الفترة (الآن أو close_time)
      */
     public ShiftSummary calculateShiftSummary(int userId, LocalDateTime from, LocalDateTime to)
             throws DaoException {

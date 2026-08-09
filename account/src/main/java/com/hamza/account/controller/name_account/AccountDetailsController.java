@@ -1,11 +1,9 @@
 package com.hamza.account.controller.name_account;
 
 import com.hamza.account.config.Image_Setting;
-import com.hamza.account.config.PropertiesName;
 import com.hamza.account.controller.main.DataPublisher;
 import com.hamza.account.controller.main.DisableButtons;
 import com.hamza.account.controller.main.LoadOtherData;
-import com.hamza.account.controller.model.TreeAccountModelForPrint;
 import com.hamza.account.interfaces.api.DataInterface;
 import com.hamza.account.model.base.BaseAccount;
 import com.hamza.account.model.base.BaseNames;
@@ -21,7 +19,6 @@ import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.dateTime.SearchInTwoDate;
 import com.hamza.controlsfx.interfaceData.AppSettingInterface;
 import com.hamza.controlsfx.language.Setting_Language;
-import com.hamza.controlsfx.others.CssToColorHelper;
 import com.hamza.controlsfx.others.DateSetting;
 import com.hamza.controlsfx.table.Column;
 import com.hamza.controlsfx.util.ImageChoose;
@@ -41,24 +38,22 @@ import java.util.function.Predicate;
 
 import static com.hamza.controlsfx.dateTime.DateUtils.getMinDateWithFilter;
 import static com.hamza.controlsfx.table.Table_Setting.createTable;
-import static com.hamza.controlsfx.util.NumberUtils.roundToTwoDecimalPlaces;
 
 @Log4j2
 @FxmlPath(pathFile = "accountDetails-view.fxml")
 public class AccountDetailsController<T1 extends BasePurchasesAndSales, T2 extends BaseTotals, T3 extends BaseNames, T4 extends BaseAccount>
         extends LoadOtherData<T1, T2, T3, T4> implements Initializable, AppSettingInterface {
 
-    private final CssToColorHelper helper;
     private final String name_account;
     private final int num_id;
     @FXML
     private TableView<T4> tableView;
     @FXML
-    private Label labelName, labelFirstBalance, labelLastBalance, labelFrom, labelTo;
+    private Label labelName, labelFrom, labelTo;
     @FXML
-    private Button btnPrint, btnRefresh, btnSearch, btnUpdate, btnDelete;
+    private Button btnSearch, btnUpdate, btnDelete;
     @FXML
-    private TextField txtLimit, txtLast, txtName;
+    private TextField txtName;
     @FXML
     private AnchorPane pane;
     @FXML
@@ -70,9 +65,8 @@ public class AccountDetailsController<T1 extends BasePurchasesAndSales, T2 exten
 
     public AccountDetailsController(DaoFactory daoFactory, DataPublisher dataPublisher
             , DataInterface<T1, T2, T3, T4> dataInterface
-            , String nameAccount, int numId, CssToColorHelper helper) throws Exception {
+            , String nameAccount, int numId) throws Exception {
         super(dataInterface, daoFactory, dataPublisher);
-        this.helper = helper;
         this.name_account = nameAccount;
         this.num_id = numId;
     }
@@ -102,8 +96,6 @@ public class AccountDetailsController<T1 extends BasePurchasesAndSales, T2 exten
 
     private void buttonGraphic() {
         var imageSetting = new Image_Setting();
-        btnPrint.setGraphic(ImageChoose.createIcon(imageSetting.print));
-        btnRefresh.setGraphic(ImageChoose.createIcon(imageSetting.refresh));
         btnSearch.setGraphic(ImageChoose.createIcon(imageSetting.search));
         btnUpdate.setGraphic(ImageChoose.createIcon(imageSetting.update));
         btnDelete.setGraphic(ImageChoose.createIcon(imageSetting.delete));
@@ -119,14 +111,10 @@ public class AccountDetailsController<T1 extends BasePurchasesAndSales, T2 exten
         List<T3> customersList = getDataAllList();
 
         labelName.setText(Setting_Language.WORD_NAME);
-        labelFirstBalance.setText(Setting_Language.FIRST_BALANCE);
-        labelLastBalance.setText(Setting_Language.THE_FINAL_BALANCE);
-        btnPrint.setText(Setting_Language.WORD_PRINT);
         btnSearch.setText(Setting_Language.WORD_SEARCH);
         btnUpdate.setText(Setting_Language.WORD_UPDATE);
-        btnRefresh.setText(Setting_Language.WORD_REFRESH);
+
         btnDelete.setText(Setting_Language.WORD_DELETE);
-        txtLimit.setText(String.valueOf(nameService.getCredit(customersList, num_id)));
         txtName.setText(name_account);
 
 
@@ -171,7 +159,6 @@ public class AccountDetailsController<T1 extends BasePurchasesAndSales, T2 exten
 
         createTable(tableView, columns, list_items);
         tableView.getItems().addAll(accountsList2());
-        sum(accountsList2());
         TableSetting.tableMenuSetting(getClass(), tableView);
 
 
@@ -210,15 +197,6 @@ public class AccountDetailsController<T1 extends BasePurchasesAndSales, T2 exten
     }
 
     private void action() {
-        btnRefresh.setOnAction(actionEvent -> {
-            try {
-                tableView.setItems(FXCollections.observableArrayList(accountsList2()));
-            } catch (Exception e) {
-                errorLog(e);
-            }
-        });
-
-        btnPrint.setOnAction(event -> printAccount());
         btnSearch.setOnAction(actionEvent -> {
             try {
                 String firstDate = dateFrom.getValue().toString();
@@ -264,35 +242,6 @@ public class AccountDetailsController<T1 extends BasePurchasesAndSales, T2 exten
         });
     }
 
-    private void printAccount() {
-        List<TreeAccountModelForPrint> listPrint = new ArrayList<>();
-        tableView.getItems().forEach(t4 -> {
-            TreeAccountModelForPrint e = new TreeAccountModelForPrint();
-            e.setId(accountData.getIdName(t4));
-            e.setName(accountData.getName(t4));
-            e.setDate(t4.getDate());
-            e.setPurchase(t4.getPurchase());
-            e.setPaid(t4.getPaid());
-            e.setAmount(t4.getAmount());
-            e.setNotes(t4.getNotes());
-            listPrint.add(e);
-        });
-
-        if (PropertiesName.getPrintPaperReceiptAccount()) {
-            double purchase = listPrint.stream().mapToDouble(TreeAccountModelForPrint::getPurchase).sum();
-            double paid = listPrint.stream().mapToDouble(TreeAccountModelForPrint::getPaid).sum();
-            double total = roundToTwoDecimalPlaces(purchase - paid);
-            printReports.printReceiptAccount(listPrint, listPrint.getFirst().getName(), total);
-        } else
-            printReports.printAccountByNameOrDate(listPrint, true, dataInterface.designInterface().nameTextOfReport(), helper);
-    }
-
-    private void sum(List<T4> list) {
-        double p = list.stream().mapToDouble(BaseAccount::getPurchase).sum();
-        double d = list.stream().mapToDouble(BaseAccount::getPaid).sum();
-        txtLast.setText(String.valueOf(roundToTwoDecimalPlaces(p - d)));
-    }
-
     private void deleteData() {
         try {
             T4 selectedItem = tableView.getSelectionModel().getSelectedItem();
@@ -301,7 +250,6 @@ public class AccountDetailsController<T1 extends BasePurchasesAndSales, T2 exten
                     int i = nameAndAccountInterface.accountDao().deleteById(selectedItem.getId());
                     if (i == 1) {
                         dataInterface.nameAndAccountInterface().addAccountPublisher().notifyObservers();
-                        btnRefresh.fire();
                     }
                 }
             }

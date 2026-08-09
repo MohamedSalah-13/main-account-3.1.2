@@ -26,7 +26,7 @@ public class MonthlySalesViewDao extends AbstractDao<MonthlySalesViewModel> {
     private final String DECEMBER = "December";
     private final String TOTAL_YEARLY_SALES = "total_yearly_sales";
     //    private final String TABLE_NAME = "view_monthly_sales";
-    private String TABLE_NAME;
+    private final String TABLE_NAME;
 
     public MonthlySalesViewDao(String tableName) {
         super();
