@@ -33,7 +33,7 @@ import java.util.List;
 public class UserController implements TableInterface<Users> {
 
     private final String title;
-    private final Publisher<String> publisherAddUser;
+    private final Publisher<String> publisherUsersChanged;
     private final DaoFactory daoFactory;
     private final UsersService usersService;
     private TableView<Users> table;
@@ -42,7 +42,7 @@ public class UserController implements TableInterface<Users> {
             , String title) {
         this.daoFactory = daoFactory;
         this.title = title;
-        this.publisherAddUser = dataPublisher.getPublisherAddUser();
+        this.publisherUsersChanged = dataPublisher.getPublisherUsersChanged();
         this.usersService = ServiceRegistry.get(UsersService.class);
     }
 
@@ -71,7 +71,7 @@ public class UserController implements TableInterface<Users> {
 
             @Override
             public void afterDelete() {
-                UserController.this.publisherAddUser.publish();
+                UserController.this.publisherUsersChanged.publish();
             }
         };
     }
@@ -117,7 +117,7 @@ public class UserController implements TableInterface<Users> {
 
     @Override
     public Publisher<String> publisherTable() {
-        return publisherAddUser;
+        return publisherUsersChanged;
     }
 
     @Override
@@ -209,7 +209,7 @@ public class UserController implements TableInterface<Users> {
                     users.setActive(b);
                     int update = daoFactory.usersDao().updateCase(users);
                     if (update == 1) {
-                        publisherAddUser.publish();
+                        publisherUsersChanged.publish();
                     }
                 }
             }
@@ -238,7 +238,7 @@ public class UserController implements TableInterface<Users> {
     }
 
     private void openAddUser(int code) throws Exception {
-        new AddForAllApplication(0, new AddUserController(code, publisherAddUser));
+        new AddForAllApplication(0, new AddUserController(code, publisherUsersChanged));
     }
 
 }

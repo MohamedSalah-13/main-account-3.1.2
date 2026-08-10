@@ -61,14 +61,8 @@ public class MainToolbarController implements Initializable {
         // No subscription to close here: the publishers belong to the main screen
         // (MainItems extends DataPublisher), and this toolbar is part of it, so the
         // two are collected together when the user logs out.
-        //
-        // publisherAddUser carries two different things: the signed-in user's name,
-        // which this greeting wants, and a payload-less "the user list changed" from
-        // the users screen, which it must leave the greeting alone for.
-        dataPublisher.getPublisherAddUser().addObserver(message -> {
-            if (message == null) return;
-            menuButton.setText(Setting_Language.WELCOME + " " + message + " !");
-        });
+        dataPublisher.getPublisherUserName().addObserver(message ->
+                menuButton.setText(Setting_Language.WELCOME + " " + message + " !"));
         dataPublisher.getShowLoginScreen().addObserver(message -> menuItemLogout.setDisable(!message));
 //        toolBar.getItems().remove(btnAlarm);
 //        toolBar.getItems().remove(btnPosSales);

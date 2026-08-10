@@ -21,7 +21,17 @@ public class DataPublisher {
     private final Publisher<String> publisherAddAccountSuppliers = new Publisher<>();
     private final Publisher<String> publisherAddNameCustomer = new Publisher<>();
     private final Publisher<String> publisherAddNameSuppliers = new Publisher<>();
-    private final Publisher<String> publisherAddUser = new Publisher<>();
+    /**
+     * Carries the signed-in user's name, for the greeting in the toolbar. Kept
+     * apart from {@link #publisherUsersChanged} - the two were one publisher, so
+     * deleting a user re-announced a name to a greeting that had no business
+     * hearing about it.
+     */
+    private final Publisher<String> publisherUserName = new Publisher<>();
+    /**
+     * A bare signal: the list of users has changed. No payload.
+     */
+    private final Publisher<String> publisherUsersChanged = new Publisher<>();
     private final Publisher<String> publisherAddMainGroup = new Publisher<>();
     private final Publisher<String> publisherAddSubGroup = new Publisher<>();
     private final Publisher<String> publisherAddEmployee = new Publisher<>();

@@ -50,7 +50,10 @@ public class ChangeUserName extends TextInputDialog {
                 users.setUsername(string);
                 int update = daoFactory.usersDao().update(users);
                 if (update == 1) {
-                    dataPublisher.getPublisherAddUser().publish(string);
+                    // The greeting takes the new name, and the users table - which
+                    // shows the row that just changed - is told to reload.
+                    dataPublisher.getPublisherUserName().publish(string);
+                    dataPublisher.getPublisherUsersChanged().publish();
                     Thread thread = new Thread(() -> Platform.runLater(AllAlerts::alertSave));
                     thread.start();
                 } else throw new DaoException(Setting_Language.MESSAGE);

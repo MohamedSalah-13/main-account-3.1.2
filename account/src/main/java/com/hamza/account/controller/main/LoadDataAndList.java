@@ -17,7 +17,7 @@ public class LoadDataAndList {
         Stream.of(
                         dataPublisher.getPublisherAddItem(),
                         dataPublisher.getPublisherAddArea(),
-                        dataPublisher.getPublisherAddUser(),
+                        dataPublisher.getPublisherUsersChanged(),
                         dataPublisher.getPublisherAddEmployee(),
                         dataPublisher.getPublisherBuy(),
                         dataPublisher.getPublisherSales(),

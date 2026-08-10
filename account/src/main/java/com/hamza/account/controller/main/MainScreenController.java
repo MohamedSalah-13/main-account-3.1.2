@@ -43,7 +43,7 @@ import static com.hamza.account.config.PropertiesName.getShowMainTotals;
 @Log4j2
 public class MainScreenController extends MainItems implements Initializable {
 
-    private final Publisher<String> publisherAddUser;
+    private final Publisher<String> publisherUserName;
     private final ContextMenu slideshowMenu = new ContextMenu();
     public Pane mainPane;
     private MainMenuController menuController;
@@ -67,7 +67,7 @@ public class MainScreenController extends MainItems implements Initializable {
 
     public MainScreenController(DaoFactory daoFactory) throws Exception {
         super(daoFactory);
-        this.publisherAddUser = getPublisherAddUser();
+        this.publisherUserName = getPublisherUserName();
     }
 
     @Override
@@ -88,7 +88,7 @@ public class MainScreenController extends MainItems implements Initializable {
 
         // data publisher
         var name = LogApplication.usersVo.getUsername();
-        publisherAddUser.publish(name);
+        publisherUserName.publish(name);
         // This controller is the publisher bag it subscribes to, so there is nothing
         // that could outlive the observers registered here.
         getChangeMainScreenImage().addObserver(message -> setBackgroundImage());

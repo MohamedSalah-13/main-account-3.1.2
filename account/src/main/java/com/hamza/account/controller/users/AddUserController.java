@@ -29,7 +29,7 @@ public class AddUserController implements AddInterface {
 
 
     private final int codeId;
-    private final Publisher<String> publisherAddUsers;
+    private final Publisher<String> publisherUsersChanged;
     private final UsersService usersService = ServiceRegistry.get(UsersService.class);
     @FXML
     private Label labelCode, labelName, labelActive, labelPass;
@@ -42,9 +42,9 @@ public class AddUserController implements AddInterface {
     @FXML
     private PasswordField txtPass;
 
-    public AddUserController(int codeId, Publisher<String> publisherAddUsers) {
+    public AddUserController(int codeId, Publisher<String> publisherUsersChanged) {
         this.codeId = codeId;
-        this.publisherAddUsers = publisherAddUsers;
+        this.publisherUsersChanged = publisherUsersChanged;
     }
 
     @FXML
@@ -99,7 +99,7 @@ public class AddUserController implements AddInterface {
 
     @Override
     public void afterSaved() {
-        publisherAddUsers.publish();
+        publisherUsersChanged.publish();
         resetData();
     }
 
