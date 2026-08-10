@@ -1,6 +1,6 @@
 package com.hamza.account.controller.dataByName;
 
-import com.hamza.controlsfx.observer.Publisher;
+import com.hamza.controlsfx.observer.AppEvent;
 
 import java.util.List;
 import java.util.function.ToIntFunction;
@@ -29,5 +29,9 @@ public interface AreaInterface<T> {
 
     ToIntFunction<T> getIdFunction();
 
-    Publisher<String> publisherTable();
+    /**
+     * The event announcing that this screen's data changed, published by the
+     * toolbar it is shown with.
+     */
+    AppEvent changeEvent();
 }

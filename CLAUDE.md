@@ -175,10 +175,19 @@ events are records implementing `AppEvent`, under `account.features.events`. A s
 from the registry rather than having a publisher threaded through its constructor, and the compiler
 checks the payload — where a dozen `Publisher<String>` fields can only be told apart by which field
 the caller picked. `UserRenamed`, `UsersChanged`, `InvoiceSaved`, `ItemSaved`, `ItemsChanged`,
-`NameChanged` and `AccountChanged` are migrated; the rest of `DataPublisher` follows family by family.
+`NameChanged`, `AccountChanged`, `GroupsChanged`, `AreasChanged` and `UnitsChanged` are migrated; what
+is left in `DataPublisher` is treasuries, employees, expenses, company details, sel-price units and the
+window signals.
 A table declares `refreshOn()` (its event) or `publisherTable()` (the old way), and `TableController`
 subscribes to whichever is set; a table seeing only one side of an event narrows it with
 `refreshFor(event)`.
+
+The generic toolbar takes the same idea one step further. `ToolbarAccountInt` answers `changeEvent()`
+and `eventBus()`, and `ToolbarAccountController` publishes the event after a save or a delete while
+`ApplicationDataWithToolbarIndexApp` subscribes to `changeEvent().getClass()`. It is the event
+*instance* rather than its type because the bus publishes instances and a generic component cannot
+build one; the events are records, so a fresh one per call costs nothing. `eventBus()` is asked of the
+screen because `controlsfx` cannot reach `ServiceRegistry`, which lives in `account`.
 
 `InvoiceSaved` carries an `InvoiceSide` (PURCHASE or SALES) and replaced
 `DataInterface.publisherPurchaseOrSales()`, which routed to one of two publishers to say the same

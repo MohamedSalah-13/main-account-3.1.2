@@ -5,7 +5,8 @@ import com.hamza.account.controller.main.DataPublisher;
 import com.hamza.account.controller.others.ServiceRegistry;
 import com.hamza.account.model.domain.Area;
 import com.hamza.account.service.AreaService;
-import com.hamza.controlsfx.observer.Publisher;
+import com.hamza.account.features.events.AreasChanged;
+import com.hamza.controlsfx.observer.AppEvent;
 
 import java.util.List;
 import java.util.function.ToIntFunction;
@@ -77,7 +78,7 @@ public class AreaImpl implements AreaInterface<Area> {
     }
 
     @Override
-    public Publisher<String> publisherTable() {
-        return dataPublisher.getPublisherAddArea();
+    public AppEvent changeEvent() {
+        return new AreasChanged();
     }
 }

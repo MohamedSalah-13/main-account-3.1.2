@@ -5,7 +5,9 @@ import com.hamza.controlsfx.interfaceData.Disable;
 import com.hamza.controlsfx.interfaceData.TableViewShowDataInt;
 import com.hamza.controlsfx.interfaceData.ToolbarAccountInt;
 import com.hamza.controlsfx.language.Setting_Language;
-import com.hamza.controlsfx.observer.Publisher;
+import com.hamza.account.controller.others.ServiceRegistry;
+import com.hamza.controlsfx.observer.AppEvent;
+import com.hamza.controlsfx.observer.EventBus;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.scene.control.Label;
@@ -164,8 +166,13 @@ public class AddAreaController<T> extends VBox {
             }
 
             @Override
-            public Publisher<String> publisherTable() {
-                return areaInterface.publisherTable();
+            public AppEvent changeEvent() {
+                return areaInterface.changeEvent();
+            }
+
+            @Override
+            public EventBus eventBus() {
+                return ServiceRegistry.get(EventBus.class);
             }
         };
     }

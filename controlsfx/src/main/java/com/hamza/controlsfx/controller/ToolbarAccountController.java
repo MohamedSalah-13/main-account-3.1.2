@@ -114,9 +114,19 @@ public class ToolbarAccountController<T> {
             if (i >= 1) {
                 AllAlerts.alertDelete();
                 toolbarAccountInt.afterSaveOrDelete();
-                toolbarAccountInt.publisherTable().publish();
+                publishChange(toolbarAccountInt);
             } else AllAlerts.alertError(Setting_Language.PLEASE_INSERT_ALL_DATA);
         }
+    }
+
+    /**
+     * Announces the change on behalf of the screen. A screen that declares neither
+     * a bus nor an event simply says nothing.
+     */
+    private void publishChange(ToolbarAccountInt<T> toolbarAccountInt) {
+        var eventBus = toolbarAccountInt.eventBus();
+        var event = toolbarAccountInt.changeEvent();
+        if (eventBus != null && event != null) eventBus.publish(event);
     }
 
     private void save(ToolbarAccountInt<T> toolbarAccountInt) {
@@ -131,7 +141,7 @@ public class ToolbarAccountController<T> {
             if (i != null) {
                 AllAlerts.alertSave();
                 toolbarAccountInt.afterSaveOrDelete();
-                toolbarAccountInt.publisherTable().publish();
+                publishChange(toolbarAccountInt);
             }
         }
     }

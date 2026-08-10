@@ -6,6 +6,8 @@ import com.hamza.account.controller.main.DisableButtons;
 import com.hamza.account.controller.main.LoadData;
 import com.hamza.account.controller.others.SelectedButton;
 import com.hamza.account.controller.others.ServiceRegistry;
+import com.hamza.account.features.events.GroupLevel;
+import com.hamza.account.features.events.GroupsChanged;
 import com.hamza.account.features.events.ItemSaved;
 import com.hamza.account.features.events.ItemsChanged;
 import com.hamza.account.model.dao.DaoFactory;
@@ -106,7 +108,11 @@ public class ItemsController extends LoadData {
         // combo items
         ObservableList<String> observableListMain = FXCollections.observableArrayList(getMainGroupsNames());
 
-        subscriptions.subscribe(dataPublisher.getPublisherAddMainGroup(), string -> observableListMain.setAll(getMainGroupsNames()));
+        if (eventBus != null) {
+            subscriptions.add(eventBus.subscribe(GroupsChanged.class, event -> {
+                if (event.level() == GroupLevel.MAIN) observableListMain.setAll(getMainGroupsNames());
+            }));
+        }
         if (eventBus != null) {
             subscriptions.add(eventBus.subscribe(ItemSaved.class, event -> btnRefresh.fire()));
             subscriptions.add(eventBus.subscribe(ItemsChanged.class, event -> btnRefresh.fire()));

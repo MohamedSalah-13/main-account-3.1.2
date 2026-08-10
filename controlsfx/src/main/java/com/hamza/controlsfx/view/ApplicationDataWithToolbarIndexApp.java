@@ -50,18 +50,24 @@ public class ApplicationDataWithToolbarIndexApp<T> extends Dialog<T> {
         tableView.setItems(FXCollections.observableArrayList(tableViewShowDataInt.dataList()));
         dialogPane.setExpandableContent(tableView);
 
-        subscriptions.subscribe(toolbarAccountInt.publisherTable(), message -> {
-            try {
-                tableView.getItems().clear();
-                tableView.setItems(FXCollections.observableArrayList(tableViewShowDataInt.dataList()));
-                tableView.refresh();
-            } catch (DaoException e) {
-                log.error(e.getMessage(), e);
-            }
-        });
-        // The dialog is built fresh every time it is opened, so its observer has to
-        // go with it; the publisher behind it belongs to the screen underneath.
-        subscriptions.disposeWith(vBox);
+        var eventBus = toolbarAccountInt.eventBus();
+        var changeEvent = toolbarAccountInt.changeEvent();
+        if (eventBus != null && changeEvent != null) {
+            // The event the toolbar publishes is the one to listen for; only its type
+            // matters here, since the reload reads the data again anyway.
+            subscriptions.add(eventBus.subscribe(changeEvent.getClass(), event -> {
+                try {
+                    tableView.getItems().clear();
+                    tableView.setItems(FXCollections.observableArrayList(tableViewShowDataInt.dataList()));
+                    tableView.refresh();
+                } catch (DaoException e) {
+                    log.error(e.getMessage(), e);
+                }
+            }));
+            // The dialog is built fresh every time it is opened, so its listener has
+            // to go with it; the bus behind it lives for the whole process.
+            subscriptions.disposeWith(vBox);
+        }
     }
 
     private Pane getToolBar(ToolbarAccountInt<T> toolbarAccountInt) throws IOException {

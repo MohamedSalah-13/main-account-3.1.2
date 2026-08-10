@@ -2,6 +2,9 @@ package com.hamza.account.controller.main;
 
 import com.hamza.account.controller.others.ServiceRegistry;
 import com.hamza.account.features.events.AccountChanged;
+import com.hamza.account.features.events.AreasChanged;
+import com.hamza.account.features.events.GroupLevel;
+import com.hamza.account.features.events.GroupsChanged;
 import com.hamza.account.features.events.InvoiceSaved;
 import com.hamza.account.features.events.NameChanged;
 import com.hamza.account.features.events.PartyKind;
@@ -34,13 +37,12 @@ public class LoadDataAndList {
                 eventBus.publish(new NameChanged(kind));
                 eventBus.publish(new AccountChanged(kind));
             }
+            for (GroupLevel level : GroupLevel.values()) eventBus.publish(new GroupsChanged(level));
+            eventBus.publish(new AreasChanged());
         }
 
         Stream.of(
-                        dataPublisher.getPublisherAddArea(),
-                        dataPublisher.getPublisherAddEmployee(),
-                        dataPublisher.getPublisherAddMainGroup(),
-                        dataPublisher.getPublisherAddSubGroup()
+                        dataPublisher.getPublisherAddEmployee()
                 ).filter(java.util.Objects::nonNull)
                 .forEach(Publisher::publish);
     }

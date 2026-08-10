@@ -11,7 +11,11 @@ import com.hamza.controlsfx.interfaceData.Disable;
 import com.hamza.controlsfx.interfaceData.TableViewShowDataInt;
 import com.hamza.controlsfx.interfaceData.ToolbarAccountInt;
 import com.hamza.controlsfx.language.Setting_Language;
-import com.hamza.controlsfx.observer.Publisher;
+import com.hamza.account.controller.others.ServiceRegistry;
+import com.hamza.account.features.events.GroupLevel;
+import com.hamza.account.features.events.GroupsChanged;
+import com.hamza.controlsfx.observer.AppEvent;
+import com.hamza.controlsfx.observer.EventBus;
 import com.hamza.controlsfx.others.Utils;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -29,7 +33,6 @@ import java.util.List;
 @FxmlPath(pathFile = "addSubGroup.fxml")
 public class AddSubGroupController {
 
-    private final Publisher<String> publisherAddGroup;
     private final ObservableList<SubGroups> subGroupsObservableList;
     private final MainGroupService mainGroupService = ServiceRegistry.get(MainGroupService.class);
     private final SupGroupService supGroupService = ServiceRegistry.get(SupGroupService.class);
@@ -42,8 +45,7 @@ public class AddSubGroupController {
     @FXML
     private VBox box;
 
-    public AddSubGroupController(Publisher<String> publisherAddGroup) throws Exception {
-        this.publisherAddGroup = publisherAddGroup;
+    public AddSubGroupController() throws Exception {
         subGroupsObservableList = FXCollections.observableArrayList(supGroupService.getSubGroupsList());
     }
 
@@ -124,7 +126,8 @@ public class AddSubGroupController {
             @Override
             public void afterSaveOrDelete() {
                 try {
-                    publisherAddGroup.publish(Setting_Language.WORD_SUB_G);
+                    // The toolbar publishes changeEvent() straight after this, so
+                    // announcing it here as well would notify everyone twice.
                     resetData();
                     subGroupsObservableList.clear();
                     subGroupsObservableList.setAll(supGroupService.getSubGroupsList());
@@ -135,8 +138,13 @@ public class AddSubGroupController {
             }
 
             @Override
-            public Publisher<String> publisherTable() {
-                return publisherAddGroup;
+            public AppEvent changeEvent() {
+                return new GroupsChanged(GroupLevel.SUB);
+            }
+
+            @Override
+            public EventBus eventBus() {
+                return ServiceRegistry.get(EventBus.class);
             }
         };
     }

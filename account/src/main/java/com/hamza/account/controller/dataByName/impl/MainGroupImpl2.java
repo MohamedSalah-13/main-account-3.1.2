@@ -6,7 +6,9 @@ import com.hamza.account.controller.others.ServiceRegistry;
 import com.hamza.account.model.base.BaseGroups;
 import com.hamza.account.model.domain.MainGroups;
 import com.hamza.account.service.MainGroupService;
-import com.hamza.controlsfx.observer.Publisher;
+import com.hamza.account.features.events.GroupLevel;
+import com.hamza.account.features.events.GroupsChanged;
+import com.hamza.controlsfx.observer.AppEvent;
 
 import java.util.List;
 import java.util.function.ToIntFunction;
@@ -79,7 +81,7 @@ public class MainGroupImpl2 implements AreaInterface<BaseGroups> {
     }
 
     @Override
-    public Publisher<String> publisherTable() {
-        return dataPublisher.getPublisherAddMainGroup();
+    public AppEvent changeEvent() {
+        return new GroupsChanged(GroupLevel.MAIN);
     }
 }
