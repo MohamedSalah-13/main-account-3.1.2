@@ -1,6 +1,7 @@
 package com.hamza.account.interfaces.api;
 
 import com.hamza.account.controller.model.PrintPurchaseWithName;
+import com.hamza.account.features.events.InvoiceSide;
 import com.hamza.account.model.base.BaseAccount;
 import com.hamza.account.model.base.BaseNames;
 import com.hamza.account.model.base.BasePurchasesAndSales;
@@ -27,7 +28,11 @@ public interface DataInterface<T1 extends BasePurchasesAndSales, T2 extends Base
 
     TotalDesignInterface<T2> totalDesignInterface();
 
-    Publisher<String> publisherPurchaseOrSales();
+    /**
+     * Which side an {@link com.hamza.account.features.events.InvoiceSaved} from
+     * this implementation carries - it replaced the publisher this used to return.
+     */
+    InvoiceSide invoiceSide();
 
     List<T1> listForAllPurchase(int id) throws DaoException;
 

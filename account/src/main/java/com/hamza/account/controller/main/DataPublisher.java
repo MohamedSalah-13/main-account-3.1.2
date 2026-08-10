@@ -10,8 +10,8 @@ import java.util.HashMap;
 public class DataPublisher {
 
     // for database
-    private final Publisher<String> publisherBuy = new Publisher<>();
-    private final Publisher<String> publisherSales = new Publisher<>();
+    // publisherBuy and publisherSales are now InvoiceSaved on the EventBus, told
+    // apart by InvoiceSide rather than by which of the two a caller reached for.
     private final Publisher<ItemsModel> publisherAddItem = new Publisher<>();
     // Areas used to borrow publisherAddStock, which was left over from the
     // warehouse screens. Those are gone; areas now have their own.

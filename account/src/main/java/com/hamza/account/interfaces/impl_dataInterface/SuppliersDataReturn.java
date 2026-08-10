@@ -4,6 +4,7 @@ import com.hamza.account.controller.main.DataPublisher;
 import com.hamza.account.controller.main.LoadData;
 import com.hamza.account.controller.model.PrintPurchaseWithName;
 import com.hamza.account.controller.others.ServiceRegistry;
+import com.hamza.account.features.events.InvoiceSide;
 import com.hamza.account.interfaces.api.*;
 import com.hamza.account.interfaces.impl_account.AccountSuppliers;
 import com.hamza.account.interfaces.impl_design.DesignSuppliersReturn;
@@ -45,8 +46,8 @@ public class SuppliersDataReturn extends LoadData implements DataInterface<Purch
     }
 
     @Override
-    public Publisher<String> publisherPurchaseOrSales() {
-        return dataPublisher.getPublisherBuy();
+    public InvoiceSide invoiceSide() {
+        return InvoiceSide.PURCHASE;
     }
 
     @Override

@@ -10,6 +10,7 @@ import com.hamza.account.controller.name_account.NameController;
 import com.hamza.account.controller.others.ServiceRegistry;
 import com.hamza.account.features.key_setting.UpdateInterface;
 import com.hamza.account.features.key_setting.UpdateQuantity;
+import com.hamza.account.features.events.InvoiceSaved;
 import com.hamza.account.features.notification.StockLevelAlert;
 import com.hamza.account.interfaces.api.DataInterface;
 import com.hamza.account.interfaces.impl_dataInterface.CustomData;
@@ -32,6 +33,7 @@ import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.language.Error_Text_Show;
 import com.hamza.controlsfx.language.Setting_Language;
 import com.hamza.controlsfx.observer.Publisher;
+import com.hamza.controlsfx.observer.EventBus;
 import com.hamza.controlsfx.observer.Subscriptions;
 import com.hamza.controlsfx.others.DateSetting;
 import com.hamza.controlsfx.table.TableColumnAnnotation;
@@ -78,6 +80,7 @@ public class PosController extends ButtonSetting {
 
     private static final int PAGE_SIZE = 100;
     private final Subscriptions subscriptions = new Subscriptions();
+    private final EventBus eventBus = ServiceRegistry.get(EventBus.class);
     private final Publisher<String> publisherAddCustomer;
     private final DaoFactory daoFactory;
     private final List<Button> paneList = new ArrayList<>();
@@ -687,7 +690,7 @@ public class PosController extends ButtonSetting {
                     Thread thread = new Thread(() -> {
                         try {
                             Thread.sleep(5000);
-                            dataInterface.publisherPurchaseOrSales().publish();
+                            if (eventBus != null) eventBus.publish(new InvoiceSaved(dataInterface.invoiceSide()));
                         } catch (InterruptedException e) {
                             logError(e);
                         }

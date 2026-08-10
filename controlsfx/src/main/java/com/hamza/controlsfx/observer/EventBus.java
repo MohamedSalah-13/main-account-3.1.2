@@ -2,6 +2,7 @@ package com.hamza.controlsfx.observer;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Executor;
 import java.util.function.Consumer;
 
 /**
@@ -27,6 +28,21 @@ public final class EventBus {
 
     private final Map<Class<?>, Publisher<AppEvent>> byType = new ConcurrentHashMap<>();
 
+    private final Executor uiExecutor;
+
+    public EventBus() {
+        this(null);
+    }
+
+    /**
+     * @param uiExecutor where listeners run, handed to every publisher this bus
+     *                   creates; {@code Runnable::run} in tests, null for the FX
+     *                   thread the application needs
+     */
+    public EventBus(Executor uiExecutor) {
+        this.uiExecutor = uiExecutor;
+    }
+
     /**
      * Listens for events of exactly {@code type} - a subtype is a different event
      * and is not delivered here.
@@ -42,6 +58,7 @@ public final class EventBus {
     }
 
     private Publisher<AppEvent> publisherFor(Class<?> type) {
-        return byType.computeIfAbsent(type, ignored -> new Publisher<>());
+        return byType.computeIfAbsent(type
+                , ignored -> uiExecutor == null ? new Publisher<>() : new Publisher<>(uiExecutor));
     }
 }

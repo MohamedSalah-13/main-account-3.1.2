@@ -8,6 +8,9 @@ import com.hamza.account.controller.model.TreeAccountModelForPrint;
 import com.hamza.account.controller.name_account.impl.AccountTotalsPurchase;
 import com.hamza.account.controller.name_account.impl.AccountTotalsSales;
 import com.hamza.account.controller.others.SelectedButton;
+import com.hamza.account.controller.others.ServiceRegistry;
+import com.hamza.account.features.events.InvoiceSaved;
+import com.hamza.controlsfx.observer.EventBus;
 import com.hamza.account.interfaces.api.DataInterface;
 import com.hamza.account.model.base.BaseAccount;
 import com.hamza.account.model.base.BaseNames;
@@ -50,6 +53,7 @@ import static com.hamza.controlsfx.util.ImageChoose.createIcon;
 @FxmlPath(pathFile = "account-totals.fxml")
 public class AccountController2<T1 extends BasePurchasesAndSales, T2 extends BaseTotals, T3 extends BaseNames, T4 extends BaseAccount>
         extends LoadOtherData<T1, T2, T3, T4> {
+    private final EventBus eventBus = ServiceRegistry.get(EventBus.class);
     private final ObservableList<T4> observableList = FXCollections.observableArrayList();
     private final ObservableList<String> items = FXCollections.observableArrayList();
     private FilteredList<T4> filteredTable;
@@ -82,7 +86,11 @@ public class AccountController2<T1 extends BasePurchasesAndSales, T2 extends Bas
                 throw new RuntimeException(e);
             }
         });
-        subscriptions.subscribe(dataInterface.publisherPurchaseOrSales(), message -> btnRefresh.fire());
+        if (eventBus != null) {
+            subscriptions.add(eventBus.subscribe(InvoiceSaved.class, event -> {
+                if (event.side() == dataInterface.invoiceSide()) btnRefresh.fire();
+            }));
+        }
     }
 
     @FXML

@@ -5,6 +5,7 @@ import lombok.extern.log4j.Log4j2;
 
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.Executor;
 
 /**
  * Notifies its observers on the JavaFX application thread.
@@ -29,6 +30,38 @@ public class Publisher<T> implements Subject<T> {
      * thread - while the dispatch iterates on the FX thread.
      */
     private final List<Observer<T>> observers = new CopyOnWriteArrayList<>();
+
+    private final Executor uiExecutor;
+
+    public Publisher() {
+        this(Publisher::runOnFxThread);
+    }
+
+    /**
+     * @param uiExecutor where the observers run; {@code Runnable::run} in tests, the
+     *                   FX thread in the application
+     */
+    public Publisher(Executor uiExecutor) {
+        this.uiExecutor = uiExecutor;
+    }
+
+    /**
+     * Runs inline when already on the FX thread, so a caller that reads the UI on
+     * the next line sees its own publish, and posts otherwise. A missing toolkit is
+     * logged rather than thrown: a refresh failing must not take down the save that
+     * asked for it.
+     */
+    private static void runOnFxThread(Runnable runnable) {
+        if (Platform.isFxApplicationThread()) {
+            runnable.run();
+            return;
+        }
+        try {
+            Platform.runLater(runnable);
+        } catch (IllegalStateException e) {
+            log.error("JavaFX is not running, so observers were not notified", e);
+        }
+    }
 
     @Override
     public Subscription subscribe(Observer<T> observer) {
@@ -66,15 +99,7 @@ public class Publisher<T> implements Subject<T> {
     }
 
     private void deliver(T message) {
-        if (Platform.isFxApplicationThread()) {
-            dispatch(message);
-            return;
-        }
-        try {
-            Platform.runLater(() -> dispatch(message));
-        } catch (IllegalStateException e) {
-            log.error("JavaFX is not running, so observers were not notified", e);
-        }
+        uiExecutor.execute(() -> dispatch(message));
     }
 
     /**

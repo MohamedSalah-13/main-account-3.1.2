@@ -11,6 +11,7 @@ import com.hamza.account.controller.setting.SettingTabLanguageController;
 import com.hamza.account.features.key_setting.MoveRow;
 import com.hamza.account.features.key_setting.UpdateInterface;
 import com.hamza.account.features.key_setting.UpdateQuantity;
+import com.hamza.account.features.events.InvoiceSaved;
 import com.hamza.account.features.notification.StockLevelAlert;
 import com.hamza.account.interfaces.api.DataInterface;
 import com.hamza.account.interfaces.api.TotalsDataInterface;
@@ -43,6 +44,7 @@ import com.hamza.controlsfx.database.DaoList;
 import com.hamza.controlsfx.interfaceData.AppSettingInterface;
 import com.hamza.controlsfx.language.Error_Text_Show;
 import com.hamza.controlsfx.language.Setting_Language;
+import com.hamza.controlsfx.observer.EventBus;
 import com.hamza.controlsfx.observer.Subscriptions;
 import com.hamza.controlsfx.others.DateSetting;
 import com.hamza.controlsfx.others.DoubleSetting;
@@ -100,6 +102,7 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
 
     private final ObservableList<T1> myObservableList = FXCollections.observableArrayList();
     private final Subscriptions subscriptions = new Subscriptions();
+    private final EventBus eventBus = ServiceRegistry.get(EventBus.class);
     private final DataPublisher dataPublisher;
     private final ActionTextBuy actionTextBuy;
     private final ObjectProperty<ItemsModel> itemsModel = new SimpleObjectProperty<>(new ItemsModel());
@@ -816,7 +819,7 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
         Thread thread = new Thread(() -> {
             try {
                 Thread.sleep(5000);
-                dataInterface.publisherPurchaseOrSales().publish();
+                if (eventBus != null) eventBus.publish(new InvoiceSaved(dataInterface.invoiceSide()));
                 if (getInvoiceBackupAfterSave())
                     SaveDatabaseFile.saveBeforeClose(false);
             } catch (Exception e) {

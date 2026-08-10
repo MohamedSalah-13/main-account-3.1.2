@@ -112,9 +112,18 @@ registered in `ServiceRegistry` by the `DownLoadApplication` constructor and key
 events are records implementing `AppEvent`, under `account.features.events`. A screen pulls the bus
 from the registry rather than having a publisher threaded through its constructor, and the compiler
 checks the payload — where a dozen `Publisher<String>` fields can only be told apart by which field
-the caller picked. `UserRenamed` and `UsersChanged` are migrated; the rest of `DataPublisher` follows
-family by family. A table declares `refreshOn()` (its event) or `publisherTable()` (the old way), and
-`TableController` subscribes to whichever is set.
+the caller picked. `UserRenamed`, `UsersChanged` and `InvoiceSaved` are migrated; the rest of
+`DataPublisher` follows family by family. A table declares `refreshOn()` (its event) or
+`publisherTable()` (the old way), and `TableController` subscribes to whichever is set.
+
+`InvoiceSaved` carries an `InvoiceSide` (PURCHASE or SALES) and replaced
+`DataInterface.publisherPurchaseOrSales()`, which routed to one of two publishers to say the same
+thing; implementations now answer `invoiceSide()` and listeners filter on it. The side is two-valued
+on purpose: a return shares the side of what it reverses, exactly as it shared a publisher, so a
+purchases screen still reloads when a purchase return is saved.
+
+`Publisher` and `EventBus` take an `Executor` for tests (`Runnable::run`), the way `NotificationCenter`
+does — `PublisherTest` and `EventBusTest` need no JavaFX toolkit.
 
 The bus lives for the whole process, and that removes a safety net worth knowing about: `DataPublisher`
 belonged to the main screen and was thrown away at logout, so observers nobody unsubscribed died with
