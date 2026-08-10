@@ -61,11 +61,11 @@ public class ShowInvoiceController<T1 extends BasePurchasesAndSales, T2 extends 
     @FXML
     private TableView<BasePurchasesAndSales> tableView;
     @FXML
-    private Label labelCount, labelCountItems, labelTotals, labelDiscount, labelAfterDiscount, labelPaid, labelRest, labelCode, labelName, labelDate, labelStock;
+    private Label labelCount, labelCountItems, labelTotals, labelDiscount, labelAfterDiscount, labelPaid, labelRest, labelCode, labelName, labelDate;
     @FXML
     private Label labelTotalAfterDiscount, labelOtherDiscount, labelTotal, labelType, labelProfit, labelTotalCost;
     @FXML
-    private Text textCount, textQuantity, textTotal, textDiscount, textAfterDiscount, textPaid, textRest, txtDate, txtCode, txtName, txtStock, textType,
+    private Text textCount, textQuantity, textTotal, textDiscount, textAfterDiscount, textPaid, textRest, txtDate, txtCode, txtName, textType,
             textInvoiceTotal, textInvoiceDiscount, textInvoiceAfterDiscount, textInvoiceProfit, textTotalProfit;
     @FXML
     private VBox root;
@@ -115,7 +115,6 @@ public class ShowInvoiceController<T1 extends BasePurchasesAndSales, T2 extends 
         labelCode.setText(Setting_Language.WORD_NUM_INV);
         labelName.setText(Setting_Language.WORD_NAME);
         labelDate.setText(Setting_Language.WORD_DATE);
-        labelStock.setText(Setting_Language.WORD_STOCK);
 
         labelCount.setText(Setting_Language.WORD_COUNT);
         labelCountItems.setText(Setting_Language.COUNT_ITEMS);
@@ -148,7 +147,6 @@ public class ShowInvoiceController<T1 extends BasePurchasesAndSales, T2 extends 
         txtCode.setText(String.valueOf(hashMap.get(ShowInvoiceNameData.ID)));
         txtName.setText(String.valueOf(hashMap.get(ShowInvoiceNameData.NAME)));
         txtDate.setText(String.valueOf(hashMap.get(ShowInvoiceNameData.DATE)));
-        txtStock.setText(String.valueOf(hashMap.get(ShowInvoiceNameData.STOCK)));
         date_insert = hashMap.get(ShowInvoiceNameData.DATE_INSERT).toString();
 
         double invoiceTotal = (double) hashMap.get(ShowInvoiceNameData.TOTAL);

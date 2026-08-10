@@ -54,12 +54,6 @@ public class UserPermissionController implements AppSettingInterface {
     @FXML
     private CheckBox items_add_excel;
 
-    // stocks
-    @FXML
-    private CheckBox stock_show, stock_update, stock_delete;
-    @FXML
-    private CheckBox stock_convert_show, stock_convert_update, stock_convert_delete;
-
     // groups
     @FXML
     private CheckBox main_group_show, main_group_update, main_group_delete;
@@ -164,12 +158,6 @@ public class UserPermissionController implements AppSettingInterface {
         checkBoxMap.put(items_update, UserPermissionType.ITEMS_UPDATE);
         checkBoxMap.put(items_delete, UserPermissionType.ITEMS_DELETE);
         checkBoxMap.put(items_add_excel, UserPermissionType.ITEMS_ADD_EXCEL);
-        checkBoxMap.put(stock_show, UserPermissionType.STOCK_SHOW);
-        checkBoxMap.put(stock_update, UserPermissionType.STOCK_UPDATE);
-        checkBoxMap.put(stock_delete, UserPermissionType.STOCK_DELETE);
-        checkBoxMap.put(stock_convert_show, UserPermissionType.STOCK_CONVERT_SHOW);
-        checkBoxMap.put(stock_convert_update, UserPermissionType.STOCK_CONVERT_UPDATE);
-        checkBoxMap.put(stock_convert_delete, UserPermissionType.STOCK_CONVERT_DELETE);
         checkBoxMap.put(main_group_show, UserPermissionType.MAIN_GROUP_SHOW);
         checkBoxMap.put(main_group_update, UserPermissionType.MAIN_GROUP_UPDATE);
         checkBoxMap.put(main_group_delete, UserPermissionType.MAIN_GROUP_DELETE);
@@ -256,12 +244,6 @@ public class UserPermissionController implements AppSettingInterface {
         items_update.setText("تعديل الأصناف");
         items_delete.setText("حذف الأصناف");
         items_add_excel.setText("إضافة الأصناف من ملف Excel");
-        stock_show.setText("عرض المخزون");
-        stock_update.setText("تعديل المخزون");
-        stock_delete.setText("حذف المخزون");
-        stock_convert_show.setText("عرض تحويلات المخزون");
-        stock_convert_update.setText("تعديل تحويلات المخزون");
-        stock_convert_delete.setText("حذف تحويلات المخزون");
         main_group_show.setText("عرض المجموعة الرئيسية");
         main_group_update.setText("تعديل المجموعة الرئيسية");
         main_group_delete.setText("حذف المجموعة الرئيسية");

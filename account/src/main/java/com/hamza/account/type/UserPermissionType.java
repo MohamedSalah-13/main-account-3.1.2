@@ -36,12 +36,9 @@ public enum UserPermissionType {
     ITEMS_UPDATE(22, "items_update"),
     ITEMS_DELETE(23, "items_delete"),
     ITEMS_ADD_EXCEL(24, "items_add_excel"),
-    STOCK_SHOW(25, "stock_show"),
-    STOCK_UPDATE(26, "stock_update"),
-    STOCK_DELETE(27, "stock_delete"),
-    STOCK_CONVERT_SHOW(28, "stock_convert_show"),
-    STOCK_CONVERT_UPDATE(29, "stock_convert_update"),
-    STOCK_CONVERT_DELETE(30, "stock_convert_delete"),
+    // 25..30 were the warehouse and warehouse-transfer permissions. Multi-warehouse
+    // support was removed, so nothing grants or checks them any more. The rows stay in
+    // the permission table - the schema is untouched - they are simply unreachable.
     MAIN_GROUP_SHOW(31, "main_group_show"),
     MAIN_GROUP_UPDATE(32, "main_group_update"),
     MAIN_GROUP_DELETE(33, "main_group_delete"),

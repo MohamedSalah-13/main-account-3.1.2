@@ -41,8 +41,6 @@ public class TotalSalesImpDesign implements TotalDesignInterface<Total_Sales> {
         Callback<TableColumn.CellDataFeatures<Total_Sales, String>, ObservableValue<String>> colNameType = f -> f.getValue().getInvoiceType().typeProperty();
         addColumn(tableView, Setting_Language.WORD_TYPE, 3, colNameType);
 
-        Callback<TableColumn.CellDataFeatures<Total_Sales, String>, ObservableValue<String>> colStockName = f -> f.getValue().getStockData().nameProperty();
-        addColumn(tableView, Setting_Language.WORD_STOCK, tableView.getColumns().size(), colStockName);
 
         Callback<TableColumn.CellDataFeatures<Total_Sales, String>, ObservableValue<String>> colDelegate = f -> f.getValue().getEmployeeObject().nameProperty();
         addColumn(tableView, Setting_Language.DELEGATE, tableView.getColumns().size(), colDelegate);

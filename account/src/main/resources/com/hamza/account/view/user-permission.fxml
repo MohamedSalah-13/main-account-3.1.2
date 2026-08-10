@@ -190,18 +190,6 @@
                                                         <Text layoutX="15.0" layoutY="55.0" strokeType="OUTSIDE"
                                                               strokeWidth="0.0" styleClass="text-explain" text="المخزن"
                                                               underline="true"/>
-                                                        <CheckBox fx:id="stock_show" disable="true"
-                                                                  mnemonicParsing="false" text="stock_show"/>
-                                                        <CheckBox fx:id="stock_update" disable="true"
-                                                                  mnemonicParsing="false" text="stock_update"/>
-                                                        <CheckBox fx:id="stock_delete" disable="true"
-                                                                  mnemonicParsing="false" text="stock_delete"/>
-                                                        <CheckBox fx:id="stock_convert_show" disable="true"
-                                                                  mnemonicParsing="false" text="stock_convert_show"/>
-                                                        <CheckBox fx:id="stock_convert_update" disable="true"
-                                                                  mnemonicParsing="false" text="stock_convert_update"/>
-                                                        <CheckBox fx:id="stock_convert_delete" disable="true"
-                                                                  mnemonicParsing="false" text="stock_convert_delete"/>
                                                     </children>
                                                     <padding>
                                                         <Insets bottom="5.0" left="5.0" right="5.0" top="5.0"/>

@@ -1,47 +1,23 @@
 package com.hamza.account.service;
 
+import com.hamza.account.config.DefaultStock;
 import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.model.domain.Stock;
 import com.hamza.controlsfx.database.DaoException;
-import com.hamza.controlsfx.language.Error_Text_Show;
 
-import java.util.List;
-
+/**
+ * Reads the single stock the application works against.
+ * <p>
+ * Multi-warehouse support was removed: there is no screen to create, rename from a
+ * list, transfer between or delete a warehouse any more, so the list/insert/update/
+ * delete methods that served those screens went with them. What remains is the one
+ * lookup the reports still need - the stock's name for a printed header.
+ * <p>
+ * The {@code stocks} table itself is untouched; see {@link DefaultStock}.
+ */
 public record StockService(DaoFactory daoFactory) {
 
-    public List<Stock> getStockList() throws DaoException {
-//        if (PropertiesName.getSettingServerStart()) {
-//            return LoadDataAndList.getStockList();
-//        } else {
-        return daoFactory.stockDao().loadAll();
-//        }
-    }
-
-    public List<String> getStockNames() throws DaoException {
-        return getStockList()
-                .stream()
-                .map(Stock::getName)
-                .toList();
-    }
-
-    public Stock getStockByName(String name) throws DaoException {
-        return daoFactory.stockDao().getDataByString(name);
-    }
-
-    public Stock getStockById(int id) throws DaoException {
-        return daoFactory.stockDao().getDataById(id);
-    }
-
-    public int deleteStock(int id) throws DaoException {
-        if (id == 1) throw new DaoException(Error_Text_Show.CANT_DELETE);
-        return daoFactory.stockDao().deleteById(id);
-    }
-
-    public int update(Stock stock) throws DaoException {
-        return daoFactory.stockDao().update(stock);
-    }
-
-    public int insert(Stock stock) throws DaoException {
-        return daoFactory.stockDao().insert(stock);
+    public Stock getDefaultStock() throws DaoException {
+        return daoFactory.stockDao().getDataById(DefaultStock.ID);
     }
 }

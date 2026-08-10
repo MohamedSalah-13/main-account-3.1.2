@@ -13,7 +13,9 @@ public class DataPublisher {
     private final Publisher<String> publisherBuy = new Publisher<>();
     private final Publisher<String> publisherSales = new Publisher<>();
     private final Publisher<ItemsModel> publisherAddItem = new Publisher<>();
-    private final Publisher<String> publisherAddStock = new Publisher<>();
+    // Areas used to borrow publisherAddStock, which was left over from the
+    // warehouse screens. Those are gone; areas now have their own.
+    private final Publisher<String> publisherAddArea = new Publisher<>();
     private final Publisher<String> publisherAddTreasury = new Publisher<>();
     private final Publisher<String> publisherAddAccountCustom = new Publisher<>();
     private final Publisher<String> publisherAddAccountSuppliers = new Publisher<>();

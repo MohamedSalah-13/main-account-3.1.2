@@ -35,7 +35,7 @@ public class DeleteDataController implements AppSettingInterface {
     @FXML
     private CheckBox deletePurchase, deletePurchaseReturn, deleteSuppliersAccount, deleteSuppliers;
     @FXML
-    private CheckBox deleteItems, deleteStocks, deleteSubGroup, deleteMainGroup;
+    private CheckBox deleteItems, deleteSubGroup, deleteMainGroup;
     @FXML
     private CheckBox deleteExpenses, deleteEmployees, deleteProcesses, deleteUsers;
     @FXML
@@ -74,7 +74,7 @@ public class DeleteDataController implements AppSettingInterface {
         addActionForCheckBox(deleteSales, deletePurchase, deleteCustomersAccount, deleteSuppliersAccount);
         addActionForCheckBox(deleteCustomersAccount, deleteCustomers, deleteExpenses);
         addActionForCheckBox(deletePurchase, deleteSuppliers, deleteItems);
-        addActionForCheckBox(deleteItems, deleteStocks, deleteSubGroup);
+        addActionForCheckBox(deleteItems, deleteSubGroup);
         addActionForCheckBox(deleteSubGroup, deleteMainGroup);
         addActionForCheckBox(deleteExpenses, deleteEmployees, deleteProcesses, deleteUsers);
 
@@ -83,7 +83,7 @@ public class DeleteDataController implements AppSettingInterface {
 
             checkSetting(btnSelected.isSelected(), deleteSales, deleteSalesReturn, deleteCustomersAccount, deleteCustomers, deletePurchase
                     , deletePurchaseReturn, deleteSuppliersAccount, deleteSuppliers
-                    , deleteItems, deleteStocks, deleteSubGroup, deleteMainGroup, deleteExpenses, deleteEmployees, deleteProcesses, deleteUsers);
+                    , deleteItems, deleteSubGroup, deleteMainGroup, deleteExpenses, deleteEmployees, deleteProcesses, deleteUsers);
         });
         btnSave.setOnAction(actionEvent -> {
             if (!deleteSalesReturn.isSelected()) {
@@ -123,7 +123,9 @@ public class DeleteDataController implements AppSettingInterface {
         try {
             daoFactory.truncateDao().truncateTableSales(deleteSalesReturn.isSelected(), deleteSales.isSelected(), deleteCustomersAccount.isSelected(), deleteCustomers.isSelected());
             daoFactory.truncateDao().truncateTablePurchase(deletePurchaseReturn.isSelected(), deletePurchase.isSelected(), deleteSuppliersAccount.isSelected(), deleteSuppliers.isSelected());
-            daoFactory.truncateDao().truncateTableItems(deleteItems.isSelected(), deleteStocks.isSelected(), deleteSubGroup.isSelected(), deleteMainGroup.isSelected());
+            // The warehouse reset option was removed with multi-warehouse support: stocks now
+            // holds exactly one row and resetting it would only re-create that same row.
+            daoFactory.truncateDao().truncateTableItems(deleteItems.isSelected(), false, deleteSubGroup.isSelected(), deleteMainGroup.isSelected());
             daoFactory.truncateDao().truncateTableOthers(deleteEmployees.isSelected(), deleteProcesses.isSelected(), deleteExpenses.isSelected(), deleteUsers.isSelected());
 
         } catch (Exception e) {

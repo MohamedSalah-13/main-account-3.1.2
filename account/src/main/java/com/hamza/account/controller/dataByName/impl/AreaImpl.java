@@ -78,6 +78,6 @@ public class AreaImpl implements AreaInterface<Area> {
 
     @Override
     public Publisher<String> publisherTable() {
-        return dataPublisher.getPublisherAddStock();
+        return dataPublisher.getPublisherAddArea();
     }
 }

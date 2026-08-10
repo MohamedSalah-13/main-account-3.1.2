@@ -39,7 +39,6 @@
                                         <Label fx:id="labelCode" styleClass="form-label" text="Code" />
                                         <Label fx:id="labelDate" styleClass="form-label" text="Date" GridPane.columnIndex="2" />
                                         <Label fx:id="labelName" styleClass="form-label" text="Name" GridPane.rowIndex="1" />
-                                        <Label fx:id="labelStock" styleClass="form-label" text="Stock" GridPane.columnIndex="2" GridPane.rowIndex="1" />
                                         <Label fx:id="labelType" styleClass="form-label" text="Type" GridPane.columnIndex="4" />
                                         <Label fx:id="labelTotal" styleClass="form-label" text="Total" GridPane.rowIndex="2" />
                                         <Label fx:id="labelOtherDiscount" styleClass="form-label" text="Other Discount" GridPane.columnIndex="2" GridPane.rowIndex="2" />
@@ -55,7 +54,6 @@
                                         <Text fx:id="txtDate" strokeType="OUTSIDE" strokeWidth="0.0" styleClass="text-sum" GridPane.columnIndex="3" />
                                         <Text fx:id="txtCode" strokeType="OUTSIDE" strokeWidth="0.0" styleClass="text-sum" GridPane.columnIndex="1" />
                                         <Text fx:id="txtName" strokeType="OUTSIDE" strokeWidth="0.0" styleClass="text-sum" GridPane.columnIndex="1" GridPane.rowIndex="1" />
-                                        <Text fx:id="txtStock" strokeType="OUTSIDE" strokeWidth="0.0" styleClass="text-sum" GridPane.columnIndex="3" GridPane.rowIndex="1" />
                                         <Text fx:id="textInvoiceProfit" layoutX="565.0" layoutY="93.0" strokeType="OUTSIDE" strokeWidth="0.0" styleClass="text-sum" text="0" GridPane.columnIndex="5" GridPane.rowIndex="3" />
                                         <Label fx:id="labelProfit" styleClass="form-label" text="gross profit" GridPane.columnIndex="4" GridPane.rowIndex="3" />
                                     </children>

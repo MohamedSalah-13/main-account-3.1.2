@@ -6,6 +6,15 @@ import javafx.beans.property.StringProperty;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
+/**
+ * Display names for the tables the audit log records against.
+ * <p>
+ * {@code STOCKS} and {@code STOCK_TRANSFER} survive the removal of multi-warehouse
+ * support on purpose: {@code AuditLogDao} resolves each row with
+ * {@link #valueOf(String)} against the table name stored at the time, so dropping a
+ * constant would make every historical audit entry for that table throw instead of
+ * displaying. Nothing writes them any more - they exist to keep the past readable.
+ */
 @Getter
 @AllArgsConstructor
 public enum TableType {

@@ -86,14 +86,6 @@ public enum DaoFactory {
         return new StockDao();
     }
 
-    public StockTransferDao stockTransferDao() {
-        return new StockTransferDao(this);
-    }
-
-    public StockTransferListDao stockTransferListDao() {
-        return new StockTransferListDao(this);
-    }
-
     public UsersDao usersDao() {
         return new UsersDao();
     }
