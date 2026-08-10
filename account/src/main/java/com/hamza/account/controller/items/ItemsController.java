@@ -6,6 +6,11 @@ import com.hamza.account.controller.main.DisableButtons;
 import com.hamza.account.controller.main.LoadData;
 import com.hamza.account.controller.others.SelectedButton;
 import com.hamza.account.controller.others.ServiceRegistry;
+import com.hamza.account.features.events.GroupLevel;
+import com.hamza.account.features.events.GroupsChanged;
+import com.hamza.account.features.events.ItemSaved;
+import com.hamza.account.features.events.SelPriceNamesChanged;
+import com.hamza.account.features.events.ItemsChanged;
 import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.model.domain.ItemsModel;
 import com.hamza.account.openFxml.FxmlPath;
@@ -23,7 +28,7 @@ import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.language.Error_Text_Show;
 import com.hamza.controlsfx.language.Setting_Language;
-import com.hamza.controlsfx.observer.Publisher;
+import com.hamza.controlsfx.observer.EventBus;
 import com.hamza.controlsfx.table.TableColumnAnnotation;
 import com.hamza.controlsfx.table.columnEdit.ColumnSetting;
 import com.hamza.controlsfx.table.columnEdit.TableColumnEdite;
@@ -45,8 +50,8 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import static com.hamza.account.config.PropertiesName.getItemEditFromTable;
 import static com.hamza.account.view.ConvertItemsGroup.HEADER_TEXT;
@@ -56,7 +61,7 @@ import static com.hamza.controlsfx.util.ImageChoose.createIcon;
 @FxmlPath(pathFile = "items/items-view.fxml")
 public class ItemsController extends LoadData {
 
-    private final Publisher<ItemsModel> publisherAddItem;
+    private final EventBus eventBus = ServiceRegistry.get(EventBus.class);
     private final TableView<ItemsModel> tableView = new TableView<>();
     private final ItemsService itemsService = ServiceRegistry.get(ItemsService.class);
     private final MainGroupService mainGroupService = ServiceRegistry.get(MainGroupService.class);
@@ -81,7 +86,6 @@ public class ItemsController extends LoadData {
 
     public ItemsController(DaoFactory daoFactory, DataPublisher dataPublisher) throws Exception {
         super(daoFactory, dataPublisher);
-        this.publisherAddItem = dataPublisher.getPublisherAddItem();
     }
 
     public void initialize() {
@@ -93,6 +97,9 @@ public class ItemsController extends LoadData {
         paginationTableSetting = new PaginationTableSetting(tableView, itemsService
                 , txtSearch, pagination);
         paginationTableSetting.initializePagination();
+        // The tab can be opened again and again; the publishers live as long as the
+        // main screen, so what this instance registered has to go with its tab.
+        subscriptions.disposeWith(stackPane);
     }
 
     private void otherSetting() {
@@ -102,8 +109,15 @@ public class ItemsController extends LoadData {
         // combo items
         ObservableList<String> observableListMain = FXCollections.observableArrayList(getMainGroupsNames());
 
-        dataPublisher.getPublisherAddMainGroup().addObserver(string -> observableListMain.setAll(getMainGroupsNames()));
-        publisherAddItem.addObserver(message -> btnRefresh.fire());
+        if (eventBus != null) {
+            subscriptions.add(eventBus.subscribe(GroupsChanged.class, event -> {
+                if (event.level() == GroupLevel.MAIN) observableListMain.setAll(getMainGroupsNames());
+            }));
+        }
+        if (eventBus != null) {
+            subscriptions.add(eventBus.subscribe(ItemSaved.class, event -> btnRefresh.fire()));
+            subscriptions.add(eventBus.subscribe(ItemsChanged.class, event -> btnRefresh.fire()));
+        }
     }
 
     private void permissionButtons() {
@@ -140,7 +154,10 @@ public class ItemsController extends LoadData {
         TableSetting.tableMenuSetting(getClass(), tableView);
 
         // change column names
-        dataPublisher.getPublisherSelPriceUnits().addObserver(message -> Platform.runLater(() -> updateColumnNames(message)));
+        if (eventBus != null) {
+            subscriptions.add(eventBus.subscribe(SelPriceNamesChanged.class
+                    , event -> Platform.runLater(() -> updateColumnNames(event.names()))));
+        }
         // load column names
         try {
             updateColumnNames(selPriceService.getIntegerStringHashMap());
@@ -177,7 +194,7 @@ public class ItemsController extends LoadData {
         return column;
     }
 
-    private void updateColumnNames(HashMap<Integer, String> message) {
+    private void updateColumnNames(Map<Integer, String> message) {
         tableView.getColumns().get(6).setText(message.get(1));
         tableView.getColumns().get(7).setText(message.get(2));
         tableView.getColumns().get(8).setText(message.get(3));
@@ -524,7 +541,6 @@ public class ItemsController extends LoadData {
 
     private void updateItemAndRefresh(ItemsModel item, TableView<ItemsModel> tableView) throws DaoException {
         item.setItemsUnitsModelList(new ArrayList<>());
-        item.setItems_packageList(new ArrayList<>());
         item.setUsers(LogApplication.usersVo);
         var i = itemsService.commitItemUpdate(item);
         if (i >= 0) {

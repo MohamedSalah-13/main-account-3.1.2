@@ -3,6 +3,8 @@ package com.hamza.account.controller.name_account;
 import com.hamza.account.controller.main.DataPublisher;
 import com.hamza.account.controller.main.LoadOtherData;
 import com.hamza.account.controller.others.ServiceRegistry;
+import com.hamza.account.features.events.AccountChanged;
+import com.hamza.account.features.events.NameChanged;
 import com.hamza.account.interfaces.api.DataInterface;
 import com.hamza.account.model.base.BaseAccount;
 import com.hamza.account.model.base.BaseNames;
@@ -19,7 +21,7 @@ import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.database.DaoList;
 import com.hamza.controlsfx.language.Error_Text_Show;
 import com.hamza.controlsfx.language.Setting_Language;
-import com.hamza.controlsfx.observer.Publisher;
+import com.hamza.controlsfx.observer.EventBus;
 import com.hamza.controlsfx.others.DateSetting;
 import com.hamza.controlsfx.others.DoubleSetting;
 import javafx.application.Platform;
@@ -49,7 +51,7 @@ public class Add_AccountController<T1 extends BasePurchasesAndSales, T2 extends 
         extends LoadOtherData<T1, T2, T3, T4> implements AddInterface {
 
     private final DaoList<T4> interFace;
-    private final Publisher<String> publisherAddAccount;
+    private final EventBus eventBus = ServiceRegistry.get(EventBus.class);
     private final int numInvoice;
     private final String name;
     private final TreasuryService treasuryService = ServiceRegistry.get(TreasuryService.class);
@@ -76,13 +78,18 @@ public class Add_AccountController<T1 extends BasePurchasesAndSales, T2 extends 
         this.numInvoice = num;
         this.interFace = nameAndAccountInterface.accountDao();
         this.name = name;
-        this.publisherAddAccount = nameAndAccountInterface.addAccountPublisher();
-        this.nameAndAccountInterface.addNamePublisher().addObserver(message -> names = nameService.getNames(getDataNameList()));
+        if (eventBus != null) {
+            subscriptions.add(eventBus.subscribe(NameChanged.class, event -> {
+                if (event.kind() == nameAndAccountInterface.partyKind())
+                    names = nameService.getNames(getDataNameList());
+            }));
+        }
         names = nameService.getNames(getDataNameList());
     }
 
     @FXML
     public void initialize() {
+        subscriptions.disposeWith(searchableName);
         otherSetting();
         addTreasurySetting();
         // for update account select data by code num invoice
@@ -179,7 +186,7 @@ public class Add_AccountController<T1 extends BasePurchasesAndSales, T2 extends 
 
     @Override
     public void afterSaved() {
-        publisherAddAccount.setAvailability(dataInterface.designInterface().nameTextOfInvoice());
+        if (eventBus != null) eventBus.publish(new AccountChanged(nameAndAccountInterface.partyKind()));
         txtCode.setText(String.valueOf(generateNextAccountCode()));
         txtPaid.setText("0.0");
         txtNotes.clear();

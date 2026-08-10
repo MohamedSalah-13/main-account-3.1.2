@@ -2,7 +2,11 @@ package com.hamza.account.features.choiceDialoge;
 
 import com.hamza.account.config.Image_Setting;
 import com.hamza.account.controller.main.DataPublisher;
+import com.hamza.account.controller.others.ServiceRegistry;
 import com.hamza.account.controller.pos.DialogButtons;
+import com.hamza.account.features.events.UserRenamed;
+import com.hamza.account.features.events.UsersChanged;
+import com.hamza.controlsfx.observer.EventBus;
 import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.model.domain.Users;
 import com.hamza.account.view.LogApplication;
@@ -50,7 +54,11 @@ public class ChangeUserName extends TextInputDialog {
                 users.setUsername(string);
                 int update = daoFactory.usersDao().update(users);
                 if (update == 1) {
-                    dataPublisher.getPublisherAddUser().setAvailability(string);
+                    // The greeting takes the new name, and the users table - which
+                    // shows the row that just changed - is told to reload.
+                    var eventBus = ServiceRegistry.get(EventBus.class);
+                    eventBus.publish(new UserRenamed(string));
+                    eventBus.publish(new UsersChanged());
                     Thread thread = new Thread(() -> Platform.runLater(AllAlerts::alertSave));
                     thread.start();
                 } else throw new DaoException(Setting_Language.MESSAGE);

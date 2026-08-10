@@ -8,6 +8,8 @@ import com.hamza.account.table.TableInterface;
 import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.button.ButtonGraphics;
 import com.hamza.controlsfx.language.Setting_Language;
+import com.hamza.controlsfx.observer.EventBus;
+import com.hamza.controlsfx.observer.Subscriptions;
 import com.hamza.controlsfx.others.CssToColorHelper;
 import com.hamza.controlsfx.table.TableColumnAnnotation;
 import com.hamza.controlsfx.table.columnEdit.ColumnSetting;
@@ -46,6 +48,8 @@ import static com.hamza.controlsfx.util.ImageChoose.createIcon;
 public class TableController<T> implements Initializable {
 
     private final TableInterface<T> tableInterface;
+    private final EventBus eventBus = ServiceRegistry.get(EventBus.class);
+    private final Subscriptions subscriptions = new Subscriptions();
     private final CssToColorHelper helper = new CssToColorHelper();
     private final ActionButtonToolBar<T> actionButtonToolBar;
     private final int ROWS_PER_PAGE = 50;
@@ -97,7 +101,17 @@ public class TableController<T> implements Initializable {
         actionButton();
         permButtons();
         updateTableView(0);
-        tableInterface.publisherTable().addObserver(message -> updateTableView(0));
+        // A screen names one or the other: the publisher it was built with, or the
+        // event it has been migrated to.
+        if (tableInterface.publisherTable() != null) {
+            subscriptions.subscribe(tableInterface.publisherTable(), message -> updateTableView(0));
+        }
+        if (tableInterface.refreshOn() != null && eventBus != null) {
+            subscriptions.add(eventBus.subscribe(tableInterface.refreshOn(), event -> {
+                if (tableInterface.refreshFor(event)) updateTableView(0);
+            }));
+        }
+        subscriptions.disposeWith(root);
     }
 
     public void initializePagination() {

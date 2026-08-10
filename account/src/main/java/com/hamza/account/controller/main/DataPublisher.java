@@ -1,42 +1,26 @@
 package com.hamza.account.controller.main;
 
-import com.hamza.account.model.domain.ItemsModel;
 import com.hamza.controlsfx.observer.Publisher;
 import lombok.Getter;
 
-import java.util.HashMap;
-
+/**
+ * What is left of the publisher bag: signals about windows, not about data.
+ * <p>
+ * Every domain event that used to live here is now a record on the
+ * {@code EventBus}, under {@code account.features.events}. These four stay: they
+ * say "close yourself", "the login screen setting changed", "show or hide the
+ * totals box", "the background image changed" and "the shift changed", which are
+ * window control rather than something that happened to the business. They also
+ * belong to the main screen exactly as long as the windows they steer do, so the
+ * bag being thrown away at logout is the disposal they want.
+ */
 @Getter
 public class DataPublisher {
-
-    // for database
-    private final Publisher<String> publisherBuy = new Publisher<>();
-    private final Publisher<String> publisherSales = new Publisher<>();
-    private final Publisher<ItemsModel> publisherAddItem = new Publisher<>();
-    // Areas used to borrow publisherAddStock, which was left over from the
-    // warehouse screens. Those are gone; areas now have their own.
-    private final Publisher<String> publisherAddArea = new Publisher<>();
-    private final Publisher<String> publisherAddTreasury = new Publisher<>();
-    private final Publisher<String> publisherAddAccountCustom = new Publisher<>();
-    private final Publisher<String> publisherAddAccountSuppliers = new Publisher<>();
-    private final Publisher<String> publisherAddNameCustomer = new Publisher<>();
-    private final Publisher<String> publisherAddNameSuppliers = new Publisher<>();
-    private final Publisher<String> publisherAddUser = new Publisher<>();
-    private final Publisher<String> publisherAddMainGroup = new Publisher<>();
-    private final Publisher<String> publisherAddSubGroup = new Publisher<>();
-    private final Publisher<String> publisherAddEmployee = new Publisher<>();
-    private final Publisher<String> publisherAddExpenses = new Publisher<>();
-    private final Publisher<String> publisherUpdateCompany = new Publisher<>();
-    private final Publisher<String> publisherAddUnits = new Publisher<>();
-    private final Publisher<String> publisherAddItemUnit = new Publisher<>();
 
     private final Publisher<Boolean> closeStageFromLogout = new Publisher<>();
     private final Publisher<Boolean> showLoginScreen = new Publisher<>();
     private final Publisher<Boolean> showMainTotalsScreen = new Publisher<>();
     private final Publisher<String> changeMainScreenImage = new Publisher<>();
-    private final Publisher<String> afterAddTarget = new Publisher<>();
-    private final Publisher<HashMap<Integer, String>> publisherSelPriceUnits = new Publisher<>();
-
     private final Publisher<Boolean> publisherShiftChanged = new Publisher<>();
 
 }

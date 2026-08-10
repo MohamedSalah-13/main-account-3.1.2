@@ -12,6 +12,7 @@ import com.hamza.account.trial.TrialManager;
 import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.database.ConnectionManager;
 import com.hamza.controlsfx.database.DaoException;
+import com.hamza.controlsfx.observer.EventBus;
 import com.hamza.controlsfx.util.FontsSetting;
 import javafx.application.Application;
 import javafx.stage.Stage;
@@ -44,6 +45,10 @@ public class DownLoadApplication extends Application {
 //        AlertSetting.setStylesheets(ThemeManager.getStylesheet());
         ThemeManager.initialize();
 
+        // Registered first, and without a DaoFactory: screens pull it from here
+        // instead of being handed a publisher through their constructor.
+        ServiceRegistry.register(EventBus.class, new EventBus());
+
         ServiceRegistry.register(ItemsService.class, new ItemsService(daoFactory));
         ServiceRegistry.register(StockService.class, new StockService(daoFactory));
         ServiceRegistry.register(EmployeeService.class, new EmployeeService(daoFactory));
@@ -52,7 +57,6 @@ public class DownLoadApplication extends Application {
         ServiceRegistry.register(UsersService.class, new UsersService(daoFactory));
         ServiceRegistry.register(MainGroupService.class, new MainGroupService(daoFactory));
         ServiceRegistry.register(SupGroupService.class, new SupGroupService(daoFactory));
-        ServiceRegistry.register(TreasuryTransferService.class, new TreasuryTransferService(daoFactory));
         ServiceRegistry.register(CardItemService.class, new CardItemService(daoFactory));
         ServiceRegistry.register(ExpensesService.class, new ExpensesService(daoFactory));
         ServiceRegistry.register(ExpensesDetailsService.class, new ExpensesDetailsService(daoFactory));
@@ -66,7 +70,6 @@ public class DownLoadApplication extends Application {
         ServiceRegistry.register(AccountCustomerService.class, new AccountCustomerService(daoFactory));
         ServiceRegistry.register(AccountSupplierService.class, new AccountSupplierService(daoFactory));
         ServiceRegistry.register(AuditLogService.class, new AuditLogService(daoFactory));
-        ServiceRegistry.register(DepositService.class, new DepositService(daoFactory));
         ServiceRegistry.register(TreasuryBalanceService.class, new TreasuryBalanceService(daoFactory));
         ServiceRegistry.register(ItemMiniQuantityService.class, new ItemMiniQuantityService(daoFactory));
         ServiceRegistry.register(AreaService.class, new AreaService(daoFactory));

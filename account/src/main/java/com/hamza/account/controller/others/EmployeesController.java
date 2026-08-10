@@ -9,7 +9,9 @@ import com.hamza.account.table.ActionButtonToolBar;
 import com.hamza.account.table.TableInterface;
 import com.hamza.account.type.UserPermissionType;
 import com.hamza.controlsfx.language.Setting_Language;
-import com.hamza.controlsfx.observer.Publisher;
+import com.hamza.account.controller.others.ServiceRegistry;
+import com.hamza.account.features.events.EmployeesChanged;
+import com.hamza.controlsfx.observer.EventBus;
 import javafx.beans.property.BooleanProperty;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
@@ -22,6 +24,7 @@ import java.util.List;
 public class EmployeesController implements TableInterface<Employees> {
 
     private final DataPublisher dataPublisher;
+    private final EventBus eventBus = ServiceRegistry.get(EventBus.class);
     private final EmployeeService employeeService;
 
     public EmployeesController(DataPublisher dataPublisher, EmployeeService employeeService) throws Exception {
@@ -54,7 +57,7 @@ public class EmployeesController implements TableInterface<Employees> {
 
             @Override
             public void afterDelete() {
-                dataPublisher.getPublisherAddEmployee().notifyObservers();
+                if (eventBus != null) eventBus.publish(new EmployeesChanged());
             }
         };
     }
@@ -89,8 +92,8 @@ public class EmployeesController implements TableInterface<Employees> {
     }
 
     @Override
-    public Publisher<String> publisherTable() {
-        return dataPublisher.getPublisherAddEmployee();
+    public Class<EmployeesChanged> refreshOn() {
+        return EmployeesChanged.class;
     }
 
     @Override
@@ -129,7 +132,7 @@ public class EmployeesController implements TableInterface<Employees> {
     }
 
     private void openData(int id) throws Exception {
-        AddEmployeeController addEmployeeController = new AddEmployeeController(dataPublisher.getPublisherAddEmployee(), id, employeeService);
+        AddEmployeeController addEmployeeController = new AddEmployeeController(id, employeeService);
         new AddForAllApplication(id, addEmployeeController);
     }
 

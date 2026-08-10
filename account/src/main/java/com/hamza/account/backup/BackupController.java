@@ -181,7 +181,7 @@ public class BackupController {
                 Toolkit.getDefaultToolkit().beep();
                 setStatus("✓ تمت الاستعادة بنجاح");
                 resetUIAfterTask();
-                LoadDataAndList.updateData(dataPublisher);
+                LoadDataAndList.updateData();
             });
 
             task.setOnFailed(e -> {

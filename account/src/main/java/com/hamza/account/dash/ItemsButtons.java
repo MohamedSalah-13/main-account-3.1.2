@@ -92,7 +92,7 @@ public class ItemsButtons {
 
             @Override
             public void action() throws Exception {
-                new OpenApplication<>(new ImportDataFromExcelFileController(dataPublisher.getPublisherAddItem()));
+                new OpenApplication<>(new ImportDataFromExcelFileController());
             }
 
             @NotNull
@@ -194,7 +194,7 @@ public class ItemsButtons {
 
             @Override
             public void action() throws Exception {
-                new AddGroupApp(dataPublisher.getPublisherAddSubGroup());
+                new AddGroupApp();
             }
         };
     }

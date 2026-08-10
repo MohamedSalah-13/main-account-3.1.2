@@ -1,6 +1,7 @@
 package com.hamza.controlsfx.interfaceData;
 
-import com.hamza.controlsfx.observer.Publisher;
+import com.hamza.controlsfx.observer.AppEvent;
+import com.hamza.controlsfx.observer.EventBus;
 import javafx.collections.ObservableList;
 
 public interface ToolbarAccountInt<T> {
@@ -92,5 +93,24 @@ public interface ToolbarAccountInt<T> {
      */
     void afterSaveOrDelete();
 
-    Publisher<String> publisherTable();
+    /**
+     * A fresh event saying this screen's data changed, published by the toolbar
+     * after a save or a delete and listened for by the list beside it. Null for a
+     * screen that announces nothing.
+     * <p>
+     * It is the event itself rather than its type because the bus publishes
+     * instances, and this toolbar is generic - it cannot build one. The events are
+     * records, so handing out a new one per call costs nothing.
+     */
+    default AppEvent changeEvent() {
+        return null;
+    }
+
+    /**
+     * The bus to publish {@link #changeEvent()} on. It is asked for here because
+     * controlsfx has no access to the application's service registry.
+     */
+    default EventBus eventBus() {
+        return null;
+    }
 }

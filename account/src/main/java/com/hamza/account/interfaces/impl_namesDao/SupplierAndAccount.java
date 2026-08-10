@@ -4,6 +4,7 @@ import com.hamza.account.controller.main.DataPublisher;
 import com.hamza.account.controller.others.ServiceRegistry;
 import com.hamza.account.controller.search.SearchInterface;
 import com.hamza.account.controller.search.SuppliersSearchController;
+import com.hamza.account.features.events.PartyKind;
 import com.hamza.account.interfaces.api.NameAndAccountInterface;
 import com.hamza.account.model.domain.SupplierAccount;
 import com.hamza.account.model.domain.Suppliers;
@@ -61,13 +62,8 @@ public class SupplierAndAccount implements NameAndAccountInterface<Suppliers, Su
     }
 
     @Override
-    public Publisher<String> addAccountPublisher() {
-        return dataPublisher.getPublisherAddAccountSuppliers();
-    }
-
-    @Override
-    public Publisher<String> addNamePublisher() {
-        return dataPublisher.getPublisherAddNameSuppliers();
+    public PartyKind partyKind() {
+        return PartyKind.SUPPLIER;
     }
 
     @Override

@@ -4,6 +4,8 @@ import com.hamza.account.config.Image_Setting;
 import com.hamza.account.controller.main.DataPublisher;
 import com.hamza.account.controller.main.DisableButtons;
 import com.hamza.account.controller.main.LoadOtherData;
+import com.hamza.account.controller.others.ServiceRegistry;
+import com.hamza.account.features.events.AccountChanged;
 import com.hamza.account.interfaces.api.DataInterface;
 import com.hamza.account.model.base.BaseAccount;
 import com.hamza.account.model.base.BaseNames;
@@ -16,6 +18,7 @@ import com.hamza.account.otherSetting.SearchAccountByDate;
 import com.hamza.account.table.TableSetting;
 import com.hamza.account.view.AddAccountApplication;
 import com.hamza.controlsfx.alert.AllAlerts;
+import com.hamza.controlsfx.observer.EventBus;
 import com.hamza.controlsfx.dateTime.SearchInTwoDate;
 import com.hamza.controlsfx.interfaceData.AppSettingInterface;
 import com.hamza.controlsfx.language.Setting_Language;
@@ -249,7 +252,9 @@ public class AccountDetailsController<T1 extends BasePurchasesAndSales, T2 exten
                 if (AllAlerts.confirmDelete()) {
                     int i = nameAndAccountInterface.accountDao().deleteById(selectedItem.getId());
                     if (i == 1) {
-                        dataInterface.nameAndAccountInterface().addAccountPublisher().notifyObservers();
+                        var eventBus = ServiceRegistry.get(EventBus.class);
+                        if (eventBus != null)
+                            eventBus.publish(new AccountChanged(nameAndAccountInterface.partyKind()));
                     }
                 }
             }

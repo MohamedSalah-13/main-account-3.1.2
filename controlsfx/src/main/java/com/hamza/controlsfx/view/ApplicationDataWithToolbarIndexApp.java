@@ -5,6 +5,7 @@ import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.interfaceData.TableViewShowDataInt;
 import com.hamza.controlsfx.interfaceData.ToolbarAccountInt;
 import com.hamza.controlsfx.language.Setting_Language;
+import com.hamza.controlsfx.observer.Subscriptions;
 import com.hamza.controlsfx.table.TableColumnAnnotation;
 import javafx.collections.FXCollections;
 import javafx.fxml.FXMLLoader;
@@ -19,6 +20,8 @@ import java.util.Objects;
 
 @Log4j2
 public class ApplicationDataWithToolbarIndexApp<T> extends Dialog<T> {
+
+    private final Subscriptions subscriptions = new Subscriptions();
 
     private static final String TOOLBAR_STYLESHEET = Objects.requireNonNull(
             ApplicationDataWithToolbarIndexApp.class.getResource("/com/hamza/controlsfx/css/toolbar-account.css")).toExternalForm();
@@ -47,15 +50,24 @@ public class ApplicationDataWithToolbarIndexApp<T> extends Dialog<T> {
         tableView.setItems(FXCollections.observableArrayList(tableViewShowDataInt.dataList()));
         dialogPane.setExpandableContent(tableView);
 
-        toolbarAccountInt.publisherTable().addObserver(message -> {
-            try {
-                tableView.getItems().clear();
-                tableView.setItems(FXCollections.observableArrayList(tableViewShowDataInt.dataList()));
-                tableView.refresh();
-            } catch (DaoException e) {
-                log.error(e.getMessage(), e);
-            }
-        });
+        var eventBus = toolbarAccountInt.eventBus();
+        var changeEvent = toolbarAccountInt.changeEvent();
+        if (eventBus != null && changeEvent != null) {
+            // The event the toolbar publishes is the one to listen for; only its type
+            // matters here, since the reload reads the data again anyway.
+            subscriptions.add(eventBus.subscribe(changeEvent.getClass(), event -> {
+                try {
+                    tableView.getItems().clear();
+                    tableView.setItems(FXCollections.observableArrayList(tableViewShowDataInt.dataList()));
+                    tableView.refresh();
+                } catch (DaoException e) {
+                    log.error(e.getMessage(), e);
+                }
+            }));
+            // The dialog is built fresh every time it is opened, so its listener has
+            // to go with it; the bus behind it lives for the whole process.
+            subscriptions.disposeWith(vBox);
+        }
     }
 
     private Pane getToolBar(ToolbarAccountInt<T> toolbarAccountInt) throws IOException {

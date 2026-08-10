@@ -9,6 +9,11 @@ public class NamesTables {
     public static final String EMAIL = "البريد الالكترونى";
     public static final String TEL = "التليفون";
     public static final String QUANTITY = "الكمية";
+    /**
+     * The units screen's column for units.value_d. It is a default, not the
+     * factor an item converts by - that is per item, in items_units.
+     */
+    public static final String DEFAULT_FACTOR = "المعامل الافتراضي";
     public static final String PRICE = "السعر";
     public static final String DATE = "التاريخ";
     public static final String NOTES = "ملاحظات";

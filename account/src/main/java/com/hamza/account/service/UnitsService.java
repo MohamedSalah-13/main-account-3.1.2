@@ -3,7 +3,6 @@ package com.hamza.account.service;
 import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.model.domain.UnitsModel;
 import com.hamza.controlsfx.database.DaoException;
-import com.hamza.controlsfx.language.Error_Text_Show;
 
 import java.util.List;
 
@@ -33,13 +32,26 @@ public record UnitsService(DaoFactory daoFactory) {
 
     }
 
+    /**
+     * Renaming is always allowed. It used to be refused for the two units the
+     * database ships with, which meant a business that spells "كرتونة"
+     * differently was stuck with the seed spelling forever - and a rename is
+     * safe: invoice lines reference the unit by id and carry their own factor.
+     */
     public int update(int id, String name, double value) throws DaoException {
-        if (id == 1 || id == 2) throw new DaoException(Error_Text_Show.CAN_NOT_UPDATE);
         return daoFactory.unitsDao().update(new UnitsModel(id, name, value));
     }
 
+    /**
+     * Whether anything still points at this unit - an item's base unit, one of
+     * an item's units, or a line on an invoice already saved. Deleting one that
+     * is referenced would fail on a foreign key, or orphan the history.
+     */
+    public boolean isUnitInUse(int id) throws DaoException {
+        return daoFactory.unitsDao().isInUse(id);
+    }
+
     public int delete(int id) throws DaoException {
-//        if (id == 1 || id == 2) throw new DaoException(Error_Text_Show.CANT_DELETE);
         return daoFactory.unitsDao().deleteById(id);
     }
 }

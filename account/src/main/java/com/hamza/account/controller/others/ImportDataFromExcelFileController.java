@@ -12,7 +12,8 @@ import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.excel.*;
 import com.hamza.controlsfx.interfaceData.AppSettingInterface;
 import com.hamza.controlsfx.language.Setting_Language;
-import com.hamza.controlsfx.observer.Publisher;
+import com.hamza.account.features.events.ItemsChanged;
+import com.hamza.controlsfx.observer.EventBus;
 import com.hamza.controlsfx.others.DoubleSetting;
 import com.hamza.controlsfx.table.TableColumnAnnotation;
 import com.hamza.controlsfx.table.columnEdit.ColumnSetting;
@@ -53,7 +54,7 @@ public class ImportDataFromExcelFileController implements Initializable, AppSett
     private final String buy = "buy";
     private final String sel = "sel";
     private final String balance = "first_balance";
-    private final Publisher<ItemsModel> publisherAddItem;
+    private final EventBus eventBus = ServiceRegistry.get(EventBus.class);
     private final IntegerProperty integerProperty = new SimpleIntegerProperty(0);
     private final ObservableList<ItemsModel> myObservableList = FXCollections.observableArrayList();
     private final ItemsService itemsService = ServiceRegistry.get(ItemsService.class);
@@ -68,10 +69,6 @@ public class ImportDataFromExcelFileController implements Initializable, AppSett
     @FXML
     private Label labelCount;
     private MaskerPaneSetting maskerPaneSetting;
-
-    public ImportDataFromExcelFileController(Publisher<ItemsModel> publisherAddItem) {
-        this.publisherAddItem = publisherAddItem;
-    }
 
     @Override
     public void initialize(URL url, ResourceBundle resourceBundle) {
@@ -201,7 +198,7 @@ public class ImportDataFromExcelFileController implements Initializable, AppSett
             new TaskProgressViewAction(voidTask).start(primaryStage);
             voidTask.setOnSucceeded(workerStateEvent -> {
                 btnClear.fire();
-                publisherAddItem.notifyObservers();
+                if (eventBus != null) eventBus.publish(new ItemsChanged());
                 AllAlerts.alertSave();
                 primaryStage.close();
             });

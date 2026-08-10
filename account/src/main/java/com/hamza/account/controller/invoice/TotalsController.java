@@ -5,6 +5,10 @@ import com.hamza.account.config.SaveDatabaseFile;
 import com.hamza.account.controller.main.DataPublisher;
 import com.hamza.account.controller.main.DisableButtons;
 import com.hamza.account.controller.model.PrintPurchaseWithName;
+import com.hamza.account.controller.others.ServiceRegistry;
+import com.hamza.account.features.events.EmployeesChanged;
+import com.hamza.account.features.events.InvoiceSaved;
+import com.hamza.account.features.events.NameChanged;
 import com.hamza.account.controller.model.PrintTotalsData;
 import com.hamza.account.interfaces.api.DataInterface;
 import com.hamza.account.interfaces.api.NameAndAccountInterface;
@@ -24,6 +28,7 @@ import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.excel.ExportData;
 import com.hamza.controlsfx.language.Setting_Language;
+import com.hamza.controlsfx.observer.EventBus;
 import com.hamza.controlsfx.others.CssToColorHelper;
 import com.hamza.controlsfx.others.DateSetting;
 import com.hamza.controlsfx.table.TableColumnAnnotation;
@@ -68,6 +73,7 @@ public class TotalsController<T1 extends BasePurchasesAndSales, T2 extends BaseT
         extends TotalsService<T1, T2, T3, T4> implements Initializable {
 
     private final CssToColorHelper helper;
+    private final EventBus eventBus = ServiceRegistry.get(EventBus.class);
     private final EmployeeService employeeService;
     private final ObservableList<T2> observableList;
     private final FilteredList<T2> filteredTable;
@@ -127,9 +133,22 @@ public class TotalsController<T1 extends BasePurchasesAndSales, T2 extends BaseT
         addDataToComboName();
 //        gridPane.add(pane, 4, 2);
         // publisher data
-        this.stringPublisher.addObserver(message -> btnRefresh.fire());
-        dataPublisher.getPublisherAddEmployee().addObserver(message -> comboDelegateSetting(comboDelegate, getDelegateNames()));
-        nameAndAccountInterface.addNamePublisher().addObserver(message -> addDataToComboName());
+        // Both sides arrive here; this screen shows one of them.
+        if (eventBus != null) {
+            subscriptions.add(eventBus.subscribe(InvoiceSaved.class, event -> {
+                if (event.side() == dataInterface.invoiceSide()) btnRefresh.fire();
+            }));
+        }
+        if (eventBus != null) {
+            subscriptions.add(eventBus.subscribe(EmployeesChanged.class
+                    , event -> comboDelegateSetting(comboDelegate, getDelegateNames())));
+        }
+        if (eventBus != null) {
+            subscriptions.add(eventBus.subscribe(NameChanged.class, event -> {
+                if (event.kind() == nameAndAccountInterface.partyKind()) addDataToComboName();
+            }));
+        }
+        subscriptions.disposeWith(stackPane);
         addTimeSearch();
         permissionButtons();
         btnRefresh.fire();
@@ -311,7 +330,7 @@ public class TotalsController<T1 extends BasePurchasesAndSales, T2 extends BaseT
                     maskerPaneSetting.getVoidTask().setOnSucceeded(workerStateEvent -> {
 //                        log.info("delete multi data success , {}", sb.toString());
                         btnRefresh.fire();
-                        dataInterface.publisherPurchaseOrSales().notifyObservers();
+                        if (eventBus != null) eventBus.publish(new InvoiceSaved(dataInterface.invoiceSide()));
                         AllAlerts.alertDelete();
                     });
                     maskerPaneSetting.getVoidTask().setOnFailed(workerStateEvent -> AllAlerts.alertError("لا يمكن الحذف"));

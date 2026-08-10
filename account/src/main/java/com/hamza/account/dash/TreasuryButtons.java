@@ -1,27 +1,16 @@
 package com.hamza.account.dash;
 
-import com.hamza.account.Main;
-import com.hamza.account.controller.convert_treasury.AddDepositController;
-import com.hamza.account.controller.convert_treasury.TreasuryTransferController;
 import com.hamza.account.controller.main.ButtonWithPerm;
 import com.hamza.account.controller.main.DataPublisher;
 import com.hamza.account.model.dao.DaoFactory;
-import com.hamza.account.openFxml.OpenFxmlApplication;
 import com.hamza.account.table.TableOpen;
 import com.hamza.account.type.UserPermissionType;
-
-import com.hamza.controlsfx.language.Setting_Language;
-import javafx.fxml.FXMLLoader;
-import javafx.scene.Parent;
-import javafx.scene.Scene;
-import javafx.stage.Stage;
-import org.jetbrains.annotations.NotNull;
-import com.hamza.account.view.OpenApplicationWithData;
-import com.hamza.account.view.SceneAll;
-import com.hamza.account.view.StageManager;
 import com.hamza.account.view.ExpensesDetailsApplication;
 import com.hamza.account.view.OpenTreasuryDetailsApplication;
 import com.hamza.account.view.ProcessorApplication;
+import com.hamza.controlsfx.language.Setting_Language;
+import javafx.stage.Stage;
+import org.jetbrains.annotations.NotNull;
 
 public class TreasuryButtons {
 
@@ -31,34 +20,6 @@ public class TreasuryButtons {
     public TreasuryButtons(DaoFactory daoFactory, DataPublisher dataPublisher) {
         this.daoFactory = daoFactory;
         this.dataPublisher = dataPublisher;
-    }
-
-    public ButtonWithPerm addDeposit() {
-        return new ButtonWithPerm() {
-            public final String TRANSACTION_TYPE_DEPOSIT_WITHDRAWAL = "إيداع - صرف";
-
-            @Override
-            public UserPermissionType getPermissionType() {
-                return null;
-            }
-
-            @Override
-            public void action() throws Exception {
-                var controller = new AddDepositController(daoFactory, dataPublisher);
-                OpenFxmlApplication application = new OpenFxmlApplication(controller);
-                new OpenApplicationWithData<>(controller.getToolbarAccountActionInterface()
-                        , controller.createTable()
-                        , application.getPane(), textName());
-            }
-
-            @NotNull
-            @Override
-            public String textName() {
-                return TRANSACTION_TYPE_DEPOSIT_WITHDRAWAL;
-            }
-
-
-        };
     }
 
     public ButtonWithPerm treasuryDetails() {
@@ -83,35 +44,6 @@ public class TreasuryButtons {
         };
     }
 
-    public ButtonWithPerm convertTreasury() {
-        return new ButtonWithPerm() {
-            @Override
-            public UserPermissionType getPermissionType() {
-                return null;
-            }
-
-            @Override
-            public void action() throws Exception {
-                FXMLLoader loader = new FXMLLoader(Main.class.getResource("view/treasury/TreasuryTransfer.fxml"));
-                Parent root = loader.load();
-                TreasuryTransferController controller = loader.getController();
-                controller.setDaoFactory(daoFactory); // تمرير اتصال قاعدة البيانات
-
-                Scene scene = new SceneAll(root);
-                StageManager.show(
-                        "treasury-transfer",
-                        scene,
-                        "تحويلات الخزينة"
-                );
-            }
-
-            @NotNull
-            @Override
-            public String textName() {
-                return Setting_Language.TREASURY_TRANSFERS;
-            }
-        };
-    }
 
     public ButtonWithPerm openProcess() {
         return new ButtonWithPerm() {
@@ -135,7 +67,7 @@ public class TreasuryButtons {
 
     public ButtonWithPerm openExpenses() {
         return new ButtonWithPerm() {
-            final ExpensesDetailsApplication expensesController = new ExpensesDetailsApplication(dataPublisher);
+            final ExpensesDetailsApplication expensesController = new ExpensesDetailsApplication();
 
             @Override
             public UserPermissionType getPermissionType() {

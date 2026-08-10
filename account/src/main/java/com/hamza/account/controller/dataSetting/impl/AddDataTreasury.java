@@ -1,9 +1,10 @@
 package com.hamza.account.controller.dataSetting.impl;
 
 import com.hamza.account.controller.dataSetting.AddDataInterface;
+import com.hamza.account.features.events.TreasuriesChanged;
 import com.hamza.account.service.TreasuryService;
 import com.hamza.controlsfx.database.DaoException;
-import com.hamza.controlsfx.observer.Publisher;
+import com.hamza.controlsfx.observer.AppEvent;
 import lombok.Setter;
 
 import java.util.List;
@@ -11,8 +12,6 @@ import java.util.List;
 public class AddDataTreasury implements AddDataInterface {
     @Setter
     private TreasuryService treasuryService;
-    @Setter
-    private Publisher<String> publisherAddTreasury;
 
     @Override
     public void addData() {
@@ -41,7 +40,7 @@ public class AddDataTreasury implements AddDataInterface {
     }
 
     @Override
-    public Publisher<?> publisher() {
-        return publisherAddTreasury;
+    public Class<? extends AppEvent> refreshOn() {
+        return TreasuriesChanged.class;
     }
 }

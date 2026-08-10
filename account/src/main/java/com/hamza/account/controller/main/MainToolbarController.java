@@ -2,7 +2,11 @@ package com.hamza.account.controller.main;
 
 import com.hamza.account.config.Image_Setting;
 import com.hamza.account.config.PropertiesName;
+import com.hamza.account.controller.others.ServiceRegistry;
+import com.hamza.account.features.events.UserRenamed;
 import com.hamza.account.features.notification.NotificationBootstrap;
+import com.hamza.controlsfx.observer.EventBus;
+import com.hamza.controlsfx.observer.Subscriptions;
 import com.hamza.account.view.LogApplication;
 import com.hamza.controlsfx.button.ImageDesign;
 import com.hamza.controlsfx.language.Setting_Language;
@@ -28,6 +32,8 @@ public class MainToolbarController implements Initializable {
 
     private final MainScreenController controller;
     private final DataPublisher dataPublisher;
+    private final EventBus eventBus = ServiceRegistry.get(EventBus.class);
+    private final Subscriptions subscriptions = new Subscriptions();
     @Getter
     @FXML
     private JFXHamburger hamburger;
@@ -58,7 +64,14 @@ public class MainToolbarController implements Initializable {
     @Override
     public void initialize(URL url, ResourceBundle resourceBundle) {
         otherSetting();
-        dataPublisher.getPublisherAddUser().addObserver(message -> menuButton.setText(Setting_Language.WELCOME + " " + message + " !"));
+        // This one does have to be closed. The remaining publishers belong to the
+        // main screen and are thrown away with it at logout, but the bus outlives
+        // every login, so a greeting left listening would pile up one per session.
+        if (eventBus != null) {
+            subscriptions.add(eventBus.subscribe(UserRenamed.class
+                    , event -> menuButton.setText(Setting_Language.WELCOME + " " + event.name() + " !")));
+            subscriptions.disposeWith(toolBar);
+        }
         dataPublisher.getShowLoginScreen().addObserver(message -> menuItemLogout.setDisable(!message));
 //        toolBar.getItems().remove(btnAlarm);
 //        toolBar.getItems().remove(btnPosSales);

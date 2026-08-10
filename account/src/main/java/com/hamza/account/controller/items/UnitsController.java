@@ -3,12 +3,14 @@ package com.hamza.account.controller.items;
 import com.hamza.account.config.Image_Setting;
 import com.hamza.account.controller.main.DataPublisher;
 import com.hamza.account.controller.others.ServiceRegistry;
+import com.hamza.account.features.events.UnitsChanged;
 import com.hamza.account.model.domain.UnitsModel;
 import com.hamza.account.openFxml.FxmlPath;
 import com.hamza.account.openFxml.OpenFxmlApplication;
 import com.hamza.account.otherSetting.MaskerPaneSetting;
 import com.hamza.account.service.UnitsService;
 import com.hamza.controlsfx.alert.AllAlerts;
+import com.hamza.controlsfx.observer.EventBus;
 import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.interfaceData.AppSettingInterface;
 import com.hamza.controlsfx.language.Error_Text_Show;
@@ -23,6 +25,7 @@ import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TextField;
+import javafx.scene.control.Tooltip;
 import javafx.scene.input.KeyCode;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.StackPane;
@@ -91,16 +94,22 @@ public class UnitsController implements Initializable, AppSettingInterface {
         whenEnterPressed(textName, textCount);
         labelName.setText(Setting_Language.WORD_NAME);
         labelCode.setText(Setting_Language.WORD_CODE);
-        labelQuantity.setText(Setting_Language.WORD_QUANTITY);
+        // A unit is a name. The number beside it is only the default the item
+        // screen offers when you pick it - what a carton holds is per item.
+        labelQuantity.setText(Setting_Language.UNIT_DEFAULT_FACTOR);
+        labelQuantity.setTooltip(new Tooltip(Setting_Language.UNIT_DEFAULT_FACTOR_HINT));
+        textCount.setTooltip(new Tooltip(Setting_Language.UNIT_DEFAULT_FACTOR_HINT));
         btnSave.setText(Setting_Language.WORD_SAVE);
         btnClose.setText(Setting_Language.WORD_CLOSE);
         btnRefresh.setText(Setting_Language.WORD_REFRESH);
         btnClear.setText(CLEAR);
         textCode.setText(generate);
         textName.setPromptText(Setting_Language.NAME_ITEM);
-        textCount.setPromptText(Setting_Language.WORD_COUNT);
-        btnSave.disableProperty().bind(textName.textProperty().isEmpty());
-        btnSave.disableProperty().bind(textCount.textProperty().lessThanOrEqualTo("0.0"));
+        textCount.setPromptText(Setting_Language.UNIT_DEFAULT_FACTOR);
+        // One bind per property: the second call used to replace the first, so the
+        // empty-name half of the condition never took effect.
+        btnSave.disableProperty().bind(textName.textProperty().isEmpty()
+                .or(textCount.textProperty().isEmpty()));
         btnSave.setOnAction(actionEvent -> insertData());
         btnClear.setOnAction(actionEvent -> resetData());
         btnClose.setOnAction(actionEvent -> btnClose.getScene().getWindow().hide());
@@ -139,9 +148,14 @@ public class UnitsController implements Initializable, AppSettingInterface {
 
             UnitsModel selectedItem = tableView.getSelectionModel().getSelectedItem();
 
-            // check before delete
-            if (selectedItem.getUnit_id() == 1 || selectedItem.getUnit_id() == 2)
-                throw new Exception(Error_Text_Show.CANT_DELETE);
+            // A unit used to be undeletable for being one of the two the database
+            // ships with, which said nothing about whether anyone relies on it: a
+            // business that sells nothing by the carton was stuck with "كرتونه",
+            // while a unit it added and used everywhere could be deleted. What
+            // matters is whether anything points at it.
+            if (unitsService.isUnitInUse(selectedItem.getUnit_id())) {
+                throw new Exception("لا يمكن حذف وحدة مستخدمة في أصناف أو فواتير");
+            }
 
             if (!AllAlerts.confirmDelete()) {
                 return;
@@ -159,64 +173,89 @@ public class UnitsController implements Initializable, AppSettingInterface {
 
     private void insertData() {
         try {
+            int editedUnitId = editedUnitId();
             UnitFormData formData = validateAndGetFormData();
-            validateUniqueUnitName(formData.name());
+            validateUniqueUnitName(formData.name(), editedUnitId);
 
             if (!AllAlerts.confirmSave()) {
                 return;
             }
 
-            int insertResult = insertOrUpdateUnit(formData);
+            int insertResult = editedUnitId == 0
+                    ? unitsService.insert(formData.name(), formData.value())
+                    : unitsService.update(editedUnitId, formData.name(), formData.value());
             if (insertResult >= 1) {
                 afterData();
             }
+        } catch (ValidationException e) {
+            log.error(e.getMessage(), e);
+            AllAlerts.alertError(e.getMessage());
+            e.setFocus();
         } catch (Exception e) {
             log.error(e.getMessage(), e);
             AllAlerts.alertError(e.getMessage());
         }
     }
 
+    /** The unit being edited, or 0 when the form is adding a new one. */
+    private int editedUnitId() {
+        String code = textCode.getText();
+        if (code == null || code.equals(generate)) {
+            return 0;
+        }
+        try {
+            return Integer.parseInt(code);
+        } catch (NumberFormatException e) {
+            return 0;
+        }
+    }
+
     private UnitFormData validateAndGetFormData() throws ValidationException {
         String name = textName.getText();
-        if (name.isEmpty()) {
+        if (name == null || name.isBlank()) {
             throw new ValidationException(Error_Text_Show.PLEASE_INSERT_ALL_DATA, textName);
+        }
+
+        // Left blank, a unit converts one to one - which is what a unit that is
+        // only a name should do. Anything typed still has to be a real number.
+        String text = textCount.getText();
+        if (text == null || text.isBlank()) {
+            return new UnitFormData(name.trim(), 1);
         }
 
         double value;
         try {
-            value = Double.parseDouble(textCount.getText());
-            if (value <= MIN_VALUE) {
-                throw new ValidationException(Error_Text_Show.PLEASE_INSERT_ALL_DATA, textCount);
-            }
+            value = Double.parseDouble(text.trim());
         } catch (NumberFormatException e) {
             throw new ValidationException(Error_Text_Show.PLEASE_INSERT_ALL_DATA, textCount);
         }
+        if (value <= MIN_VALUE) {
+            throw new ValidationException(Error_Text_Show.PLEASE_INSERT_ALL_DATA, textCount);
+        }
 
-        return new UnitFormData(name, value);
+        return new UnitFormData(name.trim(), value);
     }
 
-    private void validateUniqueUnitName(String name) throws Exception {
+    /**
+     * The name has to be free, but a unit does not clash with itself - renaming
+     * "كرتونه" to "كرتونة" used to be rejected as a duplicate of the row being
+     * edited.
+     */
+    private void validateUniqueUnitName(String name, int editedUnitId) throws Exception {
         boolean nameExists = tableView.getItems().stream()
+                .filter(item -> item.getUnit_id() != editedUnitId)
                 .anyMatch(item -> item.getUnit_name().equals(name));
         if (nameExists) {
             throw new Exception("هذا الاسم موجود");
         }
     }
 
-    private int insertOrUpdateUnit(UnitFormData formData) throws Exception {
-        boolean isCustomCode = textCode.textProperty().isNotEqualTo(generate).get();
-        if (isCustomCode) {
-            int code = Integer.parseInt(textCode.getText());
-            return unitsService.update(code, formData.name(), formData.value());
-        }
-        return unitsService.insert(formData.name(), formData.value());
-    }
-
     private void afterData() {
         AllAlerts.alertSave();
         resetData();
         refreshTable();
-        dataPublisher.getPublisherAddUnits().notifyObservers();
+        var eventBus = ServiceRegistry.get(EventBus.class);
+        if (eventBus != null) eventBus.publish(new UnitsChanged());
 
     }
 

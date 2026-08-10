@@ -1,7 +1,7 @@
 package com.hamza.account.view;
 
-import com.hamza.account.controller.main.DataPublisher;
 import com.hamza.account.controller.others.AddExpensesController;
+import com.hamza.account.features.events.ExpensesChanged;
 import com.hamza.account.controller.others.ServiceRegistry;
 import com.hamza.account.interfaces.api.DataTable;
 import com.hamza.account.model.domain.ExpensesDetails;
@@ -35,12 +35,10 @@ import static com.hamza.controlsfx.language.Setting_Language.TOTAL;
 public class ExpensesDetailsApplication extends Application implements TableInterface<ExpensesDetails> {
 
 
-    private final Publisher<String> stringPublisher;
     private final ExpensesDetailsService expensesDetailsService = ServiceRegistry.get(ExpensesDetailsService.class);
     private TableView<ExpensesDetails> tableView;
 
-    public ExpensesDetailsApplication(DataPublisher dataPublisher) {
-        this.stringPublisher = dataPublisher.getPublisherAddExpenses();
+    public ExpensesDetailsApplication() {
     }
 
 
@@ -122,8 +120,8 @@ public class ExpensesDetailsApplication extends Application implements TableInte
     }
 
     @Override
-    public Publisher<String> publisherTable() {
-        return stringPublisher;
+    public Class<ExpensesChanged> refreshOn() {
+        return ExpensesChanged.class;
     }
 
     @Override
@@ -157,7 +155,7 @@ public class ExpensesDetailsApplication extends Application implements TableInte
     }
 
     private void openApp(int id) throws Exception {
-        new AddForAllApplication(id, new AddExpensesController(id, stringPublisher));
+        new AddForAllApplication(id, new AddExpensesController(id));
     }
 
     @Override

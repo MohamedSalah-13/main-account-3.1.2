@@ -10,6 +10,10 @@ import com.hamza.account.controller.name_account.NameController;
 import com.hamza.account.controller.others.ServiceRegistry;
 import com.hamza.account.features.key_setting.UpdateInterface;
 import com.hamza.account.features.key_setting.UpdateQuantity;
+import com.hamza.account.features.events.InvoiceSaved;
+import com.hamza.account.features.events.ItemSaved;
+import com.hamza.account.features.events.NameChanged;
+import com.hamza.account.features.events.PartyKind;
 import com.hamza.account.features.notification.StockLevelAlert;
 import com.hamza.account.interfaces.api.DataInterface;
 import com.hamza.account.interfaces.impl_dataInterface.CustomData;
@@ -32,6 +36,8 @@ import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.language.Error_Text_Show;
 import com.hamza.controlsfx.language.Setting_Language;
 import com.hamza.controlsfx.observer.Publisher;
+import com.hamza.controlsfx.observer.EventBus;
+import com.hamza.controlsfx.observer.Subscriptions;
 import com.hamza.controlsfx.others.DateSetting;
 import com.hamza.controlsfx.table.TableColumnAnnotation;
 import javafx.application.Platform;
@@ -76,7 +82,8 @@ import static com.hamza.controlsfx.util.NumberUtils.roundToTwoDecimalPlaces;
 public class PosController extends ButtonSetting {
 
     private static final int PAGE_SIZE = 100;
-    private final Publisher<String> publisherAddCustomer;
+    private final Subscriptions subscriptions = new Subscriptions();
+    private final EventBus eventBus = ServiceRegistry.get(EventBus.class);
     private final DaoFactory daoFactory;
     private final List<Button> paneList = new ArrayList<>();
     private final DataPublisher dataPublisher;
@@ -144,7 +151,6 @@ public class PosController extends ButtonSetting {
     public PosController(DaoFactory daoFactory, DataPublisher dataPublisher) throws Exception {
         this.daoFactory = daoFactory;
         this.dataPublisher = dataPublisher;
-        this.publisherAddCustomer = dataPublisher.getPublisherAddNameCustomer();
         this.dataInterface = new CustomData(daoFactory, dataPublisher);
         this.nameController = new NameController<>(dataInterface, daoFactory, dataPublisher);
     }
@@ -166,12 +172,19 @@ public class PosController extends ButtonSetting {
         setupKeyboardHandlers();
         splitPane.setDividerPosition(0, getSplitPaneDividerPos());
 
-        dataPublisher.getPublisherAddItem().addObserver(message -> {
-            if (!message.isActiveItem()) {
-                paneList.removeIf(pane -> pane.getId().equals(message.getNameItem().toLowerCase()));
-                flowPane.getChildren().removeIf(node -> node.getId().equals(message.getNameItem().toLowerCase()));
-            }
-        });
+        // ItemSaved always carries the item, so there is no null to guard against;
+        // the bulk ItemsChanged from the import screen is a different event, and
+        // this screen does not react to it.
+        if (eventBus != null) {
+            subscriptions.add(eventBus.subscribe(ItemSaved.class, event -> {
+                var item = event.item();
+                if (!item.isActiveItem()) {
+                    paneList.removeIf(pane -> pane.getId().equals(item.getNameItem().toLowerCase()));
+                    flowPane.getChildren().removeIf(node -> node.getId().equals(item.getNameItem().toLowerCase()));
+                }
+            }));
+        }
+        subscriptions.disposeWith(stackPane);
 
     }
 
@@ -585,7 +598,7 @@ public class PosController extends ButtonSetting {
                 Map<Integer, ItemsModel> itemById = new HashMap<>();
                 for (BasePurchasesAndSales row : tableView.getItems()) {
                     ItemsModel item = row.getItems();
-                    double baseQuantity = row.getQuantity() * item.getUnitsType().getValue();
+                    double baseQuantity = ItemUnits.toBase(row.getQuantity(), ItemUnits.baseUnit(item));
                     requestedBaseQuantityByItem.merge(item.getId(), baseQuantity, Double::sum);
                     itemById.putIfAbsent(item.getId(), item);
                 }
@@ -618,9 +631,10 @@ public class PosController extends ButtonSetting {
                     sales.setDiscount(basePurchasesAndSales.getDiscount());
                     sales.setInvoiceNumber(invoiceNumber);
                     sales.setNumItem(items.getId());
-                    UnitsModel unitsModel = items.getUnitsType();
+                    UnitsModel unitsModel = ItemUnits.baseUnit(items);
                     sales.setUnitsType(unitsModel);
-                    sales.setBuy_price(roundToTwoDecimalPlaces(items.getBuyPrice() * unitsModel.getValue()));
+                    sales.setBuy_price(roundToTwoDecimalPlaces(
+                            ItemUnits.buyPrice(items, unitsModel, items.getBuyPrice())));
                     sales.setExpiration_date(null);
                     salesList.add(sales);
                 }
@@ -681,7 +695,7 @@ public class PosController extends ButtonSetting {
                     Thread thread = new Thread(() -> {
                         try {
                             Thread.sleep(5000);
-                            dataInterface.publisherPurchaseOrSales().notifyObservers();
+                            if (eventBus != null) eventBus.publish(new InvoiceSaved(dataInterface.invoiceSide()));
                         } catch (InterruptedException e) {
                             logError(e);
                         }
@@ -792,7 +806,7 @@ public class PosController extends ButtonSetting {
             else insert = customerService.nameDao().insert(customers);
             if (insert == 1) {
                 AllAlerts.alertSave();
-                publisherAddCustomer.notifyObservers();
+                if (eventBus != null) eventBus.publish(new NameChanged(PartyKind.CUSTOMER));
             }
 
         } catch (Exception e) {

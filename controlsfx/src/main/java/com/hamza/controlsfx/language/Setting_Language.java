@@ -149,6 +149,13 @@ public class Setting_Language {
     public static final String WORD_SHOW = INSTANCE.getString("show");
     public static final String WORD_REPORT = INSTANCE.getString("report");
     public static final String WORD_QUANTITY = INSTANCE.getString("quantity");
+    /**
+     * What a unit is worth when an item does not say otherwise. The real factor
+     * is per item, in items_units - this is only the number the item screen
+     * offers when you pick the unit.
+     */
+    public static final String UNIT_DEFAULT_FACTOR = INSTANCE.getString("unit.default.factor");
+    public static final String UNIT_DEFAULT_FACTOR_HINT = INSTANCE.getString("unit.default.factor.hint");
     public static final String WORD_DISCOUNT = INSTANCE.getString("discount");
     public static final String WORD_CUSTOM = INSTANCE.getString("customers");
     public static final String WORD_SUP = INSTANCE.getString("suppliers");

@@ -17,7 +17,14 @@ public class UnitsModel extends DForColumnTable {
     private IntegerProperty unit_id = new SimpleIntegerProperty();
     @ColumnData(titleName = NamesTables.NAME)
     private StringProperty unit_name = new SimpleStringProperty();
-    @ColumnData(titleName = NamesTables.QUANTITY)
+    /**
+     * {@code units.value_d} - one number for the whole database, so it cannot
+     * say that a carton of juice is 12 while a carton of cigarettes is 200. It
+     * survives as the default the item screen offers, and as the fallback for a
+     * unit row with no factor of its own; the factor that counts is per item, in
+     * {@code items_units.quantity}.
+     */
+    @ColumnData(titleName = NamesTables.DEFAULT_FACTOR)
     private DoubleProperty value = new SimpleDoubleProperty();
 
     public UnitsModel(int unit_id) {

@@ -8,6 +8,8 @@ import com.hamza.account.controller.model.ModelPrintInvoice;
 import com.hamza.account.controller.others.ServiceRegistry;
 import com.hamza.account.controller.search.ItemsSearch;
 import com.hamza.account.controller.setting.SettingTabLanguageController;
+import com.hamza.account.features.events.EmployeesChanged;
+import com.hamza.account.features.events.InvoiceSaved;
 import com.hamza.account.features.key_setting.MoveRow;
 import com.hamza.account.features.key_setting.UpdateInterface;
 import com.hamza.account.features.key_setting.UpdateQuantity;
@@ -43,6 +45,8 @@ import com.hamza.controlsfx.database.DaoList;
 import com.hamza.controlsfx.interfaceData.AppSettingInterface;
 import com.hamza.controlsfx.language.Error_Text_Show;
 import com.hamza.controlsfx.language.Setting_Language;
+import com.hamza.controlsfx.observer.EventBus;
+import com.hamza.controlsfx.observer.Subscriptions;
 import com.hamza.controlsfx.others.DateSetting;
 import com.hamza.controlsfx.others.DoubleSetting;
 import com.hamza.controlsfx.others.Utils;
@@ -98,6 +102,8 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
         extends BuyData<T1, T2, T3, T4> implements Initializable, AppSettingInterface {
 
     private final ObservableList<T1> myObservableList = FXCollections.observableArrayList();
+    private final Subscriptions subscriptions = new Subscriptions();
+    private final EventBus eventBus = ServiceRegistry.get(EventBus.class);
     private final DataPublisher dataPublisher;
     private final ActionTextBuy actionTextBuy;
     private final ObjectProperty<ItemsModel> itemsModel = new SimpleObjectProperty<>(new ItemsModel());
@@ -106,7 +112,6 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
     private final EmployeeService employeeService = ServiceRegistry.get(EmployeeService.class);
     private final TreasuryService treasuryService = ServiceRegistry.get(TreasuryService.class);
     private final CardItemService cardItemService = ServiceRegistry.get(CardItemService.class);
-    private final UnitsService unitsService = ServiceRegistry.get(UnitsService.class);
     private List<ModelPrintInvoice> modelPrintInvoices = new ArrayList<>();
     private int priceTypeByNameId = 1; // use a first price type
     private int codeAccount;
@@ -352,33 +357,17 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
 
             var model = itemsModel.get();
             var itemsPrice = invoiceBuy.getItemsPrice(model, priceTypeByNameId);
-//            var unitsModelList = model.getItemsUnitsModelList()
-//                    .stream().filter(unitsModel -> unitsModel.getUnitsModel().getUnit_name().equals(newValue)).findFirst();
 
-            // add all units
-            var unitsModelList = getUnitsModelList().stream()
-                    .filter(unitsModel -> unitsModel.getUnit_name().equals(newValue)).findFirst();
+            // The factor is the one this item defines for the unit, not the
+            // database-wide units.value_d - a carton is not the same multiple
+            // for every item.
+            var unitsModel = ItemUnits.unitByName(model, newValue);
 
-            if (unitsModelList.isPresent()) {
-                var unitsModel = unitsModelList.get();
-                var value = unitsModel.getValue();
-                var roundedBalance = roundToTwoDecimalPlaces(model.getSumAllBalance() / value);
-                txtItemBalance.setText(String.valueOf(roundedBalance));
-                txtPrice.setText(String.valueOf(itemsPrice * value));
-            } else {
-                txtItemBalance.setText(String.valueOf(model.getSumAllBalance()));
-                txtPrice.setText(String.valueOf(itemsPrice));
-            }
+            txtItemBalance.setText(String.valueOf(roundToTwoDecimalPlaces(ItemUnits.fromBase(model.getSumAllBalance(), unitsModel))));
+            // The unit's own price where it has one, and the item's scaled by the
+            // factor where it does not.
+            txtPrice.setText(String.valueOf(ItemUnits.sellPrice(model, unitsModel, priceTypeByNameId, itemsPrice)));
         });
-    }
-
-    private List<UnitsModel> getUnitsModelList() {
-        try {
-            return unitsService.getUnitsModelList();
-        } catch (DaoException e) {
-            logError(e);
-            return Collections.emptyList();
-        }
     }
 
     private void openSearchItems() {
@@ -417,7 +406,12 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
                                 itemsModel.set(item);
                                 txtBarcode.setText(item.getBarcode());
                                 textSearchItems.set(item.getNameItem());
-                                addDataToComboType(item);
+                                // A scale barcode carries a weight, so the row is
+                                // always in the unit the item is weighed in. The
+                                // price and quantity below come from the barcode
+                                // and deliberately overwrite what selecting the
+                                // unit just filled in.
+                                addDataToComboType(item, ItemUnits.baseUnit(item));
 
                                 txtItemBalance.setText(String.valueOf(item.getSumAllBalance()));
                                 txtPrice.setText(String.valueOf(barcodeResult.selPrice()));
@@ -487,9 +481,6 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
             var model = itemsModel.get();
             txtPrice.requestFocus();
 
-            // add data to type
-            addDataToComboType(model);
-
             // check name first to select sel price
             var s = textSearchName.get();
             if (s == null) {
@@ -498,26 +489,43 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
             var object = nameService.getObject(nameAndAccountInterface.nameList(), s);
             priceTypeByNameId = t3NameData.priceId(object);
 
-            txtItemBalance.setText(String.valueOf(model.getSumAllBalance()));
-            txtPrice.setText(String.valueOf(invoiceBuy.getItemsPrice(model, priceTypeByNameId)));
+            // A code can belong to a unit rather than to the item, so a carton
+            // scanned here selects the carton. Searching by name has no code to
+            // go on and starts from the base unit. The price type is resolved
+            // first, because selecting the unit is what fills the price in.
+            var scannedUnit = searchByName ? ItemUnits.baseUnit(model) : ItemUnits.unitByBarcode(model, itemName);
+            addDataToComboType(model, scannedUnit);
+
             txtQuantity.setText("1");
         } catch (Exception e) {
             logError(e);
         }
     }
 
-    private void addDataToComboType(ItemsModel model) {
+    /**
+     * Fills the unit combo from the item and selects {@code selected}. Selecting
+     * it is what puts the balance and the price for that unit into their fields -
+     * the combo's listener does both - so nothing here writes them.
+     */
+    private void addDataToComboType(ItemsModel model, UnitsModel selected) {
 
-        var list = getUnitsModelList()
-                .stream()
-                .map(UnitsModel::getUnit_name).toList();
+        // Only the units this item defines. Offering every unit in the database
+        // let a row be priced and counted by a factor the item never declared.
+        var units = ItemUnits.unitsFor(model);
+        var list = units.stream().map(UnitsModel::getUnit_name).toList();
 
         comboType.setItems(FXCollections.observableArrayList(list));
 
-        // select data
-        list.stream().filter(name -> name.equals(model.getUnitsType().getUnit_name())).findFirst().ifPresent(name -> comboType.getSelectionModel().select(name));
+        String name = selected == null ? null : selected.getUnit_name();
+        String toSelect = list.contains(name) ? name : (list.isEmpty() ? null : list.getFirst());
+        if (toSelect != null) {
+            // setItems cleared the selection, so this always fires the listener
+            // and the fields are filled even when the same unit is scanned twice.
+            comboType.getSelectionModel().select(toSelect);
+        }
 
-        comboType.setDisable(model.getUnitsType().getValue() > 1);
+        // Nothing to choose between when the item sells in one unit only.
+        comboType.setDisable(list.size() < 2);
     }
 
     private void getCodeAccountAndBalance(String newValue) {
@@ -535,9 +543,9 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
     private int addRowT(double quantity, double price, double discount, double total, LocalDate expireDate) throws DaoException {
         var model = itemsModel.get();
         var numItem = model.getId();
-        if (!increaseTheItemByOneIfPresentInTable(quantity, model)) {
-            UnitsModel unitsModel = unitsService.getUnitsByName(comboType.getSelectionModel().getSelectedItem());
+        UnitsModel unitsModel = ItemUnits.unitByName(model, comboType.getSelectionModel().getSelectedItem());
 
+        if (!increaseTheItemByOneIfPresentInTable(quantity, model, unitsModel)) {
             T1 object = invoiceBuy.object_TableData(0, num_invoice_update, numItem, price, quantity, discount, total, unitsModel, model, expireDate);
             myObservableList.add(object);
         }
@@ -563,11 +571,11 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
 
             if (designInterface.showDataForCustomer()) {
                 var model = itemsModel.get();
-                UnitsModel selectedUnit = unitsService.getUnitsByName(comboType.getSelectionModel().getSelectedItem());
+                UnitsModel selectedUnit = ItemUnits.unitByName(model, comboType.getSelectionModel().getSelectedItem());
 
-                // never sell below cost - buy price is per base unit, so scale it to
-                // whichever unit this row is being sold in
-                double buyPriceForUnit = model.getBuyPrice() * selectedUnit.getValue();
+                // never sell below cost - the unit's own cost where it has one,
+                // otherwise the item's scaled to the unit being sold in
+                double buyPriceForUnit = ItemUnits.buyPrice(model, selectedUnit, model.getBuyPrice());
                 if (price < buyPriceForUnit) {
                     txtPrice.requestFocus();
                     throw new Exception("لا يمكن البيع بسعر أقل من سعر الشراء");
@@ -578,11 +586,11 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
                 // same invoice (converted to the item's base unit, since rows can use
                 // different units)
                 if (!getSelWithoutBalance()) {
-                    double newBaseQuantity = quantity * selectedUnit.getValue();
+                    double newBaseQuantity = ItemUnits.toBase(quantity, selectedUnit);
 
                     double alreadyInTableBaseQuantity = table.getItems().stream()
                             .filter(t1 -> purchaseSalesInterface.getItems(t1).getId() == model.getId())
-                            .mapToDouble(t1 -> purchaseSalesInterface.getQuantity(t1) * purchaseSalesInterface.getUnitsType(t1).getValue())
+                            .mapToDouble(t1 -> ItemUnits.toBase(purchaseSalesInterface.getQuantity(t1), purchaseSalesInterface.getUnitsType(t1)))
                             .sum();
 
                     if (alreadyInTableBaseQuantity + newBaseQuantity > model.getSumAllBalance()) {
@@ -649,8 +657,8 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
         try {
             double alreadyOnInvoice = table.getItems().stream()
                     .filter(t1 -> purchaseSalesInterface.getItems(t1).getId() == item.getId())
-                    .mapToDouble(t1 -> purchaseSalesInterface.getQuantity(t1)
-                            * purchaseSalesInterface.getUnitsType(t1).getValue())
+                    .mapToDouble(t1 -> ItemUnits.toBase(purchaseSalesInterface.getQuantity(t1),
+                            purchaseSalesInterface.getUnitsType(t1)))
                     .sum();
 
             StockLevelAlert.check(item, StockLevelAlert.remainingAfter(item, alreadyOnInvoice));
@@ -660,14 +668,23 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
         }
     }
 
-    private boolean increaseTheItemByOneIfPresentInTable(double newQuantity, ItemsModel itemsModel) {
+    /**
+     * Folds a repeated scan into the row that is already there, but only into a
+     * row in the same unit: a piece and a carton of the same item are separate
+     * lines, priced separately, and adding one to the other would sell a carton
+     * for the price of a piece.
+     */
+    private boolean increaseTheItemByOneIfPresentInTable(double newQuantity, ItemsModel itemsModel, UnitsModel unit) {
         String equals = String.valueOf(getSettingBarcodeStart());
         if (itemsModel.getBarcode().startsWith(equals)) return false;
         if (getInvoiceIncreaseItemOneTable())
             if (!table.getItems().isEmpty()) {
                 Optional<T1> checkItemsExistingInTable = table.getItems()
                         .stream()
-                        .filter(t1 -> purchaseSalesInterface.getItems(t1).getId() == itemsModel.getId()).findFirst();
+                        .filter(t1 -> purchaseSalesInterface.getItems(t1).getId() == itemsModel.getId())
+                        .filter(t1 -> unit == null || purchaseSalesInterface.getUnitsType(t1) == null
+                                || purchaseSalesInterface.getUnitsType(t1).getUnit_id() == unit.getUnit_id())
+                        .findFirst();
 
                 if (checkItemsExistingInTable.isPresent()) {
                     T1 purchasesAndSales = checkItemsExistingInTable.get();
@@ -814,7 +831,7 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
         Thread thread = new Thread(() -> {
             try {
                 Thread.sleep(5000);
-                dataInterface.publisherPurchaseOrSales().notifyObservers();
+                if (eventBus != null) eventBus.publish(new InvoiceSaved(dataInterface.invoiceSide()));
                 if (getInvoiceBackupAfterSave())
                     SaveDatabaseFile.saveBeforeClose(false);
             } catch (Exception e) {
@@ -964,7 +981,13 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
     }
 
     private void publisherData(DataPublisher dataPublisher) {
-        dataPublisher.getPublisherAddEmployee().addObserver(message -> comboDelegate.setItems(FXCollections.observableArrayList(getDelegateNames())));
+        if (eventBus != null) {
+            subscriptions.add(eventBus.subscribe(EmployeesChanged.class
+                    , event -> comboDelegate.setItems(FXCollections.observableArrayList(getDelegateNames()))));
+        }
+        // An invoice window is opened per invoice and closed again; the bus behind
+        // it lives for the whole process.
+        subscriptions.disposeWith(stackPane);
     }
 
     private List<String> getDelegateNames() {
@@ -1070,7 +1093,8 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
             double newPrice = t.getNewValue() == null ? 0.0 : t.getNewValue();
 
             if (designInterface.showDataForCustomer()) {
-                double buyPriceForUnit = purchase.getItems().getBuyPrice() * purchase.getUnitsType().getValue();
+                double buyPriceForUnit = ItemUnits.buyPrice(purchase.getItems(), purchase.getUnitsType(),
+                        purchase.getItems().getBuyPrice());
                 if (newPrice < buyPriceForUnit) {
                     AllAlerts.alertError("لا يمكن البيع بسعر أقل من سعر الشراء");
                     table.refresh();
@@ -1113,13 +1137,21 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
 
     private void updateItem(BasePurchasesAndSales purchase) throws DaoException {
         var items = itemsService.getItemByItemIdAndStockId(purchase.getItems().getId(), DefaultStock.ID);
-        items.setNameItem(purchase.getItems().getNameItem());
-        items.setItemsUnitsModelList(new ArrayList<>());
-        items.setItems_packageList(new ArrayList<>());
 
-        // update price
-        var unitIdPurchase = purchase.getUnitsType().getValue();
-        var b = invoiceBuy.updateItemPrice(items, roundToTwoDecimalPlaces(purchase.getPrice() / unitIdPurchase), priceTypeByNameId);
+        // A unit priced by hand says nothing about what one base unit is worth -
+        // a carton sold at a wholesale price is cheaper than twelve pieces on
+        // purpose, and dividing it back out would drag the item's price down.
+        if (ItemUnits.hasOwnSellPrice(items, purchase.getUnitsType(), priceTypeByNameId)) {
+            return;
+        }
+
+        // The list stays as loaded: ItemsDao replaces the item's units from it,
+        // so blanking it here to "not touch them" would delete them instead.
+        items.setNameItem(purchase.getItems().getNameItem());
+
+        // update price - the row is priced per its own unit, the item per base unit
+        var unitFactor = ItemUnits.factor(purchase.getUnitsType());
+        var b = invoiceBuy.updateItemPrice(items, roundToTwoDecimalPlaces(purchase.getPrice() / unitFactor), priceTypeByNameId);
         if (b) {
             var i = itemsService.commitItemUpdate(items);
         }
@@ -1264,22 +1296,33 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
     private void addColumnType() {
         TableColumn<T1, String> typeColumn = new TableColumn<>(Setting_Language.WORD_TYPE);
         typeColumn.setCellValueFactory(features -> features.getValue().getUnitsType().unit_nameProperty());
-        typeColumn.setCellFactory(ComboBoxTableCell.forTableColumn(FXCollections.observableArrayList(getUnitsModelList().stream()
-                .map(UnitsModel::getUnit_name)
-                .toList())));
+        // The choices belong to the row's item, so they are filled in as the cell
+        // starts editing rather than baked into the factory from one global list.
+        typeColumn.setCellFactory(column -> new ComboBoxTableCell<>() {
+            @Override
+            public void startEdit() {
+                var row = getTableRow();
+                T1 rowValue = row == null ? null : row.getItem();
+                getItems().setAll(rowValue == null
+                        ? List.<String>of()
+                        : ItemUnits.unitsFor(rowValue.getItems()).stream().map(UnitsModel::getUnit_name).toList());
+
+                // One unit is not a choice, and an empty list would open a blank
+                // combo whose commit would clear the row's unit.
+                if (getItems().size() < 2) {
+                    return;
+                }
+                super.startEdit();
+            }
+        });
         typeColumn.setOnEditCommit(event -> {
             T1 item = event.getRowValue();
-            try {
-                UnitsModel unitsModel = unitsService.getUnitsByName(event.getNewValue());
-                item.setUnitsType(unitsModel);
-                var selPrice1 = dataInterface.invoiceBuy().getItemsPrice(item.getItems(), priceTypeByNameId);
-                item.setPrice(selPrice1 * unitsModel.getValue());
-//                item.getUnitsType().setUnit_name(event.getNewValue());
-                updateData(item);
-                table.refresh();
-            } catch (DaoException e) {
-                logError(e);
-            }
+            UnitsModel unitsModel = ItemUnits.unitByName(item.getItems(), event.getNewValue());
+            item.setUnitsType(unitsModel);
+            var selPrice1 = dataInterface.invoiceBuy().getItemsPrice(item.getItems(), priceTypeByNameId);
+            item.setPrice(ItemUnits.sellPrice(item.getItems(), unitsModel, priceTypeByNameId, selPrice1));
+            updateData(item);
+            table.refresh();
         });
         table.getColumns().add(2, typeColumn);
     }
