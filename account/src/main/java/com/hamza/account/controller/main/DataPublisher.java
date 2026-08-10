@@ -12,7 +12,8 @@ public class DataPublisher {
     // for database
     // publisherBuy and publisherSales are now InvoiceSaved on the EventBus, told
     // apart by InvoiceSide rather than by which of the two a caller reached for.
-    private final Publisher<ItemsModel> publisherAddItem = new Publisher<>();
+    // publisherAddItem is now ItemSaved (one item, always carried) and
+    // ItemsChanged (a bulk reload) on the EventBus.
     // Areas used to borrow publisherAddStock, which was left over from the
     // warehouse screens. Those are gone; areas now have their own.
     private final Publisher<String> publisherAddArea = new Publisher<>();

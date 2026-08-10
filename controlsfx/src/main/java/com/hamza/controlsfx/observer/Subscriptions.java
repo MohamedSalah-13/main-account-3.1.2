@@ -14,7 +14,8 @@ import java.util.concurrent.CopyOnWriteArrayList;
  * A screen subscribes in {@code initialize()} and ends with
  * {@link #disposeWith(Node)}; nothing else has to remember to clean up:
  * <pre>
- * subscriptions.subscribe(dataPublisher.getPublisherAddItem(), message -&gt; btnRefresh.fire());
+ * subscriptions.subscribe(dataPublisher.getPublisherAddUnits(), message -&gt; btnRefresh.fire());
+ * subscriptions.add(eventBus.subscribe(ItemSaved.class, event -&gt; btnRefresh.fire()));
  * subscriptions.disposeWith(stackPane);
  * </pre>
  * The alternative - having each of the ten classes that open these screens close

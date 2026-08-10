@@ -11,6 +11,7 @@ import com.hamza.account.controller.others.ServiceRegistry;
 import com.hamza.account.features.key_setting.UpdateInterface;
 import com.hamza.account.features.key_setting.UpdateQuantity;
 import com.hamza.account.features.events.InvoiceSaved;
+import com.hamza.account.features.events.ItemSaved;
 import com.hamza.account.features.notification.StockLevelAlert;
 import com.hamza.account.interfaces.api.DataInterface;
 import com.hamza.account.interfaces.impl_dataInterface.CustomData;
@@ -171,15 +172,18 @@ public class PosController extends ButtonSetting {
         setupKeyboardHandlers();
         splitPane.setDividerPosition(0, getSplitPaneDividerPos());
 
-        subscriptions.subscribe(dataPublisher.getPublisherAddItem(), message -> {
-            // Publishers notified without a payload deliver null - the import screen
-            // does exactly that after loading items from Excel.
-            if (message == null) return;
-            if (!message.isActiveItem()) {
-                paneList.removeIf(pane -> pane.getId().equals(message.getNameItem().toLowerCase()));
-                flowPane.getChildren().removeIf(node -> node.getId().equals(message.getNameItem().toLowerCase()));
-            }
-        });
+        // ItemSaved always carries the item, so there is no null to guard against;
+        // the bulk ItemsChanged from the import screen is a different event, and
+        // this screen does not react to it.
+        if (eventBus != null) {
+            subscriptions.add(eventBus.subscribe(ItemSaved.class, event -> {
+                var item = event.item();
+                if (!item.isActiveItem()) {
+                    paneList.removeIf(pane -> pane.getId().equals(item.getNameItem().toLowerCase()));
+                    flowPane.getChildren().removeIf(node -> node.getId().equals(item.getNameItem().toLowerCase()));
+                }
+            }));
+        }
         subscriptions.disposeWith(stackPane);
 
     }

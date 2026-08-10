@@ -24,7 +24,6 @@ public class BuyData<T1 extends BasePurchasesAndSales, T2 extends BaseTotals, T3
     protected final InvoiceBuy<T1, T2, T3, T4> invoiceBuy;
     protected final DataInterface<T1, T2, T3, T4> dataInterface;
     protected final DesignInterface designInterface;
-    protected final Publisher<ItemsModel> publisherAddItem;
     protected final int num_invoice_update;
     protected final TotalsAndPurchaseList<T1, T2> totalsAndPurchaseList;
     protected final PurchaseSalesInterface purchaseSalesInterface;
@@ -39,7 +38,6 @@ public class BuyData<T1 extends BasePurchasesAndSales, T2 extends BaseTotals, T3
             , DataPublisher dataPublisher
             , int numInvoiceUpdate) throws Exception {
         this.dataInterface = dataInterface;
-        this.publisherAddItem = dataPublisher.getPublisherAddItem();
         this.num_invoice_update = numInvoiceUpdate;
         this.designInterface = dataInterface.designInterface();
         this.invoiceBuy = dataInterface.invoiceBuy();

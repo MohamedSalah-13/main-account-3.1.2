@@ -7,6 +7,7 @@ import com.hamza.account.controller.dataByName.impl.MainGroupImpl2;
 import com.hamza.account.controller.main.DataPublisher;
 import com.hamza.account.controller.main.DisableButtons;
 import com.hamza.account.controller.others.ServiceRegistry;
+import com.hamza.account.features.events.ItemSaved;
 import com.hamza.account.model.domain.ItemsModel;
 import com.hamza.account.model.domain.ItemsUnitsModel;
 import com.hamza.account.model.domain.SubGroups;
@@ -20,6 +21,7 @@ import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.interfaceData.AppSettingInterface;
 import com.hamza.controlsfx.language.Setting_Language;
+import com.hamza.controlsfx.observer.EventBus;
 import com.hamza.controlsfx.observer.Subscriptions;
 import com.hamza.controlsfx.others.DoubleSetting;
 import com.hamza.controlsfx.util.ImageChoose;
@@ -57,6 +59,7 @@ public class AddItemController implements AppSettingInterface {
     private final int codeItem;
     private final DataPublisher dataPublisher;
     private final Subscriptions subscriptions = new Subscriptions();
+    private final EventBus eventBus = ServiceRegistry.get(EventBus.class);
     private final ImageChoose imageChoose = new ImageChoose();
 
     private final UnitsService unitsService = ServiceRegistry.get(UnitsService.class);
@@ -496,7 +499,7 @@ public class AddItemController implements AppSettingInterface {
                 var itemsModel = insertData();
                 var i = itemsService.updateItem(itemsModel);
                 if (i == 1) {
-                    dataPublisher.getPublisherAddItem().publish(itemsModel);
+                    if (eventBus != null) eventBus.publish(new ItemSaved(itemsModel));
                     tableUnits.getItems().clear();
                     listExtraBarcodes.getItems().clear();
                     AllAlerts.alertSave();

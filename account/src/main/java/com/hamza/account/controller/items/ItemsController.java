@@ -6,6 +6,8 @@ import com.hamza.account.controller.main.DisableButtons;
 import com.hamza.account.controller.main.LoadData;
 import com.hamza.account.controller.others.SelectedButton;
 import com.hamza.account.controller.others.ServiceRegistry;
+import com.hamza.account.features.events.ItemSaved;
+import com.hamza.account.features.events.ItemsChanged;
 import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.model.domain.ItemsModel;
 import com.hamza.account.openFxml.FxmlPath;
@@ -23,7 +25,7 @@ import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.language.Error_Text_Show;
 import com.hamza.controlsfx.language.Setting_Language;
-import com.hamza.controlsfx.observer.Publisher;
+import com.hamza.controlsfx.observer.EventBus;
 import com.hamza.controlsfx.table.TableColumnAnnotation;
 import com.hamza.controlsfx.table.columnEdit.ColumnSetting;
 import com.hamza.controlsfx.table.columnEdit.TableColumnEdite;
@@ -56,7 +58,7 @@ import static com.hamza.controlsfx.util.ImageChoose.createIcon;
 @FxmlPath(pathFile = "items/items-view.fxml")
 public class ItemsController extends LoadData {
 
-    private final Publisher<ItemsModel> publisherAddItem;
+    private final EventBus eventBus = ServiceRegistry.get(EventBus.class);
     private final TableView<ItemsModel> tableView = new TableView<>();
     private final ItemsService itemsService = ServiceRegistry.get(ItemsService.class);
     private final MainGroupService mainGroupService = ServiceRegistry.get(MainGroupService.class);
@@ -81,7 +83,6 @@ public class ItemsController extends LoadData {
 
     public ItemsController(DaoFactory daoFactory, DataPublisher dataPublisher) throws Exception {
         super(daoFactory, dataPublisher);
-        this.publisherAddItem = dataPublisher.getPublisherAddItem();
     }
 
     public void initialize() {
@@ -106,7 +107,10 @@ public class ItemsController extends LoadData {
         ObservableList<String> observableListMain = FXCollections.observableArrayList(getMainGroupsNames());
 
         subscriptions.subscribe(dataPublisher.getPublisherAddMainGroup(), string -> observableListMain.setAll(getMainGroupsNames()));
-        subscriptions.subscribe(publisherAddItem, message -> btnRefresh.fire());
+        if (eventBus != null) {
+            subscriptions.add(eventBus.subscribe(ItemSaved.class, event -> btnRefresh.fire()));
+            subscriptions.add(eventBus.subscribe(ItemsChanged.class, event -> btnRefresh.fire()));
+        }
     }
 
     private void permissionButtons() {
