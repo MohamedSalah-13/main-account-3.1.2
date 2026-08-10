@@ -9,6 +9,7 @@ import com.hamza.account.controller.others.ServiceRegistry;
 import com.hamza.account.features.events.GroupLevel;
 import com.hamza.account.features.events.GroupsChanged;
 import com.hamza.account.features.events.ItemSaved;
+import com.hamza.account.features.events.SelPriceNamesChanged;
 import com.hamza.account.features.events.ItemsChanged;
 import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.model.domain.ItemsModel;
@@ -49,8 +50,8 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import static com.hamza.account.config.PropertiesName.getItemEditFromTable;
 import static com.hamza.account.view.ConvertItemsGroup.HEADER_TEXT;
@@ -153,7 +154,10 @@ public class ItemsController extends LoadData {
         TableSetting.tableMenuSetting(getClass(), tableView);
 
         // change column names
-        subscriptions.subscribe(dataPublisher.getPublisherSelPriceUnits(), message -> Platform.runLater(() -> updateColumnNames(message)));
+        if (eventBus != null) {
+            subscriptions.add(eventBus.subscribe(SelPriceNamesChanged.class
+                    , event -> Platform.runLater(() -> updateColumnNames(event.names()))));
+        }
         // load column names
         try {
             updateColumnNames(selPriceService.getIntegerStringHashMap());
@@ -190,7 +194,7 @@ public class ItemsController extends LoadData {
         return column;
     }
 
-    private void updateColumnNames(HashMap<Integer, String> message) {
+    private void updateColumnNames(Map<Integer, String> message) {
         tableView.getColumns().get(6).setText(message.get(1));
         tableView.getColumns().get(7).setText(message.get(2));
         tableView.getColumns().get(8).setText(message.get(3));

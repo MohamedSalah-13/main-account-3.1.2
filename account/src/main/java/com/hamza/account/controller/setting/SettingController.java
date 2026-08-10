@@ -108,7 +108,7 @@ public class SettingController implements Initializable, AppSettingInterface {
 
     private Pane getTabBarcode() throws Exception {
         SettingTabBarcodeController barcodeController =
-                new SettingTabBarcodeController(daoFactory, dataPublisher.getPublisherSelPriceUnits());
+                new SettingTabBarcodeController(daoFactory);
         return new OpenFxmlApplication(barcodeController).getPane();
     }
 

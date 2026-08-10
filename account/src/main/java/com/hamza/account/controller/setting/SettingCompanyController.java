@@ -14,7 +14,8 @@ import com.hamza.account.service.TreasuryService;
 import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.language.Setting_Language;
-import com.hamza.controlsfx.observer.Publisher;
+import com.hamza.account.features.events.CompanyChanged;
+import com.hamza.controlsfx.observer.EventBus;
 import com.hamza.controlsfx.util.ImageChoose;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
@@ -49,8 +50,8 @@ public class SettingCompanyController implements Initializable {
     private final DataPublisher dataPublisher;
     private final TreasuryService treasuryService = ServiceRegistry.get(TreasuryService.class);
     private final Image defaultImage = new Image(new Image_Setting().defaultBlog);
+    private final EventBus eventBus = ServiceRegistry.get(EventBus.class);
     private Company company = new Company();
-    private Publisher<String> publisherUpdateCompany;
     private int comp_id;
     @FXML
     private Button btnAddImage, btnSave, btnClearImage;
@@ -65,7 +66,6 @@ public class SettingCompanyController implements Initializable {
 
     @Override
     public void initialize(URL url, ResourceBundle resourceBundle) {
-        publisherUpdateCompany = dataPublisher.getPublisherUpdateCompany();
         getCompany();
         otherSetting();
         // add image if insert new before select data
@@ -205,7 +205,7 @@ public class SettingCompanyController implements Initializable {
                     try {
                         int insert = daoFactory.getCompanyDao().insert(new Company());
                         if (insert == 1) {
-                            publisherUpdateCompany.publish();
+                            if (eventBus != null) eventBus.publish(new CompanyChanged());
                         }
                     } catch (DaoException e) {
                         errorLog(e);
@@ -236,7 +236,7 @@ public class SettingCompanyController implements Initializable {
                 int update = daoFactory.getCompanyDao().update(model);
                 if (update == 1) {
                     AllAlerts.alertSave();
-                    publisherUpdateCompany.publish();
+                    if (eventBus != null) eventBus.publish(new CompanyChanged());
                 }
             } catch (Exception e) {
                 if (e.getMessage().contains("Data truncation: Data too long for column")) {
@@ -252,7 +252,7 @@ public class SettingCompanyController implements Initializable {
         try {
             int update = daoFactory.getCompanyDao().update(company);
             if (update == 1) {
-                publisherUpdateCompany.publish();
+                if (eventBus != null) eventBus.publish(new CompanyChanged());
             }
         } catch (DaoException e) {
             errorLog(e);

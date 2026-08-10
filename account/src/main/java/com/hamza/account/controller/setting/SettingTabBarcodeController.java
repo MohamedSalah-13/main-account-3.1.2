@@ -15,7 +15,8 @@ import com.hamza.account.service.UnitsService;
 import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.language.Setting_Language;
-import com.hamza.controlsfx.observer.Publisher;
+import com.hamza.account.features.events.SelPriceNamesChanged;
+import com.hamza.controlsfx.observer.EventBus;
 import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
@@ -49,7 +50,7 @@ public class SettingTabBarcodeController implements Initializable {
     private final BarcodePrintName barcodePrintName = new BarcodePrintName();
 
     private final DaoFactory daoFactory;
-    private final Publisher<HashMap<Integer, String>> publisher;
+    private final EventBus eventBus = ServiceRegistry.get(EventBus.class);
     @FXML
     private CheckBox show2, showName, showPrice, showCurrency, showBarcode, checkActivateBarcodeScale;
     @FXML
@@ -114,8 +115,7 @@ public class SettingTabBarcodeController implements Initializable {
             selPriceTypeModel.setName(name);
             var update = priceSelService.update(selPriceTypeModel);
             if (update >= 1) {
-                var map = priceSelService.getIntegerStringHashMap();
-                publisher.publish(map);
+                if (eventBus != null) eventBus.publish(new SelPriceNamesChanged(priceSelService.getIntegerStringHashMap()));
             }
         } catch (DaoException e) {
             AllAlerts.showExceptionDialog(e);

@@ -176,9 +176,11 @@ from the registry rather than having a publisher threaded through its constructo
 checks the payload — where a dozen `Publisher<String>` fields can only be told apart by which field
 the caller picked. `UserRenamed`, `UsersChanged`, `InvoiceSaved`, `ItemSaved`, `ItemsChanged`,
 `NameChanged`, `AccountChanged`, `GroupsChanged`, `AreasChanged`, `UnitsChanged`, `EmployeesChanged`
-`ExpensesChanged` and `TreasuriesChanged` are migrated; what is left in `DataPublisher` is the company
-details, the sel-price unit names and the window signals (logout, login screen, the totals box) — the
-last of which are window control rather than domain events and are staying. `LoadDataAndList.updateData()` — the wholesale "everything was
+`ExpensesChanged`, `TreasuriesChanged`, `CompanyChanged` and `SelPriceNamesChanged` are migrated —
+every domain event has moved. What is left in `DataPublisher` is five window signals (logout, the
+login-screen setting, the totals box, the background image, the shift), which are window control
+rather than something that happened to the business, and whose life is exactly the main screen's.
+They are staying. `LoadDataAndList.updateData()` — the wholesale "everything was
 replaced" announcement fired after a restore — is now a list of events and needs no publisher bag.
 A table declares `refreshOn()` (its event) or `publisherTable()` (the old way), and `TableController`
 subscribes to whichever is set; a table seeing only one side of an event narrows it with
