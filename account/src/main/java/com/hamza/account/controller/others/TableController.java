@@ -107,7 +107,9 @@ public class TableController<T> implements Initializable {
             subscriptions.subscribe(tableInterface.publisherTable(), message -> updateTableView(0));
         }
         if (tableInterface.refreshOn() != null && eventBus != null) {
-            subscriptions.add(eventBus.subscribe(tableInterface.refreshOn(), event -> updateTableView(0)));
+            subscriptions.add(eventBus.subscribe(tableInterface.refreshOn(), event -> {
+                if (tableInterface.refreshFor(event)) updateTableView(0);
+            }));
         }
         subscriptions.disposeWith(root);
     }

@@ -112,15 +112,21 @@ registered in `ServiceRegistry` by the `DownLoadApplication` constructor and key
 events are records implementing `AppEvent`, under `account.features.events`. A screen pulls the bus
 from the registry rather than having a publisher threaded through its constructor, and the compiler
 checks the payload — where a dozen `Publisher<String>` fields can only be told apart by which field
-the caller picked. `UserRenamed`, `UsersChanged`, `InvoiceSaved`, `ItemSaved` and `ItemsChanged` are
-migrated; the rest of `DataPublisher` follows family by family. A table declares `refreshOn()` (its event) or
-`publisherTable()` (the old way), and `TableController` subscribes to whichever is set.
+the caller picked. `UserRenamed`, `UsersChanged`, `InvoiceSaved`, `ItemSaved`, `ItemsChanged`,
+`NameChanged` and `AccountChanged` are migrated; the rest of `DataPublisher` follows family by family.
+A table declares `refreshOn()` (its event) or `publisherTable()` (the old way), and `TableController`
+subscribes to whichever is set; a table seeing only one side of an event narrows it with
+`refreshFor(event)`.
 
 `InvoiceSaved` carries an `InvoiceSide` (PURCHASE or SALES) and replaced
 `DataInterface.publisherPurchaseOrSales()`, which routed to one of two publishers to say the same
 thing; implementations now answer `invoiceSide()` and listeners filter on it. The side is two-valued
 on purpose: a return shares the side of what it reverses, exactly as it shared a publisher, so a
 purchases screen still reloads when a purchase return is saved.
+
+`NameChanged` and `AccountChanged` carry a `PartyKind` (CUSTOMER or SUPPLIER) and replaced the four
+publishers that were one per event × side; `NameAndAccountInterface` answers `partyKind()` and every
+listener filters on it — a customers screen must not reload because a supplier changed.
 
 `ItemSaved` carries the item and always has one; a bulk change (the Excel import, or a full reload) is
 `ItemsChanged` and carries nothing. That split is the point of the migration in miniature: one

@@ -7,6 +7,7 @@ import com.hamza.account.controller.main.DisableButtons;
 import com.hamza.account.controller.model.PrintPurchaseWithName;
 import com.hamza.account.controller.others.ServiceRegistry;
 import com.hamza.account.features.events.InvoiceSaved;
+import com.hamza.account.features.events.NameChanged;
 import com.hamza.account.controller.model.PrintTotalsData;
 import com.hamza.account.interfaces.api.DataInterface;
 import com.hamza.account.interfaces.api.NameAndAccountInterface;
@@ -138,7 +139,11 @@ public class TotalsController<T1 extends BasePurchasesAndSales, T2 extends BaseT
             }));
         }
         subscriptions.subscribe(dataPublisher.getPublisherAddEmployee(), message -> comboDelegateSetting(comboDelegate, getDelegateNames()));
-        subscriptions.subscribe(nameAndAccountInterface.addNamePublisher(), message -> addDataToComboName());
+        if (eventBus != null) {
+            subscriptions.add(eventBus.subscribe(NameChanged.class, event -> {
+                if (event.kind() == nameAndAccountInterface.partyKind()) addDataToComboName();
+            }));
+        }
         subscriptions.disposeWith(stackPane);
         addTimeSearch();
         permissionButtons();

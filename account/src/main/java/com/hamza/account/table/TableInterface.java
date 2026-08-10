@@ -54,6 +54,15 @@ public interface TableInterface<T> extends MainData {
         return null;
     }
 
+    /**
+     * Whether an event of {@link #refreshOn()} concerns this table. The default
+     * accepts every one; a screen showing one side of an event that carries both -
+     * customers, where a supplier change arrives too - narrows it here.
+     */
+    default boolean refreshFor(AppEvent event) {
+        return true;
+    }
+
     default boolean resizeTable() {
         return false;
     }

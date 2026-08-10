@@ -9,7 +9,9 @@ import com.hamza.account.controller.name_account.impl.AccountTotalsPurchase;
 import com.hamza.account.controller.name_account.impl.AccountTotalsSales;
 import com.hamza.account.controller.others.SelectedButton;
 import com.hamza.account.controller.others.ServiceRegistry;
+import com.hamza.account.features.events.AccountChanged;
 import com.hamza.account.features.events.InvoiceSaved;
+import com.hamza.account.features.events.NameChanged;
 import com.hamza.controlsfx.observer.EventBus;
 import com.hamza.account.interfaces.api.DataInterface;
 import com.hamza.account.model.base.BaseAccount;
@@ -77,16 +79,19 @@ public class AccountController2<T1 extends BasePurchasesAndSales, T2 extends Bas
 
     public AccountController2(DaoFactory daoFactory, DataPublisher dataPublisher, DataInterface<T1, T2, T3, T4> dataInterface) throws Exception {
         super(dataInterface, daoFactory, dataPublisher);
-        // publisher data
-        subscriptions.subscribe(dataInterface.nameAndAccountInterface().addAccountPublisher(), message -> btnRefresh.fire());
-        subscriptions.subscribe(dataInterface.nameAndAccountInterface().addNamePublisher(), message -> {
-            try {
-                items.addAll(nameAndAccountInterface.nameList().stream().map(nameData.getName()).toList());
-            } catch (Exception e) {
-                throw new RuntimeException(e);
-            }
-        });
         if (eventBus != null) {
+            var kind = dataInterface.nameAndAccountInterface().partyKind();
+            subscriptions.add(eventBus.subscribe(AccountChanged.class, event -> {
+                if (event.kind() == kind) btnRefresh.fire();
+            }));
+            subscriptions.add(eventBus.subscribe(NameChanged.class, event -> {
+                if (event.kind() != kind) return;
+                try {
+                    items.addAll(nameAndAccountInterface.nameList().stream().map(nameData.getName()).toList());
+                } catch (Exception e) {
+                    throw new RuntimeException(e);
+                }
+            }));
             subscriptions.add(eventBus.subscribe(InvoiceSaved.class, event -> {
                 if (event.side() == dataInterface.invoiceSide()) btnRefresh.fire();
             }));

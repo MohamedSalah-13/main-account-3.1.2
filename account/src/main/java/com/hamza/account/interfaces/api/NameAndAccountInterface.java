@@ -1,6 +1,7 @@
 package com.hamza.account.interfaces.api;
 
 import com.hamza.account.controller.search.SearchInterface;
+import com.hamza.account.features.events.PartyKind;
 import com.hamza.account.model.base.BaseAccount;
 import com.hamza.account.model.base.BaseNames;
 import com.hamza.controlsfx.database.DaoList;
@@ -28,9 +29,13 @@ public interface NameAndAccountInterface<T1 extends BaseNames, T2 extends BaseAc
 
     SearchInterface<T1> searchInterface();
 
-    Publisher<String> addAccountPublisher();
-
-    Publisher<String> addNamePublisher();
+    /**
+     * Which side this implementation speaks for, and the value carried by the
+     * {@link com.hamza.account.features.events.NameChanged} and
+     * {@link com.hamza.account.features.events.AccountChanged} events it fires -
+     * it replaced the two publishers this used to hand out.
+     */
+    PartyKind partyKind();
 
     T1 getNameById(int id) throws Exception;
 

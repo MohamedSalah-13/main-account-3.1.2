@@ -12,6 +12,8 @@ import com.hamza.account.features.key_setting.UpdateInterface;
 import com.hamza.account.features.key_setting.UpdateQuantity;
 import com.hamza.account.features.events.InvoiceSaved;
 import com.hamza.account.features.events.ItemSaved;
+import com.hamza.account.features.events.NameChanged;
+import com.hamza.account.features.events.PartyKind;
 import com.hamza.account.features.notification.StockLevelAlert;
 import com.hamza.account.interfaces.api.DataInterface;
 import com.hamza.account.interfaces.impl_dataInterface.CustomData;
@@ -82,7 +84,6 @@ public class PosController extends ButtonSetting {
     private static final int PAGE_SIZE = 100;
     private final Subscriptions subscriptions = new Subscriptions();
     private final EventBus eventBus = ServiceRegistry.get(EventBus.class);
-    private final Publisher<String> publisherAddCustomer;
     private final DaoFactory daoFactory;
     private final List<Button> paneList = new ArrayList<>();
     private final DataPublisher dataPublisher;
@@ -150,7 +151,6 @@ public class PosController extends ButtonSetting {
     public PosController(DaoFactory daoFactory, DataPublisher dataPublisher) throws Exception {
         this.daoFactory = daoFactory;
         this.dataPublisher = dataPublisher;
-        this.publisherAddCustomer = dataPublisher.getPublisherAddNameCustomer();
         this.dataInterface = new CustomData(daoFactory, dataPublisher);
         this.nameController = new NameController<>(dataInterface, daoFactory, dataPublisher);
     }
@@ -805,7 +805,7 @@ public class PosController extends ButtonSetting {
             else insert = customerService.nameDao().insert(customers);
             if (insert == 1) {
                 AllAlerts.alertSave();
-                publisherAddCustomer.publish();
+                if (eventBus != null) eventBus.publish(new NameChanged(PartyKind.CUSTOMER));
             }
 
         } catch (Exception e) {

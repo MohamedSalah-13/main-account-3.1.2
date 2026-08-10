@@ -1,7 +1,10 @@
 package com.hamza.account.controller.main;
 
 import com.hamza.account.controller.others.ServiceRegistry;
+import com.hamza.account.features.events.AccountChanged;
 import com.hamza.account.features.events.InvoiceSaved;
+import com.hamza.account.features.events.NameChanged;
+import com.hamza.account.features.events.PartyKind;
 import com.hamza.account.features.events.InvoiceSide;
 import com.hamza.account.features.events.ItemsChanged;
 import com.hamza.account.features.events.UsersChanged;
@@ -20,23 +23,22 @@ public class LoadDataAndList {
             return;
         }
 
-        // The users, invoice and item families have moved to the bus; the rest are
-        // still publishers, and this list shrinks as each family follows.
+        // Most families have moved to the bus; the rest are still publishers, and
+        // this list shrinks as each one follows.
         var eventBus = ServiceRegistry.get(EventBus.class);
         if (eventBus != null) {
             eventBus.publish(new UsersChanged());
             eventBus.publish(new ItemsChanged());
-            eventBus.publish(new InvoiceSaved(InvoiceSide.PURCHASE));
-            eventBus.publish(new InvoiceSaved(InvoiceSide.SALES));
+            for (InvoiceSide side : InvoiceSide.values()) eventBus.publish(new InvoiceSaved(side));
+            for (PartyKind kind : PartyKind.values()) {
+                eventBus.publish(new NameChanged(kind));
+                eventBus.publish(new AccountChanged(kind));
+            }
         }
 
         Stream.of(
                         dataPublisher.getPublisherAddArea(),
                         dataPublisher.getPublisherAddEmployee(),
-                        dataPublisher.getPublisherAddAccountCustom(),
-                        dataPublisher.getPublisherAddAccountSuppliers(),
-                        dataPublisher.getPublisherAddNameCustomer(),
-                        dataPublisher.getPublisherAddNameSuppliers(),
                         dataPublisher.getPublisherAddMainGroup(),
                         dataPublisher.getPublisherAddSubGroup()
                 ).filter(java.util.Objects::nonNull)

@@ -3,6 +3,8 @@ package com.hamza.account.controller.name_account;
 import com.hamza.account.controller.main.DataPublisher;
 import com.hamza.account.controller.main.LoadOtherData;
 import com.hamza.account.controller.others.ServiceRegistry;
+import com.hamza.account.features.events.AccountChanged;
+import com.hamza.account.features.events.NameChanged;
 import com.hamza.account.interfaces.api.DataInterface;
 import com.hamza.account.model.base.BaseAccount;
 import com.hamza.account.model.base.BaseNames;
@@ -18,7 +20,7 @@ import com.hamza.account.service.SelPriceItemService;
 import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.database.DaoList;
 import com.hamza.controlsfx.language.Setting_Language;
-import com.hamza.controlsfx.observer.Publisher;
+import com.hamza.controlsfx.observer.EventBus;
 import com.hamza.controlsfx.others.Utils;
 import javafx.application.Platform;
 import javafx.beans.binding.BooleanBinding;
@@ -51,8 +53,7 @@ public class AddNameController<T1 extends BasePurchasesAndSales, T2 extends Base
 
     private final DaoList<T3> interFace;
     private final int id;
-    private final Publisher<String> publisherAddName;
-    private final Publisher<String> publisherAddAccount;
+    private final EventBus eventBus = ServiceRegistry.get(EventBus.class);
     private final AreaService areaService = ServiceRegistry.get(AreaService.class);
     private final SelPriceItemService selPriceItemService = ServiceRegistry.get(SelPriceItemService.class);
 
@@ -70,8 +71,6 @@ public class AddNameController<T1 extends BasePurchasesAndSales, T2 extends Base
             , int id) throws Exception {
         super(dataInterface, daoFactory, dataPublisher);
         this.id = id;
-        this.publisherAddName = dataInterface.nameAndAccountInterface().addNamePublisher();
-        this.publisherAddAccount = dataInterface.nameAndAccountInterface().addAccountPublisher();
         this.interFace = nameAndAccountInterface.nameDao();
     }
 
@@ -165,8 +164,11 @@ public class AddNameController<T1 extends BasePurchasesAndSales, T2 extends Base
             try {
                 dataInterface.loadNameAndAccount();
                 Thread.sleep(1000);
-                publisherAddName.publish(dataInterface.designInterface().nameTextOfData());
-                publisherAddAccount.publish(dataInterface.designInterface().nameTextOfInvoice());
+                if (eventBus != null) {
+                    var kind = nameAndAccountInterface.partyKind();
+                    eventBus.publish(new NameChanged(kind));
+                    eventBus.publish(new AccountChanged(kind));
+                }
             } catch (InterruptedException e) {
                 log.error(e.getMessage(), e);
             }

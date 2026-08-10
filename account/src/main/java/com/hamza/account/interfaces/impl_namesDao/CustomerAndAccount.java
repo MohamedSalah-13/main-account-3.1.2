@@ -4,6 +4,7 @@ import com.hamza.account.controller.main.DataPublisher;
 import com.hamza.account.controller.others.ServiceRegistry;
 import com.hamza.account.controller.search.CustomerSearchController;
 import com.hamza.account.controller.search.SearchInterface;
+import com.hamza.account.features.events.PartyKind;
 import com.hamza.account.interfaces.api.NameAndAccountInterface;
 import com.hamza.account.model.domain.CustomerAccount;
 import com.hamza.account.model.domain.Customers;
@@ -63,13 +64,8 @@ public class CustomerAndAccount implements NameAndAccountInterface<Customers, Cu
     }
 
     @Override
-    public Publisher<String> addAccountPublisher() {
-        return dataPublisher.getPublisherAddAccountCustom();
-    }
-
-    @Override
-    public Publisher<String> addNamePublisher() {
-        return dataPublisher.getPublisherAddNameCustomer();
+    public PartyKind partyKind() {
+        return PartyKind.CUSTOMER;
     }
 
     @Override

@@ -18,10 +18,9 @@ public class DataPublisher {
     // warehouse screens. Those are gone; areas now have their own.
     private final Publisher<String> publisherAddArea = new Publisher<>();
     private final Publisher<String> publisherAddTreasury = new Publisher<>();
-    private final Publisher<String> publisherAddAccountCustom = new Publisher<>();
-    private final Publisher<String> publisherAddAccountSuppliers = new Publisher<>();
-    private final Publisher<String> publisherAddNameCustomer = new Publisher<>();
-    private final Publisher<String> publisherAddNameSuppliers = new Publisher<>();
+    // The four name and account publishers are now NameChanged and AccountChanged
+    // on the EventBus, carrying a PartyKind instead of being one publisher per
+    // combination.
     // The two user publishers that were here are now UserRenamed and UsersChanged
     // on the EventBus, in account.features.events.
     private final Publisher<String> publisherAddMainGroup = new Publisher<>();

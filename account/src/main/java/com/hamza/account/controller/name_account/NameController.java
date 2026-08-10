@@ -19,7 +19,11 @@ import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.database.DaoList;
 import com.hamza.controlsfx.language.Error_Text_Show;
 import com.hamza.controlsfx.language.Setting_Language;
-import com.hamza.controlsfx.observer.Publisher;
+import com.hamza.account.controller.others.ServiceRegistry;
+import com.hamza.account.features.events.AccountChanged;
+import com.hamza.account.features.events.NameChanged;
+import com.hamza.controlsfx.observer.AppEvent;
+import com.hamza.controlsfx.observer.EventBus;
 import com.hamza.controlsfx.others.CssToColorHelper;
 import javafx.beans.property.*;
 import javafx.scene.control.*;
@@ -35,8 +39,7 @@ public class NameController<T1 extends BasePurchasesAndSales, T2 extends BaseTot
         extends LoadOtherData<T1, T2, T3, T4> implements TableInterface<T3> {
 
     private final DaoList<T3> nameInterface;
-    private final Publisher<String> publisherAddName;
-    private final Publisher<String> publisherAddAccount;
+    private final EventBus eventBus = ServiceRegistry.get(EventBus.class);
     private final DesignInterface designInterface;
     private final StringProperty textSearchData = new SimpleStringProperty("");
     private final ObjectProperty<T3> objectProperty = new SimpleObjectProperty<>();
@@ -48,8 +51,6 @@ public class NameController<T1 extends BasePurchasesAndSales, T2 extends BaseTot
         super(dataInterface, daoFactory, dataPublisher);
         this.designInterface = dataInterface.designInterface();
         this.nameInterface = nameAndAccountInterface.nameDao();
-        this.publisherAddName = nameAndAccountInterface.addNamePublisher();
-        this.publisherAddAccount = nameAndAccountInterface.addAccountPublisher();
     }
 
 
@@ -92,8 +93,10 @@ public class NameController<T1 extends BasePurchasesAndSales, T2 extends BaseTot
 
             @Override
             public void afterDelete() {
-                publisherAddName.publish(dataInterface.designInterface().nameTextOfData());
-                publisherAddAccount.publish(dataInterface.designInterface().nameTextOfAccount());
+                if (eventBus == null) return;
+                var kind = nameAndAccountInterface.partyKind();
+                eventBus.publish(new NameChanged(kind));
+                eventBus.publish(new AccountChanged(kind));
             }
         };
     }
@@ -140,8 +143,16 @@ public class NameController<T1 extends BasePurchasesAndSales, T2 extends BaseTot
     }
 
     @Override
-    public Publisher<String> publisherTable() {
-        return publisherAddName;
+    public Class<NameChanged> refreshOn() {
+        return NameChanged.class;
+    }
+
+    /**
+     * A customers list has no reason to reload because a supplier changed.
+     */
+    @Override
+    public boolean refreshFor(AppEvent event) {
+        return event instanceof NameChanged changed && changed.kind() == nameAndAccountInterface.partyKind();
     }
 
     @Override
