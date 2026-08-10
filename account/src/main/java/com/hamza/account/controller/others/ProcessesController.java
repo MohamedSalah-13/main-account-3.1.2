@@ -226,6 +226,10 @@ public class ProcessesController implements Initializable {
         try {
             List<Audit_log> processesDataList = tableView.getSelectionModel().getSelectedItems();
             if (!processesDataList.isEmpty()) {
+                // The audit log is what records every other delete in the system, and
+                // this was the one delete in the application that ran straight off the
+                // button with nothing to confirm it.
+                if (!AllAlerts.confirmDelete()) return;
                 var list = processesDataList.stream().map(Audit_log::getId).toList();
                 Integer[] ids = list.toArray(new Integer[0]);
 //                System.out.println(ids);

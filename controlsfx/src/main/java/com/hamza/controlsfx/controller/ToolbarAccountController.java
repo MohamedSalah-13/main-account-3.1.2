@@ -110,6 +110,11 @@ public class ToolbarAccountController<T> {
                 i = toolbarAccountInt.deleteAccount();
             } catch (Exception e) {
                 logError(e);
+                // The screen's own reason - a protected row, a missing permission, a
+                // record something else still points at - used to be logged and then
+                // replaced by the validation message below, which named none of them.
+                AllAlerts.alertError(e.getMessage() == null ? Setting_Language.PLEASE_INSERT_ALL_DATA : e.getMessage());
+                return;
             }
             if (i >= 1) {
                 AllAlerts.alertDelete();

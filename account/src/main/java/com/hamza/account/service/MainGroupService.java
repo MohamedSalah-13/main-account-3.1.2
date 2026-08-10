@@ -1,9 +1,10 @@
 package com.hamza.account.service;
 
+import com.hamza.account.delete.DeleteRegistry;
+import com.hamza.account.delete.DeletionService;
 import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.model.domain.MainGroups;
 import com.hamza.controlsfx.database.DaoException;
-import com.hamza.controlsfx.language.Error_Text_Show;
 
 import java.util.List;
 
@@ -31,8 +32,9 @@ public record MainGroupService(DaoFactory daoFactory) {
     }
 
     public int deleteMainGroup(int id) throws DaoException {
-        if (id == 1) throw new DaoException(Error_Text_Show.CANT_DELETE);
-        return daoFactory.getMainGroups().deleteById(id);
+        return DeletionService.shared()
+                .delete(DeleteRegistry.MAIN_GROUPS, id, daoFactory.getMainGroups()::deleteById)
+                .rowsOrThrow();
     }
 
     public int insert(MainGroups groups) throws DaoException {

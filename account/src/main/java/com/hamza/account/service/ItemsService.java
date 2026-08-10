@@ -1,5 +1,7 @@
 package com.hamza.account.service;
 
+import com.hamza.account.delete.DeleteRegistry;
+import com.hamza.account.delete.DeletionService;
 import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.model.domain.ItemsModel;
 import com.hamza.controlsfx.database.DaoException;
@@ -52,7 +54,9 @@ public record ItemsService(DaoFactory daoFactory) {
     }
 
     public int deleteItem(int id) throws DaoException {
-        return daoFactory.getItemsDao().deleteById(id);
+        return DeletionService.shared()
+                .delete(DeleteRegistry.ITEMS, id, daoFactory.getItemsDao()::deleteById)
+                .rowsOrThrow();
     }
 
     public int getMaxItemId() {

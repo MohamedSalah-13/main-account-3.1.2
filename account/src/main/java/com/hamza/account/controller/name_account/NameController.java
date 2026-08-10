@@ -10,6 +10,8 @@ import com.hamza.account.model.base.BaseNames;
 import com.hamza.account.model.base.BasePurchasesAndSales;
 import com.hamza.account.model.base.BaseTotals;
 import com.hamza.account.model.dao.DaoFactory;
+import com.hamza.account.delete.DeleteRegistry;
+import com.hamza.account.delete.DeletionService;
 import com.hamza.account.openFxml.AddForAllApplication;
 import com.hamza.account.table.ActionButtonToolBar;
 import com.hamza.account.table.TableInterface;
@@ -17,7 +19,6 @@ import com.hamza.account.table.TableSetting;
 import com.hamza.account.type.UserPermissionType;
 import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.database.DaoList;
-import com.hamza.controlsfx.language.Error_Text_Show;
 import com.hamza.controlsfx.language.Setting_Language;
 import com.hamza.account.controller.others.ServiceRegistry;
 import com.hamza.account.features.events.AccountChanged;
@@ -87,8 +88,17 @@ public class NameController<T1 extends BasePurchasesAndSales, T2 extends BaseTot
 
             @Override
             public int delete(T3 t3) throws DaoException {
-                if (t3.getId() == 1) throw new DaoException(Error_Text_Show.CANT_DELETE);
-                return nameInterface.deleteById(t3.getId());
+                // Customers and suppliers are deleted straight through the DAO, with
+                // no service in between, so the rule is applied here - the last point
+                // that still knows which side is being deleted. It carries the
+                // permission and the protected id that used to be written out at this
+                // spot, and adds the invoices and account movements that make a name
+                // undeletable, counted, in place of the one general sentence a foreign
+                // key failure was turned into.
+                return DeletionService.shared()
+                        .delete(DeleteRegistry.forParty(nameAndAccountInterface.partyKind()),
+                                t3.getId(), nameInterface::deleteById)
+                        .rowsOrThrow();
             }
 
             @Override

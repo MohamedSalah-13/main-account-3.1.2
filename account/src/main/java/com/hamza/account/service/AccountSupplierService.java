@@ -2,6 +2,8 @@ package com.hamza.account.service;
 
 import com.hamza.account.interfaces.impl_account.AccountSuppliers;
 import com.hamza.account.model.dao.DaoFactory;
+import com.hamza.account.perm.PermissionGuard;
+import com.hamza.account.type.UserPermissionType;
 import com.hamza.account.model.dao.SupplierAccountDao;
 import com.hamza.account.model.domain.SupplierAccount;
 import com.hamza.controlsfx.database.DaoException;
@@ -27,6 +29,7 @@ public record AccountSupplierService(DaoFactory daoFactory) {
     }
 
     public int delete(int id) throws DaoException {
+        PermissionGuard.require(UserPermissionType.SUPPLIERS_ACCOUNT_DELETE);
         return accountDao().deleteById(id);
     }
 

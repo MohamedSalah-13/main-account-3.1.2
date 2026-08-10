@@ -134,10 +134,6 @@ public enum DaoFactory {
         return new ItemMiniDao();
     }
 
-    public TruncateDao truncateDao() {
-        return new TruncateDao();
-    }
-
     public EarningsDao earningsDao() {
         return new EarningsDao();
     }

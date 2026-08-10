@@ -223,6 +223,43 @@ the `subscriptions` field; the rest declare their own. The only classes that may
 `addObserver` are the main screen and its toolbar, which are the publisher bag, and are commented as
 such.
 
+### Deleting
+
+Two packages, and the rule for both is that what may be deleted is **declared**, not written out at
+each delete.
+
+`account.delete` handles one row. `DeleteRegistry` declares a `DeleteRule` per entity — the permission,
+the ids that are never deletable, and the tables that would still point at the row — and
+`DeletionService` applies it: permission first (no query at all if the user may not), then the protected
+ids, then one counted query through `ReferenceScanner`, then the delete. It answers a `DeleteOutcome`
+(`Deleted`/`Blocked`/`Protected`/`Denied`/`NotFound`), each carrying its own Arabic sentence;
+`rowsOrThrow()` is the bridge for the screens that still expect a row count and an exception.
+
+`account.wipe` handles whole tables — the "delete data" screen. `WipeCatalog` declares a `WipeTarget`
+per option (its tables in delete order, its seed rows, and the targets that must go with it), `WipePlan`
+resolves the closure into an ordered list of statements, and `WipeService` runs them **inside one
+transaction with the foreign keys left on**. `DeleteDataController` generates its checkbox tree from
+`requires`; there is no dependency graph written out in the controller and none in SQL.
+
+**The rule that governs both catalogs: only declare a foreign key that is not `ON DELETE CASCADE`.** A
+cascading key takes its rows with it, so declaring it refuses a delete the database performs happily —
+`expense_salary.expenses_details_id` and `targeted_sales.delegate_id` are the two that catch people
+out. `WipeCatalogTest` reads the keys straight out of the migration files and checks the declarations
+and the ordering against them, so a wrong declaration fails the build rather than the customer's
+database.
+
+What this replaced is worth knowing, because the old shape still shows in places not yet moved: deletes
+answered `0` from a `DaoList` default when a DAO had no delete at all, protections were spread across
+`IllegalArgumentException` in some DAOs and `DaoException` in others and an `if (id == 1)` in a
+controller, and the wipe was four stored procedures taking sixteen booleans that each switched
+`FOREIGN_KEY_CHECKS` off — on a pooled connection, without restoring it on failure. The DAO-level
+`id == 1` guards that remain are a last line for direct DAO callers, not the rule.
+
+Deletes are audited by triggers, not by the application: `V2` and `V7` write the whole row into
+`audit_log.old_data`. `write_audit_log` skips its insert while `@app_bulk_wipe` is set, which is how a
+wipe avoids copying the database into the log on its way out — `WipeService` sets it and clears it
+before the connection goes back to the pool.
+
 ### FXML
 
 Controllers carry `@FxmlPath(pathFile = "...")`; `OpenFxmlApplication` loads the FXML for a controller

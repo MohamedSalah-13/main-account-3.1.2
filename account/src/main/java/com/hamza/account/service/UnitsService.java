@@ -1,5 +1,8 @@
 package com.hamza.account.service;
 
+import com.hamza.account.delete.DeleteOutcome;
+import com.hamza.account.delete.DeleteRegistry;
+import com.hamza.account.delete.DeletionService;
 import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.model.domain.UnitsModel;
 import com.hamza.controlsfx.database.DaoException;
@@ -43,15 +46,21 @@ public record UnitsService(DaoFactory daoFactory) {
     }
 
     /**
-     * Whether anything still points at this unit - an item's base unit, one of
-     * an item's units, or a line on an invoice already saved. Deleting one that
-     * is referenced would fail on a foreign key, or orphan the history.
+     * Why this unit cannot be deleted - a protected id, a missing permission, or
+     * the items and invoice lines still pointing at it, counted - or null when it
+     * can. The screen asks before it offers to delete.
+     * <p>
+     * This replaced {@code isUnitInUse}, which answered a bare yes and left the
+     * screen to write its own sentence. The rule knows what is in the way, so the
+     * sentence names it.
      */
-    public boolean isUnitInUse(int id) throws DaoException {
-        return daoFactory.unitsDao().isInUse(id);
+    public DeleteOutcome checkDelete(int id) throws DaoException {
+        return DeletionService.shared().check(DeleteRegistry.UNITS, id);
     }
 
     public int delete(int id) throws DaoException {
-        return daoFactory.unitsDao().deleteById(id);
+        return DeletionService.shared()
+                .delete(DeleteRegistry.UNITS, id, daoFactory.unitsDao()::deleteById)
+                .rowsOrThrow();
     }
 }

@@ -20,26 +20,34 @@ CREATE PROCEDURE write_audit_log(
     IN p_notes TEXT
 )
 BEGIN
-    INSERT INTO audit_log
-    (
-        table_name,
-        record_id,
-        action_type,
-        user_id,
-        old_data,
-        new_data,
-        notes
-    )
-    VALUES
+    -- A wipe empties whole tables, and the DELETE triggers would copy every row it
+    -- removes into audit_log - the database written into itself, inside the wipe's
+    -- own transaction, only to be erased again if the log is one of the things
+    -- being wiped. WipeService sets @app_bulk_wipe for the length of that work and
+    -- clears it before the connection goes back to the pool. Nothing else sets it,
+    -- so ordinary deletes are audited exactly as before.
+    IF @app_bulk_wipe IS NULL THEN
+        INSERT INTO audit_log
         (
-            UPPER(p_table_name),
-            p_record_id,
-            UPPER(p_action_type),
-            p_user_id,
-            p_old_data,
-            p_new_data,
-            p_notes
-        );
+            table_name,
+            record_id,
+            action_type,
+            user_id,
+            old_data,
+            new_data,
+            notes
+        )
+        VALUES
+            (
+                UPPER(p_table_name),
+                p_record_id,
+                UPPER(p_action_type),
+                p_user_id,
+                p_old_data,
+                p_new_data,
+                p_notes
+            );
+    END IF;
 END;
 |
 DELIMITER ;
@@ -60,230 +68,28 @@ end;
 DELIMITER ;
 
 -- #####################################################################
--- ## Truncate/reset procedures               (was V007_user_truncate) ##
+-- ## The truncate/reset procedures are gone.                         ##
+-- ##                                                                 ##
+-- ## truncateTableSales, truncateTablePurchase, truncateTableItems   ##
+-- ## and truncateTableOthers took sixteen booleans between them and  ##
+-- ## emptied whatever the flags said, in an order that only worked   ##
+-- ## because each of them switched FOREIGN_KEY_CHECKS off first -    ##
+-- ## a session setting, on a pooled connection, that a failure part  ##
+-- ## way through left switched off for whoever borrowed it next.     ##
+-- ##                                                                 ##
+-- ## What they erased and what they put back is now declared in      ##
+-- ## com.hamza.account.wipe.WipeCatalog and run by WipeService as    ##
+-- ## ordinary DELETEs inside one transaction, with the foreign keys  ##
+-- ## left on. The DROPs below clean them out of databases that ran   ##
+-- ## an earlier version of this file; the helpers they called go     ##
+-- ## with them.                                                      ##
 -- #####################################################################
-/*------------------------------------ truncateTableSales - 6 tables ------------------------------------ */
-DROP procedure if exists truncateTableSales;
 
-DELIMITER |
-create
- procedure truncateTableSales(IN salesReturn tinyint(1), IN deleteSales tinyint(1),
-                                                          IN deleteAccount tinyint(1), IN deleteName tinyint(1))
-begin
-    SET FOREIGN_KEY_CHECKS = 0;
-    if (salesReturn) THEN
-        TRUNCATE table total_sales_re;
-        TRUNCATE table sales_re;
-    End IF;
-
-    if (deleteSales) THEN
-        TRUNCATE table total_sales;
-        TRUNCATE table sales;
-    End IF;
-
-    IF (deleteAccount) Then
-        TRUNCATE table customers_accounts;
-    End IF;
-
-    IF (deleteName) Then
-        # this use for customer
-        TRUNCATE table custom;
-        INSERT INTO custom(id, name, limit_num, price_id)
-        VALUES (1, 'بيع نقدى', 5000, 1);
-    End IF;
-
-    SET FOREIGN_KEY_CHECKS = 1;
-END
-|
-DELIMITER ;
-
-/*------------------------------------ truncateTablePurchase - 6 tables ------------------------------------ */
-DROP procedure if exists truncateTablePurchase;
-
-DELIMITER |
-create
- procedure truncateTablePurchase(IN deletePurchaseReturn tinyint(1),
-                                                             IN deletePurchase tinyint(1),
-                                                             IN deleteAccount tinyint(1), IN deleteName tinyint(1))
-begin
-    SET FOREIGN_KEY_CHECKS = 0;
-    if (deletePurchaseReturn) THEN
-        TRUNCATE table total_buy_re;
-        TRUNCATE table purchase_re;
-    End IF;
-
-    if (deletePurchase) THEN
-        TRUNCATE table total_buy;
-        TRUNCATE table purchase;
-    End IF;
-
-    IF (deleteAccount) Then
-        TRUNCATE table suppliers_accounts;
-    End IF;
-
-    IF (deleteName) Then
-        TRUNCATE table suppliers;
-        INSERT INTO suppliers(id, name)
-        VALUES (1, 'مورد عام');
-    End IF;
-
-    SET FOREIGN_KEY_CHECKS = 1;
-END
-|
-DELIMITER ;
-
-/*------------------------------------ truncateTableItems -12 tables ------------------------------------ */
-DROP procedure IF EXISTS truncateTableItems;
-DELIMITER |
-CREATE
- PROCEDURE truncateTableItems(IN deleteItems TINYINT(1),
-                                                          IN deleteStock TINYINT(1),
-                                                          IN deleteSubGroup TINYINT(1),
-                                                          IN deleteMainGroup TINYINT(1))
-BEGIN
-    SET FOREIGN_KEY_CHECKS = 0;
-
-    IF (deleteItems) THEN
-        CALL truncateAndInitializeItemsTables();
-    END IF;
-
-    IF (deleteStock) THEN
-        CALL truncateAndInitializeStocksTables();
-    END IF;
-
-    IF (deleteSubGroup) THEN
-        CALL truncateAndInitializeSubGroupTable();
-    END IF;
-
-    IF (deleteMainGroup) THEN
-        CALL truncateAndInitializeMainGroupTable();
-    END IF;
-
-    SET FOREIGN_KEY_CHECKS = 1;
-END
-|
-
-DELIMITER ;
+DROP PROCEDURE IF EXISTS truncateTableSales;
+DROP PROCEDURE IF EXISTS truncateTablePurchase;
+DROP PROCEDURE IF EXISTS truncateTableItems;
+DROP PROCEDURE IF EXISTS truncateTableOthers;
 DROP PROCEDURE IF EXISTS truncateAndInitializeItemsTables;
-DELIMITER |
-CREATE PROCEDURE truncateAndInitializeItemsTables()
-BEGIN
-    TRUNCATE TABLE units;
-    INSERT INTO units(unit_name) VALUES ('قطعة'), ('كرتونة');
-
-    TRUNCATE TABLE type_price;
-    INSERT INTO type_price (name)
-    VALUES ('سعر1'),
-           ('سعر2'),
-           ('سعر3');
-
-    TRUNCATE TABLE items;
-    TRUNCATE TABLE items_package;
-    TRUNCATE TABLE items_units;
-    TRUNCATE TABLE items_stock;
-    TRUNCATE TABLE stock_movements;
-END
-|
-
-DELIMITER ;
 DROP PROCEDURE IF EXISTS truncateAndInitializeStocksTables;
-DELIMITER |
-CREATE PROCEDURE truncateAndInitializeStocksTables()
-BEGIN
-    TRUNCATE TABLE stock_movements;
-    TRUNCATE TABLE stocks;
-    TRUNCATE TABLE stock_transfer;
-    TRUNCATE TABLE stock_transfer_list;
-    INSERT INTO stocks(stock_name) VALUES ('الرئيسى');
-END
-|
-
-DELIMITER ;
 DROP PROCEDURE IF EXISTS truncateAndInitializeSubGroupTable;
-DELIMITER |
-CREATE PROCEDURE truncateAndInitializeSubGroupTable()
-BEGIN
-    TRUNCATE TABLE sub_group;
-    INSERT INTO sub_group(name, main_id) VALUES ('فرع 1', 1);
-END
-|
-
-DELIMITER ;
 DROP PROCEDURE IF EXISTS truncateAndInitializeMainGroupTable;
-DELIMITER |
-CREATE PROCEDURE truncateAndInitializeMainGroupTable()
-BEGIN
-    TRUNCATE TABLE main_group;
-    INSERT INTO main_group(name_g) VALUES ('عام 1');
-END
-|
-DELIMITER ;
-
-/*------------------------------------ truncateTableOthers -8 tables ------------------------------------ */
-DROP procedure if exists truncateTableOthers;
-
-DELIMITER |
-create
- procedure truncateTableOthers(IN deleteEmployees tinyint(1),
-                                                           IN deleteProcesses tinyint(1),
-                                                           IN deleteExpenses tinyint(1), IN deleteUsers tinyint(1))
-begin
-    SET FOREIGN_KEY_CHECKS = 0;
-
-    IF (deleteUsers) Then
-        TRUNCATE table users;
-        TRUNCATE table user_permission;
-        INSERT INTO users(id, user_name, user_pass, user_available) VALUES (1, 'admin', 'admin', 1);
-
-    End IF;
-
-    if (deleteEmployees) THEN
-        TRUNCATE table employees;
-        INSERT INTO employees (column_name, birth_date, hire_date, salary, job)
-        VALUES ('بيع مباشر', CURRENT_DATE(), CURRENT_DATE(), 0, 4);
-        TRUNCATE table treasury_deposit_expenses;
-        TRUNCATE table treasury_transfers;
-        TRUNCATE table treasury;
-        INSERT INTO treasury(t_name, amount)
-        VALUES ('الخزينة الرئيسية', 0);
-
-        TRUNCATE table targeted_sales;
-
-    End IF;
-
-    IF (deleteExpenses) Then
-        TRUNCATE table expenses_details;
-        TRUNCATE table expense_salary;
-    End IF;
-
-    if (deleteProcesses) THEN
-        TRUNCATE table audit_log;
-    End IF;
-
-    SET FOREIGN_KEY_CHECKS = 1;
-END
-|
-DELIMITER ;
-
-/*------------------------------------ delete all ------------------------------------ */
-# CALL truncateTableSales(true, true, true, true);
-# CALL truncateTablePurchase(true, true, true, true);
-# CALL truncateTableOthers(true, true, true, true);
-# CALL truncateTableItems(true, true, true, true);
-
-/*------------------------------------ table not truncate ------------------------------------ */
-SELECT table_name
-FROM information_schema.tables
-WHERE table_schema = 'account_system_db'
-  AND TABLE_TYPE = 'BASE TABLE'
-  AND table_name NOT IN (
-                         'total_sales_re', 'sales_re', 'total_sales', 'sales',
-                         'customers_accounts', 'custom', 'total_buy_re', 'purchase_re',
-                         'total_buy', 'purchase', 'suppliers_accounts', 'suppliers',
-                         'units', 'type_price', 'items', 'items_price',
-                         'items_units', 'items_stock', 'stocks', 'stock_transfer',
-                         'stock_transfer_list', 'sub_group', 'main_group', 'users',
-                         'user_permission', 'employees', 'treasury_deposit_expenses',
-                         'treasury_transfers', 'treasury', 'targeted_sales', 'expenses_details',
-                         'expense_salary', 'processes_data'
-    );

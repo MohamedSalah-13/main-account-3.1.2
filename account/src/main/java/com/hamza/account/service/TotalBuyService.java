@@ -1,6 +1,8 @@
 package com.hamza.account.service;
 
 import com.hamza.account.model.dao.DaoFactory;
+import com.hamza.account.perm.PermissionGuard;
+import com.hamza.account.type.UserPermissionType;
 import com.hamza.account.model.dao.TotalsBuyDao;
 import com.hamza.account.model.domain.Total_buy;
 import com.hamza.controlsfx.database.DaoException;
@@ -40,6 +42,7 @@ public record TotalBuyService(DaoFactory daoFactory) {
     }
 
     public int deleteMultiData(Integer[] ids) throws DaoException {
+        PermissionGuard.require(UserPermissionType.PURCHASE_DELETE);
         return getTotalsBuyDao().deleteInvoicesInRange(ids);
     }
 
