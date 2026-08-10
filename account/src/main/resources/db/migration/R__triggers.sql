@@ -193,27 +193,9 @@ end;
 DELIMITER ;
 
 -- items_units
+--
+-- `before_items_units_insert` used to reject a second row for the same
+-- (item, unit). V5 replaced it with the `items_units_item_unit_uk` unique key,
+-- which also covers UPDATE - the trigger never did. Dropping it here as well
+-- keeps a database that reruns this file from getting it back.
 DROP TRIGGER IF EXISTS before_items_units_insert;
-
-DELIMITER |
-create trigger before_items_units_insert
-    before insert
-    on items_units
-    for each row
-begin
-    -- Define a constant for the error message
-    DECLARE err_msg VARCHAR(255) DEFAULT 'Cannot insert : Duplicate entry combination';
-
-    -- Get the latest item id
-#     set NEW.items_id = (SELECT id FROM items ORDER BY id DESC LIMIT 1);
-
-    -- Check if a matching stock and item combination already exists
-    IF EXISTS (SELECT 1
-               FROM items_units
-               WHERE items_units.unit = NEW.unit
-                 AND items_units.items_id = NEW.items_id) THEN
-        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = err_msg;
-    END IF;
-end;
-|
-DELIMITER ;

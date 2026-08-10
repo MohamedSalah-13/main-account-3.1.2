@@ -143,8 +143,22 @@
                                                                 <TextField fx:id="textUnitBarcode" GridPane.columnIndex="1" GridPane.rowIndex="1" />
 
                                                                 <Button fx:id="btnAdd" mnemonicParsing="false" styleClass="primary-button" text="إضافة" GridPane.columnIndex="2" GridPane.rowIndex="1" />
+
+                                                                <Label styleClass="form-label" text="سعر الشراء" GridPane.rowIndex="2" />
+                                                                <TextField fx:id="textUnitBuyPrice" promptText="اتركه فارغاً للحساب من سعر الصنف" GridPane.columnIndex="1" GridPane.rowIndex="2" />
+
+                                                                <Label styleClass="form-label" text="سعر البيع" GridPane.columnIndex="2" GridPane.rowIndex="2" />
+                                                                <TextField fx:id="textUnitSelPrice" prefWidth="80.0" GridPane.columnIndex="3" GridPane.rowIndex="2" />
+
+                                                                <Label styleClass="form-label" text="سعر البيع 2" GridPane.rowIndex="3" />
+                                                                <TextField fx:id="textUnitSelPrice2" GridPane.columnIndex="1" GridPane.rowIndex="3" />
+
+                                                                <Label styleClass="form-label" text="سعر البيع 3" GridPane.columnIndex="2" GridPane.rowIndex="3" />
+                                                                <TextField fx:id="textUnitSelPrice3" prefWidth="80.0" GridPane.columnIndex="3" GridPane.rowIndex="3" />
                                                             </children>
                                              <rowConstraints>
+                                                <RowConstraints />
+                                                <RowConstraints />
                                                 <RowConstraints />
                                                 <RowConstraints />
                                              </rowConstraints>

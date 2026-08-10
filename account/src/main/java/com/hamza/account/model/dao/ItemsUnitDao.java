@@ -21,9 +21,11 @@ public class ItemsUnitDao extends AbstractDao<ItemsUnitsModel> {
     private final String QUANTITY = "quantity";
     private final String BUY_PRICE = "buy_price";
     private final String SEL_PRICE = "sel_price";
+    private final String SEL_PRICE_2 = "sel_price2";
+    private final String SEL_PRICE_3 = "sel_price3";
     private final String USER_ID = "user_id";
     private final String INSERT = SqlStatements.insertStatement(ITEMS_UNITS, ITEMS_ID, ITEMS_BARCODE, UNIT, QUANTITY
-            , BUY_PRICE, SEL_PRICE, USER_ID);
+            , BUY_PRICE, SEL_PRICE, SEL_PRICE_2, SEL_PRICE_3, USER_ID);
 
     public ItemsUnitDao(DaoFactory daoFactory) {
         super();
@@ -50,8 +52,10 @@ public class ItemsUnitDao extends AbstractDao<ItemsUnitsModel> {
 
     @Override
     public int update(ItemsUnitsModel itemsUnitsModel) throws DaoException {
+        // user_id records who added the row and is not rewritten on edit - it is
+        // also what left the SET clause one placeholder longer than getData().
         String query = SqlStatements.updateStatement(ITEMS_UNITS, ID, ITEMS_ID, ITEMS_BARCODE, UNIT, QUANTITY
-                , BUY_PRICE, SEL_PRICE, USER_ID);
+                , BUY_PRICE, SEL_PRICE, SEL_PRICE_2, SEL_PRICE_3);
         return executeUpdate(query, getData(itemsUnitsModel));
     }
 
@@ -67,9 +71,10 @@ public class ItemsUnitDao extends AbstractDao<ItemsUnitsModel> {
 
     @Override
     public Object[] getData(ItemsUnitsModel itemsUnitsModel) throws DaoException {
-        return new Object[]{itemsUnitsModel.getItemsId(), itemsUnitsModel.getItemsBarcode(),
+        return new Object[]{itemsUnitsModel.getItemsId(), barcodeOrNull(itemsUnitsModel),
                 itemsUnitsModel.getUnitsModel().getUnit_id(), itemsUnitsModel.getQuantityForUnit()
                 , itemsUnitsModel.getBuyPrice(), itemsUnitsModel.getSelPrice()
+                , itemsUnitsModel.getSelPrice2(), itemsUnitsModel.getSelPrice3()
                 , itemsUnitsModel.getId()};
     }
 
@@ -86,6 +91,8 @@ public class ItemsUnitDao extends AbstractDao<ItemsUnitsModel> {
             itemsUnitsModel.setUnitsModel(unitsModels);
             itemsUnitsModel.setBuyPrice(rs.getDouble(BUY_PRICE));
             itemsUnitsModel.setSelPrice(rs.getDouble(SEL_PRICE));
+            itemsUnitsModel.setSelPrice2(rs.getDouble(SEL_PRICE_2));
+            itemsUnitsModel.setSelPrice3(rs.getDouble(SEL_PRICE_3));
             itemsUnitsModel.setUsers(daoFactory.usersDao().getDataById(rs.getInt(USER_ID)));
         } catch (SQLException e) {
             throw new DaoException(e);
@@ -104,10 +111,21 @@ public class ItemsUnitDao extends AbstractDao<ItemsUnitsModel> {
     }
 
     private Object[] getObjectsInsert(ItemsUnitsModel itemsUnitsModel) {
-        return new Object[]{itemsUnitsModel.getItemsId(), itemsUnitsModel.getItemsBarcode()
+        return new Object[]{itemsUnitsModel.getItemsId(), barcodeOrNull(itemsUnitsModel)
                 , itemsUnitsModel.getUnitsModel().getUnit_id(), itemsUnitsModel.getQuantityForUnit()
                 , itemsUnitsModel.getBuyPrice(), itemsUnitsModel.getSelPrice()
+                , itemsUnitsModel.getSelPrice2(), itemsUnitsModel.getSelPrice3()
                 , itemsUnitsModel.getUsers().getId()};
+    }
+
+    /**
+     * A unit without its own barcode stores NULL, not ''. The column is unique,
+     * and '' repeats - so the second unit an item was given without a barcode
+     * used to collide with the first.
+     */
+    private String barcodeOrNull(ItemsUnitsModel itemsUnitsModel) {
+        String barcode = itemsUnitsModel.getItemsBarcode();
+        return barcode == null || barcode.isBlank() ? null : barcode;
     }
 
     public List<ItemsUnitsModel> getAllUnitsByItemId(int itemId) throws DaoException {

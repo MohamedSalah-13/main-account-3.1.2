@@ -598,7 +598,7 @@ public class PosController extends ButtonSetting {
                 Map<Integer, ItemsModel> itemById = new HashMap<>();
                 for (BasePurchasesAndSales row : tableView.getItems()) {
                     ItemsModel item = row.getItems();
-                    double baseQuantity = row.getQuantity() * item.getUnitsType().getValue();
+                    double baseQuantity = ItemUnits.toBase(row.getQuantity(), ItemUnits.baseUnit(item));
                     requestedBaseQuantityByItem.merge(item.getId(), baseQuantity, Double::sum);
                     itemById.putIfAbsent(item.getId(), item);
                 }
@@ -631,9 +631,10 @@ public class PosController extends ButtonSetting {
                     sales.setDiscount(basePurchasesAndSales.getDiscount());
                     sales.setInvoiceNumber(invoiceNumber);
                     sales.setNumItem(items.getId());
-                    UnitsModel unitsModel = items.getUnitsType();
+                    UnitsModel unitsModel = ItemUnits.baseUnit(items);
                     sales.setUnitsType(unitsModel);
-                    sales.setBuy_price(roundToTwoDecimalPlaces(items.getBuyPrice() * unitsModel.getValue()));
+                    sales.setBuy_price(roundToTwoDecimalPlaces(
+                            ItemUnits.buyPrice(items, unitsModel, items.getBuyPrice())));
                     sales.setExpiration_date(null);
                     salesList.add(sales);
                 }

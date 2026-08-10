@@ -20,6 +20,18 @@ public record ItemsService(DaoFactory daoFactory) {
         return daoFactory.getItemsDao().findItemByStockIdAndBarcode(barcode, stockId);
     }
 
+    /**
+     * Whether this code already belongs to some other item - as its barcode, one
+     * of its extra barcodes, or the code on one of its units. Pass the id of the
+     * item being edited so its own codes do not count against it.
+     */
+    public boolean isBarcodeTakenByAnotherItem(String barcode, int itemId) throws DaoException {
+        if (barcode == null || barcode.isBlank()) {
+            return false;
+        }
+        return daoFactory.getItemsDao().barcodeExists(barcode.trim(), itemId);
+    }
+
     public int updateItem(ItemsModel itemsModel) throws DaoException {
         if (itemsModel.getId() == 0)
             return daoFactory.getItemsDao().insert(itemsModel);

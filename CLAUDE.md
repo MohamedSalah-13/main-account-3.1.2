@@ -85,6 +85,68 @@ is the central abstraction. Four implementations in `interfaces/impl_dataInterfa
 (`BuyController2`, `TotalsController`, `AccountController2`) serve customer/supplier × sale/return. When
 changing invoice behaviour, check all four implementations, and expect heavily generic signatures.
 
+### Units
+
+An item is stocked in one **base unit** and may be bought or sold in others — قطعة, كرتونة, لفة, متر,
+whatever the business uses. `service.ItemUnits` is the only place that answers what a unit means for an
+item: `unitsFor`, `unitByName`, `baseUnit`, `toBase`/`fromBase`, `factor`. Nothing should read a factor
+off a `UnitsModel` directly — `factor()` guards the zero and negative that would zero or reverse a stock
+movement.
+
+**The factor is per item, and lives in `items_units.quantity`.** `units.value_d` is one number for the
+whole database and cannot say that a carton of juice is 12 while a carton of cigarettes is 200; it
+survives only as the fallback for a unit with no row of its own, and as the default the item screen
+offers when you pick a unit. The invoice screens used to scale by it, so every item shared one meaning
+of "carton" — `V5__item_units.sql` is the migration that ended that, and it rebases any item whose own
+unit had a factor above 1 (quantities on past lines are untouched; the balances and prices counted
+against them move by the same factor, so the stock is the same, restated in the unit it is sold in).
+
+`ItemsDao` prepends the base unit to `itemsUnitsModelList` with a factor of 1 — it is `items.unit_id`,
+not a row in `items_units`, and a row there for the same unit is a duplicate (V5 deletes them and adds
+`items_units_item_unit_uk` to stop more). `ItemUnits.unitsFor` therefore returns the base first, which
+is what the invoice combo selects.
+
+**A unit may also carry its own prices** — `items_units.buy_price`, `sel_price`, `sel_price2`,
+`sel_price3` (the last two added by `V6__item_unit_prices.sql`; the tiers mirror the item's, since the
+customer's price tier has to answer for a carton as much as for a piece). Zero means "no price of its
+own" and falls back to the item's price × the factor, which is what every row held before the columns
+were readable — so nothing was repriced by the migration. `ItemUnits.sellPrice`/`buyPrice` resolve it;
+`hasOwnSellPrice` is what stops the invoice's "update the item's price as you type" option from
+dividing an outright carton price by twelve and dragging the piece price down with it.
+
+The base unit never has an override: it is `items.unit_id`, its row in the loaded list is the one
+`ItemsDao` synthesizes, and `ItemsDao.saveUnits` filters it back out on the way to the database — which
+is also why `items_units` rows are replaced wholesale on every item save, empty list included.
+
+**A unit may carry its own barcode** in `items_units.items_barcode` (nullable since V5, so several
+units of an item can go without one). An item therefore answers to three kinds of code — `items.barcode`,
+`item_barcodes` (V3), and its units' — and `ItemsDao.findItemByStockIdAndBarcode` and the three
+`getFilterItems` queries search all three. Which unit was scanned is answered from the item's already
+loaded list by `ItemUnits.unitByBarcode`, not by another query; `BuyController2` selects it in the
+combo, and selecting it is what fills in the price and balance. Each barcode table has its own unique
+index and none can see the others, so `ItemsService.isBarcodeTakenByAnotherItem` is what stops one code
+from belonging to two items — the item screen calls it for every code before saving.
+
+The POS screen stays on the base unit: it has no barcode lookup (its search is an in-memory name index)
+and its rows carry no unit column.
+
+An invoice line stores the factor it used in `type_value`, and `quantity_items_table` computes the
+balance as `quantity * type_value`. That is deliberate: changing an item's factor later must not
+silently rewrite what past invoices meant. Anything comparing quantities across rows — stock checks,
+`StockLevelAlert` — has to convert with `toBase` first, since two rows of one item can be in different
+units.
+
+Two units of the same item may hold the same number of base units (a roll and a carton of twelve are
+different things to sell); it is the unit that must not repeat.
+
+**The units screen manages names.** `value_d` is presented there as "المعامل الافتراضي" — the number the
+item screen offers when you pick that unit, nothing more — and left blank it is 1. A unit may be renamed
+freely (lines reference it by id and carry their own factor), and may be deleted when nothing points at
+it: `UnitsDao.isInUse` checks `items`, `items_units` and the four invoice tables. Unit 1 is exempt, being
+the `DEFAULT` on every `type` column. The old rule — ids 1 and 2 can never be renamed or deleted — said
+nothing about whether anyone relied on them, and left a business that sells nothing by the carton stuck
+with the seeded "كرتونه".
+
 ### Cross-screen refresh
 
 `controlsfx.observer.Publisher` + `DataPublisher` (a bag of publishers). Saving fires

@@ -25,6 +25,16 @@ public class ItemsDao extends AbstractDao<ItemsModel> {
     public static final String BARCODE = "barcode";
     public static final String NAME_ITEM = "nameItem";
     private static final int FILTER_ITEMS_LIMIT = 50;
+    /**
+     * An item answers to three kinds of code, and a search that knows only the
+     * first two cannot find a carton by the code printed on it: {@code
+     * items.barcode}, the extra codes in {@code item_barcodes}, and the code a
+     * unit carries in {@code items_units}.
+     */
+    private static final String ITEM_UNIT_BARCODE_EXACT =
+            "items.id IN (SELECT items_id FROM items_units WHERE items_barcode = ?)";
+    private static final String ITEM_UNIT_BARCODE_LIKE =
+            "items.id IN (SELECT items_id FROM items_units WHERE items_barcode LIKE ?)";
     private static final String FILTER_ITEMS_SQL_TEXT_STARTS = """
             SELECT *
             FROM items
@@ -32,19 +42,22 @@ public class ItemsDao extends AbstractDao<ItemsModel> {
             WHERE items.nameItem LIKE ?
                OR items.barcode LIKE ?
                OR items.id IN (SELECT item_id FROM item_barcodes WHERE barcode LIKE ?)
+               OR %s
             ORDER BY
                 CASE
                     WHEN items.barcode = ? THEN 0
                     WHEN items.id = ? THEN 1
                     WHEN items.id IN (SELECT item_id FROM item_barcodes WHERE barcode = ?) THEN 1
+                    WHEN %s THEN 1
                     WHEN items.nameItem LIKE ? THEN 2
                     WHEN items.barcode LIKE ? THEN 3
                     WHEN items.id IN (SELECT item_id FROM item_barcodes WHERE barcode LIKE ?) THEN 3
+                    WHEN %s THEN 3
                     ELSE 4
                 END,
                 items.id DESC
             LIMIT %d
-            """.formatted(FILTER_ITEMS_LIMIT);
+            """.formatted(ITEM_UNIT_BARCODE_LIKE, ITEM_UNIT_BARCODE_EXACT, ITEM_UNIT_BARCODE_LIKE, FILTER_ITEMS_LIMIT);
     private static final String FILTER_ITEMS_SQL_TEXT_CONTAINS = """
             SELECT *
             FROM items
@@ -52,16 +65,18 @@ public class ItemsDao extends AbstractDao<ItemsModel> {
             WHERE items.nameItem LIKE ?
                OR items.barcode LIKE ?
                OR items.id IN (SELECT item_id FROM item_barcodes WHERE barcode LIKE ?)
+               OR %s
             ORDER BY
                 CASE
                     WHEN items.barcode = ? THEN 0
                     WHEN items.id = ? THEN 1
                     WHEN items.id IN (SELECT item_id FROM item_barcodes WHERE barcode = ?) THEN 1
+                    WHEN %s THEN 1
                     ELSE 2
                 END,
                 items.id DESC
             LIMIT %d
-            """.formatted(FILTER_ITEMS_LIMIT);
+            """.formatted(ITEM_UNIT_BARCODE_LIKE, ITEM_UNIT_BARCODE_EXACT, FILTER_ITEMS_LIMIT);
     private static final String FILTER_ITEMS_SQL_NUMERIC = """
             SELECT *
             FROM items
@@ -69,16 +84,18 @@ public class ItemsDao extends AbstractDao<ItemsModel> {
             WHERE items.id = ?
                OR items.barcode = ?
                OR items.id IN (SELECT item_id FROM item_barcodes WHERE barcode = ?)
+               OR %s
             ORDER BY
                 CASE
                     WHEN items.id = ? THEN 0
                     WHEN items.barcode = ? THEN 1
                     WHEN items.id IN (SELECT item_id FROM item_barcodes WHERE barcode = ?) THEN 1
+                    WHEN %s THEN 1
                     ELSE 2
                 END,
                 items.id DESC
             LIMIT %d
-            """.formatted(FILTER_ITEMS_LIMIT);
+            """.formatted(ITEM_UNIT_BARCODE_EXACT, ITEM_UNIT_BARCODE_EXACT, FILTER_ITEMS_LIMIT);
     private final String ID = "id";
     private final String SUB_NUM = "sub_num";
     private final String BUY_PRICE = "buy_price";
@@ -128,6 +145,11 @@ public class ItemsDao extends AbstractDao<ItemsModel> {
                     itemsModel.getId(), DefaultStock.ID, itemsModel.getFirstBalanceForStock(), itemsModel.getFirstBalanceForStock()
             ));
 
+            // A new item's units were dropped on the floor here: only update()
+            // ever wrote them, so an item saved with a carton had none until it
+            // was opened and saved a second time.
+            saveUnits(itemsModel);
+
             if (!itemsModel.getExtraBarcodes().isEmpty()) {
                 daoFactory.getItemBarcodesDao().insertBarcodesForItem(itemId, itemsModel.getExtraBarcodes());
             }
@@ -143,15 +165,7 @@ public class ItemsDao extends AbstractDao<ItemsModel> {
         return insertMultiData(() -> {
             executeUpdateWithException(string, getData(itemsModel));
 
-            // update package
-            if (!itemsModel.getItemsUnitsModelList().isEmpty()) {
-                // first delete all units
-                daoFactory.getItemsUnitDao().deleteByItemId(itemsModel.getId());
-                // update list if existing
-                itemsModel.getItemsUnitsModelList().forEach(itemsUnitsModel -> itemsUnitsModel.setItemsId(itemsModel.getId()));
-                // add new units
-                daoFactory.getItemsUnitDao().insertList(itemsModel.getItemsUnitsModelList());
-            }
+            saveUnits(itemsModel);
 
             // update extra barcodes: delete then re-insert
             daoFactory.getItemBarcodesDao().deleteByItemId(itemsModel.getId());
@@ -159,6 +173,30 @@ public class ItemsDao extends AbstractDao<ItemsModel> {
                 daoFactory.getItemBarcodesDao().insertBarcodesForItem(itemsModel.getId(), itemsModel.getExtraBarcodes());
             }
         });
+    }
+
+    /**
+     * Replaces the item's rows in {@code items_units}.
+     * <p>
+     * The base unit is skipped: it is {@code items.unit_id}, and the row for it
+     * in the loaded list is the one {@link #getItemsModel} synthesizes, so
+     * writing it back would store the duplicate that {@code V5} removed.
+     * <p>
+     * Everything else is deleted first, including when the list is empty -
+     * removing an item's last extra unit has to remove the row, not keep it.
+     */
+    private void saveUnits(ItemsModel itemsModel) throws DaoException {
+        daoFactory.getItemsUnitDao().deleteByItemId(itemsModel.getId());
+
+        int baseUnitId = itemsModel.getUnitsType() == null ? 0 : itemsModel.getUnitsType().getUnit_id();
+        var extraUnits = itemsModel.getItemsUnitsModelList().stream()
+                .filter(unit -> unit.getUnitsModel() != null && unit.getUnitsModel().getUnit_id() != baseUnitId)
+                .peek(unit -> unit.setItemsId(itemsModel.getId()))
+                .toList();
+
+        if (!extraUnits.isEmpty()) {
+            daoFactory.getItemsUnitDao().insertList(extraUnits);
+        }
     }
 
     @Override
@@ -333,10 +371,51 @@ public class ItemsDao extends AbstractDao<ItemsModel> {
         return queryForObject(QUERY_ITEMS.concat(" where nameItem = ? and ip.stock_id = ? "), this::map, itemName, stockId);
     }
 
+    /**
+     * All three places a code can live, so scanning the code on a carton finds
+     * the item it belongs to. Which unit was scanned is answered from the item's
+     * own list by {@code ItemUnits.unitByBarcode} - it is already loaded.
+     */
     public ItemsModel findItemByStockIdAndBarcode(String barcode, Integer stockId) throws DaoException {
         String query = QUERY_ITEMS.concat(
-                " where (items.barcode = ? or items.id in (select item_id from item_barcodes where barcode = ?)) and ip.stock_id = ? ");
-        return queryForObject(query, this::map, barcode, barcode, stockId);
+                " where (items.barcode = ?"
+                        + " or items.id in (select item_id from item_barcodes where barcode = ?)"
+                        + " or items.id in (select items_id from items_units where items_barcode = ?))"
+                        + " and ip.stock_id = ? ");
+        return queryForObject(query, this::map, barcode, barcode, barcode, stockId);
+    }
+
+    /**
+     * Whether any item already answers to this code, ignoring {@code exceptItemId}
+     * (the item being edited). The three tables each have their own unique index
+     * and none of them can see the others, so nothing stops the same code being
+     * an item's barcode here and a carton's there - and then a scan is a coin toss.
+     */
+    public boolean barcodeExists(String barcode, int exceptItemId) throws DaoException {
+        String query = """
+                SELECT EXISTS (
+                    SELECT 1 FROM items WHERE barcode = ? AND id <> ?
+                    UNION ALL
+                    SELECT 1 FROM item_barcodes WHERE barcode = ? AND item_id <> ?
+                    UNION ALL
+                    SELECT 1 FROM items_units WHERE items_barcode = ? AND items_id <> ?
+                )
+                """;
+        // queryForObject maps to ItemsModel; this asks a yes/no question, so it
+        // goes through the connection directly.
+        return withConnection(connection -> {
+            try (PreparedStatement statement = connection.prepareStatement(query)) {
+                for (int i = 0; i < 3; i++) {
+                    statement.setString(i * 2 + 1, barcode);
+                    statement.setInt(i * 2 + 2, exceptItemId);
+                }
+                try (ResultSet rs = statement.executeQuery()) {
+                    return rs.next() && rs.getBoolean(1);
+                }
+            } catch (SQLException e) {
+                throw new DaoException(e.getMessage(), e);
+            }
+        });
     }
 
     public int maxItemId() {
@@ -379,7 +458,7 @@ public class ItemsDao extends AbstractDao<ItemsModel> {
                 // باركود طويل جداً => اعتبره باركود فقط
                 id = -1;
             }
-            return queryForObjects(FILTER_ITEMS_SQL_NUMERIC, this::map, id, q, q, id, q, q);
+            return queryForObjects(FILTER_ITEMS_SQL_NUMERIC, this::map, id, q, q, q, id, q, q, q);
         }
 
         // 2) نص/مختلط: مرحلتين startsWith ثم contains
@@ -393,9 +472,9 @@ public class ItemsDao extends AbstractDao<ItemsModel> {
         List<ItemsModel> starts = queryForObjects(
                 FILTER_ITEMS_SQL_TEXT_STARTS,
                 this::map,
-                likeStarts, likeStarts, likeStarts, // WHERE
-                q, 0, q,                             // ORDER BY (barcode exact, id exact disabled, extra barcode exact)
-                likeStarts, likeStarts, likeStarts   // ORDER BY (name starts, barcode starts, extra barcode starts)
+                likeStarts, likeStarts, likeStarts, likeStarts, // WHERE
+                q, 0, q, q,                                      // ORDER BY (barcode exact, id exact disabled, extra barcode exact, unit barcode exact)
+                likeStarts, likeStarts, likeStarts, likeStarts   // ORDER BY (name, barcode, extra barcode, unit barcode - all starts)
         );
         putUniqueById(result, starts, FILTER_ITEMS_LIMIT);
 
@@ -404,8 +483,8 @@ public class ItemsDao extends AbstractDao<ItemsModel> {
             List<ItemsModel> contains = queryForObjects(
                     FILTER_ITEMS_SQL_TEXT_CONTAINS,
                     this::map,
-                    likeContains, likeContains, likeContains, // WHERE (contains)
-                    q, 0, q                                    // ORDER BY (barcode exact, id exact disabled, extra barcode exact)
+                    likeContains, likeContains, likeContains, likeContains, // WHERE (contains)
+                    q, 0, q, q                                               // ORDER BY (barcode exact, id exact disabled, extra barcode exact, unit barcode exact)
             );
             putUniqueById(result, contains, FILTER_ITEMS_LIMIT);
         }

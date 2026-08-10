@@ -7,6 +7,8 @@ import com.hamza.account.controller.dataByName.impl.MainGroupImpl2;
 import com.hamza.account.controller.main.DataPublisher;
 import com.hamza.account.controller.main.DisableButtons;
 import com.hamza.account.controller.others.ServiceRegistry;
+import com.hamza.account.features.events.GroupLevel;
+import com.hamza.account.features.events.GroupsChanged;
 import com.hamza.account.features.events.ItemSaved;
 import com.hamza.account.model.domain.ItemsModel;
 import com.hamza.account.model.domain.ItemsUnitsModel;
@@ -44,8 +46,10 @@ import lombok.extern.log4j.Log4j2;
 import java.io.ByteArrayInputStream;
 import java.io.FileNotFoundException;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 
 import static com.hamza.account.controller.setting.ComboSetting.comboSubSetting;
 import static com.hamza.account.controller.setting.ComboSetting.comboTypeSetting;
@@ -96,6 +100,8 @@ public class AddItemController implements AppSettingInterface {
     @FXML
     private TextField textUnitQuantity, textUnitBarcode;
     @FXML
+    private TextField textUnitBuyPrice, textUnitSelPrice, textUnitSelPrice2, textUnitSelPrice3;
+    @FXML
     private Button btnAdd;
     @FXML
     private TextField textExtraBarcode;
@@ -113,15 +119,16 @@ public class AddItemController implements AppSettingInterface {
         this.codeItem = codeItem;
         this.dataPublisher = dataPublisher;
 
-        subscriptions.subscribe(dataPublisher.getPublisherAddMainGroup(), message -> {
-            comboMainGroup.setItems(FXCollections.observableList(getMainGroupsNames()));
-            comboMainGroup.getSelectionModel().selectLast();
-        });
-
-        subscriptions.subscribe(dataPublisher.getPublisherAddSubGroup(), message -> {
-            List<String> groupListByMainId = getSubGroupsNamesByMainId();
-            comboSupGroup.setItems(FXCollections.observableList(groupListByMainId));
-        });
+        if (eventBus != null) {
+            subscriptions.add(eventBus.subscribe(GroupsChanged.class, event -> {
+                if (event.level() == GroupLevel.MAIN) {
+                    comboMainGroup.setItems(FXCollections.observableList(getMainGroupsNames()));
+                    comboMainGroup.getSelectionModel().selectLast();
+                } else {
+                    comboSupGroup.setItems(FXCollections.observableList(getSubGroupsNamesByMainId()));
+                }
+            }));
+        }
     }
 
     @FXML
@@ -195,8 +202,19 @@ public class AddItemController implements AppSettingInterface {
         this.tableUnitsSetting = new TableUnitsSetting(unitsService, tableUnits);
         tableUnitsSetting.selectedTypeProperty().bind(comboOtherTypes.getSelectionModel().selectedItemProperty());
         tableUnitsSetting.textUnitBarcodeProperty().bindBidirectional(textUnitBarcode.textProperty());
-//        tableUnitsSetting.textUnitQuantityProperty().bindBidirectional(textUnitQuantity.textProperty());
-        textUnitQuantity.setDisable(true);
+        // The factor belongs to the item, not to the unit: picking a unit fills
+        // this in with its default, and the field is where that gets corrected
+        // to what a carton of *this* item actually holds.
+        tableUnitsSetting.textUnitQuantityProperty().bindBidirectional(textUnitQuantity.textProperty());
+
+        // A unit may be priced outright - a carton is sold cheaper than twelve
+        // pieces on purpose. Left blank, it is priced from the item as before.
+        tableUnitsSetting.textUnitBuyPriceProperty().bindBidirectional(textUnitBuyPrice.textProperty());
+        tableUnitsSetting.textUnitSelPriceProperty().bindBidirectional(textUnitSelPrice.textProperty());
+        tableUnitsSetting.textUnitSelPrice2Property().bindBidirectional(textUnitSelPrice2.textProperty());
+        tableUnitsSetting.textUnitSelPrice3Property().bindBidirectional(textUnitSelPrice3.textProperty());
+
+        setTextFormatter(textUnitQuantity, textUnitBuyPrice, textUnitSelPrice, textUnitSelPrice2, textUnitSelPrice3);
     }
 
     private void buttonGraphic() {
@@ -252,6 +270,22 @@ public class AddItemController implements AppSettingInterface {
         });
     }
 
+    /**
+     * Zero is not a price, it is the absence of one - show it as an empty field
+     * so the unit reads as priced from the item, which is what it is.
+     */
+    private void showPrice(TextField field, double price) {
+        field.setText(price > 0 ? String.valueOf(price) : "");
+    }
+
+    private void clearUnitEntryFields() {
+        textUnitBarcode.clear();
+        textUnitBuyPrice.clear();
+        textUnitSelPrice.clear();
+        textUnitSelPrice2.clear();
+        textUnitSelPrice3.clear();
+    }
+
     private List<String> getUnitsModelNames() {
         try {
             return unitsService.getUnitsModelNames();
@@ -299,7 +333,7 @@ public class AddItemController implements AppSettingInterface {
         });
         btnAddSubGroup.setOnAction(actionEvent -> {
             try {
-                new AddGroupApp(dataPublisher.getPublisherAddSubGroup());
+                new AddGroupApp();
             } catch (Exception e) {
                 logError(e);
             }
@@ -330,11 +364,17 @@ public class AddItemController implements AppSettingInterface {
         });
 
         // units setting
-//        btnAdd.disableProperty().bind(textUnitQuantity.textProperty().isEmpty());
-        btnAdd.setOnAction(actionEvent -> tableUnitsSetting.addUnit());
+        btnAdd.setOnAction(actionEvent -> {
+            tableUnitsSetting.addUnit();
+            // The next unit starts from a clean sheet - a price left in the field
+            // would otherwise be charged for a unit nobody priced, and a barcode
+            // left there is a code two units of the item both claim.
+            clearUnitEntryFields();
+        });
+        // DELETE used to fire btnAdd, which added a unit rather than removing one.
         tableUnits.setOnKeyPressed(keyEvent -> {
             if (keyEvent.getCode() == javafx.scene.input.KeyCode.DELETE) {
-                btnAdd.fire();
+                tableUnitsSetting.removeSelectedUnit();
             }
         });
 
@@ -343,6 +383,11 @@ public class AddItemController implements AppSettingInterface {
                 var selectedItem = tableUnits.getSelectionModel().getSelectedItem();
                 comboOtherTypes.getSelectionModel().select(selectedItem.getUnitsModel().getUnit_name());
                 textUnitQuantity.setText(String.valueOf(selectedItem.getQuantityForUnit()));
+                textUnitBarcode.setText(selectedItem.getItemsBarcode());
+                showPrice(textUnitBuyPrice, selectedItem.getBuyPrice());
+                showPrice(textUnitSelPrice, selectedItem.getSelPrice());
+                showPrice(textUnitSelPrice2, selectedItem.getSelPrice2());
+                showPrice(textUnitSelPrice3, selectedItem.getSelPrice3());
             }
         });
 
@@ -463,6 +508,9 @@ public class AddItemController implements AppSettingInterface {
             throw new Exception("يجب إدخال وحدات الصنف");
         }
 
+        var baseUnit = getUnitsModelByName(comboType.getSelectionModel().getSelectedItem());
+        checkBarcodesAreFree(barcode, baseUnit, itemsUnitsModelList);
+
         var itemsModel = new ItemsModel();
         itemsModel.setId(codeItem);
         itemsModel.setBarcode(barcode);
@@ -484,13 +532,46 @@ public class AddItemController implements AppSettingInterface {
             itemsModel.setItem_image(imageChoose.convertFxImageToBytes(imageAdd.getImage()));
         }
 
-        // check this - add to dao
-        itemsModel.setUnitsType(getUnitsModelByName(comboType.getSelectionModel().getSelectedItem()));
-        if (itemsUnitsModelList.size() > 1) {
-            itemsModel.setItemsUnitsModelList(itemsUnitsModelList.stream().skip(1).toList());
-        } else itemsModel.setItemsUnitsModelList(new ArrayList<>());
+        // The whole list goes down: ItemsDao drops the base unit's row by matching
+        // it against items.unit_id, which does not depend on it being first.
+        itemsModel.setUnitsType(baseUnit);
+        itemsModel.setItemsUnitsModelList(new ArrayList<>(itemsUnitsModelList));
         itemsModel.setExtraBarcodes(new ArrayList<>(listExtraBarcodes.getItems()));
         return itemsModel;
+    }
+
+    /**
+     * No two codes on this item may be the same, and none of them may belong to
+     * another item.
+     * <p>
+     * Each of the three tables holding barcodes has its own unique index and
+     * none can see the others, so without this a carton could carry the code of
+     * a different item entirely - and a scan would then resolve to whichever
+     * table the query happened to look at first.
+     */
+    private void checkBarcodesAreFree(String itemBarcode, UnitsModel baseUnit, List<ItemsUnitsModel> units) throws Exception {
+        List<String> codes = new ArrayList<>();
+        codes.add(itemBarcode);
+        codes.addAll(listExtraBarcodes.getItems());
+
+        // The base unit's row carries the item's own barcode and is not stored,
+        // so counting it here would report the item as clashing with itself.
+        int baseUnitId = baseUnit == null ? 0 : baseUnit.getUnit_id();
+        units.stream()
+                .filter(unit -> unit.getUnitsModel() == null || unit.getUnitsModel().getUnit_id() != baseUnitId)
+                .map(ItemsUnitsModel::getItemsBarcode)
+                .filter(code -> code != null && !code.isBlank())
+                .forEach(codes::add);
+
+        Set<String> seen = new HashSet<>();
+        for (String code : codes) {
+            if (!seen.add(code)) {
+                throw new Exception("الباركود مكرر داخل نفس الصنف: " + code);
+            }
+            if (itemsService.isBarcodeTakenByAnotherItem(code, codeItem)) {
+                throw new Exception("الباركود مستخدم لصنف آخر: " + code);
+            }
+        }
     }
 
     private void saveData(boolean isDuplicate) {

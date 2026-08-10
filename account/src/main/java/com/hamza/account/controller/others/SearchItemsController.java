@@ -13,6 +13,7 @@ import com.hamza.account.model.base.BaseTotals;
 import com.hamza.account.model.domain.ItemsModel;
 import com.hamza.account.openFxml.FxmlPath;
 import com.hamza.account.otherSetting.ButtonDeleteRow;
+import com.hamza.account.service.ItemUnits;
 import com.hamza.account.service.ItemsService;
 import com.hamza.account.table.TableSetting;
 import com.hamza.controlsfx.alert.AllAlerts;
@@ -254,7 +255,9 @@ public class SearchItemsController<T1 extends BasePurchasesAndSales, T2 extends 
         List<T1> list = new ArrayList<>();
         Optional<T1> first = tableView.getItems().stream().filter(t1 -> t1.getItems().equals(itemsModel)).findFirst();
         if (first.isEmpty()) {
-            list.add(invoiceBuy.object_TableData(0, 0, itemsModel.getId(), price, 1, 0, price, itemsModel.getUnitsType(), itemsModel, null));
+            // The row starts in the item's base unit, whose factor is 1 - not in
+            // whatever units.value_d happens to say about that unit.
+            list.add(invoiceBuy.object_TableData(0, 0, itemsModel.getId(), price, 1, 0, price, ItemUnits.baseUnit(itemsModel), itemsModel, null));
             tableView.getItems().addAll(list);
         }
     }
