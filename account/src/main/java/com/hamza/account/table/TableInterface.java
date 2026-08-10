@@ -3,6 +3,7 @@ package com.hamza.account.table;
 import com.hamza.account.interfaces.api.DataTable;
 import com.hamza.account.openFxml.MainData;
 import com.hamza.account.type.UserPermissionType;
+import com.hamza.controlsfx.observer.AppEvent;
 import com.hamza.controlsfx.observer.Publisher;
 import javafx.beans.property.BooleanProperty;
 import javafx.scene.control.TableView;
@@ -35,7 +36,23 @@ public interface TableInterface<T> extends MainData {
 
     BooleanProperty getColumnSelected(T t);
 
-    Publisher<String> publisherTable();
+    /**
+     * The publisher whose notifications reload this table. Screens migrated to
+     * {@link com.hamza.controlsfx.observer.EventBus} name an event in
+     * {@link #refreshOn()} instead and leave this null.
+     */
+    default Publisher<String> publisherTable() {
+        return null;
+    }
+
+    /**
+     * The event that means this table is out of date, or null where the screen
+     * still uses {@link #publisherTable()}. {@code TableController} subscribes and
+     * unsubscribes for it.
+     */
+    default Class<? extends AppEvent> refreshOn() {
+        return null;
+    }
 
     default boolean resizeTable() {
         return false;

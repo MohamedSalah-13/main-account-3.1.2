@@ -20,7 +20,8 @@ import com.hamza.controlsfx.button.button_column.ButtonColumn;
 import com.hamza.controlsfx.button.button_column.Button_Toggle_Table;
 import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.language.Setting_Language;
-import com.hamza.controlsfx.observer.Publisher;
+import com.hamza.account.features.events.UsersChanged;
+import com.hamza.controlsfx.observer.EventBus;
 import javafx.beans.property.BooleanProperty;
 import javafx.scene.Node;
 import javafx.scene.control.TableView;
@@ -33,7 +34,7 @@ import java.util.List;
 public class UserController implements TableInterface<Users> {
 
     private final String title;
-    private final Publisher<String> publisherUsersChanged;
+    private final EventBus eventBus = ServiceRegistry.get(EventBus.class);
     private final DaoFactory daoFactory;
     private final UsersService usersService;
     private TableView<Users> table;
@@ -42,7 +43,6 @@ public class UserController implements TableInterface<Users> {
             , String title) {
         this.daoFactory = daoFactory;
         this.title = title;
-        this.publisherUsersChanged = dataPublisher.getPublisherUsersChanged();
         this.usersService = ServiceRegistry.get(UsersService.class);
     }
 
@@ -71,7 +71,7 @@ public class UserController implements TableInterface<Users> {
 
             @Override
             public void afterDelete() {
-                UserController.this.publisherUsersChanged.publish();
+                eventBus.publish(new UsersChanged());
             }
         };
     }
@@ -116,8 +116,8 @@ public class UserController implements TableInterface<Users> {
     }
 
     @Override
-    public Publisher<String> publisherTable() {
-        return publisherUsersChanged;
+    public Class<UsersChanged> refreshOn() {
+        return UsersChanged.class;
     }
 
     @Override
@@ -209,7 +209,7 @@ public class UserController implements TableInterface<Users> {
                     users.setActive(b);
                     int update = daoFactory.usersDao().updateCase(users);
                     if (update == 1) {
-                        publisherUsersChanged.publish();
+                        eventBus.publish(new UsersChanged());
                     }
                 }
             }
@@ -238,7 +238,7 @@ public class UserController implements TableInterface<Users> {
     }
 
     private void openAddUser(int code) throws Exception {
-        new AddForAllApplication(0, new AddUserController(code, publisherUsersChanged));
+        new AddForAllApplication(0, new AddUserController(code));
     }
 
 }

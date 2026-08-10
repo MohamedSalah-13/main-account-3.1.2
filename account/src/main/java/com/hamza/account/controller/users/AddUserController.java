@@ -7,7 +7,8 @@ import com.hamza.account.openFxml.FxmlPath;
 import com.hamza.account.security.PasswordHasher;
 import com.hamza.account.service.UsersService;
 import com.hamza.controlsfx.language.Setting_Language;
-import com.hamza.controlsfx.observer.Publisher;
+import com.hamza.account.features.events.UsersChanged;
+import com.hamza.controlsfx.observer.EventBus;
 import com.hamza.controlsfx.others.ShowPassService;
 import com.hamza.controlsfx.others.Utils;
 import com.hamza.controlsfx.type.ActivityType;
@@ -29,7 +30,9 @@ public class AddUserController implements AddInterface {
 
 
     private final int codeId;
-    private final Publisher<String> publisherUsersChanged;
+    // Pulled from the registry like the services beside it, instead of being handed
+    // a publisher by whoever opens this dialog.
+    private final EventBus eventBus = ServiceRegistry.get(EventBus.class);
     private final UsersService usersService = ServiceRegistry.get(UsersService.class);
     @FXML
     private Label labelCode, labelName, labelActive, labelPass;
@@ -42,9 +45,8 @@ public class AddUserController implements AddInterface {
     @FXML
     private PasswordField txtPass;
 
-    public AddUserController(int codeId, Publisher<String> publisherUsersChanged) {
+    public AddUserController(int codeId) {
         this.codeId = codeId;
-        this.publisherUsersChanged = publisherUsersChanged;
     }
 
     @FXML
@@ -99,7 +101,7 @@ public class AddUserController implements AddInterface {
 
     @Override
     public void afterSaved() {
-        publisherUsersChanged.publish();
+        eventBus.publish(new UsersChanged());
         resetData();
     }
 

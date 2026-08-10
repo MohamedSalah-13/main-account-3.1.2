@@ -107,6 +107,20 @@ subscriptions.subscribe(dataPublisher.getPublisherAddItem(), message -> btnRefre
 subscriptions.disposeWith(stackPane);   // last line of initialize()
 ```
 
+**New events go on the `EventBus`, not into `DataPublisher`.** `controlsfx.observer.EventBus` is
+registered in `ServiceRegistry` by the `DownLoadApplication` constructor and keyed by event type;
+events are records implementing `AppEvent`, under `account.features.events`. A screen pulls the bus
+from the registry rather than having a publisher threaded through its constructor, and the compiler
+checks the payload — where a dozen `Publisher<String>` fields can only be told apart by which field
+the caller picked. `UserRenamed` and `UsersChanged` are migrated; the rest of `DataPublisher` follows
+family by family. A table declares `refreshOn()` (its event) or `publisherTable()` (the old way), and
+`TableController` subscribes to whichever is set.
+
+The bus lives for the whole process, and that removes a safety net worth knowing about: `DataPublisher`
+belonged to the main screen and was thrown away at logout, so observers nobody unsubscribed died with
+it. A bus listener does not — closing its subscription is mandatory, which is why the toolbar greeting
+now keeps a `Subscriptions` and the publisher-based listeners beside it do not.
+
 `Subscriptions.disposeWith` unsubscribes when the node leaves the scene graph (a closed tab) or its
 window is hidden (a dialog or stage) — both are needed, since closing a stage leaves the scene attached
 to its root, and a tab is detached without any window closing. Controllers extending `LoadData` inherit

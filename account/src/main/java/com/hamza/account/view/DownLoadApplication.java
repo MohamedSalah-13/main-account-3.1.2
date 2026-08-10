@@ -12,6 +12,7 @@ import com.hamza.account.trial.TrialManager;
 import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.database.ConnectionManager;
 import com.hamza.controlsfx.database.DaoException;
+import com.hamza.controlsfx.observer.EventBus;
 import com.hamza.controlsfx.util.FontsSetting;
 import javafx.application.Application;
 import javafx.stage.Stage;
@@ -43,6 +44,10 @@ public class DownLoadApplication extends Application {
         checkTrialStatus();
 //        AlertSetting.setStylesheets(ThemeManager.getStylesheet());
         ThemeManager.initialize();
+
+        // Registered first, and without a DaoFactory: screens pull it from here
+        // instead of being handed a publisher through their constructor.
+        ServiceRegistry.register(EventBus.class, new EventBus());
 
         ServiceRegistry.register(ItemsService.class, new ItemsService(daoFactory));
         ServiceRegistry.register(StockService.class, new StockService(daoFactory));
