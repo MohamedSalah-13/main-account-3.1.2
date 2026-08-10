@@ -206,7 +206,7 @@ public class SettingCompanyController implements Initializable {
                     try {
                         int insert = daoFactory.getCompanyDao().insert(new Company());
                         if (insert == 1) {
-                            publisherUpdateCompany.notifyObservers();
+                            publisherUpdateCompany.publish();
                         }
                     } catch (DaoException e) {
                         errorLog(e);
@@ -237,7 +237,7 @@ public class SettingCompanyController implements Initializable {
                 int update = daoFactory.getCompanyDao().update(model);
                 if (update == 1) {
                     AllAlerts.alertSave();
-                    publisherUpdateCompany.notifyObservers();
+                    publisherUpdateCompany.publish();
                 }
             } catch (Exception e) {
                 if (e.getMessage().contains("Data truncation: Data too long for column")) {
@@ -253,7 +253,7 @@ public class SettingCompanyController implements Initializable {
         try {
             int update = daoFactory.getCompanyDao().update(company);
             if (update == 1) {
-                publisherUpdateCompany.notifyObservers();
+                publisherUpdateCompany.publish();
             }
         } catch (DaoException e) {
             errorLog(e);

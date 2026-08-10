@@ -134,7 +134,7 @@ public class AddExpensesController implements AddInterface {
 
     @Override
     public void afterSaved() {
-        publisher.notifyObservers();
+        publisher.publish();
         resetData();
     }
 

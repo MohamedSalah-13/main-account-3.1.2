@@ -312,7 +312,7 @@ public class TotalsController<T1 extends BasePurchasesAndSales, T2 extends BaseT
                     maskerPaneSetting.getVoidTask().setOnSucceeded(workerStateEvent -> {
 //                        log.info("delete multi data success , {}", sb.toString());
                         btnRefresh.fire();
-                        dataInterface.publisherPurchaseOrSales().notifyObservers();
+                        dataInterface.publisherPurchaseOrSales().publish();
                         AllAlerts.alertDelete();
                     });
                     maskerPaneSetting.getVoidTask().setOnFailed(workerStateEvent -> AllAlerts.alertError("لا يمكن الحذف"));

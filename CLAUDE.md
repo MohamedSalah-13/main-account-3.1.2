@@ -88,9 +88,11 @@ changing invoice behaviour, check all four implementations, and expect heavily g
 ### Cross-screen refresh
 
 `controlsfx.observer.Publisher` + `DataPublisher` (a bag of publishers). Saving fires
-`publish(message)`, or `notifyObservers()` where there is nothing to send — note that the no-argument
-form re-sends whatever was published last, which is `null` for most of these publishers, so an
-observer that reads its message must tolerate null. All observers are UI updates, so `Publisher`
+`publish(message)`, or `publish()` where the event carries nothing — which is most of them. The
+publisher keeps no state, so `publish()` hands observers `null`: an observer that reads its message
+has to tolerate that, since the same publisher is usually fired both ways. `publisherAddUser` is the
+one to remember — the users screen fires it as a bare signal, while the login path publishes the
+user's name for the toolbar greeting. All observers are UI updates, so `Publisher`
 dispatches on the JavaFX thread itself — background callers do not need `Platform.runLater`.
 `AllAlerts` marshals to the FX thread the same way, so alerts are safe from any thread.
 

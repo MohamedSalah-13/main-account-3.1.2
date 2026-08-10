@@ -182,7 +182,7 @@ public class SettingTabLanguageController implements Initializable {
         btnDeleteImage.setOnAction(actionEvent -> {
             textPath.setText(text);
             setPathImageMainScreen("");
-            changeImage.setAvailability("");
+            changeImage.publish("");
         });
 
         setGraphic();
@@ -329,7 +329,7 @@ public class SettingTabLanguageController implements Initializable {
             String absolutePath = file.getAbsolutePath();
             textPath.setText(absolutePath);
             setPathImageMainScreen(absolutePath);
-            changeImage.setAvailability(absolutePath);
+            changeImage.publish(absolutePath);
         }
     }
 

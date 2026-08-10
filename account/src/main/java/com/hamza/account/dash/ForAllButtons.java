@@ -133,11 +133,11 @@ public class ForAllButtons extends LoadData {
     /**
      * Provides a logout action for the application, encapsulated as a button menu item action.
      * When triggered, this action:
-     * - Sets the availability status of the logout stage to true.
+     * - Publishes true on the logout publisher, closing the open stages.
      * - Initializes and starts the {@code LogApplication} for user re-login.
      *
      * @return a {@code ButtonWithPerm} instance that handles the logout process,
-     * including setting the logout stage availability, providing the menu label,
+     * including publishing the logout event, providing the menu label,
      * and enabling a specific keyboard shortcut for logout.
      */
     public ButtonWithPerm logout() {
@@ -150,7 +150,7 @@ public class ForAllButtons extends LoadData {
             @Override
             public void action() throws Exception {
                 if (AllAlerts.confirm_all("logout", "هل تريد الخروج")) {
-                    dataPublisher.getCloseStageFromLogout().setAvailability(true);
+                    dataPublisher.getCloseStageFromLogout().publish(true);
                     new LogApplication(daoFactory).start(new Stage());
                 }
             }

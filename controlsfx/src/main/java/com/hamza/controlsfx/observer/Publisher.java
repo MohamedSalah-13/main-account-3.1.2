@@ -30,12 +30,6 @@ public class Publisher<T> implements Subject<T> {
      */
     private final List<Observer<T>> observers = new CopyOnWriteArrayList<>();
 
-    /**
-     * Only kept for the no-argument {@link #notifyObservers()}. Written from any
-     * thread, read on the FX thread.
-     */
-    private volatile T availability;
-
     @Override
     public Subscription subscribe(Observer<T> observer) {
         observers.add(observer);
@@ -53,25 +47,22 @@ public class Publisher<T> implements Subject<T> {
     }
 
     /**
-     * Sends one message without storing it. This is the form to reach for: the
-     * observers see exactly what this call passed, and nothing is retained
-     * afterwards.
+     * Sends one message. The observers see exactly what this call passed, and
+     * nothing is kept afterwards - this class holds no state at all, so no
+     * observer can be handed a value some earlier, unrelated call published.
      */
     public void publish(T message) {
-        this.availability = message;
         deliver(message);
     }
 
     /**
-     * Re-sends whatever was published last - {@code null} where nothing ever was,
-     * which is the case for most publishers here, since they carry no payload and
-     * exist only to say "something changed". An observer reading the message must
-     * therefore tolerate null; unboxing a {@code Publisher<Boolean>} message
+     * Says "something changed" without a payload, which is what most publishers
+     * here are for. Observers are handed {@code null}, so one that reads its
+     * message has to expect it - unboxing a {@code Publisher<Boolean>} message
      * straight into an {@code if} would throw.
      */
-    @Override
-    public void notifyObservers() {
-        deliver(availability);
+    public void publish() {
+        deliver(null);
     }
 
     private void deliver(T message) {
@@ -102,15 +93,6 @@ public class Publisher<T> implements Subject<T> {
                 log.error("An observer failed while handling a notification", e);
             }
         }
-    }
-
-    /**
-     * @deprecated use {@link #publish(T)}, which does the same thing under a name
-     * that says what it does.
-     */
-    @Deprecated
-    public void setAvailability(T availability) {
-        publish(availability);
     }
 
 }

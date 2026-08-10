@@ -180,7 +180,7 @@ public class Add_AccountController<T1 extends BasePurchasesAndSales, T2 extends 
 
     @Override
     public void afterSaved() {
-        publisherAddAccount.setAvailability(dataInterface.designInterface().nameTextOfInvoice());
+        publisherAddAccount.publish(dataInterface.designInterface().nameTextOfInvoice());
         txtCode.setText(String.valueOf(generateNextAccountCode()));
         txtPaid.setText("0.0");
         txtNotes.clear();

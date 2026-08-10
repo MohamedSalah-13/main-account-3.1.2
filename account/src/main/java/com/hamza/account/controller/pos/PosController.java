@@ -687,7 +687,7 @@ public class PosController extends ButtonSetting {
                     Thread thread = new Thread(() -> {
                         try {
                             Thread.sleep(5000);
-                            dataInterface.publisherPurchaseOrSales().notifyObservers();
+                            dataInterface.publisherPurchaseOrSales().publish();
                         } catch (InterruptedException e) {
                             logError(e);
                         }
@@ -798,7 +798,7 @@ public class PosController extends ButtonSetting {
             else insert = customerService.nameDao().insert(customers);
             if (insert == 1) {
                 AllAlerts.alertSave();
-                publisherAddCustomer.notifyObservers();
+                publisherAddCustomer.publish();
             }
 
         } catch (Exception e) {

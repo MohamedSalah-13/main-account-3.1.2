@@ -496,7 +496,7 @@ public class AddItemController implements AppSettingInterface {
                 var itemsModel = insertData();
                 var i = itemsService.updateItem(itemsModel);
                 if (i == 1) {
-                    dataPublisher.getPublisherAddItem().setAvailability(itemsModel);
+                    dataPublisher.getPublisherAddItem().publish(itemsModel);
                     tableUnits.getItems().clear();
                     listExtraBarcodes.getItems().clear();
                     AllAlerts.alertSave();

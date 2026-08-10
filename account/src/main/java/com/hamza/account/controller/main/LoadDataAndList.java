@@ -28,7 +28,7 @@ public class LoadDataAndList {
                         dataPublisher.getPublisherAddMainGroup(),
                         dataPublisher.getPublisherAddSubGroup()
                 ).filter(java.util.Objects::nonNull)
-                .forEach(Publisher::notifyObservers);
+                .forEach(Publisher::publish);
     }
 
 }

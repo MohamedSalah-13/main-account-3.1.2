@@ -216,7 +216,7 @@ public class UnitsController implements Initializable, AppSettingInterface {
         AllAlerts.alertSave();
         resetData();
         refreshTable();
-        dataPublisher.getPublisherAddUnits().notifyObservers();
+        dataPublisher.getPublisherAddUnits().publish();
 
     }
 

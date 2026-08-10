@@ -98,7 +98,7 @@ public class AddEmployeeController implements AddInterface {
 
     @Override
     public void afterSaved() {
-        publisherAddEmployee.notifyObservers();
+        publisherAddEmployee.publish();
 //        paneImage.getImageController().clearImage();
         Utils.clearAll(txtName, txtSalary, txtEmail, txtTel);
     }

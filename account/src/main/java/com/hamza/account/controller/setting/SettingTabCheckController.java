@@ -87,11 +87,11 @@ public class SettingTabCheckController implements Initializable {
         checkInvoicePaid.selectedProperty().addListener((observable, oldValue, newValue) -> setInvoiceShowScreenPaid(newValue));
 
         checkLogin.selectedProperty().addListener((observable, oldValue, newValue) -> {
-            dataPublisher.getShowLoginScreen().setAvailability(newValue);
+            dataPublisher.getShowLoginScreen().publish(newValue);
             setSettingLoginShow(newValue);
         });
         checkShowTotals.selectedProperty().addListener((observable, oldValue, newValue) -> {
-            dataPublisher.getShowMainTotalsScreen().setAvailability(newValue);
+            dataPublisher.getShowMainTotalsScreen().publish(newValue);
             setShowMainTotals(newValue);
         });
 

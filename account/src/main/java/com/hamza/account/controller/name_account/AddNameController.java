@@ -165,8 +165,8 @@ public class AddNameController<T1 extends BasePurchasesAndSales, T2 extends Base
             try {
                 dataInterface.loadNameAndAccount();
                 Thread.sleep(1000);
-                publisherAddName.setAvailability(dataInterface.designInterface().nameTextOfData());
-                publisherAddAccount.setAvailability(dataInterface.designInterface().nameTextOfInvoice());
+                publisherAddName.publish(dataInterface.designInterface().nameTextOfData());
+                publisherAddAccount.publish(dataInterface.designInterface().nameTextOfInvoice());
             } catch (InterruptedException e) {
                 log.error(e.getMessage(), e);
             }

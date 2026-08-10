@@ -92,8 +92,8 @@ public class NameController<T1 extends BasePurchasesAndSales, T2 extends BaseTot
 
             @Override
             public void afterDelete() {
-                publisherAddName.setAvailability(dataInterface.designInterface().nameTextOfData());
-                publisherAddAccount.setAvailability(dataInterface.designInterface().nameTextOfAccount());
+                publisherAddName.publish(dataInterface.designInterface().nameTextOfData());
+                publisherAddAccount.publish(dataInterface.designInterface().nameTextOfAccount());
             }
         };
     }

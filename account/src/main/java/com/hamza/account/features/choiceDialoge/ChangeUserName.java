@@ -50,7 +50,7 @@ public class ChangeUserName extends TextInputDialog {
                 users.setUsername(string);
                 int update = daoFactory.usersDao().update(users);
                 if (update == 1) {
-                    dataPublisher.getPublisherAddUser().setAvailability(string);
+                    dataPublisher.getPublisherAddUser().publish(string);
                     Thread thread = new Thread(() -> Platform.runLater(AllAlerts::alertSave));
                     thread.start();
                 } else throw new DaoException(Setting_Language.MESSAGE);

@@ -71,7 +71,7 @@ public class UserController implements TableInterface<Users> {
 
             @Override
             public void afterDelete() {
-                UserController.this.publisherAddUser.notifyObservers();
+                UserController.this.publisherAddUser.publish();
             }
         };
     }
@@ -209,7 +209,7 @@ public class UserController implements TableInterface<Users> {
                     users.setActive(b);
                     int update = daoFactory.usersDao().updateCase(users);
                     if (update == 1) {
-                        publisherAddUser.notifyObservers();
+                        publisherAddUser.publish();
                     }
                 }
             }

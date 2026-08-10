@@ -816,7 +816,7 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
         Thread thread = new Thread(() -> {
             try {
                 Thread.sleep(5000);
-                dataInterface.publisherPurchaseOrSales().notifyObservers();
+                dataInterface.publisherPurchaseOrSales().publish();
                 if (getInvoiceBackupAfterSave())
                     SaveDatabaseFile.saveBeforeClose(false);
             } catch (Exception e) {

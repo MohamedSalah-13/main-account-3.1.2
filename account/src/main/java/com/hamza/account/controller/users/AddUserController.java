@@ -99,7 +99,7 @@ public class AddUserController implements AddInterface {
 
     @Override
     public void afterSaved() {
-        publisherAddUsers.notifyObservers();
+        publisherAddUsers.publish();
         resetData();
     }
 

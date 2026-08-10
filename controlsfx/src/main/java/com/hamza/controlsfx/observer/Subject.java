@@ -14,6 +14,4 @@ public interface Subject<T> {
 
     void removeObserver(Observer<T> observer);
 
-    void notifyObservers();
-
 }

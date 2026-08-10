@@ -54,7 +54,7 @@ public class EmployeesController implements TableInterface<Employees> {
 
             @Override
             public void afterDelete() {
-                dataPublisher.getPublisherAddEmployee().notifyObservers();
+                dataPublisher.getPublisherAddEmployee().publish();
             }
         };
     }

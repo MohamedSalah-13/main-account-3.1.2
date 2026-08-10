@@ -124,7 +124,7 @@ public class AddSubGroupController {
             @Override
             public void afterSaveOrDelete() {
                 try {
-                    publisherAddGroup.setAvailability(Setting_Language.WORD_SUB_G);
+                    publisherAddGroup.publish(Setting_Language.WORD_SUB_G);
                     resetData();
                     subGroupsObservableList.clear();
                     subGroupsObservableList.setAll(supGroupService.getSubGroupsList());

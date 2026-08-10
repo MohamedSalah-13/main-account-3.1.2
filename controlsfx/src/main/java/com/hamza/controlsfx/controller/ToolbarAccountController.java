@@ -114,7 +114,7 @@ public class ToolbarAccountController<T> {
             if (i >= 1) {
                 AllAlerts.alertDelete();
                 toolbarAccountInt.afterSaveOrDelete();
-                toolbarAccountInt.publisherTable().notifyObservers();
+                toolbarAccountInt.publisherTable().publish();
             } else AllAlerts.alertError(Setting_Language.PLEASE_INSERT_ALL_DATA);
         }
     }
@@ -131,7 +131,7 @@ public class ToolbarAccountController<T> {
             if (i != null) {
                 AllAlerts.alertSave();
                 toolbarAccountInt.afterSaveOrDelete();
-                toolbarAccountInt.publisherTable().notifyObservers();
+                toolbarAccountInt.publisherTable().publish();
             }
         }
     }

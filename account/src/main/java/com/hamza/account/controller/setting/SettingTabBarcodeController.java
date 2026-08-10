@@ -115,7 +115,7 @@ public class SettingTabBarcodeController implements Initializable {
             var update = priceSelService.update(selPriceTypeModel);
             if (update >= 1) {
                 var map = priceSelService.getIntegerStringHashMap();
-                publisher.setAvailability(map);
+                publisher.publish(map);
             }
         } catch (DaoException e) {
             AllAlerts.showExceptionDialog(e);

@@ -201,7 +201,7 @@ public class ImportDataFromExcelFileController implements Initializable, AppSett
             new TaskProgressViewAction(voidTask).start(primaryStage);
             voidTask.setOnSucceeded(workerStateEvent -> {
                 btnClear.fire();
-                publisherAddItem.notifyObservers();
+                publisherAddItem.publish();
                 AllAlerts.alertSave();
                 primaryStage.close();
             });

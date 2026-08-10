@@ -249,7 +249,7 @@ public class AccountDetailsController<T1 extends BasePurchasesAndSales, T2 exten
                 if (AllAlerts.confirmDelete()) {
                     int i = nameAndAccountInterface.accountDao().deleteById(selectedItem.getId());
                     if (i == 1) {
-                        dataInterface.nameAndAccountInterface().addAccountPublisher().notifyObservers();
+                        dataInterface.nameAndAccountInterface().addAccountPublisher().publish();
                     }
                 }
             }
