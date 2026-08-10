@@ -1,39 +1,15 @@
 -- =====================================================================
--- V1 - Baseline schema: tables, indexes and seed data.
---
--- Derived from the manual bundle clients used to run by hand (V001_tables,
--- V002_audit_log, V003_trigger_company, V004_trigger_items, V006_user_insert,
--- V007_user_truncate, V008_view_table).
---
--- Views, triggers and stored procedures no longer live here. They moved to
--- R__views.sql, R__triggers.sql and R__procedures.sql - repeatable migrations
--- that Flyway re-executes whenever their checksum changes, so every client
--- converges on the current definition no matter which version it came from.
--- What remains here is only what must run exactly once: CREATE TABLE, the
--- indexes, and the seed rows.
---
--- Bringing an old client's schema forward is NOT this file's job - V1 is never
--- executed on an existing database, only stamped over it by baselineOnMigrate.
--- That work lives in V4__converge_legacy.sql, which every client reaches as a
--- normal versioned migration.
---
--- Every statement here is still idempotent, so the file is safe to execute
--- against a database that already holds part of the schema rather than only
--- against an empty one:
---   * CREATE TABLE IF NOT EXISTS for every table.
---   * Indexes go through add_index_if_missing, because MySQL has no
---     CREATE INDEX IF NOT EXISTS.
---   * The seed block is wrapped in seed_initial_data(), which returns early
---     when the users table is already populated.
---
--- Two deliberate changes carried over from the original scripts:
---   * the leading DROP DATABASE / CREATE DATABASE / USE statements are gone -
---     Flyway is already connected to the target schema, and DROP DATABASE here
---     would destroy a client's data.
---   * `DEFINER = root@localhost` is stripped from the procedures, so they are
---     created as CURRENT_USER. Clients rarely connect as root, and naming
---     another definer requires SUPER/SET_USER_ID and fails outright.
--- =====================================================================
+-- #####################################################################
+-- ## Tables and indexes                                              ##
+-- #####################################################################
+-- Repeated from V1 on purpose. A client that Flyway stamped rather than
+-- executed never ran V1, so a v3.x database reaching this file has none of the
+-- tables added since: stock_movements, items_package, user_shifts, audit_log,
+-- treasury_movements, system_info, database_migrations. The column work further
+-- down addresses tables that already exist; these statements supply the ones
+-- that do not, and every one of them is IF NOT EXISTS, so a database that
+-- already has them is untouched.
+-- #####################################################################
 
 -- #####################################################################
 -- ## Tables and indexes                             (was V001_tables) ##
@@ -1019,162 +995,615 @@ CREATE TABLE IF NOT EXISTS database_migrations (
 );
 
 
--- #####################################################################
--- ## Seed data (admin user, lookups, permissions) (was V006_user_insert) ##
--- #####################################################################
 
--- The seed rows below must only ever land in a brand-new database. Wrapping
--- them in a guarded procedure keeps this file safe to execute against an
--- existing client schema: a database that already has an admin user is left
--- untouched, while a fresh one gets the full set of lookup rows.
-DROP PROCEDURE IF EXISTS seed_initial_data;
+-- V4 - Convergence of legacy schemas.
+--
+-- V1 only ever runs on a brand-new database. Every existing client is stamped
+-- with it by baselineOnMigrate without it being executed, so anything V1 says
+-- about repairing an old schema never reaches the databases that need it - the
+-- stamp is taken on trust, and the marker-table guard in DatabaseMigrationService
+-- checks seven tables and no views, which is how a database missing
+-- view_customer_receivables was recorded as being the v4.1.3 schema.
+--
+-- This file closes that gap by being a versioned migration instead. A client
+-- sitting at V3 runs it and converges; a fresh install runs V1 through V3 first
+-- and then reaches this as a no-op. No Flyway configuration change and no
+-- hand-editing of flyway_schema_history at each client.
+--
+-- CREATE TABLE IF NOT EXISTS is silent about a table that already exists with
+-- the wrong shape - an `items` from v3.x keeps its old columns and gains none
+-- of the new ones. What follows walks every table whose definition changed
+-- since the old releases and brings the columns, types and constraints up to
+-- the current shape, checking information_schema before touching anything.
+--
+-- It runs unconditionally rather than being gated on a detected version: the
+-- old schemas carry no version marker to detect, which is precisely what made
+-- the manual upgrade path skippable in the first place. On a database that is
+-- already current, every statement here is a no-op.
+--
+-- Tested against a v3.x database built from the original script.sql: repeated
+-- runs leave the schema and the data unchanged, and the result differs from a
+-- fresh install only by the legacy-only columns it deliberately does not drop
+-- (company.trial_*, company.installation_date, custom.status, suppliers.status).
+-- =====================================================================
+
+SET FOREIGN_KEY_CHECKS = 0;
+
+-- ---------------------------------------------------------------------
+-- Foreign keys over columns that are about to change type.
+--
+-- v3.0.0 declared total_buy.invoice_number and total_sales.invoice_number as
+-- INT; the current schema has them BIGINT. Widening the parent while the child
+-- purchase.invoice_number is still INT breaks the foreign key between them, and
+-- MySQL refuses outright:
+--
+--   ERROR 3780: Referencing column 'invoice_number' and referenced column
+--   'invoice_number' in foreign key constraint
+--   'purchase_total_buy_invoice_number_fk' are incompatible
+--
+-- SET FOREIGN_KEY_CHECKS = 0 does not help - it suppresses row validation, not
+-- the type check on the constraint definition. The keys have to come off, both
+-- sides retyped, and the keys put back. This is what V000_forrienKey.sql did
+-- before V001_update_database.sql in the old manual bundle, and it has to run
+-- here for the same reason and in the same order.
+--
+-- Idempotent on a current database: the drops find the keys, the MODIFYs are
+-- no-ops because the columns are already BIGINT, and the same keys go back on.
+-- total_buy_re_total_buy_invoice_number_fk is dropped without being restored,
+-- matching V1 - that key exists only in the legacy schema.
+-- ---------------------------------------------------------------------
+DROP PROCEDURE IF EXISTS DropForeignKeyIfExists;
 DELIMITER $$
-CREATE PROCEDURE seed_initial_data()
+CREATE PROCEDURE DropForeignKeyIfExists(IN target_table VARCHAR(255), IN fk_name VARCHAR(255))
 BEGIN
-    IF (SELECT COUNT(*) FROM users) > 0 THEN
-        SELECT 'seed skipped - database already populated' AS note;
-    ELSE
-        # this use after create table and triggers
-        INSERT INTO users(id, user_name, user_pass, user_available)
-        VALUES (1, 'admin', 'admin', 1);
-        INSERT INTO type_price (name)
-        VALUES ('سعر1'),
-               ('سعر2'),
-               ('سعر3');
-
-        INSERT INTO table_area (area_name)
-        values ('القاهرة');
-
-        INSERT INTO custom(name, limit_num, price_id)
-        VALUES ('بيع نقدي', 5000, 1);
-
-        INSERT INTO suppliers(name)
-        VALUES ('مورد عام');
-
-        INSERT INTO units(unit_name)
-        VALUES ('قطعة'),
-               ('كرتونه');
-        INSERT INTO stocks(stock_name)
-        VALUES ('الرئيسي');
-        INSERT INTO main_group(name_g)
-        VALUES ('عام 1');
-        INSERT INTO sub_group(name, main_id)
-        VALUES ('فرع 1', 1);
-
-        insert into jobs (id, job_name)
-        values (2, 'المدير'),
-               (1, 'المسئول'),
-               (4, 'مندوب'),
-               (3, 'موظف');
-
-        insert into permission (name_permission)
-        values ('purchase_show'),
-               ('purchase_update'),
-               ('purchase_delete'),
-               ('total_purchase_show'),
-               ('total_purchase_show_invoice'),
-               ('purchase_re_show'),
-               ('purchase_re_update'),
-               ('purchase_re_delete'),
-               ('total_purchase_re_show'),
-               ('total_purchase_re_show_invoice'),
-               ('sales_show'),
-               ('sales_update'),
-               ('sales_delete'),
-               ('total_sales_show'),
-               ('total_sales_show_invoice'),
-               ('sales_re_show'),
-               ('sales_re_update'),
-               ('sales_re_delete'),
-               ('total_sales_re_show'),
-               ('total_sales_re_show_invoice'),
-               ('items_show'),
-               ('items_update'),
-               ('items_delete'),
-               ('items_add_excel'),
-               ('stock_show'),
-               ('stock_update'),
-               ('stock_delete'),
-               ('stock_convert_show'),
-               ('stock_convert_update'),
-               ('stock_convert_delete'),
-               ('main_group_show'),
-               ('main_group_update'),
-               ('main_group_delete'),
-               ('sub_group_show'),
-               ('sub_group_update'),
-               ('sub_group_delete'),
-               ('inventory_show'),
-               ('treasury_show'),
-               ('treasury_update'),
-               ('treasury_delete'),
-               ('units_show'),
-               ('units_update'),
-               ('units_delete'),
-               ('sel_price_show'),
-               ('sel_price_update'),
-               ('sel_price_delete'),
-               ('customer_show'),
-               ('customer_update'),
-               ('customer_delete'),
-               ('customer_account_show'),
-               ('customer_account_update'),
-               ('customer_account_delete'),
-               ('suppliers_show'),
-               ('suppliers_update'),
-               ('suppliers_delete'),
-               ('suppliers_account_show'),
-               ('suppliers_account_update'),
-               ('suppliers_account_delete'),
-               ('expenses_show'),
-               ('expenses_update'),
-               ('expenses_delete'),
-               ('employee_show'),
-               ('employee_update'),
-               ('employee_delete'),
-               ('setting_show'),
-               ('setting_company_show'),
-               ('setting_backup_show'),
-               ('setting_other_show'),
-               ('setting_items_show'),
-               ('setting_shows_show'),
-               ('invoice_profit_show'),
-               ('employees_show_salary'),
-               ('show_column_buy_price'),
-               ('update_data_before_month'),
-               ('show_data_before_month'),
-               ('setting_update_name'),
-               ('setting_update_pass'),
-               ('reports_show_summary'),
-               ('reports_show_items'),
-               ('reports_show_customers'),
-               ('reports_show_suppliers'),
-               ('reports_show_customers_account_area'),
-               ('reports_show_sales'),
-               ('reports_show_purchase'),
-               ('reports_show_day_details'),
-               ('reports_show_delegate'),
-               ('reports_show_profit');
-
-
-
-        INSERT INTO employees (column_name, birth_date, hire_date, salary, job)
-        VALUES ('بيع مباشر', CURRENT_DATE(), CURRENT_DATE(), 0, 4);
-        INSERT INTO treasury(t_name, amount)
-        VALUES ('الخزينة الرئيسية', 0);
-
-        # this use with type
-        insert into expenses (id, expenses_name)
-        values (1, 'مرتبات'),
-               (2, 'كهرباء'),
-               (3, 'سلف'),
-               (4, 'مياه'),
-               (5, 'إيجارات'),
-               (6, 'أخرى');
-
+    IF EXISTS (SELECT 1 FROM information_schema.TABLE_CONSTRAINTS
+               WHERE CONSTRAINT_SCHEMA = DATABASE()
+                 AND TABLE_NAME       = target_table
+                 AND CONSTRAINT_NAME  = fk_name
+                 AND CONSTRAINT_TYPE  = 'FOREIGN KEY')
+    THEN
+        SET @query = CONCAT('ALTER TABLE `', target_table, '` DROP FOREIGN KEY `', fk_name, '`');
+        PREPARE stmt FROM @query; EXECUTE stmt; DEALLOCATE PREPARE stmt;
     END IF;
 END$$
 DELIMITER ;
 
-CALL seed_initial_data();
-DROP PROCEDURE IF EXISTS seed_initial_data;
+CALL DropForeignKeyIfExists('purchase',           'purchase_total_buy_invoice_number_fk');
+CALL DropForeignKeyIfExists('sales',              'sales_total_invoice_number_fk');
+CALL DropForeignKeyIfExists('purchase_re',        'purchase_re_total_buy_re_id_fk');
+CALL DropForeignKeyIfExists('sales_re',           'sales_re_total_sales_re_id_fk');
+CALL DropForeignKeyIfExists('total_buy_re',       'total_buy_re_total_buy_invoice_number_fk');
+CALL DropForeignKeyIfExists('total_buy_re',       'total_buy_re_suppliers_sup_id_fk');
+CALL DropForeignKeyIfExists('total_sales_re',     'total_sales_re_custom_id_fk');
+CALL DropForeignKeyIfExists('suppliers_accounts', 'suppliers_accounts_suppliers_id_fk');
+CALL DropForeignKeyIfExists('customers_accounts', 'customers_accounts_custom_id_fk');
+
+-- Parents first, then children, so the pair is never half-converted.
+ALTER TABLE total_buy      MODIFY invoice_number BIGINT NOT NULL;
+ALTER TABLE total_sales    MODIFY invoice_number BIGINT NOT NULL;
+ALTER TABLE total_buy_re   MODIFY id BIGINT NOT NULL;
+ALTER TABLE total_sales_re MODIFY id BIGINT NOT NULL;
+ALTER TABLE suppliers      MODIFY id INT NOT NULL;
+ALTER TABLE custom         MODIFY id INT NOT NULL;
+
+ALTER TABLE purchase    MODIFY invoice_number BIGINT NOT NULL;
+ALTER TABLE sales       MODIFY invoice_number BIGINT NOT NULL;
+ALTER TABLE purchase_re MODIFY invoice_number BIGINT NOT NULL;
+ALTER TABLE sales_re    MODIFY invoice_number BIGINT NOT NULL;
+
+ALTER TABLE purchase ADD CONSTRAINT purchase_total_buy_invoice_number_fk
+    FOREIGN KEY (invoice_number) REFERENCES total_buy (invoice_number) ON UPDATE CASCADE ON DELETE CASCADE;
+ALTER TABLE sales ADD CONSTRAINT sales_total_invoice_number_fk
+    FOREIGN KEY (invoice_number) REFERENCES total_sales (invoice_number) ON UPDATE CASCADE ON DELETE CASCADE;
+ALTER TABLE purchase_re ADD CONSTRAINT purchase_re_total_buy_re_id_fk
+    FOREIGN KEY (invoice_number) REFERENCES total_buy_re (id) ON UPDATE CASCADE ON DELETE CASCADE;
+ALTER TABLE sales_re ADD CONSTRAINT sales_re_total_sales_re_id_fk
+    FOREIGN KEY (invoice_number) REFERENCES total_sales_re (id) ON UPDATE CASCADE ON DELETE CASCADE;
+ALTER TABLE total_buy_re ADD CONSTRAINT total_buy_re_suppliers_sup_id_fk
+    FOREIGN KEY (sup_id) REFERENCES suppliers (id);
+ALTER TABLE total_sales_re ADD CONSTRAINT total_sales_re_custom_id_fk
+    FOREIGN KEY (sup_id) REFERENCES custom (id);
+ALTER TABLE suppliers_accounts ADD CONSTRAINT suppliers_accounts_suppliers_id_fk
+    FOREIGN KEY (account_code) REFERENCES suppliers (id);
+ALTER TABLE customers_accounts ADD CONSTRAINT customers_accounts_custom_id_fk
+    FOREIGN KEY (account_code) REFERENCES custom (id);
+
+DROP PROCEDURE IF EXISTS DropForeignKeyIfExists;
+
+DELIMITER $$
+
+-- أ. إجراء لإضافة أو تعديل الأعمدة
+DROP PROCEDURE IF EXISTS ManageColumn$$
+CREATE PROCEDURE ManageColumn(IN t_name VARCHAR(255), IN c_name VARCHAR(255), IN col_def TEXT)
+BEGIN
+    DECLARE col_exists INT;
+    SELECT COUNT(*) INTO col_exists FROM information_schema.COLUMNS 
+    WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = t_name AND COLUMN_NAME = c_name;
+
+    IF col_exists > 0 THEN
+        SET @query = CONCAT('ALTER TABLE ', t_name, ' MODIFY COLUMN ', c_name, ' ', col_def);
+    ELSE
+        SET @query = CONCAT('ALTER TABLE ', t_name, ' ADD COLUMN ', c_name, ' ', col_def);
+    END IF;
+    PREPARE stmt FROM @query; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+END$$
+
+-- ب. إجراء لتغيير اسم العمود بأمان (بدون خطأ إذا تم تغييره مسبقاً)
+DROP PROCEDURE IF EXISTS RenameColumnSafe$$
+CREATE PROCEDURE RenameColumnSafe(IN t_name VARCHAR(255), IN old_c VARCHAR(255), IN new_c VARCHAR(255), IN col_def TEXT)
+BEGIN
+    DECLARE old_exists INT; DECLARE new_exists INT;
+    SELECT COUNT(*) INTO old_exists FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = t_name AND COLUMN_NAME = old_c;
+    SELECT COUNT(*) INTO new_exists FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = t_name AND COLUMN_NAME = new_c;
+
+    IF new_exists = 0 AND old_exists > 0 THEN
+        SET @query = CONCAT('ALTER TABLE ', t_name, ' CHANGE COLUMN ', old_c, ' ', new_c, ' ', col_def);
+        PREPARE stmt FROM @query; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+    ELSEIF new_exists > 0 THEN
+        SET @query = CONCAT('ALTER TABLE ', t_name, ' MODIFY COLUMN ', new_c, ' ', col_def);
+        PREPARE stmt FROM @query; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+    END IF;
+END$$
+
+-- ج. إجراء لإضافة وتحديث القيود (Constraints & Indexes)
+DROP PROCEDURE IF EXISTS ManageConstraint$$
+CREATE PROCEDURE ManageConstraint(IN t_name VARCHAR(255), IN c_name VARCHAR(255), IN const_def TEXT, IN c_type VARCHAR(50))
+BEGIN
+    DECLARE const_exists INT;
+
+    IF c_type = 'UNIQUE' THEN
+        SELECT COUNT(*) INTO const_exists FROM information_schema.STATISTICS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = t_name AND INDEX_NAME = c_name;
+    ELSE
+        SELECT COUNT(*) INTO const_exists FROM information_schema.TABLE_CONSTRAINTS WHERE CONSTRAINT_SCHEMA = DATABASE() AND TABLE_NAME = t_name AND CONSTRAINT_NAME = c_name;
+    END IF;
+
+    -- The original one-shot script dropped the constraint and re-added it. That
+    -- cannot work here: items_stock_uk backs a foreign key, so dropping it fails
+    -- with errno 1553, and on a live database the window between the drop and the
+    -- re-add is a window with no constraint at all. Add-if-missing converges to
+    -- the same end state and is safe to repeat.
+    IF const_exists = 0 THEN
+        SET @query = CONCAT('ALTER TABLE ', t_name, ' ADD CONSTRAINT ', c_name, ' ', const_def);
+        PREPARE stmt FROM @query; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+    END IF;
+END$$
+
+-- د. إجراء ترحيل البيانات وحذف الجداول القديمة بأمان
+DROP PROCEDURE IF EXISTS MigrateDataSafe$$
+CREATE PROCEDURE MigrateDataSafe()
+BEGIN
+    DECLARE tbl_exists INT;
+    -- ترحيل أسعار العناصر
+    SELECT COUNT(*) INTO tbl_exists FROM information_schema.tables WHERE table_schema=DATABASE() AND table_name='items_price';
+    IF tbl_exists > 0 THEN
+        SET @q1 = 'UPDATE items i JOIN items_price ip1 ON i.id = ip1.item_id AND ip1.price_id = 1 SET i.sel_price1 = ip1.sel_price where i.id != 0';
+        PREPARE stmt1 FROM @q1; EXECUTE stmt1; DEALLOCATE PREPARE stmt1;
+        SET @q2 = 'DROP TABLE items_price';
+        PREPARE stmt2 FROM @q2; EXECUTE stmt2; DEALLOCATE PREPARE stmt2;
+    END IF;
+
+    -- نسخ احتياطي لـ processes_data
+    SELECT COUNT(*) INTO tbl_exists FROM information_schema.tables WHERE table_schema=DATABASE() AND table_name='processes_data';
+    IF tbl_exists > 0 THEN
+        SET @q1 = 'CREATE TABLE IF NOT EXISTS processes_data_backup AS SELECT * FROM processes_data';
+        PREPARE stmt1 FROM @q1; EXECUTE stmt1; DEALLOCATE PREPARE stmt1;
+        SET @q2 = 'DROP TABLE processes_data';
+        PREPARE stmt2 FROM @q2; EXECUTE stmt2; DEALLOCATE PREPARE stmt2;
+    END IF;
+END$$
+
+DELIMITER ;
+
+-- ---------------------------------------------------------------------
+-- Columns and constraints, table by table.
+-- ---------------------------------------------------------------------
+
+CALL ManageColumn('company', 'updated_at', 'TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP');
+
+-- v3.x declared user_name as VARCHAR(100) NOT NULL where the current schema has
+-- it nullable. Converging on the wider type rather than the narrower one: the
+-- width is harmless either way, but MODIFY-ing 100 down to 30 would truncate any
+-- name a client had already stored.
+CALL ManageColumn('users', 'user_name', 'VARCHAR(100) NULL');
+CALL ManageColumn('users', 'user_pass', 'VARCHAR(255) NULL');
+CALL ManageColumn('users', 'updated_at', 'TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP');
+CALL ManageConstraint('users', 'users_activity_chk', 'CHECK (user_activity IN (0, 1))', 'CHECK');
+CALL ManageConstraint('users', 'users_available_chk', 'CHECK (user_available IN (0, 1))', 'CHECK');
+
+CALL ManageColumn('main_group', 'updated_at', 'TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP');
+CALL ManageColumn('stocks', 'updated_at', 'TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP');
+
+CALL ManageColumn('treasury', 'amount', 'DECIMAL(14, 2) NOT NULL DEFAULT 0');
+CALL ManageColumn('treasury', 'updated_at', 'TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP');
+
+CALL ManageColumn('type_price', 'updated_at', 'TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP');
+
+CALL ManageColumn('units', 'value_d', 'DECIMAL(14, 3) NOT NULL DEFAULT 1');
+CALL ManageColumn('units', 'updated_at', 'TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP');
+
+CALL ManageColumn('employees', 'salary', 'DECIMAL(14, 2) NOT NULL');
+CALL ManageColumn('employees', 'updated_at', 'TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP');
+
+CALL ManageColumn('sub_group', 'updated_at', 'TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP');
+
+CALL ManageColumn('suppliers', 'id', 'int AUTO_INCREMENT');
+CALL ManageColumn('suppliers', 'notes', 'LONGTEXT NULL');
+CALL ManageColumn('suppliers', 'first_balance', 'DECIMAL(14, 2) NOT NULL DEFAULT 0');
+CALL ManageColumn('suppliers', 'updated_at', 'TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP');
+
+CALL ManageColumn('custom', 'id', 'int AUTO_INCREMENT');
+-- Legacy custom.price_id carried no default, so an insert that omits it fails.
+CALL ManageColumn('custom', 'price_id', 'INT NOT NULL DEFAULT 1');
+CALL ManageColumn('custom', 'notes', 'LONGTEXT NULL');
+CALL ManageColumn('custom', 'limit_num', 'DECIMAL(14, 2) NOT NULL');
+CALL ManageColumn('custom', 'first_balance', 'DECIMAL(14, 2) NOT NULL DEFAULT 0');
+CALL RenameColumnSafe('custom', 'date_insert', 'created_at', 'TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP');
+CALL ManageColumn('custom', 'updated_at', 'TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP');
+
+CALL ManageColumn('items', 'buy_price', 'DECIMAL(14, 2) NOT NULL DEFAULT 0');
+CALL ManageColumn('items', 'sel_price1', 'DECIMAL(14, 2) NOT NULL DEFAULT 0');
+CALL ManageColumn('items', 'sel_price2', 'DECIMAL(14, 2) NOT NULL DEFAULT 0');
+CALL ManageColumn('items', 'sel_price3', 'DECIMAL(14, 2) NOT NULL DEFAULT 0');
+CALL ManageColumn('items', 'mini_quantity', 'DECIMAL(14, 3) NOT NULL DEFAULT 1');
+CALL ManageColumn('items', 'first_balance', 'DECIMAL(14, 3) NOT NULL DEFAULT 0');
+CALL ManageColumn('items', 'item_active', 'TINYINT(1) NOT NULL DEFAULT 1');
+CALL ManageColumn('items', 'item_has_validity', 'TINYINT(1) NOT NULL DEFAULT 0');
+CALL ManageColumn('items', 'number_validity_days', 'INT NOT NULL DEFAULT 0');
+CALL ManageColumn('items', 'alert_days_before_expire', 'INT NOT NULL DEFAULT 0');
+CALL ManageColumn('items', 'item_has_package', 'TINYINT(1) NOT NULL DEFAULT 0');
+CALL RenameColumnSafe('items', 'date_insert', 'created_at', 'TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP');
+CALL ManageColumn('items', 'updated_at', 'TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP');
+
+CALL ManageColumn('items_stock', 'first_balance', 'DECIMAL(14, 3) NOT NULL DEFAULT 0');
+CALL ManageColumn('items_stock', 'current_quantity', 'DECIMAL(14, 3) NOT NULL DEFAULT 0');
+CALL ManageConstraint('items_stock', 'items_stock_uk', 'UNIQUE (item_id, stock_id)', 'UNIQUE');
+
+CALL ManageColumn('items_units', 'quantity', 'DECIMAL(14, 3) NOT NULL');
+CALL ManageColumn('items_units', 'buy_price', 'DECIMAL(14, 2) NOT NULL');
+CALL ManageColumn('items_units', 'sel_price', 'DECIMAL(14, 2) NOT NULL');
+CALL ManageColumn('items_units', 'updated_at', 'TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP');
+CALL ManageConstraint('items_units', 'items_units_quantity_chk', 'CHECK (quantity > 0)', 'CHECK');
+
+CALL ManageColumn('treasury_deposit_expenses', 'amount', 'DECIMAL(14, 2) NOT NULL');
+CALL ManageColumn('treasury_deposit_expenses', 'deposit_or_expenses', 'TINYINT NOT NULL DEFAULT 1');
+CALL ManageColumn('treasury_deposit_expenses', 'updated_at', 'TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP');
+CALL ManageConstraint('treasury_deposit_expenses', 'treasury_deposit_expenses_type_chk', 'CHECK (deposit_or_expenses IN (1, 2))', 'CHECK');
+
+CALL ManageColumn('treasury_transfers', 'amount', 'DECIMAL(14, 2) NOT NULL');
+CALL ManageColumn('treasury_transfers', 'notes', 'LONGTEXT NULL');
+CALL ManageColumn('treasury_transfers', 'updated_at', 'TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP');
+CALL ManageConstraint('treasury_transfers', 'treasury_transfers_not_same_chk', 'CHECK (treasury_from <> treasury_to)', 'CHECK');
+CALL ManageConstraint('treasury_transfers', 'treasury_transfers_amount_chk', 'CHECK (amount > 0)', 'CHECK');
+
+CALL ManageColumn('expenses_details', 'amount', 'DECIMAL(14, 2) NOT NULL DEFAULT 0');
+CALL ManageColumn('expenses_details', 'updated_at', 'TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP');
+CALL ManageConstraint('expenses_details', 'expenses_details_amount_chk', 'CHECK (amount >= 0)', 'CHECK');
+
+CALL ManageColumn('total_buy', 'invoice_number', 'BIGINT NOT NULL');
+CALL ManageColumn('total_buy', 'discount', 'DECIMAL(14, 2) NOT NULL');
+CALL ManageColumn('total_buy', 'paid_up', 'DECIMAL(14, 2) NOT NULL');
+CALL ManageColumn('total_buy', 'notes', 'LONGTEXT NULL');
+CALL ManageColumn('total_buy', 'updated_at', 'TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP');
+CALL ManageConstraint('total_buy', 'total_buy_invoice_type_chk', 'CHECK (invoice_type IN (1, 2))', 'CHECK');
+
+CALL ManageColumn('total_buy_re', 'id', 'BIGINT NOT NULL');
+CALL ManageColumn('total_buy_re', 'discount', 'DECIMAL(14, 2) NOT NULL');
+CALL ManageColumn('total_buy_re', 'paid_to_treasury', 'DECIMAL(14, 2) NOT NULL');
+CALL ManageColumn('total_buy_re', 'notes', 'LONGTEXT NULL');
+CALL ManageColumn('total_buy_re', 'updated_at', 'TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP');
+CALL ManageConstraint('total_buy_re', 'total_buy_re_invoice_type_chk', 'CHECK (invoice_type IN (1, 2))', 'CHECK');
+
+CALL ManageColumn('total_sales', 'invoice_number', 'BIGINT NOT NULL');
+CALL ManageColumn('total_sales', 'discount', 'DECIMAL(14, 2) NOT NULL');
+CALL ManageColumn('total_sales', 'paid_up', 'DECIMAL(14, 2) NOT NULL');
+CALL ManageColumn('total_sales', 'notes', 'LONGTEXT NULL');
+CALL ManageColumn('total_sales', 'updated_at', 'TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP');
+CALL ManageConstraint('total_sales', 'total_sales_invoice_type_chk', 'CHECK (invoice_type IN (1, 2))', 'CHECK');
+
+CALL ManageColumn('total_sales_re', 'id', 'BIGINT NOT NULL');
+CALL ManageColumn('total_sales_re', 'discount', 'DECIMAL(14, 2) NOT NULL');
+CALL ManageColumn('total_sales_re', 'paid_from_treasury', 'DECIMAL(14, 2) NOT NULL');
+CALL ManageColumn('total_sales_re', 'notes', 'LONGTEXT NULL');
+CALL ManageColumn('total_sales_re', 'updated_at', 'TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP');
+CALL ManageConstraint('total_sales_re', 'total_sales_re_invoice_type_chk', 'CHECK (invoice_type IN (1, 2))', 'CHECK');
+
+CALL ManageColumn('suppliers_accounts', 'account_num', 'BIGINT AUTO_INCREMENT');
+CALL ManageColumn('suppliers_accounts', 'purchase', 'DECIMAL(14, 2) NOT NULL DEFAULT 0');
+CALL ManageColumn('suppliers_accounts', 'paid', 'DECIMAL(14, 2) NOT NULL');
+CALL ManageColumn('suppliers_accounts', 'notes', 'LONGTEXT NULL');
+CALL ManageColumn('suppliers_accounts', 'invoice_number_return', 'BIGINT NOT NULL DEFAULT 0');
+CALL ManageColumn('suppliers_accounts', 'updated_at', 'TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP');
+
+CALL ManageColumn('customers_accounts', 'account_num', 'BIGINT AUTO_INCREMENT');
+CALL ManageColumn('customers_accounts', 'paid', 'DECIMAL(14, 2) NOT NULL');
+CALL ManageColumn('customers_accounts', 'notes', 'LONGTEXT NULL');
+CALL ManageColumn('customers_accounts', 'purchase', 'DECIMAL(14, 2) NOT NULL DEFAULT 0');
+CALL ManageColumn('customers_accounts', 'invoice_number_return', 'BIGINT NOT NULL DEFAULT 0');
+CALL RenameColumnSafe('customers_accounts', 'date_insert', 'created_at', 'TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP');
+CALL ManageColumn('customers_accounts', 'updated_at', 'TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP');
+
+CALL ManageColumn('purchase', 'invoice_number', 'BIGINT NOT NULL');
+CALL ManageColumn('purchase', 'quantity', 'DECIMAL(14, 3) NOT NULL');
+CALL ManageColumn('purchase', 'price', 'DECIMAL(14, 2) NOT NULL');
+CALL ManageColumn('purchase', 'discount', 'DECIMAL(14, 2) NOT NULL DEFAULT 0');
+CALL ManageColumn('purchase', 'type_value', 'DECIMAL(14, 3) NOT NULL DEFAULT 1');
+CALL ManageColumn('purchase', 'expiration_date', 'DATE NULL');
+CALL ManageConstraint('purchase', 'purchase_quantity_chk', 'CHECK (quantity > 0)', 'CHECK');
+
+CALL ManageColumn('purchase_re', 'invoice_number', 'BIGINT NOT NULL');
+CALL ManageColumn('purchase_re', 'quantity', 'DECIMAL(14, 3) NOT NULL');
+CALL ManageColumn('purchase_re', 'price', 'DECIMAL(14, 2) NOT NULL');
+CALL ManageColumn('purchase_re', 'discount', 'DECIMAL(14, 2) NOT NULL DEFAULT 0');
+CALL ManageColumn('purchase_re', 'type_value', 'DECIMAL(14, 3) NOT NULL DEFAULT 1');
+CALL ManageColumn('purchase_re', 'expiration_date', 'DATE NULL');
+CALL ManageConstraint('purchase_re', 'purchase_re_quantity_chk', 'CHECK (quantity > 0)', 'CHECK');
+
+CALL ManageColumn('sales', 'invoice_number', 'BIGINT NOT NULL');
+CALL ManageColumn('sales', 'quantity', 'DECIMAL(14, 3) NOT NULL');
+CALL ManageColumn('sales', 'price', 'DECIMAL(14, 2) NOT NULL');
+CALL ManageColumn('sales', 'buy_price', 'DECIMAL(14, 2) NOT NULL');
+CALL ManageColumn('sales', 'total_sel_price', 'DECIMAL(14, 2) NOT NULL DEFAULT 0');
+CALL ManageColumn('sales', 'total_buy_price', 'DECIMAL(14, 2) NOT NULL DEFAULT 0');
+CALL ManageColumn('sales', 'total_profit', 'DECIMAL(14, 2) NOT NULL DEFAULT 0');
+CALL ManageColumn('sales', 'discount', 'DECIMAL(14, 2) NOT NULL DEFAULT 0');
+CALL ManageColumn('sales', 'type_value', 'DECIMAL(14, 3) NOT NULL DEFAULT 1');
+CALL ManageColumn('sales', 'expiration_date', 'DATE NULL');
+CALL ManageColumn('sales', 'item_has_package', 'TINYINT(1) NOT NULL DEFAULT 0');
+CALL ManageConstraint('sales', 'sales_quantity_chk', 'CHECK (quantity > 0)', 'CHECK');
+
+CALL ManageColumn('sales_re', 'invoice_number', 'BIGINT NOT NULL');
+CALL ManageColumn('sales_re', 'quantity', 'DECIMAL(14, 3) NOT NULL');
+CALL ManageColumn('sales_re', 'price', 'DECIMAL(14, 2) NOT NULL');
+CALL ManageColumn('sales_re', 'buy_price', 'DECIMAL(14, 2) NOT NULL DEFAULT 0');
+CALL ManageColumn('sales_re', 'total_sel_price', 'DECIMAL(14, 2) NOT NULL DEFAULT 0');
+CALL ManageColumn('sales_re', 'total_buy_price', 'DECIMAL(14, 2) NOT NULL DEFAULT 0');
+CALL ManageColumn('sales_re', 'total_profit', 'DECIMAL(14, 2) NOT NULL DEFAULT 0');
+CALL ManageColumn('sales_re', 'discount', 'DECIMAL(14, 2) NOT NULL DEFAULT 0');
+CALL ManageColumn('sales_re', 'type_value', 'DECIMAL(14, 3) NOT NULL DEFAULT 1');
+CALL ManageColumn('sales_re', 'expiration_date', 'DATE NULL');
+CALL ManageConstraint('sales_re', 'sales_re_quantity_chk', 'CHECK (quantity > 0)', 'CHECK');
+
+CALL ManageColumn('targeted_sales', 'target', 'DECIMAL(14, 2) NOT NULL');
+CALL ManageColumn('targeted_sales', 'target_ratio1', 'DECIMAL(6, 2) NOT NULL DEFAULT 100');
+CALL ManageColumn('targeted_sales', 'rate_1', 'DECIMAL(6, 2) NOT NULL DEFAULT 0');
+CALL ManageColumn('targeted_sales', 'target_ratio2', 'DECIMAL(6, 2) NOT NULL DEFAULT 0');
+CALL ManageColumn('targeted_sales', 'rate_2', 'DECIMAL(6, 2) NOT NULL DEFAULT 0');
+CALL ManageColumn('targeted_sales', 'target_ratio3', 'DECIMAL(6, 2) NOT NULL DEFAULT 0');
+CALL ManageColumn('targeted_sales', 'rate_3', 'DECIMAL(6, 2) NOT NULL DEFAULT 0');
+CALL ManageColumn('targeted_sales', 'updated_at', 'TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP');
+
+CALL ManageColumn('user_permission', 'check_status', 'TINYINT NOT NULL DEFAULT 0');
+CALL ManageColumn('user_permission', 'updated_at', 'TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP');
+CALL ManageConstraint('user_permission', 'user_permission_uk', 'UNIQUE (permission_id, user_id)', 'UNIQUE');
+CALL ManageConstraint('user_permission', 'user_permission_chk', 'CHECK (check_status IN (0, 1))', 'CHECK');
+
+-- ---------------------------------------------------------------------
+-- Constraints on tables that predate the convergence helpers.
+-- ---------------------------------------------------------------------
+-- قيود Stock Transfer الجديدة
+CALL ManageConstraint('stock_transfer', 'stock_transfer_from_fk', 'FOREIGN KEY (stock_from) REFERENCES stocks (stock_id)', 'FOREIGN KEY');
+CALL ManageConstraint('stock_transfer', 'stock_transfer_to_fk', 'FOREIGN KEY (stock_to) REFERENCES stocks (stock_id)', 'FOREIGN KEY');
+CALL ManageConstraint('stock_transfer', 'stock_transfer_not_same_chk', 'CHECK (stock_from <> stock_to)', 'CHECK');
+
+CALL ManageConstraint('stock_transfer_list', 'stock_transfer_list_items_id_fk', 'FOREIGN KEY (item_id) REFERENCES items (id)', 'FOREIGN KEY');
+CALL ManageConstraint('stock_transfer_list', 'stock_transfer_list_quantity_chk', 'CHECK (quantity > 0)', 'CHECK');
+
+-- ---------------------------------------------------------------------
+-- ---------------------------------------------------------------------
+-- Column types that v3.0.0 got wrong and V001_update_database never covered.
+--
+-- The old manual script was written against a later "old" schema than v3.0.0,
+-- so these thirteen columns fell through it. Found by diffing a migrated v3.0.0
+-- database against a fresh install, column by column.
+--
+-- The money columns matter most: v3.0.0 stored invoice totals as DOUBLE, which
+-- carries rounding error into every sum the reports run. DECIMAL(14,2) is what
+-- the current schema uses and what the balances depend on.
+--
+-- The narrowings to TINYINT are safe: each of those columns is a flag already
+-- constrained to (0,1) or (1,2) by a CHECK added further down.
+-- ---------------------------------------------------------------------
+CALL ManageColumn('customers_accounts',  'numberInv',      'BIGINT NOT NULL');
+CALL ManageColumn('suppliers_accounts',  'numberInv',      'BIGINT NOT NULL');
+CALL ManageColumn('stock_transfer_list', 'quantity',       'DECIMAL(14, 3) NOT NULL');
+
+CALL ManageColumn('total_buy',       'total',        'DECIMAL(14, 2) NOT NULL');
+CALL ManageColumn('total_buy',       'invoice_type', 'TINYINT NOT NULL DEFAULT 1');
+CALL ManageColumn('total_buy_re',    'total',        'DECIMAL(14, 2) NOT NULL');
+CALL ManageColumn('total_buy_re',    'invoice_type', 'TINYINT NOT NULL DEFAULT 1');
+CALL ManageColumn('total_sales',     'total',        'DECIMAL(14, 2) NOT NULL');
+CALL ManageColumn('total_sales',     'invoice_type', 'TINYINT NOT NULL DEFAULT 1');
+CALL ManageColumn('total_sales_re',  'total',        'DECIMAL(14, 2) NOT NULL');
+CALL ManageColumn('total_sales_re',  'invoice_type', 'TINYINT NOT NULL DEFAULT 1');
+
+CALL ManageColumn('users', 'user_activity',  'TINYINT NOT NULL DEFAULT 1');
+CALL ManageColumn('users', 'user_available', 'TINYINT NOT NULL DEFAULT 0');
+
+-- Legacy data moves. Each one checks first, so they are inert on a
+-- database that has already been through them.
+-- ---------------------------------------------------------------------
+
+-- Folds items_price into items.sel_price1 and drops processes_data,
+-- both only if those legacy tables are still present.
+CALL MigrateDataSafe();
+
+-- تهيئة stock_movements للمرة الأولى فقط
+INSERT INTO stock_movements (item_id, stock_id, movement_date, movement_type, quantity_in, user_id)
+SELECT is2.item_id, is2.stock_id, NOW(), 'OPENING', is2.first_balance, 1
+FROM items_stock is2
+WHERE is2.first_balance > 0 AND NOT EXISTS (SELECT 1 FROM stock_movements);
+
+
+-- Recompute on-hand quantities from the movement ledger. Idempotent by
+-- construction - it derives the value rather than adjusting it.
+UPDATE items_stock ist
+SET current_quantity = (SELECT COALESCE(SUM(quantity_in) - SUM(quantity_out), 0)
+                        FROM stock_movements sm
+                        WHERE sm.item_id = ist.item_id
+                          AND sm.stock_id = ist.stock_id);
+
+-- database_migrations.version is UNIQUE, but CREATE TABLE IF NOT EXISTS above
+-- cannot retrofit that onto a database where the table already exists - either
+-- from an earlier build of this file, or from the hand-run v4.1.0 delta. The
+-- check is on "any unique index over version" rather than on a constraint name,
+-- because the delta's inline UNIQUE produced an index named `version` while the
+-- named constraint produces database_migrations_version_uk; either one counts.
+DROP PROCEDURE IF EXISTS fix_migrations_version_uk;
+DELIMITER $$
+CREATE PROCEDURE fix_migrations_version_uk()
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM information_schema.STATISTICS
+                   WHERE table_schema = DATABASE()
+                     AND table_name   = 'database_migrations'
+                     AND column_name  = 'version'
+                     AND non_unique   = 0)
+    THEN
+        -- A duplicate version would make the index fail to build. Keep the
+        -- earliest row of each version and drop the rest.
+        DELETE d FROM database_migrations d
+            JOIN database_migrations keep
+              ON keep.version = d.version AND keep.id < d.id;
+
+        ALTER TABLE database_migrations
+            ADD CONSTRAINT database_migrations_version_uk UNIQUE (version);
+    END IF;
+END$$
+DELIMITER ;
+
+CALL fix_migrations_version_uk();
+DROP PROCEDURE IF EXISTS fix_migrations_version_uk;
+
+-- The original script did TRUNCATE TABLE type_price followed by a re-insert of
+-- the three defaults. That is safe as a one-shot upgrade from a v3.x database,
+-- but destructive here: a client who renamed their price tiers would silently
+-- lose the names every time this file ran. Seeding only when the table is empty
+-- gives an old database the rows it lacks and leaves a populated one alone.
+INSERT INTO type_price (name)
+SELECT * FROM (SELECT 'سعر1' UNION ALL SELECT 'سعر2' UNION ALL SELECT 'سعر3') AS d
+WHERE NOT EXISTS (SELECT 1 FROM type_price);
+
+DROP TABLE IF EXISTS `sales_package`;
+
+-- ---------------------------------------------------------------------
+-- Retire the v3.0.0 trigger set.
+--
+-- v3.0.0 logged every change into a `processes_data` table through ~60 AFTER
+-- triggers calling handle_processes_data(). v4 replaced that mechanism with
+-- audit_log, and MigrateDataSafe() above drops processes_data - which leaves
+-- those triggers pointing at a table that no longer exists. The failure is not
+-- subtle: the next INSERT into items dies with
+--
+--   ERROR 1146: Table 'processes_data' doesn't exist
+--
+-- and the application is unusable. The old manual bundle never dropped them
+-- either, so this hits any v3.0.0 client that was upgraded by hand as well.
+--
+-- The remaining v3.0.0 triggers here are not broken - they set defaults and
+-- guard deletes - but v4 does not define them, so leaving them would keep a
+-- migrated database behaving differently from a fresh install forever.
+--
+-- Listed by name rather than discovered from information_schema because MySQL
+-- rejects DROP TRIGGER through the prepared-statement protocol (ERROR 1295), so
+-- a cursor over the catalogue cannot execute the drop it finds.
+-- ---------------------------------------------------------------------
+DROP TRIGGER IF EXISTS after_company_update;
+DROP TRIGGER IF EXISTS after_custom_account_delete;
+DROP TRIGGER IF EXISTS after_custom_account_insert;
+DROP TRIGGER IF EXISTS after_custom_account_update;
+DROP TRIGGER IF EXISTS after_custom_delete;
+DROP TRIGGER IF EXISTS after_custom_insert;
+DROP TRIGGER IF EXISTS after_custom_update;
+DROP TRIGGER IF EXISTS after_employees_delete;
+DROP TRIGGER IF EXISTS after_employees_insert;
+DROP TRIGGER IF EXISTS after_employees_update;
+DROP TRIGGER IF EXISTS after_expenses_details_delete;
+DROP TRIGGER IF EXISTS after_expenses_details_insert;
+DROP TRIGGER IF EXISTS after_expenses_details_update;
+DROP TRIGGER IF EXISTS after_items_delete;
+DROP TRIGGER IF EXISTS after_items_insert;
+DROP TRIGGER IF EXISTS after_items_units_delete;
+DROP TRIGGER IF EXISTS after_items_units_insert;
+DROP TRIGGER IF EXISTS after_items_units_update;
+DROP TRIGGER IF EXISTS after_main_group_delete;
+DROP TRIGGER IF EXISTS after_main_group_insert;
+DROP TRIGGER IF EXISTS after_main_group_update;
+DROP TRIGGER IF EXISTS after_stock_transfer_delete;
+DROP TRIGGER IF EXISTS after_stock_transfer_insert;
+DROP TRIGGER IF EXISTS after_stock_transfer_update;
+DROP TRIGGER IF EXISTS after_stocks_delete;
+DROP TRIGGER IF EXISTS after_stocks_insert;
+DROP TRIGGER IF EXISTS after_stocks_update;
+DROP TRIGGER IF EXISTS after_sub_group_delete;
+DROP TRIGGER IF EXISTS after_sub_group_insert;
+DROP TRIGGER IF EXISTS after_sub_group_update;
+DROP TRIGGER IF EXISTS after_supplier_account_delete;
+DROP TRIGGER IF EXISTS after_supplier_account_insert;
+DROP TRIGGER IF EXISTS after_supplier_account_update;
+DROP TRIGGER IF EXISTS after_suppliers_delete;
+DROP TRIGGER IF EXISTS after_suppliers_insert;
+DROP TRIGGER IF EXISTS after_suppliers_update;
+DROP TRIGGER IF EXISTS after_total_buy_delete;
+DROP TRIGGER IF EXISTS after_total_buy_insert;
+DROP TRIGGER IF EXISTS after_total_buy_re_delete;
+DROP TRIGGER IF EXISTS after_total_buy_re_insert;
+DROP TRIGGER IF EXISTS after_total_buy_re_update;
+DROP TRIGGER IF EXISTS after_total_buy_update;
+DROP TRIGGER IF EXISTS after_total_sales_delete;
+DROP TRIGGER IF EXISTS after_total_sales_insert;
+DROP TRIGGER IF EXISTS after_total_sales_re_delete;
+DROP TRIGGER IF EXISTS after_total_sales_re_insert;
+DROP TRIGGER IF EXISTS after_total_sales_re_update;
+DROP TRIGGER IF EXISTS after_total_sales_update;
+DROP TRIGGER IF EXISTS after_treasury_delete;
+DROP TRIGGER IF EXISTS after_treasury_deposit_expenses_delete;
+DROP TRIGGER IF EXISTS after_treasury_deposit_expenses_insert;
+DROP TRIGGER IF EXISTS after_treasury_deposit_expenses_update;
+DROP TRIGGER IF EXISTS after_treasury_insert;
+DROP TRIGGER IF EXISTS after_treasury_transfers_delete;
+DROP TRIGGER IF EXISTS after_treasury_transfers_insert;
+DROP TRIGGER IF EXISTS after_treasury_transfers_update;
+DROP TRIGGER IF EXISTS after_treasury_update;
+DROP TRIGGER IF EXISTS after_units_delete;
+DROP TRIGGER IF EXISTS after_units_insert;
+DROP TRIGGER IF EXISTS after_units_update;
+DROP TRIGGER IF EXISTS before_custom_account_insert;
+DROP TRIGGER IF EXISTS before_custom_insert;
+DROP TRIGGER IF EXISTS before_employees_insert;
+DROP TRIGGER IF EXISTS before_expenses_details_insert;
+DROP TRIGGER IF EXISTS before_items_insert;
+DROP TRIGGER IF EXISTS before_main_group_delete;
+DROP TRIGGER IF EXISTS before_main_group_insert;
+DROP TRIGGER IF EXISTS before_purchase_insert;
+DROP TRIGGER IF EXISTS before_purchase_re_insert;
+DROP TRIGGER IF EXISTS before_sales_insert;
+DROP TRIGGER IF EXISTS before_sales_re_insert;
+DROP TRIGGER IF EXISTS before_stock_transfer_insert;
+DROP TRIGGER IF EXISTS before_stocks_delete;
+DROP TRIGGER IF EXISTS before_stocks_insert;
+DROP TRIGGER IF EXISTS before_sub_group_delete;
+DROP TRIGGER IF EXISTS before_sub_group_insert;
+DROP TRIGGER IF EXISTS before_suppliers_accounts_insert;
+DROP TRIGGER IF EXISTS before_suppliers_insert;
+DROP TRIGGER IF EXISTS before_total_buy_insert;
+DROP TRIGGER IF EXISTS before_total_buy_re_insert;
+DROP TRIGGER IF EXISTS before_total_sales_insert;
+DROP TRIGGER IF EXISTS before_total_sales_re_insert;
+DROP TRIGGER IF EXISTS before_treasury_delete;
+DROP TRIGGER IF EXISTS before_treasury_deposit_expenses_insert;
+DROP TRIGGER IF EXISTS before_treasury_insert;
+DROP TRIGGER IF EXISTS before_treasury_transfers_insert;
+DROP TRIGGER IF EXISTS before_units_delete;
+DROP TRIGGER IF EXISTS before_units_insert;
+DROP TRIGGER IF EXISTS before_users_delete;
+
+-- Orphaned by the same change.
+DROP PROCEDURE IF EXISTS handle_processes_data;
+DROP PROCEDURE IF EXISTS max_stock_transfer_id;
+
+SET FOREIGN_KEY_CHECKS = 1;
+
+-- The helpers exist only for the duration of this migration.
+DROP PROCEDURE IF EXISTS ManageColumn;
+DROP PROCEDURE IF EXISTS RenameColumnSafe;
+DROP PROCEDURE IF EXISTS ManageConstraint;
+DROP PROCEDURE IF EXISTS MigrateDataSafe;
