@@ -10,6 +10,7 @@ import com.hamza.account.controller.others.ServiceRegistry;
 import com.hamza.account.features.events.GroupLevel;
 import com.hamza.account.features.events.GroupsChanged;
 import com.hamza.account.features.events.ItemSaved;
+import com.hamza.account.features.events.UnitsChanged;
 import com.hamza.account.model.domain.ItemsModel;
 import com.hamza.account.model.domain.ItemsUnitsModel;
 import com.hamza.account.model.domain.SubGroups;
@@ -64,6 +65,11 @@ public class AddItemController implements AppSettingInterface {
     private final DataPublisher dataPublisher;
     private final Subscriptions subscriptions = new Subscriptions();
     private final EventBus eventBus = ServiceRegistry.get(EventBus.class);
+    /**
+     * Backs the unit combo, so a unit added while this dialog is open can be
+     * dropped in without rebuilding the combo and its listeners.
+     */
+    private final ObservableList<String> unitNames = FXCollections.observableArrayList();
     private final ImageChoose imageChoose = new ImageChoose();
 
     private final UnitsService unitsService = ServiceRegistry.get(UnitsService.class);
@@ -120,6 +126,14 @@ public class AddItemController implements AppSettingInterface {
         this.dataPublisher = dataPublisher;
 
         if (eventBus != null) {
+            // The units screen can be opened over this dialog; keep the selection,
+            // since renaming some other unit must not silently change this item's.
+            subscriptions.add(eventBus.subscribe(UnitsChanged.class, event -> {
+                var selected = comboType.getSelectionModel().getSelectedItem();
+                unitNames.setAll(getUnitsModelNames());
+                if (unitNames.contains(selected)) comboType.getSelectionModel().select(selected);
+            }));
+
             subscriptions.add(eventBus.subscribe(GroupsChanged.class, event -> {
                 if (event.level() == GroupLevel.MAIN) {
                     comboMainGroup.setItems(FXCollections.observableList(getMainGroupsNames()));
@@ -153,7 +167,7 @@ public class AddItemController implements AppSettingInterface {
 //        if (ADD_PACKAGE_TO_ITEMS) addPackaged();
         selectData();
 
-        tabPane.getTabs().getFirst().setDisable(true);
+//        tabPane.getTabs().getFirst().setDisable(true);
         tabPane.getSelectionModel().select(1);
 
         InputValidator.makeNumericOnly(textExtraBarcode);
@@ -240,9 +254,8 @@ public class AddItemController implements AppSettingInterface {
     }
 
     private void comboTypeOption() {
-        var unitsModelNames = getUnitsModelNames();
-        ObservableList<String> unitsModelNamesObservableList = FXCollections.observableArrayList(unitsModelNames);
-        FilteredList<String> filteredItems = new FilteredList<>(unitsModelNamesObservableList, s -> true);
+        unitNames.setAll(getUnitsModelNames());
+        FilteredList<String> filteredItems = new FilteredList<>(unitNames, s -> true);
         comboType.setItems(filteredItems);
         comboType.getSelectionModel().selectFirst();
 
