@@ -57,7 +57,6 @@ public class DownLoadApplication extends Application {
         ServiceRegistry.register(UsersService.class, new UsersService(daoFactory));
         ServiceRegistry.register(MainGroupService.class, new MainGroupService(daoFactory));
         ServiceRegistry.register(SupGroupService.class, new SupGroupService(daoFactory));
-        ServiceRegistry.register(TreasuryTransferService.class, new TreasuryTransferService(daoFactory));
         ServiceRegistry.register(CardItemService.class, new CardItemService(daoFactory));
         ServiceRegistry.register(ExpensesService.class, new ExpensesService(daoFactory));
         ServiceRegistry.register(ExpensesDetailsService.class, new ExpensesDetailsService(daoFactory));
@@ -71,7 +70,6 @@ public class DownLoadApplication extends Application {
         ServiceRegistry.register(AccountCustomerService.class, new AccountCustomerService(daoFactory));
         ServiceRegistry.register(AccountSupplierService.class, new AccountSupplierService(daoFactory));
         ServiceRegistry.register(AuditLogService.class, new AuditLogService(daoFactory));
-        ServiceRegistry.register(DepositService.class, new DepositService(daoFactory));
         ServiceRegistry.register(TreasuryBalanceService.class, new TreasuryBalanceService(daoFactory));
         ServiceRegistry.register(ItemMiniQuantityService.class, new ItemMiniQuantityService(daoFactory));
         ServiceRegistry.register(AreaService.class, new AreaService(daoFactory));

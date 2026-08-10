@@ -8,10 +8,10 @@ import com.hamza.account.controller.model.ModelPrintInvoice;
 import com.hamza.account.controller.others.ServiceRegistry;
 import com.hamza.account.controller.search.ItemsSearch;
 import com.hamza.account.controller.setting.SettingTabLanguageController;
+import com.hamza.account.features.events.InvoiceSaved;
 import com.hamza.account.features.key_setting.MoveRow;
 import com.hamza.account.features.key_setting.UpdateInterface;
 import com.hamza.account.features.key_setting.UpdateQuantity;
-import com.hamza.account.features.events.InvoiceSaved;
 import com.hamza.account.features.notification.StockLevelAlert;
 import com.hamza.account.interfaces.api.DataInterface;
 import com.hamza.account.interfaces.api.TotalsDataInterface;
@@ -1124,7 +1124,6 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
         var items = itemsService.getItemByItemIdAndStockId(purchase.getItems().getId(), DefaultStock.ID);
         items.setNameItem(purchase.getItems().getNameItem());
         items.setItemsUnitsModelList(new ArrayList<>());
-        items.setItems_packageList(new ArrayList<>());
 
         // update price
         var unitIdPurchase = purchase.getUnitsType().getValue();

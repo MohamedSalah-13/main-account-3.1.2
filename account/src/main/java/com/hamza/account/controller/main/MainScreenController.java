@@ -1,8 +1,10 @@
 package com.hamza.account.controller.main;
 
 import com.hamza.account.config.FxmlConstants;
+import com.hamza.account.controller.others.ServiceRegistry;
 import com.hamza.account.controller.reports.ModernDashboardApp;
 import com.hamza.account.controller.reports.MonthlySalesInterface;
+import com.hamza.account.features.events.UserRenamed;
 import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.model.dao.MonthlySalesViewDao;
 import com.hamza.account.type.UserPermissionType;
@@ -11,8 +13,6 @@ import com.hamza.account.view.MonthlyView;
 import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.language.Setting_Language;
-import com.hamza.account.controller.others.ServiceRegistry;
-import com.hamza.account.features.events.UserRenamed;
 import com.hamza.controlsfx.observer.EventBus;
 import com.jfoenix.controls.JFXDrawer;
 import com.jfoenix.controls.JFXHamburger;
@@ -65,7 +65,6 @@ public class MainScreenController extends MainItems implements Initializable {
 
     private MenuButtonSetting menuButtonSetting;
     private MainToolbarController toolbarController;
-    private BackgroundSlideshow slideshow;
 
     public MainScreenController(DaoFactory daoFactory) throws Exception {
         super(daoFactory);
@@ -74,13 +73,10 @@ public class MainScreenController extends MainItems implements Initializable {
     @Override
     public void initialize(URL url, ResourceBundle resourceBundle) {
         menuButtonSetting = new MenuButtonSetting(tabPane);
-//        showImage();
         menuBarSetting();
         dontShowData();
         mainToolbarSetting();
         otherSetting();
-//        action();
-//        setBackgroundImage();
         addTabContextMenu();
 
         if (LogApplication.usersVo.getId() == 1) {
@@ -154,9 +150,7 @@ public class MainScreenController extends MainItems implements Initializable {
         menuButtonSetting.configureButton(mainRightPaneController.getBtnSuppliers(), getNameSup().namesData());
         menuButtonSetting.configureButton(mainRightPaneController.getBtnAccountSuppliers(), getAccountButtonsSup());
         /*----------------------------------------------- Employees -----------------------------------------------*/
-        menuButtonSetting.configureButton(mainRightPaneController.getBtnAddDeposit(), getTreasuryButtons().addDeposit());
         menuButtonSetting.configureButton(mainRightPaneController.getBtnTreasuryDetails(), getTreasuryButtons().treasuryDetails());
-        menuButtonSetting.configureButton(mainRightPaneController.getBtnConvertTreasury(), getTreasuryButtons().convertTreasury());
         menuButtonSetting.configureButton(mainRightPaneController.getBtnProcess(), getTreasuryButtons().openProcess());
         menuButtonSetting.configureButton(mainRightPaneController.getBtnExpenses(), getTreasuryButtons().openExpenses());
         /*----------------------------------------------- Setting -----------------------------------------------*/

@@ -34,7 +34,7 @@ public class MainRightPaneController implements Initializable {
     private Button btnSales, btnTotalSale, btnPurchase, btnTotalPurchase, btnPurchaseRe, btnTotalPurchaseRe, btnItems,
             btnAddItem, btnUnits, btnMainGroup, btnInventory, btnCustomer, btnAccountCustom, btnSuppliers,
             btnAccountSuppliers,
-            btnAddDeposit, btnTreasuryDetails, btnConvertTreasury, btnProcess, btnExpenses, btnHome, btnUsers, btnBackup, btnClose;
+            btnTreasuryDetails, btnProcess, btnExpenses, btnHome, btnUsers, btnBackup, btnClose;
     @FXML
     private TitledPane paneSales, panePurchase, paneItems, paneCustom, paneSuppliers, paneTreasury, paneSetting;
     @FXML

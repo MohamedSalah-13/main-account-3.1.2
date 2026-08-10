@@ -531,7 +531,6 @@ public class ItemsController extends LoadData {
 
     private void updateItemAndRefresh(ItemsModel item, TableView<ItemsModel> tableView) throws DaoException {
         item.setItemsUnitsModelList(new ArrayList<>());
-        item.setItems_packageList(new ArrayList<>());
         item.setUsers(LogApplication.usersVo);
         var i = itemsService.commitItemUpdate(item);
         if (i >= 0) {

@@ -98,14 +98,6 @@ public enum DaoFactory {
         return new TreasuryDao();
     }
 
-    public TreasuryDepositExpensesDao getTreasuryDepositExpensesDao() {
-        return new TreasuryDepositExpensesDao();
-    }
-
-    public TreasuryTransferDao treasuryTransferDao() {
-        return new TreasuryTransferDao();
-    }
-
     public CustomerAccountDao customerAccountDao() {
         return new CustomerAccountDao();
     }
@@ -150,9 +142,6 @@ public enum DaoFactory {
         return new EarningsDao();
     }
 
-    public DepositDao depositDao() {
-        return new DepositDao(this);
-    }
 
     public TreasuryBalanceDao treasuryBalanceDao() {
         return new TreasuryBalanceDao();
