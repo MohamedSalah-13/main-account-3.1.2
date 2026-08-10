@@ -76,3 +76,6 @@ replay_pid*
 
 imageDownload.png
 account/image.png
+
+# Written by maven-shade-plugin on every package, and carries the version with it
+account/dependency-reduced-pom.xml
