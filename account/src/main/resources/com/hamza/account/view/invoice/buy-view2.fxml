@@ -169,7 +169,6 @@
                                                 <Label fx:id="labelNum" styleClass="form-label" text="Code" />
                                                 <Label fx:id="labelName" styleClass="form-label" text="Name" GridPane.rowIndex="1" />
                                                 <Label fx:id="labelDate" styleClass="form-label" text="Date" GridPane.columnIndex="2" />
-                                                <Label fx:id="labelStockName" styleClass="form-label" text="Stoke" GridPane.columnIndex="4" />
                                                 <Label fx:id="labelDelegate" styleClass="form-label" text="Delegate" GridPane.columnIndex="2" GridPane.rowIndex="1" />
                                                 <Label fx:id="labelPrice" styleClass="form-label" text="Price" GridPane.columnIndex="2" GridPane.rowIndex="3" />
                                                 <Label fx:id="labelSearchBy" styleClass="form-label" text="Search" GridPane.columnIndex="2" GridPane.rowIndex="2" />
@@ -183,7 +182,6 @@
 
                                                 <TextField fx:id="txtNum" editable="false" promptText="رقم الفاتورة" GridPane.columnIndex="1" />
                                                 <DatePicker fx:id="date" editable="false" GridPane.columnIndex="3" />
-                                                <ComboBox fx:id="comboStock" disable="true" maxWidth="1.7976931348623157E308" GridPane.columnIndex="5" />
                                                 <ComboBox fx:id="comboDelegate" maxWidth="1.7976931348623157E308" GridPane.columnIndex="3" GridPane.rowIndex="1" />
                                                 <ComboBox fx:id="comboTreasury" disable="true" maxWidth="1.7976931348623157E308" GridPane.columnIndex="5" GridPane.rowIndex="1" />
                                                 <TextField fx:id="txtItemBalance" editable="false" promptText="balance" GridPane.columnIndex="5" GridPane.rowIndex="2" />

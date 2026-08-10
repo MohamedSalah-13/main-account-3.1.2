@@ -59,7 +59,6 @@ public class ItemsController extends LoadData {
     private final Publisher<ItemsModel> publisherAddItem;
     private final TableView<ItemsModel> tableView = new TableView<>();
     private final ItemsService itemsService = ServiceRegistry.get(ItemsService.class);
-    private final StockService stockService = ServiceRegistry.get(StockService.class);
     private final MainGroupService mainGroupService = ServiceRegistry.get(MainGroupService.class);
 //    private final SupGroupService supGroupService = ServiceRegistry.get(SupGroupService.class);
     private final SelPriceItemService selPriceService = ServiceRegistry.get(SelPriceItemService.class);
@@ -101,10 +100,8 @@ public class ItemsController extends LoadData {
         menuItemConvertGroup.setText(HEADER_TEXT);
         menuItemConvertGroup.setDisable(true);
         // combo items
-        ObservableList<String> observableListStock = FXCollections.observableArrayList(getStockNames());
         ObservableList<String> observableListMain = FXCollections.observableArrayList(getMainGroupsNames());
 
-        dataPublisher.getPublisherAddStock().addObserver(string -> observableListStock.setAll(getStockNames()));
         dataPublisher.getPublisherAddMainGroup().addObserver(string -> observableListMain.setAll(getMainGroupsNames()));
         publisherAddItem.addObserver(message -> btnRefresh.fire());
     }
@@ -123,15 +120,6 @@ public class ItemsController extends LoadData {
             logErrors(e);
             return new ArrayList<>();
         }
-    }
-
-    private List<String> getStockNames() {
-        try {
-            return stockService.getStockNames();
-        } catch (DaoException e) {
-            logErrors(e);
-        }
-        return new ArrayList<>();
     }
 
     private void table_data() {

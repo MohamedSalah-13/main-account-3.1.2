@@ -1,5 +1,6 @@
 package com.hamza.account.controller.pos;
 
+import com.hamza.account.config.DefaultStock;
 
 import com.hamza.account.config.Image_Setting;
 import com.hamza.account.controller.main.DataPublisher;
@@ -651,7 +652,7 @@ public class PosController extends ButtonSetting {
                 totalSales.setDate(datePicker.getValue().toString());
                 totalSales.setTotal(roundToTwoDecimalPlaces(totalAmount));
                 totalSales.setDiscount(roundToTwoDecimalPlaces(discountValue));
-                totalSales.setStockData(new Stock(1));
+                totalSales.setStockData(new Stock(DefaultStock.ID));
                 totalSales.setEmployeeObject(new Employees(1));
                 totalSales.setTreasuryModel(new Treasury(1));
                 totalSales.setUsers(LogApplication.usersVo);

@@ -1,6 +1,5 @@
 package com.hamza.account.controller.items;
 
-import com.hamza.account.controller.main.DataPublisher;
 import com.hamza.account.controller.others.ServiceRegistry;
 import com.hamza.account.model.domain.ItemsModel;
 import com.hamza.account.openFxml.FxmlPath;
@@ -18,7 +17,6 @@ import com.hamza.controlsfx.util.NumberUtils;
 import javafx.animation.PauseTransition;
 import javafx.beans.value.ObservableValue;
 import javafx.collections.FXCollections;
-import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
 import javafx.scene.text.Text;
@@ -35,15 +33,11 @@ import static com.hamza.controlsfx.language.Setting_Language.*;
 @FxmlPath(pathFile = "items/inventory-view.fxml")
 public class InventoryController {
 
-    private final DataPublisher dataPublisher;
-    private final ObservableList<String> observableList = FXCollections.observableArrayList();
     private final TableView<ItemsModel> tableView = new TableView<>();
     private final int ROWS_PER_PAGE = 50;
 
     private final ItemsService itemsService = ServiceRegistry.get(ItemsService.class);
     private final StockService stockService = ServiceRegistry.get(StockService.class);
-    @FXML
-    private ComboBox<String> comboStock;
     @FXML
     private TextField textSearch;
     @FXML
@@ -53,17 +47,11 @@ public class InventoryController {
     @FXML
     private Pagination pagination;
 
-    public InventoryController(DataPublisher dataPublisher) {
-        this.dataPublisher = dataPublisher;
-    }
-
     @FXML
     public void initialize() {
-        addComboStock();
         actionButton();
         getTable();
         initializePagination();
-        dataPublisher.getPublisherAddStock().addObserver(message -> addComboStock());
     }
 
     private void initializePagination() {
@@ -148,25 +136,24 @@ public class InventoryController {
         tableView.getColumns().add(new AddColumnMix<ItemsModel, Double>().getTableColumn(SALES, columnInterfaceSales));
     }
 
-    private void addComboStock() {
+    /**
+     * Header for the printed inventory sheet. This used to be whichever warehouse
+     * the user had picked; with a single stock it is simply that stock's name, read
+     * from the database so a renamed stock still prints correctly.
+     */
+    private String stockName() {
         try {
-            observableList.clear();
-            observableList.addAll(stockService.getStockNames());
-            observableList.addFirst(Setting_Language.WORD_ALL);
-            comboStock.getSelectionModel().selectFirst();
+            return stockService.getDefaultStock().getName();
         } catch (DaoException e) {
             log.error(e.getMessage(), e);
-            AllAlerts.alertError(e.getMessage());
+            return "";
         }
     }
 
     private void actionButton() {
-        comboStock.setItems(observableList);
-//        comboStock.valueProperty().addListener((observableValue, s, t1) -> searchAction());
 //        checkShowZeroBalance.selectedProperty().addListener((observableValue, s, t1) -> searchAction());
         pagination.currentPageIndexProperty().addListener((observableValue, s, t1) -> updateTableView(t1.intValue()));
-        btnPrint.setOnAction(actionEvent -> new Print_Reports().printInventoryByTable(tableView.getItems(), comboStock.getSelectionModel().getSelectedItem()));
-        btnPrint.disableProperty().bind(comboStock.valueProperty().isNull());
+        btnPrint.setOnAction(actionEvent -> new Print_Reports().printInventoryByTable(tableView.getItems(), stockName()));
 
         pagination.currentPageIndexProperty().addListener((observableValue, s, t1) -> {
             calculateTotalBalances();

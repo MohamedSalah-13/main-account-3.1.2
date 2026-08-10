@@ -3,7 +3,6 @@ package com.hamza.account.controller.setting;
 import com.hamza.account.config.Image_Setting;
 import com.hamza.account.controller.dataSetting.AddDataController;
 import com.hamza.account.controller.dataSetting.AddDataInterface;
-import com.hamza.account.controller.dataSetting.impl.AddDataStocks;
 import com.hamza.account.controller.dataSetting.impl.AddDataTreasury;
 import com.hamza.account.controller.main.DataPublisher;
 import com.hamza.account.controller.others.ServiceRegistry;
@@ -11,7 +10,6 @@ import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.model.domain.Company;
 import com.hamza.account.openFxml.FxmlPath;
 import com.hamza.account.openFxml.OpenFxmlApplication;
-import com.hamza.account.service.StockService;
 import com.hamza.account.service.TreasuryService;
 import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.database.DaoException;
@@ -49,7 +47,6 @@ public class SettingCompanyController implements Initializable {
     private final ImageChoose imageChoose = new ImageChoose();
     private final DaoFactory daoFactory;
     private final DataPublisher dataPublisher;
-    private final StockService stockService = ServiceRegistry.get(StockService.class);
     private final TreasuryService treasuryService = ServiceRegistry.get(TreasuryService.class);
     private final Image defaultImage = new Image(new Image_Setting().defaultBlog);
     private Company company = new Company();
@@ -86,13 +83,6 @@ public class SettingCompanyController implements Initializable {
     }
 
     private void addDataToSetting() {
-        // add stocks
-        var addDataStocks = new AddDataStocks();
-        addDataStocks.setStockService(stockService);
-        addDataStocks.setPublisherAddStock(dataPublisher.getPublisherAddStock());
-        addDataStocks.setDaoFactory(daoFactory);
-        addData(addDataStocks);
-
         // add treasury
         var addDataTreasury = new AddDataTreasury();
         addDataTreasury.setTreasuryService(treasuryService);

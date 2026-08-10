@@ -41,8 +41,6 @@ public class TotalsPurchaseImplDesign implements TotalDesignInterface<Total_buy>
         Callback<TableColumn.CellDataFeatures<Total_buy, String>, ObservableValue<String>> colNameType = f -> f.getValue().getInvoiceType().typeProperty();
         addColumn(tableView, Setting_Language.WORD_TYPE, 3, colNameType);
 
-        Callback<TableColumn.CellDataFeatures<Total_buy, String>, ObservableValue<String>> colStockName = f -> f.getValue().getStockData().nameProperty();
-        addColumn(tableView, Setting_Language.WORD_STOCK, tableView.getColumns().size(), colStockName);
 
     }
 

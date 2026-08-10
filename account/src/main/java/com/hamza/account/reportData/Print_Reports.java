@@ -170,27 +170,6 @@ public class Print_Reports extends ReportCompany {
         jasperData.printJasperPrint(JasperReportPaths.Report.INVENTORY_BY_TABLE, Setting_Language.WORD_ITEMS, map, 1, "");
     }
 
-    public void printStockTransfer(@NotNull Integer stockId, @NotNull Integer stockEnd) {
-        HashMap<String, Object> company = getCompany();
-        company.put("transfer_id", stockId);
-        company.put("transfer_end", stockEnd);
-        try {
-            withConnection(connection ->
-                    jasperData.printJasperPrintWithConnection(
-                            JasperReportPaths.Report.CONVERT_STOCK,
-                            Setting_Language.STORE_TRANSFERS,
-                            company,
-                            1,
-                            "",
-                            connection
-                    )
-            );
-        } catch (Exception e) {
-            log.error("Failed to print stock transfer report", e);
-            throw new RuntimeException(e);
-        }
-    }
-
     public void printCardItem(@NotNull Integer itemId, double purchase, double sales, double purchase_re, double sales_re, double first_balance
             , double amount, @NotNull String dateFrom, @NotNull String dateTo) throws DaoException, SQLException {
         HashMap<String, Object> company = getCompany();

@@ -1,5 +1,6 @@
 package com.hamza.account.controller.invoice;
 
+import com.hamza.account.config.DefaultStock;
 import com.hamza.account.config.Image_Setting;
 import com.hamza.account.config.SaveDatabaseFile;
 import com.hamza.account.controller.main.DataPublisher;
@@ -103,7 +104,6 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
     private final CustomerService customerService = ServiceRegistry.get(CustomerService.class);
     private final ItemsService itemsService = ServiceRegistry.get(ItemsService.class);
     private final EmployeeService employeeService = ServiceRegistry.get(EmployeeService.class);
-    private final StockService stockService = ServiceRegistry.get(StockService.class);
     private final TreasuryService treasuryService = ServiceRegistry.get(TreasuryService.class);
     private final CardItemService cardItemService = ServiceRegistry.get(CardItemService.class);
     private final UnitsService unitsService = ServiceRegistry.get(UnitsService.class);
@@ -114,12 +114,12 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
     private int invNumber;
     private StringProperty textSearchName, textSearchItems;
     @FXML
-    private Label labelNum, labelName, labelBarcode, labelDate, labelStockName, labelCondition, labelDelegate, labelTreasury, labelSearchBy, labelPrice, labelQuantity, labelItemBalance, labelTotals, last1, last2, last3, last4, last5, labelNotes, labelInvoiceTotal;
+    private Label labelNum, labelName, labelBarcode, labelDate, labelCondition, labelDelegate, labelTreasury, labelSearchBy, labelPrice, labelQuantity, labelItemBalance, labelTotals, last1, last2, last3, last4, last5, labelNotes, labelInvoiceTotal;
     @FXML
     @Getter
     private Button btnAdd, btnSave, btnPrintSave, btnNew, btnSearch, btnUpdateItem;
     @FXML
-    private ComboBox<String> comboStock, comboType, comboDelegate, comboTreasury;
+    private ComboBox<String> comboType, comboDelegate, comboTreasury;
     @FXML
     private TextField txtNum, txtBarcode, txtPrice, txtQuantity, txtItemBalance, txtTotals, txtOtherDiscount, txtPaid, txtRestAfterPaid, txtRestAfterDiscount;
     @FXML
@@ -231,7 +231,6 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
         labelName.setText(lang.getString("invoice.name"));
         labelBarcode.setText(lang.getString("invoice.barcode"));
         labelDate.setText(lang.getString("invoice.date"));
-        labelStockName.setText(lang.getString("invoice.stock"));
         labelCondition.setText(lang.getString("invoice.type"));
         labelSearchBy.setText(lang.getString("invoice.search.by"));
         labelPrice.setText(lang.getString("invoice.price"));
@@ -244,7 +243,6 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
         // combo prompts - نصوص الاختيارات
         comboTreasury.setPromptText(lang.getString("invoice.treasury"));
         comboDelegate.setPromptText(lang.getString("invoice.delegate"));
-        comboStock.setPromptText(lang.getString("invoice.stock"));
         comboType.setPromptText(lang.getString("invoice.type"));
 
         // text field prompts - نصوص الحقول
@@ -343,7 +341,6 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
         });
         myObservableList.addListener((ListChangeListener<BasePurchasesAndSales>) change -> {
             sumTotals();
-            comboStock.setDisable(!table.getItems().isEmpty());
 //            triggerAutosave();
         });
 
@@ -456,7 +453,7 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
 
     private void searchItemByTypeAndName(String itemName, boolean searchByName, boolean useScaleBarcode) {
         try {
-            var id = getStockIdBySelectedStock().getId();
+            var id = DefaultStock.ID;
             if (searchByName) {
                 var itemByItemNameAndStockId = itemsService.getItemByItemNameAndStockId(itemName, id);
                 if (itemByItemNameAndStockId == null) {
@@ -692,13 +689,11 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
             int id = dataById.getId();
             String name = totalsDataInterface.getNameData(dataById);
             InvoiceType invoiceType = dataById.getInvoiceType();
-            String nameStock = dataById.getStockData().getName();
             String invoiceDate = dataById.getDate();
             String getDelegate = totalsDataInterface.getDelegateData(dataById).getName();
 
             date.setValue(LocalDate.parse(invoiceDate));
             textSearchName.set(name);
-            comboStock.getSelectionModel().select(nameStock);
             comboDelegate.getSelectionModel().select(getDelegate);
             txtNum.setText(String.valueOf(id));
             codeAccount = totalsDataInterface.getIdData(dataById);
@@ -777,7 +772,7 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
                 List<T1> list = listOfItemsPurchase(invNumber);
 
                 T2 t2 = invoiceBuy.object_Totals(invNumber, invoiceType, invoiceDate, total, discountValue, discountType, after, paidValue, remainingBalance, notes,
-                        t3, getStockIdBySelectedStock(), employees, list, treasuryByName);
+                        t3, new Stock(DefaultStock.ID), employees, list, treasuryByName);
 
 
                 DaoList<T2> totalDaoList = totalsAndPurchaseList.totalDao();
@@ -870,15 +865,6 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
         return list;
     }
 
-    private Stock getStockIdBySelectedStock() {
-        try {
-            return stockService.getStockByName(comboStock.getSelectionModel().getSelectedItem());
-        } catch (DaoException e) {
-            logError(e);
-            throw new RuntimeException(e.getMessage());
-        }
-    }
-
     private void printInvoice(boolean print, T2 t2) {
         // print invoice
         if (print) {
@@ -925,9 +911,6 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
         setTextFormatter(txtPaid, txtOtherDiscount, txtItemBalance, txtPrice, txtQuantity, txtTotals);
         Utils.replaceNonDigitChar(txtBarcode);
         txtNum.setText(num_invoice_update > 0 ? String.valueOf(num_invoice_update) : Setting_Language.generate);
-        // stock data
-        comboStock.setItems(FXCollections.observableArrayList(getStockNames()));
-        comboStock.getSelectionModel().select(getName());
         // delegate data
         comboDelegate.setItems(FXCollections.observableArrayList(getDelegateNames()));
         // treasury data
@@ -955,24 +938,6 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
         return new ArrayList<>();
     }
 
-    @NotNull
-    private List<String> getStockNames() {
-        try {
-            return stockService.getStockNames();
-        } catch (DaoException e) {
-            logError(e);
-        }
-        return List.of();
-    }
-
-    private String getName() {
-        try {
-            return stockService.getStockById(1).getName();
-        } catch (DaoException e) {
-            logError(e);
-        }
-        return "";
-    }
 
     private void clearData() {
         textSearchItems.set(null);
@@ -1000,7 +965,6 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
 
     private void publisherData(DataPublisher dataPublisher) {
         dataPublisher.getPublisherAddEmployee().addObserver(message -> comboDelegate.setItems(FXCollections.observableArrayList(getDelegateNames())));
-        dataPublisher.getPublisherAddStock().addObserver(message -> comboStock.setItems(FXCollections.observableArrayList(getStockNames())));
     }
 
     private List<String> getDelegateNames() {
@@ -1148,7 +1112,7 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
     }
 
     private void updateItem(BasePurchasesAndSales purchase) throws DaoException {
-        var items = itemsService.getItemByItemIdAndStockId(purchase.getItems().getId(), 1);
+        var items = itemsService.getItemByItemIdAndStockId(purchase.getItems().getId(), DefaultStock.ID);
         items.setNameItem(purchase.getItems().getNameItem());
         items.setItemsUnitsModelList(new ArrayList<>());
         items.setItems_packageList(new ArrayList<>());
@@ -1210,7 +1174,6 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
         labelDelegate.setVisible(designInterface.showDataForCustomer());
 
         BooleanBinding binding = txtSumTotals.textProperty().lessThanOrEqualTo(String.valueOf(0.0))
-                .or(comboStock.valueProperty().isNull())
                 .or(table.itemsProperty().isNull());
 
         if (designInterface.showDataForCustomer()) binding.or(comboDelegate.valueProperty().isNull());

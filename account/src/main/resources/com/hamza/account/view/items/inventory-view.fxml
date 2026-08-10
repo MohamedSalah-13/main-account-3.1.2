@@ -45,7 +45,6 @@
                 <HBox alignment="CENTER_LEFT" spacing="5.0" styleClass="app-card" BorderPane.alignment="CENTER">
                     <children>
                         <Label styleClass="form-label" text="المخزن" />
-                        <ComboBox fx:id="comboStock" minWidth="200.0" promptText="المخزن" />
 
                         <Label styleClass="form-label" text="بحث" />
                         <TextField fx:id="textSearch" minWidth="200.0" promptText="بحث" />

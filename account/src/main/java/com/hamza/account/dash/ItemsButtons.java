@@ -1,7 +1,6 @@
 package com.hamza.account.dash;
 
 import com.hamza.account.config.Image_Setting;
-import com.hamza.account.controller.convert_stock.ConvertStockDataController;
 import com.hamza.account.controller.dataByName.OpenAddAreaApplication;
 import com.hamza.account.controller.dataByName.impl.AreaImpl;
 import com.hamza.account.controller.dataByName.impl.MainGroupImpl2;
@@ -128,7 +127,7 @@ public class ItemsButtons {
 
     public ButtonWithPerm inventory() throws Exception {
         return new ButtonWithPerm() {
-            final InventoryController inventory = new InventoryController(dataPublisher);
+            final InventoryController inventory = new InventoryController();
 
             @Override
             public UserPermissionType getPermissionType() {
@@ -155,28 +154,6 @@ public class ItemsButtons {
             public boolean showOnTapPane() {
                 return true;
             }
-        };
-    }
-
-    public ButtonWithPerm convertStock() {
-        return new ButtonWithPerm() {
-            @Override
-            public UserPermissionType getPermissionType() {
-                return UserPermissionType.DISABLE_BUTTON;
-            }
-
-            @Override
-            public void action() throws Exception {
-                ConvertStockDataController itemsController = new ConvertStockDataController(daoFactory);
-                new TableOpen<>(itemsController).start(new Stage());
-            }
-
-            @NotNull
-            @Override
-            public String textName() {
-                return Setting_Language.STORE_TRANSFERS;
-            }
-
         };
     }
 

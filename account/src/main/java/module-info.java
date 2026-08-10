@@ -101,8 +101,6 @@ module com.hamza.account {
     opens com.hamza.account.controller.dataByName to javafx.fxml;
     opens com.hamza.account.controller.invoice to javafx.fxml;
     exports com.hamza.account.controller.invoice;
-    exports com.hamza.account.controller.convert_stock;
-    opens com.hamza.account.controller.convert_stock to javafx.fxml;
     opens com.hamza.account.controller.model to javafx.fxml;
     exports com.hamza.account.controller.model;
     exports com.hamza.account.controller.convert_treasury;

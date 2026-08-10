@@ -1,5 +1,6 @@
 package com.hamza.account.model.dao;
 
+import com.hamza.account.config.DefaultStock;
 import com.hamza.account.model.domain.ItemsModel;
 import com.hamza.account.model.domain.ItemsUnitsModel;
 import com.hamza.account.model.domain.Items_Stock_Model;
@@ -124,7 +125,7 @@ public class ItemsDao extends AbstractDao<ItemsModel> {
         return insertMultiData(() -> {
             int itemId = insertItem(itemsModel);
             daoFactory.getItemsStockDao().insert(new Items_Stock_Model(
-                    itemsModel.getId(), 1, itemsModel.getFirstBalanceForStock(), itemsModel.getFirstBalanceForStock()
+                    itemsModel.getId(), DefaultStock.ID, itemsModel.getFirstBalanceForStock(), itemsModel.getFirstBalanceForStock()
             ));
 
             if (!itemsModel.getExtraBarcodes().isEmpty()) {
