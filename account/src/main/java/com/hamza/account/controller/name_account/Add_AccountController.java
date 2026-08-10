@@ -77,12 +77,13 @@ public class Add_AccountController<T1 extends BasePurchasesAndSales, T2 extends 
         this.interFace = nameAndAccountInterface.accountDao();
         this.name = name;
         this.publisherAddAccount = nameAndAccountInterface.addAccountPublisher();
-        this.nameAndAccountInterface.addNamePublisher().addObserver(message -> names = nameService.getNames(getDataNameList()));
+        subscriptions.subscribe(this.nameAndAccountInterface.addNamePublisher(), message -> names = nameService.getNames(getDataNameList()));
         names = nameService.getNames(getDataNameList());
     }
 
     @FXML
     public void initialize() {
+        subscriptions.disposeWith(searchableName);
         otherSetting();
         addTreasurySetting();
         // for update account select data by code num invoice

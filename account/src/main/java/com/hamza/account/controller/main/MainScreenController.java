@@ -89,6 +89,8 @@ public class MainScreenController extends MainItems implements Initializable {
         // data publisher
         var name = LogApplication.usersVo.getUsername();
         publisherAddUser.setAvailability(name);
+        // This controller is the publisher bag it subscribes to, so there is nothing
+        // that could outlive the observers registered here.
         getChangeMainScreenImage().addObserver(message -> setBackgroundImage());
         getShowMainTotalsScreen().addObserver(message -> {
             if (message == true) {

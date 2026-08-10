@@ -43,6 +43,7 @@ import com.hamza.controlsfx.database.DaoList;
 import com.hamza.controlsfx.interfaceData.AppSettingInterface;
 import com.hamza.controlsfx.language.Error_Text_Show;
 import com.hamza.controlsfx.language.Setting_Language;
+import com.hamza.controlsfx.observer.Subscriptions;
 import com.hamza.controlsfx.others.DateSetting;
 import com.hamza.controlsfx.others.DoubleSetting;
 import com.hamza.controlsfx.others.Utils;
@@ -98,6 +99,7 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
         extends BuyData<T1, T2, T3, T4> implements Initializable, AppSettingInterface {
 
     private final ObservableList<T1> myObservableList = FXCollections.observableArrayList();
+    private final Subscriptions subscriptions = new Subscriptions();
     private final DataPublisher dataPublisher;
     private final ActionTextBuy actionTextBuy;
     private final ObjectProperty<ItemsModel> itemsModel = new SimpleObjectProperty<>(new ItemsModel());
@@ -964,7 +966,11 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
     }
 
     private void publisherData(DataPublisher dataPublisher) {
-        dataPublisher.getPublisherAddEmployee().addObserver(message -> comboDelegate.setItems(FXCollections.observableArrayList(getDelegateNames())));
+        subscriptions.subscribe(dataPublisher.getPublisherAddEmployee()
+                , message -> comboDelegate.setItems(FXCollections.observableArrayList(getDelegateNames())));
+        // An invoice window is opened per invoice and closed again; the publisher
+        // behind it belongs to the main screen and outlives every one of them.
+        subscriptions.disposeWith(stackPane);
     }
 
     private List<String> getDelegateNames() {

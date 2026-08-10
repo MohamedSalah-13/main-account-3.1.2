@@ -58,6 +58,9 @@ public class MainToolbarController implements Initializable {
     @Override
     public void initialize(URL url, ResourceBundle resourceBundle) {
         otherSetting();
+        // No subscription to close here: the publishers belong to the main screen
+        // (MainItems extends DataPublisher), and this toolbar is part of it, so the
+        // two are collected together when the user logs out.
         dataPublisher.getPublisherAddUser().addObserver(message -> menuButton.setText(Setting_Language.WELCOME + " " + message + " !"));
         dataPublisher.getShowLoginScreen().addObserver(message -> menuItemLogout.setDisable(!message));
 //        toolBar.getItems().remove(btnAlarm);

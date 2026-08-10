@@ -5,6 +5,7 @@ import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.interfaceData.TableViewShowDataInt;
 import com.hamza.controlsfx.interfaceData.ToolbarAccountInt;
 import com.hamza.controlsfx.language.Setting_Language;
+import com.hamza.controlsfx.observer.Subscriptions;
 import com.hamza.controlsfx.table.TableColumnAnnotation;
 import javafx.collections.FXCollections;
 import javafx.fxml.FXMLLoader;
@@ -19,6 +20,8 @@ import java.util.Objects;
 
 @Log4j2
 public class ApplicationDataWithToolbarIndexApp<T> extends Dialog<T> {
+
+    private final Subscriptions subscriptions = new Subscriptions();
 
     private static final String TOOLBAR_STYLESHEET = Objects.requireNonNull(
             ApplicationDataWithToolbarIndexApp.class.getResource("/com/hamza/controlsfx/css/toolbar-account.css")).toExternalForm();
@@ -47,7 +50,7 @@ public class ApplicationDataWithToolbarIndexApp<T> extends Dialog<T> {
         tableView.setItems(FXCollections.observableArrayList(tableViewShowDataInt.dataList()));
         dialogPane.setExpandableContent(tableView);
 
-        toolbarAccountInt.publisherTable().addObserver(message -> {
+        subscriptions.subscribe(toolbarAccountInt.publisherTable(), message -> {
             try {
                 tableView.getItems().clear();
                 tableView.setItems(FXCollections.observableArrayList(tableViewShowDataInt.dataList()));
@@ -56,6 +59,9 @@ public class ApplicationDataWithToolbarIndexApp<T> extends Dialog<T> {
                 log.error(e.getMessage(), e);
             }
         });
+        // The dialog is built fresh every time it is opened, so its observer has to
+        // go with it; the publisher behind it belongs to the screen underneath.
+        subscriptions.disposeWith(vBox);
     }
 
     private Pane getToolBar(ToolbarAccountInt<T> toolbarAccountInt) throws IOException {

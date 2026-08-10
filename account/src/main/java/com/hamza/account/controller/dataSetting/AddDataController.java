@@ -4,6 +4,7 @@ import com.hamza.account.config.Image_Setting;
 import com.hamza.account.openFxml.FxmlPath;
 import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.language.Setting_Language;
+import com.hamza.controlsfx.observer.Subscriptions;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.control.Button;
@@ -22,6 +23,7 @@ import static com.hamza.controlsfx.util.ImageChoose.createIcon;
 public class AddDataController implements Initializable {
 
     private final AddDataInterface addDataInterface;
+    private final Subscriptions subscriptions = new Subscriptions();
     @FXML
     private CheckListView<String> checkListView;
     @FXML
@@ -102,12 +104,13 @@ public class AddDataController implements Initializable {
             }
         });
 
-        addDataInterface.publisher().addObserver(message -> {
+        subscriptions.subscribe(addDataInterface.publisher(), message -> {
             checkListView.refresh();
             checkListView.getItems().removeAll();
             checkListView.getItems().setAll(getList());
             checkListView.getCheckModel().clearChecks();
         });
+        subscriptions.disposeWith(checkListView);
     }
 
     private void log(Exception e) {

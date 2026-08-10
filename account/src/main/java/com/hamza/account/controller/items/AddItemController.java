@@ -20,6 +20,7 @@ import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.interfaceData.AppSettingInterface;
 import com.hamza.controlsfx.language.Setting_Language;
+import com.hamza.controlsfx.observer.Subscriptions;
 import com.hamza.controlsfx.others.DoubleSetting;
 import com.hamza.controlsfx.util.ImageChoose;
 import javafx.application.Platform;
@@ -55,6 +56,7 @@ public class AddItemController implements AppSettingInterface {
 
     private final int codeItem;
     private final DataPublisher dataPublisher;
+    private final Subscriptions subscriptions = new Subscriptions();
     private final ImageChoose imageChoose = new ImageChoose();
 
     private final UnitsService unitsService = ServiceRegistry.get(UnitsService.class);
@@ -108,12 +110,12 @@ public class AddItemController implements AppSettingInterface {
         this.codeItem = codeItem;
         this.dataPublisher = dataPublisher;
 
-        dataPublisher.getPublisherAddMainGroup().addObserver(message -> {
+        subscriptions.subscribe(dataPublisher.getPublisherAddMainGroup(), message -> {
             comboMainGroup.setItems(FXCollections.observableList(getMainGroupsNames()));
             comboMainGroup.getSelectionModel().selectLast();
         });
 
-        dataPublisher.getPublisherAddSubGroup().addObserver(message -> {
+        subscriptions.subscribe(dataPublisher.getPublisherAddSubGroup(), message -> {
             List<String> groupListByMainId = getSubGroupsNamesByMainId();
             comboSupGroup.setItems(FXCollections.observableList(groupListByMainId));
         });
@@ -121,6 +123,9 @@ public class AddItemController implements AppSettingInterface {
 
     @FXML
     public void initialize() {
+        // The dialog is opened once per item added or edited, so this instance and
+        // its two observers have to go when the window does.
+        subscriptions.disposeWith(stackPane);
         unitSetting();
         otherSetting();
         comboTypeOption();

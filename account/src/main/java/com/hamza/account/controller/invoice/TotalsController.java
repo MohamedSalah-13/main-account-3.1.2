@@ -127,9 +127,10 @@ public class TotalsController<T1 extends BasePurchasesAndSales, T2 extends BaseT
         addDataToComboName();
 //        gridPane.add(pane, 4, 2);
         // publisher data
-        this.stringPublisher.addObserver(message -> btnRefresh.fire());
-        dataPublisher.getPublisherAddEmployee().addObserver(message -> comboDelegateSetting(comboDelegate, getDelegateNames()));
-        nameAndAccountInterface.addNamePublisher().addObserver(message -> addDataToComboName());
+        subscriptions.subscribe(this.stringPublisher, message -> btnRefresh.fire());
+        subscriptions.subscribe(dataPublisher.getPublisherAddEmployee(), message -> comboDelegateSetting(comboDelegate, getDelegateNames()));
+        subscriptions.subscribe(nameAndAccountInterface.addNamePublisher(), message -> addDataToComboName());
+        subscriptions.disposeWith(stackPane);
         addTimeSearch();
         permissionButtons();
         btnRefresh.fire();

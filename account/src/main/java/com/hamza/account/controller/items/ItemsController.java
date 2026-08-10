@@ -93,6 +93,9 @@ public class ItemsController extends LoadData {
         paginationTableSetting = new PaginationTableSetting(tableView, itemsService
                 , txtSearch, pagination);
         paginationTableSetting.initializePagination();
+        // The tab can be opened again and again; the publishers live as long as the
+        // main screen, so what this instance registered has to go with its tab.
+        subscriptions.disposeWith(stackPane);
     }
 
     private void otherSetting() {
@@ -102,8 +105,8 @@ public class ItemsController extends LoadData {
         // combo items
         ObservableList<String> observableListMain = FXCollections.observableArrayList(getMainGroupsNames());
 
-        dataPublisher.getPublisherAddMainGroup().addObserver(string -> observableListMain.setAll(getMainGroupsNames()));
-        publisherAddItem.addObserver(message -> btnRefresh.fire());
+        subscriptions.subscribe(dataPublisher.getPublisherAddMainGroup(), string -> observableListMain.setAll(getMainGroupsNames()));
+        subscriptions.subscribe(publisherAddItem, message -> btnRefresh.fire());
     }
 
     private void permissionButtons() {
@@ -140,7 +143,7 @@ public class ItemsController extends LoadData {
         TableSetting.tableMenuSetting(getClass(), tableView);
 
         // change column names
-        dataPublisher.getPublisherSelPriceUnits().addObserver(message -> Platform.runLater(() -> updateColumnNames(message)));
+        subscriptions.subscribe(dataPublisher.getPublisherSelPriceUnits(), message -> Platform.runLater(() -> updateColumnNames(message)));
         // load column names
         try {
             updateColumnNames(selPriceService.getIntegerStringHashMap());

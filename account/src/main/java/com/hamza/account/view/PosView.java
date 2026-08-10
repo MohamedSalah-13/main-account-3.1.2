@@ -57,11 +57,14 @@ public class PosView extends Application {
         btnPay.setText(btnPay.getText() + " (F10)");
         scene.getAccelerators().put(new KeyCodeCombination(KeyCode.F10), btnPay::fire);
 
-        dataPublisher.getCloseStageFromLogout().addObserver(message -> {
-            if (message) {
+        // The publisher belongs to the main screen, which outlives this window: the
+        // observer holds the stage, so it has to go when the stage does.
+        var subscription = dataPublisher.getCloseStageFromLogout().subscribe(message -> {
+            if (Boolean.TRUE.equals(message)) {
                 stage.close();
             }
         });
+        stage.setOnHidden(event -> subscription.unsubscribe());
     }
 
     private void getAVoid(Stage stage) {

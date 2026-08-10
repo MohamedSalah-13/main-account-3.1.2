@@ -87,10 +87,30 @@ changing invoice behaviour, check all four implementations, and expect heavily g
 
 ### Cross-screen refresh
 
-`controlsfx.observer.Publisher` + `DataPublisher` (a bag of publishers). Screens subscribe with
-`addObserver(...)`; saving fires `notifyObservers()`. All observers are UI updates, so `Publisher`
+`controlsfx.observer.Publisher` + `DataPublisher` (a bag of publishers). Saving fires
+`publish(message)`, or `notifyObservers()` where there is nothing to send — note that the no-argument
+form re-sends whatever was published last, which is `null` for most of these publishers, so an
+observer that reads its message must tolerate null. All observers are UI updates, so `Publisher`
 dispatches on the JavaFX thread itself — background callers do not need `Platform.runLater`.
 `AllAlerts` marshals to the FX thread the same way, so alerts are safe from any thread.
+
+**Subscribe with `Subscriptions`, not `addObserver`.** `DataPublisher` lives as long as the main
+screen — `MainItems extends DataPublisher`, and `MainScreenController extends MainItems` — while the
+screens subscribing to it are rebuilt on every open. An observer left registered keeps its whole
+controller and scene graph alive and re-runs its refresh (and its queries) once per past opening. So a
+screen collects its handles and ends its setup with the node its life is tied to:
+
+```java
+subscriptions.subscribe(dataPublisher.getPublisherAddItem(), message -> btnRefresh.fire());
+subscriptions.disposeWith(stackPane);   // last line of initialize()
+```
+
+`Subscriptions.disposeWith` unsubscribes when the node leaves the scene graph (a closed tab) or its
+window is hidden (a dialog or stage) — both are needed, since closing a stage leaves the scene attached
+to its root, and a tab is detached without any window closing. Controllers extending `LoadData` inherit
+the `subscriptions` field; the rest declare their own. The only classes that may still call
+`addObserver` are the main screen and its toolbar, which are the publisher bag, and are commented as
+such.
 
 ### FXML
 

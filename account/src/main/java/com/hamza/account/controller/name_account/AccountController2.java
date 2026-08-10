@@ -74,19 +74,22 @@ public class AccountController2<T1 extends BasePurchasesAndSales, T2 extends Bas
     public AccountController2(DaoFactory daoFactory, DataPublisher dataPublisher, DataInterface<T1, T2, T3, T4> dataInterface) throws Exception {
         super(dataInterface, daoFactory, dataPublisher);
         // publisher data
-        dataInterface.nameAndAccountInterface().addAccountPublisher().addObserver(message -> btnRefresh.fire());
-        dataInterface.nameAndAccountInterface().addNamePublisher().addObserver(message -> {
+        subscriptions.subscribe(dataInterface.nameAndAccountInterface().addAccountPublisher(), message -> btnRefresh.fire());
+        subscriptions.subscribe(dataInterface.nameAndAccountInterface().addNamePublisher(), message -> {
             try {
                 items.addAll(nameAndAccountInterface.nameList().stream().map(nameData.getName()).toList());
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }
         });
-        dataInterface.publisherPurchaseOrSales().addObserver(message -> btnRefresh.fire());
+        subscriptions.subscribe(dataInterface.publisherPurchaseOrSales(), message -> btnRefresh.fire());
     }
 
     @FXML
     public void initialize() {
+        // Only here can the node be reached: the subscriptions above are made in the
+        // constructor, before the FXML fields are injected.
+        subscriptions.disposeWith(stackPane);
         maskerPaneSetting = new MaskerPaneSetting(stackPane);
         getTable();
         actionButton();

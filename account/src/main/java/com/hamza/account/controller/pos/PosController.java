@@ -32,6 +32,7 @@ import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.language.Error_Text_Show;
 import com.hamza.controlsfx.language.Setting_Language;
 import com.hamza.controlsfx.observer.Publisher;
+import com.hamza.controlsfx.observer.Subscriptions;
 import com.hamza.controlsfx.others.DateSetting;
 import com.hamza.controlsfx.table.TableColumnAnnotation;
 import javafx.application.Platform;
@@ -76,6 +77,7 @@ import static com.hamza.controlsfx.util.NumberUtils.roundToTwoDecimalPlaces;
 public class PosController extends ButtonSetting {
 
     private static final int PAGE_SIZE = 100;
+    private final Subscriptions subscriptions = new Subscriptions();
     private final Publisher<String> publisherAddCustomer;
     private final DaoFactory daoFactory;
     private final List<Button> paneList = new ArrayList<>();
@@ -166,12 +168,16 @@ public class PosController extends ButtonSetting {
         setupKeyboardHandlers();
         splitPane.setDividerPosition(0, getSplitPaneDividerPos());
 
-        dataPublisher.getPublisherAddItem().addObserver(message -> {
+        subscriptions.subscribe(dataPublisher.getPublisherAddItem(), message -> {
+            // Publishers notified without a payload deliver null - the import screen
+            // does exactly that after loading items from Excel.
+            if (message == null) return;
             if (!message.isActiveItem()) {
                 paneList.removeIf(pane -> pane.getId().equals(message.getNameItem().toLowerCase()));
                 flowPane.getChildren().removeIf(node -> node.getId().equals(message.getNameItem().toLowerCase()));
             }
         });
+        subscriptions.disposeWith(stackPane);
 
     }
 
