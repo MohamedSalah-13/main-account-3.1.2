@@ -175,9 +175,10 @@ events are records implementing `AppEvent`, under `account.features.events`. A s
 from the registry rather than having a publisher threaded through its constructor, and the compiler
 checks the payload — where a dozen `Publisher<String>` fields can only be told apart by which field
 the caller picked. `UserRenamed`, `UsersChanged`, `InvoiceSaved`, `ItemSaved`, `ItemsChanged`,
-`NameChanged`, `AccountChanged`, `GroupsChanged`, `AreasChanged` and `UnitsChanged` are migrated; what
-is left in `DataPublisher` is treasuries, employees, expenses, company details, sel-price units and the
-window signals.
+`NameChanged`, `AccountChanged`, `GroupsChanged`, `AreasChanged`, `UnitsChanged`, `EmployeesChanged`
+and `ExpensesChanged` are migrated; what is left in `DataPublisher` is treasuries, company details,
+sel-price units and the window signals. `LoadDataAndList.updateData()` — the wholesale "everything was
+replaced" announcement fired after a restore — is now a list of events and needs no publisher bag.
 A table declares `refreshOn()` (its event) or `publisherTable()` (the old way), and `TableController`
 subscribes to whichever is set; a table seeing only one side of an event narrows it with
 `refreshFor(event)`.

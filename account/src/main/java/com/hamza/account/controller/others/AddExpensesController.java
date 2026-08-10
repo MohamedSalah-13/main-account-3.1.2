@@ -13,7 +13,9 @@ import com.hamza.account.type.ExpensesType;
 import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.language.Setting_Language;
-import com.hamza.controlsfx.observer.Publisher;
+import com.hamza.account.controller.others.ServiceRegistry;
+import com.hamza.account.features.events.ExpensesChanged;
+import com.hamza.controlsfx.observer.EventBus;
 import com.hamza.controlsfx.others.DateSetting;
 import com.hamza.controlsfx.others.Utils;
 import javafx.application.Platform;
@@ -33,7 +35,7 @@ import static com.hamza.account.type.TypeList.expensesTypeList;
 public class AddExpensesController implements AddInterface {
 
     private final int codeId;
-    private final Publisher<String> publisher;
+    private final EventBus eventBus = ServiceRegistry.get(EventBus.class);
     private final ExpensesService expensesService = ServiceRegistry.get(ExpensesService.class);
     private final ExpensesDetailsService expensesDetailsService = ServiceRegistry.get(ExpensesDetailsService.class);
     private final EmployeeService employeeService = ServiceRegistry.get(EmployeeService.class);
@@ -47,9 +49,8 @@ public class AddExpensesController implements AddInterface {
     @FXML
     private TextField txtCode, txtAmount;
 
-    public AddExpensesController(int codeId, Publisher<String> publisher) {
+    public AddExpensesController(int codeId) {
         this.codeId = codeId;
-        this.publisher = publisher;
     }
 
     @FXML
@@ -134,7 +135,7 @@ public class AddExpensesController implements AddInterface {
 
     @Override
     public void afterSaved() {
-        publisher.publish();
+        if (eventBus != null) eventBus.publish(new ExpensesChanged());
         resetData();
     }
 

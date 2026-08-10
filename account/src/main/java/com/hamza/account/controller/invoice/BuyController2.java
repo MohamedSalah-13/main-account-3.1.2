@@ -8,6 +8,7 @@ import com.hamza.account.controller.model.ModelPrintInvoice;
 import com.hamza.account.controller.others.ServiceRegistry;
 import com.hamza.account.controller.search.ItemsSearch;
 import com.hamza.account.controller.setting.SettingTabLanguageController;
+import com.hamza.account.features.events.EmployeesChanged;
 import com.hamza.account.features.events.InvoiceSaved;
 import com.hamza.account.features.key_setting.MoveRow;
 import com.hamza.account.features.key_setting.UpdateInterface;
@@ -980,10 +981,12 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
     }
 
     private void publisherData(DataPublisher dataPublisher) {
-        subscriptions.subscribe(dataPublisher.getPublisherAddEmployee()
-                , message -> comboDelegate.setItems(FXCollections.observableArrayList(getDelegateNames())));
-        // An invoice window is opened per invoice and closed again; the publisher
-        // behind it belongs to the main screen and outlives every one of them.
+        if (eventBus != null) {
+            subscriptions.add(eventBus.subscribe(EmployeesChanged.class
+                    , event -> comboDelegate.setItems(FXCollections.observableArrayList(getDelegateNames()))));
+        }
+        // An invoice window is opened per invoice and closed again; the bus behind
+        // it lives for the whole process.
         subscriptions.disposeWith(stackPane);
     }
 

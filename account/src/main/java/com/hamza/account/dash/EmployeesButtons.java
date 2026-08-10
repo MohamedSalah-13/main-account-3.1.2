@@ -39,8 +39,7 @@ public class EmployeesButtons extends LoadData {
 
             @Override
             public void action() throws Exception {
-                AddEmployeeController addEmployeeController = new AddEmployeeController(dataPublisher.getPublisherAddEmployee()
-                        , 0, employeeService);
+                AddEmployeeController addEmployeeController = new AddEmployeeController(0, employeeService);
                 new AddForAllApplication(0, addEmployeeController);
             }
 

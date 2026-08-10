@@ -96,7 +96,7 @@ public class DeleteDataController implements AppSettingInterface {
 
                 maskerPaneSetting.getVoidTask().setOnSucceeded(workerStateEvent -> {
                     AllAlerts.alertSave();
-                    LoadDataAndList.updateData(dataPublisher);
+                    LoadDataAndList.updateData();
                     btnSelected.setSelected(false);
                 });
             }

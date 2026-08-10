@@ -22,8 +22,7 @@ public class DataPublisher {
     // The two user publishers that were here are now UserRenamed and UsersChanged
     // on the EventBus, in account.features.events.
     // The two group publishers are now GroupsChanged, carrying a GroupLevel.
-    private final Publisher<String> publisherAddEmployee = new Publisher<>();
-    private final Publisher<String> publisherAddExpenses = new Publisher<>();
+    // Employees and expenses are now EmployeesChanged and ExpensesChanged.
     private final Publisher<String> publisherUpdateCompany = new Publisher<>();
     // publisherAddUnits is now UnitsChanged on the EventBus. publisherAddItemUnit
     // went with it: nothing published it and nothing listened.

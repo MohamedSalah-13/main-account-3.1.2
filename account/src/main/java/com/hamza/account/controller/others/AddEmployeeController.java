@@ -8,7 +8,9 @@ import com.hamza.account.type.UsersType;
 import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.language.Setting_Language;
-import com.hamza.controlsfx.observer.Publisher;
+import com.hamza.account.controller.others.ServiceRegistry;
+import com.hamza.account.features.events.EmployeesChanged;
+import com.hamza.controlsfx.observer.EventBus;
 import com.hamza.controlsfx.others.DateSetting;
 import com.hamza.controlsfx.others.Utils;
 import javafx.application.Platform;
@@ -28,7 +30,7 @@ import static com.hamza.controlsfx.others.Utils.setTextFormatter;
 @FxmlPath(pathFile = "addEmployee.fxml")
 public class AddEmployeeController implements AddInterface {
 
-    private final Publisher<String> publisherAddEmployee;
+    private final EventBus eventBus = ServiceRegistry.get(EventBus.class);
     private final int updateData;
     private final EmployeeService employeeService;
     @FXML
@@ -44,9 +46,8 @@ public class AddEmployeeController implements AddInterface {
     @FXML
     private VBox boxImage;
 
-    public AddEmployeeController(Publisher<String> publisherAddEmployee, int updateData, EmployeeService employeeService) {
+    public AddEmployeeController(int updateData, EmployeeService employeeService) {
         this.employeeService = employeeService;
-        this.publisherAddEmployee = publisherAddEmployee;
         this.updateData = updateData;
     }
 
@@ -98,7 +99,7 @@ public class AddEmployeeController implements AddInterface {
 
     @Override
     public void afterSaved() {
-        publisherAddEmployee.publish();
+        if (eventBus != null) eventBus.publish(new EmployeesChanged());
 //        paneImage.getImageController().clearImage();
         Utils.clearAll(txtName, txtSalary, txtEmail, txtTel);
     }

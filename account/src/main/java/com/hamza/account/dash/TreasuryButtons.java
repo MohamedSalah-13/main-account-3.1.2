@@ -67,7 +67,7 @@ public class TreasuryButtons {
 
     public ButtonWithPerm openExpenses() {
         return new ButtonWithPerm() {
-            final ExpensesDetailsApplication expensesController = new ExpensesDetailsApplication(dataPublisher);
+            final ExpensesDetailsApplication expensesController = new ExpensesDetailsApplication();
 
             @Override
             public UserPermissionType getPermissionType() {
