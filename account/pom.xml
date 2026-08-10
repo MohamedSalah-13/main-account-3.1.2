@@ -15,14 +15,14 @@
     <properties>
         <maven.build.timestamp.format>yyyy-MM-dd_HH-mm-ss</maven.build.timestamp.format>
         <build.timestamp.display>${maven.build.timestamp}</build.timestamp.display>
-        <hamza.version>4.3.0</hamza.version>
     </properties>
 
     <dependencies>
         <dependency>
             <groupId>com.hamza</groupId>
             <artifactId>controlsfx</artifactId>
-            <version>${hamza.version}</version>
+            <!-- A module of this same build, so it is released as one with it. -->
+            <version>${project.version}</version>
             <scope>compile</scope>
         </dependency>
 
