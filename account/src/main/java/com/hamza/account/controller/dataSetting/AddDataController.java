@@ -4,6 +4,8 @@ import com.hamza.account.config.Image_Setting;
 import com.hamza.account.openFxml.FxmlPath;
 import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.language.Setting_Language;
+import com.hamza.account.controller.others.ServiceRegistry;
+import com.hamza.controlsfx.observer.EventBus;
 import com.hamza.controlsfx.observer.Subscriptions;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
@@ -23,6 +25,7 @@ import static com.hamza.controlsfx.util.ImageChoose.createIcon;
 public class AddDataController implements Initializable {
 
     private final AddDataInterface addDataInterface;
+    private final EventBus eventBus = ServiceRegistry.get(EventBus.class);
     private final Subscriptions subscriptions = new Subscriptions();
     @FXML
     private CheckListView<String> checkListView;
@@ -104,12 +107,14 @@ public class AddDataController implements Initializable {
             }
         });
 
-        subscriptions.subscribe(addDataInterface.publisher(), message -> {
-            checkListView.refresh();
-            checkListView.getItems().removeAll();
-            checkListView.getItems().setAll(getList());
-            checkListView.getCheckModel().clearChecks();
-        });
+        if (eventBus != null && addDataInterface.refreshOn() != null) {
+            subscriptions.add(eventBus.subscribe(addDataInterface.refreshOn(), event -> {
+                checkListView.refresh();
+                checkListView.getItems().removeAll();
+                checkListView.getItems().setAll(getList());
+                checkListView.getCheckModel().clearChecks();
+            }));
+        }
         subscriptions.disposeWith(checkListView);
     }
 

@@ -86,7 +86,6 @@ public class SettingCompanyController implements Initializable {
         // add treasury
         var addDataTreasury = new AddDataTreasury();
         addDataTreasury.setTreasuryService(treasuryService);
-        addDataTreasury.setPublisherAddTreasury(dataPublisher.getPublisherAddTreasury());
         addData(addDataTreasury);
     }
 

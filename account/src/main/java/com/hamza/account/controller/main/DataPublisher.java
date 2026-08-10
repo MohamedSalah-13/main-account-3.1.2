@@ -15,7 +15,7 @@ public class DataPublisher {
     // publisherAddItem is now ItemSaved (one item, always carried) and
     // ItemsChanged (a bulk reload) on the EventBus.
     // Areas are now AreasChanged on the EventBus.
-    private final Publisher<String> publisherAddTreasury = new Publisher<>();
+    // Treasuries are now TreasuriesChanged on the EventBus.
     // The four name and account publishers are now NameChanged and AccountChanged
     // on the EventBus, carrying a PartyKind instead of being one publisher per
     // combination.
