@@ -166,7 +166,12 @@ public class SupplierAccountDao extends AbstractDao<SupplierAccount> {
             model.setInvoice_number(rs.getInt(NUMBER_INV));
             model.setNotes(rs.getString(NOTES));
             model.setTreasury(new Treasury(rs.getInt(TREASURY_ID)));
-            model.setCreated_at(LocalDateTime.parse(rs.getString(DATE_INSERT), DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
+            // See CustomerAccountDao: a row from the invoice half of the view has no
+            // entry timestamp, and a missing one is not a reason to fail the listing.
+            String createdAt = rs.getString(DATE_INSERT);
+            if (createdAt != null) {
+                model.setCreated_at(LocalDateTime.parse(createdAt, DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
+            }
             String nameSup = adjustPurchase ? rs.getString(NAME) : "";
             model.setSuppliers(new Suppliers(codeSup, nameSup));
             if (adjustPurchase) {

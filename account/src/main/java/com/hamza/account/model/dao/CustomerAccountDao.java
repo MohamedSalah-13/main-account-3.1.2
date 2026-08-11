@@ -136,6 +136,12 @@ public class CustomerAccountDao extends AbstractDao<CustomerAccount> {
         return executeUpdate(deleteSql(), id);
     }
 
+    /**
+     * The parameters of {@link #updateSql()}. The user is not among them: {@code user_id}
+     * records who entered the payment, and editing it does not make the editor the one
+     * who entered it - the same reading the supplier's ledger has always had, and the one
+     * {@code audit_log} leaves room for by recording every change on its own.
+     */
     @Override
     public Object[] getData(CustomerAccount customerAccount) {
         return new Object[]{customerAccount.getCustomers().getId()
@@ -144,7 +150,6 @@ public class CustomerAccountDao extends AbstractDao<CustomerAccount> {
                 , customerAccount.getNotes()
                 , customerAccount.getInvoice_number()
                 , customerAccount.getTreasury().getId()
-                , customerAccount.getUsers().getId()
                 , customerAccount.getId()
         };
     }
@@ -172,8 +177,15 @@ public class CustomerAccountDao extends AbstractDao<CustomerAccount> {
             model.setInvoice_number(rs.getInt(NUMBER_INV));
             model.setNotes(rs.getString(NOTES));
             model.setTreasury(new Treasury(rs.getInt(TREASURY_ID)));
-            var createdAt = rs.getString(dateInsert) == null ? rs.getString("created_at") : rs.getString(dateInsert);
-            model.setCreated_at(LocalDateTime.parse(createdAt, DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
+            // The row may come from the invoice half of the view rather than from
+            // customers_accounts, and that half has no entry timestamp of its own. It is
+            // left unset rather than parsed: what used to stand here read the same column
+            // twice - "created_at, or else created_at" - so the fallback never ran and a
+            // null threw out of the parse instead.
+            String createdAt = rs.getString(dateInsert);
+            if (createdAt != null) {
+                model.setCreated_at(LocalDateTime.parse(createdAt, DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
+            }
             String customerName = adjustPurchase ? rs.getString(NAME) : "";
             model.setCustomers(new Customers(codeSup, customerName));
             if (adjustPurchase) {

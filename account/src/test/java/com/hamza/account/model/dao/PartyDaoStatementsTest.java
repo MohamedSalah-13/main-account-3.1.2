@@ -63,20 +63,26 @@ class PartyDaoStatementsTest {
             assertEquals(dao.updateSql().replace("first_balance=?,", ""), dao.updateWithoutOpeningSql());
         }
 
+        /**
+         * The area join is a LEFT join. It was an INNER join, which dropped a customer
+         * whose area row had been deleted out of every list and every search - while a
+         * supplier in the same state stayed, its queries never joining at all. The join
+         * is here to read the area's name, not to decide who is a customer.
+         */
         @Test
         void queries() {
-            assertEquals("SELECT * FROM custom INNER JOIN table_area ON custom.area_id = table_area.id",
+            assertEquals("SELECT * FROM custom LEFT JOIN table_area ON custom.area_id = table_area.id",
                     dao.selectAllSql());
             // Normalised when these moved to the specification: the keyword was written
             // "where" in lower case here and "WHERE" everywhere else. SQL keywords are
             // not case sensitive, so this is the whole of the change.
-            assertEquals("SELECT * FROM custom INNER JOIN table_area ON custom.area_id = table_area.id "
+            assertEquals("SELECT * FROM custom LEFT JOIN table_area ON custom.area_id = table_area.id "
                     + "WHERE custom.id = ?", dao.selectByIdSql());
-            assertEquals("SELECT * FROM custom INNER JOIN table_area ON custom.area_id = table_area.id "
+            assertEquals("SELECT * FROM custom LEFT JOIN table_area ON custom.area_id = table_area.id "
                     + "WHERE custom.name = ?", dao.selectByNameSql());
-            assertEquals("SELECT * FROM custom INNER JOIN table_area ON custom.area_id = table_area.id "
+            assertEquals("SELECT * FROM custom LEFT JOIN table_area ON custom.area_id = table_area.id "
                     + "ORDER BY custom.id DESC LIMIT 50", dao.filterAllSql());
-            assertEquals("SELECT * FROM custom INNER JOIN table_area ON custom.area_id = table_area.id "
+            assertEquals("SELECT * FROM custom LEFT JOIN table_area ON custom.area_id = table_area.id "
                     + "ORDER BY custom.id DESC LIMIT ? OFFSET ?", dao.pageSql());
         }
 
@@ -85,7 +91,7 @@ class PartyDaoStatementsTest {
         void numericSearch() {
             assertEquals("""
                     SELECT * FROM custom
-                    INNER JOIN table_area ON custom.area_id = table_area.id
+                    LEFT JOIN table_area ON custom.area_id = table_area.id
                     WHERE custom.id = ? OR custom.tel = ?
                     ORDER BY
                         CASE
@@ -103,7 +109,7 @@ class PartyDaoStatementsTest {
         void textSearch() {
             assertEquals("""
                     SELECT * FROM custom
-                    INNER JOIN table_area ON custom.area_id = table_area.id
+                    LEFT JOIN table_area ON custom.area_id = table_area.id
                     WHERE custom.name LIKE ? OR custom.tel LIKE ?
                     ORDER BY
                         CASE
@@ -116,7 +122,7 @@ class PartyDaoStatementsTest {
                     """, dao.filterStartsSql());
             assertEquals("""
                     SELECT * FROM custom
-                    INNER JOIN table_area ON custom.area_id = table_area.id
+                    LEFT JOIN table_area ON custom.area_id = table_area.id
                     WHERE custom.name LIKE ? OR custom.tel LIKE ?
                     ORDER BY custom.id DESC
                     LIMIT 50

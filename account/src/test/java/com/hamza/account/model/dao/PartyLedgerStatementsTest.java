@@ -1,10 +1,15 @@
 package com.hamza.account.model.dao;
 
+import com.hamza.account.model.domain.CustomerAccount;
+import com.hamza.account.model.domain.Customers;
+import com.hamza.account.model.domain.Treasury;
+import com.hamza.account.model.domain.Users;
 import com.hamza.account.party.PartyLedgerSpec;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -57,8 +62,10 @@ class PartyLedgerStatementsTest {
         void writes() {
             assertEquals("INSERT INTO customers_accounts (account_code,account_date,paid,notes,numberInv,"
                     + "treasury_id,account_num,user_id) VALUES (?,?,?,?,?,?,?,?)", dao.insertSql());
+            // user_id was here and is deliberately gone: the column records who entered
+            // the payment, so an edit no longer restamps it with whoever edited.
             assertEquals("UPDATE customers_accounts SET account_code=?,account_date=?,paid=?,notes=?,"
-                    + "numberInv=?,treasury_id=?,user_id=? WHERE account_num=?", dao.updateSql());
+                    + "numberInv=?,treasury_id=? WHERE account_num=?", dao.updateSql());
             assertEquals("DELETE FROM customers_accounts WHERE account_num=?", dao.deleteSql());
         }
 
@@ -79,6 +86,22 @@ class PartyLedgerStatementsTest {
         void theInsertParametersAreInTheInsertOrder() {
             assertEquals(dao.insertSql().chars().filter(c -> c == '?').count(),
                     PartyLedgerSpec.CUSTOMER.insertColumns().size());
+        }
+
+        /**
+         * The array the update binds, position by position. Dropping a column from the
+         * statement without dropping its value from here would not fail - it would bind
+         * the id into the treasury and the whole row would shift by one.
+         */
+        @Test
+        void updateParameters() {
+            CustomerAccount payment = new CustomerAccount(77, "2026-08-11", 150.0, "ملاحظة", 9001,
+                    new Customers(42, "عميل"), new Treasury(4, "خزينة"));
+            payment.setUsers(new Users(8, "admin"));
+
+            Object[] data = dao.getData(payment);
+            assertEquals(dao.updateSql().chars().filter(c -> c == '?').count(), data.length);
+            assertArrayEquals(new Object[]{42, "2026-08-11", 150.0, "ملاحظة", 9001, 4, 77}, data);
         }
     }
 
@@ -114,7 +137,7 @@ class PartyLedgerStatementsTest {
                     tokens(dao.selectByPartySql()));
         }
 
-        /** The insert matches the customer's column for column. The update does not. */
+        /** Column for column the customer's, now that the user is out of the update. */
         @Test
         void writes() {
             assertEquals("INSERT INTO suppliers_accounts (account_code,account_date,paid,notes,numberInv,"
@@ -162,21 +185,32 @@ class PartyLedgerStatementsTest {
         }
 
         /**
-         * <b>The one difference that is not naming.</b> Editing a customer's payment
-         * stamps it with whoever edited it; editing a supplier's leaves the user as
-         * whoever entered it. Both tables have the column and both inserts fill it.
-         * <p>
-         * Pinned rather than fixed: which of the two is right is a question about what
-         * {@code user_id} on a payment is supposed to mean - who entered it, or who
-         * touched it last - and the answer decides both screens, not one.
+         * {@code user_id} on a movement records <b>who entered it</b>, so neither update
+         * writes it. The customer's used to, which meant the same edit restamped one
+         * payment and left the other alone, and the figure a statement showed for "who
+         * entered this" changed the first time anyone corrected a note. Who changed a row
+         * afterwards is what {@code audit_log} records, from a trigger, whether or not
+         * the application asks.
          */
         @Test
-        void onlyTheCustomerUpdateRecordsWhoEditedIt() {
-            assertTrue(PartyLedgerSpec.CUSTOMER.updateRecordsTheUser());
+        void neitherUpdateRewritesWhoEnteredThePayment() {
+            assertFalse(PartyLedgerSpec.CUSTOMER.updateRecordsTheUser());
             assertFalse(PartyLedgerSpec.SUPPLIER.updateRecordsTheUser());
-            assertEquals(customers.updateSql()
-                            .replace("customers_accounts", "suppliers_accounts")
-                            .replace(",user_id=?", ""),
+            assertFalse(customers.updateSql().contains("user_id"));
+            assertFalse(suppliers.updateSql().contains("user_id"));
+        }
+
+        /** Both inserts do fill it: that is where "who entered it" is decided. */
+        @Test
+        void bothInsertsRecordWhoEnteredThePayment() {
+            assertTrue(customers.insertSql().contains("user_id"));
+            assertTrue(suppliers.insertSql().contains("user_id"));
+        }
+
+        /** With the user out of the way, the two updates are one statement twice. */
+        @Test
+        void theTwoUpdatesAreNowTheSameStatement() {
+            assertEquals(customers.updateSql().replace("customers_accounts", "suppliers_accounts"),
                     suppliers.updateSql());
         }
 

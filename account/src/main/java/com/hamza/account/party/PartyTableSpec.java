@@ -23,12 +23,15 @@ import java.util.regex.Pattern;
  *
  * @param kind           which party this describes
  * @param table          the table written to
- * @param listJoin       the area join the listing query carries, or empty
- * @param searchJoin     the area join the search and paging queries carry, or empty.
- *                       It is not the same as {@code listJoin} for suppliers, whose
- *                       {@code map} looks the area up with a query of its own - an
- *                       inconsistency kept as it was found, because an inner join also
- *                       decides whether a party with a missing area is listed at all
+ * @param listJoin       the area join the listing query carries, or empty. It is a
+ *                       {@code LEFT} join: it is there to read the area's name, and a
+ *                       customer whose area row has been deleted is still a customer.
+ *                       It was an inner join, which quietly dropped them from every
+ *                       list and every search while the supplier in the same state
+ *                       stayed - the supplier's queries never joined at all
+ * @param searchJoin     the area join the search, paging and by-id queries carry, or
+ *                       empty. Empty for suppliers, whose {@code map} looks the area up
+ *                       with a query of its own
  * @param createdColumn  when the row was entered, under its two names
  * @param insertColumns  the insert, in the order the DAO fills it
  * @param updateColumns  the update's SET clause; the key is the WHERE and is not here
@@ -58,8 +61,8 @@ public record PartyTableSpec(
 
     public static final PartyTableSpec CUSTOMER = new PartyTableSpec(
             PartyKind.CUSTOMER, "custom",
-            "INNER JOIN table_area ON custom.area_id = table_area.id",
-            "INNER JOIN table_area ON custom.area_id = table_area.id",
+            "LEFT JOIN table_area ON custom.area_id = table_area.id",
+            "LEFT JOIN table_area ON custom.area_id = table_area.id",
             "created_at",
             List.of("name", "tel", "address", "notes", "limit_num", "first_balance", "price_id",
                     "user_id", "area_id"),
@@ -103,9 +106,8 @@ public record PartyTableSpec(
 
     /**
      * One party by its id. It carries {@link #searchJoin} rather than {@link #listJoin}:
-     * for the supplier those differ, and an inner join is not free of meaning - it drops
-     * a party whose area no longer exists, which is a thing to decide deliberately and
-     * not to acquire by sharing a statement.
+     * for the supplier those differ, and which join a statement carries is a thing to
+     * decide deliberately and not to acquire by sharing a statement.
      */
     public String selectByIdSql() {
         return searchFrom() + " WHERE " + table + "." + KEY + " = ?";

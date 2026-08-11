@@ -15,10 +15,12 @@ import java.util.regex.Pattern;
  * and is guarded at {@code TotalsSalesDao} instead.
  * <p>
  * As with {@link PartyTableSpec}, the customer's ledger and the supplier's are the same
- * table twice. One difference is real and is kept as data rather than tidied away: the
- * customer's update writes {@code user_id} and the supplier's does not, so editing a
- * supplier payment leaves it stamped with whoever entered it. Which of the two is right
- * is a question for the business, not for a refactor - see {@link #updateColumns}.
+ * table twice - and now in the same way. The customer's update used to write
+ * {@code user_id} where the supplier's did not, so the same edit restamped one payment
+ * and left the other alone. {@code user_id} on a movement records <b>who entered it</b>,
+ * which is the supplier's reading and the one the inserts already agree on; who changed
+ * it afterwards is what {@code audit_log} is for, and the trigger writes that row whether
+ * anyone asks or not.
  *
  * @param kind          which party's ledger this describes
  * @param table         the table written to - payments only
@@ -30,7 +32,8 @@ import java.util.regex.Pattern;
  * @param createdColumn when the row was entered, under its two names
  * @param insertColumns the insert, in the order the DAO fills it
  * @param updateColumns the update's SET clause; the key is the WHERE and is not here.
- *                      The customer's carries {@code user_id} and the supplier's does not
+ *                      Neither carries {@code user_id}: an edit does not change who
+ *                      entered the payment
  */
 public record PartyLedgerSpec(
         PartyKind kind,
@@ -62,14 +65,15 @@ public record PartyLedgerSpec(
             "account_customer_totals", "custom", "act", "c", "created_at",
             List.of("account_code", "account_date", "paid", "notes", "numberInv", "treasury_id",
                     "account_num", "user_id"),
-            List.of("account_code", "account_date", "paid", "notes", "numberInv", "treasury_id", "user_id"));
+            // No user_id, as on the supplier's side: editing a payment does not change
+            // who entered it.
+            List.of("account_code", "account_date", "paid", "notes", "numberInv", "treasury_id"));
 
     public static final PartyLedgerSpec SUPPLIER = new PartyLedgerSpec(
             PartyKind.SUPPLIER, "suppliers_accounts", "account_suppliers_table",
             "account_suppliers_totals", "suppliers", "ac", "s", "date_insert",
             List.of("account_code", "account_date", "paid", "notes", "numberInv", "treasury_id",
                     "account_num", "user_id"),
-            // No user_id: the supplier's update leaves it as it was entered.
             List.of("account_code", "account_date", "paid", "notes", "numberInv", "treasury_id"));
 
     public PartyLedgerSpec {
@@ -93,7 +97,11 @@ public record PartyLedgerSpec(
         return kind == PartyKind.CUSTOMER ? CUSTOMER : SUPPLIER;
     }
 
-    /** Whether editing a movement records who edited it. True for customers only. */
+    /**
+     * Whether editing a movement rewrites {@code user_id}. False on both sides: the
+     * column records who entered the payment, and an edit does not make someone else
+     * the one who entered it.
+     */
     public boolean updateRecordsTheUser() {
         return updateColumns.contains("user_id");
     }

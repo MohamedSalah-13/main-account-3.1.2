@@ -188,7 +188,11 @@ public class CustomerDao extends AbstractDao<Customers> {
             customers.setCredit_limit(rs.getInt(LIMIT_NUM));
             customers.setFirst_balance(rs.getDouble(FIRST_BALANCE));
             customers.setSelPriceObject(daoFactory.getItemsSelPriceDao().getDataById(rs.getInt(ITEMS_SEL_PRICE_ID)));
-            customers.setArea(new Area(rs.getInt(AREA_ID), rs.getString(AREA_NAME)));
+            // The area join is a LEFT join, so the name is absent for a customer whose
+            // area row has been deleted. The id it still carries is what the area combo
+            // needs; an empty name reads as "no area" rather than throwing.
+            String areaName = rs.getString(AREA_NAME);
+            customers.setArea(new Area(rs.getInt(AREA_ID), areaName == null ? "" : areaName));
             customers.setCreated_at(LocalDateTime.parse(rs.getString(DATE_INSERT), DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
         } catch (SQLException e) {
             throw new DaoException(e);

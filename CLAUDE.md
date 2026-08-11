@@ -126,17 +126,18 @@ lives and what its columns are called, and builds every statement over it —
 (exact id or telephone → names starting with the text → names containing it). A supplier is a customer
 without a credit limit and a price tier; everything else that differed was accident. Two asymmetries are
 kept deliberately and are commented as such: the supplier's date column is `date_insert` where the
-customer's is `created_at`, and the supplier's searches do **not** join `table_area` — an inner join is
-not free of meaning, it drops a party whose area row is gone. `PartyDaoStatementsTest` pins all of it.
+customer's is `created_at`, and the supplier's searches do **not** join `table_area`. The customer's
+join is a **`LEFT` join**: it is there to read the area's name, and it was an inner join, which dropped a
+customer whose area row had been deleted out of every list and every search while a supplier in the same
+state stayed. `PartyDaoStatementsTest` pins all of it.
 
 `PartyLedgerSpec` does the same for the two account tables. Only **payments** live in
 `customers_accounts` and `suppliers_accounts`; the invoice side of a statement comes from the view
 (`account_customer_table` unions the payments with `total_sales`), which is why saving an invoice never
-reaches the period lock there and is guarded at `TotalsSalesDao` instead. One difference between the two
-ledgers is not naming and is left as it was found: **the customer's update writes `user_id` and the
-supplier's does not**, so editing a supplier payment leaves it stamped with whoever entered it. Both
-inserts fill the column. `PartyLedgerStatementsTest.onlyTheCustomerUpdateRecordsWhoEditedIt` pins the
-difference and says why it was not resolved in passing.
+reaches the period lock there and is guarded at `TotalsSalesDao` instead. **`user_id` on a movement
+records who *entered* it**, so both inserts write it and neither update does — the customer's update used
+to, which meant the same edit restamped one payment and left the other alone. Who changed a row
+afterwards is `audit_log`'s answer, written by a trigger whether the application asks or not.
 
 **Changing a column means changing the spec, and `DocumentDaoStatementsTest` will tell you.** It pins
 every statement of all eight DAOs character for character, and pins the array bound to each against the
