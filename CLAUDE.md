@@ -120,6 +120,15 @@ returns, the party is `sup_code` or `sup_id`, what was settled in cash is `paid_
 statement over them is built from one place. The eight DAOs keep their `map` and their parameter
 arrays, which are the parts that know a model; they no longer write their own SQL.
 
+**The parties have the same seam.** `account.party.PartyTableSpec` says where a customer or a supplier
+lives and what its columns are called, and builds every statement over it —
+`CustomerDao` and `SuppliersDao` were the same file twice, down to the sixty-line three-phase search
+(exact id or telephone → names starting with the text → names containing it). A supplier is a customer
+without a credit limit and a price tier; everything else that differed was accident. Two asymmetries are
+kept deliberately and are commented as such: the supplier's date column is `date_insert` where the
+customer's is `created_at`, and the supplier's searches do **not** join `table_area` — an inner join is
+not free of meaning, it drops a party whose area row is gone. `PartyDaoStatementsTest` pins all of it.
+
 **Changing a column means changing the spec, and `DocumentDaoStatementsTest` will tell you.** It pins
 every statement of all eight DAOs character for character, and pins the array bound to each against the
 statement's parameter count. A repository merge that swaps two adjacent columns still produces valid
