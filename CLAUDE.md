@@ -85,6 +85,30 @@ is the central abstraction. Four implementations in `interfaces/impl_dataInterfa
 (`BuyController2`, `TotalsController`, `AccountController2`) serve customer/supplier × sale/return. When
 changing invoice behaviour, check all four implementations, and expect heavily generic signatures.
 
+**What the four are is declared in `account.document`, not spread over the screens.** `DocumentType`
+(SALES, SALES_RETURN, PURCHASE, PURCHASE_RETURN) answers what a document *means* — whose account it
+moves (`partyKind`), which half of the ledger it is on (`side`), which way it moves the stock and the
+treasury (`stockSign`/`cashSign`), whether it carries a delegate, which period lock guards it, and its
+five permissions. `DesignInterface.documentType()` is the one thing the four `impl_design` classes now
+answer for themselves; `show()`, `update()`, `delete()`, `show_totals()`, `show_totals_invoice()` and
+`showDataForCustomer()` are defaults that read it. That is why `BuyController2` no longer identifies a
+sale by comparing its permission against `SALES_SHOW` — a permission was the only field that differed
+between `DesignCustom` and `DesignCustomReturn`, and using it as an identity check is what a new
+document type would have broken.
+
+`DocumentTableSpec` is the other half: where a document's rows *live*. The four tables answer the same
+questions with different words — the key is `invoice_number` on the two invoices and `id` on the two
+returns, the party is `sup_code` or `sup_id`, what was settled in cash is `paid_up`,
+`paid_from_treasury` or `paid_to_treasury`, and the item on a line is `num` or `item_id` — and every
+statement over them is built from one place. The eight DAOs keep their `map` and their parameter
+arrays, which are the parts that know a model; they no longer write their own SQL.
+
+**Changing a column means changing the spec, and `DocumentDaoStatementsTest` will tell you.** It pins
+every statement of all eight DAOs character for character, and pins the array bound to each against the
+statement's parameter count. A repository merge that swaps two adjacent columns still produces valid
+SQL — it just saves the discount as a stock id — so the pinning is the only thing standing between that
+and a customer's database.
+
 ### Units
 
 An item is stocked in one **base unit** and may be bought or sold in others — قطعة, كرتونة, لفة, متر,

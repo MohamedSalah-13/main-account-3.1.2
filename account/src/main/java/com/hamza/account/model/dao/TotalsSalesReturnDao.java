@@ -1,12 +1,12 @@
 package com.hamza.account.model.dao;
 
+import com.hamza.account.document.DocumentTableSpec;
+import com.hamza.account.document.DocumentType;
 import com.hamza.account.model.domain.*;
 import com.hamza.account.type.InvoiceType;
 import com.hamza.controlsfx.database.AbstractDao;
 import com.hamza.account.period.PeriodLock;
-import com.hamza.account.period.PeriodLockRegistry;
 import com.hamza.controlsfx.database.DaoException;
-import com.hamza.controlsfx.database.SqlStatements;
 import lombok.extern.log4j.Log4j2;
 
 import java.math.BigDecimal;
@@ -20,21 +20,28 @@ import java.util.List;
 @Log4j2
 public class TotalsSalesReturnDao extends AbstractDao<Total_Sales_Re> {
 
-    public static final String TABLE_VIEW = "total_sales_return_names_table";
-    public static final String TABLE_NAME = "total_sales_re";
-    public static final String ID = "id";
+    /** Which document this DAO writes. The period lock it must respect follows from it. */
+    static final DocumentType DOCUMENT_TYPE = DocumentType.SALES_RETURN;
+
+    /** Where it lives, and every statement that reads or writes it. */
+    static final DocumentTableSpec SPEC = DocumentTableSpec.of(DOCUMENT_TYPE);
+
+    // The names map() reads the result set by - see TotalsSalesDao.
+    public static final String TABLE_VIEW = SPEC.view();
+    public static final String TABLE_NAME = SPEC.table();
+    public static final String ID = SPEC.key();
+    public static final String SUP_ID = SPEC.party();
+    public static final String INVOICE_DATE = SPEC.dateColumn();
+    public static final String PAID_FROM_TREASURY = SPEC.paid();
     public static final String STOCK_ID = "stock_id";
     public static final String TOTAL = "total";
-    public static final String INVOICE_DATE = "invoice_date";
     public static final String INVOICE_TYPE = "invoice_type";
-    public static final String SUP_ID = "sup_id";
     public static final String DELEGATE_ID = "delegate_id";
     public static final String TREASURY_ID = "treasury_id";
     //    public static final String TOTAL_SALES_ID = "total_sales_id";
     public static final String NOTES = "notes";
     public static final String DISCOUNT = "discount";
     //    public static final String DISCOUNT_TYPE = "discount_type";
-    public static final String PAID_FROM_TREASURY = "paid_from_treasury";
     public static final String USER_ID = "user_id";
     public static final String DATE_INSERT = "date_insert";
     private final String TOTAL_PROFIT = "total_profit";
@@ -48,26 +55,24 @@ public class TotalsSalesReturnDao extends AbstractDao<Total_Sales_Re> {
 
     @Override
     public List<Total_Sales_Re> loadAll() throws DaoException {
-        return queryForObjects(SqlStatements.selectStatement(TABLE_VIEW), this::map);
+        return queryForObjects(selectAllSql(), this::map);
     }
 
     @Override
     public List<Total_Sales_Re> loadAllById(int id) throws DaoException {
-        return queryForObjects(SqlStatements.selectStatementByColumnWhere(TABLE_VIEW, ID), this::map, id);
+        return queryForObjects(selectByIdSql(), this::map, id);
     }
 
     @Override
     public List<Total_Sales_Re> loadDataBetweenDate(String startDate, String endDate) throws DaoException {
-        String query = SqlStatements.selectStatement(TABLE_VIEW) + " WHERE " + INVOICE_DATE + " BETWEEN ? AND ?";
-        return queryForObjects(query, this::map, startDate, endDate);
+        return queryForObjects(selectBetweenDatesSql(), this::map, startDate, endDate);
     }
 
     @Override
     public int insert(Total_Sales_Re totalSalesRe) throws DaoException {
         // See TotalsSalesDao.insert: enforced here so it holds for every caller.
-        PeriodLock.require(totalSalesRe.getDate(), PeriodLockRegistry.SALES_RETURN.label());
-        String query = SqlStatements.insertStatement(TABLE_NAME, SUP_ID, INVOICE_DATE, INVOICE_TYPE, TOTAL
-                , DISCOUNT, PAID_FROM_TREASURY, STOCK_ID, DELEGATE_ID, TREASURY_ID, ID, NOTES, USER_ID);
+        PeriodLock.require(totalSalesRe.getDate(), DOCUMENT_TYPE.periodLock().label());
+        String query = insertSql();
         return insertMultiData(() -> {
             try {
                 // insert into total return
@@ -85,24 +90,13 @@ public class TotalsSalesReturnDao extends AbstractDao<Total_Sales_Re> {
 
     @Override
     public int update(Total_Sales_Re totalSalesRe) throws DaoException {
-        PeriodLock.requireMove(PeriodLockRegistry.SALES_RETURN, totalSalesRe.getId(), totalSalesRe.getDate());
-        String query = SqlStatements.updateStatement(TABLE_NAME, ID, SUP_ID, INVOICE_DATE, INVOICE_TYPE, TOTAL, DISCOUNT, PAID_FROM_TREASURY, STOCK_ID, DELEGATE_ID, TREASURY_ID, NOTES);
+        PeriodLock.requireMove(DOCUMENT_TYPE.periodLock(), totalSalesRe.getId(), totalSalesRe.getDate());
+        String query = updateSql();
         return insertMultiData(() -> {
-            Object[] objects = {totalSalesRe.getCustomer().getId()
-                    , totalSalesRe.getDate()
-                    , totalSalesRe.getInvoiceType().getId()
-                    , totalSalesRe.getTotal()
-                    , totalSalesRe.getDiscount()
-                    , totalSalesRe.getPaid()
-                    , totalSalesRe.getStockData().getId()
-                    , totalSalesRe.getEmployeeObject().getId()
-                    , totalSalesRe.getTreasuryModel().getId()
-                    , totalSalesRe.getNotes()
-//                    , totalSalesRe.getTotalSalesId()
-                    , totalSalesRe.getId()};
+            Object[] objects = getUpdateData(totalSalesRe);
 
             // delete invoice from total before update
-            executeUpdateWithException(SqlStatements.deleteStatement(SalesReturnDao.TABLE_NAME, SalesReturnDao.INVOICE_NUMBER), totalSalesRe.getId());
+            executeUpdateWithException(lineDeleteByDocumentSql(), totalSalesRe.getId());
             // insert new invoice to total
             daoFactory.salesReturnsDao().insertList(totalSalesRe.getSalesReturnList());
             //update total
@@ -113,13 +107,78 @@ public class TotalsSalesReturnDao extends AbstractDao<Total_Sales_Re> {
 
     @Override
     public int deleteById(int id) throws DaoException {
-        String deleteStatement = SqlStatements.deleteStatement(TABLE_NAME, ID);
-        return executeUpdate(deleteStatement, id);
+        return executeUpdate(deleteSql(), id);
     }
 
     @Override
     public Total_Sales_Re getDataById(int id) throws DaoException {
-        return queryForObject(SqlStatements.selectStatementByColumnWhere(TABLE_VIEW, ID), this::map, id);
+        return queryForObject(selectByIdSql(), this::map, id);
+    }
+
+    // ---- the statements, and the order their parameters go in -------------------
+    // See TotalsSalesDao. The return family keys on id rather than invoice_number and
+    // spells the party column sup_id, so nothing here can be shared with the sales
+    // family by name alone - which is the whole reason these four DAOs exist.
+
+    String selectAllSql() {
+        return SPEC.selectAllSql();
+    }
+
+    String selectBetweenDatesSql() {
+        return SPEC.selectBetweenDatesSql();
+    }
+
+    String selectByPartySql() {
+        return SPEC.selectByPartySql();
+    }
+
+    String selectByYearSql() {
+        return SPEC.selectByYearSql();
+    }
+
+    String deleteInRangeSql(int count) {
+        return SPEC.deleteInRangeSql(count);
+    }
+
+    /** Its lines go with it, and are rewritten wholesale on every update. */
+    String lineDeleteByDocumentSql() {
+        return SPEC.lineDeleteByDocumentSql();
+    }
+
+    String insertSql() {
+        return SPEC.insertSql();
+    }
+
+    String updateSql() {
+        return SPEC.updateSql();
+    }
+
+    String deleteSql() {
+        return SPEC.deleteSql();
+    }
+
+    String selectByIdSql() {
+        return SPEC.selectByIdSql();
+    }
+
+    String maxIdSql() {
+        return SPEC.maxIdSql();
+    }
+
+    /** The parameters of {@link #updateSql()}, which is not the order {@link #getData} uses. */
+    Object[] getUpdateData(Total_Sales_Re totalSalesRe) {
+        return new Object[]{totalSalesRe.getCustomer().getId()
+                , totalSalesRe.getDate()
+                , totalSalesRe.getInvoiceType().getId()
+                , totalSalesRe.getTotal()
+                , totalSalesRe.getDiscount()
+                , totalSalesRe.getPaid()
+                , totalSalesRe.getStockData().getId()
+                , totalSalesRe.getEmployeeObject().getId()
+                , totalSalesRe.getTreasuryModel().getId()
+                , totalSalesRe.getNotes()
+//                    , totalSalesRe.getTotalSalesId()
+                , totalSalesRe.getId()};
     }
 
     @Override
@@ -184,21 +243,18 @@ public class TotalsSalesReturnDao extends AbstractDao<Total_Sales_Re> {
 
     public int deleteInvoicesInRange(Integer... invoiceNumbers) throws DaoException {
         if (invoiceNumbers.length == 0) return 0;
-        String query = SqlStatements.deleteInRangeId(TABLE_NAME, ID, invoiceNumbers.length);
-        return executeUpdate(query, (Object[]) invoiceNumbers);
+        return executeUpdate(deleteInRangeSql(invoiceNumbers.length), (Object[]) invoiceNumbers);
     }
 
     public List<Total_Sales_Re> getTotalSalesByCustomerId(int customerId) throws DaoException {
-        String query = SqlStatements.selectStatement(TABLE_VIEW).concat(" WHERE ").concat(SUP_ID).concat(" = ?");
-        return queryForObjects(query, this::map, customerId);
+        return queryForObjects(selectByPartySql(), this::map, customerId);
     }
 
     public List<Total_Sales_Re> getTotalSalesByYear(int year) throws DaoException {
-        String query = SqlStatements.selectStatement(TABLE_VIEW).concat(" WHERE YEAR(invoice_date)").concat(" = ?");
-        return queryForObjects(query, this::map, year);
+        return queryForObjects(selectByYearSql(), this::map, year);
     }
 
     public int getMaxId() throws DaoException {
-        return queryForInt("SELECT COALESCE(MAX(id), 0) + 1 FROM " + TABLE_NAME);
+        return queryForInt(maxIdSql());
     }
 }

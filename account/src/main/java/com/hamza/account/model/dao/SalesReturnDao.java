@@ -3,9 +3,9 @@ package com.hamza.account.model.dao;
 import com.hamza.account.model.domain.ItemsModel;
 import com.hamza.account.model.domain.Sales_Return;
 import com.hamza.account.model.domain.UnitsModel;
+import com.hamza.account.document.DocumentTableSpec;
 import com.hamza.controlsfx.database.AbstractDao;
 import com.hamza.controlsfx.database.DaoException;
-import com.hamza.controlsfx.database.SqlStatements;
 import lombok.extern.log4j.Log4j2;
 
 import java.sql.PreparedStatement;
@@ -18,12 +18,15 @@ import static com.hamza.controlsfx.util.NumberUtils.roundToTwoDecimalPlaces;
 @Log4j2
 public class SalesReturnDao extends AbstractDao<Sales_Return> {
 
-    public static final String TABLE_NAME = "sales_re";
-    public static final String INVOICE_NUMBER = "invoice_number";
+    /** Which document these lines belong to, and every statement over them. */
+    static final DocumentTableSpec SPEC = DocumentTableSpec.SALES_RETURN;
+
+    public static final String TABLE_NAME = SPEC.lineTable();
+    public static final String INVOICE_NUMBER = DocumentTableSpec.LINE_DOCUMENT;
     private final DaoFactory daofactory;
-    private final String TABLE_VIEW = "sales_return_names_table";
-    private final String ID = "id";
-    private final String ITEM_ID = "item_id";
+    private final String TABLE_VIEW = SPEC.lineView();
+    private final String ID = DocumentTableSpec.LINE_KEY;
+    private final String ITEM_ID = SPEC.lineItem();
     private final String QUANTITY = "quantity";
     private final String TYPE = "type";
     private final String TYPE_VALUE = "type_value";
@@ -38,17 +41,40 @@ public class SalesReturnDao extends AbstractDao<Sales_Return> {
 
     @Override
     public List<Sales_Return> loadAll() throws DaoException {
-        return queryForObjects(SqlStatements.selectStatement(TABLE_VIEW), this::map);
+        return queryForObjects(selectAllSql(), this::map);
     }
 
     @Override
     public List<Sales_Return> loadAllById(int id) throws DaoException {
-        return queryForObjects(SqlStatements.selectStatementByColumnWhere(TABLE_VIEW, INVOICE_NUMBER), this::map, id);
+        return queryForObjects(selectByDocumentSql(), this::map, id);
     }
 
     @Override
     public int deleteById(int id) throws DaoException {
-        return executeUpdate(SqlStatements.deleteStatement(TABLE_NAME, ID), id);
+        return executeUpdate(deleteSql(), id);
+    }
+
+    // ---- the statements ---------------------------------------------------------
+    // Named so DocumentDaoStatementsTest can read them without a database.
+
+    String selectAllSql() {
+        return SPEC.lineSelectAllSql();
+    }
+
+    String selectByDocumentSql() {
+        return SPEC.lineSelectByDocumentSql();
+    }
+
+    String selectBetweenDocumentsSql() {
+        return SPEC.lineSelectBetweenDocumentsSql();
+    }
+
+    String selectByItemSql() {
+        return SPEC.lineSelectByItemSql();
+    }
+
+    String deleteSql() {
+        return SPEC.lineDeleteSql();
     }
 
     @Override
@@ -90,25 +116,37 @@ public class SalesReturnDao extends AbstractDao<Sales_Return> {
         return salesReturn;
     }
 
+    /**
+     * The line insert, named so {@code DocumentDaoStatementsTest} can read it without a
+     * database. Same columns as the sales line, in the same order, under a different
+     * name for the item.
+     */
+    String insertListSql() {
+        return SPEC.lineInsertSql();
+    }
+
     @Override
     public int insertList(List<Sales_Return> list) throws DaoException {
         try {
-            return executeUpdateListWithException(list, SqlStatements.insertStatement(TABLE_NAME, INVOICE_NUMBER
-                    , ITEM_ID, TYPE, QUANTITY, PRICE, "buy_price", "total_sel_price", "total_buy_price", "total_profit"
-                    , DISCOUNT, TYPE_VALUE, EXPIRATION_DATE), this::setData);
+            return executeUpdateListWithException(list, insertListSql(), this::setData);
         } catch (SQLException e) {
             throw new DaoException(e);
         }
     }
 
+    /** The parameters of {@link #insertListSql()}, in its column order. */
+    Object[] lineData(Sales_Return salesReturn) {
+        return new Object[]{salesReturn.getInvoiceNumber(), salesReturn.getItems().getId()
+                , salesReturn.getUnitsType().getUnit_id(), salesReturn.getQuantity(), salesReturn.getPrice()
+                , salesReturn.getBuy_price(), salesReturn.getTotalSelPrice()
+                , salesReturn.getTotal_buy_price(), salesReturn.getTotal_profit()
+                , salesReturn.getDiscount()
+                , salesReturn.getUnitsType().getValue(), salesReturn.getExpiration_date()};
+    }
+
     private void setData(PreparedStatement statement, Sales_Return salesReturn) throws SQLException {
         try {
-            Object[] objects = new Object[]{salesReturn.getInvoiceNumber(), salesReturn.getItems().getId()
-                    , salesReturn.getUnitsType().getUnit_id(), salesReturn.getQuantity(), salesReturn.getPrice()
-                    , salesReturn.getBuy_price(), salesReturn.getTotalSelPrice()
-                    , salesReturn.getTotal_buy_price(), salesReturn.getTotal_profit()
-                    , salesReturn.getDiscount()
-                    , salesReturn.getUnitsType().getValue(), salesReturn.getExpiration_date()};
+            Object[] objects = lineData(salesReturn);
             for (int i = 0; i < objects.length; i++) {
                 statement.setObject(i + 1, objects[i]);
             }
@@ -118,13 +156,11 @@ public class SalesReturnDao extends AbstractDao<Sales_Return> {
     }
 
     public List<Sales_Return> loadBetweenTwoInvoiceNumber(int first, int last) throws DaoException {
-        String query = SqlStatements.selectStatement(TABLE_VIEW) + " WHERE " + INVOICE_NUMBER + " BETWEEN ? AND ?";
-        return queryForObjects(query, this::map, first, last);
+        return queryForObjects(selectBetweenDocumentsSql(), this::map, first, last);
     }
 
     public List<Sales_Return> findByNumItem(int numItem) throws DaoException {
-        String query = SqlStatements.selectStatement(TABLE_VIEW).concat(" WHERE ").concat(ITEM_ID).concat(" = ?");
-        return queryForObjects(query, this::map, numItem);
+        return queryForObjects(selectByItemSql(), this::map, numItem);
     }
 
 }

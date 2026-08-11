@@ -1,14 +1,14 @@
 package com.hamza.account.model.dao;
 
+import com.hamza.account.document.DocumentTableSpec;
+import com.hamza.account.document.DocumentType;
 import com.hamza.account.model.domain.*;
 import com.hamza.account.trial.TrialManager;
 import com.hamza.account.type.InvoiceStatus;
 import com.hamza.account.type.InvoiceType;
 import com.hamza.controlsfx.database.AbstractDao;
 import com.hamza.account.period.PeriodLock;
-import com.hamza.account.period.PeriodLockRegistry;
 import com.hamza.controlsfx.database.DaoException;
-import com.hamza.controlsfx.database.SqlStatements;
 
 import java.math.BigDecimal;
 import java.sql.ResultSet;
@@ -21,17 +21,23 @@ import static com.hamza.controlsfx.util.NumberUtils.roundToTwoDecimalPlaces;
 
 public class TotalsBuyDao extends AbstractDao<Total_buy> {
 
+    /** Which document this DAO writes. The period lock it must respect follows from it. */
+    static final DocumentType DOCUMENT_TYPE = DocumentType.PURCHASE;
+
+    /** Where it lives, and every statement that reads or writes it. */
+    static final DocumentTableSpec SPEC = DocumentTableSpec.of(DOCUMENT_TYPE);
+
+    // The names map() reads the result set by - see TotalsSalesDao.
+    private final String TABLE_VIEW = SPEC.view();
+    private final String INVOICE_NUMBER = SPEC.key();
+    private final String SUP_CODE = SPEC.party();
+    private final String INVOICE_DATE = SPEC.dateColumn();
+    private final String PAID_UP = SPEC.paid();
     private final String DATE_INSERT = "date_insert";
-    private final String TABLE_VIEW = "total_purchase_names_table";
-    private final String TABLE_NAME = "total_buy";
-    private final String INVOICE_NUMBER = "invoice_number";
-    private final String SUP_CODE = "sup_code";
     private final String INVOICE_TYPE = "invoice_type";
-    private final String INVOICE_DATE = "invoice_date";
     private final String TOTAL = "total";
     private final String DISCOUNT = "discount";
     private final String DISCOUNT_TYPE = "discount_type";
-    private final String PAID_UP = "paid_up";
     private final String STOCK_ID = "stock_id";
     private final String TREASURY_ID = "treasury_id";
     private final String NOTES = "notes";
@@ -48,21 +54,20 @@ public class TotalsBuyDao extends AbstractDao<Total_buy> {
 
     @Override
     public List<Total_buy> loadAll() throws DaoException {
-        return queryForObjects(SqlStatements.selectStatement(TABLE_VIEW), this::map);
+        return queryForObjects(selectAllSql(), this::map);
     }
 
     @Override
     public List<Total_buy> loadDataBetweenDate(String startDate, String endDate) throws DaoException {
-        String query = SqlStatements.selectStatement(TABLE_VIEW) + " WHERE " + INVOICE_DATE + " BETWEEN ? AND ?";
-        return queryForObjects(query, this::map, startDate, endDate);
+        return queryForObjects(selectBetweenDatesSql(), this::map, startDate, endDate);
     }
 
     @Override
     public int insert(Total_buy total_buy) throws DaoException {
         // See TotalsSalesDao.insert: enforced here so it holds for every caller.
-        PeriodLock.require(total_buy.getDate(), PeriodLockRegistry.PURCHASE_INVOICE.label());
+        PeriodLock.require(total_buy.getDate(), DOCUMENT_TYPE.periodLock().label());
         if (!withConnection(c -> new TrialManager(c).canAddPurchase())) return 0;
-        String query = SqlStatements.insertStatement(TABLE_NAME, SUP_CODE, INVOICE_TYPE, INVOICE_DATE, TOTAL, DISCOUNT, PAID_UP, STOCK_ID, TREASURY_ID, NOTES, USER_ID, INVOICE_NUMBER);
+        String query = insertSql();
         return insertMultiData(() -> {
             Object[] data = getData(total_buy);
             // first insert data in total
@@ -74,24 +79,14 @@ public class TotalsBuyDao extends AbstractDao<Total_buy> {
 
     @Override
     public int update(Total_buy total_buy) throws DaoException {
-        PeriodLock.requireMove(PeriodLockRegistry.PURCHASE_INVOICE, total_buy.getId(), total_buy.getDate());
-        String query = SqlStatements.updateStatement(TABLE_NAME, INVOICE_NUMBER, SUP_CODE, INVOICE_TYPE, INVOICE_DATE, TOTAL, DISCOUNT, PAID_UP, STOCK_ID, TREASURY_ID, NOTES);
+        PeriodLock.requireMove(DOCUMENT_TYPE.periodLock(), total_buy.getId(), total_buy.getDate());
+        String query = updateSql();
         return insertMultiData(() -> {
-            Object[] data = new Object[]{total_buy.getSupplierData().getId()
-                    , total_buy.getInvoiceType().getId()
-                    , total_buy.getDate()
-                    , total_buy.getTotal()
-                    , total_buy.getDiscount()
-                    , total_buy.getPaid()
-                    , total_buy.getStockData().getId()
-                    , total_buy.getTreasuryModel().getId()
-                    , total_buy.getNotes()
-                    , total_buy.getId()
-            };
+            Object[] data = getUpdateData(total_buy);
 
             executeUpdateWithException(query, data);
             // first, delete data from purchase
-            executeUpdateWithException(SqlStatements.deleteStatement(PurchaseDao.TABLE_NAME, PurchaseDao.INVOICE_NUMBER), total_buy.getId());
+            executeUpdateWithException(lineDeleteByDocumentSql(), total_buy.getId());
             // Secondly, enter the purchase data.
             // insert if not existing
             List<Purchase> purchaseList = total_buy.getPurchaseList();
@@ -103,12 +98,76 @@ public class TotalsBuyDao extends AbstractDao<Total_buy> {
 
     @Override
     public int deleteById(int id) throws DaoException {
-        return executeUpdate(SqlStatements.deleteStatement(TABLE_NAME, INVOICE_NUMBER), id);
+        return executeUpdate(deleteSql(), id);
     }
 
     @Override
     public Total_buy getDataById(int id) throws DaoException {
-        return queryForObject(SqlStatements.selectStatementByColumnWhere(TABLE_VIEW, INVOICE_NUMBER), this::map, id);
+        return queryForObject(selectByIdSql(), this::map, id);
+    }
+
+    // ---- the statements, and the order their parameters go in -------------------
+    // See TotalsSalesDao. Note how little of this family differs from the sales one -
+    // no delegate, and the user and invoice number the other way round.
+
+    String selectAllSql() {
+        return SPEC.selectAllSql();
+    }
+
+    String selectBetweenDatesSql() {
+        return SPEC.selectBetweenDatesSql();
+    }
+
+    String selectByPartySql() {
+        return SPEC.selectByPartySql();
+    }
+
+    String selectByYearSql() {
+        return SPEC.selectByYearSql();
+    }
+
+    String deleteInRangeSql(int count) {
+        return SPEC.deleteInRangeSql(count);
+    }
+
+    /** Its lines go with it, and are rewritten wholesale on every update. */
+    String lineDeleteByDocumentSql() {
+        return SPEC.lineDeleteByDocumentSql();
+    }
+
+    String insertSql() {
+        return SPEC.insertSql();
+    }
+
+    String updateSql() {
+        return SPEC.updateSql();
+    }
+
+    String deleteSql() {
+        return SPEC.deleteSql();
+    }
+
+    String selectByIdSql() {
+        return SPEC.selectByIdSql();
+    }
+
+    String maxIdSql() {
+        return SPEC.maxIdSql();
+    }
+
+    /** The parameters of {@link #updateSql()}, which is not the order {@link #getData} uses. */
+    Object[] getUpdateData(Total_buy total_buy) {
+        return new Object[]{total_buy.getSupplierData().getId()
+                , total_buy.getInvoiceType().getId()
+                , total_buy.getDate()
+                , total_buy.getTotal()
+                , total_buy.getDiscount()
+                , total_buy.getPaid()
+                , total_buy.getStockData().getId()
+                , total_buy.getTreasuryModel().getId()
+                , total_buy.getNotes()
+                , total_buy.getId()
+        };
     }
 
     @Override
@@ -171,36 +230,33 @@ public class TotalsBuyDao extends AbstractDao<Total_buy> {
 
     public int deleteInvoicesInRange(Integer... invoiceNumbers) throws DaoException {
         if (invoiceNumbers.length == 0) return 0;
-        String query = SqlStatements.deleteInRangeId(TABLE_NAME, INVOICE_NUMBER, invoiceNumbers.length);
-        return executeUpdate(query, (Object[]) invoiceNumbers);
+        return executeUpdate(deleteInRangeSql(invoiceNumbers.length), (Object[]) invoiceNumbers);
     }
 
     public List<Total_buy> getTotalBuyBySupId(int customerId) throws DaoException {
-        String query = SqlStatements.selectStatement(TABLE_VIEW).concat(" WHERE ").concat(SUP_CODE).concat(" = ?");
-        return queryForObjects(query, this::map, customerId);
+        return queryForObjects(selectByPartySql(), this::map, customerId);
     }
 
     public List<Total_buy> getTotalBuyByYear(int year) throws DaoException {
-        String query = SqlStatements.selectStatement(TABLE_VIEW).concat(" WHERE YEAR(invoice_date)").concat(" = ?");
-        return queryForObjects(query, this::map, year);
+        return queryForObjects(selectByYearSql(), this::map, year);
     }
 
     public List<Integer> getListYear() {
-        String query = "SELECT YEAR(invoice_date) AS action_year FROM total_sales\n" +
-                "UNION\n" +
-                "SELECT YEAR(invoice_date) FROM total_sales_re\n" +
-                "UNION\n" +
-                "SELECT YEAR(invoice_date) FROM total_buy\n" +
-                "UNION\n" +
-                "SELECT YEAR(invoice_date) FROM total_buy_re\n" +
-                "\n" +
-                "-- ترتيب السنوات تنازلياً (من الأحدث للأقدم)\n" +
-                "ORDER BY action_year DESC;";
-        return queryForIntList(query);
+        return queryForIntList(yearsSql());
+    }
+
+    /**
+     * Every year any of the four documents was written in - سنوات الحركة، من الأحدث
+     * للأقدم. It lives on the purchase DAO for no reason other than that being where it
+     * was needed first: it names all four tables and belongs to none of them, so the
+     * statement itself is now built from the four specs.
+     */
+    static String yearsSql() {
+        return DocumentTableSpec.yearsSql();
     }
 
     public int getMaxId() throws DaoException {
-        return queryForInt("SELECT COALESCE(MAX(invoice_number), 0) + 1 FROM " + TABLE_NAME);
+        return queryForInt(maxIdSql());
     }
 
 }
