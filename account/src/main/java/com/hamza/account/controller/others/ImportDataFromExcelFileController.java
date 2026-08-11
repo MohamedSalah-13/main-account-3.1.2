@@ -18,6 +18,7 @@ import com.hamza.controlsfx.others.DoubleSetting;
 import com.hamza.controlsfx.table.TableColumnAnnotation;
 import com.hamza.controlsfx.table.columnEdit.ColumnSetting;
 import com.hamza.controlsfx.util.Extensions;
+import javafx.application.Platform;
 import javafx.beans.property.IntegerProperty;
 import javafx.beans.property.SimpleIntegerProperty;
 import javafx.collections.FXCollections;
@@ -122,8 +123,13 @@ public class ImportDataFromExcelFileController implements Initializable, AppSett
             if (file != null) {
                 maskerPaneSetting.showMaskerPane(() -> {
                     try {
-                        myObservableList.clear();
-                        myObservableList.addAll(fetchDataFromExcel(file));
+                        // Reading the workbook is the wait; the table's list is filled
+                        // back on the JavaFX thread.
+                        var rows = fetchDataFromExcel(file);
+                        Platform.runLater(() -> {
+                            myObservableList.clear();
+                            myObservableList.addAll(rows);
+                        });
                     } catch (Exception e) {
                         log.error(e.getMessage(), e);
                         AllAlerts.alertError(e.getMessage());

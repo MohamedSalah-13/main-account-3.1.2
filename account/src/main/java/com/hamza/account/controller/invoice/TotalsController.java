@@ -33,6 +33,7 @@ import com.hamza.controlsfx.others.CssToColorHelper;
 import com.hamza.controlsfx.others.DateSetting;
 import com.hamza.controlsfx.table.TableColumnAnnotation;
 import com.hamza.controlsfx.table.columnEdit.ColumnSetting;
+import javafx.application.Platform;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.value.ObservableValue;
 import javafx.collections.FXCollections;
@@ -392,15 +393,22 @@ public class TotalsController<T1 extends BasePurchasesAndSales, T2 extends BaseT
     }
 
     private void refreshData() {
+        // Read off the pickers before leaving the JavaFX thread.
+        var from = dateFrom.getValue().toString();
+        var to = dateTo.getValue().toString();
         maskerPaneSetting.showMaskerPane(() -> {
             try {
-                var collection = dataInterface.totalsAndPurchaseList().totalList(dateFrom.getValue().toString(), dateTo.getValue().toString())
+                var collection = dataInterface.totalsAndPurchaseList().totalList(from, to)
                         .stream().sorted(Comparator.comparing(BaseTotals::getDate)).toList();
-                observableList.clear();
-                observableList.setAll(collection);
-                filteredTable.setPredicate(t2 -> true);
-                tableView.refresh();
-                sumTable();
+                // The query runs off the JavaFX thread; what the table is showing is
+                // replaced back on it.
+                Platform.runLater(() -> {
+                    observableList.clear();
+                    observableList.setAll(collection);
+                    filteredTable.setPredicate(t2 -> true);
+                    tableView.refresh();
+                    sumTable();
+                });
             } catch (Exception e) {
                 exceptionHandle(e);
             }

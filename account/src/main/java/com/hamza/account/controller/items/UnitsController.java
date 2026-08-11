@@ -18,6 +18,7 @@ import com.hamza.controlsfx.language.Setting_Language;
 import com.hamza.controlsfx.menu.ActionTable;
 import com.hamza.controlsfx.menu.ContextMenuTable;
 import com.hamza.controlsfx.table.TableColumnAnnotation;
+import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
@@ -278,7 +279,8 @@ public class UnitsController implements Initializable, AppSettingInterface {
     private void refreshTable() {
         MaskerPaneSetting maskerPaneSetting = new MaskerPaneSetting(stackPane);
         maskerPaneSetting.showMaskerPane(() -> {
-            tableView.setItems(FXCollections.observableArrayList(getUnitsModelList()));
+            var units = getUnitsModelList();
+            Platform.runLater(() -> tableView.setItems(FXCollections.observableArrayList(units)));
         });
     }
 

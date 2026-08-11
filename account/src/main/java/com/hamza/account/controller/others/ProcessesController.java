@@ -16,6 +16,7 @@ import com.hamza.controlsfx.others.DateSetting;
 import com.hamza.controlsfx.table.TableColumnAnnotation;
 import com.hamza.controlsfx.table.columnEdit.ColumnSetting;
 import com.hamza.controlsfx.util.ImageChoose;
+import javafx.application.Platform;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.value.ObservableValue;
 import javafx.collections.FXCollections;
@@ -198,15 +199,18 @@ public class ProcessesController implements Initializable {
     }
 
     private void loadData() {
+        // The pickers are read here, on the JavaFX thread, not inside the query.
+        var from = dateFrom.getValue();
+        var to = dateTo.getValue();
         maskerPaneSetting.showMaskerPane(() -> {
-            var processesData = getProcessesData();
-            observableListTable.setAll(processesData);
+            var processesData = getProcessesData(from, to);
+            Platform.runLater(() -> observableListTable.setAll(processesData));
         });
     }
 
-    private List<Audit_log> getProcessesData() {
+    private List<Audit_log> getProcessesData(LocalDate from, LocalDate to) {
         try {
-            return auditLogService.getProcessesData(dateFrom.getValue(), dateTo.getValue());
+            return auditLogService.getProcessesData(from, to);
         } catch (DaoException e) {
             log.error(e.getMessage());
             AllAlerts.alertError(e.getMessage());
@@ -236,9 +240,11 @@ public class ProcessesController implements Initializable {
                 var i = auditLogService.deleteInRangeId(ids);
                 if (i > 0) {
                     AllAlerts.alertSave();
+                    var from = dateFrom.getValue();
+                    var to = dateTo.getValue();
                     maskerPaneSetting.showMaskerPane(() -> {
-                        var processesData = getProcessesData();
-                        observableListTable.setAll(processesData);
+                        var processesData = getProcessesData(from, to);
+                        Platform.runLater(() -> observableListTable.setAll(processesData));
                     });
                     log.info("processes deleted");
                 }

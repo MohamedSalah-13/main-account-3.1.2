@@ -16,7 +16,8 @@ import com.hamza.account.type.ProcessType;
 import com.hamza.account.view.LogApplication;
 import com.hamza.account.view.ShowInvoiceApplication;
 import com.hamza.controlsfx.alert.AllAlerts;
-import com.hamza.controlsfx.controller.MaskerPaneSetting;
+import javafx.application.Platform;
+import com.hamza.account.otherSetting.MaskerPaneSetting;
 import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.language.Setting_Language;
 import com.hamza.controlsfx.others.DateSetting;
@@ -257,15 +258,21 @@ public class TreasureDetailsController {
     }
 
     private void refreshTableView() {
+        // Read off the pickers before leaving the JavaFX thread.
+        var from = dateFrom.getValue().toString();
+        var to = dateTo.getValue().toString();
         maskerPaneSetting.showMaskerPane(() -> {
             try {
-                var treasuryBalanceSummary = treasuryBalanceService.getAllTreasuryBalanceBetweenTwoDate(dateFrom.getValue().toString()
-                                , dateTo.getValue().toString())
+                var treasuryBalanceSummary = treasuryBalanceService.getAllTreasuryBalanceBetweenTwoDate(from, to)
                         .stream()
 //                        .filter(treasuryBalance -> treasuryBalance.getTotal_income() != 0 && treasuryBalance.getTotal_output() != 0)
                         .toList();
-                treasuryBalances.clear();
-                treasuryBalances.addAll(treasuryBalanceSummary);
+                // The query is the slow part and stays here; the list the table is
+                // showing may only be touched on the JavaFX thread.
+                Platform.runLater(() -> {
+                    treasuryBalances.clear();
+                    treasuryBalances.addAll(treasuryBalanceSummary);
+                });
             } catch (DaoException e) {
                 log.error(e.getMessage(), e);
                 AllAlerts.alertError(e.getMessage());

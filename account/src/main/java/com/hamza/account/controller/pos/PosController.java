@@ -63,6 +63,8 @@ import java.io.ByteArrayInputStream;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.function.ToDoubleFunction;
@@ -90,12 +92,15 @@ public class PosController extends ButtonSetting {
     private final NameController<Sales, Total_Sales, Customers, CustomerAccount> nameController;
     private final DataInterface<Sales, Total_Sales, Customers, CustomerAccount> dataInterface;
     private final Map<BasePurchasesAndSales, String> originalNames = new HashMap<>();
-    private final Map<Integer, List<Button>> groupButtonsCache = new HashMap<>();
-    private final Map<Integer, List<ItemsModel>> groupItemsCache = new HashMap<>();
-    private final Map<Integer, Button> itemButtonCache = new HashMap<>();
-    private final Map<Integer, ItemRef> itemRefById = new HashMap<>();
-    private final Map<String, List<ItemRef>> searchIndex = new HashMap<>();
-    private final List<ItemRef> allIndexedItems = new ArrayList<>();
+    // Concurrent because the caches and the index are now filled on the worker
+    // thread the masker pane runs its action on - loading a group and searching both
+    // reach them - while the JavaFX thread reads them to draw the buttons.
+    private final Map<Integer, List<Button>> groupButtonsCache = new ConcurrentHashMap<>();
+    private final Map<Integer, List<ItemsModel>> groupItemsCache = new ConcurrentHashMap<>();
+    private final Map<Integer, Button> itemButtonCache = new ConcurrentHashMap<>();
+    private final Map<Integer, ItemRef> itemRefById = new ConcurrentHashMap<>();
+    private final Map<String, List<ItemRef>> searchIndex = new ConcurrentHashMap<>();
+    private final List<ItemRef> allIndexedItems = new CopyOnWriteArrayList<>();
     private final Label loadingLabel = new Label("جاري التحميل...");
     private final Button loadMoreButton = new Button("المزيد");
 
@@ -252,10 +257,18 @@ public class PosController extends ButtonSetting {
 
         flowPane.getChildren().setAll(loadingLabel);
         maskerPaneSetting.showMaskerPane(() -> {
-            paneList.clear();
-            itemsList = loadItemsForGroup(mainGroup.getId());
-            paneList.addAll(buildButtons(itemsList));
-            cacheGroup(mainGroup.getId(), itemsList, paneList);
+            // The query and the buttons are built on the worker; paneList is what the
+            // rest of the screen reads, so it is replaced on the JavaFX thread. This
+            // runs before onSucceeded below - it was queued first - so the cache is
+            // there when the group is shown.
+            var items = loadItemsForGroup(mainGroup.getId());
+            var buttons = buildButtons(items);
+            Platform.runLater(() -> {
+                itemsList = items;
+                paneList.clear();
+                paneList.addAll(buttons);
+                cacheGroup(mainGroup.getId(), items, paneList);
+            });
         });
         maskerPaneSetting.getVoidTask().setOnSucceeded(event -> showGroupFromCache(mainGroup.getId()));
     }
@@ -467,11 +480,15 @@ public class PosController extends ButtonSetting {
         return nameColumn;
     }
 
+    /**
+     * The refresh button. It used to hang {@code loadData()} off the masker's task
+     * while the line that starts that task was commented out, so it either threw on
+     * a null task or attached a handler to one that had already finished and never
+     * ran at all. {@code loadData()} reloads the group, which shows the masker
+     * itself.
+     */
     private void refreshData() {
-//        maskerPaneSetting.showMaskerPane(LoadDataAndList::get2ItemsLoad);
-        maskerPaneSetting.getVoidTask().setOnSucceeded(event -> {
-            loadData();
-        });
+        loadData();
     }
 
     private void loadData() {
@@ -710,35 +727,44 @@ public class PosController extends ButtonSetting {
     }
 
     private void printInvoice() {
+        // The invoice is read off the screen here, on the JavaFX thread, and what
+        // goes to the worker is a snapshot: the rows are cleared by clearData() the
+        // moment the printing succeeds, and the till is free to take the next sale
+        // while the report is still compiling.
+        int invNumber = Integer.parseInt(textCode.getText());
+        var discountValue = Double.parseDouble(textDiscount.getText());
+        var addons = Double.parseDouble(textAddons.getText());
+        List<ModelPrintInvoice> modelPrintInvoices = new ArrayList<>();
+
+        for (BasePurchasesAndSales basePurchasesAndSales : tableView.getItems()) {
+            ModelPrintInvoice modelPrintInvoice
+                    = new ModelPrintInvoice(basePurchasesAndSales.getItems().getNameItem(),
+                    basePurchasesAndSales.getItems().getBarcode(), basePurchasesAndSales.getTypeName()
+                    , basePurchasesAndSales.getPrice(), basePurchasesAndSales.getQuantity(), basePurchasesAndSales.getTotal()
+                    , basePurchasesAndSales.getDiscount(), basePurchasesAndSales.getTotal() - basePurchasesAndSales.getDiscount()
+            );
+            modelPrintInvoices.add(modelPrintInvoice);
+        }
+
+        var format = LocalDateTime.now().format(DATE_TIME_FORMATTER);
+        var string = datePicker.getValue().toString();
+        var address = textAddress.getText();
+        var tel = textTel.getText();
+        var customerName = textCustomName.getText();
+
         maskerPaneSetting.showMaskerPane(() -> {
             Print_Reports printReports = new Print_Reports();
-            int invNumber = Integer.parseInt(textCode.getText());
-            var discountValue = Double.parseDouble(textDiscount.getText());
-            List<ModelPrintInvoice> modelPrintInvoices = new ArrayList<>();
-
-            for (BasePurchasesAndSales basePurchasesAndSales : tableView.getItems()) {
-                ModelPrintInvoice modelPrintInvoice
-                        = new ModelPrintInvoice(basePurchasesAndSales.getItems().getNameItem(),
-                        basePurchasesAndSales.getItems().getBarcode(), basePurchasesAndSales.getTypeName()
-                        , basePurchasesAndSales.getPrice(), basePurchasesAndSales.getQuantity(), basePurchasesAndSales.getTotal()
-                        , basePurchasesAndSales.getDiscount(), basePurchasesAndSales.getTotal() - basePurchasesAndSales.getDiscount()
-                );
-                modelPrintInvoices.add(modelPrintInvoice);
-            }
-
-            var format = LocalDateTime.now().format(DATE_TIME_FORMATTER);
-            var string = datePicker.getValue().toString();
 
             if (isPrintInvoice())
                 printReports.printReceiptInvoice(modelPrintInvoices, dataInterface.designInterface().nameTextOfInvoice(), invNumber
-                        , discountValue, format, string, Double.parseDouble(textAddons.getText()));
+                        , discountValue, format, string, addons);
 
             if (isPrintToKitchen())
                 printReports.printReceiptInvoiceKitchen(modelPrintInvoices, dataInterface.designInterface().nameTextOfInvoice(), invNumber
                         , discountValue, format, string);
 
             if (isPrintCustomer())
-                printReports.printReceiptNames(textAddress.getText(), textTel.getText(), textCustomName.getText());
+                printReports.printReceiptNames(address, tel, customerName);
         });
 
         maskerPaneSetting.getVoidTask().setOnSucceeded(workerStateEvent -> clearData());

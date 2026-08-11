@@ -8,6 +8,7 @@ import com.hamza.account.openFxml.OpenFxmlApplication;
 import com.hamza.account.otherSetting.MaskerPaneSetting;
 import com.hamza.controlsfx.interfaceData.AppSettingInterface;
 import com.hamza.controlsfx.table.TableColumnAnnotation;
+import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
 import javafx.scene.control.Label;
@@ -61,8 +62,10 @@ public class SummaryController implements AppSettingInterface {
     @FXML
     public void initialize() {
         getTableItems();
-        MaskerPaneSetting maskerPaneSetting = new MaskerPaneSetting(stackPane);
-        maskerPaneSetting.showMaskerPane(() -> tableView.setItems(FXCollections.observableArrayList(topSellingItems)));
+        // Filling the table from a list the constructor already loaded is not
+        // something to wait for, and it is the scene graph, which the masker pane no
+        // longer runs its action on.
+        tableView.setItems(FXCollections.observableArrayList(topSellingItems));
 
         labelDay.setText(String.valueOf(dailyDashboardReport.getSalesTotalToday()));
         labelPreviousDay.setText(String.valueOf(dailyDashboardReport.getSalesTotalYesterday()));

@@ -13,6 +13,7 @@ import com.hamza.controlsfx.language.Setting_Language;
 import com.hamza.controlsfx.others.DateSetting;
 import com.hamza.controlsfx.table.TableColumnAnnotation;
 import com.hamza.controlsfx.util.NumberUtils;
+import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
@@ -73,10 +74,13 @@ public class ProfitLossController {
     }
 
     private void searchTable() {
+        // Read off the pickers before leaving the JavaFX thread.
+        var from = dateFrom.getValue();
+        var to = dateTo.getValue();
         maskerPaneSetting.showMaskerPane(() -> {
             List<Earnings> allEarningsData;
             try {
-                allEarningsData = earningsService.getEarningsByDateRange(dateFrom.getValue(), dateTo.getValue());
+                allEarningsData = earningsService.getEarningsByDateRange(from, to);
 
 
                 List<TableData> tableData = new ArrayList<>();
@@ -125,7 +129,7 @@ public class ProfitLossController {
                     tableData.add(tableDataEntry);
                 }
 
-                tableView.setItems(FXCollections.observableArrayList(tableData));
+                Platform.runLater(() -> tableView.setItems(FXCollections.observableArrayList(tableData)));
             } catch (DaoException e) {
                 log.error(e.getMessage(), e);
                 AllAlerts.alertError(e.getMessage());
