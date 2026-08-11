@@ -17,7 +17,6 @@ import java.sql.SQLException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
-import java.util.Objects;
 
 public class SupplierAccountDao extends AbstractDao<SupplierAccount> {
 
@@ -79,7 +78,6 @@ public class SupplierAccountDao extends AbstractDao<SupplierAccount> {
         return SPEC.insertSql();
     }
 
-    /** Note what is missing next to the customer's: this one does not write user_id. */
     String updateSql() {
         return SPEC.updateSql();
     }
@@ -98,6 +96,10 @@ public class SupplierAccountDao extends AbstractDao<SupplierAccount> {
 
     String totalsSql() {
         return SPEC.totalsSql();
+    }
+
+    String totalsBetweenDatesSql() {
+        return SPEC.totalsBetweenDatesSql();
     }
 
     String betweenDatesSql() {
@@ -175,9 +177,9 @@ public class SupplierAccountDao extends AbstractDao<SupplierAccount> {
             String nameSup = adjustPurchase ? rs.getString(NAME) : "";
             model.setSuppliers(new Suppliers(codeSup, nameSup));
             if (adjustPurchase) {
-                var tableNameById = TableName.getTableNameById(rs.getInt(INFORMATION));
+                var tableNameById = TableName.requireById(rs.getInt(INFORMATION));
                 model.setInformation(tableNameById);
-                model.setInformation_name(Objects.requireNonNull(tableNameById).getType());
+                model.setInformation_name(tableNameById.getType());
             }
         } catch (SQLException e) {
             throw new DaoException(e);
@@ -207,13 +209,26 @@ public class SupplierAccountDao extends AbstractDao<SupplierAccount> {
     }
 
     /**
-     * Retrieves the summary of accounts and the total amounts of purchases and payments for each supplier.
+     * The summary of every supplier's account, over the whole history.
      *
      * @return a list of SupplierAccount objects containing the account summaries and totals for each supplier.
      * @throws DaoException if there is an error during the data access operation.
      */
     public List<SupplierAccount> getTotalsAccount() throws DaoException {
-        String selectAccountAndTotalsById = totalsSql();
+        return getTotalsAccount(null, null);
+    }
+
+    /**
+     * The same summary over one period. The customer's ledger has answered this since it
+     * was written and the supplier's could not, so the supplier screen's date filter had
+     * nothing behind it - the totals it showed were always the whole history.
+     * <p>
+     * With no dates it reads the totals view, which has already summed everything; with
+     * dates it sums the period itself, since a total cannot be filtered after the fact.
+     */
+    public List<SupplierAccount> getTotalsAccount(String dateFrom, String dateTo) throws DaoException {
+        boolean wholeHistory = dateFrom == null || dateTo == null;
+        String selectAccountAndTotalsById = wholeHistory ? totalsSql() : totalsBetweenDatesSql();
         GenericMapper<SupplierAccount> map = rs -> {
             SupplierAccount model = new SupplierAccount();
             int codeSup = rs.getInt(ACCOUNT_CODE);
@@ -230,7 +245,10 @@ public class SupplierAccountDao extends AbstractDao<SupplierAccount> {
             return model;
         };
 
-        return queryForObjects(selectAccountAndTotalsById, map);
+        if (wholeHistory) {
+            return queryForObjects(selectAccountAndTotalsById, map);
+        }
+        return queryForObjects(selectAccountAndTotalsById, map, dateFrom, dateTo);
     }
 
     public List<SupplierAccount> getAccountBetweenDate(String dateFrom, String dateTo) throws DaoException {

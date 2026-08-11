@@ -139,6 +139,14 @@ records who *entered* it**, so both inserts write it and neither update does —
 to, which meant the same edit restamped one payment and left the other alone. Who changed a row
 afterwards is `audit_log`'s answer, written by a trigger whether the application asks or not.
 
+A summary of a ledger comes in two forms and both are in the spec: `totalsSql()` reads the totals view,
+which has already summed everything there has ever been, and `totalsBetweenDatesSql()` sums one period
+itself — a total cannot be filtered after the fact. Both sides answer both now; the supplier screen used
+to take the period filter and drop it, and the customer's dated statement selected seven columns while
+its mapper read nine, so it failed in the mapper and the service logged it and returned an empty list.
+An unknown `information` value is refused by `TableName.requireById` with the value in the message,
+rather than reaching a caller as a bare `NullPointerException` from inside a row mapper.
+
 **Changing a column means changing the spec, and `DocumentDaoStatementsTest` will tell you.** It pins
 every statement of all eight DAOs character for character, and pins the array bound to each against the
 statement's parameter count. A repository merge that swaps two adjacent columns still produces valid

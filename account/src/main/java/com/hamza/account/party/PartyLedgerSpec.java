@@ -34,6 +34,9 @@ import java.util.regex.Pattern;
  * @param updateColumns the update's SET clause; the key is the WHERE and is not here.
  *                      Neither carries {@code user_id}: an edit does not change who
  *                      entered the payment
+ * @param withArea      whether a summary of this ledger carries the party's area. The
+ *                      customer's does - the screen groups receivables by area - and the
+ *                      supplier's has nowhere to put it
  */
 public record PartyLedgerSpec(
         PartyKind kind,
@@ -45,7 +48,8 @@ public record PartyLedgerSpec(
         String partyAlias,
         String createdColumn,
         List<String> insertColumns,
-        List<String> updateColumns) {
+        List<String> updateColumns,
+        boolean withArea) {
 
     /** As in {@code LockedDocument}: these are concatenated into SQL, so they are checked. */
     private static final Pattern IDENTIFIER = Pattern.compile("[A-Za-z_][A-Za-z0-9_]*");
@@ -67,14 +71,16 @@ public record PartyLedgerSpec(
                     "account_num", "user_id"),
             // No user_id, as on the supplier's side: editing a payment does not change
             // who entered it.
-            List.of("account_code", "account_date", "paid", "notes", "numberInv", "treasury_id"));
+            List.of("account_code", "account_date", "paid", "notes", "numberInv", "treasury_id"),
+            true);
 
     public static final PartyLedgerSpec SUPPLIER = new PartyLedgerSpec(
             PartyKind.SUPPLIER, "suppliers_accounts", "account_suppliers_table",
             "account_suppliers_totals", "suppliers", "ac", "s", "date_insert",
             List.of("account_code", "account_date", "paid", "notes", "numberInv", "treasury_id",
                     "account_num", "user_id"),
-            List.of("account_code", "account_date", "paid", "notes", "numberInv", "treasury_id"));
+            List.of("account_code", "account_date", "paid", "notes", "numberInv", "treasury_id"),
+            false);
 
     public PartyLedgerSpec {
         for (String identifier : new String[]{table, view, totalsView, partyTable, ledgerAlias,
@@ -174,6 +180,44 @@ public record PartyLedgerSpec(
 
     public String totalsSql() {
         return SqlStatements.selectStatement(totalsView).concat(" order by name ");
+    }
+
+    /**
+     * The same one-row-per-party summary as {@link #totalsSql()}, restricted to a period.
+     * <p>
+     * It has to be a statement of its own rather than a {@code WHERE} on the view: the
+     * view has already summed every movement there has ever been, and a total cannot be
+     * filtered after the fact.
+     * <p>
+     * Two things it inherits from the query it replaced, both worth knowing. It selects
+     * the same columns the totals view does - including the area, for a customer, which
+     * is what the mapper reads and what the old query forgot, so a dated summary came
+     * back empty however many payments were in the period. And it keeps
+     * {@code purchase > 0}: a party who only paid in that period, and bought nothing,
+     * is not on the list.
+     */
+    public String totalsBetweenDatesSql() {
+        String a = ledgerAlias;
+        return """
+                SELECT %1$s.account_code,
+                       %2$s.name,
+                       SUM(%1$s.purchase)                                                   AS purchase,
+                       SUM(%1$s.discount)                                                   AS discount,
+                       SUM(%1$s.paid)                                                       AS paid,
+                       ROUND(SUM(%1$s.purchase) - SUM(%1$s.discount) - SUM(%1$s.paid), 2)   AS amount,
+                       MAX(%1$s.account_date)                                               AS account_date%3$s
+                FROM %4$s %1$s
+                         JOIN %5$s %2$s ON %1$s.account_code = %2$s.id%6$s
+                WHERE %1$s.account_date BETWEEN ? AND ? AND %1$s.purchase > 0
+                GROUP BY %1$s.account_code, %2$s.name%7$s"""
+                .formatted(a, partyAlias,
+                        withArea ? ",\n                       ta.id                                                                AS area_id,"
+                                + "\n                       ta.area_name                                                         AS area_name" : "",
+                        view, partyTable,
+                        // LEFT, as everywhere else the area is joined: a party whose area
+                        // row was deleted still owes what they owe.
+                        withArea ? "\n                         LEFT JOIN table_area ta ON ta.id = " + partyAlias + ".area_id" : "",
+                        withArea ? ", ta.id, ta.area_name" : "");
     }
 
     public String betweenDatesSql() {

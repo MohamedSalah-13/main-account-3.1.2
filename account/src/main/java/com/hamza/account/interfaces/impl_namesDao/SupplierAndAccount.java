@@ -53,7 +53,9 @@ public class SupplierAndAccount implements NameAndAccountInterface<Suppliers, Su
 
     @Override
     public List<SupplierAccount> accountTotalList(String dateFrom, String dateTo) {
-        return accountSupplierService.accountTotalList();
+        // The dates were taken and dropped here: the screen's period filter moved the
+        // customer totals and left the supplier ones showing the whole history.
+        return accountSupplierService.accountTotalList(dateFrom, dateTo);
     }
 
     @Override

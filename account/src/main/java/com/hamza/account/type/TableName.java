@@ -30,6 +30,28 @@ public enum TableName {
         return null;
     }
 
+    /**
+     * The kind a row's {@code information} column names, refused rather than returned
+     * null.
+     * <p>
+     * Both account ledgers used to read that column straight into
+     * {@link #getTableNameById} and then call a method on the answer: one of them wrapped
+     * it in {@code requireNonNull} and the other did not, so an id outside 1..4 surfaced
+     * as a bare {@code NullPointerException} from inside a row mapper, naming nothing.
+     * The value is in the message here, which is the only thing that makes it findable in
+     * a table of thousands of movements.
+     *
+     * @throws IllegalArgumentException if no kind carries that id
+     */
+    public static TableName requireById(int id) {
+        TableName tableName = getTableNameById(id);
+        if (tableName == null) {
+            throw new IllegalArgumentException("لا يوجد نوع حركة بالرقم " + id
+                    + " - العمود information يقبل 1..4 فقط");
+        }
+        return tableName;
+    }
+
     public static TableName getTableNameByType(String type) {
         for (TableName invoiceType : TableName.values()) {
             if (invoiceType.getType().equals(type)) {

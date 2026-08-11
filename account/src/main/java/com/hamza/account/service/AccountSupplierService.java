@@ -18,8 +18,13 @@ import java.util.List;
 public record AccountSupplierService(DaoFactory daoFactory) {
 
     public List<SupplierAccount> accountTotalList() {
+        return accountTotalList(null, null);
+    }
+
+    /** The same summary over one period; null dates mean the whole history. */
+    public List<SupplierAccount> accountTotalList(String dateFrom, String dateTo) {
         try {
-            return accountDao().getTotalsAccount();
+            return accountDao().getTotalsAccount(dateFrom, dateTo);
         } catch (DaoException e) {
             log.error(e.getMessage(), e);
         }

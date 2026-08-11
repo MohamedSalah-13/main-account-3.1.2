@@ -161,6 +161,61 @@ class PartyLedgerStatementsTest {
     }
 
     @Nested
+    @DisplayName("Summaries over a period")
+    class DatedTotals {
+
+        private final CustomerAccountDao customers = FACTORY.customerAccountDao();
+        private final SupplierAccountDao suppliers = FACTORY.suppliersAccountDao();
+
+        /**
+         * The customer's dated summary selects the area, which its mapper reads. The
+         * statement it replaced did not, so every dated summary threw in the mapper and
+         * the service logged it and returned nothing.
+         */
+        @Test
+        void theCustomerSummaryCarriesTheAreaItsMapperReads() {
+            String sql = customers.totalsBetweenDatesSql();
+            assertTrue(sql.contains("AS area_id"), sql);
+            assertTrue(sql.contains("AS area_name"), sql);
+            assertTrue(sql.contains("LEFT JOIN table_area ta ON ta.id = c.area_id"), sql);
+            assertTrue(sql.contains("GROUP BY act.account_code, c.name, ta.id, ta.area_name"), sql);
+        }
+
+        /** A supplier has nowhere to put an area, and its totals view carries none. */
+        @Test
+        void theSupplierSummaryHasNoArea() {
+            String sql = suppliers.totalsBetweenDatesSql();
+            assertFalse(sql.contains("area"), sql);
+            assertTrue(sql.contains("GROUP BY ac.account_code, s.name"), sql);
+        }
+
+        /** Both take the period as two bound parameters, and both keep purchase > 0. */
+        @Test
+        void bothBindTheirPeriod() {
+            for (String sql : new String[]{customers.totalsBetweenDatesSql(), suppliers.totalsBetweenDatesSql()}) {
+                assertEquals(2, sql.chars().filter(c -> c == '?').count(), sql);
+                assertTrue(sql.contains("BETWEEN ? AND ?"), sql);
+                // A party who only paid in the period, and bought nothing, is not listed.
+                assertTrue(sql.contains(".purchase > 0"), sql);
+            }
+        }
+
+        /** Same statement, two ledgers - the area apart. */
+        @Test
+        void theTwoSummariesAreTheSameStatement() {
+            assertEquals(tokens(customers.totalsBetweenDatesSql())
+                            .replaceAll(", ta\\.id +AS area_id, ta\\.area_name +AS area_name", "")
+                            .replace(" LEFT JOIN table_area ta ON ta.id = c.area_id", "")
+                            .replace(", ta.id, ta.area_name", "")
+                            .replace("act.", "ac.").replace("c.name", "s.name")
+                            .replace("account_customer_table act", "account_suppliers_table ac")
+                            .replace("JOIN custom c", "JOIN suppliers s")
+                            .replace("= c.id", "= s.id"),
+                    tokens(suppliers.totalsBetweenDatesSql()));
+        }
+    }
+
+    @Nested
     @DisplayName("Across the two")
     class AcrossLedgers {
 

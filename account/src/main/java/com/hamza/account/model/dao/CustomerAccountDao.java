@@ -98,6 +98,10 @@ public class CustomerAccountDao extends AbstractDao<CustomerAccount> {
         return SPEC.totalsSql();
     }
 
+    String totalsBetweenDatesSql() {
+        return SPEC.totalsBetweenDatesSql();
+    }
+
     String betweenDatesSql() {
         return SPEC.betweenDatesSql();
     }
@@ -189,7 +193,7 @@ public class CustomerAccountDao extends AbstractDao<CustomerAccount> {
             String customerName = adjustPurchase ? rs.getString(NAME) : "";
             model.setCustomers(new Customers(codeSup, customerName));
             if (adjustPurchase) {
-                var tableNameById = TableName.getTableNameById(rs.getInt(INFORMATION));
+                var tableNameById = TableName.requireById(rs.getInt(INFORMATION));
                 model.setInformation(tableNameById);
                 model.setInformation_name(tableNameById.getType());
             }
@@ -220,21 +224,18 @@ public class CustomerAccountDao extends AbstractDao<CustomerAccount> {
         return queryForObjects(selectByPartyCodeSql(), this::mapMain, accountCode);
     }
 
+    /**
+     * One row per customer, summed. With no dates it reads the totals view, which has
+     * summed everything there has ever been; with dates it sums the period itself.
+     * <p>
+     * The dated statement used to select seven columns while the mapper below read nine:
+     * it never selected the area, so every dated summary failed in the mapper and the
+     * service logged it and returned an empty list. It comes from the specification now,
+     * which selects what the totals view selects.
+     */
     public List<CustomerAccount> getTotalsAccount(String dateFrom, String dateTo) throws DaoException {
-        String selectAccountAndTotalsById = """
-                SELECT account_code,
-                       c.name,
-                       SUM(purchase)                                       AS purchase,
-                       SUM(discount)                                       AS discount,
-                       SUM(paid)                                           AS paid,
-                       round(sum(purchase) - sum(discount) - sum(paid), 2) AS amount,
-                       MAX(account_date)                                   AS account_date
-                FROM account_customer_table act
-                         JOIN custom c ON act.account_code = c.id
-                WHERE account_date between ? and ? and purchase>0
-                GROUP BY account_code, name""";
-        if (dateFrom == null || dateTo == null)
-            selectAccountAndTotalsById = totalsSql();
+        boolean wholeHistory = dateFrom == null || dateTo == null;
+        String selectAccountAndTotalsById = wholeHistory ? totalsSql() : totalsBetweenDatesSql();
 
         GenericMapper<CustomerAccount> map = rs -> {
             CustomerAccount model = new CustomerAccount();
@@ -249,16 +250,19 @@ public class CustomerAccountDao extends AbstractDao<CustomerAccount> {
             model.setPaid(rs.getDouble(PAID));
             model.setAmount(amount);
             var customers = new Customers(codeSup, nameSup);
-            customers.setArea(new Area(rs.getInt("area_id"), rs.getString("area_name")));
+            // The area is joined LEFT, so a customer whose area row is gone still has a
+            // line here, with no area name on it.
+            String areaName = rs.getString("area_name");
+            customers.setArea(new Area(rs.getInt("area_id"), areaName == null ? "" : areaName));
             model.setArea_id(rs.getInt("area_id"));
-            model.setArea_name(rs.getString("area_name"));
+            model.setArea_name(areaName == null ? "" : areaName);
             model.setCustomers(customers);
             return model;
         };
 
-        if (dateFrom == null || dateTo == null)
+        if (wholeHistory) {
             return queryForObjects(selectAccountAndTotalsById, map);
-
+        }
         return queryForObjects(selectAccountAndTotalsById, map, dateFrom, dateTo);
     }
 
