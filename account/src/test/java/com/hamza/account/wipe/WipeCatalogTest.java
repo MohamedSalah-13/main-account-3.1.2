@@ -245,7 +245,7 @@ class WipeCatalogTest {
     class Statements {
 
         @Test
-        @DisplayName("each table contributes its delete, then its seeds")
+        @DisplayName("a table is seeded after it is emptied")
         void deleteThenSeed() {
             List<String> statements = WipePlan.of(List.of(WipeCatalog.PROCESSES, WipeCatalog.CUSTOMERS)).statements();
 
@@ -255,6 +255,74 @@ class WipeCatalogTest {
 
             assertTrue(delete >= 0, statements.toString());
             assertTrue(seed > delete, "the cash customer must be put back after the table is emptied");
+        }
+
+        /**
+         * A seed is an INSERT, and the foreign keys judge it exactly as they judge a
+         * DELETE - only the other way round. Putting {@code sub_group} row 1 back
+         * before {@code main_group} had been emptied is what made the whole wipe fail:
+         * the row pointed at {@code main_group} 1, and the DELETE that came next could
+         * not remove it.
+         */
+        @Test
+        @DisplayName("nothing is seeded while a table it points at is still to be emptied")
+        void seedsComeAfterEveryDelete() {
+            List<String> statements = WipePlan.of(WipeCatalog.TARGETS).statements();
+
+            int lastDelete = -1;
+            int firstSeed = statements.size();
+            for (int i = 0; i < statements.size(); i++) {
+                if (statements.get(i).startsWith("DELETE FROM ")) {
+                    lastDelete = i;
+                } else if (i < firstSeed) {
+                    firstSeed = i;
+                }
+            }
+
+            assertTrue(lastDelete < firstSeed,
+                    "a seed runs at " + firstSeed + " with deletes still to come at " + lastDelete
+                    + ": " + statements);
+        }
+
+        /**
+         * And two seeds can point at each other: the seeded {@code sub_group} row needs
+         * the seeded {@code main_group} row to exist first.
+         */
+        @Test
+        @DisplayName("a seeded row's parent is seeded before it")
+        void seedsAreParentFirst() {
+            List<String> statements = WipePlan.of(WipeCatalog.TARGETS).statements();
+            Map<String, Integer> seededAt = new LinkedHashMap<>();
+
+            for (WipeTarget target : WipeCatalog.TARGETS) {
+                for (WipeTable table : target.tables()) {
+                    table.seeds().stream()
+                            .map(statements::indexOf)
+                            .filter(index -> index >= 0)
+                            .min(Integer::compare)
+                            .ifPresent(index -> seededAt.put(table.table(), index));
+                }
+            }
+
+            assertTrue(seededAt.containsKey("sub_group") && seededAt.containsKey("main_group"),
+                    "expected both group tables to be seeded: " + seededAt.keySet());
+
+            List<String> problems = new ArrayList<>();
+            for (ForeignKey key : FOREIGN_KEYS) {
+                Integer child = seededAt.get(key.child());
+                Integer parent = seededAt.get(key.parent());
+                if (child == null || parent == null || key.child().equals(key.parent())) {
+                    continue;
+                }
+                if (parent > child) {
+                    problems.add("%s is seeded before %s, which its %s points at"
+                            .formatted(key.child(), key.parent(), key.column()));
+                }
+            }
+
+            if (!problems.isEmpty()) {
+                fail("Seed order breaks these foreign keys:\n" + String.join("\n", problems));
+            }
         }
 
         @Test
