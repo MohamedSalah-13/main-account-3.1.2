@@ -129,6 +129,15 @@ kept deliberately and are commented as such: the supplier's date column is `date
 customer's is `created_at`, and the supplier's searches do **not** join `table_area` — an inner join is
 not free of meaning, it drops a party whose area row is gone. `PartyDaoStatementsTest` pins all of it.
 
+`PartyLedgerSpec` does the same for the two account tables. Only **payments** live in
+`customers_accounts` and `suppliers_accounts`; the invoice side of a statement comes from the view
+(`account_customer_table` unions the payments with `total_sales`), which is why saving an invoice never
+reaches the period lock there and is guarded at `TotalsSalesDao` instead. One difference between the two
+ledgers is not naming and is left as it was found: **the customer's update writes `user_id` and the
+supplier's does not**, so editing a supplier payment leaves it stamped with whoever entered it. Both
+inserts fill the column. `PartyLedgerStatementsTest.onlyTheCustomerUpdateRecordsWhoEditedIt` pins the
+difference and says why it was not resolved in passing.
+
 **Changing a column means changing the spec, and `DocumentDaoStatementsTest` will tell you.** It pins
 every statement of all eight DAOs character for character, and pins the array bound to each against the
 statement's parameter count. A repository merge that swaps two adjacent columns still produces valid

@@ -1,6 +1,7 @@
 package com.hamza.account.model.dao;
 
 import com.hamza.account.model.domain.SupplierAccount;
+import com.hamza.account.party.PartyLedgerSpec;
 import com.hamza.account.model.domain.Suppliers;
 import com.hamza.account.model.domain.Treasury;
 import com.hamza.account.type.TableName;
@@ -20,23 +21,11 @@ import java.util.Objects;
 
 public class SupplierAccountDao extends AbstractDao<SupplierAccount> {
 
-    public static final String SELECT_ACCOUNT_AND_TOTALS_BY_ID = """
-            SELECT ac.account_num,
-                   ac.account_code,
-                   ac.account_date,
-                   ac.purchase,
-                   ac.discount,
-                   ac.paid,
-                   ROUND(ac.purchase - ac.discount - ac.paid) as amount,
-                   ac.notes,
-                   s.name,
-                   ac.information,
-                   ac.type,
-                   ac.date_insert,
-                   ac.treasury_id,
-                   ac.numberInv
-            FROM account_suppliers_table ac
-                     JOIN suppliers s ON ac.account_code = s.id """;
+    /** Where a supplier's payments live, and every statement over them. */
+    static final PartyLedgerSpec SPEC = PartyLedgerSpec.SUPPLIER;
+
+    /** Kept public: the supplier statement screen builds on it. */
+    public static final String SELECT_ACCOUNT_AND_TOTALS_BY_ID = SPEC.statementSql();
     private final String PURCHASE = "purchase";
     private final String INFORMATION = "information";
     //    private final String INFORMATION_DATA = "arabic_name";
@@ -62,13 +51,57 @@ public class SupplierAccountDao extends AbstractDao<SupplierAccount> {
 
     @Override
     public List<SupplierAccount> loadAll() throws DaoException {
-//        String selectAccountAndTotalsById = SqlStatements.selectStatement(TABLE_VIEW).concat(" order by account_date ");
-        return queryForObjects(SELECT_ACCOUNT_AND_TOTALS_BY_ID.concat(" ORDER BY ac.date_insert"), this::map);
+        return queryForObjects(selectAllSql(), this::map);
     }
 
     @Override
     public List<SupplierAccount> loadAllById(int id) throws DaoException {
-        return queryForObjects(SELECT_ACCOUNT_AND_TOTALS_BY_ID.concat(" where account_code = ? and ac.information =2"), this::map, id);
+        return queryForObjects(selectByPartySql(), this::map, id);
+    }
+
+    // ---- the statements ---------------------------------------------------------
+    // Named so PartyLedgerStatementsTest can read them without a database. See
+    // CustomerAccountDao: the same ledger under other names.
+
+    String statementSql() {
+        return SPEC.statementSql();
+    }
+
+    String selectAllSql() {
+        return SPEC.selectAllSql();
+    }
+
+    String selectByPartySql() {
+        return SPEC.selectByPartySql();
+    }
+
+    String insertSql() {
+        return SPEC.insertSql();
+    }
+
+    /** Note what is missing next to the customer's: this one does not write user_id. */
+    String updateSql() {
+        return SPEC.updateSql();
+    }
+
+    String deleteSql() {
+        return SPEC.deleteSql();
+    }
+
+    String selectForUpdateSql() {
+        return SPEC.selectForUpdateSql();
+    }
+
+    String selectByPartyCodeSql() {
+        return SPEC.selectByPartyCodeSql();
+    }
+
+    String totalsSql() {
+        return SPEC.totalsSql();
+    }
+
+    String betweenDatesSql() {
+        return SPEC.betweenDatesSql();
     }
 
     @Override
@@ -76,14 +109,13 @@ public class SupplierAccountDao extends AbstractDao<SupplierAccount> {
         // See CustomerAccountDao.insert: only payments are stored here, and the invoice
         // side of a statement comes from total_buy through account_suppliers_table.
         PeriodLock.require(model.getDate(), PeriodLockRegistry.SUPPLIER_ACCOUNT.label());
-        String s = SqlStatements.insertStatement(TABLE_NAME, ACCOUNT_CODE, ACCOUNT_DATE, PAID, NOTES, NUMBER_INV, TREASURY_ID, ACCOUNT_NUM, USER_ID);
-        return executeUpdate(s, getData(model));
+        return executeUpdate(insertSql(), getData(model));
     }
 
     @Override
     public int update(SupplierAccount supplierAccount) throws DaoException {
         PeriodLock.requireMove(PeriodLockRegistry.SUPPLIER_ACCOUNT, supplierAccount.getId(), supplierAccount.getDate());
-        return executeUpdate(SqlStatements.updateStatement(TABLE_NAME, ACCOUNT_NUM, ACCOUNT_CODE, ACCOUNT_DATE, PAID, NOTES, NUMBER_INV, TREASURY_ID), supplierAccount.getSuppliers().getId()
+        return executeUpdate(updateSql(), supplierAccount.getSuppliers().getId()
                 , supplierAccount.getDate()
                 , supplierAccount.getPaid()
                 , supplierAccount.getNotes()
@@ -94,7 +126,7 @@ public class SupplierAccountDao extends AbstractDao<SupplierAccount> {
 
     @Override
     public int deleteById(int id) throws DaoException {
-        return executeUpdate(SqlStatements.deleteStatement(TABLE_NAME, ACCOUNT_NUM), id);
+        return executeUpdate(deleteSql(), id);
     }
 
 
@@ -156,9 +188,7 @@ public class SupplierAccountDao extends AbstractDao<SupplierAccount> {
      * @throws DaoException if there is an error during the data access operation
      */
     public SupplierAccount getAccountByNum(int id) throws DaoException {
-        String selectAccountById = SqlStatements.selectStatement(TABLE_NAME)
-                .concat(" join treasury t on t.id = suppliers_accounts.treasury_id ")
-                .concat(" WHERE ").concat(ACCOUNT_NUM).concat(" = ?");
+        String selectAccountById = selectForUpdateSql();
         GenericMapper<SupplierAccount> mapMain = resultSet -> {
             SupplierAccount map = mapMain(resultSet);
             map.getTreasury().setName(resultSet.getString("t_name"));
@@ -168,8 +198,7 @@ public class SupplierAccountDao extends AbstractDao<SupplierAccount> {
     }
 
     public List<SupplierAccount> getAccountByAccountCode(int accountCode) throws DaoException {
-        String selectAccountById = SqlStatements.selectStatementByColumnWhere(TABLE_NAME, ACCOUNT_CODE);
-        return queryForObjects(selectAccountById, this::mapMain, accountCode);
+        return queryForObjects(selectByPartyCodeSql(), this::mapMain, accountCode);
     }
 
     /**
@@ -179,7 +208,7 @@ public class SupplierAccountDao extends AbstractDao<SupplierAccount> {
      * @throws DaoException if there is an error during the data access operation.
      */
     public List<SupplierAccount> getTotalsAccount() throws DaoException {
-        String selectAccountAndTotalsById = SqlStatements.selectStatement(TABLE_VIEW_TOTALS).concat(" order by name ");
+        String selectAccountAndTotalsById = totalsSql();
         GenericMapper<SupplierAccount> map = rs -> {
             SupplierAccount model = new SupplierAccount();
             int codeSup = rs.getInt(ACCOUNT_CODE);
