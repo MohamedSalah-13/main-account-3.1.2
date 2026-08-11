@@ -10,6 +10,8 @@ public class Error_Text_Show {
     public static final String UNABLE_TO_SET_CONNECT_TO_AUTO_SAVE = INSTANCE.getString("msg.auto.save");
     public static final String UNABLE_CLOSED = INSTANCE.getString("msg.unable.close");
     public static final String CANT_DELETE = INSTANCE.getString("msg.cant.delete");
+    /** A wipe that threw: it is one transaction, so nothing was erased. */
+    public static final String WIPE_FAILED = INSTANCE.getString("msg.wipe.failed");
     public static final String UNABLE_CONNECT = INSTANCE.getString("msg.unable.connect");
 
     public static final String DUPLICATE_ENTRY = INSTANCE.getString("msg.duplicate");

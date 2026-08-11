@@ -64,7 +64,10 @@
                     <children>
                         <HBox alignment="CENTER_LEFT" spacing="8.0" styleClass="summary-bar">
                             <children>
-                                <Label fx:id="summaryLabel" maxWidth="1.7976931348623157E308" wrapText="true"
+                                <!-- One line with an ellipsis, not wrapped: everything
+                                     ticked is fifteen names, and wrapping them took the
+                                     height out of the cards. The tooltip has the lot. -->
+                                <Label fx:id="summaryLabel" maxWidth="1.7976931348623157E308"
                                        HBox.hgrow="ALWAYS" />
                             </children>
                         </HBox>

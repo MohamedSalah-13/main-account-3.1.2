@@ -143,8 +143,13 @@ public class DeleteDataController implements AppSettingInterface {
                 });
                 maskerPaneSetting.getVoidTask().setOnFailed(workerStateEvent -> {
                     var error = workerStateEvent.getSource().getException();
+                    // The message on the exception is the driver's, in English, and
+                    // reads like "a foreign key constraint fails (...)" - which tells
+                    // the shop owner nothing and the log everything. The wipe is one
+                    // transaction, so what the screen can promise is that nothing was
+                    // erased.
                     log.error("The wipe did not complete", error);
-                    AllAlerts.alertError(error == null ? Error_Text_Show.CANT_DELETE : error.getMessage());
+                    AllAlerts.alertError(Error_Text_Show.WIPE_FAILED);
                 });
             }
         });
@@ -199,13 +204,15 @@ public class DeleteDataController implements AppSettingInterface {
 
         if (selected.isEmpty()) {
             summaryLabel.setText("لم يتم اختيار أي بيانات");
+            summaryLabel.setTooltip(null);
             return;
         }
 
         List<WipeTarget> closure = WipeCatalog.closureOf(selected);
-        summaryLabel.setText("سيتم مسح (%d): %s".formatted(
-                closure.size(),
-                closure.stream().map(WipeTarget::label).collect(Collectors.joining("، "))));
+        String names = closure.stream().map(WipeTarget::label).collect(Collectors.joining("، "));
+        summaryLabel.setText("سيتم مسح (%d): %s".formatted(closure.size(), names));
+        // The label is one line and ends in an ellipsis when everything is ticked.
+        summaryLabel.setTooltip(new Tooltip(names));
     }
 
     /**
