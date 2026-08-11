@@ -23,13 +23,13 @@ import lombok.extern.log4j.Log4j2;
 import org.jetbrains.annotations.NotNull;
 
 @Log4j2
-public class TotalsButton<T1 extends BasePurchasesAndSales, T2 extends BaseTotals, T3 extends BaseNames, T4 extends BaseAccount>
-        extends TotalsService<T1, T2, T3, T4> {
+public class TotalsButton<T2 extends BaseTotals, T3 extends BaseNames, T4 extends BaseAccount>
+        extends TotalsService<T2, T3, T4> {
 
-    private final DataInterface<T1, T2, T3, T4> dataInterface;
+    private final DataInterface<?, T2, T3, T4> dataInterface;
     private final EmployeeService employeeService = ServiceRegistry.get(EmployeeService.class);
 
-    public TotalsButton(DataInterface<T1, T2, T3, T4> dataInterface, DaoFactory daoFactory
+    public TotalsButton(DataInterface<?, T2, T3, T4> dataInterface, DaoFactory daoFactory
             , DataPublisher dataPublisher) throws Exception {
         super(dataInterface, daoFactory, dataPublisher);
         this.dataInterface = dataInterface;
@@ -86,7 +86,7 @@ public class TotalsButton<T1 extends BasePurchasesAndSales, T2 extends BaseTotal
 
             @Override
             public void action() throws Exception {
-                BuyApplication<T1, T2, T3, T4> buyApp = new BuyApplication<>(dataInterface, dataPublisher, 0);
+                BuyApplication buyApp = new BuyApplication(dataInterface, dataPublisher, 0);
                 buyApp.start(new Stage());
             }
 
@@ -108,7 +108,7 @@ public class TotalsButton<T1 extends BasePurchasesAndSales, T2 extends BaseTotal
 
 //            @Override
 //            public void actionAddPaneToTabPane(TabPane tabPane) throws Exception {
-//                BuyApplication<T1, T2, T3, T4> buyApp = new BuyApplication<>(dataInterface, dataPublisher, 0);
+//                BuyApplication buyApp = new BuyApplication(dataInterface, dataPublisher, 0);
 //
 //                var shoppingSales = new Image_Setting().shoppingPurchase;
 //                if (textName().equals("sales") || textName().equals("المبيعات"))
@@ -161,7 +161,7 @@ public class TotalsButton<T1 extends BasePurchasesAndSales, T2 extends BaseTotal
         };
     }
 
-    private TotalsApplication<T1, T2, T3, T4> initializeTotalsApp() throws Exception {
-        return new TotalsApplication<>(dataInterface, daoFactory, dataPublisher, employeeService);
+    private TotalsApplication initializeTotalsApp() throws Exception {
+        return new TotalsApplication(dataInterface, daoFactory, dataPublisher, employeeService);
     }
 }

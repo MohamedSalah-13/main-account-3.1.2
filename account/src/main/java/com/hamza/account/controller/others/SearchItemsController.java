@@ -6,10 +6,7 @@ import com.hamza.account.controller.items.PaginationTableSetting;
 import com.hamza.account.interfaces.api.DataInterface;
 import com.hamza.account.interfaces.api.DesignInterface;
 import com.hamza.account.interfaces.api.InvoiceBuy;
-import com.hamza.account.model.base.BaseAccount;
-import com.hamza.account.model.base.BaseNames;
 import com.hamza.account.model.base.BasePurchasesAndSales;
-import com.hamza.account.model.base.BaseTotals;
 import com.hamza.account.model.domain.ItemsModel;
 import com.hamza.account.openFxml.FxmlPath;
 import com.hamza.account.otherSetting.ButtonDeleteRow;
@@ -52,12 +49,12 @@ import static com.hamza.controlsfx.util.ImageChoose.createIcon;
 
 @Log4j2
 @FxmlPath(pathFile = "search-view.fxml")
-public class SearchItemsController<T1 extends BasePurchasesAndSales, T2 extends BaseTotals, T3 extends BaseNames, T4 extends BaseAccount>
+public class SearchItemsController<T1 extends BasePurchasesAndSales>
         implements Initializable {
 
     private final DesignInterface designInterface;
-    private final DataInterface<T1, T2, T3, T4> dataInterface;
-    private final InvoiceBuy<T1, T2, T3, T4> invoiceBuy;
+    private final DataInterface<T1, ?, ?, ?> dataInterface;
+    private final InvoiceBuy<T1, ?, ?, ?> invoiceBuy;
     private final ObservableList<ItemsModel> itemsModels = FXCollections.observableArrayList();
     private final ListProperty<T1> selectedItem = new SimpleListProperty<>();
     private final TableView<ItemsModel> tableItems = new TableView<>();
@@ -82,7 +79,7 @@ public class SearchItemsController<T1 extends BasePurchasesAndSales, T2 extends 
     @FXML
     private Pagination pagination;
 
-    public SearchItemsController(DataInterface<T1, T2, T3, T4> dataInterface) {
+    public SearchItemsController(DataInterface<T1, ?, ?, ?> dataInterface) {
         this.dataInterface = dataInterface;
         this.invoiceBuy = dataInterface.invoiceBuy();
         this.designInterface = dataInterface.designInterface();

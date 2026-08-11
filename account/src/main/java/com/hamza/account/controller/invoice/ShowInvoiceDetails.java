@@ -2,9 +2,6 @@ package com.hamza.account.controller.invoice;
 
 import com.hamza.account.interfaces.api.DataInterface;
 import com.hamza.account.interfaces.api.TotalsDataInterface;
-import com.hamza.account.model.base.BaseAccount;
-import com.hamza.account.model.base.BaseNames;
-import com.hamza.account.model.base.BasePurchasesAndSales;
 import com.hamza.account.model.base.BaseTotals;
 import com.hamza.account.type.InvoiceType;
 
@@ -14,8 +11,9 @@ import static com.hamza.controlsfx.util.NumberUtils.roundToTwoDecimalPlaces;
 
 public class ShowInvoiceDetails {
 
-    public static <T1 extends BasePurchasesAndSales, T2 extends BaseTotals, T3 extends BaseNames, T4 extends BaseAccount>
-    HashMap<String, Object> invoiceDetails(DataInterface<T1, T2, T3, T4> dataInterface, T2 t2) {
+    /** The header of one document, for printing. Only the totals type has to be named. */
+    public static <T2 extends BaseTotals>
+    HashMap<String, Object> invoiceDetails(DataInterface<?, T2, ?, ?> dataInterface, T2 t2) {
         TotalsDataInterface<T2> totalsDataInterface = dataInterface.totalDesignInterface().totalsDataInterface();
 
         double paid = t2.getPaid();

@@ -12,8 +12,6 @@ import com.hamza.account.opening.OpeningBalanceRegistry;
 import com.hamza.account.opening.OpeningBalanceRule;
 import com.hamza.account.model.base.BaseAccount;
 import com.hamza.account.model.base.BaseNames;
-import com.hamza.account.model.base.BasePurchasesAndSales;
-import com.hamza.account.model.base.BaseTotals;
 import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.model.domain.Area;
 import com.hamza.account.model.domain.SelPriceTypeModel;
@@ -45,16 +43,14 @@ import static com.hamza.controlsfx.others.TextFormat.createNumericTextFormatter;
 import static com.hamza.controlsfx.others.Utils.setTextFormatter;
 
 /**
- * @param <T1> for purchase or sales or purchase return or sales return
- * @param <T2> for Totals (purchase or sales or purchase return or sales return)
  * @param <T3> for Names (Customers or Suppliers)
  * @param <T4> for Accounts (Customers or Suppliers)
  */
 
 @FxmlPath(pathFile = "addName.fxml")
 @Log4j2
-public class AddNameController<T1 extends BasePurchasesAndSales, T2 extends BaseTotals, T3 extends BaseNames, T4 extends BaseAccount>
-        extends LoadOtherData<T1, T2, T3, T4> implements AddInterface {
+public class AddNameController<T3 extends BaseNames, T4 extends BaseAccount>
+        extends LoadOtherData<T3, T4> implements AddInterface {
 
     private final DaoList<T3> interFace;
     private final int id;
@@ -71,7 +67,7 @@ public class AddNameController<T1 extends BasePurchasesAndSales, T2 extends Base
     @FXML
     private ComboBox<String> comboSelPrice, comboArea;
 
-    public AddNameController(DataInterface<T1, T2, T3, T4> dataInterface
+    public AddNameController(DataInterface<?, ?, T3, T4> dataInterface
             , DaoFactory daoFactory, DataPublisher dataPublisher
             , int id) throws Exception {
         super(dataInterface, daoFactory, dataPublisher);

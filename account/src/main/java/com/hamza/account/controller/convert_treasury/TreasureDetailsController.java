@@ -176,7 +176,7 @@ public class TreasureDetailsController {
                                 processType = processTypePurchase;
                             else processType = processTypePurchaseRe;
 
-                            new ShowInvoiceApplication<>(dataPublisher, dataInterface(processType, daoFactory, dataPublisher), daoFactory, id, "");
+                            new ShowInvoiceApplication(dataPublisher, dataInterface(processType, daoFactory, dataPublisher), daoFactory, id, "");
                         }
                     } catch (Exception ex) {
                         log.error(ex.getMessage(), ex);

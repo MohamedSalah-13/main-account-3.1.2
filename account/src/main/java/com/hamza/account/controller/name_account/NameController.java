@@ -7,8 +7,6 @@ import com.hamza.account.interfaces.api.DataTable;
 import com.hamza.account.interfaces.api.DesignInterface;
 import com.hamza.account.model.base.BaseAccount;
 import com.hamza.account.model.base.BaseNames;
-import com.hamza.account.model.base.BasePurchasesAndSales;
-import com.hamza.account.model.base.BaseTotals;
 import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.delete.DeleteRegistry;
 import com.hamza.account.delete.DeletionService;
@@ -36,8 +34,8 @@ import java.util.List;
 
 
 @Log4j2
-public class NameController<T1 extends BasePurchasesAndSales, T2 extends BaseTotals, T3 extends BaseNames, T4 extends BaseAccount>
-        extends LoadOtherData<T1, T2, T3, T4> implements TableInterface<T3> {
+public class NameController<T3 extends BaseNames, T4 extends BaseAccount>
+        extends LoadOtherData<T3, T4> implements TableInterface<T3> {
 
     private final DaoList<T3> nameInterface;
     private final EventBus eventBus = ServiceRegistry.get(EventBus.class);
@@ -47,7 +45,7 @@ public class NameController<T1 extends BasePurchasesAndSales, T2 extends BaseTot
     private TableView<T3> table;
     private CssToColorHelper helper;
 
-    public NameController(DataInterface<T1, T2, T3, T4> dataInterface
+    public NameController(DataInterface<?, ?, T3, T4> dataInterface
             , DaoFactory daoFactory, DataPublisher dataPublisher) throws Exception {
         super(dataInterface, daoFactory, dataPublisher);
         this.designInterface = dataInterface.designInterface();

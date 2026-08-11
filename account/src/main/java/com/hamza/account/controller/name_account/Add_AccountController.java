@@ -47,8 +47,8 @@ import static com.hamza.controlsfx.util.NumberUtils.roundToTwoDecimalPlaces;
 
 @Log4j2
 @FxmlPath(pathFile = "addAccount-view.fxml")
-public class Add_AccountController<T1 extends BasePurchasesAndSales, T2 extends BaseTotals, T3 extends BaseNames, T4 extends BaseAccount>
-        extends LoadOtherData<T1, T2, T3, T4> implements AddInterface {
+public class Add_AccountController<T3 extends BaseNames, T4 extends BaseAccount>
+        extends LoadOtherData<T3, T4> implements AddInterface {
 
     private final DaoList<T4> interFace;
     private final EventBus eventBus = ServiceRegistry.get(EventBus.class);
@@ -71,7 +71,7 @@ public class Add_AccountController<T1 extends BasePurchasesAndSales, T2 extends 
     private ComboBox<String> comboTreasury;
 
     public Add_AccountController(DaoFactory daoFactory, DataPublisher dataPublisher
-            , DataInterface<T1, T2, T3, T4> dataInterface
+            , DataInterface<?, ?, T3, T4> dataInterface
             , int code_id, int num, String name) throws Exception {
         super(dataInterface, daoFactory, dataPublisher);
         this.code_id = code_id;

@@ -16,12 +16,12 @@ import javafx.scene.control.TabPane;
 import org.jetbrains.annotations.NotNull;
 
 
-public class AccountButtons<T1 extends BasePurchasesAndSales, T2 extends BaseTotals, T3 extends BaseNames, T4 extends BaseAccount>
-        extends LoadOtherData<T1, T2, T3, T4> implements ButtonWithPerm {
+public class AccountButtons<T3 extends BaseNames, T4 extends BaseAccount>
+        extends LoadOtherData<T3, T4> implements ButtonWithPerm {
 
     public AccountButtons(DaoFactory daoFactory
             , DataPublisher dataPublisher
-            , DataInterface<T1, T2, T3, T4> dataInterface) throws Exception {
+            , DataInterface<?, ?, T3, T4> dataInterface) throws Exception {
         super(dataInterface, daoFactory, dataPublisher);
     }
 
@@ -38,7 +38,7 @@ public class AccountButtons<T1 extends BasePurchasesAndSales, T2 extends BaseTot
 
     @Override
     public void actionAddPaneToTabPane(TabPane tabPane) throws Exception {
-        AccountTotalsApplication<T1, T2, T3, T4> design = new AccountTotalsApplication<>(daoFactory, dataPublisher, dataInterface);
+        AccountTotalsApplication design = new AccountTotalsApplication(daoFactory, dataPublisher, dataInterface);
         addTape(tabPane, design.getPane(), textName(), new Image_Setting().account);
     }
 

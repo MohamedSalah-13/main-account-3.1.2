@@ -15,14 +15,14 @@ public class MainItems extends DataPublisher {
 
     private final SettingButtons settingButtons;
     private final EmployeesButtons addEmployee;
-    private final NameButtons<Purchase, Total_buy, Suppliers, SupplierAccount> nameSup;
-    private final NameButtons<Sales, Total_Sales, Customers, CustomerAccount> nameCustomer;
+    private final NameButtons<Suppliers, SupplierAccount> nameSup;
+    private final NameButtons<Customers, CustomerAccount> nameCustomer;
     private final TotalsButton totalSalesReturn;
     private final TotalsButton totalPurchaseReturn;
     private final TotalsButton totalPurchase;
     private final TotalsButton totalSales;
-    private final AccountButtons<Purchase, Total_buy, Suppliers, SupplierAccount> accountButtonsSup;
-    private final AccountButtons<Sales, Total_Sales, Customers, CustomerAccount> accountButtonsCustom;
+    private final AccountButtons<Suppliers, SupplierAccount> accountButtonsSup;
+    private final AccountButtons<Customers, CustomerAccount> accountButtonsCustom;
     private final ItemsButtons itemsButtons;
     private final ForAllButtons forAllButtons;
     private final UsersButtons usersAll;

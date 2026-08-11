@@ -45,8 +45,8 @@ import static com.hamza.controlsfx.table.Table_Setting.createTable;
 
 @Log4j2
 @FxmlPath(pathFile = "accountDetails-view.fxml")
-public class AccountDetailsController<T1 extends BasePurchasesAndSales, T2 extends BaseTotals, T3 extends BaseNames, T4 extends BaseAccount>
-        extends LoadOtherData<T1, T2, T3, T4> implements Initializable, AppSettingInterface {
+public class AccountDetailsController<T3 extends BaseNames, T4 extends BaseAccount>
+        extends LoadOtherData<T3, T4> implements Initializable, AppSettingInterface {
 
     private final String name_account;
     private final int num_id;
@@ -68,7 +68,7 @@ public class AccountDetailsController<T1 extends BasePurchasesAndSales, T2 exten
     private DatePicker dateTo;
 
     public AccountDetailsController(DaoFactory daoFactory, DataPublisher dataPublisher
-            , DataInterface<T1, T2, T3, T4> dataInterface
+            , DataInterface<?, ?, T3, T4> dataInterface
             , String nameAccount, int numId) throws Exception {
         super(dataInterface, daoFactory, dataPublisher);
         this.name_account = nameAccount;
@@ -224,7 +224,7 @@ public class AccountDetailsController<T1 extends BasePurchasesAndSales, T2 exten
                     int num = selectedItem.getId();
                     int code = accountData.getIdName(selectedItem);
                     String name = accountData.getName(selectedItem);
-                    new AddAccountApplication<>(daoFactory, dataPublisher, dataInterface, code, num, name);
+                    new AddAccountApplication(daoFactory, dataPublisher, dataInterface, code, num, name);
                 }
             } catch (Exception e) {
                 errorLog(e);

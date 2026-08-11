@@ -85,6 +85,23 @@ is the central abstraction. Four implementations in `interfaces/impl_dataInterfa
 (`BuyController2`, `TotalsController`, `AccountController2`) serve customer/supplier × sale/return. When
 changing invoice behaviour, check all four implementations, and expect heavily generic signatures.
 
+**A class declares only the type parameters it actually uses.** The four used to be copied onto every
+class that so much as touched a `DataInterface` — 27 of them, most using none of the four for anything
+but passing the interface along. They now say what they mean: `NameController<T3, T4>`,
+`TotalsController<T2, T3, T4>`, `SearchItemsController<T1>`, and the seven `view/*Application` classes
+name none at all. Everything unused is a wildcard (`DataInterface<?, ?, T3, T4>`), and constructing the
+next controller down from it works because Java captures the wildcards — `new NameController<>(...)`
+needs no help. `LoadOtherData<T3, T4>` is the shared base for the name and account screens, which is
+why `TotalsService` keeps a second, T2-precise handle (`totalsInterface`) on the same object.
+
+`BuyData`, `BuyController2` and `ShowInvoiceController` still name all four, and genuinely use them.
+**The four cannot be deleted outright until the models are one.** Each parameter is bounded by exactly
+one base class, so widening them to the bases compiles at every *use* site - but the four
+implementations override methods that take the concrete type (`addList(List<Total_Sales>, …)`), and a
+widened parameter no longer overrides. Making it work would mean unchecked casts inside the
+implementations, which is the safety the generics are there for. A single `Document` model removes the
+parameters for free; nothing short of it does.
+
 **What the four are is declared in `account.document`, not spread over the screens.** `DocumentType`
 (SALES, SALES_RETURN, PURCHASE, PURCHASE_RETURN) answers what a document *means* — whose account it
 moves (`partyKind`), which half of the ledger it is on (`side`), which way it moves the stock and the

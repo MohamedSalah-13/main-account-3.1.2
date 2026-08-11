@@ -71,8 +71,8 @@ import static com.hamza.controlsfx.util.NumberUtils.roundToTwoDecimalPlaces;
 
 @Log4j2
 @FxmlPath(pathFile = "invoice/totals.fxml")
-public class TotalsController<T1 extends BasePurchasesAndSales, T2 extends BaseTotals, T3 extends BaseNames, T4 extends BaseAccount>
-        extends TotalsService<T1, T2, T3, T4> implements Initializable {
+public class TotalsController<T2 extends BaseTotals, T3 extends BaseNames, T4 extends BaseAccount>
+        extends TotalsService<T2, T3, T4> implements Initializable {
 
     private final CssToColorHelper helper;
     private final EventBus eventBus = ServiceRegistry.get(EventBus.class);
@@ -114,7 +114,7 @@ public class TotalsController<T1 extends BasePurchasesAndSales, T2 extends BaseT
     @FXML
     private MenuItem menuItemPrintTotals, menuItemPrintDetailed;
 
-    public TotalsController(DataInterface<T1, T2, T3, T4> dataInterface, DaoFactory daoFactory
+    public TotalsController(DataInterface<?, T2, T3, T4> dataInterface, DaoFactory daoFactory
             , DataPublisher dataPublisher, EmployeeService employeeService
             , CssToColorHelper helper) throws Exception {
         super(dataInterface, daoFactory, dataPublisher);
@@ -400,7 +400,7 @@ public class TotalsController<T1 extends BasePurchasesAndSales, T2 extends BaseT
         var to = dateTo.getValue().toString();
         maskerPaneSetting.showMaskerPane(() -> {
             try {
-                var collection = dataInterface.totalsAndPurchaseList().totalList(from, to)
+                var collection = totalsInterface.totalsAndPurchaseList().totalList(from, to)
                         .stream().sorted(Comparator.comparing(BaseTotals::getDate)).toList();
                 // The query runs off the JavaFX thread; what the table is showing is
                 // replaced back on it.
@@ -524,7 +524,7 @@ public class TotalsController<T1 extends BasePurchasesAndSales, T2 extends BaseT
                 throw new Exception("لا يمكن تعديل بيانات خارج الشهر الحالي");
             }
         }
-        BuyApplication<T1, T2, T3, T4> buyApp = new BuyApplication<>(dataInterface, dataPublisher, i);
+        BuyApplication buyApp = new BuyApplication(dataInterface, dataPublisher, i);
         buyApp.start(new Stage());
     }
 
@@ -559,7 +559,7 @@ public class TotalsController<T1 extends BasePurchasesAndSales, T2 extends BaseT
                 }
             }
             List<PrintPurchaseWithName> printPurchaseWithNames = new ArrayList<>();
-            dataInterface.addList(items, printPurchaseWithNames);
+            totalsInterface.addList(items, printPurchaseWithNames);
             String date1 = dateFrom.getValue().toString();
             String date2 = dateTo.getValue().toString();
             printReports.printMultiInvoice(printPurchaseWithNames, dataInterface.designInterface().nameTextOfTotal(), date1, date2, null);
@@ -571,7 +571,7 @@ public class TotalsController<T1 extends BasePurchasesAndSales, T2 extends BaseT
     private void showInvoiceData(T2 t2) throws Exception {
         int id = totalsDataInterface.getNum(t2);
         String name = totalsDataInterface.getNameData(t2);
-        new ShowInvoiceApplication<>(dataPublisher, dataInterface, daoFactory, id, name);
+        new ShowInvoiceApplication(dataPublisher, dataInterface, daoFactory, id, name);
     }
 
     private void sumTable() {

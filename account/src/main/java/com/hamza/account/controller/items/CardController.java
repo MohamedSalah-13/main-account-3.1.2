@@ -313,7 +313,7 @@ public class CardController extends LoadData implements Initializable, AppSettin
                     int id = cardItems.getInvoice_num();
                     String name = cardItems.getNameItem();
                     ProcessType processType = cardItems.getProcessType();
-                    new ShowInvoiceApplication<>(dataPublisher, dataInterface(processType, daoFactory, dataPublisher), daoFactory, id, name);
+                    new ShowInvoiceApplication(dataPublisher, dataInterface(processType, daoFactory, dataPublisher), daoFactory, id, name);
                 } catch (Exception e) {
                     logError(e);
                 }

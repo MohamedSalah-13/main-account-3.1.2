@@ -54,8 +54,8 @@ import static com.hamza.controlsfx.util.ImageChoose.createIcon;
 
 @Log4j2
 @FxmlPath(pathFile = "account-totals.fxml")
-public class AccountController2<T1 extends BasePurchasesAndSales, T2 extends BaseTotals, T3 extends BaseNames, T4 extends BaseAccount>
-        extends LoadOtherData<T1, T2, T3, T4> {
+public class AccountController2<T3 extends BaseNames, T4 extends BaseAccount>
+        extends LoadOtherData<T3, T4> {
     private final EventBus eventBus = ServiceRegistry.get(EventBus.class);
     private final ObservableList<T4> observableList = FXCollections.observableArrayList();
     private final ObservableList<String> items = FXCollections.observableArrayList();
@@ -78,7 +78,7 @@ public class AccountController2<T1 extends BasePurchasesAndSales, T2 extends Bas
     private CheckBox checkByZero;
     private MaskerPaneSetting maskerPaneSetting;
 
-    public AccountController2(DaoFactory daoFactory, DataPublisher dataPublisher, DataInterface<T1, T2, T3, T4> dataInterface) throws Exception {
+    public AccountController2(DaoFactory daoFactory, DataPublisher dataPublisher, DataInterface<?, ?, T3, T4> dataInterface) throws Exception {
         super(dataInterface, daoFactory, dataPublisher);
         if (eventBus != null) {
             var kind = dataInterface.nameAndAccountInterface().partyKind();
@@ -297,7 +297,7 @@ public class AccountController2<T1 extends BasePurchasesAndSales, T2 extends Bas
                 T4 selectedItem = tableView.getSelectionModel().getSelectedItem();
                 int code_id = accountData.getIdName(selectedItem);
                 String name = accountData.getName(selectedItem);
-                new AccountDetailsApplication<>(daoFactory, dataPublisher, dataInterface, name, code_id);
+                new AccountDetailsApplication(daoFactory, dataPublisher, dataInterface, name, code_id);
             } catch (Exception e) {
                 logError(e);
             }
@@ -313,7 +313,7 @@ public class AccountController2<T1 extends BasePurchasesAndSales, T2 extends Bas
                 code = accountData.getIdName(selectedItem);
                 name = accountData.getName(selectedItem);
             }
-            new AddAccountApplication<>(daoFactory, dataPublisher, dataInterface, code, 0, name);
+            new AddAccountApplication(daoFactory, dataPublisher, dataInterface, code, 0, name);
         } catch (Exception e) {
             logError(e);
         }
