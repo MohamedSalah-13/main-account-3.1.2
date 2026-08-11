@@ -4,6 +4,10 @@ import com.hamza.account.backup.BackupService;
 import com.hamza.account.config.ConnectionToDatabase;
 import com.hamza.account.config.ThemeManager;
 import com.hamza.account.controller.others.ServiceRegistry;
+import com.hamza.account.features.company.CompanyService;
+import com.hamza.account.features.inventory.InventoryService;
+import com.hamza.account.features.stockcount.StockCountService;
+import com.hamza.account.period.PeriodLockService;
 import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.service.*;
 import com.hamza.account.service.version.DatabaseMigrationService;
@@ -49,8 +53,14 @@ public class DownLoadApplication extends Application {
         // instead of being handed a publisher through their constructor.
         ServiceRegistry.register(EventBus.class, new EventBus());
 
+        ServiceRegistry.register(CompanyService.class, new CompanyService(daoFactory));
         ServiceRegistry.register(ItemsService.class, new ItemsService(daoFactory));
         ServiceRegistry.register(StockService.class, new StockService(daoFactory));
+        ServiceRegistry.register(InventoryService.class, new InventoryService(daoFactory));
+        ServiceRegistry.register(StockCountService.class, new StockCountService(daoFactory));
+        // Registered before anything that writes a dated document: the services ask it
+        // whether the period is open, so it has to be there by the time one is called.
+        ServiceRegistry.register(PeriodLockService.class, new PeriodLockService(daoFactory));
         ServiceRegistry.register(EmployeeService.class, new EmployeeService(daoFactory));
         ServiceRegistry.register(TreasuryService.class, new TreasuryService(daoFactory));
         ServiceRegistry.register(UnitsService.class, new UnitsService(daoFactory));

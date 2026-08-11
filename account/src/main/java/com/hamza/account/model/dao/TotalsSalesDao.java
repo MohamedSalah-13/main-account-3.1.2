@@ -5,6 +5,8 @@ import com.hamza.account.trial.TrialManager;
 import com.hamza.account.type.InvoiceStatus;
 import com.hamza.account.type.InvoiceType;
 import com.hamza.controlsfx.database.AbstractDao;
+import com.hamza.account.period.PeriodLock;
+import com.hamza.account.period.PeriodLockRegistry;
 import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.database.SqlStatements;
 import lombok.extern.log4j.Log4j2;
@@ -62,6 +64,11 @@ public class TotalsSalesDao extends AbstractDao<Total_Sales> {
 
     @Override
     public int insert(Total_Sales totalSales) throws DaoException {
+        // Here rather than in the service, so it holds for every caller - the invoice
+        // screen, the POS, and the return that writes one on its way through. A closed
+        // period has been reported, and an invoice dated into it changes a figure that
+        // has already been signed.
+        PeriodLock.require(totalSales.getDate(), PeriodLockRegistry.SALES_INVOICE.label());
         if (!withConnection(c -> new TrialManager(c).canAddSale())) return 0;
         String query = SqlStatements.insertStatement(TABLE_NAME, SUP_CODE, INVOICE_TYPE, INVOICE_DATE, TOTAL, DISCOUNT
                 , PAID_UP, STOCK_ID, DELEGATE_ID, TREASURY_ID, NOTES, INVOICE_NUMBER, USER_ID);
@@ -77,6 +84,8 @@ public class TotalsSalesDao extends AbstractDao<Total_Sales> {
 
     @Override
     public int update(Total_Sales totalSales) throws DaoException {
+        // Both ends: where the invoice is now, and where it is being moved to.
+        PeriodLock.requireMove(PeriodLockRegistry.SALES_INVOICE, totalSales.getId(), totalSales.getDate());
         String query = SqlStatements.updateStatement(TABLE_NAME, INVOICE_NUMBER, SUP_CODE, INVOICE_TYPE, INVOICE_DATE
                 , TOTAL, DISCOUNT, PAID_UP, STOCK_ID, DELEGATE_ID, TREASURY_ID, NOTES);
         return insertMultiData(() -> {

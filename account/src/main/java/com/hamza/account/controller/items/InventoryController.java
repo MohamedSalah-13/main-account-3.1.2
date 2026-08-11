@@ -1,139 +1,665 @@
 package com.hamza.account.controller.items;
 
 import com.hamza.account.controller.others.ServiceRegistry;
-import com.hamza.account.model.domain.ItemsModel;
+import com.hamza.account.features.events.ItemSaved;
+import com.hamza.account.features.events.ItemsChanged;
+import com.hamza.account.features.events.InvoiceSaved;
+import com.hamza.account.features.events.StockCountPosted;
+import com.hamza.account.features.inventory.ColumnKind;
+import com.hamza.account.features.inventory.InventoryColumn;
+import com.hamza.account.features.inventory.InventoryColumns;
+import com.hamza.account.features.inventory.InventoryPage;
+import com.hamza.account.features.inventory.InventoryQuery;
+import com.hamza.account.features.inventory.InventoryRow;
+import com.hamza.account.features.inventory.InventoryService;
+import com.hamza.account.features.inventory.InventorySummary;
+import com.hamza.account.features.inventory.StockFilter;
+import com.hamza.account.features.export.ExcelExportService;
 import com.hamza.account.openFxml.FxmlPath;
 import com.hamza.account.reportData.Print_Reports;
-import com.hamza.account.service.ItemsService;
+import com.hamza.account.service.MainGroupService;
 import com.hamza.account.service.StockService;
 import com.hamza.account.table.TableSetting;
 import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.database.DaoException;
-import com.hamza.controlsfx.language.Setting_Language;
-import com.hamza.controlsfx.table.AddColumnMix;
-import com.hamza.controlsfx.table.ColumnInterface;
-import com.hamza.controlsfx.table.TableColumnAnnotation;
-import com.hamza.controlsfx.util.NumberUtils;
+import com.hamza.controlsfx.observer.EventBus;
+import com.hamza.controlsfx.observer.Subscriptions;
 import javafx.animation.PauseTransition;
-import javafx.beans.value.ObservableValue;
+import javafx.application.Platform;
+import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.collections.FXCollections;
+import javafx.concurrent.Task;
 import javafx.fxml.FXML;
-import javafx.scene.control.*;
+import javafx.scene.control.Button;
+import javafx.scene.control.CheckBox;
+import javafx.scene.control.ChoiceBox;
+import javafx.scene.control.Label;
+import javafx.scene.control.Pagination;
+import javafx.scene.control.ProgressIndicator;
+import javafx.scene.control.TableCell;
+import javafx.scene.control.TableColumn;
+import javafx.scene.control.TableRow;
+import javafx.scene.control.TableView;
+import javafx.scene.control.TextField;
+import javafx.scene.control.Tooltip;
+import javafx.scene.input.KeyCode;
+import javafx.scene.input.KeyEvent;
+import javafx.scene.layout.AnchorPane;
+import javafx.scene.layout.Priority;
+import javafx.scene.layout.VBox;
 import javafx.scene.text.Text;
-import javafx.util.Callback;
+import javafx.stage.FileChooser;
 import javafx.util.Duration;
+import javafx.util.StringConverter;
 import lombok.extern.log4j.Log4j2;
 
-import java.util.HashMap;
+import java.io.File;
+import java.io.IOException;
+import java.time.LocalDate;
 import java.util.List;
+import java.util.Locale;
 
-import static com.hamza.controlsfx.language.Setting_Language.*;
-
+/**
+ * The inventory sheet: every item, what moved, what is left, and what it is worth.
+ *
+ * <h2>What the totals mean</h2>
+ * The figures in the bottom bar are for <em>every</em> item the current search
+ * matches, not for the rows on screen. They arrive from a {@code SELECT SUM(...)}
+ * over the same filter that produced the rows - see {@code InventoryDao} - rather
+ * than being added up from the loaded page, which is what they used to be. Turning a
+ * page no longer changes them, and searching narrows them in step with the table.
+ *
+ * <h2>Loading</h2>
+ * Every load runs on a background thread, because a DAO call here reaches the
+ * database and blocking the JavaFX thread freezes the window. Results are stamped
+ * with a token and a late one is dropped: with a debounced search box, a slow query
+ * for "ا" can otherwise land after a fast one for "احمد" and put the wrong rows -
+ * and the wrong totals - on screen.
+ * <p>
+ * The page is driven from {@code currentPageIndexProperty} alone. The page factory
+ * only hands back the table now; it used to load as well, and with a second listener
+ * doing the same thing every page turn ran the query twice.
+ */
 @Log4j2
 @FxmlPath(pathFile = "items/inventory-view.fxml")
 public class InventoryController {
 
-    private final TableView<ItemsModel> tableView = new TableView<>();
-    private final int ROWS_PER_PAGE = 50;
+    private final TableView<InventoryRow> tableView = new TableView<>();
 
-    private final ItemsService itemsService = ServiceRegistry.get(ItemsService.class);
+    private final InventoryService inventoryService = ServiceRegistry.get(InventoryService.class);
     private final StockService stockService = ServiceRegistry.get(StockService.class);
+    private final MainGroupService mainGroupService = ServiceRegistry.get(MainGroupService.class);
+    private final EventBus eventBus = ServiceRegistry.get(EventBus.class);
+    private final ExcelExportService excelExportService = new ExcelExportService();
+
+    /**
+     * Closed when the screen leaves the scene graph. The bus outlives every screen -
+     * it is registered once for the process - so a listener left on it keeps this
+     * controller, its table and its scene graph alive, and re-runs its reload once per
+     * past opening of the screen.
+     */
+    private final Subscriptions subscriptions = new Subscriptions();
+
+    /** What is currently on screen. Every reload is derived from it. */
+    private InventoryQuery query = InventoryQuery.all();
+
+    /**
+     * Identifies the newest load. A task whose token is no longer the latest has been
+     * overtaken and its result is discarded.
+     */
+    private long loadToken;
+
+    /** Set while the pagination is being resized in code, so it does not reload. */
+    private boolean adjustingPagination;
+
+    /**
+     * Set while the filter controls are being put back in step with {@link #query} in
+     * code, so their listeners do not read the change as the user making it and start
+     * a second load.
+     */
+    private boolean adjustingFilters;
+
     @FXML
     private TextField textSearch;
     @FXML
-    private Text textSumPurchase, textSumSales;
+    private Text textSumPurchase, textSumSales, textItemCount, textLowStock;
     @FXML
-    private Button btnPrint, btnRefresh;
+    private Label labelTotalQuantity, labelExpectedProfit, labelStockStates, labelCostHint, labelStatus;
+    @FXML
+    private Button btnPrint, btnRefresh, btnExcel, btnClearFilters;
+    @FXML
+    private ProgressIndicator progress;
     @FXML
     private Pagination pagination;
+    @FXML
+    private ChoiceBox<StockFilter> choiceLevel;
+    @FXML
+    private ChoiceBox<GroupChoice> choiceGroup;
+    @FXML
+    private CheckBox checkInactive;
+    @FXML
+    private VBox tileLowStock;
+    @FXML
+    private AnchorPane root;
 
     @FXML
     public void initialize() {
-        actionButton();
-        getTable();
-        initializePagination();
+        buildTable();
+        buildPagination();
+        buildLevelPicker();
+        buildGroupPicker();
+        buildActions();
+        explainTotals();
+        subscribeToChanges();
+        // The screen used to open showing 0.00 and stay there until the user changed
+        // a page or typed something: nothing loaded the totals on the way in.
+        load(query);
     }
 
-    private void initializePagination() {
-        int totalItems = itemsService.getCountItems(); // database.getCount();
-        int pageCount = (totalItems / ROWS_PER_PAGE) + 1;
-        pagination.setPageCount(pageCount);
-        // 3. تحديد ماذا يحدث عند تغيير الصفحة (Factory)
-        pagination.setPageFactory((pageIndex) -> {
-            updateTableView(pageIndex);
-            return tableView; // نعيد الجدول ليتم عرضه داخل صفحة الـ Pagination
-        });
-    }
+    // ------------------------------------------------------------------
+    // Table
+    // ------------------------------------------------------------------
 
-    private void updateTableView(int pageIndex) {
-        try {
-            int offset = pageIndex * ROWS_PER_PAGE;
-            // هنا الكود الحقيقي لجلب البيانات من قاعدة البيانات
-            List<ItemsModel> data = itemsService.getProducts(ROWS_PER_PAGE, offset);
-            tableView.setItems(FXCollections.observableArrayList(data));
-        } catch (DaoException e) {
-            throw new RuntimeException(e);
-        }
-    }
+    /**
+     * The table is built from {@link InventoryColumns#ALL}. Everything below is the
+     * one piece of code that turns a declaration into a {@code TableColumn}; a new
+     * column is a line in that catalogue and nothing here.
+     * <p>
+     * What this replaced was eight near-identical blocks followed by
+     * {@code getColumns().removeAll(List.of(5, 4, 3, 1))} - columns deleted by
+     * position, so adding an annotated field to the item model removed different
+     * ones. The columns also had no ids, so {@link TableSetting} remembered the
+     * user's widths against an index that moved with them.
+     */
+    private void buildTable() {
+        tableView.setId("inventoryTable");
+        tableView.getStyleClass().add("modern-table");
+        tableView.setPlaceholder(new Label("لا توجد أصناف مطابقة"));
 
-    private void getTable() {
-        new TableColumnAnnotation().getTable(tableView, ItemsModel.class);
+        InventoryColumns.ALL.forEach(column -> tableView.getColumns().add(build(column)));
+        tableView.setRowFactory(view -> new StockRow());
 
-        Callback<TableColumn.CellDataFeatures<ItemsModel, Double>, ObservableValue<Double>> columnFirstBalance = f -> f.getValue().firstBalanceForStockProperty().asObject();
-        addColumnData(FIRST_BALANCE, columnFirstBalance);
-
-        Callback<TableColumn.CellDataFeatures<ItemsModel, Double>, ObservableValue<Double>> columnPur = f -> f.getValue().sumPurchaseProperty().asObject();
-        addColumnData(Setting_Language.WORD_PUR, columnPur);
-
-        Callback<TableColumn.CellDataFeatures<ItemsModel, Double>, ObservableValue<Double>> columnSales = f -> f.getValue().sumSalesProperty().asObject();
-        addColumnData(Setting_Language.WORD_SALES, columnSales);
-
-        Callback<TableColumn.CellDataFeatures<ItemsModel, Double>, ObservableValue<Double>> columnPurRe = f -> f.getValue().sumPurchaseReProperty().asObject();
-        addColumnData(RETURN + "\n" + Setting_Language.WORD_PUR, columnPurRe);
-
-        Callback<TableColumn.CellDataFeatures<ItemsModel, Double>, ObservableValue<Double>> columnSalesRe = f -> f.getValue().sumSalesReProperty().asObject();
-        addColumnData(RETURN + "\n" + Setting_Language.WORD_SALES, columnSalesRe);
-
-        Callback<TableColumn.CellDataFeatures<ItemsModel, Double>, ObservableValue<Double>> columnRest = f -> f.getValue().fromStockProperty().asObject();
-        addColumnData("تحويلات صادرة", columnRest);
-
-        Callback<TableColumn.CellDataFeatures<ItemsModel, Double>, ObservableValue<Double>> columnTo = f -> f.getValue().toStockProperty().asObject();
-        addColumnData("تحويلات واردة", columnTo);
-
-        Callback<TableColumn.CellDataFeatures<ItemsModel, Double>, ObservableValue<Double>> columnBalance = f -> f.getValue().sumAllBalanceProperty().asObject();
-        addColumnData(BALANCE_NOW, columnBalance);
-
-        // add column price
-        addColumnPrice();
-
-        tableView.getColumns().get(2).setPrefWidth(250);
-        List<Integer> list = List.of(5, 4, 3, 1);
-        tableView.getColumns().removeAll(list.stream().map(tableView.getColumns()::get).toList());
         TableSetting.tableMenuSetting(getClass(), tableView);
     }
 
-    private void addColumnPrice() {
-        var columnInterface = new ColumnInterface<ItemsModel, Double>() {
-            @Override
-            public HashMap<String, Callback<TableColumn.CellDataFeatures<ItemsModel, Double>, ObservableValue<Double>>> STRING_CALLBACK_HASH_MAP() {
-                HashMap<String, Callback<TableColumn.CellDataFeatures<ItemsModel, Double>, ObservableValue<Double>>> hashMap = new HashMap<>();
-                hashMap.put(PRICE, f -> f.getValue().buyPriceProperty().asObject());
-                hashMap.put(TOTAL, f -> f.getValue().sumAllBalanceByBuyPriceProperty().asObject());
-                return hashMap;
-            }
-        };
-        tableView.getColumns().add(new AddColumnMix<ItemsModel, Double>().getTableColumn(Setting_Language.PURCHASE, columnInterface));
+    /**
+     * A row that carries its stock state as a style class, so the shading lives in the
+     * theme and works in both light and dark rather than being an inline colour that
+     * only suits one of them.
+     * <p>
+     * The state comes from {@link InventoryRow#level()}, which is
+     * {@code StockLevel.of} - the same function the sales screens use - so a shaded row
+     * here and a warning raised there can never mean different things.
+     */
+    private static final class StockRow extends TableRow<InventoryRow> {
 
-        var columnInterfaceSales = new ColumnInterface<ItemsModel, Double>() {
+        private static final List<String> STATES =
+                List.of("stock-low", "stock-out", "stock-negative", "stock-inactive");
+
+        @Override
+        protected void updateItem(InventoryRow row, boolean empty) {
+            super.updateItem(row, empty);
+            getStyleClass().removeAll(STATES);
+            if (empty || row == null) {
+                return;
+            }
+            switch (row.level()) {
+                case AT_MINIMUM -> getStyleClass().add("stock-low");
+                case OUT_OF_STOCK -> getStyleClass().add("stock-out");
+                case NEGATIVE -> getStyleClass().add("stock-negative");
+                case OK -> {
+                }
+            }
+            if (!row.active()) {
+                getStyleClass().add("stock-inactive");
+            }
+        }
+    }
+
+    private TableColumn<InventoryRow, ?> build(InventoryColumn column) {
+        if (column.isGroup()) {
+            TableColumn<InventoryRow, Object> group = new TableColumn<>(column.title());
+            group.setId(column.id());
+            column.children().forEach(child -> group.getColumns().add(build(child)));
+            return group;
+        }
+        return column.kind() == ColumnKind.TEXT ? text(column) : number(column);
+    }
+
+    private TableColumn<InventoryRow, String> text(InventoryColumn column) {
+        TableColumn<InventoryRow, String> tableColumn = new TableColumn<>(column.title());
+        tableColumn.setId(column.id());
+        tableColumn.setPrefWidth(column.prefWidth());
+        tableColumn.setCellValueFactory(f -> new ReadOnlyObjectWrapper<>(column.textOf(f.getValue())));
+        return tableColumn;
+    }
+
+    /**
+     * A numeric column. The cell value stays a {@code Double} so sorting compares
+     * numbers rather than the formatted text - "1,000" sorts before "9" as a string -
+     * and only the display goes through {@link ColumnKind#format}.
+     */
+    private TableColumn<InventoryRow, Double> number(InventoryColumn column) {
+        TableColumn<InventoryRow, Double> tableColumn = new TableColumn<>(column.title());
+        tableColumn.setId(column.id());
+        tableColumn.setPrefWidth(column.prefWidth());
+        tableColumn.setCellValueFactory(f -> new ReadOnlyObjectWrapper<>(column.numberOf(f.getValue())));
+        tableColumn.setCellFactory(c -> {
+            TableCell<InventoryRow, Double> cell = new TableCell<>() {
+                @Override
+                protected void updateItem(Double item, boolean empty) {
+                    super.updateItem(item, empty);
+                    setText(empty || item == null ? null : column.kind().format(item));
+                }
+            };
+            cell.setStyle("-fx-alignment: CENTER-RIGHT;");
+            return cell;
+        });
+        return tableColumn;
+    }
+
+    // ------------------------------------------------------------------
+    // Wiring
+    // ------------------------------------------------------------------
+
+    private void buildPagination() {
+        // Layout only. Loading is driven by the index listener below, so the two
+        // cannot both fire for one page turn.
+        pagination.setPageFactory(pageIndex -> tableView);
+        pagination.setPageCount(1);
+        pagination.currentPageIndexProperty().addListener((observable, oldValue, newValue) -> {
+            if (adjustingPagination) {
+                return;
+            }
+            load(query.withPage(newValue.intValue()));
+        });
+        VBox.setVgrow(pagination, Priority.ALWAYS);
+    }
+
+    /**
+     * The stock-state filter. It narrows the query rather than the loaded rows, so the
+     * totals and the row count narrow with it - filtering in memory would have left
+     * the header describing every item while the table showed a handful.
+     */
+    private void buildLevelPicker() {
+        choiceLevel.getItems().setAll(StockFilter.values());
+        choiceLevel.setConverter(new StringConverter<>() {
             @Override
-            public HashMap<String, Callback<TableColumn.CellDataFeatures<ItemsModel, Double>, ObservableValue<Double>>> STRING_CALLBACK_HASH_MAP() {
-                HashMap<String, Callback<TableColumn.CellDataFeatures<ItemsModel, Double>, ObservableValue<Double>>> hashMap = new HashMap<>();
-                hashMap.put(PRICE, f -> f.getValue().selPrice1Property().asObject());
-                hashMap.put(TOTAL, f -> f.getValue().sumAllBalanceBySelPriceProperty().asObject());
-                return hashMap;
+            public String toString(StockFilter filter) {
+                return filter == null ? "" : filter.title();
+            }
+
+            @Override
+            public StockFilter fromString(String string) {
+                return StockFilter.ALL;
+            }
+        });
+        choiceLevel.setValue(StockFilter.ALL);
+        choiceLevel.valueProperty().addListener((observable, oldValue, newValue) -> {
+            if (!adjustingFilters && newValue != null) {
+                load(query.withLevel(newValue));
+            }
+        });
+    }
+
+    /**
+     * The group filter, read once when the screen opens.
+     * <p>
+     * It offers main groups rather than sub groups: a shop has a handful of the former
+     * and often hundreds of the latter, and a list of hundreds is not a filter anyone
+     * uses. {@code items} carries the sub group, so the query reaches the main one
+     * through {@code sub_group.main_id} - see {@code InventoryDao.filter}.
+     * <p>
+     * Failing to read the groups leaves the picker holding "الكل" and the screen fully
+     * usable; it is a filter, not the report.
+     */
+    private void buildGroupPicker() {
+        choiceGroup.setConverter(new StringConverter<>() {
+            @Override
+            public String toString(GroupChoice choice) {
+                return choice == null ? "" : choice.name();
+            }
+
+            @Override
+            public GroupChoice fromString(String string) {
+                return GroupChoice.ALL;
+            }
+        });
+        choiceGroup.getItems().add(GroupChoice.ALL);
+        choiceGroup.setValue(GroupChoice.ALL);
+        choiceGroup.valueProperty().addListener((observable, oldValue, newValue) -> {
+            if (!adjustingFilters && newValue != null) {
+                load(query.withMainGroup(newValue.id()));
+            }
+        });
+
+        Task<List<GroupChoice>> task = new Task<>() {
+            @Override
+            protected List<GroupChoice> call() throws DaoException {
+                return mainGroupService.getMainGroupList().stream()
+                        .map(group -> new GroupChoice(group.getId(), group.getName()))
+                        .toList();
             }
         };
-        tableView.getColumns().add(new AddColumnMix<ItemsModel, Double>().getTableColumn(SALES, columnInterfaceSales));
+        task.setOnSucceeded(event -> choiceGroup.getItems().addAll(task.getValue()));
+        task.setOnFailed(event ->
+                log.error("Failed to read the item groups for the inventory filter", task.getException()));
+
+        Thread thread = new Thread(task, "inventory-groups");
+        thread.setDaemon(true);
+        thread.start();
+    }
+
+    /** An entry in the group picker; {@link #ALL} is the "no group" option. */
+    private record GroupChoice(int id, String name) {
+
+        static final GroupChoice ALL = new GroupChoice(InventoryQuery.ALL_GROUPS, "كل المجموعات");
+    }
+
+    /**
+     * Reloads when something happens that changes what is in stock.
+     * <p>
+     * The screen had no subscription at all: an invoice could be saved in another tab
+     * and this sheet would go on showing balances from before it. A purchase return
+     * carries {@code PURCHASE} and a sales return {@code SALES}, so both sides are
+     * taken - every one of them moves stock, which is the only thing this screen
+     * reports on.
+     */
+    private void subscribeToChanges() {
+        subscriptions.add(eventBus.subscribe(InvoiceSaved.class, event -> reload()));
+        subscriptions.add(eventBus.subscribe(ItemSaved.class, event -> reload()));
+        subscriptions.add(eventBus.subscribe(ItemsChanged.class, event -> reload()));
+        // A posted count corrects balances without anything being bought or sold, and
+        // the sheet shows the correction in its own column.
+        subscriptions.add(eventBus.subscribe(StockCountPosted.class, event -> reload()));
+        subscriptions.disposeWith(root);
+    }
+
+    /**
+     * Reloads the current view. Separate from {@link #load} so a listener cannot be
+     * mistaken for something that changes the filter.
+     */
+    private void reload() {
+        load(query);
+    }
+
+    private void buildActions() {
+        // The refresh button had no handler at all: it was declared in the FXML,
+        // injected here, and never wired to anything.
+        btnRefresh.setOnAction(actionEvent -> reload());
+        btnPrint.setOnAction(actionEvent -> printSheet());
+        btnExcel.setOnAction(actionEvent -> exportToExcel());
+        btnClearFilters.setOnAction(actionEvent -> load(InventoryQuery.all()));
+
+        checkInactive.selectedProperty().addListener((observable, oldValue, newValue) -> {
+            if (!adjustingFilters) {
+                load(query.withInactive(newValue));
+            }
+        });
+
+        // The tile is the only place the low-stock count appears, so it is also the
+        // obvious place to ask for those items; clicking it narrows the table to them
+        // and clicking again goes back.
+        tileLowStock.setOnMouseClicked(event -> load(query.withLevel(
+                query.level() == StockFilter.LOW ? StockFilter.ALL : StockFilter.LOW)));
+
+        PauseTransition pause = new PauseTransition(Duration.millis(400));
+        textSearch.textProperty().addListener((observable, oldValue, newValue) -> {
+            if (adjustingFilters) {
+                return;
+            }
+            pause.setOnFinished(event -> load(query.withSearch(newValue)));
+            pause.playFromStart();
+        });
+
+        // A report screen is read, so the keys that matter are the ones that get you
+        // back to the search box and the ones that redraw it.
+        root.addEventHandler(KeyEvent.KEY_PRESSED, event -> {
+            if (event.getCode() == KeyCode.F5) {
+                reload();
+            } else if (event.getCode() == KeyCode.F && event.isControlDown()) {
+                textSearch.requestFocus();
+                textSearch.selectAll();
+            }
+        });
+        Platform.runLater(textSearch::requestFocus);
+    }
+
+    private void explainTotals() {
+        Tooltip tooltip = new Tooltip("الإجماليات محسوبة على كل الأصناف المطابقة للفلاتر، وليست إجمالي الصفحة المعروضة");
+        Tooltip.install(textSumPurchase, tooltip);
+        Tooltip.install(textSumSales, tooltip);
+        Tooltip.install(textItemCount, tooltip);
+        Tooltip.install(tileLowStock, new Tooltip("اضغط لعرض الأصناف التي وصلت لحد الطلب أو أقل"));
+    }
+
+    /**
+     * Puts the filter controls back in step with {@link #query}. Needed because the
+     * query can change without the user touching a control - "مسح الفلاتر" resets all
+     * of them at once, and the low-stock tile sets the stock state.
+     */
+    private void syncFilters() {
+        adjustingFilters = true;
+        try {
+            if (!textSearch.getText().equals(query.search())) {
+                textSearch.setText(query.search());
+            }
+            choiceLevel.setValue(query.level());
+            checkInactive.setSelected(query.includeInactive());
+            choiceGroup.getItems().stream()
+                    .filter(choice -> choice.id() == query.mainGroupId())
+                    .findFirst()
+                    .ifPresent(choiceGroup::setValue);
+            btnClearFilters.setDisable(!query.isNarrowed());
+        } finally {
+            adjustingFilters = false;
+        }
+    }
+
+    // ------------------------------------------------------------------
+    // Loading
+    // ------------------------------------------------------------------
+
+    /**
+     * Loads {@code next} in the background and shows it if nothing newer has been
+     * asked for by the time it arrives.
+     */
+    private void load(InventoryQuery next) {
+        query = next;
+        long token = ++loadToken;
+        progress.setVisible(true);
+
+        Task<InventoryPage> task = new Task<>() {
+            @Override
+            protected InventoryPage call() throws DaoException {
+                return inventoryService.load(next);
+            }
+        };
+        task.setOnSucceeded(event -> {
+            if (token != loadToken) {
+                return;
+            }
+            progress.setVisible(false);
+            show(task.getValue());
+        });
+        task.setOnFailed(event -> {
+            if (token != loadToken) {
+                return;
+            }
+            progress.setVisible(false);
+            Throwable error = task.getException();
+            // A failure here used to be wrapped in a RuntimeException thrown out of
+            // the page factory: no Arabic message, and a broken Pagination.
+            log.error("Failed to load the inventory sheet", error);
+            AllAlerts.alertError(error == null ? "" : error.getMessage());
+        });
+
+        Thread thread = new Thread(task, "inventory-load-" + token);
+        thread.setDaemon(true);
+        thread.start();
+    }
+
+    private void show(InventoryPage page) {
+        int pageCount = page.pageCount(query.pageSize());
+
+        // The filter can shrink under a page that no longer exists - search while
+        // sitting on page 7 and the two matches are all on page 1. Land on the last
+        // real page instead of showing an empty table that reads as "no matches".
+        int clamped = Math.min(query.page(), pageCount - 1);
+        if (clamped != query.page()) {
+            load(query.withPage(clamped));
+            return;
+        }
+
+        tableView.setItems(FXCollections.observableArrayList(page.rows()));
+
+        adjustingPagination = true;
+        try {
+            pagination.setPageCount(pageCount);
+            pagination.setCurrentPageIndex(query.page());
+        } finally {
+            adjustingPagination = false;
+        }
+
+        syncFilters();
+        showSummary(page.summary());
+        showStatus(page);
+        tableView.setPlaceholder(new Label(query.isNarrowed()
+                ? "لا توجد أصناف مطابقة للفلاتر المختارة"
+                : "لا توجد أصناف"));
+    }
+
+    /**
+     * Which slice of the whole is on screen. Without it the pagination says "page 3"
+     * and nothing says of how many rows, which is exactly the question a stocktake asks.
+     */
+    private void showStatus(InventoryPage page) {
+        long total = page.totalRows();
+        if (total == 0) {
+            labelStatus.setText("");
+            return;
+        }
+        long first = (long) query.page() * query.pageSize() + 1;
+        long last = first + page.rows().size() - 1;
+        labelStatus.setText("عرض %s - %s من %s صنف".formatted(count(first), count(last), count(total)));
+    }
+
+    /**
+     * Written through the same {@link ColumnKind} the matching columns use, so the
+     * total under a column is formatted exactly like the figures above it.
+     */
+    private void showSummary(InventorySummary summary) {
+        textSumPurchase.setText(ColumnKind.MONEY.format(summary.valueAtCost()));
+        textSumSales.setText(ColumnKind.MONEY.format(summary.valueAtSale()));
+        textItemCount.setText(count(summary.itemCount()));
+        textLowStock.setText(count(summary.lowStockCount()));
+
+        labelCostHint.setText(query.isNarrowed() ? "للأصناف المطابقة للفلاتر" : "لكل أصناف المخزن");
+        // The gap between the two valuations, which is the margin still sitting on the
+        // shelf. Not a profit until it is sold, so it is a hint and not a tile.
+        labelExpectedProfit.setText("الربح المتوقع " +
+                ColumnKind.MONEY.format(summary.valueAtSale() - summary.valueAtCost()));
+        labelTotalQuantity.setText("إجمالي الكمية " + ColumnKind.QUANTITY.format(summary.totalQuantity()));
+        labelStockStates.setText("منتهي %s · سالب %s"
+                .formatted(count(summary.outOfStockCount()), count(summary.negativeCount())));
+    }
+
+    private static String count(long value) {
+        return String.format(Locale.US, "%,d", value);
+    }
+
+    // ------------------------------------------------------------------
+    // Printing and export
+    // ------------------------------------------------------------------
+
+    /**
+     * Writes the whole filtered sheet to a spreadsheet.
+     * <p>
+     * The file is asked for first and the rows only fetched once the user has chosen
+     * one, so cancelling costs nothing. As with printing, the rows are re-read unpaged:
+     * exporting the table's items would export the fifty rows on screen.
+     */
+    private void exportToExcel() {
+        InventoryQuery snapshot = query;
+
+        FileChooser chooser = new FileChooser();
+        chooser.setTitle("تصدير الجرد");
+        chooser.setInitialFileName("inventory-" + LocalDate.now() + ".xlsx");
+        chooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("Excel", "*.xlsx"));
+        File file = chooser.showSaveDialog(root.getScene() == null ? null : root.getScene().getWindow());
+        if (file == null) {
+            return;
+        }
+
+        btnExcel.setDisable(true);
+        progress.setVisible(true);
+
+        Task<Void> task = new Task<>() {
+            @Override
+            protected Void call() throws DaoException, IOException {
+                // The totals are re-read rather than taken off the screen so the file's
+                // totals row is the database's answer, not whatever the header happened
+                // to be showing when the button was pressed.
+                excelExportService.exportInventoryToExcel(
+                        inventoryService.loadAll(snapshot),
+                        InventoryColumns.ALL,
+                        inventoryService.summary(snapshot),
+                        file.getAbsolutePath());
+                return null;
+            }
+        };
+        task.setOnSucceeded(event -> {
+            btnExcel.setDisable(false);
+            progress.setVisible(false);
+            AllAlerts.alertSaveWithMessage("تم تصدير الجرد إلى " + file.getName());
+        });
+        task.setOnFailed(event -> {
+            btnExcel.setDisable(false);
+            progress.setVisible(false);
+            Throwable error = task.getException();
+            log.error("Failed to export the inventory sheet", error);
+            AllAlerts.alertError("فشل التصدير: " + (error == null ? "" : error.getMessage()));
+        });
+
+        Thread thread = new Thread(task, "inventory-export");
+        thread.setDaemon(true);
+        thread.start();
+    }
+
+    /**
+     * Prints everything the current search matches. The rows are fetched again
+     * unpaged, because the table only ever holds one page - printing used to hand the
+     * report {@code tableView.getItems()} and so printed fifty items out of however
+     * many the shop has.
+     */
+    private void printSheet() {
+        InventoryQuery snapshot = query;
+        btnPrint.setDisable(true);
+        progress.setVisible(true);
+
+        Task<PrintData> task = new Task<>() {
+            @Override
+            protected PrintData call() throws DaoException {
+                return new PrintData(inventoryService.loadAll(snapshot), stockName());
+            }
+        };
+        task.setOnSucceeded(event -> {
+            btnPrint.setDisable(false);
+            progress.setVisible(false);
+            PrintData data = task.getValue();
+            new Print_Reports().printInventoryByTable(data.rows(), data.stockName());
+        });
+        task.setOnFailed(event -> {
+            btnPrint.setDisable(false);
+            progress.setVisible(false);
+            Throwable error = task.getException();
+            log.error("Failed to build the inventory sheet for printing", error);
+            AllAlerts.alertError(error == null ? "" : error.getMessage());
+        });
+
+        Thread thread = new Thread(task, "inventory-print");
+        thread.setDaemon(true);
+        thread.start();
     }
 
     /**
@@ -150,46 +676,6 @@ public class InventoryController {
         }
     }
 
-    private void actionButton() {
-//        checkShowZeroBalance.selectedProperty().addListener((observableValue, s, t1) -> searchAction());
-        pagination.currentPageIndexProperty().addListener((observableValue, s, t1) -> updateTableView(t1.intValue()));
-        btnPrint.setOnAction(actionEvent -> new Print_Reports().printInventoryByTable(tableView.getItems(), stockName()));
-
-        pagination.currentPageIndexProperty().addListener((observableValue, s, t1) -> {
-            calculateTotalBalances();
-        });
-
-        PauseTransition pause = new PauseTransition(Duration.millis(500));
-        textSearch.textProperty().addListener((observable, oldValue, newValue) -> {
-            pause.setOnFinished(event -> {
-                try {
-                    loadDataFromDB(newValue); // لا يتم الاستدعاء إلا بعد التوقف عن الكتابة
-                    calculateTotalBalances();
-                } catch (DaoException e) {
-                    log.error(e.getMessage(), e);
-                    AllAlerts.alertError(e.getMessage());
-                }
-            });
-            pause.playFromStart();
-        });
-    }
-
-    private void loadDataFromDB(String newValue) throws DaoException {
-        var filterItems = itemsService.getFilterItems(newValue);
-        tableView.setItems(FXCollections.observableArrayList(filterItems));
-    }
-
-
-    private void calculateTotalBalances() {
-        double v2 = tableView.getItems().stream().mapToDouble(ItemsModel::getSumAllBalanceByBuyPrice).sum();
-        double v3 = tableView.getItems().stream().mapToDouble(ItemsModel::getSumAllBalanceBySelPrice).sum();
-        textSumPurchase.setText(String.valueOf(NumberUtils.roundToTwoDecimalPlaces(v2)));
-        textSumSales.setText(String.valueOf(NumberUtils.roundToTwoDecimalPlaces(v3)));
-    }
-
-    private <T> void addColumnData(String name, Callback<TableColumn.CellDataFeatures<ItemsModel, T>, ObservableValue<T>> column) {
-        TableColumn<ItemsModel, T> colName = new TableColumn<>(name);
-        colName.setCellValueFactory(column);
-        tableView.getColumns().add(colName);
+    private record PrintData(List<InventoryRow> rows, String stockName) {
     }
 }

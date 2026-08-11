@@ -33,10 +33,17 @@ public class CompanyDao extends AbstractDao<Company> {
         return queryForObjects(SqlStatements.selectStatement(COMPANY), this::map);
     }
 
+    /**
+     * Creates the company row. It used to write nothing but a placeholder name and drop
+     * whatever it was handed on the floor, which was only ever true because the one
+     * caller passed an empty company; the columns are written now, and the placeholder is
+     * the fallback for the name rather than the value.
+     */
     @Override
     public int insert(Company company) throws DaoException {
-        String query = SqlStatements.insertStatement(COMPANY, COMP_NAME);
-        return executeUpdate(query, Setting_Language.COMPANY_NAME);
+        String query = SqlStatements.insertStatement(COMPANY, COMP_NAME, COMP_TEL, COMP_ADDRESS, COMP_TAX, COMP_COMM, COMP_IMAGE);
+        return executeUpdate(query, name(company), company.getTel(), company.getAddress()
+                , company.getTax(), company.getCommercial(), image(company));
     }
 
     @Override
@@ -47,9 +54,21 @@ public class CompanyDao extends AbstractDao<Company> {
 
     @Override
     public Object[] getData(Company company) {
-        return new Object[]{company.getName(), company.getTel(), company.getAddress()
-                , company.getTax(), company.getCommercial(), company.getImage() == null ? null : company.getImage().length > 0 ? company.getImage() : null
+        return new Object[]{name(company), company.getTel(), company.getAddress()
+                , company.getTax(), company.getCommercial(), image(company)
                 , company.getId()};
+    }
+
+    /** {@code comp_name} is {@code NOT NULL}, so a blank name is the seeded label, not a failed insert. */
+    private String name(Company company) {
+        String name = company.getName();
+        return name == null || name.isBlank() ? Setting_Language.COMPANY_NAME : name.trim();
+    }
+
+    /** An empty byte array means "no logo" as much as a null does, and the column stores neither. */
+    private byte[] image(Company company) {
+        byte[] image = company.getImage();
+        return image == null || image.length == 0 ? null : image;
     }
 
     @Override

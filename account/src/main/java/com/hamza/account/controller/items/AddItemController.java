@@ -446,6 +446,7 @@ public class AddItemController implements AppSettingInterface {
                     txtBuyPrice.setText(String.valueOf(itemsModel.getBuyPrice()));
                     txtMiniQuantity.setText(String.valueOf(itemsModel.getMini_quantity()));
                     txtBalance.setText(String.valueOf(itemsModel.getFirstBalanceForStock()));
+                    lockOpeningBalanceIfItemHasMoved(numItem);
                     // combo restore data
                     mainId = itemsModel.getSubGroups().getMainGroups().getId();
                     subId = itemsModel.getSubGroups().getId();
@@ -474,6 +475,33 @@ public class AddItemController implements AppSettingInterface {
             } catch (DaoException e) {
                 logError(e);
             }
+    }
+
+    /**
+     * Greys the opening-balance field once the item has moved, and says why.
+     * <p>
+     * The rule is enforced in {@code ItemsDao.update}, not here - a disabled field is a
+     * hint, and the same save is reachable from the Excel import. This is so the user
+     * finds out before typing rather than by having the save refused afterwards.
+     * <p>
+     * A failure to read it leaves the field enabled: the DAO will still refuse a change,
+     * so the worst case is a message at the wrong moment rather than a corrupted balance.
+     */
+    private void lockOpeningBalanceIfItemHasMoved(int itemId) {
+        try {
+            if (!itemsService.isOpeningBalanceLocked(itemId)) {
+                txtBalance.setDisable(false);
+                txtBalance.setTooltip(null);
+                return;
+            }
+            txtBalance.setDisable(true);
+            txtBalance.setTooltip(new Tooltip(
+                    "رصيد أول المدة مقفل: يوجد حركات على هذا الصنف."
+                    + "\nتغييره يعيد حساب رصيد الصنف في كل تاريخ سابق."
+                    + "\nلتصحيح الرصيد استخدم شاشة الجرد الفعلي."));
+        } catch (DaoException e) {
+            logError(e);
+        }
     }
 
     private BooleanBinding checkEnableButton() {
@@ -600,6 +628,9 @@ public class AddItemController implements AppSettingInterface {
                     imageAdd.setImage(null);
                     if (!isDuplicate) {
                         clearAll(txtCode, txtBarcode, txtItemName, txtBalance, txtBuyPrice, txtSelPrice, txtMiniQuantity);
+                        // The form is a blank item again, and a blank item has moved
+                        // nothing - so the opening balance is open for entry.
+                        lockOpeningBalanceIfItemHasMoved(0);
                     }
                     addBarcode();
                     getFocusToName();

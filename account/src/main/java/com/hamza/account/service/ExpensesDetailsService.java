@@ -3,6 +3,8 @@ package com.hamza.account.service;
 import com.hamza.account.delete.DeleteRegistry;
 import com.hamza.account.delete.DeletionService;
 import com.hamza.account.model.dao.DaoFactory;
+import com.hamza.account.period.PeriodLock;
+import com.hamza.account.period.PeriodLockRegistry;
 import com.hamza.account.model.dao.ExpensesDetailsDao;
 import com.hamza.account.model.domain.ExpensesDetails;
 import com.hamza.controlsfx.database.DaoException;
@@ -23,7 +25,9 @@ public record ExpensesDetailsService(DaoFactory daoFactory) {
         return expensesDetailsDao().getDataById(id);
     }
 
+    /** Refused inside a closed period: an expense is dated, and its month has been reported. */
     public int deleteById(int id) throws DaoException {
+        PeriodLock.require(PeriodLockRegistry.EXPENSE, id);
         return DeletionService.shared()
                 .delete(DeleteRegistry.EXPENSES_DETAILS, id, daoFactory.expensesDetailsDao()::deleteById)
                 .rowsOrThrow();

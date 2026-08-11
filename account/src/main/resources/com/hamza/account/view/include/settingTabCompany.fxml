@@ -1,7 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
+<?import javafx.geometry.Insets?>
 <?import javafx.scene.control.Button?>
 <?import javafx.scene.control.Label?>
+<?import javafx.scene.control.ProgressIndicator?>
 <?import javafx.scene.control.ScrollPane?>
 <?import javafx.scene.control.TextField?>
 <?import javafx.scene.image.ImageView?>
@@ -9,86 +11,119 @@
 <?import javafx.scene.layout.ColumnConstraints?>
 <?import javafx.scene.layout.GridPane?>
 <?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Region?>
 <?import javafx.scene.layout.RowConstraints?>
 <?import javafx.scene.layout.VBox?>
 
-<AnchorPane styleClass="app-root" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1">
+<!-- The controller is named here rather than set on the loader: OpenFxmlApplication
+     hands its own instance back through a controller factory, so the declaration costs
+     nothing at runtime and gives the editor something to check the fx:id fields against. -->
+<AnchorPane styleClass="app-root" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
+            fx:controller="com.hamza.account.controller.setting.SettingCompanyController">
     <children>
         <ScrollPane fitToHeight="true" fitToWidth="true" styleClass="settings-scroll-pane" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
             <content>
-                <VBox spacing="18.0" styleClass="app-container">
+                <VBox spacing="14.0" styleClass="app-container">
                     <children>
-                        <VBox spacing="5.0">
+
+                        <!-- Header -->
+                        <VBox spacing="4.0">
                             <children>
                                 <Label styleClass="settings-title" text="بيانات الشركة" />
-                                <Label styleClass="settings-subtitle" text="تعديل بيانات الشركة والشعار المستخدم في التقارير والفواتير" />
+                                <Label styleClass="settings-subtitle" text="الاسم والعنوان والشعار المطبوعة على الفواتير والتقارير" />
                             </children>
                         </VBox>
 
-                        <HBox spacing="18.0" styleClass="app-card">
+                        <!-- The form, and the logo beside it -->
+                        <HBox spacing="14.0">
                             <children>
-                                <VBox spacing="5.0" HBox.hgrow="SOMETIMES">
+
+                                <VBox spacing="10.0" styleClass="app-card" HBox.hgrow="ALWAYS">
                                     <children>
-                                        <GridPane hgap="5.0" vgap="5.0">
+                                        <Label styleClass="section-title" text="البيانات الأساسية" />
+
+                                        <GridPane hgap="10.0" vgap="10.0">
                                             <columnConstraints>
-                                                <ColumnConstraints maxWidth="-Infinity" />
-                                                <ColumnConstraints hgrow="ALWAYS" maxWidth="1.7976931348623157E308" />
+                                                <ColumnConstraints halignment="RIGHT" minWidth="90.0" prefWidth="110.0" />
+                                                <ColumnConstraints hgrow="ALWAYS" maxWidth="1.7976931348623157E308" minWidth="180.0" />
                                             </columnConstraints>
-      
+                                            <rowConstraints>
+                                                <RowConstraints minHeight="30.0" />
+                                                <RowConstraints minHeight="30.0" />
+                                                <RowConstraints minHeight="30.0" />
+                                                <RowConstraints minHeight="30.0" />
+                                                <RowConstraints minHeight="30.0" />
+                                            </rowConstraints>
                                             <children>
-                                                <Label fx:id="labelName" styleClass="form-label" text="Name" />
+                                                <Label fx:id="labelName" styleClass="form-label" text="الاسم" />
                                                 <TextField fx:id="textNameCompany" styleClass="modern-input" GridPane.columnIndex="1" />
-      
-                                                <Label fx:id="labelAddress" styleClass="form-label" text="Address" GridPane.rowIndex="1" />
+
+                                                <Label fx:id="labelAddress" styleClass="form-label" text="العنوان" GridPane.rowIndex="1" />
                                                 <TextField fx:id="textAddress" styleClass="modern-input" GridPane.columnIndex="1" GridPane.rowIndex="1" />
-      
-                                                <Label fx:id="labelTel" styleClass="form-label" text="Tel" GridPane.rowIndex="2" />
+
+                                                <Label fx:id="labelTel" styleClass="form-label" text="التليفون" GridPane.rowIndex="2" />
                                                 <TextField fx:id="textTel" styleClass="modern-input" GridPane.columnIndex="1" GridPane.rowIndex="2" />
-      
-                                                <Label fx:id="labelTax" styleClass="form-label" text="Tax" GridPane.rowIndex="3" />
+
+                                                <Label fx:id="labelTax" styleClass="form-label" text="البطاقة الضريبية" GridPane.rowIndex="3" />
                                                 <TextField fx:id="textTax" styleClass="modern-input" GridPane.columnIndex="1" GridPane.rowIndex="3" />
-      
-                                                <Label fx:id="labelCom" styleClass="form-label" text="Comm" GridPane.rowIndex="4" />
+
+                                                <Label fx:id="labelCom" styleClass="form-label" text="السجل التجاري" GridPane.rowIndex="4" />
                                                 <TextField fx:id="textCom" styleClass="modern-input" GridPane.columnIndex="1" GridPane.rowIndex="4" />
-                                    <HBox alignment="CENTER_LEFT" GridPane.columnIndex="1" GridPane.rowIndex="5">
-                                       <children>
-      
-                                                            <Button fx:id="btnSave" mnemonicParsing="false" styleClass="primary-button" text="Save" />
-                                       </children>
-                                    </HBox>
                                             </children>
-                                 <rowConstraints>
-                                    <RowConstraints />
-                                    <RowConstraints />
-                                    <RowConstraints />
-                                    <RowConstraints />
-                                    <RowConstraints />
-                                    <RowConstraints />
-                                 </rowConstraints>
                                         </GridPane>
                                     </children>
+                                    <padding>
+                                        <Insets bottom="14.0" left="14.0" right="14.0" top="14.0" />
+                                    </padding>
                                 </VBox>
 
-                                <VBox alignment="TOP_CENTER" spacing="12.0">
+                                <VBox maxWidth="260.0" minWidth="230.0" spacing="10.0" styleClass="app-card">
                                     <children>
-                                        <VBox alignment="CENTER" spacing="8.0" styleClass="image-preview-card">
+                                        <Label styleClass="section-title" text="شعار الشركة" />
+
+                                        <!-- Clicking or dropping a picture here is the same as pressing "اختر ملف". -->
+                                        <VBox fx:id="logoDropZone" alignment="CENTER" minHeight="180.0" spacing="8.0" styleClass="logo-drop" VBox.vgrow="ALWAYS">
                                             <children>
-                                                <ImageView fx:id="imageView" fitHeight="150.0" fitWidth="150.0" pickOnBounds="true" preserveRatio="true" />
+                                                <ImageView fx:id="imageView" fitHeight="150.0" fitWidth="190.0" pickOnBounds="true" preserveRatio="true" />
                                             </children>
                                         </VBox>
 
+                                        <Label fx:id="labelLogoInfo" styleClass="kpi-hint" text="" wrapText="true" />
+
                                         <HBox alignment="CENTER" spacing="8.0">
                                             <children>
-                                                <Button fx:id="btnAddImage" mnemonicParsing="false" styleClass="success-button" text="Add Image" />
-                                                <Button fx:id="btnClearImage" mnemonicParsing="false" styleClass="danger-button" text="Clear" />
+                                                <Button fx:id="btnAddImage" maxWidth="1.7976931348623157E308" mnemonicParsing="false" styleClass="success-button" text="اختر ملف" HBox.hgrow="ALWAYS" />
+                                                <Button fx:id="btnClearImage" maxWidth="1.7976931348623157E308" mnemonicParsing="false" styleClass="danger-button" text="حذف" HBox.hgrow="ALWAYS" />
                                             </children>
                                         </HBox>
                                     </children>
+                                    <padding>
+                                        <Insets bottom="14.0" left="14.0" right="14.0" top="14.0" />
+                                    </padding>
                                 </VBox>
                             </children>
                         </HBox>
 
-                        <HBox fx:id="hbox" styleClass="app-card" VBox.vgrow="ALWAYS" />
+                        <!-- Actions -->
+                        <HBox alignment="CENTER_LEFT" spacing="10.0" styleClass="app-card">
+                            <children>
+                                <ProgressIndicator fx:id="progress" maxHeight="18.0" maxWidth="18.0" visible="false" />
+                                <Label fx:id="labelStatus" styleClass="kpi-hint" text="" />
+                                <Region HBox.hgrow="ALWAYS" />
+                                <Button fx:id="btnReset" disable="true" mnemonicParsing="false" styleClass="neutral-button" text="إلغاء" />
+                                <Button fx:id="btnSave" disable="true" mnemonicParsing="false" styleClass="primary-button" text="حفظ" />
+                            </children>
+                            <padding>
+                                <Insets bottom="8.0" left="12.0" right="12.0" top="8.0" />
+                            </padding>
+                        </HBox>
+
+                        <!-- The treasuries list that shares this tab -->
+                        <HBox fx:id="hbox" styleClass="app-card" VBox.vgrow="ALWAYS">
+                            <padding>
+                                <Insets bottom="10.0" left="10.0" right="10.0" top="10.0" />
+                            </padding>
+                        </HBox>
                     </children>
                 </VBox>
             </content>

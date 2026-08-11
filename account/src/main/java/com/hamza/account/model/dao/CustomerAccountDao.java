@@ -6,6 +6,8 @@ import com.hamza.account.model.domain.Customers;
 import com.hamza.account.model.domain.Treasury;
 import com.hamza.account.type.TableName;
 import com.hamza.controlsfx.database.AbstractDao;
+import com.hamza.account.period.PeriodLock;
+import com.hamza.account.period.PeriodLockRegistry;
 import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.database.GenericMapper;
 import com.hamza.controlsfx.database.SqlStatements;
@@ -70,6 +72,14 @@ public class CustomerAccountDao extends AbstractDao<CustomerAccount> {
 
     @Override
     public int insert(CustomerAccount customerAccount) throws DaoException {
+        // A payment is a dated document: it changes what the customer owed on that day
+        // and on every day after it, so it may not be written into a reported month.
+        //
+        // Only payments live in this table. An invoice's own line on the statement is
+        // not stored here - account_customer_table unions customers_accounts with
+        // total_sales - so nothing an invoice save does reaches this check, and the
+        // invoice is guarded at TotalsSalesDao instead.
+        PeriodLock.require(customerAccount.getDate(), PeriodLockRegistry.CUSTOMER_ACCOUNT.label());
         String sqlQuery = SqlStatements.insertStatement(TABLE_NAME, ACCOUNT_CODE, ACCOUNT_DATE, PAID, NOTES, NUMBER_INV, TREASURY_ID, ACCOUNT_NUM, USER_ID);
         var objects = new Object[]{customerAccount.getCustomers().getId()
                 , customerAccount.getDate()
@@ -84,6 +94,8 @@ public class CustomerAccountDao extends AbstractDao<CustomerAccount> {
 
     @Override
     public int update(CustomerAccount customerAccount) throws DaoException {
+        // Both ends: where the payment is now, and where it is being moved to.
+        PeriodLock.requireMove(PeriodLockRegistry.CUSTOMER_ACCOUNT, customerAccount.getId(), customerAccount.getDate());
         return executeUpdate(SqlStatements.updateStatement(TABLE_NAME, ACCOUNT_NUM, ACCOUNT_CODE, ACCOUNT_DATE, PAID
                 , NOTES, NUMBER_INV, TREASURY_ID, USER_ID), getData(customerAccount));
     }

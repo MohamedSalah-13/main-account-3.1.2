@@ -51,7 +51,8 @@ class WipeCatalogTest {
 
     private static List<ForeignKey> readForeignKeys() {
         List<ForeignKey> keys = new ArrayList<>();
-        for (String migration : List.of("V1__baseline.sql", "V3__item_barcodes.sql", "V5__item_units.sql")) {
+        for (String migration : List.of("V1__baseline.sql", "V3__item_barcodes.sql", "V5__item_units.sql",
+                "V8__stock_count.sql", "V9__accounting_lock.sql")) {
             Matcher tables = CREATE_TABLE.matcher(read("db/migration/" + migration));
             while (tables.find()) {
                 String child = tables.group(1);

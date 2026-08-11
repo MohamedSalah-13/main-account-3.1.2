@@ -5,6 +5,8 @@ import com.hamza.account.model.domain.Suppliers;
 import com.hamza.account.model.domain.Treasury;
 import com.hamza.account.type.TableName;
 import com.hamza.controlsfx.database.AbstractDao;
+import com.hamza.account.period.PeriodLock;
+import com.hamza.account.period.PeriodLockRegistry;
 import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.database.GenericMapper;
 import com.hamza.controlsfx.database.SqlStatements;
@@ -71,12 +73,16 @@ public class SupplierAccountDao extends AbstractDao<SupplierAccount> {
 
     @Override
     public int insert(SupplierAccount model) throws DaoException {
+        // See CustomerAccountDao.insert: only payments are stored here, and the invoice
+        // side of a statement comes from total_buy through account_suppliers_table.
+        PeriodLock.require(model.getDate(), PeriodLockRegistry.SUPPLIER_ACCOUNT.label());
         String s = SqlStatements.insertStatement(TABLE_NAME, ACCOUNT_CODE, ACCOUNT_DATE, PAID, NOTES, NUMBER_INV, TREASURY_ID, ACCOUNT_NUM, USER_ID);
         return executeUpdate(s, getData(model));
     }
 
     @Override
     public int update(SupplierAccount supplierAccount) throws DaoException {
+        PeriodLock.requireMove(PeriodLockRegistry.SUPPLIER_ACCOUNT, supplierAccount.getId(), supplierAccount.getDate());
         return executeUpdate(SqlStatements.updateStatement(TABLE_NAME, ACCOUNT_NUM, ACCOUNT_CODE, ACCOUNT_DATE, PAID, NOTES, NUMBER_INV, TREASURY_ID), supplierAccount.getSuppliers().getId()
                 , supplierAccount.getDate()
                 , supplierAccount.getPaid()

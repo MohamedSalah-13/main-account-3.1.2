@@ -45,6 +45,19 @@ public record ItemsService(DaoFactory daoFactory) {
         return daoFactory.getItemsDao().update(itemsModel);
     }
 
+    /**
+     * Whether this item's opening balance is closed to editing, which it is as soon as
+     * anything has moved it - an invoice line, a return, a transfer or a stock count.
+     * <p>
+     * The item screen asks so it can grey the field and say why. The rule itself lives
+     * in the DAO and is applied where the row is written, because a disabled field is a
+     * hint and not a rule: the same save is reachable from the Excel import and from
+     * any caller that never looked at the screen.
+     */
+    public boolean isOpeningBalanceLocked(int itemId) throws DaoException {
+        return daoFactory.getItemsDao().isOpeningBalanceLocked(itemId);
+    }
+
     public int updateGroup(List<ItemsModel> itemsModel) throws DaoException {
         return daoFactory.getItemsDao().updateList(itemsModel);
     }

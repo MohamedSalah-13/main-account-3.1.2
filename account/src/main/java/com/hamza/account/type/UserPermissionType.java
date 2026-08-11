@@ -96,6 +96,19 @@ public enum UserPermissionType {
     REPORTS_SHOW_DAY_DETAILS(85, "reports_show_day_details"),
     REPORTS_SHOW_DELEGATE(86, "reports_show_delegate"),
     REPORTS_SHOW_PROFIT(87, "reports_show_profit"),
+    // Added with the stock-count screen (V8, which seeds the two permission rows).
+    // Entering a count is clerical; posting it moves every balance on the sheet, so
+    // they are separate. New ids rather than the free 25..30 left by the removed
+    // warehouse permissions - an old install may still hold a user_permission row for
+    // one of those, and reusing the id would hand the new permission to whoever had it.
+    STOCK_COUNT_SHOW(88, "stock_count_show"),
+    STOCK_COUNT_POST(89, "stock_count_post"),
+    // Added with the accounting period lock (V9, which seeds the two permission rows).
+    // Moving the line is an owner's decision; being allowed to post inside a closed
+    // period is an exception granted to whoever has to correct something. Granting the
+    // second must not grant the first, so they are separate.
+    ACCOUNTING_LOCK_MANAGE(90, "accounting_lock_manage"),
+    ACCOUNTING_LOCK_BYPASS(91, "accounting_lock_bypass"),
     DISABLE_BUTTON(1000, "reports_show_profit");
 
 

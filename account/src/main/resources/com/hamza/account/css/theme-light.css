@@ -53,6 +53,16 @@
     -app-summary-bg-2: #1e3a8a;
     -app-summary-value: #facc15;
 
+    /* Stock states on a table row. Tinted rather than filled: the row still has to
+       read as a row, and the striping and the selection colour have to show through. */
+    -app-stock-low-row: #fff5e6;
+    -app-stock-low-text: #9a3412;
+    -app-stock-out-row: #f1f5f9;
+    -app-stock-out-text: #475569;
+    -app-stock-negative-row: #fdeaea;
+    -app-stock-negative-text: #b91c1c;
+    -app-stock-inactive-text: #94a3b8;
+
     -app-tab-strip: #eaf1fb;
     -app-tab-hover: #dbeafe;
 

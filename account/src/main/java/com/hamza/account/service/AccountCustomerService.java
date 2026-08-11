@@ -3,6 +3,8 @@ package com.hamza.account.service;
 import com.hamza.account.interfaces.impl_account.AccountCustomer;
 import com.hamza.account.model.dao.CustomerAccountDao;
 import com.hamza.account.model.dao.DaoFactory;
+import com.hamza.account.period.PeriodLock;
+import com.hamza.account.period.PeriodLockRegistry;
 import com.hamza.account.perm.PermissionGuard;
 import com.hamza.account.type.UserPermissionType;
 import com.hamza.account.model.domain.CustomerAccount;
@@ -29,8 +31,13 @@ public record AccountCustomerService(DaoFactory daoFactory) {
     }
 
 
+    /**
+     * A payment is a dated document like an invoice, so it is refused inside a closed
+     * period - deleting one changes what the customer owed on every later day.
+     */
     public int delete(int id) throws DaoException {
         PermissionGuard.require(UserPermissionType.CUSTOMER_ACCOUNT_DELETE);
+        PeriodLock.require(PeriodLockRegistry.CUSTOMER_ACCOUNT, id);
         return daoFactory.customerAccountDao().deleteById(id);
     }
 

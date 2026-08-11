@@ -2,6 +2,8 @@ package com.hamza.account.model.dao;
 
 import com.hamza.account.model.domain.Suppliers;
 import com.hamza.controlsfx.database.AbstractDao;
+import com.hamza.account.opening.OpeningBalanceGuard;
+import com.hamza.account.opening.OpeningBalanceRegistry;
 import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.database.SqlStatements;
 
@@ -51,6 +53,8 @@ public class SuppliersDao extends AbstractDao<Suppliers> {
     private final String ADDRESS = "address";
     private final String NOTES = "notes";
     private final String FIRST_BALANCE = "first_balance";
+    /** Where the opening balance sits in the array {@link #getData} builds. */
+    private static final int OPENING_BALANCE_INDEX = 4;
     private final String TABLE_NAME = "suppliers";
     private final String USER_ID = "user_id";
     private final String AREA_ID = "area_id";
@@ -84,10 +88,26 @@ public class SuppliersDao extends AbstractDao<Suppliers> {
         return executeUpdate(query, objects);
     }
 
+    /**
+     * Saves the supplier.
+     * <p>
+     * <b>The opening balance is written only while the supplier has never moved</b> -
+     * the same rule, and the same reason, as {@code CustomerDao.update}: a statement is
+     * {@code first_balance + invoices - payments}, so editing it rewrites what was owed
+     * at every earlier date. See {@link OpeningBalanceRegistry#SUPPLIERS}.
+     */
     @Override
     public int update(Suppliers model) throws DaoException {
-        String query = SqlStatements.updateStatement(TABLE_NAME, ID, NAME, TEL, ADDRESS, NOTES, FIRST_BALANCE, AREA_ID);
-        return executeUpdate(query, getData(model));
+        boolean mayWriteOpening = OpeningBalanceGuard.shared()
+                .mayWrite(OpeningBalanceRegistry.SUPPLIERS, model.getId(), model.getFirst_balance());
+
+        if (mayWriteOpening) {
+            String query = SqlStatements.updateStatement(TABLE_NAME, ID, NAME, TEL, ADDRESS, NOTES, FIRST_BALANCE, AREA_ID);
+            return executeUpdate(query, getData(model));
+        }
+
+        String query = SqlStatements.updateStatement(TABLE_NAME, ID, NAME, TEL, ADDRESS, NOTES, AREA_ID);
+        return executeUpdate(query, OpeningBalanceGuard.without(getData(model), OPENING_BALANCE_INDEX));
     }
 
     @Override

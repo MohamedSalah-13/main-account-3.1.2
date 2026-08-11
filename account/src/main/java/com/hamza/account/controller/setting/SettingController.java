@@ -87,6 +87,8 @@ public class SettingController implements Initializable, AppSettingInterface {
         tabChecks.setText(Setting_Language.WORD_SHOW);
         // add tab notifications
         pane.getTabs().add(new Tab("الإشعارات", getTabNotifications()));
+        // add tab accounting period
+        pane.getTabs().add(new Tab("الفترة المحاسبية", getTabPeriodLock()));
         // add tab backup
 //        Pane backupAppPane = backupSetting();
         pane.getTabs().add(new Tab(Setting_Language.WORD_BACKUP, backup()));
@@ -96,9 +98,13 @@ public class SettingController implements Initializable, AppSettingInterface {
         return new OpenFxmlApplication(new SettingTabNotificationsController()).getPane();
     }
 
+    private Pane getTabPeriodLock() throws Exception {
+        return new OpenFxmlApplication(new SettingTabPeriodLockController()).getPane();
+    }
+
     private Pane getTabCompany() throws IOException {
-        SettingCompanyController companyController = new SettingCompanyController(daoFactory, dataPublisher);
-        return new OpenFxmlApplication(companyController).getPane();
+        // Its collaborators come from ServiceRegistry, so it needs nothing handed to it.
+        return new OpenFxmlApplication(new SettingCompanyController()).getPane();
     }
 
     private Pane getTabLanguage() throws Exception {

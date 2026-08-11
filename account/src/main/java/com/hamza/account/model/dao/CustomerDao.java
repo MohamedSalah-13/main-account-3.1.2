@@ -4,6 +4,8 @@ import com.hamza.account.model.domain.Area;
 import com.hamza.account.model.domain.Customers;
 import com.hamza.account.trial.TrialManager;
 import com.hamza.controlsfx.database.AbstractDao;
+import com.hamza.account.opening.OpeningBalanceGuard;
+import com.hamza.account.opening.OpeningBalanceRegistry;
 import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.database.SqlStatements;
 
@@ -57,6 +59,8 @@ public class CustomerDao extends AbstractDao<Customers> {
     private final String NOTES = "notes";
     private final String LIMIT_NUM = "limit_num";
     private final String FIRST_BALANCE = "first_balance";
+    /** Where the opening balance sits in the array {@link #getData} builds. */
+    private static final int OPENING_BALANCE_INDEX = 5;
     private final String ITEMS_SEL_PRICE_ID = "price_id";
     private final String TABLE = "custom";
     private final String USER_ID = "user_id";
@@ -93,10 +97,29 @@ public class CustomerDao extends AbstractDao<Customers> {
         return executeUpdate(SqlStatements.insertStatement(TABLE, NAME, TEL, ADDRESS, NOTES, LIMIT_NUM, FIRST_BALANCE, ITEMS_SEL_PRICE_ID, USER_ID, AREA_ID), objects);
     }
 
+    /**
+     * Saves the customer.
+     * <p>
+     * <b>The opening balance is written only while the customer has never moved.</b> It
+     * is the one figure on the row with no date on it - a statement is
+     * {@code first_balance + invoices - payments} - so changing it changes what the
+     * customer owed at every moment of their history, and a statement printed and
+     * signed last month prints differently today. Once there is an invoice, a return or
+     * a payment it is a closed entry, and the correction is a new dated movement on the
+     * account. See {@link OpeningBalanceRegistry#CUSTOMERS}.
+     */
     @Override
     public int update(Customers model) throws DaoException {
-        String query = SqlStatements.updateStatement(TABLE, ID, NAME, TEL, ADDRESS, NOTES, LIMIT_NUM, FIRST_BALANCE, ITEMS_SEL_PRICE_ID, AREA_ID);
-        return executeUpdate(query, getData(model));
+        boolean mayWriteOpening = OpeningBalanceGuard.shared()
+                .mayWrite(OpeningBalanceRegistry.CUSTOMERS, model.getId(), model.getFirst_balance());
+
+        if (mayWriteOpening) {
+            String query = SqlStatements.updateStatement(TABLE, ID, NAME, TEL, ADDRESS, NOTES, LIMIT_NUM, FIRST_BALANCE, ITEMS_SEL_PRICE_ID, AREA_ID);
+            return executeUpdate(query, getData(model));
+        }
+
+        String query = SqlStatements.updateStatement(TABLE, ID, NAME, TEL, ADDRESS, NOTES, LIMIT_NUM, ITEMS_SEL_PRICE_ID, AREA_ID);
+        return executeUpdate(query, OpeningBalanceGuard.without(getData(model), OPENING_BALANCE_INDEX));
     }
 
     @Override

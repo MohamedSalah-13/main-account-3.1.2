@@ -6,6 +6,8 @@ import com.hamza.account.model.domain.Total_Buy_Re;
 import com.hamza.account.model.domain.Treasury;
 import com.hamza.account.type.InvoiceType;
 import com.hamza.controlsfx.database.AbstractDao;
+import com.hamza.account.period.PeriodLock;
+import com.hamza.account.period.PeriodLockRegistry;
 import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.database.SqlStatements;
 
@@ -60,6 +62,8 @@ public class TotalsPurchaseReturnDao extends AbstractDao<Total_Buy_Re> {
 
     @Override
     public int insert(Total_Buy_Re totalBuyRe) throws DaoException {
+        // See TotalsSalesDao.insert: enforced here so it holds for every caller.
+        PeriodLock.require(totalBuyRe.getDate(), PeriodLockRegistry.PURCHASE_RETURN.label());
         String query = SqlStatements.insertStatement(TABLE_NAME, SUP_ID, INVOICE_DATE, INVOICE_TYPE, TOTAL, DISCOUNT, PAID_TO_TREASURY, STOCK_ID, TREASURY_ID, ID, NOTES, USER_ID);
         return insertMultiData(() -> {
             // first, insert data to total
@@ -71,6 +75,7 @@ public class TotalsPurchaseReturnDao extends AbstractDao<Total_Buy_Re> {
 
     @Override
     public int update(Total_Buy_Re totalBuyRe) throws DaoException {
+        PeriodLock.requireMove(PeriodLockRegistry.PURCHASE_RETURN, totalBuyRe.getId(), totalBuyRe.getDate());
         String query = SqlStatements.updateStatement(TABLE_NAME, ID, SUP_ID, INVOICE_DATE, INVOICE_TYPE, TOTAL, DISCOUNT, PAID_TO_TREASURY, STOCK_ID, TREASURY_ID, NOTES);
         return insertMultiData(() -> {
             Object[] objects = {totalBuyRe.getSuppliers().getId()

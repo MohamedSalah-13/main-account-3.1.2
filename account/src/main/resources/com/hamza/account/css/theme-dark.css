@@ -53,6 +53,16 @@
     -app-summary-bg-2: #172554;
     -app-summary-value: #fde047;
 
+    /* Stock states on a table row - see theme-light.css. Dark rows are darkened
+       towards the state's hue instead of lightened, or the tint burns out the text. */
+    -app-stock-low-row: #3a2a12;
+    -app-stock-low-text: #fdba74;
+    -app-stock-out-row: #1f2937;
+    -app-stock-out-text: #94a3b8;
+    -app-stock-negative-row: #3d1a1a;
+    -app-stock-negative-text: #fca5a5;
+    -app-stock-inactive-text: #64748b;
+
     -app-tab-strip: #1e293b;
     -app-tab-hover: #334155;
 

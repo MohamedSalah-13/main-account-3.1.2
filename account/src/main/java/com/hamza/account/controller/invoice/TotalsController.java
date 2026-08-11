@@ -15,6 +15,7 @@ import com.hamza.account.interfaces.api.NameAndAccountInterface;
 import com.hamza.account.interfaces.api.TotalsDataInterface;
 import com.hamza.account.model.base.*;
 import com.hamza.account.model.dao.DaoFactory;
+import com.hamza.account.period.PeriodLockService;
 import com.hamza.account.openFxml.FxmlPath;
 import com.hamza.account.otherSetting.MaskerPaneSetting;
 import com.hamza.account.service.EmployeeService;
@@ -75,6 +76,7 @@ public class TotalsController<T1 extends BasePurchasesAndSales, T2 extends BaseT
 
     private final CssToColorHelper helper;
     private final EventBus eventBus = ServiceRegistry.get(EventBus.class);
+    private final PeriodLockService periodLockService = ServiceRegistry.get(PeriodLockService.class);
     private final EmployeeService employeeService;
     private final ObservableList<T2> observableList;
     private final FilteredList<T2> filteredTable;
@@ -502,13 +504,24 @@ public class TotalsController<T1 extends BasePurchasesAndSales, T2 extends BaseT
     private void update(T2 t2) throws Exception {
         int i = totalsDataInterface.getNum(t2);
 
+        // The accounting lock decides this now, not the calendar. What was here refused
+        // any invoice outside the current month: on the first of the month yesterday's
+        // invoice was locked whether or not anything had been reported, everything
+        // inside the current month stayed editable however much had been, and the rule
+        // was invisible - it could not be seen or set by anyone. It also guarded only
+        // the button that opens an invoice, leaving the delete beside it unchecked.
+        //
+        // update_data is still honoured: it is a per-user restriction to the current
+        // month, which some shops rely on, and it is now the narrower of the two rather
+        // than the only one.
+        LocalDate invoiceDate = LocalDate.parse(t2.getDate());
+        periodLockService.requireOpen(invoiceDate, dataInterface.designInterface().nameTextOfInvoice());
+
         if (!update_data) {
-            var date = t2.getDate();
-            var inputDate = LocalDate.parse(date);
             LocalDate currentDate = LocalDate.now();
-            if (inputDate.getYear() != currentDate.getYear() ||
-                    inputDate.getMonth() != currentDate.getMonth()) {
-                throw new Exception("لا يمكن التعديل");
+            if (invoiceDate.getYear() != currentDate.getYear()
+                || invoiceDate.getMonth() != currentDate.getMonth()) {
+                throw new Exception("لا يمكن تعديل بيانات خارج الشهر الحالي");
             }
         }
         BuyApplication<T1, T2, T3, T4> buyApp = new BuyApplication<>(dataInterface, dataPublisher, i);

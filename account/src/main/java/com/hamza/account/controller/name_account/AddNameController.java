@@ -5,7 +5,11 @@ import com.hamza.account.controller.main.LoadOtherData;
 import com.hamza.account.controller.others.ServiceRegistry;
 import com.hamza.account.features.events.AccountChanged;
 import com.hamza.account.features.events.NameChanged;
+import com.hamza.account.features.events.PartyKind;
 import com.hamza.account.interfaces.api.DataInterface;
+import com.hamza.account.opening.OpeningBalanceGuard;
+import com.hamza.account.opening.OpeningBalanceRegistry;
+import com.hamza.account.opening.OpeningBalanceRule;
 import com.hamza.account.model.base.BaseAccount;
 import com.hamza.account.model.base.BaseNames;
 import com.hamza.account.model.base.BasePurchasesAndSales;
@@ -29,6 +33,7 @@ import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
+import javafx.scene.control.Tooltip;
 import lombok.extern.log4j.Log4j2;
 import org.jetbrains.annotations.NotNull;
 
@@ -206,7 +211,44 @@ public class AddNameController<T1 extends BasePurchasesAndSales, T2 extends Base
                 if (dataInterface.designInterface().showDataForCustomer()) {
                     comboSelPrice.getSelectionModel().select(nameData.getPriceType(t3));
                 }
+
+                lockOpeningBalanceIfMoved(id1);
             }
+        }
+    }
+
+    /**
+     * Greys the opening-balance field once this customer or supplier has moved, and says
+     * why.
+     * <p>
+     * The rule is applied in {@code CustomerDao.update} and {@code SuppliersDao.update},
+     * where the row is written - a disabled field is a hint, and the same save is
+     * reachable from anything holding the DAO. This is so the user finds out before
+     * typing rather than by having the save refused afterwards.
+     * <p>
+     * The screen serves both sides, so which rule applies comes from
+     * {@code partyKind()}, the same answer the events are filtered on. A failure to read
+     * it leaves the field enabled: the DAO still refuses a change, so the worst case is
+     * a message at the wrong moment rather than a rewritten history.
+     */
+    private void lockOpeningBalanceIfMoved(int id) {
+        try {
+            OpeningBalanceRule rule = nameAndAccountInterface.partyKind() == PartyKind.CUSTOMER
+                    ? OpeningBalanceRegistry.CUSTOMERS
+                    : OpeningBalanceRegistry.SUPPLIERS;
+
+            if (!OpeningBalanceGuard.shared().isLocked(rule, id)) {
+                txtBalance.setDisable(false);
+                txtBalance.setTooltip(null);
+                return;
+            }
+            txtBalance.setDisable(true);
+            txtBalance.setTooltip(new Tooltip(
+                    "رصيد أول المدة مقفل: يوجد حركات على هذا الحساب."
+                    + "\nتغييره يعيد حساب الرصيد في كل تاريخ سابق."
+                    + "\n" + rule.correction()));
+        } catch (DaoException e) {
+            log.error("Failed to read the opening-balance lock for {}", id, e);
         }
     }
 
@@ -217,6 +259,9 @@ public class AddNameController<T1 extends BasePurchasesAndSales, T2 extends Base
         txtBalance.setText("0");
         txtOther.clear();
         Utils.clearAll(txtName, txtTel, txtAddress);
+        // A blank form is a new row, and a new row has moved nothing.
+        txtBalance.setDisable(false);
+        txtBalance.setTooltip(null);
     }
 
     @NotNull
