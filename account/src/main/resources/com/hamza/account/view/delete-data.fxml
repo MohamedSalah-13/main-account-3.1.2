@@ -1,80 +1,90 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<?import java.net.URL?>
+<?import javafx.geometry.Insets?>
 <?import javafx.scene.control.Button?>
-<?import javafx.scene.control.CheckBox?>
+<?import javafx.scene.control.Label?>
 <?import javafx.scene.control.ScrollPane?>
 <?import javafx.scene.control.ToggleButton?>
-<?import javafx.scene.control.ToolBar?>
 <?import javafx.scene.layout.BorderPane?>
-<?import javafx.scene.layout.ColumnConstraints?>
-<?import javafx.scene.layout.GridPane?>
-<?import javafx.scene.layout.RowConstraints?>
+<?import javafx.scene.layout.FlowPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Region?>
 <?import javafx.scene.layout.StackPane?>
 <?import javafx.scene.layout.VBox?>
-<?import javafx.scene.text.Text?>
 
-<StackPane fx:id="stackPane" minHeight="-Infinity" minWidth="-Infinity" styleClass="app-root" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1">
+<!--
+    The options themselves are not written here: DeleteDataController builds one
+    card per section and one check box per WipeTarget out of the catalog, so a
+    target added there appears on the screen without an fx:id, a field and a row
+    index having to be added to match. What is left is the frame.
+-->
+<StackPane fx:id="stackPane" prefHeight="640.0" prefWidth="860.0" styleClass="app-root"
+           xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
+           fx:controller="com.hamza.account.controller.others.DeleteDataController">
     <children>
         <BorderPane styleClass="app-container">
+
             <top>
-                <ToolBar BorderPane.alignment="CENTER">
-                    <items>
-                        <Button fx:id="btnSave" mnemonicParsing="false" styleClass="app-primary-button" text="Save" />
-                        <Button fx:id="btnClose" layoutX="10.0" layoutY="12.0" mnemonicParsing="false" styleClass="app-danger-button" text="Close" />
-                        <ToggleButton fx:id="btnSelected" mnemonicParsing="false" styleClass="app-neutral-button" text="ToggleButton" />
-                    </items>
-                </ToolBar>
-            </top>
-            <center>
-                <ScrollPane fitToHeight="true" fitToWidth="true" BorderPane.alignment="CENTER">
-                    <content>
-                        <VBox styleClass="app-card">
+                <VBox spacing="10.0">
+                    <children>
+                        <VBox spacing="2.0">
                             <children>
-                                <GridPane hgap="10.0" minHeight="-Infinity" minWidth="-Infinity" vgap="10.0">
-                                    <columnConstraints>
-                                        <ColumnConstraints hgrow="SOMETIMES" maxWidth="-Infinity" minWidth="10.0" prefWidth="300.0" />
-                                        <ColumnConstraints hgrow="SOMETIMES" maxWidth="-Infinity" minWidth="10.0" prefWidth="300.0" />
-                                    </columnConstraints>
-                                    <rowConstraints>
-                                        <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
-                                        <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
-                                        <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
-                                        <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
-                                        <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
-                                        <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
-                                        <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
-                                        <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
-                                        <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
-                                        <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
-                                    </rowConstraints>
-                                    <children>
-                                        <Text strokeType="OUTSIDE" strokeWidth="0.0" styleClass="text-explain" text="المبيعات" />
-                                        <CheckBox fx:id="deleteSalesReturn" mnemonicParsing="false" text="مرتجع المبيعات" GridPane.rowIndex="1" />
-                                        <CheckBox fx:id="deleteSales" mnemonicParsing="false" text="المبيعات" GridPane.rowIndex="2" />
-                                        <CheckBox fx:id="deleteCustomersAccount" mnemonicParsing="false" text="حسابات العملاء" GridPane.rowIndex="3" />
-                                        <CheckBox fx:id="deleteCustomers" mnemonicParsing="false" text="العملاء" GridPane.rowIndex="4" />
-                                        <Text strokeType="OUTSIDE" strokeWidth="0.0" styleClass="text-explain" text="الاصناف" GridPane.columnIndex="1" />
-                                        <CheckBox fx:id="deleteItems" mnemonicParsing="false" text="الاصناف" GridPane.columnIndex="1" GridPane.rowIndex="1" />
-                                        <CheckBox fx:id="deleteSubGroup" mnemonicParsing="false" text="مجموعات فرعية" GridPane.columnIndex="1" GridPane.rowIndex="3" />
-                                        <CheckBox fx:id="deleteMainGroup" mnemonicParsing="false" text="مجموعات رئيسية" GridPane.columnIndex="1" GridPane.rowIndex="4" />
-                                        <Text strokeType="OUTSIDE" strokeWidth="0.0" styleClass="text-explain" text="المشتريات" GridPane.rowIndex="5" />
-                                        <CheckBox fx:id="deletePurchaseReturn" mnemonicParsing="false" text="مرتجع المشتريات" GridPane.rowIndex="6" />
-                                        <CheckBox fx:id="deletePurchase" mnemonicParsing="false" text="المشتريات" GridPane.rowIndex="7" />
-                                        <CheckBox fx:id="deleteSuppliersAccount" mnemonicParsing="false" text="حسابات الموردين" GridPane.rowIndex="8" />
-                                        <CheckBox fx:id="deleteSuppliers" mnemonicParsing="false" text="الموردين" GridPane.rowIndex="9" />
-                                        <Text strokeType="OUTSIDE" strokeWidth="0.0" styleClass="text-explain" text="أخرى" GridPane.columnIndex="1" GridPane.rowIndex="5" />
-                                        <CheckBox fx:id="deleteExpenses" mnemonicParsing="false" text="المصروفات" GridPane.columnIndex="1" GridPane.rowIndex="6" />
-                                        <CheckBox fx:id="deleteEmployees" mnemonicParsing="false" text="الموظفين" GridPane.columnIndex="1" GridPane.rowIndex="7" />
-                                        <CheckBox fx:id="deleteProcesses" mnemonicParsing="false" text="العمليات" GridPane.columnIndex="1" GridPane.rowIndex="8" />
-                                        <CheckBox fx:id="deleteUsers" mnemonicParsing="false" text="المستخدمين" GridPane.columnIndex="1" GridPane.rowIndex="9" />
-                                    </children>
-                                </GridPane>
+                                <Label styleClass="app-title" text="حذف البيانات" />
+                                <Label styleClass="app-subtitle"
+                                       text="اختر ما تريد مسحه؛ ما يعتمد عليه سيُختار معه تلقائياً" />
                             </children>
                         </VBox>
+
+                        <HBox alignment="CENTER_LEFT" spacing="10.0" styleClass="app-card, danger-card">
+                            <children>
+                                <Label styleClass="app-section-title" text="⚠" />
+                                <Label maxWidth="1.7976931348623157E308" styleClass="info-text" wrapText="true"
+                                       text="لا يمكن التراجع عن هذه العملية. تُؤخذ نسخة احتياطية قبل البدء، وإذا فشلت النسخة لا يتم الحذف."
+                                       HBox.hgrow="ALWAYS" />
+                            </children>
+                        </HBox>
+                    </children>
+                    <BorderPane.margin>
+                        <Insets bottom="12.0" />
+                    </BorderPane.margin>
+                </VBox>
+            </top>
+
+            <center>
+                <ScrollPane fitToWidth="true" styleClass="app-scroll-pane" BorderPane.alignment="CENTER">
+                    <content>
+                        <!-- Wraps to however wide the window is, rather than to two fixed columns. -->
+                        <FlowPane fx:id="targetsPane" hgap="12.0" prefWrapLength="820.0" vgap="12.0" />
                     </content>
                 </ScrollPane>
             </center>
+
+            <bottom>
+                <VBox spacing="10.0">
+                    <children>
+                        <HBox alignment="CENTER_LEFT" spacing="8.0" styleClass="summary-bar">
+                            <children>
+                                <Label fx:id="summaryLabel" maxWidth="1.7976931348623157E308" wrapText="true"
+                                       HBox.hgrow="ALWAYS" />
+                            </children>
+                        </HBox>
+
+                        <HBox alignment="CENTER_LEFT" spacing="10.0">
+                            <children>
+                                <ToggleButton fx:id="btnSelected" mnemonicParsing="false"
+                                              styleClass="app-neutral-button, select-action-toggle" />
+                                <Region HBox.hgrow="ALWAYS" />
+                                <Button fx:id="btnSave" mnemonicParsing="false" styleClass="app-danger-button" />
+                                <Button fx:id="btnClose" mnemonicParsing="false" styleClass="app-neutral-button" />
+                            </children>
+                        </HBox>
+                    </children>
+                    <BorderPane.margin>
+                        <Insets top="12.0" />
+                    </BorderPane.margin>
+                </VBox>
+            </bottom>
+
         </BorderPane>
     </children>
 </StackPane>
