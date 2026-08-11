@@ -227,35 +227,38 @@ public class AccountDetailsWithItemsController<T1 extends BasePurchasesAndSales,
         calculateSumAccount();
     }
 
+    /**
+     * Runs on the JavaFX thread, and has to: every line of it is the tree the screen
+     * is showing. It was wrapped in the masker pane, which used to mean the same
+     * thing - the masker ran its action on the JavaFX thread - but no longer does.
+     * There is nothing here to wait for either; the rows are built from a list
+     * already in memory.
+     */
     private void initializeAccountTreeItems() {
-        maskerPaneSetting.showMaskerPane(() -> {
-            treeItem.getChildren().clear();
-            observableList.forEach(t4 -> {
-                TreeItem<AccountCard> accountTreeItem = new TreeItem<>(t4);
-                treeItem.getChildren().add(accountTreeItem);
-                treeItem.setExpanded(true);
+        treeItem.getChildren().clear();
+        observableList.forEach(t4 -> {
+            TreeItem<AccountCard> accountTreeItem = new TreeItem<>(t4);
+            treeItem.getChildren().add(accountTreeItem);
+            treeItem.setExpanded(true);
 
-                // lazy load details only when expanded
-                if (shouldLazyLoad(t4)) {
-                    accountTreeItem.getChildren().add(new TreeItem<>(new AccountCard()));
-                    accountTreeItem.expandedProperty().addListener((observable, oldValue, newValue) -> {
-                        if (newValue && !lazyLoadedItems.contains(accountTreeItem)) {
-//                            maskerPaneSetting.showMaskerPane(() -> {
-                                accountTreeItem.getChildren().clear();
-                                try {
-                                    accountDetailsInterface.addTreeItemTotals(t4, accountTreeItem);
-                                } catch (Exception e) {
-                                    errorLog(e);
-                                }
-                                lazyLoadedItems.add(accountTreeItem);
-                                if (checkShowAll.isSelected()) {
-                                    expandAllChildren(accountTreeItem);
-                                }
-//                            });
+            // lazy load details only when expanded
+            if (shouldLazyLoad(t4)) {
+                accountTreeItem.getChildren().add(new TreeItem<>(new AccountCard()));
+                accountTreeItem.expandedProperty().addListener((observable, oldValue, newValue) -> {
+                    if (newValue && !lazyLoadedItems.contains(accountTreeItem)) {
+                        accountTreeItem.getChildren().clear();
+                        try {
+                            accountDetailsInterface.addTreeItemTotals(t4, accountTreeItem);
+                        } catch (Exception e) {
+                            errorLog(e);
                         }
-                    });
-                }
-            });
+                        lazyLoadedItems.add(accountTreeItem);
+                        if (checkShowAll.isSelected()) {
+                            expandAllChildren(accountTreeItem);
+                        }
+                    }
+                });
+            }
         });
     }
 

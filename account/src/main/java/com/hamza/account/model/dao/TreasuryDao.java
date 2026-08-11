@@ -70,6 +70,24 @@ public class TreasuryDao extends AbstractDao<Treasury> {
         );
     }
 
+    /**
+     * Treasury 1 is the seeded "الخزينة الرئيسية" and the DEFAULT behind every
+     * {@code treasury_id} column, so a row saved without one still resolves.
+     * <p>
+     * This override is not a refinement of the inherited behaviour - there was
+     * none. {@code DaoList.deleteById} used to answer 0 for any DAO that did not
+     * implement it, so deleting a treasury removed nothing and the toolbar
+     * reported it as a validation failure.
+     */
+    @Override
+    public int deleteById(int id) throws DaoException {
+        if (id <= 0)
+            throw new IllegalArgumentException("Invalid treasury ID: " + id);
+        if (id == 1)
+            throw new DaoException("لا يمكن حذف الخزينة الرئيسية");
+        return executeUpdate("DELETE FROM " + TABLE_NAME + " WHERE " + ID + " = ?", id);
+    }
+
     @Override
     public Treasury getDataById(int id) throws DaoException {
         String query = """

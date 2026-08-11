@@ -18,6 +18,7 @@ import com.hamza.controlsfx.language.Setting_Language;
 import com.hamza.controlsfx.menu.ActionTable;
 import com.hamza.controlsfx.menu.ContextMenuTable;
 import com.hamza.controlsfx.table.TableColumnAnnotation;
+import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
@@ -152,9 +153,12 @@ public class UnitsController implements Initializable, AppSettingInterface {
             // ships with, which said nothing about whether anyone relies on it: a
             // business that sells nothing by the carton was stuck with "كرتونه",
             // while a unit it added and used everywhere could be deleted. What
-            // matters is whether anything points at it.
-            if (unitsService.isUnitInUse(selectedItem.getUnit_id())) {
-                throw new Exception("لا يمكن حذف وحدة مستخدمة في أصناف أو فواتير");
+            // matters is whether anything points at it - and the rule answers with
+            // what and how many, so the refusal names the invoices rather than
+            // leaving the user to go looking for them.
+            var refusal = unitsService.checkDelete(selectedItem.getUnit_id());
+            if (refusal != null) {
+                throw new Exception(refusal.message());
             }
 
             if (!AllAlerts.confirmDelete()) {
@@ -275,7 +279,8 @@ public class UnitsController implements Initializable, AppSettingInterface {
     private void refreshTable() {
         MaskerPaneSetting maskerPaneSetting = new MaskerPaneSetting(stackPane);
         maskerPaneSetting.showMaskerPane(() -> {
-            tableView.setItems(FXCollections.observableArrayList(getUnitsModelList()));
+            var units = getUnitsModelList();
+            Platform.runLater(() -> tableView.setItems(FXCollections.observableArrayList(units)));
         });
     }
 

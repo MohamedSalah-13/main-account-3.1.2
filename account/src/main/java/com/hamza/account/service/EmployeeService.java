@@ -1,11 +1,12 @@
 package com.hamza.account.service;
 
+import com.hamza.account.delete.DeleteRegistry;
+import com.hamza.account.delete.DeletionService;
 import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.model.dao.EmployeesDao;
 import com.hamza.account.model.domain.Employees;
 import com.hamza.account.type.UsersType;
 import com.hamza.controlsfx.database.DaoException;
-import com.hamza.controlsfx.language.Error_Text_Show;
 import org.jetbrains.annotations.NotNull;
 
 import java.time.LocalDate;
@@ -49,8 +50,9 @@ public record EmployeeService(DaoFactory daoFactory) {
     }
 
     public int deleteEmployee(int id) throws DaoException {
-        if (id == 1) throw new DaoException(Error_Text_Show.CANT_DELETE);
-        return getEmployeesDao().deleteById(id);
+        return DeletionService.shared()
+                .delete(DeleteRegistry.EMPLOYEES, id, getEmployeesDao()::deleteById)
+                .rowsOrThrow();
     }
 
     public int updateEmployee(int id, String name, LocalDate birth_date, LocalDate hire_date, double salary, String email, String tel, String address, UsersType job_id) throws DaoException {

@@ -1,9 +1,10 @@
 package com.hamza.account.service;
 
+import com.hamza.account.delete.DeleteRegistry;
+import com.hamza.account.delete.DeletionService;
 import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.model.domain.Treasury;
 import com.hamza.controlsfx.database.DaoException;
-import com.hamza.controlsfx.language.Error_Text_Show;
 
 import java.util.List;
 
@@ -29,7 +30,8 @@ public record TreasuryService(DaoFactory daoFactory) {
     }
 
     public int delete(int id) throws DaoException {
-        if (id == 1) throw new DaoException(Error_Text_Show.CANT_DELETE);
-        return daoFactory.treasuryDao().deleteById(id);
+        return DeletionService.shared()
+                .delete(DeleteRegistry.TREASURIES, id, daoFactory.treasuryDao()::deleteById)
+                .rowsOrThrow();
     }
 }

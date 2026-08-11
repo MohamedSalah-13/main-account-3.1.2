@@ -55,7 +55,8 @@ public class AuditLogDao extends AbstractDao<Audit_log> {
     }
 
     public int deleteRangeIds(Integer... rangeIds) throws DaoException {
-        return executeUpdate(SqlStatements.deleteInRangeId(TABLE_NAME, ID, rangeIds));
+        if (rangeIds.length == 0) return 0;
+        return executeUpdate(SqlStatements.deleteInRangeId(TABLE_NAME, ID, rangeIds.length), (Object[]) rangeIds);
     }
 
     public List<Audit_log> getAuditLogsBetweenDates(LocalDate startDate, LocalDate endDate) throws DaoException {

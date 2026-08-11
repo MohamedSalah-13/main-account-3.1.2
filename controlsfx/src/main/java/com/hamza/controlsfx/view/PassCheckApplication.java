@@ -16,13 +16,22 @@ import java.io.InputStream;
 
 public class PassCheckApplication extends Dialog<Boolean> {
 
-    private final FXMLLoader fxmlLoader;
+    /**
+     * The loaded content, kept rather than the loader.
+     * <p>
+     * {@code pane()} used to call {@code load()} on the same loader a second time,
+     * which builds a second copy of the form with a controller nobody holds - the
+     * password would have been read off the first. Nothing calls it today; keeping
+     * the pane is what stops the next caller finding out the hard way.
+     */
+    private final Pane content;
 
     public PassCheckApplication(String pass) throws Exception {
-        fxmlLoader = new FXMLLoader(getClass().getResource("pass-check.fxml"));
+        FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource("pass-check.fxml"));
         PassCheckController passCheckController = new PassCheckController();
         fxmlLoader.setController(passCheckController);
-        this.getDialogPane().setContent(fxmlLoader.load());
+        content = fxmlLoader.load();
+        this.getDialogPane().setContent(content);
         this.getDialogPane().setHeaderText(appSettingInterface().header());
         this.getDialogPane().getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL);
         this.setResultConverter(dialogButton -> {
@@ -44,8 +53,8 @@ public class PassCheckApplication extends Dialog<Boolean> {
     private AppSettingInterface appSettingInterface() {
         return new AppSettingInterface() {
             @Override
-            public Pane pane() throws Exception {
-                return fxmlLoader.load();
+            public Pane pane() {
+                return content;
             }
 
 

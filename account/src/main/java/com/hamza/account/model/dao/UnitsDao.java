@@ -5,7 +5,6 @@ import com.hamza.controlsfx.database.AbstractDao;
 import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.database.SqlStatements;
 
-import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.List;
@@ -42,54 +41,21 @@ public class UnitsDao extends AbstractDao<UnitsModel> {
         return executeUpdate(update, getData(unitsModel));
     }
 
+    /**
+     * Removes the row and nothing else.
+     * <p>
+     * What may be deleted is no longer decided here. The protected id and the
+     * "is anything still using it" query used to live in this method - the only
+     * DAO in the tree that checked either - and are now declared as
+     * {@code DeleteRegistry.UNITS}, so units are refused for the same reasons, in
+     * the same words, and through the same code as every other entity.
+     */
     @Override
     public int deleteById(int id) throws DaoException {
         if (id <= 0)
             throw new IllegalArgumentException("Invalid unit ID: " + id);
-        // Unit 1 is the DEFAULT on the type column of all four invoice tables and
-        // on stock_movements, so a row written without a unit still resolves.
-        // The rest are deletable when nothing points at them - see isInUse.
-        if (id == DEFAULT_UNIT_ID)
-            throw new DaoException("لا يمكن حذف الوحدة الافتراضية");
-        if (isInUse(id))
-            throw new DaoException("لا يمكن حذف وحدة مستخدمة في أصناف أو فواتير");
         String deleteStatement = SqlStatements.deleteStatement(TABLE_NAME, UNIT_ID);
         return executeUpdate(deleteStatement, id);
-    }
-
-    /**
-     * Whether any item, item unit or saved invoice line still references this
-     * unit. Checked before deleting rather than left to the foreign keys, so the
-     * screen can say why instead of surfacing a constraint name.
-     */
-    public boolean isInUse(int id) throws DaoException {
-        String query = """
-                SELECT EXISTS (
-                    SELECT 1 FROM items       WHERE unit_id = ?
-                    UNION ALL
-                    SELECT 1 FROM items_units WHERE unit    = ?
-                    UNION ALL
-                    SELECT 1 FROM purchase    WHERE type    = ?
-                    UNION ALL
-                    SELECT 1 FROM purchase_re WHERE type    = ?
-                    UNION ALL
-                    SELECT 1 FROM sales       WHERE type    = ?
-                    UNION ALL
-                    SELECT 1 FROM sales_re    WHERE type    = ?
-                )
-                """;
-        return withConnection(connection -> {
-            try (PreparedStatement statement = connection.prepareStatement(query)) {
-                for (int i = 1; i <= 6; i++) {
-                    statement.setInt(i, id);
-                }
-                try (ResultSet rs = statement.executeQuery()) {
-                    return rs.next() && rs.getBoolean(1);
-                }
-            } catch (SQLException e) {
-                throw new DaoException(e.getMessage(), e);
-            }
-        });
     }
 
     @Override

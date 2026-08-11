@@ -154,8 +154,9 @@ public class TotalsPurchaseReturnDao extends AbstractDao<Total_Buy_Re> {
     }
 
     public int deleteInvoicesInRange(Integer... invoiceNumbers) throws DaoException {
-        String query = SqlStatements.deleteInRangeId(TABLE_NAME, ID, invoiceNumbers);
-        return executeUpdate(query);
+        if (invoiceNumbers.length == 0) return 0;
+        String query = SqlStatements.deleteInRangeId(TABLE_NAME, ID, invoiceNumbers.length);
+        return executeUpdate(query, (Object[]) invoiceNumbers);
     }
 
     public List<Total_Buy_Re> getTotalBuyBySupId(int customerId) throws DaoException {

@@ -1,9 +1,10 @@
 package com.hamza.account.service;
 
+import com.hamza.account.delete.DeleteRegistry;
+import com.hamza.account.delete.DeletionService;
 import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.model.domain.SubGroups;
 import com.hamza.controlsfx.database.DaoException;
-import com.hamza.controlsfx.language.Error_Text_Show;
 
 import java.util.List;
 
@@ -42,8 +43,9 @@ public record SupGroupService(DaoFactory daoFactory) {
     }
 
     public int deleteSubGroup(int id) throws DaoException {
-        if (id == 1) throw new DaoException(Error_Text_Show.CANT_DELETE);
-        return daoFactory.getSupGroupsDao().deleteById(id);
+        return DeletionService.shared()
+                .delete(DeleteRegistry.SUB_GROUPS, id, daoFactory.getSupGroupsDao()::deleteById)
+                .rowsOrThrow();
     }
 
     public int update(SubGroups subGroups) throws DaoException {

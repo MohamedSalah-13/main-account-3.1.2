@@ -31,6 +31,7 @@ import com.hamza.controlsfx.excel.ExportData;
 import com.hamza.controlsfx.language.Error_Text_Show;
 import com.hamza.controlsfx.table.TableColumnAnnotation;
 import com.hamza.controlsfx.table.columnEdit.ColumnSetting;
+import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
@@ -231,9 +232,12 @@ public class AccountController2<T1 extends BasePurchasesAndSales, T2 extends Bas
 
         btnRefresh.setOnAction(actionEvent -> {
             maskerPaneSetting.showMaskerPane(() -> {
-                observableList.clear();
-                observableList.setAll(nameAndAccountInterface.accountTotalList(null, null));
-                sumTable();
+                var accounts = nameAndAccountInterface.accountTotalList(null, null);
+                Platform.runLater(() -> {
+                    observableList.clear();
+                    observableList.setAll(accounts);
+                    sumTable();
+                });
             });
         });
 

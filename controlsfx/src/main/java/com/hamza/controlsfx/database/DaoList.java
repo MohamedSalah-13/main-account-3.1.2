@@ -25,8 +25,17 @@ public interface DaoList<T> {
         return 0;
     }
 
+    /**
+     * Removes the row with this id and answers how many rows went.
+     * <p>
+     * Refusing rather than answering 0: a DAO with no delete of its own used to
+     * look exactly like a delete that matched nothing, and the toolbar turns that
+     * into "من فضلك أدخل كل البيانات" - a validation message for what is really a
+     * missing implementation. {@code TreasuryDao} sat like that, so deleting a
+     * treasury quietly did nothing at all.
+     */
     default int deleteById(int id) throws DaoException {
-        return 0;
+        throw new DaoException("الحذف غير مدعوم لهذا الجدول: " + getClass().getSimpleName());
     }
 
     default T getDataById(int id) throws DaoException {

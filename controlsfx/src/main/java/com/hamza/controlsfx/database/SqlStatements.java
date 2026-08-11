@@ -91,18 +91,28 @@ public class SqlStatements {
     }
 
     /**
-     * Generates a SQL DELETE statement to remove records in a specified table where
-     * the values of a specific column fall within a given range of IDs.
+     * Generates a SQL DELETE statement removing every row whose {@code whereColumn}
+     * is one of {@code count} bound values, as {@code IN (?,?,?)}.
+     * <p>
+     * The ids used to be pasted into the statement. They are placeholders now, so
+     * the caller passes them to {@code executeUpdate} like every other parameter
+     * and the statement can be cached by the driver.
      *
      * @param tableName   the name of the table from which to delete records
-     * @param whereColumn the column on which to apply the range condition
-     * @param range       the range of integer IDs to delete
+     * @param whereColumn the column on which to apply the condition
+     * @param count       how many ids will be bound; must be at least one
      * @return a SQL DELETE statement as a String
+     * @throws IllegalArgumentException if {@code count} is not positive - an empty
+     *                                  list would produce {@code IN ()}, which is a
+     *                                  syntax error rather than a delete of nothing
      */
-    public static String deleteInRangeId(@NotNull String tableName, @NotNull String whereColumn, @NotNull Integer... range) {
-        String rangeList = String.join(",", createRangeList(range));
+    public static String deleteInRangeId(@NotNull String tableName, @NotNull String whereColumn, int count) {
+        if (count <= 0) {
+            throw new IllegalArgumentException("deleteInRangeId needs at least one id, got " + count);
+        }
+        String placeholders = String.join(",", createPlaceholders(count));
 
-        return "DELETE FROM " + tableName + " WHERE " + whereColumn + " IN (" + rangeList + ")";
+        return "DELETE FROM " + tableName + " WHERE " + whereColumn + " IN (" + placeholders + ")";
     }
 
     /**
@@ -132,19 +142,5 @@ public class SqlStatements {
             }
         }
         return setClause.toString();
-    }
-
-    /**
-     * Converts an array of integers to an array of strings.
-     *
-     * @param range an array of integers to be converted
-     * @return an array of strings corresponding to the input array of integers
-     */
-    private static String[] createRangeList(@NotNull Integer[] range) {
-        String[] rangeList = new String[range.length];
-        for (int i = 0; i < range.length; i++) {
-            rangeList[i] = String.valueOf(range[i]);
-        }
-        return rangeList;
     }
 }

@@ -885,16 +885,26 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
     private void printInvoice(boolean print, T2 t2) {
         // print invoice
         if (print) {
+            // Everything the report needs off the controls is read here, on the
+            // JavaFX thread; compiling and filling the Jasper report is the wait and
+            // is all that goes to the worker.
+            var lines = modelPrintInvoices;
+            var discount = discountValue;
+            var customerName = textSearchName.getValue();
+            var invoiceDate = date.getValue().toString();
+            var receipt = getPrintPaperReceiptInvoice();
+            var invoiceDetails = ShowInvoiceDetails.invoiceDetails(dataInterface, t2);
+            modelPrintInvoices = new ArrayList<>();
+            discountValue = 0.0;
+
             maskerPaneSetting.showMaskerPane(() -> {
                 Print_Reports printReports = new Print_Reports();
-                if (getPrintPaperReceiptInvoice()) {
-                    printReports.printReceiptInvoice(modelPrintInvoices, textSearchName.getValue(), invNumber
-                            , discountValue, LocalDateTime.now().format(DATE_TIME_FORMATTER), date.getValue().toString(), 0);
-                } else
-                    printReports.printInvoice(modelPrintInvoices, ShowInvoiceDetails.invoiceDetails(dataInterface, t2), dataInterface.designInterface().nameTextOfInvoice());
-
-                modelPrintInvoices = new ArrayList<>();
-                discountValue = 0.0;
+                if (receipt) {
+                    printReports.printReceiptInvoice(lines, customerName, invNumber
+                            , discount, LocalDateTime.now().format(DATE_TIME_FORMATTER), invoiceDate, 0);
+                } else {
+                    printReports.printInvoice(lines, invoiceDetails, dataInterface.designInterface().nameTextOfInvoice());
+                }
             });
 
         }
