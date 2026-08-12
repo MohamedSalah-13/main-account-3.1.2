@@ -24,7 +24,7 @@
                             </children>
                         </VBox>
 
-                        <VBox spacing="18.0" styleClass="app-card">
+                        <VBox spacing="18.0" styleClass="app-card" VBox.vgrow="SOMETIMES">
                             <children>
                                 <GridPane hgap="5.0" vgap="5.0">
                                     <columnConstraints>

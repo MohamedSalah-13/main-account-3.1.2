@@ -28,7 +28,7 @@
                             </children>
                         </VBox>
 
-                        <GridPane hgap="5.0" styleClass="app-card" vgap="5.0">
+                        <GridPane hgap="5.0" styleClass="app-card" vgap="5.0" VBox.vgrow="SOMETIMES">
                             <columnConstraints>
                                 <ColumnConstraints maxWidth="-Infinity" />
                                 <ColumnConstraints hgrow="ALWAYS" maxWidth="1.7976931348623157E308" />

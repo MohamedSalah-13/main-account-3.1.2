@@ -85,12 +85,6 @@ public class TotalSalesReturnImplDesign implements TotalDesignInterface<Total_Sa
 
     @NotNull
     @Override
-    public Predicate<Total_Sales_Re> filterById(int id) {
-        return totalSales -> totalSales.getCustomer().getId() == id;
-    }
-
-    @NotNull
-    @Override
     public Predicate<Total_Sales_Re> filterByName(String name) {
         return totalSales -> totalSales.getCustomer().getName().equals(name);
     }

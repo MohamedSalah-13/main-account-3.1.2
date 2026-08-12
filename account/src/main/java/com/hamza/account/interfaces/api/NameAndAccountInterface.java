@@ -5,7 +5,6 @@ import com.hamza.account.features.events.PartyKind;
 import com.hamza.account.model.base.BaseAccount;
 import com.hamza.account.model.base.BaseNames;
 import com.hamza.controlsfx.database.DaoList;
-import com.hamza.controlsfx.observer.Publisher;
 
 import java.util.List;
 
@@ -39,8 +38,9 @@ public interface NameAndAccountInterface<T1 extends BaseNames, T2 extends BaseAc
 
     T1 getNameById(int id) throws Exception;
 
-    //TODO 5/8/2026 6:59 PM Mohamed:  add in searchInterface
     List<T1> getFilterItems(String filter) throws Exception;
+
     List<T1> getCustomers(int rowsPerPage, int offset) throws Exception;
+
     int getCountItems();
 }

@@ -1,7 +1,6 @@
 package com.hamza.account.controller.items;
 
 import com.hamza.account.config.Image_Setting;
-import com.hamza.account.controller.main.DataPublisher;
 import com.hamza.account.controller.others.ServiceRegistry;
 import com.hamza.account.features.events.UnitsChanged;
 import com.hamza.account.model.domain.UnitsModel;
@@ -10,23 +9,19 @@ import com.hamza.account.openFxml.OpenFxmlApplication;
 import com.hamza.account.otherSetting.MaskerPaneSetting;
 import com.hamza.account.service.UnitsService;
 import com.hamza.controlsfx.alert.AllAlerts;
-import com.hamza.controlsfx.observer.EventBus;
 import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.interfaceData.AppSettingInterface;
 import com.hamza.controlsfx.language.Error_Text_Show;
 import com.hamza.controlsfx.language.Setting_Language;
 import com.hamza.controlsfx.menu.ActionTable;
 import com.hamza.controlsfx.menu.ContextMenuTable;
+import com.hamza.controlsfx.observer.EventBus;
 import com.hamza.controlsfx.table.TableColumnAnnotation;
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
-import javafx.scene.control.Button;
-import javafx.scene.control.Label;
-import javafx.scene.control.TableView;
-import javafx.scene.control.TextField;
-import javafx.scene.control.Tooltip;
+import javafx.scene.control.*;
 import javafx.scene.input.KeyCode;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.StackPane;
@@ -49,7 +44,6 @@ import static com.hamza.controlsfx.util.ImageChoose.createIcon;
 public class UnitsController implements Initializable, AppSettingInterface {
 
     private static final double MIN_VALUE = 0.0;
-    private final DataPublisher dataPublisher;
     private final String name;
     private final UnitsService unitsService = ServiceRegistry.get(UnitsService.class);
     @FXML
@@ -63,8 +57,7 @@ public class UnitsController implements Initializable, AppSettingInterface {
     @FXML
     private StackPane stackPane;
 
-    public UnitsController(DataPublisher dataPublisher, String name) {
-        this.dataPublisher = dataPublisher;
+    public UnitsController(String name) {
         this.name = name;
     }
 
@@ -201,7 +194,9 @@ public class UnitsController implements Initializable, AppSettingInterface {
         }
     }
 
-    /** The unit being edited, or 0 when the form is adding a new one. */
+    /**
+     * The unit being edited, or 0 when the form is adding a new one.
+     */
     private int editedUnitId() {
         String code = textCode.getText();
         if (code == null || code.equals(generate)) {

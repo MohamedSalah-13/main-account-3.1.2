@@ -312,7 +312,7 @@ public class ItemsController extends LoadData {
 
     private void addItem(int num) {
         try {
-            new AddItemApplication(num, dataPublisher).start(new Stage());
+            new AddItemApplication(num).start(new Stage());
         } catch (Exception e) {
             logErrors(e);
         }

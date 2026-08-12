@@ -73,12 +73,6 @@ public class TotalsPurchaseImplDesign implements TotalDesignInterface<Total_buy>
 
 
     @Override
-    public Predicate<Total_buy> filterById(int code) {
-        return totalBuy -> totalBuy.getSupplierData().getId() == code;
-    }
-
-
-    @Override
     public Predicate<Total_buy> filterByName(String name) {
         return totalBuy -> totalBuy.getSupplierData().getName().equals(name);
     }

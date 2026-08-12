@@ -5,8 +5,6 @@ import javafx.scene.control.TextField;
 import javafx.scene.control.TextFormatter;
 import javafx.scene.input.KeyCode;
 
-import java.util.Optional;
-
 public class Utils {
 
     /**
@@ -55,7 +53,7 @@ public class Utils {
      * when the Enter key is pressed.
      *
      * @param controls An array of Control objects that will be configured with the Enter key handler.
-     * @param index The index of the current control in the array to set the handler on.
+     * @param index    The index of the current control in the array to set the handler on.
      */
     private static void setUpEnterKeyRequestFocus(Control[] controls, int index) {
         controls[index].setOnKeyPressed(event -> {
@@ -80,15 +78,4 @@ public class Utils {
         });
     }
 
-    /**
-     * Parses the given string input into an Optional Double.
-     * If the input is empty, returns Optional.empty().
-     * Otherwise, returns an Optional containing the parsed Double value.
-     *
-     * @param input the string input to be parsed
-     * @return an Optional containing the parsed Double value, or Optional.empty() if the input is empty
-     */
-    public static Optional<Double> parseDoubleText(String input) {
-        return input.isEmpty() ? Optional.empty() : Optional.of(Double.parseDouble(input));
-    }
 }

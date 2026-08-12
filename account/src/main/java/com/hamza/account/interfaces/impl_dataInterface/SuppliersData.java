@@ -96,7 +96,7 @@ public class SuppliersData
 
     @Override
     public NameAndAccountInterface<Suppliers, SupplierAccount> nameAndAccountInterface() throws Exception {
-        return new SupplierAndAccount(dataPublisher);
+        return new SupplierAndAccount();
     }
 
     @Override

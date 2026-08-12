@@ -71,12 +71,6 @@ public class TotalsPurchaseReturnImplDesign implements TotalDesignInterface<Tota
 
     @NotNull
     @Override
-    public Predicate<Total_Buy_Re> filterById(int code) {
-        return totalBuyRe -> totalBuyRe.getSuppliers().getId() == code;
-    }
-
-    @NotNull
-    @Override
     public Predicate<Total_Buy_Re> filterByName(String name) {
         return totalBuyRe -> totalBuyRe.getSuppliers().getName().equals(name);
     }

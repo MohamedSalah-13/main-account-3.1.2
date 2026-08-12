@@ -8,7 +8,6 @@ import com.hamza.account.model.base.BasePurchasesAndSales;
 import com.hamza.account.model.base.BaseTotals;
 import com.hamza.account.perm.PermAccountAndNameInt;
 import com.hamza.controlsfx.database.DaoException;
-import com.hamza.controlsfx.observer.Publisher;
 
 import java.util.List;
 

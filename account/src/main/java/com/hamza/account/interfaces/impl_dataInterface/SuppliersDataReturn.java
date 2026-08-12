@@ -22,7 +22,6 @@ import com.hamza.account.service.PurchaseReService;
 import com.hamza.account.service.TotalBuyReturnService;
 import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.database.DaoList;
-import com.hamza.controlsfx.observer.Publisher;
 
 import java.util.List;
 
@@ -94,7 +93,7 @@ public class SuppliersDataReturn extends LoadData implements DataInterface<Purch
 
     @Override
     public NameAndAccountInterface<Suppliers, SupplierAccount> nameAndAccountInterface() throws Exception {
-        return new SupplierAndAccount(dataPublisher);
+        return new SupplierAndAccount();
     }
 
     @Override

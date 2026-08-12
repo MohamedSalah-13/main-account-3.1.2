@@ -2,7 +2,6 @@ package com.hamza.account.view;
 
 import com.hamza.account.config.Image_Setting;
 import com.hamza.account.controller.items.AddItemController;
-import com.hamza.account.controller.main.DataPublisher;
 import javafx.application.Application;
 import javafx.scene.Scene;
 import javafx.scene.input.KeyCode;
@@ -15,11 +14,10 @@ import lombok.RequiredArgsConstructor;
 public class AddItemApplication extends Application {
 
     private final int num;
-    private final DataPublisher dataPublisher;
 
     @Override
     public void start(Stage stage) throws Exception {
-        var addItemController = new AddItemController(num, dataPublisher);
+        var addItemController = new AddItemController(num);
         Scene scene = new SceneAll(addItemController.pane());
         stage.setScene(scene);
         if (num == 0)

@@ -22,7 +22,6 @@ import com.hamza.account.service.SalesReService;
 import com.hamza.account.service.TotalSalesReturnService;
 import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.database.DaoList;
-import com.hamza.controlsfx.observer.Publisher;
 
 import java.util.List;
 
@@ -94,7 +93,7 @@ public class CustomDataReturn extends LoadData implements DataInterface<Sales_Re
 
     @Override
     public NameAndAccountInterface<Customers, CustomerAccount> nameAndAccountInterface() throws Exception {
-        return new CustomerAndAccount(dataPublisher);
+        return new CustomerAndAccount();
     }
 
     @Override

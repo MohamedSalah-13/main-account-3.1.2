@@ -1,6 +1,5 @@
 package com.hamza.account.interfaces.impl_namesDao;
 
-import com.hamza.account.controller.main.DataPublisher;
 import com.hamza.account.controller.others.ServiceRegistry;
 import com.hamza.account.controller.search.SearchInterface;
 import com.hamza.account.controller.search.SuppliersSearchController;
@@ -12,7 +11,6 @@ import com.hamza.account.service.AccountSupplierService;
 import com.hamza.account.service.SuppliersService;
 import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.database.DaoList;
-import com.hamza.controlsfx.observer.Publisher;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 
@@ -22,7 +20,6 @@ import java.util.List;
 @RequiredArgsConstructor
 public class SupplierAndAccount implements NameAndAccountInterface<Suppliers, SupplierAccount> {
 
-    private final DataPublisher dataPublisher;
     private final SuppliersService suppliersService = ServiceRegistry.get(SuppliersService.class);
     private final AccountSupplierService accountSupplierService = ServiceRegistry.get(AccountSupplierService.class);
 

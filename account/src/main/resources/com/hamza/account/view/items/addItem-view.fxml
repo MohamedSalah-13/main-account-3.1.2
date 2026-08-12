@@ -118,7 +118,7 @@
                                     </children>
                                 </HBox>
 
-                                <TabPane fx:id="tabPane" styleClass="items-tab-pane" tabClosingPolicy="UNAVAILABLE">
+                                <TabPane fx:id="tabPane" minHeight="-Infinity" minWidth="-Infinity" styleClass="items-tab-pane" tabClosingPolicy="UNAVAILABLE">
                                     <tabs>
                                         <Tab text="الوحدات">
                                             <content>
@@ -164,7 +164,7 @@
                                              </rowConstraints>
                                                         </GridPane>
 
-                                                        <TableView fx:id="tableUnits" styleClass="app-table" VBox.vgrow="ALWAYS" />
+                                                        <TableView fx:id="tableUnits" minHeight="-Infinity" minWidth="-Infinity" styleClass="app-table" VBox.vgrow="ALWAYS" />
                                                     </children>
                                                 </VBox>
                                             </content>

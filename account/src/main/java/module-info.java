@@ -125,10 +125,6 @@ module com.hamza.account {
     opens com.hamza.account.table;
     exports com.hamza.account.view.barcode;
     opens com.hamza.account.view.barcode to javafx.fxml;
-    exports com.hamza.account.controller.dataSetting;
-    opens com.hamza.account.controller.dataSetting to javafx.fxml;
-    exports com.hamza.account.controller.dataSetting.impl;
-    opens com.hamza.account.controller.dataSetting.impl to javafx.fxml;
     exports com.hamza.account.controller.dataByName.impl;
     opens com.hamza.account.controller.dataByName.impl to javafx.fxml;
     exports com.hamza.account.model.base;
@@ -153,6 +149,10 @@ module com.hamza.account {
     opens com.hamza.account.features.inventory;
     exports com.hamza.account.features.stockcount;
     opens com.hamza.account.features.stockcount;
+    opens com.hamza.account.features.events;
+    exports com.hamza.account.features.events;
+    opens com.hamza.account.document;
+    exports com.hamza.account.document;
     exports com.hamza.account.view;
     opens com.hamza.account.view to javafx.fxml;
 }

@@ -21,7 +21,7 @@ public class MainMenuController {
     @FXML
     private MenuItem menuItemPurchase, menuItemPurchaseReturn, menuItemTotalPurchase, menuItemTotalPurchaseReturn;
     @FXML
-    private MenuItem menuItemItems, menuItemAddItem, menuItemAddItemFromExcel, menuItemUnit, menuItemArea, menuItemInventory, menuItemStockCount, menuItemMainGroup, menuItemSupGroup;
+    private MenuItem menuItemItems, menuItemAddItem, menuItemUnit, menuItemArea, menuItemInventory, menuItemStockCount, menuItemMainGroup, menuItemSupGroup;
     @FXML
     private MenuItem menuItemAddCustomName, menuItemCustomName, menuItemCustomAccount;
     @FXML

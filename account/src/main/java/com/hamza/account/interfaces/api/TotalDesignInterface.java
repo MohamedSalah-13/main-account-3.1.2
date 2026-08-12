@@ -16,8 +16,6 @@ public interface TotalDesignInterface<T extends BaseTotals> extends DataTable<T>
 
     int deleteMultiData(@NotNull Integer... ids) throws Exception;
 
-    Predicate<T> filterById(int id);
-
     Predicate<T> filterByName(String name);
 
     Predicate<T> filterByDelegate(String name);

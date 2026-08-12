@@ -4,7 +4,6 @@ import com.codejava.commons.fx.validation.InputValidator;
 import com.hamza.account.config.Image_Setting;
 import com.hamza.account.controller.dataByName.OpenAddAreaApplication;
 import com.hamza.account.controller.dataByName.impl.MainGroupImpl2;
-import com.hamza.account.controller.main.DataPublisher;
 import com.hamza.account.controller.main.DisableButtons;
 import com.hamza.account.controller.others.ServiceRegistry;
 import com.hamza.account.features.events.GroupLevel;
@@ -46,11 +45,7 @@ import lombok.extern.log4j.Log4j2;
 
 import java.io.ByteArrayInputStream;
 import java.io.FileNotFoundException;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 
 import static com.hamza.account.controller.setting.ComboSetting.comboSubSetting;
 import static com.hamza.account.controller.setting.ComboSetting.comboTypeSetting;
@@ -62,7 +57,6 @@ import static com.hamza.controlsfx.util.ImageChoose.createIcon;
 public class AddItemController implements AppSettingInterface {
 
     private final int codeItem;
-    private final DataPublisher dataPublisher;
     private final Subscriptions subscriptions = new Subscriptions();
     private final EventBus eventBus = ServiceRegistry.get(EventBus.class);
     /**
@@ -121,9 +115,8 @@ public class AddItemController implements AppSettingInterface {
     private Button btnAddImage, btnClearImage;
     private TableUnitsSetting tableUnitsSetting;
 
-    public AddItemController(int codeItem, DataPublisher dataPublisher) {
+    public AddItemController(int codeItem) {
         this.codeItem = codeItem;
-        this.dataPublisher = dataPublisher;
 
         if (eventBus != null) {
             // The units screen can be opened over this dialog; keep the selection,
@@ -339,7 +332,7 @@ public class AddItemController implements AppSettingInterface {
 
         btnAddMainGroup.setOnAction(actionEvent -> {
             try {
-                new OpenAddAreaApplication<>(new MainGroupImpl2(dataPublisher), Setting_Language.WORD_MAIN_G);
+                new OpenAddAreaApplication<>(new MainGroupImpl2(), Setting_Language.WORD_MAIN_G);
             } catch (Exception e) {
                 logError(e);
             }
@@ -497,8 +490,8 @@ public class AddItemController implements AppSettingInterface {
             txtBalance.setDisable(true);
             txtBalance.setTooltip(new Tooltip(
                     "رصيد أول المدة مقفل: يوجد حركات على هذا الصنف."
-                    + "\nتغييره يعيد حساب رصيد الصنف في كل تاريخ سابق."
-                    + "\nلتصحيح الرصيد استخدم شاشة الجرد الفعلي."));
+                            + "\nتغييره يعيد حساب رصيد الصنف في كل تاريخ سابق."
+                            + "\nلتصحيح الرصيد استخدم شاشة الجرد الفعلي."));
         } catch (DaoException e) {
             logError(e);
         }

@@ -5,15 +5,13 @@ import com.hamza.account.controller.dataByName.OpenAddAreaApplication;
 import com.hamza.account.controller.dataByName.impl.AreaImpl;
 import com.hamza.account.controller.dataByName.impl.MainGroupImpl2;
 import com.hamza.account.controller.items.InventoryController;
-import com.hamza.account.controller.items.StockCountController;
 import com.hamza.account.controller.items.ItemsController;
+import com.hamza.account.controller.items.StockCountController;
 import com.hamza.account.controller.items.UnitsController;
 import com.hamza.account.controller.main.ButtonWithPerm;
 import com.hamza.account.controller.main.DataPublisher;
-import com.hamza.account.controller.others.ImportDataFromExcelFileController;
 import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.openFxml.OpenFxmlApplication;
-import com.hamza.account.table.TableOpen;
 import com.hamza.account.type.UserPermissionType;
 import com.hamza.account.view.AddGroupApp;
 import com.hamza.account.view.AddItemApplication;
@@ -42,7 +40,7 @@ public class ItemsButtons {
 
             @Override
             public void action() throws Exception {
-                new AddItemApplication(0, dataPublisher).start(new Stage());
+                new AddItemApplication(0).start(new Stage());
             }
 
             @NotNull
@@ -83,28 +81,6 @@ public class ItemsButtons {
         };
     }
 
-    public ButtonWithPerm addItemsFromExcel() {
-        return new ButtonWithPerm() {
-
-            @Override
-            public UserPermissionType getPermissionType() {
-                return UserPermissionType.DISABLE_BUTTON;
-            }
-
-            @Override
-            public void action() throws Exception {
-                new OpenApplication<>(new ImportDataFromExcelFileController());
-            }
-
-            @NotNull
-            @Override
-            public String textName() {
-                return "إضافة من Excel";
-            }
-
-        };
-    }
-
     public ButtonWithPerm units() {
         return new ButtonWithPerm() {
 
@@ -115,7 +91,7 @@ public class ItemsButtons {
 
             @Override
             public void action() throws Exception {
-                new OpenApplication<>(new UnitsController(dataPublisher, textName()));
+                new OpenApplication<>(new UnitsController(textName()));
             }
 
             @NotNull
@@ -204,7 +180,7 @@ public class ItemsButtons {
 
             @Override
             public void action() throws Exception {
-                var area = new AreaImpl(dataPublisher);
+                var area = new AreaImpl();
                 new OpenAddAreaApplication<>(area, textName());
             }
 
@@ -251,7 +227,7 @@ public class ItemsButtons {
 
             @Override
             public void action() throws Exception {
-                new OpenAddAreaApplication<>(new MainGroupImpl2(dataPublisher), Setting_Language.WORD_MAIN_G);
+                new OpenAddAreaApplication<>(new MainGroupImpl2(), Setting_Language.WORD_MAIN_G);
             }
         };
     }

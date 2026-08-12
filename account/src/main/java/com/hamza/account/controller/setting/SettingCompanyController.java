@@ -1,15 +1,12 @@
 package com.hamza.account.controller.setting;
 
 import com.hamza.account.config.Image_Setting;
-import com.hamza.account.controller.dataSetting.AddDataController;
-import com.hamza.account.controller.dataSetting.impl.AddDataTreasury;
 import com.hamza.account.controller.others.ServiceRegistry;
 import com.hamza.account.features.company.CompanyLogo;
 import com.hamza.account.features.company.CompanyService;
 import com.hamza.account.features.events.CompanyChanged;
 import com.hamza.account.model.domain.Company;
 import com.hamza.account.openFxml.FxmlPath;
-import com.hamza.account.openFxml.OpenFxmlApplication;
 import com.hamza.account.service.TreasuryService;
 import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.database.DaoException;
@@ -18,19 +15,13 @@ import com.hamza.controlsfx.observer.EventBus;
 import javafx.concurrent.Task;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
-import javafx.scene.control.Button;
-import javafx.scene.control.Label;
-import javafx.scene.control.ProgressIndicator;
-import javafx.scene.control.TextField;
-import javafx.scene.control.TextFormatter;
+import javafx.scene.control.*;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.input.DragEvent;
 import javafx.scene.input.Dragboard;
 import javafx.scene.input.TransferMode;
 import javafx.scene.layout.HBox;
-import javafx.scene.layout.Pane;
-import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 import javafx.stage.FileChooser;
 import javafx.stage.Window;
@@ -91,13 +82,21 @@ public class SettingCompanyController implements Initializable {
     private final EventBus eventBus = ServiceRegistry.get(EventBus.class);
     private final Image placeholder = placeholder();
 
-    /** The row as last read or saved — the baseline every "is there anything to save" question is asked against. */
+    /**
+     * The row as last read or saved — the baseline every "is there anything to save" question is asked against.
+     */
     private Company company = new Company();
-    /** The logo on display, or null for none. Saved as-is; never re-encoded unless it was just chosen. */
+    /**
+     * The logo on display, or null for none. Saved as-is; never re-encoded unless it was just chosen.
+     */
     private CompanyLogo logo;
-    /** The logo as last read or saved, so cancelling a change is possible and dirty-tracking has a baseline. */
+    /**
+     * The logo as last read or saved, so cancelling a change is possible and dirty-tracking has a baseline.
+     */
     private CompanyLogo savedLogo;
-    /** Set while the form is being filled in, so filling it does not read as the user typing. */
+    /**
+     * Set while the form is being filled in, so filling it does not read as the user typing.
+     */
     private boolean filling;
 
     @FXML
@@ -122,7 +121,6 @@ public class SettingCompanyController implements Initializable {
         actions();
         dragAndDrop();
         buttonGraphic();
-        addDataToSetting();
         load();
     }
 
@@ -210,18 +208,6 @@ public class SettingCompanyController implements Initializable {
         btnReset.setGraphic(createIcon(images.cancel));
     }
 
-    /** The treasuries list that shares this tab. */
-    private void addDataToSetting() {
-        var addDataTreasury = new AddDataTreasury();
-        addDataTreasury.setTreasuryService(treasuryService);
-        try {
-            Pane pane = new OpenFxmlApplication(new AddDataController(addDataTreasury)).getPane();
-            HBox.setHgrow(pane, Priority.ALWAYS);
-            hbox.getChildren().add(pane);
-        } catch (IOException e) {
-            report("Failed to open the treasuries list", e);
-        }
-    }
 
     // ------------------------------------------------------------------
     // Reading and writing
@@ -249,7 +235,9 @@ public class SettingCompanyController implements Initializable {
         run(task, "company-load");
     }
 
-    /** Puts the last saved state back on the form — used after a load, and by "إلغاء". */
+    /**
+     * Puts the last saved state back on the form — used after a load, and by "إلغاء".
+     */
     private void fill() {
         filling = true;
         try {
@@ -327,7 +315,9 @@ public class SettingCompanyController implements Initializable {
         }
     }
 
-    /** Reading, decoding and scaling a picture off the FX thread — a phone photo is not instant. */
+    /**
+     * Reading, decoding and scaling a picture off the FX thread — a phone photo is not instant.
+     */
     private void readLogo(File file) {
         setBusy(true);
         Task<CompanyLogo> task = new Task<>() {
@@ -384,11 +374,11 @@ public class SettingCompanyController implements Initializable {
             return;
         }
         boolean dirty = !trimmed(textNameCompany).equals(orEmpty(company.getName()))
-                        || !trimmed(textTel).equals(orEmpty(company.getTel()))
-                        || !trimmed(textAddress).equals(orEmpty(company.getAddress()))
-                        || !trimmed(textTax).equals(orEmpty(company.getTax()))
-                        || !trimmed(textCom).equals(orEmpty(company.getCommercial()))
-                        || !CompanyLogo.sameBytes(logo, savedLogo);
+                || !trimmed(textTel).equals(orEmpty(company.getTel()))
+                || !trimmed(textAddress).equals(orEmpty(company.getAddress()))
+                || !trimmed(textTax).equals(orEmpty(company.getTax()))
+                || !trimmed(textCom).equals(orEmpty(company.getCommercial()))
+                || !CompanyLogo.sameBytes(logo, savedLogo);
 
         btnSave.setDisable(!dirty);
         btnReset.setDisable(!dirty);
@@ -445,7 +435,7 @@ public class SettingCompanyController implements Initializable {
         File file = board.getFiles().getFirst();
         String name = file.getName().toLowerCase(Locale.ROOT);
         boolean picture = name.endsWith(".png") || name.endsWith(".jpg") || name.endsWith(".jpeg")
-                          || name.endsWith(".gif") || name.endsWith(".bmp");
+                || name.endsWith(".gif") || name.endsWith(".bmp");
         return picture && file.isFile() ? file : null;
     }
 
@@ -468,7 +458,9 @@ public class SettingCompanyController implements Initializable {
         thread.start();
     }
 
-    /** A failure the user has to see: logged in full, shown as whatever sentence it carries. */
+    /**
+     * A failure the user has to see: logged in full, shown as whatever sentence it carries.
+     */
     private void report(String context, Throwable error) {
         log.error(context, error);
         String message = error == null || error.getMessage() == null || error.getMessage().isBlank()
@@ -477,7 +469,9 @@ public class SettingCompanyController implements Initializable {
         AllAlerts.alertError(message);
     }
 
-    /** The row and its logo, read together off the FX thread. */
+    /**
+     * The row and its logo, read together off the FX thread.
+     */
     private record Loaded(Company company, CompanyLogo logo) {
     }
 }

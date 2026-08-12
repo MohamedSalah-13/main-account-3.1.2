@@ -23,7 +23,6 @@ import com.hamza.account.service.SalesService;
 import com.hamza.account.service.TotalSalesService;
 import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.database.DaoList;
-import com.hamza.controlsfx.observer.Publisher;
 
 import java.util.List;
 
@@ -95,7 +94,7 @@ public class CustomData extends LoadData implements DataInterface<Sales, Total_S
 
     @Override
     public NameAndAccountInterface<Customers, CustomerAccount> nameAndAccountInterface() throws Exception {
-        return new CustomerAndAccount(dataPublisher);
+        return new CustomerAndAccount();
     }
 
     @Override

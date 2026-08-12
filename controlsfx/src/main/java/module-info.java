@@ -43,12 +43,10 @@ module com.hamza.controlsfx {
     exports com.hamza.controlsfx.dateTime;
     exports com.hamza.controlsfx.excel;
 
-    exports com.hamza.controlsfx.type;
     exports com.hamza.controlsfx.notifications;
 
     exports com.hamza.controlsfx.language;
     opens com.hamza.controlsfx.language to javafx.fxml;
-    exports com.hamza.controlsfx.jasperData;
     opens com.hamza.controlsfx.interfaceData to javafx.fxml;
     opens com.hamza.controlsfx.util to javafx.fxml;
 }

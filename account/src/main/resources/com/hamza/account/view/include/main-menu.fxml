@@ -42,7 +42,6 @@
                 <KeyCodeCombination alt="UP" code="I" control="DOWN" meta="UP" shift="DOWN" shortcut="UP"/>
             </accelerator>
         </MenuItem>
-        <MenuItem fx:id="menuItemAddItemFromExcel" mnemonicParsing="false" text="Add From Excel"/>
         <SeparatorMenuItem mnemonicParsing="false"/>
         <MenuItem fx:id="menuItemUnit" mnemonicParsing="false" text="Add Unit"/>
         <MenuItem fx:id="menuItemMainGroup" mnemonicParsing="false" text="Main Group"/>

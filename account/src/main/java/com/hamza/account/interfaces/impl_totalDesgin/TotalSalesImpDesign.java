@@ -85,12 +85,6 @@ public class TotalSalesImpDesign implements TotalDesignInterface<Total_Sales> {
 
 
     @Override
-    public Predicate<Total_Sales> filterById(int id) {
-        return totalSales -> totalSales.getCustomers().getId() == id;
-    }
-
-
-    @Override
     public Predicate<Total_Sales> filterByName(String name) {
         return totalSales -> totalSales.getCustomers().getName().equals(name);
 
