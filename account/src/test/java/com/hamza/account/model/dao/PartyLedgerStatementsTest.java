@@ -117,7 +117,7 @@ class PartyLedgerStatementsTest {
                     SELECT ac.account_num, ac.account_code, ac.account_date, ac.purchase,
                     ac.discount, ac.paid,
                     ROUND(ac.purchase - ac.discount - ac.paid) as amount,
-                    ac.notes, s.name, ac.information, ac.type, ac.date_insert,
+                    ac.notes, s.name, ac.information, ac.type, ac.created_at,
                     ac.treasury_id, ac.numberInv
                     FROM account_suppliers_table ac
                     JOIN suppliers s ON ac.account_code = s.id"""), tokens(dao.statementSql()));
@@ -131,7 +131,7 @@ class PartyLedgerStatementsTest {
          */
         @Test
         void listings() {
-            assertEquals(tokens(dao.statementSql()) + " ORDER BY ac.date_insert", tokens(dao.selectAllSql()));
+            assertEquals(tokens(dao.statementSql()) + " ORDER BY ac.created_at", tokens(dao.selectAllSql()));
             assertEquals(tokens(dao.statementSql())
                             + " WHERE ac.account_code = ? and ac.information =2",
                     tokens(dao.selectByPartySql()));
@@ -222,15 +222,19 @@ class PartyLedgerStatementsTest {
         private final CustomerAccountDao customers = FACTORY.customerAccountDao();
         private final SupplierAccountDao suppliers = FACTORY.suppliersAccountDao();
 
-        /** Two ledgers, one shape: the same movement under two table names. */
+        /**
+         * Two ledgers, one shape: the same movement under two table names, and nothing
+         * else. The date column was the last word that differed - the customer's said
+         * {@code created_at} and the supplier's {@code date_insert} - until
+         * {@code V10__supplier_created_at.sql} finished what V4 started.
+         */
         @Test
         void theTwoLedgersAreTheSameStatement() {
             assertEquals(tokens(customers.statementSql())
                             .replace("act.", "ac.").replace("c.name", "s.name")
                             .replace("account_customer_table act", "account_suppliers_table ac")
                             .replace("JOIN custom c", "JOIN suppliers s")
-                            .replace("= c.id", "= s.id")
-                            .replace("ac.created_at", "ac.date_insert"),
+                            .replace("= c.id", "= s.id"),
                     tokens(suppliers.statementSql()));
         }
 

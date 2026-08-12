@@ -18,9 +18,9 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
  * {@code CustomerDao} and {@code SuppliersDao} are the same file twice - the same
  * columns, the same opening-balance rule, and the same sixty-line three-phase search -
  * differing in the table name, two columns a supplier has no use for, and a handful of
- * details nobody chose: the date column is {@code created_at} on one and
- * {@code date_insert} on the other, and the supplier queries write their join in lower
- * case. Pinned here so a merge has to keep answering exactly what they answer now.
+ * details nobody chose - the supplier queries write their join in lower case, and until
+ * {@code V10__supplier_created_at.sql} the two spelled their date column differently.
+ * Pinned here so a merge has to keep answering exactly what they answer now.
  */
 class PartyDaoStatementsTest {
 

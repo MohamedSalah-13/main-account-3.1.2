@@ -13,8 +13,9 @@ import java.util.regex.Pattern;
  * notes, an opening balance, an area and who entered it. A customer has two columns more
  * - the credit limit and which price tier they buy at - and that is the whole of the
  * difference. Everything else that differs between {@code custom} and {@code suppliers}
- * is accident: the date column is {@code created_at} on one and {@code date_insert} on
- * the other, and the supplier's queries write their join in lower case.
+ * is accident, and less of it every time: the date column was {@code created_at} on one
+ * and {@code date_insert} on the other until {@code V10__supplier_created_at.sql}, and
+ * the supplier's queries still write their join in lower case.
  * <p>
  * Collecting it here is what lets one statement serve both, the way
  * {@link com.hamza.account.document.DocumentTableSpec} does for the four documents.
@@ -32,7 +33,8 @@ import java.util.regex.Pattern;
  * @param searchJoin     the area join the search, paging and by-id queries carry, or
  *                       empty. Empty for suppliers, whose {@code map} looks the area up
  *                       with a query of its own
- * @param createdColumn  when the row was entered, under its two names
+ * @param createdColumn  when the row was entered. One name on both sides since V10;
+ *                       it stays a field because the tables are still two
  * @param insertColumns  the insert, in the order the DAO fills it
  * @param updateColumns  the update's SET clause; the key is the WHERE and is not here
  * @param openingBalance the opening-balance column, which the update drops while the
@@ -73,7 +75,7 @@ public record PartyTableSpec(
             PartyKind.SUPPLIER, "suppliers",
             "join table_area on suppliers.area_id = table_area.id",
             "",
-            "date_insert",
+            "created_at",
             List.of("name", "tel", "address", "notes", "first_balance", "user_id", "area_id"),
             List.of("name", "tel", "address", "notes", "first_balance", "area_id"),
             "first_balance");

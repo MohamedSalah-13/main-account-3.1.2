@@ -29,7 +29,8 @@ import java.util.regex.Pattern;
  * @param partyTable    the party table the view is joined to for the name
  * @param ledgerAlias   what the statement calls the ledger, {@code act} or {@code ac}
  * @param partyAlias    what it calls the party
- * @param createdColumn when the row was entered, under its two names
+ * @param createdColumn when the row was entered. One name on both sides since
+ *                      {@code V10__supplier_created_at.sql}
  * @param insertColumns the insert, in the order the DAO fills it
  * @param updateColumns the update's SET clause; the key is the WHERE and is not here.
  *                      Neither carries {@code user_id}: an edit does not change who
@@ -76,7 +77,7 @@ public record PartyLedgerSpec(
 
     public static final PartyLedgerSpec SUPPLIER = new PartyLedgerSpec(
             PartyKind.SUPPLIER, "suppliers_accounts", "account_suppliers_table",
-            "account_suppliers_totals", "suppliers", "ac", "s", "date_insert",
+            "account_suppliers_totals", "suppliers", "ac", "s", "created_at",
             List.of("account_code", "account_date", "paid", "notes", "numberInv", "treasury_id",
                     "account_num", "user_id"),
             List.of("account_code", "account_date", "paid", "notes", "numberInv", "treasury_id"),

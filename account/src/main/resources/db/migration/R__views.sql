@@ -414,18 +414,18 @@ ORDER BY created_at;
 
 DROP VIEW IF EXISTS account_suppliers_table;
 CREATE VIEW account_suppliers_table AS
-SELECT 0                                      AS account_num,
-       c.id                                   AS account_code,
-       DATE_FORMAT(c.date_insert, '%Y-%m-%d') AS account_date,
-       c.first_balance                        AS purchase,
-       0                                      AS discount,
-       0                                      AS paid,
-       'رصيد اول'                             AS notes,
-       1                                      AS information,
-       0                                      AS type,
-       c.date_insert                          AS date_insert,
-       0                                      AS treasury_id,
-       0                                      AS numberInv
+SELECT 0                                     AS account_num,
+       c.id                                  AS account_code,
+       DATE_FORMAT(c.created_at, '%Y-%m-%d') AS account_date,
+       c.first_balance                       AS purchase,
+       0                                     AS discount,
+       0                                     AS paid,
+       'رصيد اول'                            AS notes,
+       1                                     AS information,
+       0                                     AS type,
+       c.created_at                          AS created_at,
+       0                                     AS treasury_id,
+       0                                     AS numberInv
 FROM suppliers c
 UNION ALL
 SELECT account_num,
@@ -437,7 +437,7 @@ SELECT account_num,
        notes,
        2        AS information,
        0        AS type,
-       date_insert,
+       created_at,
        treasury_id,
        numberInv
 FROM suppliers_accounts
@@ -469,7 +469,7 @@ SELECT tbr.id,
        tbr.treasury_id,
        0                AS numberInv
 FROM total_buy_re tbr
-ORDER BY date_insert;
+ORDER BY created_at;
 
 -- --------------------------------------card_item_view---------------------------------------------
 
@@ -725,7 +725,7 @@ WITH cte_union_data AS (SELECT invoice_number AS id_no,
                                0,
                                paid,
                                treasury_id,
-                               date_insert,
+                               created_at AS date_insert,
                                user_id,
                                'حسابات الموردين'
                         FROM suppliers_accounts
@@ -920,7 +920,7 @@ WITH computed_profit AS (SELECT ts.invoice_number,
                                          0                    AS discount,
                                          0                    AS paid_up,
                                          treasury_id,
-                                         date_insert,
+                                         created_at           AS date_insert,
                                          user_id,
                                          'suppliers_accounts' AS table_name,
                                          0                    AS profit

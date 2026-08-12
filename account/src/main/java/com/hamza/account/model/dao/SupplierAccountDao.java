@@ -40,7 +40,7 @@ public class SupplierAccountDao extends AbstractDao<SupplierAccount> {
     private final String TABLE_VIEW_TOTALS = "account_suppliers_totals";
     private final String AMOUNT = "amount";
     private final String TREASURY_ID = "treasury_id";
-    private final String DATE_INSERT = "date_insert";
+    private final String DATE_INSERT = SPEC.createdColumn();
     private final String USER_ID = "user_id";
     private final String NAME = "name";
 

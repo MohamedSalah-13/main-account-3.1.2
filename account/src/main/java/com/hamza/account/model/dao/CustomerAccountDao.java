@@ -40,7 +40,7 @@ public class CustomerAccountDao extends AbstractDao<CustomerAccount> {
     private final String TABLE_VIEW_TOTALS = "account_customer_totals";
     private final String AMOUNT = "amount";
     private final String TREASURY_ID = "treasury_id";
-    private final String dateInsert = "created_at";
+    private final String dateInsert = SPEC.createdColumn();
     private final String NAME = "name";
     private final String USER_ID = "user_id";
 

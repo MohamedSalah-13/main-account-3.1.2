@@ -126,7 +126,10 @@ lives and what its columns are called, and builds every statement over it —
 (exact id or telephone → names starting with the text → names containing it). A supplier is a customer
 without a credit limit and a price tier; everything else that differed was accident. Two asymmetries are
 kept deliberately and are commented as such: the supplier's date column is `date_insert` where the
-customer's is `created_at`, and the supplier's searches do **not** join `table_area`. The customer's
+customer's is `created_at` — **was**, until `V10__supplier_created_at.sql` renamed the supplier's to
+match, finishing what `V4` started when it renamed `custom`, `customers_accounts` and `items` and
+stopped. The other nineteen tables keep `date_insert`: they are not paired with anything. The supplier's
+searches do **not** join `table_area`. The customer's
 join is a **`LEFT` join**: it is there to read the area's name, and it was an inner join, which dropped a
 customer whose area row had been deleted out of every list and every search while a supplier in the same
 state stayed. `PartyDaoStatementsTest` pins all of it.

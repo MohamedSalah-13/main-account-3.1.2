@@ -32,7 +32,7 @@ public class SuppliersDao extends AbstractDao<Suppliers> {
     private final String USER_ID = "user_id";
     private final String AREA_ID = "area_id";
     private final String AREA_NAME = "area_name";
-    private final String DATE_INSERT = "date_insert";
+    private final String DATE_INSERT = SPEC.createdColumn();
     private final DaoFactory daoFactory;
 
     SuppliersDao(DaoFactory daoFactory) {
