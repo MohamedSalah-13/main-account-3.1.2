@@ -3,10 +3,6 @@ package com.hamza.account.view;
 import com.hamza.account.controller.invoice.TotalsController;
 import com.hamza.account.controller.main.DataPublisher;
 import com.hamza.account.interfaces.api.DataInterface;
-import com.hamza.account.model.base.BaseAccount;
-import com.hamza.account.model.base.BaseNames;
-import com.hamza.account.model.base.BasePurchasesAndSales;
-import com.hamza.account.model.base.BaseTotals;
 import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.openFxml.OpenFxmlApplication;
 import com.hamza.account.service.EmployeeService;
@@ -15,12 +11,12 @@ import javafx.scene.layout.Pane;
 import lombok.Getter;
 
 @Getter
-public class TotalsApplication<T1 extends BasePurchasesAndSales, T2 extends BaseTotals, T3 extends BaseNames, T4 extends BaseAccount> {
+public class TotalsApplication {
 
     private final Pane pane;
-    private final TotalsController<T1, T2, T3, T4> controller;
+    private final TotalsController<?, ?, ?> controller;
 
-    public TotalsApplication(DataInterface<T1, T2, T3, T4> dataInterface, DaoFactory daoFactory
+    public TotalsApplication(DataInterface<?, ?, ?, ?> dataInterface, DaoFactory daoFactory
             , DataPublisher dataPublisher, EmployeeService employeeService) throws Exception {
 
         CssToColorHelper helper = new CssToColorHelper();

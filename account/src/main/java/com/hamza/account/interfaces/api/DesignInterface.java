@@ -1,9 +1,21 @@
 package com.hamza.account.interfaces.api;
 
+import com.hamza.account.document.DocumentType;
+import com.hamza.account.features.events.PartyKind;
 import com.hamza.account.type.UserPermissionType;
 import javafx.scene.Node;
 
 public interface DesignInterface {
+
+    /**
+     * Which of the four documents this screen is showing.
+     * <p>
+     * Everything below it that is not a caption or an icon follows from this: the five
+     * permissions, and whether the screen is a customer's or a supplier's. They used to
+     * be written out in each implementation, which is how a permission ended up being
+     * the only way to tell a sale from a sales return.
+     */
+    DocumentType documentType();
 
     /**
      * Returns the stylesheet for the user interface design.
@@ -76,21 +88,36 @@ public interface DesignInterface {
         return null;
     }
 
+    /**
+     * True on the two customer screens - the sale and its return - and false on the
+     * two supplier ones. It follows from the document type and is no longer worth
+     * overriding.
+     */
     default boolean showDataForCustomer() {
-        return false;
+        return documentType().partyKind() == PartyKind.CUSTOMER;
     }
 
     default boolean showScreenPaidInInvoice() {
         return false;
     }
 
-    UserPermissionType show();
+    default UserPermissionType show() {
+        return documentType().showPermission();
+    }
 
-    UserPermissionType update();
+    default UserPermissionType update() {
+        return documentType().updatePermission();
+    }
 
-    UserPermissionType delete();
+    default UserPermissionType delete() {
+        return documentType().deletePermission();
+    }
 
-    UserPermissionType show_totals();
+    default UserPermissionType show_totals() {
+        return documentType().showTotalsPermission();
+    }
 
-    UserPermissionType show_totals_invoice();
+    default UserPermissionType show_totals_invoice() {
+        return documentType().showTotalsInvoicePermission();
+    }
 }

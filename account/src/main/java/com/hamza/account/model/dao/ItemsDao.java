@@ -4,6 +4,8 @@ import com.hamza.account.config.DefaultStock;
 import com.hamza.account.model.domain.ItemsModel;
 import com.hamza.account.model.domain.ItemsUnitsModel;
 import com.hamza.account.model.domain.Items_Stock_Model;
+import com.hamza.account.opening.OpeningBalanceGuard;
+import com.hamza.account.opening.OpeningBalanceRegistry;
 import com.hamza.account.trial.TrialManager;
 import com.hamza.controlsfx.database.AbstractDao;
 import com.hamza.controlsfx.database.DaoException;
@@ -110,6 +112,10 @@ public class ItemsDao extends AbstractDao<ItemsModel> {
     private final String QUANTITY_SALES_RE = "quantitySalesRe";
     private final String FROM_STOCK = "fromStock";
     private final String TO_STOCK = "toStock";
+    private final String ADJUSTMENT = "adjustment";
+
+    /** Where the opening balance sits in the array {@link #getData} builds. */
+    private static final int OPENING_BALANCE_INDEX = 13;
     private final String STOCK_ID = "stock_id";
     private final String selPrice1 = "sel_price1";
     private final String selPrice2 = "sel_price2";
@@ -156,14 +162,37 @@ public class ItemsDao extends AbstractDao<ItemsModel> {
         });
     }
 
+    /**
+     * The columns an update writes, and the values to write, built together.
+     * <p>
+     * They have to be built together because the opening balance drops out of both once
+     * the item has moved - see {@link #update}. Two lists kept in step by hand is how a
+     * value ends up written into the wrong column.
+     */
+    private record UpdateStatement(String sql, Object[] values) {
+    }
+
+    /**
+     * Saves the item.
+     * <p>
+     * <b>The opening balance is written only while the item has never moved.</b> It is
+     * the one figure in the row that has no date on it: the balance is
+     * {@code first_balance + purchases + ... - sales}, so changing it changes what the
+     * item's stock was at every moment of its history, and a stock sheet printed and
+     * signed last month prints differently today. Once anything has been bought, sold,
+     * returned, transferred or counted, the opening balance is a closed entry and the
+     * way to correct the stock is a dated movement - which is what the stock-count
+     * screen is for.
+     * <p>
+     * A changed value is refused rather than quietly dropped: the user typed a number
+     * and is entitled to know it was not saved.
+     */
     @Override
     public int update(ItemsModel itemsModel) throws DaoException {
-        String string = SqlStatements.updateStatement(TABLE_NAME, ID, BARCODE, NAME_ITEM, SUB_NUM, BUY_PRICE
-                , selPrice1, selPrice2, selPrice3, itemActive, itemHasValidity, numberValidityDays, alertDaysBeforeExpire
-                , UNIT_ID, MINI_QUANTITY, FIRST_BALANCE, ITEM_IMAGE, USER_ID);
+        UpdateStatement statement = updateStatementFor(itemsModel);
 
         return insertMultiData(() -> {
-            executeUpdateWithException(string, getData(itemsModel));
+            executeUpdateWithException(statement.sql(), statement.values());
 
             saveUnits(itemsModel);
 
@@ -173,6 +202,42 @@ public class ItemsDao extends AbstractDao<ItemsModel> {
                 daoFactory.getItemBarcodesDao().insertBarcodesForItem(itemsModel.getId(), itemsModel.getExtraBarcodes());
             }
         });
+    }
+
+    private UpdateStatement updateStatementFor(ItemsModel itemsModel) throws DaoException {
+        boolean mayWriteOpening = OpeningBalanceGuard.shared()
+                .mayWrite(OpeningBalanceRegistry.ITEMS, itemsModel.getId(), itemsModel.getFirstBalanceForStock());
+
+        if (mayWriteOpening) {
+            return new UpdateStatement(
+                    SqlStatements.updateStatement(TABLE_NAME, ID, BARCODE, NAME_ITEM, SUB_NUM, BUY_PRICE
+                            , selPrice1, selPrice2, selPrice3, itemActive, itemHasValidity, numberValidityDays
+                            , alertDaysBeforeExpire, UNIT_ID, MINI_QUANTITY, FIRST_BALANCE, ITEM_IMAGE, USER_ID),
+                    getData(itemsModel));
+        }
+
+        return new UpdateStatement(
+                SqlStatements.updateStatement(TABLE_NAME, ID, BARCODE, NAME_ITEM, SUB_NUM, BUY_PRICE
+                        , selPrice1, selPrice2, selPrice3, itemActive, itemHasValidity, numberValidityDays
+                        , alertDaysBeforeExpire, UNIT_ID, MINI_QUANTITY, ITEM_IMAGE, USER_ID),
+                dataWithoutOpeningBalance(itemsModel));
+    }
+
+    /**
+     * {@link #getData} without the opening balance, for the locked case. The column is
+     * left out of the statement rather than written with its current value, so a value
+     * that reached here some other way cannot overwrite it either.
+     */
+    private Object[] dataWithoutOpeningBalance(ItemsModel itemsModel) {
+        return OpeningBalanceGuard.without(getData(itemsModel), OPENING_BALANCE_INDEX);
+    }
+
+    /**
+     * Whether the item's opening balance is closed to editing. The item screen asks so
+     * it can grey the field; the rule itself is applied in {@link #update}.
+     */
+    public boolean isOpeningBalanceLocked(int itemId) throws DaoException {
+        return OpeningBalanceGuard.shared().isLocked(OpeningBalanceRegistry.ITEMS, itemId);
     }
 
     /**
@@ -242,6 +307,11 @@ public class ItemsDao extends AbstractDao<ItemsModel> {
             double saleRe = rs.getDouble(QUANTITY_SALES_RE);
             double fromStock = rs.getDouble(FROM_STOCK);
             double toStock = rs.getDouble(TO_STOCK);
+            // What posted stock counts corrected the balance by, signed. Added by V8;
+            // it belongs in the balance everywhere the balance is worked out, or a
+            // counted item would read one way on the inventory sheet and another on
+            // every invoice screen.
+            double adjustment = rs.getDouble(ADJUSTMENT);
 
             itemsModel.setItemStock(daoFactory.stockDao().getDataById(rs.getInt(STOCK_ID)));
             itemsModel.setSumPurchase(purchase);
@@ -250,7 +320,7 @@ public class ItemsDao extends AbstractDao<ItemsModel> {
             itemsModel.setSumSalesRe(saleRe);
             itemsModel.setFromStock(fromStock);
             itemsModel.setToStock(toStock);
-            double sumAllBalance = (itemsModel.getFirstBalanceForStock() + purchase + saleRe + toStock) - (sales + purRe + fromStock);
+            double sumAllBalance = (itemsModel.getFirstBalanceForStock() + purchase + saleRe + toStock + adjustment) - (sales + purRe + fromStock);
             itemsModel.setSumAllBalance(sumAllBalance);
             itemsModel.setSumAllBalanceByBuyPrice(roundToTwoDecimalPlaces(itemsModel.getBuyPrice() * sumAllBalance));
             itemsModel.setSumAllBalanceBySelPrice(roundToTwoDecimalPlaces(itemsModel.getSelPrice1() * sumAllBalance));
@@ -264,11 +334,17 @@ public class ItemsDao extends AbstractDao<ItemsModel> {
     @Override
     public int updateList(List<ItemsModel> list) throws DaoException {
         try {
+            // No FIRST_BALANCE, ever. This is the bulk update behind the "edit several
+            // items" screen, which changes prices and groups; it has no field for an
+            // opening balance and no business rewriting one. Leaving the column in meant
+            // every item in the batch had its opening balance written back from whatever
+            // the loaded model happened to hold - and it was the one path around the
+            // rule in update(), unlogged and a hundred rows at a time.
             String string = SqlStatements.updateStatement(TABLE_NAME, ID, BARCODE, NAME_ITEM, SUB_NUM, BUY_PRICE
                     , selPrice1, selPrice2, selPrice3, itemActive, itemHasValidity, numberValidityDays, alertDaysBeforeExpire
-                    , UNIT_ID, MINI_QUANTITY, FIRST_BALANCE, ITEM_IMAGE, USER_ID);
+                    , UNIT_ID, MINI_QUANTITY, ITEM_IMAGE, USER_ID);
             return executeUpdateListWithException(list, string
-                    , (statement, itemsModel) -> this.setData(statement, getData(itemsModel)));
+                    , (statement, model) -> this.setData(statement, dataWithoutOpeningBalance(model)));
         } catch (SQLException e) {
             throw new DaoException(e);
         }

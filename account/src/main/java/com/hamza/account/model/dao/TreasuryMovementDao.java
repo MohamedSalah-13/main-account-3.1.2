@@ -5,6 +5,8 @@ import com.hamza.account.model.domain.TreasuryMovement;
 import com.hamza.account.type.TreasuryMovementType;
 import com.hamza.account.type.TreasuryReferenceType;
 import com.hamza.controlsfx.database.AbstractDao;
+import com.hamza.account.period.PeriodLock;
+import com.hamza.account.period.PeriodLockRegistry;
 import com.hamza.controlsfx.database.DaoException;
 
 import java.math.BigDecimal;
@@ -223,6 +225,13 @@ public class TreasuryMovementDao extends AbstractDao<TreasuryMovement> {
             String notes,
             int userId
     ) throws DaoException {
+        // The treasury ledger is dated, so a closed month protects it like any other
+        // document. Note this method is currently unreachable - nothing constructs this
+        // DAO and no DaoFactory method returns it - so the guard is in place for
+        // whenever the treasury screens are wired back up rather than protecting
+        // anything today. See PeriodLockRegistry for the state of the other two
+        // treasury tables.
+        PeriodLock.require(movementDate, PeriodLockRegistry.TREASURY_MOVEMENT.label());
         String query = """
                 INSERT INTO treasury_movements
                     (treasury_id,

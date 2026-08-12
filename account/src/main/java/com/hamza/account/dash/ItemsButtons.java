@@ -5,6 +5,7 @@ import com.hamza.account.controller.dataByName.OpenAddAreaApplication;
 import com.hamza.account.controller.dataByName.impl.AreaImpl;
 import com.hamza.account.controller.dataByName.impl.MainGroupImpl2;
 import com.hamza.account.controller.items.InventoryController;
+import com.hamza.account.controller.items.StockCountController;
 import com.hamza.account.controller.items.ItemsController;
 import com.hamza.account.controller.items.UnitsController;
 import com.hamza.account.controller.main.ButtonWithPerm;
@@ -148,6 +149,42 @@ public class ItemsButtons {
             @Override
             public void actionAddPaneToTabPane(TabPane tabPane) throws Exception {
                 addTape(tabPane, new OpenFxmlApplication(inventory).getPane(), textName(), new Image_Setting().itemWhite);
+            }
+
+            @Override
+            public boolean showOnTapPane() {
+                return true;
+            }
+        };
+    }
+
+    /**
+     * The physical count. Opened as a tab beside the inventory sheet it corrects, and
+     * held behind its own permission - entering a count is clerical work, but the
+     * screen is where posting one is reached from.
+     */
+    public ButtonWithPerm stockCount() throws Exception {
+        return new ButtonWithPerm() {
+            final StockCountController stockCount = new StockCountController();
+
+            @Override
+            public UserPermissionType getPermissionType() {
+                return UserPermissionType.STOCK_COUNT_SHOW;
+            }
+
+            @Override
+            public void action() {
+            }
+
+            @NotNull
+            @Override
+            public String textName() {
+                return "الجرد الفعلي";
+            }
+
+            @Override
+            public void actionAddPaneToTabPane(TabPane tabPane) throws Exception {
+                addTape(tabPane, new OpenFxmlApplication(stockCount).getPane(), textName(), new Image_Setting().itemWhite);
             }
 
             @Override

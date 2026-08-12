@@ -2,6 +2,8 @@ package com.hamza.account.service;
 
 import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.perm.PermissionGuard;
+import com.hamza.account.period.PeriodLock;
+import com.hamza.account.period.PeriodLockRegistry;
 import com.hamza.account.type.UserPermissionType;
 import com.hamza.account.model.dao.TotalsSalesDao;
 import com.hamza.account.model.domain.Total_Sales;
@@ -33,8 +35,17 @@ public record TotalSalesService(DaoFactory daoFactory) {
         return daoFactory.totalsSalesDao();
     }
 
+    /**
+     * Deletes invoices, refusing the batch whole if any of them falls inside a closed
+     * accounting period.
+     * <p>
+     * The dates come from the stored rows, not from the caller, and the oldest decides -
+     * so a selection reaching back into a closed month is refused rather than
+     * half-deleted.
+     */
     public int deleteMultiData(Integer[] ids) throws DaoException {
         PermissionGuard.require(UserPermissionType.SALES_DELETE);
+        PeriodLock.require(PeriodLockRegistry.SALES_INVOICE, List.of(ids));
         return getTotalsSalesDao().deleteInvoicesInRange(ids);
     }
 

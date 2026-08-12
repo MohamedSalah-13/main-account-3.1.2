@@ -142,6 +142,17 @@ module com.hamza.account {
     opens com.hamza.account.features.key_setting to javafx.fxml;
     exports com.hamza.account.features.export;
     opens com.hamza.account.features.export;
+
+    // JasperReports reads its data source by bean getter, and the inventory sheet's
+    // rows are InventoryRow now rather than ItemsModel. Reflection on a public getter
+    // needs the package exported - the same reason com.hamza.account.model.domain is,
+    // for the reports that still print item models. Opened as well, unqualified, so a
+    // bean introspector that reaches for setAccessible is not a runtime surprise in a
+    // code path that only runs when someone presses "طباعة".
+    exports com.hamza.account.features.inventory;
+    opens com.hamza.account.features.inventory;
+    exports com.hamza.account.features.stockcount;
+    opens com.hamza.account.features.stockcount;
     exports com.hamza.account.view;
     opens com.hamza.account.view to javafx.fxml;
 }

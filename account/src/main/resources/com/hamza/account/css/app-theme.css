@@ -414,6 +414,154 @@
     -fx-padding: 5px 6px;
 }
 
+/* ---------- Stock states on an inventory row ----------
+   Set by InventoryController's row factory from StockLevel, which is the same
+   function the sales screens use to decide an item is low - so a row shaded here
+   and a warning raised there always mean the same thing.
+   Selection wins over the state: a selected row has to look selected. */
+
+.table-row-cell.stock-low {
+    -fx-background-color: -app-stock-low-row;
+}
+
+.table-row-cell.stock-low .table-cell {
+    -fx-text-fill: -app-stock-low-text;
+}
+
+.table-row-cell.stock-out {
+    -fx-background-color: -app-stock-out-row;
+}
+
+.table-row-cell.stock-out .table-cell {
+    -fx-text-fill: -app-stock-out-text;
+}
+
+.table-row-cell.stock-negative {
+    -fx-background-color: -app-stock-negative-row;
+}
+
+.table-row-cell.stock-negative .table-cell {
+    -fx-text-fill: -app-stock-negative-text;
+    -fx-font-weight: bold;
+}
+
+/* A stopped item still holds stock, so it is shown and counted - only greyed. */
+.table-row-cell.stock-inactive .table-cell {
+    -fx-text-fill: -app-stock-inactive-text;
+}
+
+.table-row-cell.stock-low:hover,
+.table-row-cell.stock-out:hover,
+.table-row-cell.stock-negative:hover {
+    -fx-background-color: -app-table-hover;
+}
+
+.table-row-cell.stock-low:selected,
+.table-row-cell.stock-out:selected,
+.table-row-cell.stock-negative:selected {
+    -fx-background-color: -app-table-selected;
+}
+
+/* A book balance below zero on the stock-count sheet. Written as a descendant of the
+   row so it outweighs the row-state rules above, which also colour .table-cell - the
+   row says "this line has a surplus", the cell says "and the books were negative",
+   and the second is the one worth reading. */
+.table-row-cell .table-cell.count-suspect {
+    -fx-text-fill: -app-stock-negative-text;
+    -fx-font-weight: bold;
+}
+
+/* ---------- Logo drop zone ----------
+   The company logo can be clicked or dropped onto, so it is drawn as a target
+   rather than as a plain preview: a dashed outline that lights up on hover and
+   while a file is being dragged over it. */
+
+.logo-drop {
+    -fx-background-color: -app-neutral-soft;
+    -fx-background-radius: 14px;
+    -fx-border-radius: 14px;
+    -fx-border-color: -app-border;
+    -fx-border-width: 1.5px;
+    -fx-border-style: segments(6, 4) line-cap round;
+    -fx-padding: 10px;
+    -fx-cursor: hand;
+}
+
+.logo-drop:hover,
+.logo-drop-active {
+    -fx-background-color: -app-input-focus-bg;
+    -fx-border-color: -app-primary;
+}
+
+/* Whether the form differs from what is in the database, said in the colour that
+   already means "needs attention" everywhere else in the app. */
+
+.status-dirty {
+    -fx-text-fill: -app-warning;
+    -fx-font-weight: bold;
+}
+
+.status-clean {
+    -fx-text-fill: -app-text-muted;
+}
+
+/* ---------- KPI tiles ---------- */
+
+.kpi-tile {
+    -fx-background-color: -app-surface;
+    -fx-background-radius: 14px;
+    -fx-border-radius: 14px;
+    -fx-border-color: -app-border;
+    -fx-border-width: 1px;
+    -fx-padding: 10px 14px;
+    -fx-spacing: 2px;
+    -fx-min-width: 150px;
+    -fx-effect: dropshadow(gaussian, -app-shadow, 10, 0.10, 0, 3);
+}
+
+.kpi-title {
+    -fx-font-size: 11px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -app-text-muted;
+}
+
+.kpi-value {
+    -fx-font-size: 19px;
+    -fx-font-weight: bold;
+    -fx-fill: -app-text-strong;
+    -fx-text-fill: -app-text-strong;
+}
+
+.kpi-hint {
+    -fx-font-size: 10px;
+    -fx-text-fill: -app-text-muted;
+}
+
+.kpi-tile.kpi-cost .kpi-value {
+    -fx-fill: -app-primary;
+    -fx-text-fill: -app-primary;
+}
+
+.kpi-tile.kpi-sale .kpi-value {
+    -fx-fill: -app-success;
+    -fx-text-fill: -app-success;
+}
+
+/* The low-stock tile filters the table, so it says so by behaving like a control. */
+.kpi-tile.kpi-low {
+    -fx-border-color: -app-warning-border;
+    -fx-cursor: hand;
+}
+
+.kpi-tile.kpi-low .kpi-value {
+    -fx-fill: -app-warning;
+    -fx-text-fill: -app-warning;
+}
+
+.kpi-tile.kpi-low:hover {
+    -fx-background-color: -app-warning-soft;
+}
+
 /* ---------- Summary bars ---------- */
 
 .summary-bar,

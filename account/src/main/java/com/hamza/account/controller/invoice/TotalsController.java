@@ -15,6 +15,7 @@ import com.hamza.account.interfaces.api.NameAndAccountInterface;
 import com.hamza.account.interfaces.api.TotalsDataInterface;
 import com.hamza.account.model.base.*;
 import com.hamza.account.model.dao.DaoFactory;
+import com.hamza.account.period.PeriodLockService;
 import com.hamza.account.openFxml.FxmlPath;
 import com.hamza.account.otherSetting.MaskerPaneSetting;
 import com.hamza.account.service.EmployeeService;
@@ -70,11 +71,12 @@ import static com.hamza.controlsfx.util.NumberUtils.roundToTwoDecimalPlaces;
 
 @Log4j2
 @FxmlPath(pathFile = "invoice/totals.fxml")
-public class TotalsController<T1 extends BasePurchasesAndSales, T2 extends BaseTotals, T3 extends BaseNames, T4 extends BaseAccount>
-        extends TotalsService<T1, T2, T3, T4> implements Initializable {
+public class TotalsController<T2 extends BaseTotals, T3 extends BaseNames, T4 extends BaseAccount>
+        extends TotalsService<T2, T3, T4> implements Initializable {
 
     private final CssToColorHelper helper;
     private final EventBus eventBus = ServiceRegistry.get(EventBus.class);
+    private final PeriodLockService periodLockService = ServiceRegistry.get(PeriodLockService.class);
     private final EmployeeService employeeService;
     private final ObservableList<T2> observableList;
     private final FilteredList<T2> filteredTable;
@@ -112,7 +114,7 @@ public class TotalsController<T1 extends BasePurchasesAndSales, T2 extends BaseT
     @FXML
     private MenuItem menuItemPrintTotals, menuItemPrintDetailed;
 
-    public TotalsController(DataInterface<T1, T2, T3, T4> dataInterface, DaoFactory daoFactory
+    public TotalsController(DataInterface<?, T2, T3, T4> dataInterface, DaoFactory daoFactory
             , DataPublisher dataPublisher, EmployeeService employeeService
             , CssToColorHelper helper) throws Exception {
         super(dataInterface, daoFactory, dataPublisher);
@@ -398,7 +400,7 @@ public class TotalsController<T1 extends BasePurchasesAndSales, T2 extends BaseT
         var to = dateTo.getValue().toString();
         maskerPaneSetting.showMaskerPane(() -> {
             try {
-                var collection = dataInterface.totalsAndPurchaseList().totalList(from, to)
+                var collection = totalsInterface.totalsAndPurchaseList().totalList(from, to)
                         .stream().sorted(Comparator.comparing(BaseTotals::getDate)).toList();
                 // The query runs off the JavaFX thread; what the table is showing is
                 // replaced back on it.
@@ -502,16 +504,27 @@ public class TotalsController<T1 extends BasePurchasesAndSales, T2 extends BaseT
     private void update(T2 t2) throws Exception {
         int i = totalsDataInterface.getNum(t2);
 
+        // The accounting lock decides this now, not the calendar. What was here refused
+        // any invoice outside the current month: on the first of the month yesterday's
+        // invoice was locked whether or not anything had been reported, everything
+        // inside the current month stayed editable however much had been, and the rule
+        // was invisible - it could not be seen or set by anyone. It also guarded only
+        // the button that opens an invoice, leaving the delete beside it unchecked.
+        //
+        // update_data is still honoured: it is a per-user restriction to the current
+        // month, which some shops rely on, and it is now the narrower of the two rather
+        // than the only one.
+        LocalDate invoiceDate = LocalDate.parse(t2.getDate());
+        periodLockService.requireOpen(invoiceDate, dataInterface.designInterface().nameTextOfInvoice());
+
         if (!update_data) {
-            var date = t2.getDate();
-            var inputDate = LocalDate.parse(date);
             LocalDate currentDate = LocalDate.now();
-            if (inputDate.getYear() != currentDate.getYear() ||
-                    inputDate.getMonth() != currentDate.getMonth()) {
-                throw new Exception("لا يمكن التعديل");
+            if (invoiceDate.getYear() != currentDate.getYear()
+                || invoiceDate.getMonth() != currentDate.getMonth()) {
+                throw new Exception("لا يمكن تعديل بيانات خارج الشهر الحالي");
             }
         }
-        BuyApplication<T1, T2, T3, T4> buyApp = new BuyApplication<>(dataInterface, dataPublisher, i);
+        BuyApplication buyApp = new BuyApplication(dataInterface, dataPublisher, i);
         buyApp.start(new Stage());
     }
 
@@ -546,7 +559,7 @@ public class TotalsController<T1 extends BasePurchasesAndSales, T2 extends BaseT
                 }
             }
             List<PrintPurchaseWithName> printPurchaseWithNames = new ArrayList<>();
-            dataInterface.addList(items, printPurchaseWithNames);
+            totalsInterface.addList(items, printPurchaseWithNames);
             String date1 = dateFrom.getValue().toString();
             String date2 = dateTo.getValue().toString();
             printReports.printMultiInvoice(printPurchaseWithNames, dataInterface.designInterface().nameTextOfTotal(), date1, date2, null);
@@ -558,7 +571,7 @@ public class TotalsController<T1 extends BasePurchasesAndSales, T2 extends BaseT
     private void showInvoiceData(T2 t2) throws Exception {
         int id = totalsDataInterface.getNum(t2);
         String name = totalsDataInterface.getNameData(t2);
-        new ShowInvoiceApplication<>(dataPublisher, dataInterface, daoFactory, id, name);
+        new ShowInvoiceApplication(dataPublisher, dataInterface, daoFactory, id, name);
     }
 
     private void sumTable() {

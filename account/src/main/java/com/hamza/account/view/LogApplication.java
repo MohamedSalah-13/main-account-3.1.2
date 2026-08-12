@@ -9,6 +9,7 @@ import com.hamza.account.interfaces.ActionLogin;
 import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.model.domain.Users;
 import com.hamza.account.model.domain.Users_Permission;
+import com.hamza.account.period.PeriodLockService;
 import com.hamza.account.service.UserPermissionService;
 import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.database.DaoException;
@@ -133,6 +134,8 @@ public class LogApplication extends Application {
     private void openMainScreen() throws Exception {
         updateData();
         usersPermissionList = new UserPermissionService(daoFactory).getUsersPermissionById(usersVo.getId());
+        // This machine may have sat at the login screen while another one closed a month.
+        PeriodLockService.forget();
         var mainScreenApplication = new MainScreenApplication(daoFactory);
         mainScreenApplication.start(new Stage());
     }

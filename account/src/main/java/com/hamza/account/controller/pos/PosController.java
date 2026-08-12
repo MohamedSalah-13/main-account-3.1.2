@@ -89,7 +89,7 @@ public class PosController extends ButtonSetting {
     private final DaoFactory daoFactory;
     private final List<Button> paneList = new ArrayList<>();
     private final DataPublisher dataPublisher;
-    private final NameController<Sales, Total_Sales, Customers, CustomerAccount> nameController;
+    private final NameController<Customers, CustomerAccount> nameController;
     private final DataInterface<Sales, Total_Sales, Customers, CustomerAccount> dataInterface;
     private final Map<BasePurchasesAndSales, String> originalNames = new HashMap<>();
     // Concurrent because the caches and the index are now filled on the worker

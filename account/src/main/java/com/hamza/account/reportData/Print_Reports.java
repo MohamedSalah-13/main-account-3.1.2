@@ -6,6 +6,7 @@ import com.hamza.account.controller.model.ModelPrintInvoice;
 import com.hamza.account.controller.model.PrintPurchaseWithName;
 import com.hamza.account.controller.model.TableTotals;
 import com.hamza.account.features.checkbox.impl.setting.BarcodePrintDoubleLabel;
+import com.hamza.account.features.inventory.InventoryRow;
 import com.hamza.account.model.domain.*;
 import com.hamza.account.otherSetting.BarcodeDetails;
 import com.hamza.account.service.ShiftReportService;
@@ -164,7 +165,16 @@ public class Print_Reports extends ReportCompany {
         jasperData.printJasperPrint(JasperReportPaths.Account.ACCOUNT_DETAILS_REPORT_TEMPLATE, Setting_Language.WORD_PRINT, map, 1, printerNameThermal);
     }
 
-    public void printInventoryByTable(List<ItemsModel> list, String stock_name) {
+    /**
+     * Prints the inventory sheet.
+     * <p>
+     * The rows are {@link InventoryRow} now, not {@code ItemsModel}: the screen no
+     * longer loads item models, and the caller passes every row matching the search
+     * rather than the page on screen - "طباعة" used to print whichever fifty rows
+     * the user happened to be looking at. The template is unchanged; the row type
+     * carries getters named after the fields in {@code items-inventory-A4.jrxml}.
+     */
+    public void printInventoryByTable(List<InventoryRow> list, String stock_name) {
         HashMap<String, Object> map = getStringObjectHashMap(list, null);
         map.put("stock_name", stock_name);
         jasperData.printJasperPrint(JasperReportPaths.Report.INVENTORY_BY_TABLE, Setting_Language.WORD_ITEMS, map, 1, "");

@@ -52,7 +52,7 @@ import static com.hamza.controlsfx.util.NumberUtils.roundToTwoDecimalPlaces;
 @Log4j2
 @FxmlPath(pathFile = "invoice/showInv-view.fxml")
 public class ShowInvoiceController<T1 extends BasePurchasesAndSales, T2 extends BaseTotals, T3 extends BaseNames, T4 extends BaseAccount>
-        extends LoadOtherData<T1, T2, T3, T4> implements Initializable, AppSettingInterface {
+        extends LoadOtherData<T3, T4> implements Initializable, AppSettingInterface {
 
     private final DataInterface<T1, T2, T3, T4> dataInterface;
     private final PurchaseSalesInterface t1PurchaseSalesInterface;

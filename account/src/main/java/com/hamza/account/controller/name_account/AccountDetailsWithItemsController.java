@@ -9,8 +9,6 @@ import com.hamza.account.features.export.ReportExportService;
 import com.hamza.account.interfaces.api.DataInterface;
 import com.hamza.account.model.base.BaseAccount;
 import com.hamza.account.model.base.BaseNames;
-import com.hamza.account.model.base.BasePurchasesAndSales;
-import com.hamza.account.model.base.BaseTotals;
 import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.openFxml.FxmlPath;
 import com.hamza.account.openFxml.OpenFxmlApplication;
@@ -56,8 +54,8 @@ import static com.hamza.controlsfx.util.NumberUtils.roundToTwoDecimalPlaces;
 
 @Log4j2
 @FxmlPath(pathFile = "accountDetailsTreeTableView.fxml")
-public class AccountDetailsWithItemsController<T1 extends BasePurchasesAndSales, T2 extends BaseTotals, T3 extends BaseNames, T4 extends BaseAccount>
-        extends LoadOtherData<T1, T2, T3, T4> implements Initializable, AppSettingInterface {
+public class AccountDetailsWithItemsController<T3 extends BaseNames, T4 extends BaseAccount>
+        extends LoadOtherData<T3, T4> implements Initializable, AppSettingInterface {
 
     public static final String ACCOUNT_DETAILS_TREE_COLOR_ROW = "account.details.tree.color.row";
     private static final String ACCOUNT_TITLE_ARABIC = "دفع";
@@ -96,7 +94,7 @@ public class AccountDetailsWithItemsController<T1 extends BasePurchasesAndSales,
 
     // Add this helper method:
     public AccountDetailsWithItemsController(DaoFactory daoFactory, DataPublisher dataPublisher
-            , DataInterface<T1, T2, T3, T4> dataInterface
+            , DataInterface<?, ?, T3, T4> dataInterface
             , T4 t4, AccountDetailsInterface accountDetailsInterface) throws Exception {
         super(dataInterface, daoFactory, dataPublisher);
         this.name_account = accountData.getName(t4);

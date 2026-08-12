@@ -20,11 +20,11 @@ import javafx.scene.control.TabPane;
 import javafx.scene.layout.Pane;
 import org.jetbrains.annotations.NotNull;
 
-public class NameButtons<T1 extends BasePurchasesAndSales, T2 extends BaseTotals, T3 extends BaseNames, T4 extends BaseAccount>
-        extends LoadOtherData<T1, T2, T3, T4> {
+public class NameButtons<T3 extends BaseNames, T4 extends BaseAccount>
+        extends LoadOtherData<T3, T4> {
 
     public NameButtons(DaoFactory daoFactory, DataPublisher dataPublisher
-            , DataInterface<T1, T2, T3, T4> dataInterface) throws Exception {
+            , DataInterface<?, ?, T3, T4> dataInterface) throws Exception {
         super(dataInterface, daoFactory, dataPublisher);
     }
 
@@ -48,7 +48,7 @@ public class NameButtons<T1 extends BasePurchasesAndSales, T2 extends BaseTotals
 
             @Override
             public void actionAddPaneToTabPane(TabPane tabPane) throws Exception {
-                NameController<T1, T2, T3, T4> nameController = new NameController<>(dataInterface, daoFactory, dataPublisher);
+                NameController<T3, T4> nameController = new NameController<>(dataInterface, daoFactory, dataPublisher);
                 Pane pane = new TableOpen<>(nameController).getPane();
                 addTape(tabPane, pane, textName(), new Image_Setting().personCustomer);
             }

@@ -85,6 +85,77 @@ is the central abstraction. Four implementations in `interfaces/impl_dataInterfa
 (`BuyController2`, `TotalsController`, `AccountController2`) serve customer/supplier × sale/return. When
 changing invoice behaviour, check all four implementations, and expect heavily generic signatures.
 
+**A class declares only the type parameters it actually uses.** The four used to be copied onto every
+class that so much as touched a `DataInterface` — 27 of them, most using none of the four for anything
+but passing the interface along. They now say what they mean: `NameController<T3, T4>`,
+`TotalsController<T2, T3, T4>`, `SearchItemsController<T1>`, and the seven `view/*Application` classes
+name none at all. Everything unused is a wildcard (`DataInterface<?, ?, T3, T4>`), and constructing the
+next controller down from it works because Java captures the wildcards — `new NameController<>(...)`
+needs no help. `LoadOtherData<T3, T4>` is the shared base for the name and account screens, which is
+why `TotalsService` keeps a second, T2-precise handle (`totalsInterface`) on the same object.
+
+`BuyData`, `BuyController2` and `ShowInvoiceController` still name all four, and genuinely use them.
+**The four cannot be deleted outright until the models are one.** Each parameter is bounded by exactly
+one base class, so widening them to the bases compiles at every *use* site - but the four
+implementations override methods that take the concrete type (`addList(List<Total_Sales>, …)`), and a
+widened parameter no longer overrides. Making it work would mean unchecked casts inside the
+implementations, which is the safety the generics are there for. A single `Document` model removes the
+parameters for free; nothing short of it does.
+
+**What the four are is declared in `account.document`, not spread over the screens.** `DocumentType`
+(SALES, SALES_RETURN, PURCHASE, PURCHASE_RETURN) answers what a document *means* — whose account it
+moves (`partyKind`), which half of the ledger it is on (`side`), which way it moves the stock and the
+treasury (`stockSign`/`cashSign`), whether it carries a delegate, which period lock guards it, and its
+five permissions. `DesignInterface.documentType()` is the one thing the four `impl_design` classes now
+answer for themselves; `show()`, `update()`, `delete()`, `show_totals()`, `show_totals_invoice()` and
+`showDataForCustomer()` are defaults that read it. That is why `BuyController2` no longer identifies a
+sale by comparing its permission against `SALES_SHOW` — a permission was the only field that differed
+between `DesignCustom` and `DesignCustomReturn`, and using it as an identity check is what a new
+document type would have broken.
+
+`DocumentTableSpec` is the other half: where a document's rows *live*. The four tables answer the same
+questions with different words — the key is `invoice_number` on the two invoices and `id` on the two
+returns, the party is `sup_code` or `sup_id`, what was settled in cash is `paid_up`,
+`paid_from_treasury` or `paid_to_treasury`, and the item on a line is `num` or `item_id` — and every
+statement over them is built from one place. The eight DAOs keep their `map` and their parameter
+arrays, which are the parts that know a model; they no longer write their own SQL.
+
+**The parties have the same seam.** `account.party.PartyTableSpec` says where a customer or a supplier
+lives and what its columns are called, and builds every statement over it —
+`CustomerDao` and `SuppliersDao` were the same file twice, down to the sixty-line three-phase search
+(exact id or telephone → names starting with the text → names containing it). A supplier is a customer
+without a credit limit and a price tier; everything else that differed was accident. Two asymmetries are
+kept deliberately and are commented as such: the supplier's date column is `date_insert` where the
+customer's is `created_at` — **was**, until `V10__supplier_created_at.sql` renamed the supplier's to
+match, finishing what `V4` started when it renamed `custom`, `customers_accounts` and `items` and
+stopped. The other nineteen tables keep `date_insert`: they are not paired with anything. The supplier's
+searches do **not** join `table_area`. The customer's
+join is a **`LEFT` join**: it is there to read the area's name, and it was an inner join, which dropped a
+customer whose area row had been deleted out of every list and every search while a supplier in the same
+state stayed. `PartyDaoStatementsTest` pins all of it.
+
+`PartyLedgerSpec` does the same for the two account tables. Only **payments** live in
+`customers_accounts` and `suppliers_accounts`; the invoice side of a statement comes from the view
+(`account_customer_table` unions the payments with `total_sales`), which is why saving an invoice never
+reaches the period lock there and is guarded at `TotalsSalesDao` instead. **`user_id` on a movement
+records who *entered* it**, so both inserts write it and neither update does — the customer's update used
+to, which meant the same edit restamped one payment and left the other alone. Who changed a row
+afterwards is `audit_log`'s answer, written by a trigger whether the application asks or not.
+
+A summary of a ledger comes in two forms and both are in the spec: `totalsSql()` reads the totals view,
+which has already summed everything there has ever been, and `totalsBetweenDatesSql()` sums one period
+itself — a total cannot be filtered after the fact. Both sides answer both now; the supplier screen used
+to take the period filter and drop it, and the customer's dated statement selected seven columns while
+its mapper read nine, so it failed in the mapper and the service logged it and returned an empty list.
+An unknown `information` value is refused by `TableName.requireById` with the value in the message,
+rather than reaching a caller as a bare `NullPointerException` from inside a row mapper.
+
+**Changing a column means changing the spec, and `DocumentDaoStatementsTest` will tell you.** It pins
+every statement of all eight DAOs character for character, and pins the array bound to each against the
+statement's parameter count. A repository merge that swaps two adjacent columns still produces valid
+SQL — it just saves the discount as a stock id — so the pinning is the only thing standing between that
+and a customer's database.
+
 ### Units
 
 An item is stocked in one **base unit** and may be bought or sold in others — قطعة, كرتونة, لفة, متر,

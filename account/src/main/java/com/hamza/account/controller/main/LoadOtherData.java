@@ -11,15 +11,15 @@ import com.hamza.account.model.base.BaseTotals;
 import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.service.NameService;
 
-public class LoadOtherData<T1 extends BasePurchasesAndSales, T2 extends BaseTotals, T3 extends BaseNames, T4 extends BaseAccount> extends LoadData {
+public class LoadOtherData<T3 extends BaseNames, T4 extends BaseAccount> extends LoadData {
 
-    protected DataInterface<T1, T2, T3, T4> dataInterface;
+    protected DataInterface<?, ?, T3, T4> dataInterface;
     protected NameAndAccountInterface<T3, T4> nameAndAccountInterface;
     protected AccountData<T4> accountData;
     protected NameService<T3> nameService;
     protected NameData<T3> nameData;
 
-    public LoadOtherData(DataInterface<T1, T2, T3, T4> dataInterface
+    public LoadOtherData(DataInterface<?, ?, T3, T4> dataInterface
             , DaoFactory daoFactory, DataPublisher dataPublisher) throws Exception {
         super(daoFactory, dataPublisher);
         this.dataInterface = dataInterface;

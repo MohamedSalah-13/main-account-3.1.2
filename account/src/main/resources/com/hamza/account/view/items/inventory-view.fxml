@@ -1,61 +1,138 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
+<?import java.lang.String?>
 <?import javafx.geometry.Insets?>
 <?import javafx.scene.control.Button?>
-<?import javafx.scene.control.ComboBox?>
+<?import javafx.scene.control.CheckBox?>
+<?import javafx.scene.control.ChoiceBox?>
 <?import javafx.scene.control.Label?>
 <?import javafx.scene.control.Pagination?>
-<?import javafx.scene.control.ScrollPane?>
+<?import javafx.scene.control.ProgressIndicator?>
 <?import javafx.scene.control.TextField?>
 <?import javafx.scene.layout.AnchorPane?>
 <?import javafx.scene.layout.BorderPane?>
 <?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Region?>
 <?import javafx.scene.layout.VBox?>
 <?import javafx.scene.text.Text?>
 
-<AnchorPane styleClass="app-root" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1">
+<!-- fx:id on the root is what the screen's event-bus subscriptions are tied to:
+     Subscriptions.disposeWith closes them when this node leaves the scene graph. -->
+<AnchorPane fx:id="root" styleClass="app-root" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1">
     <children>
         <BorderPane styleClass="app-container" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
-            <bottom>
-
-                <HBox alignment="CENTER_LEFT" spacing="14.0" styleClass="summary-bar" BorderPane.alignment="CENTER">
-                    <children>
-                        <Label styleClass="summary-label" text="إجمالي قيمة المخزون بسعر الشراء" />
-                        <Text fx:id="textSumPurchase" strokeType="OUTSIDE" strokeWidth="0.0" styleClass="summary-value" text="0.0" />
-
-                        <Label styleClass="summary-label" text="إجمالي قيمة المخزون بسعر البيع" />
-                        <Text fx:id="textSumSales" strokeType="OUTSIDE" strokeWidth="0.0" styleClass="summary-value" text="0.0" />
-                    </children>
-                </HBox>
-            </bottom>
-            <center>
-
-                <ScrollPane fitToHeight="true" fitToWidth="true" styleClass="items-scroll-pane" BorderPane.alignment="CENTER">
-                    <content>
-                        <VBox spacing="5.0">
-                            <children>
-
-                                <Pagination fx:id="pagination" styleClass="modern-pagination" VBox.vgrow="SOMETIMES" />
-                            </children>
-                        </VBox>
-                    </content>
-                </ScrollPane>
-            </center>
             <top>
-                <HBox alignment="CENTER_LEFT" spacing="5.0" styleClass="app-card" BorderPane.alignment="CENTER">
+                <VBox spacing="8.0" BorderPane.alignment="CENTER">
                     <children>
-                        <Label styleClass="form-label" text="المخزن" />
 
-                        <Label styleClass="form-label" text="بحث" />
-                        <TextField fx:id="textSearch" minWidth="200.0" promptText="بحث" />
-                        <Button fx:id="btnRefresh" mnemonicParsing="false" styleClass="neutral-button" text="تحديث" />
-                        <Button fx:id="btnPrint" mnemonicParsing="false" styleClass="primary-button" text="طباعة" />
+                        <!-- Toolbar -->
+                        <HBox alignment="CENTER_LEFT" spacing="8.0" styleClass="app-card">
+                            <children>
+                                <Label styleClass="form-label" text="بحث" />
+                                <TextField fx:id="textSearch" minWidth="220.0" promptText="اسم الصنف أو الباركود" />
+
+                                <Label styleClass="form-label" text="المجموعة" />
+                                <ChoiceBox fx:id="choiceGroup" minWidth="150.0" />
+
+                                <Label styleClass="form-label" text="حالة المخزون" />
+                                <ChoiceBox fx:id="choiceLevel" minWidth="130.0" />
+
+                                <CheckBox fx:id="checkInactive" mnemonicParsing="false" selected="true" text="إظهار الموقوفة" />
+
+                                <Button fx:id="btnClearFilters" mnemonicParsing="false" styleClass="neutral-button" text="مسح الفلاتر" />
+                                <ProgressIndicator fx:id="progress" maxHeight="18.0" maxWidth="18.0" visible="false" />
+
+                                <Region HBox.hgrow="ALWAYS" />
+
+                                <Button fx:id="btnRefresh" mnemonicParsing="false" styleClass="neutral-button" text="تحديث" />
+                                <Button fx:id="btnExcel" mnemonicParsing="false" styleClass="excel-button" text="Excel" />
+                                <Button fx:id="btnPrint" mnemonicParsing="false" styleClass="primary-button" text="طباعة" />
+                            </children>
+                            <padding>
+                                <Insets bottom="6.0" left="6.0" right="6.0" top="6.0" />
+                            </padding>
+                        </HBox>
+
+                        <!-- The totals. Every tile counts every item matching the filters
+                             above, not the page below - the old bar summed the fifty rows
+                             on screen and called the result "إجمالي قيمة المخزون". -->
+                        <HBox fx:id="kpiStrip" alignment="CENTER_LEFT" spacing="10.0">
+                            <children>
+                                <VBox HBox.hgrow="ALWAYS">
+                                    <styleClass>
+                                        <String fx:value="kpi-tile" />
+                                        <String fx:value="kpi-cost" />
+                                    </styleClass>
+                                    <children>
+                                        <Label styleClass="kpi-title" text="قيمة المخزون بسعر الشراء" />
+                                        <Text fx:id="textSumPurchase" strokeType="OUTSIDE" strokeWidth="0.0" styleClass="kpi-value" text="0.00" />
+                                        <Label fx:id="labelCostHint" styleClass="kpi-hint" text="التكلفة" />
+                                    </children>
+                                </VBox>
+
+                                <VBox HBox.hgrow="ALWAYS">
+                                    <styleClass>
+                                        <String fx:value="kpi-tile" />
+                                        <String fx:value="kpi-sale" />
+                                    </styleClass>
+                                    <children>
+                                        <Label styleClass="kpi-title" text="قيمة المخزون بسعر البيع" />
+                                        <Text fx:id="textSumSales" strokeType="OUTSIDE" strokeWidth="0.0" styleClass="kpi-value" text="0.00" />
+                                        <Label fx:id="labelExpectedProfit" styleClass="kpi-hint" text="الربح المتوقع 0.00" />
+                                    </children>
+                                </VBox>
+
+                                <VBox styleClass="kpi-tile" HBox.hgrow="ALWAYS">
+                                    <children>
+                                        <Label styleClass="kpi-title" text="عدد الأصناف" />
+                                        <Text fx:id="textItemCount" strokeType="OUTSIDE" strokeWidth="0.0" styleClass="kpi-value" text="0" />
+                                        <Label fx:id="labelTotalQuantity" styleClass="kpi-hint" text="إجمالي الكمية 0" />
+                                    </children>
+                                </VBox>
+
+                                <VBox fx:id="tileLowStock" HBox.hgrow="ALWAYS">
+                                    <styleClass>
+                                        <String fx:value="kpi-tile" />
+                                        <String fx:value="kpi-low" />
+                                    </styleClass>
+                                    <children>
+                                        <Label styleClass="kpi-title" text="تحت حد الطلب" />
+                                        <Text fx:id="textLowStock" strokeType="OUTSIDE" strokeWidth="0.0" styleClass="kpi-value" text="0" />
+                                        <Label fx:id="labelStockStates" styleClass="kpi-hint" text="منتهي 0 · سالب 0" />
+                                    </children>
+                                </VBox>
+                            </children>
+                        </HBox>
                     </children>
                     <padding>
-                        <Insets bottom="5.0" left="5.0" right="5.0" top="5.0" />
+                        <Insets bottom="4.0" left="6.0" right="6.0" top="6.0" />
+                    </padding>
+                </VBox>
+            </top>
+            <center>
+
+                <!-- The table goes straight in. It used to sit inside a ScrollPane, which
+                     gave a virtualised table its own scrollbars and stopped it taking the
+                     height of the screen. -->
+                <VBox spacing="5.0" BorderPane.alignment="CENTER">
+                    <children>
+                        <Pagination fx:id="pagination" styleClass="modern-pagination" VBox.vgrow="ALWAYS" />
+                    </children>
+                    <padding>
+                        <Insets left="6.0" right="6.0" />
+                    </padding>
+                </VBox>
+            </center>
+            <bottom>
+                <HBox alignment="CENTER_LEFT" spacing="10.0" BorderPane.alignment="CENTER">
+                    <children>
+                        <Label fx:id="labelStatus" styleClass="kpi-hint" text="" />
+                    </children>
+                    <padding>
+                        <Insets bottom="6.0" left="12.0" right="12.0" top="2.0" />
                     </padding>
                 </HBox>
-            </top>
+            </bottom>
         </BorderPane>
     </children>
 </AnchorPane>

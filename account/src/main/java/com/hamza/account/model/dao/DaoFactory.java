@@ -1,5 +1,9 @@
 package com.hamza.account.model.dao;
 
+import com.hamza.account.features.inventory.InventoryDao;
+import com.hamza.account.features.stockcount.StockCountDao;
+import com.hamza.account.period.PeriodLockDao;
+
 /**
  * Creates DAOs. It no longer holds a {@link java.sql.Connection}: each DAO call
  * borrows one from the pool for the length of that call, so there is nothing
@@ -36,6 +40,18 @@ public enum DaoFactory {
 
     public Items_StockDao getItemsStockDao() {
         return new Items_StockDao(this);
+    }
+
+    public InventoryDao inventoryDao() {
+        return new InventoryDao();
+    }
+
+    public StockCountDao stockCountDao() {
+        return new StockCountDao();
+    }
+
+    public PeriodLockDao periodLockDao() {
+        return new PeriodLockDao();
     }
 
     public MainGroupsDao getMainGroups() {

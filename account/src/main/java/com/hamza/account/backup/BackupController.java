@@ -1,7 +1,5 @@
 package com.hamza.account.backup;
 
-import lombok.extern.log4j.Log4j2;
-import com.hamza.account.controller.main.DataPublisher;
 import com.hamza.account.controller.main.LoadDataAndList;
 import javafx.application.Platform;
 import javafx.concurrent.Task;
@@ -13,6 +11,7 @@ import javafx.scene.control.TextField;
 import javafx.scene.layout.HBox;
 import javafx.stage.DirectoryChooser;
 import javafx.stage.FileChooser;
+import lombok.extern.log4j.Log4j2;
 
 import java.awt.*;
 import java.io.File;
@@ -35,12 +34,9 @@ public class BackupController {
     @FXML
     private HBox progressBox;
     @FXML
-    private ProgressIndicator progressIndicator;
-    @FXML
     private Label progressLabel, statusLabel;
 
 
-    private DataPublisher dataPublisher;
     private BackupService backupService;
     private Preferences prefs;
 //    private ScheduledExecutorService scheduler;
@@ -73,13 +69,12 @@ public class BackupController {
 
     // هذه الدالة تُستدعى من التطبيق الرئيسي لضبط بيانات الاتصال
     public void initConnection(String dbHost, String dbPort, String dbName,
-                               String dbUser, String dbPassword,DataPublisher dataPublisher) {
+                               String dbUser, String dbPassword) {
         this.dbHost = dbHost;
         this.dbPort = dbPort;
         this.dbName = dbName;
         this.dbUser = dbUser;
         this.dbPassword = dbPassword;
-        this.dataPublisher = dataPublisher;
         updateBackupService();
     }
 

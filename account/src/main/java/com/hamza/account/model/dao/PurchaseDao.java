@@ -4,9 +4,9 @@ import com.hamza.account.model.domain.ItemsModel;
 import com.hamza.account.model.domain.Purchase;
 import com.hamza.account.model.domain.Suppliers;
 import com.hamza.account.model.domain.UnitsModel;
+import com.hamza.account.document.DocumentTableSpec;
 import com.hamza.controlsfx.database.AbstractDao;
 import com.hamza.controlsfx.database.DaoException;
-import com.hamza.controlsfx.database.SqlStatements;
 import lombok.extern.log4j.Log4j2;
 
 import java.sql.ResultSet;
@@ -18,12 +18,15 @@ import static com.hamza.controlsfx.util.NumberUtils.roundToTwoDecimalPlaces;
 @Log4j2
 public class PurchaseDao extends AbstractDao<Purchase> {
 
-    public static final String TABLE_NAME = "purchase";
-    public static final String INVOICE_NUMBER = "invoice_number";
+    /** Which document these lines belong to, and every statement over them. */
+    static final DocumentTableSpec SPEC = DocumentTableSpec.PURCHASE;
+
+    public static final String TABLE_NAME = SPEC.lineTable();
+    public static final String INVOICE_NUMBER = DocumentTableSpec.LINE_DOCUMENT;
     private final DaoFactory daoFactory;
-    private final String TABLE_VIEW = "purchase_names_table";
-    private final String ID = "id";
-    private final String NUM = "num";
+    private final String TABLE_VIEW = SPEC.lineView();
+    private final String ID = DocumentTableSpec.LINE_KEY;
+    private final String NUM = SPEC.lineItem();
     private final String TYPE = "type";
     private final String TYPE_VALUE = "type_value";
     private final String QUANTITY = "quantity";
@@ -39,17 +42,40 @@ public class PurchaseDao extends AbstractDao<Purchase> {
 
     @Override
     public List<Purchase> loadAll() throws DaoException {
-        return queryForObjects(SqlStatements.selectStatement(TABLE_VIEW), this::map);
+        return queryForObjects(selectAllSql(), this::map);
     }
 
     @Override
     public List<Purchase> loadAllById(int id) throws DaoException {
-        return queryForObjects(SqlStatements.selectStatementByColumnWhere(TABLE_VIEW, INVOICE_NUMBER), this::map, id);
+        return queryForObjects(selectByDocumentSql(), this::map, id);
     }
 
     @Override
     public int deleteById(int id) throws DaoException {
-        return executeUpdate(SqlStatements.deleteStatement(TABLE_NAME, ID), id);
+        return executeUpdate(deleteSql(), id);
+    }
+
+    // ---- the statements ---------------------------------------------------------
+    // Named so DocumentDaoStatementsTest can read them without a database.
+
+    String selectAllSql() {
+        return SPEC.lineSelectAllSql();
+    }
+
+    String selectByDocumentSql() {
+        return SPEC.lineSelectByDocumentSql();
+    }
+
+    String selectBetweenDocumentsSql() {
+        return SPEC.lineSelectBetweenDocumentsSql();
+    }
+
+    String selectByItemSql() {
+        return SPEC.lineSelectByItemSql();
+    }
+
+    String deleteSql() {
+        return SPEC.lineDeleteSql();
     }
 
     @Override
@@ -99,11 +125,19 @@ public class PurchaseDao extends AbstractDao<Purchase> {
         return purchase;
     }
 
+    /**
+     * The line insert, named so {@code DocumentDaoStatementsTest} can read it without a
+     * database. A purchase line carries no profit columns - the four the sales line
+     * writes have no meaning on the buying side.
+     */
+    String insertListSql() {
+        return SPEC.lineInsertSql();
+    }
+
     @Override
     public int insertList(List<Purchase> list) throws DaoException {
         try {
-            String query = SqlStatements.insertStatement(TABLE_NAME, INVOICE_NUMBER, NUM
-                    , TYPE, QUANTITY, PRICE, DISCOUNT, TYPE_VALUE, EXPIRATION_DATE);
+            String query = insertListSql();
             return executeUpdateListWithException(list, query, (statement, purchase) -> {
                 try {
                     setData(statement, getData(purchase));
@@ -117,13 +151,11 @@ public class PurchaseDao extends AbstractDao<Purchase> {
     }
 
     public List<Purchase> loadBetweenTwoInvoiceNumber(int first, int last) throws DaoException {
-        String query = SqlStatements.selectStatement(TABLE_VIEW) + " WHERE " + INVOICE_NUMBER + " BETWEEN ? AND ?";
-        return queryForObjects(query, this::map, first, last);
+        return queryForObjects(selectBetweenDocumentsSql(), this::map, first, last);
     }
 
     public List<Purchase> findByNumItem(int numItem) throws DaoException {
-        String query = SqlStatements.selectStatement(TABLE_VIEW).concat(" WHERE ").concat(NUM).concat(" = ?");
-        return queryForObjects(query, this::map, numItem);
+        return queryForObjects(selectByItemSql(), this::map, numItem);
     }
 
 }

@@ -4,10 +4,6 @@ import com.hamza.account.config.Image_Setting;
 import com.hamza.account.controller.invoice.BuyController2;
 import com.hamza.account.controller.main.DataPublisher;
 import com.hamza.account.interfaces.api.DataInterface;
-import com.hamza.account.model.base.BaseAccount;
-import com.hamza.account.model.base.BaseNames;
-import com.hamza.account.model.base.BasePurchasesAndSales;
-import com.hamza.account.model.base.BaseTotals;
 import javafx.application.Application;
 import javafx.scene.Scene;
 import javafx.scene.layout.Pane;
@@ -18,17 +14,17 @@ import java.util.HashMap;
 import java.util.Map;
 
 @Getter
-public class BuyApplication<T1 extends BasePurchasesAndSales, T2 extends BaseTotals, T3 extends BaseNames, T4 extends BaseAccount> extends Application {
+public class BuyApplication extends Application {
 
     // قاموس لتخزين الـ Stages المفتوحة: المفتاح هو رقم الفاتورة والقيمة هي الـ Stage
     private static final Map<Integer, Stage> openInvoices = new HashMap<>();
 
     private final Pane pane;
-    private final BuyController2<T1, T2, T3, T4> controller;
+    private final BuyController2<?, ?, ?, ?> controller;
     private final int numInvoiceUpdate;
     private String title = "Buy";
 
-    public BuyApplication(DataInterface<T1, T2, T3, T4> dataInterface, DataPublisher dataPublisher
+    public BuyApplication(DataInterface<?, ?, ?, ?> dataInterface, DataPublisher dataPublisher
             , int numInvoiceUpdate) throws Exception {
         controller = new BuyController2<>(dataInterface, dataPublisher, numInvoiceUpdate);
         pane = controller.pane();

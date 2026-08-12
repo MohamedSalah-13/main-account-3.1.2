@@ -33,7 +33,7 @@ import com.hamza.account.table.TableSetting;
 import com.hamza.account.type.DiscountType;
 import com.hamza.account.type.InvoiceType;
 import com.hamza.account.type.ProcessType;
-import com.hamza.account.type.UserPermissionType;
+import com.hamza.account.document.DocumentType;
 import com.hamza.account.view.AddItemApplication;
 import com.hamza.account.view.LogApplication;
 import com.hamza.account.view.SearchItemsApplication;
@@ -372,8 +372,7 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
 
     private void openSearchItems() {
         try {
-            SearchItemsApplication<T1, T2, T3, T4> itemsApplication
-                    = new SearchItemsApplication<>(dataInterface);
+            SearchItemsApplication<T1> itemsApplication = new SearchItemsApplication<>(dataInterface);
 
             itemsApplication.start(new Stage());
             itemsApplication.getSearchItems().selectedItemProperty().addListener((observableValue, t1s, t1) -> {
@@ -641,9 +640,10 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
      * invoice.
      * <p>
      * Sales only, and not sales returns: a return puts stock back, so a low balance
-     * there is not something to warn about. {@code showDataForCustomer()} is true for
-     * both, which is why the permission type is used to tell them apart - it is the
-     * one thing that actually differs between {@code DesignCustom} and
+     * there is not something to warn about. The screen says which of the four documents
+     * it is writing, so the question is asked directly - it used to be answered by
+     * comparing the screen's permission against {@code SALES_SHOW}, because a permission
+     * was the one field that differed between {@code DesignCustom} and
      * {@code DesignCustomReturn}.
      * <p>
      * The balance is read after the row is in the table, so the quantity just added
@@ -651,7 +651,7 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
      * the sale leaves behind.
      */
     private void warnIfStockIsLow(ItemsModel item) {
-        if (item == null || dataInterface.designInterface().show() != UserPermissionType.SALES_SHOW) {
+        if (item == null || dataInterface.designInterface().documentType() != DocumentType.SALES) {
             return;
         }
         try {

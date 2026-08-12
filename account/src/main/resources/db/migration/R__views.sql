@@ -169,23 +169,50 @@ WITH purchase_agg AS (SELECT stock_id, num AS item_id,
                            GROUP BY stock_from, item_id),
      transfer_to_agg AS (SELECT stock_to AS stock_id, item_id, SUM(quantity) AS qty
                          FROM stock_transfer_view
-                         GROUP BY stock_to, item_id)
+                         GROUP BY stock_to, item_id),
+     -- A posted stock count moves the balance by the difference the counter found:
+     -- what was on the shelf, less what the system said at the moment the line was
+     -- written. Drafts are excluded, so counting in progress moves nothing.
+     -- counted_qty is in the unit that was counted, so it is scaled by the factor the
+     -- line stored, exactly as an invoice line is.
+     adjustment_agg AS (SELECT sc.stock_id,
+                               scl.item_id,
+                               SUM(scl.counted_qty * scl.type_value - scl.system_qty) AS qty
+                        FROM stock_count_lines scl
+                                 JOIN stock_count sc ON sc.id = scl.count_id
+                        WHERE sc.status = 'POSTED'
+                        GROUP BY sc.stock_id, scl.item_id)
+-- The opening balance comes from items, not from items_stock.
+--
+-- It was stored in both: ItemsDao.insert writes the two together, and ItemsDao.update
+-- writes only items.first_balance - Items_StockDao has no update method at all. So the
+-- moment anyone edited an item's opening balance the two copies parted company, and
+-- since every screen reads items.first_balance (SELECT * over items joined to this
+-- view returns the items column, being the first of that name) while mini_quantity_view
+-- reads this one, the low-stock alert was judging a balance no screen ever showed.
+--
+-- Reading items.first_balance here makes the one number every screen already uses the
+-- only one there is. items_stock.first_balance stays in the schema - migrations that
+-- have shipped are not edited - but nothing reads it now.
 SELECT ist.item_id,
        ist.stock_id,
-       ist.first_balance,
+       i.first_balance,
        COALESCE(pa.qty,   0) AS quantityPurchase,
        COALESCE(sa.qty,   0) AS quantitySales,
        COALESCE(pra.qty,  0) AS quantityPurchaseRe,
        COALESCE(sra.qty,  0) AS quantitySalesRe,
        COALESCE(tfa.qty,  0) AS fromStock,
-       COALESCE(tta.qty,  0) AS toStock
+       COALESCE(tta.qty,  0) AS toStock,
+       COALESCE(ada.qty,  0) AS adjustment
 FROM items_stock ist
+         JOIN items i ON i.id = ist.item_id
          LEFT JOIN purchase_agg     pa  ON pa.stock_id  = ist.stock_id AND pa.item_id  = ist.item_id
          LEFT JOIN sales_agg        sa  ON sa.stock_id  = ist.stock_id AND sa.item_id  = ist.item_id
          LEFT JOIN purchase_re_agg  pra ON pra.stock_id = ist.stock_id AND pra.item_id = ist.item_id
          LEFT JOIN sales_re_agg     sra ON sra.stock_id = ist.stock_id AND sra.item_id = ist.item_id
          LEFT JOIN transfer_from_agg tfa ON tfa.stock_id = ist.stock_id AND tfa.item_id = ist.item_id
-         LEFT JOIN transfer_to_agg   tta ON tta.stock_id = ist.stock_id AND tta.item_id = ist.item_id;
+         LEFT JOIN transfer_to_agg   tta ON tta.stock_id = ist.stock_id AND tta.item_id = ist.item_id
+         LEFT JOIN adjustment_agg    ada ON ada.stock_id = ist.stock_id AND ada.item_id = ist.item_id;
 
 -- --------------------------------------total_sales_names_table------------------------------------
 
@@ -387,18 +414,18 @@ ORDER BY created_at;
 
 DROP VIEW IF EXISTS account_suppliers_table;
 CREATE VIEW account_suppliers_table AS
-SELECT 0                                      AS account_num,
-       c.id                                   AS account_code,
-       DATE_FORMAT(c.date_insert, '%Y-%m-%d') AS account_date,
-       c.first_balance                        AS purchase,
-       0                                      AS discount,
-       0                                      AS paid,
-       'رصيد اول'                             AS notes,
-       1                                      AS information,
-       0                                      AS type,
-       c.date_insert                          AS date_insert,
-       0                                      AS treasury_id,
-       0                                      AS numberInv
+SELECT 0                                     AS account_num,
+       c.id                                  AS account_code,
+       DATE_FORMAT(c.created_at, '%Y-%m-%d') AS account_date,
+       c.first_balance                       AS purchase,
+       0                                     AS discount,
+       0                                     AS paid,
+       'رصيد اول'                            AS notes,
+       1                                     AS information,
+       0                                     AS type,
+       c.created_at                          AS created_at,
+       0                                     AS treasury_id,
+       0                                     AS numberInv
 FROM suppliers c
 UNION ALL
 SELECT account_num,
@@ -410,7 +437,7 @@ SELECT account_num,
        notes,
        2        AS information,
        0        AS type,
-       date_insert,
+       created_at,
        treasury_id,
        numberInv
 FROM suppliers_accounts
@@ -442,7 +469,7 @@ SELECT tbr.id,
        tbr.treasury_id,
        0                AS numberInv
 FROM total_buy_re tbr
-ORDER BY date_insert;
+ORDER BY created_at;
 
 -- --------------------------------------card_item_view---------------------------------------------
 
@@ -576,7 +603,7 @@ FROM expenses_details ed
 DROP VIEW IF EXISTS mini_quantity_view;
 CREATE VIEW mini_quantity_view AS
 WITH calculated_balance AS (SELECT item_id,
-                                   SUM((first_balance + quantityPurchase + quantitySalesRe + toStock) -
+                                   SUM((first_balance + quantityPurchase + quantitySalesRe + toStock + adjustment) -
                                        (quantitySales + quantityPurchaseRe + fromStock)) AS balance
                             FROM quantity_items_table
                             GROUP BY item_id)
@@ -698,7 +725,7 @@ WITH cte_union_data AS (SELECT invoice_number AS id_no,
                                0,
                                paid,
                                treasury_id,
-                               date_insert,
+                               created_at AS date_insert,
                                user_id,
                                'حسابات الموردين'
                         FROM suppliers_accounts
@@ -893,7 +920,7 @@ WITH computed_profit AS (SELECT ts.invoice_number,
                                          0                    AS discount,
                                          0                    AS paid_up,
                                          treasury_id,
-                                         date_insert,
+                                         created_at           AS date_insert,
                                          user_id,
                                          'suppliers_accounts' AS table_name,
                                          0                    AS profit

@@ -80,6 +80,16 @@ public final class WipeCatalog {
      * their own: multi-warehouse support was removed, so nothing writes them any
      * more, but old rows still point at items and would refuse the delete.
      */
+    /**
+     * The physical counts (V8). Its lines point at {@code units}, which the items
+     * target empties, so items requires this one and the lines go first.
+     * <p>
+     * Both tables are named although {@code count_id} cascades, for the same reason
+     * the invoice targets name their lines: the plan reads as what it erases.
+     */
+    public static final WipeTarget STOCK_COUNTS = WipeTarget.of("stockCounts", "الجرد الفعلي",
+            List.of(WipeTable.of("stock_count_lines"), WipeTable.of("stock_count")));
+
     public static final WipeTarget ITEMS = WipeTarget.of("items", "الأصناف",
             List.of(WipeTable.of("item_barcodes"),
                     WipeTable.of("items_package"),
@@ -91,7 +101,7 @@ public final class WipeCatalog {
                     WipeTable.of("items"),
                     WipeTable.of("units",
                             "INSERT INTO units(unit_id, unit_name) VALUES (1, 'قطعة'), (2, 'كرتونة')")),
-            "sales", "salesReturns", "purchases", "purchaseReturns");
+            "sales", "salesReturns", "purchases", "purchaseReturns", "stockCounts");
 
     public static final WipeTarget SUB_GROUPS = WipeTarget.of("subGroups", "المجموعات الفرعية",
             List.of(WipeTable.of("sub_group",
@@ -153,7 +163,7 @@ public final class WipeCatalog {
     public static final List<WipeTarget> TARGETS = List.of(
             SALES_RETURNS, SALES, PURCHASE_RETURNS, PURCHASES,
             CUSTOMER_ACCOUNTS, SUPPLIER_ACCOUNTS, CUSTOMERS, SUPPLIERS,
-            ITEMS, SUB_GROUPS, MAIN_GROUPS,
+            STOCK_COUNTS, ITEMS, SUB_GROUPS, MAIN_GROUPS,
             EXPENSES, EMPLOYEES, PROCESSES, USERS);
 
     private static final Map<String, WipeTarget> BY_ID =

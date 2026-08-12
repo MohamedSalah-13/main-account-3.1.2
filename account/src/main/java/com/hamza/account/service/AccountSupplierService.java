@@ -2,6 +2,8 @@ package com.hamza.account.service;
 
 import com.hamza.account.interfaces.impl_account.AccountSuppliers;
 import com.hamza.account.model.dao.DaoFactory;
+import com.hamza.account.period.PeriodLock;
+import com.hamza.account.period.PeriodLockRegistry;
 import com.hamza.account.perm.PermissionGuard;
 import com.hamza.account.type.UserPermissionType;
 import com.hamza.account.model.dao.SupplierAccountDao;
@@ -16,8 +18,13 @@ import java.util.List;
 public record AccountSupplierService(DaoFactory daoFactory) {
 
     public List<SupplierAccount> accountTotalList() {
+        return accountTotalList(null, null);
+    }
+
+    /** The same summary over one period; null dates mean the whole history. */
+    public List<SupplierAccount> accountTotalList(String dateFrom, String dateTo) {
         try {
-            return accountDao().getTotalsAccount();
+            return accountDao().getTotalsAccount(dateFrom, dateTo);
         } catch (DaoException e) {
             log.error(e.getMessage(), e);
         }
@@ -28,8 +35,10 @@ public record AccountSupplierService(DaoFactory daoFactory) {
         return AccountService.sumAccountForId(daoFactory.suppliersAccountDao().loadAll(), new AccountSuppliers(daoFactory));
     }
 
+    /** Refused inside a closed period, for the same reason as a customer payment. */
     public int delete(int id) throws DaoException {
         PermissionGuard.require(UserPermissionType.SUPPLIERS_ACCOUNT_DELETE);
+        PeriodLock.require(PeriodLockRegistry.SUPPLIER_ACCOUNT, id);
         return accountDao().deleteById(id);
     }
 

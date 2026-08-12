@@ -5,6 +5,8 @@ import com.hamza.account.model.domain.Expenses;
 import com.hamza.account.model.domain.ExpensesDetails;
 import com.hamza.account.model.domain.Treasury;
 import com.hamza.controlsfx.database.AbstractDao;
+import com.hamza.account.period.PeriodLock;
+import com.hamza.account.period.PeriodLockRegistry;
 import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.database.SqlStatements;
 
@@ -60,6 +62,9 @@ public class ExpensesDetailsDao extends AbstractDao<ExpensesDetails> {
 
     @Override
     public int insert(ExpensesDetails expensesDetails) throws DaoException {
+        // An expense is dated and its month has been reported. The model carries a
+        // LocalDate here rather than a string, so there is nothing to parse.
+        PeriodLock.require(expensesDetails.getLocalDate(), PeriodLockRegistry.EXPENSE.label());
         String query = SqlStatements.insertStatement(TABLE_NAME, TYPE_CODE
                 , DATE, AMOUNT, NOTES
                 , EMP_ID, TREASURY_ID, USER_ID);
@@ -68,6 +73,8 @@ public class ExpensesDetailsDao extends AbstractDao<ExpensesDetails> {
 
     @Override
     public int update(ExpensesDetails expensesDetails) throws DaoException {
+        PeriodLock.require(PeriodLockRegistry.EXPENSE, expensesDetails.getId());
+        PeriodLock.require(expensesDetails.getLocalDate(), PeriodLockRegistry.EXPENSE.label());
         Object[] object = new Object[]{expensesDetails.getExpenses().getId()
                 , expensesDetails.getLocalDate().toString()
                 , expensesDetails.getAmount()
