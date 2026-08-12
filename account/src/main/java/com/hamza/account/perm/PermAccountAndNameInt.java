@@ -1,18 +1,21 @@
 package com.hamza.account.perm;
 
-import com.hamza.account.type.UserPermissionType;
+import com.hamza.account.authorization.AppPermissions;
+import com.hamza.account.authorization.PermissionKey;
 
 public interface PermAccountAndNameInt {
 
-    UserPermissionType showAccounts();
+    PermissionKey showAccounts();
 
-    UserPermissionType updateAccounts();
+    PermissionKey updateAccounts();
 
-    UserPermissionType deleteAccounts();
+    PermissionKey deleteAccounts();
 
-    UserPermissionType showNames();
+    PermissionKey showNames();
 
-    UserPermissionType updateNames();
+    PermissionKey createNames();
 
-    UserPermissionType deleteNames();
+    PermissionKey updateNames();
+
+    PermissionKey deleteNames();
 }

@@ -4,8 +4,9 @@ import com.hamza.account.controller.others.ServiceRegistry;
 import com.hamza.account.openFxml.FxmlPath;
 import com.hamza.account.period.AccountingLock;
 import com.hamza.account.period.PeriodLockService;
-import com.hamza.account.perm.PermissionGuard;
-import com.hamza.account.type.UserPermissionType;
+import com.hamza.account.authorization.AuthorizationGuard;
+import com.hamza.account.authorization.AppPermissions;
+import com.hamza.account.authorization.PermissionKey;
 import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.database.DaoException;
 import javafx.beans.property.ReadOnlyObjectWrapper;
@@ -63,7 +64,7 @@ public class SettingTabPeriodLockController {
         buildTable();
         buildActions();
 
-        boolean mayManage = PermissionGuard.isGranted(UserPermissionType.ACCOUNTING_LOCK_MANAGE);
+        boolean mayManage = AuthorizationGuard.isGranted(AppPermissions.ACCOUNTING_LOCK_MANAGE);
         datePicker.setDisable(!mayManage);
         textNotes.setDisable(!mayManage);
         btnClose.setDisable(!mayManage);

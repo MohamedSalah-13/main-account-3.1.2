@@ -159,10 +159,6 @@ public enum DaoFactory {
         return new TreasuryBalanceDao();
     }
 
-    public UserPermissionDao userPermissionDao() {
-        return new UserPermissionDao();
-    }
-
     public AreaDao areaDao() {
         return new AreaDao();
     }

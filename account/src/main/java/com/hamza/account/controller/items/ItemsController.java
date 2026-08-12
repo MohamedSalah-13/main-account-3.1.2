@@ -17,7 +17,9 @@ import com.hamza.account.openFxml.FxmlPath;
 import com.hamza.account.service.*;
 import com.hamza.account.table.EditCell;
 import com.hamza.account.table.TableSetting;
-import com.hamza.account.type.UserPermissionType;
+import com.hamza.account.authorization.AppPermissions;
+import com.hamza.account.authorization.AuthorizationGuard;
+import com.hamza.account.authorization.PermissionKey;
 import com.hamza.account.view.AddItemApplication;
 import com.hamza.account.view.CardApplication;
 import com.hamza.account.view.ConvertItemsGroup;
@@ -122,9 +124,9 @@ public class ItemsController extends LoadData {
 
     private void permissionButtons() {
         var permissionDisableService = new DisableButtons.PermissionDisableService();
-        permissionDisableService.applyPermissionBasedDisable(btnNew::setDisable, UserPermissionType.ITEMS_SHOW);
-        permissionDisableService.applyPermissionBasedDisable(btnUpdate::setDisable, UserPermissionType.ITEMS_UPDATE);
-        permissionDisableService.applyPermissionBasedDisable(btnDelete::setDisable, UserPermissionType.ITEMS_DELETE);
+        permissionDisableService.applyPermissionBasedDisable(btnNew::setDisable, AppPermissions.ITEMS_CREATE);
+        permissionDisableService.applyPermissionBasedDisable(btnUpdate::setDisable, AppPermissions.ITEMS_UPDATE);
+        permissionDisableService.applyPermissionBasedDisable(btnDelete::setDisable, AppPermissions.ITEMS_DELETE);
     }
 
     private List<String> getMainGroupsNames() {
@@ -165,14 +167,10 @@ public class ItemsController extends LoadData {
             logErrors(e);
         }
 
-        // hide data table if not admin
-        var b = LogApplication.usersVo.getId() == 1;
-        if (b) {
-            // show table menu
-            TableSetting.tableMenuSetting(getClass(), tableView);
-        }
-
-        tableView.getColumns().get(5).setVisible(b);
+        // The units column is inserted at index 3, so the annotated buy-price
+        // column moves from index 3 to index 4.
+        tableView.getColumns().get(4).setVisible(
+                AuthorizationGuard.isGranted(AppPermissions.SHOW_COLUMN_BUY_PRICE));
 
     }
 

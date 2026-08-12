@@ -3,8 +3,9 @@ package com.hamza.account.service;
 import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.period.PeriodLock;
 import com.hamza.account.period.PeriodLockRegistry;
-import com.hamza.account.perm.PermissionGuard;
-import com.hamza.account.type.UserPermissionType;
+import com.hamza.account.authorization.AuthorizationGuard;
+import com.hamza.account.authorization.AppPermissions;
+import com.hamza.account.authorization.PermissionKey;
 import com.hamza.account.model.dao.TotalsBuyDao;
 import com.hamza.account.model.domain.Total_buy;
 import com.hamza.controlsfx.database.DaoException;
@@ -45,9 +46,13 @@ public record TotalBuyService(DaoFactory daoFactory) {
 
     /** Refused whole if any of them falls inside a closed period - see TotalSalesService. */
     public int deleteMultiData(Integer[] ids) throws DaoException {
-        PermissionGuard.require(UserPermissionType.PURCHASE_DELETE);
+        AuthorizationGuard.require(AppPermissions.PURCHASE_DELETE);
         PeriodLock.require(PeriodLockRegistry.PURCHASE_INVOICE, List.of(ids));
         return getTotalsBuyDao().deleteInvoicesInRange(ids);
+    }
+
+    public int deleteById(int id) throws DaoException {
+        return deleteMultiData(new Integer[]{id});
     }
 
     public List<Total_buy> getTotalBuyBySupId(int customer_id) throws DaoException {

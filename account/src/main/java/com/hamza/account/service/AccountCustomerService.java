@@ -5,8 +5,9 @@ import com.hamza.account.model.dao.CustomerAccountDao;
 import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.period.PeriodLock;
 import com.hamza.account.period.PeriodLockRegistry;
-import com.hamza.account.perm.PermissionGuard;
-import com.hamza.account.type.UserPermissionType;
+import com.hamza.account.authorization.AuthorizationGuard;
+import com.hamza.account.authorization.AppPermissions;
+import com.hamza.account.authorization.PermissionKey;
 import com.hamza.account.model.domain.CustomerAccount;
 import com.hamza.controlsfx.database.DaoException;
 import lombok.extern.log4j.Log4j2;
@@ -36,13 +37,19 @@ public record AccountCustomerService(DaoFactory daoFactory) {
      * period - deleting one changes what the customer owed on every later day.
      */
     public int delete(int id) throws DaoException {
-        PermissionGuard.require(UserPermissionType.CUSTOMER_ACCOUNT_DELETE);
+        AuthorizationGuard.require(AppPermissions.CUSTOMER_ACCOUNT_DELETE);
         PeriodLock.require(PeriodLockRegistry.CUSTOMER_ACCOUNT, id);
         return daoFactory.customerAccountDao().deleteById(id);
     }
 
     public CustomerAccountDao accountDao() {
         return daoFactory.customerAccountDao();
+    }
+
+    public int save(CustomerAccount account) throws DaoException {
+        AuthorizationGuard.require(account.getId() == 0
+                ? AppPermissions.CUSTOMER_ACCOUNT_CREATE : AppPermissions.CUSTOMER_ACCOUNT_UPDATE);
+        return account.getId() == 0 ? accountDao().insert(account) : accountDao().update(account);
     }
 
     public double sumTotal() {

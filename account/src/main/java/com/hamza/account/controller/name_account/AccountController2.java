@@ -44,6 +44,8 @@ import javafx.scene.layout.VBox;
 import javafx.scene.text.Text;
 import lombok.extern.log4j.Log4j2;
 
+import static com.hamza.controlsfx.util.NumberUtils.roundToTwoDecimalPlaces;
+
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
@@ -281,9 +283,11 @@ public class AccountController2<T3 extends BaseNames, T4 extends BaseAccount>
     }
 
     private void sumTable() {
-        double purchase = Math.round(tableView.getItems().stream().mapToDouble(BaseAccount::getPurchase).sum());
-        double paid = Math.round(tableView.getItems().stream().mapToDouble(BaseAccount::getPaid).sum());
-        double rest = Math.round(purchase - paid);
+        double purchase = roundToTwoDecimalPlaces(
+                tableView.getItems().stream().mapToDouble(BaseAccount::getPurchase).sum());
+        double paid = roundToTwoDecimalPlaces(
+                tableView.getItems().stream().mapToDouble(BaseAccount::getPaid).sum());
+        double rest = roundToTwoDecimalPlaces(purchase - paid);
 
         textTotalPurchase.setText(String.valueOf(purchase));
         textTotalPaid.setText(String.valueOf(paid));

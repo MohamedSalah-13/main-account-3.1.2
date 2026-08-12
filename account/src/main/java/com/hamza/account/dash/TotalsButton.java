@@ -12,7 +12,8 @@ import com.hamza.account.model.base.BaseTotals;
 import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.service.EmployeeService;
 import com.hamza.account.service.TotalsService;
-import com.hamza.account.type.UserPermissionType;
+import com.hamza.account.authorization.AppPermissions;
+import com.hamza.account.authorization.PermissionKey;
 import com.hamza.account.view.BuyApplication;
 import com.hamza.account.view.PosView;
 import com.hamza.account.view.TotalsApplication;
@@ -38,7 +39,7 @@ public class TotalsButton<T2 extends BaseTotals, T3 extends BaseNames, T4 extend
     public ButtonWithPerm totals() {
         return new ButtonWithPerm() {
             @Override
-            public UserPermissionType getPermissionType() {
+            public PermissionKey getPermissionType() {
                 return dataInterface.designInterface().show_totals();
             }
 
@@ -80,7 +81,7 @@ public class TotalsButton<T2 extends BaseTotals, T3 extends BaseNames, T4 extend
 
         return new ButtonWithPerm() {
             @Override
-            public UserPermissionType getPermissionType() {
+            public PermissionKey getPermissionType() {
                 return dataInterface.designInterface().show();
             }
 
@@ -133,7 +134,7 @@ public class TotalsButton<T2 extends BaseTotals, T3 extends BaseNames, T4 extend
 
         return new ButtonWithPerm() {
             @Override
-            public UserPermissionType getPermissionType() {
+            public PermissionKey getPermissionType() {
                 return dataInterface.designInterface().show();
             }
 

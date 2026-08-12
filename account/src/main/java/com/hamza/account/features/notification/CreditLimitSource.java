@@ -6,7 +6,8 @@ import com.hamza.account.controller.others.ServiceRegistry;
 import com.hamza.account.model.domain.CustomerReceivable;
 import com.hamza.account.model.domain.Customers;
 import com.hamza.account.service.CustomerService;
-import com.hamza.account.type.UserPermissionType;
+import com.hamza.account.authorization.AppPermissions;
+import com.hamza.account.authorization.PermissionKey;
 import com.hamza.account.view.OpenApplication;
 import com.hamza.controlsfx.interfaceData.AppSettingInterface;
 import com.hamza.controlsfx.interfaceData.TableViewShowDataInt;
@@ -70,7 +71,7 @@ public class CreditLimitSource implements NotificationSource {
 
     @Override
     public boolean enabled() {
-        return new DisableButtons.PermissionDisableService().getABoolean(UserPermissionType.CUSTOMER_ACCOUNT_SHOW);
+        return new DisableButtons.PermissionDisableService().getABoolean(AppPermissions.CUSTOMER_ACCOUNT_SHOW);
     }
 
     @NotNull

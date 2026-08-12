@@ -29,6 +29,11 @@ public class SupplierAndAccount implements NameAndAccountInterface<Suppliers, Su
     }
 
     @Override
+    public int saveName(Suppliers name) throws DaoException {
+        return suppliersService.save(name);
+    }
+
+    @Override
     public List<Suppliers> nameList() throws Exception {
         return suppliersService.getSuppliersList();
     }
@@ -36,6 +41,16 @@ public class SupplierAndAccount implements NameAndAccountInterface<Suppliers, Su
     @Override
     public DaoList<SupplierAccount> accountDao() {
         return accountSupplierService.accountDao();
+    }
+
+    @Override
+    public int saveAccount(SupplierAccount account) throws DaoException {
+        return accountSupplierService.save(account);
+    }
+
+    @Override
+    public int deleteAccount(int id) throws DaoException {
+        return accountSupplierService.delete(id);
     }
 
     @Override

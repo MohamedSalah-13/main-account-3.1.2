@@ -1,16 +1,16 @@
 package com.hamza.account.interfaces.impl_totalDesgin;
 
+import com.hamza.account.authorization.AppPermissions;
+import com.hamza.account.authorization.AuthorizationGuard;
 import com.hamza.account.interfaces.api.DataInterface;
 import com.hamza.account.interfaces.api.TotalDesignInterface;
 import com.hamza.account.interfaces.api.TotalsDataInterface;
 import com.hamza.account.interfaces.totals.TotalsSalesReturnData;
-import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.model.domain.CustomerAccount;
 import com.hamza.account.model.domain.Customers;
 import com.hamza.account.model.domain.Sales_Return;
 import com.hamza.account.model.domain.Total_Sales_Re;
 import com.hamza.account.service.TotalSalesReturnService;
-import com.hamza.account.view.LogApplication;
 import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.excel.WriteExcelInterface;
 import com.hamza.controlsfx.language.Setting_Language;
@@ -30,7 +30,6 @@ import static com.hamza.controlsfx.table.columnEdit.ColumnSetting.addColumn;
 @RequiredArgsConstructor
 public class TotalSalesReturnImplDesign implements TotalDesignInterface<Total_Sales_Re> {
     private final DataInterface<Sales_Return, Total_Sales_Re, Customers, CustomerAccount> dataInterface;
-    private final DaoFactory daoFactory;
     private final TotalSalesReturnService totalSalesReturnService;
 
     @Override
@@ -45,7 +44,7 @@ public class TotalSalesReturnImplDesign implements TotalDesignInterface<Total_Sa
         Callback<TableColumn.CellDataFeatures<Total_Sales_Re, String>, ObservableValue<String>> colDelegate = f -> f.getValue().getEmployeeObject().nameProperty();
         addColumn(tableView, Setting_Language.DELEGATE, tableView.getColumns().size(), colDelegate);
 
-        if (LogApplication.usersVo.getId() == 1) {
+        if (AuthorizationGuard.isGranted(AppPermissions.INVOICE_PROFIT_SHOW)) {
             Callback<TableColumn.CellDataFeatures<Total_Sales_Re, Double>, ObservableValue<Double>> totalProfit =
                     cellData -> new SimpleDoubleProperty(cellData.getValue().getTotal_profit()).asObject();
             addColumn(tableView, "ربح الفاتورة", tableView.getColumns().size(), totalProfit);
@@ -75,7 +74,7 @@ public class TotalSalesReturnImplDesign implements TotalDesignInterface<Total_Sa
 
     @Override
     public int deleteData(Total_Sales_Re totalSalesRe) throws DaoException {
-        return daoFactory.totalsSalesReturnDao().deleteById(Math.toIntExact(totalSalesRe.getId()));
+        return totalSalesReturnService.deleteById(Math.toIntExact(totalSalesRe.getId()));
     }
 
     @Override

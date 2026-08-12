@@ -1,5 +1,7 @@
 package com.hamza.account.controller.pos;
 
+import com.hamza.account.authorization.AuthorizedDataWriter;
+
 import com.hamza.account.config.DefaultStock;
 
 import com.hamza.account.config.Image_Setting;
@@ -28,7 +30,8 @@ import com.hamza.account.service.*;
 import com.hamza.account.session.ShiftContext;
 import com.hamza.account.table.TableOpen;
 import com.hamza.account.type.InvoiceType;
-import com.hamza.account.type.UserPermissionType;
+import com.hamza.account.authorization.AppPermissions;
+import com.hamza.account.authorization.PermissionKey;
 import com.hamza.account.view.LogApplication;
 import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.button.button_column.ButtonColumn;
@@ -195,8 +198,8 @@ public class PosController extends ButtonSetting {
 
     private void permissionButtons() {
         var permissionDisableService = new DisableButtons.PermissionDisableService();
-        permissionDisableService.applyPermissionBasedDisable(btnAddCustom::setDisable, UserPermissionType.CUSTOMER_SHOW);
-        permissionDisableService.applyPermissionBasedDisable(btnCustomers::setDisable, UserPermissionType.CUSTOMER_SHOW);
+        permissionDisableService.applyPermissionBasedDisable(btnAddCustom::setDisable, AppPermissions.CUSTOMER_SHOW);
+        permissionDisableService.applyPermissionBasedDisable(btnCustomers::setDisable, AppPermissions.CUSTOMER_SHOW);
     }
 
     private void otherSetting() {
@@ -689,7 +692,8 @@ public class PosController extends ButtonSetting {
                 totalSales.setUsers(LogApplication.usersVo);
                 totalSales.setSalesList(salesList);
 
-                int save = daoFactory.totalsSalesDao().insert(totalSales);
+                int save = AuthorizedDataWriter.insert(
+                        daoFactory.totalsSalesDao(), totalSales, AppPermissions.SALES_CREATE);
                 if (save == 1) {
                     AllAlerts.alertSave();
 
@@ -826,10 +830,7 @@ public class PosController extends ButtonSetting {
             customers.setUsers(new Users(1));
             customers.setArea(getAreas().stream().filter(area -> area.getArea_name().equals(comboArea.getSelectionModel().getSelectedItem())).findFirst().orElseThrow());
 
-            var insert = 0;
-            if (customerId > 0)
-                insert = customerService.nameDao().update(customers);
-            else insert = customerService.nameDao().insert(customers);
+            var insert = customerService.save(customers);
             if (insert == 1) {
                 AllAlerts.alertSave();
                 if (eventBus != null) eventBus.publish(new NameChanged(PartyKind.CUSTOMER));

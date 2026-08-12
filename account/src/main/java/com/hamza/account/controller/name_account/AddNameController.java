@@ -152,10 +152,10 @@ public class AddNameController<T3 extends BaseNames, T4 extends BaseAccount>
 
         if (id > 0) {
             nameData.setId(t3, id);
-            return interFace.update(t3);
+            return dataInterface.nameAndAccountInterface().saveName(t3);
         } else {
             nameData.setId(t3, 0);
-            return dataInterface.nameAndAccountInterface().nameDao().insert(t3);
+            return dataInterface.nameAndAccountInterface().saveName(t3);
         }
     }
 

@@ -9,7 +9,8 @@ import com.hamza.account.controller.users.AdminShiftsController;
 import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.openFxml.OpenFxmlApplication;
 import com.hamza.account.otherSetting.KeyCodeCombinationSetting;
-import com.hamza.account.type.UserPermissionType;
+import com.hamza.account.authorization.AppPermissions;
+import com.hamza.account.authorization.PermissionKey;
 import com.hamza.account.view.AboutApplication;
 import com.hamza.account.view.OpenApplication;
 import com.hamza.account.view.PassCheckView;
@@ -52,8 +53,8 @@ public class SettingButtons {
     public ButtonWithPerm setting() {
         return new ButtonWithPerm() {
             @Override
-            public UserPermissionType getPermissionType() {
-                return UserPermissionType.SETTING_SHOW;
+            public PermissionKey getPermissionType() {
+                return AppPermissions.SETTING_SHOW;
             }
 
             @Override
@@ -82,8 +83,8 @@ public class SettingButtons {
     public ButtonWithPerm home() {
         return new ButtonWithPerm() {
             @Override
-            public UserPermissionType getPermissionType() {
-                return UserPermissionType.SETTING_SHOW;
+            public PermissionKey getPermissionType() {
+                return AppPermissions.SETTING_SHOW;
             }
 
             @Override
@@ -121,8 +122,8 @@ public class SettingButtons {
     public ButtonWithPerm close() {
         return new ButtonWithPerm() {
             @Override
-            public UserPermissionType getPermissionType() {
-                return null;
+            public PermissionKey getPermissionType() {
+                return AppPermissions.PUBLIC_ACCESS;
             }
 
             @Override
@@ -147,8 +148,8 @@ public class SettingButtons {
     public ButtonWithPerm about() {
         return new ButtonWithPerm() {
             @Override
-            public UserPermissionType getPermissionType() {
-                return UserPermissionType.SETTING_SHOW;
+            public PermissionKey getPermissionType() {
+                return AppPermissions.SETTING_SHOW;
             }
 
             @Override
@@ -172,8 +173,8 @@ public class SettingButtons {
     public ButtonWithPerm backup() {
         return new ButtonWithPerm() {
             @Override
-            public UserPermissionType getPermissionType() {
-                return UserPermissionType.SETTING_SHOW;
+            public PermissionKey getPermissionType() {
+                return AppPermissions.SETTING_SHOW;
             }
 
             @Override
@@ -202,8 +203,8 @@ public class SettingButtons {
     public ButtonWithPerm deleteData() {
         return new ButtonWithPerm() {
             @Override
-            public UserPermissionType getPermissionType() {
-                return UserPermissionType.SETTING_SHOW;
+            public PermissionKey getPermissionType() {
+                return AppPermissions.SETTING_SHOW;
             }
 
             @Override
@@ -224,8 +225,8 @@ public class SettingButtons {
     public ButtonWithPerm adminShifts() {
         return new ButtonWithPerm() {
             @Override
-            public UserPermissionType getPermissionType() {
-                return null;
+            public PermissionKey getPermissionType() {
+                return AppPermissions.PUBLIC_ACCESS;
             }
 
             @Override

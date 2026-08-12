@@ -1,5 +1,7 @@
 package com.hamza.account.service;
 
+import com.hamza.account.authorization.AppPermissions;
+import com.hamza.account.authorization.AuthorizationGuard;
 import com.hamza.account.delete.DeleteRegistry;
 import com.hamza.account.delete.DeletionService;
 import com.hamza.account.model.dao.DaoFactory;
@@ -27,6 +29,16 @@ public record TreasuryService(DaoFactory daoFactory) {
 
     public Treasury getTreasuryById(int id) throws DaoException {
         return daoFactory.treasuryDao().getDataById(id);
+    }
+
+    public int insert(Treasury treasury) throws DaoException {
+        AuthorizationGuard.require(AppPermissions.TREASURY_UPDATE);
+        return daoFactory.treasuryDao().insert(treasury);
+    }
+
+    public int update(Treasury treasury) throws DaoException {
+        AuthorizationGuard.require(AppPermissions.TREASURY_UPDATE);
+        return daoFactory.treasuryDao().update(treasury);
     }
 
     public int delete(int id) throws DaoException {

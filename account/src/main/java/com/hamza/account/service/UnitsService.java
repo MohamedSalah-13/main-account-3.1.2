@@ -1,5 +1,8 @@
 package com.hamza.account.service;
 
+import com.hamza.account.authorization.AppPermissions;
+import com.hamza.account.authorization.AuthorizationGuard;
+
 import com.hamza.account.delete.DeleteOutcome;
 import com.hamza.account.delete.DeleteRegistry;
 import com.hamza.account.delete.DeletionService;
@@ -31,6 +34,7 @@ public record UnitsService(DaoFactory daoFactory) {
     }
 
     public int insert(String name, double value) throws DaoException {
+        AuthorizationGuard.require(AppPermissions.UNITS_CREATE);
         return daoFactory.unitsDao().insert(new UnitsModel(0, name, value));
 
     }
@@ -42,6 +46,7 @@ public record UnitsService(DaoFactory daoFactory) {
      * safe: invoice lines reference the unit by id and carry their own factor.
      */
     public int update(int id, String name, double value) throws DaoException {
+        AuthorizationGuard.require(AppPermissions.UNITS_UPDATE);
         return daoFactory.unitsDao().update(new UnitsModel(id, name, value));
     }
 

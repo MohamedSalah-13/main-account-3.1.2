@@ -1,5 +1,7 @@
 package com.hamza.account.controller.invoice;
 
+import com.hamza.account.authorization.AppPermissions;
+import com.hamza.account.authorization.AuthorizationGuard;
 import com.hamza.account.config.PropertiesName;
 import com.hamza.account.controller.main.DataPublisher;
 import com.hamza.account.controller.main.LoadOtherData;
@@ -14,7 +16,6 @@ import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.model.domain.ItemsModel;
 import com.hamza.account.openFxml.FxmlPath;
 import com.hamza.account.openFxml.OpenFxmlApplication;
-import com.hamza.account.view.LogApplication;
 import com.hamza.account.view.barcode.PrintBarcodeApp;
 import com.hamza.account.view.barcode.PrintBarcodeModel;
 import com.hamza.controlsfx.alert.AllAlerts;
@@ -136,7 +137,7 @@ public class ShowInvoiceController<T1 extends BasePurchasesAndSales, T2 extends 
 
         // show profit
 //        var b = dataInterface.designInterface().showDataForCustomer();
-        var b = LogApplication.usersVo.getId() == 1;
+        var b = AuthorizationGuard.isGranted(AppPermissions.INVOICE_PROFIT_SHOW);
         labelProfit.setVisible(b);
         labelTotalCost.setVisible(b);
         textInvoiceProfit.setVisible(b);

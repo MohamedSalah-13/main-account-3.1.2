@@ -1,8 +1,9 @@
 package com.hamza.account.period;
 
 import com.hamza.account.model.dao.DaoFactory;
-import com.hamza.account.perm.PermissionGuard;
-import com.hamza.account.type.UserPermissionType;
+import com.hamza.account.authorization.AuthorizationGuard;
+import com.hamza.account.authorization.AppPermissions;
+import com.hamza.account.authorization.PermissionKey;
 import com.hamza.account.view.LogApplication;
 import com.hamza.controlsfx.database.DaoException;
 import lombok.extern.log4j.Log4j2;
@@ -75,7 +76,7 @@ public record PeriodLockService(DaoFactory daoFactory) {
     }
 
     public List<AccountingLock> history(int limit) throws DaoException {
-        PermissionGuard.require(UserPermissionType.ACCOUNTING_LOCK_MANAGE);
+        AuthorizationGuard.require(AppPermissions.ACCOUNTING_LOCK_MANAGE);
         return dao().history(limit);
     }
 
@@ -87,7 +88,7 @@ public record PeriodLockService(DaoFactory daoFactory) {
      * entering today is being rejected.
      */
     public void close(LocalDate lockedUntil, String notes) throws DaoException {
-        PermissionGuard.require(UserPermissionType.ACCOUNTING_LOCK_MANAGE);
+        AuthorizationGuard.require(AppPermissions.ACCOUNTING_LOCK_MANAGE);
         if (lockedUntil == null) {
             throw new DaoException("اختر تاريخ الإغلاق");
         }
@@ -104,7 +105,7 @@ public record PeriodLockService(DaoFactory daoFactory) {
      * a period that is closed and a value that happens to be set.
      */
     public void reopen(String notes) throws DaoException {
-        PermissionGuard.require(UserPermissionType.ACCOUNTING_LOCK_MANAGE);
+        AuthorizationGuard.require(AppPermissions.ACCOUNTING_LOCK_MANAGE);
         dao().record(null, notes, currentUserId());
         refresh();
     }
@@ -121,7 +122,7 @@ public record PeriodLockService(DaoFactory daoFactory) {
      */
     public void requireOpen(LocalDate date, String what) throws DaoException {
         AccountingLock lock = current();
-        if (!lock.covers(date) || PermissionGuard.isGranted(UserPermissionType.ACCOUNTING_LOCK_BYPASS)) {
+        if (!lock.covers(date) || AuthorizationGuard.isGranted(AppPermissions.ACCOUNTING_LOCK_BYPASS)) {
             return;
         }
         throw new DaoException("""
@@ -162,7 +163,7 @@ public record PeriodLockService(DaoFactory daoFactory) {
     /** Whether a date may be written at all - for a screen greying a control. */
     public boolean isOpen(LocalDate date) {
         return !current().covers(date)
-               || PermissionGuard.isGranted(UserPermissionType.ACCOUNTING_LOCK_BYPASS);
+               || AuthorizationGuard.isGranted(AppPermissions.ACCOUNTING_LOCK_BYPASS);
     }
 
     private int currentUserId() {

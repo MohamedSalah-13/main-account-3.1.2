@@ -4,7 +4,8 @@ import com.hamza.account.features.events.InvoiceSide;
 import com.hamza.account.features.events.PartyKind;
 import com.hamza.account.period.LockedDocument;
 import com.hamza.account.period.PeriodLockRegistry;
-import com.hamza.account.type.UserPermissionType;
+import com.hamza.account.authorization.AppPermissions;
+import com.hamza.account.authorization.PermissionKey;
 
 /**
  * The four documents the business writes: a sale, its return, a purchase, its return.
@@ -34,38 +35,38 @@ public enum DocumentType {
     SALES(PartyKind.CUSTOMER, InvoiceSide.SALES, false,
             Direction.OUT, Direction.IN, true,
             PeriodLockRegistry.SALES_INVOICE,
-            UserPermissionType.SALES_SHOW,
-            UserPermissionType.SALES_UPDATE,
-            UserPermissionType.SALES_DELETE,
-            UserPermissionType.TOTAL_SALES_SHOW,
-            UserPermissionType.TOTAL_SALES_SHOW_INVOICE),
+            AppPermissions.SALES_SHOW,
+            AppPermissions.SALES_UPDATE,
+            AppPermissions.SALES_DELETE,
+            AppPermissions.TOTAL_SALES_SHOW,
+            AppPermissions.TOTAL_SALES_SHOW_INVOICE),
 
     SALES_RETURN(PartyKind.CUSTOMER, InvoiceSide.SALES, true,
             Direction.IN, Direction.OUT, true,
             PeriodLockRegistry.SALES_RETURN,
-            UserPermissionType.SALES_RE_SHOW,
-            UserPermissionType.SALES_RE_UPDATE,
-            UserPermissionType.SALES_RE_DELETE,
-            UserPermissionType.TOTAL_SALES_RE_SHOW,
-            UserPermissionType.TOTAL_SALES_RE_SHOW_INVOICE),
+            AppPermissions.SALES_RE_SHOW,
+            AppPermissions.SALES_RE_UPDATE,
+            AppPermissions.SALES_RE_DELETE,
+            AppPermissions.TOTAL_SALES_RE_SHOW,
+            AppPermissions.TOTAL_SALES_RE_SHOW_INVOICE),
 
     PURCHASE(PartyKind.SUPPLIER, InvoiceSide.PURCHASE, false,
             Direction.IN, Direction.OUT, false,
             PeriodLockRegistry.PURCHASE_INVOICE,
-            UserPermissionType.PURCHASE_SHOW,
-            UserPermissionType.PURCHASE_UPDATE,
-            UserPermissionType.PURCHASE_DELETE,
-            UserPermissionType.TOTAL_PURCHASE_SHOW,
-            UserPermissionType.TOTAL_PURCHASE_SHOW_INVOICE),
+            AppPermissions.PURCHASE_SHOW,
+            AppPermissions.PURCHASE_UPDATE,
+            AppPermissions.PURCHASE_DELETE,
+            AppPermissions.TOTAL_PURCHASE_SHOW,
+            AppPermissions.TOTAL_PURCHASE_SHOW_INVOICE),
 
     PURCHASE_RETURN(PartyKind.SUPPLIER, InvoiceSide.PURCHASE, true,
             Direction.OUT, Direction.IN, false,
             PeriodLockRegistry.PURCHASE_RETURN,
-            UserPermissionType.PURCHASE_RE_SHOW,
-            UserPermissionType.PURCHASE_RE_UPDATE,
-            UserPermissionType.PURCHASE_RE_DELETE,
-            UserPermissionType.TOTAL_PURCHASE_RE_SHOW,
-            UserPermissionType.TOTAL_PURCHASE_RE_SHOW_INVOICE);
+            AppPermissions.PURCHASE_RE_SHOW,
+            AppPermissions.PURCHASE_RE_UPDATE,
+            AppPermissions.PURCHASE_RE_DELETE,
+            AppPermissions.TOTAL_PURCHASE_RE_SHOW,
+            AppPermissions.TOTAL_PURCHASE_RE_SHOW_INVOICE);
 
     /**
      * Which way a document moves a balance. {@code quantity_items_table} adds the
@@ -95,17 +96,17 @@ public enum DocumentType {
     private final Direction cash;
     private final boolean hasDelegate;
     private final LockedDocument periodLock;
-    private final UserPermissionType show;
-    private final UserPermissionType update;
-    private final UserPermissionType delete;
-    private final UserPermissionType showTotals;
-    private final UserPermissionType showTotalsInvoice;
+    private final PermissionKey show;
+    private final PermissionKey update;
+    private final PermissionKey delete;
+    private final PermissionKey showTotals;
+    private final PermissionKey showTotalsInvoice;
 
     DocumentType(PartyKind partyKind, InvoiceSide side, boolean isReturn,
                  Direction stock, Direction cash, boolean hasDelegate,
                  LockedDocument periodLock,
-                 UserPermissionType show, UserPermissionType update, UserPermissionType delete,
-                 UserPermissionType showTotals, UserPermissionType showTotalsInvoice) {
+                 PermissionKey show, PermissionKey update, PermissionKey delete,
+                 PermissionKey showTotals, PermissionKey showTotalsInvoice) {
         this.partyKind = partyKind;
         this.side = side;
         this.isReturn = isReturn;
@@ -178,23 +179,23 @@ public enum DocumentType {
         return periodLock.label();
     }
 
-    public UserPermissionType showPermission() {
+    public PermissionKey showPermission() {
         return show;
     }
 
-    public UserPermissionType updatePermission() {
+    public PermissionKey updatePermission() {
         return update;
     }
 
-    public UserPermissionType deletePermission() {
+    public PermissionKey deletePermission() {
         return delete;
     }
 
-    public UserPermissionType showTotalsPermission() {
+    public PermissionKey showTotalsPermission() {
         return showTotals;
     }
 
-    public UserPermissionType showTotalsInvoicePermission() {
+    public PermissionKey showTotalsInvoicePermission() {
         return showTotalsInvoice;
     }
 

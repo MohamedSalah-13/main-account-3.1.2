@@ -1,5 +1,8 @@
 package com.hamza.account.service;
 
+import com.hamza.account.authorization.AppPermissions;
+import com.hamza.account.authorization.AuthorizationGuard;
+
 import com.hamza.account.delete.DeleteRegistry;
 import com.hamza.account.delete.DeletionService;
 import com.hamza.account.model.dao.DaoFactory;
@@ -56,6 +59,7 @@ public record EmployeeService(DaoFactory daoFactory) {
     }
 
     public int updateEmployee(int id, String name, LocalDate birth_date, LocalDate hire_date, double salary, String email, String tel, String address, UsersType job_id) throws DaoException {
+        AuthorizationGuard.require(id == 0 ? AppPermissions.EMPLOYEE_CREATE : AppPermissions.EMPLOYEE_UPDATE);
         var employees = new Employees(id, name, birth_date, hire_date, salary, email, tel, address, job_id);
         if (id == 0)
             return getEmployeesDao().insert(employees);

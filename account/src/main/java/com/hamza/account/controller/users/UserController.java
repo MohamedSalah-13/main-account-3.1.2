@@ -3,15 +3,16 @@ package com.hamza.account.controller.users;
 import com.hamza.account.config.Image_Setting;
 import com.hamza.account.controller.main.DataPublisher;
 import com.hamza.account.controller.others.ServiceRegistry;
+import com.hamza.account.features.rbac.RbacService;
 import com.hamza.account.interfaces.api.DataTable;
 import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.model.domain.Users;
 import com.hamza.account.openFxml.AddForAllApplication;
-import com.hamza.account.service.UserPermissionService;
 import com.hamza.account.service.UsersService;
 import com.hamza.account.table.ActionButtonToolBar;
 import com.hamza.account.table.TableInterface;
-import com.hamza.account.type.UserPermissionType;
+import com.hamza.account.authorization.AppPermissions;
+import com.hamza.account.authorization.PermissionKey;
 import com.hamza.account.view.OpenApplication;
 import com.hamza.controlsfx.button.ImageDesign;
 import com.hamza.controlsfx.button.api.ButtonColumnBoolean;
@@ -35,15 +36,15 @@ public class UserController implements TableInterface<Users> {
 
     private final String title;
     private final EventBus eventBus = ServiceRegistry.get(EventBus.class);
-    private final DaoFactory daoFactory;
     private final UsersService usersService;
+    private final RbacService rbacService;
     private TableView<Users> table;
 
     public UserController(DaoFactory daoFactory, DataPublisher dataPublisher
             , String title) {
-        this.daoFactory = daoFactory;
         this.title = title;
         this.usersService = ServiceRegistry.get(UsersService.class);
+        this.rbacService = ServiceRegistry.get(RbacService.class);
     }
 
     @Override
@@ -126,18 +127,18 @@ public class UserController implements TableInterface<Users> {
     }
 
     @Override
-    public UserPermissionType permAdd() {
-        return null;
+    public PermissionKey permAdd() {
+        return AppPermissions.USERS_MANAGE;
     }
 
     @Override
-    public UserPermissionType permUpdate() {
-        return null;
+    public PermissionKey permUpdate() {
+        return AppPermissions.USERS_MANAGE;
     }
 
     @Override
-    public UserPermissionType permDelete() {
-        return null;
+    public PermissionKey permDelete() {
+        return AppPermissions.USERS_MANAGE;
     }
 
     @Override
@@ -161,7 +162,7 @@ public class UserController implements TableInterface<Users> {
             public void action(int i) throws Exception {
                 int id = table.getItems().get(i).getId();
                 String name_user = table.getItems().get(i).getUsername();
-                new OpenApplication<>(new UserPermissionController(id, name_user, new UserPermissionService(daoFactory)));
+                new OpenApplication<>(new UserPermissionController(id, name_user, rbacService));
             }
 
             @NotNull
@@ -172,9 +173,8 @@ public class UserController implements TableInterface<Users> {
 
             @Override
             public boolean isButtonDisabled(int index) {
-                if (table.getItems().get(index).getId() == 1)
-                    return true;
-                return !table.getItems().get(index).isActive();
+                return !com.hamza.account.authorization.AuthorizationGuard.isGranted(AppPermissions.ROLES_MANAGE)
+                        || !table.getItems().get(index).isActive();
             }
 
             @NotNull
@@ -204,10 +204,7 @@ public class UserController implements TableInterface<Users> {
             public void action(int index, boolean b) throws Exception {
                 int id = table.getItems().get(index).getId();
                 if (id != 1) {
-                    Users users = new Users();
-                    users.setId(id);
-                    users.setActive(b);
-                    int update = daoFactory.usersDao().updateCase(users);
+                    int update = usersService.updateActive(id, b);
                     if (update == 1) {
                         eventBus.publish(new UsersChanged());
                     }

@@ -16,9 +16,15 @@ public interface NameAndAccountInterface<T1 extends BaseNames, T2 extends BaseAc
 
     DaoList<T1> nameDao();
 
+    int saveName(T1 name) throws Exception;
+
     List<T1> nameList() throws Exception;
 
     DaoList<T2> accountDao();
+
+    int saveAccount(T2 account) throws Exception;
+
+    int deleteAccount(int id) throws Exception;
 
     List<T2> accountList() throws Exception;
 

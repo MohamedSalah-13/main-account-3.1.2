@@ -63,7 +63,7 @@ public class TotalsPurchaseImplDesign implements TotalDesignInterface<Total_buy>
 
     @Override
     public int deleteData(Total_buy totalBuy) throws DaoException {
-        return dataInterface.totalsAndPurchaseList().totalDao().deleteById(totalBuy.getId());
+        return totalBuyService.deleteById(totalBuy.getId());
     }
 
     @Override

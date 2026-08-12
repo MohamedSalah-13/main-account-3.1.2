@@ -1,5 +1,8 @@
 package com.hamza.account.service;
 
+import com.hamza.account.authorization.AppPermissions;
+import com.hamza.account.authorization.AuthorizationGuard;
+
 import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.model.domain.Audit_log;
 import com.hamza.controlsfx.database.DaoException;
@@ -14,6 +17,7 @@ public record AuditLogService(DaoFactory daoFactory) {
     }
 
     public int deleteInRangeId(Integer... integer) throws DaoException {
+        AuthorizationGuard.require(AppPermissions.AUDIT_DELETE);
         return daoFactory.processesDao().deleteRangeIds(integer);
     }
 }

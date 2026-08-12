@@ -22,6 +22,8 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+import static com.hamza.controlsfx.util.NumberUtils.roundToTwoDecimalPlaces;
+
 @Log4j2
 @FxmlPath(pathFile = "reports/total-year-profit.fxml")
 public class ReportTotalByYearController {
@@ -226,7 +228,7 @@ public class ReportTotalByYearController {
      * دالة مساعدة لتقريب الأرقام العشرية إلى أقرب رقمين
      */
     private double round(double value) {
-        return Math.round(value * 100.0) / 100.0;
+        return roundToTwoDecimalPlaces(value);
     }
 
     private void showInfo(String msg) {

@@ -1,7 +1,8 @@
 package com.hamza.account.delete;
 
 import com.hamza.account.features.events.PartyKind;
-import com.hamza.account.type.UserPermissionType;
+import com.hamza.account.authorization.AppPermissions;
+import com.hamza.account.authorization.PermissionKey;
 
 /**
  * The delete rules, one per kind of row.
@@ -24,7 +25,7 @@ public final class DeleteRegistry {
      * resolves to a row that exists.
      */
     public static final DeleteRule UNITS = DeleteRule.forEntity("الوحدة")
-            .requirePermission(UserPermissionType.UNITS_DELETE)
+            .requirePermission(AppPermissions.UNITS_DELETE)
             .protectId(1, "لا يمكن حذف الوحدة الافتراضية")
             .referencedBy("items", "unit_id", "صنف")
             .referencedBy("items_units", "unit", "وحدة صنف")
@@ -36,7 +37,7 @@ public final class DeleteRegistry {
             .build();
 
     public static final DeleteRule ITEMS = DeleteRule.forEntity("الصنف")
-            .requirePermission(UserPermissionType.ITEMS_DELETE)
+            .requirePermission(AppPermissions.ITEMS_DELETE)
             .referencedBy("sales", "num", "سطر فاتورة بيع")
             .referencedBy("sales_re", "item_id", "سطر مرتجع بيع")
             .referencedBy("purchase", "num", "سطر فاتورة شراء")
@@ -47,7 +48,7 @@ public final class DeleteRegistry {
 
     /** Customer 1 is "بيع نقدى", which the sales screen falls back to. */
     public static final DeleteRule CUSTOMERS = DeleteRule.forEntity("العميل")
-            .requirePermission(UserPermissionType.CUSTOMER_DELETE)
+            .requirePermission(AppPermissions.CUSTOMER_DELETE)
             .protectId(1, "لا يمكن حذف عميل البيع النقدى")
             .referencedBy("total_sales", "sup_code", "فاتورة بيع")
             .referencedBy("total_sales_re", "sup_id", "مرتجع بيع")
@@ -56,7 +57,7 @@ public final class DeleteRegistry {
 
     /** Supplier 1 is the seeded "مورد عام". */
     public static final DeleteRule SUPPLIERS = DeleteRule.forEntity("المورد")
-            .requirePermission(UserPermissionType.SUPPLIERS_DELETE)
+            .requirePermission(AppPermissions.SUPPLIERS_DELETE)
             .protectId(1, "لا يمكن حذف المورد العام")
             .referencedBy("total_buy", "sup_code", "فاتورة شراء")
             .referencedBy("total_buy_re", "sup_id", "مرتجع شراء")
@@ -65,7 +66,7 @@ public final class DeleteRegistry {
 
     /** Treasury 1 is the seeded "الخزينة الرئيسية" and the DEFAULT behind every treasury_id. */
     public static final DeleteRule TREASURIES = DeleteRule.forEntity("الخزينة")
-            .requirePermission(UserPermissionType.TREASURY_DELETE)
+            .requirePermission(AppPermissions.TREASURY_DELETE)
             .protectId(1, "لا يمكن حذف الخزينة الرئيسية")
             .referencedBy("total_sales", "treasury_id", "فاتورة بيع")
             .referencedBy("total_sales_re", "treasury_id", "مرتجع بيع")
@@ -80,20 +81,20 @@ public final class DeleteRegistry {
             .build();
 
     public static final DeleteRule MAIN_GROUPS = DeleteRule.forEntity("المجموعة الرئيسية")
-            .requirePermission(UserPermissionType.MAIN_GROUP_DELETE)
+            .requirePermission(AppPermissions.MAIN_GROUP_DELETE)
             .protectId(1, "لا يمكن حذف المجموعة الرئيسية الافتراضية")
             .referencedBy("sub_group", "main_id", "مجموعة فرعية")
             .build();
 
     public static final DeleteRule SUB_GROUPS = DeleteRule.forEntity("المجموعة الفرعية")
-            .requirePermission(UserPermissionType.SUB_GROUP_DELETE)
+            .requirePermission(AppPermissions.SUB_GROUP_DELETE)
             .protectId(1, "لا يمكن حذف المجموعة الفرعية الافتراضية")
             .referencedBy("items", "sub_num", "صنف")
             .build();
 
     /** Employee 1 is the seeded "بيع مباشر" delegate. */
     public static final DeleteRule EMPLOYEES = DeleteRule.forEntity("الموظف")
-            .requirePermission(UserPermissionType.EMPLOYEE_DELETE)
+            .requirePermission(AppPermissions.EMPLOYEE_DELETE)
             .protectId(1, "لا يمكن حذف موظف البيع المباشر")
             .referencedBy("total_sales", "delegate_id", "فاتورة بيع")
             .referencedBy("total_sales_re", "delegate_id", "مرتجع بيع")
@@ -110,7 +111,7 @@ public final class DeleteRegistry {
      * performs happily - which is why only the non-cascading keys belong here.
      */
     public static final DeleteRule EXPENSES_DETAILS = DeleteRule.forEntity("المصروف")
-            .requirePermission(UserPermissionType.EXPENSES_DELETE)
+            .requirePermission(AppPermissions.EXPENSES_DELETE)
             .build();
 
     /**

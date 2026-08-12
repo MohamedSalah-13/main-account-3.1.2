@@ -1,11 +1,14 @@
 package com.hamza.account.dash;
 
 import com.hamza.account.controller.main.ButtonWithPerm;
+import com.hamza.account.controller.others.ServiceRegistry;
+import com.hamza.account.features.rbac.RbacService;
 import com.hamza.account.controller.main.DataPublisher;
 import com.hamza.account.controller.main.LoadData;
 import com.hamza.account.features.choiceDialoge.ChangeUserName;
 import com.hamza.account.model.dao.DaoFactory;
-import com.hamza.account.type.UserPermissionType;
+import com.hamza.account.authorization.AppPermissions;
+import com.hamza.account.authorization.PermissionKey;
 import com.hamza.account.view.ChangePassView;
 import com.hamza.account.view.LogApplication;
 import com.hamza.controlsfx.alert.AllAlerts;
@@ -27,8 +30,8 @@ public class ForAllButtons extends LoadData {
     public ButtonWithPerm calc() {
         return new ButtonWithPerm() {
             @Override
-            public UserPermissionType getPermissionType() {
-                return null;
+            public PermissionKey getPermissionType() {
+                return AppPermissions.PUBLIC_ACCESS;
             }
 
             @Override
@@ -66,8 +69,8 @@ public class ForAllButtons extends LoadData {
     public ButtonWithPerm changePassword() {
         return new ButtonWithPerm() {
             @Override
-            public UserPermissionType getPermissionType() {
-                return UserPermissionType.SETTING_UPDATE_PASS;
+            public PermissionKey getPermissionType() {
+                return AppPermissions.SETTING_UPDATE_PASS;
             }
 
             @Override
@@ -103,8 +106,8 @@ public class ForAllButtons extends LoadData {
     public ButtonWithPerm changeName() {
         return new ButtonWithPerm() {
             @Override
-            public UserPermissionType getPermissionType() {
-                return UserPermissionType.SETTING_UPDATE_NAME;
+            public PermissionKey getPermissionType() {
+                return AppPermissions.SETTING_UPDATE_NAME;
             }
 
             @Override
@@ -143,14 +146,16 @@ public class ForAllButtons extends LoadData {
     public ButtonWithPerm logout() {
         return new ButtonWithPerm() {
             @Override
-            public UserPermissionType getPermissionType() {
-                return null;
+            public PermissionKey getPermissionType() {
+                return AppPermissions.PUBLIC_ACCESS;
             }
 
             @Override
             public void action() throws Exception {
                 if (AllAlerts.confirm_all("logout", "هل تريد الخروج")) {
                     dataPublisher.getCloseStageFromLogout().publish(true);
+                    RbacService rbacService = ServiceRegistry.get(RbacService.class);
+                    if (rbacService != null) rbacService.signOut();
                     new LogApplication(daoFactory).start(new Stage());
                 }
             }

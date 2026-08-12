@@ -66,7 +66,7 @@ public class AdminShiftsController {
                 return;
             }
 
-//            if (!LogApplication.hasPermission(UserPermissionType.SHIFT_MANAGER)) {
+//            if (!LogApplication.hasPermission(AppPermissions.SHIFT_MANAGER)) {
 //                AllAlerts.alertError("ليس لديك صلاحية إدارة الورديات");
 //                return;
 //            }

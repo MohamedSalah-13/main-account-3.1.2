@@ -1,6 +1,7 @@
 package com.hamza.account.delete;
 
-import com.hamza.account.type.UserPermissionType;
+import com.hamza.account.authorization.AppPermissions;
+import com.hamza.account.authorization.PermissionKey;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
@@ -26,7 +27,7 @@ import java.util.Map;
 public final class DeleteRule {
 
     private final String entityLabel;
-    private final UserPermissionType permission;
+    private final PermissionKey permission;
     private final Map<Integer, String> protectedIds;
     private final List<ReferenceCheck> references;
 
@@ -50,7 +51,7 @@ public final class DeleteRule {
         return entityLabel;
     }
 
-    public UserPermissionType permission() {
+    public PermissionKey permission() {
         return permission;
     }
 
@@ -68,7 +69,7 @@ public final class DeleteRule {
         private final String entityLabel;
         private final Map<Integer, String> protectedIds = new LinkedHashMap<>();
         private final List<ReferenceCheck> references = new ArrayList<>();
-        private UserPermissionType permission;
+        private PermissionKey permission;
 
         private Builder(String entityLabel) {
             this.entityLabel = entityLabel;
@@ -79,7 +80,7 @@ public final class DeleteRule {
          * none - which is the honest declaration for a row that has no permission of
          * its own, rather than a check nobody wrote down.
          */
-        public Builder requirePermission(UserPermissionType permission) {
+        public Builder requirePermission(PermissionKey permission) {
             this.permission = permission;
             return this;
         }

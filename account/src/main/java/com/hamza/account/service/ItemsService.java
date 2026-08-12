@@ -1,5 +1,8 @@
 package com.hamza.account.service;
 
+import com.hamza.account.authorization.AppPermissions;
+import com.hamza.account.authorization.AuthorizationGuard;
+
 import com.hamza.account.delete.DeleteRegistry;
 import com.hamza.account.delete.DeletionService;
 import com.hamza.account.model.dao.DaoFactory;
@@ -35,6 +38,7 @@ public record ItemsService(DaoFactory daoFactory) {
     }
 
     public int updateItem(ItemsModel itemsModel) throws DaoException {
+        AuthorizationGuard.require(itemsModel.getId() == 0 ? AppPermissions.ITEMS_CREATE : AppPermissions.ITEMS_UPDATE);
         if (itemsModel.getId() == 0)
             return daoFactory.getItemsDao().insert(itemsModel);
         else
@@ -42,6 +46,7 @@ public record ItemsService(DaoFactory daoFactory) {
     }
 
     public int commitItemUpdate(ItemsModel itemsModel) throws DaoException {
+        AuthorizationGuard.require(AppPermissions.ITEMS_UPDATE);
         return daoFactory.getItemsDao().update(itemsModel);
     }
 
@@ -59,10 +64,12 @@ public record ItemsService(DaoFactory daoFactory) {
     }
 
     public int updateGroup(List<ItemsModel> itemsModel) throws DaoException {
+        AuthorizationGuard.require(AppPermissions.ITEMS_UPDATE);
         return daoFactory.getItemsDao().updateList(itemsModel);
     }
 
     public int insertList(List<ItemsModel> list) throws DaoException {
+        AuthorizationGuard.require(AppPermissions.ITEMS_ADD_EXCEL);
         return daoFactory.getItemsDao().insertList(list);
     }
 

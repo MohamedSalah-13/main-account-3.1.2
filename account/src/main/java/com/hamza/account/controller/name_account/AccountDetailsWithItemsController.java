@@ -300,8 +300,7 @@ public class AccountDetailsWithItemsController<T3 extends BaseNames, T4 extends 
 
         textSumPurchase.setText(String.valueOf(totalPurchase));
         textSumPaid.setText(String.valueOf(totalPaid));
-        double total = totalPurchase - totalPaid;
-        total = Math.round(total * 100.0) / 100.0;
+        double total = roundToTwoDecimalPlaces(totalPurchase - totalPaid);
 
         textSumTotals.setText(String.valueOf(total));
 

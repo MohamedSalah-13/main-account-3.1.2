@@ -17,7 +17,8 @@ import com.hamza.account.model.domain.UnitsModel;
 import com.hamza.account.openFxml.FxmlPath;
 import com.hamza.account.openFxml.OpenFxmlApplication;
 import com.hamza.account.service.*;
-import com.hamza.account.type.UserPermissionType;
+import com.hamza.account.authorization.AppPermissions;
+import com.hamza.account.authorization.PermissionKey;
 import com.hamza.account.view.AddGroupApp;
 import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.database.DaoException;
@@ -303,8 +304,8 @@ public class AddItemController implements AppSettingInterface {
 
     private void permButtons() {
         var permissionDisableService = new DisableButtons.PermissionDisableService();
-        permissionDisableService.applyPermissionBasedDisable(btnAddMainGroup::setDisable, UserPermissionType.MAIN_GROUP_SHOW);
-        permissionDisableService.applyPermissionBasedDisable(btnAddSubGroup::setDisable, UserPermissionType.SUB_GROUP_SHOW);
+        permissionDisableService.applyPermissionBasedDisable(btnAddMainGroup::setDisable, AppPermissions.MAIN_GROUP_SHOW);
+        permissionDisableService.applyPermissionBasedDisable(btnAddSubGroup::setDisable, AppPermissions.SUB_GROUP_SHOW);
     }
 
     private void action() {

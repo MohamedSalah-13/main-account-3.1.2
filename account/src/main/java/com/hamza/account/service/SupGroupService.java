@@ -1,5 +1,8 @@
 package com.hamza.account.service;
 
+import com.hamza.account.authorization.AppPermissions;
+import com.hamza.account.authorization.AuthorizationGuard;
+
 import com.hamza.account.delete.DeleteRegistry;
 import com.hamza.account.delete.DeletionService;
 import com.hamza.account.model.dao.DaoFactory;
@@ -49,10 +52,12 @@ public record SupGroupService(DaoFactory daoFactory) {
     }
 
     public int update(SubGroups subGroups) throws DaoException {
+        AuthorizationGuard.require(AppPermissions.SUB_GROUP_UPDATE);
         return daoFactory.getSupGroupsDao().update(subGroups);
     }
 
     public int insert(SubGroups subGroups) throws DaoException {
+        AuthorizationGuard.require(AppPermissions.SUB_GROUP_CREATE);
         return daoFactory.getSupGroupsDao().insert(subGroups);
     }
 }

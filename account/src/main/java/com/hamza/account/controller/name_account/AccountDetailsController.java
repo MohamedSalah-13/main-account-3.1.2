@@ -13,7 +13,6 @@ import com.hamza.account.model.base.BasePurchasesAndSales;
 import com.hamza.account.model.base.BaseTotals;
 import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.openFxml.FxmlPath;
-import com.hamza.account.perm.PermissionGuard;
 import com.hamza.account.openFxml.OpenFxmlApplication;
 import com.hamza.account.otherSetting.SearchAccountByDate;
 import com.hamza.account.table.TableSetting;
@@ -251,11 +250,7 @@ public class AccountDetailsController<T3 extends BaseNames, T4 extends BaseAccou
             T4 selectedItem = tableView.getSelectionModel().getSelectedItem();
             if (selectedItem != null) {
                 if (AllAlerts.confirmDelete()) {
-                    // The account rows are deleted through the DAO rather than
-                    // AccountCustomerService, so the disabled button above was the only
-                    // thing standing between this and a user without the permission.
-                    PermissionGuard.require(dataInterface.permAccountAndNameInt().deleteAccounts());
-                    int i = nameAndAccountInterface.accountDao().deleteById(selectedItem.getId());
+                    int i = nameAndAccountInterface.deleteAccount(selectedItem.getId());
                     if (i == 1) {
                         var eventBus = ServiceRegistry.get(EventBus.class);
                         if (eventBus != null)

@@ -1,5 +1,9 @@
 package com.hamza.account.controller.invoice;
 
+import com.hamza.account.authorization.AuthorizedDataWriter;
+import com.hamza.account.authorization.PermissionKey;
+import com.hamza.account.authorization.AppPermissions;
+
 import com.hamza.account.config.DefaultStock;
 import com.hamza.account.config.Image_Setting;
 import com.hamza.account.config.SaveDatabaseFile;
@@ -793,10 +797,8 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
 
 
                 DaoList<T2> totalDaoList = totalsAndPurchaseList.totalDao();
-                int save;
-                if (num_invoice_update > 0)
-                    save = totalDaoList.update(t2);
-                else save = totalDaoList.insert(t2);
+                int save = AuthorizedDataWriter.save(totalDaoList, t2, num_invoice_update > 0,
+                        createPermission(), dataInterface.designInterface().update());
                 if (save == 1) {
                     AllAlerts.alertSave();
                     // Show change dialog only for cash invoices
@@ -825,6 +827,15 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
             logError(e);
         }
 
+    }
+
+    private PermissionKey createPermission() {
+        PermissionKey show = dataInterface.designInterface().show();
+        if (show.equals(AppPermissions.PURCHASE_SHOW)) return AppPermissions.PURCHASE_CREATE;
+        if (show.equals(AppPermissions.PURCHASE_RE_SHOW)) return AppPermissions.PURCHASE_RE_CREATE;
+        if (show.equals(AppPermissions.SALES_SHOW)) return AppPermissions.SALES_CREATE;
+        if (show.equals(AppPermissions.SALES_RE_SHOW)) return AppPermissions.SALES_RE_CREATE;
+        return AppPermissions.DISABLE_BUTTON;
     }
 
     private void handlePurchaseAndSales() {

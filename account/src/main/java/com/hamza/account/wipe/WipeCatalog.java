@@ -152,8 +152,7 @@ public final class WipeCatalog {
      * the admin account, reaches the same place with the constraints left on.
      */
     public static final WipeTarget USERS = WipeTarget.of("users", "المستخدمين",
-            List.of(WipeTable.of("user_permission"),
-                    WipeTable.keeping("users", "id <> 1",
+            List.of(WipeTable.keeping("users", "id <> 1",
                             "UPDATE users SET user_name = 'admin', user_pass = 'admin', user_available = 1 WHERE id = 1")),
             "sales", "salesReturns", "purchases", "purchaseReturns",
             "customerAccounts", "supplierAccounts", "customers", "suppliers",

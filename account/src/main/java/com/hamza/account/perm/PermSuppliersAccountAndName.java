@@ -1,35 +1,41 @@
 package com.hamza.account.perm;
 
-import com.hamza.account.type.UserPermissionType;
+import com.hamza.account.authorization.AppPermissions;
+import com.hamza.account.authorization.PermissionKey;
 
 public class PermSuppliersAccountAndName implements PermAccountAndNameInt {
     @Override
-    public UserPermissionType showAccounts() {
-        return UserPermissionType.SUPPLIERS_ACCOUNT_SHOW;
+    public PermissionKey showAccounts() {
+        return AppPermissions.SUPPLIERS_ACCOUNT_SHOW;
     }
 
     @Override
-    public UserPermissionType updateAccounts() {
-        return UserPermissionType.SUPPLIERS_ACCOUNT_UPDATE;
+    public PermissionKey updateAccounts() {
+        return AppPermissions.SUPPLIERS_ACCOUNT_UPDATE;
     }
 
     @Override
-    public UserPermissionType deleteAccounts() {
-        return UserPermissionType.SUPPLIERS_ACCOUNT_DELETE;
+    public PermissionKey deleteAccounts() {
+        return AppPermissions.SUPPLIERS_ACCOUNT_DELETE;
     }
 
     @Override
-    public UserPermissionType showNames() {
-        return UserPermissionType.SUPPLIERS_SHOW;
+    public PermissionKey showNames() {
+        return AppPermissions.SUPPLIERS_SHOW;
     }
 
     @Override
-    public UserPermissionType updateNames() {
-        return UserPermissionType.SUPPLIERS_UPDATE;
+    public PermissionKey createNames() {
+        return AppPermissions.SUPPLIERS_CREATE;
     }
 
     @Override
-    public UserPermissionType deleteNames() {
-        return UserPermissionType.SUPPLIERS_DELETE;
+    public PermissionKey updateNames() {
+        return AppPermissions.SUPPLIERS_UPDATE;
+    }
+
+    @Override
+    public PermissionKey deleteNames() {
+        return AppPermissions.SUPPLIERS_DELETE;
     }
 }

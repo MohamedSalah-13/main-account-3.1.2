@@ -1,5 +1,8 @@
 package com.hamza.account.service;
 
+import com.hamza.account.authorization.AppPermissions;
+import com.hamza.account.authorization.AuthorizationGuard;
+
 import com.hamza.account.delete.DeleteRegistry;
 import com.hamza.account.delete.DeletionService;
 import com.hamza.account.model.dao.DaoFactory;
@@ -34,10 +37,12 @@ public record ExpensesDetailsService(DaoFactory daoFactory) {
     }
 
     public int insert(ExpensesDetails expensesDetails) throws DaoException {
+        AuthorizationGuard.require(AppPermissions.EXPENSES_CREATE);
         return daoFactory.expensesDetailsDao().insert(expensesDetails);
     }
 
     public int update(ExpensesDetails expensesDetails) throws DaoException {
+        AuthorizationGuard.require(AppPermissions.EXPENSES_UPDATE);
         return daoFactory.expensesDetailsDao().update(expensesDetails);
     }
 

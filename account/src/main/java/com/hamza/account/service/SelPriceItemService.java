@@ -1,5 +1,8 @@
 package com.hamza.account.service;
 
+import com.hamza.account.authorization.AppPermissions;
+import com.hamza.account.authorization.AuthorizationGuard;
+
 import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.model.domain.SelPriceTypeModel;
 import com.hamza.controlsfx.database.DaoException;
@@ -14,6 +17,7 @@ public record SelPriceItemService(DaoFactory daoFactory) {
     }
 
     public int update(SelPriceTypeModel selPriceTypeModel) throws DaoException {
+        AuthorizationGuard.require(AppPermissions.SEL_PRICE_UPDATE);
         return daoFactory.getItemsSelPriceDao().update(selPriceTypeModel);
     }
 

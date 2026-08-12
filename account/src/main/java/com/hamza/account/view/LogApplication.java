@@ -5,12 +5,12 @@ import com.hamza.account.config.Image_Setting;
 import com.hamza.account.config.PropertiesName;
 import com.hamza.account.config.ThemeManager;
 import com.hamza.account.controller.login.LoginController;
+import com.hamza.account.controller.others.ServiceRegistry;
+import com.hamza.account.features.rbac.RbacService;
 import com.hamza.account.interfaces.ActionLogin;
 import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.model.domain.Users;
-import com.hamza.account.model.domain.Users_Permission;
 import com.hamza.account.period.PeriodLockService;
-import com.hamza.account.service.UserPermissionService;
 import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.language.Error_Text_Show;
@@ -25,14 +25,12 @@ import javafx.stage.Stage;
 import lombok.extern.log4j.Log4j2;
 
 import java.io.IOException;
-import java.util.List;
 import java.util.Optional;
 
 @Log4j2
 public class LogApplication extends Application {
     public static final LanguageManager INSTANCE = LanguageManager.getInstance();
     public static Users usersVo;
-    public static List<Users_Permission> usersPermissionList;
     private final LoginController login;
     private final DaoFactory daoFactory;
     private final Scene scene;
@@ -133,7 +131,9 @@ public class LogApplication extends Application {
      */
     private void openMainScreen() throws Exception {
         updateData();
-        usersPermissionList = new UserPermissionService(daoFactory).getUsersPermissionById(usersVo.getId());
+        RbacService rbacService = ServiceRegistry.get(RbacService.class);
+        if (rbacService == null) throw new IllegalStateException("RBAC service is not registered");
+        rbacService.signIn(usersVo.getId(), usersVo.getUsername());
         // This machine may have sat at the login screen while another one closed a month.
         PeriodLockService.forget();
         var mainScreenApplication = new MainScreenApplication(daoFactory);

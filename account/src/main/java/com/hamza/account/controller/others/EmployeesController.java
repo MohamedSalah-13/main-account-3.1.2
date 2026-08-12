@@ -7,7 +7,9 @@ import com.hamza.account.openFxml.AddForAllApplication;
 import com.hamza.account.service.EmployeeService;
 import com.hamza.account.table.ActionButtonToolBar;
 import com.hamza.account.table.TableInterface;
-import com.hamza.account.type.UserPermissionType;
+import com.hamza.account.authorization.AppPermissions;
+import com.hamza.account.authorization.AuthorizationGuard;
+import com.hamza.account.authorization.PermissionKey;
 import com.hamza.controlsfx.language.Setting_Language;
 import com.hamza.account.controller.others.ServiceRegistry;
 import com.hamza.account.features.events.EmployeesChanged;
@@ -70,8 +72,8 @@ public class EmployeesController implements TableInterface<Employees> {
                 TableColumn<Employees, String> columnTypeName = new TableColumn<>(Setting_Language.WORD_TYPE);
                 columnTypeName.setCellValueFactory(f -> f.getValue().getJob_id().typeProperty());
                 tableView.getColumns().add(columnTypeName);
-                // permission for employee salary
-//                tableView.getColumns().get(4).setVisible(!new PermSetting().hasPermission(UserPermissionType.EMPLOYEES_SHOW_SALARY));
+                tableView.getColumns().get(4).setVisible(
+                        AuthorizationGuard.isGranted(AppPermissions.EMPLOYEES_SHOW_SALARY));
             }
 
             @Override
@@ -102,18 +104,18 @@ public class EmployeesController implements TableInterface<Employees> {
     }
 
     @Override
-    public UserPermissionType permAdd() {
-        return UserPermissionType.EMPLOYEE_SHOW;
+    public PermissionKey permAdd() {
+        return AppPermissions.EMPLOYEE_CREATE;
     }
 
     @Override
-    public UserPermissionType permUpdate() {
-        return UserPermissionType.EMPLOYEE_UPDATE;
+    public PermissionKey permUpdate() {
+        return AppPermissions.EMPLOYEE_UPDATE;
     }
 
     @Override
-    public UserPermissionType permDelete() {
-        return UserPermissionType.EMPLOYEE_DELETE;
+    public PermissionKey permDelete() {
+        return AppPermissions.EMPLOYEE_DELETE;
     }
 
     @Override

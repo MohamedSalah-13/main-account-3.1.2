@@ -1,5 +1,8 @@
 package com.hamza.account.service;
 
+import com.hamza.account.authorization.AppPermissions;
+import com.hamza.account.authorization.AuthorizationGuard;
+
 import com.hamza.account.model.dao.CustomerDao;
 import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.model.domain.Customers;
@@ -19,6 +22,12 @@ public record CustomerService(DaoFactory daoFactory) {
 
     public CustomerDao nameDao() {
         return daoFactory.customersDao();
+    }
+
+    public int save(Customers customer) throws DaoException {
+        AuthorizationGuard.require(customer.getId() == 0
+                ? AppPermissions.CUSTOMER_CREATE : AppPermissions.CUSTOMER_UPDATE);
+        return customer.getId() == 0 ? nameDao().insert(customer) : nameDao().update(customer);
     }
 
     public Customers getCustomerById(int id) throws DaoException {

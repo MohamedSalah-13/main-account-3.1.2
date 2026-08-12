@@ -41,7 +41,7 @@ public class CustomDataReturn extends LoadData implements DataInterface<Sales_Re
 
     @Override
     public TotalDesignInterface<Total_Sales_Re> totalDesignInterface() {
-        return new TotalSalesReturnImplDesign(this, daoFactory, totalSalesReturnService);
+        return new TotalSalesReturnImplDesign(this, totalSalesReturnService);
     }
 
     @Override

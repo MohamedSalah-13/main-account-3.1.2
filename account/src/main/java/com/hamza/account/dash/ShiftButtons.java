@@ -6,7 +6,8 @@ import com.hamza.account.controller.main.LoadData;
 import com.hamza.account.controller.users.UserShiftController;
 import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.openFxml.OpenFxmlApplication;
-import com.hamza.account.type.UserPermissionType;
+import com.hamza.account.authorization.AppPermissions;
+import com.hamza.account.authorization.PermissionKey;
 import javafx.scene.Scene;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyCodeCombination;
@@ -26,8 +27,8 @@ public class ShiftButtons extends LoadData {
     public ButtonWithPerm openShiftScreen() {
         return new ButtonWithPerm() {
             @Override
-            public UserPermissionType getPermissionType() {
-                return UserPermissionType.UNITS_SHOW;
+            public PermissionKey getPermissionType() {
+                return AppPermissions.UNITS_SHOW;
             }
 
             @Override

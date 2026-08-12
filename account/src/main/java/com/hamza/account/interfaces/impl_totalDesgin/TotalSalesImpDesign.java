@@ -1,5 +1,7 @@
 package com.hamza.account.interfaces.impl_totalDesgin;
 
+import com.hamza.account.authorization.AppPermissions;
+import com.hamza.account.authorization.AuthorizationGuard;
 import com.hamza.account.interfaces.api.DataInterface;
 import com.hamza.account.interfaces.api.TotalDesignInterface;
 import com.hamza.account.interfaces.api.TotalsDataInterface;
@@ -10,7 +12,6 @@ import com.hamza.account.model.domain.Sales;
 import com.hamza.account.model.domain.Total_Sales;
 import com.hamza.account.service.TotalSalesService;
 import com.hamza.account.type.InvoiceType;
-import com.hamza.account.view.LogApplication;
 import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.excel.WriteExcelInterface;
 import com.hamza.controlsfx.language.Setting_Language;
@@ -45,8 +46,7 @@ public class TotalSalesImpDesign implements TotalDesignInterface<Total_Sales> {
         Callback<TableColumn.CellDataFeatures<Total_Sales, String>, ObservableValue<String>> colDelegate = f -> f.getValue().getEmployeeObject().nameProperty();
         addColumn(tableView, Setting_Language.DELEGATE, tableView.getColumns().size(), colDelegate);
 
-        var b = LogApplication.usersVo.getId() == 1;
-        if (b) {
+        if (AuthorizationGuard.isGranted(AppPermissions.INVOICE_PROFIT_SHOW)) {
             Callback<TableColumn.CellDataFeatures<Total_Sales, Double>, ObservableValue<Double>> totalProfit =
                     cellData -> new SimpleDoubleProperty(cellData.getValue().getTotal_profit()).asObject();
             addColumn(tableView, "ربح الفاتورة", tableView.getColumns().size(), totalProfit);
@@ -75,7 +75,7 @@ public class TotalSalesImpDesign implements TotalDesignInterface<Total_Sales> {
 
     @Override
     public int deleteData(Total_Sales totalSales) throws DaoException {
-        return dataInterface.totalsAndPurchaseList().totalDao().deleteById(totalSales.getId());
+        return totalSalesService.deleteById(totalSales.getId());
     }
 
     @Override

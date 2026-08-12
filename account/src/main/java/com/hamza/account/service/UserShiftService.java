@@ -1,5 +1,8 @@
 package com.hamza.account.service;
 
+import com.hamza.account.authorization.AppPermissions;
+import com.hamza.account.authorization.AuthorizationGuard;
+
 import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.model.domain.ShiftSummary;
 import com.hamza.account.model.domain.UserShift;
@@ -106,10 +109,12 @@ public record UserShiftService(DaoFactory daoFactory) {
     }
 
     public int deleteShift(int shiftId) throws DaoException {
+        AuthorizationGuard.require(AppPermissions.USER_SHIFT_MANAGE);
         return daoFactory.userShiftDao().deleteById(shiftId);
     }
 
     public int forceCloseShift(int shiftId, double closeBalance, String notes) throws DaoException {
+        AuthorizationGuard.require(AppPermissions.USER_SHIFT_MANAGE);
         UserShift shift = daoFactory.userShiftDao().getDataById(shiftId);
         if (shift == null) {
             throw new DaoException("الوردية غير موجودة");

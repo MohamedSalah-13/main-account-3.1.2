@@ -4,7 +4,8 @@ import com.hamza.account.controller.main.ButtonWithPerm;
 import com.hamza.account.controller.main.DataPublisher;
 import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.table.TableOpen;
-import com.hamza.account.type.UserPermissionType;
+import com.hamza.account.authorization.AppPermissions;
+import com.hamza.account.authorization.PermissionKey;
 import com.hamza.account.view.ExpensesDetailsApplication;
 import com.hamza.account.view.OpenTreasuryDetailsApplication;
 import com.hamza.account.view.ProcessorApplication;
@@ -26,8 +27,8 @@ public class TreasuryButtons {
         return new ButtonWithPerm() {
 
             @Override
-            public UserPermissionType getPermissionType() {
-                return UserPermissionType.TREASURY_SHOW;
+            public PermissionKey getPermissionType() {
+                return AppPermissions.TREASURY_SHOW;
             }
 
             @Override
@@ -48,8 +49,8 @@ public class TreasuryButtons {
     public ButtonWithPerm openProcess() {
         return new ButtonWithPerm() {
             @Override
-            public UserPermissionType getPermissionType() {
-                return UserPermissionType.SETTING_SHOW;
+            public PermissionKey getPermissionType() {
+                return AppPermissions.SETTING_SHOW;
             }
 
             @Override
@@ -70,8 +71,8 @@ public class TreasuryButtons {
             final ExpensesDetailsApplication expensesController = new ExpensesDetailsApplication();
 
             @Override
-            public UserPermissionType getPermissionType() {
-                return UserPermissionType.TREASURY_SHOW;
+            public PermissionKey getPermissionType() {
+                return AppPermissions.TREASURY_SHOW;
             }
 
             @Override

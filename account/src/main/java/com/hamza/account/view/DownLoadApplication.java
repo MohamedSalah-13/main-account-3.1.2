@@ -1,11 +1,15 @@
 package com.hamza.account.view;
 
 import com.hamza.account.backup.BackupService;
+import com.hamza.account.authorization.AppPermissions;
 import com.hamza.account.config.ConnectionToDatabase;
 import com.hamza.account.config.ThemeManager;
 import com.hamza.account.controller.others.ServiceRegistry;
 import com.hamza.account.features.company.CompanyService;
 import com.hamza.account.features.inventory.InventoryService;
+import com.hamza.account.features.rbac.JdbcRbacRepository;
+import com.hamza.account.features.rbac.RbacService;
+import com.hamza.account.features.rbac.UserSessionContext;
 import com.hamza.account.features.stockcount.StockCountService;
 import com.hamza.account.period.PeriodLockService;
 import com.hamza.account.model.dao.DaoFactory;
@@ -52,6 +56,16 @@ public class DownLoadApplication extends Application {
         // Registered first, and without a DaoFactory: screens pull it from here
         // instead of being handed a publisher through their constructor.
         ServiceRegistry.register(EventBus.class, new EventBus());
+
+        UserSessionContext userSession = new UserSessionContext();
+        JdbcRbacRepository authorizationRepository = new JdbcRbacRepository();
+        try {
+            authorizationRepository.synchronizeCatalog(AppPermissions.definitions());
+        } catch (DaoException e) {
+            throw new IllegalStateException("تعذر مزامنة كتالوج الصلاحيات", e);
+        }
+        ServiceRegistry.register(UserSessionContext.class, userSession);
+        ServiceRegistry.register(RbacService.class, new RbacService(authorizationRepository, userSession));
 
         ServiceRegistry.register(CompanyService.class, new CompanyService(daoFactory));
         ServiceRegistry.register(ItemsService.class, new ItemsService(daoFactory));

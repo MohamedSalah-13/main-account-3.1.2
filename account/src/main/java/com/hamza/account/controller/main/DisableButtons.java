@@ -1,7 +1,8 @@
 package com.hamza.account.controller.main;
 
-import com.hamza.account.type.UserPermissionType;
-import com.hamza.account.view.LogApplication;
+import com.hamza.account.authorization.AuthorizationGuard;
+import com.hamza.account.authorization.AppPermissions;
+import com.hamza.account.authorization.PermissionKey;
 import javafx.scene.Node;
 import javafx.scene.control.Menu;
 import lombok.RequiredArgsConstructor;
@@ -17,39 +18,23 @@ public class DisableButtons {
     @RequiredArgsConstructor
     static public class PermissionDisableService {
 
-        private boolean show = false;
-
-        public void applyPermissionBasedDisable(Disableable uiElement, UserPermissionType permissionType) {
+        public void applyPermissionBasedDisable(Disableable uiElement, PermissionKey permissionType) {
             var isEnabled = getABoolean(permissionType);
             uiElement.setDisable(!isEnabled);
         }
 
-        public void applyPermissionBasedDisable(Node node, UserPermissionType permissionType) {
+        public void applyPermissionBasedDisable(Node node, PermissionKey permissionType) {
             var isEnabled = getABoolean(permissionType);
             node.setVisible(isEnabled);
         }
 
-        public void applyPermissionBasedDisable(Menu menu, UserPermissionType permissionType) {
+        public void applyPermissionBasedDisable(Menu menu, PermissionKey permissionType) {
             var isEnabled = getABoolean(permissionType);
             menu.setVisible(isEnabled);
         }
 
-        public Boolean getABoolean(UserPermissionType permissionType) {
-            if (permissionType == UserPermissionType.DISABLE_BUTTON) return false;
-            // Deny rather than throw when nobody is signed in. This used to
-            // dereference usersVo straight away, so any caller reached before login -
-            // a background rule, a screen opened early - died on an NPE instead of
-            // simply being refused.
-            if (LogApplication.usersVo == null) return false;
-
-            var id = LogApplication.usersVo.getId();
-            if (permissionType == null || id == 1) return true;
-
-            var permissionValue = LogApplication.usersPermissionList.stream()
-                    .filter(usersPermission -> usersPermission.getUserPermissionType().equals(permissionType)).findFirst();
-            permissionValue.ifPresent(usersPermission -> show = usersPermission.isStatus());
-            return show;
-
+        public Boolean getABoolean(PermissionKey permissionType) {
+            return AuthorizationGuard.isGranted(permissionType);
         }
     }
 }

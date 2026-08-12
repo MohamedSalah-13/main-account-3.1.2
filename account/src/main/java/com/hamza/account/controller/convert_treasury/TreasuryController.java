@@ -1,8 +1,8 @@
 package com.hamza.account.controller.convert_treasury;
 
 import com.hamza.account.model.dao.DaoFactory;
-import com.hamza.account.model.dao.TreasuryDao;
 import com.hamza.account.model.domain.Treasury;
+import com.hamza.account.service.TreasuryService;
 import com.hamza.controlsfx.database.DaoException;
 import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
@@ -30,19 +30,19 @@ public class TreasuryController {
     @FXML
     private TableColumn<Treasury, BigDecimal> amountColumn;
 
-    private TreasuryDao treasuryDao;
+    private TreasuryService treasuryService;
     private Treasury selectedTreasury;
 
     public TreasuryController() {
     }
 
     public void setDaoFactory(DaoFactory daoFactory) {
-        this.treasuryDao = daoFactory.treasuryDao();
+        this.treasuryService = new TreasuryService(daoFactory);
         loadTreasuries();
     }
 
     public TreasuryController(DaoFactory daoFactory) {
-        this.treasuryDao = daoFactory.treasuryDao();
+        this.treasuryService = new TreasuryService(daoFactory);
     }
 
     @FXML
@@ -61,7 +61,7 @@ public class TreasuryController {
             fillForm(newValue);
         });
 
-        if (treasuryDao != null) {
+        if (treasuryService != null) {
             loadTreasuries();
         }
     }
@@ -69,7 +69,7 @@ public class TreasuryController {
     @FXML
     private void loadTreasuries() {
         try {
-            treasuryTable.setItems(FXCollections.observableArrayList(treasuryDao.loadAll()));
+            treasuryTable.setItems(FXCollections.observableArrayList(treasuryService.getTreasuryModelList()));
         } catch (DaoException e) {
             showError(e.getMessage());
         }
@@ -93,7 +93,7 @@ public class TreasuryController {
 
             validateTreasury(treasury);
 
-            treasuryDao.insert(treasury);
+            treasuryService.insert(treasury);
             loadTreasuries();
             newTreasury();
             showInfo("تم حفظ الخزينة بنجاح");
@@ -115,7 +115,7 @@ public class TreasuryController {
 
             validateTreasury(selectedTreasury);
 
-            treasuryDao.update(selectedTreasury);
+            treasuryService.update(selectedTreasury);
             loadTreasuries();
             showInfo("تم تعديل الخزينة بنجاح");
         } catch (Exception e) {

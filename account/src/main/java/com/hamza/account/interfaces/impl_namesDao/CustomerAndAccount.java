@@ -30,6 +30,11 @@ public class CustomerAndAccount implements NameAndAccountInterface<Customers, Cu
     }
 
     @Override
+    public int saveName(Customers name) throws DaoException {
+        return customerService.save(name);
+    }
+
+    @Override
     public List<Customers> nameList() throws Exception {
         return customerService.getCustomerList();
     }
@@ -37,6 +42,16 @@ public class CustomerAndAccount implements NameAndAccountInterface<Customers, Cu
     @Override
     public DaoList<CustomerAccount> accountDao() {
         return accountCustomerService.accountDao();
+    }
+
+    @Override
+    public int saveAccount(CustomerAccount account) throws DaoException {
+        return accountCustomerService.save(account);
+    }
+
+    @Override
+    public int deleteAccount(int id) throws DaoException {
+        return accountCustomerService.delete(id);
     }
 
     @Override

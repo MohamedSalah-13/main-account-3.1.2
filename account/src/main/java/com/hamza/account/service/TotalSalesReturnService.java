@@ -3,8 +3,9 @@ package com.hamza.account.service;
 import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.period.PeriodLock;
 import com.hamza.account.period.PeriodLockRegistry;
-import com.hamza.account.perm.PermissionGuard;
-import com.hamza.account.type.UserPermissionType;
+import com.hamza.account.authorization.AuthorizationGuard;
+import com.hamza.account.authorization.AppPermissions;
+import com.hamza.account.authorization.PermissionKey;
 import com.hamza.account.model.dao.TotalsSalesReturnDao;
 import com.hamza.account.model.domain.Total_Sales_Re;
 import com.hamza.controlsfx.database.DaoException;
@@ -31,7 +32,7 @@ public record TotalSalesReturnService(DaoFactory daoFactory) {
 
     /** Refused whole if any of them falls inside a closed period - see TotalSalesService. */
     public int deleteMultiData(Integer[] ids) throws DaoException {
-        PermissionGuard.require(UserPermissionType.SALES_RE_DELETE);
+        AuthorizationGuard.require(AppPermissions.SALES_RE_DELETE);
         PeriodLock.require(PeriodLockRegistry.SALES_RETURN, List.of(ids));
         return getTotalsSalesReturnDao().deleteInvoicesInRange(ids);
     }
@@ -51,5 +52,9 @@ public record TotalSalesReturnService(DaoFactory daoFactory) {
 
     public int getMaxId() throws DaoException {
         return getTotalsSalesReturnDao().getMaxId();
+    }
+
+    public int deleteById(int id) throws DaoException {
+        return deleteMultiData(new Integer[]{id});
     }
 }

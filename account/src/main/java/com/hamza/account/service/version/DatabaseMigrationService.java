@@ -8,6 +8,7 @@ import org.flywaydb.core.api.output.MigrateResult;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.Statement;
 import java.util.Arrays;
@@ -42,6 +43,7 @@ public class DatabaseMigrationService {
      * rather than having it executed, because the database already <em>is</em> that schema.
      */
     private static final String BASELINE_VERSION = "1";
+    private static final String RBAC_MIGRATION_VERSION = "11";
 
     /**
      * Tables every v4.1.3 install has. A non-empty database missing any of them is not the schema
@@ -75,6 +77,7 @@ public class DatabaseMigrationService {
         }
 
         Flyway flyway = buildFlyway();
+        recoverFailedRbacMigration(flyway);
 
         List<MigrationInfo> pending = Arrays.asList(flyway.info().pending());
 
@@ -160,6 +163,68 @@ public class DatabaseMigrationService {
     private String currentVersion(Flyway flyway) {
         MigrationInfo current = flyway.info().current();
         return current == null || current.getVersion() == null ? "0" : current.getVersion().getVersion();
+    }
+
+    /**
+     * V11 originally used MariaDB's {@code ADD COLUMN IF NOT EXISTS} syntax. MySQL records that
+     * first-statement syntax failure in its non-transactional Flyway history even though no schema
+     * object was changed. Remove only that known-safe failed row so the corrected migration can run.
+     * Any partial V11 schema, or any other failed migration, is refused for manual investigation.
+     */
+    private void recoverFailedRbacMigration(Flyway flyway) {
+        List<MigrationInfo> failed = Arrays.stream(flyway.info().all())
+                .filter(info -> info.getState().isFailed())
+                .toList();
+        if (failed.isEmpty()) return;
+
+        boolean onlyKnownFailure = failed.size() == 1
+                && failed.getFirst().getVersion() != null
+                && RBAC_MIGRATION_VERSION.equals(failed.getFirst().getVersion().getVersion());
+        if (!onlyKnownFailure || hasRbacArtifacts()) {
+            String versions = failed.stream()
+                    .map(info -> info.getVersion() == null ? info.getScript() : info.getVersion().getVersion())
+                    .collect(Collectors.joining(", "));
+            throw new IllegalStateException(
+                    "Database contains a failed migration that cannot be retried automatically: " + versions);
+        }
+
+        String sql = "DELETE FROM flyway_schema_history WHERE version = ? AND success = 0";
+        try (Connection connection = DriverManager.getConnection(
+                jdbcUrl(database.getDbName()), database.getUsername(), database.getPass());
+             PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setString(1, RBAC_MIGRATION_VERSION);
+            if (statement.executeUpdate() != 1) {
+                throw new IllegalStateException("Failed V11 history row was not found for safe retry");
+            }
+            log.warn("Removed the failed V11 history row after confirming that no RBAC artifacts exist");
+        } catch (Exception e) {
+            log.error("Failed to prepare V11 for a safe retry", e);
+            throw new RuntimeException("Failed to prepare database migration V11 for retry", e);
+        }
+    }
+
+    private boolean hasRbacArtifacts() {
+        if (countExistingTables(List.of("roles", "role_permission", "user_role", "rbac_audit_log")) > 0) {
+            return true;
+        }
+
+        String sql = """
+                SELECT COUNT(*)
+                FROM information_schema.columns
+                WHERE table_schema = DATABASE()
+                  AND table_name = 'permission'
+                  AND column_name IN ('category', 'sort_order')
+                """;
+        try (Connection connection = DriverManager.getConnection(
+                jdbcUrl(database.getDbName()), database.getUsername(), database.getPass());
+             Statement statement = connection.createStatement();
+             ResultSet resultSet = statement.executeQuery(sql)) {
+            resultSet.next();
+            return resultSet.getInt(1) > 0;
+        } catch (Exception e) {
+            log.error("Failed to inspect V11 migration artifacts", e);
+            throw new RuntimeException("Failed to inspect V11 migration artifacts", e);
+        }
     }
 
     /**

@@ -1,6 +1,7 @@
 package com.hamza.account.delete;
 
-import com.hamza.account.type.UserPermissionType;
+import com.hamza.account.authorization.AppPermissions;
+import com.hamza.account.authorization.PermissionKey;
 import com.hamza.controlsfx.database.DaoException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -24,7 +25,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class DeletionServiceTest {
 
     private static final DeleteRule RULE = DeleteRule.forEntity("الوحدة")
-            .requirePermission(UserPermissionType.UNITS_DELETE)
+            .requirePermission(AppPermissions.UNITS_DELETE)
             .protectId(1, "لا يمكن حذف الوحدة الافتراضية")
             .referencedBy("sales", "type", "سطر فاتورة بيع")
             .build();

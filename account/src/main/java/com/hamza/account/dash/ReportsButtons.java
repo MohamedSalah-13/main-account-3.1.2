@@ -9,7 +9,8 @@ import com.hamza.account.controller.main.MainItems;
 import com.hamza.account.controller.reports.*;
 import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.openFxml.OpenFxmlApplication;
-import com.hamza.account.type.UserPermissionType;
+import com.hamza.account.authorization.AppPermissions;
+import com.hamza.account.authorization.PermissionKey;
 import com.hamza.account.view.OpenApplication;
 import com.hamza.account.view.ReportTotalYearlyApplication;
 import com.hamza.account.view.SceneAll;
@@ -40,8 +41,8 @@ public class ReportsButtons extends LoadData {
     public ButtonWithPerm summaryReport() {
         return new ButtonWithPerm() {
             @Override
-            public UserPermissionType getPermissionType() {
-                return UserPermissionType.REPORTS_SHOW_SUMMARY;
+            public PermissionKey getPermissionType() {
+                return AppPermissions.REPORTS_SHOW_SUMMARY;
             }
 
             @Override
@@ -62,8 +63,8 @@ public class ReportsButtons extends LoadData {
 
         return new ButtonWithPerm() {
             @Override
-            public UserPermissionType getPermissionType() {
-                return UserPermissionType.REPORTS_SHOW_PROFIT;
+            public PermissionKey getPermissionType() {
+                return AppPermissions.REPORTS_SHOW_PROFIT;
             }
 
             @Override
@@ -84,8 +85,8 @@ public class ReportsButtons extends LoadData {
     public ButtonWithPerm profitLossReport() {
         return new ButtonWithPerm() {
             @Override
-            public UserPermissionType getPermissionType() {
-                return UserPermissionType.REPORTS_SHOW_PROFIT;
+            public PermissionKey getPermissionType() {
+                return AppPermissions.REPORTS_SHOW_PROFIT;
             }
 
             @Override
@@ -115,8 +116,8 @@ public class ReportsButtons extends LoadData {
     public ButtonWithPerm detailsReport() {
         return new ButtonWithPerm() {
             @Override
-            public UserPermissionType getPermissionType() {
-                return UserPermissionType.DISABLE_BUTTON;
+            public PermissionKey getPermissionType() {
+                return AppPermissions.DISABLE_BUTTON;
             }
 
             @NotNull
@@ -134,8 +135,8 @@ public class ReportsButtons extends LoadData {
     public ButtonWithPerm itemsReport() {
         return new ButtonWithPerm() {
             @Override
-            public UserPermissionType getPermissionType() {
-                return UserPermissionType.REPORTS_SHOW_ITEMS;
+            public PermissionKey getPermissionType() {
+                return AppPermissions.REPORTS_SHOW_ITEMS;
             }
 
             @Override
@@ -171,8 +172,8 @@ public class ReportsButtons extends LoadData {
     public ButtonWithPerm itemsReportDaily() {
         return new ButtonWithPerm() {
             @Override
-            public UserPermissionType getPermissionType() {
-                return UserPermissionType.REPORTS_SHOW_ITEMS;
+            public PermissionKey getPermissionType() {
+                return AppPermissions.REPORTS_SHOW_ITEMS;
             }
 
             @Override
@@ -207,8 +208,8 @@ public class ReportsButtons extends LoadData {
     public ButtonWithPerm reportCustomPaid() {
         return new ButtonWithPerm() {
             @Override
-            public UserPermissionType getPermissionType() {
-                return UserPermissionType.REPORTS_SHOW_SALES;
+            public PermissionKey getPermissionType() {
+                return AppPermissions.REPORTS_SHOW_SALES;
             }
 
             @Override
@@ -243,8 +244,8 @@ public class ReportsButtons extends LoadData {
     public ButtonWithPerm reportSupplierPaid() {
         return new ButtonWithPerm() {
             @Override
-            public UserPermissionType getPermissionType() {
-                return UserPermissionType.REPORTS_SHOW_PURCHASE;
+            public PermissionKey getPermissionType() {
+                return AppPermissions.REPORTS_SHOW_PURCHASE;
             }
 
             @Override

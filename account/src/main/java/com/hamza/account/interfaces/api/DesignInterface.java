@@ -2,7 +2,8 @@ package com.hamza.account.interfaces.api;
 
 import com.hamza.account.document.DocumentType;
 import com.hamza.account.features.events.PartyKind;
-import com.hamza.account.type.UserPermissionType;
+import com.hamza.account.authorization.AppPermissions;
+import com.hamza.account.authorization.PermissionKey;
 import javafx.scene.Node;
 
 public interface DesignInterface {
@@ -101,23 +102,23 @@ public interface DesignInterface {
         return false;
     }
 
-    default UserPermissionType show() {
+    default PermissionKey show() {
         return documentType().showPermission();
     }
 
-    default UserPermissionType update() {
+    default PermissionKey update() {
         return documentType().updatePermission();
     }
 
-    default UserPermissionType delete() {
+    default PermissionKey delete() {
         return documentType().deletePermission();
     }
 
-    default UserPermissionType show_totals() {
+    default PermissionKey show_totals() {
         return documentType().showTotalsPermission();
     }
 
-    default UserPermissionType show_totals_invoice() {
+    default PermissionKey show_totals_invoice() {
         return documentType().showTotalsInvoicePermission();
     }
 }

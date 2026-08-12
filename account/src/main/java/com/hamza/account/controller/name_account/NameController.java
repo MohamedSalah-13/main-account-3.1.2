@@ -14,7 +14,8 @@ import com.hamza.account.openFxml.AddForAllApplication;
 import com.hamza.account.table.ActionButtonToolBar;
 import com.hamza.account.table.TableInterface;
 import com.hamza.account.table.TableSetting;
-import com.hamza.account.type.UserPermissionType;
+import com.hamza.account.authorization.AppPermissions;
+import com.hamza.account.authorization.PermissionKey;
 import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.database.DaoList;
 import com.hamza.controlsfx.language.Setting_Language;
@@ -164,17 +165,17 @@ public class NameController<T3 extends BaseNames, T4 extends BaseAccount>
     }
 
     @Override
-    public UserPermissionType permAdd() {
-        return dataInterface.permAccountAndNameInt().showNames();
+    public PermissionKey permAdd() {
+        return dataInterface.permAccountAndNameInt().createNames();
     }
 
     @Override
-    public UserPermissionType permUpdate() {
+    public PermissionKey permUpdate() {
         return dataInterface.permAccountAndNameInt().updateNames();
     }
 
     @Override
-    public UserPermissionType permDelete() {
+    public PermissionKey permDelete() {
         return dataInterface.permAccountAndNameInt().deleteNames();
     }
 

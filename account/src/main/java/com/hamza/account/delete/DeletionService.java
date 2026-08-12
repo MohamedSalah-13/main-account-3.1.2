@@ -1,7 +1,8 @@
 package com.hamza.account.delete;
 
-import com.hamza.account.perm.PermissionGuard;
-import com.hamza.account.type.UserPermissionType;
+import com.hamza.account.authorization.AuthorizationGuard;
+import com.hamza.account.authorization.AppPermissions;
+import com.hamza.account.authorization.PermissionKey;
 import com.hamza.controlsfx.database.DaoException;
 import org.jetbrains.annotations.NotNull;
 
@@ -29,7 +30,7 @@ public final class DeletionService {
 
     /** The wiring the application uses: a real scanner and the signed-in user's permissions. */
     public DeletionService() {
-        this(new ReferenceScanner(), PermissionGuard::isGranted);
+        this(new ReferenceScanner(), AuthorizationGuard::isGranted);
     }
 
     /**
@@ -114,9 +115,9 @@ public final class DeletionService {
         int delete(int id) throws DaoException;
     }
 
-    /** Whether the signed-in user holds a permission. {@link PermissionGuard} in the application. */
+    /** Whether the signed-in user holds a permission. {@link AuthorizationGuard} in the application. */
     @FunctionalInterface
     public interface PermissionChecker {
-        boolean isGranted(UserPermissionType permissionType);
+        boolean isGranted(PermissionKey permissionType);
     }
 }

@@ -1,5 +1,8 @@
 package com.hamza.account.features.company;
 
+import com.hamza.account.authorization.AppPermissions;
+import com.hamza.account.authorization.AuthorizationGuard;
+
 import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.model.domain.Company;
 import com.hamza.controlsfx.database.DaoException;
@@ -48,6 +51,7 @@ public record CompanyService(DaoFactory daoFactory) {
      *                      holding is not in the table any more
      */
     public void save(Company company) throws DaoException {
+        AuthorizationGuard.require(AppPermissions.COMPANY_UPDATE);
         if (company.getName() == null || company.getName().isBlank()) {
             throw new DaoException("اسم الشركة مطلوب");
         }

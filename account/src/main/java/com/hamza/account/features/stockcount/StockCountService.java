@@ -6,9 +6,10 @@ import com.hamza.account.model.domain.ItemsModel;
 import com.hamza.account.model.domain.UnitsModel;
 import com.hamza.account.period.PeriodLock;
 import com.hamza.account.period.PeriodLockRegistry;
-import com.hamza.account.perm.PermissionGuard;
+import com.hamza.account.authorization.AuthorizationGuard;
 import com.hamza.account.service.ItemUnits;
-import com.hamza.account.type.UserPermissionType;
+import com.hamza.account.authorization.AppPermissions;
+import com.hamza.account.authorization.PermissionKey;
 import com.hamza.account.view.LogApplication;
 import com.hamza.controlsfx.database.DaoException;
 
@@ -41,7 +42,7 @@ public record StockCountService(DaoFactory daoFactory) {
      * closing it again leaves no empty counts behind.
      */
     public StockCount openDraft() throws DaoException {
-        PermissionGuard.require(UserPermissionType.STOCK_COUNT_SHOW);
+        AuthorizationGuard.require(AppPermissions.STOCK_COUNT_SHOW);
         StockCount existing = dao().findOpenDraft(DefaultStock.ID);
         if (existing != null) {
             return existing;
@@ -55,12 +56,12 @@ public record StockCountService(DaoFactory daoFactory) {
     }
 
     public StockCount findById(int id) throws DaoException {
-        PermissionGuard.require(UserPermissionType.STOCK_COUNT_SHOW);
+        AuthorizationGuard.require(AppPermissions.STOCK_COUNT_SHOW);
         return dao().findById(id);
     }
 
     public List<StockCount> recent(int limit) throws DaoException {
-        PermissionGuard.require(UserPermissionType.STOCK_COUNT_SHOW);
+        AuthorizationGuard.require(AppPermissions.STOCK_COUNT_SHOW);
         return dao().recent(limit);
     }
 
@@ -91,7 +92,7 @@ public record StockCountService(DaoFactory daoFactory) {
 
     /** Saves the sheet as a draft. Refuses to touch one that has been posted. */
     public int save(StockCount count) throws DaoException {
-        PermissionGuard.require(UserPermissionType.STOCK_COUNT_SHOW);
+        AuthorizationGuard.require(AppPermissions.STOCK_COUNT_SHOW);
         requireEditable(count);
         return dao().save(count);
     }
@@ -110,7 +111,7 @@ public record StockCountService(DaoFactory daoFactory) {
      * posting it twice.
      */
     public int post(StockCount count) throws DaoException {
-        PermissionGuard.require(UserPermissionType.STOCK_COUNT_POST);
+        AuthorizationGuard.require(AppPermissions.STOCK_COUNT_POST);
         requireEditable(count);
         // Posting moves every balance on the sheet at the count's own date, so a count
         // dated into a closed month would rewrite a stock valuation already reported.
@@ -133,7 +134,7 @@ public record StockCountService(DaoFactory daoFactory) {
      * stays: undoing one means counting again and posting that.
      */
     public int deleteDraft(StockCount count) throws DaoException {
-        PermissionGuard.require(UserPermissionType.STOCK_COUNT_POST);
+        AuthorizationGuard.require(AppPermissions.STOCK_COUNT_POST);
         requireEditable(count);
         if (count.isNew()) {
             return 0;

@@ -9,6 +9,7 @@ import com.hamza.account.features.events.UsersChanged;
 import com.hamza.controlsfx.observer.EventBus;
 import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.model.domain.Users;
+import com.hamza.account.service.UsersService;
 import com.hamza.account.view.LogApplication;
 import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.button.ImageDesign;
@@ -51,9 +52,10 @@ public class ChangeUserName extends TextInputDialog {
         s.ifPresent(string -> {
             try {
                 Users users = LogApplication.usersVo;
-                users.setUsername(string);
-                int update = daoFactory.usersDao().update(users);
+                int update = ServiceRegistry.get(UsersService.class)
+                        .updateOwnUsername(users.getId(), string);
                 if (update == 1) {
+                    users.setUsername(string.trim());
                     // The greeting takes the new name, and the users table - which
                     // shows the row that just changed - is told to reload.
                     var eventBus = ServiceRegistry.get(EventBus.class);

@@ -4,6 +4,8 @@ import com.hamza.account.config.ThemeManager;
 import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.model.domain.Users;
 import com.hamza.account.security.PasswordHasher;
+import com.hamza.account.controller.others.ServiceRegistry;
+import com.hamza.account.service.UsersService;
 import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.interfaceData.ChangePassInt;
 import com.hamza.controlsfx.view.ChangePassApplication;
@@ -22,9 +24,10 @@ public class ChangePassView {
 
             @Override
             public boolean updatePass(String newPass) throws Exception {
-                Users users = daoFactory.usersDao().getDataById(LogApplication.usersVo.getId());
+                Users users = ServiceRegistry.get(UsersService.class).getUsersById(LogApplication.usersVo.getId());
                 users.setPasswordHash(PasswordHasher.hash(newPass));
-                boolean updated = daoFactory.usersDao().update(users) == 1;
+                boolean updated = ServiceRegistry.get(UsersService.class)
+                        .updateOwnPassword(users.getId(), users.getPasswordHash()) == 1;
                 if (updated) LogApplication.usersVo = users;
                 return updated;
             }

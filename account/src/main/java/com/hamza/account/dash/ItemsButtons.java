@@ -12,7 +12,8 @@ import com.hamza.account.controller.main.ButtonWithPerm;
 import com.hamza.account.controller.main.DataPublisher;
 import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.openFxml.OpenFxmlApplication;
-import com.hamza.account.type.UserPermissionType;
+import com.hamza.account.authorization.AppPermissions;
+import com.hamza.account.authorization.PermissionKey;
 import com.hamza.account.view.AddGroupApp;
 import com.hamza.account.view.AddItemApplication;
 import com.hamza.account.view.OpenApplication;
@@ -34,8 +35,8 @@ public class ItemsButtons {
     public ButtonWithPerm addItem() {
         return new ButtonWithPerm() {
             @Override
-            public UserPermissionType getPermissionType() {
-                return UserPermissionType.ITEMS_SHOW;
+            public PermissionKey getPermissionType() {
+                return AppPermissions.ITEMS_SHOW;
             }
 
             @Override
@@ -54,8 +55,8 @@ public class ItemsButtons {
     public ButtonWithPerm allItems() {
         return new ButtonWithPerm() {
             @Override
-            public UserPermissionType getPermissionType() {
-                return UserPermissionType.ITEMS_SHOW;
+            public PermissionKey getPermissionType() {
+                return AppPermissions.ITEMS_SHOW;
             }
 
             @Override
@@ -85,8 +86,8 @@ public class ItemsButtons {
         return new ButtonWithPerm() {
 
             @Override
-            public UserPermissionType getPermissionType() {
-                return UserPermissionType.UNITS_SHOW;
+            public PermissionKey getPermissionType() {
+                return AppPermissions.UNITS_SHOW;
             }
 
             @Override
@@ -107,8 +108,8 @@ public class ItemsButtons {
             final InventoryController inventory = new InventoryController();
 
             @Override
-            public UserPermissionType getPermissionType() {
-                return UserPermissionType.INVENTORY_SHOW;
+            public PermissionKey getPermissionType() {
+                return AppPermissions.INVENTORY_SHOW;
             }
 
             @Override
@@ -144,8 +145,8 @@ public class ItemsButtons {
             final StockCountController stockCount = new StockCountController();
 
             @Override
-            public UserPermissionType getPermissionType() {
-                return UserPermissionType.STOCK_COUNT_SHOW;
+            public PermissionKey getPermissionType() {
+                return AppPermissions.STOCK_COUNT_SHOW;
             }
 
             @Override
@@ -174,8 +175,8 @@ public class ItemsButtons {
 
         return new ButtonWithPerm() {
             @Override
-            public UserPermissionType getPermissionType() {
-                return UserPermissionType.ITEMS_SHOW;
+            public PermissionKey getPermissionType() {
+                return AppPermissions.ITEMS_SHOW;
             }
 
             @Override
@@ -195,8 +196,8 @@ public class ItemsButtons {
     public ButtonWithPerm addSubGroup() {
         return new ButtonWithPerm() {
             @Override
-            public UserPermissionType getPermissionType() {
-                return UserPermissionType.SUB_GROUP_SHOW;
+            public PermissionKey getPermissionType() {
+                return AppPermissions.SUB_GROUP_SHOW;
             }
 
             @NotNull
@@ -215,8 +216,8 @@ public class ItemsButtons {
     public ButtonWithPerm addMainGroup() {
         return new ButtonWithPerm() {
             @Override
-            public UserPermissionType getPermissionType() {
-                return UserPermissionType.MAIN_GROUP_SHOW;
+            public PermissionKey getPermissionType() {
+                return AppPermissions.MAIN_GROUP_SHOW;
             }
 
             @NotNull

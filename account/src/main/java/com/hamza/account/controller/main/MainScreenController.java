@@ -7,7 +7,9 @@ import com.hamza.account.controller.reports.MonthlySalesInterface;
 import com.hamza.account.features.events.UserRenamed;
 import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.model.dao.MonthlySalesViewDao;
-import com.hamza.account.type.UserPermissionType;
+import com.hamza.account.authorization.AppPermissions;
+import com.hamza.account.authorization.AuthorizationGuard;
+import com.hamza.account.authorization.PermissionKey;
 import com.hamza.account.view.LogApplication;
 import com.hamza.account.view.MonthlyView;
 import com.hamza.controlsfx.alert.AllAlerts;
@@ -79,7 +81,7 @@ public class MainScreenController extends MainItems implements Initializable {
         otherSetting();
         addTabContextMenu();
 
-        if (LogApplication.usersVo.getId() == 1) {
+        if (AuthorizationGuard.isGranted(AppPermissions.REPORTS_SHOW_SUMMARY)) {
             if (getShowMainTotals()) firstBoxInMain();
         }
 
@@ -283,10 +285,10 @@ public class MainScreenController extends MainItems implements Initializable {
         String sales = "مبيعات";
         return new ButtonWithPerm() {
             @Override
-            public UserPermissionType getPermissionType() {
+            public PermissionKey getPermissionType() {
                 if (name.contains(sales))
-                    return UserPermissionType.REPORTS_SHOW_SALES;
-                else return UserPermissionType.REPORTS_SHOW_PURCHASE;
+                    return AppPermissions.REPORTS_SHOW_SALES;
+                else return AppPermissions.REPORTS_SHOW_PURCHASE;
             }
 
             @Override
@@ -372,8 +374,8 @@ public class MainScreenController extends MainItems implements Initializable {
 
     private void dontShowData() {
         var permissionDisableService = new DisableButtons.PermissionDisableService();
-        permissionDisableService.applyPermissionBasedDisable(menuController.getMenuEmployees(), UserPermissionType.EMPLOYEE_SHOW);
-        permissionDisableService.applyPermissionBasedDisable(menuController.getMenuSetting(), UserPermissionType.SETTING_SHOW);
+        permissionDisableService.applyPermissionBasedDisable(menuController.getMenuEmployees(), AppPermissions.EMPLOYEE_SHOW);
+        permissionDisableService.applyPermissionBasedDisable(menuController.getMenuSetting(), AppPermissions.SETTING_SHOW);
 
     }
 

@@ -1,304 +1,440 @@
 package com.hamza.account.controller.users;
 
-import com.hamza.account.model.domain.Users_Permission;
+import com.hamza.account.features.rbac.*;
 import com.hamza.account.openFxml.FxmlPath;
 import com.hamza.account.openFxml.OpenFxmlApplication;
-import com.hamza.account.service.UserPermissionService;
-import com.hamza.account.type.UserPermissionType;
+import com.hamza.account.authorization.AuthorizationGuard;
+import com.hamza.account.authorization.AppPermissions;
+import com.hamza.account.authorization.PermissionKey;
 import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.interfaceData.AppSettingInterface;
-import com.hamza.controlsfx.language.Setting_Language;
+import javafx.beans.property.BooleanProperty;
+import javafx.beans.property.ReadOnlyStringWrapper;
+import javafx.beans.property.SimpleBooleanProperty;
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
+import javafx.collections.transformation.FilteredList;
 import javafx.fxml.FXML;
-import javafx.scene.control.CheckBox;
+import javafx.scene.control.*;
+import javafx.scene.control.cell.CheckBoxTableCell;
 import javafx.scene.layout.Pane;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
+import java.util.LinkedHashSet;
+import java.util.Locale;
+import java.util.Set;
 
+/** RBAC editor: assigns roles to a user and manages each role's permission bundle. */
 @Log4j2
 @FxmlPath(pathFile = "user-permission.fxml")
-@RequiredArgsConstructor
-public class UserPermissionController implements AppSettingInterface {
+public final class UserPermissionController implements AppSettingInterface {
 
-    private final int user_id;
+    private final int userId;
     private final String username;
-    private final UserPermissionService userPermissionService;
+    private final RbacService rbacService;
+    private final ObservableList<UserRoleRow> userRoleRows = FXCollections.observableArrayList();
+    private final ObservableList<RolePermissionRow> permissionRows = FXCollections.observableArrayList();
+    private final ObservableList<UserRoleRow> parentRoleRows = FXCollections.observableArrayList();
+    private final ObservableList<RbacUserOverride> overrideRows = FXCollections.observableArrayList();
+    private final ObservableList<RbacAccessDecision> accessRows = FXCollections.observableArrayList();
+    private FilteredList<RolePermissionRow> filteredPermissions;
+    private FilteredList<RbacAccessDecision> filteredAccess;
+    private RbacRole editingRole;
+    private boolean creatingRole;
+    private boolean canManageOverrides;
 
-    // purchase
-    @FXML
-    private CheckBox purchase_show, purchase_update, purchase_delete;
-    @FXML
-    private CheckBox total_purchase_show, total_purchase_show_invoice;
-    @FXML
-    private CheckBox purchase_re_show, purchase_re_update;
-    @FXML
-    private CheckBox purchase_re_delete, total_purchase_re_show, total_purchase_re_show_invoice;
+    @FXML private Label labelUser;
+    @FXML private TableView<UserRoleRow> tableUserRoles;
+    @FXML private TableColumn<UserRoleRow, Boolean> colRoleAssigned;
+    @FXML private TableColumn<UserRoleRow, String> colUserRoleName, colUserRoleCode;
+    @FXML private ComboBox<RbacRole> comboRoles;
+    @FXML private TextField textRoleCode, textRoleName, textPermissionSearch;
+    @FXML private TextArea textRoleDescription;
+    @FXML private CheckBox checkRoleActive, checkAssignNewRole;
+    @FXML private Button btnNewRole, btnDeleteRole;
+    @FXML private TableView<RolePermissionRow> tablePermissions;
+    @FXML private TableView<UserRoleRow> tableParentRoles;
+    @FXML private TableColumn<UserRoleRow, Boolean> colParentRoleInherited;
+    @FXML private TableColumn<UserRoleRow, String> colParentRoleName, colParentRoleCode;
+    @FXML private TableColumn<RolePermissionRow, Boolean> colPermissionGranted;
+    @FXML private TableColumn<RolePermissionRow, String> colPermissionCategory, colPermissionDescription,
+            colPermissionCode;
+    @FXML private ComboBox<RbacPermission> comboOverridePermission;
+    @FXML private ComboBox<RbacOverrideEffect> comboOverrideEffect;
+    @FXML private TextField textOverrideReason, textAccessSearch;
+    @FXML private DatePicker dateOverrideExpiry;
+    @FXML private Button btnSaveOverride, btnDeleteOverride, btnClearOverride;
+    @FXML private TableView<RbacUserOverride> tableOverrides;
+    @FXML private TableColumn<RbacUserOverride, String> colOverrideEffect, colOverridePermission,
+            colOverrideCode, colOverrideReason, colOverrideExpiry, colOverrideStatus;
+    @FXML private TableView<RbacAccessDecision> tableEffectiveAccess;
+    @FXML private TableColumn<RbacAccessDecision, String> colAccessGranted, colAccessPermission,
+            colAccessCode, colAccessSource;
 
-    // sales
-    @FXML
-    private CheckBox sales_show, sales_update, sales_delete;
-    @FXML
-    private CheckBox total_sales_show, total_sales_show_invoice;
-    @FXML
-    private CheckBox sales_re_show, sales_re_update, sales_re_delete;
-    @FXML
-    private CheckBox total_sales_re_show, total_sales_re_show_invoice;
-
-    // items
-    @FXML
-    private CheckBox items_show, items_update, items_delete;
-    @FXML
-    private CheckBox items_add_excel;
-
-    // groups
-    @FXML
-    private CheckBox main_group_show, main_group_update, main_group_delete;
-    @FXML
-    private CheckBox sub_group_show, sub_group_update, sub_group_delete;
-
-    // others
-    @FXML
-    private CheckBox inventory_show;
-    @FXML
-    private CheckBox treasury_show, treasury_update, treasury_delete;
-    @FXML
-    private CheckBox units_show, units_update, units_delete;
-    @FXML
-    private CheckBox sel_price_show, sel_price_update, sel_price_delete;
-
-    // account customer
-    @FXML
-    private CheckBox customer_show, customer_update, customer_delete;
-    @FXML
-    private CheckBox customer_account_show, customer_account_update, customer_account_delete;
-
-    // account suppliers
-    @FXML
-    private CheckBox suppliers_show, suppliers_update, suppliers_delete;
-    @FXML
-    private CheckBox suppliers_account_show, suppliers_account_update, suppliers_account_delete;
-
-    // others
-    @FXML
-    private CheckBox expenses_show, expenses_update, expenses_delete;
-    @FXML
-    private CheckBox employee_show, employee_update, employee_delete;
-    @FXML
-    private CheckBox setting_show, setting_company_show, setting_backup_show;
-    @FXML
-    private CheckBox setting_items_show, setting_other_show, setting_shows_show, invoice_profit_show;
-
-    // setting
-    @FXML
-    private CheckBox employees_show_salary, show_column_buy_price;
-    @FXML
-    private CheckBox checkEditPreviousData, checkShowPreviousData;
-    @FXML
-    private CheckBox checkUpdateName, checkUpdatePass;
-
-    // reports
-    @FXML
-    private CheckBox checkReportSummary, checkReportItems, checkReportCustomers;
-    @FXML
-    private CheckBox checkReportSuppliers, checkReportCustomAccountArea, checkReportSales;
-    @FXML
-    private CheckBox checkReportPurchase, checkReportDayDetails, checkReportDelegate, checkReportProfit;
-
+    public UserPermissionController(int userId, String username, RbacService rbacService) {
+        this.userId = userId;
+        this.username = username;
+        this.rbacService = rbacService;
+    }
 
     @FXML
     public void initialize() {
+        configureTables();
+        configureRoleSelector();
+        btnNewRole.setOnAction(event -> beginNewRole());
+        btnDeleteRole.setOnAction(event -> deleteSelectedRole());
+        btnSaveOverride.setOnAction(event -> saveOverride());
+        btnDeleteOverride.setOnAction(event -> deleteSelectedOverride());
+        btnClearOverride.setOnAction(event -> clearOverrideForm());
+        textPermissionSearch.textProperty().addListener((obs, old, value) -> filterPermissions(value));
+        textAccessSearch.textProperty().addListener((obs, old, value) -> filterAccess(value));
         loadData();
-        addNames();
+    }
+
+    private void configureTables() {
+        tableUserRoles.setEditable(true);
+        colRoleAssigned.setCellValueFactory(cell -> cell.getValue().selectedProperty());
+        colRoleAssigned.setCellFactory(CheckBoxTableCell.forTableColumn(colRoleAssigned));
+        colUserRoleName.setCellValueFactory(cell -> new ReadOnlyStringWrapper(cell.getValue().role().name()));
+        colUserRoleCode.setCellValueFactory(cell -> new ReadOnlyStringWrapper(cell.getValue().role().code()));
+        tableUserRoles.setItems(userRoleRows);
+
+        tableParentRoles.setEditable(true);
+        colParentRoleInherited.setCellValueFactory(cell -> cell.getValue().selectedProperty());
+        colParentRoleInherited.setCellFactory(CheckBoxTableCell.forTableColumn(colParentRoleInherited));
+        colParentRoleName.setCellValueFactory(cell -> new ReadOnlyStringWrapper(cell.getValue().role().name()));
+        colParentRoleCode.setCellValueFactory(cell -> new ReadOnlyStringWrapper(cell.getValue().role().code()));
+        tableParentRoles.setItems(parentRoleRows);
+
+        tablePermissions.setEditable(true);
+        colPermissionGranted.setCellValueFactory(cell -> cell.getValue().selectedProperty());
+        colPermissionGranted.setCellFactory(CheckBoxTableCell.forTableColumn(colPermissionGranted));
+        colPermissionCategory.setCellValueFactory(cell ->
+                new ReadOnlyStringWrapper(categoryLabel(cell.getValue().permission().category())));
+        colPermissionDescription.setCellValueFactory(cell ->
+                new ReadOnlyStringWrapper(cell.getValue().permission().description()));
+        colPermissionCode.setCellValueFactory(cell ->
+                new ReadOnlyStringWrapper(cell.getValue().permission().code()));
+        filteredPermissions = new FilteredList<>(permissionRows, row -> true);
+        tablePermissions.setItems(filteredPermissions);
+
+        comboOverridePermission.setCellFactory(list -> permissionCell());
+        comboOverridePermission.setButtonCell(permissionCell());
+        comboOverrideEffect.setItems(FXCollections.observableArrayList(RbacOverrideEffect.values()));
+        comboOverrideEffect.setCellFactory(list -> overrideEffectCell());
+        comboOverrideEffect.setButtonCell(overrideEffectCell());
+
+        colOverrideEffect.setCellValueFactory(cell ->
+                new ReadOnlyStringWrapper(overrideEffectLabel(cell.getValue().effect())));
+        colOverridePermission.setCellValueFactory(cell ->
+                new ReadOnlyStringWrapper(cell.getValue().permissionDescription()));
+        colOverrideCode.setCellValueFactory(cell ->
+                new ReadOnlyStringWrapper(cell.getValue().permissionCode()));
+        colOverrideReason.setCellValueFactory(cell ->
+                new ReadOnlyStringWrapper(cell.getValue().reason()));
+        colOverrideExpiry.setCellValueFactory(cell ->
+                new ReadOnlyStringWrapper(formatDate(cell.getValue().expiresAt())));
+        colOverrideStatus.setCellValueFactory(cell -> new ReadOnlyStringWrapper(
+                cell.getValue().isActiveAt(LocalDateTime.now()) ? "نشط" : "منتهي"));
+        tableOverrides.setItems(overrideRows);
+        tableOverrides.getSelectionModel().selectedItemProperty().addListener((obs, old, value) -> {
+            if (value != null) showOverride(value);
+        });
+
+        colAccessGranted.setCellValueFactory(cell ->
+                new ReadOnlyStringWrapper(cell.getValue().granted() ? "مسموح" : "مرفوض"));
+        colAccessPermission.setCellValueFactory(cell ->
+                new ReadOnlyStringWrapper(cell.getValue().permission().description()));
+        colAccessCode.setCellValueFactory(cell ->
+                new ReadOnlyStringWrapper(cell.getValue().permission().code()));
+        colAccessSource.setCellValueFactory(cell ->
+                new ReadOnlyStringWrapper(cell.getValue().explanation()));
+        filteredAccess = new FilteredList<>(accessRows, row -> true);
+        tableEffectiveAccess.setItems(filteredAccess);
+    }
+
+    private void configureRoleSelector() {
+        comboRoles.setCellFactory(list -> roleCell());
+        comboRoles.setButtonCell(roleCell());
+        comboRoles.valueProperty().addListener((obs, old, role) -> {
+            if (role != null) showRole(role);
+        });
+    }
+
+    private ListCell<RbacRole> roleCell() {
+        return new ListCell<>() {
+            @Override
+            protected void updateItem(RbacRole role, boolean empty) {
+                super.updateItem(role, empty);
+                setText(empty || role == null ? null : role.displayName());
+            }
+        };
     }
 
     private void loadData() {
         try {
-            var userPermissions = userPermissionService.getUsersPermissionById(user_id);
-            HashMap<CheckBox, UserPermissionType> checkBoxMap = mapUserPermissionCheckBox();
-            checkBoxMap.forEach((checkBox, userPermissionType) ->
-                    checkBox.setSelected(isPermissionGranted(userPermissions, userPermissionType)));
+            labelUser.setText("الأدوار المسندة إلى: " + username);
+            Set<Integer> assigned = rbacService.roleIdsForUser(userId);
+            var roles = rbacService.roles();
+            userRoleRows.setAll(roles.stream()
+                    .filter(role -> userId == 1 || !role.systemRole())
+                    .map(role ->
+                    new UserRoleRow(role, assigned.contains(role.id()))).toList());
+            var permissions = rbacService.permissions();
+            permissionRows.setAll(permissions.stream()
+                    .map(permission -> new RolePermissionRow(permission, false)).toList());
+            comboOverridePermission.setItems(FXCollections.observableArrayList(permissions));
+            comboRoles.setItems(FXCollections.observableArrayList(roles));
+
+            boolean canManage = AuthorizationGuard.isGranted(AppPermissions.ROLES_MANAGE);
+            canManageOverrides = canManage && userId != 1;
+            tableUserRoles.setDisable(!canManage || userId == 1);
+            btnNewRole.setDisable(!canManage);
+            setOverrideEditorDisabled(!canManageOverrides);
+            loadUserSecurityDetails();
+            if (!roles.isEmpty()) comboRoles.getSelectionModel().selectFirst();
+            else beginNewRole();
         } catch (DaoException e) {
-            log.error(e.getMessage(), e);
-            AllAlerts.alertError(e.getMessage());
+            report(e);
         }
     }
 
-    private boolean isPermissionGranted(List<Users_Permission> userPermissions, UserPermissionType permissionType) {
-        return userPermissions.stream().filter(permission ->
-                permission.getUserPermissionType().equals(permissionType)).map(Users_Permission::isStatus).findFirst().orElse(false);
+    private void loadUserSecurityDetails() throws DaoException {
+        overrideRows.setAll(rbacService.userOverrides(userId));
+        accessRows.setAll(rbacService.accessDecisionsForUser(userId));
+        clearOverrideForm();
     }
 
-    private HashMap<CheckBox, UserPermissionType> mapUserPermissionCheckBox() {
-        HashMap<CheckBox, UserPermissionType> checkBoxMap = new HashMap<>();
-        checkBoxMap.put(purchase_show, UserPermissionType.PURCHASE_SHOW);
-        checkBoxMap.put(purchase_update, UserPermissionType.PURCHASE_UPDATE);
-        checkBoxMap.put(purchase_delete, UserPermissionType.PURCHASE_DELETE);
-        checkBoxMap.put(total_purchase_show, UserPermissionType.TOTAL_PURCHASE_SHOW);
-        checkBoxMap.put(total_purchase_show_invoice, UserPermissionType.TOTAL_PURCHASE_SHOW_INVOICE);
-        checkBoxMap.put(purchase_re_show, UserPermissionType.PURCHASE_RE_SHOW);
-        checkBoxMap.put(purchase_re_update, UserPermissionType.PURCHASE_RE_UPDATE);
-        checkBoxMap.put(purchase_re_delete, UserPermissionType.PURCHASE_RE_DELETE);
-        checkBoxMap.put(total_purchase_re_show, UserPermissionType.TOTAL_PURCHASE_RE_SHOW);
-        checkBoxMap.put(total_purchase_re_show_invoice, UserPermissionType.TOTAL_PURCHASE_RE_SHOW_INVOICE);
-        checkBoxMap.put(sales_show, UserPermissionType.SALES_SHOW);
-        checkBoxMap.put(sales_update, UserPermissionType.SALES_UPDATE);
-        checkBoxMap.put(sales_delete, UserPermissionType.SALES_DELETE);
-        checkBoxMap.put(total_sales_show, UserPermissionType.TOTAL_SALES_SHOW);
-        checkBoxMap.put(total_sales_show_invoice, UserPermissionType.TOTAL_SALES_SHOW_INVOICE);
-        checkBoxMap.put(sales_re_show, UserPermissionType.SALES_RE_SHOW);
-        checkBoxMap.put(sales_re_update, UserPermissionType.SALES_RE_UPDATE);
-        checkBoxMap.put(sales_re_delete, UserPermissionType.SALES_RE_DELETE);
-        checkBoxMap.put(total_sales_re_show, UserPermissionType.TOTAL_SALES_RE_SHOW);
-        checkBoxMap.put(total_sales_re_show_invoice, UserPermissionType.TOTAL_SALES_RE_SHOW_INVOICE);
-        checkBoxMap.put(items_show, UserPermissionType.ITEMS_SHOW);
-        checkBoxMap.put(items_update, UserPermissionType.ITEMS_UPDATE);
-        checkBoxMap.put(items_delete, UserPermissionType.ITEMS_DELETE);
-        checkBoxMap.put(items_add_excel, UserPermissionType.ITEMS_ADD_EXCEL);
-        checkBoxMap.put(main_group_show, UserPermissionType.MAIN_GROUP_SHOW);
-        checkBoxMap.put(main_group_update, UserPermissionType.MAIN_GROUP_UPDATE);
-        checkBoxMap.put(main_group_delete, UserPermissionType.MAIN_GROUP_DELETE);
-        checkBoxMap.put(sub_group_show, UserPermissionType.SUB_GROUP_SHOW);
-        checkBoxMap.put(sub_group_update, UserPermissionType.SUB_GROUP_UPDATE);
-        checkBoxMap.put(sub_group_delete, UserPermissionType.SUB_GROUP_DELETE);
-        checkBoxMap.put(inventory_show, UserPermissionType.INVENTORY_SHOW);
-        checkBoxMap.put(treasury_show, UserPermissionType.TREASURY_SHOW);
-        checkBoxMap.put(treasury_update, UserPermissionType.TREASURY_UPDATE);
-        checkBoxMap.put(treasury_delete, UserPermissionType.TREASURY_DELETE);
-        checkBoxMap.put(units_show, UserPermissionType.UNITS_SHOW);
-        checkBoxMap.put(units_update, UserPermissionType.UNITS_UPDATE);
-        checkBoxMap.put(units_delete, UserPermissionType.UNITS_DELETE);
-        checkBoxMap.put(sel_price_show, UserPermissionType.SEL_PRICE_SHOW);
-        checkBoxMap.put(sel_price_update, UserPermissionType.SEL_PRICE_UPDATE);
-        checkBoxMap.put(sel_price_delete, UserPermissionType.SEL_PRICE_DELETE);
-        checkBoxMap.put(customer_show, UserPermissionType.CUSTOMER_SHOW);
-        checkBoxMap.put(customer_update, UserPermissionType.CUSTOMER_UPDATE);
-        checkBoxMap.put(customer_delete, UserPermissionType.CUSTOMER_DELETE);
-        checkBoxMap.put(customer_account_show, UserPermissionType.CUSTOMER_ACCOUNT_SHOW);
-        checkBoxMap.put(customer_account_update, UserPermissionType.CUSTOMER_ACCOUNT_UPDATE);
-        checkBoxMap.put(customer_account_delete, UserPermissionType.CUSTOMER_ACCOUNT_DELETE);
-        checkBoxMap.put(suppliers_show, UserPermissionType.SUPPLIERS_SHOW);
-        checkBoxMap.put(suppliers_update, UserPermissionType.SUPPLIERS_UPDATE);
-        checkBoxMap.put(suppliers_delete, UserPermissionType.SUPPLIERS_DELETE);
-        checkBoxMap.put(suppliers_account_show, UserPermissionType.SUPPLIERS_ACCOUNT_SHOW);
-        checkBoxMap.put(suppliers_account_update, UserPermissionType.SUPPLIERS_ACCOUNT_UPDATE);
-        checkBoxMap.put(suppliers_account_delete, UserPermissionType.SUPPLIERS_ACCOUNT_DELETE);
-        checkBoxMap.put(expenses_show, UserPermissionType.EXPENSES_SHOW);
-        checkBoxMap.put(expenses_update, UserPermissionType.EXPENSES_UPDATE);
-        checkBoxMap.put(expenses_delete, UserPermissionType.EXPENSES_DELETE);
-        checkBoxMap.put(employee_show, UserPermissionType.EMPLOYEE_SHOW);
-        checkBoxMap.put(employee_update, UserPermissionType.EMPLOYEE_UPDATE);
-        checkBoxMap.put(employee_delete, UserPermissionType.EMPLOYEE_DELETE);
-        checkBoxMap.put(setting_show, UserPermissionType.SETTING_SHOW);
-        checkBoxMap.put(setting_company_show, UserPermissionType.SETTING_COMPANY_SHOW);
-        checkBoxMap.put(setting_backup_show, UserPermissionType.SETTING_BACKUP_SHOW);
-        checkBoxMap.put(setting_items_show, UserPermissionType.SETTING_ITEMS_SHOW);
-        checkBoxMap.put(setting_other_show, UserPermissionType.SETTING_OTHER_SHOW);
-        checkBoxMap.put(setting_shows_show, UserPermissionType.SETTING_SHOWS_SHOW);
-        checkBoxMap.put(invoice_profit_show, UserPermissionType.INVOICE_PROFIT_SHOW);
-        checkBoxMap.put(employees_show_salary, UserPermissionType.EMPLOYEES_SHOW_SALARY);
-        checkBoxMap.put(show_column_buy_price, UserPermissionType.SHOW_COLUMN_BUY_PRICE);
-        checkBoxMap.put(checkEditPreviousData, UserPermissionType.UPDATE_DATA_BEFORE_MONTH);
-        checkBoxMap.put(checkShowPreviousData, UserPermissionType.SHOW_DATA_BEFORE_MONTH);
-        getChecks(checkBoxMap);
-        return checkBoxMap;
+    private ListCell<RbacPermission> permissionCell() {
+        return new ListCell<>() {
+            @Override
+            protected void updateItem(RbacPermission permission, boolean empty) {
+                super.updateItem(permission, empty);
+                setText(empty || permission == null ? null
+                        : permission.description() + " (" + permission.code() + ")");
+            }
+        };
     }
 
-    private void getChecks(HashMap<CheckBox, UserPermissionType> checkBoxMap) {
-        CheckBox[] checkBoxList = {checkUpdateName, checkUpdatePass, checkReportSummary, checkReportItems, checkReportCustomers, checkReportSuppliers
-                , checkReportCustomAccountArea, checkReportSales, checkReportPurchase, checkReportDayDetails
-                , checkReportDelegate, checkReportProfit};
-        int h = 0;
-        for (int i = 76; i < 88; i++) {
-            var userPermissionById = UserPermissionType.getUserPermissionById(i);
-            checkBoxMap.put(checkBoxList[h], userPermissionById);
-            h++;
+    private ListCell<RbacOverrideEffect> overrideEffectCell() {
+        return new ListCell<>() {
+            @Override
+            protected void updateItem(RbacOverrideEffect effect, boolean empty) {
+                super.updateItem(effect, empty);
+                setText(empty || effect == null ? null : overrideEffectLabel(effect));
+            }
+        };
+    }
+
+    private void showOverride(RbacUserOverride override) {
+        comboOverridePermission.getItems().stream()
+                .filter(permission -> permission.id() == override.permissionId())
+                .findFirst().ifPresent(comboOverridePermission::setValue);
+        comboOverrideEffect.setValue(override.effect());
+        textOverrideReason.setText(override.reason());
+        dateOverrideExpiry.setValue(override.expiresAt() == null ? null : override.expiresAt().toLocalDate());
+        btnDeleteOverride.setDisable(!canManageOverrides);
+    }
+
+    private void clearOverrideForm() {
+        tableOverrides.getSelectionModel().clearSelection();
+        comboOverridePermission.getSelectionModel().clearSelection();
+        comboOverrideEffect.setValue(RbacOverrideEffect.DENY);
+        textOverrideReason.clear();
+        dateOverrideExpiry.setValue(null);
+        btnDeleteOverride.setDisable(true);
+    }
+
+    private void setOverrideEditorDisabled(boolean disabled) {
+        comboOverridePermission.setDisable(disabled);
+        comboOverrideEffect.setDisable(disabled);
+        textOverrideReason.setDisable(disabled);
+        dateOverrideExpiry.setDisable(disabled);
+        btnSaveOverride.setDisable(disabled);
+        btnClearOverride.setDisable(disabled);
+        btnDeleteOverride.setDisable(true);
+    }
+
+    private void saveOverride() {
+        RbacPermission permission = comboOverridePermission.getValue();
+        if (permission == null) {
+            AllAlerts.alertError("حدد الصلاحية أولاً");
+            return;
+        }
+        LocalDateTime expiresAt = dateOverrideExpiry.getValue() == null
+                ? null
+                : dateOverrideExpiry.getValue().atTime(LocalTime.MAX);
+        try {
+            rbacService.saveUserOverride(userId, permission.id(), comboOverrideEffect.getValue(),
+                    textOverrideReason.getText(), expiresAt);
+            AllAlerts.alertSaveWithMessage("تم حفظ الاستثناء وتحديث الوصول الفعلي");
+            loadUserSecurityDetails();
+        } catch (DaoException e) {
+            report(e);
         }
     }
 
-    private void addNames() {
-        purchase_show.setText("عرض الشراء");
-        purchase_update.setText("تعديل الشراء");
-        purchase_delete.setText("حذف الشراء");
-        total_purchase_show.setText("عرض إجمالي الشراء");
-        total_purchase_show_invoice.setText("عرض فاتورة إجمالي الشراء");
-        purchase_re_show.setText("عرض مرتجعات الشراء");
-        purchase_re_update.setText("تعديل مرتجعات الشراء");
-        purchase_re_delete.setText("حذف مرتجعات الشراء");
-        total_purchase_re_show.setText("عرض إجمالي مرتجعات الشراء");
-        total_purchase_re_show_invoice.setText("عرض فاتورة إجمالي مرتجعات الشراء");
-        sales_show.setText("عرض المبيعات");
-        sales_update.setText("تعديل المبيعات");
-        sales_delete.setText("حذف المبيعات");
-        total_sales_show.setText("عرض إجمالي المبيعات");
-        total_sales_show_invoice.setText("عرض فاتورة إجمالي المبيعات");
-        sales_re_show.setText("عرض مرتجعات المبيعات");
-        sales_re_update.setText("تعديل مرتجعات المبيعات");
-        sales_re_delete.setText("حذف مرتجعات المبيعات");
-        total_sales_re_show.setText("عرض إجمالي مرتجعات المبيعات");
-        total_sales_re_show_invoice.setText("عرض فاتورة إجمالي مرتجعات المبيعات");
-        items_show.setText("عرض الأصناف");
-        items_update.setText("تعديل الأصناف");
-        items_delete.setText("حذف الأصناف");
-        items_add_excel.setText("إضافة الأصناف من ملف Excel");
-        main_group_show.setText("عرض المجموعة الرئيسية");
-        main_group_update.setText("تعديل المجموعة الرئيسية");
-        main_group_delete.setText("حذف المجموعة الرئيسية");
-        sub_group_show.setText("عرض المجموعة الفرعية");
-        sub_group_update.setText("تعديل المجموعة الفرعية");
-        sub_group_delete.setText("حذف المجموعة الفرعية");
-        inventory_show.setText("عرض الجرد");
-        treasury_show.setText("عرض الخزينة");
-        treasury_update.setText("تعديل الخزينة");
-        treasury_delete.setText("حذف الخزينة");
-        units_show.setText("عرض الوحدات");
-        units_update.setText("تعديل الوحدات");
-        units_delete.setText("حذف الوحدات");
-        sel_price_show.setText("عرض أسعار البيع");
-        sel_price_update.setText("تعديل أسعار البيع");
-        sel_price_delete.setText("حذف أسعار البيع");
-        customer_show.setText("عرض العملاء");
-        customer_update.setText("تعديل العملاء");
-        customer_delete.setText("حذف العملاء");
-        customer_account_show.setText("عرض حساب العملاء");
-        customer_account_update.setText("تعديل حساب العملاء");
-        customer_account_delete.setText("حذف حساب العملاء");
-        suppliers_show.setText("عرض الموردين");
-        suppliers_update.setText("تعديل الموردين");
-        suppliers_delete.setText("حذف الموردين");
-        suppliers_account_show.setText("عرض حساب الموردين");
-        suppliers_account_update.setText("تعديل حساب الموردين");
-        suppliers_account_delete.setText("حذف حساب الموردين");
-        expenses_show.setText("عرض المصروفات");
-        expenses_update.setText("تعديل المصروفات");
-        expenses_delete.setText("حذف المصروفات");
-        employee_show.setText("عرض الموظفين");
-        employee_update.setText("تعديل الموظفين");
-        employee_delete.setText("حذف الموظفين");
-        setting_show.setText("عرض الإعدادات");
-        setting_company_show.setText("عرض إعدادات الشركة");
-        setting_backup_show.setText("عرض نسخ البيانات الاحتياطية");
-        setting_items_show.setText("عرض إعدادات الأصناف");
-        setting_other_show.setText("عرض الإعدادات الأخرى");
-        setting_shows_show.setText("عرض إعدادات الشاشات");
-        invoice_profit_show.setText("عرض نسبة الربح من الفواتير");
-        employees_show_salary.setText("إظهار المرتب");
-        show_column_buy_price.setText("عرض سعر الشراء");
+    private void deleteSelectedOverride() {
+        RbacUserOverride selected = tableOverrides.getSelectionModel().getSelectedItem();
+        if (selected == null) {
+            AllAlerts.alertError("حدد استثناءً للحذف");
+            return;
+        }
+        if (!AllAlerts.confirmDelete()) return;
+        try {
+            if (rbacService.deleteUserOverride(userId, selected.permissionId()) > 0) {
+                AllAlerts.alertDelete();
+                loadUserSecurityDetails();
+            }
+        } catch (DaoException e) {
+            report(e);
+        }
+    }
+
+    private void filterAccess(String value) {
+        String query = value == null ? "" : value.trim().toLowerCase(Locale.ROOT);
+        filteredAccess.setPredicate(decision -> query.isEmpty()
+                || decision.permission().code().toLowerCase(Locale.ROOT).contains(query)
+                || decision.permission().description().toLowerCase(Locale.ROOT).contains(query)
+                || decision.explanation().toLowerCase(Locale.ROOT).contains(query));
+    }
+
+    private String overrideEffectLabel(RbacOverrideEffect effect) {
+        return effect == RbacOverrideEffect.ALLOW ? "سماح استثنائي" : "منع استثنائي";
+    }
+
+    private String formatDate(LocalDateTime value) {
+        return value == null ? "دائم" : value.format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
+    }
+
+    private void showRole(RbacRole role) {
+        try {
+            creatingRole = false;
+            editingRole = role;
+            textRoleCode.setText(role.code());
+            textRoleName.setText(role.name());
+            textRoleDescription.setText(role.description());
+            checkRoleActive.setSelected(role.active());
+            checkAssignNewRole.setSelected(false);
+            checkAssignNewRole.setDisable(true);
+
+            Set<Integer> granted = rbacService.permissionIdsForRole(role.id());
+            permissionRows.forEach(row -> row.setSelected(granted.contains(row.permission().id())));
+            Set<Integer> inherited = rbacService.parentRoleIds(role.id());
+            parentRoleRows.setAll(rbacService.roles().stream()
+                    .filter(candidate -> candidate.id() != role.id() && !candidate.systemRole() && candidate.active())
+                    .map(candidate -> new UserRoleRow(candidate, inherited.contains(candidate.id())))
+                    .toList());
+            setRoleEditorDisabled(role.systemRole());
+        } catch (DaoException e) {
+            report(e);
+        }
+    }
+
+    private void beginNewRole() {
+        creatingRole = true;
+        editingRole = null;
+        comboRoles.getSelectionModel().clearSelection();
+        textRoleCode.clear();
+        textRoleName.clear();
+        textRoleDescription.clear();
+        checkRoleActive.setSelected(true);
+        checkAssignNewRole.setDisable(userId == 1);
+        checkAssignNewRole.setSelected(userId != 1);
+        permissionRows.forEach(row -> row.setSelected(false));
+        parentRoleRows.setAll(comboRoles.getItems().stream()
+                .filter(role -> !role.systemRole() && role.active())
+                .map(role -> new UserRoleRow(role, false)).toList());
+        setRoleEditorDisabled(false);
+        textRoleCode.requestFocus();
+    }
+
+    private void setRoleEditorDisabled(boolean systemRole) {
+        boolean disabled = systemRole || !AuthorizationGuard.isGranted(AppPermissions.ROLES_MANAGE);
+        textRoleCode.setDisable(disabled);
+        textRoleName.setDisable(disabled);
+        textRoleDescription.setDisable(disabled);
+        checkRoleActive.setDisable(disabled);
+        tablePermissions.setDisable(disabled);
+        tableParentRoles.setDisable(disabled);
+        btnDeleteRole.setDisable(disabled || editingRole == null);
+    }
+
+    private void deleteSelectedRole() {
+        RbacRole role = editingRole;
+        if (role == null) {
+            AllAlerts.alertError("حدد دورًا للحذف");
+            return;
+        }
+        if (!AllAlerts.confirmDelete()) return;
+        try {
+            if (rbacService.deleteRole(role) == 1) {
+                AllAlerts.alertDelete();
+                loadData();
+            }
+        } catch (DaoException e) {
+            report(e);
+        }
+    }
+
+    private void filterPermissions(String value) {
+        String query = value == null ? "" : value.trim().toLowerCase(Locale.ROOT);
+        filteredPermissions.setPredicate(row -> query.isEmpty()
+                || row.permission().code().toLowerCase(Locale.ROOT).contains(query)
+                || row.permission().description().toLowerCase(Locale.ROOT).contains(query)
+                || categoryLabel(row.permission().category()).contains(query));
     }
 
     @Override
     public int save() throws DaoException {
-        List<Users_Permission> userPermissions = new ArrayList<>();
-        HashMap<CheckBox, UserPermissionType> checkBoxMap = mapUserPermissionCheckBox();
-        checkBoxMap.forEach((checkBox, userPermissionType) -> {
-            userPermissions.add(new Users_Permission(0, user_id, userPermissionType, checkBox.isSelected()));
-        });
-        var i = userPermissionService.updateUserPermissionsList(userPermissions);
-        log.info("updateUserPermissionsList: {}", i);
-        return i;
+        RbacRole role = roleDraft();
+        Set<Integer> permissionIds = new LinkedHashSet<>();
+        if (role != null) {
+            permissionRows.stream().filter(RolePermissionRow::isSelected)
+                    .map(row -> row.permission().id()).forEach(permissionIds::add);
+        }
+
+        Set<Integer> assignedRoleIds = new LinkedHashSet<>();
+        userRoleRows.stream().filter(UserRoleRow::isSelected)
+                .map(row -> row.role().id()).forEach(assignedRoleIds::add);
+
+        Set<Integer> parentRoleIds = new LinkedHashSet<>();
+        parentRoleRows.stream().filter(UserRoleRow::isSelected)
+                .map(row -> row.role().id()).forEach(parentRoleIds::add);
+
+        return rbacService.saveConfiguration(userId, role, permissionIds, parentRoleIds, assignedRoleIds,
+                creatingRole && checkAssignNewRole.isSelected());
+    }
+
+    private RbacRole roleDraft() {
+        if (!creatingRole && (editingRole == null || editingRole.systemRole())) return null;
+        int id = creatingRole ? 0 : editingRole.id();
+        return new RbacRole(id, textRoleCode.getText(), textRoleName.getText(),
+                textRoleDescription.getText(), false, checkRoleActive.isSelected());
+    }
+
+    private String categoryLabel(String category) {
+        if (category == null) return "عام";
+        return switch (category) {
+            case "PURCHASES" -> "المشتريات";
+            case "SALES" -> "المبيعات";
+            case "PARTIES" -> "العملاء والموردون";
+            case "INVENTORY" -> "الأصناف والمخزون";
+            case "TREASURY" -> "الخزينة";
+            case "REPORTS" -> "التقارير";
+            case "SETTINGS" -> "الإعدادات";
+            case "SECURITY" -> "المستخدمون والأمان";
+            default -> "عام";
+        };
+    }
+
+    private void report(Exception e) {
+        log.error(e.getMessage(), e);
+        AllAlerts.alertError(e.getMessage());
     }
 
     @Override
@@ -308,11 +444,55 @@ public class UserPermissionController implements AppSettingInterface {
 
     @Override
     public String title() {
-        return Setting_Language.WORD_PERM.concat(" / ").concat(username);
+        return "إدارة الأدوار والصلاحيات / " + username;
+    }
+
+    @Override
+    public boolean resize() {
+        return true;
     }
 
     @Override
     public boolean addLastPane() {
         return true;
+    }
+
+    @Override
+    public double minWidth() {
+        return 980;
+    }
+
+    @Override
+    public double minHeight() {
+        return 650;
+    }
+
+    public static final class UserRoleRow {
+        private final RbacRole role;
+        private final BooleanProperty selected;
+
+        private UserRoleRow(RbacRole role, boolean selected) {
+            this.role = role;
+            this.selected = new SimpleBooleanProperty(selected);
+        }
+
+        public RbacRole role() { return role; }
+        public boolean isSelected() { return selected.get(); }
+        public BooleanProperty selectedProperty() { return selected; }
+    }
+
+    public static final class RolePermissionRow {
+        private final RbacPermission permission;
+        private final BooleanProperty selected;
+
+        private RolePermissionRow(RbacPermission permission, boolean selected) {
+            this.permission = permission;
+            this.selected = new SimpleBooleanProperty(selected);
+        }
+
+        public RbacPermission permission() { return permission; }
+        public boolean isSelected() { return selected.get(); }
+        public void setSelected(boolean value) { selected.set(value); }
+        public BooleanProperty selectedProperty() { return selected; }
     }
 }

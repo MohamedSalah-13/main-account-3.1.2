@@ -11,7 +11,8 @@ import com.hamza.account.service.ExpensesDetailsService;
 import com.hamza.account.table.ActionButtonToolBar;
 import com.hamza.account.table.TableInterface;
 import com.hamza.account.table.TableOpen;
-import com.hamza.account.type.UserPermissionType;
+import com.hamza.account.authorization.AppPermissions;
+import com.hamza.account.authorization.PermissionKey;
 import com.hamza.controlsfx.language.Setting_Language;
 import com.hamza.controlsfx.observer.Publisher;
 import com.hamza.controlsfx.table.columnEdit.ColumnSetting;
@@ -125,18 +126,18 @@ public class ExpensesDetailsApplication extends Application implements TableInte
     }
 
     @Override
-    public UserPermissionType permAdd() {
-        return UserPermissionType.EXPENSES_SHOW;
+    public PermissionKey permAdd() {
+        return AppPermissions.EXPENSES_CREATE;
     }
 
     @Override
-    public UserPermissionType permUpdate() {
-        return UserPermissionType.EXPENSES_UPDATE;
+    public PermissionKey permUpdate() {
+        return AppPermissions.EXPENSES_UPDATE;
     }
 
     @Override
-    public UserPermissionType permDelete() {
-        return UserPermissionType.EXPENSES_DELETE;
+    public PermissionKey permDelete() {
+        return AppPermissions.EXPENSES_DELETE;
     }
 
     @Override

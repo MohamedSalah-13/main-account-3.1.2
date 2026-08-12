@@ -1,10 +1,11 @@
 package com.hamza.account.service;
 
 import com.hamza.account.model.dao.DaoFactory;
-import com.hamza.account.perm.PermissionGuard;
+import com.hamza.account.authorization.AuthorizationGuard;
 import com.hamza.account.period.PeriodLock;
 import com.hamza.account.period.PeriodLockRegistry;
-import com.hamza.account.type.UserPermissionType;
+import com.hamza.account.authorization.AppPermissions;
+import com.hamza.account.authorization.PermissionKey;
 import com.hamza.account.model.dao.TotalsSalesDao;
 import com.hamza.account.model.domain.Total_Sales;
 import com.hamza.controlsfx.database.DaoException;
@@ -44,9 +45,13 @@ public record TotalSalesService(DaoFactory daoFactory) {
      * half-deleted.
      */
     public int deleteMultiData(Integer[] ids) throws DaoException {
-        PermissionGuard.require(UserPermissionType.SALES_DELETE);
+        AuthorizationGuard.require(AppPermissions.SALES_DELETE);
         PeriodLock.require(PeriodLockRegistry.SALES_INVOICE, List.of(ids));
         return getTotalsSalesDao().deleteInvoicesInRange(ids);
+    }
+
+    public int deleteById(int id) throws DaoException {
+        return deleteMultiData(new Integer[]{id});
     }
 
     public List<Total_Sales> getTotalSalesByCustomerId(int customer_id) throws DaoException {

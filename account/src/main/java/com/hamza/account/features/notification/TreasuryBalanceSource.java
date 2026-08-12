@@ -4,7 +4,8 @@ import com.hamza.account.controller.main.DisableButtons;
 import com.hamza.account.controller.others.ServiceRegistry;
 import com.hamza.account.model.domain.TreasuryBalance;
 import com.hamza.account.service.TreasuryBalanceService;
-import com.hamza.account.type.UserPermissionType;
+import com.hamza.account.authorization.AppPermissions;
+import com.hamza.account.authorization.PermissionKey;
 import com.hamza.controlsfx.notifications.AppNotification;
 import com.hamza.controlsfx.notifications.NotificationSeverity;
 import com.hamza.controlsfx.notifications.NotificationSource;
@@ -56,7 +57,7 @@ public class TreasuryBalanceSource implements NotificationSource {
 
     @Override
     public boolean enabled() {
-        return new DisableButtons.PermissionDisableService().getABoolean(UserPermissionType.TREASURY_SHOW);
+        return new DisableButtons.PermissionDisableService().getABoolean(AppPermissions.TREASURY_SHOW);
     }
 
     @NotNull

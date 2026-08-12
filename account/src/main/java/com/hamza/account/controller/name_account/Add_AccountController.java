@@ -179,9 +179,7 @@ public class Add_AccountController<T3 extends BaseNames, T4 extends BaseAccount>
 
         T4 t4 = accountData.objectData(code, value.toString(), paid, txtNotes.getText(), 0, code_id, treasury);
 
-        if (numInvoice > 0)
-            return interFace.update(t4);
-        else return interFace.insert(t4);
+        return dataInterface.nameAndAccountInterface().saveAccount(t4);
     }
 
     @Override

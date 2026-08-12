@@ -2,7 +2,8 @@ package com.hamza.account.table;
 
 import com.hamza.account.interfaces.api.DataTable;
 import com.hamza.account.openFxml.MainData;
-import com.hamza.account.type.UserPermissionType;
+import com.hamza.account.authorization.AppPermissions;
+import com.hamza.account.authorization.PermissionKey;
 import com.hamza.controlsfx.observer.AppEvent;
 import com.hamza.controlsfx.observer.Publisher;
 import javafx.beans.property.BooleanProperty;
@@ -67,11 +68,11 @@ public interface TableInterface<T> extends MainData {
         return false;
     }
 
-    UserPermissionType permAdd();
+    PermissionKey permAdd();
 
-    UserPermissionType permUpdate();
+    PermissionKey permUpdate();
 
-    UserPermissionType permDelete();
+    PermissionKey permDelete();
 
     List<T> getProducts(int rowsPerPage, int offset) throws Exception;
 

@@ -6,7 +6,8 @@ import com.hamza.account.controller.main.DisableButtons;
 import com.hamza.account.controller.others.ServiceRegistry;
 import com.hamza.account.model.domain.ItemsMiniQuantity;
 import com.hamza.account.service.ItemMiniQuantityService;
-import com.hamza.account.type.UserPermissionType;
+import com.hamza.account.authorization.AppPermissions;
+import com.hamza.account.authorization.PermissionKey;
 import com.hamza.account.view.OpenApplication;
 import com.hamza.controlsfx.interfaceData.AppSettingInterface;
 import com.hamza.controlsfx.interfaceData.TableViewShowDataInt;
@@ -70,7 +71,7 @@ public class LowStockSource implements NotificationSource {
     @Override
     public boolean enabled() {
         return PropertiesName.getItemShowAlert()
-                && new DisableButtons.PermissionDisableService().getABoolean(UserPermissionType.ITEMS_SHOW);
+                && new DisableButtons.PermissionDisableService().getABoolean(AppPermissions.ITEMS_SHOW);
     }
 
     @NotNull

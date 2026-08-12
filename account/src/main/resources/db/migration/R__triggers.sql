@@ -4,24 +4,14 @@
 -- Every trigger is preceded by DROP TRIGGER IF EXISTS. MySQL has no
 -- CREATE OR REPLACE TRIGGER, so drop-then-create is the only safe form.
 -- 
--- These fire after the V1 seed data is inserted rather than before it, as
--- in the old single-file baseline. That is harmless: after_users_insert is
--- guarded by IF (NEW.id > 1) and the seed only inserts the admin (id = 1),
--- and after_permission_insert copies rows for users where id != 1, of
--- which the seed creates none.
+-- V11 replaced the old per-user permission-maintenance triggers with RBAC.
+-- The obsolete after_users_insert trigger is dropped below; a new permission
+-- is copied only to the protected SYSTEM_ADMIN role.
 -- 
 -- The audit_* triggers on users/custom/suppliers/total_sales/total_buy/
 -- treasury stay in V2__audit_triggers.sql - moving an already-applied
 -- versioned migration would fail Flyway validation on live clients.
 --
--- One consequence: `users` carries two AFTER INSERT triggers, and because
--- this file runs after V2, after_users_insert is now created second and so
--- fires second, where it used to fire first. The two are independent -
--- after_users_insert writes user_permission, audit_users_insert writes
--- audit_log, and neither reads the other's table - so the swap has no
--- effect. FOLLOWS/PRECEDES was deliberately not used here: it would make
--- this file fail outright if run by hand against a schema that has not yet
--- had V2 applied.
 -- =====================================================================
 
 DROP TRIGGER IF EXISTS audit_items_insert;
@@ -107,49 +97,11 @@ END;
 |
 DELIMITER ;
 
--- user permission
+-- Authorization is catalogue-driven from V12. New users start with no role
+-- (deny by default), and catalogue synchronization grants new permissions only
+-- to the protected system-administrator role.
 DROP TRIGGER IF EXISTS after_users_insert;
-
--- insert permission for new user
-DELIMITER |
-create trigger after_users_insert
-    after insert
-    on users
-    for each row
-begin
-    declare maxPermissions int unsigned default (SELECT count(*) FROM permission);
-    declare currentPermissionId int unsigned default 1;
-    IF (NEW.id > 1) THEN
-        while currentPermissionId <= maxPermissions
-            do
-                set @permissionId = (SELECT p.id FROM permission p WHERE p.id = currentPermissionId);
-                insert into user_permission (permission_id, user_id)
-                VALUES (@permissionId, NEW.id);
-                set currentPermissionId = currentPermissionId + 1;
-            end while;
-    end if;
-
-end;
-|
-DELIMITER ;
-
-
--- permission
 DROP TRIGGER IF EXISTS after_permission_insert;
-
-DELIMITER |
-create trigger after_permission_insert
-    after insert
-    on permission
-    for each row
-begin
-    INSERT INTO user_permission (permission_id, user_id, check_status)
-    SELECT NEW.id, users.id, 0
-    FROM users
-    WHERE users.id != 1;
-end;
-|
-DELIMITER ;
 
 
 DROP TRIGGER IF EXISTS after_items_update;
