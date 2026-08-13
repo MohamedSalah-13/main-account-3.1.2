@@ -3,6 +3,7 @@ package com.hamza.account.features.invoice;
 import com.hamza.account.type.InvoiceType;
 import org.junit.jupiter.api.Test;
 
+import java.math.BigDecimal;
 import static org.junit.jupiter.api.Assertions.*;
 
 class InvoicePaymentViewModelTest {
@@ -45,5 +46,17 @@ class InvoicePaymentViewModelTest {
         model.updateAmounts(100, 0, 101);
         assertFalse(model.isValid());
         assertEquals(InvoiceSaveValidator.Target.PAID, model.invalidTarget());
+    }
+
+    @Test
+    void preservesExactFormAmountsInThePreview() {
+        InvoicePaymentViewModel model = new InvoicePaymentViewModel();
+        model.selectInvoiceType(InvoiceType.DEFER, false);
+
+        model.updateAmounts(new BigDecimal("0.30"),
+                new BigDecimal("0.10"), new BigDecimal("0.10"));
+
+        assertEquals(new BigDecimal("0.20"), model.preview().netAmount());
+        assertEquals(new BigDecimal("0.10"), model.preview().remainingAmount());
     }
 }

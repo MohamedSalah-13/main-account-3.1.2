@@ -1,5 +1,6 @@
 package com.hamza.account.controller.invoice;
 
+import com.hamza.account.finance.MoneyMath;
 import com.hamza.account.authorization.AppPermissions;
 import com.hamza.account.authorization.AuthorizationGuard;
 import com.hamza.account.config.PropertiesName;
@@ -41,6 +42,7 @@ import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
 import java.net.URL;
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -155,7 +157,8 @@ public class ShowInvoiceController<T1 extends BasePurchasesAndSales, T2 extends 
         textType.setText(String.valueOf(hashMap.get(ShowInvoiceNameData.TYPE)));
         textInvoiceTotal.setText(String.valueOf(invoiceTotal));
         textInvoiceDiscount.setText(String.valueOf(invoiceDiscount));
-        textInvoiceAfterDiscount.setText(String.valueOf(invoiceTotal - invoiceDiscount));
+        textInvoiceAfterDiscount.setText(MoneyMath.text(MoneyMath.subtract(
+                MoneyMath.decimal(invoiceTotal), MoneyMath.decimal(invoiceDiscount))));
 
         ToDoubleFunction<BasePurchasesAndSales> totalFunction = BasePurchasesAndSales::getTotal;
         ToDoubleFunction<BasePurchasesAndSales> quantityFunction = BasePurchasesAndSales::getQuantity;
@@ -164,23 +167,25 @@ public class ShowInvoiceController<T1 extends BasePurchasesAndSales, T2 extends 
         ToDoubleFunction<BasePurchasesAndSales> totalProfitAfterDiscountInItem = t1PurchaseSalesInterface.getTotalBuy();
 
         double sumQuantity = tableView.getItems().stream().mapToDouble(quantityFunction).sum();
-        double sumTotal = tableView.getItems().stream().mapToDouble(totalFunction).sum();
-        double sumDiscount = tableView.getItems().stream().mapToDouble(discountFunction).sum();
-        double sumAfterDiscount = tableView.getItems().stream().mapToDouble(totalAfterDiscountFunction).sum();
-        double sumTotalCost = tableView.getItems().stream().mapToDouble(totalProfitAfterDiscountInItem).sum();
+        BigDecimal sumTotal = MoneyMath.sum(tableView.getItems().stream().mapToDouble(totalFunction));
+        BigDecimal sumDiscount = MoneyMath.sum(tableView.getItems().stream().mapToDouble(discountFunction));
+        BigDecimal sumAfterDiscount = MoneyMath.sum(tableView.getItems().stream().mapToDouble(totalAfterDiscountFunction));
+        BigDecimal sumTotalCost = MoneyMath.sum(tableView.getItems().stream().mapToDouble(totalProfitAfterDiscountInItem));
 
         textCount.setText(String.valueOf(tableView.getItems().size()));
         textQuantity.setText(String.valueOf(roundToTwoDecimalPlaces(sumQuantity)));
-        textTotal.setText(String.valueOf(roundToTwoDecimalPlaces(sumTotal)));
-        textDiscount.setText(String.valueOf(roundToTwoDecimalPlaces(sumDiscount)));
-        textAfterDiscount.setText(String.valueOf(roundToTwoDecimalPlaces(sumAfterDiscount)));
-        textTotalProfit.setText(String.valueOf(roundToTwoDecimalPlaces(sumTotalCost)));
+        textTotal.setText(MoneyMath.text(sumTotal));
+        textDiscount.setText(MoneyMath.text(sumDiscount));
+        textAfterDiscount.setText(MoneyMath.text(sumAfterDiscount));
+        textTotalProfit.setText(MoneyMath.text(sumTotalCost));
 
         textPaid.setText(String.valueOf(hashMap.get(ShowInvoiceNameData.PAID)));
         textRest.setText(String.valueOf(hashMap.get(ShowInvoiceNameData.REST)));
 
         // GROSS PROFIT
-        textInvoiceProfit.setText(String.valueOf(roundToTwoDecimalPlaces(sumAfterDiscount - sumTotalCost - invoiceDiscount)));
+        textInvoiceProfit.setText(MoneyMath.text(MoneyMath.subtract(
+                MoneyMath.subtract(sumAfterDiscount, sumTotalCost),
+                MoneyMath.decimal(invoiceDiscount))));
 
         btnPrint.setOnAction(actionEvent -> printData());
         btnPrintBarcode.setOnAction(actionEvent -> printBarcode());

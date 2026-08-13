@@ -1,13 +1,12 @@
 package com.hamza.account.controller.invoice;
 
+import com.hamza.account.finance.MoneyMath;
 import com.hamza.account.interfaces.api.DataInterface;
 import com.hamza.account.interfaces.api.TotalsDataInterface;
 import com.hamza.account.model.base.BaseTotals;
 import com.hamza.account.type.InvoiceType;
 
 import java.util.HashMap;
-
-import static com.hamza.controlsfx.util.NumberUtils.roundToTwoDecimalPlaces;
 
 public class ShowInvoiceDetails {
 
@@ -19,7 +18,9 @@ public class ShowInvoiceDetails {
         double paid = t2.getPaid();
         double total = t2.getTotal();
         double discount = t2.getDiscount();
-        double rest = roundToTwoDecimalPlaces(total - (discount + paid));
+        double rest = MoneyMath.asDouble(MoneyMath.subtract(
+                MoneyMath.subtract(MoneyMath.decimal(total), MoneyMath.decimal(discount)),
+                MoneyMath.decimal(paid)));
         var type = t2.getInvoiceType().getType();
         if (type == null) type = InvoiceType.CASH.getType();
 

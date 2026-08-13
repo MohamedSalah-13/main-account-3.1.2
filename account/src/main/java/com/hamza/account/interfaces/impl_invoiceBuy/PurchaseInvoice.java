@@ -1,5 +1,6 @@
 package com.hamza.account.interfaces.impl_invoiceBuy;
 
+import com.hamza.account.finance.MoneyMath;
 import com.hamza.account.interfaces.api.InvoiceBuy;
 import com.hamza.account.model.domain.*;
 import com.hamza.account.type.DiscountType;
@@ -24,7 +25,8 @@ public class PurchaseInvoice implements InvoiceBuy<Purchase, Total_buy, Supplier
         purchase.setPrice(price);
         purchase.setDiscount(discount);
         purchase.setTotal(total);
-        purchase.setTotal_after_discount(total - discount);
+        purchase.setTotal_after_discount(MoneyMath.asDouble(MoneyMath.subtract(
+                MoneyMath.decimal(total), MoneyMath.decimal(discount))));
         purchase.setItems(itemsModel);
         purchase.setExpiration_date(expireDate);
         return purchase;

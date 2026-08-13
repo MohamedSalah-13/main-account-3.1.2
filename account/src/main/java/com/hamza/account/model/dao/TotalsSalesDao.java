@@ -1,5 +1,6 @@
 package com.hamza.account.model.dao;
 
+import com.hamza.account.finance.MoneyMath;
 import com.hamza.account.document.DocumentTableSpec;
 import com.hamza.account.document.DocumentType;
 import com.hamza.account.document.DocumentWriteGuard;
@@ -19,7 +20,6 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 
-import static com.hamza.controlsfx.util.NumberUtils.roundToTwoDecimalPlaces;
 
 @Log4j2
 public class TotalsSalesDao extends AbstractDao<Total_Sales> {
@@ -209,7 +209,9 @@ public class TotalsSalesDao extends AbstractDao<Total_Sales> {
             String delegate_name = rs.getString(EmployeesDao.COLUMN_NAME);
             int treasury_id = rs.getInt(TREASURY_ID);
             String treasury_name = rs.getString(TreasuryDao.COLUMN_NAME);
-            double total_amount = total - dis;
+            var netAmount = MoneyMath.subtract(
+                    MoneyMath.decimal(total), MoneyMath.decimal(dis));
+            double total_amount = MoneyMath.asDouble(netAmount);
 
             totalSales = new Total_Sales();
             totalSales.setId(num);
@@ -220,14 +222,17 @@ public class TotalsSalesDao extends AbstractDao<Total_Sales> {
 //            totalSales.setDiscountType(DiscountType.getDiscountTypeById(rs.getInt(DISCOUNT_TYPE)));
             totalSales.setTotal_after_discount(total_amount);
             totalSales.setPaid(paid);
-            totalSales.setRest(roundToTwoDecimalPlaces(total_amount - paid));
+            totalSales.setRest(MoneyMath.asDouble(MoneyMath.subtract(
+                    netAmount, MoneyMath.decimal(paid))));
             totalSales.setCustomers(new Customers(custom_id, custom_name));
             totalSales.setStockData(new Stock(stock_id, stock_name));
             totalSales.setEmployeeObject(new Employees(delegate_id, delegate_name));
             totalSales.setTreasuryModel(new Treasury(treasury_id, treasury_name, BigDecimal.valueOf(0)));
             totalSales.setNotes(rs.getString(NOTES) != null ? rs.getString(NOTES) : " ");
             totalSales.setOtherPaid(rs.getDouble(OTHER_PAID));
-            totalSales.setAmountAfterOtherPaid(roundToTwoDecimalPlaces(total_amount - totalSales.getOtherPaid() - totalSales.getPaid()));
+            totalSales.setAmountAfterOtherPaid(MoneyMath.asDouble(MoneyMath.subtract(
+                    MoneyMath.subtract(netAmount, MoneyMath.decimal(totalSales.getOtherPaid())),
+                    MoneyMath.decimal(totalSales.getPaid()))));
             totalSales.setInvoice_status(totalSales.getAmountAfterOtherPaid() == 0 ? InvoiceStatus.CLOSE : InvoiceStatus.OPEN);
             totalSales.setCreated_at(LocalDateTime.parse(rs.getString(DATE_INSERT), DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
             totalSales.setUsers(daoFactory.usersDao().getDataById(rs.getInt(USER_ID)));

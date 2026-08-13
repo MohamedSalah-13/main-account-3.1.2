@@ -1,5 +1,6 @@
 package com.hamza.account.model.dao;
 
+import com.hamza.account.finance.MoneyMath;
 import com.hamza.account.model.domain.ItemsModel;
 import com.hamza.account.model.domain.Purchase;
 import com.hamza.account.model.domain.Suppliers;
@@ -12,7 +13,6 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.List;
 
-import static com.hamza.controlsfx.util.NumberUtils.roundToTwoDecimalPlaces;
 
 @Log4j2
 public class PurchaseDao extends DocumentLineDao<Purchase> {
@@ -100,8 +100,10 @@ public class PurchaseDao extends DocumentLineDao<Purchase> {
             double quantity = rs.getDouble(QUANTITY);
             double price = rs.getDouble(PRICE);
             double discount = rs.getDouble(DISCOUNT);
-            double total = roundToTwoDecimalPlaces((quantity * price));
-            double totalAfterDiscount = roundToTwoDecimalPlaces(total - discount);
+            var totalAmount = MoneyMath.multiply(quantity, price);
+            double total = MoneyMath.asDouble(totalAmount);
+            double totalAfterDiscount = MoneyMath.asDouble(MoneyMath.subtract(
+                    totalAmount, MoneyMath.decimal(discount)));
 
             UnitsModel unitsType = daoFactory.unitsDao().getDataById(rs.getInt(TYPE));
             unitsType.setValue(rs.getDouble(TYPE_VALUE));

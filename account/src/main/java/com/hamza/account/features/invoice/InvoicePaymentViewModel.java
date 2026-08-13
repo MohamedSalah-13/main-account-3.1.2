@@ -1,10 +1,13 @@
 package com.hamza.account.features.invoice;
 
+import com.hamza.account.finance.MoneyMath;
 import com.hamza.account.type.InvoiceType;
 import javafx.beans.property.ReadOnlyBooleanProperty;
 import javafx.beans.property.ReadOnlyBooleanWrapper;
 import javafx.beans.property.ReadOnlyObjectProperty;
 import javafx.beans.property.ReadOnlyObjectWrapper;
+
+import java.math.BigDecimal;
 
 /**
  * UI-independent state for the cash/deferred section of an invoice form.
@@ -20,19 +23,25 @@ public final class InvoicePaymentViewModel {
     private final ReadOnlyObjectWrapper<InvoiceSaveValidator.Target> invalidTarget =
             new ReadOnlyObjectWrapper<>(InvoiceSaveValidator.Target.LINES);
 
-    private double subtotal;
-    private double discount;
-    private double enteredPaid;
+    private BigDecimal subtotal = MoneyMath.ZERO;
+    private BigDecimal discount = MoneyMath.ZERO;
+    private BigDecimal enteredPaid = MoneyMath.ZERO;
 
     public void selectInvoiceType(InvoiceType type, boolean resetDeferredPayment) {
         invoiceType.set(type);
         if (resetDeferredPayment && type == InvoiceType.DEFER) {
-            enteredPaid = 0;
+            enteredPaid = MoneyMath.ZERO;
         }
         recalculate();
     }
 
     public void updateAmounts(double subtotal, double discount, double enteredPaid) {
+        updateAmounts(MoneyMath.decimal(subtotal), MoneyMath.decimal(discount),
+                MoneyMath.decimal(enteredPaid));
+    }
+
+    public void updateAmounts(BigDecimal subtotal, BigDecimal discount,
+                              BigDecimal enteredPaid) {
         this.subtotal = subtotal;
         this.discount = discount;
         this.enteredPaid = enteredPaid;

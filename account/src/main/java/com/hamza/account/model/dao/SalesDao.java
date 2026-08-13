@@ -1,5 +1,6 @@
 package com.hamza.account.model.dao;
 
+import com.hamza.account.finance.MoneyMath;
 import com.hamza.account.model.domain.Customers;
 import com.hamza.account.model.domain.Sales;
 import com.hamza.account.document.DocumentTableSpec;
@@ -11,7 +12,6 @@ import java.sql.SQLException;
 import java.time.LocalDate;
 import java.util.List;
 
-import static com.hamza.controlsfx.util.NumberUtils.roundToTwoDecimalPlaces;
 
 @Log4j2
 public class SalesDao extends DocumentLineDao<Sales> {
@@ -118,7 +118,8 @@ public class SalesDao extends DocumentLineDao<Sales> {
             sales.setPrice(aDoublePrice);
             sales.setDiscount(aDoubleDiscount);
             sales.setTotal(round);
-            sales.setTotal_after_discount(roundToTwoDecimalPlaces(round - aDoubleDiscount));
+            sales.setTotal_after_discount(MoneyMath.asDouble(MoneyMath.subtract(
+                    MoneyMath.decimal(round), MoneyMath.decimal(aDoubleDiscount))));
             var unitsModel = daoFactory.unitsDao().getDataById(rs.getInt(TYPE));
             unitsModel.setValue(rs.getDouble(TYPE_VALUE));
             sales.setUnitsType(unitsModel);

@@ -3,6 +3,7 @@ package com.hamza.account.features.invoice;
 import com.hamza.account.model.domain.Purchase;
 import org.junit.jupiter.api.Test;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -22,7 +23,18 @@ class InvoiceLineTotalsTest {
         assertEquals(30.01, totals.gross());
         assertEquals(0.31, totals.discount());
         assertEquals(29.70, totals.net());
+        assertEquals(new BigDecimal("29.70"), totals.netAmount());
         assertFalse(totals.hasInvalidLine());
+    }
+
+    @Test
+    void keepsMoneyExactWhileAggregatingRows() {
+        var totals = InvoiceLineTotals.from(List.of(
+                line(1, 0.1, 0, 0.1),
+                line(1, 0.2, 0, 0.2)));
+
+        assertEquals(new BigDecimal("0.30"), totals.grossAmount());
+        assertEquals(new BigDecimal("0.30"), totals.netAmount());
     }
 
     @Test

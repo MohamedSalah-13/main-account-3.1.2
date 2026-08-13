@@ -1,8 +1,7 @@
 package com.hamza.account.controller.invoice;
 
+import com.hamza.account.finance.MoneyMath;
 import com.hamza.account.model.base.BasePurchasesAndSales;
-
-import static com.hamza.controlsfx.util.NumberUtils.roundToTwoDecimalPlaces;
 
 public class UpdateInvoiceRow {
 
@@ -10,8 +9,9 @@ public class UpdateInvoiceRow {
         double price = selectedItem.getPrice();
         double quantity = selectedItem.getQuantity();
         double discount = selectedItem.getDiscount();
-        double round = roundToTwoDecimalPlaces((quantity * price));
-        selectedItem.setTotal(round);
-        selectedItem.setTotal_after_discount(roundToTwoDecimalPlaces(round - discount));
+        var total = MoneyMath.multiply(quantity, price);
+        selectedItem.setTotal(MoneyMath.asDouble(total));
+        selectedItem.setTotal_after_discount(MoneyMath.asDouble(
+                MoneyMath.subtract(total, MoneyMath.decimal(discount))));
     }
 }

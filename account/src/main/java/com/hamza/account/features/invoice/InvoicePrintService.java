@@ -1,6 +1,7 @@
 package com.hamza.account.features.invoice;
 
 import com.hamza.account.controller.model.ModelPrintInvoice;
+import com.hamza.account.finance.MoneyMath;
 import com.hamza.account.model.base.BasePurchasesAndSales;
 import com.hamza.account.reportData.Print_Reports;
 
@@ -38,7 +39,9 @@ public final class InvoicePrintService {
                         line.getItems().getNameItem(), line.getItems().getBarcode(),
                         line.getUnitsType().getUnit_name(), line.getPrice(), line.getQuantity(),
                         line.getTotal(), line.getDiscount(),
-                        line.getTotal() - line.getDiscount()))
+                        MoneyMath.asDouble(MoneyMath.subtract(
+                                MoneyMath.decimal(line.getTotal()),
+                                MoneyMath.decimal(line.getDiscount())))))
                 .toList();
         return new InvoicePrintRequest(lines, partyName, invoiceNumber, discount,
                 printedAt, invoiceDate, receipt, invoiceDetails, reportName);

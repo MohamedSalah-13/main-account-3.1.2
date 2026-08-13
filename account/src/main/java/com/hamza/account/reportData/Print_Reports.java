@@ -1,5 +1,6 @@
 package com.hamza.account.reportData;
 
+import com.hamza.account.finance.MoneyMath;
 import com.hamza.controlsfx.database.ConnectionManager;
 import com.hamza.account.controller.invoice.ShowInvoiceNameData;
 import com.hamza.account.controller.model.ModelPrintInvoice;
@@ -20,6 +21,7 @@ import org.jetbrains.annotations.NotNull;
 
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.HashMap;
@@ -28,7 +30,6 @@ import java.util.List;
 import static com.hamza.account.config.PropertiesName.*;
 import static com.hamza.controlsfx.dateTime.DateUtils.DATE_FORMATTER;
 import static com.hamza.controlsfx.dateTime.DateUtils.DATE_TIME_FORMATTER;
-import static com.hamza.controlsfx.util.NumberUtils.roundToTwoDecimalPlaces;
 
 @Log4j2
 public class Print_Reports extends ReportCompany {
@@ -225,16 +226,23 @@ public class Print_Reports extends ReportCompany {
 
     public void printReceiptInvoice(List<ModelPrintInvoice> list, String name, int numInvoice, double otherDiscount
             , String date_insert, String invoice_date, double delivery) {
-        double total = roundToTwoDecimalPlaces(list.stream().mapToDouble(ModelPrintInvoice::getTotal_amount).sum());
+        BigDecimal totalAmount = MoneyMath.money(list.stream()
+                .map(ModelPrintInvoice::getTotal_amount)
+                .map(MoneyMath::decimal)
+                .reduce(BigDecimal.ZERO, BigDecimal::add));
+        double total = MoneyMath.asDouble(totalAmount);
+        BigDecimal afterDiscount = MoneyMath.subtract(
+                totalAmount, MoneyMath.decimal(otherDiscount));
         HashMap<String, Object> map = dataForPrinterReceipt(name, list, total, date_insert);
         map.put("No_Invoice", numInvoice);
         map.put("discount", otherDiscount);
         map.put("invoice_date", invoice_date);
-        map.put("after_discount", total - otherDiscount);
+        map.put("after_discount", MoneyMath.asDouble(afterDiscount));
         if (delivery != 0) {
             map.put("delivery", delivery);
             map.put("active_delivery", true);
-            map.put("after_discount", total - otherDiscount + delivery);
+            map.put("after_discount", MoneyMath.asDouble(MoneyMath.add(
+                    afterDiscount, MoneyMath.decimal(delivery))));
         }
         jasperData.printJasperPrint(JasperReportPaths.Invoice.THERMAL, Setting_Language.WORD_PRINT, map, 1, printerNameThermal);
     }

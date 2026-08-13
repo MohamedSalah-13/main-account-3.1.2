@@ -1,5 +1,6 @@
 package com.hamza.account.controller.invoice;
 
+import com.hamza.account.finance.MoneyMath;
 import com.hamza.account.config.Image_Setting;
 import com.hamza.account.config.SaveDatabaseFile;
 import com.hamza.account.controller.main.DataPublisher;
@@ -56,6 +57,7 @@ import javafx.util.Callback;
 import lombok.extern.log4j.Log4j2;
 
 import java.net.URL;
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -67,7 +69,6 @@ import java.util.function.ToDoubleFunction;
 import static com.hamza.controlsfx.table.TextSearch.searchTableFromExitedText;
 import static com.hamza.controlsfx.table.columnEdit.ColumnSetting.addColumn;
 import static com.hamza.controlsfx.util.ImageChoose.createIcon;
-import static com.hamza.controlsfx.util.NumberUtils.roundToTwoDecimalPlaces;
 
 
 @Log4j2
@@ -567,24 +568,24 @@ public class TotalsController<T2 extends BaseTotals, T3 extends BaseNames, T4 ex
     }
 
     private void sumTable() {
-        double total = getSum(BaseTotals::getTotal);
-        double discount = getSum(BaseTotals::getDiscount);
-        double afterDiscount = getSum(BaseTotals::getTotal_after_discount);
-        double paid = getSum(BaseTotals::getPaid);
-        double profit = getSum(totalsDataInterface.getTotalProfit());
+        BigDecimal total = getMoneySum(BaseTotals::getTotal);
+        BigDecimal discount = getMoneySum(BaseTotals::getDiscount);
+        BigDecimal afterDiscount = getMoneySum(BaseTotals::getTotal_after_discount);
+        BigDecimal paid = getMoneySum(BaseTotals::getPaid);
+        BigDecimal profit = getMoneySum(totalsDataInterface.getTotalProfit());
 
         textSumTableSize.setText(String.valueOf(tableView.getItems().size()));
-        textSumTotals.setText(String.valueOf(roundToTwoDecimalPlaces(total)));
-        textSumDiscount.setText(String.valueOf(roundToTwoDecimalPlaces(discount)));
-        textSumAfterDiscount.setText(String.valueOf(roundToTwoDecimalPlaces(afterDiscount)));
+        textSumTotals.setText(MoneyMath.text(total));
+        textSumDiscount.setText(MoneyMath.text(discount));
+        textSumAfterDiscount.setText(MoneyMath.text(afterDiscount));
 
-        textCash.setText(String.valueOf(roundToTwoDecimalPlaces(paid)));
-        textDeffer.setText(String.valueOf(roundToTwoDecimalPlaces(afterDiscount - paid)));
-        textProfit.setText(String.format("%.2f", profit));
+        textCash.setText(MoneyMath.text(paid));
+        textDeffer.setText(MoneyMath.text(MoneyMath.subtract(afterDiscount, paid)));
+        textProfit.setText(MoneyMath.text(profit));
     }
 
-    private double getSum(ToDoubleFunction<T2> discountToDoubleFunction) {
-        return tableView.getItems().stream().mapToDouble(discountToDoubleFunction).sum();
+    private BigDecimal getMoneySum(ToDoubleFunction<T2> valueFunction) {
+        return MoneyMath.sum(tableView.getItems().stream().mapToDouble(valueFunction));
     }
 
     private void exceptionHandle(Exception e) {

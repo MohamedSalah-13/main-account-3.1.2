@@ -3,6 +3,7 @@ package com.hamza.account.features.invoice;
 import com.hamza.account.type.InvoiceType;
 import org.junit.jupiter.api.Test;
 
+import java.math.BigDecimal;
 import static org.junit.jupiter.api.Assertions.*;
 
 class InvoicePaymentTermsTest {
@@ -53,6 +54,17 @@ class InvoicePaymentTermsTest {
         assertEquals(10.01, terms.net());
         assertEquals(3.34, terms.paid());
         assertEquals(6.67, terms.remaining());
+        assertEquals(new BigDecimal("6.67"), terms.remainingAmount());
+    }
+
+    @Test
+    void acceptsExactDecimalInputsWithoutConvertingThroughDouble() throws Exception {
+        InvoicePaymentTerms terms = InvoicePaymentTerms.resolve(
+                InvoiceType.DEFER, new BigDecimal("0.30"),
+                new BigDecimal("0.10"), new BigDecimal("0.10"));
+
+        assertEquals(new BigDecimal("0.20"), terms.netAmount());
+        assertEquals(new BigDecimal("0.10"), terms.remainingAmount());
     }
 
     private void assertTarget(InvoiceSaveValidator.Target target,

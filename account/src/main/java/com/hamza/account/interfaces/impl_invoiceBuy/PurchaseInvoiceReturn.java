@@ -1,5 +1,6 @@
 package com.hamza.account.interfaces.impl_invoiceBuy;
 
+import com.hamza.account.finance.MoneyMath;
 import com.hamza.account.interfaces.api.InvoiceBuy;
 import com.hamza.account.model.domain.*;
 import com.hamza.account.type.DiscountType;
@@ -22,7 +23,8 @@ public class PurchaseInvoiceReturn implements InvoiceBuy<Purchase_Return, Total_
         purchaseReturn.setQuantity(quantity);
         purchaseReturn.setPrice(price);
         purchaseReturn.setDiscount(discount);
-        purchaseReturn.setTotal_after_discount(total - discount);
+        purchaseReturn.setTotal_after_discount(MoneyMath.asDouble(MoneyMath.subtract(
+                MoneyMath.decimal(total), MoneyMath.decimal(discount))));
         purchaseReturn.setTotal(total);
         purchaseReturn.setItems(itemsModel);
         purchaseReturn.setUnitsType(type);

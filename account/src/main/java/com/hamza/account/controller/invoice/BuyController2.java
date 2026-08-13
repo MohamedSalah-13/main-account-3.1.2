@@ -12,6 +12,7 @@ import com.hamza.account.controller.others.ServiceRegistry;
 import com.hamza.account.controller.search.ItemsSearch;
 import com.hamza.account.controller.setting.SettingTabLanguageController;
 import com.hamza.account.features.events.EmployeesChanged;
+import com.hamza.account.finance.MoneyMath;
 import com.hamza.account.features.invoice.InvoiceLineTotals;
 import com.hamza.account.features.invoice.InvoicePaymentTerms;
 import com.hamza.account.features.invoice.InvoicePaymentViewModel;
@@ -781,7 +782,7 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
         InvoicePaymentTerms payment = paymentViewModel.requireValid();
         return new InvoiceSaveCommand<>(
                 num_invoice_update, date.getValue(), payment.invoiceType(),
-                payment.discount(), discountType, payment.paid(),
+                payment.discountAmount(), discountType, payment.paidAmount(),
                 txtNotes.getText(), codeAccount, textSearchName.get(),
                 comboTreasury.getSelectionModel().getSelectedItem(),
                 comboDelegate.getSelectionModel().getSelectedItem(),
@@ -900,8 +901,7 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
     private void totalItemQuantityAndPrice() {
         double price = DoubleSetting.parseDoubleOrDefault(txtPrice.getText());
         double quantity = DoubleSetting.parseDoubleOrDefault(txtQuantity.getText());
-        double sum = roundToTwoDecimalPlaces(price * quantity);
-        txtTotals.setText(String.valueOf(sum));
+        txtTotals.setText(MoneyMath.text(MoneyMath.multiply(price, quantity)));
     }
 
     private void otherSetting() {
@@ -1026,11 +1026,11 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
         try {
             updatePaymentViewModel(resetDeferredPayment);
             InvoicePaymentTerms terms = paymentViewModel.preview();
-            txtRestAfterDiscount.setText(String.valueOf(terms.net()));
+            txtRestAfterDiscount.setText(MoneyMath.text(terms.netAmount()));
             if (terms.invoiceType() == InvoiceType.CASH || resetDeferredPayment) {
-                txtPaid.setText(String.valueOf(terms.paid()));
+                txtPaid.setText(MoneyMath.text(terms.paidAmount()));
             }
-            txtRestAfterPaid.setText(String.valueOf(terms.remaining()));
+            txtRestAfterPaid.setText(MoneyMath.text(terms.remainingAmount()));
             updatePaymentLabels(terms.invoiceType());
         } finally {
             updatingPaymentUi = false;
@@ -1079,12 +1079,13 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
 
     private void updatePaymentViewModel(boolean resetDeferredPayment) {
         paymentViewModel.selectInvoiceType(selectedInvoiceType(), resetDeferredPayment);
+        InvoiceLineTotals totals = InvoiceLineTotals.from(table.getItems());
         paymentViewModel.updateAmounts(
-                InvoiceLineTotals.from(table.getItems()).net(),
-                DoubleSetting.parseDoubleOrDefault(txtOtherDiscount.getText()),
+                totals.netAmount(),
+                MoneyMath.parseOrZero(txtOtherDiscount.getText()),
                 resetDeferredPayment
-                        ? 0
-                        : DoubleSetting.parseDoubleOrDefault(txtPaid.getText()));
+                        ? MoneyMath.ZERO
+                        : MoneyMath.parseOrZero(txtPaid.getText()));
     }
 
     private void sumTotals() {

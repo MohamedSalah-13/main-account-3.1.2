@@ -1,6 +1,7 @@
 package com.hamza.account.controller.invoice;
 
 import com.hamza.account.controller.others.DialogButtons;
+import com.hamza.account.finance.MoneyMath;
 import com.hamza.account.model.domain.ItemsModel;
 import com.hamza.account.service.SelPriceItemService;
 import com.hamza.controlsfx.database.DaoException;
@@ -13,8 +14,6 @@ import javafx.stage.Screen;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Optional;
-
-import static com.hamza.controlsfx.util.NumberUtils.roundToTwoDecimalPlaces;
 
 public class DialogCashPaid {
 
@@ -83,7 +82,8 @@ public class DialogCashPaid {
     @NotNull
     private static VBox createPaymentDialog(double amountDue) {
         Label lblTotalText = new Label("إجمالي الفاتورة:");
-        Label lblTotal = new Label(String.valueOf(roundToTwoDecimalPlaces(amountDue)));
+        var due = MoneyMath.money(amountDue);
+        Label lblTotal = new Label(MoneyMath.text(due));
 
         Label lblPaidText = new Label("المدفوع:");
         TextField paidField = new TextField();
@@ -98,10 +98,9 @@ public class DialogCashPaid {
 
         paidField.textProperty().addListener((obs, oldV, newV) -> {
             try {
-                double paid = (newV == null || newV.isEmpty()) ? 0.0 : Double.parseDouble(newV);
-                double change = paid - amountDue;
-                if (change < 0) change = 0.0; // الباقي لإرجاعه فقط عند زيادة المدفوع عن إجمالي الفاتورة
-                lblChange.setText(String.valueOf(roundToTwoDecimalPlaces(change)));
+                var change = MoneyMath.subtract(MoneyMath.parseOrZero(newV), due);
+                if (change.signum() < 0) change = MoneyMath.ZERO;
+                lblChange.setText(MoneyMath.text(change));
             } catch (Exception ex) {
                 lblChange.setText("0.00");
             }

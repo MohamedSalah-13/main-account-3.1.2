@@ -1,5 +1,6 @@
 package com.hamza.account.interfaces.impl_invoiceBuy;
 
+import com.hamza.account.finance.MoneyMath;
 import com.hamza.account.interfaces.api.InvoiceBuy;
 import com.hamza.account.model.domain.*;
 import com.hamza.account.type.DiscountType;
@@ -11,7 +12,6 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 
-import static com.hamza.controlsfx.util.NumberUtils.roundToTwoDecimalPlaces;
 
 @Log4j2
 public class SalesInvoice implements InvoiceBuy<Sales, Total_Sales, Customers, CustomerAccount> {
@@ -27,9 +27,11 @@ public class SalesInvoice implements InvoiceBuy<Sales, Total_Sales, Customers, C
         sales.setPrice(price);
         sales.setDiscount(discount);
         sales.setUnitsType(type);
-        sales.setTotal_after_discount(total - discount);
+        sales.setTotal_after_discount(MoneyMath.asDouble(MoneyMath.subtract(
+                MoneyMath.decimal(total), MoneyMath.decimal(discount))));
         sales.setTotal(total);
-        sales.setBuy_price(roundToTwoDecimalPlaces(itemsModel.getBuyPrice() * type.getValue()));
+        sales.setBuy_price(MoneyMath.asDouble(MoneyMath.multiply(
+                itemsModel.getBuyPrice(), type.getValue())));
         sales.setItems(itemsModel);
         sales.setExpiration_date(expireDate);
         return sales;

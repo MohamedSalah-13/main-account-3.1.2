@@ -84,8 +84,8 @@ public final class InvoiceSaveService<
         }
 
         InvoicePaymentTerms payment = InvoicePaymentTerms.resolve(
-                command.invoiceType(), lineTotals.net(), command.invoiceDiscount(),
-                command.enteredPaid());
+                command.invoiceType(), lineTotals.netAmount(),
+                command.invoiceDiscount(), command.enteredPaid());
         return transactions.execute(() -> persist(command, payment));
     }
 

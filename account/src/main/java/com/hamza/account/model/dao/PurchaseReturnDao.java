@@ -1,5 +1,6 @@
 package com.hamza.account.model.dao;
 
+import com.hamza.account.finance.MoneyMath;
 import com.hamza.account.model.domain.ItemsModel;
 import com.hamza.account.model.domain.Purchase_Return;
 import com.hamza.account.model.domain.UnitsModel;
@@ -12,7 +13,6 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.List;
 
-import static com.hamza.controlsfx.util.NumberUtils.roundToTwoDecimalPlaces;
 
 @Log4j2
 public class PurchaseReturnDao extends DocumentLineDao<Purchase_Return> {
@@ -86,7 +86,8 @@ public class PurchaseReturnDao extends DocumentLineDao<Purchase_Return> {
             double price = resultSet.getDouble(PRICE);
             double quantity = resultSet.getDouble(QUANTITY);
             double discount = resultSet.getDouble(DISCOUNT);
-            double total = roundToTwoDecimalPlaces(quantity * price);
+            var totalAmount = MoneyMath.multiply(quantity, price);
+            double total = MoneyMath.asDouble(totalAmount);
             UnitsModel unitsType = daofactory.unitsDao().getDataById(resultSet.getInt(TYPE));
             unitsType.setValue(resultSet.getDouble(TYPE_VALUE));
             ItemsModel items = new ItemsModel(numItem, resultSet.getString(ItemsDao.BARCODE), resultSet.getString(ItemsDao.NAME_ITEM));
@@ -98,7 +99,8 @@ public class PurchaseReturnDao extends DocumentLineDao<Purchase_Return> {
             purchaseReturn.setPrice(price);
             purchaseReturn.setTotal(total);
             purchaseReturn.setDiscount(discount);
-            purchaseReturn.setTotal_after_discount(total - discount);
+            purchaseReturn.setTotal_after_discount(MoneyMath.asDouble(MoneyMath.subtract(
+                    totalAmount, MoneyMath.decimal(discount))));
             purchaseReturn.setUnitsType(unitsType);
             purchaseReturn.setItems(items);
             purchaseReturn.setNumItem(numItem);

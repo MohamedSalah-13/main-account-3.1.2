@@ -1,5 +1,6 @@
 package com.hamza.account.model.dao;
 
+import com.hamza.account.finance.MoneyMath;
 import com.hamza.account.document.DocumentTableSpec;
 import com.hamza.account.document.DocumentType;
 import com.hamza.account.document.DocumentWriteGuard;
@@ -18,7 +19,6 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 
-import static com.hamza.controlsfx.util.NumberUtils.roundToTwoDecimalPlaces;
 
 public class TotalsBuyDao extends AbstractDao<Total_buy> {
 
@@ -189,7 +189,9 @@ public class TotalsBuyDao extends AbstractDao<Total_buy> {
             double dis = rs.getDouble(DISCOUNT);
             double paid = rs.getDouble(PAID_UP);
             int stock_id = rs.getInt(STOCK_ID);
-            double total_amount = total - dis;
+            var netAmount = MoneyMath.subtract(
+                    MoneyMath.decimal(total), MoneyMath.decimal(dis));
+            double total_amount = MoneyMath.asDouble(netAmount);
             String stock_name = rs.getString(StockDao.STOCK_NAME);
             int treasury_id = rs.getInt(TREASURY_ID);
             String treasury_name = rs.getString(TreasuryDao.COLUMN_NAME);
@@ -202,13 +204,16 @@ public class TotalsBuyDao extends AbstractDao<Total_buy> {
             total_buy.setDiscount(dis);
             total_buy.setTotal_after_discount(total_amount);
             total_buy.setPaid(paid);
-            total_buy.setRest(roundToTwoDecimalPlaces(total_amount - paid));
+            total_buy.setRest(MoneyMath.asDouble(MoneyMath.subtract(
+                    netAmount, MoneyMath.decimal(paid))));
             total_buy.setSupplierData(new Suppliers(sup_id, sup_name));
             total_buy.setStockData(new Stock(stock_id, stock_name));
             total_buy.setTreasuryModel(new Treasury(treasury_id, treasury_name, BigDecimal.valueOf(0)));
             total_buy.setNotes(rs.getString(NOTES) != null ? rs.getString(NOTES) : "");
             total_buy.setOtherPaid(rs.getDouble(OTHER_PAID));
-            total_buy.setAmountAfterOtherPaid(roundToTwoDecimalPlaces(total_amount - total_buy.getOtherPaid() - total_buy.getPaid()));
+            total_buy.setAmountAfterOtherPaid(MoneyMath.asDouble(MoneyMath.subtract(
+                    MoneyMath.subtract(netAmount, MoneyMath.decimal(total_buy.getOtherPaid())),
+                    MoneyMath.decimal(total_buy.getPaid()))));
             total_buy.setInvoice_status(total_buy.getAmountAfterOtherPaid() == 0 ? InvoiceStatus.CLOSE : InvoiceStatus.OPEN);
             total_buy.setCreated_at(LocalDateTime.parse(rs.getString(DATE_INSERT), DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
             total_buy.setUsers(daoFactory.usersDao().getDataById(rs.getInt(USER_ID)));
