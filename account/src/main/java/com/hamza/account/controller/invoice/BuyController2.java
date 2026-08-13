@@ -6,17 +6,18 @@ import com.hamza.account.authorization.AppPermissions;
 
 import com.hamza.account.config.DefaultStock;
 import com.hamza.account.config.Image_Setting;
-import com.hamza.account.config.SaveDatabaseFile;
 import com.hamza.account.controller.main.DataPublisher;
-import com.hamza.account.controller.model.ModelPrintInvoice;
 import com.hamza.account.controller.others.TextSearchController;
 import com.hamza.account.controller.others.ServiceRegistry;
 import com.hamza.account.controller.search.ItemsSearch;
 import com.hamza.account.controller.setting.SettingTabLanguageController;
 import com.hamza.account.features.events.EmployeesChanged;
-import com.hamza.account.features.events.InvoiceSaved;
 import com.hamza.account.features.invoice.InvoiceLineTotals;
 import com.hamza.account.features.invoice.InvoicePaymentTerms;
+import com.hamza.account.features.invoice.InvoicePaymentViewModel;
+import com.hamza.account.features.invoice.InvoicePostSaveService;
+import com.hamza.account.features.invoice.InvoicePrintRequest;
+import com.hamza.account.features.invoice.InvoicePrintService;
 import com.hamza.account.features.invoice.InvoiceSaveCommand;
 import com.hamza.account.features.invoice.InvoiceSaveResult;
 import com.hamza.account.features.invoice.InvoiceSaveService;
@@ -38,7 +39,6 @@ import com.hamza.account.openFxml.OpenFxmlApplication;
 import com.hamza.account.otherSetting.BarcodeProcessor;
 import com.hamza.account.otherSetting.ButtonDeleteRow;
 import com.hamza.account.otherSetting.MaskerPaneSetting;
-import com.hamza.account.reportData.Print_Reports;
 import com.hamza.account.service.*;
 import com.hamza.account.session.ShiftContext;
 import com.hamza.account.table.TableSetting;
@@ -99,8 +99,6 @@ import java.net.URL;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.*;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.TimeUnit;
 
 import static com.hamza.account.config.PropertiesName.*;
 import static com.hamza.account.controller.invoice.DialogCashPaid.showCashChangeDialog;
@@ -124,12 +122,15 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
     private final ActionTextBuy actionTextBuy;
     private final ObjectProperty<ItemsModel> itemsModel = new SimpleObjectProperty<>(new ItemsModel());
     private final BooleanProperty saveInProgress = new SimpleBooleanProperty();
+    private final InvoicePaymentViewModel paymentViewModel = new InvoicePaymentViewModel();
+    private final InvoicePrintService invoicePrintService = new InvoicePrintService();
     private final CustomerService customerService = ServiceRegistry.get(CustomerService.class);
     private final ItemsService itemsService = ServiceRegistry.get(ItemsService.class);
     private final EmployeeService employeeService = ServiceRegistry.get(EmployeeService.class);
     private final TreasuryService treasuryService = ServiceRegistry.get(TreasuryService.class);
     private final CardItemService cardItemService = ServiceRegistry.get(CardItemService.class);
     private final InvoiceSaveService<T1, T2, T3, T4> invoiceSaveService;
+    private final InvoicePostSaveService invoicePostSaveService;
     private int priceTypeByNameId = 1; // use a first price type
     private int codeAccount;
     private boolean updatingPaymentUi;
@@ -169,6 +170,8 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
         this.dataPublisher = dataPublisher;
         this.invoiceSaveService = new InvoiceSaveService<>(dataInterface,
                 treasuryService::getTreasuryByName, employeeService::getDelegateByName);
+        this.invoicePostSaveService = new InvoicePostSaveService(
+                eventBus, dataInterface.invoiceSide());
         this.actionTextBuy = new ActionTextBuy() {
             @Override
             public int addRowToTable(String barcode, double quantity, double price, double discount, double total, LocalDate expireDate) throws Exception {
@@ -770,14 +773,15 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
         }
     }
 
-    private InvoiceSaveCommand<T1> captureSaveCommand() {
+    private InvoiceSaveCommand<T1> captureSaveCommand() throws InvoiceValidationException {
         DiscountType discountType = radioAmount.isSelected()
                 ? DiscountType.AMOUNT
                 : DiscountType.RATE;
+        updatePaymentViewModel(false);
+        InvoicePaymentTerms payment = paymentViewModel.requireValid();
         return new InvoiceSaveCommand<>(
-                num_invoice_update, date.getValue(), selectedInvoiceType(),
-                DoubleSetting.parseDoubleOrDefault(txtOtherDiscount.getText()),
-                discountType, DoubleSetting.parseDoubleOrDefault(txtPaid.getText()),
+                num_invoice_update, date.getValue(), payment.invoiceType(),
+                payment.discount(), discountType, payment.paid(),
                 txtNotes.getText(), codeAccount, textSearchName.get(),
                 comboTreasury.getSelectionModel().getSelectedItem(),
                 comboDelegate.getSelectionModel().getSelectedItem(),
@@ -821,13 +825,12 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
             showCashChangeDialog(result.payment().net());
         }
 
-        List<ModelPrintInvoice> printLines = toPrintLines(command.lines());
-        printInvoice(print, result, printLines, command.partyName(), command.invoiceDate());
+        printInvoice(preparePrintRequest(print, command, result));
         if (result.updated()) {
             table.getScene().getWindow().hide();
         }
         reset_all();
-        handlePurchaseAndSales();
+        handlePostSave();
     }
 
     private void validateInvoiceForSave() throws InvoiceValidationException {
@@ -841,9 +844,8 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
         if (problem != null) {
             throw new InvoiceValidationException(problem.target(), problem.message());
         }
-        InvoicePaymentTerms.resolve(selectedInvoiceType(), totals.net(),
-                DoubleSetting.parseDoubleOrDefault(txtOtherDiscount.getText()),
-                DoubleSetting.parseDoubleOrDefault(txtPaid.getText()));
+        updatePaymentViewModel(false);
+        paymentViewModel.requireValid();
     }
 
     private void focusValidationTarget(InvoiceSaveValidator.Target target) {
@@ -860,48 +862,39 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
         Platform.runLater(requestFocus);
     }
 
-    private void handlePurchaseAndSales() {
-        CompletableFuture.runAsync(() -> {
-            try {
-                if (eventBus != null) eventBus.publish(new InvoiceSaved(dataInterface.invoiceSide()));
-                if (getInvoiceBackupAfterSave())
-                    SaveDatabaseFile.saveBeforeClose(false);
-            } catch (Exception e) {
-                logError(e);
-            }
-        }, CompletableFuture.delayedExecutor(5, TimeUnit.SECONDS));
+    private void handlePostSave() {
+        invoicePostSaveService.afterSave(getInvoiceBackupAfterSave())
+                .whenComplete((ignored, failure) -> {
+                    if (failure != null) {
+                        Platform.runLater(() -> logError(asException(failure)));
+                    }
+                });
     }
 
-    private List<ModelPrintInvoice> toPrintLines(List<T1> source) {
-        return source.stream().map(line -> new ModelPrintInvoice(
-                line.getItems().getNameItem(), line.getItems().getBarcode(),
-                line.getUnitsType().getUnit_name(), line.getPrice(), line.getQuantity(),
-                line.getTotal(), line.getDiscount(), line.getTotal() - line.getDiscount())).toList();
+    private Exception asException(Throwable failure) {
+        Throwable cause = failure.getCause() == null ? failure : failure.getCause();
+        return cause instanceof Exception exception ? exception : new RuntimeException(cause);
     }
 
-    private void printInvoice(boolean print, InvoiceSaveResult<T1, T2> result,
-                              List<ModelPrintInvoice> lines, String partyName,
-                              LocalDate invoiceDate) {
-        // print invoice
-        if (print) {
-            // Everything the report needs off the controls is read here, on the
-            // JavaFX thread; compiling and filling the Jasper report is the wait and
-            // is all that goes to the worker.
-            var discount = result.payment().discount();
-            var receipt = getPrintPaperReceiptInvoice();
-            var invoiceDetails = ShowInvoiceDetails.invoiceDetails(dataInterface, result.invoice());
-            var printedAt = LocalDateTime.now().format(DATE_TIME_FORMATTER);
+    private InvoicePrintRequest preparePrintRequest(boolean print,
+                                                    InvoiceSaveCommand<T1> command,
+                                                    InvoiceSaveResult<T1, T2> result) {
+        if (!print) {
+            return null;
+        }
+        return invoicePrintService.prepare(command.lines(), command.partyName(),
+                result.invoiceNumber(), result.payment().discount(),
+                LocalDateTime.now().format(DATE_TIME_FORMATTER), command.invoiceDate(),
+                getPrintPaperReceiptInvoice(),
+                ShowInvoiceDetails.invoiceDetails(dataInterface, result.invoice()),
+                dataInterface.designInterface().nameTextOfInvoice());
+    }
 
-            maskerPaneSetting.showMaskerPane(() -> {
-                Print_Reports printReports = new Print_Reports();
-                if (receipt) {
-                    printReports.printReceiptInvoice(lines, partyName, result.invoiceNumber()
-                            , discount, printedAt, invoiceDate.toString(), 0);
-                } else {
-                    printReports.printInvoice(lines, invoiceDetails, dataInterface.designInterface().nameTextOfInvoice());
-                }
-            });
-
+    private void printInvoice(InvoicePrintRequest request) {
+        if (request != null) {
+            maskerPaneSetting.showMaskerPane(() -> invoicePrintService.print(request));
+            maskerPaneSetting.getVoidTask().setOnFailed(event ->
+                    logError(asException(maskerPaneSetting.getVoidTask().getException())));
         }
     }
 
@@ -1032,13 +1025,8 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
         }
         updatingPaymentUi = true;
         try {
-            double subtotal = DoubleSetting.parseDoubleOrDefault(txtSumTotals.getText());
-            double discount = DoubleSetting.parseDoubleOrDefault(txtOtherDiscount.getText());
-            double enteredPaid = resetDeferredPayment
-                    ? 0
-                    : DoubleSetting.parseDoubleOrDefault(txtPaid.getText());
-            InvoicePaymentTerms terms = InvoicePaymentTerms.preview(
-                    selectedInvoiceType(), subtotal, discount, enteredPaid);
+            updatePaymentViewModel(resetDeferredPayment);
+            InvoicePaymentTerms terms = paymentViewModel.preview();
             txtRestAfterDiscount.setText(String.valueOf(terms.net()));
             if (terms.invoiceType() == InvoiceType.CASH || resetDeferredPayment) {
                 txtPaid.setText(String.valueOf(terms.paid()));
@@ -1061,17 +1049,11 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
     private void updatePaymentValidationStyle() {
         setValidationError(txtOtherDiscount, false);
         setValidationError(txtPaid, false);
-        try {
-            InvoicePaymentTerms.resolve(selectedInvoiceType(),
-                    InvoiceLineTotals.from(table.getItems()).net(),
-                    DoubleSetting.parseDoubleOrDefault(txtOtherDiscount.getText()),
-                    DoubleSetting.parseDoubleOrDefault(txtPaid.getText()));
-        } catch (InvoiceValidationException e) {
-            if (e.target() == InvoiceSaveValidator.Target.DISCOUNT) {
-                setValidationError(txtOtherDiscount, true);
-            } else if (e.target() == InvoiceSaveValidator.Target.PAID) {
-                setValidationError(txtPaid, true);
-            }
+        InvoiceSaveValidator.Target target = paymentViewModel.invalidTarget();
+        if (target == InvoiceSaveValidator.Target.DISCOUNT) {
+            setValidationError(txtOtherDiscount, true);
+        } else if (target == InvoiceSaveValidator.Target.PAID) {
+            setValidationError(txtPaid, true);
         }
     }
 
@@ -1092,15 +1074,18 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
     }
 
     private boolean paymentDraftInvalid() {
-        try {
-            InvoicePaymentTerms.resolve(selectedInvoiceType(),
-                    InvoiceLineTotals.from(table.getItems()).net(),
-                    DoubleSetting.parseDoubleOrDefault(txtOtherDiscount.getText()),
-                    DoubleSetting.parseDoubleOrDefault(txtPaid.getText()));
-            return false;
-        } catch (InvoiceValidationException ignored) {
-            return true;
-        }
+        updatePaymentViewModel(false);
+        return !paymentViewModel.isValid();
+    }
+
+    private void updatePaymentViewModel(boolean resetDeferredPayment) {
+        paymentViewModel.selectInvoiceType(selectedInvoiceType(), resetDeferredPayment);
+        paymentViewModel.updateAmounts(
+                InvoiceLineTotals.from(table.getItems()).net(),
+                DoubleSetting.parseDoubleOrDefault(txtOtherDiscount.getText()),
+                resetDeferredPayment
+                        ? 0
+                        : DoubleSetting.parseDoubleOrDefault(txtPaid.getText()));
     }
 
     private void sumTotals() {
