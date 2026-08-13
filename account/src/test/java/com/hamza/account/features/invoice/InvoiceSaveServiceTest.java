@@ -11,6 +11,7 @@ import com.hamza.account.type.DiscountType;
 import com.hamza.account.type.InvoiceType;
 import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.database.DaoList;
+import com.hamza.controlsfx.error.BusinessRuleException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -30,6 +31,7 @@ class InvoiceSaveServiceTest {
     private TotalsAndPurchaseList<Sales, Total_Sales> repository;
     private DaoList<Total_Sales> dao;
     private InvoiceNumberAllocator numberAllocator;
+    private InvoiceStockGuard stockGuard;
     private InvoiceSaveService<Sales, Total_Sales, Customers, CustomerAccount> service;
     private UserSessionContext session;
 
@@ -39,11 +41,13 @@ class InvoiceSaveServiceTest {
         repository = mock(TotalsAndPurchaseList.class);
         dao = mock(DaoList.class);
         numberAllocator = mock(InvoiceNumberAllocator.class);
+        stockGuard = mock(InvoiceStockGuard.class);
         when(repository.totalDao()).thenReturn(dao);
         service = new InvoiceSaveService<>(new SalesInvoice(), repository,
                 DocumentType.SALES, Clock.fixed(
                 Instant.parse("2026-08-13T05:00:00Z"), ZoneOffset.UTC),
                 numberAllocator, InvoiceTransactionExecutor.direct(),
+                stockGuard,
                 name -> new Treasury(1, name, BigDecimal.ZERO),
                 name -> new Employees(2, name));
         session = new UserSessionContext();
@@ -68,6 +72,7 @@ class InvoiceSaveServiceTest {
         assertEquals(10, result.invoice().getRest());
         assertEquals(44, result.persistedLines().getFirst().getInvoiceNumber());
         verify(dao).insert(result.invoice());
+        verify(stockGuard).validate(any());
         verify(dao, never()).update(any());
     }
 
@@ -84,6 +89,7 @@ class InvoiceSaveServiceTest {
                 "an edited line must reach the DAO with its stored identity");
         assertEquals(37, result.invoice().getSalesList().getFirst().getId());
         verifyNoInteractions(numberAllocator);
+        verify(stockGuard).validate(any());
         verify(dao).update(result.invoice());
         verify(dao, never()).insert(any());
     }
@@ -97,6 +103,7 @@ class InvoiceSaveServiceTest {
         verifyNoInteractions(repository);
         verifyNoInteractions(dao);
         verifyNoInteractions(numberAllocator);
+        verifyNoInteractions(stockGuard);
     }
 
     @Test
@@ -109,7 +116,22 @@ class InvoiceSaveServiceTest {
 
         assertEquals(InvoiceSaveValidator.Target.PAID, error.target());
         verifyNoInteractions(numberAllocator);
+        verifyNoInteractions(stockGuard);
         verify(dao, never()).insert(any());
+    }
+
+    @Test
+    void stockRefusalHappensBeforeNumberAllocationOrPersistence() throws Exception {
+        session.signIn(7, "cashier", Set.of(AppPermissions.SALES_CREATE));
+        doThrow(new BusinessRuleException("stock changed"))
+                .when(stockGuard).validate(any());
+
+        assertThrows(BusinessRuleException.class,
+                () -> service.save(command(0, 5)));
+
+        verifyNoInteractions(numberAllocator);
+        verify(dao, never()).insert(any());
+        verify(dao, never()).update(any());
     }
 
     private InvoiceSaveCommand<Sales> command(int existingId, double paid) {

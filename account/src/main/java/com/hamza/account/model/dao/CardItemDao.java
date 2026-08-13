@@ -1,5 +1,6 @@
 package com.hamza.account.model.dao;
 
+import com.hamza.account.config.DefaultStock;
 import com.hamza.account.model.domain.CardItems;
 import com.hamza.account.type.ProcessType;
 import com.hamza.controlsfx.database.AbstractDao;
@@ -63,8 +64,10 @@ public class CardItemDao extends AbstractDao<CardItems> {
         return withConnection(connection -> {
             Map<LocalDate, Double> balances = new LinkedHashMap<>();
             try (var statement = connection.prepareStatement(expiryBalanceSql())) {
-                for (int parameter = 1; parameter <= 4; parameter++) {
-                    statement.setInt(parameter, itemId);
+                int parameter = 1;
+                for (int branch = 0; branch < 4; branch++) {
+                    statement.setInt(parameter++, DefaultStock.ID);
+                    statement.setInt(parameter++, itemId);
                 }
                 try (ResultSet resultSet = statement.executeQuery()) {
                     while (resultSet.next()) {
@@ -82,21 +85,25 @@ public class CardItemDao extends AbstractDao<CardItems> {
         return """
                 SELECT expiration_date, SUM(base_quantity) AS available_quantity
                 FROM (
-                    SELECT expiration_date, quantity * type_value AS base_quantity
-                    FROM purchase
-                    WHERE num = ? AND expiration_date IS NOT NULL
+                    SELECT p.expiration_date, p.quantity * p.type_value AS base_quantity
+                    FROM purchase p
+                    JOIN total_buy h ON h.invoice_number = p.invoice_number
+                    WHERE h.stock_id = ? AND p.num = ? AND p.expiration_date IS NOT NULL
                     UNION ALL
-                    SELECT expiration_date, quantity * type_value AS base_quantity
-                    FROM sales_re
-                    WHERE item_id = ? AND expiration_date IS NOT NULL
+                    SELECT r.expiration_date, r.quantity * r.type_value AS base_quantity
+                    FROM sales_re r
+                    JOIN total_sales_re h ON h.id = r.invoice_number
+                    WHERE h.stock_id = ? AND r.item_id = ? AND r.expiration_date IS NOT NULL
                     UNION ALL
-                    SELECT expiration_date, -(quantity * type_value) AS base_quantity
-                    FROM sales
-                    WHERE num = ? AND expiration_date IS NOT NULL
+                    SELECT s.expiration_date, -(s.quantity * s.type_value) AS base_quantity
+                    FROM sales s
+                    JOIN total_sales h ON h.invoice_number = s.invoice_number
+                    WHERE h.stock_id = ? AND s.num = ? AND s.expiration_date IS NOT NULL
                     UNION ALL
-                    SELECT expiration_date, -(quantity * type_value) AS base_quantity
-                    FROM purchase_re
-                    WHERE item_id = ? AND expiration_date IS NOT NULL
+                    SELECT r.expiration_date, -(r.quantity * r.type_value) AS base_quantity
+                    FROM purchase_re r
+                    JOIN total_buy_re h ON h.id = r.invoice_number
+                    WHERE h.stock_id = ? AND r.item_id = ? AND r.expiration_date IS NOT NULL
                 ) expiry_movements
                 GROUP BY expiration_date
                 HAVING SUM(base_quantity) > 0

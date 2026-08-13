@@ -22,6 +22,7 @@ public record InvoiceSaveCommand<T extends BasePurchasesAndSales>(
         String partyName,
         String treasuryName,
         String delegateName,
+        boolean allowInsufficientStock,
         List<T> lines) {
 
     public InvoiceSaveCommand {
@@ -36,6 +37,17 @@ public record InvoiceSaveCommand<T extends BasePurchasesAndSales>(
 
     /** Compatibility constructor for tests and callers using legacy double models. */
     public InvoiceSaveCommand(int existingInvoiceId, LocalDate invoiceDate,
+                              InvoiceType invoiceType, BigDecimal invoiceDiscount,
+                              DiscountType discountType, BigDecimal enteredPaid,
+                              String notes, int partyId, String partyName,
+                              String treasuryName, String delegateName, List<T> lines) {
+        this(existingInvoiceId, invoiceDate, invoiceType, invoiceDiscount,
+                discountType, enteredPaid, notes, partyId, partyName,
+                treasuryName, delegateName, false, lines);
+    }
+
+    /** Compatibility constructor for tests and callers using legacy double models. */
+    public InvoiceSaveCommand(int existingInvoiceId, LocalDate invoiceDate,
                               InvoiceType invoiceType, double invoiceDiscount,
                               DiscountType discountType, double enteredPaid,
                               String notes, int partyId, String partyName,
@@ -43,7 +55,19 @@ public record InvoiceSaveCommand<T extends BasePurchasesAndSales>(
         this(existingInvoiceId, invoiceDate, invoiceType,
                 MoneyMath.decimal(invoiceDiscount), discountType,
                 MoneyMath.decimal(enteredPaid), notes, partyId, partyName,
-                treasuryName, delegateName, lines);
+                treasuryName, delegateName, false, lines);
+    }
+
+    public InvoiceSaveCommand(int existingInvoiceId, LocalDate invoiceDate,
+                              InvoiceType invoiceType, double invoiceDiscount,
+                              DiscountType discountType, double enteredPaid,
+                              String notes, int partyId, String partyName,
+                              String treasuryName, String delegateName,
+                              boolean allowInsufficientStock, List<T> lines) {
+        this(existingInvoiceId, invoiceDate, invoiceType,
+                MoneyMath.decimal(invoiceDiscount), discountType,
+                MoneyMath.decimal(enteredPaid), notes, partyId, partyName,
+                treasuryName, delegateName, allowInsufficientStock, lines);
     }
 
     public boolean updating() {

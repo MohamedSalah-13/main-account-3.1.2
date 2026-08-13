@@ -34,6 +34,7 @@ public final class InvoiceSaveService<
     private final Clock clock;
     private final InvoiceNumberAllocator numberAllocator;
     private final InvoiceTransactionExecutor transactions;
+    private final InvoiceStockGuard stockGuard;
     private final InvoiceLookup<Treasury> treasuryLookup;
     private final InvoiceLookup<Employees> delegateLookup;
 
@@ -43,6 +44,8 @@ public final class InvoiceSaveService<
         this(dataInterface.invoiceBuy(), dataInterface.totalsAndPurchaseList(),
                 dataInterface.designInterface().documentType(), Clock.systemDefaultZone(),
                 new JdbcInvoiceNumberAllocator(), InvoiceTransactionExecutor.jdbc(),
+                new InvoiceStockGuard(dataInterface.designInterface().documentType(),
+                        new JdbcInvoiceStockRepository()),
                 treasuryLookup, delegateLookup);
     }
 
@@ -51,6 +54,7 @@ public final class InvoiceSaveService<
                        DocumentType documentType, Clock clock,
                        InvoiceNumberAllocator numberAllocator,
                        InvoiceTransactionExecutor transactions,
+                       InvoiceStockGuard stockGuard,
                        InvoiceLookup<Treasury> treasuryLookup,
                        InvoiceLookup<Employees> delegateLookup) {
         this.invoiceFactory = invoiceFactory;
@@ -59,6 +63,7 @@ public final class InvoiceSaveService<
         this.clock = clock;
         this.numberAllocator = numberAllocator;
         this.transactions = transactions;
+        this.stockGuard = stockGuard;
         this.treasuryLookup = treasuryLookup;
         this.delegateLookup = delegateLookup;
     }
@@ -92,6 +97,7 @@ public final class InvoiceSaveService<
     private InvoiceSaveResult<T1, T2> persist(InvoiceSaveCommand<T1> command,
                                               InvoicePaymentTerms payment)
             throws DaoException {
+        stockGuard.validate(command);
         int invoiceNumber = command.updating()
                 ? command.existingInvoiceId()
                 : numberAllocator.next(documentType);

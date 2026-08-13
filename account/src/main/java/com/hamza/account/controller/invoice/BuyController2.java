@@ -638,6 +638,7 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
                 txtNotes.getText(), codeAccount, textSearchName.get(),
                 comboTreasury.getSelectionModel().getSelectedItem(),
                 comboDelegate.getSelectionModel().getSelectedItem(),
+                getSelWithoutBalance(),
                 List.copyOf(table.getItems()));
     }
 
