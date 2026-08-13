@@ -76,10 +76,13 @@ class InvoiceSaveServiceTest {
         session.signIn(7, "manager", Set.of(AppPermissions.SALES_UPDATE));
         when(dao.update(any())).thenReturn(1);
 
-        InvoiceSaveResult<Sales, Total_Sales> result = service.save(command(91, 5));
+        InvoiceSaveResult<Sales, Total_Sales> result = service.save(command(91, 5, 37));
 
         assertEquals(91, result.invoiceNumber());
         assertTrue(result.updated());
+        assertEquals(37, result.persistedLines().getFirst().getId(),
+                "an edited line must reach the DAO with its stored identity");
+        assertEquals(37, result.invoice().getSalesList().getFirst().getId());
         verifyNoInteractions(numberAllocator);
         verify(dao).update(result.invoice());
         verify(dao, never()).insert(any());
@@ -110,12 +113,16 @@ class InvoiceSaveServiceTest {
     }
 
     private InvoiceSaveCommand<Sales> command(int existingId, double paid) {
-        return new InvoiceSaveCommand<>(existingId, LocalDate.of(2026, 8, 13),
-                InvoiceType.DEFER, 3, DiscountType.AMOUNT, paid, " test ",
-                8, "عميل", "الرئيسية", "مندوب", List.of(line()));
+        return command(existingId, paid, 0);
     }
 
-    private Sales line() {
+    private InvoiceSaveCommand<Sales> command(int existingId, double paid, int lineId) {
+        return new InvoiceSaveCommand<>(existingId, LocalDate.of(2026, 8, 13),
+                InvoiceType.DEFER, 3, DiscountType.AMOUNT, paid, " test ",
+                8, "عميل", "الرئيسية", "مندوب", List.of(line(lineId)));
+    }
+
+    private Sales line(int id) {
         ItemsModel item = new ItemsModel();
         item.setId(12);
         item.setNameItem("صنف");
@@ -123,6 +130,7 @@ class InvoiceSaveServiceTest {
         item.setBuyPrice(4);
         UnitsModel unit = new UnitsModel(1, "قطعة", 1);
         Sales line = new Sales();
+        line.setId(id);
         line.setItems(item);
         line.setUnitsType(unit);
         line.setPrice(10);
