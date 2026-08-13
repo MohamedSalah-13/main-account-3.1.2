@@ -28,6 +28,7 @@ import javafx.scene.layout.GridPane;
 import javafx.scene.paint.Color;
 import javafx.scene.text.TextAlignment;
 import javafx.stage.Stage;
+import javafx.stage.Window;
 import javafx.util.Duration;
 import lombok.Getter;
 import lombok.extern.log4j.Log4j2;
@@ -37,6 +38,7 @@ import java.util.List;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 @Log4j2
 public class ModernDashboardApp {
@@ -52,6 +54,7 @@ public class ModernDashboardApp {
     @Getter
     private final GridPane pane;
     private final ScheduledExecutorService scheduler;
+    private final AtomicBoolean stopped = new AtomicBoolean();
 
     public ModernDashboardApp(DaoFactory daoFactory, DataPublisher dataPublisher) throws DaoException {
         this.daoFactory = daoFactory;
@@ -250,18 +253,47 @@ public class ModernDashboardApp {
         animateTile(treasuryTile, delay += 150);
 
         // إنشاء مؤقت يعمل في الخلفية - تحديث حي كل 5 ثواني
-        scheduler = Executors.newScheduledThreadPool(1);
+        scheduler = Executors.newSingleThreadScheduledExecutor(runnable -> {
+            Thread thread = new Thread(runnable, "modern-dashboard-refresh");
+            thread.setDaemon(true);
+            return thread;
+        });
+
+        // The dashboard is normally embedded through getPane(), so showWindow()
+        // and its close handler are not involved. Replacing the main scene during
+        // logout or shutdown detaches this pane and must stop its database polling.
+        pane.sceneProperty().addListener((observable, oldScene, newScene) -> {
+            if (oldScene != null && newScene == null) {
+                stop();
+                return;
+            }
+            if (newScene == null) return;
+
+            observeWindow(newScene.getWindow());
+            newScene.windowProperty().addListener((windowObservable, oldWindow, newWindow) -> {
+                if (oldWindow != null && newWindow == null) {
+                    stop();
+                } else {
+                    observeWindow(newWindow);
+                }
+            });
+        });
 
         scheduler.scheduleAtFixedRate(() -> {
+            if (stopped.get()) return;
             try {
                 var first = daoFactory.dailyDashboardReportDao().loadAll().getFirst();
+                if (stopped.get()) return;
                 var freshLowStockCount = daoFactory.itemMiniDao().loadAll().size();
+                if (stopped.get()) return;
                 var freshReceivables = daoFactory.customerReceivableDao().getReceivablesReport();
                 var freshReceivableTotal = freshReceivables.stream().mapToDouble(CustomerReceivable::getTotalReceivable).sum();
+                if (stopped.get()) return;
                 var freshCash = daoFactory.treasuryBalanceDao().getSumTreasuryBalance().stream()
                         .mapToDouble(TreasuryBalance::getBalance).sum();
 
                 Platform.runLater(() -> {
+                    if (stopped.get()) return;
                     todayData.setValue(first.getSalesTotalToday().doubleValue());
                     yesterdayData.setValue(first.getSalesTotalYesterday().doubleValue());
                     weekData.setValue(first.getSalesTotalWeek().doubleValue());
@@ -282,6 +314,7 @@ public class ModernDashboardApp {
                 });
 
             } catch (Exception e) {
+                if (stopped.get()) return;
                 log.error("Error fetching dashboard data: {}", e.getMessage(), e);
             }
         }, 3, 5, TimeUnit.SECONDS); // يبدأ بعد 3 ثواني، ثم يتكرر كل 5 ثواني
@@ -309,14 +342,25 @@ public class ModernDashboardApp {
 
             // 3. التعامل مع حدث الإغلاق
             dashboardStage.setOnCloseRequest(event -> {
-                if (scheduler != null) {
-                    scheduler.shutdownNow(); // إيقاف المؤقت
-                }
+                stop();
                 dashboardStage = null; // تفريغ المرجع لكي نتمكن من فتحها مرة أخرى
             });
         }
 
         dashboardStage.show();
+    }
+
+    public void stop() {
+        if (stopped.compareAndSet(false, true)) {
+            scheduler.shutdownNow();
+        }
+    }
+
+    private void observeWindow(Window window) {
+        if (window == null) return;
+        window.showingProperty().addListener((observable, wasShowing, isShowing) -> {
+            if (wasShowing && !isShowing) stop();
+        });
     }
 
     /**
