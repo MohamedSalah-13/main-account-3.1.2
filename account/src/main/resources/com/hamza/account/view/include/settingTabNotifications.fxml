@@ -14,7 +14,7 @@
 
 <!--
   Two columns rather than one tall stack. The three sections stacked vertically
-  ran well past the height of a POS screen, so the two short ones sit side by
+  ran well past the height of a compact desktop screen, so the two short ones sit side by
   side and only the rules table - the one that grows as rules are added - gets
   the full width. SettingTabNotificationsController collapses this back to a
   single column on a narrow window.

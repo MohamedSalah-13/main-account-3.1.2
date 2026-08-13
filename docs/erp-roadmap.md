@@ -272,7 +272,7 @@ main (pom)
   ```
   - `beforeSave`/`afterSave` **داخل** `@Transactional` الحفظ: فشل الإضافة يُرجِع المستند كاملًا.
     مقصود — فاتورة بلا قيدها المحاسبي أسوأ من فاتورة لم تُحفظ.
-  - نقاط التعليق: `BuyController2.addData`، `PosController.addDataToTable`، ودوال الحفظ في
+  - نقاط التعليق: `BuyController2.addData` ودوال الحفظ في
     `TotalsController`.
   - **فخّان معروفان:** التمييز بين البيع ومرتجع البيع هو `designInterface.show() == SALES_SHOW`
     لا `showDataForCustomer()` (الأخيرة true للاثنين) — نفس ما وقع فيه `StockLevelAlert`؛

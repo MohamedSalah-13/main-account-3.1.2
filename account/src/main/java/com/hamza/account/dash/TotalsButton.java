@@ -15,7 +15,6 @@ import com.hamza.account.service.TotalsService;
 import com.hamza.account.authorization.AppPermissions;
 import com.hamza.account.authorization.PermissionKey;
 import com.hamza.account.view.BuyApplication;
-import com.hamza.account.view.PosView;
 import com.hamza.account.view.TotalsApplication;
 import javafx.scene.Node;
 import javafx.scene.control.TabPane;
@@ -127,38 +126,6 @@ public class TotalsButton<T2 extends BaseTotals, T3 extends BaseNames, T4 extend
             public boolean addMultiTabWithSameName() {
                 return true;
             }
-        };
-    }
-
-    public ButtonWithPerm addInvoicePos() {
-
-        return new ButtonWithPerm() {
-            @Override
-            public PermissionKey getPermissionType() {
-                return dataInterface.designInterface().show();
-            }
-
-            @Override
-            public void action() throws Exception {
-                new PosView(daoFactory, dataPublisher).start(new Stage());
-            }
-
-            @Override
-            public Node imageMenu() {
-                return dataInterface.designInterface().imageMenu();
-            }
-
-            @NotNull
-            @Override
-            public String textName() {
-                return "نقاط البيع";
-            }
-
-            @Override
-            public Node imageNode() {
-                return dataInterface.designInterface().imageButton();
-            }
-
         };
     }
 

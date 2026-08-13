@@ -40,7 +40,7 @@ public class SettingTabCheckController implements Initializable {
     @FXML
     private CheckBox checkBackupAfterSave;
     @FXML
-    private CheckBox checkPrintReceiptAccount, checkPosSelectPrice, checkAddItemDirect;
+    private CheckBox checkPrintReceiptAccount, checkAddItemDirect;
     @FXML
     private CheckBox checkLogin, checkShowTotals, checkInvoicePaid, showScreenAlone;
     @FXML
@@ -72,7 +72,6 @@ public class SettingTabCheckController implements Initializable {
         checkSetting(checkBalance, "عرض تنبيه الاصناف", getItemShowAlert());
 
         checkSetting(checkShowImageHint, "إظهار تلميحات الصورة", getItemImageHint());
-        checkSetting(checkPosSelectPrice, "إظهار اختيار السعر فى الفواتير POS", getPosInvoiceShowSelectPrice());
         checkSetting(checkAddItemDirect, "إضافة الصنف مباشرة فى الفاتورة", getInvoiceAddItemDirect());
 
         checkSetting(checkIncreaseItemOnTable, "جمع الاصناف المكررة", getInvoiceIncreaseItemOneTable());
@@ -107,7 +106,6 @@ public class SettingTabCheckController implements Initializable {
         checkShowImageHint.selectedProperty().addListener((observable, oldValue, newValue) -> setItemImageHint(newValue));
         checkIncreaseItemOnTable.selectedProperty().addListener((observable, oldValue, newValue) -> setInvoiceIncreaseItemOneTable(newValue));
         checkSelWithoutBalance.selectedProperty().addListener((observable, oldValue, newValue) -> setSelWithoutBalance(newValue));
-        checkPosSelectPrice.selectedProperty().addListener((observable, oldValue, newValue) -> setPosInvoiceShowSelectPrice(newValue));
         checkAddItemDirect.selectedProperty().addListener((observableValue, aBoolean, t1) -> setInvoiceAddItemsDirect(t1));
     }
 

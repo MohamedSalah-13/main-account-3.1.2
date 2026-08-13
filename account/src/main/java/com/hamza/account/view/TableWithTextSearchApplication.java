@@ -1,7 +1,7 @@
 package com.hamza.account.view;
 
 import com.hamza.account.controller.others.TableWithTextSearchController;
-import com.hamza.account.controller.pos.DialogButtons;
+import com.hamza.account.controller.others.DialogButtons;
 import com.hamza.account.controller.search.SearchInterface;
 import com.hamza.account.openFxml.OpenFxmlApplication;
 import com.hamza.controlsfx.language.Setting_Language;

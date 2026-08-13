@@ -1,6 +1,6 @@
 package com.hamza.account.controller.invoice;
 
-import com.hamza.account.controller.pos.DialogButtons;
+import com.hamza.account.controller.others.DialogButtons;
 import com.hamza.account.model.domain.ItemsModel;
 import com.hamza.account.service.SelPriceItemService;
 import com.hamza.controlsfx.database.DaoException;

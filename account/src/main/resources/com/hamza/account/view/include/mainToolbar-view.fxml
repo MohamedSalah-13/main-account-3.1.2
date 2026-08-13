@@ -17,7 +17,6 @@
         </HBox>
 
         <Button fx:id="btnHome" mnemonicParsing="false" styleClass="app-primary-button" text="Home" />
-        <Button fx:id="btnPosSales" mnemonicParsing="false" styleClass="app-neutral-button" text="Pos Sales" />
         <Button fx:id="btnSales" mnemonicParsing="false" styleClass="app-neutral-button" text="Sales" />
         <Button fx:id="btnPurchase" mnemonicParsing="false" styleClass="app-neutral-button" text="Purchase" />
         <Button fx:id="btnItems" mnemonicParsing="false" styleClass="app-neutral-button" text="Items" />

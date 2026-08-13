@@ -239,36 +239,11 @@ public class Print_Reports extends ReportCompany {
         jasperData.printJasperPrint(JasperReportPaths.Invoice.THERMAL, Setting_Language.WORD_PRINT, map, 1, printerNameThermal);
     }
 
-    public void printReceiptNumberGenerate(int number) {
-        HashMap<String, Object> map = getCompany();
-        map.put("number", number);
-        jasperData.printJasperPrint(JasperReportPaths.Invoice.THERMAL_NUMBER_GENERATE, Setting_Language.WORD_PRINT, map, 1, printerNameThermal);
-    }
-
-    public void printReceiptInvoiceKitchen(List<ModelPrintInvoice> list, String name, int numInvoice, double otherDiscount
-            , String date_insert, String invoice_date) {
-        double total = roundToTwoDecimalPlaces(list.stream().mapToDouble(ModelPrintInvoice::getTotal_amount).sum());
-        HashMap<String, Object> map = dataForPrinterReceipt(name, list, total, date_insert);
-        map.put("No_Invoice", numInvoice);
-        map.put("discount", otherDiscount);
-        map.put("invoice_date", invoice_date);
-        map.put("after_discount", total - otherDiscount);
-        jasperData.printJasperPrint(JasperReportPaths.Invoice.THERMAL_KITCHEN_TEST, Setting_Language.WORD_PRINT, map, 1, printerNameThermal);
-    }
-
     public void printReceiptItemsQuantity(List<ItemsModel> list, String dateFrom, String dateTo) {
         HashMap<String, Object> map = getStringObjectHashMap(list, null);
         map.put("dateFrom", dateFrom);
         map.put("dateTo", dateTo);
         jasperData.printJasperPrint(JasperReportPaths.Report.REPORT_ITEMS_QUANTITY_80MM_TEMPLATE, Setting_Language.WORD_PRINT, map, 1, printerNameThermal);
-    }
-
-    public void printReceiptNames(String address, String tel, String username) {
-        HashMap<String, Object> map = getCompany();
-        map.put("username", username);
-        map.put("telUsername", tel);
-        map.put("addressUsername", address);
-        jasperData.printJasperPrint(JasperReportPaths.Invoice.THERMAL_Kitchen, Setting_Language.WORD_PRINT, map, 1, printerNameThermal);
     }
 
     public void printReportDelegate(String name, Integer year, Integer firstMonth, Integer lastMonth) throws Exception {

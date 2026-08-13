@@ -47,7 +47,6 @@ public class Image_Setting {
     public final InputStream totals = getResourceAsStream("icons8-bill-100", ImageFormat.PNG, ImageTheme.NONE);
     public final InputStream totals2 = getResourceAsStream("icons8-bill-100 (1)", ImageFormat.PNG, ImageTheme.NONE);
     public final InputStream homeWhite = getResourceAsStream("icons8-home-page-80", ImageFormat.PNG, ImageTheme.NONE);
-    public final InputStream shoppingSalesPOS = getResourceAsStream("icons8-best-sales-100", ImageFormat.PNG, ImageTheme.NONE);
     public final InputStream shoppingSales = getResourceAsStream("icons8-best-sales-64", ImageFormat.PNG, ImageTheme.NONE);
     public final InputStream shoppingPurchase = getResourceAsStream("icons8-purchase-94", ImageFormat.PNG, ImageTheme.NONE);
     public final InputStream itemWhite = getResourceAsStream("icons8-pink-basket-with-products-100", ImageFormat.PNG, ImageTheme.NONE);

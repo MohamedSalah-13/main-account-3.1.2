@@ -50,22 +50,14 @@ public class PropertiesName extends PreferencesSetting {
     private static final String BACKUP_DATABASE_SAVE_AUTOMATIC = "backup.database.save.automatic";
     private static final String BACKUP_DATABASE_SAVE_BEFORE_CLOSE = "backup.database.save.before.close";
     private static final String BACKUP_DATABASE_TIME_BACKUP = "backup.database.time_backup";
-    private static final String SPLIT_PANE_DIVIDER_POS = "pos.splitPane.divider";
-    private static final String POS_SPLIT_PANE_DIVIDER_SEARCH_ITEMS = "pos.splitPane.divider.search.items";
-    private static final String POS_PRINT_CUSTOMER = "pos.print.customer";
+    private static final String SEARCH_ITEMS_SPLIT_PANE_DIVIDER = "search.items.splitPane.divider";
     private static final String APP_LAST_RUN_VERSION = "app.lastRunVersion";
     private static final String SETTING_LOGIN_SHOW = "setting.login.show";
     private static final String SETTING_SERVER_START = "setting.server.start";
     private static final String SETTING_SHOW_INVOICE_SCREEN_SEPARATE = "setting.show.invoice.screen.separate";
-    private static final String POS_INVOICE_ITEMS_SIZE_HEIGHT = "pos.invoice.items.size.height";
-    private static final String POS_INVOICE_ITEMS_SIZE_WIDTH = "pos.invoice.items.size.width";
-    private static final String POS_INVOICE_SHOW_SELECT_PRICE = "pos.invoice.show.select.price";
-    private static final String POS_INVOICE_FONT_NAME_SIZE = "pos.invoice.font.name.size";
-    private static final String POS_INVOICE_FONT_PRICE_SIZE = "pos.invoice.font.price.size";
     private static final String MENU_SEARCH_SIZE_HEIGHT = "menu.search.size.height";
     private static final String MENU_SEARCH_SIZE_WIDTH = "menu.search.size.width";
     private static final String ACCOUNT_CONTROLLER_ROW_COLOR = "account.controller.row.color";
-    private static final String NUMBER_GENERATOR_LAST_NUMBER = "number.generator.last.number";
     private static final String FONT_COLOR_ACTIVE = "font.color.active";
     private static final String SHOW_MAIN_TOTALS = "setting.show.main.totals";
     private static final String INVOICE_ADD_ITEMS_DIRECT = "invoice.add.items.direct";
@@ -388,28 +380,12 @@ public class PropertiesName extends PreferencesSetting {
         putBoolean(INVOICE_UPDATE_PRICE, value);
     }
 
-    public static double getSplitPaneDividerPos() {
-        return getDouble(SPLIT_PANE_DIVIDER_POS, 0.5);
+    public static double getSearchItemsSplitPaneDivider() {
+        return getDouble(SEARCH_ITEMS_SPLIT_PANE_DIVIDER, 0.5);
     }
 
-    public static void setSplitPaneDividerPos(double value) {
-        putDouble(SPLIT_PANE_DIVIDER_POS, value);
-    }
-
-    public static double getPosSplitPaneDividerSearchItems() {
-        return getDouble(POS_SPLIT_PANE_DIVIDER_SEARCH_ITEMS, 0.5);
-    }
-
-    public static void setPosSplitPaneDividerSearchItems(double value) {
-        putDouble(POS_SPLIT_PANE_DIVIDER_SEARCH_ITEMS, value);
-    }
-
-    public static boolean getPosPrintCustomer() {
-        return getBoolean(POS_PRINT_CUSTOMER, true);
-    }
-
-    public static void setPosPrintCustomer(boolean value) {
-        putBoolean(POS_PRINT_CUSTOMER, value);
+    public static void setSearchItemsSplitPaneDivider(double value) {
+        putDouble(SEARCH_ITEMS_SPLIT_PANE_DIVIDER, value);
     }
 
     public static String getAppLastRunVersion() {
@@ -460,52 +436,12 @@ public class PropertiesName extends PreferencesSetting {
         putBoolean(INVOICE_SHOW_SCREEN_PAID, value);
     }
 
-    public static int getPosInvoiceItemsSizeHeight() {
-        return getInt(POS_INVOICE_ITEMS_SIZE_HEIGHT, 150);
-    }
-
-    public static void setPosInvoiceItemsSizeHeight(int value) {
-        putInt(POS_INVOICE_ITEMS_SIZE_HEIGHT, value);
-    }
-
-    public static int getPosInvoiceItemsSizeWidth() {
-        return getInt(POS_INVOICE_ITEMS_SIZE_WIDTH, 100);
-    }
-
-    public static void setPosInvoiceItemsSizeWidth(int value) {
-        putInt(POS_INVOICE_ITEMS_SIZE_WIDTH, value);
-    }
-
-    public static boolean getPosInvoiceShowSelectPrice() {
-        return getBoolean(POS_INVOICE_SHOW_SELECT_PRICE, false);
-    }
-
-    public static void setPosInvoiceShowSelectPrice(boolean value) {
-        putBoolean(POS_INVOICE_SHOW_SELECT_PRICE, value);
-    }
-
     public static boolean getInvoiceAddItemDirect() {
         return getBoolean(INVOICE_ADD_ITEMS_DIRECT, false);
     }
 
     public static void setInvoiceAddItemsDirect(boolean value) {
         putBoolean(INVOICE_ADD_ITEMS_DIRECT, value);
-    }
-
-    public static int getPosInvoiceFontNameSize() {
-        return getInt(POS_INVOICE_FONT_NAME_SIZE, 12);
-    }
-
-    public static void setPosInvoiceFontNameSize(int value) {
-        putInt(POS_INVOICE_FONT_NAME_SIZE, value);
-    }
-
-    public static int getPosInvoiceFontPriceSize() {
-        return getInt(POS_INVOICE_FONT_PRICE_SIZE, 12);
-    }
-
-    public static void setPosInvoiceFontPriceSize(int value) {
-        putInt(POS_INVOICE_FONT_PRICE_SIZE, value);
     }
 
     public static int getMenuSearchSizeHeight() {
@@ -530,14 +466,6 @@ public class PropertiesName extends PreferencesSetting {
 
     public static void setAccountControllerRowColor(String value) {
         putString(ACCOUNT_CONTROLLER_ROW_COLOR, value);
-    }
-
-    public static int getNumberGeneratorLastNumber() {
-        return getInt(NUMBER_GENERATOR_LAST_NUMBER, 1);
-    }
-
-    public static void setNumberGeneratorLastNumber(int value) {
-        putInt(NUMBER_GENERATOR_LAST_NUMBER, value);
     }
 
     public static boolean getFontColorActive() {

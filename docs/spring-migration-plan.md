@@ -177,7 +177,7 @@ beans في auto-configuration الإضافة، وتلتقطها النواة ب�
 مع `V4` القادمة في النواة، ويمكن تركيب إضافة على تثبيت قائم دون لمس تاريخ هجرات النواة.
 
 **ن-5 هي أصعبها ولها قسم خاص** — §6.3 — لأن الفاتورة الضريبية والمناديب كلتاهما تعلّقان
-عليها، و`BuyController2` (1324 سطرًا) و`PosController` (1168 سطرًا) هما نقطتا التعليق.
+عليها، و`BuyController2` هو نقطة التعليق الحالية.
 
 ---
 
@@ -320,7 +320,7 @@ beans في auto-configuration الإضافة، وتلتقطها النواة ب�
   - `beforeSave`/`afterSave` **داخل** `@Transactional` الخاصة بحفظ الفاتورة — فشل
     الإضافة يُرجِع الفاتورة كاملة. هذا مقصود: فاتورة ضريبية بلا سجل ضريبي أسوأ من
     فاتورة لم تُحفظ.
-  - نقاط التعليق: `BuyController2.addData`، `PosController.addDataToTable`، ودوال
+  - نقاط التعليق: `BuyController2.addData` ودوال
     الحفظ في `TotalsController`.
   - **حذّر:** الفرق بين البيع ومرتجع البيع هو `designInterface.show() == SALES_SHOW`
     لا `showDataForCustomer()` (الأخيرة true للاثنين) — نفس الفخ الذي وقع فيه

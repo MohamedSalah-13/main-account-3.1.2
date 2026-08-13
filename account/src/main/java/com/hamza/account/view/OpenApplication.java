@@ -2,7 +2,7 @@ package com.hamza.account.view;
 
 import com.hamza.account.config.Image_Setting;
 import com.hamza.account.config.ThemeManager;
-import com.hamza.account.controller.pos.DialogButtons;
+import com.hamza.account.controller.others.DialogButtons;
 import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.interfaceData.AppSettingInterface;
 import com.hamza.controlsfx.others.ChangeOrientation;

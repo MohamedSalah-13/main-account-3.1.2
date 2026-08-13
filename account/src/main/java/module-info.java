@@ -132,8 +132,6 @@ module com.hamza.account {
     exports com.hamza.account;
     opens com.hamza.account to javafx.fxml;
     opens com.hamza.account.config;
-    exports com.hamza.account.controller.pos;
-    opens com.hamza.account.controller.pos to javafx.fxml;
     exports com.hamza.account.features.key_setting;
     opens com.hamza.account.features.key_setting to javafx.fxml;
     exports com.hamza.account.features.export;

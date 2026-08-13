@@ -3,7 +3,7 @@ package com.hamza.account.features.choiceDialoge;
 import com.hamza.account.config.Image_Setting;
 import com.hamza.account.controller.main.DataPublisher;
 import com.hamza.account.controller.others.ServiceRegistry;
-import com.hamza.account.controller.pos.DialogButtons;
+import com.hamza.account.controller.others.DialogButtons;
 import com.hamza.account.features.events.UserRenamed;
 import com.hamza.account.features.events.UsersChanged;
 import com.hamza.controlsfx.observer.EventBus;

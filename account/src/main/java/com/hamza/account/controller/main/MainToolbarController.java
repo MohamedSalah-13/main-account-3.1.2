@@ -50,7 +50,7 @@ public class MainToolbarController implements Initializable {
     @FXML
     private Button btnPurchase;
     @FXML
-    private Button btnSales, btnPosSales;
+    private Button btnSales;
     @FXML
     private Button btnShift;
     @FXML
@@ -74,9 +74,6 @@ public class MainToolbarController implements Initializable {
         }
         dataPublisher.getShowLoginScreen().addObserver(message -> menuItemLogout.setDisable(!message));
 //        toolBar.getItems().remove(btnAlarm);
-//        toolBar.getItems().remove(btnPosSales);
-
-        showButton(btnPosSales, false);
         showButton(btnShift, false);
         replaceAlarmWithNotificationBell();
     }
@@ -105,7 +102,6 @@ public class MainToolbarController implements Initializable {
         MenuButtonSetting menuButtonSetting = new MenuButtonSetting(controller.getTabPane());
         var imageSetting = new Image_Setting();
         menuButtonSetting.configureButton(btnHome, imageSetting.homeWhite, controller.getSettingButtons().home());
-        menuButtonSetting.configureButton(btnPosSales, imageSetting.shoppingSalesPOS, controller.getTotalSales().addInvoicePos());
         menuButtonSetting.configureButton(btnSales, imageSetting.shoppingSales, controller.getTotalSales().addInvoice());
         menuButtonSetting.configureButton(btnPurchase, imageSetting.shoppingPurchase, controller.getTotalPurchase().addInvoice());
         menuButtonSetting.configureButton(btnItems, imageSetting.itemWhite, controller.getItemsButtons().allItems());
