@@ -888,11 +888,18 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
                 }
 
             T1 t1 = invoiceBuy.object_TableData(id, num_invoice, numItem, price, quantity, discount, totals, type, itemsModel, t11.getExpiration_date());
+            preservePersistedCost(t11, t1);
             list.add(t1);
             modelPrintInvoices.add(new ModelPrintInvoice(itemsModel.getNameItem(), itemsModel.getBarcode()
                     , type.getUnit_name(), price, quantity, totals, discount, totals - discount));
         }
         return list;
+    }
+
+    static void preservePersistedCost(BasePurchasesAndSales source, BasePurchasesAndSales target) {
+        if (source.getId() > 0) {
+            target.setBuy_price(source.getBuy_price());
+        }
     }
 
     private void printInvoice(boolean print, T2 t2) {

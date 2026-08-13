@@ -94,15 +94,8 @@ public class TotalsSalesDao extends AbstractDao<Total_Sales> {
         String query = updateSql();
         return insertMultiData(() -> {
             Object[] data = getUpdateData(totalSales);
-
-            //TODO 11/24/2025 6:14 AM Mohamed: update without delete
-            // first, delete data from sales
-            executeUpdateWithException(lineDeleteByDocumentSql(), totalSales.getId());
-            // Secondly, enter the sales data.
-            salesDao.insertList(totalSales.getSalesList());
-
-            // finally, insert data in total
             executeUpdateWithException(query, data);
+            salesDao.synchronizeLines(totalSales.getId(), totalSales.getSalesList());
         });
     }
 
@@ -140,11 +133,6 @@ public class TotalsSalesDao extends AbstractDao<Total_Sales> {
 
     String deleteInRangeSql(int count) {
         return SPEC.deleteInRangeSql(count);
-    }
-
-    /** Its lines go with it, and are rewritten wholesale on every update. */
-    String lineDeleteByDocumentSql() {
-        return SPEC.lineDeleteByDocumentSql();
     }
 
     String insertSql() {

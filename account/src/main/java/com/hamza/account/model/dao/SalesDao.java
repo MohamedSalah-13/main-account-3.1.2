@@ -3,7 +3,6 @@ package com.hamza.account.model.dao;
 import com.hamza.account.model.domain.Customers;
 import com.hamza.account.model.domain.Sales;
 import com.hamza.account.document.DocumentTableSpec;
-import com.hamza.controlsfx.database.AbstractDao;
 import com.hamza.controlsfx.database.DaoException;
 import lombok.extern.log4j.Log4j2;
 
@@ -15,7 +14,7 @@ import java.util.List;
 import static com.hamza.controlsfx.util.NumberUtils.roundToTwoDecimalPlaces;
 
 @Log4j2
-public class SalesDao extends AbstractDao<Sales> {
+public class SalesDao extends DocumentLineDao<Sales> {
 
     /** Which document these lines belong to, and every statement over them. */
     static final DocumentTableSpec SPEC = DocumentTableSpec.SALES;
@@ -45,7 +44,7 @@ public class SalesDao extends AbstractDao<Sales> {
     private final DaoFactory daoFactory;
 
     public SalesDao(DaoFactory daoFactory) {
-        super();
+        super(SPEC);
         this.daoFactory = daoFactory;
     }
 
@@ -96,6 +95,11 @@ public class SalesDao extends AbstractDao<Sales> {
     }
 
     @Override
+    protected Object[] lineData(Sales sales) throws DaoException {
+        return getData(sales);
+    }
+
+    @Override
     public Sales map(ResultSet rs) throws DaoException {
         Sales sales = new Sales();
 
@@ -116,6 +120,7 @@ public class SalesDao extends AbstractDao<Sales> {
             sales.setTotal(round);
             sales.setTotal_after_discount(roundToTwoDecimalPlaces(round - aDoubleDiscount));
             var unitsModel = daoFactory.unitsDao().getDataById(rs.getInt(TYPE));
+            unitsModel.setValue(rs.getDouble(TYPE_VALUE));
             sales.setUnitsType(unitsModel);
             sales.setCustomers(new Customers(rs.getString(name), 0, 0));
 

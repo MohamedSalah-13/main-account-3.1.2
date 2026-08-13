@@ -4,7 +4,6 @@ import com.hamza.account.model.domain.ItemsModel;
 import com.hamza.account.model.domain.Purchase_Return;
 import com.hamza.account.model.domain.UnitsModel;
 import com.hamza.account.document.DocumentTableSpec;
-import com.hamza.controlsfx.database.AbstractDao;
 import com.hamza.controlsfx.database.DaoException;
 import lombok.extern.log4j.Log4j2;
 
@@ -16,7 +15,7 @@ import java.util.List;
 import static com.hamza.controlsfx.util.NumberUtils.roundToTwoDecimalPlaces;
 
 @Log4j2
-public class PurchaseReturnDao extends AbstractDao<Purchase_Return> {
+public class PurchaseReturnDao extends DocumentLineDao<Purchase_Return> {
 
     /** Which document these lines belong to, and every statement over them. */
     static final DocumentTableSpec SPEC = DocumentTableSpec.PURCHASE_RETURN;
@@ -35,7 +34,7 @@ public class PurchaseReturnDao extends AbstractDao<Purchase_Return> {
     private final DaoFactory daofactory;
 
     public PurchaseReturnDao(DaoFactory daofactory) {
-        super();
+        super(SPEC);
         this.daofactory = daofactory;
     }
 
@@ -89,6 +88,7 @@ public class PurchaseReturnDao extends AbstractDao<Purchase_Return> {
             double discount = resultSet.getDouble(DISCOUNT);
             double total = roundToTwoDecimalPlaces(quantity * price);
             UnitsModel unitsType = daofactory.unitsDao().getDataById(resultSet.getInt(TYPE));
+            unitsType.setValue(resultSet.getDouble(TYPE_VALUE));
             ItemsModel items = new ItemsModel(numItem, resultSet.getString(ItemsDao.BARCODE), resultSet.getString(ItemsDao.NAME_ITEM));
 //            Purchase purchaseObject = new Purchase(resultSet.getInt(PURCHASE_ID));
             purchaseReturn = new Purchase_Return();
@@ -132,7 +132,8 @@ public class PurchaseReturnDao extends AbstractDao<Purchase_Return> {
     }
 
     /** The parameters of {@link #insertListSql()}, in its column order. */
-    Object[] lineData(Purchase_Return purchaseReturn) {
+    @Override
+    protected Object[] lineData(Purchase_Return purchaseReturn) {
         return new Object[]{purchaseReturn.getInvoiceNumber(), purchaseReturn.getItems().getId()
                 , purchaseReturn.getUnitsType().getUnit_id(), purchaseReturn.getQuantity(), purchaseReturn.getPrice(), purchaseReturn.getDiscount()
                 , purchaseReturn.getUnitsType().getValue(), purchaseReturn.getExpiration_date()};

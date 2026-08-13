@@ -174,7 +174,6 @@ class DocumentDaoStatementsTest {
             assertEquals("SELECT * FROM total_sales_names_table WHERE sup_code = ?", dao.selectByPartySql());
             assertEquals("SELECT * FROM total_sales_names_table WHERE YEAR(invoice_date) = ?", dao.selectByYearSql());
             assertEquals("DELETE FROM total_sales WHERE invoice_number IN (?,?,?)", dao.deleteInRangeSql(3));
-            assertEquals("DELETE FROM sales WHERE invoice_number=?", dao.lineDeleteByDocumentSql());
         }
 
         @Test
@@ -185,6 +184,11 @@ class DocumentDaoStatementsTest {
                     lines.selectBetweenDocumentsSql());
             assertEquals("SELECT * FROM sales_names_table WHERE num = ?", lines.selectByItemSql());
             assertEquals("DELETE FROM sales WHERE id=?", lines.deleteSql());
+            assertEquals("SELECT id FROM sales WHERE invoice_number=? FOR UPDATE", lines.lineIdsForUpdateSql());
+            assertEquals("UPDATE sales SET num=?,type=?,quantity=?,price=?,buy_price=?,total_sel_price=?,"
+                    + "total_buy_price=?,total_profit=?,discount=?,type_value=?,expiration_date=? "
+                    + "WHERE id=? AND invoice_number=?", lines.lineUpdateSql());
+            assertEquals("DELETE FROM sales WHERE id=? AND invoice_number=?", lines.lineDeleteOwnedSql());
         }
 
         @Test
@@ -276,7 +280,6 @@ class DocumentDaoStatementsTest {
             assertEquals("SELECT * FROM total_purchase_names_table WHERE sup_code = ?", dao.selectByPartySql());
             assertEquals("SELECT * FROM total_purchase_names_table WHERE YEAR(invoice_date) = ?", dao.selectByYearSql());
             assertEquals("DELETE FROM total_buy WHERE invoice_number IN (?,?,?)", dao.deleteInRangeSql(3));
-            assertEquals("DELETE FROM purchase WHERE invoice_number=?", dao.lineDeleteByDocumentSql());
         }
 
         @Test
@@ -287,6 +290,10 @@ class DocumentDaoStatementsTest {
                     lines.selectBetweenDocumentsSql());
             assertEquals("SELECT * FROM purchase_names_table WHERE num = ?", lines.selectByItemSql());
             assertEquals("DELETE FROM purchase WHERE id=?", lines.deleteSql());
+            assertEquals("SELECT id FROM purchase WHERE invoice_number=? FOR UPDATE", lines.lineIdsForUpdateSql());
+            assertEquals("UPDATE purchase SET num=?,type=?,quantity=?,price=?,discount=?,type_value=?,"
+                    + "expiration_date=? WHERE id=? AND invoice_number=?", lines.lineUpdateSql());
+            assertEquals("DELETE FROM purchase WHERE id=? AND invoice_number=?", lines.lineDeleteOwnedSql());
         }
 
         /**
@@ -378,7 +385,6 @@ class DocumentDaoStatementsTest {
             assertEquals("SELECT * FROM total_sales_return_names_table WHERE YEAR(invoice_date) = ?",
                     dao.selectByYearSql());
             assertEquals("DELETE FROM total_sales_re WHERE id IN (?,?,?)", dao.deleteInRangeSql(3));
-            assertEquals("DELETE FROM sales_re WHERE invoice_number=?", dao.lineDeleteByDocumentSql());
         }
 
         @Test
@@ -389,6 +395,11 @@ class DocumentDaoStatementsTest {
                     lines.selectBetweenDocumentsSql());
             assertEquals("SELECT * FROM sales_return_names_table WHERE item_id = ?", lines.selectByItemSql());
             assertEquals("DELETE FROM sales_re WHERE id=?", lines.deleteSql());
+            assertEquals("SELECT id FROM sales_re WHERE invoice_number=? FOR UPDATE", lines.lineIdsForUpdateSql());
+            assertEquals("UPDATE sales_re SET item_id=?,type=?,quantity=?,price=?,buy_price=?,total_sel_price=?,"
+                    + "total_buy_price=?,total_profit=?,discount=?,type_value=?,expiration_date=? "
+                    + "WHERE id=? AND invoice_number=?", lines.lineUpdateSql());
+            assertEquals("DELETE FROM sales_re WHERE id=? AND invoice_number=?", lines.lineDeleteOwnedSql());
         }
 
         /**
@@ -473,7 +484,6 @@ class DocumentDaoStatementsTest {
             assertEquals("SELECT * FROM total_purchase_return_names_table WHERE YEAR(invoice_date) = ?",
                     dao.selectByYearSql());
             assertEquals("DELETE FROM total_buy_re WHERE id IN (?,?,?)", dao.deleteInRangeSql(3));
-            assertEquals("DELETE FROM purchase_re WHERE invoice_number=?", dao.lineDeleteByDocumentSql());
         }
 
         @Test
@@ -484,6 +494,10 @@ class DocumentDaoStatementsTest {
                     lines.selectBetweenDocumentsSql());
             assertEquals("SELECT * FROM purchase_return_names_table WHERE item_id = ?", lines.selectByItemSql());
             assertEquals("DELETE FROM purchase_re WHERE id=?", lines.deleteSql());
+            assertEquals("SELECT id FROM purchase_re WHERE invoice_number=? FOR UPDATE", lines.lineIdsForUpdateSql());
+            assertEquals("UPDATE purchase_re SET item_id=?,type=?,quantity=?,price=?,discount=?,type_value=?,"
+                    + "expiration_date=? WHERE id=? AND invoice_number=?", lines.lineUpdateSql());
+            assertEquals("DELETE FROM purchase_re WHERE id=? AND invoice_number=?", lines.lineDeleteOwnedSql());
         }
 
         @Test

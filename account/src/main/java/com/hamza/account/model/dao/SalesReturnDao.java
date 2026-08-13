@@ -4,7 +4,6 @@ import com.hamza.account.model.domain.ItemsModel;
 import com.hamza.account.model.domain.Sales_Return;
 import com.hamza.account.model.domain.UnitsModel;
 import com.hamza.account.document.DocumentTableSpec;
-import com.hamza.controlsfx.database.AbstractDao;
 import com.hamza.controlsfx.database.DaoException;
 import lombok.extern.log4j.Log4j2;
 
@@ -16,7 +15,7 @@ import java.util.List;
 import static com.hamza.controlsfx.util.NumberUtils.roundToTwoDecimalPlaces;
 
 @Log4j2
-public class SalesReturnDao extends AbstractDao<Sales_Return> {
+public class SalesReturnDao extends DocumentLineDao<Sales_Return> {
 
     /** Which document these lines belong to, and every statement over them. */
     static final DocumentTableSpec SPEC = DocumentTableSpec.SALES_RETURN;
@@ -31,11 +30,12 @@ public class SalesReturnDao extends AbstractDao<Sales_Return> {
     private final String TYPE = "type";
     private final String TYPE_VALUE = "type_value";
     private final String PRICE = "price";
+    private final String BUY_PRICE = "buy_price";
     private final String DISCOUNT = "discount";
     private final String EXPIRATION_DATE = "expiration_date";
 
     public SalesReturnDao(DaoFactory daofactory) {
-        super();
+        super(SPEC);
         this.daofactory = daofactory;
     }
 
@@ -89,6 +89,7 @@ public class SalesReturnDao extends AbstractDao<Sales_Return> {
             double price = resultSet.getDouble(PRICE);
             double total = roundToTwoDecimalPlaces(quantity * price);
             UnitsModel unitsType = daofactory.unitsDao().getDataById(resultSet.getInt(TYPE));
+            unitsType.setValue(resultSet.getDouble(TYPE_VALUE));
 //            Sales salesObject = new Sales(resultSet.getInt(SALES_ID));
             salesReturn = new Sales_Return();
             salesReturn.setNumItem(numItem);
@@ -102,6 +103,7 @@ public class SalesReturnDao extends AbstractDao<Sales_Return> {
             salesReturn.setDiscount(discount);
             salesReturn.setTotal(total);
             salesReturn.setTotal_after_discount(total - discount);
+            salesReturn.setBuy_price(resultSet.getDouble(BUY_PRICE));
             salesReturn.setId(id);
 
             var date = resultSet.getDate(EXPIRATION_DATE);
@@ -135,7 +137,8 @@ public class SalesReturnDao extends AbstractDao<Sales_Return> {
     }
 
     /** The parameters of {@link #insertListSql()}, in its column order. */
-    Object[] lineData(Sales_Return salesReturn) {
+    @Override
+    protected Object[] lineData(Sales_Return salesReturn) {
         return new Object[]{salesReturn.getInvoiceNumber(), salesReturn.getItems().getId()
                 , salesReturn.getUnitsType().getUnit_id(), salesReturn.getQuantity(), salesReturn.getPrice()
                 , salesReturn.getBuy_price(), salesReturn.getTotalSelPrice()

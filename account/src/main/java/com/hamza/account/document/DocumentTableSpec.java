@@ -211,9 +211,27 @@ public record DocumentTableSpec(
         return SqlStatements.deleteStatement(lineTable, LINE_KEY);
     }
 
-    /** Lines are replaced wholesale when a document is updated, so this runs first. */
-    public String lineDeleteByDocumentSql() {
-        return SqlStatements.deleteStatement(lineTable, LINE_DOCUMENT);
+    /** Locks the current identities before an update computes its insert/update/delete delta. */
+    public String lineIdsForUpdateSql() {
+        return "SELECT " + LINE_KEY + " FROM " + lineTable
+                + " WHERE " + LINE_DOCUMENT + "=? FOR UPDATE";
+    }
+
+    /**
+     * Updates the mutable values of one line while also proving that the id still
+     * belongs to this document. The document id is deliberately not movable.
+     */
+    public String lineUpdateSql() {
+        String assignments = lineColumns.subList(1, lineColumns.size()).stream()
+                .map(column -> column + "=?")
+                .collect(java.util.stream.Collectors.joining(","));
+        return "UPDATE " + lineTable + " SET " + assignments
+                + " WHERE " + LINE_KEY + "=? AND " + LINE_DOCUMENT + "=?";
+    }
+
+    /** Deletes one removed line, scoped to the document whose edit is in progress. */
+    public String lineDeleteOwnedSql() {
+        return "DELETE FROM " + lineTable + " WHERE " + LINE_KEY + "=? AND " + LINE_DOCUMENT + "=?";
     }
 
     // ---- across the four --------------------------------------------------------------

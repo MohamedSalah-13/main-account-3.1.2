@@ -5,7 +5,6 @@ import com.hamza.account.model.domain.Purchase;
 import com.hamza.account.model.domain.Suppliers;
 import com.hamza.account.model.domain.UnitsModel;
 import com.hamza.account.document.DocumentTableSpec;
-import com.hamza.controlsfx.database.AbstractDao;
 import com.hamza.controlsfx.database.DaoException;
 import lombok.extern.log4j.Log4j2;
 
@@ -16,7 +15,7 @@ import java.util.List;
 import static com.hamza.controlsfx.util.NumberUtils.roundToTwoDecimalPlaces;
 
 @Log4j2
-public class PurchaseDao extends AbstractDao<Purchase> {
+public class PurchaseDao extends DocumentLineDao<Purchase> {
 
     /** Which document these lines belong to, and every statement over them. */
     static final DocumentTableSpec SPEC = DocumentTableSpec.PURCHASE;
@@ -36,7 +35,7 @@ public class PurchaseDao extends AbstractDao<Purchase> {
     private final String EXPIRATION_DATE = "expiration_date";
 
     public PurchaseDao(DaoFactory daoFactory) {
-        super();
+        super(SPEC);
         this.daoFactory = daoFactory;
     }
 
@@ -86,6 +85,11 @@ public class PurchaseDao extends AbstractDao<Purchase> {
     }
 
     @Override
+    protected Object[] lineData(Purchase purchase) throws DaoException {
+        return getData(purchase);
+    }
+
+    @Override
     public Purchase map(ResultSet rs) throws DaoException {
 
         Purchase purchase;
@@ -100,6 +104,7 @@ public class PurchaseDao extends AbstractDao<Purchase> {
             double totalAfterDiscount = roundToTwoDecimalPlaces(total - discount);
 
             UnitsModel unitsType = daoFactory.unitsDao().getDataById(rs.getInt(TYPE));
+            unitsType.setValue(rs.getDouble(TYPE_VALUE));
             ItemsModel items = new ItemsModel(numItem, rs.getString(ItemsDao.BARCODE), rs.getString(ItemsDao.NAME_ITEM));
             Suppliers suppliers = new Suppliers(0, rs.getString(NAME));
             purchase = new Purchase();

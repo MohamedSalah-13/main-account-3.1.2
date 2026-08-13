@@ -83,16 +83,8 @@ public class TotalsBuyDao extends AbstractDao<Total_buy> {
         String query = updateSql();
         return insertMultiData(() -> {
             Object[] data = getUpdateData(total_buy);
-
             executeUpdateWithException(query, data);
-            // first, delete data from purchase
-            executeUpdateWithException(lineDeleteByDocumentSql(), total_buy.getId());
-            // Secondly, enter the purchase data.
-            // insert if not existing
-            List<Purchase> purchaseList = total_buy.getPurchaseList();
-            purchaseDao.insertList(purchaseList);
-            // update list if existing
-//            purchaseDao.updateList(list1);
+            purchaseDao.synchronizeLines(total_buy.getId(), total_buy.getPurchaseList());
         });
     }
 
@@ -128,11 +120,6 @@ public class TotalsBuyDao extends AbstractDao<Total_buy> {
 
     String deleteInRangeSql(int count) {
         return SPEC.deleteInRangeSql(count);
-    }
-
-    /** Its lines go with it, and are rewritten wholesale on every update. */
-    String lineDeleteByDocumentSql() {
-        return SPEC.lineDeleteByDocumentSql();
     }
 
     String insertSql() {
