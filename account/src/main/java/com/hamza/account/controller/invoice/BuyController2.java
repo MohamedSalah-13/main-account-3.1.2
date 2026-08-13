@@ -1,6 +1,5 @@
 package com.hamza.account.controller.invoice;
 
-import com.hamza.account.authorization.AuthorizedDataWriter;
 import com.hamza.account.authorization.AuthorizationGuard;
 import com.hamza.account.authorization.PermissionKey;
 import com.hamza.account.authorization.AppPermissions;
@@ -16,9 +15,13 @@ import com.hamza.account.controller.search.ItemsSearch;
 import com.hamza.account.controller.setting.SettingTabLanguageController;
 import com.hamza.account.features.events.EmployeesChanged;
 import com.hamza.account.features.events.InvoiceSaved;
-import com.hamza.account.features.invoice.InvoiceLineAssembler;
 import com.hamza.account.features.invoice.InvoiceLineTotals;
+import com.hamza.account.features.invoice.InvoicePaymentTerms;
+import com.hamza.account.features.invoice.InvoiceSaveCommand;
+import com.hamza.account.features.invoice.InvoiceSaveResult;
+import com.hamza.account.features.invoice.InvoiceSaveService;
 import com.hamza.account.features.invoice.InvoiceSaveValidator;
+import com.hamza.account.features.invoice.InvoiceValidationException;
 import com.hamza.account.features.key_setting.MoveRow;
 import com.hamza.account.features.key_setting.UpdateInterface;
 import com.hamza.account.features.key_setting.UpdateQuantity;
@@ -50,7 +53,6 @@ import com.hamza.account.view.TextSearchApplication;
 import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.button.button_column.ButtonColumn;
 import com.hamza.controlsfx.database.DaoException;
-import com.hamza.controlsfx.database.DaoList;
 import com.hamza.controlsfx.interfaceData.AppSettingInterface;
 import com.hamza.controlsfx.language.Error_Text_Show;
 import com.hamza.controlsfx.language.Setting_Language;
@@ -64,7 +66,9 @@ import com.hamza.controlsfx.table.columnEdit.ColumnSetting;
 import javafx.application.Platform;
 import javafx.beans.binding.Bindings;
 import javafx.beans.binding.BooleanBinding;
+import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.ObjectProperty;
+import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.property.StringProperty;
 import javafx.beans.value.ObservableValue;
@@ -95,6 +99,8 @@ import java.net.URL;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 
 import static com.hamza.account.config.PropertiesName.*;
 import static com.hamza.account.controller.invoice.DialogCashPaid.showCashChangeDialog;
@@ -117,20 +123,20 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
     private final DataPublisher dataPublisher;
     private final ActionTextBuy actionTextBuy;
     private final ObjectProperty<ItemsModel> itemsModel = new SimpleObjectProperty<>(new ItemsModel());
+    private final BooleanProperty saveInProgress = new SimpleBooleanProperty();
     private final CustomerService customerService = ServiceRegistry.get(CustomerService.class);
     private final ItemsService itemsService = ServiceRegistry.get(ItemsService.class);
     private final EmployeeService employeeService = ServiceRegistry.get(EmployeeService.class);
     private final TreasuryService treasuryService = ServiceRegistry.get(TreasuryService.class);
     private final CardItemService cardItemService = ServiceRegistry.get(CardItemService.class);
-    private List<ModelPrintInvoice> modelPrintInvoices = new ArrayList<>();
+    private final InvoiceSaveService<T1, T2, T3, T4> invoiceSaveService;
     private int priceTypeByNameId = 1; // use a first price type
     private int codeAccount;
-    private double discountValue;
-    private int invNumber;
+    private boolean updatingPaymentUi;
     private StringProperty textSearchName, textSearchItems;
     private TextSearchController<T3> nameSearchController;
     @FXML
-    private Label labelNum, labelName, labelBarcode, labelDate, labelCondition, labelDelegate, labelTreasury, labelSearchBy, labelPrice, labelQuantity, labelItemBalance, labelTotals, last1, last2, last3, last4, last5, labelNotes, labelInvoiceTotal;
+    private Label labelNum, labelName, labelBarcode, labelDate, labelCondition, labelDelegate, labelTreasury, labelSearchBy, labelPrice, labelQuantity, labelItemBalance, labelTotals, last1, last2, last3, last4, last5, labelNotes, labelInvoiceTotal, labelPaid, labelRemaining, labelNetAfterDiscount;
     @FXML
     @Getter
     private Button btnAdd, btnSave, btnPrintSave, btnNew, btnSearch, btnUpdateItem;
@@ -161,6 +167,8 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
     public BuyController2(DataInterface<T1, T2, T3, T4> dataInterface, DataPublisher dataPublisher, int numInvoiceUpdate) throws Exception {
         super(dataInterface, dataPublisher, numInvoiceUpdate);
         this.dataPublisher = dataPublisher;
+        this.invoiceSaveService = new InvoiceSaveService<>(dataInterface,
+                treasuryService::getTreasuryByName, employeeService::getDelegateByName);
         this.actionTextBuy = new ActionTextBuy() {
             @Override
             public int addRowToTable(String barcode, double quantity, double price, double discount, double total, LocalDate expireDate) throws Exception {
@@ -740,6 +748,9 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
     }
 
     private void saveInvoice(boolean print) {
+        if (saveInProgress.get()) {
+            return;
+        }
         try {
             validateInvoiceForSave();
 
@@ -747,156 +758,145 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
                 return;
             }
 
-            if (AllAlerts.confirmSave()) {
-                String invoiceDate = date.getValue().toString();
-                double total = Double.parseDouble(txtSumTotals.getText());
-                discountValue = Double.parseDouble(txtOtherDiscount.getText());
-                double after = Double.parseDouble(textInvoiceTotal.getText());
-                double paidValue = Double.parseDouble(txtPaid.getText());
-                double remainingBalance = 0; //Double.parseDouble(paneRightController.getRest());
-                String notes = txtNotes.getText();
-
-
-                InvoiceType invoiceType = radioCash.isSelected() ? InvoiceType.CASH : InvoiceType.DEFER;
-
-                Treasury treasuryByName = treasuryService.getTreasuryByName(comboTreasury.getSelectionModel().getSelectedItem());
-
-                Employees employees = employeeService.getDelegateByName(comboDelegate.getSelectionModel().getSelectedItem());
-
-                T3 t3 = invoiceBuy.objectName(codeAccount, textSearchName.get());
-
-                // check to get code for update or insert
-                invNumber = num_invoice_update > 0 ? num_invoice_update : getInvNumber();
-
-                DiscountType discountType = radioAmount.isSelected() ? DiscountType.AMOUNT : DiscountType.RATE;
-                List<T1> list = listOfItemsPurchase(invNumber);
-
-                T2 t2 = invoiceBuy.object_Totals(invNumber, invoiceType, invoiceDate, total, discountValue, discountType, after, paidValue, remainingBalance, notes,
-                        t3, new Stock(DefaultStock.ID), employees, list, treasuryByName);
-
-
-                DaoList<T2> totalDaoList = totalsAndPurchaseList.totalDao();
-                int save = AuthorizedDataWriter.save(totalDaoList, t2, num_invoice_update > 0,
-                        createPermission(), dataInterface.designInterface().update());
-                if (save == 1) {
-                    AllAlerts.alertSave();
-                    // Show change dialog only for cash invoices
-                    if (dataInterface.designInterface().showScreenPaidInInvoice()) {
-                        if (getInvoiceShowScreenPaid())
-                            if (invoiceType.equals(InvoiceType.CASH)) {
-                                showCashChangeDialog(after);
-                            }
-                    }
-
-                    // close stage if open when update
-                    if (num_invoice_update > 0) {
-                        table.getScene().getWindow().hide();
-                    }
-
-                    reset_all();
-                    // for print invoice
-                    printInvoice(print, t2);
-
-                    // if portable version don`t create backup
-                    handlePurchaseAndSales();
-
-                }
+            if (!AllAlerts.confirmSave()) {
+                return;
             }
+            saveInBackground(print, captureSaveCommand());
+        } catch (InvoiceValidationException e) {
+            focusValidationTarget(e.target());
+            logError(e);
         } catch (Exception e) {
             logError(e);
         }
-
     }
 
-    private void validateInvoiceForSave() throws DaoException {
+    private InvoiceSaveCommand<T1> captureSaveCommand() {
+        DiscountType discountType = radioAmount.isSelected()
+                ? DiscountType.AMOUNT
+                : DiscountType.RATE;
+        return new InvoiceSaveCommand<>(
+                num_invoice_update, date.getValue(), selectedInvoiceType(),
+                DoubleSetting.parseDoubleOrDefault(txtOtherDiscount.getText()),
+                discountType, DoubleSetting.parseDoubleOrDefault(txtPaid.getText()),
+                txtNotes.getText(), codeAccount, textSearchName.get(),
+                comboTreasury.getSelectionModel().getSelectedItem(),
+                comboDelegate.getSelectionModel().getSelectedItem(),
+                List.copyOf(table.getItems()));
+    }
+
+    private void saveInBackground(boolean print, InvoiceSaveCommand<T1> command) {
+        saveInProgress.set(true);
+        javafx.concurrent.Task<InvoiceSaveResult<T1, T2>> task = new javafx.concurrent.Task<>() {
+            @Override
+            protected InvoiceSaveResult<T1, T2> call() throws Exception {
+                return invoiceSaveService.save(command);
+            }
+        };
+        task.runningProperty().addListener((observable, wasRunning, running) ->
+                {
+                    saveInProgress.set(running);
+                    maskerPaneSetting.setVisible(running);
+                });
+        task.setOnSucceeded(event -> afterSuccessfulSave(print, command, task.getValue()));
+        task.setOnFailed(event -> {
+            Throwable failure = task.getException();
+            if (failure instanceof InvoiceValidationException validation) {
+                focusValidationTarget(validation.target());
+            }
+            logError(failure instanceof Exception exception
+                    ? exception
+                    : new RuntimeException(failure));
+        });
+        Thread worker = new Thread(task, "invoice-save");
+        worker.setDaemon(true);
+        worker.start();
+    }
+
+    private void afterSuccessfulSave(boolean print, InvoiceSaveCommand<T1> command,
+                                     InvoiceSaveResult<T1, T2> result) {
+        AllAlerts.alertSave();
+        if (designInterface.showScreenPaidInInvoice()
+                && getInvoiceShowScreenPaid()
+                && result.payment().invoiceType() == InvoiceType.CASH) {
+            showCashChangeDialog(result.payment().net());
+        }
+
+        List<ModelPrintInvoice> printLines = toPrintLines(command.lines());
+        printInvoice(print, result, printLines, command.partyName(), command.invoiceDate());
+        if (result.updated()) {
+            table.getScene().getWindow().hide();
+        }
+        reset_all();
+        handlePurchaseAndSales();
+    }
+
+    private void validateInvoiceForSave() throws InvoiceValidationException {
+        InvoiceLineTotals totals = InvoiceLineTotals.from(table.getItems());
         InvoiceSaveValidator.Problem problem = InvoiceSaveValidator.firstProblem(
-                table.getItems().size(), checkTableForZeroBalanceOrPriceBoolean.get(),
-                date.getValue(), LocalDate.now(), designInterface.showDataForCustomer(),
+                totals.lineCount(), totals.hasInvalidLine(), date.getValue(), LocalDate.now(),
+                designInterface.documentType().hasDelegate(),
                 comboDelegate.getSelectionModel().getSelectedItem() != null,
                 comboTreasury.getSelectionModel().getSelectedItem() != null,
                 codeAccount).orElse(null);
-        if (problem == null) {
-            return;
+        if (problem != null) {
+            throw new InvoiceValidationException(problem.target(), problem.message());
         }
+        InvoicePaymentTerms.resolve(selectedInvoiceType(), totals.net(),
+                DoubleSetting.parseDoubleOrDefault(txtOtherDiscount.getText()),
+                DoubleSetting.parseDoubleOrDefault(txtPaid.getText()));
+    }
 
-        Runnable requestFocus = switch (problem.target()) {
+    private void focusValidationTarget(InvoiceSaveValidator.Target target) {
+        Runnable requestFocus = switch (target) {
             case LINES -> table::requestFocus;
             case DATE -> date::requestFocus;
             case DELEGATE -> comboDelegate::requestFocus;
             case TREASURY -> comboTreasury::requestFocus;
             case ACCOUNT -> nameSearchController::requestFocus;
+            case PAYMENT_TYPE -> radioCash::requestFocus;
+            case DISCOUNT -> txtOtherDiscount::requestFocus;
+            case PAID -> txtPaid::requestFocus;
         };
         Platform.runLater(requestFocus);
-        throw new DaoException(problem.message());
-    }
-
-    private PermissionKey createPermission() {
-        PermissionKey show = dataInterface.designInterface().show();
-        if (show.equals(AppPermissions.PURCHASE_SHOW)) return AppPermissions.PURCHASE_CREATE;
-        if (show.equals(AppPermissions.PURCHASE_RE_SHOW)) return AppPermissions.PURCHASE_RE_CREATE;
-        if (show.equals(AppPermissions.SALES_SHOW)) return AppPermissions.SALES_CREATE;
-        if (show.equals(AppPermissions.SALES_RE_SHOW)) return AppPermissions.SALES_RE_CREATE;
-        return AppPermissions.DISABLE_BUTTON;
     }
 
     private void handlePurchaseAndSales() {
-        Thread thread = new Thread(() -> {
+        CompletableFuture.runAsync(() -> {
             try {
-                Thread.sleep(5000);
                 if (eventBus != null) eventBus.publish(new InvoiceSaved(dataInterface.invoiceSide()));
                 if (getInvoiceBackupAfterSave())
                     SaveDatabaseFile.saveBeforeClose(false);
             } catch (Exception e) {
                 logError(e);
             }
-        });
-        thread.start();
+        }, CompletableFuture.delayedExecutor(5, TimeUnit.SECONDS));
     }
 
-    /**
-     * Falling back to a fixed number here used to let a failed lookup save the
-     * invoice as number 1, on top of whatever already held that number. The save
-     * has to stop instead, so the failure is propagated to {@link #saveInvoice}.
-     */
-    private int getInvNumber() throws Exception {
-        try {
-            return dataInterface.totalsAndPurchaseList().getMaxId();
-        } catch (Exception e) {
-            throw new DaoException(Error_Text_Show.NO_DATA + e.getMessage(), e);
-        }
-    }
-
-    private List<T1> listOfItemsPurchase(int invoiceNumber) throws DaoException {
-        List<T1> source = List.copyOf(table.getItems());
-        List<T1> persistenceLines = InvoiceLineAssembler.assemble(
-                source, invoiceNumber, invoiceBuy::object_TableData);
-        modelPrintInvoices = source.stream().map(line -> new ModelPrintInvoice(
+    private List<ModelPrintInvoice> toPrintLines(List<T1> source) {
+        return source.stream().map(line -> new ModelPrintInvoice(
                 line.getItems().getNameItem(), line.getItems().getBarcode(),
                 line.getUnitsType().getUnit_name(), line.getPrice(), line.getQuantity(),
                 line.getTotal(), line.getDiscount(), line.getTotal() - line.getDiscount())).toList();
-        return persistenceLines;
     }
 
-    private void printInvoice(boolean print, T2 t2) {
+    private void printInvoice(boolean print, InvoiceSaveResult<T1, T2> result,
+                              List<ModelPrintInvoice> lines, String partyName,
+                              LocalDate invoiceDate) {
         // print invoice
         if (print) {
             // Everything the report needs off the controls is read here, on the
             // JavaFX thread; compiling and filling the Jasper report is the wait and
             // is all that goes to the worker.
-            var lines = modelPrintInvoices;
-            var discount = discountValue;
-            var customerName = textSearchName.getValue();
-            var invoiceDate = date.getValue().toString();
+            var discount = result.payment().discount();
             var receipt = getPrintPaperReceiptInvoice();
-            var invoiceDetails = ShowInvoiceDetails.invoiceDetails(dataInterface, t2);
-            modelPrintInvoices = new ArrayList<>();
-            discountValue = 0.0;
+            var invoiceDetails = ShowInvoiceDetails.invoiceDetails(dataInterface, result.invoice());
+            var printedAt = LocalDateTime.now().format(DATE_TIME_FORMATTER);
 
             maskerPaneSetting.showMaskerPane(() -> {
                 Print_Reports printReports = new Print_Reports();
                 if (receipt) {
-                    printReports.printReceiptInvoice(lines, customerName, invNumber
-                            , discount, LocalDateTime.now().format(DATE_TIME_FORMATTER), invoiceDate, 0);
+                    printReports.printReceiptInvoice(lines, partyName, result.invoiceNumber()
+                            , discount, printedAt, invoiceDate.toString(), 0);
                 } else {
                     printReports.printInvoice(lines, invoiceDetails, dataInterface.designInterface().nameTextOfInvoice());
                 }
@@ -1005,39 +1005,101 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
     }
 
     private void totalSetting() {
-        txtPaid.disableProperty().bind(radioDeffer.selectedProperty().not());
+        txtPaid.disableProperty().bind(radioCash.selectedProperty());
+        txtPaid.setPromptText("دفعة نقدية مقدمة للفاتورة الآجلة");
+        radioCash.setTooltip(new Tooltip("يُسدد صافي الفاتورة بالكامل تلقائيًا"));
+        radioDeffer.setTooltip(new Tooltip("يمكن إدخال دفعة مقدمة ويُرحّل المتبقي إلى الحساب"));
         radioCash.selectedProperty().addListener((observable, oldValue, newValue) -> {
             if (newValue) {
-                radioDeffer.setSelected(false);
-                txtPaid.setText(txtRestAfterDiscount.getText());
+                refreshPaymentSummary(false);
             }
         });
-        txtOtherDiscount.textProperty().addListener((observable, oldValue, newValue) -> otherDiscount());
-        txtSumTotals.textProperty().addListener((observableValue, s, t1) -> otherDiscount());
-
-        txtPaid.textProperty().addListener((observableValue, s, t1) -> {
-            double paid = DoubleSetting.parseDoubleOrDefault(t1);
-            double afterDiscount = DoubleSetting.parseDoubleOrDefault(txtRestAfterDiscount.getText());
-            txtRestAfterPaid.setText(String.valueOf(afterDiscount - paid));
+        radioDeffer.selectedProperty().addListener((observable, oldValue, newValue) -> {
+            if (newValue) {
+                refreshPaymentSummary(true);
+            }
         });
-
-        txtRestAfterDiscount.textProperty().addListener((observableValue, s, t1) -> {
-            double paid = DoubleSetting.parseDoubleOrDefault(txtPaid.getText());
-            double rad = DoubleSetting.parseDoubleOrDefault(t1);
-            txtRestAfterPaid.setText(String.valueOf(rad - paid));
-        });
-
+        txtOtherDiscount.textProperty().addListener((observable, oldValue, newValue) -> refreshPaymentSummary(false));
+        txtSumTotals.textProperty().addListener((observable, oldValue, newValue) -> refreshPaymentSummary(false));
+        txtPaid.textProperty().addListener((observable, oldValue, newValue) -> refreshPaymentSummary(false));
         textInvoiceTotal.textProperty().bind(txtRestAfterDiscount.textProperty());
+        refreshPaymentSummary(false);
     }
 
-    private void otherDiscount() {
-        double totalCost = DoubleSetting.parseDoubleOrDefault(txtSumTotals.getText());
-        double discountValue = DoubleSetting.parseDoubleOrDefault(txtOtherDiscount.getText());
-        txtRestAfterDiscount.setText(String.valueOf(totalCost - discountValue));
+    private void refreshPaymentSummary(boolean resetDeferredPayment) {
+        if (updatingPaymentUi) {
+            return;
+        }
+        updatingPaymentUi = true;
+        try {
+            double subtotal = DoubleSetting.parseDoubleOrDefault(txtSumTotals.getText());
+            double discount = DoubleSetting.parseDoubleOrDefault(txtOtherDiscount.getText());
+            double enteredPaid = resetDeferredPayment
+                    ? 0
+                    : DoubleSetting.parseDoubleOrDefault(txtPaid.getText());
+            InvoicePaymentTerms terms = InvoicePaymentTerms.preview(
+                    selectedInvoiceType(), subtotal, discount, enteredPaid);
+            txtRestAfterDiscount.setText(String.valueOf(terms.net()));
+            if (terms.invoiceType() == InvoiceType.CASH || resetDeferredPayment) {
+                txtPaid.setText(String.valueOf(terms.paid()));
+            }
+            txtRestAfterPaid.setText(String.valueOf(terms.remaining()));
+            updatePaymentLabels(terms.invoiceType());
+        } finally {
+            updatingPaymentUi = false;
+        }
+        updatePaymentValidationStyle();
+    }
 
-        // paid setting
-        if (radioCash.isSelected()) {
-            txtPaid.setText(txtRestAfterDiscount.getText());
+    private void updatePaymentLabels(InvoiceType type) {
+        boolean deferred = type == InvoiceType.DEFER;
+        labelPaid.setText(deferred ? "دفعة مقدمة" : "المدفوع نقدًا");
+        labelRemaining.setText(deferred ? "المتبقي على الحساب" : "المتبقي");
+        labelNetAfterDiscount.setText("الصافي بعد الخصم");
+    }
+
+    private void updatePaymentValidationStyle() {
+        setValidationError(txtOtherDiscount, false);
+        setValidationError(txtPaid, false);
+        try {
+            InvoicePaymentTerms.resolve(selectedInvoiceType(),
+                    InvoiceLineTotals.from(table.getItems()).net(),
+                    DoubleSetting.parseDoubleOrDefault(txtOtherDiscount.getText()),
+                    DoubleSetting.parseDoubleOrDefault(txtPaid.getText()));
+        } catch (InvoiceValidationException e) {
+            if (e.target() == InvoiceSaveValidator.Target.DISCOUNT) {
+                setValidationError(txtOtherDiscount, true);
+            } else if (e.target() == InvoiceSaveValidator.Target.PAID) {
+                setValidationError(txtPaid, true);
+            }
+        }
+    }
+
+    private void setValidationError(Control control, boolean invalid) {
+        if (invalid) {
+            if (!control.getStyleClass().contains("validation-error")) {
+                control.getStyleClass().add("validation-error");
+            }
+        } else {
+            control.getStyleClass().remove("validation-error");
+        }
+    }
+
+    private InvoiceType selectedInvoiceType() {
+        if (radioCash.isSelected()) return InvoiceType.CASH;
+        if (radioDeffer.isSelected()) return InvoiceType.DEFER;
+        return null;
+    }
+
+    private boolean paymentDraftInvalid() {
+        try {
+            InvoicePaymentTerms.resolve(selectedInvoiceType(),
+                    InvoiceLineTotals.from(table.getItems()).net(),
+                    DoubleSetting.parseDoubleOrDefault(txtOtherDiscount.getText()),
+                    DoubleSetting.parseDoubleOrDefault(txtPaid.getText()));
+            return false;
+        } catch (InvoiceValidationException ignored) {
+            return true;
         }
     }
 
@@ -1221,7 +1283,19 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
                 .or(checkTableForZeroBalanceOrPriceBoolean)
                 .or(comboTreasury.valueProperty().isNull());
 
-        if (designInterface.showDataForCustomer()) {
+        BooleanBinding invalidPayment = Bindings.createBooleanBinding(
+                this::paymentDraftInvalid,
+                txtSumTotals.textProperty(), txtOtherDiscount.textProperty(),
+                txtPaid.textProperty(), radioCash.selectedProperty(),
+                radioDeffer.selectedProperty(), checkTableForZeroBalanceOrPriceBoolean);
+        PermissionKey writePermission = num_invoice_update > 0
+                ? designInterface.documentType().updatePermission()
+                : designInterface.documentType().createPermission();
+        BooleanBinding writeDenied = Bindings.createBooleanBinding(
+                () -> !AuthorizationGuard.isGranted(writePermission));
+        binding = binding.or(invalidPayment).or(writeDenied).or(saveInProgress);
+
+        if (designInterface.documentType().hasDelegate()) {
             binding = binding.or(comboDelegate.valueProperty().isNull());
         }
 

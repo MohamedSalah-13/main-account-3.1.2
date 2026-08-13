@@ -54,7 +54,10 @@ public final class InvoiceSaveValidator {
         DATE,
         DELEGATE,
         TREASURY,
-        ACCOUNT
+        ACCOUNT,
+        PAYMENT_TYPE,
+        DISCOUNT,
+        PAID
     }
 
     public record Problem(Target target, String message) {

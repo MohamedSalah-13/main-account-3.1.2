@@ -2,6 +2,7 @@ package com.hamza.account.model.dao;
 
 import com.hamza.account.document.DocumentTableSpec;
 import com.hamza.account.document.DocumentType;
+import com.hamza.account.document.DocumentWriteGuard;
 import com.hamza.account.model.domain.Stock;
 import com.hamza.account.model.domain.Suppliers;
 import com.hamza.account.model.domain.Total_Buy_Re;
@@ -72,7 +73,8 @@ public class TotalsPurchaseReturnDao extends AbstractDao<Total_Buy_Re> {
         String query = insertSql();
         return insertMultiData(() -> {
             // first, insert data to total
-            executeUpdateWithException(query, getData(totalBuyRe));
+            DocumentWriteGuard.requireSingleHeaderRow(
+                    executeUpdateWithException(query, getData(totalBuyRe)), DOCUMENT_TYPE);
             // Secondly, enter the purchase data.
             returnPurchaseDao.insertList(totalBuyRe.getPurchaseReturnList());
         });
@@ -84,7 +86,8 @@ public class TotalsPurchaseReturnDao extends AbstractDao<Total_Buy_Re> {
         String query = updateSql();
         return insertMultiData(() -> {
             Object[] objects = getUpdateData(totalBuyRe);
-            executeUpdateWithException(query, objects);
+            DocumentWriteGuard.requireSingleHeaderRow(
+                    executeUpdateWithException(query, objects), DOCUMENT_TYPE);
             returnPurchaseDao.synchronizeLines(
                     totalBuyRe.getId(), totalBuyRe.getPurchaseReturnList());
         });

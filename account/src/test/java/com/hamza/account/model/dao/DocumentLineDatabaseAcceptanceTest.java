@@ -1,5 +1,7 @@
 package com.hamza.account.model.dao;
 
+import com.hamza.account.document.DocumentType;
+import com.hamza.account.features.invoice.JdbcInvoiceNumberAllocator;
 import com.hamza.account.model.domain.ItemsModel;
 import com.hamza.account.model.domain.Purchase;
 import com.hamza.account.model.domain.Purchase_Return;
@@ -86,6 +88,36 @@ class DocumentLineDatabaseAcceptanceTest {
                     assertEquals(0, rows.getInt(1), "acceptance data must be rolled back");
                 }
             }
+        } finally {
+            ConnectionManager.release(connection);
+        }
+    }
+
+    @Test
+    void invoiceNumberAllocationJoinsAndRollsBackWithTheOuterTransaction() throws Exception {
+        long before;
+        Connection connection = ConnectionManager.acquire();
+        try {
+            before = sequenceValue(connection, DocumentType.SALES);
+        } finally {
+            ConnectionManager.release(connection);
+        }
+
+        Connection transaction = ConnectionManager.beginTransaction();
+        assertTrue(transaction != null);
+        try {
+            JdbcInvoiceNumberAllocator allocator = new JdbcInvoiceNumberAllocator();
+            assertEquals(before + 1, allocator.next(DocumentType.SALES));
+            assertEquals(before + 2, allocator.next(DocumentType.SALES));
+        } finally {
+            transaction.rollback();
+            ConnectionManager.endTransaction(transaction);
+        }
+
+        connection = ConnectionManager.acquire();
+        try {
+            assertEquals(before, sequenceValue(connection, DocumentType.SALES),
+                    "rolled-back invoice save must not consume its number");
         } finally {
             ConnectionManager.release(connection);
         }
@@ -234,6 +266,17 @@ class DocumentLineDatabaseAcceptanceTest {
                      "SELECT COALESCE(MAX(" + key + "),0)+1000 FROM " + table)) {
             assertTrue(rows.next());
             return rows.getInt(1);
+        }
+    }
+
+    private static long sequenceValue(Connection connection, DocumentType type) throws Exception {
+        try (PreparedStatement statement = connection.prepareStatement(
+                "SELECT current_value FROM document_sequences WHERE document_type=?")) {
+            statement.setString(1, type.name());
+            try (ResultSet rows = statement.executeQuery()) {
+                assertTrue(rows.next());
+                return rows.getLong(1);
+            }
         }
     }
 

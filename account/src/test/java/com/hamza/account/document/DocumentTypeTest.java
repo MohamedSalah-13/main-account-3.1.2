@@ -166,6 +166,7 @@ class DocumentTypeTest {
         void salesPermissions() {
             DocumentType type = DocumentType.SALES;
             assertEquals(AppPermissions.SALES_SHOW, type.showPermission());
+            assertEquals(AppPermissions.SALES_CREATE, type.createPermission());
             assertEquals(AppPermissions.SALES_UPDATE, type.updatePermission());
             assertEquals(AppPermissions.SALES_DELETE, type.deletePermission());
             assertEquals(AppPermissions.TOTAL_SALES_SHOW, type.showTotalsPermission());
@@ -176,6 +177,7 @@ class DocumentTypeTest {
         void salesReturnPermissions() {
             DocumentType type = DocumentType.SALES_RETURN;
             assertEquals(AppPermissions.SALES_RE_SHOW, type.showPermission());
+            assertEquals(AppPermissions.SALES_RE_CREATE, type.createPermission());
             assertEquals(AppPermissions.SALES_RE_UPDATE, type.updatePermission());
             assertEquals(AppPermissions.SALES_RE_DELETE, type.deletePermission());
             assertEquals(AppPermissions.TOTAL_SALES_RE_SHOW, type.showTotalsPermission());
@@ -186,6 +188,7 @@ class DocumentTypeTest {
         void purchasePermissions() {
             DocumentType type = DocumentType.PURCHASE;
             assertEquals(AppPermissions.PURCHASE_SHOW, type.showPermission());
+            assertEquals(AppPermissions.PURCHASE_CREATE, type.createPermission());
             assertEquals(AppPermissions.PURCHASE_UPDATE, type.updatePermission());
             assertEquals(AppPermissions.PURCHASE_DELETE, type.deletePermission());
             assertEquals(AppPermissions.TOTAL_PURCHASE_SHOW, type.showTotalsPermission());
@@ -196,6 +199,7 @@ class DocumentTypeTest {
         void purchaseReturnPermissions() {
             DocumentType type = DocumentType.PURCHASE_RETURN;
             assertEquals(AppPermissions.PURCHASE_RE_SHOW, type.showPermission());
+            assertEquals(AppPermissions.PURCHASE_RE_CREATE, type.createPermission());
             assertEquals(AppPermissions.PURCHASE_RE_UPDATE, type.updatePermission());
             assertEquals(AppPermissions.PURCHASE_RE_DELETE, type.deletePermission());
             assertEquals(AppPermissions.TOTAL_PURCHASE_RE_SHOW, type.showTotalsPermission());
@@ -213,12 +217,12 @@ class DocumentTypeTest {
             Set<PermissionKey> seen = new HashSet<>();
             for (DocumentType type : DocumentType.values()) {
                 for (PermissionKey permission : new PermissionKey[]{
-                        type.showPermission(), type.updatePermission(), type.deletePermission(),
+                        type.showPermission(), type.createPermission(), type.updatePermission(), type.deletePermission(),
                         type.showTotalsPermission(), type.showTotalsInvoicePermission()}) {
                     assertTrue(seen.add(permission), permission + " is claimed by more than one document type");
                 }
             }
-            assertEquals(20, seen.size());
+            assertEquals(24, seen.size());
         }
     }
 
@@ -236,6 +240,7 @@ class DocumentTypeTest {
             assertNotNull(type.periodLock());
             assertNotNull(type.label());
             assertNotNull(type.showPermission());
+            assertNotNull(type.createPermission());
             assertNotNull(type.updatePermission());
             assertNotNull(type.deletePermission());
             assertNotNull(type.showTotalsPermission());

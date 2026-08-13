@@ -2,6 +2,7 @@ package com.hamza.account.model.dao;
 
 import com.hamza.account.document.DocumentTableSpec;
 import com.hamza.account.document.DocumentType;
+import com.hamza.account.document.DocumentWriteGuard;
 import com.hamza.account.model.domain.*;
 import com.hamza.account.type.InvoiceType;
 import com.hamza.controlsfx.database.AbstractDao;
@@ -76,14 +77,15 @@ public class TotalsSalesReturnDao extends AbstractDao<Total_Sales_Re> {
         return insertMultiData(() -> {
             try {
                 // insert into total return
-                executeUpdateWithException(query, getData(totalSalesRe));
+                DocumentWriteGuard.requireSingleHeaderRow(
+                        executeUpdateWithException(query, getData(totalSalesRe)), DOCUMENT_TYPE);
                 // insert to sales return
                 daoFactory.salesReturnsDao().insertList(totalSalesRe.getSalesReturnList());
 
             } catch (SQLIntegrityConstraintViolationException e) {
                 throw new DaoException("يجب إدخال جميع البيانات ... !", e);
             } catch (DaoException e) {
-                throw new DaoException(e);
+                throw e;
             }
         });
     }
@@ -94,7 +96,8 @@ public class TotalsSalesReturnDao extends AbstractDao<Total_Sales_Re> {
         String query = updateSql();
         return insertMultiData(() -> {
             Object[] objects = getUpdateData(totalSalesRe);
-            executeUpdateWithException(query, objects);
+            DocumentWriteGuard.requireSingleHeaderRow(
+                    executeUpdateWithException(query, objects), DOCUMENT_TYPE);
             daoFactory.salesReturnsDao().synchronizeLines(
                     totalSalesRe.getId(), totalSalesRe.getSalesReturnList());
         });

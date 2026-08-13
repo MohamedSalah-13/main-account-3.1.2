@@ -2,6 +2,7 @@ package com.hamza.account.model.dao;
 
 import com.hamza.account.document.DocumentTableSpec;
 import com.hamza.account.document.DocumentType;
+import com.hamza.account.document.DocumentWriteGuard;
 import com.hamza.account.model.domain.*;
 import com.hamza.account.trial.TrialManager;
 import com.hamza.account.type.InvoiceStatus;
@@ -80,7 +81,8 @@ public class TotalsSalesDao extends AbstractDao<Total_Sales> {
         return insertMultiData(() -> {
             Object[] data = getData(totalSales);
             // first insert data in total
-            executeUpdateWithException(query, data);
+            DocumentWriteGuard.requireSingleHeaderRow(
+                    executeUpdateWithException(query, data), DOCUMENT_TYPE);
             // Secondly, enter the sales data.
             salesDao.insertList(totalSales.getSalesList());
         });
@@ -94,7 +96,8 @@ public class TotalsSalesDao extends AbstractDao<Total_Sales> {
         String query = updateSql();
         return insertMultiData(() -> {
             Object[] data = getUpdateData(totalSales);
-            executeUpdateWithException(query, data);
+            DocumentWriteGuard.requireSingleHeaderRow(
+                    executeUpdateWithException(query, data), DOCUMENT_TYPE);
             salesDao.synchronizeLines(totalSales.getId(), totalSales.getSalesList());
         });
     }

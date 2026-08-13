@@ -70,8 +70,8 @@
                                             </rowConstraints>
                                             <children>
                                                 <TextField fx:id="txtPaid" text="0.0" GridPane.columnIndex="7" GridPane.rowIndex="1" />
-                                                <Label styleClass="summary-label" text="المدفوع" GridPane.columnIndex="6" GridPane.rowIndex="1" />
-                                                <Label styleClass="summary-label" text="الباقى" GridPane.columnIndex="6" GridPane.rowIndex="2" />
+                                                <Label fx:id="labelPaid" styleClass="summary-label" text="المدفوع نقدًا" GridPane.columnIndex="6" GridPane.rowIndex="1" />
+                                                <Label fx:id="labelRemaining" styleClass="summary-label" text="المتبقي" GridPane.columnIndex="6" GridPane.rowIndex="2" />
                                                 <TextField fx:id="txtRestAfterPaid" editable="false" text="0.0" GridPane.columnIndex="7" GridPane.rowIndex="2" />
 
                                                 <HBox spacing="10.0" GridPane.columnIndex="7">
@@ -92,7 +92,7 @@
                                                 <TextField fx:id="txtOtherDiscount" text="0.0" GridPane.columnIndex="5" GridPane.rowIndex="1" />
                                                 <TextField fx:id="txtRestAfterDiscount" editable="false" text="0.0" GridPane.columnIndex="5" GridPane.rowIndex="2" />
                                                 <Label styleClass="summary-label" text="الخصم" GridPane.columnIndex="4" GridPane.rowIndex="1" />
-                                                <Label styleClass="summary-label" text="الباقى" GridPane.columnIndex="4" GridPane.rowIndex="2" />
+                                                <Label fx:id="labelNetAfterDiscount" styleClass="summary-label" text="الصافي بعد الخصم" GridPane.columnIndex="4" GridPane.rowIndex="2" />
 
                                                 <HBox alignment="CENTER_LEFT" spacing="10.0" GridPane.columnIndex="5">
                                                     <children>

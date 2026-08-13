@@ -246,6 +246,14 @@ class WipeCatalogTest {
     class Statements {
 
         @Test
+        @DisplayName("invoice numbers are never reset or reused by a data wipe")
+        void preservesDocumentSequences() {
+            assertTrue(WipePlan.of(WipeCatalog.TARGETS).statements().stream()
+                            .noneMatch(statement -> statement.contains("document_sequences")),
+                    "a data wipe must not reset invoice numbering");
+        }
+
+        @Test
         @DisplayName("a table is seeded after it is emptied")
         void deleteThenSeed() {
             List<String> statements = WipePlan.of(List.of(WipeCatalog.PROCESSES, WipeCatalog.CUSTOMERS)).statements();

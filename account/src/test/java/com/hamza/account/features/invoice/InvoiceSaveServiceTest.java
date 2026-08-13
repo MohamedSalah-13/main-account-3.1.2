@@ -1,0 +1,134 @@
+package com.hamza.account.features.invoice;
+
+import com.hamza.account.authorization.AppPermissions;
+import com.hamza.account.controller.others.ServiceRegistry;
+import com.hamza.account.document.DocumentType;
+import com.hamza.account.features.rbac.UserSessionContext;
+import com.hamza.account.interfaces.api.TotalsAndPurchaseList;
+import com.hamza.account.interfaces.impl_invoiceBuy.SalesInvoice;
+import com.hamza.account.model.domain.*;
+import com.hamza.account.type.DiscountType;
+import com.hamza.account.type.InvoiceType;
+import com.hamza.controlsfx.database.DaoException;
+import com.hamza.controlsfx.database.DaoList;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
+import java.math.BigDecimal;
+import java.time.Clock;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneOffset;
+import java.util.List;
+import java.util.Set;
+
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
+
+class InvoiceSaveServiceTest {
+
+    private TotalsAndPurchaseList<Sales, Total_Sales> repository;
+    private DaoList<Total_Sales> dao;
+    private InvoiceNumberAllocator numberAllocator;
+    private InvoiceSaveService<Sales, Total_Sales, Customers, CustomerAccount> service;
+    private UserSessionContext session;
+
+    @BeforeEach
+    @SuppressWarnings("unchecked")
+    void setUp() {
+        repository = mock(TotalsAndPurchaseList.class);
+        dao = mock(DaoList.class);
+        numberAllocator = mock(InvoiceNumberAllocator.class);
+        when(repository.totalDao()).thenReturn(dao);
+        service = new InvoiceSaveService<>(new SalesInvoice(), repository,
+                DocumentType.SALES, Clock.fixed(
+                Instant.parse("2026-08-13T05:00:00Z"), ZoneOffset.UTC),
+                numberAllocator, InvoiceTransactionExecutor.direct(),
+                name -> new Treasury(1, name, BigDecimal.ZERO),
+                name -> new Employees(2, name));
+        session = new UserSessionContext();
+        ServiceRegistry.register(UserSessionContext.class, session);
+        clearInvocations(repository, dao, numberAllocator);
+    }
+
+    @Test
+    void createsAggregateFromLinesAndPersistsItOnce() throws Exception {
+        session.signIn(7, "cashier", Set.of(AppPermissions.SALES_CREATE));
+        when(numberAllocator.next(DocumentType.SALES)).thenReturn(44);
+        when(dao.insert(any())).thenReturn(1);
+
+        InvoiceSaveResult<Sales, Total_Sales> result = service.save(command(0, 5));
+
+        assertEquals(44, result.invoiceNumber());
+        assertFalse(result.updated());
+        assertEquals(18, result.invoice().getTotal());
+        assertEquals(3, result.invoice().getDiscount());
+        assertEquals(15, result.invoice().getTotal_after_discount());
+        assertEquals(5, result.invoice().getPaid());
+        assertEquals(10, result.invoice().getRest());
+        assertEquals(44, result.persistedLines().getFirst().getInvoiceNumber());
+        verify(dao).insert(result.invoice());
+        verify(dao, never()).update(any());
+    }
+
+    @Test
+    void updateKeepsExistingNumberAndDoesNotAllocateAnother() throws Exception {
+        session.signIn(7, "manager", Set.of(AppPermissions.SALES_UPDATE));
+        when(dao.update(any())).thenReturn(1);
+
+        InvoiceSaveResult<Sales, Total_Sales> result = service.save(command(91, 5));
+
+        assertEquals(91, result.invoiceNumber());
+        assertTrue(result.updated());
+        verifyNoInteractions(numberAllocator);
+        verify(dao).update(result.invoice());
+        verify(dao, never()).insert(any());
+    }
+
+    @Test
+    void authorizationRunsBeforeNumberAllocationOrPersistence() {
+        session.signOut();
+
+        assertThrows(DaoException.class, () -> service.save(command(0, 0)));
+
+        verifyNoInteractions(repository);
+        verifyNoInteractions(dao);
+        verifyNoInteractions(numberAllocator);
+    }
+
+    @Test
+    void invalidPaymentDoesNotAllocateNumberOrWrite() throws Exception {
+        session.signIn(7, "cashier", Set.of(AppPermissions.SALES_CREATE));
+        InvoiceSaveCommand<Sales> invalid = command(0, 100);
+
+        InvoiceValidationException error = assertThrows(
+                InvoiceValidationException.class, () -> service.save(invalid));
+
+        assertEquals(InvoiceSaveValidator.Target.PAID, error.target());
+        verifyNoInteractions(numberAllocator);
+        verify(dao, never()).insert(any());
+    }
+
+    private InvoiceSaveCommand<Sales> command(int existingId, double paid) {
+        return new InvoiceSaveCommand<>(existingId, LocalDate.of(2026, 8, 13),
+                InvoiceType.DEFER, 3, DiscountType.AMOUNT, paid, " test ",
+                8, "عميل", "الرئيسية", "مندوب", List.of(line()));
+    }
+
+    private Sales line() {
+        ItemsModel item = new ItemsModel();
+        item.setId(12);
+        item.setNameItem("صنف");
+        item.setBarcode("123");
+        item.setBuyPrice(4);
+        UnitsModel unit = new UnitsModel(1, "قطعة", 1);
+        Sales line = new Sales();
+        line.setItems(item);
+        line.setUnitsType(unit);
+        line.setPrice(10);
+        line.setQuantity(2);
+        line.setTotal(20);
+        line.setDiscount(2);
+        return line;
+    }
+}

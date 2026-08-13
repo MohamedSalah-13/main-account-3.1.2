@@ -34,6 +34,10 @@ public final class WipeCatalog {
     // Lines go before headers even though the key cascades: naming both keeps the
     // plan readable, and a cascade the schema might lose does not change what the
     // wipe erases.
+    //
+    // document_sequences is deliberately not a wipe target. Invoice numbers are
+    // business identifiers and must never be reused merely because invoice rows
+    // were removed from this administrative screen.
 
     public static final WipeTarget SALES_RETURNS = WipeTarget.of("salesReturns", "مرتجعات البيع",
             List.of(WipeTable.of("sales_re"), WipeTable.of("total_sales_re")));

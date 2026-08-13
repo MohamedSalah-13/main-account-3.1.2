@@ -36,6 +36,7 @@ public enum DocumentType {
             Direction.OUT, Direction.IN, true,
             PeriodLockRegistry.SALES_INVOICE,
             AppPermissions.SALES_SHOW,
+            AppPermissions.SALES_CREATE,
             AppPermissions.SALES_UPDATE,
             AppPermissions.SALES_DELETE,
             AppPermissions.TOTAL_SALES_SHOW,
@@ -45,6 +46,7 @@ public enum DocumentType {
             Direction.IN, Direction.OUT, true,
             PeriodLockRegistry.SALES_RETURN,
             AppPermissions.SALES_RE_SHOW,
+            AppPermissions.SALES_RE_CREATE,
             AppPermissions.SALES_RE_UPDATE,
             AppPermissions.SALES_RE_DELETE,
             AppPermissions.TOTAL_SALES_RE_SHOW,
@@ -54,6 +56,7 @@ public enum DocumentType {
             Direction.IN, Direction.OUT, false,
             PeriodLockRegistry.PURCHASE_INVOICE,
             AppPermissions.PURCHASE_SHOW,
+            AppPermissions.PURCHASE_CREATE,
             AppPermissions.PURCHASE_UPDATE,
             AppPermissions.PURCHASE_DELETE,
             AppPermissions.TOTAL_PURCHASE_SHOW,
@@ -63,6 +66,7 @@ public enum DocumentType {
             Direction.OUT, Direction.IN, false,
             PeriodLockRegistry.PURCHASE_RETURN,
             AppPermissions.PURCHASE_RE_SHOW,
+            AppPermissions.PURCHASE_RE_CREATE,
             AppPermissions.PURCHASE_RE_UPDATE,
             AppPermissions.PURCHASE_RE_DELETE,
             AppPermissions.TOTAL_PURCHASE_RE_SHOW,
@@ -97,6 +101,7 @@ public enum DocumentType {
     private final boolean hasDelegate;
     private final LockedDocument periodLock;
     private final PermissionKey show;
+    private final PermissionKey create;
     private final PermissionKey update;
     private final PermissionKey delete;
     private final PermissionKey showTotals;
@@ -105,7 +110,7 @@ public enum DocumentType {
     DocumentType(PartyKind partyKind, InvoiceSide side, boolean isReturn,
                  Direction stock, Direction cash, boolean hasDelegate,
                  LockedDocument periodLock,
-                 PermissionKey show, PermissionKey update, PermissionKey delete,
+                 PermissionKey show, PermissionKey create, PermissionKey update, PermissionKey delete,
                  PermissionKey showTotals, PermissionKey showTotalsInvoice) {
         this.partyKind = partyKind;
         this.side = side;
@@ -115,6 +120,7 @@ public enum DocumentType {
         this.hasDelegate = hasDelegate;
         this.periodLock = periodLock;
         this.show = show;
+        this.create = create;
         this.update = update;
         this.delete = delete;
         this.showTotals = showTotals;
@@ -181,6 +187,10 @@ public enum DocumentType {
 
     public PermissionKey showPermission() {
         return show;
+    }
+
+    public PermissionKey createPermission() {
+        return create;
     }
 
     public PermissionKey updatePermission() {
