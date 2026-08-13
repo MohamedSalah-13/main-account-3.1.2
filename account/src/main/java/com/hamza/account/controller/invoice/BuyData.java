@@ -6,11 +6,7 @@ import com.hamza.account.model.base.BaseAccount;
 import com.hamza.account.model.base.BaseNames;
 import com.hamza.account.model.base.BasePurchasesAndSales;
 import com.hamza.account.model.base.BaseTotals;
-import com.hamza.account.model.domain.ItemsModel;
 import com.hamza.account.service.NameService;
-import com.hamza.controlsfx.observer.Publisher;
-import javafx.beans.property.BooleanProperty;
-import javafx.beans.property.SimpleBooleanProperty;
 
 public class BuyData<T1 extends BasePurchasesAndSales, T2 extends BaseTotals, T3 extends BaseNames, T4 extends BaseAccount> {
 
@@ -20,7 +16,6 @@ public class BuyData<T1 extends BasePurchasesAndSales, T2 extends BaseTotals, T3
     protected final int num_invoice_update;
     protected final TotalsAndPurchaseList<T1, T2> totalsAndPurchaseList;
     protected final PurchaseSalesInterface purchaseSalesInterface;
-    protected final BooleanProperty checkTableForZeroBalanceOrPriceBoolean = new SimpleBooleanProperty(false);
     protected final NameData<T3> t3NameData;
     protected final AccountData<T4> accountData;
     protected final NameService<T3> nameService;

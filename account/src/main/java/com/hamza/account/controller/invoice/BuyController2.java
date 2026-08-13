@@ -22,8 +22,8 @@ import com.hamza.account.features.invoice.InvoiceLineDraft;
 import com.hamza.account.features.invoice.InvoiceLineEditService;
 import com.hamza.account.features.invoice.InvoiceLineService;
 import com.hamza.account.features.invoice.InvoiceLineTotals;
+import com.hamza.account.features.invoice.InvoiceEditorViewModel;
 import com.hamza.account.features.invoice.InvoicePaymentTerms;
-import com.hamza.account.features.invoice.InvoicePaymentViewModel;
 import com.hamza.account.features.invoice.InvoicePostSaveService;
 import com.hamza.account.features.invoice.InvoicePrintRequest;
 import com.hamza.account.features.invoice.InvoicePrintService;
@@ -66,13 +66,8 @@ import com.hamza.controlsfx.others.Utils;
 import javafx.application.Platform;
 import javafx.beans.binding.Bindings;
 import javafx.beans.binding.BooleanBinding;
-import javafx.beans.property.BooleanProperty;
-import javafx.beans.property.ObjectProperty;
-import javafx.beans.property.SimpleBooleanProperty;
-import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.property.StringProperty;
 import javafx.collections.FXCollections;
-import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.control.*;
@@ -107,13 +102,10 @@ import static com.hamza.controlsfx.util.NumberUtils.roundToTwoDecimalPlaces;
 public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTotals, T3 extends BaseNames, T4 extends BaseAccount>
         extends BuyData<T1, T2, T3, T4> implements Initializable, AppSettingInterface {
 
-    private final ObservableList<T1> myObservableList = FXCollections.observableArrayList();
+    private final InvoiceEditorViewModel<T1> editor = new InvoiceEditorViewModel<>();
     private final Subscriptions subscriptions = new Subscriptions();
     private final EventBus eventBus = ServiceRegistry.get(EventBus.class);
     private final DataPublisher dataPublisher;
-    private final ObjectProperty<ItemsModel> itemsModel = new SimpleObjectProperty<>(new ItemsModel());
-    private final BooleanProperty saveInProgress = new SimpleBooleanProperty();
-    private final InvoicePaymentViewModel paymentViewModel = new InvoicePaymentViewModel();
     private final InvoicePrintService invoicePrintService = new InvoicePrintService();
     private final CustomerService customerService = ServiceRegistry.get(CustomerService.class);
     private final ItemsService itemsService = ServiceRegistry.get(ItemsService.class);
@@ -184,6 +176,7 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
         applyInvoiceThemeClass();
         labelName();
         tableSetting();
+        bindEditorState();
         otherSetting();
         addTextSearchName();
         addTextSearchItems();
@@ -327,7 +320,7 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
             if (txtBarcode.getText().isEmpty()) {
                 addItem(0);
             } else
-                addItem(itemsModel.get().getId());
+                addItem(editor.selectedItem().getId());
         });
 
         btnAdd.setOnAction(actionEvent -> addData());
@@ -358,7 +351,7 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
             if (newValue == null) {
                 return;
             }
-            ItemsModel model = itemsModel.get();
+            ItemsModel model = editor.selectedItem();
             if (model == null || model.getId() <= 0) return;
             try {
                 var selection = invoiceItemSelectionService.selectUnit(
@@ -450,7 +443,7 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
     private void applyItemSelection(InvoiceItemSelection selection, boolean updateSearchName) {
         applyingItemSelection = true;
         try {
-            itemsModel.set(selection.item());
+            editor.selectItem(selection.item());
             txtBarcode.setText(selection.barcode());
             if (updateSearchName) {
                 textSearchItems.set(selection.item().getNameItem());
@@ -488,8 +481,7 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
     private int addRowT(InvoiceLineDraft draft) throws DaoException {
         boolean mergeRepeated = getInvoiceIncreaseItemOneTable()
                 && !draft.item().getBarcode().startsWith(String.valueOf(getSettingBarcodeStart()));
-        invoiceLineService.add(myObservableList, draft, mergeRepeated, getSelWithoutBalance());
-        sumTotals();
+        invoiceLineService.add(editor.lines(), draft, mergeRepeated, getSelWithoutBalance());
         return 1;
     }
 
@@ -500,9 +492,9 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
             double price = DoubleSetting.parseDoubleOrDefault(txtPrice.getText());
             double discount = 0;
 
-            // Captured before the row is added: clearData() resets itemsModel after
+            // Captured before the row is added: clearData() resets the selection after
             // the optional modal expiry dialog has closed.
-            final ItemsModel addedItem = itemsModel.get();
+            final ItemsModel addedItem = editor.selectedItem();
             UnitsModel selectedUnit = ItemUnits.unitByName(
                     addedItem, comboType.getSelectionModel().getSelectedItem());
             InvoiceLineDraft draft = new InvoiceLineDraft(
@@ -590,7 +582,7 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
             codeAccount = totalsDataInterface.getIdData(dataById);
 //            List<T1> collection = dataInterface.totalsAndPurchaseList().purchaseOrSalesDao().loadAllById(num_invoice_update);
             List<T1> collection = dataInterface.totalsAndPurchaseList().purchaseOrSalesList(id, id);
-            myObservableList.setAll(collection);
+            editor.replaceLines(collection);
             invoiceLineService.captureOriginalLines(collection);
             invoiceExpiryService.captureOriginalLines(collection);
             radioCash.setSelected(invoiceType.equals(InvoiceType.CASH));
@@ -604,7 +596,7 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
     }
 
     private void saveInvoice(boolean print) {
-        if (saveInProgress.get()) {
+        if (editor.isSaving()) {
             return;
         }
         try {
@@ -631,7 +623,7 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
                 ? DiscountType.AMOUNT
                 : DiscountType.RATE;
         updatePaymentViewModel(false);
-        InvoicePaymentTerms payment = paymentViewModel.requireValid();
+        InvoicePaymentTerms payment = editor.requireValidPayment();
         return new InvoiceSaveCommand<>(
                 num_invoice_update, date.getValue(), payment.invoiceType(),
                 payment.discountAmount(), discountType, payment.paidAmount(),
@@ -643,7 +635,7 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
     }
 
     private void saveInBackground(boolean print, InvoiceSaveCommand<T1> command) {
-        saveInProgress.set(true);
+        editor.setSaving(true);
         javafx.concurrent.Task<InvoiceSaveResult<T1, T2>> task = new javafx.concurrent.Task<>() {
             @Override
             protected InvoiceSaveResult<T1, T2> call() throws Exception {
@@ -652,7 +644,7 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
         };
         task.runningProperty().addListener((observable, wasRunning, running) ->
                 {
-                    saveInProgress.set(running);
+                    editor.setSaving(running);
                     maskerPaneSetting.setVisible(running);
                 });
         task.setOnSucceeded(event -> afterSuccessfulSave(print, command, task.getValue()));
@@ -688,7 +680,7 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
     }
 
     private void validateInvoiceForSave() throws InvoiceValidationException {
-        InvoiceLineTotals totals = InvoiceLineTotals.from(table.getItems());
+        InvoiceLineTotals totals = editor.totals();
         InvoiceSaveValidator.Problem problem = InvoiceSaveValidator.firstProblem(
                 totals.lineCount(), totals.hasInvalidLine(), date.getValue(), LocalDate.now(),
                 designInterface.documentType().hasDelegate(),
@@ -704,7 +696,7 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
             throw new InvoiceValidationException(InvoiceSaveValidator.Target.LINES, e.getMessage());
         }
         updatePaymentViewModel(false);
-        paymentViewModel.requireValid();
+        editor.requireValidPayment();
     }
 
     private void focusValidationTarget(InvoiceSaveValidator.Target target) {
@@ -813,6 +805,7 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
 
     private void clearData() {
         textSearchItems.set(null);
+        editor.selectItem(null);
         comboType.setDisable(false);
         comboType.getItems().clear();
         Utils.clearAll(txtItemBalance, txtPrice, txtQuantity, txtTotals, txtBarcode);
@@ -832,7 +825,6 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
         txtNotes.clear();
         radioCash.setSelected(true);
         radioDeffer.setSelected(false);
-        sumTotals();
     }
 
     private void publisherData(DataPublisher dataPublisher) {
@@ -882,8 +874,7 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
         }
         updatingPaymentUi = true;
         try {
-            updatePaymentViewModel(resetDeferredPayment);
-            InvoicePaymentTerms terms = paymentViewModel.preview();
+            InvoicePaymentTerms terms = updatePaymentViewModel(resetDeferredPayment);
             txtRestAfterDiscount.setText(MoneyMath.text(terms.netAmount()));
             if (terms.invoiceType() == InvoiceType.CASH || resetDeferredPayment) {
                 txtPaid.setText(MoneyMath.text(terms.paidAmount()));
@@ -906,7 +897,7 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
     private void updatePaymentValidationStyle() {
         setValidationError(txtOtherDiscount, false);
         setValidationError(txtPaid, false);
-        InvoiceSaveValidator.Target target = paymentViewModel.invalidTarget();
+        InvoiceSaveValidator.Target target = editor.invalidPaymentTarget();
         if (target == InvoiceSaveValidator.Target.DISCOUNT) {
             setValidationError(txtOtherDiscount, true);
         } else if (target == InvoiceSaveValidator.Target.PAID) {
@@ -932,28 +923,27 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
 
     private boolean paymentDraftInvalid() {
         updatePaymentViewModel(false);
-        return !paymentViewModel.isValid();
+        return !editor.isPaymentValid();
     }
 
-    private void updatePaymentViewModel(boolean resetDeferredPayment) {
-        paymentViewModel.selectInvoiceType(selectedInvoiceType(), resetDeferredPayment);
-        InvoiceLineTotals totals = InvoiceLineTotals.from(table.getItems());
-        paymentViewModel.updateAmounts(
-                totals.netAmount(),
+    private InvoicePaymentTerms updatePaymentViewModel(boolean resetDeferredPayment) {
+        return editor.updatePayment(
+                selectedInvoiceType(), resetDeferredPayment,
                 MoneyMath.parseOrZero(txtOtherDiscount.getText()),
-                resetDeferredPayment
-                        ? MoneyMath.ZERO
-                        : MoneyMath.parseOrZero(txtPaid.getText()));
+                MoneyMath.parseOrZero(txtPaid.getText()));
     }
 
-    private void sumTotals() {
-        InvoiceLineTotals totals = InvoiceLineTotals.from(table.getItems());
-        textSumCount.setText(String.valueOf(totals.lineCount()));
-        txtSumQuantity.setText(String.valueOf(totals.quantity()));
-        txtBeforeDiscount.setText(String.valueOf(totals.gross()));
-        txtSumDiscount.setText(String.valueOf(totals.discount()));
-        txtSumTotals.setText(String.valueOf(totals.net()));
-        checkTableForZeroBalanceOrPriceBoolean.set(totals.hasInvalidLine());
+    private void bindEditorState() {
+        textSumCount.textProperty().bind(Bindings.createStringBinding(
+                () -> String.valueOf(editor.totals().lineCount()), editor.totalsProperty()));
+        txtSumQuantity.textProperty().bind(Bindings.createStringBinding(
+                () -> String.valueOf(editor.totals().quantity()), editor.totalsProperty()));
+        txtBeforeDiscount.textProperty().bind(Bindings.createStringBinding(
+                () -> String.valueOf(editor.totals().gross()), editor.totalsProperty()));
+        txtSumDiscount.textProperty().bind(Bindings.createStringBinding(
+                () -> String.valueOf(editor.totals().discount()), editor.totalsProperty()));
+        txtSumTotals.textProperty().bind(Bindings.createStringBinding(
+                () -> String.valueOf(editor.totals().net()), editor.totalsProperty()));
     }
 
     private void tableSetting() {
@@ -962,9 +952,9 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
                 documentType, itemsService, invoiceBuy::updateItemPrice);
         InvoiceLineEditService editService = new InvoiceLineEditService(
                 documentType, catalogService, DefaultStock.ID);
-        new InvoiceTableCoordinator<>(table, myObservableList, editService,
+        new InvoiceTableCoordinator<>(table, editor.lines(), editService,
                 () -> priceTypeByNameId, () -> getInvoiceUpdatePrice(),
-                this::sumTotals, getClass(), LogApplication.usersVo.getId() == 1)
+                editor::refreshTotals, getClass(), LogApplication.usersVo.getId() == 1)
                 .configure();
     }
 
@@ -982,20 +972,20 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
                 }, txtSumTotals.textProperty());
         BooleanBinding binding = nonPositiveTotal
                 .or(Bindings.isEmpty(table.getItems()))
-                .or(checkTableForZeroBalanceOrPriceBoolean)
+                .or(editor.invalidLinesProperty())
                 .or(comboTreasury.valueProperty().isNull());
 
         BooleanBinding invalidPayment = Bindings.createBooleanBinding(
                 this::paymentDraftInvalid,
                 txtSumTotals.textProperty(), txtOtherDiscount.textProperty(),
                 txtPaid.textProperty(), radioCash.selectedProperty(),
-                radioDeffer.selectedProperty(), checkTableForZeroBalanceOrPriceBoolean);
+                radioDeffer.selectedProperty(), editor.invalidLinesProperty());
         PermissionKey writePermission = num_invoice_update > 0
                 ? designInterface.documentType().updatePermission()
                 : designInterface.documentType().createPermission();
         BooleanBinding writeDenied = Bindings.createBooleanBinding(
                 () -> !AuthorizationGuard.isGranted(writePermission));
-        binding = binding.or(invalidPayment).or(writeDenied).or(saveInProgress);
+        binding = binding.or(invalidPayment).or(writeDenied).or(editor.savingProperty());
 
         if (designInterface.documentType().hasDelegate()) {
             binding = binding.or(comboDelegate.valueProperty().isNull());
