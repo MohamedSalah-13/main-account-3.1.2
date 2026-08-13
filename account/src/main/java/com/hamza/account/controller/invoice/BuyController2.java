@@ -15,6 +15,8 @@ import com.hamza.account.controller.search.ItemsSearch;
 import com.hamza.account.controller.setting.SettingTabLanguageController;
 import com.hamza.account.features.events.EmployeesChanged;
 import com.hamza.account.features.events.InvoiceSaved;
+import com.hamza.account.features.invoice.InvoiceLineAssembler;
+import com.hamza.account.features.invoice.InvoiceLineTotals;
 import com.hamza.account.features.key_setting.MoveRow;
 import com.hamza.account.features.key_setting.UpdateInterface;
 import com.hamza.account.features.key_setting.UpdateQuantity;
@@ -867,39 +869,15 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
         }
     }
 
-    private List<T1> listOfItemsPurchase(int num_invoice) {
-        modelPrintInvoices = new ArrayList<>();
-        List<T1> list = new ArrayList<>();
-        for (int i = 0; i < table.getItems().size(); i++) {
-            T1 t11 = table.getItems().get(i);
-            ItemsModel itemsModel = purchaseSalesInterface.getItems(t11);
-            int numItem = itemsModel.getId();
-            double price = purchaseSalesInterface.getPrice(t11);
-            double quantity = purchaseSalesInterface.getQuantity(t11);
-            double discount = purchaseSalesInterface.getDiscount(t11);
-            double totals = purchaseSalesInterface.getTotal(t11);
-            UnitsModel type = purchaseSalesInterface.getUnitsType(t11);
-            int id = purchaseSalesInterface.id(t11);
-
-            //
-            if (itemsModel.isHasValidate())
-                if (t11.getExpiration_date() == null) {
-                    throw new RuntimeException("cant be null");
-                }
-
-            T1 t1 = invoiceBuy.object_TableData(id, num_invoice, numItem, price, quantity, discount, totals, type, itemsModel, t11.getExpiration_date());
-            preservePersistedCost(t11, t1);
-            list.add(t1);
-            modelPrintInvoices.add(new ModelPrintInvoice(itemsModel.getNameItem(), itemsModel.getBarcode()
-                    , type.getUnit_name(), price, quantity, totals, discount, totals - discount));
-        }
-        return list;
-    }
-
-    static void preservePersistedCost(BasePurchasesAndSales source, BasePurchasesAndSales target) {
-        if (source.getId() > 0) {
-            target.setBuy_price(source.getBuy_price());
-        }
+    private List<T1> listOfItemsPurchase(int invoiceNumber) throws DaoException {
+        List<T1> source = List.copyOf(table.getItems());
+        List<T1> persistenceLines = InvoiceLineAssembler.assemble(
+                source, invoiceNumber, invoiceBuy::object_TableData);
+        modelPrintInvoices = source.stream().map(line -> new ModelPrintInvoice(
+                line.getItems().getNameItem(), line.getItems().getBarcode(),
+                line.getUnitsType().getUnit_name(), line.getPrice(), line.getQuantity(),
+                line.getTotal(), line.getDiscount(), line.getTotal() - line.getDiscount())).toList();
+        return persistenceLines;
     }
 
     private void printInvoice(boolean print, T2 t2) {
@@ -1067,15 +1045,13 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
     }
 
     private void sumTotals() {
-        double total = getSumBuyFunction(BasePurchasesAndSales::getTotal, table.getItems());
-        double quantity = getSumBuyFunction(BasePurchasesAndSales::getQuantity, table.getItems());
-        double discount = getSumBuyFunction(BasePurchasesAndSales::getDiscount, table.getItems());
-        textSumCount.setText(String.valueOf(table.getItems().size()));
-        txtSumQuantity.setText(String.valueOf(quantity));
-        txtBeforeDiscount.setText(String.valueOf(total));
-        txtSumDiscount.setText(String.valueOf(discount));
-        txtSumTotals.setText(String.valueOf(total - discount));
-        checkTableForZeroBalanceOrPriceBoolean.set(checkTableForZeroBalanceOrPrice(table.getItems()));
+        InvoiceLineTotals totals = InvoiceLineTotals.from(table.getItems());
+        textSumCount.setText(String.valueOf(totals.lineCount()));
+        txtSumQuantity.setText(String.valueOf(totals.quantity()));
+        txtBeforeDiscount.setText(String.valueOf(totals.gross()));
+        txtSumDiscount.setText(String.valueOf(totals.discount()));
+        txtSumTotals.setText(String.valueOf(totals.net()));
+        checkTableForZeroBalanceOrPriceBoolean.set(totals.hasInvalidLine());
     }
 
     private void tableSetting() {

@@ -12,13 +12,6 @@ import com.hamza.controlsfx.observer.Publisher;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.SimpleBooleanProperty;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
-import java.util.function.ToDoubleFunction;
-
-import static com.hamza.controlsfx.util.NumberUtils.roundToTwoDecimalPlaces;
-
 public class BuyData<T1 extends BasePurchasesAndSales, T2 extends BaseTotals, T3 extends BaseNames, T4 extends BaseAccount> {
 
     protected final InvoiceBuy<T1, T2, T3, T4> invoiceBuy;
@@ -48,36 +41,6 @@ public class BuyData<T1 extends BasePurchasesAndSales, T2 extends BaseTotals, T3
         this.accountData = dataInterface.accountData();
         this.nameService = new NameService<>(t3NameData);
 
-    }
-
-    /**
-     * Checks if any element in the provided list has a zero price or quantity.
-     *
-     * @param list the list of items to be checked
-     * @return true if any item has a price or quantity of zero, false otherwise
-     */
-    protected boolean checkTableForZeroBalanceOrPrice(List<T1> list) {
-        List<Double> doubleList = new ArrayList<>();
-        for (T1 t1 : list) {
-            double price1 = purchaseSalesInterface.getPrice(t1);
-            double quantity1 = purchaseSalesInterface.getQuantity(t1);
-            doubleList.add(price1);
-            doubleList.add(quantity1);
-        }
-        Optional<Double> first = doubleList.stream().filter(aDouble -> aDouble <= 0).findFirst();
-//        first.ifPresentOrElse(aDouble -> checkTableForZeroBalanceOrPriceBoolean.set(true), () -> checkTableForZeroBalanceOrPriceBoolean.set(false));
-        return first.isPresent();
-    }
-
-    /**
-     * Calculates the sum of values from a list of T1 elements based on a provided function.
-     *
-     * @param function a ToDoubleFunction that extracts the double value from a T1 element
-     * @param list     a List of T1 elements to be summed
-     * @return the sum of double values extracted from the list
-     */
-    protected double getSumBuyFunction(ToDoubleFunction<T1> function, List<T1> list) {
-        return roundToTwoDecimalPlaces(list.stream().mapToDouble(function).sum());
     }
 
 }
