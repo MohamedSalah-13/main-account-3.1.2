@@ -68,7 +68,7 @@ public class LoginController extends LoginService implements Initializable {
             try {
                 action = actionLogin.action(txtUsername.getText(), pass.getText());
             } catch (Exception e) {
-                AllAlerts.alertError(e.getMessage());
+                AllAlerts.handleError("تسجيل الدخول", e);
             }
 
             if (action) {

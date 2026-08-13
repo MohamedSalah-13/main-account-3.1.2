@@ -6,6 +6,8 @@ import com.hamza.account.authorization.AuthorizationGuard;
 import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.model.domain.Company;
 import com.hamza.controlsfx.database.DaoException;
+import com.hamza.controlsfx.error.BusinessRuleException;
+import com.hamza.controlsfx.error.UserValidationException;
 import com.hamza.controlsfx.language.Setting_Language;
 
 import java.util.List;
@@ -53,11 +55,11 @@ public record CompanyService(DaoFactory daoFactory) {
     public void save(Company company) throws DaoException {
         AuthorizationGuard.require(AppPermissions.COMPANY_UPDATE);
         if (company.getName() == null || company.getName().isBlank()) {
-            throw new DaoException("اسم الشركة مطلوب");
+            throw new UserValidationException("اسم الشركة مطلوب");
         }
         int updated = daoFactory.getCompanyDao().update(company);
         if (updated == 0) {
-            throw new DaoException("لم يتم حفظ بيانات الشركة، لم يتم العثور على السجل");
+            throw new BusinessRuleException("لم يتم حفظ بيانات الشركة، لم يتم العثور على السجل");
         }
     }
 

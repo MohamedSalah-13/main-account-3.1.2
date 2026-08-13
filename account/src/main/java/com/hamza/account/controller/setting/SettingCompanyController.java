@@ -462,11 +462,7 @@ public class SettingCompanyController implements Initializable {
      * A failure the user has to see: logged in full, shown as whatever sentence it carries.
      */
     private void report(String context, Throwable error) {
-        log.error(context, error);
-        String message = error == null || error.getMessage() == null || error.getMessage().isBlank()
-                ? context
-                : error.getMessage();
-        AllAlerts.alertError(message);
+        AllAlerts.handleError(context, error);
     }
 
     /**

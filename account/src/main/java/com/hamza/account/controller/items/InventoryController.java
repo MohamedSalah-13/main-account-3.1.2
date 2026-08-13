@@ -490,8 +490,7 @@ public class InventoryController {
             Throwable error = task.getException();
             // A failure here used to be wrapped in a RuntimeException thrown out of
             // the page factory: no Arabic message, and a broken Pagination.
-            log.error("Failed to load the inventory sheet", error);
-            AllAlerts.alertError(error == null ? "" : error.getMessage());
+            AllAlerts.handleError("تحميل ورقة الجرد", error);
         });
 
         Thread thread = new Thread(task, "inventory-load-" + token);
@@ -617,8 +616,7 @@ public class InventoryController {
             btnExcel.setDisable(false);
             progress.setVisible(false);
             Throwable error = task.getException();
-            log.error("Failed to export the inventory sheet", error);
-            AllAlerts.alertError("فشل التصدير: " + (error == null ? "" : error.getMessage()));
+            AllAlerts.handleError("تصدير ورقة الجرد", error);
         });
 
         Thread thread = new Thread(task, "inventory-export");
@@ -653,8 +651,7 @@ public class InventoryController {
             btnPrint.setDisable(false);
             progress.setVisible(false);
             Throwable error = task.getException();
-            log.error("Failed to build the inventory sheet for printing", error);
-            AllAlerts.alertError(error == null ? "" : error.getMessage());
+            AllAlerts.handleError("طباعة ورقة الجرد", error);
         });
 
         Thread thread = new Thread(task, "inventory-print");

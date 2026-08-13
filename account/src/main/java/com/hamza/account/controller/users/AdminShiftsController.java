@@ -54,7 +54,7 @@ public class AdminShiftsController {
             tableView.setItems(FXCollections.observableArrayList(list));
         } catch (DaoException e) {
             log.error("Error loading shifts", e);
-            AllAlerts.alertError(e.getMessage());
+            AllAlerts.handleError("تحميل الورديات", e);
         }
     }
 
@@ -94,7 +94,7 @@ public class AdminShiftsController {
             }
         } catch (DaoException e) {
             log.error("Error force closing shift", e);
-            AllAlerts.alertError(e.getMessage());
+            AllAlerts.handleError("الإغلاق الإجباري للوردية", e);
         }
     }
 

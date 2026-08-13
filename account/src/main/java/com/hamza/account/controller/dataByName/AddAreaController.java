@@ -67,7 +67,7 @@ public class AddAreaController<T> extends VBox {
             return areaInterface.listData();
         } catch (Exception e) {
             log.error(e.getMessage(), e);
-            AllAlerts.alertError(e.getMessage());
+            AllAlerts.handleError("تحميل المناطق", e);
             return List.of();
         }
     }

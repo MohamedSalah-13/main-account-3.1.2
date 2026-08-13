@@ -349,7 +349,6 @@ public class CardController extends LoadData implements Initializable, AppSettin
     }
 
     private void logError(Exception e) {
-        log.error(e.getMessage(), e);
-        AllAlerts.alertError(e.getMessage());
+        AllAlerts.handleError("تحميل بطاقة الصنف", e);
     }
 }

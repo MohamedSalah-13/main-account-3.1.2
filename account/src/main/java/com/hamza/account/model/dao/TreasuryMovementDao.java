@@ -8,6 +8,8 @@ import com.hamza.controlsfx.database.AbstractDao;
 import com.hamza.account.period.PeriodLock;
 import com.hamza.account.period.PeriodLockRegistry;
 import com.hamza.controlsfx.database.DaoException;
+import com.hamza.controlsfx.error.BusinessRuleException;
+import com.hamza.controlsfx.error.UserValidationException;
 
 import java.math.BigDecimal;
 import java.sql.ResultSet;
@@ -188,7 +190,7 @@ public class TreasuryMovementDao extends AbstractDao<TreasuryMovement> {
         BigDecimal currentBalance = treasuryDao.getCurrentAmount(treasuryId);
 
         if (currentBalance.compareTo(amount) < 0) {
-            throw new DaoException("رصيد الخزينة غير كافٍ");
+            throw new BusinessRuleException("رصيد الخزينة غير كافٍ");
         }
 
         BigDecimal balanceAfter = currentBalance.subtract(amount);
@@ -196,7 +198,7 @@ public class TreasuryMovementDao extends AbstractDao<TreasuryMovement> {
         int affectedRows = treasuryDao.decreaseAmount(treasuryId, amount);
 
         if (affectedRows == 0) {
-            throw new DaoException("رصيد الخزينة غير كافٍ");
+            throw new BusinessRuleException("رصيد الخزينة غير كافٍ");
         }
 
         return insertMovement(
@@ -265,7 +267,7 @@ public class TreasuryMovementDao extends AbstractDao<TreasuryMovement> {
 
     private void validateAmount(BigDecimal amount) throws DaoException {
         if (amount == null || amount.compareTo(BigDecimal.ZERO) <= 0) {
-            throw new DaoException("يجب إدخال مبلغ أكبر من صفر");
+            throw new UserValidationException("يجب إدخال مبلغ أكبر من صفر");
         }
     }
 }

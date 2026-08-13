@@ -89,7 +89,7 @@ public class TableWithTextSearchController<T> {
                     loadDataFromDB(newValue); // لا يتم الاستدعاء إلا بعد التوقف عن الكتابة
                 } catch (Exception e) {
                     log.error(e.getMessage(), e);
-                    AllAlerts.alertError(e.getMessage());
+                    AllAlerts.handleError("البحث في بيانات الجدول", e);
                 }
             });
             pause.playFromStart();

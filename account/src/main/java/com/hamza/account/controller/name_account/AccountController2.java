@@ -359,7 +359,6 @@ public class AccountController2<T3 extends BaseNames, T4 extends BaseAccount>
     }
 
     private void logError(Exception e) {
-        log.error(e.getMessage(), e);
-        AllAlerts.alertError(e.getMessage());
+        AllAlerts.handleError("تنفيذ حركة الحساب", e);
     }
 }

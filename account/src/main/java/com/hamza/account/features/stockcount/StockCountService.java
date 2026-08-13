@@ -12,6 +12,8 @@ import com.hamza.account.authorization.AppPermissions;
 import com.hamza.account.authorization.PermissionKey;
 import com.hamza.account.view.LogApplication;
 import com.hamza.controlsfx.database.DaoException;
+import com.hamza.controlsfx.error.BusinessRuleException;
+import com.hamza.controlsfx.error.UserValidationException;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -117,13 +119,13 @@ public record StockCountService(DaoFactory daoFactory) {
         // dated into a closed month would rewrite a stock valuation already reported.
         PeriodLock.require(count.getCountDate(), PeriodLockRegistry.STOCK_COUNT.label());
         if (count.getLines().isEmpty()) {
-            throw new DaoException("لا يمكن ترحيل جرد بدون أصناف");
+            throw new UserValidationException("لا يمكن ترحيل جرد بدون أصناف");
         }
 
         int moved = count.linesWithDifference().size();
         dao().save(count);
         if (dao().post(count.getId()) == 0) {
-            throw new DaoException("تم ترحيل هذا الجرد بالفعل");
+            throw new BusinessRuleException("تم ترحيل هذا الجرد بالفعل");
         }
         count.setStatus(StockCountStatus.POSTED);
         return moved;
@@ -144,7 +146,7 @@ public record StockCountService(DaoFactory daoFactory) {
 
     private void requireEditable(StockCount count) throws DaoException {
         if (count.isPosted()) {
-            throw new DaoException("الجرد المرحّل لا يمكن تعديله");
+            throw new BusinessRuleException("الجرد المرحّل لا يمكن تعديله");
         }
     }
 }

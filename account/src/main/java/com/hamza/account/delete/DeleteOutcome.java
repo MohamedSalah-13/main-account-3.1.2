@@ -1,6 +1,7 @@
 package com.hamza.account.delete;
 
 import com.hamza.controlsfx.database.DaoException;
+import com.hamza.controlsfx.error.BusinessRuleException;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -81,6 +82,6 @@ public sealed interface DeleteOutcome {
         if (this instanceof Deleted deleted) {
             return deleted.rows();
         }
-        throw new DaoException(message());
+        throw new BusinessRuleException(message());
     }
 }

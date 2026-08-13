@@ -487,8 +487,7 @@ public class StockCountController {
     }
 
     private void reportFailure(String message, Throwable error) {
-        log.error(message, error);
-        AllAlerts.alertError(error == null ? "" : error.getMessage());
+        AllAlerts.handleError(message, error);
     }
 
     @FunctionalInterface

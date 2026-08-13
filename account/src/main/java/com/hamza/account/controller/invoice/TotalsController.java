@@ -597,8 +597,7 @@ public class TotalsController<T2 extends BaseTotals, T3 extends BaseNames, T4 ex
     }
 
     private void exceptionHandle(Exception e) {
-        AllAlerts.alertError(e.getMessage());
-        log.error(e.getMessage(), e);
+        AllAlerts.handleError("تنفيذ إجراء على الفاتورة", e);
     }
 
 }
@@ -613,7 +612,7 @@ class OpenMethod<T> {
         try {
             action(tableView.getSelectionModel().getSelectedItem());
         } catch (Exception e) {
-            AllAlerts.alertError(e.getMessage());
+            AllAlerts.handleError("تنفيذ إجراء على الفاتورة المحددة", e);
             log.error(e.getMessage(), e);
         }
     }

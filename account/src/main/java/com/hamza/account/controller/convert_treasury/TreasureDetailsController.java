@@ -126,7 +126,7 @@ public class TreasureDetailsController {
                 filteredList.setPredicate(filterByDate().and(filterByDetails()).and(filterByUsers()).and(filterByTime()));
             } catch (DaoException e) {
                 log.error(e.getMessage(), e);
-                AllAlerts.alertError(e.getMessage());
+                AllAlerts.handleError("تصفية حركات الخزينة", e);
             }
         }
     }
@@ -218,7 +218,7 @@ public class TreasureDetailsController {
             return treasuryService.listTreasuryModelNames();
         } catch (DaoException e) {
             log.error(e.getMessage(), e);
-            AllAlerts.alertError(e.getMessage());
+            AllAlerts.handleError("تحميل الخزائن", e);
             return List.of();
         }
     }
@@ -228,7 +228,7 @@ public class TreasureDetailsController {
             return userService.getUsersNames();
         } catch (DaoException e) {
             log.error(e.getMessage(), e);
-            AllAlerts.alertError(e.getMessage());
+            AllAlerts.handleError("تحميل المستخدمين", e);
             return List.of();
         }
     }
@@ -275,7 +275,7 @@ public class TreasureDetailsController {
                 });
             } catch (DaoException e) {
                 log.error(e.getMessage(), e);
-                AllAlerts.alertError(e.getMessage());
+                AllAlerts.handleError("تحميل تفاصيل الخزينة", e);
             }
         });
 
@@ -315,7 +315,7 @@ public class TreasureDetailsController {
             return userService.getUsersByName(comboUsers.getSelectionModel().getSelectedItem());
         } catch (DaoException e) {
             log.error(e.getMessage(), e);
-            AllAlerts.alertError(e.getMessage());
+            AllAlerts.handleError("تحميل بيانات المستخدم", e);
         }
         return new Users();
     }

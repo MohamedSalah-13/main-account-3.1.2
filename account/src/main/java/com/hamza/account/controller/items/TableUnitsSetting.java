@@ -82,7 +82,7 @@ public class TableUnitsSetting extends TableUnitsSettingProperty {
 
         } catch (Exception e) {
             log.error(e.getMessage(), e);
-            AllAlerts.alertError(e.getMessage());
+            AllAlerts.handleError("تحديث وحدات الصنف", e);
         }
     }
 

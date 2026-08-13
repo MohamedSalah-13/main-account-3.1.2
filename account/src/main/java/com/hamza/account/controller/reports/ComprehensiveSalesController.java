@@ -111,7 +111,7 @@ public class ComprehensiveSalesController implements Initializable {
 
         } catch (DaoException e) {
             log.error("خطأ في تقرير المبيعات", e);
-            AllAlerts.alertError("فشل جلب البيانات: " + e.getMessage());
+            AllAlerts.handleError("تحميل تقرير المبيعات الشامل", e);
         }
     }
 
@@ -153,7 +153,7 @@ public class ComprehensiveSalesController implements Initializable {
                 // excelExportService.exportComprehensiveSalesToExcel(masterData, file.getAbsolutePath());
                 showInfo("تم تصدير ملف Excel بنجاح.");
             } catch (Exception e) {
-                AllAlerts.alertError("فشل تصدير الإكسيل: " + e.getMessage());
+                AllAlerts.handleError("تصدير تقرير المبيعات الشامل", e);
             }
         }
     }

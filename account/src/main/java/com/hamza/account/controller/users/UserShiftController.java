@@ -128,7 +128,7 @@ public class UserShiftController {
             }
         } catch (DaoException e) {
             log.error("Error loading shift status", e);
-            AllAlerts.alertError("خطأ في تحميل حالة الوردية: " + e.getMessage());
+            AllAlerts.handleError("تحميل حالة الوردية", e);
         }
     }
 
@@ -153,7 +153,7 @@ public class UserShiftController {
             tableShifts.setItems(FXCollections.observableArrayList(shifts));
         } catch (DaoException e) {
             log.error("Error loading shift history", e);
-            AllAlerts.alertError("خطأ في تحميل سجل الورديات: " + e.getMessage());
+            AllAlerts.handleError("تحميل سجل الورديات", e);
         }
     }
 
@@ -225,7 +225,7 @@ public class UserShiftController {
             }
         } catch (DaoException e) {
             log.error("Error opening shift", e);
-            AllAlerts.alertError(e.getMessage());
+            AllAlerts.handleError("فتح الوردية", e);
         } catch (NumberFormatException e) {
             AllAlerts.alertError("الرجاء إدخال رصيد صحيح!");
         }
@@ -237,7 +237,7 @@ public class UserShiftController {
             printReports.printShiftXReport(data);
         } catch (DaoException e) {
             log.error("Error printing X-Report", e);
-            AllAlerts.alertError(e.getMessage());
+            AllAlerts.handleError("طباعة تقرير الوردية", e);
         }
     }
 
@@ -279,7 +279,7 @@ public class UserShiftController {
             }
         } catch (DaoException e) {
             log.error("Error closing shift", e);
-            AllAlerts.alertError(e.getMessage());
+            AllAlerts.handleError("إغلاق الوردية", e);
         } catch (NumberFormatException e) {
             AllAlerts.alertError("الرجاء إدخال رصيد صحيح!");
         }

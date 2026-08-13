@@ -163,7 +163,7 @@ public class MonthlySalesController implements Initializable {
                 excelService.exportMonthlySalesToExcel(salesDataList, file.getAbsolutePath());
                 showInfo("تم تصدير ملف Excel بنجاح مع المخطط البياني");
             } catch (Exception e) {
-                showError("خطأ أثناء التصدير: " + e.getMessage());
+                com.hamza.controlsfx.alert.AllAlerts.handleError("تصدير تقرير المبيعات الشهرية", e);
             }
         }
     }

@@ -4,6 +4,7 @@ import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.model.domain.ShiftSummary;
 import com.hamza.account.model.domain.UserShift;
 import com.hamza.controlsfx.database.DaoException;
+import com.hamza.controlsfx.error.BusinessRuleException;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -19,7 +20,7 @@ public record ShiftReportService(DaoFactory daoFactory, UserShiftService userShi
     public ShiftReportData buildXReport(int userId) throws DaoException {
         UserShift shift = userShiftService.getOpenShift(userId);
         if (shift == null) {
-            throw new DaoException("لا توجد وردية مفتوحة لهذا المستخدم!");
+            throw new BusinessRuleException("لا توجد وردية مفتوحة لهذا المستخدم!");
         }
         ShiftSummary summary = userShiftService.getCurrentShiftSummary(userId);
         return new ShiftReportData(shift, summary, LocalDateTime.now(), "X-Report");
@@ -31,7 +32,7 @@ public record ShiftReportService(DaoFactory daoFactory, UserShiftService userShi
     public ShiftReportData buildZReport(int shiftId) throws DaoException {
         UserShift shift = daoFactory.userShiftDao().getDataById(shiftId);
         if (shift == null) {
-            throw new DaoException("الوردية غير موجودة!");
+            throw new BusinessRuleException("الوردية غير موجودة!");
         }
         ShiftSummary summary = ShiftSummary.builder()
                 .openBalance(shift.getOpenBalance())

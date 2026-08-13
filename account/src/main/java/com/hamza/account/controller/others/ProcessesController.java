@@ -117,7 +117,7 @@ public class ProcessesController implements Initializable {
             return usersService.getUsersNames();
         } catch (DaoException e) {
             log.error(e.getMessage());
-            AllAlerts.alertError(e.getMessage());
+            AllAlerts.handleError("تحميل أسماء المستخدمين", e);
             return List.of();
         }
     }
@@ -213,7 +213,7 @@ public class ProcessesController implements Initializable {
             return auditLogService.getProcessesData(from, to);
         } catch (DaoException e) {
             log.error(e.getMessage());
-            AllAlerts.alertError(e.getMessage());
+            AllAlerts.handleError("تحميل سجل العمليات", e);
             return List.of();
         }
     }
@@ -251,7 +251,7 @@ public class ProcessesController implements Initializable {
             }
         } catch (DaoException e) {
             log.error(e.getMessage(), e);
-            AllAlerts.alertError(e.getMessage());
+            AllAlerts.handleError("طباعة سجل العمليات", e);
         }
     }
 }

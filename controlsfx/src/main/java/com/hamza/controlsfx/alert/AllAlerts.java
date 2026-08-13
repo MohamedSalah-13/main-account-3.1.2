@@ -1,18 +1,13 @@
 package com.hamza.controlsfx.alert;
 
+import com.hamza.controlsfx.error.ErrorReporter;
+import com.hamza.controlsfx.error.FxErrorPresenter;
 import com.hamza.controlsfx.language.LanguageManager;
 import javafx.application.Platform;
 import javafx.scene.control.Alert;
 import javafx.scene.control.ButtonType;
-import javafx.scene.control.Label;
-import javafx.scene.control.TextArea;
-import javafx.scene.layout.GridPane;
-import javafx.scene.layout.Priority;
 import lombok.extern.log4j.Log4j2;
 
-import java.awt.*;
-import java.io.PrintWriter;
-import java.io.StringWriter;
 import java.util.Optional;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.FutureTask;
@@ -22,6 +17,8 @@ import java.util.function.Supplier;
 public class AllAlerts {
 
     private static final LanguageManager LANGUAGE_MANAGER = LanguageManager.getInstance();
+    private static final ErrorReporter ERROR_REPORTER = ErrorReporter.shared();
+    private static final FxErrorPresenter ERROR_PRESENTER = new FxErrorPresenter();
     public static final String SAVE = LANGUAGE_MANAGER.getString("common.save");
     public static final String SAVE_ALL = LANGUAGE_MANAGER.getString("common.save.all");
     private static final String ERROR = LANGUAGE_MANAGER.getString("common.error");
@@ -70,38 +67,29 @@ public class AllAlerts {
         });
     }
 
+    /**
+     * Reports an unexpected failure under a reference id and shows only its safe,
+     * localized description. The throwable and its stack trace stay in the log.
+     */
+    public static void reportError(String operation, Throwable throwable) {
+        ERROR_PRESENTER.present(ERROR_REPORTER.reportUnexpected(operation, throwable));
+    }
+
+    /**
+     * Presents a classified failure. Validation and business exceptions expose
+     * their approved message; unclassified exceptions are reported as technical.
+     */
+    public static void handleError(String operation, Throwable throwable) {
+        ERROR_PRESENTER.present(ERROR_REPORTER.report(operation, throwable));
+    }
+
+    /**
+     * Compatibility bridge for existing screens. It deliberately no longer puts
+     * a stack trace or the raw exception message in front of the user.
+     * New code should name the failed operation through {@link #reportError}.
+     */
     public static void showExceptionDialog(Throwable throwable) {
-        showOnFxThread(() -> {
-            Alert alert = new Alert(Alert.AlertType.ERROR);
-            alert.setTitle(throwable.getMessage());
-            alert.setHeaderText(throwable.getMessage());
-            alert.setContentText(throwable.getMessage());
-
-            StringWriter sw = new StringWriter();
-            PrintWriter pw = new PrintWriter(sw);
-            throwable.printStackTrace(pw);
-            String exceptionText = sw.toString();
-
-            Label label = new Label("The exception stacktrace was:");
-
-            TextArea textArea = new TextArea(exceptionText);
-            textArea.setEditable(false);
-            textArea.setWrapText(true);
-
-            textArea.setMaxWidth(Double.MAX_VALUE);
-            textArea.setMaxHeight(Double.MAX_VALUE);
-            GridPane.setVgrow(textArea, Priority.ALWAYS);
-            GridPane.setHgrow(textArea, Priority.ALWAYS);
-
-            GridPane expContent = new GridPane();
-            expContent.setMaxWidth(Double.MAX_VALUE);
-            expContent.add(label, 0, 0);
-            expContent.add(textArea, 0, 1);
-
-            alert.getDialogPane().setExpandableContent(expContent);
-            Toolkit.getDefaultToolkit().beep();
-            alert.showAndWait();
-        });
+        handleError(LANGUAGE_MANAGER.getString("error.operation.default"), throwable);
     }
 
     /**

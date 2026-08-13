@@ -4,6 +4,8 @@ import com.hamza.account.document.DocumentTableSpec;
 import com.hamza.account.model.base.BasePurchasesAndSales;
 import com.hamza.controlsfx.database.AbstractDao;
 import com.hamza.controlsfx.database.DaoException;
+import com.hamza.controlsfx.error.BusinessRuleException;
+import com.hamza.controlsfx.error.UserValidationException;
 
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -122,10 +124,10 @@ abstract class DocumentLineDao<T extends BasePurchasesAndSales> extends Abstract
     static <L extends BasePurchasesAndSales> LinePlan<L> plan(
             int documentId, Set<Integer> storedIds, List<L> submittedLines) throws DaoException {
         if (documentId <= 0) {
-            throw new DaoException("رقم الفاتورة غير صالح");
+            throw new UserValidationException("رقم الفاتورة غير صالح");
         }
         if (submittedLines == null || submittedLines.isEmpty()) {
-            throw new DaoException("لا يمكن حفظ فاتورة بدون أصناف");
+            throw new UserValidationException("لا يمكن حفظ فاتورة بدون أصناف");
         }
 
         Set<Integer> stored = Set.copyOf(storedIds);
@@ -135,10 +137,10 @@ abstract class DocumentLineDao<T extends BasePurchasesAndSales> extends Abstract
 
         for (L line : submittedLines) {
             if (line == null) {
-                throw new DaoException("يوجد سطر فارغ داخل الفاتورة");
+                throw new UserValidationException("يوجد سطر فارغ داخل الفاتورة");
             }
             if (line.getInvoiceNumber() != documentId) {
-                throw new DaoException("السطر لا ينتمي إلى الفاتورة الحالية");
+                throw new BusinessRuleException("تم تغيير سطور الفاتورة؛ أعد فتحها قبل الحفظ");
             }
 
             int id = line.getId();
@@ -147,13 +149,13 @@ abstract class DocumentLineDao<T extends BasePurchasesAndSales> extends Abstract
                 continue;
             }
             if (id < 0) {
-                throw new DaoException("هوية سطر الفاتورة غير صالحة");
+                throw new UserValidationException("هوية سطر الفاتورة غير صالحة");
             }
             if (!stored.contains(id)) {
-                throw new DaoException("تم تغيير سطور الفاتورة؛ أعد فتحها قبل الحفظ");
+                throw new BusinessRuleException("تم تغيير سطور الفاتورة؛ أعد فتحها قبل الحفظ");
             }
             if (!retained.add(id)) {
-                throw new DaoException("سطر الفاتورة مكرر: " + id);
+                throw new UserValidationException("سطر الفاتورة مكرر: " + id);
             }
             updates.add(line);
         }

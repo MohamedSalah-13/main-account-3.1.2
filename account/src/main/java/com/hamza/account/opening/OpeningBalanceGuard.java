@@ -4,6 +4,7 @@ import com.hamza.account.delete.Reference;
 import com.hamza.account.delete.ReferenceScanner;
 import com.hamza.controlsfx.database.AbstractDao;
 import com.hamza.controlsfx.database.DaoException;
+import com.hamza.controlsfx.error.BusinessRuleException;
 import org.jetbrains.annotations.NotNull;
 
 import java.sql.PreparedStatement;
@@ -106,7 +107,7 @@ public final class OpeningBalanceGuard {
 
         double stored = storedBalance(rule, id);
         if (Math.abs(stored - incoming) >= TOLERANCE) {
-            throw new DaoException(refusal(rule, movements, stored));
+            throw new BusinessRuleException(refusal(rule, movements, stored));
         }
         return false;
     }

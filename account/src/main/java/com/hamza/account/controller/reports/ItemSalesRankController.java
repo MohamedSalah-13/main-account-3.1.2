@@ -117,7 +117,7 @@ public class ItemSalesRankController implements Initializable {
 
         } catch (DaoException e) {
             log.error("خطأ في جلب بيانات الأصناف الأكثر مبيعاً", e);
-            AllAlerts.alertError("حدث خطأ أثناء جلب البيانات: " + e.getMessage());
+            AllAlerts.handleError("تحميل تقرير الأصناف الأكثر مبيعًا", e);
         }
     }
 
@@ -194,7 +194,7 @@ public class ItemSalesRankController implements Initializable {
                 excelExportService.exportItemSalesToExcel(tableView.getItems(), file.getAbsolutePath());
                 showInfo("تم تصدير ملف Excel بنجاح");
             } catch (Exception e) {
-                AllAlerts.alertError("فشل التصدير: " + e.getMessage());
+                AllAlerts.handleError("تصدير تقرير الأصناف الأكثر مبيعًا", e);
             }
         }
     }

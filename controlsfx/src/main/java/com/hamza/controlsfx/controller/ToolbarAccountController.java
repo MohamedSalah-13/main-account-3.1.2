@@ -61,7 +61,7 @@ public class ToolbarAccountController<T> {
                 button.setDisable(true);
             }
         } catch (Exception e) {
-            logError(e);
+            AllAlerts.reportError("تهيئة شريط أدوات الحساب", e);
         }
     }
 
@@ -113,7 +113,6 @@ public class ToolbarAccountController<T> {
                 // The screen's own reason - a protected row, a missing permission, a
                 // record something else still points at - used to be logged and then
                 // replaced by the validation message below, which named none of them.
-                AllAlerts.alertError(e.getMessage() == null ? Setting_Language.PLEASE_INSERT_ALL_DATA : e.getMessage());
                 return;
             }
             if (i >= 1) {
@@ -238,7 +237,6 @@ public class ToolbarAccountController<T> {
     }
 
     private void logError(Exception e) {
-        AllAlerts.alertError(e.getMessage());
-        log.error(e.getMessage(), e);
+        AllAlerts.handleError("حفظ أو حذف السجل", e);
     }
 }

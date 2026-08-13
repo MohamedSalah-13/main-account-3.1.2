@@ -532,7 +532,7 @@ public class ItemsController extends LoadData {
             } catch (DaoException e) {
                 if (e.getMessage().contains("duplicate") || e.getMessage().contains("Duplicate")) {
                     AllAlerts.alertError("بيانات موجودة سابقا");
-                } else AllAlerts.alertError(e.getMessage() + " column: " + col.getText());
+                } else AllAlerts.handleError("تحديث عمود " + col.getText(), e);
             }
         });
     }

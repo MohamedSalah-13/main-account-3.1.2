@@ -4,6 +4,7 @@ import com.hamza.account.authorization.PermissionKey;
 import com.hamza.account.authorization.PermissionDefinition;
 import com.hamza.controlsfx.database.AbstractDao;
 import com.hamza.controlsfx.database.DaoException;
+import com.hamza.controlsfx.error.BusinessRuleException;
 
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -303,7 +304,7 @@ public final class JdbcRbacRepository extends AbstractDao<Object> implements Rba
                       AND NOT EXISTS (SELECT 1 FROM auth_user_role WHERE role_id = ?)
                     """, roleId, roleId);
             if (rows != 1) {
-                throw new DaoException("لا يمكن حذف دور نظام أو دور مسند إلى مستخدم");
+                throw new BusinessRuleException("لا يمكن حذف دور نظام أو دور مسند إلى مستخدم");
             }
             affected.set(rows);
             audit(actorUserId, "ROLE_DELETED", "ROLE", roleId, "");
@@ -392,7 +393,7 @@ public final class JdbcRbacRepository extends AbstractDao<Object> implements Rba
                 SET role_code = ?, role_name = ?, description = ?, active = ?
                 WHERE id = ? AND system_role = 0
                 """, role.code(), role.name(), role.description(), role.active(), role.id());
-        if (rows != 1) throw new DaoException("لا يمكن تعديل دور النظام أو أن الدور غير موجود");
+        if (rows != 1) throw new BusinessRuleException("لا يمكن تعديل دور النظام أو أن الدور غير موجود");
         return role.id();
     }
 

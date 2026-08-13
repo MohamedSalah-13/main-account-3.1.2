@@ -3,6 +3,7 @@ package com.hamza.account.model.dao;
 import com.hamza.account.model.domain.Treasury;
 import com.hamza.controlsfx.database.AbstractDao;
 import com.hamza.controlsfx.database.DaoException;
+import com.hamza.controlsfx.error.BusinessRuleException;
 
 import java.math.BigDecimal;
 import java.sql.ResultSet;
@@ -84,7 +85,7 @@ public class TreasuryDao extends AbstractDao<Treasury> {
         if (id <= 0)
             throw new IllegalArgumentException("Invalid treasury ID: " + id);
         if (id == 1)
-            throw new DaoException("لا يمكن حذف الخزينة الرئيسية");
+            throw new BusinessRuleException("لا يمكن حذف الخزينة الرئيسية");
         return executeUpdate("DELETE FROM " + TABLE_NAME + " WHERE " + ID + " = ?", id);
     }
 

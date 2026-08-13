@@ -1,6 +1,7 @@
 package com.hamza.account.service.version;
 
 import com.hamza.account.config.AppVersionInfo;
+import com.hamza.controlsfx.alert.AllAlerts;
 import javafx.geometry.Insets;
 import javafx.scene.control.Alert;
 import javafx.scene.control.TextArea;
@@ -81,11 +82,7 @@ public class SystemInfoDialog {
         } catch (Exception e) {
             log.error("Failed to show system info", e);
 
-            Alert alert = new Alert(Alert.AlertType.ERROR);
-            alert.setTitle("خطأ");
-            alert.setHeaderText("تعذر عرض معلومات النظام");
-            alert.setContentText(e.getMessage());
-            alert.showAndWait();
+            AllAlerts.handleError("عرض معلومات النظام", e);
         }
     }
 

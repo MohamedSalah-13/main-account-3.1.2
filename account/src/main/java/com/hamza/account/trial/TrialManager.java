@@ -474,8 +474,9 @@ public class TrialManager {
                 info.trialExpired = info.daysRemaining <= 0;
             }
         } catch (Exception e) {
-            log.error("Error building trial display info", e);
-            info.error = e.getMessage();
+            info.error = com.hamza.controlsfx.error.ErrorReporter.shared()
+                    .report("تحميل معلومات الترخيص والفترة التجريبية", e)
+                    .message();
         }
         return info;
     }

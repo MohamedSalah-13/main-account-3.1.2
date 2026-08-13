@@ -42,8 +42,7 @@ public class ButtonColumn<T> extends TableColumn<T, String> {
                                 try {
                                     buttonColumnI.action(getIndex());
                                 } catch (Exception e) {
-                                    log.error(e.getMessage(), e);
-                                    AllAlerts.alertError(e.getMessage());
+                                    AllAlerts.handleError("تنفيذ إجراء الجدول", e);
                                 }
                             });
 

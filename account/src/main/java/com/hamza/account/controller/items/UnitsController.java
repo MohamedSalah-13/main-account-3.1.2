@@ -163,8 +163,7 @@ public class UnitsController implements Initializable, AppSettingInterface {
                 afterData();
             }
         } catch (Exception e) {
-            log.error(e.getMessage(), e);
-            AllAlerts.alertError(e.getMessage());
+            AllAlerts.handleError("حذف الوحدة", e);
         }
     }
 
@@ -185,12 +184,10 @@ public class UnitsController implements Initializable, AppSettingInterface {
                 afterData();
             }
         } catch (ValidationException e) {
-            log.error(e.getMessage(), e);
-            AllAlerts.alertError(e.getMessage());
+            AllAlerts.handleError("حفظ الوحدة", e);
             e.setFocus();
         } catch (Exception e) {
-            log.error(e.getMessage(), e);
-            AllAlerts.alertError(e.getMessage());
+            AllAlerts.handleError("حفظ الوحدة", e);
         }
     }
 
@@ -240,12 +237,12 @@ public class UnitsController implements Initializable, AppSettingInterface {
      * "كرتونه" to "كرتونة" used to be rejected as a duplicate of the row being
      * edited.
      */
-    private void validateUniqueUnitName(String name, int editedUnitId) throws Exception {
+    private void validateUniqueUnitName(String name, int editedUnitId) throws ValidationException {
         boolean nameExists = tableView.getItems().stream()
                 .filter(item -> item.getUnit_id() != editedUnitId)
                 .anyMatch(item -> item.getUnit_name().equals(name));
         if (nameExists) {
-            throw new Exception("هذا الاسم موجود");
+            throw new ValidationException("هذا الاسم موجود", textName);
         }
     }
 
@@ -332,7 +329,7 @@ public class UnitsController implements Initializable, AppSettingInterface {
 record UnitFormData(String name, double value) {
 }
 
-class ValidationException extends Exception {
+class ValidationException extends com.hamza.controlsfx.error.UserValidationException {
     private final TextField focusField;
 
     public ValidationException(String message, TextField focusField) {

@@ -36,7 +36,7 @@ public class ToolbarReportsNameController {
                 toolbarReportsNameInterface.print();
             } catch (Exception e) {
                 log.error(e.getMessage(), e);
-                AllAlerts.alertError(e.getMessage());
+                AllAlerts.handleError("طباعة التقرير", e);
             }
         });
         btnRefresh.setOnAction(event -> {
@@ -44,7 +44,7 @@ public class ToolbarReportsNameController {
                 toolbarReportsNameInterface.refresh();
             } catch (Exception e) {
                 log.error(e.getMessage(), e);
-                AllAlerts.alertError(e.getMessage());
+                AllAlerts.handleError("تحديث التقرير", e);
             }
         });
         labelTitle.setText(toolbarReportsNameInterface.setTitle());

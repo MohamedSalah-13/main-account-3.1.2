@@ -4,6 +4,8 @@ import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.model.domain.Treasury;
 import com.hamza.account.service.TreasuryService;
 import com.hamza.controlsfx.database.DaoException;
+import com.hamza.controlsfx.alert.AllAlerts;
+import com.hamza.controlsfx.error.UserValidationException;
 import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
@@ -71,7 +73,7 @@ public class TreasuryController {
         try {
             treasuryTable.setItems(FXCollections.observableArrayList(treasuryService.getTreasuryModelList()));
         } catch (DaoException e) {
-            showError(e.getMessage());
+            AllAlerts.handleError("تحميل الخزائن", e);
         }
     }
 
@@ -98,7 +100,7 @@ public class TreasuryController {
             newTreasury();
             showInfo("تم حفظ الخزينة بنجاح");
         } catch (Exception e) {
-            showError(e.getMessage());
+            AllAlerts.handleError("حفظ الخزينة", e);
         }
     }
 
@@ -119,7 +121,7 @@ public class TreasuryController {
             loadTreasuries();
             showInfo("تم تعديل الخزينة بنجاح");
         } catch (Exception e) {
-            showError(e.getMessage());
+            AllAlerts.handleError("تعديل الخزينة", e);
         }
     }
 
@@ -132,20 +134,24 @@ public class TreasuryController {
         amountField.setText(String.valueOf(treasury.getAmount()));
     }
 
-    private BigDecimal parseAmount(String text) {
+    private BigDecimal parseAmount(String text) throws UserValidationException {
         if (text == null || text.isBlank()) {
             return BigDecimal.ZERO;
         }
-        return new BigDecimal(text.trim());
+        try {
+            return new BigDecimal(text.trim());
+        } catch (NumberFormatException e) {
+            throw new UserValidationException("أدخل رصيدًا صحيحًا", e);
+        }
     }
 
-    private void validateTreasury(Treasury treasury) {
+    private void validateTreasury(Treasury treasury) throws UserValidationException {
         if (treasury.getName() == null || treasury.getName().isBlank()) {
-            throw new IllegalArgumentException("يجب إدخال اسم الخزينة");
+            throw new UserValidationException("يجب إدخال اسم الخزينة");
         }
 
         if (treasury.getAmount() == null || treasury.getAmount().compareTo(BigDecimal.ZERO) < 0) {
-            throw new IllegalArgumentException("الرصيد لا يمكن أن يكون أقل من صفر");
+            throw new UserValidationException("الرصيد لا يمكن أن يكون أقل من صفر");
         }
     }
 

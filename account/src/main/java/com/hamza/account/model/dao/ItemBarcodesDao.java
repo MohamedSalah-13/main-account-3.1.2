@@ -2,6 +2,7 @@ package com.hamza.account.model.dao;
 
 import com.hamza.controlsfx.database.AbstractDao;
 import com.hamza.controlsfx.database.DaoException;
+import com.hamza.controlsfx.error.BusinessRuleException;
 import com.hamza.controlsfx.database.SqlStatements;
 import com.hamza.controlsfx.language.Error_Text_Show;
 
@@ -40,7 +41,7 @@ public class ItemBarcodesDao extends AbstractDao<String> {
                 return results.length;
             } catch (SQLException e) {
                 if (e.getMessage() != null && e.getMessage().contains("Duplicate entry")) {
-                    throw new DaoException(Error_Text_Show.DUPLICATE_ENTRY, e);
+                    throw new BusinessRuleException(Error_Text_Show.DUPLICATE_ENTRY, e);
                 }
                 throw new DaoException(e);
             }

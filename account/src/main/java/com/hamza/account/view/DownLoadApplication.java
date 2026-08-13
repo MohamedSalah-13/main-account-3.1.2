@@ -132,7 +132,7 @@ public class DownLoadApplication extends Application {
             }
         } catch (Exception e) {
             log.error("Database update failed on startup", e);
-            AllAlerts.alertError("تعذر تحديث قاعدة البيانات، لا يمكن فتح البرنامج:\n" + e.getMessage());
+            AllAlerts.handleError("تحديث قاعدة البيانات عند بدء التشغيل", e);
             System.exit(0);
         }
     }
@@ -150,7 +150,7 @@ public class DownLoadApplication extends Application {
             }
             return DaoFactory.INSTANCE;
         } catch (DaoException | SQLException e) {
-            AllAlerts.alertError(e.getMessage());
+            AllAlerts.handleError("الاتصال بقاعدة البيانات", e);
             System.exit(0);
         }
         return null;

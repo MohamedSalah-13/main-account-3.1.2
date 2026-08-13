@@ -4,6 +4,7 @@ import com.hamza.account.model.base.BasePurchasesAndSales;
 import com.hamza.account.model.domain.ItemsModel;
 import com.hamza.account.model.domain.UnitsModel;
 import com.hamza.controlsfx.database.DaoException;
+import com.hamza.controlsfx.error.UserValidationException;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -18,17 +19,17 @@ public final class InvoiceLineAssembler {
     public static <T extends BasePurchasesAndSales> List<T> assemble(
             List<T> source, int documentId, LineFactory<T> factory) throws DaoException {
         if (source == null || source.isEmpty()) {
-            throw new DaoException("لا يمكن حفظ فاتورة بدون أصناف");
+            throw new UserValidationException("لا يمكن حفظ فاتورة بدون أصناف");
         }
 
         List<T> result = new ArrayList<>(source.size());
         for (T row : source) {
             if (row == null || row.getItems() == null || row.getUnitsType() == null) {
-                throw new DaoException("بيانات أحد سطور الفاتورة غير مكتملة");
+                throw new UserValidationException("بيانات أحد سطور الفاتورة غير مكتملة");
             }
             ItemsModel item = row.getItems();
             if (item.isHasValidate() && row.getExpiration_date() == null) {
-                throw new DaoException("يجب تحديد تاريخ صلاحية الصنف: " + item.getNameItem());
+                throw new UserValidationException("يجب تحديد تاريخ صلاحية الصنف: " + item.getNameItem());
             }
 
             T detached = factory.create(

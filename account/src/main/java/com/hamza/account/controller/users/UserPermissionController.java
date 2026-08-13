@@ -434,7 +434,7 @@ public final class UserPermissionController implements AppSettingInterface {
 
     private void report(Exception e) {
         log.error(e.getMessage(), e);
-        AllAlerts.alertError(e.getMessage());
+        AllAlerts.handleError("إدارة صلاحيات المستخدم", e);
     }
 
     @Override

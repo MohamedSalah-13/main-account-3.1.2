@@ -55,8 +55,7 @@ public class TextSearchController<T> {
     }
 
     private void logError(Exception e) {
-        AllAlerts.alertError(e.getMessage());
-        log.error(e.getMessage(), e);
+        AllAlerts.handleError("البحث في البيانات", e);
     }
 
     public String getTextName() {

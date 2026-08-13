@@ -131,7 +131,7 @@ public class TableController<T> implements Initializable {
                 try {
                     loadDataFromDB(newValue); // لا يتم الاستدعاء إلا بعد التوقف عن الكتابة
                 } catch (Exception e) {
-                    log.error(this.getClass().getName(), e.getMessage());
+                    reportUnexpected("البحث في بيانات الجدول", e);
                 }
             });
             pause.playFromStart();
@@ -141,14 +141,15 @@ public class TableController<T> implements Initializable {
     private void updateTableView(int pageIndex) {
         int offset = pageIndex * ROWS_PER_PAGE;
         // هنا الكود الحقيقي لجلب البيانات من قاعدة البيانات
-        List<T> data = null;
         try {
-            data = tableInterface.getProducts(ROWS_PER_PAGE, offset);
+            List<T> data = tableInterface.getProducts(ROWS_PER_PAGE, offset);
+            tableView.setItems(FXCollections.observableArrayList(data));
+            tableView.refresh();
         } catch (Exception e) {
-            throw new RuntimeException(e);
+            // Keep the currently displayed rows. Replacing them with an empty list
+            // would make a database failure look like "there is no data".
+            reportUnexpected("تحميل بيانات الجدول", e);
         }
-        tableView.setItems(FXCollections.observableArrayList(data));
-        tableView.refresh();
     }
 
     private void loadDataFromDB(String newValue) throws Exception {
@@ -218,7 +219,7 @@ public class TableController<T> implements Initializable {
             try {
                 actionButtonToolBar.openNew();
             } catch (Exception e) {
-                errorLog(e);
+                reportUnexpected("فتح شاشة إضافة سجل", e);
             }
         });
 
@@ -230,7 +231,7 @@ public class TableController<T> implements Initializable {
             try {
                 actionButtonToolBar.update(tableView.getSelectionModel().getSelectedItem());
             } catch (Exception e) {
-                errorLog(e);
+                reportUnexpected("فتح شاشة تعديل السجل", e);
             }
         });
 
@@ -248,7 +249,7 @@ public class TableController<T> implements Initializable {
                         actionButtonToolBar.afterDelete();
                     }
                 } catch (Exception e) {
-                    errorLog(e);
+                    reportDeleteFailure(e);
                 }
         });
 
@@ -258,14 +259,23 @@ public class TableController<T> implements Initializable {
             try {
                 actionButtonToolBar.print();
             } catch (Exception e) {
-                errorLog(e);
+                reportUnexpected("طباعة بيانات الجدول", e);
             }
         });
     }
 
-    private void errorLog(Exception e) {
-        log.error(e.getMessage(), e);
-        AllAlerts.alertError(e.getMessage());
+    private void reportUnexpected(String operation, Exception error) {
+        AllAlerts.reportError(operation, error);
+    }
+
+    /**
+     * Delete refusals still arrive through the legacy {@code throws Exception}
+     * contract and carry the reason the user needs to see. They stay on the old
+     * path until the table API returns {@code DeleteOutcome} directly; technical
+     * failures elsewhere already use {@link AllAlerts#reportError}.
+     */
+    private void reportDeleteFailure(Exception error) {
+        AllAlerts.handleError("حذف السجل المحدد", error);
     }
 
 }

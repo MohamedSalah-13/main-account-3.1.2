@@ -5,6 +5,7 @@ import com.hamza.account.features.export.ReportExportService;
 import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.model.domain.DailyItemSales;
 import com.hamza.controlsfx.database.DaoException;
+import com.hamza.controlsfx.alert.AllAlerts;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
@@ -101,7 +102,7 @@ public class DailyItemSalesController implements Initializable {
 
         } catch (DaoException e) {
             log.error("خطأ في جلب بيانات مبيعات اليوم", e);
-            alertError("حدث خطأ أثناء جلب البيانات: " + e.getMessage());
+            AllAlerts.handleError("تحميل تقرير المبيعات اليومية", e);
         }
     }
 
@@ -168,7 +169,7 @@ public class DailyItemSalesController implements Initializable {
                 showInfo("تم تصدير ملف Excel بنجاح.");
             } catch (Exception e) {
                 log.error("خطأ تصدير إكسيل", e);
-                alertError("فشل التصدير: " + e.getMessage());
+                AllAlerts.handleError("تصدير تقرير المبيعات اليومية", e);
             }
         }
     }

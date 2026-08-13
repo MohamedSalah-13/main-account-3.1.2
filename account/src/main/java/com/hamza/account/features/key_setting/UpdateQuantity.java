@@ -30,7 +30,7 @@ public class UpdateQuantity {
                         updateQuantity(false);
                     }
                 } catch (DaoException e) {
-                    AllAlerts.alertError(e.getMessage());
+                    AllAlerts.handleError("تحديث كمية الصنف", e);
                 }
                 updateInterface.sum();
             }

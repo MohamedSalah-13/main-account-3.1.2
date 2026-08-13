@@ -462,8 +462,7 @@ public class AccountDetailsWithItemsController<T3 extends BaseNames, T4 extends 
     }
 
     private void errorLog(Exception e) {
-        AllAlerts.alertError(e.getMessage());
-        log.error(e.getMessage(), e);
+        AllAlerts.handleError("تحميل تفاصيل الحساب بالأصناف", e);
     }
 
     @Override

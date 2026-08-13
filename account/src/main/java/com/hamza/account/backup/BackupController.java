@@ -126,7 +126,9 @@ public class BackupController {
 
         task.setOnFailed(e -> {
             Throwable ex = task.getException();
-            setStatus("✗ فشل النسخ: " + ex.getMessage());
+            var report = com.hamza.controlsfx.error.ErrorReporter.shared()
+                    .report("إنشاء النسخة الاحتياطية", ex);
+            setStatus("✗ " + report.message());
             resetUIAfterTask();
         });
 
@@ -181,15 +183,9 @@ public class BackupController {
 
             task.setOnFailed(e -> {
                 Throwable ex = task.getException();
-                log.error("Restore failed", ex);
-                // A failure with no message - an NPE inside mysql, say - used to throw
-                // a second time here while reporting the first.
-                String msg = ex.getMessage() == null ? ex.getClass().getSimpleName() : ex.getMessage();
-                if (msg.contains("كلمة مرور خاطئة") || msg.contains("تالف")) {
-                    setStatus("✗ " + msg);
-                } else {
-                    setStatus("✗ فشل الاستعادة: " + msg);
-                }
+                var report = com.hamza.controlsfx.error.ErrorReporter.shared()
+                        .report("استعادة النسخة الاحتياطية", ex);
+                setStatus("✗ " + report.message());
                 resetUIAfterTask();
             });
 

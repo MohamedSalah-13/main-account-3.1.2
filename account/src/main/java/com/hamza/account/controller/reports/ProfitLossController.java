@@ -132,7 +132,7 @@ public class ProfitLossController {
                 Platform.runLater(() -> tableView.setItems(FXCollections.observableArrayList(tableData)));
             } catch (DaoException e) {
                 log.error(e.getMessage(), e);
-                AllAlerts.alertError(e.getMessage());
+                AllAlerts.handleError("تحميل تقرير الأرباح والخسائر", e);
                 return;
             }
         });

@@ -448,7 +448,7 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
                                 return;
                             } catch (Exception e) {
                                 log.error(e.getMessage());
-                                AllAlerts.alertError("خطأ في قراءة باركود الميزان: " + e.getMessage());
+                                AllAlerts.handleError("قراءة باركود الميزان", e);
                                 txtBarcode.requestFocus();
                                 return;
                             }
@@ -1372,8 +1372,7 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
     }
 
     private void logError(Exception e) {
-        AllAlerts.alertError(e.getMessage());
-        log.error(e.getMessage(), e);
+        AllAlerts.handleError("تنفيذ عملية الفاتورة", e);
     }
 
     private void addColumnType() {

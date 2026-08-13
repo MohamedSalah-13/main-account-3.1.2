@@ -1,5 +1,6 @@
 package com.hamza.account.backup;
 
+import com.hamza.controlsfx.error.UserValidationException;
 import lombok.extern.log4j.Log4j2;
 
 import java.io.*;
@@ -33,7 +34,7 @@ public class BackupService {
         // readable by anyone, since the key comes from an empty passphrase. Better
         // to say so now than to hand back a file that looks like a backup.
         if (encryptionPassword == null || encryptionPassword.isBlank()) {
-            throw new IllegalStateException(
+            throw new UserValidationException(
                     "لم يتم تعيين كلمة مرور التشفير. من فضلك اضبطها في إعدادات النسخ الاحتياطي أولاً.");
         }
 
@@ -114,7 +115,8 @@ public class BackupService {
 
             // 2. التحقق من صلاحية الملف
             if (!isSqlFile(tempSqlFile)) {
-                throw new Exception("الملف المفكوك ليس SQL صالحاً. قد يكون الملف تالفاً أو أن كلمة المرور خاطئة.");
+                throw new UserValidationException(
+                        "الملف ليس نسخة احتياطية صالحة، أو أن كلمة مرور التشفير غير صحيحة.");
             }
 
             // 3. تنفيذ الاستيراد مع تمرير الملف النظيف

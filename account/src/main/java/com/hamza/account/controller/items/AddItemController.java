@@ -755,8 +755,7 @@ public class AddItemController implements AppSettingInterface {
     }
 
     private void logError(Exception e) {
-        log.error(e.getMessage(), e);
-        AllAlerts.alertError(e.getMessage());
+        AllAlerts.handleError("حفظ بيانات الصنف", e);
     }
 
     @Override

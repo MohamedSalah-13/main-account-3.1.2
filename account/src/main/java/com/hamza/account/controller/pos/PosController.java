@@ -1027,8 +1027,7 @@ public class PosController extends ButtonSetting {
     }
 
     private void logError(Exception e) {
-        log.error(e.getMessage(), e);
-        AllAlerts.alertError(e.getMessage());
+        AllAlerts.handleError("تنفيذ عملية نقطة البيع", e);
     }
 
 

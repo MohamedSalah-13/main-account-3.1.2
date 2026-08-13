@@ -50,7 +50,7 @@ public class CustomerReceivableController implements Initializable {
             double total = masterData.stream().mapToDouble(CustomerReceivable::getTotalReceivable).sum();
             lblGrandTotal.setText(String.format("%,.2f", total));
         } catch (Exception e) {
-            AllAlerts.alertError("فشل جلب أرصدة العملاء: " + e.getMessage());
+            AllAlerts.handleError("تحميل أرصدة العملاء", e);
         }
     }
 

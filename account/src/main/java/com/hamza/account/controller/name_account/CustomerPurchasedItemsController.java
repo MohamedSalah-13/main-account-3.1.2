@@ -190,7 +190,7 @@ public class CustomerPurchasedItemsController implements Initializable, AppSetti
             }
         } catch (ExcelException e) {
             log.error(e.getMessage(), e);
-            AllAlerts.alertError(e.getMessage());
+            AllAlerts.handleError("تصدير مشتريات العميل", e);
         }
     }
 
@@ -247,7 +247,7 @@ public class CustomerPurchasedItemsController implements Initializable, AppSetti
             }
         } catch (Exception e) {
             log.error(e.getMessage(), e);
-            AllAlerts.alertError(e.getMessage());
+            AllAlerts.handleError("طباعة مشتريات العميل", e);
         }
     }
 

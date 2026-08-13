@@ -79,12 +79,13 @@ public class ScheduledBackup {
                 AppNotifications.success(SUCCESS_KEY, NotificationCategories.BACKUP,
                         "تم عمل نسخة احتياطية", backup.getName());
             } catch (Exception e) {
-                log.error("Scheduled backup failed", e);
-                setStatus("فشل النسخ التلقائي: " + e.getMessage());
+                var report = com.hamza.controlsfx.error.ErrorReporter.shared()
+                        .report("إنشاء النسخة الاحتياطية التلقائية", e);
+                setStatus(report.message());
                 // A log line was the only trace of this, which is how a folder that
                 // has been unwritable for weeks goes unnoticed.
                 AppNotifications.error(FAILURE_KEY, NotificationCategories.BACKUP,
-                        "فشل النسخ الاحتياطي التلقائي", String.valueOf(e.getMessage()));
+                        "فشل النسخ الاحتياطي التلقائي", report.message());
             }
         }, 0, getTime(), TimeUnit.HOURS);
     }

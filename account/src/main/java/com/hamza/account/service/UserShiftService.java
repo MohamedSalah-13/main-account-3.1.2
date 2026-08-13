@@ -7,6 +7,8 @@ import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.model.domain.ShiftSummary;
 import com.hamza.account.model.domain.UserShift;
 import com.hamza.controlsfx.database.DaoException;
+import com.hamza.controlsfx.error.BusinessRuleException;
+import com.hamza.controlsfx.error.UserValidationException;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -15,13 +17,13 @@ public record UserShiftService(DaoFactory daoFactory) {
 
     public int openShift(int userId, double openBalance, String notes) throws DaoException {
         if (userId <= 0) {
-            throw new DaoException("معرّف المستخدم غير صالح!");
+            throw new UserValidationException("معرّف المستخدم غير صالح!");
         }
         if (openBalance < 0) {
-            throw new DaoException("لا يمكن أن يكون الرصيد الافتتاحي بالسالب!");
+            throw new UserValidationException("لا يمكن أن يكون الرصيد الافتتاحي بالسالب!");
         }
         if (daoFactory.userShiftDao().hasOpenShift(userId)) {
-            throw new DaoException("يوجد وردية مفتوحة بالفعل لهذا المستخدم!");
+            throw new BusinessRuleException("يوجد وردية مفتوحة بالفعل لهذا المستخدم!");
         }
 
         UserShift shift = new UserShift(userId);
@@ -38,12 +40,12 @@ public record UserShiftService(DaoFactory daoFactory) {
      */
     public int closeShift(int userId, double closeBalance, String notes) throws DaoException {
         if (closeBalance < 0) {
-            throw new DaoException("لا يمكن أن يكون الرصيد الختامي بالسالب!");
+            throw new UserValidationException("لا يمكن أن يكون الرصيد الختامي بالسالب!");
         }
 
         UserShift openShift = daoFactory.userShiftDao().getOpenShiftByUserId(userId);
         if (openShift == null) {
-            throw new DaoException("لا توجد وردية مفتوحة لهذا المستخدم!");
+            throw new BusinessRuleException("لا توجد وردية مفتوحة لهذا المستخدم!");
         }
 
         LocalDateTime closeTime = LocalDateTime.now();
@@ -84,7 +86,7 @@ public record UserShiftService(DaoFactory daoFactory) {
     public ShiftSummary getCurrentShiftSummary(int userId) throws DaoException {
         UserShift openShift = daoFactory.userShiftDao().getOpenShiftByUserId(userId);
         if (openShift == null) {
-            throw new DaoException("لا توجد وردية مفتوحة لهذا المستخدم!");
+            throw new BusinessRuleException("لا توجد وردية مفتوحة لهذا المستخدم!");
         }
         ShiftSummary summary = daoFactory.userShiftDao()
                 .calculateShiftSummary(userId, openShift.getOpenTime(), LocalDateTime.now());
@@ -117,11 +119,11 @@ public record UserShiftService(DaoFactory daoFactory) {
         AuthorizationGuard.require(AppPermissions.USER_SHIFT_MANAGE);
         UserShift shift = daoFactory.userShiftDao().getDataById(shiftId);
         if (shift == null) {
-            throw new DaoException("الوردية غير موجودة");
+            throw new BusinessRuleException("الوردية غير موجودة");
         }
 
         if (!shift.isOpen()) {
-            throw new DaoException("الوردية مغلقة بالفعل");
+            throw new BusinessRuleException("الوردية مغلقة بالفعل");
         }
 
         shift.setCloseTime(java.time.LocalDateTime.now());

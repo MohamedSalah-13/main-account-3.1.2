@@ -12,6 +12,7 @@ import com.hamza.account.session.ShiftContext;
 import com.hamza.account.type.ExpensesType;
 import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.database.DaoException;
+import com.hamza.controlsfx.error.UserValidationException;
 import com.hamza.controlsfx.language.Setting_Language;
 import com.hamza.account.controller.others.ServiceRegistry;
 import com.hamza.account.features.events.ExpensesChanged;
@@ -103,7 +104,7 @@ public class AddExpensesController implements AddInterface {
 
         ExpensesDetails expensesDetails = new ExpensesDetails();
         ExpensesType byType = ExpensesType.fromType(comboType.getSelectionModel().getSelectedItem());
-        if (byType == null) throw new DaoException("خطا فى نوع المصروف");
+        if (byType == null) throw new UserValidationException("خطأ في نوع المصروف");
 
         int id = byType.getId();
         expensesDetails.setExpenses(expensesService.fetchExpenseById(id));
@@ -116,7 +117,7 @@ public class AddExpensesController implements AddInterface {
         if (byType.equals(ExpensesType.PREDECESSOR) || byType.equals(ExpensesType.SALARIES)) {
             if (comboName.getSelectionModel().isEmpty()) {
                 comboName.requestFocus();
-                throw new DaoException("من فضلك حدد اسم الموظف");
+                throw new UserValidationException("من فضلك حدد اسم الموظف");
             }
         }
 

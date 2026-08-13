@@ -264,8 +264,7 @@ public class AccountDetailsController<T3 extends BaseNames, T4 extends BaseAccou
     }
 
     private void errorLog(Exception e) {
-        AllAlerts.alertError(e.getMessage());
-        log.error(e.getMessage(), e);
+        AllAlerts.handleError("تحميل تفاصيل الحساب", e);
     }
 
     @Override

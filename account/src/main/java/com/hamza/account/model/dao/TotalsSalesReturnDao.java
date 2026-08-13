@@ -8,6 +8,7 @@ import com.hamza.account.type.InvoiceType;
 import com.hamza.controlsfx.database.AbstractDao;
 import com.hamza.account.period.PeriodLock;
 import com.hamza.controlsfx.database.DaoException;
+import com.hamza.controlsfx.error.UserValidationException;
 import lombok.extern.log4j.Log4j2;
 
 import java.math.BigDecimal;
@@ -83,7 +84,7 @@ public class TotalsSalesReturnDao extends AbstractDao<Total_Sales_Re> {
                 daoFactory.salesReturnsDao().insertList(totalSalesRe.getSalesReturnList());
 
             } catch (SQLIntegrityConstraintViolationException e) {
-                throw new DaoException("يجب إدخال جميع البيانات ... !", e);
+                throw new UserValidationException("يجب إدخال جميع البيانات", e);
             } catch (DaoException e) {
                 throw e;
             }

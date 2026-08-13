@@ -9,6 +9,7 @@ import com.hamza.account.openFxml.FxmlPath;
 import com.hamza.account.service.TotalBuyService;
 import com.hamza.account.table.TableSetting;
 import com.hamza.controlsfx.database.DaoException;
+import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.language.Setting_Language;
 import com.hamza.controlsfx.table.TableColumnAnnotation;
 import javafx.collections.FXCollections;
@@ -67,7 +68,7 @@ public class ReportTotalByYearController {
                 searchAction();
             } catch (DaoException e) {
                 log.error(e.getMessage(), e);
-                showError(e.getMessage());
+                AllAlerts.handleError("تحميل التقرير السنوي", e);
             }
         });
 
@@ -174,7 +175,7 @@ public class ReportTotalByYearController {
                 showInfo("تم تصدير ملف Excel بنجاح");
             } catch (IOException e) {
                 log.error(e.getMessage());
-                showError("فشل التصدير: " + e.getMessage());
+                AllAlerts.handleError("تصدير التقرير السنوي", e);
             }
         }
     }

@@ -63,9 +63,9 @@ public class ChangeUserName extends TextInputDialog {
                     eventBus.publish(new UsersChanged());
                     Thread thread = new Thread(() -> Platform.runLater(AllAlerts::alertSave));
                     thread.start();
-                } else throw new DaoException(Setting_Language.MESSAGE);
+                } else throw new com.hamza.controlsfx.error.UserValidationException(Setting_Language.MESSAGE);
             } catch (DaoException e) {
-                AllAlerts.alertError(e.getMessage());
+                AllAlerts.handleError("تغيير اسم المستخدم", e);
             }
         });
     }

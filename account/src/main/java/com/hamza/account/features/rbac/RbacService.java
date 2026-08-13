@@ -3,6 +3,8 @@ package com.hamza.account.features.rbac;
 import com.hamza.account.authorization.AppPermissions;
 import com.hamza.account.authorization.PermissionKey;
 import com.hamza.controlsfx.database.DaoException;
+import com.hamza.controlsfx.error.BusinessRuleException;
+import com.hamza.controlsfx.error.UserValidationException;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -92,18 +94,18 @@ public final class RbacService {
                                 String reason, LocalDateTime expiresAt) throws DaoException {
         requireRoleManagement();
         validateOverrideTarget(targetUserId);
-        if (effect == null) throw new DaoException("حدد نوع الاستثناء: سماح أو منع");
+        if (effect == null) throw new UserValidationException("حدد نوع الاستثناء: سماح أو منع");
 
         RbacPermission permission = repository.findAllPermissions().stream()
                 .filter(candidate -> candidate.id() == permissionId)
                 .findFirst()
-                .orElseThrow(() -> new DaoException("الصلاحية المحددة غير موجودة أو غير مفعلة"));
+                .orElseThrow(() -> new BusinessRuleException("الصلاحية المحددة غير موجودة أو غير مفعلة"));
         String normalizedReason = reason == null ? "" : reason.trim();
         if (normalizedReason.length() < 3 || normalizedReason.length() > 255) {
-            throw new DaoException("سبب الاستثناء مطلوب ويجب أن يكون بين 3 و255 حرفًا");
+            throw new UserValidationException("سبب الاستثناء مطلوب ويجب أن يكون بين 3 و255 حرفًا");
         }
         if (expiresAt != null && !expiresAt.isAfter(LocalDateTime.now())) {
-            throw new DaoException("تاريخ انتهاء الاستثناء يجب أن يكون في المستقبل");
+            throw new UserValidationException("تاريخ انتهاء الاستثناء يجب أن يكون في المستقبل");
         }
 
         int result = repository.saveUserOverride(targetUserId, permission.id(), effect,
@@ -115,7 +117,7 @@ public final class RbacService {
     public int deleteUserOverride(int targetUserId, int permissionId) throws DaoException {
         requireRoleManagement();
         validateUserId(targetUserId);
-        if (permissionId <= 0) throw new DaoException("حدد استثناءً للحذف");
+        if (permissionId <= 0) throw new UserValidationException("حدد استثناءً للحذف");
         int result = repository.deleteUserOverride(targetUserId, permissionId, session.currentUserId());
         refreshCurrentSession();
         return result;
@@ -130,7 +132,7 @@ public final class RbacService {
                                  Set<Integer> parentRoleIds, Set<Integer> assignedRoleIds,
                                  boolean assignSavedRole) throws DaoException {
         requireRoleManagement();
-        if (targetUserId <= 0) throw new DaoException("المستخدم غير صالح");
+        if (targetUserId <= 0) throw new UserValidationException("المستخدم غير صالح");
         if (targetUserId == 1) {
             // The recovery administrator always keeps the protected SYSTEM_ADMIN role.
             targetUserId = 0;
@@ -152,10 +154,10 @@ public final class RbacService {
 
     public int deleteRole(RbacRole role) throws DaoException {
         requireRoleManagement();
-        if (role == null || role.id() <= 0) throw new DaoException("حدد دورًا للحذف");
-        if (role.systemRole()) throw new DaoException("لا يمكن حذف دور النظام");
+        if (role == null || role.id() <= 0) throw new UserValidationException("حدد دورًا للحذف");
+        if (role.systemRole()) throw new BusinessRuleException("لا يمكن حذف دور النظام");
         if (repository.isRoleAssigned(role.id())) {
-            throw new DaoException("لا يمكن حذف الدور لأنه مسند إلى مستخدم واحد على الأقل");
+            throw new BusinessRuleException("لا يمكن حذف الدور لأنه مسند إلى مستخدم واحد على الأقل");
         }
         int result = repository.deleteRole(role.id(), session.currentUserId());
         refreshCurrentSession();
@@ -164,18 +166,18 @@ public final class RbacService {
 
     private void requireRoleManagement() throws DaoException {
         if (!session.isSignedIn() || !session.hasPermission(AppPermissions.ROLES_MANAGE)) {
-            throw new DaoException("ليس لديك صلاحية لإدارة الأدوار والصلاحيات");
+            throw new BusinessRuleException("ليس لديك صلاحية لإدارة الأدوار والصلاحيات");
         }
     }
 
     private void validateUserId(int userId) throws DaoException {
-        if (userId <= 0) throw new DaoException("المستخدم غير صالح");
+        if (userId <= 0) throw new UserValidationException("المستخدم غير صالح");
     }
 
     private void validateOverrideTarget(int userId) throws DaoException {
         validateUserId(userId);
         if (userId == 1) {
-            throw new DaoException("مدير النظام المحمي لا يقبل استثناءات فردية");
+            throw new BusinessRuleException("مدير النظام المحمي لا يقبل استثناءات فردية");
         }
     }
 
@@ -184,11 +186,11 @@ public final class RbacService {
                 .collect(Collectors.toMap(RbacRole::id, Function.identity()));
         for (Integer roleId : roleIds) {
             RbacRole role = rolesById.get(roleId);
-            if (role == null) throw new DaoException("الدور المحدد غير موجود");
+            if (role == null) throw new BusinessRuleException("الدور المحدد غير موجود");
             if (role.systemRole()) {
-                throw new DaoException("لا يمكن إسناد دور النظام المحمي إلى مستخدم آخر");
+                throw new BusinessRuleException("لا يمكن إسناد دور النظام المحمي إلى مستخدم آخر");
             }
-            if (!role.active()) throw new DaoException("لا يمكن إسناد دور غير نشط");
+            if (!role.active()) throw new BusinessRuleException("لا يمكن إسناد دور غير نشط");
         }
     }
 
@@ -197,17 +199,17 @@ public final class RbacService {
                 .collect(Collectors.toMap(RbacRole::id, Function.identity()));
         for (Integer parentId : parentIds) {
             RbacRole parent = roles.get(parentId);
-            if (parent == null) throw new DaoException("الدور الموروث غير موجود");
-            if (parent.systemRole()) throw new DaoException("لا يمكن وراثة دور النظام المحمي");
-            if (!parent.active()) throw new DaoException("لا يمكن وراثة دور غير نشط");
-            if (child.id() > 0 && child.id() == parentId) throw new DaoException("لا يمكن للدور أن يرث نفسه");
+            if (parent == null) throw new BusinessRuleException("الدور الموروث غير موجود");
+            if (parent.systemRole()) throw new BusinessRuleException("لا يمكن وراثة دور النظام المحمي");
+            if (!parent.active()) throw new BusinessRuleException("لا يمكن وراثة دور غير نشط");
+            if (child.id() > 0 && child.id() == parentId) throw new UserValidationException("لا يمكن للدور أن يرث نفسه");
         }
         if (child.id() <= 0) return;
 
         Map<Integer, Set<Integer>> graph = new HashMap<>(repository.findRoleInheritance());
         graph.put(child.id(), parentIds);
         if (hasCycle(child.id(), graph, new HashSet<>(), new HashSet<>())) {
-            throw new DaoException("تعذر حفظ وراثة الأدوار لأنها تكوّن حلقة مغلقة");
+            throw new UserValidationException("تعذر حفظ وراثة الأدوار لأنها تكوّن حلقة مغلقة");
         }
     }
 
@@ -225,7 +227,7 @@ public final class RbacService {
 
     private RbacRole normalizeAndValidate(RbacRole role) throws DaoException {
         if (role == null) return null;
-        if (role.systemRole()) throw new DaoException("دور النظام محمي من التعديل");
+        if (role.systemRole()) throw new BusinessRuleException("دور النظام محمي من التعديل");
 
         String code = role.code() == null ? "" : role.code().trim().toUpperCase(Locale.ROOT)
                 .replaceAll("\\s+", "_");
@@ -233,12 +235,12 @@ public final class RbacService {
         String description = role.description() == null ? "" : role.description().trim();
 
         if (!code.matches("[A-Z][A-Z0-9_]{2,79}")) {
-            throw new DaoException("كود الدور يجب أن يبدأ بحرف ويحتوي أحرفًا إنجليزية وأرقامًا وشرطة سفلية فقط");
+            throw new UserValidationException("كود الدور يجب أن يبدأ بحرف ويحتوي أحرفًا إنجليزية وأرقامًا وشرطة سفلية فقط");
         }
         if (name.length() < 2 || name.length() > 120) {
-            throw new DaoException("اسم الدور يجب أن يكون بين حرفين و120 حرفًا");
+            throw new UserValidationException("اسم الدور يجب أن يكون بين حرفين و120 حرفًا");
         }
-        if (description.length() > 255) throw new DaoException("وصف الدور أطول من 255 حرفًا");
+        if (description.length() > 255) throw new UserValidationException("وصف الدور أطول من 255 حرفًا");
         return new RbacRole(role.id(), code, name, description, false, role.active());
     }
 }

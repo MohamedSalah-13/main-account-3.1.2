@@ -164,8 +164,7 @@ public record ColumnImage(TableView<ItemsModel> tableView, ItemsService itemsSer
             }
 
             private void handleException(String userMessage, Exception ex) {
-                log.error(ex.getMessage(), ex);
-                AllAlerts.alertError(userMessage + ": " + ex.getMessage());
+                AllAlerts.handleError(userMessage, ex);
             }
         });
         imageColumn.setMinWidth(60);

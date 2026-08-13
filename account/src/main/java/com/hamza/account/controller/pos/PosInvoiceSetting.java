@@ -246,8 +246,7 @@ public class PosInvoiceSetting extends PosInvoiceSettingData {
     }
 
     private void logError(Exception e) {
-        log.error(e.getMessage(), e);
-        AllAlerts.alertError(e.getMessage());
+        AllAlerts.handleError("إعداد فاتورة نقطة البيع", e);
     }
 
     private LineItemDTO mapToLineItemDTO(BasePurchasesAndSales r) {
