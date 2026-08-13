@@ -41,7 +41,7 @@ public final class InvoiceLineService<T extends BasePurchasesAndSales> {
         validate(lines, draft, allowInsufficientStock);
 
         if (mergeRepeated) {
-            T existing = findSameItemAndUnit(lines, draft.item(), draft.unit());
+            T existing = findSameItemAndUnit(lines, draft);
             if (existing != null) {
                 existing.setQuantity(existing.getQuantity() + draft.quantity());
                 recalculate(existing);
@@ -140,12 +140,14 @@ public final class InvoiceLineService<T extends BasePurchasesAndSales> {
                 total, MoneyMath.decimal(line.getDiscount()))));
     }
 
-    private T findSameItemAndUnit(List<T> lines, ItemsModel item, UnitsModel unit) {
+    private T findSameItemAndUnit(List<T> lines, InvoiceLineDraft draft) {
         return lines.stream()
                 .filter(line -> line != null && line.getItems() != null
                         && line.getUnitsType() != null)
-                .filter(line -> line.getItems().getId() == item.getId())
-                .filter(line -> line.getUnitsType().getUnit_id() == unit.getUnit_id())
+                .filter(line -> line.getItems().getId() == draft.item().getId())
+                .filter(line -> line.getUnitsType().getUnit_id() == draft.unit().getUnit_id())
+                .filter(line -> Objects.equals(
+                        line.getExpiration_date(), draft.expirationDate()))
                 .findFirst()
                 .orElse(null);
     }

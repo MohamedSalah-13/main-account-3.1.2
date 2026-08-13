@@ -12,7 +12,9 @@ import java.sql.SQLException;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 public class CardItemDao extends AbstractDao<CardItems> {
 
@@ -50,6 +52,56 @@ public class CardItemDao extends AbstractDao<CardItems> {
     @Override
     public List<CardItems> loadAllById(int id) throws DaoException {
         return queryForObjects(SqlStatements.selectStatementByColumnWhere(TABLE_VIEW, NUM), this::map, id);
+    }
+
+    /**
+     * Remaining stock per expiry date, expressed in the item's base unit.
+     * The factor stored on each historical line is used deliberately: changing
+     * an item's unit factor later must not rewrite what an old carton meant.
+     */
+    public Map<LocalDate, Double> expiryBalancesByItem(int itemId) throws DaoException {
+        return withConnection(connection -> {
+            Map<LocalDate, Double> balances = new LinkedHashMap<>();
+            try (var statement = connection.prepareStatement(expiryBalanceSql())) {
+                for (int parameter = 1; parameter <= 4; parameter++) {
+                    statement.setInt(parameter, itemId);
+                }
+                try (ResultSet resultSet = statement.executeQuery()) {
+                    while (resultSet.next()) {
+                        balances.put(
+                                resultSet.getDate("expiration_date").toLocalDate(),
+                                resultSet.getDouble("available_quantity"));
+                    }
+                }
+            }
+            return balances;
+        });
+    }
+
+    String expiryBalanceSql() {
+        return """
+                SELECT expiration_date, SUM(base_quantity) AS available_quantity
+                FROM (
+                    SELECT expiration_date, quantity * type_value AS base_quantity
+                    FROM purchase
+                    WHERE num = ? AND expiration_date IS NOT NULL
+                    UNION ALL
+                    SELECT expiration_date, quantity * type_value AS base_quantity
+                    FROM sales_re
+                    WHERE item_id = ? AND expiration_date IS NOT NULL
+                    UNION ALL
+                    SELECT expiration_date, -(quantity * type_value) AS base_quantity
+                    FROM sales
+                    WHERE num = ? AND expiration_date IS NOT NULL
+                    UNION ALL
+                    SELECT expiration_date, -(quantity * type_value) AS base_quantity
+                    FROM purchase_re
+                    WHERE item_id = ? AND expiration_date IS NOT NULL
+                ) expiry_movements
+                GROUP BY expiration_date
+                HAVING SUM(base_quantity) > 0
+                ORDER BY expiration_date
+                """;
     }
 
     @Override

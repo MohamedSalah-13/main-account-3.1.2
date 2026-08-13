@@ -2,6 +2,7 @@ package com.hamza.account.service;
 
 import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.model.domain.CardItems;
+import com.hamza.controlsfx.database.DaoException;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -11,8 +12,12 @@ import java.util.stream.Collectors;
 
 public record CardItemService(DaoFactory daoFactory) {
 
-    public List<CardItems> cardItemsListByNumItem(int item_id) throws Exception {
-        return cardItemsList().stream().filter(cardItems -> cardItems.getNumItem() == item_id).toList();
+    public List<CardItems> cardItemsListByNumItem(int item_id) throws DaoException {
+        return daoFactory.cardItemDao().loadAllById(item_id);
+    }
+
+    public Map<LocalDate, Double> expiryBalancesByItem(int itemId) throws DaoException {
+        return daoFactory.cardItemDao().expiryBalancesByItem(itemId);
     }
 
     public List<CardItems> cardItemsList() throws Exception {

@@ -1,0 +1,7 @@
+interface:
+  display_name: "JavaFX Localization Review"
+  short_description: "Keep Arabic and English UI text synchronized"
+  default_prompt: "Use $javafx-localization-review to make this JavaFX change localization-safe."
+
+policy:
+  allow_implicit_invocation: true

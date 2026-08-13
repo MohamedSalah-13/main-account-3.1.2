@@ -383,3 +383,15 @@ be careful about adding failure paths here.
 `LanguageManager` (singleton) with bundles at `controlsfx/src/main/resources/i18n/messages*.properties`;
 Arabic is the default and the choice persists in Java `Preferences`. Several settings (backup path,
 interval, encryption password) also live in `Preferences`, not in files.
+
+**Localization is a required part of every UI-affecting change.** For every code change, explicitly assess
+whether any changed Java class, FXML, dialog, alert, validation message, table column, menu, tooltip, report,
+or export contains user-visible text or language-dependent layout. If it does, you must use the repository
+skill `$javafx-localization-review` and complete its workflow in the same change; do not wait for the user to
+ask about translation. New or changed user-facing text must not be hard-coded in Arabic or English.
+
+Keep `messages.properties` (the Arabic default), `messages_ar.properties`, and `messages_en.properties`
+synchronized. FXML loaded with the bundle uses `%key`; Java-created text uses
+`LanguageManager.getInstance().getString("key")`. Review RTL/LTR orientation as well as wording, and run
+`python .agents/skills/javafx-localization-review/scripts/check_bundles.py` before finishing any change that
+touches localization.

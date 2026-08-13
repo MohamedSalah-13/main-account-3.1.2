@@ -12,6 +12,7 @@ import com.hamza.account.model.domain.UnitsModel;
 import com.hamza.controlsfx.error.BusinessRuleException;
 import org.junit.jupiter.api.Test;
 
+import java.time.LocalDate;
 import java.util.ArrayList;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -42,6 +43,26 @@ class InvoiceLineServiceTest {
         assertEquals(30, merged.line().getTotal());
         assertTrue(separateUnit.inserted());
         assertEquals(2, lines.size());
+    }
+
+    @Test
+    void keepsDifferentExpiryBatchesAsSeparateLines() throws Exception {
+        var service = salesService();
+        var lines = new ArrayList<Sales>();
+        ItemsModel item = item(100);
+        UnitsModel piece = unit(1, 1);
+        LocalDate firstExpiry = LocalDate.of(2027, 1, 31);
+        LocalDate secondExpiry = LocalDate.of(2027, 2, 28);
+
+        service.add(lines, draft(item, piece, 1, 10, firstExpiry), true, false);
+        service.add(lines, draft(item, piece, 2, 10, secondExpiry), true, false);
+        service.add(lines, draft(item, piece, 3, 10, firstExpiry), true, false);
+
+        assertEquals(2, lines.size());
+        assertEquals(4, lines.getFirst().getQuantity());
+        assertEquals(firstExpiry, lines.getFirst().getExpiration_date());
+        assertEquals(2, lines.get(1).getQuantity());
+        assertEquals(secondExpiry, lines.get(1).getExpiration_date());
     }
 
     @Test
@@ -149,7 +170,14 @@ class InvoiceLineServiceTest {
 
     private static InvoiceLineDraft draft(ItemsModel item, UnitsModel unit,
                                           double quantity, double price) {
-        return new InvoiceLineDraft(item, unit, quantity, price, 0, null);
+        return draft(item, unit, quantity, price, null);
+    }
+
+    private static InvoiceLineDraft draft(ItemsModel item, UnitsModel unit,
+                                          double quantity, double price,
+                                          LocalDate expirationDate) {
+        return new InvoiceLineDraft(
+                item, unit, quantity, price, 0, expirationDate);
     }
 
     private static ItemsModel item(double balance) {

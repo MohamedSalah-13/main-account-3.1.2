@@ -16,6 +16,8 @@ import com.hamza.account.finance.MoneyMath;
 import com.hamza.account.features.invoice.InvoiceItemSelection;
 import com.hamza.account.features.invoice.InvoiceItemSelectionService;
 import com.hamza.account.features.invoice.InvoiceItemCatalogService;
+import com.hamza.account.features.invoice.InvoiceExpiryOptions;
+import com.hamza.account.features.invoice.InvoiceExpiryService;
 import com.hamza.account.features.invoice.InvoiceLineDraft;
 import com.hamza.account.features.invoice.InvoiceLineEditService;
 import com.hamza.account.features.invoice.InvoiceLineService;
@@ -45,7 +47,6 @@ import com.hamza.account.service.*;
 import com.hamza.account.session.ShiftContext;
 import com.hamza.account.type.DiscountType;
 import com.hamza.account.type.InvoiceType;
-import com.hamza.account.type.ProcessType;
 import com.hamza.account.document.DocumentType;
 import com.hamza.account.view.AddItemApplication;
 import com.hamza.account.view.LogApplication;
@@ -74,7 +75,6 @@ import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
-import javafx.scene.Node;
 import javafx.scene.control.*;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
@@ -119,10 +119,10 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
     private final ItemsService itemsService = ServiceRegistry.get(ItemsService.class);
     private final EmployeeService employeeService = ServiceRegistry.get(EmployeeService.class);
     private final TreasuryService treasuryService = ServiceRegistry.get(TreasuryService.class);
-    private final CardItemService cardItemService = ServiceRegistry.get(CardItemService.class);
     private final InvoiceSaveService<T1, T2, T3, T4> invoiceSaveService;
     private final InvoicePostSaveService invoicePostSaveService;
     private final InvoiceLineService<T1> invoiceLineService;
+    private final InvoiceExpiryService invoiceExpiryService;
     private final InvoiceItemSelectionService invoiceItemSelectionService;
     private int priceTypeByNameId = 1; // use a first price type
     private int codeAccount;
@@ -169,6 +169,10 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
         this.invoiceLineService = new InvoiceLineService<>(
                 dataInterface.designInterface().documentType(), numInvoiceUpdate,
                 dataInterface.invoiceBuy()::object_TableData);
+        CardItemService cardItemService = ServiceRegistry.get(CardItemService.class);
+        this.invoiceExpiryService = new InvoiceExpiryService(
+                dataInterface.designInterface().documentType(), numInvoiceUpdate,
+                cardItemService::expiryBalancesByItem);
         this.invoiceItemSelectionService = new InvoiceItemSelectionService(
                 dataInterface.designInterface().documentType(), itemsService,
                 dataInterface.invoiceBuy()::getItemsPrice);
@@ -496,8 +500,8 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
             double price = DoubleSetting.parseDoubleOrDefault(txtPrice.getText());
             double discount = 0;
 
-            // Captured before the row is added: clearData() resets itemsModel, and the
-            // lambda below runs after a modal date dialog has closed.
+            // Captured before the row is added: clearData() resets itemsModel after
+            // the optional modal expiry dialog has closed.
             final ItemsModel addedItem = itemsModel.get();
             UnitsModel selectedUnit = ItemUnits.unitByName(
                     addedItem, comboType.getSelectionModel().getSelectedItem());
@@ -505,26 +509,27 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
                     addedItem, selectedUnit, quantity, price, discount, null);
             invoiceLineService.validate(table.getItems(), draft, getSelWithoutBalance());
 
-            if (itemsModel.get().isHasValidate()) {
-                ExpireDateInterface anInterface = getDatePicker();
-                if (dataInterface.designInterface().showDataForCustomer()) {
-                    anInterface = getDateList(cardItemService);
+            InvoiceExpiryOptions expiryOptions = invoiceExpiryService.optionsFor(
+                    addedItem, table.getItems());
+            if (expiryOptions.mode() == InvoiceExpiryOptions.Mode.NOT_REQUIRED) {
+                if (addRowT(draft) == 1) {
+                    warnIfStockIsLow(addedItem);
+                    clearData();
                 }
-                var choiceItemExpireDate = new ChoiceItemExpireDate(anInterface);
-                var s = choiceItemExpireDate.showAndWait();
-                s.ifPresentOrElse(choiceItemExpireDate1 -> {
-                    try {
-                        if (addRowT(draft.withExpirationDate(choiceItemExpireDate1)) == 1) {
-                            warnIfStockIsLow(addedItem);
-                            clearData();
-                        }
-                    } catch (Exception e) {
-                        logError(e);
-                    }
-                }, () -> AllAlerts.alertError("من فضلك حدد تاريخ الانتهاء"));
-            } else if (addRowT(draft) == 1) {
-                warnIfStockIsLow(addedItem);
-                clearData();
+            } else {
+                LocalDate selectedExpiry = new ChoiceItemExpireDate(expiryOptions)
+                        .showAndWait()
+                        .orElse(null);
+                if (selectedExpiry == null) {
+                    return;
+                }
+                invoiceExpiryService.validateSelectedDate(
+                        expiryOptions, selectedExpiry,
+                        ItemUnits.toBase(draft.quantity(), draft.unit()));
+                if (addRowT(draft.withExpirationDate(selectedExpiry)) == 1) {
+                    warnIfStockIsLow(addedItem);
+                    clearData();
+                }
             }
 
             long endTime = System.nanoTime();
@@ -587,6 +592,7 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
             List<T1> collection = dataInterface.totalsAndPurchaseList().purchaseOrSalesList(id, id);
             myObservableList.setAll(collection);
             invoiceLineService.captureOriginalLines(collection);
+            invoiceExpiryService.captureOriginalLines(collection);
             radioCash.setSelected(invoiceType.equals(InvoiceType.CASH));
             radioDeffer.setSelected(invoiceType.equals(InvoiceType.DEFER));
             txtPaid.setText(String.valueOf(dataById.getPaid()));
@@ -1021,46 +1027,6 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
         } catch (Exception e) {
             logError(e);
         }
-    }
-
-    private ExpireDateInterface getDatePicker() {
-        return new ExpireDateInterface() {
-
-            final DatePicker datePicker = new DatePicker();
-
-            @Override
-            public Node node() {
-                return datePicker;
-            }
-
-            @Override
-            public LocalDate getDate() {
-                return datePicker.getValue();
-            }
-        };
-    }
-
-    private ExpireDateInterface getDateList(CardItemService cardItemService) throws Exception {
-        final ListView<LocalDate> localDateListView = new ListView<>();
-        var cardItems = cardItemService.cardItemsListByNumItem(1);
-        var purchase = cardItems.stream().filter(cardItems1 -> cardItems1.getProcessType().equals(ProcessType.PURCHASE))
-                .map(CardItems::getEndDate)
-                .toList();
-
-        localDateListView.getItems().addAll(purchase);
-
-        return new ExpireDateInterface() {
-            @Override
-            public Node node() {
-                return localDateListView;
-            }
-
-            @Override
-            public LocalDate getDate() {
-
-                return localDateListView.getSelectionModel().getSelectedItem();
-            }
-        };
     }
 
     @Override
