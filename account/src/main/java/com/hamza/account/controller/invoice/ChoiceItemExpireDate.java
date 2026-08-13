@@ -1,6 +1,6 @@
 package com.hamza.account.controller.invoice;
 
-import com.hamza.account.controller.pos.DialogButtons;
+import com.hamza.account.controller.others.DialogButtons;
 import javafx.scene.control.Dialog;
 import javafx.scene.layout.VBox;
 
@@ -28,4 +28,3 @@ public class ChoiceItemExpireDate extends Dialog<LocalDate> {
         });
     }
 }
-

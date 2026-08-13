@@ -42,8 +42,8 @@ import java.util.List;
 import java.util.Optional;
 import java.util.ResourceBundle;
 
-import static com.hamza.account.config.PropertiesName.getPosSplitPaneDividerSearchItems;
-import static com.hamza.account.config.PropertiesName.setPosSplitPaneDividerSearchItems;
+import static com.hamza.account.config.PropertiesName.getSearchItemsSplitPaneDivider;
+import static com.hamza.account.config.PropertiesName.setSearchItemsSplitPaneDivider;
 import static com.hamza.account.controller.invoice.UpdateInvoiceRow.updateData;
 import static com.hamza.controlsfx.util.ImageChoose.createIcon;
 
@@ -135,10 +135,10 @@ public class SearchItemsController<T1 extends BasePurchasesAndSales>
             }
         });
 
-        splitPane.setDividerPosition(0, getPosSplitPaneDividerSearchItems());
+        splitPane.setDividerPosition(0, getSearchItemsSplitPaneDivider());
         splitPane.getDividers().getFirst().positionProperty().addListener(
                 (obs, oldPos, newPos) ->
-                        setPosSplitPaneDividerSearchItems(splitPane.getDividers().getFirst().getPosition()));
+                        setSearchItemsSplitPaneDivider(splitPane.getDividers().getFirst().getPosition()));
 
         btnSave.setOnAction(event -> {
             setSelectedItem(tableView.getItems());

@@ -10,9 +10,6 @@ public final class JasperReportPaths {
 
     public static class Invoice {
         public static final String THERMAL = BASE_PATH + "invoice-80mm.jrxml";
-        public static final String THERMAL_NUMBER_GENERATE = BASE_PATH + "number-generate-80mm.jrxml";
-        public static final String THERMAL_Kitchen = BASE_PATH + "invoice-name-80mm.jrxml";
-        public static final String THERMAL_KITCHEN_TEST = BASE_PATH + "invoice-kitchen-80mm.jrxml";
         public static final String STANDARD = BASE_PATH + "invoice-A4.jrxml";
         public static final String DETAILS = BASE_PATH + "invoice-details-A4.jrxml";
         public static final String MULTI = BASE_PATH + "invoice-multi-A4.jrxml";

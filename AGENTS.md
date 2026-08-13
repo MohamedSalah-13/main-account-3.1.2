@@ -4,7 +4,7 @@ This file provides guidance to Codex (Codex.ai/code) when working with code in t
 
 ## What this is
 
-A JavaFX 21 desktop accounting/POS application for Arabic-speaking businesses (invoicing, inventory,
+A JavaFX 21 desktop accounting application for Arabic-speaking businesses (invoicing, inventory,
 customers/suppliers, treasury, reporting), backed by MySQL. User-facing strings are Arabic and the UI is RTL.
 
 ## Build and run
@@ -126,9 +126,6 @@ loaded list by `ItemUnits.unitByBarcode`, not by another query; `BuyController2`
 combo, and selecting it is what fills in the price and balance. Each barcode table has its own unique
 index and none can see the others, so `ItemsService.isBarcodeTakenByAnotherItem` is what stops one code
 from belonging to two items — the item screen calls it for every code before saving.
-
-The POS screen stays on the base unit: it has no barcode lookup (its search is an in-memory name index)
-and its rows carry no unit column.
 
 An invoice line stores the factor it used in `type_value`, and `quantity_items_table` computes the
 balance as `quantity * type_value`. That is deliberate: changing an item's factor later must not
@@ -288,10 +285,10 @@ Two ways in:
   has no rule object, so its on/off switch goes in `NotificationPreferences.isEventEnabled(id, default)`
   and it routes by category.
 
-`StockLevelAlert` is the event worth knowing about: it fires from `BuyController2.addData` and
-`PosController.addDataToTable` when an item goes onto a **sales** invoice at or below its minimum, at
-zero, or negative. Two things it gets right that are easy to get wrong when touching it — the balance it
-judges is what remains *after* everything already on the unsaved invoice (each call site converts its own
+`StockLevelAlert` is the event worth knowing about: it fires from `BuyController2.addData` when an item
+goes onto a **sales** invoice at or below its minimum, at zero, or negative. Two things it gets right that
+are easy to get wrong when touching it — the balance it judges is what remains *after* everything already
+on the unsaved invoice (the call site converts its
 rows to base units), and it is sales only, told apart from sales-returns by
 `designInterface.show() == SALES_SHOW`, since `showDataForCustomer()` is true for both. Boundary logic
 lives in `StockLevel.of(balance, miniQuantity)` and is covered by `StockLevelTest`; a minimum of zero

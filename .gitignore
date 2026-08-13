@@ -5,7 +5,6 @@ target/
 backup_data/
 backups
 program/
-suspended_invoices/
 !.mvn/wrapper/maven-wrapper.jar
 !**/src/main/**/target/
 !**/src/test/**/target/

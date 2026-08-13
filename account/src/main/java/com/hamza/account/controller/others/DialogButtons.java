@@ -1,4 +1,4 @@
-package com.hamza.account.controller.pos;
+package com.hamza.account.controller.others;
 
 import com.hamza.account.config.Image_Setting;
 import com.hamza.account.config.ThemeManager;

@@ -72,7 +72,7 @@ public class TotalsSalesDao extends AbstractDao<Total_Sales> {
     @Override
     public int insert(Total_Sales totalSales) throws DaoException {
         // Here rather than in the service, so it holds for every caller - the invoice
-        // screen, the POS, and the return that writes one on its way through. A closed
+        // invoice screen and the return that writes one on its way through. A closed
         // period has been reported, and an invoice dated into it changes a figure that
         // has already been signed.
         PeriodLock.require(totalSales.getDate(), DOCUMENT_TYPE.periodLock().label());
