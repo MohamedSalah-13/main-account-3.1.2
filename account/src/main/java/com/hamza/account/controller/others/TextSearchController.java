@@ -71,6 +71,10 @@ public class TextSearchController<T> {
         return textName;
     }
 
+    public void requestFocus() {
+        btnSearchText.requestFocus();
+    }
+
     public boolean isDisableButton() {
         return disableButton.get();
     }

@@ -10,6 +10,7 @@ import com.hamza.account.config.Image_Setting;
 import com.hamza.account.config.SaveDatabaseFile;
 import com.hamza.account.controller.main.DataPublisher;
 import com.hamza.account.controller.model.ModelPrintInvoice;
+import com.hamza.account.controller.others.TextSearchController;
 import com.hamza.account.controller.others.ServiceRegistry;
 import com.hamza.account.controller.search.ItemsSearch;
 import com.hamza.account.controller.setting.SettingTabLanguageController;
@@ -17,6 +18,7 @@ import com.hamza.account.features.events.EmployeesChanged;
 import com.hamza.account.features.events.InvoiceSaved;
 import com.hamza.account.features.invoice.InvoiceLineAssembler;
 import com.hamza.account.features.invoice.InvoiceLineTotals;
+import com.hamza.account.features.invoice.InvoiceSaveValidator;
 import com.hamza.account.features.key_setting.MoveRow;
 import com.hamza.account.features.key_setting.UpdateInterface;
 import com.hamza.account.features.key_setting.UpdateQuantity;
@@ -126,6 +128,7 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
     private double discountValue;
     private int invNumber;
     private StringProperty textSearchName, textSearchItems;
+    private TextSearchController<T3> nameSearchController;
     @FXML
     private Label labelNum, labelName, labelBarcode, labelDate, labelCondition, labelDelegate, labelTreasury, labelSearchBy, labelPrice, labelQuantity, labelItemBalance, labelTotals, last1, last2, last3, last4, last5, labelNotes, labelInvoiceTotal;
     @FXML
@@ -273,7 +276,8 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
     private void addTextSearchName() {
         try {
             TextSearchApplication<T3> customersTextSearchApplication = new TextSearchApplication<>(dataInterface.nameAndAccountInterface().searchInterface());
-            textSearchName = customersTextSearchApplication.getTextSearchController().textNameProperty();
+            nameSearchController = customersTextSearchApplication.getTextSearchController();
+            textSearchName = nameSearchController.textNameProperty();
             gridPane.add(customersTextSearchApplication.getPane(), 1, 1);
 
             textSearchName.addListener((observableValue, s, string) -> {
@@ -737,33 +741,7 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
 
     private void saveInvoice(boolean print) {
         try {
-            if (table.getItems().isEmpty()) {
-                throw new Exception(Error_Text_Show.PLEASE_INSERT_ALL_DATA);
-            }
-
-            if (date.getValue() == null) {
-                Platform.runLater(() -> date.requestFocus());
-                throw new Exception("من فضلك حدد تاريخ الفاتورة");
-            }
-
-            // Checked here as well as being greyed out in the calendar: the value can
-            // come from an existing invoice saved before this rule, and a till left
-            // open past midnight would otherwise keep yesterday's "today".
-            if (DateSetting.isInTheFuture(date.getValue())) {
-                Platform.runLater(() -> date.requestFocus());
-                throw new Exception("لا يمكن حفظ فاتورة بتاريخ بعد تاريخ اليوم");
-            }
-
-            if (dataInterface.designInterface().showDataForCustomer())
-                if (comboDelegate.getSelectionModel().getSelectedItem() == null) {
-                    Platform.runLater(() -> comboDelegate.requestFocus());
-                    throw new Exception("من فضلك حدد المندوب");
-                }
-
-            if (comboTreasury.getSelectionModel().getSelectedItem() == null) {
-                Platform.runLater(() -> comboTreasury.requestFocus());
-                throw new Exception("من فضلك حدد الخزينة");
-            }
+            validateInvoiceForSave();
 
             if (!ShiftContext.requireOpenShift()) {
                 return;
@@ -786,9 +764,6 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
                 Employees employees = employeeService.getDelegateByName(comboDelegate.getSelectionModel().getSelectedItem());
 
                 T3 t3 = invoiceBuy.objectName(codeAccount, textSearchName.get());
-
-                // check code account
-                if (codeAccount == 0) throw new DaoException("لا يوجد بيانات الاسم");
 
                 // check to get code for update or insert
                 invNumber = num_invoice_update > 0 ? num_invoice_update : getInvNumber();
@@ -831,6 +806,28 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
             logError(e);
         }
 
+    }
+
+    private void validateInvoiceForSave() throws DaoException {
+        InvoiceSaveValidator.Problem problem = InvoiceSaveValidator.firstProblem(
+                table.getItems().size(), checkTableForZeroBalanceOrPriceBoolean.get(),
+                date.getValue(), LocalDate.now(), designInterface.showDataForCustomer(),
+                comboDelegate.getSelectionModel().getSelectedItem() != null,
+                comboTreasury.getSelectionModel().getSelectedItem() != null,
+                codeAccount).orElse(null);
+        if (problem == null) {
+            return;
+        }
+
+        Runnable requestFocus = switch (problem.target()) {
+            case LINES -> table::requestFocus;
+            case DATE -> date::requestFocus;
+            case DELEGATE -> comboDelegate::requestFocus;
+            case TREASURY -> comboTreasury::requestFocus;
+            case ACCOUNT -> nameSearchController::requestFocus;
+        };
+        Platform.runLater(requestFocus);
+        throw new DaoException(problem.message());
     }
 
     private PermissionKey createPermission() {
@@ -1211,10 +1208,22 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
         comboDelegate.setVisible(designInterface.showDataForCustomer());
         labelDelegate.setVisible(designInterface.showDataForCustomer());
 
-        BooleanBinding binding = txtSumTotals.textProperty().lessThanOrEqualTo(String.valueOf(0.0))
-                .or(table.itemsProperty().isNull());
+        BooleanBinding nonPositiveTotal = Bindings.createBooleanBinding(
+                () -> {
+                    try {
+                        return Double.parseDouble(txtSumTotals.getText()) <= 0;
+                    } catch (NumberFormatException ignored) {
+                        return true;
+                    }
+                }, txtSumTotals.textProperty());
+        BooleanBinding binding = nonPositiveTotal
+                .or(Bindings.isEmpty(table.getItems()))
+                .or(checkTableForZeroBalanceOrPriceBoolean)
+                .or(comboTreasury.valueProperty().isNull());
 
-        if (designInterface.showDataForCustomer()) binding.or(comboDelegate.valueProperty().isNull());
+        if (designInterface.showDataForCustomer()) {
+            binding = binding.or(comboDelegate.valueProperty().isNull());
+        }
 
         btnPrintSave.disableProperty().bind(binding);
         btnSave.disableProperty().bind(binding);
