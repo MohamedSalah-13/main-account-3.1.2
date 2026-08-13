@@ -178,6 +178,7 @@ class ItemUnitsTest {
 
             assertEquals(100, ItemUnits.sellPrice(item, ItemUnits.unitByName(item, "كرتونة"), 1, 10));
             assertEquals(90, ItemUnits.buyPrice(item, ItemUnits.unitByName(item, "كرتونة"), 7.5));
+            assertTrue(ItemUnits.hasOwnBuyPrice(item, ItemUnits.unitByName(item, "كرتونة")));
         }
 
         @Test

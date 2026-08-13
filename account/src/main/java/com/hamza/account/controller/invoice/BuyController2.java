@@ -15,7 +15,9 @@ import com.hamza.account.features.events.EmployeesChanged;
 import com.hamza.account.finance.MoneyMath;
 import com.hamza.account.features.invoice.InvoiceItemSelection;
 import com.hamza.account.features.invoice.InvoiceItemSelectionService;
+import com.hamza.account.features.invoice.InvoiceItemCatalogService;
 import com.hamza.account.features.invoice.InvoiceLineDraft;
+import com.hamza.account.features.invoice.InvoiceLineEditService;
 import com.hamza.account.features.invoice.InvoiceLineService;
 import com.hamza.account.features.invoice.InvoiceLineTotals;
 import com.hamza.account.features.invoice.InvoicePaymentTerms;
@@ -28,9 +30,6 @@ import com.hamza.account.features.invoice.InvoiceSaveResult;
 import com.hamza.account.features.invoice.InvoiceSaveService;
 import com.hamza.account.features.invoice.InvoiceSaveValidator;
 import com.hamza.account.features.invoice.InvoiceValidationException;
-import com.hamza.account.features.key_setting.MoveRow;
-import com.hamza.account.features.key_setting.UpdateInterface;
-import com.hamza.account.features.key_setting.UpdateQuantity;
 import com.hamza.account.features.notification.StockLevelAlert;
 import com.hamza.account.interfaces.api.DataInterface;
 import com.hamza.account.interfaces.api.TotalsDataInterface;
@@ -41,11 +40,9 @@ import com.hamza.account.model.base.BaseTotals;
 import com.hamza.account.model.domain.*;
 import com.hamza.account.openFxml.FxmlPath;
 import com.hamza.account.openFxml.OpenFxmlApplication;
-import com.hamza.account.otherSetting.ButtonDeleteRow;
 import com.hamza.account.otherSetting.MaskerPaneSetting;
 import com.hamza.account.service.*;
 import com.hamza.account.session.ShiftContext;
-import com.hamza.account.table.TableSetting;
 import com.hamza.account.type.DiscountType;
 import com.hamza.account.type.InvoiceType;
 import com.hamza.account.type.ProcessType;
@@ -55,7 +52,6 @@ import com.hamza.account.view.LogApplication;
 import com.hamza.account.view.SearchItemsApplication;
 import com.hamza.account.view.TextSearchApplication;
 import com.hamza.controlsfx.alert.AllAlerts;
-import com.hamza.controlsfx.button.button_column.ButtonColumn;
 import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.error.UserValidationException;
 import com.hamza.controlsfx.interfaceData.AppSettingInterface;
@@ -66,8 +62,6 @@ import com.hamza.controlsfx.observer.Subscriptions;
 import com.hamza.controlsfx.others.DateSetting;
 import com.hamza.controlsfx.others.DoubleSetting;
 import com.hamza.controlsfx.others.Utils;
-import com.hamza.controlsfx.table.TableColumnAnnotation;
-import com.hamza.controlsfx.table.columnEdit.ColumnSetting;
 import javafx.application.Platform;
 import javafx.beans.binding.Bindings;
 import javafx.beans.binding.BooleanBinding;
@@ -76,16 +70,12 @@ import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.property.StringProperty;
-import javafx.beans.value.ObservableValue;
 import javafx.collections.FXCollections;
-import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
-import javafx.event.EventHandler;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.Node;
 import javafx.scene.control.*;
-import javafx.scene.control.cell.ComboBoxTableCell;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.GridPane;
@@ -94,7 +84,6 @@ import javafx.scene.layout.Pane;
 import javafx.scene.layout.StackPane;
 import javafx.scene.text.Text;
 import javafx.stage.Stage;
-import javafx.util.Callback;
 import lombok.Getter;
 import lombok.extern.log4j.Log4j2;
 import org.jetbrains.annotations.NotNull;
@@ -110,7 +99,6 @@ import static com.hamza.account.controller.invoice.DialogCashPaid.showCashChange
 import static com.hamza.controlsfx.dateTime.DateUtils.DATE_TIME_FORMATTER;
 import static com.hamza.controlsfx.others.Utils.setTextFormatter;
 import static com.hamza.controlsfx.others.Utils.whenEnterPressed;
-import static com.hamza.controlsfx.table.columnEdit.ColumnSetting.addColumn;
 import static com.hamza.controlsfx.util.ImageChoose.createIcon;
 import static com.hamza.controlsfx.util.NumberUtils.roundToTwoDecimalPlaces;
 
@@ -361,21 +349,6 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
             totalItemQuantityAndPrice();
         });
         txtPrice.textProperty().addListener(observable -> totalItemQuantityAndPrice());
-
-        table.editingCellProperty().addListener((observable, oldPosition, newPosition) -> {
-            sumTotals();
-            // when a cell edit ends (Enter/Tab/focus-out), the editor TextField is removed
-            // from the scene and JavaFX hands focus to the first focus-traversable control
-            // instead - which is btnNew - so a second Enter would otherwise fire btnNew and
-            // wipe the whole table. Reclaim focus on the table itself once the edit is done.
-            if (newPosition == null) {
-                Platform.runLater(table::requestFocus);
-            }
-        });
-        myObservableList.addListener((ListChangeListener<BasePurchasesAndSales>) change -> {
-            sumTotals();
-//            triggerAutosave();
-        });
 
         comboType.getSelectionModel().selectedItemProperty().addListener((observable, oldValue, newValue) -> {
             if (newValue == null) {
@@ -977,156 +950,15 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
     }
 
     private void tableSetting() {
-        new TableColumnAnnotation().getTable(table, BasePurchasesAndSales.class);
-
-        // add column
-        addColumn(table, Setting_Language.WORD_BARCODE, 0, (Callback<TableColumn.CellDataFeatures<T1, String>, ObservableValue<String>>) features -> features.getValue().getItems().barcodeProperty());
-        addColumn(table, Setting_Language.WORD_NAME, 1, (Callback<TableColumn.CellDataFeatures<T1, String>, ObservableValue<String>>) features -> features.getValue().getItems().nameItemProperty());
-
-        // add column type
-        addColumn(table, Setting_Language.WORD_TYPE, 2, (Callback<TableColumn.CellDataFeatures<T1, String>, ObservableValue<String>>) features -> features.getValue().getUnitsType().unit_nameProperty());
-        // Add editable type column with ComboBox
-//        addColumnType();
-
-        table.getColumns().add(new ButtonColumn<>(new ButtonDeleteRow() {
-            @Override
-            public void action(int i) {
-                table.getItems().remove(i);
-                table.refresh();
-            }
-        }));
-
-
-        table.setItems(myObservableList);
-        // edit column name
-        new ColumnSetting().enableStringEditing(1, t -> {
-            int row = t.getTablePosition().getRow();
-            BasePurchasesAndSales purchase = t.getTableView().getItems().get(row);
-            if (t.getNewValue() != null) {
-                purchase.getItems().setNameItem(t.getNewValue());
-                updateItem(purchase);
-            }
-        }, table);
-
-        new ColumnSetting().enableDoubleEditing(3, t -> {
-            int row = t.getTablePosition().getRow();
-            BasePurchasesAndSales purchase = t.getTableView().getItems().get(row);
-            purchase.setQuantity(t.getNewValue() == null ? 1.0 : t.getNewValue());
-            InvoiceLineService.recalculate(purchase);
-        }, table);
-
-        new ColumnSetting().enableDoubleEditing(4, t -> {
-            int row = t.getTablePosition().getRow();
-            BasePurchasesAndSales purchase = t.getTableView().getItems().get(row);
-            double newPrice = t.getNewValue() == null ? 0.0 : t.getNewValue();
-
-            if (designInterface.showDataForCustomer()) {
-                double buyPriceForUnit = ItemUnits.buyPrice(purchase.getItems(), purchase.getUnitsType(),
-                        purchase.getItems().getBuyPrice());
-                if (newPrice < buyPriceForUnit) {
-                    AllAlerts.alertError("لا يمكن البيع بسعر أقل من سعر الشراء");
-                    table.refresh();
-                    return;
-                }
-            }
-
-            purchase.setPrice(newPrice);
-            InvoiceLineService.recalculate(purchase);
-            if (getInvoiceUpdatePrice()) {
-                updateItem(purchase);
-            }
-        }, table);
-
-        new ColumnSetting().enableDoubleEditing(6, t -> {
-            int row = t.getTablePosition().getRow();
-            BasePurchasesAndSales purchase = t.getTableView().getItems().get(row);
-            purchase.setDiscount(t.getNewValue() == null ? 0.0 : t.getNewValue());
-            InvoiceLineService.recalculate(purchase);
-        }, table);
-
-
-        table.setEditable(true);
-        table.getSelectionModel().setCellSelectionEnabled(true);
-        // move selected rows
-        table.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE); // Enable multiple selection
-        // Unified key handler: combines Alt+Arrow movement and existing quantity key behavior
-        table.setOnKeyPressed(createTableKeyHandler());
-
-        // hide data table if not admin
-        var b = LogApplication.usersVo.getId() == 1;
-        if (b) {
-            // show table menu
-            TableSetting.tableMenuSetting(getClass(), table);
-        }
-
-//        table.getColumns().get(8).setVisible(b);
-//        table.getColumns().get(9).setVisible(b);
-    }
-
-    private void updateItem(BasePurchasesAndSales purchase) throws DaoException {
-        var items = itemsService.getItemByItemIdAndStockId(purchase.getItems().getId(), DefaultStock.ID);
-
-        // A unit priced by hand says nothing about what one base unit is worth -
-        // a carton sold at a wholesale price is cheaper than twelve pieces on
-        // purpose, and dividing it back out would drag the item's price down.
-        if (ItemUnits.hasOwnSellPrice(items, purchase.getUnitsType(), priceTypeByNameId)) {
-            return;
-        }
-
-        // The list stays as loaded: ItemsDao replaces the item's units from it,
-        // so blanking it here to "not touch them" would delete them instead.
-        items.setNameItem(purchase.getItems().getNameItem());
-
-        // update price - the row is priced per its own unit, the item per base unit
-        var unitFactor = ItemUnits.factor(purchase.getUnitsType());
-        var b = invoiceBuy.updateItemPrice(items, roundToTwoDecimalPlaces(purchase.getPrice() / unitFactor), priceTypeByNameId);
-        if (b) {
-            var i = itemsService.commitItemUpdate(items);
-        }
-    }
-
-    private EventHandler<KeyEvent> createTableKeyHandler() {
-        final EventHandler<KeyEvent> quantityHandler = tableKeyPressed(); // existing behavior
-        return event -> {
-            MoveRow<T1> t1MoveRow = new MoveRow<>(table, myObservableList);
-            if (event.isAltDown()) {
-                switch (event.getCode()) {
-                    case UP -> {
-                        t1MoveRow.moveSelectedRowsUp();
-                        event.consume();
-                        return; // prevent delegation
-                    }
-                    case DOWN -> {
-                        t1MoveRow.moveSelectedRowsDown();
-                        event.consume();
-                        return; // prevent delegation
-                    }
-                    default -> { /* no-op */ }
-                }
-            }
-            if (!event.isConsumed() && quantityHandler != null) {
-                quantityHandler.handle(event);
-            }
-        };
-    }
-
-    private EventHandler<KeyEvent> tableKeyPressed() {
-        return new UpdateQuantity(new UpdateInterface() {
-            @Override
-            public TableView<? extends BasePurchasesAndSales> getTable() {
-                return table;
-            }
-
-            @Override
-            public void update(BasePurchasesAndSales basePurchasesAndSales) {
-                InvoiceLineService.recalculate(basePurchasesAndSales);
-            }
-
-            @Override
-            public void sum() {
-                sumTotals();
-            }
-        }).tableKeyPressed();
+        DocumentType documentType = designInterface.documentType();
+        InvoiceItemCatalogService catalogService = new InvoiceItemCatalogService(
+                documentType, itemsService, invoiceBuy::updateItemPrice);
+        InvoiceLineEditService editService = new InvoiceLineEditService(
+                documentType, catalogService, DefaultStock.ID);
+        new InvoiceTableCoordinator<>(table, myObservableList, editService,
+                () -> priceTypeByNameId, () -> getInvoiceUpdatePrice(),
+                this::sumTotals, getClass(), LogApplication.usersVo.getId() == 1)
+                .configure();
     }
 
     private void disableData() {
@@ -1251,40 +1083,6 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
 
     private void logError(Exception e) {
         AllAlerts.handleError("تنفيذ عملية الفاتورة", e);
-    }
-
-    private void addColumnType() {
-        TableColumn<T1, String> typeColumn = new TableColumn<>(Setting_Language.WORD_TYPE);
-        typeColumn.setCellValueFactory(features -> features.getValue().getUnitsType().unit_nameProperty());
-        // The choices belong to the row's item, so they are filled in as the cell
-        // starts editing rather than baked into the factory from one global list.
-        typeColumn.setCellFactory(column -> new ComboBoxTableCell<>() {
-            @Override
-            public void startEdit() {
-                var row = getTableRow();
-                T1 rowValue = row == null ? null : row.getItem();
-                getItems().setAll(rowValue == null
-                        ? List.<String>of()
-                        : ItemUnits.unitsFor(rowValue.getItems()).stream().map(UnitsModel::getUnit_name).toList());
-
-                // One unit is not a choice, and an empty list would open a blank
-                // combo whose commit would clear the row's unit.
-                if (getItems().size() < 2) {
-                    return;
-                }
-                super.startEdit();
-            }
-        });
-        typeColumn.setOnEditCommit(event -> {
-            T1 item = event.getRowValue();
-            UnitsModel unitsModel = ItemUnits.unitByName(item.getItems(), event.getNewValue());
-            item.setUnitsType(unitsModel);
-            var selPrice1 = dataInterface.invoiceBuy().getItemsPrice(item.getItems(), priceTypeByNameId);
-            item.setPrice(ItemUnits.sellPrice(item.getItems(), unitsModel, priceTypeByNameId, selPrice1));
-            InvoiceLineService.recalculate(item);
-            table.refresh();
-        });
-        table.getColumns().add(2, typeColumn);
     }
 
 }

@@ -166,6 +166,12 @@ public final class ItemUnits {
         return ownSellPrice(rowFor(item, unit), priceType) > 0;
     }
 
+    /** Whether this unit carries a purchase price independent of the base unit. */
+    public static boolean hasOwnBuyPrice(ItemsModel item, UnitsModel unit) {
+        ItemsUnitsModel row = rowFor(item, unit);
+        return row != null && row.getBuyPrice() > 0;
+    }
+
     private static double ownSellPrice(ItemsUnitsModel row, int priceType) {
         if (row == null) {
             return 0;
