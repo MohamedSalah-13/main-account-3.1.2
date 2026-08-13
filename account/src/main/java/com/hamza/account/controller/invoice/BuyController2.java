@@ -13,6 +13,8 @@ import com.hamza.account.controller.search.ItemsSearch;
 import com.hamza.account.controller.setting.SettingTabLanguageController;
 import com.hamza.account.features.events.EmployeesChanged;
 import com.hamza.account.finance.MoneyMath;
+import com.hamza.account.features.invoice.InvoiceItemSelection;
+import com.hamza.account.features.invoice.InvoiceItemSelectionService;
 import com.hamza.account.features.invoice.InvoiceLineDraft;
 import com.hamza.account.features.invoice.InvoiceLineService;
 import com.hamza.account.features.invoice.InvoiceLineTotals;
@@ -39,7 +41,6 @@ import com.hamza.account.model.base.BaseTotals;
 import com.hamza.account.model.domain.*;
 import com.hamza.account.openFxml.FxmlPath;
 import com.hamza.account.openFxml.OpenFxmlApplication;
-import com.hamza.account.otherSetting.BarcodeProcessor;
 import com.hamza.account.otherSetting.ButtonDeleteRow;
 import com.hamza.account.otherSetting.MaskerPaneSetting;
 import com.hamza.account.service.*;
@@ -56,6 +57,7 @@ import com.hamza.account.view.TextSearchApplication;
 import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.button.button_column.ButtonColumn;
 import com.hamza.controlsfx.database.DaoException;
+import com.hamza.controlsfx.error.UserValidationException;
 import com.hamza.controlsfx.interfaceData.AppSettingInterface;
 import com.hamza.controlsfx.language.Error_Text_Show;
 import com.hamza.controlsfx.language.Setting_Language;
@@ -133,9 +135,11 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
     private final InvoiceSaveService<T1, T2, T3, T4> invoiceSaveService;
     private final InvoicePostSaveService invoicePostSaveService;
     private final InvoiceLineService<T1> invoiceLineService;
+    private final InvoiceItemSelectionService invoiceItemSelectionService;
     private int priceTypeByNameId = 1; // use a first price type
     private int codeAccount;
     private boolean updatingPaymentUi;
+    private boolean applyingItemSelection;
     private StringProperty textSearchName, textSearchItems;
     private TextSearchController<T3> nameSearchController;
     @FXML
@@ -177,6 +181,9 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
         this.invoiceLineService = new InvoiceLineService<>(
                 dataInterface.designInterface().documentType(), numInvoiceUpdate,
                 dataInterface.invoiceBuy()::object_TableData);
+        this.invoiceItemSelectionService = new InvoiceItemSelectionService(
+                dataInterface.designInterface().documentType(), itemsService,
+                dataInterface.invoiceBuy()::getItemsPrice);
     }
 
     @Override
@@ -313,8 +320,8 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
             gridPane.add(customersTextSearchApplication.getPane(), 3, 2);
 
             textSearchItems.addListener((observableValue, s, string) -> {
-                if (string != null) {
-                    searchItemByTypeAndName(string, true, false);
+                if (string != null && !applyingItemSelection) {
+                    selectItemByName(string);
                 }
             });
 
@@ -374,20 +381,17 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
             if (newValue == null) {
                 return;
             }
-            if (itemsModel.get() == null) return;
-
-            var model = itemsModel.get();
-            var itemsPrice = invoiceBuy.getItemsPrice(model, priceTypeByNameId);
-
-            // The factor is the one this item defines for the unit, not the
-            // database-wide units.value_d - a carton is not the same multiple
-            // for every item.
-            var unitsModel = ItemUnits.unitByName(model, newValue);
-
-            txtItemBalance.setText(String.valueOf(roundToTwoDecimalPlaces(ItemUnits.fromBase(model.getSumAllBalance(), unitsModel))));
-            // The unit's own price where it has one, and the item's scaled by the
-            // factor where it does not.
-            txtPrice.setText(String.valueOf(ItemUnits.sellPrice(model, unitsModel, priceTypeByNameId, itemsPrice)));
+            ItemsModel model = itemsModel.get();
+            if (model == null || model.getId() <= 0) return;
+            try {
+                var selection = invoiceItemSelectionService.selectUnit(
+                        model, newValue, priceTypeByNameId);
+                txtItemBalance.setText(String.valueOf(
+                        roundToTwoDecimalPlaces(selection.balance())));
+                txtPrice.setText(String.valueOf(selection.price()));
+            } catch (Exception e) {
+                logError(e);
+            }
         });
     }
 
@@ -407,144 +411,89 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
     }
 
     private void processBarcodeEntry(KeyEvent keyEvent) {
-        if (keyEvent.getCode() == KeyCode.ENTER) {
-            if (!txtBarcode.getText().isEmpty()) {
-                if (getSettingBarcodeScaleActive()) {
-                    // التحقق من أول رقمين (كود الميزان)
-                    String barcode = txtBarcode.getText();
-                    int scaleCodeLength = getSettingBarcodeCountScale();
+        if (keyEvent.getCode() != KeyCode.ENTER || txtBarcode.getText().isBlank()) {
+            return;
+        }
 
-                    if (barcode.length() >= scaleCodeLength) {
-                        String scalePrefix = barcode.substring(0, scaleCodeLength);
-                        String expectedPrefix = String.format("%0" + scaleCodeLength + "d", getSettingBarcodeStart());
+        String barcode = txtBarcode.getText();
+        var scaleSettings = scaleBarcodeSettings();
+        try {
+            priceTypeByNameId = resolveSelectedPriceTier();
+            InvoiceItemSelection selection = invoiceItemSelectionService.selectByBarcode(
+                    barcode, DefaultStock.ID, priceTypeByNameId, scaleSettings);
+            applyItemSelection(selection, true);
 
-                        if (scalePrefix.equals(expectedPrefix)) {
-                            try {
-                                var barcodeResult = new BarcodeProcessor(itemsService).processBarcode(barcode, true);
-                                var item = barcodeResult.item();
-
-                                itemsModel.set(item);
-                                txtBarcode.setText(item.getBarcode());
-                                textSearchItems.set(item.getNameItem());
-                                // A scale barcode carries a weight, so the row is
-                                // always in the unit the item is weighed in. The
-                                // price and quantity below come from the barcode
-                                // and deliberately overwrite what selecting the
-                                // unit just filled in.
-                                addDataToComboType(item, ItemUnits.baseUnit(item));
-
-                                txtItemBalance.setText(String.valueOf(item.getSumAllBalance()));
-                                txtPrice.setText(String.valueOf(barcodeResult.selPrice()));
-                                txtQuantity.setText(String.valueOf(barcodeResult.quantity()));
-                                txtTotals.setText(String.valueOf(barcodeResult.total()));
-
-                                if (getInvoiceAddItemDirect()) {
-                                    addData();
-                                } else {
-                                    txtPrice.requestFocus();
-                                }
-                                return;
-                            } catch (Exception e) {
-                                AllAlerts.handleError("قراءة باركود الميزان", e);
-                                txtBarcode.requestFocus();
-                                return;
-                            }
-                        }
-                    }
-                }
-
-                searchItemByTypeAndName(txtBarcode.getText(), false, false);
-
-                if (getInvoiceAddItemDirect()) {
-                    addData();
-                } else {
-                    txtPrice.requestFocus();
-                }
+            if (getInvoiceAddItemDirect()) {
+                addData();
+            } else {
+                txtPrice.requestFocus();
             }
+        } catch (Exception e) {
+            if (scaleSettings.matches(barcode)) {
+                AllAlerts.handleError("قراءة باركود الميزان", e);
+            } else {
+                logError(e);
+            }
+            txtBarcode.requestFocus();
         }
     }
 
-    private void searchItemByTypeAndName(String itemName, boolean searchByName, boolean useScaleBarcode) {
+    private void selectItemByName(String itemName) {
         try {
-            var id = DefaultStock.ID;
-            if (searchByName) {
-                var itemByItemNameAndStockId = itemsService.getItemByItemNameAndStockId(itemName, id);
-                if (itemByItemNameAndStockId == null) {
-                    Utils.clearAll(txtItemBalance, txtPrice, txtQuantity, txtTotals, txtBarcode);
-                    throw new Exception(Error_Text_Show.PLEASE_INSERT_ALL_DATA);
-                }
-
-                txtBarcode.setText(itemByItemNameAndStockId.getBarcode());
-                itemsModel.set(itemByItemNameAndStockId);
-            } else {
-                var itemByBarcodeAndStockId = itemsService.getItemByBarcodeAndStockId(itemName, id);
-                if (itemByBarcodeAndStockId == null) {
-                    Utils.clearAll(txtItemBalance, txtPrice, txtQuantity, txtTotals, txtBarcode);
-                    txtBarcode.requestFocus();
-                    throw new Exception("لا يوجد هذا الباركود: " + itemName);
-                }
-
-
-                itemsModel.set(itemByBarcodeAndStockId);
-                textSearchItems.set(itemsModel.get().getNameItem());
-            }
-
-            if (itemsModel.get() == null) {
-                throw new Exception(Error_Text_Show.PLEASE_INSERT_ALL_DATA);
-            }
-            if (itemsModel.get().getId() == 0) {
-                throw new Exception(Error_Text_Show.PLEASE_INSERT_ALL_DATA);
-            }
-
-            // add type
-            var model = itemsModel.get();
+            priceTypeByNameId = resolveSelectedPriceTier();
+            InvoiceItemSelection selection = invoiceItemSelectionService.selectByName(
+                    itemName, DefaultStock.ID, priceTypeByNameId);
+            applyItemSelection(selection, false);
             txtPrice.requestFocus();
-
-            // check name first to select sel price
-            var s = textSearchName.get();
-            if (s == null) {
-                throw new Exception(Setting_Language.PLEASE_INSERT_ALL_DATA + ":- \n ادخل الاسم");
-            }
-            var object = nameService.getObject(nameAndAccountInterface.nameList(), s);
-            priceTypeByNameId = t3NameData.priceId(object);
-
-            // A code can belong to a unit rather than to the item, so a carton
-            // scanned here selects the carton. Searching by name has no code to
-            // go on and starts from the base unit. The price type is resolved
-            // first, because selecting the unit is what fills the price in.
-            var scannedUnit = searchByName ? ItemUnits.baseUnit(model) : ItemUnits.unitByBarcode(model, itemName);
-            addDataToComboType(model, scannedUnit);
-
-            txtQuantity.setText("1");
         } catch (Exception e) {
+            Utils.clearAll(txtItemBalance, txtPrice, txtQuantity, txtTotals, txtBarcode);
             logError(e);
         }
     }
 
-    /**
-     * Fills the unit combo from the item and selects {@code selected}. Selecting
-     * it is what puts the balance and the price for that unit into their fields -
-     * the combo's listener does both - so nothing here writes them.
-     */
-    private void addDataToComboType(ItemsModel model, UnitsModel selected) {
-
-        // Only the units this item defines. Offering every unit in the database
-        // let a row be priced and counted by a factor the item never declared.
-        var units = ItemUnits.unitsFor(model);
-        var list = units.stream().map(UnitsModel::getUnit_name).toList();
-
-        comboType.setItems(FXCollections.observableArrayList(list));
-
-        String name = selected == null ? null : selected.getUnit_name();
-        String toSelect = list.contains(name) ? name : (list.isEmpty() ? null : list.getFirst());
-        if (toSelect != null) {
-            // setItems cleared the selection, so this always fires the listener
-            // and the fields are filled even when the same unit is scanned twice.
-            comboType.getSelectionModel().select(toSelect);
+    private int resolveSelectedPriceTier() throws Exception {
+        String selectedName = textSearchName == null ? null : textSearchName.get();
+        if (selectedName == null || selectedName.isBlank()) {
+            throw new UserValidationException(
+                    Setting_Language.PLEASE_INSERT_ALL_DATA + ":- \n ادخل الاسم");
         }
+        T3 party = nameService.getObject(nameAndAccountInterface.nameList(), selectedName);
+        if (party == null) {
+            throw new UserValidationException("الاسم المحدد غير موجود");
+        }
+        return t3NameData.priceId(party);
+    }
 
-        // Nothing to choose between when the item sells in one unit only.
-        comboType.setDisable(list.size() < 2);
+    private InvoiceItemSelectionService.ScaleBarcodeSettings scaleBarcodeSettings() {
+        return new InvoiceItemSelectionService.ScaleBarcodeSettings(
+                getSettingBarcodeScaleActive(), getSettingBarcodeStart(),
+                getSettingBarcodeCountScale());
+    }
+
+    private void applyItemSelection(InvoiceItemSelection selection, boolean updateSearchName) {
+        applyingItemSelection = true;
+        try {
+            itemsModel.set(selection.item());
+            txtBarcode.setText(selection.barcode());
+            if (updateSearchName) {
+                textSearchItems.set(selection.item().getNameItem());
+            }
+
+            List<String> unitNames = selection.units().stream()
+                    .map(UnitsModel::getUnit_name)
+                    .toList();
+            comboType.setItems(FXCollections.observableArrayList(unitNames));
+            comboType.getSelectionModel().select(selection.selectedUnit().getUnit_name());
+            comboType.setDisable(unitNames.size() < 2);
+
+            txtItemBalance.setText(String.valueOf(
+                    roundToTwoDecimalPlaces(selection.balance())));
+            txtPrice.setText(String.valueOf(selection.price()));
+            txtQuantity.setText(String.valueOf(selection.quantity()));
+            txtTotals.setText(String.valueOf(selection.total()));
+        } finally {
+            applyingItemSelection = false;
+        }
     }
 
     private void getCodeAccountAndBalance(String newValue) {
