@@ -1,5 +1,6 @@
 package com.hamza.account.controller.others;
 
+import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.language.Setting_Language;
 import javafx.application.Application;
 import javafx.concurrent.Task;
@@ -91,6 +92,7 @@ public class TaskProgressViewAction extends Application {
 //        taskProgressView.getTasks().add(task);
         taskProgressView.getTasks().add(voidTask);
         taskProgressView.setRetainTasks(true);
+        AllAlerts.handleTaskFailure(Setting_Language.WORD_REFRESH, voidTask);
         // execute task
         executorService.submit(voidTask);
 //        executorService.submit(task);

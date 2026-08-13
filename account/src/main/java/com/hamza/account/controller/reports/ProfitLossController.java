@@ -7,8 +7,6 @@ import com.hamza.account.openFxml.FxmlPath;
 import com.hamza.account.otherSetting.MaskerPaneSetting;
 import com.hamza.account.service.EarningsService;
 import com.hamza.account.service.UsersService;
-import com.hamza.controlsfx.alert.AllAlerts;
-import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.language.Setting_Language;
 import com.hamza.controlsfx.others.DateSetting;
 import com.hamza.controlsfx.table.TableColumnAnnotation;
@@ -19,12 +17,10 @@ import javafx.fxml.FXML;
 import javafx.scene.control.*;
 import javafx.scene.layout.StackPane;
 import javafx.scene.text.Text;
-import lombok.extern.log4j.Log4j2;
 
 import java.util.ArrayList;
 import java.util.List;
 
-@Log4j2
 @FxmlPath(pathFile = "reports/profit-loss.fxml")
 public class ProfitLossController {
 
@@ -77,17 +73,13 @@ public class ProfitLossController {
         // Read off the pickers before leaving the JavaFX thread.
         var from = dateFrom.getValue();
         var to = dateTo.getValue();
-        maskerPaneSetting.showMaskerPane(() -> {
-            List<Earnings> allEarningsData;
-            try {
-                allEarningsData = earningsService.getEarningsByDateRange(from, to);
+        maskerPaneSetting.showMaskerPane("تحميل تقرير الأرباح والخسائر", () -> {
+            List<Earnings> allEarningsData = earningsService.getEarningsByDateRange(from, to);
+            List<TableData> tableData = new ArrayList<>();
 
-
-                List<TableData> tableData = new ArrayList<>();
-
-                for (int i = 0; i < usersService.getUsersList().size(); i++) {
-                    var user = usersService.getUsersList().get(i);
-                    var list = allEarningsData.stream().filter(earnings -> earnings.getUsers().getId() == user.getId()).toList();
+            for (int i = 0; i < usersService.getUsersList().size(); i++) {
+                var user = usersService.getUsersList().get(i);
+                var list = allEarningsData.stream().filter(earnings -> earnings.getUsers().getId() == user.getId()).toList();
 
                     var sales = list.stream().filter(earnings -> earnings.getTable_id().equals("sales")).mapToDouble(Earnings::getTotal).sum();
                     var purchase = list.stream().filter(earnings -> earnings.getTable_id().equals("buy")).mapToDouble(Earnings::getTotal).sum();
@@ -126,15 +118,10 @@ public class ProfitLossController {
                     tableDataEntry.setTotal_deposit_expense(deposit_expenses);
                     tableDataEntry.setTotal_balance(deposit - deposit_expenses);
 
-                    tableData.add(tableDataEntry);
-                }
-
-                Platform.runLater(() -> tableView.setItems(FXCollections.observableArrayList(tableData)));
-            } catch (DaoException e) {
-                log.error(e.getMessage(), e);
-                AllAlerts.handleError("تحميل تقرير الأرباح والخسائر", e);
-                return;
+                tableData.add(tableDataEntry);
             }
+
+            Platform.runLater(() -> tableView.setItems(FXCollections.observableArrayList(tableData)));
         });
 
 

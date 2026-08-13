@@ -322,14 +322,10 @@ public class TotalsController<T2 extends BaseTotals, T3 extends BaseNames, T4 ex
                 AllAlerts.alertError("من فضللك حدد الصف");
             } else {
                 if (AllAlerts.confirmDelete()) {
-                    maskerPaneSetting.showMaskerPane(() -> {
-                        try {
-                            // backup before delete
-                            SaveDatabaseFile.saveBeforeClose(false);
-                            dataInterface.totalDesignInterface().deleteMultiData(list.stream().map(BaseTotals::getId).toArray(Integer[]::new));
-                        } catch (Exception e) {
-                            exceptionHandle(e);
-                        }
+                    maskerPaneSetting.showMaskerPane("حذف الفواتير", () -> {
+                        // backup before delete
+                        SaveDatabaseFile.saveBeforeClose(false);
+                        dataInterface.totalDesignInterface().deleteMultiData(list.stream().map(BaseTotals::getId).toArray(Integer[]::new));
                     });
                     maskerPaneSetting.getVoidTask().setOnSucceeded(workerStateEvent -> {
 //                        log.info("delete multi data success , {}", sb.toString());
@@ -337,7 +333,6 @@ public class TotalsController<T2 extends BaseTotals, T3 extends BaseNames, T4 ex
                         if (eventBus != null) eventBus.publish(new InvoiceSaved(dataInterface.invoiceSide()));
                         AllAlerts.alertDelete();
                     });
-                    maskerPaneSetting.getVoidTask().setOnFailed(workerStateEvent -> AllAlerts.alertError("لا يمكن الحذف"));
                 }
             }
 
@@ -399,22 +394,18 @@ public class TotalsController<T2 extends BaseTotals, T3 extends BaseNames, T4 ex
         // Read off the pickers before leaving the JavaFX thread.
         var from = dateFrom.getValue().toString();
         var to = dateTo.getValue().toString();
-        maskerPaneSetting.showMaskerPane(() -> {
-            try {
-                var collection = totalsInterface.totalsAndPurchaseList().totalList(from, to)
-                        .stream().sorted(Comparator.comparing(BaseTotals::getDate)).toList();
-                // The query runs off the JavaFX thread; what the table is showing is
-                // replaced back on it.
-                Platform.runLater(() -> {
-                    observableList.clear();
-                    observableList.setAll(collection);
-                    filteredTable.setPredicate(t2 -> true);
-                    tableView.refresh();
-                    sumTable();
-                });
-            } catch (Exception e) {
-                exceptionHandle(e);
-            }
+        maskerPaneSetting.showMaskerPane("تحميل الفواتير", () -> {
+            var collection = totalsInterface.totalsAndPurchaseList().totalList(from, to)
+                    .stream().sorted(Comparator.comparing(BaseTotals::getDate)).toList();
+            // The query runs off the JavaFX thread; what the table is showing is
+            // replaced back on it.
+            Platform.runLater(() -> {
+                observableList.clear();
+                observableList.setAll(collection);
+                filteredTable.setPredicate(t2 -> true);
+                tableView.refresh();
+                sumTable();
+            });
         });
     }
 

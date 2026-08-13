@@ -4,6 +4,8 @@ import com.hamza.controlsfx.error.ErrorReporter;
 import com.hamza.controlsfx.error.FxErrorPresenter;
 import com.hamza.controlsfx.language.LanguageManager;
 import javafx.application.Platform;
+import javafx.concurrent.Task;
+import javafx.concurrent.WorkerStateEvent;
 import javafx.scene.control.Alert;
 import javafx.scene.control.ButtonType;
 import lombok.extern.log4j.Log4j2;
@@ -81,6 +83,16 @@ public class AllAlerts {
      */
     public static void handleError(String operation, Throwable throwable) {
         ERROR_PRESENTER.present(ERROR_REPORTER.report(operation, throwable));
+    }
+
+    /**
+     * Adds the central error boundary to a JavaFX task without replacing a
+     * screen-specific {@code onFailed} callback.
+     */
+    public static <T extends Task<?>> T handleTaskFailure(String operation, T task) {
+        task.addEventHandler(WorkerStateEvent.WORKER_STATE_FAILED,
+                event -> handleError(operation, task.getException()));
+        return task;
     }
 
     /**

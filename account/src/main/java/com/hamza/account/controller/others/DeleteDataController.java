@@ -12,7 +12,6 @@ import com.hamza.account.wipe.WipeService;
 import com.hamza.account.wipe.WipeTarget;
 import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.interfaceData.AppSettingInterface;
-import com.hamza.controlsfx.language.Error_Text_Show;
 import com.hamza.controlsfx.language.Setting_Language;
 import com.hamza.controlsfx.util.ImageChoose;
 import javafx.fxml.FXML;
@@ -130,7 +129,7 @@ public class DeleteDataController implements AppSettingInterface {
         // button now says so by being unavailable.
         btnSave.setOnAction(actionEvent -> {
             if (AllAlerts.confirmDelete()) {
-                maskerPaneSetting.showMaskerPane(() -> delete());
+                maskerPaneSetting.showMaskerPane("حذف البيانات", this::delete);
 
                 maskerPaneSetting.getVoidTask().setOnSucceeded(workerStateEvent -> {
                     AllAlerts.alertSave();
@@ -140,16 +139,6 @@ public class DeleteDataController implements AppSettingInterface {
                     // run, and offering to run them again is the last thing it should do.
                     btnSelected.setSelected(false);
                     boxesByTarget.values().forEach(box -> box.setSelected(false));
-                });
-                maskerPaneSetting.getVoidTask().setOnFailed(workerStateEvent -> {
-                    var error = workerStateEvent.getSource().getException();
-                    // The message on the exception is the driver's, in English, and
-                    // reads like "a foreign key constraint fails (...)" - which tells
-                    // the shop owner nothing and the log everything. The wipe is one
-                    // transaction, so what the screen can promise is that nothing was
-                    // erased.
-                    log.error("The wipe did not complete", error);
-                    AllAlerts.alertError(Error_Text_Show.WIPE_FAILED);
                 });
             }
         });
@@ -289,27 +278,15 @@ public class DeleteDataController implements AppSettingInterface {
                 .collect(Collectors.toSet());
     }
 
-    private void delete() {
-        try {
-            // TRUNCATE commits implicitly, so a wipe that fails halfway cannot be
-            // rolled back. Deleting a single invoice already takes a backup first
-            // (TotalsController); the operation that empties the whole database was
-            // the one doing it without. A backup that fails aborts the wipe - there
-            // would be nothing to go back to.
-            SaveDatabaseFile.saveBeforeClose(false);
+    private void delete() throws Exception {
+        // A backup that fails aborts the wipe: there would be nothing to go back to.
+        SaveDatabaseFile.saveBeforeClose(false);
 
-            // The plan takes the closure of what was ticked, so a selection the
-            // screen somehow allowed that leaves out something it depends on is
-            // completed here rather than failing halfway through the wipe.
-            new WipeService().run(WipePlan.of(selectedTargets()));
-
-        } catch (Exception e) {
-            log.error(e.getMessage(), e);
-            // Rethrown rather than only reported: the task's onSucceeded announces a
-            // successful wipe and reloads every screen, and swallowing the failure
-            // here is what let it run after a wipe that did not happen.
-            throw new IllegalStateException(e.getMessage(), e);
-        }
+        // The plan takes the closure of what was ticked, so a selection the screen
+        // somehow allowed that leaves out a dependency is completed here.
+        // Let failures reach the Task boundary; swallowing one would fire the
+        // onSucceeded callback and announce a wipe that did not happen.
+        new WipeService().run(WipePlan.of(selectedTargets()));
     }
 
     @Override

@@ -892,9 +892,8 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
 
     private void printInvoice(InvoicePrintRequest request) {
         if (request != null) {
-            maskerPaneSetting.showMaskerPane(() -> invoicePrintService.print(request));
-            maskerPaneSetting.getVoidTask().setOnFailed(event ->
-                    logError(asException(maskerPaneSetting.getVoidTask().getException())));
+            maskerPaneSetting.showMaskerPane("طباعة الفاتورة",
+                    () -> invoicePrintService.print(request));
         }
     }
 

@@ -270,19 +270,14 @@ public class UnitsController implements Initializable, AppSettingInterface {
 
     private void refreshTable() {
         MaskerPaneSetting maskerPaneSetting = new MaskerPaneSetting(stackPane);
-        maskerPaneSetting.showMaskerPane(() -> {
+        maskerPaneSetting.showMaskerPane("تحميل الوحدات", () -> {
             var units = getUnitsModelList();
             Platform.runLater(() -> tableView.setItems(FXCollections.observableArrayList(units)));
         });
     }
 
-    private List<UnitsModel> getUnitsModelList() {
-        try {
-            return unitsService.getUnitsModelList();
-        } catch (DaoException e) {
-            log.error(e.getMessage(), e);
-            return List.of();
-        }
+    private List<UnitsModel> getUnitsModelList() throws DaoException {
+        return unitsService.getUnitsModelList();
     }
 
     private void addMenu() {

@@ -202,20 +202,14 @@ public class ProcessesController implements Initializable {
         // The pickers are read here, on the JavaFX thread, not inside the query.
         var from = dateFrom.getValue();
         var to = dateTo.getValue();
-        maskerPaneSetting.showMaskerPane(() -> {
+        maskerPaneSetting.showMaskerPane("تحميل سجل العمليات", () -> {
             var processesData = getProcessesData(from, to);
             Platform.runLater(() -> observableListTable.setAll(processesData));
         });
     }
 
-    private List<Audit_log> getProcessesData(LocalDate from, LocalDate to) {
-        try {
-            return auditLogService.getProcessesData(from, to);
-        } catch (DaoException e) {
-            log.error(e.getMessage());
-            AllAlerts.handleError("تحميل سجل العمليات", e);
-            return List.of();
-        }
+    private List<Audit_log> getProcessesData(LocalDate from, LocalDate to) throws DaoException {
+        return auditLogService.getProcessesData(from, to);
     }
 
     private void action() {
@@ -242,7 +236,7 @@ public class ProcessesController implements Initializable {
                     AllAlerts.alertSave();
                     var from = dateFrom.getValue();
                     var to = dateTo.getValue();
-                    maskerPaneSetting.showMaskerPane(() -> {
+                    maskerPaneSetting.showMaskerPane("تحديث سجل العمليات", () -> {
                         var processesData = getProcessesData(from, to);
                         Platform.runLater(() -> observableListTable.setAll(processesData));
                     });

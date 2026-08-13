@@ -1,5 +1,6 @@
 package com.hamza.account.otherSetting;
 
+import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.language.Setting_Language;
 import javafx.concurrent.Task;
 import javafx.scene.effect.BlendMode;
@@ -48,13 +49,19 @@ public class MaskerPaneSetting extends MaskerPane {
      * and would replace anything left there.
      */
     public void showMaskerPane(MaskerPaneSetting.ActionMasherPane actionEvent) {
+        showMaskerPane(null, actionEvent);
+    }
+
+    /** Runs a named operation and reports a failed task through the central policy. */
+    public void showMaskerPane(String operation, MaskerPaneSetting.ActionMasherPane actionEvent) {
         voidTask = new Task<>() {
             @Override
-            protected Void call() {
+            protected Void call() throws Exception {
                 actionEvent.action();
                 return null;
             }
         };
+        AllAlerts.handleTaskFailure(operation, voidTask);
         // Task state is delivered on the JavaFX thread, and covers the failed and
         // cancelled endings as well as the successful one - the overlay cannot be
         // left over a screen whose work threw.
@@ -67,6 +74,6 @@ public class MaskerPaneSetting extends MaskerPane {
 
     @FunctionalInterface
     public interface ActionMasherPane {
-        void action();
+        void action() throws Exception;
     }
 }

@@ -261,22 +261,17 @@ public class TreasureDetailsController {
         // Read off the pickers before leaving the JavaFX thread.
         var from = dateFrom.getValue().toString();
         var to = dateTo.getValue().toString();
-        maskerPaneSetting.showMaskerPane(() -> {
-            try {
-                var treasuryBalanceSummary = treasuryBalanceService.getAllTreasuryBalanceBetweenTwoDate(from, to)
-                        .stream()
+        maskerPaneSetting.showMaskerPane("تحميل تفاصيل الخزينة", () -> {
+            var treasuryBalanceSummary = treasuryBalanceService.getAllTreasuryBalanceBetweenTwoDate(from, to)
+                    .stream()
 //                        .filter(treasuryBalance -> treasuryBalance.getTotal_income() != 0 && treasuryBalance.getTotal_output() != 0)
-                        .toList();
-                // The query is the slow part and stays here; the list the table is
-                // showing may only be touched on the JavaFX thread.
-                Platform.runLater(() -> {
-                    treasuryBalances.clear();
-                    treasuryBalances.addAll(treasuryBalanceSummary);
-                });
-            } catch (DaoException e) {
-                log.error(e.getMessage(), e);
-                AllAlerts.handleError("تحميل تفاصيل الخزينة", e);
-            }
+                    .toList();
+            // The query is the slow part and stays here; the list the table is
+            // showing may only be touched on the JavaFX thread.
+            Platform.runLater(() -> {
+                treasuryBalances.clear();
+                treasuryBalances.addAll(treasuryBalanceSummary);
+            });
         });
 
         maskerPaneSetting.getVoidTask().setOnSucceeded(workerStateEvent -> updateFinancialSummaries());

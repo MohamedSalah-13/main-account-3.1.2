@@ -233,7 +233,7 @@ public class AccountController2<T3 extends BaseNames, T4 extends BaseAccount>
         btnPrint.setOnAction(actionEvent -> printAccount());
 
         btnRefresh.setOnAction(actionEvent -> {
-            maskerPaneSetting.showMaskerPane(() -> {
+            maskerPaneSetting.showMaskerPane("تحميل الحسابات", () -> {
                 var accounts = nameAndAccountInterface.accountTotalList(null, null);
                 Platform.runLater(() -> {
                     observableList.clear();

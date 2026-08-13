@@ -1,5 +1,6 @@
 package com.hamza.controlsfx.controller;
 
+import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.util.FileDir;
 import javafx.application.Platform;
 import javafx.concurrent.Task;
@@ -39,10 +40,15 @@ public class DateTimePaneController {
     }
 
     public void startPro(Task<Void> task) {
+        startPro(task, null);
+    }
+
+    public void startPro(Task<Void> task, String operation) {
         progress.setVisible(true);
         progress.progressProperty().bind(task.progressProperty());
         textProgress.textProperty().bind(task.messageProperty().concat("%"));
         textShowData.textProperty().bind(task.titleProperty());
+        AllAlerts.handleTaskFailure(operation, task);
         Thread thread = new Thread(task);
         thread.setDaemon(true);
         thread.start();
@@ -58,12 +64,15 @@ public class DateTimePaneController {
                 try {
                     Thread.sleep(1000); //1 second
                 } catch (InterruptedException e) {
-                    throw new RuntimeException(e);
+                    Thread.currentThread().interrupt();
+                    return;
                 }
                 final String time = simpleDateFormat.format(new Date());
                 Platform.runLater(() -> text.setText(time));
             }
         });
-        timerThread.start();//start the thread and its ok
+        timerThread.setName("date-time-clock");
+        timerThread.setDaemon(true);
+        timerThread.start();
     }
 }

@@ -212,13 +212,8 @@ public class UpdateSomeItems {
             var i = updateGroups(itemsModelList);
             log.info("Update groups result: {}", i);
             if (i == 1) {
-                maskerPaneSetting.showMaskerPane(() -> {
-                    try {
-                        itemsService.updateGroup(itemsModelList);
-                    } catch (Exception e) {
-                        logError(e);
-                    }
-                });
+                maskerPaneSetting.showMaskerPane("تحديث بيانات الأصناف",
+                        () -> itemsService.updateGroup(itemsModelList));
 
                 maskerPaneSetting.getVoidTask().setOnSucceeded(workerStateEvent -> {
                     AllAlerts.alertSave();
