@@ -10,7 +10,7 @@ import com.hamza.account.model.dao.MonthlySalesViewDao;
 import com.hamza.account.authorization.AppPermissions;
 import com.hamza.account.authorization.AuthorizationGuard;
 import com.hamza.account.authorization.PermissionKey;
-import com.hamza.account.view.LogApplication;
+import com.hamza.account.features.rbac.CurrentUser;
 import com.hamza.account.view.MonthlyView;
 import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.database.DaoException;
@@ -84,7 +84,7 @@ public class MainScreenController extends MainItems implements Initializable {
         }
 
         // data publisher
-        var name = LogApplication.usersVo.getUsername();
+        var name = CurrentUser.get().getUsername();
         if (eventBus != null) eventBus.publish(new UserRenamed(name));
         // This controller is the publisher bag it subscribes to, so there is nothing
         // that could outlive the observers registered here.

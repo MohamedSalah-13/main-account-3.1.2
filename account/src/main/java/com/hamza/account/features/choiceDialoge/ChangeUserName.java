@@ -6,11 +6,11 @@ import com.hamza.account.controller.others.ServiceRegistry;
 import com.hamza.account.controller.others.DialogButtons;
 import com.hamza.account.features.events.UserRenamed;
 import com.hamza.account.features.events.UsersChanged;
+import com.hamza.account.features.rbac.CurrentUser;
 import com.hamza.controlsfx.observer.EventBus;
 import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.model.domain.Users;
 import com.hamza.account.service.UsersService;
-import com.hamza.account.view.LogApplication;
 import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.button.ImageDesign;
 import com.hamza.controlsfx.database.DaoException;
@@ -45,13 +45,13 @@ public class ChangeUserName extends TextInputDialog {
 
         dialogPane.setContentText(Setting_Language.WORD_NAME);
         dialogPane.setHeaderText(textName);
-        this.getEditor().setText(LogApplication.usersVo.getUsername());
+        this.getEditor().setText(CurrentUser.get().getUsername());
         dialogPane.setGraphic(new ImageDesign(new Image_Setting().account, 60));
 
         Optional<String> s = this.showAndWait();
         s.ifPresent(string -> {
             try {
-                Users users = LogApplication.usersVo;
+                Users users = CurrentUser.get();
                 int update = ServiceRegistry.get(UsersService.class)
                         .updateOwnUsername(users.getId(), string);
                 if (update == 1) {

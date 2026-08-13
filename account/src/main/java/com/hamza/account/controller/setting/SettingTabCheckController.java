@@ -2,7 +2,7 @@ package com.hamza.account.controller.setting;
 
 import com.hamza.account.controller.main.DataPublisher;
 import com.hamza.account.openFxml.FxmlPath;
-import com.hamza.account.view.LogApplication;
+import com.hamza.account.features.rbac.CurrentUser;
 import com.hamza.controlsfx.language.Setting_Language;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
@@ -42,7 +42,7 @@ public class SettingTabCheckController implements Initializable {
     @FXML
     private CheckBox checkPrintReceiptAccount, checkAddItemDirect;
     @FXML
-    private CheckBox checkLogin, checkShowTotals, checkInvoicePaid, showScreenAlone;
+    private CheckBox checkShowTotals, checkInvoicePaid, showScreenAlone;
     @FXML
     private Text textInvoice, textItem, textOthers;
 
@@ -60,8 +60,7 @@ public class SettingTabCheckController implements Initializable {
     }
 
     private void forItems() {
-        checkLogin.setDisable(LogApplication.usersVo.getId() != 1);
-        checkShowTotals.setDisable(LogApplication.usersVo.getId() != 1);
+        checkShowTotals.setDisable(CurrentUser.get().getId() != 1);
         checkSetting(checkShowBeforePrint, "عرض قبل الطباعة", getPrintPaperDirect());
         checkSetting(checkPrintReceiptAccount, "طباعة الحساب طابعة حرارية", getPrintPaperReceiptAccount());
 
@@ -77,7 +76,6 @@ public class SettingTabCheckController implements Initializable {
         checkSetting(checkIncreaseItemOnTable, "جمع الاصناف المكررة", getInvoiceIncreaseItemOneTable());
         checkSetting(checkSelWithoutBalance, Setting_Language.BUY_WITHOUT_BALANCE, getSelWithoutBalance());
 
-        checkSetting(checkLogin, "إظهار شاشة الدخول", getSettingLoginShow());
         checkSetting(checkShowTotals, "عرض الاجماليات فى الشاشة الرئيسية", getShowMainTotals());
         checkSetting(checkInvoicePaid, "إظهار شاشة الدفع فى الفواتير", getInvoiceShowScreenPaid());
 
@@ -85,10 +83,6 @@ public class SettingTabCheckController implements Initializable {
 
         checkInvoicePaid.selectedProperty().addListener((observable, oldValue, newValue) -> setInvoiceShowScreenPaid(newValue));
 
-        checkLogin.selectedProperty().addListener((observable, oldValue, newValue) -> {
-            dataPublisher.getShowLoginScreen().publish(newValue);
-            setSettingLoginShow(newValue);
-        });
         checkShowTotals.selectedProperty().addListener((observable, oldValue, newValue) -> {
             dataPublisher.getShowMainTotalsScreen().publish(newValue);
             setShowMainTotals(newValue);

@@ -52,7 +52,6 @@ public class PropertiesName extends PreferencesSetting {
     private static final String BACKUP_DATABASE_TIME_BACKUP = "backup.database.time_backup";
     private static final String SEARCH_ITEMS_SPLIT_PANE_DIVIDER = "search.items.splitPane.divider";
     private static final String APP_LAST_RUN_VERSION = "app.lastRunVersion";
-    private static final String SETTING_LOGIN_SHOW = "setting.login.show";
     private static final String SETTING_SERVER_START = "setting.server.start";
     private static final String SETTING_SHOW_INVOICE_SCREEN_SEPARATE = "setting.show.invoice.screen.separate";
     private static final String MENU_SEARCH_SIZE_HEIGHT = "menu.search.size.height";
@@ -402,14 +401,6 @@ public class PropertiesName extends PreferencesSetting {
 
     public static void setSerialRecordModificationNumber(int value) {
         putInt(SERIAL_RECORD_MODIFICATION_NUMBER, value);
-    }
-
-    public static boolean getSettingLoginShow() {
-        return getBoolean(SETTING_LOGIN_SHOW, true);
-    }
-
-    public static void setSettingLoginShow(boolean value) {
-        putBoolean(SETTING_LOGIN_SHOW, value);
     }
 
     public static boolean getSettingServerStart() {

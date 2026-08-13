@@ -7,7 +7,7 @@ import com.hamza.account.features.events.UserRenamed;
 import com.hamza.account.features.notification.NotificationBootstrap;
 import com.hamza.controlsfx.observer.EventBus;
 import com.hamza.controlsfx.observer.Subscriptions;
-import com.hamza.account.view.LogApplication;
+import com.hamza.account.features.rbac.CurrentUser;
 import com.hamza.controlsfx.button.ImageDesign;
 import com.hamza.controlsfx.language.Setting_Language;
 import com.jfoenix.controls.JFXHamburger;
@@ -72,7 +72,6 @@ public class MainToolbarController implements Initializable {
                     , event -> menuButton.setText(Setting_Language.WELCOME + " " + event.name() + " !")));
             subscriptions.disposeWith(toolBar);
         }
-        dataPublisher.getShowLoginScreen().addObserver(message -> menuItemLogout.setDisable(!message));
 //        toolBar.getItems().remove(btnAlarm);
         showButton(btnShift, false);
         replaceAlarmWithNotificationBell();
@@ -119,14 +118,14 @@ public class MainToolbarController implements Initializable {
             }
         });
 
-        showButton(btnYouTube, LogApplication.usersVo.getId() == 1);
+        showButton(btnYouTube, CurrentUser.get().getId() == 1);
 
 //        menuButton.setGraphic(new ImageDesign(imageSetting.personCustomer, 20));
         menuButton.setText(Setting_Language.WELCOME + " " + nameProperty + " !");
         menuButtonSetting.initializeMenuItem(menuItemChangeName, controller.getForAllButtons().changeName());
         menuButtonSetting.initializeMenuItem(menuItemChangePass, controller.getForAllButtons().changePassword());
         menuButtonSetting.initializeMenuItem(menuItemLogout, controller.getForAllButtons().logout());
-        menuItemLogout.setDisable(!PropertiesName.getSettingLoginShow());
+        menuItemLogout.setDisable(false);
 
     }
 

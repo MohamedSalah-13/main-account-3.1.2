@@ -11,7 +11,7 @@ import com.hamza.account.features.inventory.InventoryRow;
 import com.hamza.account.model.domain.*;
 import com.hamza.account.otherSetting.BarcodeDetails;
 import com.hamza.account.service.ShiftReportService;
-import com.hamza.account.view.LogApplication;
+import com.hamza.account.features.rbac.CurrentUser;
 import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.language.Setting_Language;
 import com.hamza.controlsfx.others.CssToColorHelper;
@@ -341,7 +341,7 @@ public class Print_Reports extends ReportCompany {
     private HashMap<String, Object> dataForPrinterReceipt(@NotNull String name, @NotNull List<?> list, double total
             , String date_insert) {
         int count = getCount();
-        Users usersVo = LogApplication.usersVo;
+        Users usersVo = CurrentUser.get();
         if (usersVo == null)
             usersVo = new Users(1, "admin");
 

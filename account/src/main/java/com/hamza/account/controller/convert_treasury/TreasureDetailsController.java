@@ -13,7 +13,7 @@ import com.hamza.account.service.TreasuryService;
 import com.hamza.account.service.UsersService;
 import com.hamza.account.table.TableSetting;
 import com.hamza.account.type.ProcessType;
-import com.hamza.account.view.LogApplication;
+import com.hamza.account.features.rbac.CurrentUser;
 import com.hamza.account.view.ShowInvoiceApplication;
 import com.hamza.controlsfx.alert.AllAlerts;
 import javafx.application.Platform;
@@ -113,9 +113,9 @@ public class TreasureDetailsController {
 
     private void selectNextId() {
         // select user
-        if (LogApplication.usersVo.getId() != 1) {
+        if (CurrentUser.get().getId() != 1) {
             try {
-                var usersById = userService.getUsersById(LogApplication.usersVo.getId());
+                var usersById = userService.getUsersById(CurrentUser.get().getId());
                 comboUsers.setDisable(true);
                 comboUsers.getSelectionModel().select(usersById.getUsername());
                 comboTreasury.setDisable(true);

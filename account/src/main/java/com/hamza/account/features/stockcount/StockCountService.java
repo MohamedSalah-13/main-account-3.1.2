@@ -10,7 +10,7 @@ import com.hamza.account.authorization.AuthorizationGuard;
 import com.hamza.account.service.ItemUnits;
 import com.hamza.account.authorization.AppPermissions;
 import com.hamza.account.authorization.PermissionKey;
-import com.hamza.account.view.LogApplication;
+import com.hamza.account.features.rbac.CurrentUser;
 import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.error.BusinessRuleException;
 import com.hamza.controlsfx.error.UserValidationException;
@@ -53,7 +53,8 @@ public record StockCountService(DaoFactory daoFactory) {
         StockCount fresh = new StockCount();
         fresh.setStockId(DefaultStock.ID);
         fresh.setCountDate(LocalDate.now());
-        fresh.setUserId(LogApplication.usersVo == null ? 1 : LogApplication.usersVo.getId());
+        var user = CurrentUser.getOrNull();
+        fresh.setUserId(user == null ? 1 : user.getId());
         return fresh;
     }
 

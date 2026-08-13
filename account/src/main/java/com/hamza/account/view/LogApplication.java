@@ -2,169 +2,88 @@ package com.hamza.account.view;
 
 import com.hamza.account.backup.ScheduledBackup;
 import com.hamza.account.config.Image_Setting;
-import com.hamza.account.config.PropertiesName;
 import com.hamza.account.config.ThemeManager;
 import com.hamza.account.controller.login.LoginController;
+import com.hamza.account.controller.login.LoginResult;
 import com.hamza.account.controller.others.ServiceRegistry;
 import com.hamza.account.features.rbac.RbacService;
-import com.hamza.account.interfaces.ActionLogin;
 import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.model.domain.Users;
 import com.hamza.account.period.PeriodLockService;
-import com.hamza.controlsfx.alert.AllAlerts;
-import com.hamza.controlsfx.database.DaoException;
-import com.hamza.controlsfx.language.Error_Text_Show;
 import com.hamza.controlsfx.language.LanguageManager;
-import com.hamza.controlsfx.language.Setting_Language;
 import com.hamza.controlsfx.others.ChangeOrientation;
-import javafx.application.Application;
+import javafx.application.Platform;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Scene;
 import javafx.scene.image.Image;
 import javafx.stage.Stage;
 import lombok.extern.log4j.Log4j2;
 
-import java.io.IOException;
 import java.util.Optional;
+import java.util.function.Consumer;
 
+/** Builds and presents the login scene; it is not a second JavaFX Application. */
 @Log4j2
-public class LogApplication extends Application {
-    public static final LanguageManager INSTANCE = LanguageManager.getInstance();
-    public static Users usersVo;
-    private final LoginController login;
+public final class LogApplication {
+
     private final DaoFactory daoFactory;
-    private final Scene scene;
-    private boolean b = false;
+    private final Consumer<Users> onLoginSuccess;
 
-    public LogApplication(DaoFactory daoFactory) throws Exception {
+    public LogApplication(DaoFactory daoFactory, Consumer<Users> onLoginSuccess) {
         this.daoFactory = daoFactory;
-        FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource("login.fxml"), LanguageManager.getInstance().getResourceBundle());
-        login = new LoginController(new ActionLogin() {
-            @Override
-            public boolean action(String username, String password) throws Exception {
-                return onEnter(username, password);
-            }
-        });
-        fxmlLoader.setController(login);
-        scene = new Scene(fxmlLoader.load());
-//        Style_Sheet.changeStyle(scene);
+        this.onLoginSuccess = onLoginSuccess;
+    }
+
+    public void show(Stage stage) throws Exception {
+        FXMLLoader loader = new FXMLLoader(getClass().getResource("login.fxml"),
+                LanguageManager.getInstance().getResourceBundle());
+        loader.setController(new LoginController(this::authenticate, onLoginSuccess));
+
+        Scene scene = new Scene(loader.load());
         ThemeManager.apply(scene);
+        ChangeOrientation.sceneOrientation(scene);
+
+        stage.setScene(scene);
+        stage.setMinWidth(350);
+        stage.setMinHeight(480);
+        stage.setResizable(true);
+        stage.setTitle(LanguageManager.getInstance().getString("common.login.screen"));
+        if (stage.getIcons().isEmpty()) stage.getIcons().add(new Image(new Image_Setting().tools));
+        stage.setOnCloseRequest(event -> Platform.exit());
+        stage.sizeToScene();
+        stage.centerOnScreen();
+        stage.show();
     }
 
-    public static void main(String[] args) {
-        launch(args);
-    }
+    private LoginResult authenticate(String username, String password) throws Exception {
+        Optional<Users> match = daoFactory.usersDao().getUserByNameAndPassword(username, password);
+        if (match.isEmpty()) return LoginResult.invalidCredentials();
 
+        Users user = match.get();
+        if (user.getId() != 1 && !user.isActive()) return LoginResult.inactive();
 
-    @Override
-    public void start(Stage stage) throws Exception {
-        // Block the application and show progress while loading items
-        if (PropertiesName.getSettingLoginShow()) {
-            ChangeOrientation.sceneOrientation(scene);
-            stage.setScene(scene);
-            stage.setResizable(false);
-            stage.setOnCloseRequest(windowEvent -> System.exit(0));
-            stage.setTitle(INSTANCE.getString("common.login.screen"));
-            stage.getIcons().add(new Image(new Image_Setting().tools));
-            stage.show();
-//            afterSuccessfulLogin(usersVo, daoFactory);
-        } else {
-            LogApplication.usersVo = daoFactory.usersDao().getDataById(1);
-            openMainScreen();
-            stage.close();
-        }
-    }
-
-    protected boolean onEnter(String username, String password) throws Exception {
-        Optional<Users> list = daoFactory.usersDao().getUserByNameAndPassword(username, password);
-
-        list.ifPresentOrElse(users -> {
-            try {
-                usersVo = users;
-                if (usersVo.getId() != 1 && !usersVo.isActive()) {
-                    throw new Exception(Setting_Language.THIS_NAME_IS_INACTIVE);
-
-                }
-
-                new Thread(() -> {
-                    // scheduled backup
-                    if (ScheduledBackup.getTime() > 0)
-                        ScheduledBackup.startScheduler(DownLoadApplication.loadBackupService());
-                }).start();
-
-                // load mainscreen
-                openMainScreen();
-                b = true;
-            } catch (Exception e) {
-                login.setResetAllData(true);
-                AllAlerts.handleError("تسجيل الدخول", e);
-            }
-        }, this::alertErrorAndResetData);
-        return b;
-    }
-
-    /**
-     * Alerts the user with an error message and resets all login-related data.
-     * <p>
-     * This method is invoked when the system encounters an error scenario where the
-     * provided username does not exist. It uses the `AllAlerts` utility to show an
-     * error message specified by the `Setting_Language.NO_NAME` constant. Additionally,
-     * it calls the login controller to reset all data to ensure a clean state for
-     * the next login attempt.
-     */
-    private void alertErrorAndResetData() {
-        AllAlerts.alertError(Setting_Language.NO_NAME);
-        login.setResetAllData(true);
-    }
-
-    /**
-     * Opens the main screen of the application.
-     * <p>
-     * This method is triggered after a successful login and performs
-     * the following operations:
-     * 1. Updates user data by calling the {@link #updateData()} method.
-     * 2. Initializes and starts the {@link MainScreenApplication}
-     * with the DAO factory and data loader.
-     *
-     * @throws IOException if an I/O error occurs while loading the main screen.
-     */
-    private void openMainScreen() throws Exception {
-        updateData();
         RbacService rbacService = ServiceRegistry.get(RbacService.class);
         if (rbacService == null) throw new IllegalStateException("RBAC service is not registered");
-        rbacService.signIn(usersVo.getId(), usersVo.getUsername());
-        // This machine may have sat at the login screen while another one closed a month.
-        PeriodLockService.forget();
-        var mainScreenApplication = new MainScreenApplication(daoFactory);
-        mainScreenApplication.start(new Stage());
-    }
 
-    /**
-     * Updates the availability status of the current user in a separate thread.
-     * <p>
-     * The method changes the current user's availability status to available (1)
-     * and attempts to update this change in the persistent storage using the
-     * usersDao. If the update is successful, a log entry indicating successful
-     * reading from the file is recorded. Otherwise, an error message is printed to
-     * the console.
-     * <p>
-     * Handles InterruptedException and DaoException, logging any error messages.
-     */
-    private void updateData() {
-        Thread thread = new Thread(() -> {
-            try {
-//                saveUserSetting();
-                Thread.sleep(500);
-                usersVo.setUser_available(1);
-                int i = daoFactory.usersDao().updateAvailable(usersVo);
-                if (i == 1) log.info(Error_Text_Show.DONE_READING_FROM_FILE, "user login");
-                else log.error("User not found");
-            } catch (InterruptedException | DaoException e) {
-                log.error(e.getMessage(), e);
+        try {
+            rbacService.signIn(user);
+            user.setUser_available(1);
+            if (daoFactory.usersDao().updateAvailable(user) != 1) {
+                throw new IllegalStateException("Signed-in user could not be marked available");
             }
+            PeriodLockService.forget();
 
-        });
-        thread.start();
+            if (ScheduledBackup.getTime() > 0) {
+                try {
+                    ScheduledBackup.startScheduler(DownLoadApplication.loadBackupService());
+                } catch (RuntimeException e) {
+                    log.error("Could not start scheduled backup after login", e);
+                }
+            }
+            return LoginResult.success(user);
+        } catch (Exception e) {
+            rbacService.signOut();
+            throw e;
+        }
     }
-
 }

@@ -2,7 +2,6 @@ package com.hamza.account.dash;
 
 import com.hamza.account.controller.main.ButtonWithPerm;
 import com.hamza.account.controller.others.ServiceRegistry;
-import com.hamza.account.features.rbac.RbacService;
 import com.hamza.account.controller.main.DataPublisher;
 import com.hamza.account.controller.main.LoadData;
 import com.hamza.account.features.choiceDialoge.ChangeUserName;
@@ -10,9 +9,10 @@ import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.authorization.AppPermissions;
 import com.hamza.account.authorization.PermissionKey;
 import com.hamza.account.view.ChangePassView;
-import com.hamza.account.view.LogApplication;
+import com.hamza.account.view.ApplicationNavigator;
 import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.language.Setting_Language;
+import com.hamza.controlsfx.language.LanguageManager;
 import javafx.scene.control.TabPane;
 import javafx.scene.input.KeyCodeCombination;
 import javafx.stage.Stage;
@@ -152,11 +152,12 @@ public class ForAllButtons extends LoadData {
 
             @Override
             public void action() throws Exception {
-                if (AllAlerts.confirm_all("logout", "هل تريد الخروج")) {
-                    dataPublisher.getCloseStageFromLogout().publish(true);
-                    RbacService rbacService = ServiceRegistry.get(RbacService.class);
-                    if (rbacService != null) rbacService.signOut();
-                    new LogApplication(daoFactory).start(new Stage());
+                LanguageManager language = LanguageManager.getInstance();
+                if (AllAlerts.confirm_all(language.getString("session.logout.title"),
+                        language.getString("session.logout.confirm"))) {
+                    ApplicationNavigator navigator = ServiceRegistry.get(ApplicationNavigator.class);
+                    if (navigator == null) throw new IllegalStateException("Application navigator is not registered");
+                    navigator.logout();
                 }
             }
 

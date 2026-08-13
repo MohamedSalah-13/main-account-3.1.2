@@ -3,6 +3,8 @@ package com.hamza.account.view;
 import com.hamza.account.config.ThemeManager;
 import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.model.domain.Users;
+import com.hamza.account.features.rbac.CurrentUser;
+import com.hamza.account.features.rbac.UserSessionContext;
 import com.hamza.account.security.PasswordHasher;
 import com.hamza.account.controller.others.ServiceRegistry;
 import com.hamza.account.service.UsersService;
@@ -19,16 +21,16 @@ public class ChangePassView {
         var changePassInt = new ChangePassInt() {
             @Override
             public boolean verifyCurrentPassword(String candidatePassword) {
-                return PasswordHasher.matches(candidatePassword, LogApplication.usersVo.getPasswordHash()).matched();
+                return PasswordHasher.matches(candidatePassword, CurrentUser.get().getPasswordHash()).matched();
             }
 
             @Override
             public boolean updatePass(String newPass) throws Exception {
-                Users users = ServiceRegistry.get(UsersService.class).getUsersById(LogApplication.usersVo.getId());
+                Users users = ServiceRegistry.get(UsersService.class).getUsersById(CurrentUser.get().getId());
                 users.setPasswordHash(PasswordHasher.hash(newPass));
                 boolean updated = ServiceRegistry.get(UsersService.class)
                         .updateOwnPassword(users.getId(), users.getPasswordHash()) == 1;
-                if (updated) LogApplication.usersVo = users;
+                if (updated) ServiceRegistry.get(UserSessionContext.class).updateCurrentUser(users);
                 return updated;
             }
         };

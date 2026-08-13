@@ -4,7 +4,7 @@ import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.authorization.AuthorizationGuard;
 import com.hamza.account.authorization.AppPermissions;
 import com.hamza.account.authorization.PermissionKey;
-import com.hamza.account.view.LogApplication;
+import com.hamza.account.features.rbac.CurrentUser;
 import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.error.BusinessRuleException;
 import com.hamza.controlsfx.error.UserValidationException;
@@ -169,7 +169,8 @@ public record PeriodLockService(DaoFactory daoFactory) {
     }
 
     private int currentUserId() {
-        return LogApplication.usersVo == null ? 1 : LogApplication.usersVo.getId();
+        var user = CurrentUser.getOrNull();
+        return user == null ? 1 : user.getId();
     }
 
     /**

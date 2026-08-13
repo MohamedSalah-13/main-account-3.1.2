@@ -1,5 +1,7 @@
 package com.hamza.account.interfaces;
 
+import com.hamza.account.controller.login.LoginResult;
+
 @FunctionalInterface
 public interface ActionLogin {
 
@@ -9,10 +11,10 @@ public interface ActionLogin {
      *
      * @param username the username to be validated
      * @param password the password associated with the provided username
-     * @return true if the username and password combination exists and is valid, false otherwise
+     * @return the authentication outcome
      * @throws Exception if an error occurs while checking the credentials in the database
      */
     // this use to get username and password  from database to check
     // and login or not
-    boolean action(String username, String password) throws Exception;
+    LoginResult action(String username, String password) throws Exception;
 }

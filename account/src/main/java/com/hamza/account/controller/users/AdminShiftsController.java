@@ -5,7 +5,7 @@ import com.hamza.account.model.domain.UserShift;
 import com.hamza.account.openFxml.FxmlPath;
 import com.hamza.account.service.UserShiftService;
 import com.hamza.account.session.ShiftContext;
-import com.hamza.account.view.LogApplication;
+import com.hamza.account.features.rbac.CurrentUser;
 import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.table.TableColumnAnnotation;
@@ -81,7 +81,7 @@ public class AdminShiftsController {
             int result = userShiftService.forceCloseShift(
                     selected.getId(),
                     0.0,
-                    "Force closed by admin: " + LogApplication.usersVo.getUsername()
+                    "Force closed by admin: " + CurrentUser.get().getUsername()
             );
 
             if (result > 0) {

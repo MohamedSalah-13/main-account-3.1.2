@@ -188,7 +188,6 @@ public class TableController<T> implements Initializable {
 
     private void buttonSetting(Button button, String title, InputStream stream) {
         button.setText(title);
-//        if (LogApplication.usersVo.getId() != 1) button.setDisable(!b);
 
         if (stream != null) {
             ButtonGraphics.buttonGraphic(button, stream);

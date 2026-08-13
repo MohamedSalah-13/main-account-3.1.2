@@ -59,7 +59,11 @@ public class DatabaseMigrationService {
     private final DatabaseBackupService backupService;
 
     public DatabaseMigrationService() {
-        this.database = new ConnectionToDatabase();
+        this(new ConnectionToDatabase());
+    }
+
+    public DatabaseMigrationService(ConnectionToDatabase database) {
+        this.database = database;
         this.systemInfoService = new SystemInfoService();
         this.backupService = new DatabaseBackupService();
     }

@@ -2,6 +2,7 @@ package com.hamza.account.features.rbac;
 
 import com.hamza.account.authorization.AppPermissions;
 import com.hamza.account.authorization.PermissionKey;
+import com.hamza.account.model.domain.Users;
 import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.error.BusinessRuleException;
 import com.hamza.controlsfx.error.UserValidationException;
@@ -28,8 +29,12 @@ public final class RbacService {
         this.session = session;
     }
 
+    public void signIn(Users user) throws DaoException {
+        session.signIn(user, repository.findEffectivePermissions(user.getId()));
+    }
+
     public void signIn(int userId, String username) throws DaoException {
-        session.signIn(userId, username, repository.findEffectivePermissions(userId));
+        signIn(new Users(userId, username));
     }
 
     public void signOut() {
@@ -38,8 +43,7 @@ public final class RbacService {
 
     public void refreshCurrentSession() throws DaoException {
         if (!session.isSignedIn()) return;
-        session.signIn(session.currentUserId(), session.currentUsername(),
-                repository.findEffectivePermissions(session.currentUserId()));
+        session.signIn(session.currentUser(), repository.findEffectivePermissions(session.currentUserId()));
     }
 
     public List<RbacRole> roles() throws DaoException {

@@ -1,18 +1,20 @@
 package com.hamza.account.view;
 
-import com.hamza.account.backup.BackupService;
 import com.hamza.account.authorization.AppPermissions;
+import com.hamza.account.backup.BackupService;
+import com.hamza.account.backup.ScheduledBackup;
 import com.hamza.account.config.ConnectionToDatabase;
 import com.hamza.account.config.ThemeManager;
 import com.hamza.account.controller.others.ServiceRegistry;
 import com.hamza.account.features.company.CompanyService;
 import com.hamza.account.features.inventory.InventoryService;
+import com.hamza.account.features.notification.NotificationBootstrap;
 import com.hamza.account.features.rbac.JdbcRbacRepository;
 import com.hamza.account.features.rbac.RbacService;
 import com.hamza.account.features.rbac.UserSessionContext;
 import com.hamza.account.features.stockcount.StockCountService;
-import com.hamza.account.period.PeriodLockService;
 import com.hamza.account.model.dao.DaoFactory;
+import com.hamza.account.period.PeriodLockService;
 import com.hamza.account.service.*;
 import com.hamza.account.service.version.DatabaseMigrationService;
 import com.hamza.account.service.version.MigrationResult;
@@ -20,41 +22,104 @@ import com.hamza.account.trial.TrialManager;
 import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.database.ConnectionManager;
 import com.hamza.controlsfx.database.DaoException;
+import com.hamza.controlsfx.database.DataSourceProvider;
+import com.hamza.controlsfx.language.LanguageManager;
 import com.hamza.controlsfx.observer.EventBus;
+import com.hamza.controlsfx.others.ChangeOrientation;
 import com.hamza.controlsfx.util.FontsSetting;
 import javafx.application.Application;
+import javafx.application.Platform;
+import javafx.concurrent.Task;
+import javafx.geometry.Pos;
+import javafx.scene.Scene;
+import javafx.scene.control.Alert;
+import javafx.scene.control.Button;
+import javafx.scene.control.Label;
+import javafx.scene.control.ProgressIndicator;
+import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
+import lombok.extern.log4j.Log4j2;
 
 import java.sql.Connection;
 import java.sql.SQLException;
-import lombok.extern.log4j.Log4j2;
-
-import com.hamza.account.backup.ScheduledBackup;
 
 @Log4j2
 public class DownLoadApplication extends Application {
 
     private static ConnectionToDatabase connectionToDatabase;
-    private final DaoFactory daoFactory;
 
-    public DownLoadApplication() {
-        FontsSetting.fontName(FontsSetting.EL_MESSIRI);
-        FontsSetting.fontName(FontsSetting.GRAND_HOTEL);
-        FontsSetting.fontName(FontsSetting.NEW_ROCKER);
-        FontsSetting.fontName(FontsSetting.GAFATA);
+    public static void main(String[] args) {
+        launch(args);
+    }
 
-        // change language
-        connectionToDatabase = new ConnectionToDatabase();
-        // Must stay ahead of getDaoFactory(): the DAOs assume the current schema, and on a new
-        // machine there is no database to connect to until this has created it.
-        updateDatabaseIfNeeded();
-        daoFactory = getDaoFactory();
-        checkTrialStatus();
-//        AlertSetting.setStylesheets(ThemeManager.getStylesheet());
+    @Override
+    public void start(Stage primaryStage) {
+        loadFonts();
         ThemeManager.initialize();
 
-        // Registered first, and without a DaoFactory: screens pull it from here
-        // instead of being handed a publisher through their constructor.
+        LanguageManager language = LanguageManager.getInstance();
+        Label status = new Label(language.getString("startup.preparing"));
+        ProgressIndicator progress = new ProgressIndicator();
+        progress.setMaxSize(56, 56);
+        Button close = new Button(language.getString("common.close"));
+        close.setVisible(false);
+        close.setManaged(false);
+        close.setOnAction(event -> Platform.exit());
+
+        VBox root = new VBox(18, progress, status, close);
+        root.setAlignment(Pos.CENTER);
+        Scene scene = new Scene(root, 420, 260);
+        ThemeManager.apply(scene);
+        ChangeOrientation.sceneOrientation(scene);
+
+        primaryStage.setTitle(language.getString("startup.title"));
+        primaryStage.setScene(scene);
+        primaryStage.setResizable(false);
+        primaryStage.setOnCloseRequest(event -> Platform.exit());
+        primaryStage.show();
+
+        Task<BootstrapResult> bootstrapTask = new Task<>() {
+            @Override
+            protected BootstrapResult call() {
+                updateMessage(language.getString("startup.preparing"));
+                return bootstrap();
+            }
+        };
+        status.textProperty().bind(bootstrapTask.messageProperty());
+        bootstrapTask.setOnSucceeded(event -> {
+            status.textProperty().unbind();
+            BootstrapResult result = bootstrapTask.getValue();
+            showMigrationResult(result.migrationResult());
+
+            ApplicationNavigator navigator = new ApplicationNavigator(primaryStage, result.daoFactory());
+            ServiceRegistry.register(ApplicationNavigator.class, navigator);
+            navigator.showLogin();
+        });
+        bootstrapTask.setOnFailed(event -> {
+            status.textProperty().unbind();
+            progress.setVisible(false);
+            progress.setManaged(false);
+            status.setText(language.getString("startup.failed"));
+            close.setVisible(true);
+            close.setManaged(true);
+            AllAlerts.handleError(language.getString("startup.operation"), bootstrapTask.getException());
+        });
+
+        Thread thread = new Thread(bootstrapTask, "application-bootstrap");
+        thread.setDaemon(true);
+        thread.start();
+    }
+
+    private BootstrapResult bootstrap() {
+        connectionToDatabase = new ConnectionToDatabase();
+        MigrationResult migration = new DatabaseMigrationService(connectionToDatabase).updateDatabaseIfNeeded();
+        DaoFactory daoFactory = getDaoFactory();
+        checkTrialStatus();
+        registerServices(daoFactory);
+        return new BootstrapResult(daoFactory, migration);
+    }
+
+    private static void registerServices(DaoFactory daoFactory) {
         ServiceRegistry.register(EventBus.class, new EventBus());
 
         UserSessionContext userSession = new UserSessionContext();
@@ -62,7 +127,7 @@ public class DownLoadApplication extends Application {
         try {
             authorizationRepository.synchronizeCatalog(AppPermissions.definitions());
         } catch (DaoException e) {
-            throw new IllegalStateException("تعذر مزامنة كتالوج الصلاحيات", e);
+            throw new IllegalStateException("Could not synchronize the permission catalog", e);
         }
         ServiceRegistry.register(UserSessionContext.class, userSession);
         ServiceRegistry.register(RbacService.class, new RbacService(authorizationRepository, userSession));
@@ -72,8 +137,6 @@ public class DownLoadApplication extends Application {
         ServiceRegistry.register(StockService.class, new StockService(daoFactory));
         ServiceRegistry.register(InventoryService.class, new InventoryService(daoFactory));
         ServiceRegistry.register(StockCountService.class, new StockCountService(daoFactory));
-        // Registered before anything that writes a dated document: the services ask it
-        // whether the period is open, so it has to be there by the time one is called.
         ServiceRegistry.register(PeriodLockService.class, new PeriodLockService(daoFactory));
         ServiceRegistry.register(EmployeeService.class, new EmployeeService(daoFactory));
         ServiceRegistry.register(TreasuryService.class, new TreasuryService(daoFactory));
@@ -99,81 +162,42 @@ public class DownLoadApplication extends Application {
         ServiceRegistry.register(AreaService.class, new AreaService(daoFactory));
         ServiceRegistry.register(SelPriceItemService.class, new SelPriceItemService(daoFactory));
         ServiceRegistry.register(UserShiftService.class, new UserShiftService(daoFactory));
-
         ServiceRegistry.register(PurchaseService.class, new PurchaseService(daoFactory));
         ServiceRegistry.register(PurchaseReService.class, new PurchaseReService(daoFactory));
         ServiceRegistry.register(SalesService.class, new SalesService(daoFactory));
         ServiceRegistry.register(SalesReService.class, new SalesReService(daoFactory));
-
-
     }
 
-    public static void main(String[] args) {
-        launch(args);
+    private static void showMigrationResult(MigrationResult result) {
+        if (!result.isUpdated()) return;
+
+        LanguageManager language = LanguageManager.getInstance();
+        Alert alert = new Alert(Alert.AlertType.INFORMATION);
+        alert.setTitle(language.getString("startup.database.updated.title"));
+        alert.setHeaderText(language.getString("startup.database.updated.header"));
+        alert.setContentText(language.getString("startup.database.updated.details",
+                result.getOldVersion(), result.getRequiredVersion(), result.getExecutedVersions().size()));
+        ThemeManager.apply(alert.getDialogPane());
+        ChangeOrientation.sceneOrientation(alert.getDialogPane().getScene());
+        alert.showAndWait();
     }
 
-    private void updateDatabaseIfNeeded() {
-        try {
-            MigrationResult result = new DatabaseMigrationService().updateDatabaseIfNeeded();
-
-            if (result.isUpdated()) {
-                log.info("Database updated from {} to {}. Executed migrations: {}",
-                        result.getOldVersion(), result.getRequiredVersion(), result.getExecutedVersions());
-
-                String message = "من الإصدار: %s\nإلى الإصدار: %s\nعدد التحديثات: %d"
-                        .formatted(result.getOldVersion(), result.getRequiredVersion(),
-                                result.getExecutedVersions().size());
-
-                var alert = new javafx.scene.control.Alert(javafx.scene.control.Alert.AlertType.INFORMATION);
-                alert.setTitle("تحديث قاعدة البيانات");
-                alert.setHeaderText("تم تحديث قاعدة البيانات بنجاح");
-                alert.setContentText(message);
-                alert.showAndWait();
-            }
-        } catch (Exception e) {
-            AllAlerts.handleError("تحديث قاعدة البيانات عند بدء التشغيل", e);
-            System.exit(0);
-        }
-    }
-
-    /**
-     * This used to borrow a connection from the pool and hand it to the DaoFactory
-     * to keep forever. The DAOs now take a connection per call, so all that is
-     * needed here is to confirm the database is reachable before the UI opens -
-     * the connection this opens is returned to the pool immediately.
-     */
     public static DaoFactory getDaoFactory() {
+        if (connectionToDatabase == null) throw new IllegalStateException("Database configuration is not initialized");
         try (var connection = connectionToDatabase.getDbConnection().getConnection()) {
-            if (!connection.isValid(5)) {
-                throw new DaoException("تعذر الاتصال بقاعدة البيانات");
-            }
+            if (!connection.isValid(5)) throw new DaoException("Database connection validation failed");
             return DaoFactory.INSTANCE;
         } catch (DaoException | SQLException e) {
-            AllAlerts.handleError("الاتصال بقاعدة البيانات", e);
-            System.exit(0);
+            throw new IllegalStateException("Could not connect to the database", e);
         }
-        return null;
     }
 
-    /**
-     * Enforces the trial before the UI opens. A valid license.dat short-circuits
-     * the whole check, so a licensed install never reaches the trial rules.
-     * <p>
-     * The per-record limits in the DAOs - items, customers, sales, purchases -
-     * were being enforced the whole time this was switched off, which left an
-     * unlicensed copy running forever but capped at ten items. Running the check
-     * again puts the time limit back alongside them.
-     */
     private static void checkTrialStatus() {
         Connection connection = null;
         try {
             connection = ConnectionManager.acquire();
             new TrialManager(connection).checkTrialStatus();
         } catch (SQLException e) {
-            // Reachability was just confirmed by getDaoFactory, so this is not the
-            // database being down. TrialManager swallows its own errors rather than
-            // locking the user out of a program they may have paid for, and this
-            // follows it.
             log.error("Could not verify the trial status", e);
         } finally {
             ConnectionManager.release(connection);
@@ -181,16 +205,26 @@ public class DownLoadApplication extends Application {
     }
 
     public static BackupService loadBackupService() {
-        var connection = connectionToDatabase;
-        return new BackupService(connection.getHost()
-                , connection.getPort(), connection.getDbName(), connection.getUsername(), connection.getPass()
-                , ScheduledBackup.encryptionPassword());
+        if (connectionToDatabase == null) throw new IllegalStateException("Database configuration is not initialized");
+        return new BackupService(connectionToDatabase.getHost(), connectionToDatabase.getPort(),
+                connectionToDatabase.getDbName(), connectionToDatabase.getUsername(),
+                connectionToDatabase.getPass(), ScheduledBackup.encryptionPassword());
     }
 
     @Override
-    public void start(Stage stage) throws Exception {
-        new LogApplication(daoFactory).start(new Stage());
+    public void stop() {
+        NotificationBootstrap.stop();
+        ScheduledBackup.stopScheduler();
+        DataSourceProvider.shutdown();
     }
 
+    private static void loadFonts() {
+        FontsSetting.fontName(FontsSetting.EL_MESSIRI);
+        FontsSetting.fontName(FontsSetting.GRAND_HOTEL);
+        FontsSetting.fontName(FontsSetting.NEW_ROCKER);
+        FontsSetting.fontName(FontsSetting.GAFATA);
+    }
 
+    private record BootstrapResult(DaoFactory daoFactory, MigrationResult migrationResult) {
+    }
 }

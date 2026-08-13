@@ -48,7 +48,7 @@ import com.hamza.account.type.DiscountType;
 import com.hamza.account.type.InvoiceType;
 import com.hamza.account.document.DocumentType;
 import com.hamza.account.view.AddItemApplication;
-import com.hamza.account.view.LogApplication;
+import com.hamza.account.features.rbac.CurrentUser;
 import com.hamza.account.view.SearchItemsApplication;
 import com.hamza.account.view.TextSearchApplication;
 import com.hamza.controlsfx.alert.AllAlerts;
@@ -846,7 +846,7 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
                 documentType, catalogService, DefaultStock.ID);
         new InvoiceTableCoordinator<>(table, editor.lines(), editService,
                 () -> priceTypeByNameId, () -> getInvoiceUpdatePrice(),
-                editor::refreshTotals, getClass(), LogApplication.usersVo.getId() == 1)
+                editor::refreshTotals, getClass(), CurrentUser.get().getId() == 1)
                 .configure();
     }
 

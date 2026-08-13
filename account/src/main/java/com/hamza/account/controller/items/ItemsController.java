@@ -23,7 +23,7 @@ import com.hamza.account.authorization.PermissionKey;
 import com.hamza.account.view.AddItemApplication;
 import com.hamza.account.view.CardApplication;
 import com.hamza.account.view.ConvertItemsGroup;
-import com.hamza.account.view.LogApplication;
+import com.hamza.account.features.rbac.CurrentUser;
 import com.hamza.account.view.barcode.PrintBarcodeApp;
 import com.hamza.account.view.barcode.PrintBarcodeModel;
 import com.hamza.controlsfx.alert.AllAlerts;
@@ -537,7 +537,7 @@ public class ItemsController extends LoadData {
 
     private void updateItemAndRefresh(ItemsModel item, TableView<ItemsModel> tableView) throws DaoException {
         item.setItemsUnitsModelList(new ArrayList<>());
-        item.setUsers(LogApplication.usersVo);
+        item.setUsers(CurrentUser.get());
         var i = itemsService.commitItemUpdate(item);
         if (i >= 0) {
             tableView.refresh();
