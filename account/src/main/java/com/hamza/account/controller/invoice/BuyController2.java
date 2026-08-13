@@ -1,6 +1,7 @@
 package com.hamza.account.controller.invoice;
 
 import com.hamza.account.authorization.AuthorizedDataWriter;
+import com.hamza.account.authorization.AuthorizationGuard;
 import com.hamza.account.authorization.PermissionKey;
 import com.hamza.account.authorization.AppPermissions;
 
@@ -57,6 +58,7 @@ import com.hamza.controlsfx.others.Utils;
 import com.hamza.controlsfx.table.TableColumnAnnotation;
 import com.hamza.controlsfx.table.columnEdit.ColumnSetting;
 import javafx.application.Platform;
+import javafx.beans.binding.Bindings;
 import javafx.beans.binding.BooleanBinding;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleObjectProperty;
@@ -1240,7 +1242,16 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
             }
         };
         btnNew.disableProperty().bind(observableValue);
-        btnUpdateItem.disableProperty().bind(observableValue);
+        BooleanBinding itemMutationDenied = Bindings.createBooleanBinding(
+                () -> !AuthorizationGuard.isGranted(itemMutationPermission(txtBarcode.getText())),
+                txtBarcode.textProperty());
+        btnUpdateItem.disableProperty().bind(observableValue.or(itemMutationDenied));
+    }
+
+    static PermissionKey itemMutationPermission(String barcode) {
+        return barcode == null || barcode.isBlank()
+                ? AppPermissions.ITEMS_CREATE
+                : AppPermissions.ITEMS_UPDATE;
     }
 
     private void addItem(int num) {
