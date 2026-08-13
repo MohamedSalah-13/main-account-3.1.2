@@ -14,11 +14,9 @@ import javafx.collections.FXCollections;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import lombok.Setter;
-import lombok.extern.log4j.Log4j2;
 
 import java.util.function.ObjDoubleConsumer;
 
-@Log4j2
 @Setter
 public class TableUnitsSetting extends TableUnitsSettingProperty {
 
@@ -81,7 +79,6 @@ public class TableUnitsSetting extends TableUnitsSettingProperty {
             tableUnits.getItems().add(e);
 
         } catch (Exception e) {
-            log.error(e.getMessage(), e);
             AllAlerts.handleError("تحديث وحدات الصنف", e);
         }
     }

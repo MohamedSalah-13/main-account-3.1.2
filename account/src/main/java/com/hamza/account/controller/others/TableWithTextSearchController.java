@@ -20,9 +20,7 @@ import javafx.scene.input.KeyCode;
 import javafx.scene.layout.StackPane;
 import javafx.util.Duration;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.log4j.Log4j2;
 
-@Log4j2
 @FxmlPath(pathFile = "table-with-text.fxml")
 @RequiredArgsConstructor
 public class TableWithTextSearchController<T> {
@@ -88,7 +86,6 @@ public class TableWithTextSearchController<T> {
                 try {
                     loadDataFromDB(newValue); // لا يتم الاستدعاء إلا بعد التوقف عن الكتابة
                 } catch (Exception e) {
-                    log.error(e.getMessage(), e);
                     AllAlerts.handleError("البحث في بيانات الجدول", e);
                 }
             });

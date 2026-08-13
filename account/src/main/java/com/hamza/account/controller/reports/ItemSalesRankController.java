@@ -116,7 +116,6 @@ public class ItemSalesRankController implements Initializable {
             updatePieChart(result);
 
         } catch (DaoException e) {
-            log.error("خطأ في جلب بيانات الأصناف الأكثر مبيعاً", e);
             AllAlerts.handleError("تحميل تقرير الأصناف الأكثر مبيعًا", e);
         }
     }

@@ -448,7 +448,6 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
                                 }
                                 return;
                             } catch (Exception e) {
-                                log.error(e.getMessage());
                                 AllAlerts.handleError("قراءة باركود الميزان", e);
                                 txtBarcode.requestFocus();
                                 return;

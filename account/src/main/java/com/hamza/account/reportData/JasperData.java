@@ -3,7 +3,6 @@ package com.hamza.account.reportData;
 import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.language.Setting_Language;
 import com.hamza.controlsfx.util.CheckPrinterSetting;
-import lombok.extern.log4j.Log4j2;
 import net.sf.jasperreports.engine.*;
 import net.sf.jasperreports.engine.design.JasperDesign;
 import net.sf.jasperreports.engine.export.JRPrintServiceExporter;
@@ -20,7 +19,6 @@ import javax.print.attribute.standard.PrinterName;
 import java.sql.Connection;
 import java.util.HashMap;
 
-@Log4j2
 public class JasperData {
 
     private final boolean showBeforePrint;
@@ -77,8 +75,7 @@ public class JasperData {
      * @param e the JRException to be handled
      */
     private void handleJrException(JRException e) {
-        log.error(e.getMessage(), e);
-        AllAlerts.showExceptionDialog(e);
+        AllAlerts.handleError("طباعة التقرير", e);
     }
 
     /**

@@ -8,11 +8,9 @@ import javafx.scene.control.Button;
 import javafx.scene.control.MenuItem;
 import javafx.scene.control.TabPane;
 import javafx.scene.control.Tooltip;
-import lombok.extern.log4j.Log4j2;
 
 import java.io.InputStream;
 
-@Log4j2
 public record MenuButtonSetting(TabPane tabPane) {
 
     private static final boolean FOCUS_TRAVERSABLE = false;
@@ -102,8 +100,7 @@ public record MenuButtonSetting(TabPane tabPane) {
      * @param e the exception to log and display
      */
     private void logException(Exception e) {
-        log.error(e.getMessage(), e);
-        AllAlerts.showExceptionDialog(e);
+        AllAlerts.handleError("فتح شاشة من القائمة", e);
     }
 
     private void disableButton(DisableButtons.Disableable uiElement, ButtonWithPerm action) {

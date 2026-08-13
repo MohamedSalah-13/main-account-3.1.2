@@ -102,8 +102,7 @@ public class SettingTabBarcodeController implements Initializable {
             textPrice2.setText(priceList.get(1).getName());
             textPrice3.setText(priceList.get(2).getName());
         } catch (DaoException e) {
-            log.error("Failed to load price names", e);
-            AllAlerts.showExceptionDialog(e);
+            AllAlerts.handleError("تحميل أسماء أسعار البيع", e);
         }
         return priceSelService;
     }
@@ -118,8 +117,7 @@ public class SettingTabBarcodeController implements Initializable {
                 if (eventBus != null) eventBus.publish(new SelPriceNamesChanged(priceSelService.getIntegerStringHashMap()));
             }
         } catch (DaoException e) {
-            AllAlerts.showExceptionDialog(e);
-            log.error(e.getMessage(), e);
+            AllAlerts.handleError("حفظ أسماء أسعار البيع", e);
         }
     }
 

@@ -13,12 +13,10 @@ import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
 import javafx.scene.control.TableView;
-import lombok.extern.log4j.Log4j2;
 
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 
-@Log4j2
 @FxmlPath(pathFile = "admin-shifts-view.fxml")
 public class AdminShiftsController {
 
@@ -53,7 +51,6 @@ public class AdminShiftsController {
             List<UserShift> list = userShiftService.getAllShifts();
             tableView.setItems(FXCollections.observableArrayList(list));
         } catch (DaoException e) {
-            log.error("Error loading shifts", e);
             AllAlerts.handleError("تحميل الورديات", e);
         }
     }
@@ -93,7 +90,6 @@ public class AdminShiftsController {
                 refreshData();
             }
         } catch (DaoException e) {
-            log.error("Error force closing shift", e);
             AllAlerts.handleError("الإغلاق الإجباري للوردية", e);
         }
     }

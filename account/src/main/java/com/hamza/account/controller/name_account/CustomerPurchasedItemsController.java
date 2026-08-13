@@ -21,7 +21,6 @@ import javafx.fxml.Initializable;
 import javafx.scene.control.*;
 import javafx.scene.layout.Pane;
 import javafx.stage.FileChooser;
-import lombok.extern.log4j.Log4j2;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
@@ -31,7 +30,6 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.ResourceBundle;
 
-@Log4j2
 @FxmlPath(pathFile = "customer/customer-purchased-items-view.fxml")
 public class CustomerPurchasedItemsController implements Initializable, AppSettingInterface {
 
@@ -125,8 +123,7 @@ public class CustomerPurchasedItemsController implements Initializable, AppSetti
             masterData.setAll(customerPurchaseInterface.getPurchasedItemsByCustomerId(customerId));
             labelCustomerName.setText(customerName);
         } catch (DaoException e) {
-            log.error(e.getMessage(), e);
-            AllAlerts.showExceptionDialog(e);
+            AllAlerts.handleError("تحميل مشتريات العميل", e);
         }
     }
 
@@ -189,7 +186,6 @@ public class CustomerPurchasedItemsController implements Initializable, AppSetti
                 AllAlerts.alertSaveWithMessage("تم تصدير ملف Excel بنجاح");
             }
         } catch (ExcelException e) {
-            log.error(e.getMessage(), e);
             AllAlerts.handleError("تصدير مشتريات العميل", e);
         }
     }
@@ -246,7 +242,6 @@ public class CustomerPurchasedItemsController implements Initializable, AppSetti
                 AllAlerts.alertError("حدث خطأ أثناء التصدير");
             }
         } catch (Exception e) {
-            log.error(e.getMessage(), e);
             AllAlerts.handleError("طباعة مشتريات العميل", e);
         }
     }

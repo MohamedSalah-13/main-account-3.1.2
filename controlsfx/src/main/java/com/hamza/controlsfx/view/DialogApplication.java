@@ -12,12 +12,10 @@ import javafx.scene.control.DialogPane;
 import javafx.scene.image.Image;
 import javafx.scene.input.KeyCombination;
 import javafx.stage.Stage;
-import lombok.extern.log4j.Log4j2;
 
 import java.awt.*;
 import java.util.concurrent.atomic.AtomicReference;
 
-@Log4j2
 public class DialogApplication<T> extends Dialog<T> {
 
     @SuppressWarnings("unchecked")
@@ -69,8 +67,7 @@ public class DialogApplication<T> extends Dialog<T> {
                     saveResultRef.set(res);
                     // لا تستهلك الحدث لكي يُغلق الـ Dialog بشكل طبيعي
                 } catch (Exception e) {
-                    AllAlerts.showExceptionDialog(e);
-                    log.error(e.getMessage(), e);
+                    AllAlerts.handleError("حفظ بيانات النافذة", e);
                     // لا تُغلق الـ Dialog عند الاستثناء
                     evt.consume();
                 }

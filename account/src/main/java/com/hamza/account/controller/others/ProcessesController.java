@@ -116,7 +116,6 @@ public class ProcessesController implements Initializable {
         try {
             return usersService.getUsersNames();
         } catch (DaoException e) {
-            log.error(e.getMessage());
             AllAlerts.handleError("تحميل أسماء المستخدمين", e);
             return List.of();
         }
@@ -244,7 +243,6 @@ public class ProcessesController implements Initializable {
                 }
             }
         } catch (DaoException e) {
-            log.error(e.getMessage(), e);
             AllAlerts.handleError("طباعة سجل العمليات", e);
         }
     }

@@ -100,6 +100,7 @@ public class AllAlerts {
      * a stack trace or the raw exception message in front of the user.
      * New code should name the failed operation through {@link #reportError}.
      */
+    @Deprecated(forRemoval = false)
     public static void showExceptionDialog(Throwable throwable) {
         handleError(LANGUAGE_MANAGER.getString("error.operation.default"), throwable);
     }

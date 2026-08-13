@@ -5,9 +5,7 @@ import com.hamza.controlsfx.alert.AllAlerts;
 import javafx.geometry.Insets;
 import javafx.scene.control.Alert;
 import javafx.scene.control.TextArea;
-import lombok.extern.log4j.Log4j2;
 
-@Log4j2
 public class SystemInfoDialog {
 
     private final SystemInfoService systemInfoService;
@@ -80,8 +78,6 @@ public class SystemInfoDialog {
             alert.showAndWait();
 
         } catch (Exception e) {
-            log.error("Failed to show system info", e);
-
             AllAlerts.handleError("عرض معلومات النظام", e);
         }
     }

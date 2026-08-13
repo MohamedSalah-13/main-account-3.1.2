@@ -97,7 +97,6 @@ public class LogApplication extends Application {
                 b = true;
             } catch (Exception e) {
                 login.setResetAllData(true);
-                log.error(e.getMessage(), e);
                 AllAlerts.handleError("تسجيل الدخول", e);
             }
         }, this::alertErrorAndResetData);

@@ -132,7 +132,6 @@ public class AddSubGroupController {
                     subGroupsObservableList.clear();
                     subGroupsObservableList.setAll(supGroupService.getSubGroupsList());
                 } catch (Exception e) {
-                    log.error(e.getMessage());
                     AllAlerts.handleError("تحميل المجموعات الفرعية", e);
                 }
             }

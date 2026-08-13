@@ -32,7 +32,6 @@ import javafx.scene.image.ImageView;
 import javafx.scene.layout.*;
 import javafx.stage.Stage;
 import lombok.Getter;
-import lombok.extern.log4j.Log4j2;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.FileInputStream;
@@ -44,7 +43,6 @@ import java.util.ResourceBundle;
 import static com.hamza.account.config.PropertiesName.getPathImageMainScreen;
 import static com.hamza.account.config.PropertiesName.getShowMainTotals;
 
-@Log4j2
 public class MainScreenController extends MainItems implements Initializable {
 
     private final EventBus eventBus = ServiceRegistry.get(EventBus.class);
@@ -367,8 +365,7 @@ public class MainScreenController extends MainItems implements Initializable {
     }
 
     private void logException(Exception e) {
-        log.error("{} - {}", e.getMessage(), this.getClass().getName(), e);
-        AllAlerts.showExceptionDialog(e);
+        AllAlerts.handleError("فتح شاشة من القائمة الرئيسية", e);
     }
 
 

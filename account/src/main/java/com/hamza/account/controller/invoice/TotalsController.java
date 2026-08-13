@@ -605,7 +605,6 @@ class OpenMethod<T> {
             action(tableView.getSelectionModel().getSelectedItem());
         } catch (Exception e) {
             AllAlerts.handleError("تنفيذ إجراء على الفاتورة المحددة", e);
-            log.error(e.getMessage(), e);
         }
     }
 

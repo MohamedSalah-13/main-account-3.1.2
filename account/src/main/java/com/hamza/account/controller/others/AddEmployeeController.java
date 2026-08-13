@@ -18,7 +18,6 @@ import javafx.beans.binding.BooleanBinding;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
 import javafx.scene.layout.VBox;
-import lombok.extern.log4j.Log4j2;
 import org.jetbrains.annotations.NotNull;
 
 import static com.hamza.account.type.TypeList.usersTypeList;
@@ -26,7 +25,6 @@ import static com.hamza.controlsfx.language.Setting_Language.JOP;
 import static com.hamza.controlsfx.language.Setting_Language.generate;
 import static com.hamza.controlsfx.others.Utils.setTextFormatter;
 
-@Log4j2
 @FxmlPath(pathFile = "addEmployee.fxml")
 public class AddEmployeeController implements AddInterface {
 
@@ -119,8 +117,7 @@ public class AddEmployeeController implements AddInterface {
                 textAreaAddress.setText(dataById.getAddress());
                 comboJob.getSelectionModel().select(dataById.getJob_id().getType());
             } catch (DaoException e) {
-                log.error("Failed to get employee data by id: {}", e.getMessage());
-                AllAlerts.showExceptionDialog(e);
+                AllAlerts.handleError("تحميل بيانات الموظف", e);
             }
         }
     }

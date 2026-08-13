@@ -17,7 +17,6 @@ import javafx.scene.control.Tab;
 import javafx.scene.control.TabPane;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.VBox;
-import lombok.extern.log4j.Log4j2;
 
 import java.io.IOException;
 import java.net.URL;
@@ -27,7 +26,6 @@ import static com.hamza.account.config.PropertiesName.getPaneIndex;
 import static com.hamza.account.config.PropertiesName.setPaneIndex;
 
 
-@Log4j2
 @FxmlPath(pathFile = "setting-view.fxml")
 public class SettingController implements Initializable, AppSettingInterface {
 
@@ -55,8 +53,7 @@ public class SettingController implements Initializable, AppSettingInterface {
         try {
             addTabs();
         } catch (Exception e) {
-            log.error(e.getMessage(), e);
-            AllAlerts.showExceptionDialog(e);
+            AllAlerts.handleError("تحميل شاشة الإعدادات", e);
         }
 
         int paneShow = getPaneIndex();

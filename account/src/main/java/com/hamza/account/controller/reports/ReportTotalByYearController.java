@@ -67,7 +67,6 @@ public class ReportTotalByYearController {
             try {
                 searchAction();
             } catch (DaoException e) {
-                log.error(e.getMessage(), e);
                 AllAlerts.handleError("تحميل التقرير السنوي", e);
             }
         });
@@ -174,7 +173,6 @@ public class ReportTotalByYearController {
                 excelExportService.exportYearlyReportToExcel(tableView.getItems(), file.getAbsolutePath());
                 showInfo("تم تصدير ملف Excel بنجاح");
             } catch (IOException e) {
-                log.error(e.getMessage());
                 AllAlerts.handleError("تصدير التقرير السنوي", e);
             }
         }

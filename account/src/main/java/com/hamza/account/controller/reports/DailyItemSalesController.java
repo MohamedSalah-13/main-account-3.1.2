@@ -101,7 +101,6 @@ public class DailyItemSalesController implements Initializable {
             lblDayTotal.setText(String.format("%,.2f", dayTotal));
 
         } catch (DaoException e) {
-            log.error("خطأ في جلب بيانات مبيعات اليوم", e);
             AllAlerts.handleError("تحميل تقرير المبيعات اليومية", e);
         }
     }
@@ -168,7 +167,6 @@ public class DailyItemSalesController implements Initializable {
                 excelExportService.exportDailySalesToExcel(allData, file.getAbsolutePath());
                 showInfo("تم تصدير ملف Excel بنجاح.");
             } catch (Exception e) {
-                log.error("خطأ تصدير إكسيل", e);
                 AllAlerts.handleError("تصدير تقرير المبيعات اليومية", e);
             }
         }

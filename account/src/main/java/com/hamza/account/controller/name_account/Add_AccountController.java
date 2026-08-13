@@ -30,7 +30,6 @@ import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
 import javafx.stage.Stage;
-import lombok.extern.log4j.Log4j2;
 import org.controlsfx.control.SearchableComboBox;
 import org.jetbrains.annotations.NotNull;
 
@@ -45,7 +44,6 @@ import static com.hamza.controlsfx.others.Utils.setTextFormatter;
 import static com.hamza.controlsfx.others.Utils.whenEnterPressed;
 import static com.hamza.controlsfx.util.NumberUtils.roundToTwoDecimalPlaces;
 
-@Log4j2
 @FxmlPath(pathFile = "addAccount-view.fxml")
 public class Add_AccountController<T3 extends BaseNames, T4 extends BaseAccount>
         extends LoadOtherData<T3, T4> implements AddInterface {
@@ -288,7 +286,6 @@ public class Add_AccountController<T3 extends BaseNames, T4 extends BaseAccount>
     }
 
     private void logException(Exception e) {
-        AllAlerts.showExceptionDialog(e);
-        log.error(getClass().getName(), e);
+        AllAlerts.handleError("حفظ حركة الحساب", e);
     }
 }

@@ -33,7 +33,6 @@ import javafx.scene.input.KeyCode;
 import javafx.scene.layout.StackPane;
 import javafx.util.Callback;
 import lombok.Getter;
-import lombok.extern.log4j.Log4j2;
 import org.jetbrains.annotations.NotNull;
 
 import java.net.URL;
@@ -47,7 +46,6 @@ import static com.hamza.account.config.PropertiesName.setSearchItemsSplitPaneDiv
 import static com.hamza.account.controller.invoice.UpdateInvoiceRow.updateData;
 import static com.hamza.controlsfx.util.ImageChoose.createIcon;
 
-@Log4j2
 @FxmlPath(pathFile = "search-view.fxml")
 public class SearchItemsController<T1 extends BasePurchasesAndSales>
         implements Initializable {
@@ -114,8 +112,7 @@ public class SearchItemsController<T1 extends BasePurchasesAndSales>
             try {
                 addItemsInOtherTable().action(tableItems.getSelectionModel().getSelectedIndex());
             } catch (Exception e) {
-                log.error(this.getClass().getName(), e.getMessage());
-                AllAlerts.showExceptionDialog(e);
+                AllAlerts.handleError("اختيار الصنف", e);
             }
         });
 

@@ -131,7 +131,6 @@ public class DownLoadApplication extends Application {
                 alert.showAndWait();
             }
         } catch (Exception e) {
-            log.error("Database update failed on startup", e);
             AllAlerts.handleError("تحديث قاعدة البيانات عند بدء التشغيل", e);
             System.exit(0);
         }

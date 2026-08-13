@@ -108,7 +108,6 @@ public class SettingTabPeriodLockController {
             AllAlerts.alertSaveWithMessage("تم إغلاق الفترة حتى " + until.format(DAY));
             show();
         } catch (DaoException e) {
-            log.error("Failed to close the accounting period", e);
             AllAlerts.handleError("إغلاق الفترة المحاسبية", e);
         }
     }
@@ -130,7 +129,6 @@ public class SettingTabPeriodLockController {
             AllAlerts.alertSaveWithMessage("تم فتح الفترة");
             show();
         } catch (DaoException e) {
-            log.error("Failed to reopen the accounting period", e);
             AllAlerts.handleError("إعادة فتح الفترة المحاسبية", e);
         }
     }

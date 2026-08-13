@@ -19,7 +19,6 @@ import javafx.fxml.FXML;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.CheckBoxTableCell;
 import javafx.scene.layout.Pane;
-import lombok.extern.log4j.Log4j2;
 
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -29,7 +28,6 @@ import java.util.Locale;
 import java.util.Set;
 
 /** RBAC editor: assigns roles to a user and manages each role's permission bundle. */
-@Log4j2
 @FxmlPath(pathFile = "user-permission.fxml")
 public final class UserPermissionController implements AppSettingInterface {
 
@@ -433,7 +431,6 @@ public final class UserPermissionController implements AppSettingInterface {
     }
 
     private void report(Exception e) {
-        log.error(e.getMessage(), e);
         AllAlerts.handleError("إدارة صلاحيات المستخدم", e);
     }
 

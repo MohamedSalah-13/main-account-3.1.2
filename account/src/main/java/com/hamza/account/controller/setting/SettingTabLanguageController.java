@@ -265,8 +265,7 @@ public class SettingTabLanguageController implements Initializable {
             // hands each argument over whole and needs no quoting.
             new ProcessBuilder("rundll32", "printui.dll,PrintUIEntry", "/e", "/n", printerName).start();
         } catch (IOException e) {
-            log.error("Failed to open printer settings: {}", e.getMessage());
-            AllAlerts.showExceptionDialog(e);
+            AllAlerts.handleError("فتح إعدادات الطابعة", e);
         }
     }
 

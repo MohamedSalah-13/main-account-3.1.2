@@ -10,12 +10,10 @@ import javafx.fxml.FXMLLoader;
 import javafx.scene.control.ButtonType;
 import javafx.scene.layout.Pane;
 import lombok.Getter;
-import lombok.extern.log4j.Log4j2;
 
 import java.io.InputStream;
 
 @Getter
-@Log4j2
 public class ChangePassApplication {
     private final DialogApplication<Boolean> dialogApplication;
 
@@ -30,8 +28,7 @@ public class ChangePassApplication {
                     }
                 }
             } catch (Exception e) {
-                AllAlerts.showExceptionDialog(e);
-                log.error(e.getMessage());
+                AllAlerts.handleError("تغيير كلمة المرور", e);
             }
             return false;
         });

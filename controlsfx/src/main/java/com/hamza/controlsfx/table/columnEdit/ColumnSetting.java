@@ -13,10 +13,8 @@ import javafx.scene.control.cell.TextFieldTableCell;
 import javafx.util.Callback;
 import javafx.util.converter.DefaultStringConverter;
 import javafx.util.converter.DoubleStringConverter;
-import lombok.extern.log4j.Log4j2;
 
 @SuppressWarnings("unchecked")
-@Log4j2
 public class ColumnSetting {
 
     /**
@@ -94,8 +92,7 @@ public class ColumnSetting {
             try {
                 columnEdite.updateColumn(event);
             } catch (DaoException e) {
-                AllAlerts.showExceptionDialog(e);
-                log.error(e.getMessage(), e);
+                AllAlerts.handleError("تحديث بيانات الجدول", e);
             }
         });
     }

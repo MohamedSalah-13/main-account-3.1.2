@@ -13,7 +13,6 @@ import javafx.fxml.Initializable;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.stage.FileChooser;
-import lombok.extern.log4j.Log4j2;
 
 import java.io.File;
 import java.net.URL;
@@ -24,7 +23,6 @@ import java.util.ResourceBundle;
 
 import static com.hamza.account.controller.reports.ErrorReports.showInfo;
 
-@Log4j2
 public class ComprehensiveSalesController implements Initializable {
 
     @FXML private DatePicker dpFrom;
@@ -110,7 +108,6 @@ public class ComprehensiveSalesController implements Initializable {
             calculateFooterTotals();
 
         } catch (DaoException e) {
-            log.error("خطأ في تقرير المبيعات", e);
             AllAlerts.handleError("تحميل تقرير المبيعات الشامل", e);
         }
     }

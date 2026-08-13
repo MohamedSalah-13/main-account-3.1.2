@@ -7,10 +7,8 @@ import javafx.scene.Node;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.ToolBar;
-import lombok.extern.log4j.Log4j2;
 import org.jetbrains.annotations.NotNull;
 
-@Log4j2
 public class ToolbarReportsNameController {
 
     @FXML
@@ -35,7 +33,6 @@ public class ToolbarReportsNameController {
             try {
                 toolbarReportsNameInterface.print();
             } catch (Exception e) {
-                log.error(e.getMessage(), e);
                 AllAlerts.handleError("طباعة التقرير", e);
             }
         });
@@ -43,7 +40,6 @@ public class ToolbarReportsNameController {
             try {
                 toolbarReportsNameInterface.refresh();
             } catch (Exception e) {
-                log.error(e.getMessage(), e);
                 AllAlerts.handleError("تحديث التقرير", e);
             }
         });

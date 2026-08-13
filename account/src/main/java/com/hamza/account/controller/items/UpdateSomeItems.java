@@ -318,8 +318,7 @@ public class UpdateSomeItems {
     }
 
     private void logError(Exception e) {
-        log.error(e.getMessage(), e);
-        AllAlerts.showExceptionDialog(e);
+        AllAlerts.handleError("تحديث بيانات الأصناف", e);
     }
 
 }

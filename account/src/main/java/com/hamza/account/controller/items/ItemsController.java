@@ -44,7 +44,6 @@ import javafx.scene.input.KeyCode;
 import javafx.scene.layout.StackPane;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
-import lombok.extern.log4j.Log4j2;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
@@ -59,7 +58,6 @@ import static com.hamza.account.config.PropertiesName.getItemEditFromTable;
 import static com.hamza.account.view.ConvertItemsGroup.HEADER_TEXT;
 import static com.hamza.controlsfx.util.ImageChoose.createIcon;
 
-@Log4j2
 @FxmlPath(pathFile = "items/items-view.fxml")
 public class ItemsController extends LoadData {
 
@@ -549,8 +547,7 @@ public class ItemsController extends LoadData {
     }
 
     private void logErrors(Exception e) {
-        log.error(e.getMessage(), e);
-        AllAlerts.showExceptionDialog(e);
+        AllAlerts.handleError("إدارة الأصناف", e);
     }
 
 

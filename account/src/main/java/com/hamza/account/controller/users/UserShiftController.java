@@ -127,7 +127,6 @@ public class UserShiftController {
                 txtCloseNotes.clear();
             }
         } catch (DaoException e) {
-            log.error("Error loading shift status", e);
             AllAlerts.handleError("تحميل حالة الوردية", e);
         }
     }
@@ -152,7 +151,6 @@ public class UserShiftController {
             var shifts = userShiftService.getUserShifts(currentUserId);
             tableShifts.setItems(FXCollections.observableArrayList(shifts));
         } catch (DaoException e) {
-            log.error("Error loading shift history", e);
             AllAlerts.handleError("تحميل سجل الورديات", e);
         }
     }
@@ -224,7 +222,6 @@ public class UserShiftController {
                 refreshView();
             }
         } catch (DaoException e) {
-            log.error("Error opening shift", e);
             AllAlerts.handleError("فتح الوردية", e);
         } catch (NumberFormatException e) {
             AllAlerts.alertError("الرجاء إدخال رصيد صحيح!");
@@ -236,7 +233,6 @@ public class UserShiftController {
             var data = shiftReportService.buildXReport(currentUserId);
             printReports.printShiftXReport(data);
         } catch (DaoException e) {
-            log.error("Error printing X-Report", e);
             AllAlerts.handleError("طباعة تقرير الوردية", e);
         }
     }
@@ -278,7 +274,6 @@ public class UserShiftController {
                 refreshView();
             }
         } catch (DaoException e) {
-            log.error("Error closing shift", e);
             AllAlerts.handleError("إغلاق الوردية", e);
         } catch (NumberFormatException e) {
             AllAlerts.alertError("الرجاء إدخال رصيد صحيح!");

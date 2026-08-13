@@ -102,8 +102,7 @@ public class ShowInvoiceController<T1 extends BasePurchasesAndSales, T2 extends 
             tObject = dataInterface.totalsAndPurchaseList().totalDao().getDataById(invNum);
             list = dataInterface.listForAllPurchase(invNum);
         } catch (DaoException e) {
-            log.error(e.getMessage(), e);
-            AllAlerts.showExceptionDialog(e);
+            AllAlerts.handleError("تحميل تفاصيل الفاتورة", e);
         }
     }
 
