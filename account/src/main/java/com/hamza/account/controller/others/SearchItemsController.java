@@ -6,6 +6,7 @@ import com.hamza.account.controller.items.PaginationTableSetting;
 import com.hamza.account.interfaces.api.DataInterface;
 import com.hamza.account.interfaces.api.DesignInterface;
 import com.hamza.account.interfaces.api.InvoiceBuy;
+import com.hamza.account.features.invoice.InvoiceLineService;
 import com.hamza.account.model.base.BasePurchasesAndSales;
 import com.hamza.account.model.domain.ItemsModel;
 import com.hamza.account.openFxml.FxmlPath;
@@ -43,7 +44,6 @@ import java.util.ResourceBundle;
 
 import static com.hamza.account.config.PropertiesName.getSearchItemsSplitPaneDivider;
 import static com.hamza.account.config.PropertiesName.setSearchItemsSplitPaneDivider;
-import static com.hamza.account.controller.invoice.UpdateInvoiceRow.updateData;
 import static com.hamza.controlsfx.util.ImageChoose.createIcon;
 
 @FxmlPath(pathFile = "search-view.fxml")
@@ -182,7 +182,7 @@ public class SearchItemsController<T1 extends BasePurchasesAndSales>
             int row = t.getTablePosition().getRow();
             BasePurchasesAndSales purchase = t.getTableView().getItems().get(row);
             purchase.setQuantity(t.getNewValue() == null ? 1.0 : t.getNewValue());
-            updateData(purchase);
+            InvoiceLineService.recalculate(purchase);
         }, tableView);
     }
 

@@ -13,6 +13,8 @@ import com.hamza.account.controller.search.ItemsSearch;
 import com.hamza.account.controller.setting.SettingTabLanguageController;
 import com.hamza.account.features.events.EmployeesChanged;
 import com.hamza.account.finance.MoneyMath;
+import com.hamza.account.features.invoice.InvoiceLineDraft;
+import com.hamza.account.features.invoice.InvoiceLineService;
 import com.hamza.account.features.invoice.InvoiceLineTotals;
 import com.hamza.account.features.invoice.InvoicePaymentTerms;
 import com.hamza.account.features.invoice.InvoicePaymentViewModel;
@@ -103,7 +105,6 @@ import java.util.*;
 
 import static com.hamza.account.config.PropertiesName.*;
 import static com.hamza.account.controller.invoice.DialogCashPaid.showCashChangeDialog;
-import static com.hamza.account.controller.invoice.UpdateInvoiceRow.updateData;
 import static com.hamza.controlsfx.dateTime.DateUtils.DATE_TIME_FORMATTER;
 import static com.hamza.controlsfx.others.Utils.setTextFormatter;
 import static com.hamza.controlsfx.others.Utils.whenEnterPressed;
@@ -120,7 +121,6 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
     private final Subscriptions subscriptions = new Subscriptions();
     private final EventBus eventBus = ServiceRegistry.get(EventBus.class);
     private final DataPublisher dataPublisher;
-    private final ActionTextBuy actionTextBuy;
     private final ObjectProperty<ItemsModel> itemsModel = new SimpleObjectProperty<>(new ItemsModel());
     private final BooleanProperty saveInProgress = new SimpleBooleanProperty();
     private final InvoicePaymentViewModel paymentViewModel = new InvoicePaymentViewModel();
@@ -132,6 +132,7 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
     private final CardItemService cardItemService = ServiceRegistry.get(CardItemService.class);
     private final InvoiceSaveService<T1, T2, T3, T4> invoiceSaveService;
     private final InvoicePostSaveService invoicePostSaveService;
+    private final InvoiceLineService<T1> invoiceLineService;
     private int priceTypeByNameId = 1; // use a first price type
     private int codeAccount;
     private boolean updatingPaymentUi;
@@ -173,13 +174,9 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
                 treasuryService::getTreasuryByName, employeeService::getDelegateByName);
         this.invoicePostSaveService = new InvoicePostSaveService(
                 eventBus, dataInterface.invoiceSide());
-        this.actionTextBuy = new ActionTextBuy() {
-            @Override
-            public int addRowToTable(String barcode, double quantity, double price, double discount, double total, LocalDate expireDate) throws Exception {
-                ActionTextBuy.super.addRowToTable(barcode, quantity, price, discount, total, expireDate);
-                return addRowT(quantity, price, discount, total, expireDate);
-            }
-        };
+        this.invoiceLineService = new InvoiceLineService<>(
+                dataInterface.designInterface().documentType(), numInvoiceUpdate,
+                dataInterface.invoiceBuy()::object_TableData);
     }
 
     @Override
@@ -562,18 +559,11 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
         }
     }
 
-    private int addRowT(double quantity, double price, double discount, double total, LocalDate expireDate) throws DaoException {
-        var model = itemsModel.get();
-        var numItem = model.getId();
-        UnitsModel unitsModel = ItemUnits.unitByName(model, comboType.getSelectionModel().getSelectedItem());
-
-        if (!increaseTheItemByOneIfPresentInTable(quantity, model, unitsModel)) {
-            T1 object = invoiceBuy.object_TableData(0, num_invoice_update, numItem, price, quantity, discount, total, unitsModel, model, expireDate);
-            myObservableList.add(object);
-        }
-
+    private int addRowT(InvoiceLineDraft draft) throws DaoException {
+        boolean mergeRepeated = getInvoiceIncreaseItemOneTable()
+                && !draft.item().getBarcode().startsWith(String.valueOf(getSettingBarcodeStart()));
+        invoiceLineService.add(myObservableList, draft, mergeRepeated, getSelWithoutBalance());
         sumTotals();
-//        numItem = 0;
         return 1;
     }
 
@@ -582,49 +572,16 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
             long startTime = System.nanoTime();
             double quantity = DoubleSetting.parseDoubleOrDefault(txtQuantity.getText());
             double price = DoubleSetting.parseDoubleOrDefault(txtPrice.getText());
-            double total = DoubleSetting.parseDoubleOrDefault(txtTotals.getText());
             double discount = 0;
-
-            // check quantity
-            if (quantity <= 0) {
-                txtQuantity.requestFocus();
-                throw new Exception(Error_Text_Show.PLEASE_INSERT_ALL_DATA);
-            }
-
-            if (designInterface.showDataForCustomer()) {
-                var model = itemsModel.get();
-                UnitsModel selectedUnit = ItemUnits.unitByName(model, comboType.getSelectionModel().getSelectedItem());
-
-                // never sell below cost - the unit's own cost where it has one,
-                // otherwise the item's scaled to the unit being sold in
-                double buyPriceForUnit = ItemUnits.buyPrice(model, selectedUnit, model.getBuyPrice());
-                if (price < buyPriceForUnit) {
-                    txtPrice.requestFocus();
-                    throw new Exception("لا يمكن البيع بسعر أقل من سعر الشراء");
-                }
-
-                // check quantity before add row: compare against the item's real available
-                // balance, counting quantity already added for this item elsewhere in the
-                // same invoice (converted to the item's base unit, since rows can use
-                // different units)
-                if (!getSelWithoutBalance()) {
-                    double newBaseQuantity = ItemUnits.toBase(quantity, selectedUnit);
-
-                    double alreadyInTableBaseQuantity = table.getItems().stream()
-                            .filter(t1 -> purchaseSalesInterface.getItems(t1).getId() == model.getId())
-                            .mapToDouble(t1 -> ItemUnits.toBase(purchaseSalesInterface.getQuantity(t1), purchaseSalesInterface.getUnitsType(t1)))
-                            .sum();
-
-                    if (alreadyInTableBaseQuantity + newBaseQuantity > model.getSumAllBalance()) {
-                        throw new Exception(Error_Text_Show.NO_BALANCE);
-                    }
-                }
-            }
-
 
             // Captured before the row is added: clearData() resets itemsModel, and the
             // lambda below runs after a modal date dialog has closed.
             final ItemsModel addedItem = itemsModel.get();
+            UnitsModel selectedUnit = ItemUnits.unitByName(
+                    addedItem, comboType.getSelectionModel().getSelectedItem());
+            InvoiceLineDraft draft = new InvoiceLineDraft(
+                    addedItem, selectedUnit, quantity, price, discount, null);
+            invoiceLineService.validate(table.getItems(), draft, getSelWithoutBalance());
 
             if (itemsModel.get().isHasValidate()) {
                 ExpireDateInterface anInterface = getDatePicker();
@@ -635,7 +592,7 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
                 var s = choiceItemExpireDate.showAndWait();
                 s.ifPresentOrElse(choiceItemExpireDate1 -> {
                     try {
-                        if (actionTextBuy.addRowToTable(itemsModel.get().getBarcode(), quantity, price, discount, total, choiceItemExpireDate1) == 1) {
+                        if (addRowT(draft.withExpirationDate(choiceItemExpireDate1)) == 1) {
                             warnIfStockIsLow(addedItem);
                             clearData();
                         }
@@ -643,7 +600,7 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
                         logError(e);
                     }
                 }, () -> AllAlerts.alertError("من فضلك حدد تاريخ الانتهاء"));
-            } else if (actionTextBuy.addRowToTable(itemsModel.get().getBarcode(), quantity, price, discount, total, null) == 1) {
+            } else if (addRowT(draft) == 1) {
                 warnIfStockIsLow(addedItem);
                 clearData();
             }
@@ -678,47 +635,14 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
             return;
         }
         try {
-            double alreadyOnInvoice = table.getItems().stream()
-                    .filter(t1 -> purchaseSalesInterface.getItems(t1).getId() == item.getId())
-                    .mapToDouble(t1 -> ItemUnits.toBase(purchaseSalesInterface.getQuantity(t1),
-                            purchaseSalesInterface.getUnitsType(t1)))
-                    .sum();
+            double alreadyOnInvoice = invoiceLineService.quantityInBase(
+                    table.getItems(), item.getId());
 
             StockLevelAlert.check(item, StockLevelAlert.remainingAfter(item, alreadyOnInvoice));
         } catch (Exception e) {
             // The row is already added and the sale is fine; only the warning failed.
             log.error("Could not check the stock level after adding item {}", item.getId(), e);
         }
-    }
-
-    /**
-     * Folds a repeated scan into the row that is already there, but only into a
-     * row in the same unit: a piece and a carton of the same item are separate
-     * lines, priced separately, and adding one to the other would sell a carton
-     * for the price of a piece.
-     */
-    private boolean increaseTheItemByOneIfPresentInTable(double newQuantity, ItemsModel itemsModel, UnitsModel unit) {
-        String equals = String.valueOf(getSettingBarcodeStart());
-        if (itemsModel.getBarcode().startsWith(equals)) return false;
-        if (getInvoiceIncreaseItemOneTable())
-            if (!table.getItems().isEmpty()) {
-                Optional<T1> checkItemsExistingInTable = table.getItems()
-                        .stream()
-                        .filter(t1 -> purchaseSalesInterface.getItems(t1).getId() == itemsModel.getId())
-                        .filter(t1 -> unit == null || purchaseSalesInterface.getUnitsType(t1) == null
-                                || purchaseSalesInterface.getUnitsType(t1).getUnit_id() == unit.getUnit_id())
-                        .findFirst();
-
-                if (checkItemsExistingInTable.isPresent()) {
-                    T1 purchasesAndSales = checkItemsExistingInTable.get();
-                    double quantity = purchaseSalesInterface.getQuantity(purchasesAndSales);
-//                    invoiceBuy.setQuantity(purchasesAndSales, quantity + newQuantity);
-                    purchasesAndSales.setQuantity(quantity + newQuantity);
-                    updateData(purchasesAndSales);
-                    return true;
-                }
-            }
-        return false;
     }
 
     private void selectData() {
@@ -740,6 +664,7 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
 //            List<T1> collection = dataInterface.totalsAndPurchaseList().purchaseOrSalesDao().loadAllById(num_invoice_update);
             List<T1> collection = dataInterface.totalsAndPurchaseList().purchaseOrSalesList(id, id);
             myObservableList.setAll(collection);
+            invoiceLineService.captureOriginalLines(collection);
             radioCash.setSelected(invoiceType.equals(InvoiceType.CASH));
             radioDeffer.setSelected(invoiceType.equals(InvoiceType.DEFER));
             txtPaid.setText(String.valueOf(dataById.getPaid()));
@@ -843,6 +768,11 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
                 codeAccount).orElse(null);
         if (problem != null) {
             throw new InvoiceValidationException(problem.target(), problem.message());
+        }
+        try {
+            invoiceLineService.validateForSave(table.getItems(), getSelWithoutBalance());
+        } catch (DaoException e) {
+            throw new InvoiceValidationException(InvoiceSaveValidator.Target.LINES, e.getMessage());
         }
         updatePaymentViewModel(false);
         paymentViewModel.requireValid();
@@ -1133,7 +1063,7 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
             int row = t.getTablePosition().getRow();
             BasePurchasesAndSales purchase = t.getTableView().getItems().get(row);
             purchase.setQuantity(t.getNewValue() == null ? 1.0 : t.getNewValue());
-            updateData(purchase);
+            InvoiceLineService.recalculate(purchase);
         }, table);
 
         new ColumnSetting().enableDoubleEditing(4, t -> {
@@ -1152,7 +1082,7 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
             }
 
             purchase.setPrice(newPrice);
-            updateData(purchase);
+            InvoiceLineService.recalculate(purchase);
             if (getInvoiceUpdatePrice()) {
                 updateItem(purchase);
             }
@@ -1162,7 +1092,7 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
             int row = t.getTablePosition().getRow();
             BasePurchasesAndSales purchase = t.getTableView().getItems().get(row);
             purchase.setDiscount(t.getNewValue() == null ? 0.0 : t.getNewValue());
-            updateData(purchase);
+            InvoiceLineService.recalculate(purchase);
         }, table);
 
 
@@ -1240,7 +1170,7 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
 
             @Override
             public void update(BasePurchasesAndSales basePurchasesAndSales) {
-                updateData(basePurchasesAndSales);
+                InvoiceLineService.recalculate(basePurchasesAndSales);
             }
 
             @Override
@@ -1402,7 +1332,7 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
             item.setUnitsType(unitsModel);
             var selPrice1 = dataInterface.invoiceBuy().getItemsPrice(item.getItems(), priceTypeByNameId);
             item.setPrice(ItemUnits.sellPrice(item.getItems(), unitsModel, priceTypeByNameId, selPrice1));
-            updateData(item);
+            InvoiceLineService.recalculate(item);
             table.refresh();
         });
         table.getColumns().add(2, typeColumn);
