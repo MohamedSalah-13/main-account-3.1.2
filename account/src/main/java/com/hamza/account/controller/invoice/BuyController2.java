@@ -13,7 +13,6 @@ import com.hamza.account.controller.search.ItemsSearch;
 import com.hamza.account.controller.setting.SettingTabLanguageController;
 import com.hamza.account.features.events.EmployeesChanged;
 import com.hamza.account.finance.MoneyMath;
-import com.hamza.account.features.invoice.InvoiceItemSelection;
 import com.hamza.account.features.invoice.InvoiceItemSelectionService;
 import com.hamza.account.features.invoice.InvoiceItemCatalogService;
 import com.hamza.account.features.invoice.InvoiceExpiryOptions;
@@ -61,7 +60,6 @@ import com.hamza.controlsfx.language.Setting_Language;
 import com.hamza.controlsfx.observer.EventBus;
 import com.hamza.controlsfx.observer.Subscriptions;
 import com.hamza.controlsfx.others.DateSetting;
-import com.hamza.controlsfx.others.DoubleSetting;
 import com.hamza.controlsfx.others.Utils;
 import javafx.application.Platform;
 import javafx.beans.binding.Bindings;
@@ -71,8 +69,6 @@ import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.control.*;
-import javafx.scene.input.KeyCode;
-import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Pane;
@@ -95,7 +91,6 @@ import static com.hamza.controlsfx.dateTime.DateUtils.DATE_TIME_FORMATTER;
 import static com.hamza.controlsfx.others.Utils.setTextFormatter;
 import static com.hamza.controlsfx.others.Utils.whenEnterPressed;
 import static com.hamza.controlsfx.util.ImageChoose.createIcon;
-import static com.hamza.controlsfx.util.NumberUtils.roundToTwoDecimalPlaces;
 
 @Log4j2
 @FxmlPath(pathFile = "invoice/buy-view2.fxml")
@@ -116,10 +111,10 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
     private final InvoiceLineService<T1> invoiceLineService;
     private final InvoiceExpiryService invoiceExpiryService;
     private final InvoiceItemSelectionService invoiceItemSelectionService;
+    private InvoiceItemEntryCoordinator itemEntry;
     private int priceTypeByNameId = 1; // use a first price type
     private int codeAccount;
     private boolean updatingPaymentUi;
-    private boolean applyingItemSelection;
     private StringProperty textSearchName, textSearchItems;
     private TextSearchController<T3> nameSearchController;
     @FXML
@@ -180,6 +175,7 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
         otherSetting();
         addTextSearchName();
         addTextSearchItems();
+        configureItemEntry();
         action();
         publisherData(dataPublisher);
         disableData();
@@ -287,6 +283,9 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
                     txtBarcode.requestFocus();
                     var object = nameService.getObject(nameAndAccountInterface.nameList(), string);
                     priceTypeByNameId = t3NameData.priceId(object);
+                    if (itemEntry != null) {
+                        itemEntry.setPriceTier(priceTypeByNameId);
+                    }
 //                updateAllPrices();
                 } catch (Exception e) {
                     logError(e);
@@ -303,27 +302,30 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
             TextSearchApplication<ItemsModel> customersTextSearchApplication = new TextSearchApplication<>(new ItemsSearch(itemsService));
             textSearchItems = customersTextSearchApplication.getTextSearchController().textNameProperty();
             gridPane.add(customersTextSearchApplication.getPane(), 3, 2);
-
-            textSearchItems.addListener((observableValue, s, string) -> {
-                if (string != null && !applyingItemSelection) {
-                    selectItemByName(string);
-                }
-            });
-
         } catch (IOException e) {
             logError(e);
         }
     }
 
-    private void action() {
-        btnUpdateItem.setOnAction(actionEvent -> {
-            if (txtBarcode.getText().isEmpty()) {
-                addItem(0);
-            } else
-                addItem(editor.selectedItem().getId());
-        });
+    private void configureItemEntry() {
+        itemEntry = new InvoiceItemEntryCoordinator(
+                new InvoiceItemEntryCoordinator.Controls(
+                        txtBarcode, txtPrice, txtQuantity, txtItemBalance, txtTotals,
+                        comboType, btnAdd, btnUpdateItem),
+                editor,
+                invoiceItemSelectionService,
+                textSearchItems,
+                DefaultStock.ID,
+                this::resolveSelectedPriceTier,
+                this::scaleBarcodeSettings,
+                () -> getInvoiceAddItemDirect(),
+                this::addData,
+                this::addItem,
+                this::handleItemEntryError);
+        itemEntry.configure();
+    }
 
-        btnAdd.setOnAction(actionEvent -> addData());
+    private void action() {
         btnNew.setOnAction(actionEvent -> {
             if (table.getItems().isEmpty() || AllAlerts.confirm_all("تأكيد", "هل تريد إلغاء الفاتورة الحالية والبدء من جديد؟ سيتم فقد كل الأصناف المُضافة غير المحفوظة.")) {
                 reset_all();
@@ -332,37 +334,6 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
         btnSave.setOnAction(event -> saveInvoice(false));
         btnPrintSave.setOnAction(actionEvent -> saveInvoice(true));
         btnSearch.setOnAction(actionEvent -> openSearchItems());
-        txtBarcode.setOnKeyPressed(this::processBarcodeEntry);
-        txtPrice.setOnKeyPressed(keyEvent -> {
-            if (keyEvent.getCode() == KeyCode.ENTER || keyEvent.getCode() == KeyCode.TAB) {
-                txtQuantity.requestFocus();
-            }
-        });
-
-        txtQuantity.textProperty().addListener((observableValue, string, t1) -> {
-            if (t1.isEmpty() || t1.equals("0")) {
-                txtQuantity.setText("1");
-            }
-            totalItemQuantityAndPrice();
-        });
-        txtPrice.textProperty().addListener(observable -> totalItemQuantityAndPrice());
-
-        comboType.getSelectionModel().selectedItemProperty().addListener((observable, oldValue, newValue) -> {
-            if (newValue == null) {
-                return;
-            }
-            ItemsModel model = editor.selectedItem();
-            if (model == null || model.getId() <= 0) return;
-            try {
-                var selection = invoiceItemSelectionService.selectUnit(
-                        model, newValue, priceTypeByNameId);
-                txtItemBalance.setText(String.valueOf(
-                        roundToTwoDecimalPlaces(selection.balance())));
-                txtPrice.setText(String.valueOf(selection.price()));
-            } catch (Exception e) {
-                logError(e);
-            }
-        });
     }
 
     private void openSearchItems() {
@@ -380,47 +351,6 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
         }
     }
 
-    private void processBarcodeEntry(KeyEvent keyEvent) {
-        if (keyEvent.getCode() != KeyCode.ENTER || txtBarcode.getText().isBlank()) {
-            return;
-        }
-
-        String barcode = txtBarcode.getText();
-        var scaleSettings = scaleBarcodeSettings();
-        try {
-            priceTypeByNameId = resolveSelectedPriceTier();
-            InvoiceItemSelection selection = invoiceItemSelectionService.selectByBarcode(
-                    barcode, DefaultStock.ID, priceTypeByNameId, scaleSettings);
-            applyItemSelection(selection, true);
-
-            if (getInvoiceAddItemDirect()) {
-                addData();
-            } else {
-                txtPrice.requestFocus();
-            }
-        } catch (Exception e) {
-            if (scaleSettings.matches(barcode)) {
-                AllAlerts.handleError("قراءة باركود الميزان", e);
-            } else {
-                logError(e);
-            }
-            txtBarcode.requestFocus();
-        }
-    }
-
-    private void selectItemByName(String itemName) {
-        try {
-            priceTypeByNameId = resolveSelectedPriceTier();
-            InvoiceItemSelection selection = invoiceItemSelectionService.selectByName(
-                    itemName, DefaultStock.ID, priceTypeByNameId);
-            applyItemSelection(selection, false);
-            txtPrice.requestFocus();
-        } catch (Exception e) {
-            Utils.clearAll(txtItemBalance, txtPrice, txtQuantity, txtTotals, txtBarcode);
-            logError(e);
-        }
-    }
-
     private int resolveSelectedPriceTier() throws Exception {
         String selectedName = textSearchName == null ? null : textSearchName.get();
         if (selectedName == null || selectedName.isBlank()) {
@@ -431,7 +361,8 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
         if (party == null) {
             throw new UserValidationException("الاسم المحدد غير موجود");
         }
-        return t3NameData.priceId(party);
+        priceTypeByNameId = t3NameData.priceId(party);
+        return priceTypeByNameId;
     }
 
     private InvoiceItemSelectionService.ScaleBarcodeSettings scaleBarcodeSettings() {
@@ -440,29 +371,11 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
                 getSettingBarcodeCountScale());
     }
 
-    private void applyItemSelection(InvoiceItemSelection selection, boolean updateSearchName) {
-        applyingItemSelection = true;
-        try {
-            editor.selectItem(selection.item());
-            txtBarcode.setText(selection.barcode());
-            if (updateSearchName) {
-                textSearchItems.set(selection.item().getNameItem());
-            }
-
-            List<String> unitNames = selection.units().stream()
-                    .map(UnitsModel::getUnit_name)
-                    .toList();
-            comboType.setItems(FXCollections.observableArrayList(unitNames));
-            comboType.getSelectionModel().select(selection.selectedUnit().getUnit_name());
-            comboType.setDisable(unitNames.size() < 2);
-
-            txtItemBalance.setText(String.valueOf(
-                    roundToTwoDecimalPlaces(selection.balance())));
-            txtPrice.setText(String.valueOf(selection.price()));
-            txtQuantity.setText(String.valueOf(selection.quantity()));
-            txtTotals.setText(String.valueOf(selection.total()));
-        } finally {
-            applyingItemSelection = false;
+    private void handleItemEntryError(Exception error, boolean scaleBarcode) {
+        if (scaleBarcode) {
+            AllAlerts.handleError("قراءة باركود الميزان", error);
+        } else {
+            logError(error);
         }
     }
 
@@ -488,17 +401,11 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
     private void addData() {
         try {
             long startTime = System.nanoTime();
-            double quantity = DoubleSetting.parseDoubleOrDefault(txtQuantity.getText());
-            double price = DoubleSetting.parseDoubleOrDefault(txtPrice.getText());
-            double discount = 0;
+            InvoiceLineDraft draft = itemEntry.draft();
 
-            // Captured before the row is added: clearData() resets the selection after
+            // Captured before the row is added: itemEntry.clear() resets the selection after
             // the optional modal expiry dialog has closed.
-            final ItemsModel addedItem = editor.selectedItem();
-            UnitsModel selectedUnit = ItemUnits.unitByName(
-                    addedItem, comboType.getSelectionModel().getSelectedItem());
-            InvoiceLineDraft draft = new InvoiceLineDraft(
-                    addedItem, selectedUnit, quantity, price, discount, null);
+            final ItemsModel addedItem = draft.item();
             invoiceLineService.validate(table.getItems(), draft, getSelWithoutBalance());
 
             InvoiceExpiryOptions expiryOptions = invoiceExpiryService.optionsFor(
@@ -506,7 +413,7 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
             if (expiryOptions.mode() == InvoiceExpiryOptions.Mode.NOT_REQUIRED) {
                 if (addRowT(draft) == 1) {
                     warnIfStockIsLow(addedItem);
-                    clearData();
+                    itemEntry.clear();
                 }
             } else {
                 LocalDate selectedExpiry = new ChoiceItemExpireDate(expiryOptions)
@@ -520,7 +427,7 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
                         ItemUnits.toBase(draft.quantity(), draft.unit()));
                 if (addRowT(draft.withExpirationDate(selectedExpiry)) == 1) {
                     warnIfStockIsLow(addedItem);
-                    clearData();
+                    itemEntry.clear();
                 }
             }
 
@@ -748,12 +655,6 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
         }
     }
 
-    private void totalItemQuantityAndPrice() {
-        double price = DoubleSetting.parseDoubleOrDefault(txtPrice.getText());
-        double quantity = DoubleSetting.parseDoubleOrDefault(txtQuantity.getText());
-        txtTotals.setText(MoneyMath.text(MoneyMath.multiply(price, quantity)));
-    }
-
     private void otherSetting() {
         labelNotes.setText(Setting_Language.NOTES);
         txtNotes.setPromptText(Setting_Language.NOTES);
@@ -802,15 +703,6 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
         return new ArrayList<>();
     }
 
-
-    private void clearData() {
-        textSearchItems.set(null);
-        editor.selectItem(null);
-        comboType.setDisable(false);
-        comboType.getItems().clear();
-        Utils.clearAll(txtItemBalance, txtPrice, txtQuantity, txtTotals, txtBarcode);
-        txtBarcode.requestFocus();
-    }
 
     private void reset_all() {
         table.getItems().clear();
