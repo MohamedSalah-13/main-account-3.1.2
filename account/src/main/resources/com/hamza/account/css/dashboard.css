@@ -31,6 +31,51 @@
     -fx-text-fill: -app-text-muted;
 }
 
+/* ---------- Period selector ---------- */
+
+.dashboard-period-selector {
+    -fx-background-color: -app-neutral-soft;
+    -fx-background-radius: 10px;
+    -fx-padding: 3px;
+}
+
+.dashboard-period-toggle {
+    -fx-background-color: transparent;
+    -fx-background-radius: 8px;
+    -fx-text-fill: -app-text-muted;
+    -fx-font-size: 11px;
+    -fx-font-weight: bold;
+    -fx-padding: 6px 14px;
+    -fx-cursor: hand;
+}
+
+.dashboard-period-toggle:hover {
+    -fx-background-color: -app-neutral-hover;
+}
+
+.dashboard-period-toggle:selected {
+    -fx-background-color: -app-primary;
+    -fx-text-fill: white;
+}
+
+.dashboard-custom-range-row {
+    -fx-background-color: -app-surface;
+    -fx-background-radius: 12px;
+    -fx-border-radius: 12px;
+    -fx-border-color: -app-border;
+    -fx-border-width: 1px;
+    -fx-padding: 10px 14px;
+}
+
+.dashboard-custom-range-row .label {
+    -fx-text-fill: -app-text-muted;
+    -fx-font-size: 11px;
+}
+
+.dashboard-date-picker {
+    -fx-font-size: 11px;
+}
+
 /* ---------- Hero stat cards ---------- */
 
 .stat-card {

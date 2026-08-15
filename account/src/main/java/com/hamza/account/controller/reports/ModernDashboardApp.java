@@ -27,9 +27,12 @@ import javafx.scene.chart.NumberAxis;
 import javafx.scene.chart.PieChart;
 import javafx.scene.chart.XYChart;
 import javafx.scene.control.Button;
+import javafx.scene.control.DatePicker;
 import javafx.scene.control.Label;
 import javafx.scene.control.ProgressBar;
 import javafx.scene.control.ScrollPane;
+import javafx.scene.control.ToggleButton;
+import javafx.scene.control.ToggleGroup;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
@@ -41,7 +44,9 @@ import lombok.extern.log4j.Log4j2;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.ExecutorService;
@@ -49,17 +54,19 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
- * The home-tab overview screen: hero KPI cards, a sales trend, cash flow, and the
- * ranked lists (low stock / receivables / top items / treasury) that a business
- * owner actually needs to act on. Built by hand with plain JavaFX controls -
- * {@code StatCard}/{@code ListCard} are local helpers, not reusable framework -
- * so every visual is styled from {@code dashboard.css} against the app's existing
- * {@code -app-*} theme tokens and follows the light/dark/glass theme automatically.
+ * The home-tab overview screen: a period selector, hero KPI cards, a sales trend,
+ * cash flow, and the ranked lists (low stock / receivables / top items / treasury)
+ * that a business owner actually needs to act on. Built by hand with plain JavaFX
+ * controls - {@code StatCard}/{@code ListCard} are local helpers, not reusable
+ * framework - so every visual is styled from {@code dashboard.css} against the
+ * app's existing {@code -app-*} theme tokens and follows the light/dark/glass
+ * theme automatically.
  */
 @Log4j2
 public class ModernDashboardApp {
 
     private static final DateTimeFormatter TREND_AXIS_FORMAT = DateTimeFormatter.ofPattern("MM-dd");
+    private static final DateTimeFormatter RANGE_FORMAT = DateTimeFormatter.ofPattern("dd/MM");
 
     private static Stage dashboardStage = null;
     private final DaoFactory daoFactory;
@@ -69,10 +76,31 @@ public class ModernDashboardApp {
     private final ExecutorService loadExecutor;
     private final AtomicBoolean stopped = new AtomicBoolean();
 
+    // The trend chart always covers the trailing 14 days regardless of the period
+    // selector below - it is context for "how did we get here", not a KPI that
+    // should collapse to a single point when "today" is selected.
+    private enum Period {TODAY, WEEK, MONTH, CUSTOM}
+
+    private record DateRange(LocalDate from, LocalDate to) {
+        DateRange previous() {
+            long days = ChronoUnit.DAYS.between(from, to) + 1;
+            LocalDate prevTo = from.minusDays(1);
+            return new DateRange(prevTo.minusDays(days - 1), prevTo);
+        }
+    }
+
+    private Period selectedPeriod = Period.TODAY;
+    private LocalDate customFrom = LocalDate.now().minusDays(6);
+    private LocalDate customTo = LocalDate.now();
+    private HBox customRangeRow;
+    private DatePicker fromPicker;
+    private DatePicker toPicker;
+
     // Live-updated nodes, filled once in the constructor and refreshed in place.
-    private Label salesTodayValue;
-    private Label salesTodayDelta;
-    private Label purchasesTodayValue;
+    private Label salesValue;
+    private Label salesDelta;
+    private Label purchasesValue;
+    private Label purchasesSubtitle;
     private Label netCashValue;
     private Label netCashSubtitle;
     private Label invoiceCountValue;
@@ -80,6 +108,7 @@ public class ModernDashboardApp {
     private Label receivablesValue;
     private Label receivablesSubtitle;
     private Label lastUpdatedLabel;
+    private Label topItemsHint;
     private Button refreshButton;
 
     private final XYChart.Series<String, Number> trendSeries = new XYChart.Series<>();
@@ -102,12 +131,12 @@ public class ModernDashboardApp {
             return thread;
         });
 
-        DashboardMetrics metrics = loadMetrics();
+        DashboardMetrics metrics = loadMetrics(currentRange());
 
         VBox root = new VBox(18);
         root.getStyleClass().add("dashboard-root");
         root.setPadding(new Insets(20));
-        root.getChildren().addAll(buildHeader(), buildHeroRow(metrics), buildAnalyticsRow(), buildListsRow(true), buildListsRow(false));
+        root.getChildren().addAll(buildHeader(), customRangeRow, buildHeroRow(), buildAnalyticsRow(), buildListsRow(true), buildListsRow(false));
         applyMetrics(metrics);
 
         ScrollPane scroll = new ScrollPane(root);
@@ -133,27 +162,118 @@ public class ModernDashboardApp {
     }
 
     // ------------------------------------------------------------------
+    // Period selection
+    // ------------------------------------------------------------------
+
+    private DateRange currentRange() {
+        LocalDate today = LocalDate.now();
+        return switch (selectedPeriod) {
+            case TODAY -> new DateRange(today, today);
+            case WEEK -> new DateRange(today.minusDays(today.getDayOfWeek().getValue() - 1L), today);
+            case MONTH -> new DateRange(today.withDayOfMonth(1), today);
+            case CUSTOM -> new DateRange(customFrom, customTo);
+        };
+    }
+
+    private String periodLabel() {
+        return switch (selectedPeriod) {
+            case TODAY -> "اليوم";
+            case WEEK -> "هذا الأسبوع";
+            case MONTH -> "هذا الشهر";
+            case CUSTOM -> customFrom.format(RANGE_FORMAT) + " - " + customTo.format(RANGE_FORMAT);
+        };
+    }
+
+    private Node buildPeriodSelector() {
+        ToggleGroup group = new ToggleGroup();
+        ToggleButton today = periodToggle("اليوم", Period.TODAY, group);
+        ToggleButton week = periodToggle("الأسبوع", Period.WEEK, group);
+        ToggleButton month = periodToggle("الشهر", Period.MONTH, group);
+        ToggleButton custom = periodToggle("مخصص", Period.CUSTOM, group);
+        today.setSelected(true);
+
+        // A segmented group must always keep exactly one toggle selected - without
+        // this, clicking the already-selected button deselects it with nothing to fall
+        // back on, and the dashboard would be left with no period at all.
+        group.selectedToggleProperty().addListener((obs, oldToggle, newToggle) -> {
+            if (newToggle == null && oldToggle != null) {
+                oldToggle.setSelected(true);
+            }
+        });
+
+        HBox box = new HBox(0, today, week, month, custom);
+        box.getStyleClass().add("dashboard-period-selector");
+        return box;
+    }
+
+    private ToggleButton periodToggle(String text, Period period, ToggleGroup group) {
+        ToggleButton button = new ToggleButton(text);
+        button.getStyleClass().add("dashboard-period-toggle");
+        button.setToggleGroup(group);
+        button.setOnAction(e -> {
+            if (!button.isSelected()) return;
+            selectedPeriod = period;
+            boolean isCustom = period == Period.CUSTOM;
+            customRangeRow.setVisible(isCustom);
+            customRangeRow.setManaged(isCustom);
+            if (!isCustom) reload();
+        });
+        return button;
+    }
+
+    private Node buildCustomRangeRow() {
+        fromPicker = new DatePicker(customFrom);
+        toPicker = new DatePicker(customTo);
+        fromPicker.getStyleClass().add("dashboard-date-picker");
+        toPicker.getStyleClass().add("dashboard-date-picker");
+
+        Button apply = new Button("تطبيق");
+        apply.getStyleClass().add("btn-primary");
+        apply.setOnAction(e -> {
+            LocalDate from = fromPicker.getValue();
+            LocalDate to = toPicker.getValue();
+            if (from == null || to == null || from.isAfter(to)) {
+                com.hamza.controlsfx.alert.AllAlerts.handleError("تطبيق نطاق تاريخ مخصص",
+                        new com.hamza.controlsfx.error.UserValidationException("حدد نطاق تاريخ صحيح"));
+                return;
+            }
+            customFrom = from;
+            customTo = to;
+            reload();
+        });
+
+        customRangeRow = new HBox(10, new Label("من"), fromPicker, new Label("إلى"), toPicker, apply);
+        customRangeRow.getStyleClass().add("dashboard-custom-range-row");
+        customRangeRow.setAlignment(Pos.CENTER_LEFT);
+        customRangeRow.setVisible(false);
+        customRangeRow.setManaged(false);
+        return customRangeRow;
+    }
+
+    // ------------------------------------------------------------------
     // Header
     // ------------------------------------------------------------------
 
     private Node buildHeader() {
         Label title = new Label("لوحة المؤشرات");
         title.getStyleClass().add("dashboard-header-title");
-        Label subtitle = new Label("نظرة عامة على أداء العمل اليوم");
+        Label subtitle = new Label("نظرة عامة على أداء العمل");
         subtitle.getStyleClass().add("dashboard-header-subtitle");
         VBox titles = new VBox(2, title, subtitle);
+
+        buildCustomRangeRow(); // populates customRangeRow, used by buildPeriodSelector()'s toggles
 
         lastUpdatedLabel = new Label();
         lastUpdatedLabel.getStyleClass().add("dashboard-last-updated");
 
         refreshButton = new Button("⟳ تحديث");
         refreshButton.getStyleClass().add("btn-secondary");
-        refreshButton.setOnAction(e -> refresh());
+        refreshButton.setOnAction(e -> reload());
 
         Region spacer = new Region();
         HBox.setHgrow(spacer, Priority.ALWAYS);
 
-        HBox header = new HBox(14, titles, spacer, lastUpdatedLabel, refreshButton);
+        HBox header = new HBox(14, titles, spacer, buildPeriodSelector(), lastUpdatedLabel, refreshButton);
         header.setAlignment(Pos.CENTER_LEFT);
         markLastUpdatedNow();
         return header;
@@ -168,26 +288,26 @@ public class ModernDashboardApp {
     // Hero KPI row
     // ------------------------------------------------------------------
 
-    private Node buildHeroRow(DashboardMetrics m) {
-        StatCard sales = statCard("مبيعات اليوم", "stat-accent-primary");
-        salesTodayValue = sales.value;
-        salesTodayDelta = new Label();
-        salesTodayDelta.getStyleClass().add("stat-delta-up");
-        sales.body.getChildren().add(salesTodayDelta);
+    private Node buildHeroRow() {
+        StatCard sales = statCard("المبيعات", "stat-accent-primary");
+        salesValue = sales.value;
+        salesDelta = new Label();
+        salesDelta.getStyleClass().add("stat-delta-up");
+        sales.body.getChildren().add(salesDelta);
 
-        StatCard purchases = statCard("مشتريات اليوم", "stat-accent-warning");
-        purchasesTodayValue = purchases.value;
-        Label purchasesSubtitle = new Label(m.report.getPurchasesCountToday() + " فاتورة شراء");
+        StatCard purchases = statCard("المشتريات", "stat-accent-warning");
+        purchasesValue = purchases.value;
+        purchasesSubtitle = new Label();
         purchasesSubtitle.getStyleClass().add("stat-subtitle");
         purchases.body.getChildren().add(purchasesSubtitle);
 
-        StatCard netCash = statCard("صافي الخزينة اليوم", "stat-accent-success");
+        StatCard netCash = statCard("صافي الخزينة", "stat-accent-success");
         netCashValue = netCash.value;
         netCashSubtitle = new Label();
         netCashSubtitle.getStyleClass().add("stat-subtitle");
         netCash.body.getChildren().add(netCashSubtitle);
 
-        StatCard invoices = statCard("فواتير المبيعات اليوم", "stat-accent-neutral");
+        StatCard invoices = statCard("فواتير المبيعات", "stat-accent-neutral");
         invoiceCountValue = invoices.value;
         discountsSubtitle = new Label();
         discountsSubtitle.getStyleClass().add("stat-subtitle");
@@ -257,12 +377,12 @@ public class ModernDashboardApp {
         cashFlowChart.getData().addAll(cashReceiptsSlice, cashOutSlice);
         VBox.setVgrow(cashFlowChart, Priority.ALWAYS);
 
-        cashFlowEmptyLabel = new Label("لا توجد حركة خزينة اليوم");
+        cashFlowEmptyLabel = new Label("لا توجد حركة خزينة في هذه الفترة");
         cashFlowEmptyLabel.getStyleClass().add("dashboard-empty-label");
         cashFlowEmptyLabel.setVisible(false);
         cashFlowEmptyLabel.setManaged(false);
 
-        Label cashTitle = new Label("حركة الخزينة اليوم");
+        Label cashTitle = new Label("حركة الخزينة");
         cashTitle.getStyleClass().add("dashboard-card-title");
         VBox cashCard = new VBox(10, cashTitle, cashFlowChart, cashFlowEmptyLabel);
         cashCard.getStyleClass().addAll("dashboard-card", "dashboard-chart-card");
@@ -292,8 +412,9 @@ public class ModernDashboardApp {
             }
             return row;
         } else {
-            VBox topItemsCard = listCard("الأكثر مبيعاً هذا الشهر", "اضغط لعرض التقرير الكامل");
+            VBox topItemsCard = listCard("الأكثر مبيعاً", "اضغط لعرض التقرير الكامل");
             topItemsList = (VBox) topItemsCard.getChildren().get(1);
+            topItemsHint = (Label) ((VBox) topItemsCard.getChildren().get(0)).getChildren().get(1);
             makeClickable(topItemsCard, this::openItemSalesRank);
 
             VBox treasuryCard = listCard("أرصدة الخزائن", "اضغط لعرض تفاصيل الخزينة");
@@ -352,7 +473,8 @@ public class ModernDashboardApp {
     // ------------------------------------------------------------------
 
     private record DashboardMetrics(
-            DailyDashboardReport report,
+            DashboardPeriodSummary summary,
+            DashboardPeriodSummary previousSummary,
             List<DailySalesPoint> trend,
             List<ItemsMiniQuantity> lowStockItems,
             List<CustomerReceivable> receivables,
@@ -361,8 +483,11 @@ public class ModernDashboardApp {
     ) {
     }
 
-    private DashboardMetrics loadMetrics() throws DaoException {
-        DailyDashboardReport report = daoFactory.dailyDashboardReportDao().loadAll().getFirst();
+    private DashboardMetrics loadMetrics(DateRange range) throws DaoException {
+        DashboardPeriodSummary summary = daoFactory.dashboardPeriodDao().getSummary(range.from(), range.to());
+        DateRange previous = range.previous();
+        DashboardPeriodSummary previousSummary = daoFactory.dashboardPeriodDao().getSummary(previous.from(), previous.to());
+
         List<DailySalesPoint> trend = daoFactory.dailySalesPointDao().getSalesTrend(14);
 
         List<ItemsMiniQuantity> lowStockItems = daoFactory.itemMiniDao().loadAll().stream()
@@ -374,19 +499,18 @@ public class ModernDashboardApp {
 
         List<TreasuryBalance> treasuryBalances = daoFactory.treasuryBalanceDao().getSumTreasuryBalance();
 
-        List<TopSellingItem> topSellingItems = daoFactory.topSellingItemDao().loadAll().stream()
-                .limit(5)
-                .toList();
+        List<TopSellingItem> topSellingItems = daoFactory.topSellingItemDao().getTopSellingItems(range.from(), range.to());
 
-        return new DashboardMetrics(report, trend, lowStockItems, receivables, treasuryBalances, topSellingItems);
+        return new DashboardMetrics(summary, previousSummary, trend, lowStockItems, receivables, treasuryBalances, topSellingItems);
     }
 
-    private void refresh() {
+    private void reload() {
         if (stopped.get()) return;
         refreshButton.setDisable(true);
+        DateRange range = currentRange();
         loadExecutor.submit(() -> {
             try {
-                DashboardMetrics metrics = loadMetrics();
+                DashboardMetrics metrics = loadMetrics(range);
                 if (stopped.get()) return;
                 Platform.runLater(() -> {
                     if (stopped.get()) return;
@@ -406,44 +530,47 @@ public class ModernDashboardApp {
     }
 
     private void applyMetrics(DashboardMetrics m) {
-        DailyDashboardReport report = m.report();
+        DashboardPeriodSummary summary = m.summary();
 
-        salesTodayValue.setText(formatMoney(report.getSalesTotalToday()));
-        applyDelta(salesTodayDelta, report.getSalesTotalToday(), report.getSalesTotalYesterday());
+        salesValue.setText(formatMoney(summary.getSalesTotal()));
+        applyDelta(salesDelta, summary.getSalesTotal(), m.previousSummary().getSalesTotal());
 
-        purchasesTodayValue.setText(formatMoney(report.getPurchasesTotalToday()));
+        purchasesValue.setText(formatMoney(summary.getPurchasesTotal()));
+        purchasesSubtitle.setText(summary.getPurchasesCount() + " فاتورة شراء");
 
-        BigDecimal netCash = report.getTotalReceiptsToday().subtract(report.getTotalPaymentsAndExpensesToday());
+        BigDecimal netCash = summary.getTotalReceipts().subtract(summary.getTotalPaymentsAndExpenses());
         netCashValue.setText(formatMoney(netCash));
-        netCashSubtitle.setText("مقبوضات " + formatMoney(report.getTotalReceiptsToday())
-                + " / مدفوعات " + formatMoney(report.getTotalPaymentsAndExpensesToday()));
+        netCashSubtitle.setText("مقبوضات " + formatMoney(summary.getTotalReceipts())
+                + " / مدفوعات " + formatMoney(summary.getTotalPaymentsAndExpenses()));
 
-        invoiceCountValue.setText(String.valueOf(report.getSalesCountToday()));
-        discountsSubtitle.setText("خصومات اليوم: " + formatMoney(report.getTotalDiscountsToday()));
+        invoiceCountValue.setText(String.valueOf(summary.getSalesCount()));
+        discountsSubtitle.setText("خصومات الفترة: " + formatMoney(summary.getTotalDiscounts()));
 
         double totalReceivable = m.receivables().stream().mapToDouble(CustomerReceivable::getTotalReceivable).sum();
         receivablesValue.setText(formatMoney(totalReceivable));
         receivablesSubtitle.setText(m.receivables().size() + " عميل مدين - اضغط للتفاصيل");
 
+        if (topItemsHint != null) topItemsHint.setText(periodLabel() + " - اضغط لعرض التقرير الكامل");
+
         applyTrend(m.trend());
-        applyCashFlow(report);
+        applyCashFlow(summary);
         applyLowStock(m.lowStockItems());
         applyTopCustomers(m.receivables());
         applyTopItems(m.topSellingItems());
         applyTreasury(m.treasuryBalances());
     }
 
-    private void applyDelta(Label deltaLabel, BigDecimal today, BigDecimal yesterday) {
-        if (yesterday == null || yesterday.compareTo(BigDecimal.ZERO) == 0) {
-            deltaLabel.setText("لا توجد بيانات أمس للمقارنة");
+    private void applyDelta(Label deltaLabel, BigDecimal current, BigDecimal previous) {
+        if (previous == null || previous.compareTo(BigDecimal.ZERO) == 0) {
+            deltaLabel.setText("لا توجد بيانات فترة سابقة للمقارنة");
             deltaLabel.getStyleClass().setAll("stat-subtitle");
             return;
         }
-        double pct = today.subtract(yesterday)
-                .divide(yesterday, 4, RoundingMode.HALF_UP)
+        double pct = current.subtract(previous)
+                .divide(previous, 4, RoundingMode.HALF_UP)
                 .doubleValue() * 100;
         boolean up = pct >= 0;
-        deltaLabel.setText((up ? "▲ " : "▼ ") + String.format(Locale.US, "%.1f%%", Math.abs(pct)) + " عن الأمس");
+        deltaLabel.setText((up ? "▲ " : "▼ ") + String.format(Locale.US, "%.1f%%", Math.abs(pct)) + " عن الفترة السابقة");
         deltaLabel.getStyleClass().setAll(up ? "stat-delta-up" : "stat-delta-down");
     }
 
@@ -454,9 +581,9 @@ public class ModernDashboardApp {
         }
     }
 
-    private void applyCashFlow(DailyDashboardReport report) {
-        double receipts = report.getTotalReceiptsToday().doubleValue();
-        double out = report.getTotalPaymentsAndExpensesToday().doubleValue();
+    private void applyCashFlow(DashboardPeriodSummary summary) {
+        double receipts = summary.getTotalReceipts().doubleValue();
+        double out = summary.getTotalPaymentsAndExpenses().doubleValue();
         boolean empty = receipts == 0 && out == 0;
 
         cashReceiptsSlice.setName("مقبوضات " + formatMoney(receipts));
@@ -505,7 +632,7 @@ public class ModernDashboardApp {
     private void applyTopItems(List<TopSellingItem> items) {
         topItemsList.getChildren().clear();
         if (items.isEmpty()) {
-            topItemsList.getChildren().add(emptyRow("لا توجد مبيعات مسجلة هذا الشهر"));
+            topItemsList.getChildren().add(emptyRow("لا توجد مبيعات مسجلة في هذه الفترة"));
             return;
         }
         double max = items.stream().mapToDouble(i -> i.getTotalQuantity().doubleValue()).max().orElse(0);

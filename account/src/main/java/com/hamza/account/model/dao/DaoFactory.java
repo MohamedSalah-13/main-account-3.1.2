@@ -215,4 +215,8 @@ public enum DaoFactory {
         return new DailySalesPointDao();
     }
 
+    public DashboardPeriodDao dashboardPeriodDao() {
+        return new DashboardPeriodDao();
+    }
+
 }
