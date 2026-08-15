@@ -3,24 +3,29 @@ package com.hamza.account.controller.main;
 import com.hamza.account.config.Image_Setting;
 import com.hamza.controlsfx.button.ImageDesign;
 import com.hamza.controlsfx.language.Setting_Language;
+import javafx.animation.PauseTransition;
+import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.control.Button;
+import javafx.scene.control.ListCell;
 import javafx.scene.control.TextField;
 import javafx.scene.control.TitledPane;
 import javafx.scene.text.Text;
+import javafx.util.Duration;
 import lombok.Getter;
 import lombok.extern.log4j.Log4j2;
 
 import org.controlsfx.control.PopOver;
 import javafx.scene.control.ListView;
-import javafx.collections.FXCollections;
-import javafx.collections.ObservableList;
 import javafx.scene.input.MouseEvent;
 
 import java.io.InputStream;
 import java.net.URL;
+import java.util.List;
 import java.util.ResourceBundle;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import static com.hamza.controlsfx.language.Setting_Language.*;
 
@@ -47,8 +52,17 @@ public class MainRightPaneController implements Initializable {
     @FXML
     private Text txtNameProject, txtName, txtTel;
     private PopOver searchPopOver;
-    private ListView<String> searchResultsListView;
-    // يمكنك استبدال String بكلاس مخصص (مثلاً SearchResult) إذا أردت إرجاع كود العنصر مع اسمه
+    private ListView<GlobalSearchService.Hit> searchResultsListView;
+    private final GlobalSearchService globalSearchService = new GlobalSearchService();
+    private final PauseTransition searchDebounce = new PauseTransition(Duration.millis(300));
+    private final ExecutorService searchExecutor = Executors.newSingleThreadExecutor(runnable -> {
+        Thread thread = new Thread(runnable, "sidebar-search");
+        thread.setDaemon(true);
+        return thread;
+    });
+    // Bumped on every keystroke so a slow query that finally returns after the
+    // user has kept typing (or cleared the box) does not overwrite newer results.
+    private long searchRequestId;
 
     @Override
     public void initialize(URL url, ResourceBundle resourceBundle) {
@@ -170,93 +184,106 @@ public class MainRightPaneController implements Initializable {
     }
 
     private void setupGlobalSearch() {
-        // 1. إعداد قائمة عرض النتائج (ListView)
         searchResultsListView = new ListView<>();
-        searchResultsListView.setPrefSize(250, 200); // عرض وارتفاع نافذة النتائج
+        searchResultsListView.setPrefSize(260, 220);
+        searchResultsListView.setCellFactory(list -> new SearchHitCell());
 
-        // 2. إعداد نافذة الـ PopOver المنبثقة
         searchPopOver = new PopOver(searchResultsListView);
-        searchPopOver.setArrowLocation(PopOver.ArrowLocation.TOP_CENTER); // السهم يشير للأعلى نحو مربع البحث
-        searchPopOver.setDetachable(false); // منع المستخدم من فصلها كنافذة حرة
-        searchPopOver.setHeaderAlwaysVisible(false); // إخفاء العنوان العلوي للنافذة
+        searchPopOver.setArrowLocation(PopOver.ArrowLocation.TOP_CENTER);
+        searchPopOver.setDetachable(false);
+        searchPopOver.setHeaderAlwaysVisible(false);
 
-        // 3. مراقبة ما يكتبه المستخدم في مربع البحث
+        searchDebounce.setOnFinished(e -> runSearch(txtSearch.getText()));
         txtSearch.textProperty().addListener((observable, oldValue, newValue) -> {
+            searchRequestId++;
             if (newValue == null || newValue.trim().isEmpty()) {
-                searchPopOver.hide(); // إخفاء النافذة إذا كان المربع فارغاً
+                searchDebounce.stop();
+                searchPopOver.hide();
             } else {
-                // استدعاء دالة البحث في قاعدة البيانات
-                ObservableList<String> results = fetchResultsFromDatabase(newValue.trim());
-
-                if (results.isEmpty()) {
-                    searchPopOver.hide(); // إخفاء النافذة إذا لم توجد نتائج
-                } else {
-                    searchResultsListView.setItems(results); // تحديث القائمة بالنتائج
-
-                    // إظهار النافذة تحت مربع البحث إذا لم تكن ظاهرة بالفعل
-                    if (!searchPopOver.isShowing()) {
-                        searchPopOver.show(txtSearch);
-                    }
-                }
+                searchDebounce.playFromStart();
             }
         });
 
-        // 4. حدث عند النقر على إحدى النتائج في القائمة
         searchResultsListView.setOnMouseClicked((MouseEvent event) -> {
-            // تنفيذ الإجراء عند النقر المزدوج (Double Click)
             if (event.getClickCount() == 2) {
-                String selectedItem = searchResultsListView.getSelectionModel().getSelectedItem();
-                if (selectedItem != null) {
-                    handleSelectedResult(selectedItem);
+                GlobalSearchService.Hit selected = searchResultsListView.getSelectionModel().getSelectedItem();
+                if (selected != null) {
+                    handleSelectedResult(selected);
                 }
+            }
+        });
+
+        // The pane lives for the whole main-screen session; only logout tears it
+        // down, so the search thread has to be told explicitly rather than relying
+        // on the pane being garbage collected.
+        txtSearch.sceneProperty().addListener((obs, oldScene, newScene) -> {
+            if (oldScene != null && newScene == null) {
+                searchExecutor.shutdownNow();
             }
         });
     }
 
-    private ObservableList<String> fetchResultsFromDatabase(String searchText) {
-        ObservableList<String> results = FXCollections.observableArrayList();
-
-        // =========================================================
-        // هنا تضع كود قاعدة البيانات الحقيقي (JDBC أو Hibernate الخ)
-        // مثال SQL:
-        // SELECT customer_name FROM customers WHERE customer_name LIKE '%searchText%'
-        // UNION ALL
-        // SELECT item_name FROM items WHERE item_name LIKE '%searchText%'
-        // =========================================================
-
-        // بيانات وهمية لاختبار الكود قبل ربطه بقاعدة البيانات:
-        String[] mockDatabase = {
-                "أحمد محمد - عميل",
-                "فاتورة مبيعات #1024",
-                "لابتوب ديل - منتج",
-                "محمود علي - مورد",
-                "شاشة سامسونج - منتج",
-                "محمد ابراهيم - موظف"
-        };
-
-        for (String item : mockDatabase) {
-            // تجاهل حالة الأحرف عند البحث
-            if (item.toLowerCase().contains(searchText.toLowerCase())) {
-                results.add(item);
-            }
+    private void runSearch(String rawText) {
+        String text = rawText == null ? "" : rawText.trim();
+        if (text.isEmpty()) {
+            searchPopOver.hide();
+            return;
         }
-
-        return results;
+        long requestId = searchRequestId;
+        searchExecutor.submit(() -> {
+            try {
+                List<GlobalSearchService.Hit> hits = globalSearchService.search(text);
+                Platform.runLater(() -> applySearchResults(requestId, hits));
+            } catch (Exception e) {
+                log.error("Global search failed for '{}'", text, e);
+                Platform.runLater(() -> {
+                    if (requestId == searchRequestId) searchPopOver.hide();
+                });
+            }
+        });
     }
 
-    private void handleSelectedResult(String selectedItem) {
-        log.info("تم اختيار: " + selectedItem);
-        searchPopOver.hide(); // إخفاء القائمة بعد الاختيار
-
-        // يمكنك هنا تمرير بيانات العنصر المحدد وفتح الشاشة المناسبة
-        // مثلاً: إذا كان يحتوي على كلمة "عميل"، قم بفتح شاشة العملاء وتمرير اسمه
-        if(selectedItem.contains("عميل")) {
-            // openCustomerProfile(selectedItem);
-        } else if (selectedItem.contains("فاتورة")) {
-            // openInvoice(selectedItem);
+    private void applySearchResults(long requestId, List<GlobalSearchService.Hit> hits) {
+        if (requestId != searchRequestId) return; // a newer keystroke has already superseded this
+        if (hits.isEmpty()) {
+            searchPopOver.hide();
+            return;
         }
+        searchResultsListView.getItems().setAll(hits);
+        if (!searchPopOver.isShowing()) {
+            searchPopOver.show(txtSearch);
+        }
+    }
 
-        // تنظيف مربع البحث بعد الاختيار (اختياري)
+    private void handleSelectedResult(GlobalSearchService.Hit hit) {
+        searchPopOver.hide();
         txtSearch.clear();
+
+        // Firing the matching sidebar button reuses exactly the navigation (and the
+        // permission check) already wired onto it - the search box only has to find
+        // the right screen, not know how to open it or whether the user may.
+        switch (hit.kind()) {
+            case CUSTOMER -> btnCustomer.fire();
+            case SUPPLIER -> btnSuppliers.fire();
+            case ITEM -> btnItems.fire();
+        }
+    }
+
+    private static final class SearchHitCell extends ListCell<GlobalSearchService.Hit> {
+        @Override
+        protected void updateItem(GlobalSearchService.Hit hit, boolean empty) {
+            super.updateItem(hit, empty);
+            if (empty || hit == null) {
+                setText(null);
+                return;
+            }
+            String kindLabel = switch (hit.kind()) {
+                case CUSTOMER -> "عميل";
+                case SUPPLIER -> "مورد";
+                case ITEM -> "صنف";
+            };
+            String subLabel = hit.subLabel() == null || hit.subLabel().isBlank() ? "" : " - " + hit.subLabel();
+            setText(hit.label() + subLabel + " (" + kindLabel + ")");
+        }
     }
 }
