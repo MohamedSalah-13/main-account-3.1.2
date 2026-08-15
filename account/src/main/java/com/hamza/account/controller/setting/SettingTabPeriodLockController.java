@@ -9,6 +9,8 @@ import com.hamza.account.authorization.AppPermissions;
 import com.hamza.account.authorization.PermissionKey;
 import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.database.DaoException;
+import com.hamza.controlsfx.error.BusinessRuleException;
+import com.hamza.controlsfx.error.UserValidationException;
 import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
@@ -90,7 +92,7 @@ public class SettingTabPeriodLockController {
     private void closePeriod() {
         LocalDate until = datePicker.getValue();
         if (until == null) {
-            AllAlerts.alertError("اختر تاريخ الإغلاق");
+            AllAlerts.handleError("إغلاق الفترة المحاسبية", new UserValidationException("اختر تاريخ الإغلاق"));
             return;
         }
         // Closing is not a keystroke away from being undone, so it is confirmed - and
@@ -114,7 +116,7 @@ public class SettingTabPeriodLockController {
 
     private void reopenPeriod() {
         if (!periodLockService.current().isClosed()) {
-            AllAlerts.alertError("لا توجد فترة مغلقة");
+            AllAlerts.handleError("فتح الفترة المحاسبية", new BusinessRuleException("لا توجد فترة مغلقة"));
             return;
         }
         if (!AllAlerts.confirm_all("فتح الفترة المحاسبية",

@@ -9,6 +9,8 @@ import com.hamza.account.service.CustomerPurchasedItemsService;
 import com.hamza.account.table.TableSetting;
 import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.database.DaoException;
+import com.hamza.controlsfx.error.BusinessRuleException;
+import com.hamza.controlsfx.error.UserValidationException;
 import com.hamza.controlsfx.excel.ExcelException;
 import com.hamza.controlsfx.excel.ExportData;
 import com.hamza.controlsfx.interfaceData.AppSettingInterface;
@@ -134,7 +136,7 @@ public class CustomerPurchasedItemsController implements Initializable, AppSetti
             LocalDate from = dateFrom.getValue();
             LocalDate to = dateTo.getValue();
             if (from.isAfter(to)) {
-                AllAlerts.alertError("تاريخ البداية يجب أن يكون قبل تاريخ النهاية");
+                AllAlerts.handleError("تصفية مشتريات العميل", new UserValidationException("تاريخ البداية يجب أن يكون قبل تاريخ النهاية"));
                 return;
             }
             result = purchasedItemsService.filterByDateRange(result, from, to);
@@ -175,7 +177,7 @@ public class CustomerPurchasedItemsController implements Initializable, AppSetti
     private void exportExcel() {
         try {
             if (filteredData.isEmpty()) {
-                AllAlerts.alertError("لا توجد بيانات للتصدير");
+                AllAlerts.handleError("تصدير مشتريات العميل", new UserValidationException("لا توجد بيانات للتصدير"));
                 return;
             }
             int result = ExportData.exportDataToExcel(
@@ -193,7 +195,7 @@ public class CustomerPurchasedItemsController implements Initializable, AppSetti
     private void exportPdf() {
         try {
             if (filteredData.isEmpty()) {
-                AllAlerts.alertError("لا توجد بيانات للطباعة");
+                AllAlerts.handleError("طباعة مشتريات العميل", new UserValidationException("لا توجد بيانات للطباعة"));
                 return;
             }
 
@@ -239,7 +241,7 @@ public class CustomerPurchasedItemsController implements Initializable, AppSetti
             if (success) {
                 AllAlerts.alertSaveWithMessage("تم تصدير ملف PDF بنجاح");
             } else {
-                AllAlerts.alertError("حدث خطأ أثناء التصدير");
+                AllAlerts.handleError("تصدير مشتريات العميل", new BusinessRuleException("حدث خطأ أثناء التصدير"));
             }
         } catch (Exception e) {
             AllAlerts.handleError("طباعة مشتريات العميل", e);

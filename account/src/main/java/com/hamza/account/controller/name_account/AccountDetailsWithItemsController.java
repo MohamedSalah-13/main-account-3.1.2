@@ -17,6 +17,8 @@ import com.hamza.account.table.EditCellTree;
 import com.hamza.account.table.TableSetting;
 import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.util.ImageChoose;
+import com.hamza.controlsfx.error.BusinessRuleException;
+import com.hamza.controlsfx.error.UserValidationException;
 import com.hamza.controlsfx.interfaceData.AppSettingInterface;
 import com.hamza.controlsfx.language.Error_Text_Show;
 import com.hamza.controlsfx.language.Setting_Language;
@@ -202,7 +204,7 @@ public class AccountDetailsWithItemsController<T3 extends BaseNames, T4 extends 
 
         if (fromDate != null && toDate != null) {
             if (fromDate.isAfter(toDate)) {
-                AllAlerts.alertError(Error_Text_Show.NOT_POSSIBLE);
+                AllAlerts.handleError("تصفية كشف الحساب حسب التاريخ", new UserValidationException(Error_Text_Show.NOT_POSSIBLE));
                 return;
             }
             List<AccountCard> filteredList = list_items.stream()
@@ -455,7 +457,7 @@ public class AccountDetailsWithItemsController<T3 extends BaseNames, T4 extends 
                     AllAlerts.alertSaveWithMessage("تم التصدير بنجاح" +
                             "تم حفظ التقرير في:\n" + file.getAbsolutePath());
                 } else {
-                    AllAlerts.alertError("حدث خطأ أثناء التصدير");
+                    AllAlerts.handleError("تصدير كشف الحساب", new BusinessRuleException("حدث خطأ أثناء التصدير"));
                 }
             });
         }

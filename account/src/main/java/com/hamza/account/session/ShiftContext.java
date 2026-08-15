@@ -2,6 +2,7 @@ package com.hamza.account.session;
 
 import com.hamza.account.model.domain.UserShift;
 import com.hamza.controlsfx.alert.AllAlerts;
+import com.hamza.controlsfx.error.BusinessRuleException;
 
 /**
  * سياق الوردية الحالية للمستخدم خلال جلسة التطبيق.
@@ -67,8 +68,8 @@ public final class ShiftContext {
     public static boolean requireOpenShift() {
         if (!enforceShiftRequired) return true;
         if (isOpen()) return true;
-        AllAlerts.alertError(
-                "لا يمكن إتمام العملية!\nيجب فتح وردية أولاً من شاشة إدارة الورديات.");
+        AllAlerts.handleError("التحقق من الوردية المفتوحة", new BusinessRuleException(
+                "لا يمكن إتمام العملية!\nيجب فتح وردية أولاً من شاشة إدارة الورديات."));
         return false;
     }
 }

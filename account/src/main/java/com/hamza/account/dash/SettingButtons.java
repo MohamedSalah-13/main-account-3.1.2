@@ -238,7 +238,8 @@ public class SettingButtons {
                     stage.setScene(new Scene(pane));
                     stage.show();
                 } else {
-                    AllAlerts.alertError("Failed to load admin shifts pane");
+                    AllAlerts.reportError("فتح شاشة إدارة الورديات",
+                            new IllegalStateException("Failed to load admin shifts pane"));
                 }
             }
 

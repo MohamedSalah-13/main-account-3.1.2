@@ -146,8 +146,7 @@ public class AboutApplication extends Application {
                 AllAlerts.alertSaveWithMessage("تم تفعيل الترخيص بنجاح.");
                 refreshStatus();
             } catch (Exception e) {
-                log.error("Error activating license", e);
-                AllAlerts.alertError("فشل تفعيل الترخيص.");
+                AllAlerts.handleError("تفعيل الترخيص", e);
             }
         });
 

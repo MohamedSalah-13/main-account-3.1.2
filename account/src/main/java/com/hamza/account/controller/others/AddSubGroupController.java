@@ -7,6 +7,7 @@ import com.hamza.account.service.MainGroupService;
 import com.hamza.account.service.SupGroupService;
 import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.database.DaoException;
+import com.hamza.controlsfx.error.UserValidationException;
 import com.hamza.controlsfx.interfaceData.Disable;
 import com.hamza.controlsfx.interfaceData.TableViewShowDataInt;
 import com.hamza.controlsfx.interfaceData.ToolbarAccountInt;
@@ -164,11 +165,11 @@ public class AddSubGroupController {
 
         if (txtName.getText().isEmpty()) {
             txtName.requestFocus();
-            throw new Exception("من فضلك أدخل الاسم");
+            throw new UserValidationException("من فضلك أدخل الاسم");
         }
         if (comboMainGroup.getSelectionModel().isEmpty()) {
             comboMainGroup.requestFocus();
-            throw new Exception("من فضلك حدد المجموعة");
+            throw new UserValidationException("من فضلك حدد المجموعة");
         }
         SubGroups subGroups = new SubGroups();
         subGroups.setName(txtName.getText());

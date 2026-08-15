@@ -11,6 +11,7 @@ import com.hamza.account.service.MainGroupService;
 import com.hamza.account.service.SupGroupService;
 import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.database.DaoException;
+import com.hamza.controlsfx.error.UserValidationException;
 import com.hamza.controlsfx.language.Setting_Language;
 import com.hamza.controlsfx.util.ImageChoose;
 import javafx.collections.FXCollections;
@@ -238,7 +239,7 @@ public class UpdateSomeItems {
         if (checkUpdateGroup.isSelected()) {
             if (comboSubGroup.getSelectionModel().isEmpty()) {
                 comboSubGroup.getSelectionModel().selectFirst();
-                throw new Exception("من فضلك حدد المجموعة");
+                throw new UserValidationException("من فضلك حدد المجموعة");
             }
             return 1;
         }
@@ -247,7 +248,7 @@ public class UpdateSomeItems {
         else if (checkUpdateActive.isSelected()) {
             var selectionModel = comboActive.getSelectionModel();
             if (selectionModel.isEmpty()) {
-                throw new Exception("من فضلك حدد الحالة");
+                throw new UserValidationException("من فضلك حدد الحالة");
             }
             if (selectionModel.getSelectedItem().equals(Setting_Language.WORD_ACTIVE)) {
                 isActiveProperty = true;
@@ -260,7 +261,7 @@ public class UpdateSomeItems {
         else if (checkUpdateBuy.isSelected()) {
             var percentageIncrease = Double.parseDouble(textBuyPrice.getText());
             if (percentageIncrease <= 0) {
-                throw new Exception("الزيادة المطلوبة يجب ان تكون اكبر من الصفر");
+                throw new UserValidationException("الزيادة المطلوبة يجب ان تكون اكبر من الصفر");
             }
 
             itemsModelList.forEach(itemsModel -> {
@@ -274,7 +275,7 @@ public class UpdateSomeItems {
         else if (checkUpdateSell.isSelected()) {
             var percentageDecrease = Double.parseDouble(textSellPrice.getText());
             if (percentageDecrease <= 0) {
-                throw new Exception("الزيادة المطلوبة يجب ان تكون اكبر من الصفر");
+                throw new UserValidationException("الزيادة المطلوبة يجب ان تكون اكبر من الصفر");
             }
 
             itemsModelList.forEach(itemsModel -> {

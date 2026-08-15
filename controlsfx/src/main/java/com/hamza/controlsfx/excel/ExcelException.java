@@ -1,6 +1,15 @@
 package com.hamza.controlsfx.excel;
 
-public class ExcelException extends Exception {
+import com.hamza.controlsfx.error.ErrorCategory;
+import com.hamza.controlsfx.error.UserFacingException;
+
+/**
+ * A message constructed with an explicit reason (empty list, missing file) is
+ * safe to show as-is; one built from an arbitrary wrapped cause has no message
+ * and {@link com.hamza.controlsfx.error.ErrorReporter} falls back to a
+ * technical report in that case.
+ */
+public class ExcelException extends Exception implements UserFacingException {
 
     /**
      * Constructs a new ExcelException with null as its detail message.
@@ -36,5 +45,15 @@ public class ExcelException extends Exception {
      */
     public ExcelException(Throwable cause) {
         super(cause);
+    }
+
+    @Override
+    public ErrorCategory category() {
+        return ErrorCategory.BUSINESS;
+    }
+
+    @Override
+    public String userMessage() {
+        return getMessage();
     }
 }

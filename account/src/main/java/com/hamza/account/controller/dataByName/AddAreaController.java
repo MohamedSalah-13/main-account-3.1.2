@@ -1,6 +1,7 @@
 package com.hamza.account.controller.dataByName;
 
 import com.hamza.controlsfx.alert.AllAlerts;
+import com.hamza.controlsfx.error.UserValidationException;
 import com.hamza.controlsfx.interfaceData.Disable;
 import com.hamza.controlsfx.interfaceData.TableViewShowDataInt;
 import com.hamza.controlsfx.interfaceData.ToolbarAccountInt;
@@ -116,7 +117,7 @@ public class AddAreaController<T> extends VBox {
                     textCode.setText("0");
                 }
                 if (textName.getText().isEmpty()) {
-                    throw new Exception("empty name");
+                    throw new UserValidationException(Setting_Language.PLEASE_INSERT_ALL_DATA);
                 }
 
                 var id = Integer.parseInt(textCode.getText());

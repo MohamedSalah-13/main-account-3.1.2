@@ -10,6 +10,7 @@ import com.hamza.account.openFxml.FxmlPath;
 import com.hamza.account.service.TreasuryService;
 import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.database.DaoException;
+import com.hamza.controlsfx.error.UserValidationException;
 import com.hamza.controlsfx.language.Setting_Language;
 import com.hamza.controlsfx.observer.EventBus;
 import javafx.concurrent.Task;
@@ -257,7 +258,7 @@ public class SettingCompanyController implements Initializable {
     private void save() {
         String name = trimmed(textNameCompany);
         if (name.isEmpty()) {
-            AllAlerts.alertError("اسم الشركة مطلوب");
+            AllAlerts.handleError("حفظ بيانات الشركة", new UserValidationException("اسم الشركة مطلوب"));
             textNameCompany.requestFocus();
             return;
         }

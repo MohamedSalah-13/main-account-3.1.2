@@ -1,5 +1,6 @@
 package com.hamza.controlsfx.controller;
 
+import com.hamza.controlsfx.error.UserValidationException;
 import com.hamza.controlsfx.interfaceData.ChangePassInt;
 import com.hamza.controlsfx.language.Setting_Language;
 import com.hamza.controlsfx.others.ImageSetting;
@@ -60,17 +61,17 @@ public class ChangePassController implements Initializable {
             String passNew = txtPassNew.getText();
             String passNewRe = txtPassRe.getText();
             if (passNew.isEmpty() || passNewRe.isEmpty()) {
-                throw new Exception(Setting_Language.PLEASE_INSERT_ALL_DATA);
+                throw new UserValidationException(Setting_Language.PLEASE_INSERT_ALL_DATA);
             }
             if (passNew.equals(passNewRe)) {
                 //update pass
                 return changePassInt.updatePass(passNew) ? 1 : 0;
-            } else throw new Exception(Setting_Language.PASS_NO_RIGHT);
+            } else throw new UserValidationException(Setting_Language.PASS_NO_RIGHT);
 
         } else {
             txtPassOld.setText("");
             txtPassOld.requestFocus();
-            throw new Exception("كلمة المرور غير صحيحة");
+            throw new UserValidationException("كلمة المرور غير صحيحة");
         }
     }
 

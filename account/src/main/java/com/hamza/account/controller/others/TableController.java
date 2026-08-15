@@ -7,6 +7,7 @@ import com.hamza.account.table.ActionButtonToolBar;
 import com.hamza.account.table.TableInterface;
 import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.button.ButtonGraphics;
+import com.hamza.controlsfx.error.UserValidationException;
 import com.hamza.controlsfx.language.Setting_Language;
 import com.hamza.controlsfx.observer.EventBus;
 import com.hamza.controlsfx.observer.Subscriptions;
@@ -224,7 +225,7 @@ public class TableController<T> implements Initializable {
 
         btnUpdate.setOnAction(actionEvent -> {
             if (tableView.getSelectionModel().isEmpty()) {
-                AllAlerts.alertError(Setting_Language.PLEASE_SELECT_ROW);
+                AllAlerts.handleError("تنفيذ إجراء على السجل", new UserValidationException(Setting_Language.PLEASE_SELECT_ROW));
                 return;
             }
             try {
@@ -236,7 +237,7 @@ public class TableController<T> implements Initializable {
 
         btnDelete.setOnAction(actionEvent -> {
             if (tableView.getSelectionModel().isEmpty()) {
-                AllAlerts.alertError(Setting_Language.PLEASE_SELECT_ROW);
+                AllAlerts.handleError("تنفيذ إجراء على السجل", new UserValidationException(Setting_Language.PLEASE_SELECT_ROW));
                 return;
             }
             if (AllAlerts.confirmDelete())

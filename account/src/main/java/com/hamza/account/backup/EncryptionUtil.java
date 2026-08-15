@@ -1,5 +1,7 @@
 package com.hamza.account.backup;
 
+import com.hamza.controlsfx.error.UserValidationException;
+
 import javax.crypto.*;
 import javax.crypto.spec.*;
 import java.io.*;
@@ -84,7 +86,7 @@ public class EncryptionUtil {
             }
             // إذا وصلنا هنا بنجاح فالتشفير سليم
         } catch (AEADBadTagException e) {
-            throw new Exception("كلمة مرور خاطئة أو الملف المشفر تالف (فشل التحقق من سلامة البيانات).", e);
+            throw new UserValidationException("كلمة مرور خاطئة أو الملف المشفر تالف (فشل التحقق من سلامة البيانات).", e);
         }
     }
 }

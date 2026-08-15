@@ -22,6 +22,8 @@ import com.hamza.account.authorization.PermissionKey;
 import com.hamza.account.view.AddGroupApp;
 import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.database.DaoException;
+import com.hamza.controlsfx.error.BusinessRuleException;
+import com.hamza.controlsfx.error.UserValidationException;
 import com.hamza.controlsfx.interfaceData.AppSettingInterface;
 import com.hamza.controlsfx.language.Setting_Language;
 import com.hamza.controlsfx.observer.EventBus;
@@ -192,10 +194,10 @@ public class AddItemController implements AppSettingInterface {
                 return;
             }
             if (barcode.length() > 14) {
-                throw new Exception(Setting_Language.ALERT_ERROR);
+                throw new UserValidationException(Setting_Language.ALERT_ERROR);
             }
             if (barcode.equals(txtBarcode.getText()) || listExtraBarcodes.getItems().contains(barcode)) {
-                throw new Exception("هذا الباركود مُضاف بالفعل لهذا الصنف");
+                throw new UserValidationException("هذا الباركود مُضاف بالفعل لهذا الصنف");
             }
 
             listExtraBarcodes.getItems().add(barcode);
@@ -264,7 +266,7 @@ public class AddItemController implements AppSettingInterface {
 
                     if (unitName) {
                         comboType.getSelectionModel().select(stringSingleSelectionModel);
-                        throw new Exception("لا يمكن إختيار نفس الوحده مرتين");
+                        throw new UserValidationException("لا يمكن إختيار نفس الوحده مرتين");
                     }
 
                     var unitsModelByName = getUnitsModelByName(t1);
@@ -521,26 +523,26 @@ public class AddItemController implements AppSettingInterface {
 
         if (barcode.isEmpty() || barcode.equals("0")) {
             txtBarcode.requestFocus();
-            throw new Exception(Setting_Language.PLEASE_INSERT_ALL_DATA);
+            throw new UserValidationException(Setting_Language.PLEASE_INSERT_ALL_DATA);
         }
 
         if (barcode.length() > 14) {
             txtBarcode.requestFocus();
-            throw new Exception(Setting_Language.ALERT_ERROR);
+            throw new UserValidationException(Setting_Language.ALERT_ERROR);
         }
 
         if (selPrice1 <= buy) {
             txtSelPrice.requestFocus();
-            throw new Exception("لا يمكن إدخال سعر اقل من او يساوى سعر الشراء");
+            throw new UserValidationException("لا يمكن إدخال سعر اقل من او يساوى سعر الشراء");
         }
 
         if (subId <= 0) {
             comboSupGroup.requestFocus();
-            throw new Exception("يجب اختيار المجموعة");
+            throw new UserValidationException("يجب اختيار المجموعة");
         }
         var itemsUnitsModelList = tableUnitsSetting.getItemsUnitsModelList();
         if (itemsUnitsModelList.isEmpty()) {
-            throw new Exception("يجب إدخال وحدات الصنف");
+            throw new UserValidationException("يجب إدخال وحدات الصنف");
         }
 
         var baseUnit = getUnitsModelByName(comboType.getSelectionModel().getSelectedItem());
@@ -601,10 +603,10 @@ public class AddItemController implements AppSettingInterface {
         Set<String> seen = new HashSet<>();
         for (String code : codes) {
             if (!seen.add(code)) {
-                throw new Exception("الباركود مكرر داخل نفس الصنف: " + code);
+                throw new UserValidationException("الباركود مكرر داخل نفس الصنف: " + code);
             }
             if (itemsService.isBarcodeTakenByAnotherItem(code, codeItem)) {
-                throw new Exception("الباركود مستخدم لصنف آخر: " + code);
+                throw new BusinessRuleException("الباركود مستخدم لصنف آخر: " + code);
             }
         }
     }

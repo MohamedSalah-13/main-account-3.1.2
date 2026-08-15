@@ -11,6 +11,8 @@ import com.hamza.account.session.ShiftContext;
 import com.hamza.account.features.rbac.CurrentUser;
 import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.database.DaoException;
+import com.hamza.controlsfx.error.BusinessRuleException;
+import com.hamza.controlsfx.error.UserValidationException;
 import javafx.beans.property.SimpleIntegerProperty;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
@@ -211,7 +213,7 @@ public class UserShiftController {
         try {
             double openBalance = parseBalance(txtOpenBalance.getText());
             if (openBalance < 0) {
-                AllAlerts.alertError("لا يمكن أن يكون الرصيد الافتتاحي بالسالب!");
+                AllAlerts.handleError("فتح الوردية", new UserValidationException("لا يمكن أن يكون الرصيد الافتتاحي بالسالب!"));
                 return;
             }
             String notes = safeTrim(txtOpenNotes.getText());
@@ -224,7 +226,7 @@ public class UserShiftController {
         } catch (DaoException e) {
             AllAlerts.handleError("فتح الوردية", e);
         } catch (NumberFormatException e) {
-            AllAlerts.alertError("الرجاء إدخال رصيد صحيح!");
+            AllAlerts.handleError("فتح الوردية", new UserValidationException("الرجاء إدخال رصيد صحيح!"));
         }
     }
 
@@ -240,13 +242,13 @@ public class UserShiftController {
     private void closeShift() {
         try {
             if (!userShiftService.hasOpenShift(currentUserId)) {
-                AllAlerts.alertError("لا توجد وردية مفتوحة لإغلاقها!");
+                AllAlerts.handleError("إغلاق الوردية", new BusinessRuleException("لا توجد وردية مفتوحة لإغلاقها!"));
                 return;
             }
 
             double closeBalance = parseBalance(txtCloseBalance.getText());
             if (closeBalance < 0) {
-                AllAlerts.alertError("لا يمكن أن يكون الرصيد الختامي بالسالب!");
+                AllAlerts.handleError("إغلاق الوردية", new UserValidationException("لا يمكن أن يكون الرصيد الختامي بالسالب!"));
                 return;
             }
 
@@ -276,7 +278,7 @@ public class UserShiftController {
         } catch (DaoException e) {
             AllAlerts.handleError("إغلاق الوردية", e);
         } catch (NumberFormatException e) {
-            AllAlerts.alertError("الرجاء إدخال رصيد صحيح!");
+            AllAlerts.handleError("إغلاق الوردية", new UserValidationException("الرجاء إدخال رصيد صحيح!"));
         }
     }
 

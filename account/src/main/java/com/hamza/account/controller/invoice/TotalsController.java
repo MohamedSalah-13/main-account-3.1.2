@@ -28,6 +28,8 @@ import com.hamza.account.authorization.PermissionKey;
 import com.hamza.account.view.BuyApplication;
 import com.hamza.account.view.ShowInvoiceApplication;
 import com.hamza.controlsfx.alert.AllAlerts;
+import com.hamza.controlsfx.error.BusinessRuleException;
+import com.hamza.controlsfx.error.UserValidationException;
 import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.excel.ExportData;
 import com.hamza.controlsfx.language.Setting_Language;
@@ -320,7 +322,7 @@ public class TotalsController<T2 extends BaseTotals, T3 extends BaseNames, T4 ex
         btnDelete.setOnAction(actionEvent -> {
             var list = tableView.getItems().stream().filter(DForColumnTable::isSelectedRow).toList();
             if (list.isEmpty()) {
-                AllAlerts.alertError("من فضللك حدد الصف");
+                AllAlerts.handleError("حذف الفواتير", new UserValidationException("من فضللك حدد الصف"));
             } else {
                 if (AllAlerts.confirmDelete()) {
                     maskerPaneSetting.showMaskerPane("حذف الفواتير", () -> {
@@ -514,7 +516,7 @@ public class TotalsController<T2 extends BaseTotals, T3 extends BaseNames, T4 ex
             LocalDate currentDate = LocalDate.now();
             if (invoiceDate.getYear() != currentDate.getYear()
                 || invoiceDate.getMonth() != currentDate.getMonth()) {
-                throw new Exception("لا يمكن تعديل بيانات خارج الشهر الحالي");
+                throw new BusinessRuleException("لا يمكن تعديل بيانات خارج الشهر الحالي");
             }
         }
         BuyApplication buyApp = new BuyApplication(dataInterface, dataPublisher, i);
@@ -599,7 +601,7 @@ class OpenMethod<T> {
 
     public void methodData(TableView<T> tableView) throws Exception {
         if (tableView.getSelectionModel().isEmpty()) {
-            throw new Exception(Setting_Language.PLEASE_SELECT_ROW);
+            throw new UserValidationException(Setting_Language.PLEASE_SELECT_ROW);
         }
         try {
             action(tableView.getSelectionModel().getSelectedItem());

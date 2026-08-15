@@ -28,6 +28,7 @@ import com.hamza.account.view.barcode.PrintBarcodeApp;
 import com.hamza.account.view.barcode.PrintBarcodeModel;
 import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.database.DaoException;
+import com.hamza.controlsfx.error.UserValidationException;
 import com.hamza.controlsfx.language.Error_Text_Show;
 import com.hamza.controlsfx.language.Setting_Language;
 import com.hamza.controlsfx.observer.EventBus;
@@ -232,7 +233,7 @@ public class ItemsController extends LoadData {
         btnNew.setOnAction(actionEvent -> addItem(0));
         btnUpdate.setOnAction(actionEvent -> {
             if (tableView.getSelectionModel().isEmpty()) {
-                AllAlerts.alertError(Setting_Language.PLEASE_SELECT_ROW);
+                AllAlerts.handleError("تنفيذ إجراء على الصنف", new UserValidationException(Setting_Language.PLEASE_SELECT_ROW));
                 return;
             }
             int numItem = tableView.getSelectionModel().getSelectedItem().getId();
@@ -258,7 +259,7 @@ public class ItemsController extends LoadData {
     private void delete() {
         try {
             if (tableView.getSelectionModel().isEmpty()) {
-                AllAlerts.alertError(Setting_Language.PLEASE_SELECT_ROW);
+                AllAlerts.handleError("تنفيذ إجراء على الصنف", new UserValidationException(Setting_Language.PLEASE_SELECT_ROW));
                 return;
             }
             if (!AllAlerts.confirmDelete()) return;
@@ -279,7 +280,7 @@ public class ItemsController extends LoadData {
             var itemsModels = printItems();
             if (!itemsModels.isEmpty()) {
                 new ConvertItemsGroup(itemsModels).start(new Stage());
-            } else AllAlerts.alertError(Error_Text_Show.PLEASE_INSERT_ALL_DATA);
+            } else AllAlerts.handleError("تحويل مجموعة الأصناف", new UserValidationException(Error_Text_Show.PLEASE_INSERT_ALL_DATA));
         } catch (Exception e) {
             logErrors(e);
         }
@@ -292,7 +293,7 @@ public class ItemsController extends LoadData {
 
             // check if list is empty
             if (list.isEmpty()) {
-                AllAlerts.alertError(Error_Text_Show.PLEASE_INSERT_ALL_DATA);
+                AllAlerts.handleError("طباعة الباركود", new UserValidationException(Error_Text_Show.PLEASE_INSERT_ALL_DATA));
                 return;
             }
 
@@ -317,7 +318,7 @@ public class ItemsController extends LoadData {
     private void openDetails() {
         try {
             if (tableView.getSelectionModel().isEmpty()) {
-                AllAlerts.alertError(Setting_Language.PLEASE_SELECT_ROW);
+                AllAlerts.handleError("تنفيذ إجراء على الصنف", new UserValidationException(Setting_Language.PLEASE_SELECT_ROW));
                 return;
             }
             ItemsModel selectedItem = tableView.getSelectionModel().getSelectedItem();
@@ -465,7 +466,7 @@ public class ItemsController extends LoadData {
             if (newValue != null) {
                 if ("buy_price".equals(fieldType)) {
                     if (newValue > item.getSelPrice1() || newValue > 1000000000000.0) {
-                        AllAlerts.alertError("لا يمكن ان يكون سعر البيع اقل من سعر الشراء");
+                        AllAlerts.handleError("تعديل سعر الصنف", new UserValidationException("لا يمكن ان يكون سعر البيع اقل من سعر الشراء"));
                         item.setBuyPrice(t.getOldValue());
                         t.getTableView().refresh();
                         return;
@@ -473,7 +474,7 @@ public class ItemsController extends LoadData {
                     item.setBuyPrice(newValue);
                 } else if ("sel_price".equals(fieldType)) {
                     if (newValue < item.getBuyPrice() || newValue > 1000000000000.0) {
-                        AllAlerts.alertError("لا يمكن ان يكون سعر البيع اقل من سعر الشراء");
+                        AllAlerts.handleError("تعديل سعر الصنف", new UserValidationException("لا يمكن ان يكون سعر البيع اقل من سعر الشراء"));
                         item.setSelPrice1(t.getOldValue());
                         t.getTableView().refresh();
                         return;
@@ -481,7 +482,7 @@ public class ItemsController extends LoadData {
                     item.setSelPrice1(newValue);
                 } else if ("sel_price2".equals(fieldType)) {
                     if (newValue < item.getBuyPrice() || newValue > 1000000000000.0) {
-                        AllAlerts.alertError("لا يمكن ان يكون سعر البيع اقل من سعر الشراء");
+                        AllAlerts.handleError("تعديل سعر الصنف", new UserValidationException("لا يمكن ان يكون سعر البيع اقل من سعر الشراء"));
                         item.setSelPrice2(t.getOldValue());
                         t.getTableView().refresh();
                         return;
@@ -489,7 +490,7 @@ public class ItemsController extends LoadData {
                     item.setSelPrice2(newValue);
                 } else if ("sel_price3".equals(fieldType)) {
                     if (newValue < item.getBuyPrice() || newValue > 1000000000000.0) {
-                        AllAlerts.alertError("لا يمكن ان يكون سعر البيع اقل من سعر الشراء");
+                        AllAlerts.handleError("تعديل سعر الصنف", new UserValidationException("لا يمكن ان يكون سعر البيع اقل من سعر الشراء"));
                         item.setSelPrice3(t.getOldValue());
                         t.getTableView().refresh();
                         return;
@@ -529,7 +530,7 @@ public class ItemsController extends LoadData {
                 }
             } catch (DaoException e) {
                 if (e.getMessage().contains("duplicate") || e.getMessage().contains("Duplicate")) {
-                    AllAlerts.alertError("بيانات موجودة سابقا");
+                    AllAlerts.handleError("تحديث عمود " + col.getText(), new UserValidationException("بيانات موجودة سابقا"));
                 } else AllAlerts.handleError("تحديث عمود " + col.getText(), e);
             }
         });

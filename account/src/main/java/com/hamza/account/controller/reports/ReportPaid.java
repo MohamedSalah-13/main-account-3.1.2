@@ -7,6 +7,8 @@ import com.hamza.account.openFxml.FxmlPath;
 import com.hamza.account.table.TableSetting;
 import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.util.ImageChoose;
+import com.hamza.controlsfx.error.BusinessRuleException;
+import com.hamza.controlsfx.error.UserValidationException;
 import com.hamza.controlsfx.language.Error_Text_Show;
 import com.hamza.controlsfx.language.Setting_Language;
 import com.hamza.controlsfx.others.DateSetting;
@@ -87,8 +89,7 @@ public class ReportPaid<T extends BaseAccount> {
     private void searchTable() throws Exception {
         ObservableList<T> list = FXCollections.observableArrayList();
         if (dateFrom.getValue() == null || dateTo.getValue() == null) {
-            log.error("Date from and date to must be selected");
-            AllAlerts.alertError(Error_Text_Show.NOT_POSSIBLE);
+            AllAlerts.handleError("بحث كشف الحساب", new UserValidationException(Error_Text_Show.NOT_POSSIBLE));
             return;
         }
         list.addAll(accountData.getAccountBetweenDate(dateFrom.getValue().toString(), dateTo.getValue().toString()));
@@ -99,7 +100,7 @@ public class ReportPaid<T extends BaseAccount> {
 
     private void printTable() {
         //TODO 11/16/2025 9:15 AM Mohamed: add print
-        AllAlerts.alertError("لم يتم عمل التقرير");
+        AllAlerts.handleError("طباعة الجدول", new BusinessRuleException("لم يتم عمل التقرير"));
     }
 
 }

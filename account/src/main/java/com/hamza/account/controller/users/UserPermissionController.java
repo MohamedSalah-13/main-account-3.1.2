@@ -8,6 +8,7 @@ import com.hamza.account.authorization.AppPermissions;
 import com.hamza.account.authorization.PermissionKey;
 import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.database.DaoException;
+import com.hamza.controlsfx.error.UserValidationException;
 import com.hamza.controlsfx.interfaceData.AppSettingInterface;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.ReadOnlyStringWrapper;
@@ -260,7 +261,7 @@ public final class UserPermissionController implements AppSettingInterface {
     private void saveOverride() {
         RbacPermission permission = comboOverridePermission.getValue();
         if (permission == null) {
-            AllAlerts.alertError("حدد الصلاحية أولاً");
+            AllAlerts.handleError("حفظ استثناء الصلاحية", new UserValidationException("حدد الصلاحية أولاً"));
             return;
         }
         LocalDateTime expiresAt = dateOverrideExpiry.getValue() == null
@@ -279,7 +280,7 @@ public final class UserPermissionController implements AppSettingInterface {
     private void deleteSelectedOverride() {
         RbacUserOverride selected = tableOverrides.getSelectionModel().getSelectedItem();
         if (selected == null) {
-            AllAlerts.alertError("حدد استثناءً للحذف");
+            AllAlerts.handleError("حذف الاستثناء", new UserValidationException("حدد استثناءً للحذف"));
             return;
         }
         if (!AllAlerts.confirmDelete()) return;
@@ -365,7 +366,7 @@ public final class UserPermissionController implements AppSettingInterface {
     private void deleteSelectedRole() {
         RbacRole role = editingRole;
         if (role == null) {
-            AllAlerts.alertError("حدد دورًا للحذف");
+            AllAlerts.handleError("حذف الدور", new UserValidationException("حدد دورًا للحذف"));
             return;
         }
         if (!AllAlerts.confirmDelete()) return;

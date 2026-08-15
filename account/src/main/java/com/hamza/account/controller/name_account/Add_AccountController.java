@@ -19,6 +19,7 @@ import com.hamza.account.view.NoteText;
 import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.database.DaoList;
+import com.hamza.controlsfx.error.UserValidationException;
 import com.hamza.controlsfx.language.Error_Text_Show;
 import com.hamza.controlsfx.language.Setting_Language;
 import com.hamza.controlsfx.observer.EventBus;
@@ -155,19 +156,19 @@ public class Add_AccountController<T3 extends BaseNames, T4 extends BaseAccount>
         LocalDate value = date.getValue();
         if (value.isAfter(LocalDate.now())) {
             Platform.runLater(() -> date.requestFocus());
-            throw new Exception(Error_Text_Show.NOT_POSSIBLE);
+            throw new UserValidationException(Error_Text_Show.NOT_POSSIBLE);
         }
 
         // check treasury
         if (comboTreasury.getSelectionModel().isEmpty()) {
             Platform.runLater(() -> comboTreasury.requestFocus());
-            throw new Exception(Error_Text_Show.PLEASE_INSERT_ALL_DATA);
+            throw new UserValidationException(Error_Text_Show.PLEASE_INSERT_ALL_DATA);
         }
 
         var paid = Double.parseDouble(txtPaid.getText());
         if (paid <= 0) {
             Platform.runLater(() -> txtPaid.requestFocus());
-            throw new Exception(Error_Text_Show.PLEASE_INSERT_ALL_DATA);
+            throw new UserValidationException(Error_Text_Show.PLEASE_INSERT_ALL_DATA);
         }
 
         int code = Integer.parseInt(txtCode.getText());

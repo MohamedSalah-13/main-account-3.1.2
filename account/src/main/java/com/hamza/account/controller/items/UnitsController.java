@@ -10,6 +10,8 @@ import com.hamza.account.otherSetting.MaskerPaneSetting;
 import com.hamza.account.service.UnitsService;
 import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.database.DaoException;
+import com.hamza.controlsfx.error.BusinessRuleException;
+import com.hamza.controlsfx.error.UserValidationException;
 import com.hamza.controlsfx.interfaceData.AppSettingInterface;
 import com.hamza.controlsfx.language.Error_Text_Show;
 import com.hamza.controlsfx.language.Setting_Language;
@@ -138,7 +140,7 @@ public class UnitsController implements Initializable, AppSettingInterface {
     private void deleteData() {
         try {
             // check selected row
-            if (tableView.getSelectionModel().isEmpty()) throw new Exception(Error_Text_Show.PLEASE_SELECT_FILE);
+            if (tableView.getSelectionModel().isEmpty()) throw new UserValidationException(Error_Text_Show.PLEASE_SELECT_FILE);
 
             UnitsModel selectedItem = tableView.getSelectionModel().getSelectedItem();
 
@@ -151,7 +153,7 @@ public class UnitsController implements Initializable, AppSettingInterface {
             // leaving the user to go looking for them.
             var refusal = unitsService.checkDelete(selectedItem.getUnit_id());
             if (refusal != null) {
-                throw new Exception(refusal.message());
+                throw new BusinessRuleException(refusal.message());
             }
 
             if (!AllAlerts.confirmDelete()) {

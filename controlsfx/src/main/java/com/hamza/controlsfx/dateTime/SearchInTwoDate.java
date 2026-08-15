@@ -1,5 +1,6 @@
 package com.hamza.controlsfx.dateTime;
 
+import com.hamza.controlsfx.error.UserValidationException;
 import com.hamza.controlsfx.language.Error_Text_Show;
 
 import java.util.Collections;
@@ -45,7 +46,7 @@ public class SearchInTwoDate {
      */
     private static <T> void validateDateRange(SearchByDate<T> searchByDate) throws Exception {
         if (searchByDate.checkDate()) {
-            throw new Exception(Error_Text_Show.NOT_POSSIBLE);
+            throw new UserValidationException(Error_Text_Show.NOT_POSSIBLE);
         }
     }
 }

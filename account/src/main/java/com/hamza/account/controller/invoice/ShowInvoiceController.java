@@ -21,6 +21,7 @@ import com.hamza.account.view.barcode.PrintBarcodeApp;
 import com.hamza.account.view.barcode.PrintBarcodeModel;
 import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.database.DaoException;
+import com.hamza.controlsfx.error.UserValidationException;
 import com.hamza.controlsfx.interfaceData.AppSettingInterface;
 import com.hamza.controlsfx.language.Error_Text_Show;
 import com.hamza.controlsfx.language.Setting_Language;
@@ -228,7 +229,7 @@ public class ShowInvoiceController<T1 extends BasePurchasesAndSales, T2 extends 
     private void printBarcode() {
         ObservableList<PrintBarcodeModel> observableList = FXCollections.observableArrayList();
         if (list.isEmpty()) {
-            AllAlerts.alertError(Error_Text_Show.PLEASE_INSERT_ALL_DATA);
+            AllAlerts.handleError("طباعة الباركود", new UserValidationException(Error_Text_Show.PLEASE_INSERT_ALL_DATA));
             return;
         }
 

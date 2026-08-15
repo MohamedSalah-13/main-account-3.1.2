@@ -1,6 +1,7 @@
 package com.hamza.controlsfx.controller;
 
 import com.hamza.controlsfx.alert.AllAlerts;
+import com.hamza.controlsfx.error.BusinessRuleException;
 import com.hamza.controlsfx.interfaceData.Disable;
 import com.hamza.controlsfx.interfaceData.ToolbarAccountInt;
 import com.hamza.controlsfx.language.Setting_Language;
@@ -119,7 +120,7 @@ public class ToolbarAccountController<T> {
                 AllAlerts.alertDelete();
                 toolbarAccountInt.afterSaveOrDelete();
                 publishChange(toolbarAccountInt);
-            } else AllAlerts.alertError(Setting_Language.PLEASE_INSERT_ALL_DATA);
+            } else AllAlerts.handleError("حذف السجل", new BusinessRuleException(Setting_Language.PLEASE_INSERT_ALL_DATA));
         }
     }
 

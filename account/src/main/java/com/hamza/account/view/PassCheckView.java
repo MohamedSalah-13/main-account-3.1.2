@@ -2,6 +2,7 @@ package com.hamza.account.view;
 
 import com.hamza.account.config.ThemeManager;
 import com.hamza.controlsfx.alert.AllAlerts;
+import com.hamza.controlsfx.error.UserValidationException;
 import com.hamza.controlsfx.language.Setting_Language;
 import com.hamza.controlsfx.others.ChangeOrientation;
 import com.hamza.controlsfx.view.PassCheckApplication;
@@ -61,7 +62,7 @@ public final class PassCheckView {
 
         boolean matched = check.showAndWait().orElse(false);
         if (!matched && attempted[0]) {
-            AllAlerts.alertError(Setting_Language.THE_PASSWORD_IS_INCORRECT);
+            AllAlerts.handleError("التحقق من كلمة المرور", new UserValidationException(Setting_Language.THE_PASSWORD_IS_INCORRECT));
         }
         return matched;
     }

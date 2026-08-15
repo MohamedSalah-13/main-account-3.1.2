@@ -8,6 +8,8 @@ import com.hamza.account.session.ShiftContext;
 import com.hamza.account.features.rbac.CurrentUser;
 import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.database.DaoException;
+import com.hamza.controlsfx.error.BusinessRuleException;
+import com.hamza.controlsfx.error.UserValidationException;
 import com.hamza.controlsfx.table.TableColumnAnnotation;
 import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
@@ -59,7 +61,7 @@ public class AdminShiftsController {
         try {
             UserShift selected = tableView.getSelectionModel().getSelectedItem();
             if (selected == null) {
-                AllAlerts.alertError("اختر وردية أولاً");
+                AllAlerts.handleError("إغلاق وردية إجباري", new UserValidationException("اختر وردية أولاً"));
                 return;
             }
 
@@ -69,7 +71,7 @@ public class AdminShiftsController {
 //            }
 
             if (!selected.isOpen()) {
-                AllAlerts.alertError("هذه الوردية مغلقة بالفعل");
+                AllAlerts.handleError("إغلاق وردية إجباري", new BusinessRuleException("هذه الوردية مغلقة بالفعل"));
                 return;
             }
 

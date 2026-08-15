@@ -6,6 +6,7 @@ import com.hamza.account.model.dao.DaoFactory; // افترضت وجوده بنا
 import com.hamza.account.model.domain.ItemSalesRank;
 import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.database.DaoException;
+import com.hamza.controlsfx.error.UserValidationException;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
@@ -95,7 +96,7 @@ public class ItemSalesRankController implements Initializable {
     @FXML
     private void searchAction() {
         if (comboYear.getValue() == null) {
-            AllAlerts.alertError("من فضلك حدد السنة أولاً");
+            AllAlerts.handleError("تحميل تقرير الأصناف الأكثر مبيعًا", new UserValidationException("من فضلك حدد السنة أولاً"));
             return;
         }
 
@@ -154,7 +155,7 @@ public class ItemSalesRankController implements Initializable {
     @FXML
     private void onExportPdf() {
         if (tableView.getItems().isEmpty()) {
-            AllAlerts.alertError("لا توجد بيانات لتصديرها");
+            AllAlerts.handleError("تصدير تقرير الأصناف", new UserValidationException("لا توجد بيانات لتصديرها"));
             return;
         }
 

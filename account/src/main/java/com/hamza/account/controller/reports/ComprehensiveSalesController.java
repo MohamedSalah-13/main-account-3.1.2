@@ -6,6 +6,7 @@ import com.hamza.account.features.export.ReportExportService;
 import com.hamza.account.features.export.ExcelExportService;
 import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.database.DaoException;
+import com.hamza.controlsfx.error.UserValidationException;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
@@ -94,7 +95,7 @@ public class ComprehensiveSalesController implements Initializable {
     @FXML
     private void onSearchAction() {
         if (dpFrom.getValue() == null || dpTo.getValue() == null) {
-            AllAlerts.alertError("يرجى تحديد فترة البحث بدقة");
+            AllAlerts.handleError("بحث التقرير الشامل للمبيعات", new UserValidationException("يرجى تحديد فترة البحث بدقة"));
             return;
         }
 

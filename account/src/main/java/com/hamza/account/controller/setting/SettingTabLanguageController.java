@@ -222,7 +222,7 @@ public class SettingTabLanguageController implements Initializable {
                 txtNameCustomer.setText(itemsModel.getName());
             });
         } catch (IOException e) {
-            log.error("Failed to open search customer dialog: {}", e.getMessage());
+            AllAlerts.handleError("فتح شاشة البحث عن عميل", e);
         }
     }
 
@@ -253,7 +253,7 @@ public class SettingTabLanguageController implements Initializable {
                 setSettingSaveNameDelegate(String.valueOf(itemsModel.getId()));
             });
         } catch (IOException e) {
-            log.error("Failed to open search delegate dialog: {}", e.getMessage());
+            AllAlerts.handleError("فتح شاشة البحث عن مندوب", e);
         }
     }
 

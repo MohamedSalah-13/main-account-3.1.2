@@ -26,6 +26,7 @@ import com.hamza.account.view.AccountDetailsApplication;
 import com.hamza.account.view.AddAccountApplication;
 import com.hamza.account.view.OpenApplication;
 import com.hamza.controlsfx.alert.AllAlerts;
+import com.hamza.controlsfx.error.UserValidationException;
 import com.hamza.controlsfx.excel.ExcelException;
 import com.hamza.controlsfx.excel.ExportData;
 import com.hamza.controlsfx.language.Error_Text_Show;
@@ -262,7 +263,7 @@ public class AccountController2<T3 extends BaseNames, T4 extends BaseAccount>
 
         btnPaidAll.setOnAction(actionEvent -> {
             if (tableView.getSelectionModel().isEmpty()) {
-                AllAlerts.alertError("من فضلك حدد الصف .");
+                AllAlerts.handleError("سداد كامل الرصيد", new UserValidationException("من فضلك حدد الصف ."));
                 return;
             }
 
@@ -327,7 +328,7 @@ public class AccountController2<T3 extends BaseNames, T4 extends BaseAccount>
         try {
             List<TreeAccountModelForPrint> accountModelForPrints = new ArrayList<>();
             List<T4> list = tableView.getItems().stream().filter(t4 -> t4.getSelectedRow().get()).toList();
-            if (list.isEmpty()) throw new Exception(Error_Text_Show.PLEASE_INSERT_ALL_DATA);
+            if (list.isEmpty()) throw new UserValidationException(Error_Text_Show.PLEASE_INSERT_ALL_DATA);
             list.forEach(t4 -> {
                 TreeAccountModelForPrint e = new TreeAccountModelForPrint();
                 e.setId(accountData.getIdName(t4));
