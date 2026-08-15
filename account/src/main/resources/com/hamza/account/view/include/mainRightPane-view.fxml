@@ -4,8 +4,10 @@
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
 <?import javafx.scene.text.Text?>
+<?import javafx.scene.image.ImageView?>
 
-<AnchorPane xmlns:fx="http://javafx.com/fxml/1"
+<AnchorPane fx:id="rootPane"
+            xmlns:fx="http://javafx.com/fxml/1"
             xmlns="http://javafx.com/javafx/21"
             maxWidth="-Infinity"
             minWidth="-Infinity"
@@ -22,9 +24,48 @@
               AnchorPane.rightAnchor="0.0"
               AnchorPane.topAnchor="0.0">
             <children>
-                <TextField fx:id="txtSearch"
-                           promptText="Search"
-                           styleClass="right-search"/>
+                <HBox alignment="CENTER_RIGHT" spacing="8.0" styleClass="sidebar-brand-row">
+                    <children>
+                        <ImageView fx:id="imgCompanyLogo"
+                                   fitWidth="34.0"
+                                   fitHeight="34.0"
+                                   preserveRatio="true"
+                                   styleClass="sidebar-brand-logo"/>
+                        <Label fx:id="lblCompanyName"
+                               styleClass="sidebar-brand-name"
+                               text="Company"
+                               HBox.hgrow="ALWAYS"/>
+                    </children>
+                </HBox>
+
+                <HBox fx:id="quickActionsRow" alignment="CENTER_RIGHT" spacing="6.0" styleClass="sidebar-quick-actions">
+                    <children>
+                        <StackPane fx:id="notificationBellSlot"/>
+                        <Button fx:id="btnYouTube" mnemonicParsing="false" styleClass="sidebar-quick-action-btn" text="YouTube"/>
+                        <Region HBox.hgrow="ALWAYS"/>
+                    </children>
+                </HBox>
+
+                <MenuButton fx:id="menuUser" mnemonicParsing="false" styleClass="sidebar-user-menu" maxWidth="Infinity">
+                    <graphic>
+                        <HBox alignment="CENTER_RIGHT" spacing="8.0">
+                            <children>
+                                <Label fx:id="lblUserInitial" styleClass="sidebar-user-avatar" text="?"/>
+                                <VBox spacing="0.0" HBox.hgrow="ALWAYS">
+                                    <children>
+                                        <Label fx:id="lblUserName" styleClass="sidebar-user-name" text="-"/>
+                                        <Label fx:id="lblUserRole" styleClass="sidebar-user-role" text="-"/>
+                                    </children>
+                                </VBox>
+                            </children>
+                        </HBox>
+                    </graphic>
+                    <items>
+                        <MenuItem fx:id="menuItemChangeName" mnemonicParsing="false" text="Change Name"/>
+                        <MenuItem fx:id="menuItemChangePass" mnemonicParsing="false" text="Change Password"/>
+                        <MenuItem fx:id="menuItemLogout" mnemonicParsing="false" text="Logout"/>
+                    </items>
+                </MenuButton>
 
                 <Accordion styleClass="main-accordion" VBox.vgrow="ALWAYS">
                     <panes>
@@ -192,7 +233,8 @@
                     </panes>
                 </Accordion>
 
-                <VBox alignment="BOTTOM_CENTER"
+                <VBox fx:id="rightFooterBox"
+                      alignment="BOTTOM_CENTER"
                       spacing="5.0"
                       styleClass="right-footer">
                     <children>

@@ -29,7 +29,6 @@ import lombok.Getter;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.FileInputStream;
-import java.io.IOException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.ResourceBundle;
@@ -48,14 +47,11 @@ public class MainScreenController extends MainItems implements Initializable {
     @FXML
     private TabPane tabPane;
     @FXML
-    private VBox boxCenter;
-    @FXML
     private HBox mainContentBox;
     @FXML
     private VBox box;
 
     private MenuButtonSetting menuButtonSetting;
-    private MainToolbarController toolbarController;
 
     public MainScreenController(DaoFactory daoFactory) throws Exception {
         super(daoFactory);
@@ -64,7 +60,6 @@ public class MainScreenController extends MainItems implements Initializable {
     @Override
     public void initialize(URL url, ResourceBundle resourceBundle) {
         menuButtonSetting = new MenuButtonSetting(tabPane);
-        mainToolbarSetting();
         otherSetting();
         addTabContextMenu();
 
@@ -94,18 +89,6 @@ public class MainScreenController extends MainItems implements Initializable {
             tabPane.getTabs().getFirst().setClosable(false);
             getRightPane();
         } catch (Exception e) {
-            logException(e);
-        }
-    }
-
-    private void mainToolbarSetting() {
-        try {
-            FXMLLoader fxmlLoader = new FxmlConstants().mainToolbar;
-            toolbarController = new MainToolbarController(this, this);
-            fxmlLoader.setController(toolbarController);
-            ToolBar pane = fxmlLoader.load();
-            boxCenter.getChildren().addFirst(pane);
-        } catch (IOException e) {
             logException(e);
         }
     }
@@ -196,6 +179,12 @@ public class MainScreenController extends MainItems implements Initializable {
         menuButtonSetting.configureButton(mainRightPaneController.getBtnDeleteData(), getSettingButtons().deleteData());
         menuButtonSetting.configureButton(mainRightPaneController.getBtnAbout(), getSettingButtons().about());
         menuButtonSetting.configureButton(mainRightPaneController.getBtnClose(), getSettingButtons().close());
+        /*----------------------------------------------- User menu (moved from the removed top toolbar) -----------------------------------------------*/
+        menuButtonSetting.initializeMenuItem(mainRightPaneController.getMenuItemChangeName(), getForAllButtons().changeName());
+        menuButtonSetting.initializeMenuItem(mainRightPaneController.getMenuItemChangePass(), getForAllButtons().changePassword());
+        menuButtonSetting.initializeMenuItem(mainRightPaneController.getMenuItemLogout(), getForAllButtons().logout());
+        // Every signed-in user may log out, regardless of what other permissions they hold.
+        mainRightPaneController.getMenuItemLogout().setDisable(false);
 
         dontShowData(mainRightPaneController);
     }
