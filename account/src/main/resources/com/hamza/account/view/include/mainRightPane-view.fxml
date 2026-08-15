@@ -12,7 +12,6 @@
             maxWidth="-Infinity"
             minWidth="-Infinity"
             prefHeight="587.0"
-            prefWidth="230.0"
             nodeOrientation="RIGHT_TO_LEFT"
             styleClass="right-pane-root"
             fx:controller="com.hamza.account.controller.main.MainRightPaneController">
@@ -217,7 +216,7 @@
                                     <content>
                                         <VBox styleClass="side-button-box">
                                             <children>
-                                                <Button fx:id="btnHome" mnemonicParsing="false" text="Home"/>
+                                                <Button fx:id="btnHome" mnemonicParsing="false" styleClass="sidebar-nav-active" text="Home"/>
                                                 <Button fx:id="btnSetting" mnemonicParsing="false" text="Setting"/>
                                                 <Button fx:id="btnShiftReports" mnemonicParsing="false" text="Shift Reports"/>
                                                 <Button fx:id="btnBackup" mnemonicParsing="false" text="Backup"/>

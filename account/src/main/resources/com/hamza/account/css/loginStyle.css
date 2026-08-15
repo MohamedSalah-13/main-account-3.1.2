@@ -1,29 +1,45 @@
+/* Sized in em against app-theme.css's 11px root anchor, like the rest of the app,
+   so UiScale's inline -fx-font-size on the scene root scales the login screen too -
+   it used to be fixed px here regardless of that setting. */
+
+.login-root {
+    -fx-min-width: 31.818em;
+    -fx-min-height: 43.636em;
+    -fx-pref-width: 34.545em;
+    -fx-pref-height: 45.455em;
+}
+
 .login-title {
-    -fx-font-size: 20px;
+    -fx-font-size: 1.818em;
     -fx-font-weight: bold;
 }
 
 .login-footer {
-    -fx-font-size: 13px;
+    -fx-font-size: 1.182em;
     -fx-opacity: 0.75;
 }
 
 .login-field-box {
     -fx-border-color: -fx-box-border;
-    -fx-border-width: 1;
-    -fx-border-radius: 5;
-    -fx-background-radius: 5;
-    -fx-padding: 2 8 2 8;
-    -fx-spacing: 8;
+    -fx-border-width: 0.091em;
+    -fx-border-radius: 0.455em;
+    -fx-background-radius: 0.455em;
+    -fx-padding: 0.182em 0.727em 0.182em 0.727em;
+    -fx-spacing: 0.727em;
+    -fx-min-height: 3.455em;
 }
 
 .login-field-box .text-field {
     -fx-background-color: transparent;
     -fx-border-width: 0;
-    -fx-padding: 6;
+    -fx-padding: 0.545em;
 }
 
 .login-status {
     -fx-text-fill: #b3261e;
-    -fx-font-size: 12px;
+    -fx-font-size: 1.091em;
+}
+
+.login-button {
+    -fx-min-height: 3.273em;
 }

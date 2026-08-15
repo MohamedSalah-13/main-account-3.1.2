@@ -61,6 +61,9 @@ public final class ThemeManager {
 
         scene.getStylesheets().add(getBaseStylesheet());
         scene.getStylesheets().add(getStylesheet());
+        if (scene.getRoot() != null) {
+            applyUiScale(scene.getRoot());
+        }
     }
 
     public static void apply(Parent root) {
@@ -73,6 +76,17 @@ public final class ThemeManager {
 
         root.getStylesheets().add(getBaseStylesheet());
         root.getStylesheets().add(getStylesheet());
+        applyUiScale(root);
+    }
+
+    /**
+     * Stamps the current {@link UiScale} as an inline style on the root, replacing
+     * any font-size it carries from a previous call rather than piling styles up.
+     */
+    private static void applyUiScale(Parent root) {
+        String existing = root.getStyle();
+        String withoutFontSize = existing == null ? "" : existing.replaceAll("-fx-font-size:[^;]*;", "").trim();
+        root.setStyle(UiScale.fontSizeStyle() + (withoutFontSize.isEmpty() ? "" : " " + withoutFontSize));
     }
 
     public enum Theme {

@@ -27,6 +27,7 @@ import javafx.fxml.Initializable;
 import javafx.print.Printer;
 import javafx.scene.control.*;
 import javafx.stage.FileChooser;
+import javafx.util.StringConverter;
 import lombok.extern.log4j.Log4j2;
 
 import java.io.File;
@@ -67,6 +68,8 @@ public class SettingTabLanguageController implements Initializable {
     private RadioButton radioLight, radioDark, radioSystem;
     @FXML
     private RadioButton radioEnglish, radioArabic;
+    @FXML
+    private ComboBox<Double> comboUiScale;
     @FXML
     private TextField txtNameCustomer, txtNameDelegate;
     @FXML
@@ -178,6 +181,9 @@ public class SettingTabLanguageController implements Initializable {
 
         radioLight.setOnAction(e -> applyTheme(com.hamza.account.config.ThemeManager.Theme.LIGHT));
         radioDark.setOnAction(e -> applyTheme(com.hamza.account.config.ThemeManager.Theme.DARK));
+
+        // UI scale selection: initialize and wire listeners
+        configureUiScaleCombo();
 
         btnDeleteImage.setOnAction(actionEvent -> {
             textPath.setText(text);
@@ -335,7 +341,46 @@ public class SettingTabLanguageController implements Initializable {
     private void applyTheme(com.hamza.account.config.ThemeManager.Theme theme) {
         // Persist selection
         com.hamza.account.config.ThemeManager.setCurrentTheme(theme);
-        // Apply to current scene
+        reapplyToCurrentScene();
+    }
+
+    /**
+     * Same combo-box-of-percentages pattern as center-management's UiScaleSelector:
+     * items are the raw factors, and the converter is what turns 1.15 into "115%".
+     */
+    private void configureUiScaleCombo() {
+        comboUiScale.setConverter(new StringConverter<>() {
+            @Override
+            public String toString(Double value) {
+                return value == null ? "" : com.hamza.account.config.UiScale.label(value);
+            }
+
+            @Override
+            public Double fromString(String string) {
+                return null;
+            }
+        });
+
+        comboUiScale.getItems().clear();
+        for (double level : com.hamza.account.config.UiScale.LEVELS) {
+            comboUiScale.getItems().add(level);
+        }
+        comboUiScale.setValue(com.hamza.account.config.UiScale.factor());
+
+        comboUiScale.valueProperty().addListener((observable, oldValue, newValue) -> {
+            if (newValue == null || newValue.equals(com.hamza.account.config.UiScale.factor())) return;
+            com.hamza.account.config.UiScale.setFactor(newValue);
+            reapplyToCurrentScene();
+        });
+    }
+
+    /**
+     * Re-runs {@code ThemeManager.apply} on whichever scene this tab is currently
+     * showing in, which stamps both the theme stylesheet and the {@link
+     * com.hamza.account.config.UiScale} font size - the tab itself lives in the same
+     * tab-paned scene as the sidebar, so both take effect on the whole app immediately.
+     */
+    private void reapplyToCurrentScene() {
         var scene = labelLanguage.getScene();
         if (scene != null) {
             com.hamza.account.config.ThemeManager.apply(scene);

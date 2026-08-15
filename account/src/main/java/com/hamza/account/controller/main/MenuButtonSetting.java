@@ -10,10 +10,26 @@ import javafx.scene.control.TabPane;
 import javafx.scene.control.Tooltip;
 
 import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.List;
 
-public record MenuButtonSetting(TabPane tabPane) {
+public final class MenuButtonSetting {
 
     private static final boolean FOCUS_TRAVERSABLE = false;
+    private static final String ACTIVE_STYLE_CLASS = "sidebar-nav-active";
+
+    private final TabPane tabPane;
+    // Every nav button configured through this instance, so clicking one can
+    // clear the highlight off whichever other one currently carries it.
+    private final List<Button> navButtons = new ArrayList<>();
+
+    public MenuButtonSetting(TabPane tabPane) {
+        this.tabPane = tabPane;
+    }
+
+    public TabPane tabPane() {
+        return tabPane;
+    }
 
     /**
      * Configures the provided button with the specified action. This includes setting
@@ -31,6 +47,7 @@ public record MenuButtonSetting(TabPane tabPane) {
         disableButton(button::setDisable, action);
         button.focusTraversableProperty().setValue(FOCUS_TRAVERSABLE);
         setActionEvent(button, action);
+        trackNavButton(button);
     }
 
     public void configureButton(Button button, InputStream stream, ButtonWithPerm action) {
@@ -40,6 +57,23 @@ public record MenuButtonSetting(TabPane tabPane) {
         disableButton(button::setDisable, action);
         button.focusTraversableProperty().setValue(FOCUS_TRAVERSABLE);
         setActionEvent(button, action);
+        trackNavButton(button);
+    }
+
+    /**
+     * Registers a nav button for active-state tracking and highlights it on click,
+     * clearing the highlight off every other button configured through this instance.
+     */
+    private void trackNavButton(Button button) {
+        navButtons.add(button);
+        button.addEventHandler(ActionEvent.ACTION, event -> markActive(button));
+    }
+
+    private void markActive(Button activeButton) {
+        navButtons.forEach(button -> button.getStyleClass().remove(ACTIVE_STYLE_CLASS));
+        if (!activeButton.getStyleClass().contains(ACTIVE_STYLE_CLASS)) {
+            activeButton.getStyleClass().add(ACTIVE_STYLE_CLASS);
+        }
     }
 
 
