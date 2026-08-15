@@ -211,4 +211,8 @@ public enum DaoFactory {
         return new CustomerReceivableDao();
     }
 
+    public DailySalesPointDao dailySalesPointDao() {
+        return new DailySalesPointDao();
+    }
+
 }

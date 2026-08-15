@@ -1,0 +1,244 @@
+/* =========================================================
+   Dashboard (home tab) - built on top of the shared -app-*
+   theme tokens from theme-light.css / theme-dark.css / glass-theme.css,
+   so it follows whichever theme is active without its own overrides.
+   ========================================================= */
+
+.dashboard-root {
+    -fx-background-color: transparent;
+}
+
+.dashboard-scroll-pane,
+.dashboard-scroll-pane > .viewport {
+    -fx-background-color: transparent;
+}
+
+/* ---------- Header ---------- */
+
+.dashboard-header-title {
+    -fx-font-size: 22px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -app-text-strong;
+}
+
+.dashboard-header-subtitle {
+    -fx-font-size: 12px;
+    -fx-text-fill: -app-text-muted;
+}
+
+.dashboard-last-updated {
+    -fx-font-size: 11px;
+    -fx-text-fill: -app-text-muted;
+}
+
+/* ---------- Hero stat cards ---------- */
+
+.stat-card {
+    -fx-background-color: -app-surface;
+    -fx-background-radius: 16px;
+    -fx-border-radius: 16px;
+    -fx-border-color: -app-border;
+    -fx-border-width: 1px;
+    -fx-min-width: 190px;
+    -fx-effect: dropshadow(gaussian, -app-shadow, 14, 0.12, 0, 4);
+}
+
+.stat-card.clickable {
+    -fx-cursor: hand;
+}
+
+.stat-card.clickable:hover {
+    -fx-effect: dropshadow(gaussian, -app-shadow, 20, 0.18, 0, 6);
+}
+
+.stat-accent-bar {
+    -fx-background-radius: 16 16 0 0;
+    -fx-pref-height: 5px;
+    -fx-min-height: 5px;
+    -fx-max-height: 5px;
+}
+
+.stat-accent-primary { -fx-background-color: -app-primary; }
+.stat-accent-success { -fx-background-color: -app-success; }
+.stat-accent-warning { -fx-background-color: -app-warning; }
+.stat-accent-danger  { -fx-background-color: -app-danger; }
+.stat-accent-neutral { -fx-background-color: -app-text-muted; }
+
+.stat-title {
+    -fx-font-size: 12px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -app-text-muted;
+}
+
+.stat-value {
+    -fx-font-size: 24px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -app-text-strong;
+}
+
+.stat-subtitle {
+    -fx-font-size: 11px;
+    -fx-text-fill: -app-text-muted;
+}
+
+.stat-delta-up {
+    -fx-font-size: 11px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -app-success;
+}
+
+.stat-delta-down {
+    -fx-font-size: 11px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -app-danger;
+}
+
+/* ---------- Generic dashboard cards (charts + lists) ---------- */
+
+.dashboard-card {
+    -fx-background-color: -app-surface;
+    -fx-background-radius: 16px;
+    -fx-border-radius: 16px;
+    -fx-border-color: -app-border;
+    -fx-border-width: 1px;
+    -fx-padding: 16px;
+    -fx-effect: dropshadow(gaussian, -app-shadow, 14, 0.12, 0, 4);
+}
+
+.dashboard-card.clickable {
+    -fx-cursor: hand;
+}
+
+.dashboard-card.clickable:hover {
+    -fx-effect: dropshadow(gaussian, -app-shadow, 20, 0.18, 0, 6);
+}
+
+.dashboard-chart-card {
+    -fx-min-height: 260px;
+}
+
+.dashboard-card-title {
+    -fx-font-size: 14px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -app-text-strong;
+}
+
+.dashboard-card-hint {
+    -fx-font-size: 10px;
+    -fx-text-fill: -app-text-muted;
+}
+
+.dashboard-empty-label {
+    -fx-font-size: 11px;
+    -fx-text-fill: -app-text-muted;
+}
+
+/* ---------- Ranked list rows ---------- */
+
+.dashboard-row-name {
+    -fx-font-size: 11px;
+    -fx-text-fill: -app-text;
+}
+
+.dashboard-row-value {
+    -fx-font-size: 11px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -app-text-strong;
+}
+
+.dashboard-row-value-danger {
+    -fx-font-size: 11px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -app-danger;
+}
+
+.dashboard-row-value-warning {
+    -fx-font-size: 11px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -app-warning;
+}
+
+.mini-bar {
+    -fx-pref-height: 6px;
+    -fx-min-height: 6px;
+    -fx-max-height: 6px;
+}
+
+.mini-bar > .track {
+    -fx-background-color: -app-neutral-soft;
+    -fx-background-radius: 4px;
+    -fx-background-insets: 0;
+}
+
+.mini-bar > .bar {
+    -fx-background-radius: 4px;
+    -fx-background-insets: 0;
+    -fx-padding: 3px;
+}
+
+.mini-bar.accent-primary > .bar { -fx-background-color: -app-primary; }
+.mini-bar.accent-success > .bar { -fx-background-color: -app-success; }
+.mini-bar.accent-warning > .bar { -fx-background-color: -app-warning; }
+.mini-bar.accent-danger  > .bar { -fx-background-color: -app-danger; }
+
+/* ---------- Sales trend area chart ---------- */
+
+.dashboard-trend-chart {
+    -fx-background-color: transparent;
+}
+
+.dashboard-trend-chart .chart-plot-background {
+    -fx-background-color: transparent;
+}
+
+.dashboard-trend-chart .chart-vertical-grid-lines {
+    -fx-stroke: transparent;
+}
+
+.dashboard-trend-chart .chart-horizontal-grid-lines {
+    -fx-stroke: -app-border;
+}
+
+.dashboard-trend-chart .axis {
+    -fx-tick-label-fill: -app-text-muted;
+    -fx-font-size: 10px;
+}
+
+.dashboard-trend-chart .chart-legend {
+    -fx-background-color: transparent;
+}
+
+.dashboard-trend-chart .default-color0.chart-series-area-line {
+    -fx-stroke: -app-primary;
+    -fx-stroke-width: 2.5px;
+}
+
+.dashboard-trend-chart .default-color0.chart-series-area-fill {
+    -fx-fill: linear-gradient(to bottom, derive(-app-primary, 55%) 0%, transparent 95%);
+}
+
+.dashboard-trend-chart .default-color0.chart-line-symbol {
+    -fx-background-color: -app-primary, white;
+    -fx-background-insets: 0, 2;
+    -fx-background-radius: 5px;
+    -fx-padding: 4px;
+}
+
+/* ---------- Cash flow pie ---------- */
+
+.dashboard-cash-pie .chart-legend {
+    -fx-background-color: transparent;
+}
+
+.dashboard-cash-pie .chart-legend-item {
+    -fx-text-fill: -app-text;
+    -fx-font-size: 11px;
+}
+
+.dashboard-cash-pie .data0.chart-pie {
+    -fx-pie-color: -app-success;
+}
+
+.dashboard-cash-pie .data1.chart-pie {
+    -fx-pie-color: -app-danger;
+}
