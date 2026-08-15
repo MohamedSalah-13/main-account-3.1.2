@@ -16,16 +16,10 @@ import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.language.Setting_Language;
 import com.hamza.controlsfx.observer.EventBus;
-import com.jfoenix.controls.JFXDrawer;
-import com.jfoenix.controls.JFXHamburger;
-import com.jfoenix.transitions.hamburger.HamburgerBackArrowBasicTransition;
-import javafx.beans.property.DoubleProperty;
-import javafx.beans.property.SimpleDoubleProperty;
 import javafx.collections.ListChangeListener;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.fxml.Initializable;
-import javafx.scene.Node;
 import javafx.scene.control.*;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
@@ -48,9 +42,6 @@ public class MainScreenController extends MainItems implements Initializable {
     private final EventBus eventBus = ServiceRegistry.get(EventBus.class);
     private final ContextMenu slideshowMenu = new ContextMenu();
     public Pane mainPane;
-    private MainMenuController menuController;
-    @FXML
-    private MenuBar menuBar;
     @FXML
     private BorderPane borderPane;
     @Getter
@@ -59,7 +50,7 @@ public class MainScreenController extends MainItems implements Initializable {
     @FXML
     private VBox boxCenter;
     @FXML
-    private JFXDrawer drawer;
+    private HBox mainContentBox;
     @FXML
     private VBox box;
 
@@ -73,8 +64,6 @@ public class MainScreenController extends MainItems implements Initializable {
     @Override
     public void initialize(URL url, ResourceBundle resourceBundle) {
         menuButtonSetting = new MenuButtonSetting(tabPane);
-        menuBarSetting();
-        dontShowData();
         mainToolbarSetting();
         otherSetting();
         addTabContextMenu();
@@ -124,114 +113,10 @@ public class MainScreenController extends MainItems implements Initializable {
     private void getRightPane() throws Exception {
         FXMLLoader fxmlLoader = new FxmlConstants().rightPane;
         Pane pane = fxmlLoader.load();
-        // add to drawer
-        hamburgerAction(drawer, pane);
-        // button action
+        // the side menu is now the only navigation surface, so it is added directly
+        // and stays visible for the lifetime of the main screen.
+        mainContentBox.getChildren().addFirst(pane);
         MainRightPaneController mainRightPaneController = fxmlLoader.getController();
-
-        /*----------------------------------------------- Sales -----------------------------------------------*/
-        menuButtonSetting.configureButton(mainRightPaneController.getBtnSales(), getTotalSales().addInvoice());
-        menuButtonSetting.configureButton(mainRightPaneController.getBtnTotalSale(), getTotalSales().totals());
-        /*----------------------------------------------- Purchase -----------------------------------------------*/
-        menuButtonSetting.configureButton(mainRightPaneController.getBtnPurchase(), getTotalPurchase().addInvoice());
-        menuButtonSetting.configureButton(mainRightPaneController.getBtnTotalPurchase(), getTotalPurchase().totals());
-        menuButtonSetting.configureButton(mainRightPaneController.getBtnPurchaseRe(), getTotalPurchaseReturn().addInvoice());
-        menuButtonSetting.configureButton(mainRightPaneController.getBtnTotalPurchaseRe(), getTotalPurchaseReturn().totals());
-        /*----------------------------------------------- Items -----------------------------------------------*/
-        menuButtonSetting.configureButton(mainRightPaneController.getBtnItems(), getItemsButtons().allItems());
-        menuButtonSetting.configureButton(mainRightPaneController.getBtnAddItem(), getItemsButtons().addItem());
-        menuButtonSetting.configureButton(mainRightPaneController.getBtnUnits(), getItemsButtons().units());
-        menuButtonSetting.configureButton(mainRightPaneController.getBtnMainGroup(), getItemsButtons().addMainGroup());
-        menuButtonSetting.configureButton(mainRightPaneController.getBtnInventory(), getItemsButtons().inventory());
-        /*----------------------------------------------- Custom -----------------------------------------------*/
-        menuButtonSetting.configureButton(mainRightPaneController.getBtnCustomer(), getNameCustomer().namesData());
-        menuButtonSetting.configureButton(mainRightPaneController.getBtnAccountCustom(), getAccountButtonsCustom());
-        /*----------------------------------------------- Suppliers -----------------------------------------------*/
-        menuButtonSetting.configureButton(mainRightPaneController.getBtnSuppliers(), getNameSup().namesData());
-        menuButtonSetting.configureButton(mainRightPaneController.getBtnAccountSuppliers(), getAccountButtonsSup());
-        /*----------------------------------------------- Employees -----------------------------------------------*/
-        menuButtonSetting.configureButton(mainRightPaneController.getBtnTreasuryDetails(), getTreasuryButtons().treasuryDetails());
-        menuButtonSetting.configureButton(mainRightPaneController.getBtnProcess(), getTreasuryButtons().openProcess());
-        menuButtonSetting.configureButton(mainRightPaneController.getBtnExpenses(), getTreasuryButtons().openExpenses());
-        /*----------------------------------------------- Setting -----------------------------------------------*/
-        menuButtonSetting.configureButton(mainRightPaneController.getBtnHome(), getSettingButtons().home());
-        menuButtonSetting.configureButton(mainRightPaneController.getBtnBackup(), getSettingButtons().backup());
-        menuButtonSetting.configureButton(mainRightPaneController.getBtnUsers(), getUsersAll().getUsers_all());
-        menuButtonSetting.configureButton(mainRightPaneController.getBtnClose(), getSettingButtons().close());
-    }
-
-    private void menuBarSetting() {
-        try {
-            FXMLLoader fxmlLoader = new FxmlConstants().menuBar;
-            MenuBar paneMenuBar = fxmlLoader.load();
-            // add to border pane
-            borderPane.setTop(paneMenuBar);
-            menuController = fxmlLoader.getController();
-            sales(menuController);
-            purchase(menuController);
-            initializeMainMenuItems(menuController);
-            customers(menuController);
-            suppliers(menuController);
-            employees(menuController);
-            initializeReports(menuController);
-            initializeMainMenuItemsSetting(menuController);
-        } catch (Exception e) {
-            logException(e);
-        }
-
-    }
-
-    private void sales(MainMenuController menuController) {
-        menuButtonSetting.initializeMenuItem(menuController.getMenuItemSales(), getTotalSales().addInvoice());
-        menuButtonSetting.initializeMenuItem(menuController.getMenuItemSalesReturn(), getTotalSalesReturn().addInvoice());
-        menuButtonSetting.initializeMenuItem(menuController.getMenuItemTotalSales(), getTotalSales().totals());
-        menuButtonSetting.initializeMenuItem(menuController.getMenuItemTotalSalesReturn(), getTotalSalesReturn().totals());
-    }
-
-    private void purchase(MainMenuController menuController) {
-        menuButtonSetting.initializeMenuItem(menuController.getMenuItemPurchase(), getTotalPurchase().addInvoice());
-        menuButtonSetting.initializeMenuItem(menuController.getMenuItemPurchaseReturn(), getTotalPurchaseReturn().addInvoice());
-        menuButtonSetting.initializeMenuItem(menuController.getMenuItemTotalPurchase(), getTotalPurchase().totals());
-        menuButtonSetting.initializeMenuItem(menuController.getMenuItemTotalPurchaseReturn(), getTotalPurchaseReturn().totals());
-    }
-
-    private void initializeMainMenuItems(MainMenuController menuController) throws Exception {
-        menuButtonSetting.initializeMenuItem(menuController.getMenuItemItems(), getItemsButtons().addItem());
-        menuButtonSetting.initializeMenuItem(menuController.getMenuItemAddItem(), getItemsButtons().allItems());
-        menuButtonSetting.initializeMenuItem(menuController.getMenuItemUnit(), getItemsButtons().units());
-        menuButtonSetting.initializeMenuItem(menuController.getMenuItemInventory(), getItemsButtons().inventory());
-        menuButtonSetting.initializeMenuItem(menuController.getMenuItemStockCount(), getItemsButtons().stockCount());
-        menuButtonSetting.initializeMenuItem(menuController.getMenuItemMainGroup(), getItemsButtons().addMainGroup());
-        menuButtonSetting.initializeMenuItem(menuController.getMenuItemSupGroup(), getItemsButtons().addSubGroup());
-        menuButtonSetting.initializeMenuItem(menuController.getMenuItemArea(), getItemsButtons().areasList());
-    }
-
-    private void customers(MainMenuController menuController) {
-        menuButtonSetting.initializeMenuItem(menuController.getMenuItemAddCustomName(), getNameCustomer().addName());
-        menuButtonSetting.initializeMenuItem(menuController.getMenuItemCustomName(), getNameCustomer().namesData());
-        menuButtonSetting.initializeMenuItem(menuController.getMenuItemCustomAccount(), getAccountButtonsCustom());
-    }
-
-    private void suppliers(MainMenuController menuController) {
-        menuButtonSetting.initializeMenuItem(menuController.getMenuItemAddSupplierName(), getNameSup().addName());
-        menuButtonSetting.initializeMenuItem(menuController.getMenuItemSuppliersName(), getNameSup().namesData());
-        menuButtonSetting.initializeMenuItem(menuController.getMenuItemSuppliersAccount(), getAccountButtonsSup());
-    }
-
-    private void employees(MainMenuController menuController) {
-        menuButtonSetting.initializeMenuItem(menuController.getMenuItemUsers(), getUsersAll().getUsers_all());
-        menuButtonSetting.initializeMenuItem(menuController.getMenuItemAddUser(), getUsersAll().getUsers_add());
-        menuButtonSetting.initializeMenuItem(menuController.getMenuItemAddEmployee(), getAddEmployee().addEmployee());
-        menuButtonSetting.initializeMenuItem(menuController.getMenuItemEmployees(), getAddEmployee().employees());
-    }
-
-    private void initializeReports(MainMenuController menuController) throws Exception {
-        menuButtonSetting.initializeMenuItem(menuController.getMenuItemSummary(), getReportsButtons().summaryReport());
-        menuButtonSetting.initializeMenuItem(menuController.getMenuItemReportItems(), getReportsButtons().itemsReport());
-        menuButtonSetting.initializeMenuItem(menuController.getMenuItemReportItemsDaily(), getReportsButtons().itemsReportDaily());
-
-        var monthlySalesInterface = new MonthlySalesInterface() {
-        };
 
         var monthlyPurchaseInterface = new MonthlySalesInterface() {
             @Override
@@ -254,29 +139,65 @@ public class MainScreenController extends MainItems implements Initializable {
                 return "مقارنة المشتريات بين الشهور";
             }
         };
+        var monthlySalesInterface = new MonthlySalesInterface() {
+        };
 
+        /*----------------------------------------------- Sales -----------------------------------------------*/
+        menuButtonSetting.configureButton(mainRightPaneController.getBtnSales(), getTotalSales().addInvoice());
+        menuButtonSetting.configureButton(mainRightPaneController.getBtnSalesReturn(), getTotalSalesReturn().addInvoice());
+        menuButtonSetting.configureButton(mainRightPaneController.getBtnTotalSale(), getTotalSales().totals());
+        /*----------------------------------------------- Purchase -----------------------------------------------*/
+        menuButtonSetting.configureButton(mainRightPaneController.getBtnPurchase(), getTotalPurchase().addInvoice());
+        menuButtonSetting.configureButton(mainRightPaneController.getBtnTotalPurchase(), getTotalPurchase().totals());
+        menuButtonSetting.configureButton(mainRightPaneController.getBtnPurchaseRe(), getTotalPurchaseReturn().addInvoice());
+        menuButtonSetting.configureButton(mainRightPaneController.getBtnTotalPurchaseRe(), getTotalPurchaseReturn().totals());
+        /*----------------------------------------------- Items -----------------------------------------------*/
+        menuButtonSetting.configureButton(mainRightPaneController.getBtnItems(), getItemsButtons().allItems());
+        menuButtonSetting.configureButton(mainRightPaneController.getBtnAddItem(), getItemsButtons().addItem());
+        menuButtonSetting.configureButton(mainRightPaneController.getBtnUnits(), getItemsButtons().units());
+        menuButtonSetting.configureButton(mainRightPaneController.getBtnMainGroup(), getItemsButtons().addMainGroup());
+        menuButtonSetting.configureButton(mainRightPaneController.getBtnSubGroup(), getItemsButtons().addSubGroup());
+        menuButtonSetting.configureButton(mainRightPaneController.getBtnArea(), getItemsButtons().areasList());
+        menuButtonSetting.configureButton(mainRightPaneController.getBtnInventory(), getItemsButtons().inventory());
+        menuButtonSetting.configureButton(mainRightPaneController.getBtnStockCount(), getItemsButtons().stockCount());
+        /*----------------------------------------------- Custom -----------------------------------------------*/
+        menuButtonSetting.configureButton(mainRightPaneController.getBtnAddCustomerName(), getNameCustomer().addName());
+        menuButtonSetting.configureButton(mainRightPaneController.getBtnCustomer(), getNameCustomer().namesData());
+        menuButtonSetting.configureButton(mainRightPaneController.getBtnAccountCustom(), getAccountButtonsCustom());
+        /*----------------------------------------------- Suppliers -----------------------------------------------*/
+        menuButtonSetting.configureButton(mainRightPaneController.getBtnAddSupplierName(), getNameSup().addName());
+        menuButtonSetting.configureButton(mainRightPaneController.getBtnSuppliers(), getNameSup().namesData());
+        menuButtonSetting.configureButton(mainRightPaneController.getBtnAccountSuppliers(), getAccountButtonsSup());
+        /*----------------------------------------------- Employees -----------------------------------------------*/
+        menuButtonSetting.configureButton(mainRightPaneController.getBtnAddEmployee(), getAddEmployee().addEmployee());
+        menuButtonSetting.configureButton(mainRightPaneController.getBtnEmployees(), getAddEmployee().employees());
+        menuButtonSetting.configureButton(mainRightPaneController.getBtnAddUser(), getUsersAll().getUsers_add());
+        menuButtonSetting.configureButton(mainRightPaneController.getBtnUsers(), getUsersAll().getUsers_all());
+        /*----------------------------------------------- Treasury -----------------------------------------------*/
+        menuButtonSetting.configureButton(mainRightPaneController.getBtnTreasuryDetails(), getTreasuryButtons().treasuryDetails());
+        menuButtonSetting.configureButton(mainRightPaneController.getBtnProcess(), getTreasuryButtons().openProcess());
+        menuButtonSetting.configureButton(mainRightPaneController.getBtnExpenses(), getTreasuryButtons().openExpenses());
+        /*----------------------------------------------- Reports -----------------------------------------------*/
+        menuButtonSetting.configureButton(mainRightPaneController.getBtnReportSummary(), getReportsButtons().summaryReport());
+        menuButtonSetting.configureButton(mainRightPaneController.getBtnReportItems(), getReportsButtons().itemsReport());
+        menuButtonSetting.configureButton(mainRightPaneController.getBtnReportItemsDaily(), getReportsButtons().itemsReportDaily());
+        menuButtonSetting.configureButton(mainRightPaneController.getBtnReportSalesByYear(), getAction(monthlySalesInterface.reportName(), monthlySalesInterface));
+        menuButtonSetting.configureButton(mainRightPaneController.getBtnReportPurchaseByYear(), getAction(monthlyPurchaseInterface.reportName(), monthlyPurchaseInterface));
+        menuButtonSetting.configureButton(mainRightPaneController.getBtnReportCustomPaid(), getReportsButtons().reportCustomPaid());
+        menuButtonSetting.configureButton(mainRightPaneController.getBtnReportSuppliersPaid(), getReportsButtons().reportSupplierPaid());
+        menuButtonSetting.configureButton(mainRightPaneController.getBtnReportDetails(), getReportsButtons().detailsReport());
+        menuButtonSetting.configureButton(mainRightPaneController.getBtnReportYearly(), getReportsButtons().reportYearly());
+        menuButtonSetting.configureButton(mainRightPaneController.getBtnReportProfitLoss(), getReportsButtons().profitLossReport());
+        /*----------------------------------------------- Setting -----------------------------------------------*/
+        menuButtonSetting.configureButton(mainRightPaneController.getBtnHome(), getSettingButtons().home());
+        menuButtonSetting.configureButton(mainRightPaneController.getBtnSetting(), getSettingButtons().setting());
+        menuButtonSetting.configureButton(mainRightPaneController.getBtnShiftReports(), getSettingButtons().adminShifts());
+        menuButtonSetting.configureButton(mainRightPaneController.getBtnBackup(), getSettingButtons().backup());
+        menuButtonSetting.configureButton(mainRightPaneController.getBtnDeleteData(), getSettingButtons().deleteData());
+        menuButtonSetting.configureButton(mainRightPaneController.getBtnAbout(), getSettingButtons().about());
+        menuButtonSetting.configureButton(mainRightPaneController.getBtnClose(), getSettingButtons().close());
 
-        menuButtonSetting.initializeMenuItem(menuController.getMenuItemReportSalesByYear(), getAction(monthlySalesInterface.reportName(), monthlySalesInterface));
-        menuButtonSetting.initializeMenuItem(menuController.getMenuItemReportPurchaseByYear(), getAction(monthlyPurchaseInterface.reportName(), monthlyPurchaseInterface));
-
-//        menuButtonSetting.initializeMenuItem(menuController.getMenuItemReportCustom(), null);
-        menuButtonSetting.initializeMenuItem(menuController.getMenuItemCustomPaid(), getReportsButtons().reportCustomPaid());
-//        menuButtonSetting.initializeMenuItem(menuController.getMenuItemReportSuppliers(), null);
-        menuButtonSetting.initializeMenuItem(menuController.getMenuItemSuppliersPaid(), getReportsButtons().reportSupplierPaid());
-        // details
-        menuButtonSetting.initializeMenuItem(menuController.getMenuItemReportDetails(), getReportsButtons().detailsReport());
-        menuButtonSetting.initializeMenuItem(menuController.getMenuItemReportYearly(), getReportsButtons().reportYearly());
-        menuButtonSetting.initializeMenuItem(menuController.getMenuItemReportProfitLoss(), getReportsButtons().profitLossReport());
-    }
-
-    private void initializeMainMenuItemsSetting(MainMenuController menuController) {
-        menuButtonSetting.initializeMenuItem(menuController.getMenuItemHome(), getSettingButtons().home());
-        menuButtonSetting.initializeMenuItem(menuController.getMenuItemSettingUsers(), getSettingButtons().setting());
-        menuButtonSetting.initializeMenuItem(menuController.getMenuItemDeleteData(), getSettingButtons().deleteData());
-        menuButtonSetting.initializeMenuItem(menuController.getMenuItemBackup(), getSettingButtons().backup());
-        menuButtonSetting.initializeMenuItem(menuController.getMenuItemAbout(), getSettingButtons().about());
-        menuButtonSetting.initializeMenuItem(menuController.getMenuItemClose(), getSettingButtons().close());
-        menuButtonSetting.initializeMenuItem(menuController.getMenuItemShiftReports(), getSettingButtons().adminShifts());
+        dontShowData(mainRightPaneController);
     }
 
     private ButtonWithPerm getAction(String name, MonthlySalesInterface monthlySalesInterface) {
@@ -305,29 +226,6 @@ public class MainScreenController extends MainItems implements Initializable {
             }
 
         };
-    }
-
-    private void hamburgerAction(JFXDrawer drawer, Node node) {
-        DoubleProperty doubleProperty = new SimpleDoubleProperty(0);
-        drawer.prefWidthProperty().bind(doubleProperty);
-        drawer.setDefaultDrawerSize(doubleProperty.doubleValue());
-//        HamburgerBasicCloseTransition transition = new HamburgerBasicCloseTransition(hamburger);
-        JFXHamburger hamburger = toolbarController.getHamburger();
-        HamburgerBackArrowBasicTransition transition = new HamburgerBackArrowBasicTransition(hamburger);
-        transition.setRate(-1);
-        hamburger.setOnMouseClicked(mouseEvent -> {
-            transition.setRate(transition.getRate() * -1);
-            transition.play();
-            if (drawer.isOpened()) {
-                drawer.close();
-                drawer.getSidePane().clear();
-                doubleProperty.set(0);
-            } else {
-                drawer.open();
-                doubleProperty.set(200);
-                drawer.setSidePane(node);
-            }
-        });
     }
 
     private void firstBoxInMain() {
@@ -369,11 +267,10 @@ public class MainScreenController extends MainItems implements Initializable {
     }
 
 
-    private void dontShowData() {
+    private void dontShowData(MainRightPaneController mainRightPaneController) {
         var permissionDisableService = new DisableButtons.PermissionDisableService();
-        permissionDisableService.applyPermissionBasedDisable(menuController.getMenuEmployees(), AppPermissions.EMPLOYEE_SHOW);
-        permissionDisableService.applyPermissionBasedDisable(menuController.getMenuSetting(), AppPermissions.SETTING_SHOW);
-
+        permissionDisableService.applyPermissionBasedDisable(mainRightPaneController.getPaneEmployees(), AppPermissions.EMPLOYEE_SHOW);
+        permissionDisableService.applyPermissionBasedDisable(mainRightPaneController.getPaneSetting(), AppPermissions.SETTING_SHOW);
     }
 
 

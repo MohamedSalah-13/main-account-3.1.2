@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<?import com.jfoenix.controls.JFXDrawer?>
 <?import javafx.scene.control.Tab?>
 <?import javafx.scene.control.TabPane?>
 <?import javafx.scene.layout.AnchorPane?>
@@ -13,10 +12,8 @@
 <BorderPane fx:id="borderPane" nodeOrientation="RIGHT_TO_LEFT" prefHeight="478.0" prefWidth="723.0" styleClass="app-root" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1">
 
     <center>
-        <HBox styleClass="main-content" BorderPane.alignment="CENTER">
+        <HBox fx:id="mainContentBox" styleClass="main-content" BorderPane.alignment="CENTER">
             <children>
-                <JFXDrawer fx:id="drawer" defaultDrawerSize="0.0" />
-
                 <VBox fx:id="boxCenter" spacing="0.0" HBox.hgrow="ALWAYS">
                     <children>
                         <TabPane fx:id="tabPane" styleClass="main-tab-pane" tabClosingPolicy="ALL_TABS" VBox.vgrow="ALWAYS">

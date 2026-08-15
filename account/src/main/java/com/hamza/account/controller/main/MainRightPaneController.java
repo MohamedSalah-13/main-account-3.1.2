@@ -31,12 +31,19 @@ public class MainRightPaneController implements Initializable {
     private TextField txtSearch;
     @Getter
     @FXML
-    private Button btnSales, btnTotalSale, btnPurchase, btnTotalPurchase, btnPurchaseRe, btnTotalPurchaseRe, btnItems,
-            btnAddItem, btnUnits, btnMainGroup, btnInventory, btnCustomer, btnAccountCustom, btnSuppliers,
-            btnAccountSuppliers,
-            btnTreasuryDetails, btnProcess, btnExpenses, btnHome, btnUsers, btnBackup, btnClose;
+    private Button btnSales, btnSalesReturn, btnTotalSale, btnPurchase, btnTotalPurchase, btnPurchaseRe, btnTotalPurchaseRe, btnItems,
+            btnAddItem, btnUnits, btnMainGroup, btnSubGroup, btnArea, btnInventory, btnStockCount,
+            btnAddCustomerName, btnCustomer, btnAccountCustom, btnAddSupplierName, btnSuppliers,
+            btnAccountSuppliers, btnAddEmployee, btnEmployees, btnAddUser, btnUsers,
+            btnTreasuryDetails, btnProcess, btnExpenses,
+            btnReportSummary, btnReportItems, btnReportItemsDaily, btnReportSalesByYear, btnReportPurchaseByYear,
+            btnReportCustomPaid, btnReportSuppliersPaid, btnReportDetails, btnReportYearly, btnReportProfitLoss,
+            btnHome, btnSetting, btnShiftReports, btnBackup, btnDeleteData, btnAbout, btnClose;
+    @Getter
     @FXML
-    private TitledPane paneSales, panePurchase, paneItems, paneCustom, paneSuppliers, paneTreasury, paneSetting;
+    private TitledPane paneEmployees, paneSetting;
+    @FXML
+    private TitledPane paneSales, panePurchase, paneItems, paneCustom, paneSuppliers, paneTreasury, paneReports;
     @FXML
     private Text txtNameProject, txtName, txtTel;
     private PopOver searchPopOver;
@@ -58,7 +65,9 @@ public class MainRightPaneController implements Initializable {
         titlePaneSetting(paneItems, Setting_Language.WORD_ITEMS, imageSetting.itemWhite);
         titlePaneSetting(paneCustom, Setting_Language.WORD_CUSTOM, imageSetting.personCustomer);
         titlePaneSetting(paneSuppliers, Setting_Language.WORD_SUP, imageSetting.personSup);
+        titlePaneSetting(paneEmployees, Setting_Language.EMPLOYEES, imageSetting.account);
         titlePaneSetting(paneTreasury, Setting_Language.TREASURY, imageSetting.treasuryWhite);
+        titlePaneSetting(paneReports, Setting_Language.WORD_REPORT, imageSetting.reports);
         titlePaneSetting(paneSetting, Setting_Language.WORD_SETTING, imageSetting.setting);
 
         // Add a listener to txtSearch to filter TitledPane buttons
@@ -93,7 +102,9 @@ public class MainRightPaneController implements Initializable {
         filterSpecificPane(paneItems, lowerCaseSearchText);
         filterSpecificPane(paneCustom, lowerCaseSearchText);
         filterSpecificPane(paneSuppliers, lowerCaseSearchText);
+        filterSpecificPane(paneEmployees, lowerCaseSearchText);
         filterSpecificPane(paneTreasury, lowerCaseSearchText);
+        filterSpecificPane(paneReports, lowerCaseSearchText);
         filterSpecificPane(paneSetting, lowerCaseSearchText);
     }
 
@@ -135,7 +146,7 @@ public class MainRightPaneController implements Initializable {
 
     private void resetSearchVisibility() {
         // مصفوفة بكل القوائم لإرجاعها لوضعها الافتراضي
-        TitledPane[] allPanes = {paneSales, panePurchase, paneItems, paneCustom, paneSuppliers, paneTreasury, paneSetting};
+        TitledPane[] allPanes = {paneSales, panePurchase, paneItems, paneCustom, paneSuppliers, paneEmployees, paneTreasury, paneReports, paneSetting};
 
         for (TitledPane pane : allPanes) {
             setTitledPaneVisibility(pane, true);

@@ -10,14 +10,12 @@ import com.hamza.controlsfx.observer.Subscriptions;
 import com.hamza.account.features.rbac.CurrentUser;
 import com.hamza.controlsfx.button.ImageDesign;
 import com.hamza.controlsfx.language.Setting_Language;
-import com.jfoenix.controls.JFXHamburger;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.control.Button;
 import javafx.scene.control.MenuButton;
 import javafx.scene.control.MenuItem;
 import javafx.scene.control.ToolBar;
-import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 
@@ -34,9 +32,6 @@ public class MainToolbarController implements Initializable {
     private final DataPublisher dataPublisher;
     private final EventBus eventBus = ServiceRegistry.get(EventBus.class);
     private final Subscriptions subscriptions = new Subscriptions();
-    @Getter
-    @FXML
-    private JFXHamburger hamburger;
     @FXML
     private Button btnAlarm;
     @FXML
