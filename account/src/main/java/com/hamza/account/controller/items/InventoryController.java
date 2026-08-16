@@ -22,6 +22,7 @@ import com.hamza.account.service.StockService;
 import com.hamza.account.table.TableSetting;
 import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.database.DaoException;
+import com.hamza.controlsfx.language.LanguageManager;
 import com.hamza.controlsfx.observer.EventBus;
 import com.hamza.controlsfx.observer.Subscriptions;
 import javafx.animation.PauseTransition;
@@ -174,7 +175,7 @@ public class InventoryController {
     private void buildTable() {
         tableView.setId("inventoryTable");
         tableView.getStyleClass().add("modern-table");
-        tableView.setPlaceholder(new Label("لا توجد أصناف مطابقة"));
+        tableView.setPlaceholder(new Label(LanguageManager.getInstance().getString("item.inventory.placeholder.initial")));
 
         InventoryColumns.ALL.forEach(column -> tableView.getColumns().add(build(column)));
         tableView.setRowFactory(view -> new StockRow());
@@ -314,6 +315,8 @@ public class InventoryController {
      * usable; it is a filter, not the report.
      */
     private void buildGroupPicker() {
+        GroupChoice all = new GroupChoice(InventoryQuery.ALL_GROUPS,
+                LanguageManager.getInstance().getString("item.inventory.group.all"));
         choiceGroup.setConverter(new StringConverter<>() {
             @Override
             public String toString(GroupChoice choice) {
@@ -322,11 +325,11 @@ public class InventoryController {
 
             @Override
             public GroupChoice fromString(String string) {
-                return GroupChoice.ALL;
+                return all;
             }
         });
-        choiceGroup.getItems().add(GroupChoice.ALL);
-        choiceGroup.setValue(GroupChoice.ALL);
+        choiceGroup.getItems().add(all);
+        choiceGroup.setValue(all);
         choiceGroup.valueProperty().addListener((observable, oldValue, newValue) -> {
             if (!adjustingFilters && newValue != null) {
                 load(query.withMainGroup(newValue.id()));
@@ -350,10 +353,8 @@ public class InventoryController {
         thread.start();
     }
 
-    /** An entry in the group picker; {@link #ALL} is the "no group" option. */
+    /** An entry in the group picker; the "no group" option is built fresh in {@link #buildGroupPicker()}. */
     private record GroupChoice(int id, String name) {
-
-        static final GroupChoice ALL = new GroupChoice(InventoryQuery.ALL_GROUPS, "كل المجموعات");
     }
 
     /**
@@ -426,11 +427,11 @@ public class InventoryController {
     }
 
     private void explainTotals() {
-        Tooltip tooltip = new Tooltip("الإجماليات محسوبة على كل الأصناف المطابقة للفلاتر، وليست إجمالي الصفحة المعروضة");
+        Tooltip tooltip = new Tooltip(LanguageManager.getInstance().getString("item.inventory.tooltip.totals.explain"));
         Tooltip.install(textSumPurchase, tooltip);
         Tooltip.install(textSumSales, tooltip);
         Tooltip.install(textItemCount, tooltip);
-        Tooltip.install(tileLowStock, new Tooltip("اضغط لعرض الأصناف التي وصلت لحد الطلب أو أقل"));
+        Tooltip.install(tileLowStock, new Tooltip(LanguageManager.getInstance().getString("item.inventory.tooltip.low.stock.tile")));
     }
 
     /**
@@ -490,7 +491,7 @@ public class InventoryController {
             Throwable error = task.getException();
             // A failure here used to be wrapped in a RuntimeException thrown out of
             // the page factory: no Arabic message, and a broken Pagination.
-            AllAlerts.handleError("تحميل ورقة الجرد", error);
+            AllAlerts.handleError(LanguageManager.getInstance().getString("item.inventory.error.load.title"), error);
         });
 
         Thread thread = new Thread(task, "inventory-load-" + token);
@@ -523,9 +524,10 @@ public class InventoryController {
         syncFilters();
         showSummary(page.summary());
         showStatus(page);
+        var lm = LanguageManager.getInstance();
         tableView.setPlaceholder(new Label(query.isNarrowed()
-                ? "لا توجد أصناف مطابقة للفلاتر المختارة"
-                : "لا توجد أصناف"));
+                ? lm.getString("item.inventory.placeholder.no.match")
+                : lm.getString("item.inventory.placeholder.empty")));
     }
 
     /**
@@ -540,7 +542,8 @@ public class InventoryController {
         }
         long first = (long) query.page() * query.pageSize() + 1;
         long last = first + page.rows().size() - 1;
-        labelStatus.setText("عرض %s - %s من %s صنف".formatted(count(first), count(last), count(total)));
+        labelStatus.setText(LanguageManager.getInstance().getString("item.inventory.label.status",
+                count(first), count(last), count(total)));
     }
 
     /**
@@ -548,19 +551,23 @@ public class InventoryController {
      * total under a column is formatted exactly like the figures above it.
      */
     private void showSummary(InventorySummary summary) {
+        var lm = LanguageManager.getInstance();
         textSumPurchase.setText(ColumnKind.MONEY.format(summary.valueAtCost()));
         textSumSales.setText(ColumnKind.MONEY.format(summary.valueAtSale()));
         textItemCount.setText(count(summary.itemCount()));
         textLowStock.setText(count(summary.lowStockCount()));
 
-        labelCostHint.setText(query.isNarrowed() ? "للأصناف المطابقة للفلاتر" : "لكل أصناف المخزن");
+        labelCostHint.setText(query.isNarrowed()
+                ? lm.getString("item.inventory.hint.cost.narrowed")
+                : lm.getString("item.inventory.hint.cost.all"));
         // The gap between the two valuations, which is the margin still sitting on the
         // shelf. Not a profit until it is sold, so it is a hint and not a tile.
-        labelExpectedProfit.setText("الربح المتوقع " +
-                ColumnKind.MONEY.format(summary.valueAtSale() - summary.valueAtCost()));
-        labelTotalQuantity.setText("إجمالي الكمية " + ColumnKind.QUANTITY.format(summary.totalQuantity()));
-        labelStockStates.setText("منتهي %s · سالب %s"
-                .formatted(count(summary.outOfStockCount()), count(summary.negativeCount())));
+        labelExpectedProfit.setText(lm.getString("item.inventory.hint.expected.profit",
+                ColumnKind.MONEY.format(summary.valueAtSale() - summary.valueAtCost())));
+        labelTotalQuantity.setText(lm.getString("item.inventory.hint.total.quantity",
+                ColumnKind.QUANTITY.format(summary.totalQuantity())));
+        labelStockStates.setText(lm.getString("item.inventory.hint.stock.states",
+                count(summary.outOfStockCount()), count(summary.negativeCount())));
     }
 
     private static String count(long value) {
@@ -582,7 +589,7 @@ public class InventoryController {
         InventoryQuery snapshot = query;
 
         FileChooser chooser = new FileChooser();
-        chooser.setTitle("تصدير الجرد");
+        chooser.setTitle(LanguageManager.getInstance().getString("item.inventory.dialog.export.title"));
         chooser.setInitialFileName("inventory-" + LocalDate.now() + ".xlsx");
         chooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("Excel", "*.xlsx"));
         File file = chooser.showSaveDialog(root.getScene() == null ? null : root.getScene().getWindow());
@@ -610,13 +617,14 @@ public class InventoryController {
         task.setOnSucceeded(event -> {
             btnExcel.setDisable(false);
             progress.setVisible(false);
-            AllAlerts.alertSaveWithMessage("تم تصدير الجرد إلى " + file.getName());
+            AllAlerts.alertSaveWithMessage(LanguageManager.getInstance()
+                    .getString("item.inventory.msg.export.success", file.getName()));
         });
         task.setOnFailed(event -> {
             btnExcel.setDisable(false);
             progress.setVisible(false);
             Throwable error = task.getException();
-            AllAlerts.handleError("تصدير ورقة الجرد", error);
+            AllAlerts.handleError(LanguageManager.getInstance().getString("item.inventory.error.export.title"), error);
         });
 
         Thread thread = new Thread(task, "inventory-export");
@@ -651,7 +659,7 @@ public class InventoryController {
             btnPrint.setDisable(false);
             progress.setVisible(false);
             Throwable error = task.getException();
-            AllAlerts.handleError("طباعة ورقة الجرد", error);
+            AllAlerts.handleError(LanguageManager.getInstance().getString("item.inventory.error.print.title"), error);
         });
 
         Thread thread = new Thread(task, "inventory-print");

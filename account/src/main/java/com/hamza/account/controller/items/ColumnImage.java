@@ -4,6 +4,7 @@ import com.hamza.account.model.domain.ItemsModel;
 import com.hamza.account.service.ItemsService;
 import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.database.DaoException;
+import com.hamza.controlsfx.language.LanguageManager;
 import javafx.scene.control.*;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
@@ -46,10 +47,10 @@ public record ColumnImage(TableView<ItemsModel> tableView, ItemsService itemsSer
                 popup.getContent().add(popupImageView);
                 popup.setAutoHide(true);
 
-                var downloadImage = "حفظ الصورة";
-                var editImage = "تعديل الصورة";
-                var deleteImage = "حذف الصورة";
-                var refresh = "تحديث";
+                var downloadImage = LanguageManager.getInstance().getString("item.image.menu.save");
+                var editImage = LanguageManager.getInstance().getString("item.image.menu.edit");
+                var deleteImage = LanguageManager.getInstance().getString("item.image.menu.delete");
+                var refresh = LanguageManager.getInstance().getString("refresh");
 
                 MenuItem downloadItem = new MenuItem(downloadImage);
                 MenuItem editItem = new MenuItem(editImage);

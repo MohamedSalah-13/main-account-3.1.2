@@ -28,25 +28,25 @@
                         <!-- Toolbar -->
                         <HBox alignment="CENTER_LEFT" spacing="8.0" styleClass="app-card">
                             <children>
-                                <Label styleClass="form-label" text="بحث" />
-                                <TextField fx:id="textSearch" minWidth="220.0" promptText="اسم الصنف أو الباركود" />
+                                <Label styleClass="form-label" text="%search" />
+                                <TextField fx:id="textSearch" minWidth="220.0" promptText="%item.inventory.prompt.search" />
 
-                                <Label styleClass="form-label" text="المجموعة" />
+                                <Label styleClass="form-label" text="%item.inventory.label.group" />
                                 <ChoiceBox fx:id="choiceGroup" minWidth="150.0" />
 
-                                <Label styleClass="form-label" text="حالة المخزون" />
+                                <Label styleClass="form-label" text="%item.inventory.label.stock.status" />
                                 <ChoiceBox fx:id="choiceLevel" minWidth="130.0" />
 
-                                <CheckBox fx:id="checkInactive" mnemonicParsing="false" selected="true" text="إظهار الموقوفة" />
+                                <CheckBox fx:id="checkInactive" mnemonicParsing="false" selected="true" text="%item.inventory.check.show.inactive" />
 
-                                <Button fx:id="btnClearFilters" mnemonicParsing="false" styleClass="neutral-button" text="مسح الفلاتر" />
+                                <Button fx:id="btnClearFilters" mnemonicParsing="false" styleClass="neutral-button" text="%item.inventory.btn.clear.filters" />
                                 <ProgressIndicator fx:id="progress" maxHeight="18.0" maxWidth="18.0" visible="false" />
 
                                 <Region HBox.hgrow="ALWAYS" />
 
-                                <Button fx:id="btnRefresh" mnemonicParsing="false" styleClass="neutral-button" text="تحديث" />
+                                <Button fx:id="btnRefresh" mnemonicParsing="false" styleClass="neutral-button" text="%refresh" />
                                 <Button fx:id="btnExcel" mnemonicParsing="false" styleClass="excel-button" text="Excel" />
-                                <Button fx:id="btnPrint" mnemonicParsing="false" styleClass="primary-button" text="طباعة" />
+                                <Button fx:id="btnPrint" mnemonicParsing="false" styleClass="primary-button" text="%print" />
                             </children>
                             <padding>
                                 <Insets bottom="6.0" left="6.0" right="6.0" top="6.0" />
@@ -64,9 +64,9 @@
                                         <String fx:value="kpi-cost" />
                                     </styleClass>
                                     <children>
-                                        <Label styleClass="kpi-title" text="قيمة المخزون بسعر الشراء" />
+                                        <Label styleClass="kpi-title" text="%item.inventory.kpi.value.cost" />
                                         <Text fx:id="textSumPurchase" strokeType="OUTSIDE" strokeWidth="0.0" styleClass="kpi-value" text="0.00" />
-                                        <Label fx:id="labelCostHint" styleClass="kpi-hint" text="التكلفة" />
+                                        <Label fx:id="labelCostHint" styleClass="kpi-hint" text="%item.inventory.hint.cost.all" />
                                     </children>
                                 </VBox>
 
@@ -76,17 +76,17 @@
                                         <String fx:value="kpi-sale" />
                                     </styleClass>
                                     <children>
-                                        <Label styleClass="kpi-title" text="قيمة المخزون بسعر البيع" />
+                                        <Label styleClass="kpi-title" text="%item.inventory.kpi.value.sale" />
                                         <Text fx:id="textSumSales" strokeType="OUTSIDE" strokeWidth="0.0" styleClass="kpi-value" text="0.00" />
-                                        <Label fx:id="labelExpectedProfit" styleClass="kpi-hint" text="الربح المتوقع 0.00" />
+                                        <Label fx:id="labelExpectedProfit" styleClass="kpi-hint" text="" />
                                     </children>
                                 </VBox>
 
                                 <VBox styleClass="kpi-tile" HBox.hgrow="ALWAYS">
                                     <children>
-                                        <Label styleClass="kpi-title" text="عدد الأصناف" />
+                                        <Label styleClass="kpi-title" text="%item.inventory.kpi.item.count" />
                                         <Text fx:id="textItemCount" strokeType="OUTSIDE" strokeWidth="0.0" styleClass="kpi-value" text="0" />
-                                        <Label fx:id="labelTotalQuantity" styleClass="kpi-hint" text="إجمالي الكمية 0" />
+                                        <Label fx:id="labelTotalQuantity" styleClass="kpi-hint" text="" />
                                     </children>
                                 </VBox>
 
@@ -96,9 +96,9 @@
                                         <String fx:value="kpi-low" />
                                     </styleClass>
                                     <children>
-                                        <Label styleClass="kpi-title" text="تحت حد الطلب" />
+                                        <Label styleClass="kpi-title" text="%item.inventory.kpi.low.stock" />
                                         <Text fx:id="textLowStock" strokeType="OUTSIDE" strokeWidth="0.0" styleClass="kpi-value" text="0" />
-                                        <Label fx:id="labelStockStates" styleClass="kpi-hint" text="منتهي 0 · سالب 0" />
+                                        <Label fx:id="labelStockStates" styleClass="kpi-hint" text="" />
                                     </children>
                                 </VBox>
                             </children>

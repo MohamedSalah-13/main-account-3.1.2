@@ -24,20 +24,20 @@
 
                         <HBox alignment="CENTER_LEFT" spacing="8.0" styleClass="app-card">
                             <children>
-                                <Label styleClass="form-label" text="تاريخ الجرد" />
+                                <Label styleClass="form-label" text="%item.stockcount.label.count.date" />
                                 <DatePicker fx:id="datePicker" minWidth="140.0" />
 
-                                <Label styleClass="form-label" text="ملاحظات" />
-                                <TextField fx:id="textNotes" minWidth="200.0" promptText="اختياري" />
+                                <Label styleClass="form-label" text="%invoice.notes" />
+                                <TextField fx:id="textNotes" minWidth="200.0" promptText="%item.stockcount.prompt.optional" />
 
-                                <Label fx:id="labelStatus" styleClass="summary-light-label" text="مسودة" />
+                                <Label fx:id="labelStatus" styleClass="summary-light-label" text="%item.stockcount.status.draft" />
                                 <ProgressIndicator fx:id="progress" maxHeight="18.0" maxWidth="18.0" visible="false" />
 
                                 <Region HBox.hgrow="ALWAYS" />
 
-                                <Button fx:id="btnDelete" mnemonicParsing="false" styleClass="danger-button" text="حذف المسودة" />
-                                <Button fx:id="btnSave" mnemonicParsing="false" styleClass="neutral-button" text="حفظ" />
-                                <Button fx:id="btnPost" mnemonicParsing="false" styleClass="primary-button" text="ترحيل الجرد" />
+                                <Button fx:id="btnDelete" mnemonicParsing="false" styleClass="danger-button" text="%item.stockcount.btn.delete.draft" />
+                                <Button fx:id="btnSave" mnemonicParsing="false" styleClass="neutral-button" text="%common.save" />
+                                <Button fx:id="btnPost" mnemonicParsing="false" styleClass="primary-button" text="%item.stockcount.btn.post" />
                             </children>
                             <padding>
                                 <Insets bottom="6.0" left="6.0" right="6.0" top="6.0" />
@@ -48,9 +48,9 @@
                              scan either adds a line or moves to the one already there. -->
                         <HBox alignment="CENTER_LEFT" spacing="8.0" styleClass="app-card">
                             <children>
-                                <Label styleClass="form-label" text="امسح الباركود أو اكتب اسم الصنف" />
-                                <TextField fx:id="textScan" minWidth="320.0" promptText="باركود / اسم الصنف ثم Enter" />
-                                <Button fx:id="btnRemoveLine" mnemonicParsing="false" styleClass="neutral-button" text="حذف السطر" />
+                                <Label styleClass="form-label" text="%item.stockcount.label.scan.hint" />
+                                <TextField fx:id="textScan" minWidth="320.0" promptText="%item.stockcount.prompt.scan" />
+                                <Button fx:id="btnRemoveLine" mnemonicParsing="false" styleClass="neutral-button" text="%item.stockcount.btn.remove.line" />
                                 <Label fx:id="labelScanHint" styleClass="kpi-hint" text="" />
                             </children>
                             <padding>
@@ -62,7 +62,7 @@
                             <children>
                                 <VBox styleClass="kpi-tile" HBox.hgrow="ALWAYS">
                                     <children>
-                                        <Label styleClass="kpi-title" text="عدد الأسطر" />
+                                        <Label styleClass="kpi-title" text="%item.stockcount.kpi.line.count" />
                                         <Text fx:id="textLineCount" strokeType="OUTSIDE" strokeWidth="0.0" styleClass="kpi-value" text="0" />
                                     </children>
                                 </VBox>
@@ -73,7 +73,7 @@
                                         <String fx:value="kpi-low" />
                                     </styleClass>
                                     <children>
-                                        <Label styleClass="kpi-title" text="أسطر بها فروق" />
+                                        <Label styleClass="kpi-title" text="%item.stockcount.kpi.diff.count" />
                                         <Text fx:id="textDiffCount" strokeType="OUTSIDE" strokeWidth="0.0" styleClass="kpi-value" text="0" />
                                     </children>
                                 </VBox>
@@ -84,7 +84,7 @@
                                         <String fx:value="kpi-sale" />
                                     </styleClass>
                                     <children>
-                                        <Label styleClass="kpi-title" text="زيادة" />
+                                        <Label styleClass="kpi-title" text="%item.stockcount.kpi.surplus" />
                                         <Text fx:id="textSurplus" strokeType="OUTSIDE" strokeWidth="0.0" styleClass="kpi-value" text="0.000" />
                                     </children>
                                 </VBox>
@@ -95,7 +95,7 @@
                                         <String fx:value="kpi-cost" />
                                     </styleClass>
                                     <children>
-                                        <Label styleClass="kpi-title" text="عجز" />
+                                        <Label styleClass="kpi-title" text="%item.stockcount.kpi.shortage" />
                                         <Text fx:id="textShortage" strokeType="OUTSIDE" strokeWidth="0.0" styleClass="kpi-value" text="0.000" />
                                     </children>
                                 </VBox>

@@ -15,6 +15,7 @@ import com.hamza.account.service.ItemsService;
 import com.hamza.account.table.TableSetting;
 import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.database.DaoException;
+import com.hamza.controlsfx.language.LanguageManager;
 import com.hamza.controlsfx.observer.EventBus;
 import javafx.application.Platform;
 import javafx.beans.property.ReadOnlyObjectWrapper;
@@ -109,20 +110,21 @@ public class StockCountController {
     // ------------------------------------------------------------------
 
     private void buildTable() {
+        var lm = LanguageManager.getInstance();
         tableView.setId("stockCountTable");
         tableView.setEditable(true);
         tableView.setItems(lines);
-        tableView.setPlaceholder(new Label("امسح باركود صنف لبدء الجرد"));
+        tableView.setPlaceholder(new Label(lm.getString("item.stockcount.placeholder.scan.to.start")));
 
-        tableView.getColumns().add(text("item", "الصنف", StockCountLine::getItemName, 250));
-        tableView.getColumns().add(text("barcode", "الباركود", StockCountLine::getBarcode, 130));
-        tableView.getColumns().add(text("unit", "الوحدة", StockCountLine::getUnitName, 90));
+        tableView.getColumns().add(text("item", lm.getString("item.stockcount.column.item"), StockCountLine::getItemName, 250));
+        tableView.getColumns().add(text("barcode", lm.getString("column.barcode"), StockCountLine::getBarcode, 130));
+        tableView.getColumns().add(text("unit", lm.getString("item.column.unit"), StockCountLine::getUnitName, 90));
         tableView.getColumns().add(systemColumn());
         tableView.getColumns().add(countedColumn());
-        tableView.getColumns().add(number("difference", "الفرق", StockCountLine::difference));
+        tableView.getColumns().add(number("difference", lm.getString("item.stockcount.column.difference"), StockCountLine::difference));
         // Shown next to the difference so the difference explains itself. "-10, counted
         // 15, adjust by +25" reads as arithmetic; "+25" on its own reads as a mistake.
-        tableView.getColumns().add(number("resulting", "الرصيد بعد الترحيل", StockCountLine::resultingBalance));
+        tableView.getColumns().add(number("resulting", lm.getString("item.stockcount.column.resulting.balance"), StockCountLine::resultingBalance));
 
         // The whole point of the sheet is the difference column, so a row that has one
         // is shaded - reusing the inventory sheet's classes so surplus and shortage
@@ -182,7 +184,8 @@ public class StockCountController {
      * sheet is posted, while entering the missing purchase invoice is still an option.
      */
     private TableColumn<StockCountLine, Double> systemColumn() {
-        TableColumn<StockCountLine, Double> column = number("system", "دفتري", StockCountLine::getSystemQuantity);
+        TableColumn<StockCountLine, Double> column = number("system",
+                LanguageManager.getInstance().getString("item.stockcount.column.system"), StockCountLine::getSystemQuantity);
         column.setCellFactory(c -> {
             TableCell<StockCountLine, Double> cell = new TableCell<>() {
                 @Override
@@ -197,8 +200,8 @@ public class StockCountController {
                     setText(ColumnKind.QUANTITY.format(item));
                     if (item < 0) {
                         getStyleClass().add("count-suspect");
-                        setTooltip(new Tooltip("رصيد دفتري سالب: النظام سجّل بيع أكثر مما يعرف أنه موجود."
-                                               + "\nراجع فواتير الشراء الناقصة قبل الترحيل - التسوية ستغطي الفجوة كلها."));
+                        setTooltip(new Tooltip(LanguageManager.getInstance()
+                                .getString("item.stockcount.tooltip.negative.book")));
                     }
                 }
             };
@@ -213,7 +216,8 @@ public class StockCountController {
      * difference beside it is derived and a table does not know that.
      */
     private TableColumn<StockCountLine, Double> countedColumn() {
-        TableColumn<StockCountLine, Double> column = new TableColumn<>("فعلي");
+        TableColumn<StockCountLine, Double> column = new TableColumn<>(
+                LanguageManager.getInstance().getString("item.stockcount.column.counted"));
         column.setId("counted");
         column.setPrefWidth(120);
         column.setEditable(true);
@@ -333,7 +337,7 @@ public class StockCountController {
         task.setOnSucceeded(event -> {
             ItemsModel item = task.getValue();
             if (item == null) {
-                labelScanHint.setText("لا يوجد صنف بالكود: " + text);
+                labelScanHint.setText(LanguageManager.getInstance().getString("item.stockcount.scan.not.found", text));
                 return;
             }
             addOrIncrement(item, text);
@@ -394,7 +398,7 @@ public class StockCountController {
             return 0;
         }, moved -> {
             btnDelete.setDisable(false);
-            AllAlerts.alertSaveWithMessage("تم حفظ الجرد كمسودة");
+            AllAlerts.alertSaveWithMessage(LanguageManager.getInstance().getString("item.stockcount.msg.save.draft"));
         });
     }
 
@@ -403,17 +407,18 @@ public class StockCountController {
      * balances, and it cannot be undone by editing the sheet afterwards.
      */
     private void postSheet() {
+        var lm = LanguageManager.getInstance();
         List<StockCountLine> differing = sheet().linesWithDifference();
         String question = differing.isEmpty()
-                ? "لا توجد فروق في هذا الجرد. هل تريد ترحيله كما هو؟"
-                : "سيتم تعديل أرصدة %d صنف. هل تريد ترحيل الجرد؟".formatted(differing.size());
-        if (!AllAlerts.confirm_all("ترحيل الجرد", question)) {
+                ? lm.getString("item.stockcount.confirm.post.no.diff")
+                : lm.getString("item.stockcount.confirm.post.with.diff", differing.size());
+        if (!AllAlerts.confirm_all(lm.getString("item.stockcount.confirm.post.title"), question)) {
             return;
         }
 
         runSheetTask("stock-count-post", () -> stockCountService.post(sheet()), moved -> {
             eventBus.publish(new StockCountPosted(count.getId(), moved));
-            AllAlerts.alertSaveWithMessage("تم ترحيل الجرد وتعديل أرصدة %d صنف".formatted(moved));
+            AllAlerts.alertSaveWithMessage(lm.getString("item.stockcount.msg.post.success", moved));
             // The posted sheet is read-only from here, and the next count starts clean.
             show(count);
         });
@@ -424,7 +429,7 @@ public class StockCountController {
             return;
         }
         runSheetTask("stock-count-delete", () -> stockCountService.deleteDraft(sheet()), deleted -> {
-            AllAlerts.alertDeleteWithMessage("تم حذف المسودة");
+            AllAlerts.alertDeleteWithMessage(LanguageManager.getInstance().getString("item.stockcount.msg.delete.draft"));
             lines.clear();
             loadDraft();
         });

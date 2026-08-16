@@ -17,6 +17,7 @@ import com.hamza.account.authorization.PermissionKey;
 import com.hamza.account.view.AddGroupApp;
 import com.hamza.account.view.AddItemApplication;
 import com.hamza.account.view.OpenApplication;
+import com.hamza.controlsfx.language.LanguageManager;
 import com.hamza.controlsfx.language.Setting_Language;
 import javafx.scene.control.TabPane;
 import javafx.stage.Stage;
@@ -156,7 +157,7 @@ public class ItemsButtons {
             @NotNull
             @Override
             public String textName() {
-                return "الجرد الفعلي";
+                return LanguageManager.getInstance().getString("item.stockcount.title");
             }
 
             @Override
