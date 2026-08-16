@@ -11,6 +11,7 @@ import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.error.BusinessRuleException;
 import com.hamza.controlsfx.error.UserValidationException;
+import com.hamza.controlsfx.language.LanguageManager;
 import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
@@ -77,11 +78,12 @@ public class SettingTabPeriodLockController {
 
     private void buildTable() {
         colLockedUntil.setCellValueFactory(f -> new ReadOnlyObjectWrapper<>(
-                f.getValue().isClosed() ? f.getValue().lockedUntil().format(DAY) : "فُتحت الفترة"));
+                f.getValue().isClosed() ? f.getValue().lockedUntil().format(DAY)
+                        : LanguageManager.getInstance().getString("settings.periodLock.reopened")));
         colClosedAt.setCellValueFactory(f -> new ReadOnlyObjectWrapper<>(
                 f.getValue().closedAt() == null ? "" : f.getValue().closedAt().format(MOMENT)));
         colNotes.setCellValueFactory(f -> new ReadOnlyObjectWrapper<>(f.getValue().notes()));
-        tableHistory.setPlaceholder(new Label("لم يتم إغلاق أي فترة بعد"));
+        tableHistory.setPlaceholder(new Label(LanguageManager.getInstance().getString("settings.periodLock.noHistory")));
     }
 
     private void buildActions() {
@@ -91,61 +93,64 @@ public class SettingTabPeriodLockController {
 
     private void closePeriod() {
         LocalDate until = datePicker.getValue();
+        var lm = LanguageManager.getInstance();
         if (until == null) {
-            AllAlerts.handleError("إغلاق الفترة المحاسبية", new UserValidationException("اختر تاريخ الإغلاق"));
+            AllAlerts.handleError(lm.getString("settings.periodLock.closeContext"),
+                    new UserValidationException(lm.getString("settings.periodLock.chooseCloseDate")));
             return;
         }
         // Closing is not a keystroke away from being undone, so it is confirmed - and
-        // the question names the date, because "هل أنت متأكد" over an unnamed date is
+        // the question names the date, because "are you sure" over an unnamed date is
         // how the wrong month gets closed.
-        if (!AllAlerts.confirm_all("إغلاق الفترة المحاسبية",
-                "سيتم إغلاق كل الحركات حتى " + until.format(DAY)
-                + "\nلن يمكن تعديلها أو حذفها بعد ذلك. هل تريد المتابعة؟")) {
+        if (!AllAlerts.confirm_all(lm.getString("settings.periodLock.closeContext"),
+                lm.getString("settings.periodLock.closeConfirmMessage", until.format(DAY)))) {
             return;
         }
 
         try {
             periodLockService.close(until, textNotes.getText());
             textNotes.clear();
-            AllAlerts.alertSaveWithMessage("تم إغلاق الفترة حتى " + until.format(DAY));
+            AllAlerts.alertSaveWithMessage(lm.getString("settings.periodLock.closedMessage", until.format(DAY)));
             show();
         } catch (DaoException e) {
-            AllAlerts.handleError("إغلاق الفترة المحاسبية", e);
+            AllAlerts.handleError(lm.getString("settings.periodLock.closeContext"), e);
         }
     }
 
     private void reopenPeriod() {
+        var lm = LanguageManager.getInstance();
         if (!periodLockService.current().isClosed()) {
-            AllAlerts.handleError("فتح الفترة المحاسبية", new BusinessRuleException("لا توجد فترة مغلقة"));
+            AllAlerts.handleError(lm.getString("settings.periodLock.reopenContext"),
+                    new BusinessRuleException(lm.getString("settings.periodLock.noClosedPeriod")));
             return;
         }
-        if (!AllAlerts.confirm_all("فتح الفترة المحاسبية",
-                "سيصبح كل ما سبق قابلاً للتعديل والحذف مرة أخرى."
-                + "\nسيُسجَّل هذا الإجراء باسمك. هل تريد المتابعة؟")) {
+        if (!AllAlerts.confirm_all(lm.getString("settings.periodLock.reopenContext"),
+                lm.getString("settings.periodLock.reopenConfirmMessage"))) {
             return;
         }
 
         try {
             periodLockService.reopen(textNotes.getText());
             textNotes.clear();
-            AllAlerts.alertSaveWithMessage("تم فتح الفترة");
+            AllAlerts.alertSaveWithMessage(lm.getString("settings.periodLock.reopenedMessage"));
             show();
         } catch (DaoException e) {
-            AllAlerts.handleError("إعادة فتح الفترة المحاسبية", e);
+            AllAlerts.handleError(lm.getString("settings.periodLock.reopenErrorContext"), e);
         }
     }
 
     /** Re-reads the line rather than trusting the cache - another machine may have moved it. */
     private void show() {
         AccountingLock lock = periodLockService.refresh();
+        var lm = LanguageManager.getInstance();
 
         if (lock.isClosed()) {
-            labelState.setText("مغلقة حتى " + lock.lockedUntil().format(DAY));
-            labelDetail.setText("أول يوم مفتوح: " + lock.firstOpenDay().format(DAY));
+            labelState.setText(lm.getString("settings.periodLock.closedUntil", lock.lockedUntil().format(DAY)));
+            labelDetail.setText(lm.getString("settings.periodLock.firstOpenDay", lock.firstOpenDay().format(DAY)));
             datePicker.setValue(lock.lockedUntil());
         } else {
-            labelState.setText("الفترة مفتوحة");
-            labelDetail.setText("كل الحركات قابلة للتعديل والحذف حسب صلاحيات المستخدم");
+            labelState.setText(lm.getString("settings.periodLock.periodOpen"));
+            labelDetail.setText(lm.getString("settings.periodLock.openDetail"));
         }
         btnReopen.setDisable(btnReopen.isDisabled() || !lock.isClosed());
 

@@ -19,8 +19,8 @@
                     <children>
                         <VBox spacing="5.0">
                             <children>
-                                <Label styleClass="settings-title" text="إعدادات الباركود" />
-                                <Label styleClass="settings-subtitle" text="ضبط الأسعار والمجموعات وباركود الميزان وطريقة عرض الملصق" />
+                                <Label styleClass="settings-title" text="%settings.barcode.pageTitle" />
+                                <Label styleClass="settings-subtitle" text="%settings.barcode.pageSubtitle" />
                             </children>
                         </VBox>
 
@@ -35,13 +35,13 @@
                                     </columnConstraints>
 
                                     <children>
-                                        <Label fx:id="labelSub1" styleClass="form-label" text="سعر1" />
+                                        <Label fx:id="labelSub1" styleClass="form-label" text="%settings.barcode.price1" />
                                         <TextField fx:id="textPrice1" styleClass="modern-input" GridPane.columnIndex="1" />
 
-                                        <Label fx:id="labelType1" styleClass="form-label" text="سعر2" GridPane.columnIndex="2" />
+                                        <Label fx:id="labelType1" styleClass="form-label" text="%settings.barcode.price2" GridPane.columnIndex="2" />
                                         <TextField fx:id="textPrice2" styleClass="modern-input" GridPane.columnIndex="3" />
 
-                                        <Label fx:id="labelMain1" styleClass="form-label" text="سعر3" GridPane.rowIndex="1" />
+                                        <Label fx:id="labelMain1" styleClass="form-label" text="%settings.barcode.price3" GridPane.rowIndex="1" />
                                         <TextField fx:id="textPrice3" styleClass="modern-input" GridPane.columnIndex="1" GridPane.rowIndex="1" />
 
                                         <Label fx:id="labelMain" styleClass="form-label" text="Main Group" GridPane.rowIndex="2" />
@@ -53,18 +53,18 @@
                                         <Label fx:id="labelType" styleClass="form-label" text="Typ" GridPane.columnIndex="2" GridPane.rowIndex="3" />
                                         <ComboBox fx:id="comboType" maxWidth="1.7976931348623157E308" promptText="Type" GridPane.columnIndex="3" GridPane.rowIndex="3" />
 
-                                        <CheckBox fx:id="checkActivateBarcodeScale" mnemonicParsing="false" styleClass="modern-check-box" text="تفعيل ميزان الباركود" GridPane.columnIndex="1" GridPane.rowIndex="4" />
+                                        <CheckBox fx:id="checkActivateBarcodeScale" mnemonicParsing="false" styleClass="modern-check-box" text="%settings.barcode.activateScale" GridPane.columnIndex="1" GridPane.rowIndex="4" />
 
-                                        <Label styleClass="form-label" text="باركود يبدأ برقم" GridPane.rowIndex="5" />
+                                        <Label styleClass="form-label" text="%settings.barcode.startNumber" GridPane.rowIndex="5" />
                                         <TextField fx:id="textBarcodeStart" styleClass="modern-input" text="00" GridPane.columnIndex="1" GridPane.rowIndex="5" />
 
-                                        <Label styleClass="form-label" text="عدد أرقام الباركود" GridPane.columnIndex="2" GridPane.rowIndex="5" />
+                                        <Label styleClass="form-label" text="%settings.barcode.digitsCount" GridPane.columnIndex="2" GridPane.rowIndex="5" />
                                         <TextField fx:id="textCountBarcode" styleClass="modern-input" text="13" GridPane.columnIndex="3" GridPane.rowIndex="5" />
 
-                                        <Label styleClass="form-label" text="عدد أرقام الوزن" GridPane.rowIndex="6" />
+                                        <Label styleClass="form-label" text="%settings.barcode.weightDigits" GridPane.rowIndex="6" />
                                         <TextField fx:id="textCountScale" styleClass="modern-input" text="5" GridPane.columnIndex="1" GridPane.rowIndex="6" />
 
-                                        <Label styleClass="form-label" text="عدد أرقام الصنف" GridPane.columnIndex="2" GridPane.rowIndex="6" />
+                                        <Label styleClass="form-label" text="%settings.barcode.itemDigits" GridPane.columnIndex="2" GridPane.rowIndex="6" />
                                         <TextField fx:id="textCountItem" styleClass="modern-input" text="5" GridPane.columnIndex="3" GridPane.rowIndex="6" />
                                     </children>
                            <rowConstraints>

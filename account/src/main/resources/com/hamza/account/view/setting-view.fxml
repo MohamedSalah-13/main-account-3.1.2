@@ -16,10 +16,10 @@
                          styleClass="settings-tab-pane"
                          VBox.vgrow="ALWAYS">
                     <tabs>
-                        <Tab text="الشركة"/>
-                        <Tab text="النظام واللغة"/>
-                        <Tab text="الباركود"/>
-                        <Tab text="خيارات أخرى"/>
+                        <Tab text="%settings.company.tabTitle"/>
+                        <Tab text="%others"/>
+                        <Tab text="%items"/>
+                        <Tab text="%show"/>
                     </tabs>
                 </TabPane>
             </children>

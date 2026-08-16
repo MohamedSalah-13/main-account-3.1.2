@@ -23,8 +23,8 @@
                     <children>
                         <VBox spacing="5.0">
                             <children>
-                                <Label styleClass="settings-title" text="إعدادات النظام" />
-                                <Label styleClass="settings-subtitle" text="اللغة والثيم والطابعات والعملاء الافتراضيين" />
+                                <Label styleClass="settings-title" text="%settings.language.pageTitle" />
+                                <Label styleClass="settings-subtitle" text="%settings.language.pageSubtitle" />
                             </children>
                         </VBox>
 
@@ -53,7 +53,7 @@
                                 <ComboBox fx:id="comboLanguage" styleClass="modern-input" GridPane.columnIndex="1" GridPane.rowIndex="1" />
 
                                 <Label fx:id="labelPath" styleClass="form-label" text="Image Path" GridPane.rowIndex="2" />
-                                <Label fx:id="textPath" maxWidth="320.0" styleClass="settings-subtitle" text="لا يوجد" wrapText="true" GridPane.columnIndex="1" GridPane.rowIndex="2" />
+                                <Label fx:id="textPath" maxWidth="320.0" styleClass="settings-subtitle" text="%settings.image.none" wrapText="true" GridPane.columnIndex="1" GridPane.rowIndex="2" />
                                 <HBox alignment="CENTER_LEFT" spacing="6.0" GridPane.columnIndex="2" GridPane.rowIndex="2">
                                     <children>
                                         <Button fx:id="btnPath" mnemonicParsing="false" styleClass="icon-button" text="..." />
@@ -61,21 +61,21 @@
                                     </children>
                                 </HBox>
 
-                                <Label styleClass="form-label" text="فاتورة المبيعات" GridPane.rowIndex="3" />
-                                <Text strokeType="OUTSIDE" strokeWidth="0.0" styleClass="info-text" text="يتم تثبيت العميل والمندوب فى كل فاتورة بيع" GridPane.columnIndex="1" GridPane.rowIndex="3" />
+                                <Label styleClass="form-label" text="%settings.language.salesInvoiceSection" GridPane.rowIndex="3" />
+                                <Text strokeType="OUTSIDE" strokeWidth="0.0" styleClass="info-text" text="%settings.language.salesInvoiceHint" GridPane.columnIndex="1" GridPane.rowIndex="3" />
 
-                                <Label styleClass="form-label" text="العميل" GridPane.rowIndex="4" />
+                                <Label styleClass="form-label" text="%invoice.customer" GridPane.rowIndex="4" />
                                 <TextField fx:id="txtNameCustomer" disable="true" editable="false" styleClass="modern-input" GridPane.columnIndex="1" GridPane.rowIndex="4" />
                                 <Button fx:id="btnSaveCustomer" mnemonicParsing="false" styleClass="icon-button" text="..." GridPane.columnIndex="2" GridPane.rowIndex="4" />
 
-                                <Label styleClass="form-label" text="المندوب" GridPane.rowIndex="5" />
+                                <Label styleClass="form-label" text="%invoice.delegate" GridPane.rowIndex="5" />
                                 <TextField fx:id="txtNameDelegate" disable="true" editable="false" styleClass="modern-input" GridPane.columnIndex="1" GridPane.rowIndex="5" />
                                 <Button fx:id="btnSaveDelegate" mnemonicParsing="false" styleClass="icon-button" text="..." GridPane.columnIndex="2" GridPane.rowIndex="5" />
 
                                 <Label fx:id="labelRate" styleClass="form-label" text="Rate" GridPane.rowIndex="6" />
                                 <TextField fx:id="textRateSel" styleClass="modern-input" GridPane.columnIndex="1" GridPane.rowIndex="6" />
 
-                                <Label fx:id="labelMiniRate" styleClass="form-label" text="اعادة مسلسل الطابعة كل" GridPane.rowIndex="7" />
+                                <Label fx:id="labelMiniRate" styleClass="form-label" text="%settings.language.printerSerialResetLabel" GridPane.rowIndex="7" />
                                 <TextField fx:id="textSerial" styleClass="modern-input" GridPane.columnIndex="1" GridPane.rowIndex="7" />
 
                                 <Label fx:id="labelCurrency" styleClass="form-label" text="Currency" GridPane.rowIndex="8" />
@@ -108,7 +108,7 @@
                                     </children>
                                 </HBox>
 
-                                <Label fx:id="labelUiScale" styleClass="form-label" text="حجم الواجهة" GridPane.rowIndex="12" />
+                                <Label fx:id="labelUiScale" styleClass="form-label" text="%settings.language.uiScaleLabel" GridPane.rowIndex="12" />
                                 <ComboBox fx:id="comboUiScale" styleClass="modern-input" GridPane.columnIndex="1" GridPane.rowIndex="12" />
                             </children>
                      <rowConstraints>

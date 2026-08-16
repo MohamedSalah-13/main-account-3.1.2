@@ -14,7 +14,7 @@ import com.hamza.account.service.SupGroupService;
 import com.hamza.account.service.UnitsService;
 import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.database.DaoException;
-import com.hamza.controlsfx.language.Setting_Language;
+import com.hamza.controlsfx.language.LanguageManager;
 import com.hamza.account.features.events.SelPriceNamesChanged;
 import com.hamza.controlsfx.observer.EventBus;
 import javafx.collections.FXCollections;
@@ -73,13 +73,13 @@ public class SettingTabBarcodeController implements Initializable {
         comboSetting(daoFactory);
         barcodeScaleSetting();
         showCurrency.setDisable(true);
-        showCurrency.setText("عرض العملة");
+        showCurrency.setText(LanguageManager.getInstance().getString("settings.barcode.showCurrency"));
     }
 
     private void otherSetting() {
-        labelMain.setText(Setting_Language.WORD_MAIN_G);
-        labelSub.setText(Setting_Language.WORD_SUB_G);
-        labelType.setText(Setting_Language.UNITS);
+        labelMain.setText(LanguageManager.getInstance().getString("mainGroup"));
+        labelSub.setText(LanguageManager.getInstance().getString("subGroup"));
+        labelType.setText(LanguageManager.getInstance().getString("settings.barcode.units"));
 
         var priceSelService = loadPriceNames();
 
@@ -102,7 +102,7 @@ public class SettingTabBarcodeController implements Initializable {
             textPrice2.setText(priceList.get(1).getName());
             textPrice3.setText(priceList.get(2).getName());
         } catch (DaoException e) {
-            AllAlerts.handleError("تحميل أسماء أسعار البيع", e);
+            AllAlerts.handleError(LanguageManager.getInstance().getString("settings.barcode.loadPriceNamesContext"), e);
         }
         return priceSelService;
     }
@@ -117,7 +117,7 @@ public class SettingTabBarcodeController implements Initializable {
                 if (eventBus != null) eventBus.publish(new SelPriceNamesChanged(priceSelService.getIntegerStringHashMap()));
             }
         } catch (DaoException e) {
-            AllAlerts.handleError("حفظ أسماء أسعار البيع", e);
+            AllAlerts.handleError(LanguageManager.getInstance().getString("settings.barcode.savePriceNamesContext"), e);
         }
     }
 

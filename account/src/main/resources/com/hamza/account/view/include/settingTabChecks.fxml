@@ -17,8 +17,8 @@
                     <children>
                         <VBox spacing="5.0">
                             <children>
-                                <Label styleClass="settings-title" text="إعدادات التحقق والخيارات" />
-                                <Label styleClass="settings-subtitle" text="إعدادات الأصناف والفواتير والطباعة" />
+                                <Label styleClass="settings-title" text="%settings.checks.pageTitle" />
+                                <Label styleClass="settings-subtitle" text="%settings.checks.pageSubtitle" />
                             </children>
                         </VBox>
 
@@ -38,7 +38,7 @@
 
                                                 <VBox spacing="12.0">
                                                     <children>
-                                                        <CheckBox fx:id="checkShowImageHint" mnemonicParsing="false" styleClass="modern-check-box" text="إظهار تلميحات الصورة" />
+                                                        <CheckBox fx:id="checkShowImageHint" mnemonicParsing="false" styleClass="modern-check-box" text="%settings.checks.showImageHint" />
                                                     </children>
                                                 </VBox>
                                             </children>
@@ -59,7 +59,7 @@
                                                         <CheckBox fx:id="checkSelWithoutBalance" mnemonicParsing="false" styleClass="modern-check-box" text="Sales Without Balance" />
                                                         <CheckBox fx:id="updatePriceInInvoice" mnemonicParsing="false" styleClass="modern-check-box" text="Update Price In Invoice" />
                                                         <CheckBox fx:id="printReceiptInvoice" mnemonicParsing="false" styleClass="modern-check-box" text="Print invoice receipt" />
-                                                        <CheckBox fx:id="showScreenAlone" mnemonicParsing="false" styleClass="modern-check-box" text="عرض شاشة منفصلة" />
+                                                        <CheckBox fx:id="showScreenAlone" mnemonicParsing="false" styleClass="modern-check-box" text="%settings.checks.showSeparateScreen" />
                                                     </children>
                                                 </VBox>
 
@@ -68,13 +68,13 @@
                                                         <CheckBox fx:id="checkIncreaseItemOnTable" mnemonicParsing="false" styleClass="modern-check-box" text="increase Item On Table" />
                                                         <CheckBox fx:id="checkBackupAfterSave" mnemonicParsing="false" styleClass="modern-check-box" text="backup after save invoice" />
                                                         <CheckBox fx:id="checkPrintReceiptAccount" mnemonicParsing="false" styleClass="modern-check-box" text="Print invoice receipt" />
-                                                        <CheckBox fx:id="checkInvoicePaid" mnemonicParsing="false" styleClass="modern-check-box" text="شاشة المبلغ المدفوع" />
+                                                        <CheckBox fx:id="checkInvoicePaid" mnemonicParsing="false" styleClass="modern-check-box" text="%settings.checks.showPaidScreen" />
                                                     </children>
                                                 </VBox>
 
                                                 <VBox spacing="12.0">
                                                     <children>
-                                                        <CheckBox fx:id="checkAddItemDirect" mnemonicParsing="false" styleClass="modern-check-box" text="إضافة الصنف مباشرة فى الفاتورة" />
+                                                        <CheckBox fx:id="checkAddItemDirect" mnemonicParsing="false" styleClass="modern-check-box" text="%settings.checks.addItemDirect" />
                                                     </children>
                                                 </VBox>
                                             </children>
@@ -99,7 +99,7 @@
 
                                                 <VBox spacing="12.0">
                                                     <children>
-                                                        <CheckBox fx:id="checkShowTotals" mnemonicParsing="false" styleClass="modern-check-box" text="عرض الاجماليات فى الشاشة الرئيسية" />
+                                                        <CheckBox fx:id="checkShowTotals" mnemonicParsing="false" styleClass="modern-check-box" text="%settings.checks.showTotalsOnHome" />
                                                     </children>
                                                 </VBox>
                                             </children>

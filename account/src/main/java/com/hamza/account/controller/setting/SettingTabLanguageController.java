@@ -18,7 +18,6 @@ import com.hamza.account.view.TableWithTextSearchApplication;
 import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.language.LanguageManager;
-import com.hamza.controlsfx.language.Setting_Language;
 import com.hamza.controlsfx.observer.EventBus;
 import com.hamza.controlsfx.observer.Publisher;
 import com.hamza.controlsfx.others.TextFormat;
@@ -145,14 +144,14 @@ public class SettingTabLanguageController implements Initializable {
         btnPrinterSettingBarcode.setText("");
         btnPrinterSettingNormal.setText("");
 
-        labelRate.setText(Setting_Language.WORD_RATE);
+        labelRate.setText(LanguageManager.getInstance().getString("rate"));
         labelLanguage.setText(LanguageManager.getInstance().getString("settings.language"));
 
-        labelPrintNormal.setText(Setting_Language.print1);
-        labelPrintBarcode.setText(Setting_Language.print2);
-        labelPrintOther.setText(Setting_Language.print3);
-        labelPath.setText("صورة الخلفية");
-        labelCurrency.setText(Setting_Language.THE_CURRENCY);
+        labelPrintNormal.setText(LanguageManager.getInstance().getString("settings.printer.normal"));
+        labelPrintBarcode.setText(LanguageManager.getInstance().getString("settings.printer.barcode"));
+        labelPrintOther.setText(LanguageManager.getInstance().getString("settings.printer.invoice"));
+        labelPath.setText(LanguageManager.getInstance().getString("settings.image.pathLabel"));
+        labelCurrency.setText(LanguageManager.getInstance().getString("settings.currency"));
 
         textPrintNormal.setText(getSettingPrinterNormal());
         textPrintBarcode.setText(getSettingPrinterBarcode());
@@ -167,7 +166,7 @@ public class SettingTabLanguageController implements Initializable {
         btnPrinterSettingBarcode.setOnAction(actionEvent -> openSettingPrinter(textPrintBarcode.getText()));
         btnPrinterSettingOther.setOnAction(actionEvent -> openSettingPrinter(textPrintOther.getText()));
         // add imagePath
-        var text = "لا يوجد صورة";
+        var text = LanguageManager.getInstance().getString("settings.image.none");
         textPath.setText(getPathImageMainScreen().isEmpty() ? text : getPathImageMainScreen());
         chooseCurrency();
         radioSystem.setDisable(true);
@@ -235,7 +234,7 @@ public class SettingTabLanguageController implements Initializable {
                 txtNameCustomer.setText(itemsModel.getName());
             });
         } catch (IOException e) {
-            AllAlerts.handleError("فتح شاشة البحث عن عميل", e);
+            AllAlerts.handleError(LanguageManager.getInstance().getString("settings.customerSearch.context"), e);
         }
     }
 
@@ -250,7 +249,7 @@ public class SettingTabLanguageController implements Initializable {
 
                 @Override
                 public String getName(Employees customers) {
-                    return Setting_Language.EMPLOYEES;
+                    return LanguageManager.getInstance().getString("employees");
                 }
 
                 @Override
@@ -266,7 +265,7 @@ public class SettingTabLanguageController implements Initializable {
                 setSettingSaveNameDelegate(String.valueOf(itemsModel.getId()));
             });
         } catch (IOException e) {
-            AllAlerts.handleError("فتح شاشة البحث عن مندوب", e);
+            AllAlerts.handleError(LanguageManager.getInstance().getString("settings.delegateSearch.context"), e);
         }
     }
 
@@ -278,7 +277,7 @@ public class SettingTabLanguageController implements Initializable {
             // hands each argument over whole and needs no quoting.
             new ProcessBuilder("rundll32", "printui.dll,PrintUIEntry", "/e", "/n", printerName).start();
         } catch (IOException e) {
-            AllAlerts.handleError("فتح إعدادات الطابعة", e);
+            AllAlerts.handleError(LanguageManager.getInstance().getString("settings.printerSettings.context"), e);
         }
     }
 
@@ -414,13 +413,11 @@ public class SettingTabLanguageController implements Initializable {
     }
 
     /**
-     * Most of this tab's own labels still come from {@link Setting_Language}, the
-     * Arabic-only constant set that predates {@link LanguageManager} and has not been
-     * migrated yet - so most of them do not actually change here. {@code labelLanguage}
-     * is migrated as the proof this mechanism works: it is the one label on this tab
-     * read from the bundle, and it does flip with the combo box. Screens built entirely
-     * from {@code %key} FXML bindings (login, and future migrated screens) need no
-     * equivalent method at all - they reload through {@link
+     * This tab's other labels are read from {@link LanguageManager} too, but only once,
+     * in {@code otherSetting()} at load time - so, unlike {@code labelLanguage}, they do
+     * not flip with the combo box until the tab is reopened. Screens built entirely from
+     * {@code %key} FXML bindings (login, and future migrated screens) need no equivalent
+     * method at all - they reload through {@link
      * com.hamza.account.openFxml.OpenFxmlApplication}, which re-reads {@link
      * LanguageManager#getResourceBundle()} on every load.
      */

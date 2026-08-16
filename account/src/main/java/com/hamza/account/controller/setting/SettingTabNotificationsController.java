@@ -4,6 +4,7 @@ import com.hamza.account.features.notification.NotificationBootstrap;
 import com.hamza.account.features.notification.NotificationCategories;
 import com.hamza.account.features.notification.StockLevelAlert;
 import com.hamza.account.openFxml.FxmlPath;
+import com.hamza.controlsfx.language.LanguageManager;
 import com.hamza.controlsfx.notifications.NotificationChannel;
 import com.hamza.controlsfx.notifications.NotificationPreferences;
 import com.hamza.controlsfx.notifications.NotificationScheduler;
@@ -158,7 +159,7 @@ public class SettingTabNotificationsController implements Initializable {
         });
 
         comboDefaultChannel.getItems().setAll(NotificationChannel.values());
-        comboDefaultChannel.setConverter(channelConverter("داخل البرنامج"));
+        comboDefaultChannel.setConverter(channelConverter(LanguageManager.getInstance().getString("settings.notifications.channelInApp")));
         comboDefaultChannel.setValue(NotificationPreferences.getDefaultChannel());
         comboDefaultChannel.valueProperty().addListener((observable, oldValue, newValue) -> {
             if (newValue != null) {
@@ -171,8 +172,8 @@ public class SettingTabNotificationsController implements Initializable {
         // unavailable would otherwise get silence and no explanation.
         boolean windowsAvailable = WindowsNotifier.isAvailable();
         labelWindowsSupport.setText(windowsAvailable
-                ? "إشعارات ويندوز متاحة على هذا الجهاز"
-                : "إشعارات ويندوز غير متاحة على هذا الجهاز - سيتم العرض داخل البرنامج");
+                ? LanguageManager.getInstance().getString("settings.notifications.windowsAvailable")
+                : LanguageManager.getInstance().getString("settings.notifications.windowsUnavailable"));
         labelWindowsSupport.setVisible(!windowsAvailable);
         labelWindowsSupport.setManaged(!windowsAvailable);
     }
@@ -213,7 +214,7 @@ public class SettingTabNotificationsController implements Initializable {
     private void registeredRules() {
         NotificationBootstrap bootstrap = NotificationBootstrap.getIfStarted();
         if (bootstrap == null) {
-            gridSources.add(new Label("لم يتم تشغيل نظام الإشعارات بعد"), 0, 0);
+            gridSources.add(new Label(LanguageManager.getInstance().getString("settings.notifications.notStarted")), 0, 0);
             return;
         }
 
@@ -223,12 +224,15 @@ public class SettingTabNotificationsController implements Initializable {
                 .toList();
 
         if (sources.isEmpty()) {
-            gridSources.add(new Label("لا توجد قواعد مسجلة"), 0, 0);
+            gridSources.add(new Label(LanguageManager.getInstance().getString("settings.notifications.noRules")), 0, 0);
             return;
         }
 
         gridSources.addRow(0,
-                header("القاعدة"), header("كل (دقيقة)"), header("طريقة العرض"), header("الحالة"));
+                header(LanguageManager.getInstance().getString("settings.notifications.colRule")),
+                header(LanguageManager.getInstance().getString("settings.notifications.colInterval")),
+                header(LanguageManager.getInstance().getString("settings.notifications.colChannel")),
+                header(LanguageManager.getInstance().getString("settings.notifications.colStatus")));
 
         int row = 1;
         for (NotificationSource source : sources) {
@@ -247,7 +251,9 @@ public class SettingTabNotificationsController implements Initializable {
     }
 
     private Label stateLabel(NotificationSource source) {
-        Label label = new Label(source.enabled() ? "مفعلة" : "غير مفعلة");
+        Label label = new Label(source.enabled()
+                ? LanguageManager.getInstance().getString("settings.notifications.enabled")
+                : LanguageManager.getInstance().getString("settings.notifications.disabled"));
         label.getStyleClass().add("settings-subtitle");
         return label;
     }
@@ -280,7 +286,7 @@ public class SettingTabNotificationsController implements Initializable {
         ComboBox<NotificationChannel> combo = new ComboBox<>();
         combo.getItems().add(null);
         combo.getItems().addAll(NotificationChannel.values());
-        combo.setConverter(channelConverter("حسب الإعداد العام"));
+        combo.setConverter(channelConverter(LanguageManager.getInstance().getString("settings.notifications.channelFollowGlobal")));
         combo.setValue(NotificationPreferences.getChannel(source.id()));
         combo.setPrefWidth(170);
         combo.valueProperty().addListener((observable, oldValue, newValue) -> {
@@ -305,12 +311,13 @@ public class SettingTabNotificationsController implements Initializable {
     }
 
     private String arabicNameOf(NotificationSeverity severity) {
+        var lm = LanguageManager.getInstance();
         return switch (severity) {
-            case INFO -> "معلومة";
-            case SUCCESS -> "نجاح";
-            case WARNING -> "تحذير";
-            case ERROR -> "خطأ";
-            case CRITICAL -> "حرج";
+            case INFO -> lm.getString("settings.notifications.severity.info");
+            case SUCCESS -> lm.getString("settings.notifications.severity.success");
+            case WARNING -> lm.getString("settings.notifications.severity.warning");
+            case ERROR -> lm.getString("error");
+            case CRITICAL -> lm.getString("settings.notifications.severity.critical");
         };
     }
 

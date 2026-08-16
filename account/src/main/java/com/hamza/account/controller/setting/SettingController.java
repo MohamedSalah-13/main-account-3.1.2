@@ -8,7 +8,7 @@ import com.hamza.account.openFxml.FxmlPath;
 import com.hamza.account.openFxml.OpenFxmlApplication;
 import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.interfaceData.AppSettingInterface;
-import com.hamza.controlsfx.language.Setting_Language;
+import com.hamza.controlsfx.language.LanguageManager;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.fxml.Initializable;
@@ -53,7 +53,7 @@ public class SettingController implements Initializable, AppSettingInterface {
         try {
             addTabs();
         } catch (Exception e) {
-            AllAlerts.handleError("تحميل شاشة الإعدادات", e);
+            AllAlerts.handleError(LanguageManager.getInstance().getString("settings.loadContext"), e);
         }
 
         int paneShow = getPaneIndex();
@@ -66,29 +66,30 @@ public class SettingController implements Initializable, AppSettingInterface {
     }
 
     private void addTabs() throws Exception {
+        var lm = LanguageManager.getInstance();
         // tab company
         Tab tabCompany = pane.getTabs().getFirst();
         tabCompany.setContent(getTabCompany());
-        tabCompany.setText(Setting_Language.COMPANY_DATA);
+        tabCompany.setText(lm.getString("settings.company.tabTitle"));
         // tab language
         Tab tabLanguage = pane.getTabs().get(1);
         tabLanguage.setContent(getTabLanguage());
-        tabLanguage.setText(Setting_Language.OTHERS);
+        tabLanguage.setText(lm.getString("others"));
         // tab barcode
         Tab tabBarcode = pane.getTabs().get(2);
         tabBarcode.setContent(getTabBarcode());
-        tabBarcode.setText(Setting_Language.WORD_ITEMS);
+        tabBarcode.setText(lm.getString("items"));
         // tab checks
         Tab tabChecks = pane.getTabs().get(3);
         tabChecks.setContent(getTabChecks());
-        tabChecks.setText(Setting_Language.WORD_SHOW);
+        tabChecks.setText(lm.getString("show"));
         // add tab notifications
-        pane.getTabs().add(new Tab("الإشعارات", getTabNotifications()));
+        pane.getTabs().add(new Tab(lm.getString("settings.notifications.tabTitle"), getTabNotifications()));
         // add tab accounting period
-        pane.getTabs().add(new Tab("الفترة المحاسبية", getTabPeriodLock()));
+        pane.getTabs().add(new Tab(lm.getString("settings.periodLock.tabTitle"), getTabPeriodLock()));
         // add tab backup
 //        Pane backupAppPane = backupSetting();
-        pane.getTabs().add(new Tab(Setting_Language.WORD_BACKUP, backup()));
+        pane.getTabs().add(new Tab(lm.getString("backup"), backup()));
     }
 
     private Pane getTabNotifications() throws Exception {
@@ -137,7 +138,7 @@ public class SettingController implements Initializable, AppSettingInterface {
 
     @Override
     public String title() {
-        return Setting_Language.WORD_SETTING;
+        return LanguageManager.getInstance().getString("settings.title");
     }
 
     @Override

@@ -29,8 +29,8 @@
                     <children>
                         <VBox spacing="2.0">
                             <children>
-                                <Label styleClass="settings-title" text="إعدادات الإشعارات"/>
-                                <Label styleClass="settings-subtitle" text="التحكم فيما ينبهك إليه البرنامج ومتى"/>
+                                <Label styleClass="settings-title" text="%settings.notifications.pageTitle"/>
+                                <Label styleClass="settings-subtitle" text="%settings.notifications.pageSubtitle"/>
                             </children>
                         </VBox>
 
@@ -46,11 +46,11 @@
                                       GridPane.columnIndex="0" GridPane.rowIndex="0">
                                     <children>
                                         <Text strokeType="OUTSIDE" strokeWidth="0.0" styleClass="section-title"
-                                              text="عام"/>
+                                              text="%settings.notifications.generalSection"/>
                                         <CheckBox fx:id="checkEnabled" mnemonicParsing="false"
-                                                  styleClass="modern-check-box" text="تفعيل الإشعارات"/>
+                                                  styleClass="modern-check-box" text="%settings.notifications.enable"/>
                                         <CheckBox fx:id="checkSound" mnemonicParsing="false"
-                                                  styleClass="modern-check-box" text="تشغيل صوت مع التنبيهات المهمة"/>
+                                                  styleClass="modern-check-box" text="%settings.notifications.sound"/>
 
                                         <GridPane hgap="10.0" vgap="8.0">
                                             <columnConstraints>
@@ -58,17 +58,17 @@
                                                 <ColumnConstraints minWidth="170.0"/>
                                             </columnConstraints>
                                             <children>
-                                                <Label styleClass="form-label" text="أقل مستوى يظهر كتنبيه منبثق"
+                                                <Label styleClass="form-label" text="%settings.notifications.thresholdLabel"
                                                        GridPane.columnIndex="0" GridPane.rowIndex="0"/>
                                                 <ComboBox fx:id="comboThreshold" maxWidth="Infinity"
                                                           GridPane.columnIndex="1" GridPane.rowIndex="0"/>
 
-                                                <Label styleClass="form-label" text="طريقة عرض التنبيه المنبثق"
+                                                <Label styleClass="form-label" text="%settings.notifications.channelLabel"
                                                        GridPane.columnIndex="0" GridPane.rowIndex="1"/>
                                                 <ComboBox fx:id="comboDefaultChannel" maxWidth="Infinity"
                                                           GridPane.columnIndex="1" GridPane.rowIndex="1"/>
 
-                                                <Label styleClass="form-label" text="أقل فترة بين تكرار نفس التنبيه (دقيقة)"
+                                                <Label styleClass="form-label" text="%settings.notifications.cooldownLabel"
                                                        GridPane.columnIndex="0" GridPane.rowIndex="2"/>
                                                 <Spinner fx:id="spinnerCooldown" maxWidth="Infinity"
                                                          GridPane.columnIndex="1" GridPane.rowIndex="2"/>
@@ -85,14 +85,14 @@
                                       GridPane.columnIndex="1" GridPane.rowIndex="0">
                                     <children>
                                         <Text strokeType="OUTSIDE" strokeWidth="0.0" styleClass="section-title"
-                                              text="أنواع الإشعارات"/>
+                                              text="%settings.notifications.categoriesSection"/>
                                         <Label styleClass="settings-subtitle" wrapText="true"
-                                               text="أزل العلامة لإيقاف نوع بعينه دون إيقاف الباقي"/>
+                                               text="%settings.notifications.categoriesHint"/>
                                         <VBox fx:id="boxCategories" spacing="8.0"/>
                                         <Separator styleClass="settings-separator"/>
                                         <CheckBox fx:id="checkStockOnSale" mnemonicParsing="false" wrapText="true"
                                                   styleClass="modern-check-box"
-                                                  text="تنبيه فوري عند بيع صنف وصل للحد الأدنى أو نفد أو رصيده سالب"/>
+                                                  text="%settings.notifications.stockOnSale"/>
                                     </children>
                                 </VBox>
 
@@ -101,9 +101,9 @@
                                       GridPane.columnIndex="0" GridPane.rowIndex="1" GridPane.columnSpan="2">
                                     <children>
                                         <Text strokeType="OUTSIDE" strokeWidth="0.0" styleClass="section-title"
-                                              text="القواعد وتوقيتها"/>
+                                              text="%settings.notifications.rulesSection"/>
                                         <Label styleClass="settings-subtitle" wrapText="true"
-                                               text="حدد كل كم دقيقة يفحص البرنامج كل قاعدة، وأين يظهر تنبيهها"/>
+                                               text="%settings.notifications.rulesHint"/>
                                         <GridPane fx:id="gridSources" hgap="14.0" vgap="8.0"/>
                                     </children>
                                 </VBox>

@@ -19,25 +19,25 @@
 
         <VBox spacing="4.0" styleClass="app-card">
             <children>
-                <Label styleClass="section-title" text="الفترة المحاسبية" />
-                <Label fx:id="labelState" styleClass="kpi-value" text="الفترة مفتوحة" />
+                <Label styleClass="section-title" text="%settings.periodLock.tabTitle" />
+                <Label fx:id="labelState" styleClass="kpi-value" text="%settings.periodLock.periodOpen" />
                 <Label fx:id="labelDetail" styleClass="kpi-hint" text="" />
-                <Label styleClass="info-text" text="إغلاق فترة يعني أن كل ما قبل التاريخ المحدد قد تمت مراجعته وإصدار تقاريره، ولا يُعدَّل ولا يُحذف بعد ذلك. التصحيح داخل فترة مغلقة يحتاج صلاحية خاصة." wrapText="true" />
+                <Label styleClass="info-text" text="%settings.periodLock.closeExplanation" wrapText="true" />
             </children>
         </VBox>
 
         <VBox spacing="8.0" styleClass="app-card">
             <children>
-                <Label styleClass="section-title" text="إغلاق حتى تاريخ" />
+                <Label styleClass="section-title" text="%settings.periodLock.closeUntilSection" />
                 <HBox alignment="CENTER_LEFT" spacing="8.0">
                     <children>
-                        <Label minWidth="80.0" styleClass="form-label" text="التاريخ" />
+                        <Label minWidth="80.0" styleClass="form-label" text="%date" />
                         <DatePicker fx:id="datePicker" minWidth="160.0" />
-                        <Label styleClass="form-label" text="السبب" />
-                        <TextField fx:id="textNotes" minWidth="240.0" promptText="اختياري - مثال: إقفال سنة 2025" />
+                        <Label styleClass="form-label" text="%settings.periodLock.reason" />
+                        <TextField fx:id="textNotes" minWidth="240.0" promptText="%settings.periodLock.reasonPrompt" />
                         <Region HBox.hgrow="ALWAYS" />
-                        <Button fx:id="btnReopen" mnemonicParsing="false" styleClass="danger-button" text="فتح الفترة" />
-                        <Button fx:id="btnClose" mnemonicParsing="false" styleClass="primary-button" text="إغلاق الفترة" />
+                        <Button fx:id="btnReopen" mnemonicParsing="false" styleClass="danger-button" text="%settings.periodLock.reopenButton" />
+                        <Button fx:id="btnClose" mnemonicParsing="false" styleClass="primary-button" text="%settings.periodLock.closeButton" />
                     </children>
                 </HBox>
             </children>
@@ -45,12 +45,12 @@
 
         <VBox spacing="6.0" styleClass="app-card" VBox.vgrow="ALWAYS">
             <children>
-                <Label styleClass="section-title" text="سجل الإغلاق" />
+                <Label styleClass="section-title" text="%settings.periodLock.historySection" />
                 <TableView fx:id="tableHistory" styleClass="modern-table" VBox.vgrow="ALWAYS">
                     <columns>
-                        <TableColumn fx:id="colLockedUntil" prefWidth="140.0" text="مغلق حتى" />
-                        <TableColumn fx:id="colClosedAt" prefWidth="170.0" text="وقت التسجيل" />
-                        <TableColumn fx:id="colNotes" prefWidth="300.0" text="السبب" />
+                        <TableColumn fx:id="colLockedUntil" prefWidth="140.0" text="%settings.periodLock.colLockedUntil" />
+                        <TableColumn fx:id="colClosedAt" prefWidth="170.0" text="%settings.periodLock.colClosedAt" />
+                        <TableColumn fx:id="colNotes" prefWidth="300.0" text="%settings.periodLock.reason" />
                     </columns>
                 </TableView>
             </children>

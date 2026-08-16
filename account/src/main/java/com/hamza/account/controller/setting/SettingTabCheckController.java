@@ -3,7 +3,7 @@ package com.hamza.account.controller.setting;
 import com.hamza.account.controller.main.DataPublisher;
 import com.hamza.account.openFxml.FxmlPath;
 import com.hamza.account.features.rbac.CurrentUser;
-import com.hamza.controlsfx.language.Setting_Language;
+import com.hamza.controlsfx.language.LanguageManager;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.control.CheckBox;
@@ -54,32 +54,34 @@ public class SettingTabCheckController implements Initializable {
     }
 
     private void otherSetting() {
-        textItem.setText(Setting_Language.WORD_ITEMS);
-        textInvoice.setText(Setting_Language.showInv);
-        textOthers.setText(Setting_Language.OTHERS);
+        var lm = LanguageManager.getInstance();
+        textItem.setText(lm.getString("items"));
+        textInvoice.setText(lm.getString("settings.checks.invoiceSection"));
+        textOthers.setText(lm.getString("others"));
     }
 
     private void forItems() {
+        var lm = LanguageManager.getInstance();
         checkShowTotals.setDisable(CurrentUser.get().getId() != 1);
-        checkSetting(checkShowBeforePrint, "عرض قبل الطباعة", getPrintPaperDirect());
-        checkSetting(checkPrintReceiptAccount, "طباعة الحساب طابعة حرارية", getPrintPaperReceiptAccount());
+        checkSetting(checkShowBeforePrint, lm.getString("settings.checks.showBeforePrint"), getPrintPaperDirect());
+        checkSetting(checkPrintReceiptAccount, lm.getString("settings.checks.printAccountThermal"), getPrintPaperReceiptAccount());
 
-        checkSetting(printReceiptInvoice, Setting_Language.PRINT_RECEIPT_INVOICE, getPrintPaperReceiptInvoice());
-        checkSetting(updatePriceInInvoice, Setting_Language.UPDATE_PRICE_FROM_INVOICE, getInvoiceUpdatePrice());
-        checkSetting(checkBackupAfterSave, "نسخة إحتياطية بعد حفظ الفاتورة", getInvoiceBackupAfterSave());
+        checkSetting(printReceiptInvoice, lm.getString("settings.checks.printReceiptInvoice"), getPrintPaperReceiptInvoice());
+        checkSetting(updatePriceInInvoice, lm.getString("settings.checks.updatePriceInInvoice"), getInvoiceUpdatePrice());
+        checkSetting(checkBackupAfterSave, lm.getString("settings.checks.backupAfterSave"), getInvoiceBackupAfterSave());
 
-        checkSetting(checkBalance, "عرض تنبيه الاصناف", getItemShowAlert());
+        checkSetting(checkBalance, lm.getString("settings.checks.itemAlert"), getItemShowAlert());
 
-        checkSetting(checkShowImageHint, "إظهار تلميحات الصورة", getItemImageHint());
-        checkSetting(checkAddItemDirect, "إضافة الصنف مباشرة فى الفاتورة", getInvoiceAddItemDirect());
+        checkSetting(checkShowImageHint, lm.getString("settings.checks.showImageHint"), getItemImageHint());
+        checkSetting(checkAddItemDirect, lm.getString("settings.checks.addItemDirect"), getInvoiceAddItemDirect());
 
-        checkSetting(checkIncreaseItemOnTable, "جمع الاصناف المكررة", getInvoiceIncreaseItemOneTable());
-        checkSetting(checkSelWithoutBalance, Setting_Language.BUY_WITHOUT_BALANCE, getSelWithoutBalance());
+        checkSetting(checkIncreaseItemOnTable, lm.getString("settings.checks.mergeDuplicateItems"), getInvoiceIncreaseItemOneTable());
+        checkSetting(checkSelWithoutBalance, lm.getString("settings.checks.sellWithoutBalance"), getSelWithoutBalance());
 
-        checkSetting(checkShowTotals, "عرض الاجماليات فى الشاشة الرئيسية", getShowMainTotals());
-        checkSetting(checkInvoicePaid, "إظهار شاشة الدفع فى الفواتير", getInvoiceShowScreenPaid());
+        checkSetting(checkShowTotals, lm.getString("settings.checks.showTotalsOnHome"), getShowMainTotals());
+        checkSetting(checkInvoicePaid, lm.getString("settings.checks.showPaidScreen"), getInvoiceShowScreenPaid());
 
-        checkSetting(showScreenAlone, "عرض شاشة منفصلة", getSettingShowInvoiceScreenSeparate());
+        checkSetting(showScreenAlone, lm.getString("settings.checks.showSeparateScreen"), getSettingShowInvoiceScreenSeparate());
 
         checkInvoicePaid.selectedProperty().addListener((observable, oldValue, newValue) -> setInvoiceShowScreenPaid(newValue));
 

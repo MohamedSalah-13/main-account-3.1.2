@@ -11,7 +11,7 @@ import com.hamza.account.service.TreasuryService;
 import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.error.UserValidationException;
-import com.hamza.controlsfx.language.Setting_Language;
+import com.hamza.controlsfx.language.LanguageManager;
 import com.hamza.controlsfx.observer.EventBus;
 import javafx.concurrent.Task;
 import javafx.fxml.FXML;
@@ -130,22 +130,23 @@ public class SettingCompanyController implements Initializable {
     // ------------------------------------------------------------------
 
     private void labelsAndPrompts() {
-        labelName.setText(Setting_Language.WORD_NAME);
-        labelAddress.setText(Setting_Language.WORD_ADDRESS);
-        labelTel.setText(Setting_Language.WORD_TEL);
-        labelTax.setText(Setting_Language.WORD_TAX);
-        labelCom.setText(Setting_Language.WORD_COMM);
+        var lm = LanguageManager.getInstance();
+        labelName.setText(lm.getString("name"));
+        labelAddress.setText(lm.getString("address"));
+        labelTel.setText(lm.getString("tel"));
+        labelTax.setText(lm.getString("tax"));
+        labelCom.setText(lm.getString("commercial"));
 
-        textNameCompany.setPromptText(Setting_Language.WORD_NAME);
-        textAddress.setPromptText(Setting_Language.WORD_ADDRESS);
-        textTel.setPromptText(Setting_Language.WORD_TEL);
-        textTax.setPromptText(Setting_Language.WORD_TAX);
-        textCom.setPromptText(Setting_Language.WORD_COMM);
+        textNameCompany.setPromptText(lm.getString("name"));
+        textAddress.setPromptText(lm.getString("address"));
+        textTel.setPromptText(lm.getString("tel"));
+        textTax.setPromptText(lm.getString("tax"));
+        textCom.setPromptText(lm.getString("commercial"));
 
-        btnAddImage.setText(Setting_Language.WORD_CHOOSE_FILE);
-        btnClearImage.setText(Setting_Language.WORD_DELETE);
-        btnSave.setText(Setting_Language.WORD_SAVE);
-        btnReset.setText(Setting_Language.WORD_CANCEL);
+        btnAddImage.setText(lm.getString("choose_file"));
+        btnClearImage.setText(lm.getString("delete"));
+        btnSave.setText(lm.getString("common.save"));
+        btnReset.setText(lm.getString("cancel"));
 
         imageView.setPreserveRatio(true);
     }
@@ -258,7 +259,8 @@ public class SettingCompanyController implements Initializable {
     private void save() {
         String name = trimmed(textNameCompany);
         if (name.isEmpty()) {
-            AllAlerts.handleError("حفظ بيانات الشركة", new UserValidationException("اسم الشركة مطلوب"));
+            AllAlerts.handleError(LanguageManager.getInstance().getString("settings.company.saveContext"),
+                    new UserValidationException(LanguageManager.getInstance().getString("settings.company.nameRequired")));
             textNameCompany.requestFocus();
             return;
         }
@@ -307,9 +309,10 @@ public class SettingCompanyController implements Initializable {
 
     private void chooseLogo() {
         FileChooser chooser = new FileChooser();
-        chooser.setTitle(Setting_Language.WORD_CHOOSE_FILE);
+        chooser.setTitle(LanguageManager.getInstance().getString("choose_file"));
         chooser.getExtensionFilters().add(
-                new FileChooser.ExtensionFilter("الصور", "*.png", "*.jpg", "*.jpeg", "*.gif", "*.bmp"));
+                new FileChooser.ExtensionFilter(LanguageManager.getInstance().getString("settings.company.imagesFilter"),
+                        "*.png", "*.jpg", "*.jpeg", "*.gif", "*.bmp"));
         File file = chooser.showOpenDialog(window());
         if (file != null) {
             readLogo(file);
@@ -347,7 +350,7 @@ public class SettingCompanyController implements Initializable {
     private void showLogo() {
         imageView.setImage(logo == null ? placeholder : logo.toFxImage());
         labelLogoInfo.setText(logo == null
-                ? "لا يوجد شعار — اضغط أو أفلت صورة هنا"
+                ? LanguageManager.getInstance().getString("settings.company.noLogo")
                 : logo.summary());
         btnClearImage.setDisable(logo == null);
     }
@@ -383,7 +386,9 @@ public class SettingCompanyController implements Initializable {
 
         btnSave.setDisable(!dirty);
         btnReset.setDisable(!dirty);
-        labelStatus.setText(dirty ? "تغييرات غير محفوظة" : "لا توجد تغييرات");
+        labelStatus.setText(dirty
+                ? LanguageManager.getInstance().getString("settings.company.unsavedChanges")
+                : LanguageManager.getInstance().getString("settings.company.noChanges"));
         labelStatus.getStyleClass().removeAll("status-dirty", "status-clean");
         labelStatus.getStyleClass().add(dirty ? "status-dirty" : "status-clean");
     }
