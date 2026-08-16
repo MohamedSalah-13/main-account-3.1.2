@@ -1,6 +1,7 @@
 package com.hamza.account.trial;
 
 import com.hamza.controlsfx.alert.AllAlerts;
+import com.hamza.controlsfx.language.LanguageManager;
 import javafx.application.Platform;
 import lombok.extern.log4j.Log4j2;
 
@@ -475,7 +476,7 @@ public class TrialManager {
             }
         } catch (Exception e) {
             info.error = com.hamza.controlsfx.error.ErrorReporter.shared()
-                    .report("تحميل معلومات الترخيص والفترة التجريبية", e)
+                    .report(LanguageManager.getInstance().getString("trial.error.load.info"), e)
                     .message();
         }
         return info;
@@ -642,22 +643,22 @@ public class TrialManager {
 
     public boolean canAddItem() {
         if (getDisplayInfo().licenseValid) return true;
-        return checkLimit("items", MAX_ITEMS, "لقد وصلت للحد الأقصى من الأصناف في النسخة التجريبية (10 صنف).");
+        return checkLimit("items", MAX_ITEMS, LanguageManager.getInstance().getString("trial.limit.items"));
     }
 
     public boolean canAddCustomer() {
         if (getDisplayInfo().licenseValid) return true;
-        return checkLimit("custom", MAX_CUSTOMERS, "لقد وصلت للحد الأقصى من العملاء في النسخة التجريبية (5 عميل).");
+        return checkLimit("custom", MAX_CUSTOMERS, LanguageManager.getInstance().getString("trial.limit.customers"));
     }
 
     public boolean canAddSale() {
         if (getDisplayInfo().licenseValid) return true;
-        return checkLimit("total_sales", MAX_SALES, "لقد وصلت للحد الأقصى من المبيعات في النسخة التجريبية (10 مبيعات).");
+        return checkLimit("total_sales", MAX_SALES, LanguageManager.getInstance().getString("trial.limit.sales"));
     }
 
     public boolean canAddPurchase() {
         if (getDisplayInfo().licenseValid) return true;
-        return checkLimit("total_buy", MAX_PURCHASES, "لقد وصلت للحد الأقصى من المشتريات في النسخة التجريبية (10 مشتريات).");
+        return checkLimit("total_buy", MAX_PURCHASES, LanguageManager.getInstance().getString("trial.limit.purchases"));
     }
 
     private boolean checkLimit(String tableName, int maxLimit, String errorMessage) {
