@@ -30,28 +30,6 @@ public class DateUtils {
 
 
     /**
-     * Converts a given date string to a LocalDate using a predefined date formatter.
-     *
-     * @param date the date string to be converted
-     * @return the resulting LocalDate
-     */
-    public static LocalDate stringToLocalDate(@NotNull String date) {
-        return LocalDate.parse(date, DATE_FORMATTER);
-    }
-
-
-    /**
-     * Extracts the year from a given date string.
-     *
-     * @param date the date string in ISO-8601 format (yyyy-MM-dd)
-     * @return the year extracted from the provided date string
-     */
-    public static int extractYear(@NotNull String date) {
-        return LocalDate.parse(date).getYear();
-    }
-
-
-    /**
      * Returns the minimum date from the provided list that satisfies the given filter.
      * Extracts the date string using the specified date extractor function
      * and converts it to a LocalDate.

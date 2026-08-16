@@ -1,7 +1,5 @@
 package com.hamza.controlsfx.excel;
 
-import com.hamza.controlsfx.util.Extensions;
-import com.hamza.controlsfx.util.FileDir;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 import org.apache.poi.ss.usermodel.Cell;
@@ -27,7 +25,7 @@ public class SaveExcelFile {
     /**
      * Generates and downloads an Excel file based on the provided WriteExcelInterface.
      *
-     * @param <T> Type of data item in the WriteExcelInterface.
+     * @param <T>                 Type of data item in the WriteExcelInterface.
      * @param writeExcelInterface Interface that provides methods for generating the Excel file.
      * @return An integer representing the status code of the operation. A returned value of 1 typically indicates success.
      * @throws Exception if an error occurs during the generation or saving of the Excel file.
@@ -81,13 +79,15 @@ public class SaveExcelFile {
      * @throws IOException if an I/O error occurs during the file save operation
      */
     private int saveFile(XSSFWorkbook workbook) throws IOException {
+        String USER_HOME = System.getProperty("user.home");
         FileChooser fc = new FileChooser();
-        File recordsDir = new File(FileDir.USER_HOME, ".account/records");
+        File recordsDir = new File(USER_HOME, ".account/records");
         if (!recordsDir.exists()) {
             boolean mkdirs = recordsDir.mkdirs();
         }
 
-        fc.getExtensionFilters().add(Extensions.FILTER_XLSX);
+        final FileChooser.ExtensionFilter FILTER_XLSX = new FileChooser.ExtensionFilter("data files (*.xlsx)", "*.xlsx");
+        fc.getExtensionFilters().add(FILTER_XLSX);
 
         fc.setInitialDirectory(recordsDir);
         String var10000 = String.valueOf(LocalDate.now());

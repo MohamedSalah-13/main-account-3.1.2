@@ -14,8 +14,6 @@ import com.hamza.controlsfx.error.BusinessRuleException;
 import com.hamza.controlsfx.error.UserValidationException;
 import com.hamza.controlsfx.interfaceData.AppSettingInterface;
 import com.hamza.controlsfx.language.LanguageManager;
-import com.hamza.controlsfx.menu.ActionTable;
-import com.hamza.controlsfx.menu.ContextMenuTable;
 import com.hamza.controlsfx.observer.EventBus;
 import com.hamza.controlsfx.table.TableColumnAnnotation;
 import javafx.application.Platform;
@@ -64,7 +62,6 @@ public class UnitsController implements Initializable, AppSettingInterface {
     public void initialize(URL url, ResourceBundle resourceBundle) {
         tableSetting();
         otherSetting();
-        addMenu();
         buttonGraphic();
     }
 
@@ -138,7 +135,8 @@ public class UnitsController implements Initializable, AppSettingInterface {
     private void deleteData() {
         try {
             // check selected row
-            if (tableView.getSelectionModel().isEmpty()) throw new UserValidationException(LanguageManager.getInstance().getString("msg.select.file"));
+            if (tableView.getSelectionModel().isEmpty())
+                throw new UserValidationException(LanguageManager.getInstance().getString("msg.select.file"));
 
             UnitsModel selectedItem = tableView.getSelectionModel().getSelectedItem();
 
@@ -280,30 +278,6 @@ public class UnitsController implements Initializable, AppSettingInterface {
         return unitsService.getUnitsModelList();
     }
 
-    private void addMenu() {
-        ContextMenuTable contextMenu = new ContextMenuTable(new ActionTable() {
-            @Override
-            public void actionAdd() {
-                resetData();
-            }
-
-            @Override
-            public void actionUpdate() {
-                selectData();
-            }
-
-            @Override
-            public void actionDelete() {
-                deleteData();
-            }
-
-            @Override
-            public void actionRefresh() {
-                refreshTable();
-            }
-        });
-        tableView.setContextMenu(contextMenu);
-    }
 
     @Override
     public @NotNull Pane pane() throws IOException {

@@ -21,7 +21,6 @@ import com.hamza.controlsfx.language.LanguageManager;
 import com.hamza.controlsfx.observer.EventBus;
 import com.hamza.controlsfx.observer.Publisher;
 import com.hamza.controlsfx.others.TextFormat;
-import com.hamza.controlsfx.util.Extensions;
 import com.hamza.controlsfx.util.ImageChoose;
 import javafx.collections.ObservableSet;
 import javafx.fxml.FXML;
@@ -52,6 +51,7 @@ public class SettingTabLanguageController implements Initializable {
     private final Publisher<String> changeImage;
     private final CustomerService customerService = ServiceRegistry.get(CustomerService.class);
     private final EmployeeService employeeService = ServiceRegistry.get(EmployeeService.class);
+    private final EventBus eventBus = ServiceRegistry.get(EventBus.class);
     @FXML
     private Button btnPrintNormal, btnPrintBarcode, btnPrintOther, btnPath, btnPrinterSettingNormal, btnPrinterSettingBarcode, btnPrinterSettingOther, btnDeleteImage;
     @FXML
@@ -72,7 +72,6 @@ public class SettingTabLanguageController implements Initializable {
     private ComboBox<Locale> comboLanguage;
     @FXML
     private ComboBox<Double> comboUiScale;
-    private final EventBus eventBus = ServiceRegistry.get(EventBus.class);
     @FXML
     private TextField txtNameCustomer, txtNameDelegate;
     @FXML
@@ -326,8 +325,9 @@ public class SettingTabLanguageController implements Initializable {
     }
 
     private void getFileChooser() {
+        final FileChooser.ExtensionFilter FILTER_IMAGE = new FileChooser.ExtensionFilter("Image Files", "*.jpg", "*.png");
         FileChooser fc = new FileChooser();
-        fc.getExtensionFilters().add(Extensions.FILTER_IMAGE);
+        fc.getExtensionFilters().add(FILTER_IMAGE);
         Path path = Path.of(getPathImageMainScreen()).getParent() == null ? Path.of(System.getProperty("user.home")) : Path.of(getPathImageMainScreen()).getParent();
 
         log.info("path: {}", path);

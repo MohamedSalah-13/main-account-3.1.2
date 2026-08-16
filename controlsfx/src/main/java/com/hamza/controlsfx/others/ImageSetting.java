@@ -5,10 +5,8 @@ import com.hamza.controlsfx.HelloApplication;
 import java.io.InputStream;
 
 public class ImageSetting {
-    public final InputStream ARROW_UPWARD = stream("arrow_upward.png");
-    public final InputStream ARROW_DOWNWARD = stream("arrow_downward.png");
+
     public final InputStream PASSWORD = stream("password.png");
-    public final InputStream PASSWORD2 = stream("password2.png");
     public final InputStream IMAGE_PASS = stream("outline_password.png");
     public final InputStream IMAGE_MINUS = stream("minus.png");
     public final InputStream inputStream = stream("tools.png");

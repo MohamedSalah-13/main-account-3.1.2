@@ -12,15 +12,7 @@ public class DateSetting {
 
     public static LocalDate firstDateInMonth = LocalDate.now().with(TemporalAdjusters.firstDayOfMonth());
 
-    public static LocalDate lastDateInMonth = LocalDate.now().with(TemporalAdjusters.lastDayOfMonth());
-    public static LocalDate firstDayOfYear = LocalDate.now().with(TemporalAdjusters.firstDayOfYear());
-
     public static LocalDate today = LocalDate.now();
-
-    public static LocalDate yesterday = LocalDate.now().minusDays(1);
-    public static LocalDate tomorrow = LocalDate.now().plusDays(1);
-    public static LocalDate nextMonth = LocalDate.now().plusMonths(1);
-    public static LocalDate lastMonth = LocalDate.now().minusMonths(1);
 
     /**
      * Stops the user picking a day after today.

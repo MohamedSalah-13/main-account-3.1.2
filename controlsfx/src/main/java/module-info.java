@@ -32,8 +32,6 @@ module com.hamza.controlsfx {
     exports com.hamza.controlsfx.interfaceData;
     exports com.hamza.controlsfx.view;
     opens com.hamza.controlsfx.view to javafx.fxml;
-    exports com.hamza.controlsfx.menu;
-    opens com.hamza.controlsfx.menu to javafx.fxml;
     exports com.hamza.controlsfx.table.colorRow;
     exports com.hamza.controlsfx.table.columnEdit;
     opens com.hamza.controlsfx to javafx.fxml;

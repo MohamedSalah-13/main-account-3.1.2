@@ -12,11 +12,9 @@ import com.hamza.account.model.base.BaseNames;
 import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.openFxml.FxmlPath;
 import com.hamza.account.openFxml.OpenFxmlApplication;
-import com.hamza.account.otherSetting.MaskerPaneSetting;
 import com.hamza.account.table.EditCellTree;
 import com.hamza.account.table.TableSetting;
 import com.hamza.controlsfx.alert.AllAlerts;
-import com.hamza.controlsfx.util.ImageChoose;
 import com.hamza.controlsfx.error.BusinessRuleException;
 import com.hamza.controlsfx.error.UserValidationException;
 import com.hamza.controlsfx.interfaceData.AppSettingInterface;
@@ -24,6 +22,7 @@ import com.hamza.controlsfx.language.LanguageManager;
 import com.hamza.controlsfx.others.DateSetting;
 import com.hamza.controlsfx.table.Column;
 import com.hamza.controlsfx.table.TreeTable;
+import com.hamza.controlsfx.util.ImageChoose;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
@@ -71,7 +70,7 @@ public class AccountDetailsWithItemsController<T3 extends BaseNames, T4 extends 
     @FXML
     private Label labelName, labelFirstBalance, labelLastBalance, labelFrom, labelTo;
     @FXML
-    private Button btnPrint,btnExport, btnRefresh, btnSearch;
+    private Button btnPrint, btnExport, btnRefresh, btnSearch;
     @FXML
     private TextField txtLimit, txtLast, txtName;
     @FXML
@@ -89,7 +88,7 @@ public class AccountDetailsWithItemsController<T3 extends BaseNames, T4 extends 
     @FXML
     private StackPane stackPane;
     private List<AccountCard> list_items = new ArrayList<>();
-    private MaskerPaneSetting maskerPaneSetting;
+
 
     // Add this helper method:
     public AccountDetailsWithItemsController(DaoFactory daoFactory, DataPublisher dataPublisher
@@ -103,7 +102,6 @@ public class AccountDetailsWithItemsController<T3 extends BaseNames, T4 extends 
 
     @Override
     public void initialize(URL url, ResourceBundle resourceBundle) {
-        maskerPaneSetting = new MaskerPaneSetting(stackPane);
         otherSetting();
         createTree();
         buttonGraphic();
@@ -426,6 +424,7 @@ public class AccountDetailsWithItemsController<T3 extends BaseNames, T4 extends 
         }
         return items;
     }
+
     private void exportToPdf() {
         String textStart = "report";
         String year = "2025";

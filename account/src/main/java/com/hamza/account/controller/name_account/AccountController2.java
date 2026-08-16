@@ -12,12 +12,9 @@ import com.hamza.account.controller.others.ServiceRegistry;
 import com.hamza.account.features.events.AccountChanged;
 import com.hamza.account.features.events.InvoiceSaved;
 import com.hamza.account.features.events.NameChanged;
-import com.hamza.controlsfx.observer.EventBus;
 import com.hamza.account.interfaces.api.DataInterface;
 import com.hamza.account.model.base.BaseAccount;
 import com.hamza.account.model.base.BaseNames;
-import com.hamza.account.model.base.BasePurchasesAndSales;
-import com.hamza.account.model.base.BaseTotals;
 import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.openFxml.FxmlPath;
 import com.hamza.account.otherSetting.MaskerPaneSetting;
@@ -30,6 +27,7 @@ import com.hamza.controlsfx.error.UserValidationException;
 import com.hamza.controlsfx.excel.ExcelException;
 import com.hamza.controlsfx.excel.ExportData;
 import com.hamza.controlsfx.language.LanguageManager;
+import com.hamza.controlsfx.observer.EventBus;
 import com.hamza.controlsfx.table.TableColumnAnnotation;
 import com.hamza.controlsfx.table.columnEdit.ColumnSetting;
 import javafx.application.Platform;
@@ -45,14 +43,13 @@ import javafx.scene.layout.VBox;
 import javafx.scene.text.Text;
 import lombok.extern.log4j.Log4j2;
 
-import static com.hamza.controlsfx.util.NumberUtils.roundToTwoDecimalPlaces;
-
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
 import static com.hamza.account.view.OpenTreasuryDetailsApplication.accountStatementTitle;
 import static com.hamza.controlsfx.util.ImageChoose.createIcon;
+import static com.hamza.controlsfx.util.NumberUtils.roundToTwoDecimalPlaces;
 
 
 @Log4j2
@@ -329,7 +326,8 @@ public class AccountController2<T3 extends BaseNames, T4 extends BaseAccount>
         try {
             List<TreeAccountModelForPrint> accountModelForPrints = new ArrayList<>();
             List<T4> list = tableView.getItems().stream().filter(t4 -> t4.getSelectedRow().get()).toList();
-            if (list.isEmpty()) throw new UserValidationException(LanguageManager.getInstance().getString("msg.insert.all"));
+            if (list.isEmpty())
+                throw new UserValidationException(LanguageManager.getInstance().getString("msg.insert.all"));
             list.forEach(t4 -> {
                 TreeAccountModelForPrint e = new TreeAccountModelForPrint();
                 e.setId(accountData.getIdName(t4));
@@ -350,7 +348,8 @@ public class AccountController2<T3 extends BaseNames, T4 extends BaseAccount>
 
     private void exportTo() {
         try {
-            if (tableView.getItems().isEmpty()) throw new ExcelException(LanguageManager.getInstance().getString("msg.insert.all"));
+            if (tableView.getItems().isEmpty())
+                throw new ExcelException(LanguageManager.getInstance().getString("msg.insert.all"));
             List<T4> items = tableView.getItems().stream().filter(t4 -> t4.getSelectedRow().get()).toList();
             var i = ExportData.exportDataToExcel(items, accountData.writeExcelInterface(items));
             if (i >= 1) AllAlerts.alertSave();
