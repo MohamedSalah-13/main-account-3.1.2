@@ -4,6 +4,7 @@ import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.controller.ChangePassController;
 import com.hamza.controlsfx.interfaceData.AppSettingInterface;
 import com.hamza.controlsfx.interfaceData.ChangePassInt;
+import com.hamza.controlsfx.language.LanguageManager;
 import com.hamza.controlsfx.language.Setting_Language;
 import com.hamza.controlsfx.others.ImageSetting;
 import javafx.fxml.FXMLLoader;
@@ -28,7 +29,7 @@ public class ChangePassApplication {
                     }
                 }
             } catch (Exception e) {
-                AllAlerts.handleError("تغيير كلمة المرور", e);
+                AllAlerts.handleError(LanguageManager.getInstance().getString("nav.change.password"), e);
             }
             return false;
         });

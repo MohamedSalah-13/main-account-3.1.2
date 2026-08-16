@@ -2,6 +2,7 @@ package com.hamza.controlsfx.view;
 
 import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.interfaceData.AppSettingInterface;
+import com.hamza.controlsfx.language.LanguageManager;
 import com.hamza.controlsfx.language.Setting_Language;
 import com.hamza.controlsfx.others.ChangeOrientation;
 import javafx.event.ActionEvent;
@@ -67,7 +68,7 @@ public class DialogApplication<T> extends Dialog<T> {
                     saveResultRef.set(res);
                     // لا تستهلك الحدث لكي يُغلق الـ Dialog بشكل طبيعي
                 } catch (Exception e) {
-                    AllAlerts.handleError("حفظ بيانات النافذة", e);
+                    AllAlerts.handleError(LanguageManager.getInstance().getString("error.operation.dialog.save"), e);
                     // لا تُغلق الـ Dialog عند الاستثناء
                     evt.consume();
                 }
