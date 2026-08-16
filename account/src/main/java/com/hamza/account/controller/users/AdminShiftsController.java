@@ -10,6 +10,7 @@ import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.error.BusinessRuleException;
 import com.hamza.controlsfx.error.UserValidationException;
+import com.hamza.controlsfx.language.LanguageManager;
 import com.hamza.controlsfx.table.TableColumnAnnotation;
 import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
@@ -53,7 +54,7 @@ public class AdminShiftsController {
             List<UserShift> list = userShiftService.getAllShifts();
             tableView.setItems(FXCollections.observableArrayList(list));
         } catch (DaoException e) {
-            AllAlerts.handleError("تحميل الورديات", e);
+            AllAlerts.handleError(LanguageManager.getInstance().getString("user.shift.error.load.title"), e);
         }
     }
 
@@ -61,7 +62,8 @@ public class AdminShiftsController {
         try {
             UserShift selected = tableView.getSelectionModel().getSelectedItem();
             if (selected == null) {
-                AllAlerts.handleError("إغلاق وردية إجباري", new UserValidationException("اختر وردية أولاً"));
+                AllAlerts.handleError(LanguageManager.getInstance().getString("user.shift.force.close.title"),
+                        new UserValidationException(LanguageManager.getInstance().getString("user.shift.msg.select.first")));
                 return;
             }
 
@@ -71,7 +73,8 @@ public class AdminShiftsController {
 //            }
 
             if (!selected.isOpen()) {
-                AllAlerts.handleError("إغلاق وردية إجباري", new BusinessRuleException("هذه الوردية مغلقة بالفعل"));
+                AllAlerts.handleError(LanguageManager.getInstance().getString("user.shift.force.close.title"),
+                        new BusinessRuleException(LanguageManager.getInstance().getString("user.shift.msg.already.closed")));
                 return;
             }
 
@@ -88,22 +91,17 @@ public class AdminShiftsController {
 
             if (result > 0) {
                 ShiftContext.clear();
-                AllAlerts.alertSaveWithMessage("تم غلق الوردية قسريًا بنجاح");
+                AllAlerts.alertSaveWithMessage(LanguageManager.getInstance().getString("user.shift.msg.force.close.success"));
                 refreshData();
             }
         } catch (DaoException e) {
-            AllAlerts.handleError("الإغلاق الإجباري للوردية", e);
+            AllAlerts.handleError(LanguageManager.getInstance().getString("user.shift.error.force.close.title"), e);
         }
     }
 
     private String buildForceCloseMessage(UserShift shift) {
         return String.format(
-                "هل تريد غلق الوردية قسريًا؟%n%n" +
-                        "المستخدم: %s%n" +
-                        "رقم الوردية: %d%n" +
-                        "وقت الفتح: %s%n" +
-                        "الرصيد الافتتاحي: %,.2f%n" +
-                        "الملاحظات: %s",
+                LanguageManager.getInstance().getString("user.shift.force.close.confirm"),
                 shift.getUsername(),
                 shift.getId(),
                 shift.getOpenTime() == null ? "-" : shift.getOpenTime().format(DATE_TIME_FORMATTER),

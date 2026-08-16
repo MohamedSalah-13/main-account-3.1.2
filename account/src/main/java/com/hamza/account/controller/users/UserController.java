@@ -20,7 +20,7 @@ import com.hamza.controlsfx.button.api.ButtonColumnI;
 import com.hamza.controlsfx.button.button_column.ButtonColumn;
 import com.hamza.controlsfx.button.button_column.Button_Toggle_Table;
 import com.hamza.controlsfx.database.DaoException;
-import com.hamza.controlsfx.language.Setting_Language;
+import com.hamza.controlsfx.language.LanguageManager;
 import com.hamza.account.features.events.UsersChanged;
 import com.hamza.controlsfx.observer.EventBus;
 import javafx.beans.property.BooleanProperty;
@@ -224,7 +224,7 @@ public class UserController implements TableInterface<Users> {
             @NotNull
             @Override
             public String columnTitle() {
-                return Setting_Language.WORD_CASE;
+                return LanguageManager.getInstance().getString("case");
             }
 
             @Override

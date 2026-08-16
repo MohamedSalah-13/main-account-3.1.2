@@ -8,6 +8,7 @@ import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.openFxml.OpenFxmlApplication;
 import com.hamza.account.authorization.AppPermissions;
 import com.hamza.account.authorization.PermissionKey;
+import com.hamza.controlsfx.language.LanguageManager;
 import javafx.scene.Scene;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyCodeCombination;
@@ -45,7 +46,7 @@ public class ShiftButtons extends LoadData {
             @NotNull
             @Override
             public String textName() {
-                return "إدارة الوردية";
+                return LanguageManager.getInstance().getString("user.shift.button.manage");
             }
 
             @Override

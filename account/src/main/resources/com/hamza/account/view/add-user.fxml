@@ -28,14 +28,14 @@
                         <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
                     </rowConstraints>
                     <children>
-                        <Label fx:id="labelCode" text="Code" />
-                        <Label fx:id="labelName" text="Name" GridPane.rowIndex="1" />
-                        <Label fx:id="labelActive" text="Active" GridPane.rowIndex="4" />
-                        <Label fx:id="labelPass" text="Password" GridPane.rowIndex="2" />
-                        <TextField fx:id="txtCode" editable="false" promptText="code" GridPane.columnIndex="1" />
-                        <TextField fx:id="txtName" promptText="name" GridPane.columnIndex="1" GridPane.rowIndex="1" />
-                        <PasswordField fx:id="txtPass" promptText="pass" GridPane.columnIndex="1" GridPane.rowIndex="2" />
-                        <CheckBox fx:id="checkShowPass" mnemonicParsing="false" text="Show Password" GridPane.columnIndex="1" GridPane.rowIndex="3" />
+                        <Label fx:id="labelCode" text="%code" />
+                        <Label fx:id="labelName" text="%name" GridPane.rowIndex="1" />
+                        <Label fx:id="labelActive" text="%activated" GridPane.rowIndex="4" />
+                        <Label fx:id="labelPass" text="%password" GridPane.rowIndex="2" />
+                        <TextField fx:id="txtCode" editable="false" promptText="%code" GridPane.columnIndex="1" />
+                        <TextField fx:id="txtName" promptText="%name" GridPane.columnIndex="1" GridPane.rowIndex="1" />
+                        <PasswordField fx:id="txtPass" promptText="%password" GridPane.columnIndex="1" GridPane.rowIndex="2" />
+                        <CheckBox fx:id="checkShowPass" mnemonicParsing="false" text="%user.show.password" GridPane.columnIndex="1" GridPane.rowIndex="3" />
                         <ComboBox fx:id="comboActive" maxWidth="1.7976931348623157E308" GridPane.columnIndex="1" GridPane.rowIndex="4" />
                     </children>
                 </GridPane>

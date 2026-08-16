@@ -17,6 +17,7 @@ import com.hamza.account.view.PassCheckView;
 import com.hamza.account.view.SettingApplication;
 import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.button.ImageDesign;
+import com.hamza.controlsfx.language.LanguageManager;
 import com.hamza.controlsfx.language.Setting_Language;
 import javafx.scene.Node;
 import javafx.scene.Scene;
@@ -238,7 +239,7 @@ public class SettingButtons {
                     stage.setScene(new Scene(pane));
                     stage.show();
                 } else {
-                    AllAlerts.reportError("فتح شاشة إدارة الورديات",
+                    AllAlerts.reportError(LanguageManager.getInstance().getString("user.shift.error.open.screen.title"),
                             new IllegalStateException("Failed to load admin shifts pane"));
                 }
             }

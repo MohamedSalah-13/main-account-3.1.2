@@ -6,7 +6,7 @@ import com.hamza.account.openFxml.AddInterface;
 import com.hamza.account.openFxml.FxmlPath;
 import com.hamza.account.security.PasswordHasher;
 import com.hamza.account.service.UsersService;
-import com.hamza.controlsfx.language.Setting_Language;
+import com.hamza.controlsfx.language.LanguageManager;
 import com.hamza.account.features.events.UsersChanged;
 import com.hamza.controlsfx.observer.EventBus;
 import com.hamza.controlsfx.others.ShowPassService;
@@ -59,12 +59,12 @@ public class AddUserController implements AddInterface {
     @Override
     public void otherSetting() {
         comboActive.setDisable(true);
-        labelCode.setText(Setting_Language.WORD_CODE);
-        labelName.setText(Setting_Language.WORD_NAME);
-        labelPass.setText(Setting_Language.WORD_PASS);
-        labelActive.setText(Setting_Language.WORD_ACTIVE);
-        txtName.setPromptText(Setting_Language.WORD_NAME);
-        checkShowPass.setText(Setting_Language.SHOW_PASS);
+        labelCode.setText(LanguageManager.getInstance().getString("code"));
+        labelName.setText(LanguageManager.getInstance().getString("name"));
+        labelPass.setText(LanguageManager.getInstance().getString("password"));
+        labelActive.setText(LanguageManager.getInstance().getString("activated"));
+        txtName.setPromptText(LanguageManager.getInstance().getString("name"));
+        checkShowPass.setText(LanguageManager.getInstance().getString("user.show.password"));
 
         Platform.runLater(() -> txtName.requestFocus());
 
@@ -114,7 +114,7 @@ public class AddUserController implements AddInterface {
                     txtCode.setText(String.valueOf(dataById.getId()));
                     txtName.setText(dataById.getUsername());
                     txtPass.clear();
-                    txtPass.setPromptText("اتركه فارغًا للإبقاء على كلمة المرور الحالية");
+                    txtPass.setPromptText(LanguageManager.getInstance().getString("user.password.keep.current.hint"));
                     comboActive.getSelectionModel().selectFirst();
                 }
             } catch (Exception e) {
@@ -124,7 +124,7 @@ public class AddUserController implements AddInterface {
 
     @Override
     public void resetData() {
-        txtCode.setText(Setting_Language.generate);
+        txtCode.setText(LanguageManager.getInstance().getString("item.code.generate"));
         Utils.clearAll(txtName);
         txtPass.clear();
         comboActive.getSelectionModel().clearSelection();

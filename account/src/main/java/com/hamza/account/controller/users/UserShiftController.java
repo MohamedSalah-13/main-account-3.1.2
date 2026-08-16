@@ -13,6 +13,7 @@ import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.error.BusinessRuleException;
 import com.hamza.controlsfx.error.UserValidationException;
+import com.hamza.controlsfx.language.LanguageManager;
 import javafx.beans.property.SimpleIntegerProperty;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
@@ -129,12 +130,12 @@ public class UserShiftController {
                 txtCloseNotes.clear();
             }
         } catch (DaoException e) {
-            AllAlerts.handleError("تحميل حالة الوردية", e);
+            AllAlerts.handleError(LanguageManager.getInstance().getString("user.shift.error.load.status.title"), e);
         }
     }
 
     private void showOpenShiftInfo(UserShift shift) {
-        labelShiftStatus.setText("مفتوحة");
+        labelShiftStatus.setText(LanguageManager.getInstance().getString("user.shift.status.open"));
         labelShiftStatus.setStyle("-fx-text-fill: green; -fx-font-weight: bold;");
         labelOpenTime.setText(shift.getOpenTime() != null
                 ? shift.getOpenTime().format(DATE_TIME_FORMATTER) : "-");
@@ -142,7 +143,7 @@ public class UserShiftController {
     }
 
     private void showNoOpenShift() {
-        labelShiftStatus.setText("لا توجد وردية مفتوحة");
+        labelShiftStatus.setText(LanguageManager.getInstance().getString("user.shift.status.none.open"));
         labelShiftStatus.setStyle("-fx-text-fill: red; -fx-font-weight: bold;");
         labelOpenTime.setText("-");
         labelOpenBalance.setText("0.0");
@@ -153,7 +154,7 @@ public class UserShiftController {
             var shifts = userShiftService.getUserShifts(currentUserId);
             tableShifts.setItems(FXCollections.observableArrayList(shifts));
         } catch (DaoException e) {
-            AllAlerts.handleError("تحميل سجل الورديات", e);
+            AllAlerts.handleError(LanguageManager.getInstance().getString("user.shift.error.load.history.title"), e);
         }
     }
 
@@ -213,20 +214,22 @@ public class UserShiftController {
         try {
             double openBalance = parseBalance(txtOpenBalance.getText());
             if (openBalance < 0) {
-                AllAlerts.handleError("فتح الوردية", new UserValidationException("لا يمكن أن يكون الرصيد الافتتاحي بالسالب!"));
+                AllAlerts.handleError(LanguageManager.getInstance().getString("user.shift.open"),
+                        new UserValidationException(LanguageManager.getInstance().getString("user.shift.msg.open.balance.negative")));
                 return;
             }
             String notes = safeTrim(txtOpenNotes.getText());
 
             if (userShiftService.openShift(currentUserId, openBalance, notes) > 0) {
-                AllAlerts.alertSaveWithMessage("تم فتح الوردية بنجاح!");
+                AllAlerts.alertSaveWithMessage(LanguageManager.getInstance().getString("user.shift.msg.open.success"));
                 clearOpenShiftFields();
                 refreshView();
             }
         } catch (DaoException e) {
-            AllAlerts.handleError("فتح الوردية", e);
+            AllAlerts.handleError(LanguageManager.getInstance().getString("user.shift.open"), e);
         } catch (NumberFormatException e) {
-            AllAlerts.handleError("فتح الوردية", new UserValidationException("الرجاء إدخال رصيد صحيح!"));
+            AllAlerts.handleError(LanguageManager.getInstance().getString("user.shift.open"),
+                    new UserValidationException(LanguageManager.getInstance().getString("user.shift.msg.invalid.balance")));
         }
     }
 
@@ -235,20 +238,22 @@ public class UserShiftController {
             var data = shiftReportService.buildXReport(currentUserId);
             printReports.printShiftXReport(data);
         } catch (DaoException e) {
-            AllAlerts.handleError("طباعة تقرير الوردية", e);
+            AllAlerts.handleError(LanguageManager.getInstance().getString("user.shift.error.print.xreport.title"), e);
         }
     }
 
     private void closeShift() {
         try {
             if (!userShiftService.hasOpenShift(currentUserId)) {
-                AllAlerts.handleError("إغلاق الوردية", new BusinessRuleException("لا توجد وردية مفتوحة لإغلاقها!"));
+                AllAlerts.handleError(LanguageManager.getInstance().getString("user.shift.close.title"),
+                        new BusinessRuleException(LanguageManager.getInstance().getString("user.shift.msg.no.open.shift")));
                 return;
             }
 
             double closeBalance = parseBalance(txtCloseBalance.getText());
             if (closeBalance < 0) {
-                AllAlerts.handleError("إغلاق الوردية", new UserValidationException("لا يمكن أن يكون الرصيد الختامي بالسالب!"));
+                AllAlerts.handleError(LanguageManager.getInstance().getString("user.shift.close.title"),
+                        new UserValidationException(LanguageManager.getInstance().getString("user.shift.msg.close.balance.negative")));
                 return;
             }
 
@@ -271,32 +276,26 @@ public class UserShiftController {
                 } catch (Exception ex) {
                     log.error("Error auto-printing Z-Report", ex);
                 }
-                AllAlerts.alertSaveWithMessage("تم غلق الوردية بنجاح!");
+                AllAlerts.alertSaveWithMessage(LanguageManager.getInstance().getString("user.shift.msg.close.success"));
                 clearCloseShiftFields();
                 refreshView();
             }
         } catch (DaoException e) {
-            AllAlerts.handleError("إغلاق الوردية", e);
+            AllAlerts.handleError(LanguageManager.getInstance().getString("user.shift.close.title"), e);
         } catch (NumberFormatException e) {
-            AllAlerts.handleError("إغلاق الوردية", new UserValidationException("الرجاء إدخال رصيد صحيح!"));
+            AllAlerts.handleError(LanguageManager.getInstance().getString("user.shift.close.title"),
+                    new UserValidationException(LanguageManager.getInstance().getString("user.shift.msg.invalid.balance")));
         }
     }
 
     private String buildCloseConfirmMessage(ShiftSummary s, double closeBalance, double diff) {
         String diffLabel;
-        if (Math.abs(diff) < 0.005) diffLabel = "مطابق ✅";
-        else if (diff < 0) diffLabel = String.format("عجز %,.2f ⚠️", -diff);
-        else diffLabel = String.format("زيادة %,.2f", diff);
+        if (Math.abs(diff) < 0.005) diffLabel = LanguageManager.getInstance().getString("user.shift.diff.matched");
+        else if (diff < 0) diffLabel = String.format(LanguageManager.getInstance().getString("user.shift.diff.shortage"), -diff);
+        else diffLabel = String.format(LanguageManager.getInstance().getString("user.shift.diff.surplus"), diff);
 
         return String.format(
-                "ملخص الوردية:%n" +
-                        "- المبيعات: %,.2f%n" +
-                        "- المرتجعات: %,.2f%n" +
-                        "- المصروفات: %,.2f%n" +
-                        "- الرصيد المتوقع: %,.2f%n" +
-                        "- الرصيد المُدخل: %,.2f%n" +
-                        "- الفرق: %s%n%n" +
-                        "هل تريد غلق الوردية؟",
+                LanguageManager.getInstance().getString("user.shift.close.confirm"),
                 s.getTotalSales(),
                 s.getTotalSalesReturns(),
                 s.getTotalExpenses(),

@@ -14,8 +14,8 @@
               AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" style="-fx-padding: 15;">
 
             <ToolBar>
-                <Button fx:id="btnRefresh" text="تحديث" />
-                <Button fx:id="btnForceClose" text="غلق قسري" style="-fx-background-color: #d9534f; -fx-text-fill: white;" />
+                <Button fx:id="btnRefresh" text="%refresh" />
+                <Button fx:id="btnForceClose" text="%user.shift.btn.force.close" style="-fx-background-color: #d9534f; -fx-text-fill: white;" />
             </ToolBar>
 
             <TableView fx:id="tableView" VBox.vgrow="ALWAYS" />

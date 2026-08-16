@@ -10,6 +10,7 @@ import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.error.UserValidationException;
 import com.hamza.controlsfx.interfaceData.AppSettingInterface;
+import com.hamza.controlsfx.language.LanguageManager;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.ReadOnlyStringWrapper;
 import javafx.beans.property.SimpleBooleanProperty;
@@ -138,14 +139,18 @@ public final class UserPermissionController implements AppSettingInterface {
         colOverrideExpiry.setCellValueFactory(cell ->
                 new ReadOnlyStringWrapper(formatDate(cell.getValue().expiresAt())));
         colOverrideStatus.setCellValueFactory(cell -> new ReadOnlyStringWrapper(
-                cell.getValue().isActiveAt(LocalDateTime.now()) ? "نشط" : "منتهي"));
+                cell.getValue().isActiveAt(LocalDateTime.now())
+                        ? LanguageManager.getInstance().getString("user.rbac.status.active")
+                        : LanguageManager.getInstance().getString("user.rbac.status.expired")));
         tableOverrides.setItems(overrideRows);
         tableOverrides.getSelectionModel().selectedItemProperty().addListener((obs, old, value) -> {
             if (value != null) showOverride(value);
         });
 
         colAccessGranted.setCellValueFactory(cell ->
-                new ReadOnlyStringWrapper(cell.getValue().granted() ? "مسموح" : "مرفوض"));
+                new ReadOnlyStringWrapper(cell.getValue().granted()
+                        ? LanguageManager.getInstance().getString("user.rbac.access.allowed")
+                        : LanguageManager.getInstance().getString("user.rbac.access.denied")));
         colAccessPermission.setCellValueFactory(cell ->
                 new ReadOnlyStringWrapper(cell.getValue().permission().description()));
         colAccessCode.setCellValueFactory(cell ->
@@ -176,7 +181,7 @@ public final class UserPermissionController implements AppSettingInterface {
 
     private void loadData() {
         try {
-            labelUser.setText("الأدوار المسندة إلى: " + username);
+            labelUser.setText(LanguageManager.getInstance().getString("user.rbac.label.roles.assigned.to", username));
             Set<Integer> assigned = rbacService.roleIdsForUser(userId);
             var roles = rbacService.roles();
             userRoleRows.setAll(roles.stream()
@@ -261,7 +266,8 @@ public final class UserPermissionController implements AppSettingInterface {
     private void saveOverride() {
         RbacPermission permission = comboOverridePermission.getValue();
         if (permission == null) {
-            AllAlerts.handleError("حفظ استثناء الصلاحية", new UserValidationException("حدد الصلاحية أولاً"));
+            AllAlerts.handleError(LanguageManager.getInstance().getString("user.rbac.error.save.override.title"),
+                    new UserValidationException(LanguageManager.getInstance().getString("user.rbac.msg.select.permission.first")));
             return;
         }
         LocalDateTime expiresAt = dateOverrideExpiry.getValue() == null
@@ -270,7 +276,7 @@ public final class UserPermissionController implements AppSettingInterface {
         try {
             rbacService.saveUserOverride(userId, permission.id(), comboOverrideEffect.getValue(),
                     textOverrideReason.getText(), expiresAt);
-            AllAlerts.alertSaveWithMessage("تم حفظ الاستثناء وتحديث الوصول الفعلي");
+            AllAlerts.alertSaveWithMessage(LanguageManager.getInstance().getString("user.rbac.msg.override.saved"));
             loadUserSecurityDetails();
         } catch (DaoException e) {
             report(e);
@@ -280,7 +286,8 @@ public final class UserPermissionController implements AppSettingInterface {
     private void deleteSelectedOverride() {
         RbacUserOverride selected = tableOverrides.getSelectionModel().getSelectedItem();
         if (selected == null) {
-            AllAlerts.handleError("حذف الاستثناء", new UserValidationException("حدد استثناءً للحذف"));
+            AllAlerts.handleError(LanguageManager.getInstance().getString("user.rbac.btn.delete.override"),
+                    new UserValidationException(LanguageManager.getInstance().getString("user.rbac.msg.select.override.delete")));
             return;
         }
         if (!AllAlerts.confirmDelete()) return;
@@ -303,11 +310,15 @@ public final class UserPermissionController implements AppSettingInterface {
     }
 
     private String overrideEffectLabel(RbacOverrideEffect effect) {
-        return effect == RbacOverrideEffect.ALLOW ? "سماح استثنائي" : "منع استثنائي";
+        return effect == RbacOverrideEffect.ALLOW
+                ? LanguageManager.getInstance().getString("user.rbac.override.allow")
+                : LanguageManager.getInstance().getString("user.rbac.override.deny");
     }
 
     private String formatDate(LocalDateTime value) {
-        return value == null ? "دائم" : value.format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
+        return value == null
+                ? LanguageManager.getInstance().getString("user.rbac.permanent")
+                : value.format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
     }
 
     private void showRole(RbacRole role) {
@@ -366,7 +377,8 @@ public final class UserPermissionController implements AppSettingInterface {
     private void deleteSelectedRole() {
         RbacRole role = editingRole;
         if (role == null) {
-            AllAlerts.handleError("حذف الدور", new UserValidationException("حدد دورًا للحذف"));
+            AllAlerts.handleError(LanguageManager.getInstance().getString("user.rbac.btn.delete.role"),
+                    new UserValidationException(LanguageManager.getInstance().getString("user.rbac.msg.select.role.delete")));
             return;
         }
         if (!AllAlerts.confirmDelete()) return;
@@ -417,22 +429,23 @@ public final class UserPermissionController implements AppSettingInterface {
     }
 
     private String categoryLabel(String category) {
-        if (category == null) return "عام";
+        LanguageManager lm = LanguageManager.getInstance();
+        if (category == null) return lm.getString("user.category.general");
         return switch (category) {
-            case "PURCHASES" -> "المشتريات";
-            case "SALES" -> "المبيعات";
-            case "PARTIES" -> "العملاء والموردون";
-            case "INVENTORY" -> "الأصناف والمخزون";
-            case "TREASURY" -> "الخزينة";
-            case "REPORTS" -> "التقارير";
-            case "SETTINGS" -> "الإعدادات";
-            case "SECURITY" -> "المستخدمون والأمان";
-            default -> "عام";
+            case "PURCHASES" -> lm.getString("user.category.purchases");
+            case "SALES" -> lm.getString("user.category.sales");
+            case "PARTIES" -> lm.getString("user.category.parties");
+            case "INVENTORY" -> lm.getString("user.category.inventory");
+            case "TREASURY" -> lm.getString("user.category.treasury");
+            case "REPORTS" -> lm.getString("user.category.reports");
+            case "SETTINGS" -> lm.getString("user.category.settings");
+            case "SECURITY" -> lm.getString("user.category.security");
+            default -> lm.getString("user.category.general");
         };
     }
 
     private void report(Exception e) {
-        AllAlerts.handleError("إدارة صلاحيات المستخدم", e);
+        AllAlerts.handleError(LanguageManager.getInstance().getString("user.rbac.error.title"), e);
     }
 
     @Override
@@ -442,7 +455,7 @@ public final class UserPermissionController implements AppSettingInterface {
 
     @Override
     public String title() {
-        return "إدارة الأدوار والصلاحيات / " + username;
+        return LanguageManager.getInstance().getString("user.rbac.title", username);
     }
 
     @Override

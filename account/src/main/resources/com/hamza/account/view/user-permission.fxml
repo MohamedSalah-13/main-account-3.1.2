@@ -10,31 +10,31 @@
         <VBox spacing="12.0" styleClass="page-container">
             <padding><Insets top="12" right="12" bottom="12" left="12"/></padding>
             <children>
-                <Label text="نظام التحكم في الوصول المبني على الأدوار (RBAC)" styleClass="page-title"/>
-                <Label text="يمكن إسناد أكثر من دور للمستخدم، وتكون صلاحياته هي مجموع صلاحيات كل الأدوار النشطة."
+                <Label text="%user.rbac.page.title" styleClass="page-title"/>
+                <Label text="%user.rbac.page.subtitle"
                        styleClass="page-subtitle" wrapText="true"/>
                 <TabPane tabClosingPolicy="UNAVAILABLE" VBox.vgrow="ALWAYS">
                     <tabs>
-                        <Tab text="أدوار المستخدم">
+                        <Tab text="%user.rbac.tab.user.roles">
                             <content>
                                 <VBox spacing="10" styleClass="settings-card">
                                     <padding><Insets top="12" right="12" bottom="12" left="12"/></padding>
                                     <children>
-                                        <Label fx:id="labelUser" text="الأدوار المسندة" styleClass="section-title"/>
-                                        <Label text="حدد دورًا أو أكثر. إلغاء جميع الأدوار يعني عدم امتلاك المستخدم لأي صلاحية."
+                                        <Label fx:id="labelUser" text="%user.rbac.section.roles.assigned" styleClass="section-title"/>
+                                        <Label text="%user.rbac.info.roles.assigned"
                                                styleClass="info-text"/>
                                         <TableView fx:id="tableUserRoles" editable="true" VBox.vgrow="ALWAYS">
                                             <columns>
-                                                <TableColumn fx:id="colRoleAssigned" text="مسند" prefWidth="80"/>
-                                                <TableColumn fx:id="colUserRoleName" text="اسم الدور" prefWidth="360"/>
-                                                <TableColumn fx:id="colUserRoleCode" text="الكود" prefWidth="260"/>
+                                                <TableColumn fx:id="colRoleAssigned" text="%user.rbac.column.assigned" prefWidth="80"/>
+                                                <TableColumn fx:id="colUserRoleName" text="%user.rbac.role.name" prefWidth="360"/>
+                                                <TableColumn fx:id="colUserRoleCode" text="%code" prefWidth="260"/>
                                             </columns>
                                         </TableView>
                                     </children>
                                 </VBox>
                             </content>
                         </Tab>
-                        <Tab text="إدارة الأدوار والصلاحيات">
+                        <Tab text="%user.rbac.tab.manage.roles">
                             <content>
                                 <BorderPane styleClass="settings-card">
                                     <padding><Insets top="12" right="12" bottom="12" left="12"/></padding>
@@ -43,10 +43,10 @@
                                             <children>
                                                 <HBox spacing="8" alignment="CENTER_RIGHT">
                                                     <children>
-                                                        <Label text="الدور:" styleClass="form-label"/>
+                                                        <Label text="%user.rbac.label.role" styleClass="form-label"/>
                                                         <ComboBox fx:id="comboRoles" prefWidth="360" HBox.hgrow="ALWAYS"/>
-                                                        <Button fx:id="btnNewRole" text="دور جديد" styleClass="primary-button"/>
-                                                        <Button fx:id="btnDeleteRole" text="حذف الدور" styleClass="danger-button"/>
+                                                        <Button fx:id="btnNewRole" text="%user.rbac.btn.new.role" styleClass="primary-button"/>
+                                                        <Button fx:id="btnDeleteRole" text="%user.rbac.btn.delete.role" styleClass="danger-button"/>
                                                     </children>
                                                 </HBox>
                                                 <GridPane hgap="10" vgap="8">
@@ -57,25 +57,25 @@
                                                         <ColumnConstraints hgrow="ALWAYS"/>
                                                     </columnConstraints>
                                                     <children>
-                                                        <Label text="كود الدور" GridPane.columnIndex="0" GridPane.rowIndex="0" styleClass="form-label"/>
+                                                        <Label text="%user.rbac.label.role.code" GridPane.columnIndex="0" GridPane.rowIndex="0" styleClass="form-label"/>
                                                         <TextField fx:id="textRoleCode" promptText="SALES_MANAGER" GridPane.columnIndex="1" GridPane.rowIndex="0"/>
-                                                        <Label text="اسم الدور" GridPane.columnIndex="2" GridPane.rowIndex="0" styleClass="form-label"/>
-                                                        <TextField fx:id="textRoleName" promptText="مدير المبيعات" GridPane.columnIndex="3" GridPane.rowIndex="0"/>
-                                                        <Label text="الوصف" GridPane.columnIndex="0" GridPane.rowIndex="1" styleClass="form-label"/>
+                                                        <Label text="%user.rbac.role.name" GridPane.columnIndex="2" GridPane.rowIndex="0" styleClass="form-label"/>
+                                                        <TextField fx:id="textRoleName" promptText="%user.rbac.prompt.role.name.example" GridPane.columnIndex="3" GridPane.rowIndex="0"/>
+                                                        <Label text="%user.rbac.label.description" GridPane.columnIndex="0" GridPane.rowIndex="1" styleClass="form-label"/>
                                                         <TextArea fx:id="textRoleDescription" prefRowCount="2" wrapText="true"
                                                                   GridPane.columnIndex="1" GridPane.columnSpan="3" GridPane.rowIndex="1"/>
-                                                        <CheckBox fx:id="checkRoleActive" text="الدور نشط" selected="true"
+                                                        <CheckBox fx:id="checkRoleActive" text="%user.rbac.check.role.active" selected="true"
                                                                   GridPane.columnIndex="1" GridPane.rowIndex="2"/>
-                                                        <CheckBox fx:id="checkAssignNewRole" text="إسناد الدور الجديد لهذا المستخدم"
+                                                        <CheckBox fx:id="checkAssignNewRole" text="%user.rbac.check.assign.new.role"
                                                                   GridPane.columnIndex="2" GridPane.columnSpan="2" GridPane.rowIndex="2"/>
                                                     </children>
                                                 </GridPane>
                                                 <Separator/>
                                                 <HBox spacing="8" alignment="CENTER_RIGHT">
                                                     <children>
-                                                        <Label text="صلاحيات الدور" styleClass="section-title"/>
+                                                        <Label text="%user.rbac.section.role.permissions" styleClass="section-title"/>
                                                         <Region HBox.hgrow="ALWAYS"/>
-                                                        <TextField fx:id="textPermissionSearch" promptText="بحث في الصلاحيات..." prefWidth="280"/>
+                                                        <TextField fx:id="textPermissionSearch" promptText="%user.rbac.prompt.search.permissions" prefWidth="280"/>
                                                     </children>
                                                 </HBox>
                                             </children>
@@ -87,22 +87,22 @@
                                             <items>
                                                 <VBox spacing="6">
                                                     <children>
-                                                        <Label text="يرث صلاحيات الأدوار التالية" styleClass="section-title"/>
+                                                        <Label text="%user.rbac.section.inherit.roles" styleClass="section-title"/>
                                                         <TableView fx:id="tableParentRoles" editable="true" VBox.vgrow="ALWAYS">
                                                             <columns>
-                                                                <TableColumn fx:id="colParentRoleInherited" text="يرث" prefWidth="70"/>
-                                                                <TableColumn fx:id="colParentRoleName" text="اسم الدور" prefWidth="380"/>
-                                                                <TableColumn fx:id="colParentRoleCode" text="الكود" prefWidth="300"/>
+                                                                <TableColumn fx:id="colParentRoleInherited" text="%user.rbac.column.inherit" prefWidth="70"/>
+                                                                <TableColumn fx:id="colParentRoleName" text="%user.rbac.role.name" prefWidth="380"/>
+                                                                <TableColumn fx:id="colParentRoleCode" text="%code" prefWidth="300"/>
                                                             </columns>
                                                         </TableView>
                                                     </children>
                                                 </VBox>
                                                 <TableView fx:id="tablePermissions" editable="true">
                                                     <columns>
-                                                        <TableColumn fx:id="colPermissionGranted" text="مسموح مباشرة" prefWidth="105"/>
-                                                        <TableColumn fx:id="colPermissionCategory" text="القسم" prefWidth="150"/>
-                                                        <TableColumn fx:id="colPermissionDescription" text="الصلاحية" prefWidth="330"/>
-                                                        <TableColumn fx:id="colPermissionCode" text="المفتاح" prefWidth="285"/>
+                                                        <TableColumn fx:id="colPermissionGranted" text="%user.rbac.column.permission.granted.direct" prefWidth="105"/>
+                                                        <TableColumn fx:id="colPermissionCategory" text="%user.rbac.column.category" prefWidth="150"/>
+                                                        <TableColumn fx:id="colPermissionDescription" text="%user.rbac.permission" prefWidth="330"/>
+                                                        <TableColumn fx:id="colPermissionCode" text="%user.rbac.column.key" prefWidth="285"/>
                                                     </columns>
                                                 </TableView>
                                             </items>
@@ -111,14 +111,14 @@
                                 </BorderPane>
                             </content>
                         </Tab>
-                        <Tab text="الاستثناءات الفردية">
+                        <Tab text="%user.rbac.tab.overrides">
                             <content>
                                 <BorderPane styleClass="settings-card">
                                     <padding><Insets top="12" right="12" bottom="12" left="12"/></padding>
                                     <top>
                                         <VBox spacing="10">
                                             <children>
-                                                <Label text="تُستخدم الاستثناءات للحالات الخاصة فقط، وتظل الأدوار هي المصدر الأساسي للصلاحيات. كل تغيير يُسجل في سجل التدقيق."
+                                                <Label text="%user.rbac.info.overrides"
                                                        styleClass="info-text" wrapText="true"/>
                                                 <GridPane hgap="10" vgap="8">
                                                     <columnConstraints>
@@ -128,30 +128,30 @@
                                                         <ColumnConstraints hgrow="ALWAYS"/>
                                                     </columnConstraints>
                                                     <children>
-                                                        <Label text="الصلاحية" styleClass="form-label"
+                                                        <Label text="%user.rbac.permission" styleClass="form-label"
                                                                GridPane.columnIndex="0" GridPane.rowIndex="0"/>
-                                                        <ComboBox fx:id="comboOverridePermission" promptText="اختر الصلاحية"
+                                                        <ComboBox fx:id="comboOverridePermission" promptText="%user.rbac.prompt.choose.permission"
                                                                   GridPane.columnIndex="1" GridPane.columnSpan="3" GridPane.rowIndex="0"
                                                                   maxWidth="Infinity"/>
-                                                        <Label text="نوع الاستثناء" styleClass="form-label"
+                                                        <Label text="%user.rbac.label.override.type" styleClass="form-label"
                                                                GridPane.columnIndex="0" GridPane.rowIndex="1"/>
                                                         <ComboBox fx:id="comboOverrideEffect"
                                                                   GridPane.columnIndex="1" GridPane.rowIndex="1" maxWidth="Infinity"/>
-                                                        <Label text="ينتهي في" styleClass="form-label"
+                                                        <Label text="%user.rbac.label.expires.at" styleClass="form-label"
                                                                GridPane.columnIndex="2" GridPane.rowIndex="1"/>
-                                                        <DatePicker fx:id="dateOverrideExpiry" promptText="فارغ = دائم"
+                                                        <DatePicker fx:id="dateOverrideExpiry" promptText="%user.rbac.prompt.empty.permanent"
                                                                     GridPane.columnIndex="3" GridPane.rowIndex="1" maxWidth="Infinity"/>
-                                                        <Label text="السبب" styleClass="form-label"
+                                                        <Label text="%user.rbac.reason" styleClass="form-label"
                                                                GridPane.columnIndex="0" GridPane.rowIndex="2"/>
-                                                        <TextField fx:id="textOverrideReason" promptText="سبب واضح ومختصر للاستثناء"
+                                                        <TextField fx:id="textOverrideReason" promptText="%user.rbac.prompt.override.reason"
                                                                    GridPane.columnIndex="1" GridPane.columnSpan="3" GridPane.rowIndex="2"/>
                                                     </children>
                                                 </GridPane>
                                                 <HBox spacing="8" alignment="CENTER_RIGHT">
                                                     <children>
-                                                        <Button fx:id="btnSaveOverride" text="حفظ الاستثناء" styleClass="primary-button"/>
-                                                        <Button fx:id="btnClearOverride" text="استثناء جديد" styleClass="neutral-button"/>
-                                                        <Button fx:id="btnDeleteOverride" text="حذف الاستثناء" styleClass="danger-button" disable="true"/>
+                                                        <Button fx:id="btnSaveOverride" text="%user.rbac.btn.save.override" styleClass="primary-button"/>
+                                                        <Button fx:id="btnClearOverride" text="%user.rbac.btn.new.override" styleClass="neutral-button"/>
+                                                        <Button fx:id="btnDeleteOverride" text="%user.rbac.btn.delete.override" styleClass="danger-button" disable="true"/>
                                                     </children>
                                                 </HBox>
                                                 <Separator/>
@@ -162,36 +162,36 @@
                                         <TableView fx:id="tableOverrides" BorderPane.alignment="CENTER">
                                             <BorderPane.margin><Insets top="10"/></BorderPane.margin>
                                             <columns>
-                                                <TableColumn fx:id="colOverrideEffect" text="القرار" prefWidth="120"/>
-                                                <TableColumn fx:id="colOverridePermission" text="الصلاحية" prefWidth="250"/>
-                                                <TableColumn fx:id="colOverrideCode" text="المفتاح" prefWidth="210"/>
-                                                <TableColumn fx:id="colOverrideReason" text="السبب" prefWidth="220"/>
-                                                <TableColumn fx:id="colOverrideExpiry" text="الانتهاء" prefWidth="100"/>
-                                                <TableColumn fx:id="colOverrideStatus" text="الحالة" prefWidth="80"/>
+                                                <TableColumn fx:id="colOverrideEffect" text="%user.rbac.decision" prefWidth="120"/>
+                                                <TableColumn fx:id="colOverridePermission" text="%user.rbac.permission" prefWidth="250"/>
+                                                <TableColumn fx:id="colOverrideCode" text="%user.rbac.column.key" prefWidth="210"/>
+                                                <TableColumn fx:id="colOverrideReason" text="%user.rbac.reason" prefWidth="220"/>
+                                                <TableColumn fx:id="colOverrideExpiry" text="%user.rbac.column.expiry" prefWidth="100"/>
+                                                <TableColumn fx:id="colOverrideStatus" text="%case" prefWidth="80"/>
                                             </columns>
                                         </TableView>
                                     </center>
                                 </BorderPane>
                             </content>
                         </Tab>
-                        <Tab text="الوصول الفعلي">
+                        <Tab text="%user.rbac.tab.effective.access">
                             <content>
                                 <VBox spacing="10" styleClass="settings-card">
                                     <padding><Insets top="12" right="12" bottom="12" left="12"/></padding>
                                     <children>
                                         <HBox spacing="8" alignment="CENTER_RIGHT">
                                             <children>
-                                                <Label text="النتيجة النهائية بعد الأدوار والتوريث والاستثناءات" styleClass="section-title"/>
+                                                <Label text="%user.rbac.section.effective.result" styleClass="section-title"/>
                                                 <Region HBox.hgrow="ALWAYS"/>
-                                                <TextField fx:id="textAccessSearch" promptText="بحث في الوصول الفعلي..." prefWidth="300"/>
+                                                <TextField fx:id="textAccessSearch" promptText="%user.rbac.prompt.search.access" prefWidth="300"/>
                                             </children>
                                         </HBox>
                                         <TableView fx:id="tableEffectiveAccess" VBox.vgrow="ALWAYS">
                                             <columns>
-                                                <TableColumn fx:id="colAccessGranted" text="القرار" prefWidth="90"/>
-                                                <TableColumn fx:id="colAccessPermission" text="الصلاحية" prefWidth="300"/>
-                                                <TableColumn fx:id="colAccessCode" text="المفتاح" prefWidth="250"/>
-                                                <TableColumn fx:id="colAccessSource" text="مصدر القرار" prefWidth="360"/>
+                                                <TableColumn fx:id="colAccessGranted" text="%user.rbac.decision" prefWidth="90"/>
+                                                <TableColumn fx:id="colAccessPermission" text="%user.rbac.permission" prefWidth="300"/>
+                                                <TableColumn fx:id="colAccessCode" text="%user.rbac.column.key" prefWidth="250"/>
+                                                <TableColumn fx:id="colAccessSource" text="%user.rbac.column.source" prefWidth="360"/>
                                             </columns>
                                         </TableView>
                                     </children>
