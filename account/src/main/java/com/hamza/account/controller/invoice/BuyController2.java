@@ -6,7 +6,6 @@ import com.hamza.account.authorization.AppPermissions;
 
 import com.hamza.account.config.DefaultStock;
 import com.hamza.account.config.Image_Setting;
-import com.hamza.account.controller.main.DataPublisher;
 import com.hamza.account.controller.others.TextSearchController;
 import com.hamza.account.controller.others.ServiceRegistry;
 import com.hamza.account.controller.search.ItemsSearch;
@@ -55,7 +54,6 @@ import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.error.UserValidationException;
 import com.hamza.controlsfx.interfaceData.AppSettingInterface;
-import com.hamza.controlsfx.language.Error_Text_Show;
 import com.hamza.controlsfx.language.Setting_Language;
 import com.hamza.controlsfx.observer.EventBus;
 import com.hamza.controlsfx.observer.Subscriptions;
@@ -100,7 +98,6 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
     private final InvoiceEditorViewModel<T1> editor = new InvoiceEditorViewModel<>();
     private final Subscriptions subscriptions = new Subscriptions();
     private final EventBus eventBus = ServiceRegistry.get(EventBus.class);
-    private final DataPublisher dataPublisher;
     private final InvoicePrintService invoicePrintService = new InvoicePrintService();
     private final CustomerService customerService = ServiceRegistry.get(CustomerService.class);
     private final ItemsService itemsService = ServiceRegistry.get(ItemsService.class);
@@ -146,9 +143,8 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
     private Label labelTitle;
     private MaskerPaneSetting maskerPaneSetting;
 
-    public BuyController2(DataInterface<T1, T2, T3, T4> dataInterface, DataPublisher dataPublisher, int numInvoiceUpdate) throws Exception {
-        super(dataInterface, dataPublisher, numInvoiceUpdate);
-        this.dataPublisher = dataPublisher;
+    public BuyController2(DataInterface<T1, T2, T3, T4> dataInterface, int numInvoiceUpdate) throws Exception {
+        super(dataInterface, numInvoiceUpdate);
         this.invoiceSaveService = new InvoiceSaveService<>(dataInterface,
                 treasuryService::getTreasuryByName, employeeService::getDelegateByName);
         this.invoicePostSaveService = new InvoicePostSaveService(
@@ -177,7 +173,7 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
         addTextSearchItems();
         configureItemEntry();
         action();
-        publisherData(dataPublisher);
+        publisherData();
         disableData();
         totalSetting();
         buttonGraphic();
@@ -550,10 +546,10 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
             }
         };
         task.runningProperty().addListener((observable, wasRunning, running) ->
-                {
-                    editor.setSaving(running);
-                    maskerPaneSetting.setVisible(running);
-                });
+        {
+            editor.setSaving(running);
+            maskerPaneSetting.setVisible(running);
+        });
         task.setOnSucceeded(event -> afterSuccessfulSave(print, command, task.getValue()));
         task.setOnFailed(event -> {
             Throwable failure = task.getException();
@@ -719,7 +715,7 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
         radioDeffer.setSelected(false);
     }
 
-    private void publisherData(DataPublisher dataPublisher) {
+    private void publisherData() {
         if (eventBus != null) {
             subscriptions.add(eventBus.subscribe(EmployeesChanged.class
                     , event -> comboDelegate.setItems(FXCollections.observableArrayList(getDelegateNames()))));

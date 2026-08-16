@@ -1,12 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<?import javafx.scene.control.Tab?>
-<?import javafx.scene.control.TabPane?>
-<?import javafx.scene.layout.AnchorPane?>
-<?import javafx.scene.layout.BorderPane?>
-<?import javafx.scene.layout.HBox?>
-<?import javafx.scene.layout.VBox?>
-
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.text.Text?>
 <?import javafx.scene.image.ImageView?>
 <?import javafx.scene.image.Image?>
 <BorderPane fx:id="borderPane" nodeOrientation="RIGHT_TO_LEFT" prefHeight="478.0" prefWidth="723.0" styleClass="app-root" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1">
@@ -14,6 +11,258 @@
     <center>
         <HBox fx:id="mainContentBox" styleClass="main-content" BorderPane.alignment="CENTER">
             <children>
+                <AnchorPane fx:id="rightPaneRoot"
+                            maxWidth="-Infinity"
+                            minWidth="-Infinity"
+                            prefHeight="587.0"
+                            styleClass="right-pane-root">
+                    <children>
+                        <VBox spacing="12.0"
+                              styleClass="right-pane-container"
+                              AnchorPane.bottomAnchor="0.0"
+                              AnchorPane.leftAnchor="0.0"
+                              AnchorPane.rightAnchor="0.0"
+                              AnchorPane.topAnchor="0.0">
+                            <children>
+                                <HBox alignment="CENTER_RIGHT" spacing="8.0" styleClass="sidebar-brand-row">
+                                    <children>
+                                        <ImageView fx:id="imgCompanyLogo"
+                                                   fitWidth="34.0"
+                                                   fitHeight="34.0"
+                                                   preserveRatio="true"
+                                                   styleClass="sidebar-brand-logo"/>
+                                        <Label fx:id="lblCompanyName"
+                                               styleClass="sidebar-brand-name"
+                                               text="Company"
+                                               HBox.hgrow="ALWAYS"/>
+                                    </children>
+                                </HBox>
+
+                                <HBox fx:id="quickActionsRow" alignment="CENTER_RIGHT" spacing="6.0" styleClass="sidebar-quick-actions">
+                                    <children>
+                                        <StackPane fx:id="notificationBellSlot"/>
+                                        <Button fx:id="btnYouTube" mnemonicParsing="false" styleClass="sidebar-quick-action-btn" text="YouTube"/>
+                                        <Region HBox.hgrow="ALWAYS"/>
+                                    </children>
+                                </HBox>
+
+                                <MenuButton fx:id="menuUser" mnemonicParsing="false" styleClass="sidebar-user-menu" maxWidth="Infinity">
+                                    <graphic>
+                                        <HBox alignment="CENTER_RIGHT" spacing="8.0">
+                                            <children>
+                                                <Label fx:id="lblUserInitial" styleClass="sidebar-user-avatar" text="?"/>
+                                                <VBox spacing="0.0" HBox.hgrow="ALWAYS">
+                                                    <children>
+                                                        <Label fx:id="lblUserName" styleClass="sidebar-user-name" text="-"/>
+                                                        <Label fx:id="lblUserRole" styleClass="sidebar-user-role" text="-"/>
+                                                    </children>
+                                                </VBox>
+                                            </children>
+                                        </HBox>
+                                    </graphic>
+                                    <items>
+                                        <MenuItem fx:id="menuItemChangeName" mnemonicParsing="false" text="Change Name"/>
+                                        <MenuItem fx:id="menuItemChangePass" mnemonicParsing="false" text="Change Password"/>
+                                        <MenuItem fx:id="menuItemLogout" mnemonicParsing="false" text="Logout"/>
+                                    </items>
+                                </MenuButton>
+
+                                <Accordion styleClass="main-accordion" VBox.vgrow="ALWAYS">
+                                    <panes>
+                                        <TitledPane fx:id="paneSales" animated="false" text="Sales">
+                                            <content>
+                                                <ScrollPane styleClass="side-scroll" fitToWidth="true">
+                                                    <content>
+                                                        <VBox styleClass="side-button-box">
+                                                            <children>
+                                                                <Button fx:id="btnSales" mnemonicParsing="false" text="Sales"/>
+                                                                <Button fx:id="btnSalesReturn" mnemonicParsing="false" text="Sales Return"/>
+                                                                <Button fx:id="btnTotalSale" mnemonicParsing="false" text="Total Sales"/>
+                                                            </children>
+                                                        </VBox>
+                                                    </content>
+                                                </ScrollPane>
+                                            </content>
+                                        </TitledPane>
+
+                                        <TitledPane fx:id="panePurchase" animated="false" text="Purchase">
+                                            <content>
+                                                <ScrollPane styleClass="side-scroll" fitToWidth="true">
+                                                    <content>
+                                                        <VBox styleClass="side-button-box">
+                                                            <children>
+                                                                <Button fx:id="btnPurchase" mnemonicParsing="false" text="Purchase"/>
+                                                                <Button fx:id="btnPurchaseRe" mnemonicParsing="false" text="Purchase Re"/>
+                                                                <Button fx:id="btnTotalPurchase" mnemonicParsing="false" text="Total Purchase"/>
+                                                                <Button fx:id="btnTotalPurchaseRe" mnemonicParsing="false" text="Total Purchase Re"/>
+                                                            </children>
+                                                        </VBox>
+                                                    </content>
+                                                </ScrollPane>
+                                            </content>
+                                        </TitledPane>
+
+                                        <TitledPane fx:id="paneItems" animated="false" text="Items">
+                                            <content>
+                                                <ScrollPane styleClass="side-scroll" fitToWidth="true">
+                                                    <content>
+                                                        <VBox styleClass="side-button-box">
+                                                            <children>
+                                                                <Button fx:id="btnItems" mnemonicParsing="false" text="Items"/>
+                                                                <Button fx:id="btnAddItem" mnemonicParsing="false" text="Add Item"/>
+                                                                <Button fx:id="btnUnits" mnemonicParsing="false" text="Units"/>
+                                                                <Button fx:id="btnMainGroup" mnemonicParsing="false" text="Main Group"/>
+                                                                <Button fx:id="btnSubGroup" mnemonicParsing="false" text="Sub Group"/>
+                                                                <Button fx:id="btnArea" mnemonicParsing="false" text="Area"/>
+                                                                <Button fx:id="btnInventory" mnemonicParsing="false" text="Inventory"/>
+                                                                <Button fx:id="btnStockCount" mnemonicParsing="false" text="Stock Count"/>
+                                                            </children>
+                                                        </VBox>
+                                                    </content>
+                                                </ScrollPane>
+                                            </content>
+                                        </TitledPane>
+
+                                        <TitledPane fx:id="paneCustom" animated="false" text="Custom">
+                                            <content>
+                                                <ScrollPane styleClass="side-scroll" fitToWidth="true">
+                                                    <content>
+                                                        <VBox styleClass="side-button-box">
+                                                            <children>
+                                                                <Button fx:id="btnAddCustomerName" mnemonicParsing="false" text="Add Customer"/>
+                                                                <Button fx:id="btnCustomer" mnemonicParsing="false" text="Customer"/>
+                                                                <Button fx:id="btnAccountCustom" mnemonicParsing="false" text="Account Customer"/>
+                                                            </children>
+                                                        </VBox>
+                                                    </content>
+                                                </ScrollPane>
+                                            </content>
+                                        </TitledPane>
+
+                                        <TitledPane fx:id="paneSuppliers" animated="false" text="Suppliers">
+                                            <content>
+                                                <ScrollPane styleClass="side-scroll" fitToWidth="true">
+                                                    <content>
+                                                        <VBox styleClass="side-button-box">
+                                                            <children>
+                                                                <Button fx:id="btnAddSupplierName" mnemonicParsing="false" text="Add Supplier"/>
+                                                                <Button fx:id="btnSuppliers" mnemonicParsing="false" text="Suppliers"/>
+                                                                <Button fx:id="btnAccountSuppliers" mnemonicParsing="false" text="Account Suppliers"/>
+                                                            </children>
+                                                        </VBox>
+                                                    </content>
+                                                </ScrollPane>
+                                            </content>
+                                        </TitledPane>
+
+                                        <TitledPane fx:id="paneEmployees" animated="false" text="Employees">
+                                            <content>
+                                                <ScrollPane styleClass="side-scroll" fitToWidth="true">
+                                                    <content>
+                                                        <VBox styleClass="side-button-box">
+                                                            <children>
+                                                                <Button fx:id="btnAddEmployee" mnemonicParsing="false" text="Add Employee"/>
+                                                                <Button fx:id="btnEmployees" mnemonicParsing="false" text="Employees"/>
+                                                                <Button fx:id="btnAddUser" mnemonicParsing="false" text="Add User"/>
+                                                                <Button fx:id="btnUsers" mnemonicParsing="false" text="Users"/>
+                                                            </children>
+                                                        </VBox>
+                                                    </content>
+                                                </ScrollPane>
+                                            </content>
+                                        </TitledPane>
+
+                                        <TitledPane fx:id="paneTreasury" animated="false" text="Treasury">
+                                            <content>
+                                                <ScrollPane styleClass="side-scroll" fitToWidth="true">
+                                                    <content>
+                                                        <VBox styleClass="side-button-box">
+                                                            <children>
+                                                                <Button fx:id="btnTreasuryDetails" mnemonicParsing="false" text="كشف حساب"/>
+                                                                <Button fx:id="btnProcess" mnemonicParsing="false" text="Process"/>
+                                                                <Button fx:id="btnExpenses" mnemonicParsing="false" text="Expenses"/>
+                                                            </children>
+                                                        </VBox>
+                                                    </content>
+                                                </ScrollPane>
+                                            </content>
+                                        </TitledPane>
+
+                                        <TitledPane fx:id="paneReports" animated="false" text="Reports">
+                                            <content>
+                                                <ScrollPane styleClass="side-scroll" fitToWidth="true">
+                                                    <content>
+                                                        <VBox styleClass="side-button-box">
+                                                            <children>
+                                                                <Button fx:id="btnReportSummary" mnemonicParsing="false" text="Summary"/>
+                                                                <Button fx:id="btnReportItems" mnemonicParsing="false" text="Items Report"/>
+                                                                <Button fx:id="btnReportItemsDaily" mnemonicParsing="false" text="Items Report Daily"/>
+                                                                <Button fx:id="btnReportSalesByYear" mnemonicParsing="false" text="Sales By Year"/>
+                                                                <Button fx:id="btnReportPurchaseByYear" mnemonicParsing="false" text="Purchase By Year"/>
+                                                                <Button fx:id="btnReportCustomPaid" mnemonicParsing="false" text="Customer Payments"/>
+                                                                <Button fx:id="btnReportSuppliersPaid" mnemonicParsing="false" text="Supplier Payments"/>
+                                                                <Button fx:id="btnReportDetails" mnemonicParsing="false" text="Details Report"/>
+                                                                <Button fx:id="btnReportYearly" mnemonicParsing="false" text="Yearly Report"/>
+                                                                <Button fx:id="btnReportProfitLoss" mnemonicParsing="false" text="Profit Loss"/>
+                                                            </children>
+                                                        </VBox>
+                                                    </content>
+                                                </ScrollPane>
+                                            </content>
+                                        </TitledPane>
+
+                                        <TitledPane fx:id="paneSetting" animated="false" text="Setting">
+                                            <content>
+                                                <ScrollPane styleClass="side-scroll" fitToWidth="true">
+                                                    <content>
+                                                        <VBox styleClass="side-button-box">
+                                                            <children>
+                                                                <Button fx:id="btnHome" mnemonicParsing="false" styleClass="sidebar-nav-active" text="Home"/>
+                                                                <Button fx:id="btnSetting" mnemonicParsing="false" text="Setting"/>
+                                                                <Button fx:id="btnShiftReports" mnemonicParsing="false" text="Shift Reports"/>
+                                                                <Button fx:id="btnBackup" mnemonicParsing="false" text="Backup"/>
+                                                                <Button fx:id="btnDeleteData" mnemonicParsing="false" text="Delete Data"/>
+                                                                <Button fx:id="btnAbout" mnemonicParsing="false" text="About"/>
+                                                                <Button fx:id="btnClose" mnemonicParsing="false" text="Close"/>
+                                                            </children>
+                                                        </VBox>
+                                                    </content>
+                                                </ScrollPane>
+                                            </content>
+                                        </TitledPane>
+                                    </panes>
+                                </Accordion>
+
+                                <VBox fx:id="rightFooterBox"
+                                      alignment="BOTTOM_CENTER"
+                                      spacing="5.0"
+                                      styleClass="right-footer">
+                                    <children>
+                                        <Text fx:id="txtNameProject"
+                                              strokeType="OUTSIDE"
+                                              strokeWidth="0.0"
+                                              styleClass="text-account"
+                                              text="Account System"/>
+                                        <Text fx:id="txtName"
+                                              strokeType="OUTSIDE"
+                                              strokeWidth="0.0"
+                                              styleClass="text-name"
+                                              text="Mohamed Salah"/>
+                                        <Text fx:id="txtTel"
+                                              strokeType="OUTSIDE"
+                                              strokeWidth="0.0"
+                                              styleClass="text-tel"
+                                              text="01002937820"/>
+                                    </children>
+                                    <padding>
+                                        <Insets bottom="5.0" left="5.0" right="5.0" top="5.0"/>
+                                    </padding>
+                                </VBox>
+                            </children>
+                        </VBox>
+                    </children>
+                </AnchorPane>
+
                 <VBox fx:id="boxCenter" spacing="0.0" HBox.hgrow="ALWAYS">
                     <children>
                         <TabPane fx:id="tabPane" styleClass="main-tab-pane" tabClosingPolicy="ALL_TABS" VBox.vgrow="ALWAYS">

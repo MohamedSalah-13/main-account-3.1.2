@@ -1,45 +1,99 @@
 /* Sized in em against app-theme.css's 11px root anchor, like the rest of the app,
    so UiScale's inline -fx-font-size on the scene root scales the login screen too -
-   it used to be fixed px here regardless of that setting. */
+   it used to be fixed px here regardless of that setting. A compact card centred
+   on the theme's own gradient background, not a bare full-bleed form. */
 
 .login-root {
-    -fx-min-width: 31.818em;
-    -fx-min-height: 43.636em;
-    -fx-pref-width: 34.545em;
-    -fx-pref-height: 45.455em;
+    /*-fx-min-width: 30.909em;*/
+    /*-fx-min-height: 40.0em;*/
+    /*-fx-pref-width: 32.727em;*/
+    /*-fx-pref-height: 43.636em;*/
+}
+
+.login-card {
+    -fx-max-width: 27.273em;
+    -fx-background-color: -app-surface;
+    -fx-background-radius: 1.455em;
+    -fx-border-radius: 1.455em;
+    -fx-border-color: -app-border;
+    -fx-border-width: 0.091em;
+    -fx-effect: dropshadow(gaussian, -app-shadow, 24, 0.18, 0, 8);
+}
+
+.login-avatar {
+    -fx-min-width: 5.818em;
+    -fx-min-height: 5.818em;
+    -fx-max-width: 5.818em;
+    -fx-max-height: 5.818em;
+    -fx-background-color: linear-gradient(to bottom right, -app-primary, -app-primary-dark);
+    -fx-background-radius: 2.909em;
+    -fx-effect: dropshadow(gaussian, -app-focus-shadow, 14, 0.35, 0, 4);
 }
 
 .login-title {
-    -fx-font-size: 1.818em;
+    -fx-font-size: 1.636em;
     -fx-font-weight: bold;
+    -fx-fill: -app-text-strong;
 }
 
 .login-footer {
-    -fx-font-size: 1.182em;
-    -fx-opacity: 0.75;
+    -fx-font-size: 1.045em;
+    -fx-fill: -app-text-muted;
+    -fx-opacity: 0.85;
 }
 
 .login-field-box {
-    -fx-border-color: -fx-box-border;
+    -fx-background-color: -app-input-bg;
+    -fx-border-color: -app-input-border;
     -fx-border-width: 0.091em;
-    -fx-border-radius: 0.455em;
-    -fx-background-radius: 0.455em;
+    -fx-border-radius: 0.909em;
+    -fx-background-radius: 0.909em;
     -fx-padding: 0.182em 0.727em 0.182em 0.727em;
     -fx-spacing: 0.727em;
-    -fx-min-height: 3.455em;
+    /*-fx-min-height: 3.273em;*/
 }
 
-.login-field-box .text-field {
+.login-field-box:hover {
+    -fx-border-color: -app-primary;
+}
+
+.login-field-box .text-field,
+.login-field-box .password-field {
     -fx-background-color: transparent;
     -fx-border-width: 0;
     -fx-padding: 0.545em;
+    -fx-text-fill: -app-text;
 }
 
 .login-status {
-    -fx-text-fill: #b3261e;
-    -fx-font-size: 1.091em;
+    -fx-text-fill: -app-danger;
+    -fx-font-size: 1.045em;
 }
 
 .login-button {
-    -fx-min-height: 3.273em;
+    /*-fx-min-height: 3.091em;*/
+    -fx-background-radius: 0.909em;
+    -fx-font-weight: bold;
+}
+
+.login-button-primary {
+    -fx-background-color: linear-gradient(to right, -app-primary, -app-primary-dark);
+    -fx-text-fill: white;
+}
+
+.login-button-primary:hover {
+    -fx-background-color: linear-gradient(to right, -app-primary-dark, -app-primary-darker);
+}
+
+.login-button-primary:armed {
+    -fx-background-color: -app-primary-darker;
+}
+
+.login-button-secondary {
+    -fx-background-color: -app-neutral-soft;
+    -fx-text-fill: -app-text;
+}
+
+.login-button-secondary:hover {
+    -fx-background-color: -app-neutral-hover;
 }

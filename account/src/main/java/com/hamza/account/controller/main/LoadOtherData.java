@@ -6,8 +6,6 @@ import com.hamza.account.interfaces.api.NameAndAccountInterface;
 import com.hamza.account.interfaces.api.NameData;
 import com.hamza.account.model.base.BaseAccount;
 import com.hamza.account.model.base.BaseNames;
-import com.hamza.account.model.base.BasePurchasesAndSales;
-import com.hamza.account.model.base.BaseTotals;
 import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.service.NameService;
 

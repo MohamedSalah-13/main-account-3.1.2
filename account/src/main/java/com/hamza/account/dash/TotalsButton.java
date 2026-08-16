@@ -1,5 +1,6 @@
 package com.hamza.account.dash;
 
+import com.hamza.account.authorization.PermissionKey;
 import com.hamza.account.config.Image_Setting;
 import com.hamza.account.controller.main.ButtonWithPerm;
 import com.hamza.account.controller.main.DataPublisher;
@@ -7,13 +8,10 @@ import com.hamza.account.controller.others.ServiceRegistry;
 import com.hamza.account.interfaces.api.DataInterface;
 import com.hamza.account.model.base.BaseAccount;
 import com.hamza.account.model.base.BaseNames;
-import com.hamza.account.model.base.BasePurchasesAndSales;
 import com.hamza.account.model.base.BaseTotals;
 import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.service.EmployeeService;
 import com.hamza.account.service.TotalsService;
-import com.hamza.account.authorization.AppPermissions;
-import com.hamza.account.authorization.PermissionKey;
 import com.hamza.account.view.BuyApplication;
 import com.hamza.account.view.TotalsApplication;
 import javafx.scene.Node;
@@ -86,7 +84,7 @@ public class TotalsButton<T2 extends BaseTotals, T3 extends BaseNames, T4 extend
 
             @Override
             public void action() throws Exception {
-                BuyApplication buyApp = new BuyApplication(dataInterface, dataPublisher, 0);
+                BuyApplication buyApp = new BuyApplication(dataInterface, 0);
                 buyApp.start(new Stage());
             }
 

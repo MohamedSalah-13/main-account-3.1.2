@@ -2,7 +2,6 @@ package com.hamza.account.view;
 
 import com.hamza.account.config.Image_Setting;
 import com.hamza.account.controller.invoice.BuyController2;
-import com.hamza.account.controller.main.DataPublisher;
 import com.hamza.account.interfaces.api.DataInterface;
 import javafx.application.Application;
 import javafx.scene.Scene;
@@ -24,9 +23,8 @@ public class BuyApplication extends Application {
     private final int numInvoiceUpdate;
     private String title = "Buy";
 
-    public BuyApplication(DataInterface<?, ?, ?, ?> dataInterface, DataPublisher dataPublisher
-            , int numInvoiceUpdate) throws Exception {
-        controller = new BuyController2<>(dataInterface, dataPublisher, numInvoiceUpdate);
+    public BuyApplication(DataInterface<?, ?, ?, ?> dataInterface, int numInvoiceUpdate) throws Exception {
+        controller = new BuyController2<>(dataInterface, numInvoiceUpdate);
         pane = controller.pane();
         this.numInvoiceUpdate = numInvoiceUpdate;
         title = dataInterface.designInterface().nameTextOfInvoice();

@@ -44,8 +44,8 @@ public final class LogApplication {
         ChangeOrientation.sceneOrientation(scene);
 
         stage.setScene(scene);
-        stage.setMinWidth(350);
-        stage.setMinHeight(480);
+        stage.setMinWidth(300);
+        stage.setMinHeight(350);
         stage.setResizable(true);
         stage.setTitle(LanguageManager.getInstance().getString("common.login.screen"));
         if (stage.getIcons().isEmpty()) stage.getIcons().add(new Image(new Image_Setting().tools));

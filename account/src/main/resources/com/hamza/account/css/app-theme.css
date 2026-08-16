@@ -602,6 +602,7 @@
 }
 
 .summary-light-card {
+    -fx-min-width: 15.455em;
     -fx-background-color: -app-warning-soft;
     -fx-background-radius: 1.091em;
     -fx-border-radius: 1.091em;

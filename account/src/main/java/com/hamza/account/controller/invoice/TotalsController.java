@@ -519,7 +519,7 @@ public class TotalsController<T2 extends BaseTotals, T3 extends BaseNames, T4 ex
                 throw new BusinessRuleException("لا يمكن تعديل بيانات خارج الشهر الحالي");
             }
         }
-        BuyApplication buyApp = new BuyApplication(dataInterface, dataPublisher, i);
+        BuyApplication buyApp = new BuyApplication(dataInterface, i);
         buyApp.start(new Stage());
     }
 
