@@ -3,6 +3,7 @@ package com.hamza.controlsfx.button.button_column;
 import com.hamza.controlsfx.HelloApplication;
 import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.button.api.ButtonColumnI;
+import com.hamza.controlsfx.language.LanguageManager;
 import javafx.scene.control.Button;
 import javafx.scene.control.TableCell;
 import javafx.scene.control.TableColumn;
@@ -42,7 +43,7 @@ public class ButtonColumn<T> extends TableColumn<T, String> {
                                 try {
                                     buttonColumnI.action(getIndex());
                                 } catch (Exception e) {
-                                    AllAlerts.handleError("تنفيذ إجراء الجدول", e);
+                                    AllAlerts.handleError(LanguageManager.getInstance().getString("error.operation.table.action"), e);
                                 }
                             });
 

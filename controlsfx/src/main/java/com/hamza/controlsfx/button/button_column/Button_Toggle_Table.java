@@ -2,6 +2,7 @@ package com.hamza.controlsfx.button.button_column;
 
 import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.button.api.ButtonColumnBoolean;
+import com.hamza.controlsfx.language.LanguageManager;
 import com.jfoenix.controls.JFXToggleButton;
 import javafx.scene.control.TableCell;
 import javafx.scene.control.TableColumn;
@@ -35,7 +36,7 @@ public class Button_Toggle_Table<T> extends TableColumn<T, String> {
                                 try {
                                     buttonColumnI.action(getIndex(), btn.selectedProperty().getValue());
                                 } catch (Exception e) {
-                                    AllAlerts.handleError("تغيير حالة السجل", e);
+                                    AllAlerts.handleError(LanguageManager.getInstance().getString("error.operation.record.toggle"), e);
                                 }
                             });
                             setGraphic(btn);
