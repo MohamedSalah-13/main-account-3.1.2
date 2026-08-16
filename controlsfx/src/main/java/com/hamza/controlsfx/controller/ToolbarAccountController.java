@@ -4,7 +4,7 @@ import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.error.BusinessRuleException;
 import com.hamza.controlsfx.interfaceData.Disable;
 import com.hamza.controlsfx.interfaceData.ToolbarAccountInt;
-import com.hamza.controlsfx.language.Setting_Language;
+import com.hamza.controlsfx.language.LanguageManager;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.collections.ObservableList;
@@ -62,19 +62,20 @@ public class ToolbarAccountController<T> {
                 button.setDisable(true);
             }
         } catch (Exception e) {
-            AllAlerts.reportError("تهيئة شريط أدوات الحساب", e);
+            AllAlerts.reportError(LanguageManager.getInstance().getString("error.operation.toolbar.init"), e);
         }
     }
 
     private void otherSetting() {
-        btnPreviousRecord.setTooltip(new Tooltip("السابق"));
-        btnFirstPage.setTooltip(new Tooltip("السجل الاولى"));
-        btnNextRecord.setTooltip(new Tooltip("التالى"));
-        btnLastPage.setTooltip(new Tooltip("السجل الاخير"));
-        btnAddNew.setTooltip(new Tooltip(Setting_Language.WORD_NEW));
-        btnSave.setTooltip(new Tooltip(Setting_Language.WORD_SAVE));
-        btnPrint.setTooltip(new Tooltip(Setting_Language.WORD_PRINT));
-        btnDelete.setTooltip(new Tooltip(Setting_Language.WORD_UPDATE));
+        LanguageManager languageManager = LanguageManager.getInstance();
+        btnPreviousRecord.setTooltip(new Tooltip(languageManager.getString("toolbar.nav.previous")));
+        btnFirstPage.setTooltip(new Tooltip(languageManager.getString("toolbar.nav.first")));
+        btnNextRecord.setTooltip(new Tooltip(languageManager.getString("toolbar.nav.next")));
+        btnLastPage.setTooltip(new Tooltip(languageManager.getString("toolbar.nav.last")));
+        btnAddNew.setTooltip(new Tooltip(languageManager.getString("new")));
+        btnSave.setTooltip(new Tooltip(languageManager.getString("common.save")));
+        btnPrint.setTooltip(new Tooltip(languageManager.getString("print")));
+        btnDelete.setTooltip(new Tooltip(languageManager.getString("delete")));
 
     }
 
@@ -120,7 +121,11 @@ public class ToolbarAccountController<T> {
                 AllAlerts.alertDelete();
                 toolbarAccountInt.afterSaveOrDelete();
                 publishChange(toolbarAccountInt);
-            } else AllAlerts.handleError("حذف السجل", new BusinessRuleException(Setting_Language.PLEASE_INSERT_ALL_DATA));
+            } else {
+                LanguageManager languageManager = LanguageManager.getInstance();
+                AllAlerts.handleError(languageManager.getString("error.operation.delete.record"),
+                        new BusinessRuleException(languageManager.getString("msg.insert.all")));
+            }
         }
     }
 
@@ -238,6 +243,6 @@ public class ToolbarAccountController<T> {
     }
 
     private void logError(Exception e) {
-        AllAlerts.handleError("حفظ أو حذف السجل", e);
+        AllAlerts.handleError(LanguageManager.getInstance().getString("error.operation.save.or.delete"), e);
     }
 }

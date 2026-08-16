@@ -2,7 +2,7 @@ package com.hamza.controlsfx.controller;
 
 import com.hamza.controlsfx.error.UserValidationException;
 import com.hamza.controlsfx.interfaceData.ChangePassInt;
-import com.hamza.controlsfx.language.Setting_Language;
+import com.hamza.controlsfx.language.LanguageManager;
 import com.hamza.controlsfx.others.ImageSetting;
 import com.hamza.controlsfx.others.ShowPassService;
 import javafx.beans.binding.BooleanBinding;
@@ -37,13 +37,18 @@ public class ChangePassController implements Initializable {
     }
 
     private void otherSetting() {
-        LabelPassOld.setText(Setting_Language.WORD_OLD_PASS);
-        labelPassNew.setText(Setting_Language.WORD_NEW_PASS);
-        labelPassRe.setText(Setting_Language.PASS_OK);
+        LanguageManager languageManager = LanguageManager.getInstance();
+        String oldPass = languageManager.getString("oldPass");
+        String newPass = languageManager.getString("newPass");
+        String confirmPass = languageManager.getString("password.confirm");
 
-        txtPassOld.setPromptText(Setting_Language.WORD_OLD_PASS);
-        txtPassNew.setPromptText(Setting_Language.WORD_NEW_PASS);
-        txtPassRe.setPromptText(Setting_Language.PASS_OK);
+        LabelPassOld.setText(oldPass);
+        labelPassNew.setText(newPass);
+        labelPassRe.setText(confirmPass);
+
+        txtPassOld.setPromptText(oldPass);
+        txtPassNew.setPromptText(newPass);
+        txtPassRe.setPromptText(confirmPass);
 
         showPass(txtPassOld, imagePassOld);
         showPass(txtPassNew, imagePassNew);
@@ -61,17 +66,17 @@ public class ChangePassController implements Initializable {
             String passNew = txtPassNew.getText();
             String passNewRe = txtPassRe.getText();
             if (passNew.isEmpty() || passNewRe.isEmpty()) {
-                throw new UserValidationException(Setting_Language.PLEASE_INSERT_ALL_DATA);
+                throw new UserValidationException(LanguageManager.getInstance().getString("msg.insert.all"));
             }
             if (passNew.equals(passNewRe)) {
                 //update pass
                 return changePassInt.updatePass(passNew) ? 1 : 0;
-            } else throw new UserValidationException(Setting_Language.PASS_NO_RIGHT);
+            } else throw new UserValidationException(LanguageManager.getInstance().getString("password.mismatch"));
 
         } else {
             txtPassOld.setText("");
             txtPassOld.requestFocus();
-            throw new UserValidationException("كلمة المرور غير صحيحة");
+            throw new UserValidationException(LanguageManager.getInstance().getString("password.incorrect"));
         }
     }
 
