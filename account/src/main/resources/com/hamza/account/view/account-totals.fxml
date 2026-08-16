@@ -24,21 +24,21 @@
                             <children>
                                 <HBox alignment="CENTER_LEFT" spacing="5.0">
                                     <children>
-                                        <Button fx:id="btnNew" mnemonicParsing="false" styleClass="app-neutral-button" text="جديد" />
-                                        <Button fx:id="btnRefresh" mnemonicParsing="false" styleClass="app-neutral-button" text="تحديث" />
-                                        <Button fx:id="btnPrint" mnemonicParsing="false" styleClass="app-neutral-button" text="طباعة" />
+                                        <Button fx:id="btnNew" mnemonicParsing="false" styleClass="app-neutral-button" text="%new" />
+                                        <Button fx:id="btnRefresh" mnemonicParsing="false" styleClass="app-neutral-button" text="%refresh" />
+                                        <Button fx:id="btnPrint" mnemonicParsing="false" styleClass="app-neutral-button" text="%print" />
                                         <Separator orientation="VERTICAL" />
-                                        <Button fx:id="btnExport" mnemonicParsing="false" styleClass="pdf-button" text="تصدير" />
-                                        <ToggleButton fx:id="btnSelected" mnemonicParsing="false" styleClass="app-neutral-button" text="تحديد الكل" />
-                                        <Button fx:id="btnShow" mnemonicParsing="false" styleClass="app-primary-button" text="كشف حساب" />
-                                        <Button fx:id="btnPaidAll" mnemonicParsing="false" styleClass="app-primary-button" text="المدفوعات" />
+                                        <Button fx:id="btnExport" mnemonicParsing="false" styleClass="pdf-button" text="%export" />
+                                        <ToggleButton fx:id="btnSelected" mnemonicParsing="false" styleClass="app-neutral-button" text="%common.select.all" />
+                                        <Button fx:id="btnShow" mnemonicParsing="false" styleClass="app-primary-button" text="%party.account.statement" />
+                                        <Button fx:id="btnPaidAll" mnemonicParsing="false" styleClass="app-primary-button" text="%party.payments" />
                                     </children>
                                 </HBox>
                                 <HBox alignment="CENTER_LEFT" spacing="5.0" HBox.hgrow="SOMETIMES">
                                     <children>
-                                        <Label styleClass="form-label" text="بحث" />
-                                        <TextField fx:id="textSearch" promptText="بحث" HBox.hgrow="SOMETIMES" />
-                                        <CheckBox fx:id="checkByZero" mnemonicParsing="false" text="إظهار الرصيد صفر" />
+                                        <Label styleClass="form-label" text="%search" />
+                                        <TextField fx:id="textSearch" promptText="%search" HBox.hgrow="SOMETIMES" />
+                                        <CheckBox fx:id="checkByZero" mnemonicParsing="false" text="%party.check.show.zero.balance" />
                                     </children>
                                 </HBox>
                             </children>
@@ -47,13 +47,13 @@
                     <bottom>
                         <HBox alignment="CENTER_LEFT" minHeight="-Infinity" minWidth="-Infinity" spacing="10.0" styleClass="summary-bar" BorderPane.alignment="CENTER">
                             <children>
-                                <Label styleClass="form-label" text="عدد" />
+                                <Label styleClass="form-label" text="%count" />
                                 <Text fx:id="textCount" strokeType="OUTSIDE" strokeWidth="0.0" styleClass="text-sum" text="0.0" />
-                                <Label layoutX="10.0" layoutY="10.0" styleClass="form-label" text="مدين" />
+                                <Label layoutX="10.0" layoutY="10.0" styleClass="form-label" text="%common.debtor" />
                                 <Text fx:id="textTotalPurchase" layoutX="38.0" layoutY="23.0" strokeType="OUTSIDE" strokeWidth="0.0" styleClass="text-sum" text="0.0" />
-                                <Label layoutX="38.0" layoutY="10.0" styleClass="form-label" text="دائن" />
+                                <Label layoutX="38.0" layoutY="10.0" styleClass="form-label" text="%common.creditor" />
                                 <Text fx:id="textTotalPaid" layoutX="145.0" layoutY="23.0" strokeType="OUTSIDE" strokeWidth="0.0" styleClass="text-sum" text="0.0" />
-                                <Label layoutX="10.0" layoutY="10.0" styleClass="form-label" text="الباقى" />
+                                <Label layoutX="10.0" layoutY="10.0" styleClass="form-label" text="%rest" />
                                 <Text fx:id="textTotalRest" layoutX="168.0" layoutY="23.0" strokeType="OUTSIDE" strokeWidth="0.0" styleClass="text-sum" text="0.0" />
                             </children>
                         </HBox>

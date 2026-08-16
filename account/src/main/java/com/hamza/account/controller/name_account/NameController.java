@@ -18,7 +18,7 @@ import com.hamza.account.authorization.AppPermissions;
 import com.hamza.account.authorization.PermissionKey;
 import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.database.DaoList;
-import com.hamza.controlsfx.language.Setting_Language;
+import com.hamza.controlsfx.language.LanguageManager;
 import com.hamza.account.controller.others.ServiceRegistry;
 import com.hamza.account.features.events.AccountChanged;
 import com.hamza.account.features.events.NameChanged;
@@ -209,9 +209,9 @@ public class NameController<T3 extends BaseNames, T4 extends BaseAccount>
     }
 
     private void addColumnShow() {
-        TableColumn<T3, String> column = new TableColumn<>("Show");
+        TableColumn<T3, String> column = new TableColumn<>(LanguageManager.getInstance().getString("show"));
         column.setCellFactory(col -> new TableCell<>() {
-            private final Button btn = new Button(Setting_Language.WORD_SHOW);
+            private final Button btn = new Button(LanguageManager.getInstance().getString("show"));
 
             {
                 btn.getStyleClass().add("app-neutral-button");

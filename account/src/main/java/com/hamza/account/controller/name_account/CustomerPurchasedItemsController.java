@@ -14,6 +14,7 @@ import com.hamza.controlsfx.error.UserValidationException;
 import com.hamza.controlsfx.excel.ExcelException;
 import com.hamza.controlsfx.excel.ExportData;
 import com.hamza.controlsfx.interfaceData.AppSettingInterface;
+import com.hamza.controlsfx.language.LanguageManager;
 import com.hamza.controlsfx.others.DateSetting;
 import com.hamza.controlsfx.table.TableColumnAnnotation;
 import javafx.collections.FXCollections;
@@ -125,7 +126,7 @@ public class CustomerPurchasedItemsController implements Initializable, AppSetti
             masterData.setAll(customerPurchaseInterface.getPurchasedItemsByCustomerId(customerId));
             labelCustomerName.setText(customerName);
         } catch (DaoException e) {
-            AllAlerts.handleError("تحميل مشتريات العميل", e);
+            AllAlerts.handleError(LanguageManager.getInstance().getString("party.error.load.customer.purchases"), e);
         }
     }
 
@@ -136,7 +137,8 @@ public class CustomerPurchasedItemsController implements Initializable, AppSetti
             LocalDate from = dateFrom.getValue();
             LocalDate to = dateTo.getValue();
             if (from.isAfter(to)) {
-                AllAlerts.handleError("تصفية مشتريات العميل", new UserValidationException("تاريخ البداية يجب أن يكون قبل تاريخ النهاية"));
+                AllAlerts.handleError(LanguageManager.getInstance().getString("party.action.filter.customer.purchases"),
+                        new UserValidationException(LanguageManager.getInstance().getString("party.error.date.range.invalid")));
                 return;
             }
             result = purchasedItemsService.filterByDateRange(result, from, to);
@@ -177,7 +179,8 @@ public class CustomerPurchasedItemsController implements Initializable, AppSetti
     private void exportExcel() {
         try {
             if (filteredData.isEmpty()) {
-                AllAlerts.handleError("تصدير مشتريات العميل", new UserValidationException("لا توجد بيانات للتصدير"));
+                AllAlerts.handleError(LanguageManager.getInstance().getString("party.action.export.customer.purchases"),
+                        new UserValidationException(LanguageManager.getInstance().getString("party.error.no.data.export")));
                 return;
             }
             int result = ExportData.exportDataToExcel(
@@ -185,22 +188,23 @@ public class CustomerPurchasedItemsController implements Initializable, AppSetti
                     new CustomerPurchasedItemsExcelWriter(filteredData)
             );
             if (result >= 1) {
-                AllAlerts.alertSaveWithMessage("تم تصدير ملف Excel بنجاح");
+                AllAlerts.alertSaveWithMessage(LanguageManager.getInstance().getString("party.export.excel.success"));
             }
         } catch (ExcelException e) {
-            AllAlerts.handleError("تصدير مشتريات العميل", e);
+            AllAlerts.handleError(LanguageManager.getInstance().getString("party.action.export.customer.purchases"), e);
         }
     }
 
     private void exportPdf() {
         try {
             if (filteredData.isEmpty()) {
-                AllAlerts.handleError("طباعة مشتريات العميل", new UserValidationException("لا توجد بيانات للطباعة"));
+                AllAlerts.handleError(LanguageManager.getInstance().getString("party.action.print.customer.purchases"),
+                        new UserValidationException(LanguageManager.getInstance().getString("party.error.no.data.print")));
                 return;
             }
 
             FileChooser fileChooser = new FileChooser();
-            fileChooser.setTitle("حفظ التقرير");
+            fileChooser.setTitle(LanguageManager.getInstance().getString("party.dialog.save.report"));
             fileChooser.setInitialFileName("items_" + labelCustomerName.getText() + ".pdf");
             fileChooser.getExtensionFilters().add(
                     new FileChooser.ExtensionFilter("PDF Files", "*.pdf")
@@ -224,27 +228,30 @@ public class CustomerPurchasedItemsController implements Initializable, AppSetti
                     })
                     .toList();
 
+            var lm = LanguageManager.getInstance();
             PdfExportService pdfExportService = new PdfExportService();
             boolean success = pdfExportService.exportGenericReport(
                     file.getAbsolutePath(),
                     customerPurchaseInterface.title(),
-                    "العميل: " + (labelCustomerName != null ? labelCustomerName.getText() : ""),
-                    new String[]{"رقم العميل", "الاسم", "الصنف", "الكمية", "السعر", "التاريخ", "رقم الفاتورة"},
+                    lm.getString("party.pdf.customer.label", labelCustomerName != null ? labelCustomerName.getText() : ""),
+                    new String[]{lm.getString("party.column.customer.id"), lm.getString("name"), lm.getString("column.item_name")
+                            , lm.getString("quantity"), lm.getString("price"), lm.getString("date"), lm.getString("column.code_invoice")},
                     new float[]{10, 14, 18, 10, 10, 10, 10},
                     rows,
-                    "الإجمالي",
+                    lm.getString("total"),
                     String.valueOf(purchasedItemsService.sumTotalAfterDiscount(filteredData)),
                     null,
                     com.itextpdf.kernel.geom.PageSize.A4.rotate()
             );
 
             if (success) {
-                AllAlerts.alertSaveWithMessage("تم تصدير ملف PDF بنجاح");
+                AllAlerts.alertSaveWithMessage(lm.getString("party.export.pdf.success"));
             } else {
-                AllAlerts.handleError("تصدير مشتريات العميل", new BusinessRuleException("حدث خطأ أثناء التصدير"));
+                AllAlerts.handleError(lm.getString("party.action.export.customer.purchases"),
+                        new BusinessRuleException(lm.getString("party.error.export.generic")));
             }
         } catch (Exception e) {
-            AllAlerts.handleError("طباعة مشتريات العميل", e);
+            AllAlerts.handleError(LanguageManager.getInstance().getString("party.action.print.customer.purchases"), e);
         }
     }
 

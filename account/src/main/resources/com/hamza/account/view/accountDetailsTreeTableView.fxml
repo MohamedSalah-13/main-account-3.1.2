@@ -28,7 +28,7 @@
                           <Button fx:id="btnPrint" mnemonicParsing="false" styleClass="app-neutral-button" text="Print" />
                           <Button fx:id="btnExport" layoutX="134.0" layoutY="10.0" mnemonicParsing="false" styleClass="app-neutral-button" text="Export" />
                           <Button fx:id="btnRefresh" mnemonicParsing="false" styleClass="app-neutral-button" text="Refresh" />
-                          <MenuButton mnemonicParsing="false" styleClass="app-neutral-button" text="إعدادات">
+                          <MenuButton mnemonicParsing="false" styleClass="app-neutral-button" text="%menu.settings">
                               <items>
                                   <CheckMenuItem fx:id="checkPrintDetails" mnemonicParsing="false" text="Unspecified Action" />
                                   <CheckMenuItem fx:id="checkShowColor" mnemonicParsing="false" text="Unspecified Action" />
@@ -41,11 +41,11 @@
          <bottom>
                     <HBox alignment="CENTER_LEFT" spacing="10.0" styleClass="summary-card" BorderPane.alignment="CENTER">
                         <children>
-                            <Label text="مدين" />
+                            <Label text="%common.debtor" />
                             <Text fx:id="textSumPurchase" strokeType="OUTSIDE" strokeWidth="0.0" styleClass="text-sum" text="0.0" />
-                            <Label layoutX="10.0" layoutY="10.0" text="دائن" />
+                            <Label layoutX="10.0" layoutY="10.0" text="%common.creditor" />
                             <Text fx:id="textSumPaid" layoutX="38.0" layoutY="23.0" strokeType="OUTSIDE" strokeWidth="0.0" styleClass="text-sum" text="0.0" />
-                            <Label layoutX="38.0" layoutY="10.0" text="الفرق" />
+                            <Label layoutX="38.0" layoutY="10.0" text="%party.difference" />
                             <Text fx:id="textSumTotals" layoutX="117.0" layoutY="23.0" strokeType="OUTSIDE" strokeWidth="0.0" styleClass="text-sum" text="0.0" />
                         </children>
                     </HBox>

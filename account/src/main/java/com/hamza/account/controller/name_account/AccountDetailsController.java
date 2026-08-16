@@ -21,7 +21,7 @@ import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.observer.EventBus;
 import com.hamza.controlsfx.dateTime.SearchInTwoDate;
 import com.hamza.controlsfx.interfaceData.AppSettingInterface;
-import com.hamza.controlsfx.language.Setting_Language;
+import com.hamza.controlsfx.language.LanguageManager;
 import com.hamza.controlsfx.others.DateSetting;
 import com.hamza.controlsfx.table.Column;
 import com.hamza.controlsfx.util.ImageChoose;
@@ -75,15 +75,16 @@ public class AccountDetailsController<T3 extends BaseNames, T4 extends BaseAccou
     }
 
     public static List<Column<?>> initializeAccountColumnDefinitions() {
+        var lm = LanguageManager.getInstance();
         return new ArrayList<>(Arrays.asList(
-                new Column<>(Integer.class, "id", Setting_Language.WORD_NUM),
-                new Column<>(Date.class, "date", Setting_Language.WORD_DATE),
-                new Column<>(Integer.class, "invoice_number", Setting_Language.WORD_NUM_INV),
-                new Column<>(String.class, "information_name", Setting_Language.WORD_FROM),
-                new Column<>(Double.class, "purchase", Setting_Language.DEBTOR),
-                new Column<>(Double.class, "paid", Setting_Language.CREDITOR),
-                new Column<>(Double.class, "amount", Setting_Language.WORD_BALANCE),
-                new Column<>(String.class, "notes", Setting_Language.NOTES)
+                new Column<>(Integer.class, "id", lm.getString("num")),
+                new Column<>(Date.class, "date", lm.getString("date")),
+                new Column<>(Integer.class, "invoice_number", lm.getString("numInv")),
+                new Column<>(String.class, "information_name", lm.getString("from")),
+                new Column<>(Double.class, "purchase", lm.getString("common.debtor")),
+                new Column<>(Double.class, "paid", lm.getString("common.creditor")),
+                new Column<>(Double.class, "amount", lm.getString("balance")),
+                new Column<>(String.class, "notes", lm.getString("column.notes"))
         ));
     }
 
@@ -113,19 +114,20 @@ public class AccountDetailsController<T3 extends BaseNames, T4 extends BaseAccou
     private void otherSetting() {
         List<T3> customersList = getDataAllList();
 
-        labelName.setText(Setting_Language.WORD_NAME);
-        btnSearch.setText(Setting_Language.WORD_SEARCH);
-        btnUpdate.setText(Setting_Language.WORD_UPDATE);
+        var lm = LanguageManager.getInstance();
+        labelName.setText(lm.getString("name"));
+        btnSearch.setText(lm.getString("search"));
+        btnUpdate.setText(lm.getString("update"));
 
-        btnDelete.setText(Setting_Language.WORD_DELETE);
+        btnDelete.setText(lm.getString("delete"));
         txtName.setText(name_account);
 
 
         // init date
         DateSetting.dateAction(dateFrom);
         DateSetting.dateAction(dateTo);
-        labelFrom.setText(Setting_Language.WORD_FROM);
-        labelTo.setText(Setting_Language.WORD_TO);
+        labelFrom.setText(lm.getString("from"));
+        labelTo.setText(lm.getString("to"));
         // disable search
         // change style
         pane.getStylesheets().add(dataInterface.designInterface().styleSheet());
@@ -264,7 +266,7 @@ public class AccountDetailsController<T3 extends BaseNames, T4 extends BaseAccou
     }
 
     private void errorLog(Exception e) {
-        AllAlerts.handleError("تحميل تفاصيل الحساب", e);
+        AllAlerts.handleError(LanguageManager.getInstance().getString("party.error.load.account.details"), e);
     }
 
     @Override
@@ -276,7 +278,7 @@ public class AccountDetailsController<T3 extends BaseNames, T4 extends BaseAccou
 
     @Override
     public String title() {
-        return Setting_Language.ACCOUNT_CARD + " - " + name_account;
+        return LanguageManager.getInstance().getString("party.account.card.title", name_account);
     }
 
     @Override

@@ -20,8 +20,7 @@ import com.hamza.controlsfx.util.ImageChoose;
 import com.hamza.controlsfx.error.BusinessRuleException;
 import com.hamza.controlsfx.error.UserValidationException;
 import com.hamza.controlsfx.interfaceData.AppSettingInterface;
-import com.hamza.controlsfx.language.Error_Text_Show;
-import com.hamza.controlsfx.language.Setting_Language;
+import com.hamza.controlsfx.language.LanguageManager;
 import com.hamza.controlsfx.others.DateSetting;
 import com.hamza.controlsfx.table.Column;
 import com.hamza.controlsfx.table.TreeTable;
@@ -60,8 +59,6 @@ public class AccountDetailsWithItemsController<T3 extends BaseNames, T4 extends 
         extends LoadOtherData<T3, T4> implements Initializable, AppSettingInterface {
 
     public static final String ACCOUNT_DETAILS_TREE_COLOR_ROW = "account.details.tree.color.row";
-    private static final String ACCOUNT_TITLE_ARABIC = "دفع";
-    private static final String BALANCE_TITLE = "الرصيد";
     private final ObservableList<AccountCard> observableList = FXCollections.observableArrayList();
     private final Set<TreeItem<AccountCard>> lazyLoadedItems = Collections.newSetFromMap(new IdentityHashMap<>());
     private final String name_account;
@@ -162,7 +159,7 @@ public class AccountDetailsWithItemsController<T3 extends BaseNames, T4 extends 
         treeView.setEditable(true);
 
         var accountCard1 = new AccountCard();
-        accountCard1.setInformation(Setting_Language.WORD_TOTAL);
+        accountCard1.setInformation(LanguageManager.getInstance().getString("total"));
         treeItem = new TreeItem<>(accountCard1);
         treeView.setRoot(treeItem);
 
@@ -204,7 +201,8 @@ public class AccountDetailsWithItemsController<T3 extends BaseNames, T4 extends 
 
         if (fromDate != null && toDate != null) {
             if (fromDate.isAfter(toDate)) {
-                AllAlerts.handleError("تصفية كشف الحساب حسب التاريخ", new UserValidationException(Error_Text_Show.NOT_POSSIBLE));
+                AllAlerts.handleError(LanguageManager.getInstance().getString("party.action.filter.by.date"),
+                        new UserValidationException(LanguageManager.getInstance().getString("msg.cannot.insert.date.less")));
                 return;
             }
             List<AccountCard> filteredList = list_items.stream()
@@ -328,24 +326,25 @@ public class AccountDetailsWithItemsController<T3 extends BaseNames, T4 extends 
 
     private void otherSetting() {
         List<T3> customersList = getDataAllList();
-        labelName.setText(Setting_Language.WORD_NAME);
-        labelFirstBalance.setText(Setting_Language.FIRST_BALANCE);
-        labelLastBalance.setText(Setting_Language.THE_FINAL_BALANCE);
-        btnPrint.setText(Setting_Language.WORD_PRINT);
-        btnExport.setText("export to pdf");
-        btnSearch.setText(Setting_Language.WORD_SEARCH);
-        btnRefresh.setText(Setting_Language.WORD_REFRESH);
+        var lm = LanguageManager.getInstance();
+        labelName.setText(lm.getString("name"));
+        labelFirstBalance.setText(lm.getString("firstBalance"));
+        labelLastBalance.setText(lm.getString("party.final.balance"));
+        btnPrint.setText(lm.getString("print"));
+        btnExport.setText(lm.getString("party.btn.export.pdf"));
+        btnSearch.setText(lm.getString("search"));
+        btnRefresh.setText(lm.getString("refresh"));
         txtLimit.setText(String.valueOf(nameService.getCredit(customersList, num_id)));
         txtName.setText(name_account);
-        checkPrintDetails.setText("إظهار التفاصيل فى الطباعة");
-        checkShowColor.setText("إظهار اللون");
-        checkShowAll.setText("إظهار كل البيانات");
+        checkPrintDetails.setText(lm.getString("party.check.show.print.details"));
+        checkShowColor.setText(lm.getString("party.check.show.color"));
+        checkShowAll.setText(lm.getString("party.check.show.all"));
 
         // init date
         DateSetting.dateAction(dateFrom);
         DateSetting.dateAction(dateTo);
-        labelFrom.setText(Setting_Language.WORD_FROM);
-        labelTo.setText(Setting_Language.WORD_TO);
+        labelFrom.setText(lm.getString("from"));
+        labelTo.setText(lm.getString("to"));
     }
 
     private List<T3> getDataAllList() {
@@ -362,10 +361,11 @@ public class AccountDetailsWithItemsController<T3 extends BaseNames, T4 extends 
             list_items = new ArrayList<>();
             var customerById = dataInterface.nameAndAccountInterface().getNameById(num_id);
             var firstBalance = customerById.getFirst_balance();
-            AccountCard accountName = new AccountCard(0, BALANCE_TITLE
+            String balanceTitle = LanguageManager.getInstance().getString("balance");
+            AccountCard accountName = new AccountCard(0, balanceTitle
                     , customerById.getCreated_at().toLocalDate().toString()
                     , firstBalance > 0 ? firstBalance : 0, firstBalance < 0 ? firstBalance : 0
-                    , 0, customerById.getNotes(), BALANCE_TITLE);
+                    , 0, customerById.getNotes(), balanceTitle);
             list_items.add(accountName);
 
             // add totals
@@ -377,9 +377,10 @@ public class AccountDetailsWithItemsController<T3 extends BaseNames, T4 extends 
             // add account
             var accountList = dataInterface.nameAndAccountInterface().accountListById(num_id);
             var listAccount = accountList.stream().toList();
+            String paymentTitle = LanguageManager.getInstance().getString("party.transaction.payment");
             listAccount.forEach(account -> {
-                AccountCard accountCard = new AccountCard(account.getId(), ACCOUNT_TITLE_ARABIC, account.getDate(), account.getPurchase(), account.getPaid()
-                        , 0, account.getNotes(), ACCOUNT_TITLE_ARABIC);
+                AccountCard accountCard = new AccountCard(account.getId(), paymentTitle, account.getDate(), account.getPurchase(), account.getPaid()
+                        , 0, account.getNotes(), paymentTitle);
                 list_items.add(accountCard);
             });
 
@@ -429,7 +430,7 @@ public class AccountDetailsWithItemsController<T3 extends BaseNames, T4 extends 
         String textStart = "report";
         String year = "2025";
         FileChooser fileChooser = new FileChooser();
-        fileChooser.setTitle("حفظ التقرير");
+        fileChooser.setTitle(LanguageManager.getInstance().getString("party.dialog.save.report"));
         fileChooser.setInitialFileName(textStart + "_" + year + ".pdf");
         fileChooser.getExtensionFilters().add(
                 new FileChooser.ExtensionFilter("PDF Files", "*.pdf")
@@ -454,17 +455,18 @@ public class AccountDetailsWithItemsController<T3 extends BaseNames, T4 extends 
 
             javafx.application.Platform.runLater(() -> {
                 if (success) {
-                    AllAlerts.alertSaveWithMessage("تم التصدير بنجاح" +
-                            "تم حفظ التقرير في:\n" + file.getAbsolutePath());
+                    AllAlerts.alertSaveWithMessage(LanguageManager.getInstance()
+                            .getString("party.export.success.saved.at", file.getAbsolutePath()));
                 } else {
-                    AllAlerts.handleError("تصدير كشف الحساب", new BusinessRuleException("حدث خطأ أثناء التصدير"));
+                    AllAlerts.handleError(LanguageManager.getInstance().getString("party.error.export.account.statement"),
+                            new BusinessRuleException(LanguageManager.getInstance().getString("party.error.export.generic")));
                 }
             });
         }
     }
 
     private void errorLog(Exception e) {
-        AllAlerts.handleError("تحميل تفاصيل الحساب بالأصناف", e);
+        AllAlerts.handleError(LanguageManager.getInstance().getString("party.error.load.account.details.items"), e);
     }
 
     @Override
@@ -476,7 +478,7 @@ public class AccountDetailsWithItemsController<T3 extends BaseNames, T4 extends 
 
     @Override
     public String title() {
-        return Setting_Language.ACCOUNT_CARD + " - " + name_account;
+        return LanguageManager.getInstance().getString("party.account.card.title", name_account);
     }
 
     @Override
@@ -485,14 +487,15 @@ public class AccountDetailsWithItemsController<T3 extends BaseNames, T4 extends 
     }
 
     private List<Column<?>> initializeAccountColumnDefinitions() {
+        var lm = LanguageManager.getInstance();
         return new ArrayList<>(Arrays.asList(
-                new Column<>(Integer.class, "id", Setting_Language.WORD_NUM),
-                new Column<>(Date.class, "date", Setting_Language.WORD_DATE),
-                new Column<>(String.class, "information", "نوع العملية"),
-                new Column<>(Double.class, "purchase", Setting_Language.DEBTOR),
-                new Column<>(Double.class, "paid", Setting_Language.CREDITOR),
-                new Column<>(Double.class, "details", Setting_Language.WORD_BALANCE),
-                new Column<>(String.class, "notes", Setting_Language.NOTES)
+                new Column<>(Integer.class, "id", lm.getString("num")),
+                new Column<>(Date.class, "date", lm.getString("date")),
+                new Column<>(String.class, "information", lm.getString("party.column.operation.type")),
+                new Column<>(Double.class, "purchase", lm.getString("common.debtor")),
+                new Column<>(Double.class, "paid", lm.getString("common.creditor")),
+                new Column<>(Double.class, "details", lm.getString("balance")),
+                new Column<>(String.class, "notes", lm.getString("column.notes"))
 
         ));
     }

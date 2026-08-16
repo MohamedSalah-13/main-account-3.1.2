@@ -21,7 +21,7 @@ import com.hamza.account.service.AreaService;
 import com.hamza.account.service.SelPriceItemService;
 import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.database.DaoList;
-import com.hamza.controlsfx.language.Setting_Language;
+import com.hamza.controlsfx.language.LanguageManager;
 import com.hamza.controlsfx.observer.EventBus;
 import com.hamza.controlsfx.others.Utils;
 import javafx.application.Platform;
@@ -38,7 +38,6 @@ import org.jetbrains.annotations.NotNull;
 import java.util.List;
 import java.util.Optional;
 
-import static com.hamza.controlsfx.language.Setting_Language.generate;
 import static com.hamza.controlsfx.others.TextFormat.createNumericTextFormatter;
 import static com.hamza.controlsfx.others.Utils.setTextFormatter;
 
@@ -85,25 +84,26 @@ public class AddNameController<T3 extends BaseNames, T4 extends BaseAccount>
     @Override
     public void otherSetting() {
 
-        labelCode.setText(Setting_Language.WORD_CODE);
-        labelName.setText(Setting_Language.WORD_NAME);
-        labelTel.setText(Setting_Language.WORD_TEL);
-        labelAddress.setText(Setting_Language.WORD_ADDRESS);
-        labelBalance.setText(Setting_Language.FIRST_BALANCE);
-        labelLimit.setText(Setting_Language.LIMIT);
-        labelOthers.setText(Setting_Language.WORD_OTHERS);
-        labelSelPrice.setText(Setting_Language.WORD_SEL_PRICE);
-        labelArea.setText(Setting_Language.AREA);
+        var lm = LanguageManager.getInstance();
+        labelCode.setText(lm.getString("code"));
+        labelName.setText(lm.getString("name"));
+        labelTel.setText(lm.getString("tel"));
+        labelAddress.setText(lm.getString("address"));
+        labelBalance.setText(lm.getString("firstBalance"));
+        labelLimit.setText(lm.getString("column.limit"));
+        labelOthers.setText(lm.getString("others"));
+        labelSelPrice.setText(lm.getString("selPrice"));
+        labelArea.setText(lm.getString("party.area"));
         /* -------------------------------------- PromptText -------------------------------------- */
-        txtCode.setPromptText(Setting_Language.WORD_CODE);
-        txtName.setPromptText(Setting_Language.WORD_NAME);
-        txtTel.setPromptText(Setting_Language.WORD_TEL);
-        txtAddress.setPromptText(Setting_Language.WORD_ADDRESS);
-        txtBalance.setPromptText(Setting_Language.FIRST_BALANCE);
-        txtLimit.setPromptText(Setting_Language.LIMIT);
-        comboSelPrice.setPromptText(Setting_Language.WORD_SEL_PRICE);
-        comboArea.setPromptText(Setting_Language.AREA);
-        txtOther.setPromptText(Setting_Language.WORD_OTHERS);
+        txtCode.setPromptText(lm.getString("code"));
+        txtName.setPromptText(lm.getString("name"));
+        txtTel.setPromptText(lm.getString("tel"));
+        txtAddress.setPromptText(lm.getString("address"));
+        txtBalance.setPromptText(lm.getString("firstBalance"));
+        txtLimit.setPromptText(lm.getString("column.limit"));
+        comboSelPrice.setPromptText(lm.getString("selPrice"));
+        comboArea.setPromptText(lm.getString("party.area"));
+        txtOther.setPromptText(lm.getString("others"));
 
         /* -------------------------------------- comboSetting -------------------------------------- */
 
@@ -240,9 +240,7 @@ public class AddNameController<T3 extends BaseNames, T4 extends BaseAccount>
             }
             txtBalance.setDisable(true);
             txtBalance.setTooltip(new Tooltip(
-                    "رصيد أول المدة مقفل: يوجد حركات على هذا الحساب."
-                    + "\nتغييره يعيد حساب الرصيد في كل تاريخ سابق."
-                    + "\n" + rule.correction()));
+                    LanguageManager.getInstance().getString("party.balance.locked.tooltip", rule.correction())));
         } catch (DaoException e) {
             log.error("Failed to read the opening-balance lock for {}", id, e);
         }
@@ -250,7 +248,7 @@ public class AddNameController<T3 extends BaseNames, T4 extends BaseAccount>
 
     @Override
     public void resetData() {
-        txtCode.setText(generate);
+        txtCode.setText(LanguageManager.getInstance().getString("item.code.generate"));
         txtLimit.setText("0");
         txtBalance.setText("0");
         txtOther.clear();

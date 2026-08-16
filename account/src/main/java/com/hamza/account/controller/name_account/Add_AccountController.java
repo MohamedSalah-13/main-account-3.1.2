@@ -20,8 +20,7 @@ import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.database.DaoList;
 import com.hamza.controlsfx.error.UserValidationException;
-import com.hamza.controlsfx.language.Error_Text_Show;
-import com.hamza.controlsfx.language.Setting_Language;
+import com.hamza.controlsfx.language.LanguageManager;
 import com.hamza.controlsfx.observer.EventBus;
 import com.hamza.controlsfx.others.DateSetting;
 import com.hamza.controlsfx.others.DoubleSetting;
@@ -97,18 +96,19 @@ public class Add_AccountController<T3 extends BaseNames, T4 extends BaseAccount>
 
     @Override
     public void otherSetting() {
-        labelCode.setText(Setting_Language.WORD_CODE);
-        labelName.setText(Setting_Language.WORD_NAME);
-        labelDate.setText(Setting_Language.WORD_DATE);
-        labelBalance.setText(Setting_Language.WORD_BALANCE);
+        var lm = LanguageManager.getInstance();
+        labelCode.setText(lm.getString("code"));
+        labelName.setText(lm.getString("name"));
+        labelDate.setText(lm.getString("date"));
+        labelBalance.setText(lm.getString("balance"));
 
-        lAmountInv.setText("باقي الرصيد");
-        labelPaid.setText(Setting_Language.WORD_PAID);
-        labelDetails.setText(Setting_Language.NOTES);
-        labelAmount.setText(Setting_Language.WORD_REST);
-        labelTreasure.setText(Setting_Language.TREASURY);
-        txtNotes.setPromptText(Setting_Language.NOTES);
-        comboTreasury.setPromptText(Setting_Language.TREASURY);
+        lAmountInv.setText(lm.getString("party.remaining.balance"));
+        labelPaid.setText(lm.getString("paid"));
+        labelDetails.setText(lm.getString("column.notes"));
+        labelAmount.setText(lm.getString("rest"));
+        labelTreasure.setText(lm.getString("invoice.treasury"));
+        txtNotes.setPromptText(lm.getString("column.notes"));
+        comboTreasury.setPromptText(lm.getString("invoice.treasury"));
 
         DateSetting.dateAction(date);
         whenEnterPressed(txtPaid, txtNotes);
@@ -156,19 +156,19 @@ public class Add_AccountController<T3 extends BaseNames, T4 extends BaseAccount>
         LocalDate value = date.getValue();
         if (value.isAfter(LocalDate.now())) {
             Platform.runLater(() -> date.requestFocus());
-            throw new UserValidationException(Error_Text_Show.NOT_POSSIBLE);
+            throw new UserValidationException(LanguageManager.getInstance().getString("msg.cannot.insert.date.less"));
         }
 
         // check treasury
         if (comboTreasury.getSelectionModel().isEmpty()) {
             Platform.runLater(() -> comboTreasury.requestFocus());
-            throw new UserValidationException(Error_Text_Show.PLEASE_INSERT_ALL_DATA);
+            throw new UserValidationException(LanguageManager.getInstance().getString("msg.insert.all"));
         }
 
         var paid = Double.parseDouble(txtPaid.getText());
         if (paid <= 0) {
             Platform.runLater(() -> txtPaid.requestFocus());
-            throw new UserValidationException(Error_Text_Show.PLEASE_INSERT_ALL_DATA);
+            throw new UserValidationException(LanguageManager.getInstance().getString("msg.insert.all"));
         }
 
         int code = Integer.parseInt(txtCode.getText());
@@ -287,6 +287,6 @@ public class Add_AccountController<T3 extends BaseNames, T4 extends BaseAccount>
     }
 
     private void logException(Exception e) {
-        AllAlerts.handleError("حفظ حركة الحساب", e);
+        AllAlerts.handleError(LanguageManager.getInstance().getString("party.error.save.account.movement"), e);
     }
 }

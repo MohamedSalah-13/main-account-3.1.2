@@ -26,8 +26,8 @@
                             <children>
                                 <VBox spacing="5.0">
                                     <children>
-                                        <Label fx:id="title" styleClass="report-title" text="الأصناف المشتراة من العميل" />
-                                        <Label styleClass="report-subtitle" text="عرض وتحليل الأصناف التي اشتراها العميل خلال فترة محددة" />
+                                        <Label fx:id="title" styleClass="report-title" text="%party.purchased.items.title" />
+                                        <Label styleClass="report-subtitle" text="%party.purchased.items.subtitle" />
                                     </children>
                                 </VBox>
 
@@ -35,11 +35,11 @@
 
                                 <HBox alignment="CENTER_LEFT" spacing="5.0">
                                     <children>
-                                        <Label styleClass="form-label" text="العميل:" />
+                                        <Label styleClass="form-label" text="%party.customer.colon" />
                                         <Label fx:id="labelCustomerName" styleClass="customer-name" text="" />
                                         <Region HBox.hgrow="SOMETIMES" />
-                                        <Button fx:id="btnExportExcel" styleClass="excel-button" text="تصدير Excel" />
-                                        <Button fx:id="btnExportPdf" styleClass="pdf-button" text="تصدير PDF" />
+                                        <Button fx:id="btnExportExcel" styleClass="excel-button" text="%item.menu.export.excel" />
+                                        <Button fx:id="btnExportPdf" styleClass="pdf-button" text="%party.btn.export.pdf" />
                                     </children>
                                 </HBox>
                             </children>
@@ -67,21 +67,21 @@
                                                 <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
                                             </rowConstraints>
                                             <children>
-                                                <Label styleClass="form-label" text="من:" />
+                                                <Label styleClass="form-label" text="%party.label.from" />
 
-                                                <Label styleClass="form-label" text="إلى:" GridPane.columnIndex="2" />
+                                                <Label styleClass="form-label" text="%party.label.to" GridPane.columnIndex="2" />
                                                 <DatePicker fx:id="dateFrom" editable="false" maxWidth="1.7976931348623157E308" GridPane.columnIndex="1" />
                                                 <DatePicker fx:id="dateTo" editable="false" maxWidth="1.7976931348623157E308" GridPane.columnIndex="3" />
 
-                                                <Label styleClass="form-label" text="اسم الصنف:" GridPane.rowIndex="1" />
-                                                <TextField fx:id="textSearchName" promptText="ابحث بالاسم" styleClass="modern-input" GridPane.columnIndex="1" GridPane.rowIndex="1" />
+                                                <Label styleClass="form-label" text="%party.label.item.name.colon" GridPane.rowIndex="1" />
+                                                <TextField fx:id="textSearchName" promptText="%party.prompt.search.by.name" styleClass="modern-input" GridPane.columnIndex="1" GridPane.rowIndex="1" />
                                                 <HBox spacing="5.0" GridPane.columnIndex="3" GridPane.rowIndex="1">
                                                     <children>
 
-                                                        <Button fx:id="btnSearch" styleClass="primary-button" text="بحث" />
-                                                        <Button fx:id="btnReset" styleClass="neutral-button" text="إعادة ضبط" />
-                                                        <Button fx:id="btnSortDate" styleClass="warning-button" text="ترتيب حسب التاريخ" />
-                                                        <Button fx:id="btnPrint" layoutX="130.0" layoutY="10.0" styleClass="warning-button" text="طباعة" />
+                                                        <Button fx:id="btnSearch" styleClass="primary-button" text="%search" />
+                                                        <Button fx:id="btnReset" styleClass="neutral-button" text="%reset" />
+                                                        <Button fx:id="btnSortDate" styleClass="warning-button" text="%party.btn.sort.by.date" />
+                                                        <Button fx:id="btnPrint" layoutX="130.0" layoutY="10.0" styleClass="warning-button" text="%print" />
                                                     </children>
                                                 </HBox>
                                             </children>
@@ -100,28 +100,28 @@
                     <children>
                         <VBox alignment="CENTER" spacing="3.0">
                             <children>
-                                <Label text="عدد السطور" />
+                                <Label text="%party.summary.row.count" />
                                 <Label fx:id="labelCount" styleClass="summary-value" text="0" />
                             </children>
                         </VBox>
 
                         <VBox alignment="CENTER" spacing="3.0">
                             <children>
-                                <Label text="إجمالي البيع" />
+                                <Label text="%party.summary.total.sales" />
                                 <Label fx:id="labelTotalSales" styleClass="summary-value" text="0" />
                             </children>
                         </VBox>
 
                         <VBox alignment="CENTER" spacing="3.0">
                             <children>
-                                <Label text="إجمالي الكمية" />
+                                <Label text="%party.summary.total.quantity" />
                                 <Label fx:id="labelTotalQuantity" styleClass="summary-value" text="0" />
                             </children>
                         </VBox>
 
                         <VBox alignment="CENTER" spacing="3.0">
                             <children>
-                                <Label text="صافي الإجمالي" />
+                                <Label text="%party.summary.net.total" />
                                 <Label fx:id="labelNetTotal" styleClass="summary-value" text="0" />
                             </children>
                         </VBox>

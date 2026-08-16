@@ -29,7 +29,7 @@ import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.error.UserValidationException;
 import com.hamza.controlsfx.excel.ExcelException;
 import com.hamza.controlsfx.excel.ExportData;
-import com.hamza.controlsfx.language.Error_Text_Show;
+import com.hamza.controlsfx.language.LanguageManager;
 import com.hamza.controlsfx.table.TableColumnAnnotation;
 import com.hamza.controlsfx.table.columnEdit.ColumnSetting;
 import javafx.application.Platform;
@@ -234,7 +234,7 @@ public class AccountController2<T3 extends BaseNames, T4 extends BaseAccount>
         btnPrint.setOnAction(actionEvent -> printAccount());
 
         btnRefresh.setOnAction(actionEvent -> {
-            maskerPaneSetting.showMaskerPane("تحميل الحسابات", () -> {
+            maskerPaneSetting.showMaskerPane(LanguageManager.getInstance().getString("party.masker.loading.accounts"), () -> {
                 var accounts = nameAndAccountInterface.accountTotalList(null, null);
                 Platform.runLater(() -> {
                     observableList.clear();
@@ -263,7 +263,8 @@ public class AccountController2<T3 extends BaseNames, T4 extends BaseAccount>
 
         btnPaidAll.setOnAction(actionEvent -> {
             if (tableView.getSelectionModel().isEmpty()) {
-                AllAlerts.handleError("سداد كامل الرصيد", new UserValidationException("من فضلك حدد الصف ."));
+                AllAlerts.handleError(LanguageManager.getInstance().getString("party.action.pay.full.balance"),
+                        new UserValidationException(LanguageManager.getInstance().getString("msg.select.row")));
                 return;
             }
 
@@ -328,7 +329,7 @@ public class AccountController2<T3 extends BaseNames, T4 extends BaseAccount>
         try {
             List<TreeAccountModelForPrint> accountModelForPrints = new ArrayList<>();
             List<T4> list = tableView.getItems().stream().filter(t4 -> t4.getSelectedRow().get()).toList();
-            if (list.isEmpty()) throw new UserValidationException(Error_Text_Show.PLEASE_INSERT_ALL_DATA);
+            if (list.isEmpty()) throw new UserValidationException(LanguageManager.getInstance().getString("msg.insert.all"));
             list.forEach(t4 -> {
                 TreeAccountModelForPrint e = new TreeAccountModelForPrint();
                 e.setId(accountData.getIdName(t4));
@@ -349,17 +350,17 @@ public class AccountController2<T3 extends BaseNames, T4 extends BaseAccount>
 
     private void exportTo() {
         try {
-            if (tableView.getItems().isEmpty()) throw new ExcelException(Error_Text_Show.PLEASE_INSERT_ALL_DATA);
+            if (tableView.getItems().isEmpty()) throw new ExcelException(LanguageManager.getInstance().getString("msg.insert.all"));
             List<T4> items = tableView.getItems().stream().filter(t4 -> t4.getSelectedRow().get()).toList();
             var i = ExportData.exportDataToExcel(items, accountData.writeExcelInterface(items));
             if (i >= 1) AllAlerts.alertSave();
-            else throw new ExcelException("لا يمكن الحفظ");
+            else throw new ExcelException(LanguageManager.getInstance().getString("party.error.cannot.save"));
         } catch (ExcelException e) {
             logError(e);
         }
     }
 
     private void logError(Exception e) {
-        AllAlerts.handleError("تنفيذ حركة الحساب", e);
+        AllAlerts.handleError(LanguageManager.getInstance().getString("party.error.account.operation"), e);
     }
 }
