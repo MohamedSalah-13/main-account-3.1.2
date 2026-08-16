@@ -50,16 +50,7 @@
                                 </HBox>
 
                                 <Label fx:id="labelLanguage" styleClass="form-label" text="Language" GridPane.rowIndex="1" />
-                                <HBox alignment="CENTER_LEFT" disable="true" spacing="24.0" GridPane.columnIndex="1" GridPane.rowIndex="1">
-                                    <children>
-                                        <RadioButton fx:id="radioArabic" mnemonicParsing="false" selected="true" styleClass="modern-radio" text="Arabic">
-                                            <toggleGroup>
-                                                <ToggleGroup fx:id="group1" />
-                                            </toggleGroup>
-                                        </RadioButton>
-                                        <RadioButton fx:id="radioEnglish" mnemonicParsing="false" styleClass="modern-radio" text="English" toggleGroup="$group1" />
-                                    </children>
-                                </HBox>
+                                <ComboBox fx:id="comboLanguage" styleClass="modern-input" GridPane.columnIndex="1" GridPane.rowIndex="1" />
 
                                 <Label fx:id="labelPath" styleClass="form-label" text="Image Path" GridPane.rowIndex="2" />
                                 <Label fx:id="textPath" maxWidth="320.0" styleClass="settings-subtitle" text="لا يوجد" wrapText="true" GridPane.columnIndex="1" GridPane.rowIndex="2" />

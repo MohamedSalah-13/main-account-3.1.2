@@ -1,62 +1,70 @@
 package com.hamza.account.config;
 
+/**
+ * Bundle keys for {@code @ColumnData(titleName = ...)} across every annotated table -
+ * an annotation attribute must be a compile-time constant, so it cannot call {@link
+ * com.hamza.controlsfx.language.LanguageManager} directly; these constants hold the
+ * key, and {@link com.hamza.controlsfx.table.TableColumnAnnotation} resolves it
+ * through the active bundle when the column is built. See {@code column.*} in
+ * {@code i18n/messages*.properties} for the translations.
+ */
 public class NamesTables {
 
-    public final static String CODE = "كود";
-    public final static String NAME = "الاسم";
-    public final static String ADDRESS = "العنوان";
-    public static final String SALARY = "المرتب";
-    public static final String EMAIL = "البريد الالكترونى";
-    public static final String TEL = "التليفون";
-    public static final String QUANTITY = "الكمية";
+    public final static String CODE = "column.code";
+    public final static String NAME = "column.name";
+    public final static String ADDRESS = "column.address";
+    public static final String SALARY = "column.salary";
+    public static final String EMAIL = "column.email";
+    public static final String TEL = "column.tel";
+    public static final String QUANTITY = "column.quantity";
     /**
      * The units screen's column for units.value_d. It is a default, not the
      * factor an item converts by - that is per item, in items_units.
      */
-    public static final String DEFAULT_FACTOR = "المعامل الافتراضي";
-    public static final String PRICE = "السعر";
-    public static final String DATE = "التاريخ";
-    public static final String NOTES = "ملاحظات";
-    public static final String LIMIT = "حد الائتمان";
-    public static final String STRING = "الباركود";
-    public static final String EXPIRY_DATE = "تاريخ الانتهاء";
-    public static final String ALERT_DATE = "تاريخ التنبيه";
-    public static final String DEBTOR = "مدين";
-    public static final String CREDITOR = "دائن";
-    public static final String AMOUNT = "المبلغ";
-    public static final String PURCHASE = "المشتريات";
+    public static final String DEFAULT_FACTOR = "column.default_factor";
+    public static final String PRICE = "column.price";
+    public static final String DATE = "column.date";
+    public static final String NOTES = "column.notes";
+    public static final String LIMIT = "column.limit";
+    public static final String STRING = "column.barcode_str";
+    public static final String EXPIRY_DATE = "column.expiry_date";
+    public static final String ALERT_DATE = "column.alert_date";
+    public static final String DEBTOR = "column.debtor";
+    public static final String CREDITOR = "column.creditor";
+    public static final String AMOUNT = "column.amount";
+    public static final String PURCHASE = "column.purchase";
 
-    public static final String TOTAL = "الاجمالى";
-    public static final String TYPE = "النوع";
-    public static final String DISCOUNT = "الخصم";
-    public static final String TOTAL_AFTER = "الاجمالى بعد";
-    public static final String REST = "الباقى";
-    public static final String TOTAL_AMOUNT = "الصافى";
-    public static final String PASS = "كلمة المرور";
-    public static final String SEL_PRICE = "سعر البيع";
-    public static final String BUY_PRICE = "سعر الشراء";
-    public static final String BARCODE = "الباركود";
-    public static final String FIRST_BALANCE = "رصيد اول";
-    public static final String BALANCE = "الرصيد";
-    public static final String IN_BALANCE = "رصيد وارد";
-    public static final String OUT_BALANCE = "رصيد صادر";
-    public static final String OTHER_REVENUES = "ايرادات اخرى";
-    public static final String OTHER_EXPENSES = "مصروفات اخرى";
-    public static final String ACCOUNT_SUPPLIERS = "حسابات الموردين";
-    public static final String ACCOUNT_CUSTOM = "حسابات العملاء";
-    public static final String SALES_RETURN = "مردودات المبيعات";
-    public static final String SALES = "المبيعات";
-    public static final String PURCHASE_RETURN = "مردودات المشتريات";
-    public static final String RETURN_QUANTITY = "المتاح للارجاع";
-    public static final String NAME_ITEM = "اسم الصنف";
-    public static final String MINI_QUANTITY = "أقل كمية";
-    public static final String CODE_INVOICE = "رقم الفاتورة";
-    public static final String DELEGATE = "المندوب";
-    public static final String RECEIPT = "المقبوضات";
-    public static final String DAMAGED = "الهالك";
-    public static final String TOTAL_BUY_PRICE = "إجمالى سعر الشراء";
+    public static final String TOTAL = "column.total";
+    public static final String TYPE = "column.type";
+    public static final String DISCOUNT = "column.discount";
+    public static final String TOTAL_AFTER = "column.total_after";
+    public static final String REST = "column.rest";
+    public static final String TOTAL_AMOUNT = "column.total_amount";
+    public static final String PASS = "column.password";
+    public static final String SEL_PRICE = "column.sel_price";
+    public static final String BUY_PRICE = "column.buy_price";
+    public static final String BARCODE = "column.barcode";
+    public static final String FIRST_BALANCE = "column.first_balance";
+    public static final String BALANCE = "column.balance";
+    public static final String IN_BALANCE = "column.in_balance";
+    public static final String OUT_BALANCE = "column.out_balance";
+    public static final String OTHER_REVENUES = "column.other_revenues";
+    public static final String OTHER_EXPENSES = "column.other_expenses";
+    public static final String ACCOUNT_SUPPLIERS = "column.account_suppliers";
+    public static final String ACCOUNT_CUSTOM = "column.account_custom";
+    public static final String SALES_RETURN = "column.sales_return";
+    public static final String SALES = "column.sales";
+    public static final String PURCHASE_RETURN = "column.purchase_return";
+    public static final String RETURN_QUANTITY = "column.return_quantity";
+    public static final String NAME_ITEM = "column.name_item";
+    public static final String MINI_QUANTITY = "column.mini_quantity";
+    public static final String CODE_INVOICE = "column.code_invoice";
+    public static final String DELEGATE = "column.delegate";
+    public static final String RECEIPT = "column.receipt";
+    public static final String DAMAGED = "column.damaged";
+    public static final String TOTAL_BUY_PRICE = "column.total_buy_price";
 
-    public static final String SUM_ALL_BALANCE = "الرصيد";
-    public static final String DATE_INSERT = "تاريخ الاضافة";
-    public static final String ITEM_NAME = "اسم الصنف";
+    public static final String SUM_ALL_BALANCE = "column.sum_all_balance";
+    public static final String DATE_INSERT = "column.date_insert";
+    public static final String ITEM_NAME = "column.item_name";
 }

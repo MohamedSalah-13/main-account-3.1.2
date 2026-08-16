@@ -12,7 +12,7 @@ import com.hamza.account.service.SupGroupService;
 import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.error.UserValidationException;
-import com.hamza.controlsfx.language.Setting_Language;
+import com.hamza.controlsfx.language.LanguageManager;
 import com.hamza.controlsfx.util.ImageChoose;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -82,22 +82,23 @@ public class UpdateSomeItems {
     }
 
     private void comboSetting() {
-        btnSave.setText(Setting_Language.WORD_SAVE);
-        btnClose.setText(Setting_Language.WORD_CLOSE);
+        var lm = LanguageManager.getInstance();
+        btnSave.setText(lm.getString("common.save"));
+        btnClose.setText(lm.getString("common.close"));
         var imageSetting = new Image_Setting();
         btnSave.setGraphic(ImageChoose.createIcon(imageSetting.save));
         btnClose.setGraphic(ImageChoose.createIcon(imageSetting.cancel));
 
-        checkUpdateGroup.setText("تعديل المجموعة");
-        checkUpdateActive.setText("تعديل الحالة");
-        checkUpdateBuy.setText("تعديل سعر الشراء");
-        checkUpdateSell.setText("تعديل سعر البيع");
-        checkDeleteImage.setText("تعديل الصورة");
-        checkMini.setText("تعديل اقل كمية");
-        checkFirstBalance.setText("تعديل رصيد اول");
+        checkUpdateGroup.setText(lm.getString("item.update.group"));
+        checkUpdateActive.setText(lm.getString("item.update.active"));
+        checkUpdateBuy.setText(lm.getString("item.update.buy.price"));
+        checkUpdateSell.setText(lm.getString("item.update.sell.price"));
+        checkDeleteImage.setText(lm.getString("item.update.image"));
+        checkMini.setText(lm.getString("item.update.mini.quantity"));
+        checkFirstBalance.setText(lm.getString("item.update.first.balance"));
 
-        comboMainGroup.setPromptText(Setting_Language.WORD_MAIN_G);
-        comboSubGroup.setPromptText(Setting_Language.WORD_SUB_G);
+        comboMainGroup.setPromptText(lm.getString("mainGroup"));
+        comboSubGroup.setPromptText(lm.getString("subGroup"));
         // combo items
 
         ObservableList<String> observableListMain = FXCollections.observableArrayList(getMainGroupsNames());
@@ -126,9 +127,9 @@ public class UpdateSomeItems {
             }
         });
 
-        comboActive.setPromptText(Setting_Language.WORD_ACTIVE);
-        var statusActive = Setting_Language.WORD_ACTIVE;
-        var statusInactive = Setting_Language.WORD_INACTIVE;
+        comboActive.setPromptText(lm.getString("activated"));
+        var statusActive = lm.getString("activated");
+        var statusInactive = lm.getString("in_active");
 
         comboActive.setItems(FXCollections.observableArrayList(statusActive, statusInactive));
         comboActive.getSelectionModel().selectFirst();
@@ -137,8 +138,8 @@ public class UpdateSomeItems {
         textSellPrice.setTextFormatter(getTextFormatter());
         textMini.setTextFormatter(getTextFormatter());
         textFirstBalance.setTextFormatter(getTextFormatter());
-        radioAddImage.setTooltip(new Tooltip("Click to add an image for the items"));
-        radioDeleteImage.setTooltip(new Tooltip("Click to delete the image for the items"));
+        radioAddImage.setTooltip(new Tooltip(lm.getString("item.tooltip.add.image.all")));
+        radioDeleteImage.setTooltip(new Tooltip(lm.getString("item.tooltip.delete.image.all")));
         radioDeleteImage.disableProperty().bind(checkDeleteImage.selectedProperty().not());
         radioAddImage.disableProperty().bind(checkDeleteImage.selectedProperty().not());
 
@@ -157,7 +158,7 @@ public class UpdateSomeItems {
 
         final Popup popup = new Popup();
         popup.setAutoHide(true);
-        var e = new Text("حذف جميع الصورة \n او إضافة صورة واحدة لجميع الأصناف");
+        var e = new Text(lm.getString("item.popup.image.info"));
         e.getStyleClass().add("text-explain");
         popup.getContent().add(e);
         imageInformation.setOnMouseEntered(mouseEvent -> popup.show(imageInformation, mouseEvent.getScreenX() - 150, mouseEvent.getScreenY() - 50));
@@ -213,7 +214,7 @@ public class UpdateSomeItems {
             var i = updateGroups(itemsModelList);
             log.info("Update groups result: {}", i);
             if (i == 1) {
-                maskerPaneSetting.showMaskerPane("تحديث بيانات الأصناف",
+                maskerPaneSetting.showMaskerPane(LanguageManager.getInstance().getString("item.dialog.update.items.title"),
                         () -> itemsService.updateGroup(itemsModelList));
 
                 maskerPaneSetting.getVoidTask().setOnSucceeded(workerStateEvent -> {
@@ -239,7 +240,7 @@ public class UpdateSomeItems {
         if (checkUpdateGroup.isSelected()) {
             if (comboSubGroup.getSelectionModel().isEmpty()) {
                 comboSubGroup.getSelectionModel().selectFirst();
-                throw new UserValidationException("من فضلك حدد المجموعة");
+                throw new UserValidationException(LanguageManager.getInstance().getString("item.error.select.group"));
             }
             return 1;
         }
@@ -248,9 +249,9 @@ public class UpdateSomeItems {
         else if (checkUpdateActive.isSelected()) {
             var selectionModel = comboActive.getSelectionModel();
             if (selectionModel.isEmpty()) {
-                throw new UserValidationException("من فضلك حدد الحالة");
+                throw new UserValidationException(LanguageManager.getInstance().getString("item.error.select.status"));
             }
-            if (selectionModel.getSelectedItem().equals(Setting_Language.WORD_ACTIVE)) {
+            if (selectionModel.getSelectedItem().equals(LanguageManager.getInstance().getString("activated"))) {
                 isActiveProperty = true;
             }
             itemsModelList.forEach(itemsModel -> itemsModel.setActiveItem(isActiveProperty));
@@ -261,7 +262,7 @@ public class UpdateSomeItems {
         else if (checkUpdateBuy.isSelected()) {
             var percentageIncrease = Double.parseDouble(textBuyPrice.getText());
             if (percentageIncrease <= 0) {
-                throw new UserValidationException("الزيادة المطلوبة يجب ان تكون اكبر من الصفر");
+                throw new UserValidationException(LanguageManager.getInstance().getString("item.error.increase.positive"));
             }
 
             itemsModelList.forEach(itemsModel -> {
@@ -275,7 +276,7 @@ public class UpdateSomeItems {
         else if (checkUpdateSell.isSelected()) {
             var percentageDecrease = Double.parseDouble(textSellPrice.getText());
             if (percentageDecrease <= 0) {
-                throw new UserValidationException("الزيادة المطلوبة يجب ان تكون اكبر من الصفر");
+                throw new UserValidationException(LanguageManager.getInstance().getString("item.error.increase.positive"));
             }
 
             itemsModelList.forEach(itemsModel -> {
@@ -319,7 +320,7 @@ public class UpdateSomeItems {
     }
 
     private void logError(Exception e) {
-        AllAlerts.handleError("تحديث بيانات الأصناف", e);
+        AllAlerts.handleError(LanguageManager.getInstance().getString("item.dialog.update.items.title"), e);
     }
 
 }

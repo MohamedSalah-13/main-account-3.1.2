@@ -26,7 +26,7 @@ import com.hamza.controlsfx.button.api.ButtonColumnI;
 import com.hamza.controlsfx.button.button_column.ButtonColumn;
 import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.interfaceData.AppSettingInterface;
-import com.hamza.controlsfx.language.Setting_Language;
+import com.hamza.controlsfx.language.LanguageManager;
 import com.hamza.controlsfx.others.DateSetting;
 import com.hamza.controlsfx.table.TableColumnAnnotation;
 import com.hamza.controlsfx.util.ImageChoose;
@@ -135,18 +135,19 @@ public class CardController extends LoadData implements Initializable, AppSettin
     }
 
     private void otherSetting() {
-        btnSearch.setText(Setting_Language.WORD_SEARCH);
-        btnPrint.setText(Setting_Language.WORD_PRINT);
-        labelPurchase.setText(Setting_Language.WORD_PUR);
-        labelSales.setText(Setting_Language.WORD_SALES);
-        labelRePurchase.setText(Setting_Language.WORD_RE_PUR);
-        labelReSales.setText(Setting_Language.WORD_RE_SALES);
-        labelFrom.setText(Setting_Language.WORD_FROM);
-        labelTo.setText(Setting_Language.WORD_TO);
-        labelType.setText("نوع الفاتورة");
-        labelName.setText(Setting_Language.NAME_ITEM);
+        var lm = LanguageManager.getInstance();
+        btnSearch.setText(lm.getString("search"));
+        btnPrint.setText(lm.getString("print"));
+        labelPurchase.setText(lm.getString("pur"));
+        labelSales.setText(lm.getString("sales"));
+        labelRePurchase.setText(lm.getString("RePur"));
+        labelReSales.setText(lm.getString("ReSal"));
+        labelFrom.setText(lm.getString("from"));
+        labelTo.setText(lm.getString("to"));
+        labelType.setText(lm.getString("item.card.invoice.type"));
+        labelName.setText(lm.getString("column.name_item"));
 
-        comboBox.getItems().add(Setting_Language.WORD_ALL);
+        comboBox.getItems().add(lm.getString("all"));
         comboBox.getItems().addAll(processTypeList);
         comboBox.getSelectionModel().select(0);
 
@@ -328,7 +329,7 @@ public class CardController extends LoadData implements Initializable, AppSettin
             @NotNull
             @Override
             public String textName() {
-                return Setting_Language.WORD_SHOW;
+                return LanguageManager.getInstance().getString("show");
             }
         }));
     }
@@ -340,7 +341,7 @@ public class CardController extends LoadData implements Initializable, AppSettin
 
     @Override
     public String title() {
-        return Setting_Language.WORD_CARD_ITEM;
+        return LanguageManager.getInstance().getString("item.card.title");
     }
 
     @Override
@@ -349,6 +350,6 @@ public class CardController extends LoadData implements Initializable, AppSettin
     }
 
     private void logError(Exception e) {
-        AllAlerts.handleError("تحميل بطاقة الصنف", e);
+        AllAlerts.handleError(LanguageManager.getInstance().getString("item.dialog.card.title"), e);
     }
 }

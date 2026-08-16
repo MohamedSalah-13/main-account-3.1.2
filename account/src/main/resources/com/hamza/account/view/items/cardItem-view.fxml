@@ -50,22 +50,22 @@
                                 <Label fx:id="labelReSales" styleClass="summary-label" text="Return Sales" GridPane.columnIndex="6" />
                                 <Text fx:id="textReSales" styleClass="summary-value" text="0.0" GridPane.columnIndex="7" />
 
-                                <Label styleClass="summary-label" text="إجمالي الكمية" GridPane.columnIndex="8" />
+                                <Label styleClass="summary-label" text="%item.card.total.quantity" GridPane.columnIndex="8" />
                                 <Text fx:id="textCountTotals" styleClass="summary-value" text="0.0" GridPane.columnIndex="9" />
 
-                                <Label styleClass="summary-label" text="إجمالي الشراء" GridPane.rowIndex="1" />
+                                <Label styleClass="summary-label" text="%item.card.total.purchase.cost" GridPane.rowIndex="1" />
                                 <Text fx:id="textCostPurchase" styleClass="summary-value" text="0.0" GridPane.columnIndex="1" GridPane.rowIndex="1" />
 
-                                <Label styleClass="summary-label" text="إجمالي البيع" GridPane.columnIndex="2" GridPane.rowIndex="1" />
+                                <Label styleClass="summary-label" text="%item.card.total.sales.cost" GridPane.columnIndex="2" GridPane.rowIndex="1" />
                                 <Text fx:id="textCostSales" styleClass="summary-value" text="0.0" GridPane.columnIndex="3" GridPane.rowIndex="1" />
 
-                                <Label styleClass="summary-label" text="إجمالي مرتجع المشتريات" GridPane.columnIndex="4" GridPane.rowIndex="1" />
+                                <Label styleClass="summary-label" text="%item.card.total.purchase.return" GridPane.columnIndex="4" GridPane.rowIndex="1" />
                                 <Text fx:id="textCostPurchaseRe" styleClass="summary-value" text="0.0" GridPane.columnIndex="5" GridPane.rowIndex="1" />
 
-                                <Label styleClass="summary-label" text="إجمالي مرتجع المبيعات" GridPane.columnIndex="6" GridPane.rowIndex="1" />
+                                <Label styleClass="summary-label" text="%item.card.total.sales.return" GridPane.columnIndex="6" GridPane.rowIndex="1" />
                                 <Text fx:id="textCostSalesRe" styleClass="summary-value" text="0.0" GridPane.columnIndex="7" GridPane.rowIndex="1" />
 
-                                <Label styleClass="summary-label" text="ربح الصنف" GridPane.columnIndex="8" GridPane.rowIndex="1" />
+                                <Label styleClass="summary-label" text="%item.card.profit" GridPane.columnIndex="8" GridPane.rowIndex="1" />
                                 <Text fx:id="textCostTotals" styleClass="summary-value" text="0.0" GridPane.columnIndex="9" GridPane.rowIndex="1" />
                             </children>
                             <rowConstraints>
@@ -104,8 +104,8 @@
                                                 <Label fx:id="labelTo" styleClass="form-label" text="To" GridPane.columnIndex="2" GridPane.rowIndex="1" />
                                                 <DatePicker fx:id="dateTo" editable="false" maxWidth="1.7976931348623157E308" GridPane.columnIndex="3" GridPane.rowIndex="1" />
 
-                                                <Label styleClass="form-label" text="الوحدة الأساسية" GridPane.rowIndex="2" />
-                                                <Text fx:id="textType" strokeType="OUTSIDE" strokeWidth="0.0" styleClass="summary-value" text="قطعة" GridPane.columnIndex="1" GridPane.rowIndex="2" />
+                                                <Label styleClass="form-label" text="%item.card.base.unit" GridPane.rowIndex="2" />
+                                                <Text fx:id="textType" strokeType="OUTSIDE" strokeWidth="0.0" styleClass="summary-value" GridPane.columnIndex="1" GridPane.rowIndex="2" />
 
                                                 <HBox alignment="CENTER_LEFT" spacing="8.0" GridPane.columnIndex="3" GridPane.rowIndex="2">
                                                     <children>

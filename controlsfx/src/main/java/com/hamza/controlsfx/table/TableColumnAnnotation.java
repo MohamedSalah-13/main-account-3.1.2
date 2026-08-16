@@ -1,5 +1,6 @@
 package com.hamza.controlsfx.table;
 
+import com.hamza.controlsfx.language.LanguageManager;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.scene.control.TableColumn;
@@ -38,7 +39,11 @@ public class TableColumnAnnotation {
     }
 
     private <S, E> TableColumn<S, E> createTableColumn(Field f, ColumnData annotation, E type) {
-        TableColumn<S, E> tableColumn = new TableColumn<>(annotation.titleName());
+        // titleName is a bundle key (an annotation attribute must be a compile-time
+        // constant, so it can't call LanguageManager itself). A literal that isn't a
+        // known key - a screen not yet migrated - falls back to itself, so nothing
+        // regresses; see LanguageManager.getString.
+        TableColumn<S, E> tableColumn = new TableColumn<>(LanguageManager.getInstance().getString(annotation.titleName()));
         String anm = f.getName();
         if (!annotation.columnName().isEmpty()) anm = annotation.columnName();
         tableColumn.setCellValueFactory(new PropertyValueFactory<>(anm));

@@ -2,6 +2,7 @@ package com.hamza.account.config;
 
 import com.hamza.account.Main;
 import com.hamza.controlsfx.alert.AlertSetting;
+import com.hamza.controlsfx.language.LanguageManager;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 
@@ -61,6 +62,7 @@ public final class ThemeManager {
 
         scene.getStylesheets().add(getBaseStylesheet());
         scene.getStylesheets().add(getStylesheet());
+        scene.setNodeOrientation(LanguageManager.getInstance().getNodeOrientation());
         if (scene.getRoot() != null) {
             applyUiScale(scene.getRoot());
         }
@@ -76,6 +78,7 @@ public final class ThemeManager {
 
         root.getStylesheets().add(getBaseStylesheet());
         root.getStylesheets().add(getStylesheet());
+        root.setNodeOrientation(LanguageManager.getInstance().getNodeOrientation());
         applyUiScale(root);
     }
 

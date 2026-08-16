@@ -25,7 +25,7 @@ import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.error.BusinessRuleException;
 import com.hamza.controlsfx.error.UserValidationException;
 import com.hamza.controlsfx.interfaceData.AppSettingInterface;
-import com.hamza.controlsfx.language.Setting_Language;
+import com.hamza.controlsfx.language.LanguageManager;
 import com.hamza.controlsfx.observer.EventBus;
 import com.hamza.controlsfx.observer.Subscriptions;
 import com.hamza.controlsfx.others.DoubleSetting;
@@ -194,10 +194,10 @@ public class AddItemController implements AppSettingInterface {
                 return;
             }
             if (barcode.length() > 14) {
-                throw new UserValidationException(Setting_Language.ALERT_ERROR);
+                throw new UserValidationException(LanguageManager.getInstance().getString("item.error.barcode.too.long"));
             }
             if (barcode.equals(txtBarcode.getText()) || listExtraBarcodes.getItems().contains(barcode)) {
-                throw new UserValidationException("هذا الباركود مُضاف بالفعل لهذا الصنف");
+                throw new UserValidationException(LanguageManager.getInstance().getString("item.error.barcode.duplicate.same.item"));
             }
 
             listExtraBarcodes.getItems().add(barcode);
@@ -266,7 +266,7 @@ public class AddItemController implements AppSettingInterface {
 
                     if (unitName) {
                         comboType.getSelectionModel().select(stringSingleSelectionModel);
-                        throw new UserValidationException("لا يمكن إختيار نفس الوحده مرتين");
+                        throw new UserValidationException(LanguageManager.getInstance().getString("item.error.unit.duplicate"));
                     }
 
                     var unitsModelByName = getUnitsModelByName(t1);
@@ -335,7 +335,7 @@ public class AddItemController implements AppSettingInterface {
 
         btnAddMainGroup.setOnAction(actionEvent -> {
             try {
-                new OpenAddAreaApplication<>(new MainGroupImpl2(), Setting_Language.WORD_MAIN_G);
+                new OpenAddAreaApplication<>(new MainGroupImpl2(), LanguageManager.getInstance().getString("mainGroup"));
             } catch (Exception e) {
                 logError(e);
             }
@@ -492,9 +492,7 @@ public class AddItemController implements AppSettingInterface {
             }
             txtBalance.setDisable(true);
             txtBalance.setTooltip(new Tooltip(
-                    "رصيد أول المدة مقفل: يوجد حركات على هذا الصنف."
-                            + "\nتغييره يعيد حساب رصيد الصنف في كل تاريخ سابق."
-                            + "\nلتصحيح الرصيد استخدم شاشة الجرد الفعلي."));
+                    LanguageManager.getInstance().getString("item.tooltip.opening.balance.locked")));
         } catch (DaoException e) {
             logError(e);
         }
@@ -523,26 +521,26 @@ public class AddItemController implements AppSettingInterface {
 
         if (barcode.isEmpty() || barcode.equals("0")) {
             txtBarcode.requestFocus();
-            throw new UserValidationException(Setting_Language.PLEASE_INSERT_ALL_DATA);
+            throw new UserValidationException(LanguageManager.getInstance().getString("msg.insert.all"));
         }
 
         if (barcode.length() > 14) {
             txtBarcode.requestFocus();
-            throw new UserValidationException(Setting_Language.ALERT_ERROR);
+            throw new UserValidationException(LanguageManager.getInstance().getString("item.error.barcode.too.long"));
         }
 
         if (selPrice1 <= buy) {
             txtSelPrice.requestFocus();
-            throw new UserValidationException("لا يمكن إدخال سعر اقل من او يساوى سعر الشراء");
+            throw new UserValidationException(LanguageManager.getInstance().getString("item.error.sell.not.above.buy"));
         }
 
         if (subId <= 0) {
             comboSupGroup.requestFocus();
-            throw new UserValidationException("يجب اختيار المجموعة");
+            throw new UserValidationException(LanguageManager.getInstance().getString("item.error.group.required"));
         }
         var itemsUnitsModelList = tableUnitsSetting.getItemsUnitsModelList();
         if (itemsUnitsModelList.isEmpty()) {
-            throw new UserValidationException("يجب إدخال وحدات الصنف");
+            throw new UserValidationException(LanguageManager.getInstance().getString("item.error.units.required"));
         }
 
         var baseUnit = getUnitsModelByName(comboType.getSelectionModel().getSelectedItem());
@@ -603,10 +601,10 @@ public class AddItemController implements AppSettingInterface {
         Set<String> seen = new HashSet<>();
         for (String code : codes) {
             if (!seen.add(code)) {
-                throw new UserValidationException("الباركود مكرر داخل نفس الصنف: " + code);
+                throw new UserValidationException(LanguageManager.getInstance().getString("item.error.barcode.duplicate.in.item", code));
             }
             if (itemsService.isBarcodeTakenByAnotherItem(code, codeItem)) {
-                throw new BusinessRuleException("الباركود مستخدم لصنف آخر: " + code);
+                throw new BusinessRuleException(LanguageManager.getInstance().getString("item.error.barcode.used.by.other", code));
             }
         }
     }
@@ -670,29 +668,30 @@ public class AddItemController implements AppSettingInterface {
     }
 
     private void nameSetting() {
-        labelCode.setText(Setting_Language.WORD_CODE);
-        labelBarcode.setText(Setting_Language.WORD_BARCODE);
-        labelName.setText(Setting_Language.WORD_NAME);
-        labelMainGroup.setText(Setting_Language.WORD_MAIN_G);
-        labelSupGroup.setText(Setting_Language.WORD_SUB_G);
-        labelType.setText("الوحدة الصغرى");
-        labelBuyPrice.setText(Setting_Language.WORD_BUY_PRICE);
-        labelMiniQuantity.setText("اقل كمية");
-        labelFirstBalance.setText(Setting_Language.FIRST_BALANCE);
+        var lm = LanguageManager.getInstance();
+        labelCode.setText(lm.getString("code"));
+        labelBarcode.setText(lm.getString("barcode"));
+        labelName.setText(lm.getString("name"));
+        labelMainGroup.setText(lm.getString("mainGroup"));
+        labelSupGroup.setText(lm.getString("subGroup"));
+        labelType.setText(lm.getString("item.small.unit"));
+        labelBuyPrice.setText(lm.getString("BuyPrice"));
+        labelMiniQuantity.setText(lm.getString("item.mini.quantity"));
+        labelFirstBalance.setText(lm.getString("firstBalance"));
 
-        comboMainGroup.setPromptText(Setting_Language.WORD_MAIN_G);
-        comboSupGroup.setPromptText(Setting_Language.WORD_SUB_G);
-        comboType.setPromptText(Setting_Language.WORD_TYPE);
-        txtItemName.setPromptText(Setting_Language.WORD_NAME + " " + Setting_Language.WORD_ITEMS);
-        txtSelPrice.setPromptText(Setting_Language.WORD_SEL_PRICE);
-        txtBuyPrice.setPromptText(Setting_Language.WORD_BUY_PRICE);
-        txtBalance.setPromptText(Setting_Language.FIRST_BALANCE);
-        txtMiniQuantity.setPromptText("اقل كمية");
+        comboMainGroup.setPromptText(lm.getString("mainGroup"));
+        comboSupGroup.setPromptText(lm.getString("subGroup"));
+        comboType.setPromptText(lm.getString("type"));
+        txtItemName.setPromptText(lm.getString("column.name_item"));
+        txtSelPrice.setPromptText(lm.getString("selPrice"));
+        txtBuyPrice.setPromptText(lm.getString("BuyPrice"));
+        txtBalance.setPromptText(lm.getString("firstBalance"));
+        txtMiniQuantity.setPromptText(lm.getString("item.mini.quantity"));
 
-        btnSave.setText(Setting_Language.WORD_SAVE + " F10");
-        btnSaveDuplicate.setText("حفظ وتكرار");
-        btnClose.setText(Setting_Language.WORD_CLOSE);
-        btnBarcode.setText(Setting_Language.WORD_BARCODE);
+        btnSave.setText(lm.getString("common.save") + " F10");
+        btnSaveDuplicate.setText(lm.getString("item.btn.save.duplicate"));
+        btnClose.setText(lm.getString("common.close"));
+        btnBarcode.setText(lm.getString("barcode"));
 
         // sel price names
         loadNamesPrices();
@@ -715,7 +714,7 @@ public class AddItemController implements AppSettingInterface {
         String randomItemBarcode = String.valueOf(itemsService.getMaxItemId() + 1);
         if (codeItem == 0) {
             txtBarcode.setText(randomItemBarcode);
-            txtCode.setText(Setting_Language.generate);
+            txtCode.setText(LanguageManager.getInstance().getString("item.code.generate"));
         }
     }
 
@@ -757,7 +756,7 @@ public class AddItemController implements AppSettingInterface {
     }
 
     private void logError(Exception e) {
-        AllAlerts.handleError("حفظ بيانات الصنف", e);
+        AllAlerts.handleError(LanguageManager.getInstance().getString("item.dialog.save.title"), e);
     }
 
     @Override
@@ -767,9 +766,8 @@ public class AddItemController implements AppSettingInterface {
 
     @Override
     public String title() {
-        String title = Setting_Language.WORD_ADD_ITEM;
-        if (codeItem > 0) title = Setting_Language.UPDATE_ITEM;
-        return title;
+        var lm = LanguageManager.getInstance();
+        return codeItem > 0 ? lm.getString("updateItem") : lm.getString("addItem");
     }
 }
 

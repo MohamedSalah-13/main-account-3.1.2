@@ -24,34 +24,34 @@
                             <children>
                                 <HBox alignment="CENTER_LEFT" spacing="5.0">
                                     <children>
-                                        <Button fx:id="btnNew" mnemonicParsing="false" styleClass="success-button" text="جديد" />
-                                        <Button fx:id="btnUpdate" mnemonicParsing="false" styleClass="warning-button" text="تعديل" />
-                                        <Button fx:id="btnDelete" mnemonicParsing="false" styleClass="danger-button" text="حذف" />
+                                        <Button fx:id="btnNew" mnemonicParsing="false" styleClass="success-button" text="%item.btn.new" />
+                                        <Button fx:id="btnUpdate" mnemonicParsing="false" styleClass="warning-button" text="%item.btn.update" />
+                                        <Button fx:id="btnDelete" mnemonicParsing="false" styleClass="danger-button" text="%item.btn.delete" />
                                         <Separator orientation="VERTICAL" />
-                                        <Button fx:id="btnRefresh" mnemonicParsing="false" styleClass="neutral-button" text="تحديث" />
-                                        <ToggleButton fx:id="btnSelected" mnemonicParsing="false" styleClass="items-toggle" text="تحديد" />
+                                        <Button fx:id="btnRefresh" mnemonicParsing="false" styleClass="neutral-button" text="%item.btn.refresh" />
+                                        <ToggleButton fx:id="btnSelected" mnemonicParsing="false" styleClass="items-toggle" text="%item.btn.select" />
 
-                                        <MenuButton fx:id="menuButtonPrint" mnemonicParsing="false" styleClass="modern-menu-button" text="طباعة">
+                                        <MenuButton fx:id="menuButtonPrint" mnemonicParsing="false" styleClass="modern-menu-button" text="%item.menu.print">
                                             <items>
-                                                <MenuItem fx:id="menuPrint" mnemonicParsing="false" text="الكل" />
-                                                <MenuItem fx:id="menuPrintMenu" mnemonicParsing="false" text="الأصناف قوائم" />
-                                                <MenuItem fx:id="menuPrintBarcode" mnemonicParsing="false" text="باركود" />
+                                                <MenuItem fx:id="menuPrint" mnemonicParsing="false" text="%item.menu.print.all" />
+                                                <MenuItem fx:id="menuPrintMenu" mnemonicParsing="false" text="%item.menu.print.list" />
+                                                <MenuItem fx:id="menuPrintBarcode" mnemonicParsing="false" text="%item.menu.print.barcode" />
                                             </items>
                                         </MenuButton>
 
-                                        <MenuButton fx:id="menuButtonOther" mnemonicParsing="false" styleClass="modern-menu-button" text="أخرى">
+                                        <MenuButton fx:id="menuButtonOther" mnemonicParsing="false" styleClass="modern-menu-button" text="%item.menu.other">
                                             <items>
-                                                <MenuItem fx:id="menuItemConvertGroup" mnemonicParsing="false" text="تحويل المجموعات" />
-                                                <MenuItem fx:id="menuItemCard" mnemonicParsing="false" text="كارت صنف" />
-                                                <MenuItem fx:id="menuExportExcel" mnemonicParsing="false" text="تصدير إلى Excel" />
+                                                <MenuItem fx:id="menuItemConvertGroup" mnemonicParsing="false" text="%item.menu.convert.group" />
+                                                <MenuItem fx:id="menuItemCard" mnemonicParsing="false" text="%item.menu.card" />
+                                                <MenuItem fx:id="menuExportExcel" mnemonicParsing="false" text="%item.menu.export.excel" />
                                             </items>
                                         </MenuButton>
                                     </children>
                                 </HBox>
                                 <HBox alignment="CENTER_LEFT" spacing="5.0" HBox.hgrow="SOMETIMES">
                                     <children>
-                                        <Label styleClass="form-label" text="بحث" />
-                                        <TextField fx:id="txtSearch" promptText="بحث" HBox.hgrow="SOMETIMES" />
+                                        <Label styleClass="form-label" text="%search" />
+                                        <TextField fx:id="txtSearch" promptText="%search" HBox.hgrow="SOMETIMES" />
                                     </children>
                                 </HBox>
                             </children>

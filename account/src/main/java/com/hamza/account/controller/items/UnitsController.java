@@ -13,8 +13,7 @@ import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.error.BusinessRuleException;
 import com.hamza.controlsfx.error.UserValidationException;
 import com.hamza.controlsfx.interfaceData.AppSettingInterface;
-import com.hamza.controlsfx.language.Error_Text_Show;
-import com.hamza.controlsfx.language.Setting_Language;
+import com.hamza.controlsfx.language.LanguageManager;
 import com.hamza.controlsfx.menu.ActionTable;
 import com.hamza.controlsfx.menu.ContextMenuTable;
 import com.hamza.controlsfx.observer.EventBus;
@@ -35,8 +34,6 @@ import java.net.URL;
 import java.util.List;
 import java.util.ResourceBundle;
 
-import static com.hamza.controlsfx.language.Setting_Language.CLEAR;
-import static com.hamza.controlsfx.language.Setting_Language.generate;
 import static com.hamza.controlsfx.others.Utils.setTextFormatter;
 import static com.hamza.controlsfx.others.Utils.whenEnterPressed;
 import static com.hamza.controlsfx.util.ImageChoose.createIcon;
@@ -86,22 +83,23 @@ public class UnitsController implements Initializable, AppSettingInterface {
     }
 
     private void otherSetting() {
+        var lm = LanguageManager.getInstance();
         setTextFormatter(textCount);
         whenEnterPressed(textName, textCount);
-        labelName.setText(Setting_Language.WORD_NAME);
-        labelCode.setText(Setting_Language.WORD_CODE);
+        labelName.setText(lm.getString("name"));
+        labelCode.setText(lm.getString("code"));
         // A unit is a name. The number beside it is only the default the item
         // screen offers when you pick it - what a carton holds is per item.
-        labelQuantity.setText(Setting_Language.UNIT_DEFAULT_FACTOR);
-        labelQuantity.setTooltip(new Tooltip(Setting_Language.UNIT_DEFAULT_FACTOR_HINT));
-        textCount.setTooltip(new Tooltip(Setting_Language.UNIT_DEFAULT_FACTOR_HINT));
-        btnSave.setText(Setting_Language.WORD_SAVE);
-        btnClose.setText(Setting_Language.WORD_CLOSE);
-        btnRefresh.setText(Setting_Language.WORD_REFRESH);
-        btnClear.setText(CLEAR);
-        textCode.setText(generate);
-        textName.setPromptText(Setting_Language.NAME_ITEM);
-        textCount.setPromptText(Setting_Language.UNIT_DEFAULT_FACTOR);
+        labelQuantity.setText(lm.getString("unit.default.factor"));
+        labelQuantity.setTooltip(new Tooltip(lm.getString("unit.default.factor.hint")));
+        textCount.setTooltip(new Tooltip(lm.getString("unit.default.factor.hint")));
+        btnSave.setText(lm.getString("common.save"));
+        btnClose.setText(lm.getString("common.close"));
+        btnRefresh.setText(lm.getString("refresh"));
+        btnClear.setText(lm.getString("common.clear"));
+        textCode.setText(lm.getString("item.code.generate"));
+        textName.setPromptText(lm.getString("column.name_item"));
+        textCount.setPromptText(lm.getString("unit.default.factor"));
         // One bind per property: the second call used to replace the first, so the
         // empty-name half of the condition never took effect.
         btnSave.disableProperty().bind(textName.textProperty().isEmpty()
@@ -127,7 +125,7 @@ public class UnitsController implements Initializable, AppSettingInterface {
                 selectData();
             } else {
                 resetData();
-                textCode.setText(generate);
+                textCode.setText(LanguageManager.getInstance().getString("item.code.generate"));
                 textName.clear();
                 textCount.clear();
                 textName.selectAll();
@@ -140,7 +138,7 @@ public class UnitsController implements Initializable, AppSettingInterface {
     private void deleteData() {
         try {
             // check selected row
-            if (tableView.getSelectionModel().isEmpty()) throw new UserValidationException(Error_Text_Show.PLEASE_SELECT_FILE);
+            if (tableView.getSelectionModel().isEmpty()) throw new UserValidationException(LanguageManager.getInstance().getString("msg.select.file"));
 
             UnitsModel selectedItem = tableView.getSelectionModel().getSelectedItem();
 
@@ -165,7 +163,7 @@ public class UnitsController implements Initializable, AppSettingInterface {
                 afterData();
             }
         } catch (Exception e) {
-            AllAlerts.handleError("حذف الوحدة", e);
+            AllAlerts.handleError(LanguageManager.getInstance().getString("item.dialog.delete.unit.title"), e);
         }
     }
 
@@ -186,10 +184,10 @@ public class UnitsController implements Initializable, AppSettingInterface {
                 afterData();
             }
         } catch (ValidationException e) {
-            AllAlerts.handleError("حفظ الوحدة", e);
+            AllAlerts.handleError(LanguageManager.getInstance().getString("item.dialog.save.unit.title"), e);
             e.setFocus();
         } catch (Exception e) {
-            AllAlerts.handleError("حفظ الوحدة", e);
+            AllAlerts.handleError(LanguageManager.getInstance().getString("item.dialog.save.unit.title"), e);
         }
     }
 
@@ -198,7 +196,7 @@ public class UnitsController implements Initializable, AppSettingInterface {
      */
     private int editedUnitId() {
         String code = textCode.getText();
-        if (code == null || code.equals(generate)) {
+        if (code == null || code.equals(LanguageManager.getInstance().getString("item.code.generate"))) {
             return 0;
         }
         try {
@@ -211,7 +209,7 @@ public class UnitsController implements Initializable, AppSettingInterface {
     private UnitFormData validateAndGetFormData() throws ValidationException {
         String name = textName.getText();
         if (name == null || name.isBlank()) {
-            throw new ValidationException(Error_Text_Show.PLEASE_INSERT_ALL_DATA, textName);
+            throw new ValidationException(LanguageManager.getInstance().getString("msg.insert.all"), textName);
         }
 
         // Left blank, a unit converts one to one - which is what a unit that is
@@ -225,10 +223,10 @@ public class UnitsController implements Initializable, AppSettingInterface {
         try {
             value = Double.parseDouble(text.trim());
         } catch (NumberFormatException e) {
-            throw new ValidationException(Error_Text_Show.PLEASE_INSERT_ALL_DATA, textCount);
+            throw new ValidationException(LanguageManager.getInstance().getString("msg.insert.all"), textCount);
         }
         if (value <= MIN_VALUE) {
-            throw new ValidationException(Error_Text_Show.PLEASE_INSERT_ALL_DATA, textCount);
+            throw new ValidationException(LanguageManager.getInstance().getString("msg.insert.all"), textCount);
         }
 
         return new UnitFormData(name.trim(), value);
@@ -244,7 +242,7 @@ public class UnitsController implements Initializable, AppSettingInterface {
                 .filter(item -> item.getUnit_id() != editedUnitId)
                 .anyMatch(item -> item.getUnit_name().equals(name));
         if (nameExists) {
-            throw new ValidationException("هذا الاسم موجود", textName);
+            throw new ValidationException(LanguageManager.getInstance().getString("item.error.name.exists"), textName);
         }
     }
 
@@ -258,7 +256,7 @@ public class UnitsController implements Initializable, AppSettingInterface {
     }
 
     private void resetData() {
-        textCode.setText(generate);
+        textCode.setText(LanguageManager.getInstance().getString("item.code.generate"));
         textName.clear();
         textCount.clear();
     }
@@ -272,7 +270,7 @@ public class UnitsController implements Initializable, AppSettingInterface {
 
     private void refreshTable() {
         MaskerPaneSetting maskerPaneSetting = new MaskerPaneSetting(stackPane);
-        maskerPaneSetting.showMaskerPane("تحميل الوحدات", () -> {
+        maskerPaneSetting.showMaskerPane(LanguageManager.getInstance().getString("item.dialog.loading.units"), () -> {
             var units = getUnitsModelList();
             Platform.runLater(() -> tableView.setItems(FXCollections.observableArrayList(units)));
         });

@@ -6,7 +6,7 @@ import com.hamza.account.controller.main.DataPublisher;
 import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.model.domain.ItemsModel;
 import com.hamza.account.openFxml.OpenFxmlApplication;
-import com.hamza.controlsfx.language.Setting_Language;
+import com.hamza.controlsfx.language.LanguageManager;
 import javafx.application.Application;
 import javafx.scene.Scene;
 import javafx.stage.Stage;
@@ -23,7 +23,7 @@ public class CardApplication extends Application {
     public void start(Stage stage) throws Exception {
         Scene scene = new SceneAll(new OpenFxmlApplication(cardController).getPane());
         stage.setScene(scene);
-        stage.setTitle(Setting_Language.WORD_CARD_ITEM);
+        stage.setTitle(LanguageManager.getInstance().getString("item.card.title"));
         stage.getIcons().add(new javafx.scene.image.Image(new Image_Setting().itemWhite));
         stage.initModality(javafx.stage.Modality.APPLICATION_MODAL);
         stage.setResizable(true);

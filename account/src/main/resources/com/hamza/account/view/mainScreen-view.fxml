@@ -20,7 +20,7 @@
 <?import javafx.scene.layout.VBox?>
 <?import javafx.scene.text.Text?>
 
-<BorderPane fx:id="borderPane" nodeOrientation="RIGHT_TO_LEFT" prefHeight="478.0" prefWidth="723.0" styleClass="app-root" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1">
+<BorderPane fx:id="borderPane" prefHeight="478.0" prefWidth="723.0" styleClass="app-root" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1">
 
     <center>
         <HBox fx:id="mainContentBox" styleClass="main-content" BorderPane.alignment="CENTER">

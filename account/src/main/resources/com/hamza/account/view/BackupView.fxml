@@ -15,7 +15,6 @@
 
 <VBox alignment="CENTER"
       spacing="18.0"
-      nodeOrientation="RIGHT_TO_LEFT"
       styleClass="backup-root"
 
       xmlns="http://javafx.com/javafx/21"

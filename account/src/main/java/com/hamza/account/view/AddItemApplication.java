@@ -2,6 +2,7 @@ package com.hamza.account.view;
 
 import com.hamza.account.config.Image_Setting;
 import com.hamza.account.controller.items.AddItemController;
+import com.hamza.controlsfx.language.LanguageManager;
 import javafx.application.Application;
 import javafx.scene.Scene;
 import javafx.scene.input.KeyCode;
@@ -20,9 +21,8 @@ public class AddItemApplication extends Application {
         var addItemController = new AddItemController(num);
         Scene scene = new SceneAll(addItemController.pane());
         stage.setScene(scene);
-        if (num == 0)
-            stage.setTitle("إضافة صنف");
-        else stage.setTitle("تعديل صنف");
+        var lm = LanguageManager.getInstance();
+        stage.setTitle(num == 0 ? lm.getString("addItem") : lm.getString("updateItem"));
         stage.getIcons().add(new javafx.scene.image.Image(new Image_Setting().itemWhite));
         stage.setResizable(true);
         stage.initModality(Modality.APPLICATION_MODAL);

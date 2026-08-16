@@ -7,7 +7,7 @@ import com.hamza.account.otherSetting.ButtonDeleteRow;
 import com.hamza.account.service.UnitsService;
 import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.button.button_column.ButtonColumn;
-import com.hamza.controlsfx.language.Setting_Language;
+import com.hamza.controlsfx.language.LanguageManager;
 import com.hamza.controlsfx.table.TableColumnAnnotation;
 import com.hamza.controlsfx.table.columnEdit.ColumnSetting;
 import javafx.collections.FXCollections;
@@ -53,9 +53,10 @@ public class TableUnitsSetting extends TableUnitsSettingProperty {
 
     public void addUnit() {
         try {
+            var lm = LanguageManager.getInstance();
 
             if (isUnitTypeExists(getSelectedType())) {
-                throw new RuntimeException("هذه الوحدة مضافة بالفعل لهذا الصنف");
+                throw new RuntimeException(lm.getString("item.error.unit.already.added"));
             }
 
             // Two units of an item may well hold the same number of base units -
@@ -72,14 +73,14 @@ public class TableUnitsSetting extends TableUnitsSettingProperty {
             e.setItemsBarcode(getTextUnitBarcode());
             e.setQuantityForUnit(quantityForUnit);
             // Left blank, these stay zero and the unit is priced from the item.
-            e.setBuyPrice(parsePrice(getTextUnitBuyPrice(), "سعر الشراء"));
-            e.setSelPrice(parsePrice(getTextUnitSelPrice(), "سعر البيع"));
-            e.setSelPrice2(parsePrice(getTextUnitSelPrice2(), "سعر البيع 2"));
-            e.setSelPrice3(parsePrice(getTextUnitSelPrice3(), "سعر البيع 3"));
+            e.setBuyPrice(parsePrice(getTextUnitBuyPrice(), lm.getString("item.buy.price")));
+            e.setSelPrice(parsePrice(getTextUnitSelPrice(), lm.getString("item.sel.price")));
+            e.setSelPrice2(parsePrice(getTextUnitSelPrice2(), lm.getString("item.sel.price2")));
+            e.setSelPrice3(parsePrice(getTextUnitSelPrice3(), lm.getString("item.sel.price3")));
             tableUnits.getItems().add(e);
 
         } catch (Exception e) {
-            AllAlerts.handleError("تحديث وحدات الصنف", e);
+            AllAlerts.handleError(LanguageManager.getInstance().getString("item.dialog.update.units.title"), e);
         }
     }
 
@@ -93,10 +94,10 @@ public class TableUnitsSetting extends TableUnitsSettingProperty {
         try {
             quantity = text == null ? 0 : Double.parseDouble(text.trim());
         } catch (NumberFormatException e) {
-            throw new RuntimeException("ادخل عدد الوحدات الأساسية داخل هذه الوحدة");
+            throw new RuntimeException(LanguageManager.getInstance().getString("item.error.units.quantity.invalid"));
         }
         if (quantity <= 0) {
-            throw new RuntimeException("عدد الوحدات الأساسية يجب أن يكون أكبر من صفر");
+            throw new RuntimeException(LanguageManager.getInstance().getString("item.error.units.quantity.positive"));
         }
         return quantity;
     }
@@ -114,17 +115,17 @@ public class TableUnitsSetting extends TableUnitsSettingProperty {
         try {
             price = Double.parseDouble(text.trim());
         } catch (NumberFormatException e) {
-            throw new RuntimeException(fieldName + ": ادخل رقماً صحيحاً");
+            throw new RuntimeException(LanguageManager.getInstance().getString("item.error.price.invalid", fieldName));
         }
         if (price < 0) {
-            throw new RuntimeException(fieldName + ": لا يمكن أن يكون بالسالب");
+            throw new RuntimeException(LanguageManager.getInstance().getString("item.error.price.negative", fieldName));
         }
         return price;
     }
 
     private void getTable() {
         new TableColumnAnnotation().getTable(tableUnits, ItemsUnitsModel.class);
-        TableColumn<ItemsUnitsModel, String> columnActiveName = new TableColumn<>(Setting_Language.Unit);
+        TableColumn<ItemsUnitsModel, String> columnActiveName = new TableColumn<>(LanguageManager.getInstance().getString("item.column.unit"));
         columnActiveName.setCellValueFactory(f -> f.getValue().unitsModelProperty().get().unit_nameProperty());
         tableUnits.getColumns().add(2, columnActiveName);
 

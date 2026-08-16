@@ -29,8 +29,7 @@ import com.hamza.account.view.barcode.PrintBarcodeModel;
 import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.error.UserValidationException;
-import com.hamza.controlsfx.language.Error_Text_Show;
-import com.hamza.controlsfx.language.Setting_Language;
+import com.hamza.controlsfx.language.LanguageManager;
 import com.hamza.controlsfx.observer.EventBus;
 import com.hamza.controlsfx.table.TableColumnAnnotation;
 import com.hamza.controlsfx.table.columnEdit.ColumnSetting;
@@ -56,7 +55,6 @@ import java.util.List;
 import java.util.Map;
 
 import static com.hamza.account.config.PropertiesName.getItemEditFromTable;
-import static com.hamza.account.view.ConvertItemsGroup.HEADER_TEXT;
 import static com.hamza.controlsfx.util.ImageChoose.createIcon;
 
 @FxmlPath(pathFile = "items/items-view.fxml")
@@ -105,7 +103,7 @@ public class ItemsController extends LoadData {
 
     private void otherSetting() {
 
-        menuItemConvertGroup.setText(HEADER_TEXT);
+        menuItemConvertGroup.setText(LanguageManager.getInstance().getString("item.dialog.convert.title"));
         menuItemConvertGroup.setDisable(true);
         // combo items
         ObservableList<String> observableListMain = FXCollections.observableArrayList(getMainGroupsNames());
@@ -186,7 +184,7 @@ public class ItemsController extends LoadData {
     }
 
     private TableColumn<ItemsModel, String> addColumnUnitsType() {
-        TableColumn<ItemsModel, String> column = new TableColumn<>(Setting_Language.Unit);
+        TableColumn<ItemsModel, String> column = new TableColumn<>(LanguageManager.getInstance().getString("item.column.unit"));
         column.setCellValueFactory(itemsModelStringCellDataFeatures -> new SimpleStringProperty(itemsModelStringCellDataFeatures.getValue().getUnitsType().getUnit_name()));
         return column;
     }
@@ -233,7 +231,7 @@ public class ItemsController extends LoadData {
         btnNew.setOnAction(actionEvent -> addItem(0));
         btnUpdate.setOnAction(actionEvent -> {
             if (tableView.getSelectionModel().isEmpty()) {
-                AllAlerts.handleError("تنفيذ إجراء على الصنف", new UserValidationException(Setting_Language.PLEASE_SELECT_ROW));
+                AllAlerts.handleError(LanguageManager.getInstance().getString("item.dialog.action.title"), new UserValidationException(LanguageManager.getInstance().getString("msg.select.row")));
                 return;
             }
             int numItem = tableView.getSelectionModel().getSelectedItem().getId();
@@ -259,7 +257,7 @@ public class ItemsController extends LoadData {
     private void delete() {
         try {
             if (tableView.getSelectionModel().isEmpty()) {
-                AllAlerts.handleError("تنفيذ إجراء على الصنف", new UserValidationException(Setting_Language.PLEASE_SELECT_ROW));
+                AllAlerts.handleError(LanguageManager.getInstance().getString("item.dialog.action.title"), new UserValidationException(LanguageManager.getInstance().getString("msg.select.row")));
                 return;
             }
             if (!AllAlerts.confirmDelete()) return;
@@ -280,7 +278,7 @@ public class ItemsController extends LoadData {
             var itemsModels = printItems();
             if (!itemsModels.isEmpty()) {
                 new ConvertItemsGroup(itemsModels).start(new Stage());
-            } else AllAlerts.handleError("تحويل مجموعة الأصناف", new UserValidationException(Error_Text_Show.PLEASE_INSERT_ALL_DATA));
+            } else AllAlerts.handleError(LanguageManager.getInstance().getString("item.dialog.convert.title"), new UserValidationException(LanguageManager.getInstance().getString("msg.insert.all")));
         } catch (Exception e) {
             logErrors(e);
         }
@@ -293,7 +291,7 @@ public class ItemsController extends LoadData {
 
             // check if list is empty
             if (list.isEmpty()) {
-                AllAlerts.handleError("طباعة الباركود", new UserValidationException(Error_Text_Show.PLEASE_INSERT_ALL_DATA));
+                AllAlerts.handleError(LanguageManager.getInstance().getString("item.dialog.barcode.title"), new UserValidationException(LanguageManager.getInstance().getString("msg.insert.all")));
                 return;
             }
 
@@ -318,7 +316,7 @@ public class ItemsController extends LoadData {
     private void openDetails() {
         try {
             if (tableView.getSelectionModel().isEmpty()) {
-                AllAlerts.handleError("تنفيذ إجراء على الصنف", new UserValidationException(Setting_Language.PLEASE_SELECT_ROW));
+                AllAlerts.handleError(LanguageManager.getInstance().getString("item.dialog.action.title"), new UserValidationException(LanguageManager.getInstance().getString("msg.select.row")));
                 return;
             }
             ItemsModel selectedItem = tableView.getSelectionModel().getSelectedItem();
@@ -466,7 +464,7 @@ public class ItemsController extends LoadData {
             if (newValue != null) {
                 if ("buy_price".equals(fieldType)) {
                     if (newValue > item.getSelPrice1() || newValue > 1000000000000.0) {
-                        AllAlerts.handleError("تعديل سعر الصنف", new UserValidationException("لا يمكن ان يكون سعر البيع اقل من سعر الشراء"));
+                        AllAlerts.handleError(LanguageManager.getInstance().getString("item.dialog.price.title"), new UserValidationException(LanguageManager.getInstance().getString("item.error.sell.less.than.buy")));
                         item.setBuyPrice(t.getOldValue());
                         t.getTableView().refresh();
                         return;
@@ -474,7 +472,7 @@ public class ItemsController extends LoadData {
                     item.setBuyPrice(newValue);
                 } else if ("sel_price".equals(fieldType)) {
                     if (newValue < item.getBuyPrice() || newValue > 1000000000000.0) {
-                        AllAlerts.handleError("تعديل سعر الصنف", new UserValidationException("لا يمكن ان يكون سعر البيع اقل من سعر الشراء"));
+                        AllAlerts.handleError(LanguageManager.getInstance().getString("item.dialog.price.title"), new UserValidationException(LanguageManager.getInstance().getString("item.error.sell.less.than.buy")));
                         item.setSelPrice1(t.getOldValue());
                         t.getTableView().refresh();
                         return;
@@ -482,7 +480,7 @@ public class ItemsController extends LoadData {
                     item.setSelPrice1(newValue);
                 } else if ("sel_price2".equals(fieldType)) {
                     if (newValue < item.getBuyPrice() || newValue > 1000000000000.0) {
-                        AllAlerts.handleError("تعديل سعر الصنف", new UserValidationException("لا يمكن ان يكون سعر البيع اقل من سعر الشراء"));
+                        AllAlerts.handleError(LanguageManager.getInstance().getString("item.dialog.price.title"), new UserValidationException(LanguageManager.getInstance().getString("item.error.sell.less.than.buy")));
                         item.setSelPrice2(t.getOldValue());
                         t.getTableView().refresh();
                         return;
@@ -490,7 +488,7 @@ public class ItemsController extends LoadData {
                     item.setSelPrice2(newValue);
                 } else if ("sel_price3".equals(fieldType)) {
                     if (newValue < item.getBuyPrice() || newValue > 1000000000000.0) {
-                        AllAlerts.handleError("تعديل سعر الصنف", new UserValidationException("لا يمكن ان يكون سعر البيع اقل من سعر الشراء"));
+                        AllAlerts.handleError(LanguageManager.getInstance().getString("item.dialog.price.title"), new UserValidationException(LanguageManager.getInstance().getString("item.error.sell.less.than.buy")));
                         item.setSelPrice3(t.getOldValue());
                         t.getTableView().refresh();
                         return;
@@ -529,9 +527,10 @@ public class ItemsController extends LoadData {
 
                 }
             } catch (DaoException e) {
+                var title = LanguageManager.getInstance().getString("item.dialog.update.column", col.getText());
                 if (e.getMessage().contains("duplicate") || e.getMessage().contains("Duplicate")) {
-                    AllAlerts.handleError("تحديث عمود " + col.getText(), new UserValidationException("بيانات موجودة سابقا"));
-                } else AllAlerts.handleError("تحديث عمود " + col.getText(), e);
+                    AllAlerts.handleError(title, new UserValidationException(LanguageManager.getInstance().getString("msg.duplicate")));
+                } else AllAlerts.handleError(title, e);
             }
         });
     }
@@ -548,7 +547,7 @@ public class ItemsController extends LoadData {
     }
 
     private void logErrors(Exception e) {
-        AllAlerts.handleError("إدارة الأصناف", e);
+        AllAlerts.handleError(LanguageManager.getInstance().getString("item.dialog.manage.title"), e);
     }
 
 

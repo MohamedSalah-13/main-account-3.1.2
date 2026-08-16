@@ -6,7 +6,6 @@
 <?import javafx.scene.text.Text?>
 
 <StackPane fx:id="stackPane"
-           nodeOrientation="RIGHT_TO_LEFT"
            styleClass="app-root"
 
            xmlns:fx="http://javafx.com/fxml/1"
@@ -110,14 +109,14 @@
                                         <RadioButton fx:id="radioDeleteImage"
                                                      mnemonicParsing="false"
                                                      selected="true"
-                                                     text="حذف">
+                                                     text="%delete">
                                             <toggleGroup>
                                                 <ToggleGroup fx:id="group"/>
                                             </toggleGroup>
                                         </RadioButton>
                                         <RadioButton fx:id="radioAddImage"
                                                      mnemonicParsing="false"
-                                                     text="إضافة"
+                                                     text="%add"
                                                      toggleGroup="$group"/>
                                         <ImageView fx:id="imageInformation"
                                                    fitHeight="15.0"

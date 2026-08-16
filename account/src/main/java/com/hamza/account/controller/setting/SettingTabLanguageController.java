@@ -8,6 +8,7 @@ import com.hamza.account.controller.search.CustomerSearchController;
 import com.hamza.account.controller.search.SearchInterface;
 import com.hamza.account.features.choiceDialoge.ChoiceDialogSetting;
 import com.hamza.account.features.choiceDialoge.ChoosePrinter;
+import com.hamza.account.features.events.LanguageChanged;
 import com.hamza.account.model.domain.Customers;
 import com.hamza.account.model.domain.Employees;
 import com.hamza.account.openFxml.FxmlPath;
@@ -16,7 +17,9 @@ import com.hamza.account.service.EmployeeService;
 import com.hamza.account.view.TableWithTextSearchApplication;
 import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.database.DaoException;
+import com.hamza.controlsfx.language.LanguageManager;
 import com.hamza.controlsfx.language.Setting_Language;
+import com.hamza.controlsfx.observer.EventBus;
 import com.hamza.controlsfx.observer.Publisher;
 import com.hamza.controlsfx.others.TextFormat;
 import com.hamza.controlsfx.util.Extensions;
@@ -67,9 +70,10 @@ public class SettingTabLanguageController implements Initializable {
     @FXML
     private RadioButton radioLight, radioDark, radioSystem;
     @FXML
-    private RadioButton radioEnglish, radioArabic;
+    private ComboBox<Locale> comboLanguage;
     @FXML
     private ComboBox<Double> comboUiScale;
+    private final EventBus eventBus = ServiceRegistry.get(EventBus.class);
     @FXML
     private TextField txtNameCustomer, txtNameDelegate;
     @FXML
@@ -142,7 +146,7 @@ public class SettingTabLanguageController implements Initializable {
         btnPrinterSettingNormal.setText("");
 
         labelRate.setText(Setting_Language.WORD_RATE);
-        labelLanguage.setText(Setting_Language.WORD_LANGUAGE);
+        labelLanguage.setText(LanguageManager.getInstance().getString("settings.language"));
 
         labelPrintNormal.setText(Setting_Language.print1);
         labelPrintBarcode.setText(Setting_Language.print2);
@@ -184,6 +188,9 @@ public class SettingTabLanguageController implements Initializable {
 
         // UI scale selection: initialize and wire listeners
         configureUiScaleCombo();
+
+        // Language selection: initialize and wire listeners
+        configureLanguageCombo();
 
         btnDeleteImage.setOnAction(actionEvent -> {
             textPath.setText(text);
@@ -372,6 +379,53 @@ public class SettingTabLanguageController implements Initializable {
             com.hamza.account.config.UiScale.setFactor(newValue);
             reapplyToCurrentScene();
         });
+    }
+
+    /**
+     * Combo box of every language {@link LanguageManager#supportedLocales()} finds on
+     * the classpath - unlike the theme radios this needs no code change to grow past
+     * two options, since a new {@code messages_xx.properties} is picked up automatically.
+     */
+    private void configureLanguageCombo() {
+        var languageManager = LanguageManager.getInstance();
+
+        comboLanguage.setConverter(new StringConverter<>() {
+            @Override
+            public String toString(Locale locale) {
+                return locale == null ? "" : languageManager.displayNameOf(locale);
+            }
+
+            @Override
+            public Locale fromString(String string) {
+                return null;
+            }
+        });
+
+        comboLanguage.getItems().setAll(languageManager.supportedLocales());
+        comboLanguage.setValue(languageManager.getCurrentLocale());
+
+        comboLanguage.valueProperty().addListener((observable, oldValue, newValue) -> {
+            if (newValue == null || newValue.equals(languageManager.getCurrentLocale())) return;
+            languageManager.setLocale(newValue);
+            reapplyToCurrentScene();
+            eventBus.publish(new LanguageChanged(newValue));
+            refreshOwnText();
+        });
+    }
+
+    /**
+     * Most of this tab's own labels still come from {@link Setting_Language}, the
+     * Arabic-only constant set that predates {@link LanguageManager} and has not been
+     * migrated yet - so most of them do not actually change here. {@code labelLanguage}
+     * is migrated as the proof this mechanism works: it is the one label on this tab
+     * read from the bundle, and it does flip with the combo box. Screens built entirely
+     * from {@code %key} FXML bindings (login, and future migrated screens) need no
+     * equivalent method at all - they reload through {@link
+     * com.hamza.account.openFxml.OpenFxmlApplication}, which re-reads {@link
+     * LanguageManager#getResourceBundle()} on every load.
+     */
+    private void refreshOwnText() {
+        labelLanguage.setText(LanguageManager.getInstance().getString("settings.language"));
     }
 
     /**
