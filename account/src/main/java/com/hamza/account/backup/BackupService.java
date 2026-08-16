@@ -1,6 +1,7 @@
 package com.hamza.account.backup;
 
 import com.hamza.controlsfx.error.UserValidationException;
+import com.hamza.controlsfx.language.LanguageManager;
 import lombok.extern.log4j.Log4j2;
 
 import java.io.*;
@@ -35,7 +36,7 @@ public class BackupService {
         // to say so now than to hand back a file that looks like a backup.
         if (encryptionPassword == null || encryptionPassword.isBlank()) {
             throw new UserValidationException(
-                    "لم يتم تعيين كلمة مرور التشفير. من فضلك اضبطها في إعدادات النسخ الاحتياطي أولاً.");
+                    LanguageManager.getInstance().getString("backup.error.no.encryption.password"));
         }
 
         // إنشاء اسم فريد للملف المؤقت والمشفر
@@ -102,7 +103,8 @@ public class BackupService {
 
         int exitCode = process.waitFor();
         if (exitCode != 0) {
-            throw new RuntimeException("فشل mysqldump مع رمز الخروج: " + exitCode);
+            throw new RuntimeException(
+                    LanguageManager.getInstance().getString("backup.error.mysqldump.failed", exitCode));
         }
     }
 
@@ -116,7 +118,7 @@ public class BackupService {
             // 2. التحقق من صلاحية الملف
             if (!isSqlFile(tempSqlFile)) {
                 throw new UserValidationException(
-                        "الملف ليس نسخة احتياطية صالحة، أو أن كلمة مرور التشفير غير صحيحة.");
+                        LanguageManager.getInstance().getString("backup.error.invalid.file.or.password"));
             }
 
             // 3. تنفيذ الاستيراد مع تمرير الملف النظيف
@@ -142,7 +144,8 @@ public class BackupService {
                         errorMsg.append(line).append("\n");
                     }
                 }
-                throw new RuntimeException("فشل استيراد SQL (رمز الخروج " + exitCode + "): " + errorMsg.toString());
+                throw new RuntimeException(
+                        LanguageManager.getInstance().getString("backup.error.sql.import.failed", exitCode, errorMsg.toString()));
             }
 
             log.info("تمت الاستعادة بنجاح من: " + encryptedBackup.getName());

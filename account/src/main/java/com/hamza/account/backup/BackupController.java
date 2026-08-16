@@ -1,6 +1,7 @@
 package com.hamza.account.backup;
 
 import com.hamza.account.controller.main.LoadDataAndList;
+import com.hamza.controlsfx.language.LanguageManager;
 import javafx.application.Platform;
 import javafx.concurrent.Task;
 import javafx.fxml.FXML;
@@ -11,12 +12,14 @@ import javafx.scene.control.TextField;
 import javafx.scene.layout.HBox;
 import javafx.stage.DirectoryChooser;
 import javafx.stage.FileChooser;
+import javafx.util.StringConverter;
 import lombok.extern.log4j.Log4j2;
 
 import java.awt.*;
 import java.io.File;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.List;
 import java.util.Optional;
 import java.util.prefs.Preferences;
 
@@ -45,14 +48,49 @@ public class BackupController {
     private String dbHost, dbPort, dbName, dbUser, dbPassword;
 //    private ScheduledFuture<?> backupTaskHandle;
 
+    private static final List<String> INTERVAL_CODES = List.of(
+            ScheduledBackup.INTERVAL_DISABLED, ScheduledBackup.INTERVAL_HOURLY,
+            ScheduledBackup.INTERVAL_EVERY_2_HOURS, ScheduledBackup.INTERVAL_EVERY_6_HOURS,
+            ScheduledBackup.INTERVAL_DAILY);
+
+    /** Old installs may still have the Arabic label saved directly; map it to its code. */
+    private static String normalizeInterval(String stored) {
+        return switch (stored) {
+            case "كل ساعة" -> ScheduledBackup.INTERVAL_HOURLY;
+            case "كل ساعتين" -> ScheduledBackup.INTERVAL_EVERY_2_HOURS;
+            case "كل 6 ساعات" -> ScheduledBackup.INTERVAL_EVERY_6_HOURS;
+            case "كل يوم" -> ScheduledBackup.INTERVAL_DAILY;
+            case "معطل" -> ScheduledBackup.INTERVAL_DISABLED;
+            default -> stored;
+        };
+    }
+
+    private static String intervalLabel(String code) {
+        return LanguageManager.getInstance().getString("backup.interval." + code);
+    }
+
     @FXML
     public void initialize() {
         prefs = Preferences.userNodeForPackage(BackupController.class);
         // تعبئة القيم المحفوظة
         backupPathField.setText(ScheduledBackup.backupPath());
         encryptionPasswordField.setText(ScheduledBackup.encryptionPassword());
-        intervalCombo.getItems().addAll("معطل", "كل ساعة", "كل ساعتين", "كل 6 ساعات", "كل يوم");
-        intervalCombo.setValue(ScheduledBackup.interval());
+        intervalCombo.getItems().addAll(INTERVAL_CODES);
+        intervalCombo.setConverter(new StringConverter<>() {
+            @Override
+            public String toString(String code) {
+                return code == null ? "" : intervalLabel(code);
+            }
+
+            @Override
+            public String fromString(String label) {
+                return INTERVAL_CODES.stream()
+                        .filter(code -> intervalLabel(code).equals(label))
+                        .findFirst()
+                        .orElse(ScheduledBackup.INTERVAL_DISABLED);
+            }
+        });
+        intervalCombo.setValue(normalizeInterval(ScheduledBackup.interval()));
 
         // عند تغيير كلمة المرور نحفظها ونحدث الخدمة
         encryptionPasswordField.textProperty().addListener((obs, oldVal, newVal) -> {
@@ -86,7 +124,7 @@ public class BackupController {
     @FXML
     private void changeBackupPath() {
         DirectoryChooser chooser = new DirectoryChooser();
-        chooser.setTitle("اختر مجلد النسخ الاحتياطي");
+        chooser.setTitle(LanguageManager.getInstance().getString("backup.dialog.choose.folder.title"));
         File dir = chooser.showDialog(backupPathField.getScene().getWindow());
         if (dir != null) {
             backupPathField.setText(dir.getAbsolutePath());
@@ -111,7 +149,7 @@ public class BackupController {
         };
 
         // إظهار المؤشر وإخفاء الأزرار
-        setUIForTask(true, "جارٍ النسخ الاحتياطي...");
+        setUIForTask(true, LanguageManager.getInstance().getString("backup.status.backing.up"));
         backupBtn.setDisable(true);
         restoreBtn.setDisable(true);
 
@@ -120,14 +158,14 @@ public class BackupController {
             // Only once the new copy exists, so a failed backup cannot take the
             // existing ones down with it.
             ScheduledBackup.pruneOldBackups(dir, ScheduledBackup.MAX_BACKUP_FILES);
-            setStatus("✓ تم إنشاء النسخة: " + result.getName());
+            setStatus("✓ " + LanguageManager.getInstance().getString("backup.status.created", result.getName()));
             resetUIAfterTask();
         });
 
         task.setOnFailed(e -> {
             Throwable ex = task.getException();
             var report = com.hamza.controlsfx.error.ErrorReporter.shared()
-                    .report("إنشاء النسخة الاحتياطية", ex);
+                    .report(LanguageManager.getInstance().getString("backup.op.create"), ex);
             setStatus("✗ " + report.message());
             resetUIAfterTask();
         });
@@ -138,22 +176,24 @@ public class BackupController {
     @FXML
     private void restoreBackup() {
         FileChooser chooser = new FileChooser();
-        chooser.setTitle("اختر ملف النسخة الاحتياطية");
-        chooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("ملفات مشفرة", "*.enc"));
+        chooser.setTitle(LanguageManager.getInstance().getString("backup.dialog.choose.file.title"));
+        chooser.getExtensionFilters().add(new FileChooser.ExtensionFilter(
+                LanguageManager.getInstance().getString("backup.filter.encrypted.files"), "*.enc"));
         File file = chooser.showOpenDialog(backupPathField.getScene().getWindow());
         if (file == null) return;
 
         // طلب كلمة المرور للتأكيد (قد يكون أفضل من الحقل المخزن)
         TextInputDialog dialog = new TextInputDialog();
-        dialog.setTitle("كلمة مرور التشفير");
-        dialog.setHeaderText("أدخل كلمة مرور فك تشفير النسخة:");
-        dialog.setContentText("كلمة المرور:");
+        dialog.setTitle(LanguageManager.getInstance().getString("backup.dialog.password.title"));
+        dialog.setHeaderText(LanguageManager.getInstance().getString("backup.dialog.password.header"));
+        dialog.setContentText(LanguageManager.getInstance().getString("backup.dialog.password.content"));
         Optional<String> passwordResult = dialog.showAndWait();
 
         if (!passwordResult.isPresent() || passwordResult.get().trim().isEmpty()) return;
         final String password = passwordResult.get().trim();
 
-        Alert confirm = new Alert(Alert.AlertType.CONFIRMATION, "سيتم استبدال البيانات الحالية! متابعة؟");
+        Alert confirm = new Alert(Alert.AlertType.CONFIRMATION,
+                LanguageManager.getInstance().getString("backup.confirm.restore"));
         confirm.showAndWait().ifPresent(response -> {
             if (response != ButtonType.OK) return;
 
@@ -170,13 +210,13 @@ public class BackupController {
                 }
             };
 
-            setUIForTask(true, "جارٍ استعادة النسخة...");
+            setUIForTask(true, LanguageManager.getInstance().getString("backup.status.restoring"));
             backupBtn.setDisable(true);
             restoreBtn.setDisable(true);
 
             task.setOnSucceeded(e -> {
                 Toolkit.getDefaultToolkit().beep();
-                setStatus("✓ تمت الاستعادة بنجاح");
+                setStatus("✓ " + LanguageManager.getInstance().getString("backup.status.restored"));
                 resetUIAfterTask();
                 LoadDataAndList.updateData();
             });
@@ -184,7 +224,7 @@ public class BackupController {
             task.setOnFailed(e -> {
                 Throwable ex = task.getException();
                 var report = com.hamza.controlsfx.error.ErrorReporter.shared()
-                        .report("استعادة النسخة الاحتياطية", ex);
+                        .report(LanguageManager.getInstance().getString("backup.op.restore"), ex);
                 setStatus("✗ " + report.message());
                 resetUIAfterTask();
             });
@@ -215,10 +255,10 @@ public class BackupController {
             // scheduler thread at the first run.
             if (backupService == null) updateBackupService();
             ScheduledBackup.startScheduler(backupService);
-            setStatus("تم تفعيل النسخ التلقائي كل " + selected);
+            setStatus(LanguageManager.getInstance().getString("backup.status.schedule.enabled", intervalLabel(selected)));
         } else {
             ScheduledBackup.stopScheduler();
-            setStatus("تم إيقاف النسخ التلقائي");
+            setStatus(LanguageManager.getInstance().getString("backup.status.schedule.disabled"));
         }
     }
     // ... إضافة startScheduler/stopScheduler التي رأيناها سابقاً

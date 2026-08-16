@@ -2,6 +2,7 @@ package com.hamza.account.backup;
 
 import com.hamza.account.features.notification.AppNotifications;
 import com.hamza.account.features.notification.NotificationCategories;
+import com.hamza.controlsfx.language.LanguageManager;
 import lombok.extern.log4j.Log4j2;
 
 import java.io.File;
@@ -33,6 +34,17 @@ public class ScheduledBackup {
     private static final String SUCCESS_KEY = "backup.scheduled.success";
     private static final String FAILURE_KEY = "backup.scheduled.failure";
 
+    /**
+     * Stored in Preferences instead of the combo box's displayed label, so the saved
+     * schedule survives a language switch. Old installs may still hold the Arabic
+     * label {@code getTime()} used to switch on directly; those are still recognised.
+     */
+    public static final String INTERVAL_DISABLED = "disabled";
+    public static final String INTERVAL_HOURLY = "hourly";
+    public static final String INTERVAL_EVERY_2_HOURS = "every_2_hours";
+    public static final String INTERVAL_EVERY_6_HOURS = "every_6_hours";
+    public static final String INTERVAL_DAILY = "daily";
+
     public static Preferences prefsBackup = Preferences.userNodeForPackage(BackupController.class);
     private static ScheduledExecutorService scheduler;
     private static ScheduledFuture<?> backupTaskHandle;
@@ -55,7 +67,7 @@ public class ScheduledBackup {
     }
 
     public static String interval() {
-        return prefsBackup.get("interval", "معطل");
+        return prefsBackup.get("interval", INTERVAL_DISABLED);
     }
 
     public static void startScheduler(BackupService backupService) {
@@ -75,17 +87,17 @@ public class ScheduledBackup {
                 // Pruned only after a backup succeeds: a failed run must not be able
                 // to delete the copies that are still the most recent ones we have.
                 pruneOldBackups(dir, MAX_BACKUP_FILES);
-                setStatus("نسخ تلقائي: " + backup.getName());
+                setStatus(LanguageManager.getInstance().getString("backup.status.auto.created", backup.getName()));
                 AppNotifications.success(SUCCESS_KEY, NotificationCategories.BACKUP,
-                        "تم عمل نسخة احتياطية", backup.getName());
+                        LanguageManager.getInstance().getString("backup.notify.success.title"), backup.getName());
             } catch (Exception e) {
                 var report = com.hamza.controlsfx.error.ErrorReporter.shared()
-                        .report("إنشاء النسخة الاحتياطية التلقائية", e);
+                        .report(LanguageManager.getInstance().getString("backup.op.create.auto"), e);
                 setStatus(report.message());
                 // A log line was the only trace of this, which is how a folder that
                 // has been unwritable for weeks goes unnoticed.
                 AppNotifications.error(FAILURE_KEY, NotificationCategories.BACKUP,
-                        "فشل النسخ الاحتياطي التلقائي", report.message());
+                        LanguageManager.getInstance().getString("backup.notify.failure.title"), report.message());
             }
         }, 0, getTime(), TimeUnit.HOURS);
     }
@@ -119,7 +131,7 @@ public class ScheduledBackup {
             if (surplus.delete()) {
                 log.info("Deleted old backup: {}", surplus.getName());
             } else {
-                setStatus("تعذر حذف النسخة القديمة: " + surplus.getName());
+                setStatus(LanguageManager.getInstance().getString("backup.status.prune.failed", surplus.getName()));
             }
         }
     }
@@ -135,10 +147,10 @@ public class ScheduledBackup {
 
     public static long getTime() {
         return switch (interval()) {
-            case "كل ساعة" -> 1;
-            case "كل ساعتين" -> 2;
-            case "كل 6 ساعات" -> 6;
-            case "كل يوم" -> 24;
+            case INTERVAL_HOURLY, "كل ساعة" -> 1;
+            case INTERVAL_EVERY_2_HOURS, "كل ساعتين" -> 2;
+            case INTERVAL_EVERY_6_HOURS, "كل 6 ساعات" -> 6;
+            case INTERVAL_DAILY, "كل يوم" -> 24;
             default -> 0;
         };
     }

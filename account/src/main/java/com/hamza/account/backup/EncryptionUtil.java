@@ -1,6 +1,7 @@
 package com.hamza.account.backup;
 
 import com.hamza.controlsfx.error.UserValidationException;
+import com.hamza.controlsfx.language.LanguageManager;
 
 import javax.crypto.*;
 import javax.crypto.spec.*;
@@ -64,12 +65,12 @@ public class EncryptionUtil {
 
             byte[] salt = new byte[SALT_SIZE];
             if (bis.read(salt) != SALT_SIZE) {
-                throw new IOException("الملف تالف: لا يحتوي على بيانات الملح الكافية.");
+                throw new IOException(LanguageManager.getInstance().getString("backup.error.file.corrupt.salt"));
             }
 
             byte[] iv = new byte[IV_SIZE];
             if (bis.read(iv) != IV_SIZE) {
-                throw new IOException("الملف تالف: لا يحتوي على IV صحيح.");
+                throw new IOException(LanguageManager.getInstance().getString("backup.error.file.corrupt.iv"));
             }
 
             SecretKey key = getKeyFromPassword(password, salt);
@@ -86,7 +87,8 @@ public class EncryptionUtil {
             }
             // إذا وصلنا هنا بنجاح فالتشفير سليم
         } catch (AEADBadTagException e) {
-            throw new UserValidationException("كلمة مرور خاطئة أو الملف المشفر تالف (فشل التحقق من سلامة البيانات).", e);
+            throw new UserValidationException(
+                    LanguageManager.getInstance().getString("backup.error.wrong.password.or.corrupt"), e);
         }
     }
 }
