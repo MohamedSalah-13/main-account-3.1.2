@@ -13,7 +13,7 @@ import com.hamza.account.otherSetting.BarcodeDetails;
 import com.hamza.account.service.ShiftReportService;
 import com.hamza.account.features.rbac.CurrentUser;
 import com.hamza.controlsfx.database.DaoException;
-import com.hamza.controlsfx.language.Setting_Language;
+import com.hamza.controlsfx.language.LanguageManager;
 import com.hamza.controlsfx.others.CssToColorHelper;
 import lombok.extern.log4j.Log4j2;
 import net.sf.jasperreports.engine.data.JRBeanCollectionDataSource;
@@ -66,13 +66,13 @@ public class Print_Reports extends ReportCompany {
      */
     public <T> void printTotalsAccounts(@NotNull List<T> list, CssToColorHelper helper) {
         HashMap<String, Object> company = getStringObjectHashMap(list, helper);
-        company.put("title", Setting_Language.WORD_TOTAL);
-        addHeaderToReports(company, Setting_Language.WORD_TOTAL);
+        company.put("title", LanguageManager.getInstance().getString("total"));
+        addHeaderToReports(company, LanguageManager.getInstance().getString("total"));
         var totals = JasperReportPaths.Account.TOTALS;
         if (getPrintPaperReceiptAccount()) {
             totals = JasperReportPaths.Account.TOTALS_80;
         }
-        jasperData.printJasperPrint(totals, Setting_Language.WORD_TOTAL, company, 1, "");
+        jasperData.printJasperPrint(totals, LanguageManager.getInstance().getString("total"), company, 1, "");
     }
 
     /**
@@ -91,7 +91,7 @@ public class Print_Reports extends ReportCompany {
 
     public void printItems(@NotNull List<ItemsModel> list) {
         HashMap<String, Object> map = getStringObjectHashMap(list, null);
-        String wordItems = Setting_Language.WORD_ITEMS;
+        String wordItems = LanguageManager.getInstance().getString("items");
         addHeaderToReports(map, wordItems);
         jasperData.printJasperPrint(JasperReportPaths.Report.ITEMS, wordItems, map, 1, printerNameNormal);
     }
@@ -103,14 +103,14 @@ public class Print_Reports extends ReportCompany {
         company.put("delegate", delegate);
         company.put("reportName", reportName);
         addHeaderToReports(company, reportName);
-        jasperData.printJasperPrint(JasperReportPaths.Report.ITEMS_BY_DELEGATE, Setting_Language.WORD_REPORT_ITEMS, company, 1, "");
+        jasperData.printJasperPrint(JasperReportPaths.Report.ITEMS_BY_DELEGATE, LanguageManager.getInstance().getString("setting.report.items"), company, 1, "");
     }
 
 
     public void printReportByMonth(@NotNull List<TableTotals> list, @NotNull String title) {
         HashMap<String, Object> map = getStringObjectHashMap(list, null);
         map.put("title", title);
-        jasperData.printJasperPrint(JasperReportPaths.Report.MONTHLY, Setting_Language.MONTHS, map, 1, "");
+        jasperData.printJasperPrint(JasperReportPaths.Report.MONTHLY, LanguageManager.getInstance().getString("setting.months"), map, 1, "");
     }
 
     public void printTotalsInvoice(@NotNull List<?> list, @NotNull String name, @NotNull String date1, @NotNull String date2, CssToColorHelper helper) {
@@ -120,11 +120,11 @@ public class Print_Reports extends ReportCompany {
             map.put("p2", date1);
             map.put("p3", date2);
         } else {
-            map.put("p1", Setting_Language.WORD_ALL);
+            map.put("p1", LanguageManager.getInstance().getString("all"));
             map.put("p2", " ");
             map.put("p3", " ");
         }
-        String reportName = Setting_Language.WORD_TOTAL;
+        String reportName = LanguageManager.getInstance().getString("total");
         addHeaderToReports(map, reportName);
         jasperData.printJasperPrint(JasperReportPaths.Invoice.DETAILS, reportName, map, 1, "");
     }
@@ -137,9 +137,9 @@ public class Print_Reports extends ReportCompany {
 
         Thread thread = new Thread(() -> {
             if (getPrintPaperReceiptAccount()) {
-                jasperData.printJasperPrint(JasperReportPaths.Invoice.MULTI_80mm, Setting_Language.WORD_TOTAL, company, 1, "");
+                jasperData.printJasperPrint(JasperReportPaths.Invoice.MULTI_80mm, LanguageManager.getInstance().getString("total"), company, 1, "");
             } else {
-                jasperData.printJasperPrint(JasperReportPaths.Invoice.MULTI, Setting_Language.WORD_TOTAL, company, 1, "");
+                jasperData.printJasperPrint(JasperReportPaths.Invoice.MULTI, LanguageManager.getInstance().getString("total"), company, 1, "");
             }
         });
         thread.start();
@@ -150,7 +150,7 @@ public class Print_Reports extends ReportCompany {
         HashMap<String, Object> map = getStringObjectHashMap(list, helper);
         map.put("p1", s);
         addHeaderToReports(map, reportName);
-        jasperData.printJasperPrint(JasperReportPaths.Account.ACCOUNT_DETAILS_REPORT_PATH, Setting_Language.WORD_CUSTOM_ACC, map, 1, "");
+        jasperData.printJasperPrint(JasperReportPaths.Account.ACCOUNT_DETAILS_REPORT_PATH, LanguageManager.getInstance().getString("cuAcc"), map, 1, "");
     }
 
     public <T> void printAccountStatement(List<T> list, boolean s, String reportName, String accountName, CssToColorHelper helper) {
@@ -163,7 +163,7 @@ public class Print_Reports extends ReportCompany {
 
     public void printReceiptAccount(@NotNull List<?> list, @NotNull String name, double total) {
         HashMap<String, Object> map = dataForPrinterReceipt(name, list, total, LocalDateTime.now().format(DATE_TIME_FORMATTER));
-        jasperData.printJasperPrint(JasperReportPaths.Account.ACCOUNT_DETAILS_REPORT_TEMPLATE, Setting_Language.WORD_PRINT, map, 1, printerNameThermal);
+        jasperData.printJasperPrint(JasperReportPaths.Account.ACCOUNT_DETAILS_REPORT_TEMPLATE, LanguageManager.getInstance().getString("print"), map, 1, printerNameThermal);
     }
 
     /**
@@ -178,7 +178,7 @@ public class Print_Reports extends ReportCompany {
     public void printInventoryByTable(List<InventoryRow> list, String stock_name) {
         HashMap<String, Object> map = getStringObjectHashMap(list, null);
         map.put("stock_name", stock_name);
-        jasperData.printJasperPrint(JasperReportPaths.Report.INVENTORY_BY_TABLE, Setting_Language.WORD_ITEMS, map, 1, "");
+        jasperData.printJasperPrint(JasperReportPaths.Report.INVENTORY_BY_TABLE, LanguageManager.getInstance().getString("items"), map, 1, "");
     }
 
     public void printCardItem(@NotNull Integer itemId, double purchase, double sales, double purchase_re, double sales_re, double first_balance
@@ -196,7 +196,7 @@ public class Print_Reports extends ReportCompany {
         withConnection(connection ->
                 jasperData.printJasperPrintWithConnection(
                         JasperReportPaths.Report.CARD_ITEMS,
-                        Setting_Language.WORD_CARD_ITEM,
+                        LanguageManager.getInstance().getString("item.card.title"),
                         company,
                         1,
                         "",
@@ -244,14 +244,14 @@ public class Print_Reports extends ReportCompany {
             map.put("after_discount", MoneyMath.asDouble(MoneyMath.add(
                     afterDiscount, MoneyMath.decimal(delivery))));
         }
-        jasperData.printJasperPrint(JasperReportPaths.Invoice.THERMAL, Setting_Language.WORD_PRINT, map, 1, printerNameThermal);
+        jasperData.printJasperPrint(JasperReportPaths.Invoice.THERMAL, LanguageManager.getInstance().getString("print"), map, 1, printerNameThermal);
     }
 
     public void printReceiptItemsQuantity(List<ItemsModel> list, String dateFrom, String dateTo) {
         HashMap<String, Object> map = getStringObjectHashMap(list, null);
         map.put("dateFrom", dateFrom);
         map.put("dateTo", dateTo);
-        jasperData.printJasperPrint(JasperReportPaths.Report.REPORT_ITEMS_QUANTITY_80MM_TEMPLATE, Setting_Language.WORD_PRINT, map, 1, printerNameThermal);
+        jasperData.printJasperPrint(JasperReportPaths.Report.REPORT_ITEMS_QUANTITY_80MM_TEMPLATE, LanguageManager.getInstance().getString("print"), map, 1, printerNameThermal);
     }
 
     public void printReportDelegate(String name, Integer year, Integer firstMonth, Integer lastMonth) throws Exception {
@@ -264,7 +264,7 @@ public class Print_Reports extends ReportCompany {
         withConnection(connection ->
                 jasperData.printJasperPrintWithConnection(
                         JasperReportPaths.Report.DELEGATE,
-                        Setting_Language.REPORT_DELEGATE,
+                        LanguageManager.getInstance().getString("setting.report.delegate"),
                         company,
                         1,
                         "",
@@ -285,7 +285,7 @@ public class Print_Reports extends ReportCompany {
         company.put("treasury_name", treasury_name);
         company.put("convert_to_treasury", convert_to_treasury);
         company.put("dateTo", dateTo);
-        jasperData.printJasperPrint(JasperReportPaths.Report.EXPENSE_RECEIPT, Setting_Language.DEPOSIT, company, 1, "");
+        jasperData.printJasperPrint(JasperReportPaths.Report.EXPENSE_RECEIPT, LanguageManager.getInstance().getString("deposit"), company, 1, "");
     }
 
     public void printAccountStatements(@NotNull List<TreasuryBalance> list, String dateFrom, String dateTo
@@ -296,7 +296,8 @@ public class Print_Reports extends ReportCompany {
         map.put("total_income", total_income);
         map.put("total_output", total_output);
         map.put("total_balance", total_balance);
-        jasperData.printJasperPrint(JasperReportPaths.Report.TREASURY_STATEMENT_A4_TEMPLATE, "كشف حساب الخزينة", map, 1, "");
+        jasperData.printJasperPrint(JasperReportPaths.Report.TREASURY_STATEMENT_A4_TEMPLATE,
+                LanguageManager.getInstance().getString("report.treasury.statement.title"), map, 1, "");
     }
 
     public void printSummary(String datePrint, String username, String startTime, String endTime
@@ -365,7 +366,7 @@ public class Print_Reports extends ReportCompany {
         int labelCount = barcodePrintDoubleLabel.getBoolean_saved() ? 2 : 1;
         map.put("label_count", labelCount);
 
-        jasperData.printJasperPrint(JasperReportPaths.Barcode.VERSION_1, Setting_Language.WORD_BARCODE, map, copies, printerNameBarcode);
+        jasperData.printJasperPrint(JasperReportPaths.Barcode.VERSION_1, LanguageManager.getInstance().getString("barcode"), map, copies, printerNameBarcode);
 
     }
 
@@ -398,11 +399,12 @@ public class Print_Reports extends ReportCompany {
         HashMap<String, Object> map = getStringObjectHashMap(list, null);
         map.put("dateFrom", from);
         map.put("dateTo", to);
-        map.put("username", username == null ? "الكل" : username);
-        addHeaderToReports(map, "تقرير الورديات");
+        map.put("username", username == null ? LanguageManager.getInstance().getString("all") : username);
+        String reportTitle = LanguageManager.getInstance().getString("report.shifts.aggregate.title");
+        addHeaderToReports(map, reportTitle);
         jasperData.printJasperPrint(
                 JasperReportPaths.Shift.AGGREGATE_A4,
-                "تقرير الورديات", map, 1, "");
+                reportTitle, map, 1, "");
     }
 
 //    private HashMap<String, Object> buildShiftReportMap(ShiftShiftReportDataAlias) {

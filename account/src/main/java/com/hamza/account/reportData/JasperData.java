@@ -1,7 +1,7 @@
 package com.hamza.account.reportData;
 
 import com.hamza.controlsfx.alert.AllAlerts;
-import com.hamza.controlsfx.language.Setting_Language;
+import com.hamza.controlsfx.language.LanguageManager;
 import com.hamza.controlsfx.util.CheckPrinterSetting;
 import net.sf.jasperreports.engine.*;
 import net.sf.jasperreports.engine.design.JasperDesign;
@@ -75,7 +75,7 @@ public class JasperData {
      * @param e the JRException to be handled
      */
     private void handleJrException(JRException e) {
-        AllAlerts.handleError("طباعة التقرير", e);
+        AllAlerts.handleError(LanguageManager.getInstance().getString("report.error.print"), e);
     }
 
     /**
@@ -87,7 +87,7 @@ public class JasperData {
     private void jasperView(String title, JasperPrint jasperPrint) {
         JasperViewer jasperViewer = new JasperViewer(jasperPrint, false);
         jasperViewer.setTitle(title);
-        if (title.equals(Setting_Language.WORD_BARCODE)) {
+        if (title.equals(LanguageManager.getInstance().getString("barcode"))) {
             jasperViewer.setZoomRatio(2F);
             jasperViewer.setSize(350, 400);
             jasperViewer.setResizable(false);
