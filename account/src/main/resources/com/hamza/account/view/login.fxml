@@ -14,9 +14,9 @@
 <?import javafx.scene.layout.VBox?>
 <?import javafx.scene.text.Text?>
 
-<VBox alignment="CENTER" styleClass="login-root" stylesheets="@../css/loginStyle.css" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1">
+<VBox alignment="CENTER" fillWidth="false" minHeight="350.0" minWidth="350.0" styleClass="login-root" stylesheets="@../css/loginStyle.css" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1">
    <children>
-                <VBox spacing="5.0" styleClass="login-card">
+                <VBox alignment="CENTER" spacing="5.0" styleClass="login-card">
                     <children>
                         <StackPane styleClass="login-avatar">
                             <children>
@@ -87,4 +87,7 @@
                </padding>
                 </VBox>
    </children>
+   <padding>
+      <Insets bottom="20.0" left="20.0" right="20.0" top="20.0" />
+   </padding>
 </VBox>

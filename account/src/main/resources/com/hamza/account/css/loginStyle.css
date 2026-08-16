@@ -11,6 +11,8 @@
 }
 
 .login-card {
+    -fx-min-width: 24.545em;
+    -fx-pref-width: 27.273em;
     -fx-max-width: 27.273em;
     -fx-background-color: -app-surface;
     -fx-background-radius: 1.455em;
