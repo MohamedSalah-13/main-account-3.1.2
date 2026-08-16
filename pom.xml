@@ -93,6 +93,18 @@
             <version>4.7.0-9.1.2</version>
         </dependency>
 
+        <!-- =============================== ICONS (Ikonli) ===============================-->
+        <dependency>
+            <groupId>org.kordamp.ikonli</groupId>
+            <artifactId>ikonli-javafx</artifactId>
+            <version>12.4.0</version>
+        </dependency>
+        <dependency>
+            <groupId>org.kordamp.ikonli</groupId>
+            <artifactId>ikonli-feather-pack</artifactId>
+            <version>12.4.0</version>
+        </dependency>
+
         <!-- =============================== LOMBOK ===============================-->
         <dependency>
             <groupId>org.projectlombok</groupId>

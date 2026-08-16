@@ -1,6 +1,6 @@
 package com.hamza.account.controller.items;
 
-import com.hamza.account.config.Image_Setting;
+import com.hamza.account.config.UiScale;
 import com.hamza.account.controller.others.ServiceRegistry;
 import com.hamza.account.features.events.UnitsChanged;
 import com.hamza.account.model.domain.UnitsModel;
@@ -26,6 +26,9 @@ import javafx.scene.layout.Pane;
 import javafx.scene.layout.StackPane;
 import lombok.extern.log4j.Log4j2;
 import org.jetbrains.annotations.NotNull;
+import org.kordamp.ikonli.Ikon;
+import org.kordamp.ikonli.feather.Feather;
+import org.kordamp.ikonli.javafx.FontIcon;
 
 import java.io.IOException;
 import java.net.URL;
@@ -34,7 +37,6 @@ import java.util.ResourceBundle;
 
 import static com.hamza.controlsfx.others.Utils.setTextFormatter;
 import static com.hamza.controlsfx.others.Utils.whenEnterPressed;
-import static com.hamza.controlsfx.util.ImageChoose.createIcon;
 
 @Log4j2
 @FxmlPath(pathFile = "units-view.fxml")
@@ -48,11 +50,13 @@ public class UnitsController implements Initializable, AppSettingInterface {
     @FXML
     private Button btnSave, btnRefresh, btnClear, btnClose;
     @FXML
-    private Label labelName, labelCode, labelQuantity;
+    private Label labelName, labelCode, labelQuantity, labelTitle, labelSubtitle, labelCount, labelSectionData, labelSectionList;
     @FXML
     private TextField textCode, textName, textCount;
     @FXML
     private StackPane stackPane;
+    @FXML
+    private FontIcon headerIcon;
 
     public UnitsController(String name) {
         this.name = name;
@@ -65,12 +69,31 @@ public class UnitsController implements Initializable, AppSettingInterface {
         buttonGraphic();
     }
 
+    /**
+     * The size the toolbar icons and the header icon render at, scaled from
+     * {@link UiScale} so a screen opened while a larger font size is set gets
+     * icons to match - the same reasoning that puts every dimension in
+     * app-theme.css in em rather than a fixed pixel count.
+     */
+    private int iconSize() {
+        return (int) Math.round(16 * UiScale.factor());
+    }
+
+    private FontIcon icon(Ikon code) {
+        FontIcon fontIcon = new FontIcon(code);
+        fontIcon.setIconSize(iconSize());
+        fontIcon.getStyleClass().add("icon-graphic");
+        return fontIcon;
+    }
+
     private void buttonGraphic() {
-        var images = new Image_Setting();
-        btnSave.setGraphic(createIcon(images.save));
-        btnClear.setGraphic(createIcon(images.erase));
-        btnClose.setGraphic(createIcon(images.cancel));
-        btnRefresh.setGraphic(createIcon(images.refresh));
+        btnSave.setGraphic(icon(Feather.SAVE));
+        btnClear.setGraphic(icon(Feather.ROTATE_CCW));
+        btnClose.setGraphic(icon(Feather.X));
+        btnRefresh.setGraphic(icon(Feather.REFRESH_CW));
+
+        headerIcon.setIconCode(Feather.PACKAGE);
+        headerIcon.setIconSize(iconSize() * 2);
     }
 
     private void tableSetting() {
@@ -83,6 +106,10 @@ public class UnitsController implements Initializable, AppSettingInterface {
         var lm = LanguageManager.getInstance();
         setTextFormatter(textCount);
         whenEnterPressed(textName, textCount);
+        labelTitle.setText(name);
+        labelSubtitle.setText(lm.getString("unit.screen.subtitle"));
+        labelSectionData.setText(lm.getString("unit.section.data"));
+        labelSectionList.setText(lm.getString("unit.section.list"));
         labelName.setText(lm.getString("name"));
         labelCode.setText(lm.getString("code"));
         // A unit is a name. The number beside it is only the default the item
@@ -270,7 +297,10 @@ public class UnitsController implements Initializable, AppSettingInterface {
         MaskerPaneSetting maskerPaneSetting = new MaskerPaneSetting(stackPane);
         maskerPaneSetting.showMaskerPane(LanguageManager.getInstance().getString("item.dialog.loading.units"), () -> {
             var units = getUnitsModelList();
-            Platform.runLater(() -> tableView.setItems(FXCollections.observableArrayList(units)));
+            Platform.runLater(() -> {
+                tableView.setItems(FXCollections.observableArrayList(units));
+                labelCount.setText(String.format(LanguageManager.getInstance().getString("report.dashboard.unit.suffix"), units.size()));
+            });
         });
     }
 

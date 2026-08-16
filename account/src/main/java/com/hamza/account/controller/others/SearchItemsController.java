@@ -1,6 +1,7 @@
 package com.hamza.account.controller.others;
 
 import com.hamza.account.config.Image_Setting;
+import com.hamza.account.config.UiScale;
 import com.hamza.account.controller.items.ColumnImage;
 import com.hamza.account.controller.items.PaginationTableSetting;
 import com.hamza.account.interfaces.api.DataInterface;
@@ -18,6 +19,7 @@ import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.button.ImageDesign;
 import com.hamza.controlsfx.button.api.ButtonColumnI;
 import com.hamza.controlsfx.button.button_column.ButtonColumn;
+import com.hamza.controlsfx.language.LanguageManager;
 import com.hamza.controlsfx.language.Setting_Language;
 import com.hamza.controlsfx.table.TableColumnAnnotation;
 import com.hamza.controlsfx.table.columnEdit.ColumnSetting;
@@ -35,6 +37,9 @@ import javafx.scene.layout.StackPane;
 import javafx.util.Callback;
 import lombok.Getter;
 import org.jetbrains.annotations.NotNull;
+import org.kordamp.ikonli.Ikon;
+import org.kordamp.ikonli.feather.Feather;
+import org.kordamp.ikonli.javafx.FontIcon;
 
 import java.net.URL;
 import java.util.ArrayList;
@@ -44,7 +49,6 @@ import java.util.ResourceBundle;
 
 import static com.hamza.account.config.PropertiesName.getSearchItemsSplitPaneDivider;
 import static com.hamza.account.config.PropertiesName.setSearchItemsSplitPaneDivider;
-import static com.hamza.controlsfx.util.ImageChoose.createIcon;
 
 @FxmlPath(pathFile = "search-view.fxml")
 public class SearchItemsController<T1 extends BasePurchasesAndSales>
@@ -76,6 +80,10 @@ public class SearchItemsController<T1 extends BasePurchasesAndSales>
     private Button btnClose, btnSave;
     @FXML
     private Pagination pagination;
+    @FXML
+    private FontIcon headerIcon, searchIcon;
+    @FXML
+    private Label labelTitle, labelSubtitle, labelCount;
 
     public SearchItemsController(DataInterface<T1, ?, ?, ?> dataInterface) {
         this.dataInterface = dataInterface;
@@ -85,6 +93,7 @@ public class SearchItemsController<T1 extends BasePurchasesAndSales>
 
     @Override
     public void initialize(URL url, ResourceBundle resourceBundle) {
+        headerSetting();
         otherSetting();
         getTableItems();
         createTablePurchase();
@@ -93,14 +102,41 @@ public class SearchItemsController<T1 extends BasePurchasesAndSales>
                 , txtSearch, pagination).initializePagination();
     }
 
+    private void headerSetting() {
+        var lm = LanguageManager.getInstance();
+        int size = (int) Math.round(20 * UiScale.factor());
+
+        headerIcon.setIconCode(Feather.SEARCH);
+        headerIcon.setIconSize(size);
+        searchIcon.setIconCode(Feather.SEARCH);
+        searchIcon.setIconSize(size);
+
+        labelTitle.setText(Setting_Language.WORD_SEARCH);
+        labelSubtitle.setText(lm.getString("search.items.subtitle"));
+
+        tableView.getItems().addListener((javafx.collections.ListChangeListener<T1>) change -> updateAddedCount());
+        updateAddedCount();
+    }
+
+    private void updateAddedCount() {
+        labelCount.setText(String.format(LanguageManager.getInstance().getString("search.items.added.count"),
+                tableView.getItems().size()));
+    }
 
     private void buttonSetting() {
-        var images = new Image_Setting();
         btnSave.setText(Setting_Language.OK);
-        btnSave.setGraphic(createIcon(images.save));
+        btnSave.setGraphic(icon(Feather.CHECK));
         btnClose.setText(Setting_Language.WORD_CANCEL);
-        btnClose.setGraphic(createIcon(images.cancel));
+        btnClose.setGraphic(icon(Feather.X));
         btnClose.setId("btnClose");
+        btnAdd2.setGraphic(icon(Feather.PLUS));
+    }
+
+    private FontIcon icon(Ikon code) {
+        FontIcon fontIcon = new FontIcon(code);
+        fontIcon.setIconSize((int) Math.round(16 * UiScale.factor()));
+        fontIcon.getStyleClass().add("icon-graphic");
+        return fontIcon;
     }
 
     private void otherSetting() {

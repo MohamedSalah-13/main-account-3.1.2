@@ -43,9 +43,6 @@ public class TreasuryController {
         loadTreasuries();
     }
 
-    public TreasuryController(DaoFactory daoFactory) {
-        this.treasuryService = new TreasuryService(daoFactory);
-    }
 
     @FXML
     private void initialize() {

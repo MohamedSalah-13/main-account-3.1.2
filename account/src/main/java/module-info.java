@@ -30,6 +30,8 @@ module com.hamza.account {
     requires com.ibm.icu;
     requires eu.hansolo.tilesfx;
     requires fx.commons;
+    requires org.kordamp.ikonli.javafx;
+    requires org.kordamp.ikonli.feather;
     // Automatic modules (the Flyway jars carry no module-info). flyway.mysql is never
     // referenced in code - it is found through ServiceLoader - but it has to be named here
     // so the module graph actually resolves it, or MySQL support goes missing at runtime.

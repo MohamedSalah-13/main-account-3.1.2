@@ -334,6 +334,102 @@
     -fx-border-color: transparent;
 }
 
+/* ---------- Icons (Ikonli FontIcon) ---------- */
+
+.icon-graphic {
+    -fx-icon-color: -app-text;
+}
+
+.app-primary-button .icon-graphic,
+.btn-primary .icon-graphic {
+    -fx-icon-color: white;
+}
+
+.app-danger-button .icon-graphic,
+.btn-danger .icon-graphic {
+    -fx-icon-color: -app-danger;
+}
+
+.app-success-button .icon-graphic {
+    -fx-icon-color: -app-success;
+}
+
+.app-neutral-button .icon-graphic {
+    -fx-icon-color: -app-text;
+}
+
+.page-header-icon {
+    -fx-icon-color: -app-primary;
+}
+
+/* ---------- Session hand-off screen ----------
+   Shown by ApplicationNavigator.showBusy() while a session ends - signing out
+   or closing the app - between the old scene and the next one. Mirrors the
+   login screen's card-on-gradient language (login-card/login-avatar in
+   loginStyle.css) so it reads as a step in the app, not a different program. */
+
+.session-card {
+    -fx-min-width: 20.0em;
+    -fx-pref-width: 22.727em;
+    -fx-max-width: 22.727em;
+    -fx-background-color: -app-surface;
+    -fx-background-radius: 1.455em;
+    -fx-border-radius: 1.455em;
+    -fx-border-color: -app-border;
+    -fx-border-width: 0.091em;
+    -fx-padding: 2.182em 1.818em;
+    -fx-effect: dropshadow(gaussian, -app-shadow, 24, 0.18, 0, 8);
+}
+
+.session-avatar {
+    -fx-min-width: 5.091em;
+    -fx-min-height: 5.091em;
+    -fx-max-width: 5.091em;
+    -fx-max-height: 5.091em;
+    -fx-background-color: linear-gradient(to bottom right, -app-primary, -app-primary-dark);
+    -fx-background-radius: 2.545em;
+    -fx-effect: dropshadow(gaussian, -app-focus-shadow, 14, 0.35, 0, 4);
+}
+
+.session-icon {
+    -fx-icon-color: white;
+}
+
+.session-title {
+    -fx-font-size: 1.364em;
+    -fx-font-weight: bold;
+    -fx-text-fill: -app-text-strong;
+}
+
+.session-subtitle {
+    -fx-font-size: 1em;
+    -fx-text-fill: -app-text-muted;
+}
+
+.session-progress {
+    -fx-progress-color: -app-primary;
+}
+
+/* ---------- Split pane (item search / pick screen) ----------
+   The two panes are already app-card panels, so the split pane itself must stay
+   transparent - a background here would show as a mismatched strip around them. */
+
+.search-split-pane {
+    -fx-background-color: transparent;
+    -fx-padding: 0;
+}
+
+.search-split-pane > .split-pane-divider {
+    -fx-background-color: transparent;
+    -fx-padding: 0.364em 0;
+}
+
+.search-split-pane > .split-pane-divider > .vertical-grabber,
+.search-split-pane > .split-pane-divider > .horizontal-grabber {
+    -fx-background-color: -app-border;
+    -fx-background-radius: 1em;
+}
+
 /* ---------- Toolbars ---------- */
 
 .tool-bar,

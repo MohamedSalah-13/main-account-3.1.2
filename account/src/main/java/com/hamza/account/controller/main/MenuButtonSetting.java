@@ -50,16 +50,6 @@ public final class MenuButtonSetting {
         trackNavButton(button);
     }
 
-    public void configureButton(Button button, InputStream stream, ButtonWithPerm action) {
-        button.setGraphic(new ImageDesign(stream, 20));
-        button.setTooltip(new Tooltip(action.textName()));
-        button.setText(action.textName());
-        disableButton(button::setDisable, action);
-        button.focusTraversableProperty().setValue(FOCUS_TRAVERSABLE);
-        setActionEvent(button, action);
-        trackNavButton(button);
-    }
-
     /**
      * Registers a nav button for active-state tracking and highlights it on click,
      * clearing the highlight off every other button configured through this instance.
