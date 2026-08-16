@@ -13,7 +13,7 @@ import com.hamza.account.type.ExpensesType;
 import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.error.UserValidationException;
-import com.hamza.controlsfx.language.Setting_Language;
+import com.hamza.controlsfx.language.LanguageManager;
 import com.hamza.account.controller.others.ServiceRegistry;
 import com.hamza.account.features.events.ExpensesChanged;
 import com.hamza.controlsfx.observer.EventBus;
@@ -63,15 +63,16 @@ public class AddExpensesController implements AddInterface {
 
     @Override
     public void otherSetting() {
-        labelCode.setText(Setting_Language.WORD_CODE);
-        labelName.setText(Setting_Language.WORD_NAME);
-        labelType.setText(Setting_Language.WORD_TYPE);
-        labelDate.setText(Setting_Language.WORD_DATE);
-        labelAmount.setText(Setting_Language.THE_AMOUNT);
-        labelNotes.setText(Setting_Language.NOTES);
+        var lm = LanguageManager.getInstance();
+        labelCode.setText(lm.getString("code"));
+        labelName.setText(lm.getString("name"));
+        labelType.setText(lm.getString("type"));
+        labelDate.setText(lm.getString("date"));
+        labelAmount.setText(lm.getString("column.amount"));
+        labelNotes.setText(lm.getString("column.notes"));
 
-        comboName.setPromptText(Setting_Language.WORD_NAME);
-        comboType.setPromptText(Setting_Language.WORD_TYPE);
+        comboName.setPromptText(lm.getString("name"));
+        comboType.setPromptText(lm.getString("type"));
 
         Utils.setTextFormatter(txtAmount);
         Platform.runLater(() -> txtAmount.requestFocus());
@@ -79,7 +80,11 @@ public class AddExpensesController implements AddInterface {
         // date setting
         DateSetting.dateAction(date);
 
-        // combo setting
+        // combo setting - expensesTypeList / ExpensesType.getType() are not display
+        // text to translate: V1__baseline.sql seeds the expenses table with these
+        // exact Arabic names as row data, and selectData() below restores the combo
+        // selection by matching expensesDetails.getExpenses().getName() (the DB
+        // value) against this same list. Translating either side breaks the match.
         comboType.setItems(FXCollections.observableArrayList(expensesTypeList));
 
         // txt disable for salary
@@ -104,7 +109,7 @@ public class AddExpensesController implements AddInterface {
 
         ExpensesDetails expensesDetails = new ExpensesDetails();
         ExpensesType byType = ExpensesType.fromType(comboType.getSelectionModel().getSelectedItem());
-        if (byType == null) throw new UserValidationException("خطأ في نوع المصروف");
+        if (byType == null) throw new UserValidationException(LanguageManager.getInstance().getString("expenses.error.invalid.type"));
 
         int id = byType.getId();
         expensesDetails.setExpenses(expensesService.fetchExpenseById(id));
@@ -117,7 +122,7 @@ public class AddExpensesController implements AddInterface {
         if (byType.equals(ExpensesType.PREDECESSOR) || byType.equals(ExpensesType.SALARIES)) {
             if (comboName.getSelectionModel().isEmpty()) {
                 comboName.requestFocus();
-                throw new UserValidationException("من فضلك حدد اسم الموظف");
+                throw new UserValidationException(LanguageManager.getInstance().getString("expenses.error.select.employee"));
             }
         }
 
@@ -154,13 +159,13 @@ public class AddExpensesController implements AddInterface {
                 }
             }
         } catch (DaoException e) {
-            AllAlerts.handleError("حفظ المصروف", e);
+            AllAlerts.handleError(LanguageManager.getInstance().getString("expenses.dialog.save.title"), e);
         }
     }
 
     @Override
     public void resetData() {
-        txtCode.setText(Setting_Language.generate);
+        txtCode.setText(LanguageManager.getInstance().getString("item.code.generate"));
         txtNotes.clear();
         Utils.clearAll(txtAmount);
     }

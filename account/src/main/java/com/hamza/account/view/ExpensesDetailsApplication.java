@@ -13,7 +13,7 @@ import com.hamza.account.table.TableInterface;
 import com.hamza.account.table.TableOpen;
 import com.hamza.account.authorization.AppPermissions;
 import com.hamza.account.authorization.PermissionKey;
-import com.hamza.controlsfx.language.Setting_Language;
+import com.hamza.controlsfx.language.LanguageManager;
 import com.hamza.controlsfx.observer.Publisher;
 import com.hamza.controlsfx.table.columnEdit.ColumnSetting;
 import javafx.application.Application;
@@ -29,8 +29,6 @@ import lombok.extern.log4j.Log4j2;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
-
-import static com.hamza.controlsfx.language.Setting_Language.TOTAL;
 
 @Log4j2
 public class ExpensesDetailsApplication extends Application implements TableInterface<ExpensesDetails> {
@@ -49,12 +47,12 @@ public class ExpensesDetailsApplication extends Application implements TableInte
 
     @Override
     public String titleName() {
-        return Setting_Language.EXPENSES;
+        return LanguageManager.getInstance().getString("expenses");
     }
 
     @Override
     public void addToLastPane(GridPane gridPane, ToolBar toolBar) {
-        AddSumToColumn boxActive = new AddSumToColumn(TOTAL);
+        AddSumToColumn boxActive = new AddSumToColumn(LanguageManager.getInstance().getString("total"));
         double v = tableView.getItems().stream().mapToDouble(ExpensesDetails::getAmount).sum();
         boxActive.setSum(v);
 
@@ -98,9 +96,9 @@ public class ExpensesDetailsApplication extends Application implements TableInte
                 ExpensesDetailsApplication.this.tableView = tableView;
 
                 Callback<TableColumn.CellDataFeatures<ExpensesDetails, String>, ObservableValue<String>> columnProcessesDataType = f -> f.getValue().getExpenses().nameProperty();
-                ColumnSetting.addColumn(tableView, Setting_Language.WORD_TYPE, 2, columnProcessesDataType);
+                ColumnSetting.addColumn(tableView, LanguageManager.getInstance().getString("type"), 2, columnProcessesDataType);
                 Callback<TableColumn.CellDataFeatures<ExpensesDetails, String>, ObservableValue<String>> columnEmployee = f -> f.getValue().getEmployees().nameProperty();
-                ColumnSetting.addColumn(tableView, Setting_Language.WORD_NAME, 3, columnEmployee);
+                ColumnSetting.addColumn(tableView, LanguageManager.getInstance().getString("name"), 3, columnEmployee);
             }
 
             @Override
