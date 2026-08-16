@@ -1,5 +1,7 @@
 package com.hamza.account.wipe;
 
+import com.hamza.controlsfx.language.LanguageManager;
+
 import java.util.List;
 import java.util.Set;
 
@@ -9,7 +11,7 @@ import java.util.Set;
  * procedure.
  *
  * @param id       what the screen and the other targets call this one
- * @param label    the Arabic name shown to the user
+ * @param labelKey the i18n bundle key for the name shown to the user
  * @param tables   the tables it empties, <b>children before parents</b>: they are
  *                 deleted in this order, and a parent listed before its child
  *                 fails on the foreign key
@@ -18,14 +20,19 @@ import java.util.Set;
  *                 what the foreign keys say, and {@code WipeCatalogTest} checks
  *                 the declarations against the schema
  */
-public record WipeTarget(String id, String label, List<WipeTable> tables, Set<String> requires) {
+public record WipeTarget(String id, String labelKey, List<WipeTable> tables, Set<String> requires) {
 
     public WipeTarget {
         tables = List.copyOf(tables);
         requires = Set.copyOf(requires);
     }
 
-    public static WipeTarget of(String id, String label, List<WipeTable> tables, String... requires) {
-        return new WipeTarget(id, label, tables, Set.of(requires));
+    public static WipeTarget of(String id, String labelKey, List<WipeTable> tables, String... requires) {
+        return new WipeTarget(id, labelKey, tables, Set.of(requires));
+    }
+
+    /** The name shown to the user, resolved through the current language. */
+    public String label() {
+        return LanguageManager.getInstance().getString(labelKey);
     }
 }

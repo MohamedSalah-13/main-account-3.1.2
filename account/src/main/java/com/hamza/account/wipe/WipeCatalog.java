@@ -39,33 +39,33 @@ public final class WipeCatalog {
     // business identifiers and must never be reused merely because invoice rows
     // were removed from this administrative screen.
 
-    public static final WipeTarget SALES_RETURNS = WipeTarget.of("salesReturns", "مرتجعات البيع",
+    public static final WipeTarget SALES_RETURNS = WipeTarget.of("salesReturns", "wipe.target.salesReturns",
             List.of(WipeTable.of("sales_re"), WipeTable.of("total_sales_re")));
 
-    public static final WipeTarget SALES = WipeTarget.of("sales", "فواتير البيع",
+    public static final WipeTarget SALES = WipeTarget.of("sales", "wipe.target.sales",
             List.of(WipeTable.of("sales"), WipeTable.of("total_sales")));
 
-    public static final WipeTarget PURCHASE_RETURNS = WipeTarget.of("purchaseReturns", "مرتجعات الشراء",
+    public static final WipeTarget PURCHASE_RETURNS = WipeTarget.of("purchaseReturns", "wipe.target.purchaseReturns",
             List.of(WipeTable.of("purchase_re"), WipeTable.of("total_buy_re")));
 
-    public static final WipeTarget PURCHASES = WipeTarget.of("purchases", "فواتير الشراء",
+    public static final WipeTarget PURCHASES = WipeTarget.of("purchases", "wipe.target.purchases",
             List.of(WipeTable.of("purchase"), WipeTable.of("total_buy")));
 
     // ---- names and their accounts --------------------------------------------
 
-    public static final WipeTarget CUSTOMER_ACCOUNTS = WipeTarget.of("customerAccounts", "حسابات العملاء",
+    public static final WipeTarget CUSTOMER_ACCOUNTS = WipeTarget.of("customerAccounts", "wipe.target.customerAccounts",
             List.of(WipeTable.of("customers_accounts")));
 
-    public static final WipeTarget SUPPLIER_ACCOUNTS = WipeTarget.of("supplierAccounts", "حسابات الموردين",
+    public static final WipeTarget SUPPLIER_ACCOUNTS = WipeTarget.of("supplierAccounts", "wipe.target.supplierAccounts",
             List.of(WipeTable.of("suppliers_accounts")));
 
     /** Customer 1 is the cash customer the sales screen falls back to. */
-    public static final WipeTarget CUSTOMERS = WipeTarget.of("customers", "العملاء",
+    public static final WipeTarget CUSTOMERS = WipeTarget.of("customers", "wipe.target.customers",
             List.of(WipeTable.of("custom",
                     "INSERT INTO custom(id, name, limit_num, price_id) VALUES (1, 'بيع نقدى', 5000, 1)")),
             "sales", "salesReturns", "customerAccounts");
 
-    public static final WipeTarget SUPPLIERS = WipeTarget.of("suppliers", "الموردين",
+    public static final WipeTarget SUPPLIERS = WipeTarget.of("suppliers", "wipe.target.suppliers",
             List.of(WipeTable.of("suppliers",
                     "INSERT INTO suppliers(id, name) VALUES (1, 'مورد عام')")),
             "purchases", "purchaseReturns", "supplierAccounts");
@@ -91,10 +91,10 @@ public final class WipeCatalog {
      * Both tables are named although {@code count_id} cascades, for the same reason
      * the invoice targets name their lines: the plan reads as what it erases.
      */
-    public static final WipeTarget STOCK_COUNTS = WipeTarget.of("stockCounts", "الجرد الفعلي",
+    public static final WipeTarget STOCK_COUNTS = WipeTarget.of("stockCounts", "wipe.target.stockCounts",
             List.of(WipeTable.of("stock_count_lines"), WipeTable.of("stock_count")));
 
-    public static final WipeTarget ITEMS = WipeTarget.of("items", "الأصناف",
+    public static final WipeTarget ITEMS = WipeTarget.of("items", "wipe.target.items",
             List.of(WipeTable.of("item_barcodes"),
                     WipeTable.of("items_package"),
                     WipeTable.of("items_units"),
@@ -107,19 +107,19 @@ public final class WipeCatalog {
                             "INSERT INTO units(unit_id, unit_name) VALUES (1, 'قطعة'), (2, 'كرتونة')")),
             "sales", "salesReturns", "purchases", "purchaseReturns", "stockCounts");
 
-    public static final WipeTarget SUB_GROUPS = WipeTarget.of("subGroups", "المجموعات الفرعية",
+    public static final WipeTarget SUB_GROUPS = WipeTarget.of("subGroups", "wipe.target.subGroups",
             List.of(WipeTable.of("sub_group",
                     "INSERT INTO sub_group(id, name, main_id) VALUES (1, 'فرع 1', 1)")),
             "items");
 
-    public static final WipeTarget MAIN_GROUPS = WipeTarget.of("mainGroups", "المجموعات الرئيسية",
+    public static final WipeTarget MAIN_GROUPS = WipeTarget.of("mainGroups", "wipe.target.mainGroups",
             List.of(WipeTable.of("main_group",
                     "INSERT INTO main_group(id, name_g) VALUES (1, 'عام 1')")),
             "subGroups");
 
     // ---- the rest ------------------------------------------------------------
 
-    public static final WipeTarget EXPENSES = WipeTarget.of("expenses", "المصروفات",
+    public static final WipeTarget EXPENSES = WipeTarget.of("expenses", "wipe.target.expenses",
             List.of(WipeTable.of("expense_salary"), WipeTable.of("expenses_details")));
 
     /**
@@ -131,7 +131,7 @@ public final class WipeCatalog {
      * touched it - it points at the treasury, so it had to be either erased or
      * left to refuse the delete.
      */
-    public static final WipeTarget EMPLOYEES = WipeTarget.of("employees", "الموظفين والخزائن",
+    public static final WipeTarget EMPLOYEES = WipeTarget.of("employees", "wipe.target.employees",
             List.of(WipeTable.of("targeted_sales"),
                     WipeTable.of("treasury_deposit_expenses"),
                     WipeTable.of("treasury_transfers"),
@@ -144,7 +144,7 @@ public final class WipeCatalog {
             "sales", "salesReturns", "purchases", "purchaseReturns",
             "customerAccounts", "supplierAccounts", "expenses");
 
-    public static final WipeTarget PROCESSES = WipeTarget.of("processes", "سجل العمليات",
+    public static final WipeTarget PROCESSES = WipeTarget.of("processes", "wipe.target.processes",
             List.of(WipeTable.of("audit_log")));
 
     /**
@@ -155,7 +155,7 @@ public final class WipeCatalog {
      * off unavoidable. Keeping the row those columns point at, and resetting it to
      * the admin account, reaches the same place with the constraints left on.
      */
-    public static final WipeTarget USERS = WipeTarget.of("users", "المستخدمين",
+    public static final WipeTarget USERS = WipeTarget.of("users", "wipe.target.users",
             List.of(WipeTable.keeping("users", "id <> 1",
                             "UPDATE users SET user_name = 'admin', user_pass = 'admin', user_available = 1 WHERE id = 1")),
             "sales", "salesReturns", "purchases", "purchaseReturns",
