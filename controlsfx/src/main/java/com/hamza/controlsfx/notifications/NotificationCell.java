@@ -1,5 +1,6 @@
 package com.hamza.controlsfx.notifications;
 
+import com.hamza.controlsfx.language.LanguageManager;
 import de.jensd.fx.glyphs.fontawesome.FontAwesomeIcon;
 import de.jensd.fx.glyphs.fontawesome.FontAwesomeIconView;
 import javafx.geometry.Insets;
@@ -58,9 +59,10 @@ class NotificationCell extends ListCell<AppNotification> {
         timestamp.getStyleClass().add("notification-item-time");
         counter.getStyleClass().add("notification-item-counter");
 
-        iconButton(openButton, FontAwesomeIcon.EXTERNAL_LINK, "فتح");
-        iconButton(snoozeButton, FontAwesomeIcon.CLOCK_ALT, "تأجيل 8 ساعات");
-        iconButton(dismissButton, FontAwesomeIcon.TIMES, "إخفاء");
+        LanguageManager languageManager = LanguageManager.getInstance();
+        iconButton(openButton, FontAwesomeIcon.EXTERNAL_LINK, languageManager.getString("notification.action.open"));
+        iconButton(snoozeButton, FontAwesomeIcon.CLOCK_ALT, languageManager.getString("notification.action.snooze"));
+        iconButton(dismissButton, FontAwesomeIcon.TIMES, languageManager.getString("notification.action.dismiss"));
 
         HBox meta = new HBox(6, timestamp, counter);
         meta.setAlignment(Pos.CENTER_LEFT);
@@ -167,22 +169,24 @@ class NotificationCell extends ListCell<AppNotification> {
     }
 
     /**
-     * "منذ 5 دقائق" reads better than a timestamp for anything recent, which is
-     * what most of the inbox is. Older entries fall back to the date.
+     * A relative phrase ("5 minutes ago") reads better than a timestamp for
+     * anything recent, which is what most of the inbox is. Older entries fall
+     * back to the date.
      */
     private String relativeTime(LocalDateTime at) {
         Duration age = Duration.between(at, LocalDateTime.now());
+        LanguageManager languageManager = LanguageManager.getInstance();
         if (age.isNegative() || age.toMinutes() < 1) {
-            return "الآن";
+            return languageManager.getString("notification.time.now");
         }
         if (age.toHours() < 1) {
-            return "منذ " + age.toMinutes() + " دقيقة";
+            return languageManager.getString("notification.time.minutes.ago", age.toMinutes());
         }
         if (age.toDays() < 1) {
-            return "منذ " + age.toHours() + " ساعة";
+            return languageManager.getString("notification.time.hours.ago", age.toHours());
         }
         if (age.toDays() < 7) {
-            return "منذ " + age.toDays() + " يوم";
+            return languageManager.getString("notification.time.days.ago", age.toDays());
         }
         return at.format(ABSOLUTE);
     }

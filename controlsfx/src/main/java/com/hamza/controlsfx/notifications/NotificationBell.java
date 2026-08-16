@@ -1,5 +1,6 @@
 package com.hamza.controlsfx.notifications;
 
+import com.hamza.controlsfx.language.LanguageManager;
 import de.jensd.fx.glyphs.fontawesome.FontAwesomeIcon;
 import de.jensd.fx.glyphs.fontawesome.FontAwesomeIconView;
 import javafx.beans.binding.Bindings;
@@ -34,7 +35,7 @@ public class NotificationBell extends StackPane {
 
     private NotificationScheduler scheduler;
     private PopOver popOver;
-    private String panelTitle = "الإشعارات";
+    private String panelTitle = LanguageManager.getInstance().getString("notification.panel.title");
 
     public NotificationBell(@NotNull NotificationCenter center) {
         this.center = center;

@@ -1,5 +1,6 @@
 package com.hamza.controlsfx.notifications;
 
+import com.hamza.controlsfx.language.LanguageManager;
 import lombok.extern.log4j.Log4j2;
 import org.jetbrains.annotations.NotNull;
 
@@ -150,7 +151,7 @@ public class WindowsNotifier implements NotificationListener {
                 trayFailed = true;
                 return null;
             }
-            TrayIcon icon = new TrayIcon(image, "الإشعارات");
+            TrayIcon icon = new TrayIcon(image, LanguageManager.getInstance().getString("notification.panel.title"));
             icon.setImageAutoSize(true);
             SystemTray.getSystemTray().add(icon);
             trayIcon = icon;

@@ -1,8 +1,8 @@
 package com.hamza.controlsfx.notifications;
 
+import com.hamza.controlsfx.language.LanguageManager;
 import javafx.collections.transformation.SortedList;
 import javafx.geometry.Insets;
-import javafx.geometry.NodeOrientation;
 import javafx.geometry.Pos;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
@@ -43,7 +43,7 @@ public class NotificationPanel extends VBox {
         this.scheduler = scheduler;
 
         setPrefSize(PANEL_WIDTH, PANEL_HEIGHT);
-        setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
+        setNodeOrientation(LanguageManager.getInstance().getNodeOrientation());
         getStyleClass().add("notification-panel");
         setSpacing(0);
 
@@ -68,12 +68,13 @@ public class NotificationPanel extends VBox {
         header.getStyleClass().add("notification-panel-header");
         header.getChildren().addAll(heading, spacer);
 
+        LanguageManager languageManager = LanguageManager.getInstance();
         if (scheduler != null) {
-            header.getChildren().add(linkButton("تحديث", scheduler::runAllNow));
+            header.getChildren().add(linkButton(languageManager.getString("notification.panel.refresh"), scheduler::runAllNow));
         }
         header.getChildren().addAll(
-                linkButton("تعليم الكل كمقروء", center::markAllRead),
-                linkButton("مسح الكل", center::clearAll));
+                linkButton(languageManager.getString("notification.panel.mark.all.read"), center::markAllRead),
+                linkButton(languageManager.getString("notification.panel.clear.all"), center::clearAll));
 
         return header;
     }
@@ -88,7 +89,7 @@ public class NotificationPanel extends VBox {
 
         listView.setItems(sorted);
         listView.setCellFactory(view -> new NotificationCell(center, this::openAndClose));
-        listView.setPlaceholder(new Label("لا توجد إشعارات"));
+        listView.setPlaceholder(new Label(LanguageManager.getInstance().getString("notification.panel.empty")));
         listView.getStyleClass().add("notification-list");
         VBox.setVgrow(listView, Priority.ALWAYS);
         return listView;

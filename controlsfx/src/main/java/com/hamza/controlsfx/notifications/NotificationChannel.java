@@ -1,5 +1,7 @@
 package com.hamza.controlsfx.notifications;
 
+import com.hamza.controlsfx.language.LanguageManager;
+
 /**
  * Where an announced notification is shown.
  * <p>
@@ -16,15 +18,15 @@ package com.hamza.controlsfx.notifications;
 public enum NotificationChannel {
 
     /** The toast drawn by the application itself, in the corner of its own window. */
-    IN_APP("داخل البرنامج"),
+    IN_APP(LanguageManager.getInstance().getString("notification.channel.in.app")),
 
     /** A Windows notification-area balloon, visible even when the app is behind something. */
-    WINDOWS("إشعارات ويندوز"),
+    WINDOWS(LanguageManager.getInstance().getString("notification.channel.windows")),
 
-    BOTH("الاثنان معًا"),
+    BOTH(LanguageManager.getInstance().getString("notification.channel.both")),
 
     /** Inbox only - the entry is recorded behind the bell but nothing pops up. */
-    SILENT("بدون تنبيه منبثق");
+    SILENT(LanguageManager.getInstance().getString("notification.channel.silent"));
 
     private final String displayName;
 
