@@ -4,81 +4,97 @@ public class Setting_Language {
 
     public static final LanguageManager INSTANCE = LanguageManager.getInstance();
 
-    public static final String salary = "المرتب";
-    public static final String ERROR = "خطأ";
+    public static final String salary = INSTANCE.getString("setting.salary");
+    public static final String ERROR = INSTANCE.getString("error");
+
+    /**
+     * Used as an annotation constant ({@code @ColumnData(titleName = string_birth)} in
+     * {@code Employees}), which requires a compile-time constant expression - a call to
+     * {@link LanguageManager#getString} does not qualify. Left as a raw literal for that
+     * reason, not an oversight.
+     */
     public static final String string_birth = "تاريخ الميلاد";
+    /** See {@link #string_birth}: same annotation-constant requirement. */
     public static final String string_hire = "تاريخ التعيين";
-    public static final String generate = "Generate";
+    public static final String generate = INSTANCE.getString("setting.generate");
 
 
-    public static final String WORD_REPORT_CUSTOMER = "تقارير العملاء";
-    public static final String WORD_REPORT_SUPP = "تقارير الموردين";
+    public static final String WORD_REPORT_CUSTOMER = INSTANCE.getString("setting.report.customer");
+    public static final String WORD_REPORT_SUPP = INSTANCE.getString("setting.report.supplier");
 
-    public static final String TOTAL_PUR = "إجمالي المشتريات";
-    public static final String TOTAL_PUR_RE = "إجمالي مرتجع المشتريات";
-    public static final String TOTAL_SALES_RE = "إجمالي مرتجع المبيعات";
-    public static final String TOTAL_SALES = "إجمالي المبيعات";
-    public static final String AREA = "المنطقة";
+    public static final String TOTAL_PUR = INSTANCE.getString("setting.total.purchase");
+    public static final String TOTAL_PUR_RE = INSTANCE.getString("setting.total.purchase.return");
+    public static final String TOTAL_SALES_RE = INSTANCE.getString("setting.total.sales.return");
+    public static final String TOTAL_SALES = INSTANCE.getString("setting.total.sales");
+    public static final String AREA = INSTANCE.getString("setting.area");
 
-    public static final String TOTAL_DISCOUNT = "إجمالي الخصم";
+    public static final String TOTAL_DISCOUNT = INSTANCE.getString("setting.total.discount");
 
-    public static final String THE_AMOUNT = "المبلغ";
+    public static final String THE_AMOUNT = INSTANCE.getString("setting.amount");
 
-    public static final String CHANGE_PASS = "تغيير كلمة المرور";
+    public static final String CHANGE_PASS = INSTANCE.getString("nav.change.password");
 
-    public static final String NOTES = "ملاحظات";
+    public static final String NOTES = INSTANCE.getString("setting.notes");
 
-    public static final String THE_PASSWORD_IS_INCORRECT = "كلمة المرور غير صحيحة";
+    public static final String THE_PASSWORD_IS_INCORRECT = INSTANCE.getString("password.incorrect");
 
 
     public static final String PROGRAM_TITLE = "AccountK / حساباتك";
     public static final String PROGRAM_TEL = "01002937820";
 
     public static final String PROGRAM_NAME_EN = "Mohamed Salah";
-    public static final String TREASURY = "الخزينة";
+    public static final String TREASURY = INSTANCE.getString("setting.treasury");
 
 
-    public static final String E_MAIL = "E-mail";
-    public static final String JOP = "الوظيفة";
-    public static final String SELECT_ALL = "تحديد الكل";
-    public static final String CANCEL_SELECT_ALL = "إلغاء التحديد";
+    public static final String E_MAIL = INSTANCE.getString("setting.email");
+    public static final String JOP = INSTANCE.getString("setting.job");
+    public static final String SELECT_ALL = INSTANCE.getString("setting.select.all");
+    public static final String CANCEL_SELECT_ALL = INSTANCE.getString("setting.cancel.select.all");
+
+    /**
+     * {@code UsersType} resolves an employee's stored job back to a constant with
+     * {@code getUserTypeByType(String)}, matching by value against
+     * {@code employees.type} - the same class of DB-identity landmine documented on
+     * {@link #SALARIES} and friends below. Making these language-dependent would mean
+     * a row saved as "مدير" stops resolving the moment the app is switched to English.
+     */
     public static final String ADMIN = "المسئول";
     public static final String MANAGER = "مدير";
     public static final String EMPLOYEE = "موظف";
     public static final String DELEGATE = "مندوب";
 
-    public static final String PLEASE_SELECT_ROW = "من فضلك حدد الصف";
+    public static final String PLEASE_SELECT_ROW = INSTANCE.getString("msg.select.row");
 
-    public static final String PLEASE_INSERT_ALL_DATA = "من فضلك ادخل جميع البيانات";
-
-
-    public static final String MONTHS = "شهر";
-    public static final String LIMIT = "الحد الائتماني";
-    public static final String WORD_CARD_ITEM = "كارت الصنف";
+    public static final String PLEASE_INSERT_ALL_DATA = INSTANCE.getString("msg.insert.all");
 
 
-    public static final String WORD_REPORT_ITEMS = "تقارير الأصناف";
+    public static final String MONTHS = INSTANCE.getString("setting.months");
+    public static final String LIMIT = INSTANCE.getString("setting.credit.limit");
+    public static final String WORD_CARD_ITEM = INSTANCE.getString("item.card.title");
 
 
-    public static final String PRICE = "سعر";
-    public static final String TOTAL = "إجمالى";
-    public static final String PURCHASE = "الشراء";
-    public static final String SALES = "البيع";
-    public static final String RETURN = "مرتجع";
-    public static final String BALANCE_NOW = "الرصيد الحالى";
+    public static final String WORD_REPORT_ITEMS = INSTANCE.getString("setting.report.items");
 
 
-    public static final String BARCODE_PRINT_SEL_PRICE = "طباعة سعر البيع";
-    public static final String BARCODE_PRINT_NAME = "طباعة اسم الصنف";
-    public static final String TWO_BARCODE = "ملصق مزدوج - الملصق يحتوى على 2 باركود";
-    public static final String NAME_ITEM = "أسم الصنف";
-    public static final String PRINT_BARCODE = "طباعة الباركود";
+    public static final String PRICE = INSTANCE.getString("setting.price");
+    public static final String TOTAL = INSTANCE.getString("setting.total");
+    public static final String PURCHASE = INSTANCE.getString("setting.purchase");
+    public static final String SALES = INSTANCE.getString("setting.sales");
+    public static final String RETURN = INSTANCE.getString("setting.return");
+    public static final String BALANCE_NOW = INSTANCE.getString("setting.balance.now");
 
 
-    public static final String RIGHT = "يمين";
+    public static final String BARCODE_PRINT_SEL_PRICE = INSTANCE.getString("setting.barcode.print.sel.price");
+    public static final String BARCODE_PRINT_NAME = INSTANCE.getString("setting.barcode.print.name");
+    public static final String TWO_BARCODE = INSTANCE.getString("setting.barcode.two.label");
+    public static final String NAME_ITEM = INSTANCE.getString("setting.name.item");
+    public static final String PRINT_BARCODE = INSTANCE.getString("setting.print.barcode");
 
-    public static final String LEFT = "شمال";
-    public static final String OK = "موافق";
+
+    public static final String RIGHT = INSTANCE.getString("setting.right");
+
+    public static final String LEFT = INSTANCE.getString("setting.left");
+    public static final String OK = INSTANCE.getString("ok");
 
 
     public static final String DEPOSIT = INSTANCE.getString("deposit");
@@ -154,10 +170,10 @@ public class Setting_Language {
     public static final String WORD_SEL_PRICE = INSTANCE.getString("selPrice");
 
 
-    public static final String PASS_OK = "تاكيد كلمة المرور";
+    public static final String PASS_OK = INSTANCE.getString("password.confirm");
 
-    public static final String PASS_NO_RIGHT = "كلمة المرور غير متطابقة";
-    public static final String ABOUT = "عن البرنامج";
+    public static final String PASS_NO_RIGHT = INSTANCE.getString("password.mismatch");
+    public static final String ABOUT = INSTANCE.getString("nav.about");
     public static final String RENTALS = "ايجارات";
     public static final String SALARIES = "مرتبات";
     public static final String ELECTRICS = "الكهرباء";
@@ -165,27 +181,27 @@ public class Setting_Language {
     public static final String PRED = "السلف";
     public static final String OTHERS = "أخرى";
 
-    public static final String MESSAGE = "لم يتم التحديث";
-    public static final String PROCESS = "عمليات المستخدم";
+    public static final String MESSAGE = INSTANCE.getString("setting.not.updated");
+    public static final String PROCESS = INSTANCE.getString("setting.user.operations");
 
-    public static final String DATA = "بيانات";
+    public static final String DATA = INSTANCE.getString("setting.data");
 
-    public static final String Unit = "الوحدة";
-    public static final String UNITS = "الوحدات";
+    public static final String Unit = INSTANCE.getString("unit");
+    public static final String UNITS = INSTANCE.getString("setting.units");
 
-    public static final String CHOOSE_PRINTER = " تحديد الطابعة";
-
-
-    public static final String COMPANY_NAME = "اسم الشركة";
-
-    public static final String STORE_TRANSFERS = "تحويلات المخزن";
+    public static final String CHOOSE_PRINTER = INSTANCE.getString("setting.choose.printer");
 
 
-    public static final String TREASURY_TRANSFERS = "تحويلات الخزينة";
-    public static final String REPORT_DELEGATE = "تقارير المندوب";
-    public static final String PLEASE_WAIT = "من فضلك انتظر";
+    public static final String COMPANY_NAME = INSTANCE.getString("setting.company.name");
 
-    public static final String company = "الشركة";
+    public static final String STORE_TRANSFERS = INSTANCE.getString("setting.store.transfers");
+
+
+    public static final String TREASURY_TRANSFERS = INSTANCE.getString("setting.treasury.transfers");
+    public static final String REPORT_DELEGATE = INSTANCE.getString("setting.report.delegate");
+    public static final String PLEASE_WAIT = INSTANCE.getString("setting.please.wait");
+
+    public static final String company = INSTANCE.getString("setting.company");
 
 
 
