@@ -3,6 +3,7 @@ package com.hamza.account.otherSetting;
 import com.hamza.account.config.PropertiesName;
 import com.hamza.account.service.ItemsService;
 import com.hamza.controlsfx.database.DaoException;
+import com.hamza.controlsfx.language.LanguageManager;
 import lombok.RequiredArgsConstructor;
 
 import java.text.DecimalFormat;
@@ -41,19 +42,22 @@ public class BarcodeProcessor {
 
         // 1. التحقق من أن الباركود يحتوي على أرقام فقط
         if (!barcode.matches("\\d+")) {
-            throw new IllegalArgumentException("الباركود يجب أن يحتوي على أرقام فقط");
+            throw new IllegalArgumentException(
+                    LanguageManager.getInstance().getString("barcode.error.not.numeric"));
         }
 
         // 2. التحقق من طول الباركود
         if (barcode.length() != totalBarcodeLength) {
-            throw new IllegalArgumentException("طول الباركود غير صحيح. المتوقع: " + totalBarcodeLength + " والفعلي: " + barcode.length());
+            throw new IllegalArgumentException(LanguageManager.getInstance()
+                    .getString("barcode.error.wrong.length", totalBarcodeLength, barcode.length()));
         }
 
         // 3. التحقق من كود الميزان
         String scaleCode = barcode.substring(0, scaleCodeLength);
         int expectedScaleCode = PropertiesName.getSettingBarcodeStart();
         if (Integer.parseInt(scaleCode) != expectedScaleCode) {
-            throw new IllegalArgumentException("كود الميزان غير صحيح. المتوقع: " + expectedScaleCode + " والفعلي: " + scaleCode);
+            throw new IllegalArgumentException(LanguageManager.getInstance()
+                    .getString("barcode.error.wrong.scale.code", expectedScaleCode, scaleCode));
         }
 
         // تركيب الباركود: [كود الميزان (2 رقم)][كود الصنف (5 أرقام)][الوزن (5 أرقام)][رقم التحقق (1)]
@@ -67,14 +71,16 @@ public class BarcodeProcessor {
 
         // 4. التحقق من أن كود الصنف والوزن ليسوا صفر
         if (itemBarcode.matches("0+")) {
-            throw new IllegalArgumentException("كود الصنف غير صحيح (كله أصفار)");
+            throw new IllegalArgumentException(
+                    LanguageManager.getInstance().getString("barcode.error.zero.item.code"));
         }
 
         double weightValue = Double.parseDouble(weightPart);
 
         // 5. التحقق من أن الوزن ليس صفر أو سالب
         if (weightValue <= 0) {
-            throw new IllegalArgumentException("الوزن يجب أن يكون أكبر من صفر");
+            throw new IllegalArgumentException(
+                    LanguageManager.getInstance().getString("barcode.error.zero.weight"));
         }
 
         // 6. (اختياري) التحقق من رقم التحقق check digit
@@ -82,7 +88,8 @@ public class BarcodeProcessor {
             char checkDigit = barcode.charAt(totalBarcodeLength - 1);
             char calculatedCheckDigit = calculateCheckDigit(barcode.substring(0, totalBarcodeLength - 1));
             if (checkDigit != calculatedCheckDigit) {
-                throw new IllegalArgumentException("رقم التحقق غير صحيح. المتوقع: " + calculatedCheckDigit + " والفعلي: " + checkDigit);
+                throw new IllegalArgumentException(LanguageManager.getInstance()
+                        .getString("barcode.error.wrong.check.digit", calculatedCheckDigit, checkDigit));
             }
         }
 
@@ -120,11 +127,13 @@ public class BarcodeProcessor {
         double maxWeight = PropertiesName.getSettingBarcodeMaxWeight();
 
         if (weight < minWeight) {
-            throw new IllegalArgumentException(String.format("الوزن أقل من الحد الأدنى. الوزن: %.3f كجم، الحد الأدنى: %.3f كجم", weight, minWeight));
+            throw new IllegalArgumentException(LanguageManager.getInstance()
+                    .getString("barcode.error.weight.below.min", weight, minWeight));
         }
 
         if (weight > maxWeight) {
-            throw new IllegalArgumentException(String.format("الوزن أكبر من الحد الأقصى. الوزن: %.3f كجم، الحد الأقصى: %.3f كجم", weight, maxWeight));
+            throw new IllegalArgumentException(LanguageManager.getInstance()
+                    .getString("barcode.error.weight.above.max", weight, maxWeight));
         }
 
         return new CalculationResult(total, weight);
