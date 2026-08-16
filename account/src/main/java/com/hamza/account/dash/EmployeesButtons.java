@@ -15,7 +15,7 @@ import com.hamza.account.table.TableOpen;
 import com.hamza.account.authorization.AppPermissions;
 import com.hamza.account.authorization.PermissionKey;
 import com.hamza.controlsfx.button.ImageDesign;
-import com.hamza.controlsfx.language.Setting_Language;
+import com.hamza.controlsfx.language.LanguageManager;
 import javafx.scene.Node;
 import javafx.scene.input.KeyCodeCombination;
 import javafx.stage.Stage;
@@ -47,7 +47,7 @@ public class EmployeesButtons extends LoadData {
             @NotNull
             @Override
             public String textName() {
-                return Setting_Language.ADD_EMPLOYEE;
+                return LanguageManager.getInstance().getString("nav.add.employee");
             }
 
             @Override
@@ -78,7 +78,7 @@ public class EmployeesButtons extends LoadData {
             @NotNull
             @Override
             public String textName() {
-                return Setting_Language.EMPLOYEES;
+                return LanguageManager.getInstance().getString("employees");
             }
         };
     }

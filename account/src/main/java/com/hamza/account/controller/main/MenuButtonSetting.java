@@ -63,8 +63,14 @@ public final class MenuButtonSetting {
     /**
      * Registers a nav button for active-state tracking and highlights it on click,
      * clearing the highlight off every other button configured through this instance.
+     * <p>
+     * Idempotent on purpose: a language switch re-runs configureButton on every
+     * sidebar button to refresh its text, and without this check each re-run would
+     * add another ACTION handler to the same button - markActive firing once per
+     * past language switch on every click.
      */
     private void trackNavButton(Button button) {
+        if (navButtons.contains(button)) return;
         navButtons.add(button);
         button.addEventHandler(ActionEvent.ACTION, event -> markActive(button));
     }

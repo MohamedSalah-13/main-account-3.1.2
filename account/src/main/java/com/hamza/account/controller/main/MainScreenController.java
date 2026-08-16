@@ -7,6 +7,7 @@ import com.hamza.account.controller.reports.MonthlySalesInterface;
 import com.hamza.account.features.company.CompanyLogo;
 import com.hamza.account.features.company.CompanyService;
 import com.hamza.account.features.events.CompanyChanged;
+import com.hamza.account.features.events.LanguageChanged;
 import com.hamza.account.features.events.UserRenamed;
 import com.hamza.account.features.notification.NotificationBootstrap;
 import com.hamza.account.model.dao.DaoFactory;
@@ -21,7 +22,7 @@ import com.hamza.account.view.MonthlyView;
 import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.button.ImageDesign;
 import com.hamza.controlsfx.database.DaoException;
-import com.hamza.controlsfx.language.Setting_Language;
+import com.hamza.controlsfx.language.LanguageManager;
 import com.hamza.controlsfx.observer.EventBus;
 import com.hamza.controlsfx.observer.Subscriptions;
 import javafx.application.Platform;
@@ -144,7 +145,7 @@ public class MainScreenController extends MainItems implements Initializable {
 
     private void otherSetting() {
         try {
-            tabPane.getTabs().getFirst().setText(Setting_Language.WORD_MAIN);
+            tabPane.getTabs().getFirst().setText(LanguageManager.getInstance().getString("main"));
             tabPane.getTabs().getFirst().setClosable(false);
         } catch (Exception e) {
             logException(e);
@@ -157,7 +158,30 @@ public class MainScreenController extends MainItems implements Initializable {
         setupUser();
         setupNotificationBell();
         setupYouTube();
+        configureAllButtons();
+    }
 
+    /**
+     * Re-applies every piece of sidebar text that {@link #setupRightPane()} only
+     * ever set once - the titled-pane headers, every nav button and menu item, the
+     * "Main" tab title, the signed-in user's role label and the YouTube button -
+     * on a {@link LanguageChanged} event. Nothing here rebuilds the tree or touches
+     * click handlers (MenuButtonSetting.trackNavButton is idempotent for exactly
+     * this reason); it only overwrites text that was frozen at first build.
+     */
+    private void refreshSidebarText() {
+        try {
+            rightPaneSetting();
+            setupUser();
+            setupYouTube();
+            configureAllButtons();
+            otherSetting();
+        } catch (Exception e) {
+            logException(e);
+        }
+    }
+
+    private void configureAllButtons() throws Exception {
         var monthlyPurchaseInterface = new MonthlySalesInterface() {
             @Override
             public String reportName() {
@@ -248,16 +272,19 @@ public class MainScreenController extends MainItems implements Initializable {
 
     private void rightPaneSetting() {
         var imageSetting = new Image_Setting();
-        titlePaneSetting(paneSales, Setting_Language.WORD_SALES, imageSetting.shoppingSales);
-        titlePaneSetting(panePurchase, Setting_Language.WORD_PUR, imageSetting.shoppingPurchase);
-        titlePaneSetting(paneItems, Setting_Language.WORD_ITEMS, imageSetting.itemWhite);
-        titlePaneSetting(paneCustom, Setting_Language.WORD_CUSTOM, imageSetting.personCustomer);
-        titlePaneSetting(paneSuppliers, Setting_Language.WORD_SUP, imageSetting.personSup);
-        titlePaneSetting(paneEmployees, Setting_Language.EMPLOYEES, imageSetting.account);
-        titlePaneSetting(paneTreasury, Setting_Language.TREASURY, imageSetting.treasuryWhite);
-        titlePaneSetting(paneReports, Setting_Language.WORD_REPORT, imageSetting.reports);
-        titlePaneSetting(paneSetting, Setting_Language.WORD_SETTING, imageSetting.setting);
+        var lm = LanguageManager.getInstance();
+        titlePaneSetting(paneSales, lm.getString("sales"), imageSetting.shoppingSales);
+        titlePaneSetting(panePurchase, lm.getString("pur"), imageSetting.shoppingPurchase);
+        titlePaneSetting(paneItems, lm.getString("items"), imageSetting.itemWhite);
+        titlePaneSetting(paneCustom, lm.getString("customers"), imageSetting.personCustomer);
+        titlePaneSetting(paneSuppliers, lm.getString("suppliers"), imageSetting.personSup);
+        titlePaneSetting(paneEmployees, lm.getString("employees"), imageSetting.account);
+        titlePaneSetting(paneTreasury, lm.getString("treasury.label.treasury"), imageSetting.treasuryWhite);
+        titlePaneSetting(paneReports, lm.getString("report"), imageSetting.reports);
+        titlePaneSetting(paneSetting, lm.getString("menu.settings"), imageSetting.setting);
 
+        // Fixed bilingual brand identity, not translatable UI text - same choice
+        // made for SettingApplication's stage title.
         txtNameProject.setText(PROGRAM_TITLE);
         txtName.setText(PROGRAM_NAME_EN);
         txtTel.setText(PROGRAM_TEL);
@@ -278,6 +305,7 @@ public class MainScreenController extends MainItems implements Initializable {
         if (eventBus != null) {
             subscriptions.add(eventBus.subscribe(CompanyChanged.class, event -> loadCompanyBrand()));
             subscriptions.add(eventBus.subscribe(UserRenamed.class, event -> lblUserName.setText(event.name())));
+            subscriptions.add(eventBus.subscribe(LanguageChanged.class, event -> refreshSidebarText()));
             subscriptions.disposeWith(rightPaneRoot);
         }
     }
@@ -297,7 +325,7 @@ public class MainScreenController extends MainItems implements Initializable {
 
     private void applyCompany(Company company) {
         String name = company.getName();
-        lblCompanyName.setText(name == null || name.isBlank() ? Setting_Language.PROGRAM_TITLE : name);
+        lblCompanyName.setText(name == null || name.isBlank() ? PROGRAM_TITLE : name);
 
         CompanyLogo logo = CompanyLogo.fromStored(company.getImage());
         Image image = logo == null ? new Image(new Image_Setting().defaultBlog) : logo.toFxImage();
@@ -316,8 +344,9 @@ public class MainScreenController extends MainItems implements Initializable {
             return;
         }
         String username = user.getUsername();
+        var lm = LanguageManager.getInstance();
         lblUserName.setText(username == null || username.isBlank() ? "-" : username);
-        lblUserRole.setText(CurrentUser.get().getId() == 1 ? "مدير النظام" : "مستخدم");
+        lblUserRole.setText(CurrentUser.get().getId() == 1 ? lm.getString("nav.user.role.admin") : lm.getString("nav.user.role.user"));
         lblUserInitial.setText(username == null || username.isBlank() ? "?" : username.substring(0, 1).toUpperCase());
     }
 
@@ -332,8 +361,8 @@ public class MainScreenController extends MainItems implements Initializable {
     private void setupYouTube() {
         var imageSetting = new Image_Setting();
         btnYouTube.setGraphic(new ImageDesign(imageSetting.youtube, 20));
-        btnYouTube.setText("شرح البرنامج");
-        btnYouTube.setTooltip(new Tooltip("قناة يوتيوب - شرح البرنامج"));
+        btnYouTube.setText(LanguageManager.getInstance().getString("nav.youtube.explain"));
+        btnYouTube.setTooltip(new Tooltip(LanguageManager.getInstance().getString("nav.youtube.tooltip")));
         btnYouTube.setOnAction(e -> {
             try {
                 java.awt.Desktop.getDesktop().browse(new URI("https://www.youtube.com/playlist?list=PL2fs9t9FGXhoSOJ5UFsAWm2tLS_EfOvAE"));
@@ -348,6 +377,10 @@ public class MainScreenController extends MainItems implements Initializable {
     }
 
     private ButtonWithPerm getAction(String name, MonthlySalesInterface monthlySalesInterface) {
+        // name comes from MonthlySalesInterface.reportName() in configureAllButtons(),
+        // which is still an Arabic-only literal there ("تقرير المشتريات السنوي" etc) -
+        // this sentinel has to match it, so it stays Arabic too until those report
+        // names are migrated.
         String sales = "مبيعات";
         return new ButtonWithPerm() {
             @Override
@@ -410,7 +443,7 @@ public class MainScreenController extends MainItems implements Initializable {
     }
 
     private void logException(Exception e) {
-        AllAlerts.handleError("فتح شاشة من القائمة الرئيسية", e);
+        AllAlerts.handleError(LanguageManager.getInstance().getString("nav.error.open.screen"), e);
     }
 
 

@@ -16,7 +16,7 @@ import com.hamza.account.openFxml.AddForAllApplication;
 import com.hamza.account.table.TableOpen;
 import com.hamza.account.authorization.AppPermissions;
 import com.hamza.account.authorization.PermissionKey;
-import com.hamza.controlsfx.language.Setting_Language;
+import com.hamza.controlsfx.language.LanguageManager;
 import javafx.scene.control.TabPane;
 import javafx.scene.layout.Pane;
 import org.jetbrains.annotations.NotNull;
@@ -76,7 +76,7 @@ public class NameButtons<T3 extends BaseNames, T4 extends BaseAccount>
             @NotNull
             @Override
             public String textName() {
-                return Setting_Language.WORD_ADD;
+                return LanguageManager.getInstance().getString("add");
             }
         };
     }

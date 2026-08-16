@@ -18,7 +18,6 @@ import com.hamza.account.view.AddGroupApp;
 import com.hamza.account.view.AddItemApplication;
 import com.hamza.account.view.OpenApplication;
 import com.hamza.controlsfx.language.LanguageManager;
-import com.hamza.controlsfx.language.Setting_Language;
 import javafx.scene.control.TabPane;
 import javafx.stage.Stage;
 import org.jetbrains.annotations.NotNull;
@@ -48,7 +47,7 @@ public class ItemsButtons {
             @NotNull
             @Override
             public String textName() {
-                return Setting_Language.WORD_ADD_ITEM;
+                return LanguageManager.getInstance().getString("addItem");
             }
         };
     }
@@ -67,7 +66,7 @@ public class ItemsButtons {
             @NotNull
             @Override
             public String textName() {
-                return Setting_Language.WORD_ITEMS;
+                return LanguageManager.getInstance().getString("items");
             }
 
             @Override
@@ -99,7 +98,7 @@ public class ItemsButtons {
             @NotNull
             @Override
             public String textName() {
-                return Setting_Language.UNITS;
+                return LanguageManager.getInstance().getString("tab.units");
             }
         };
     }
@@ -120,7 +119,7 @@ public class ItemsButtons {
             @NotNull
             @Override
             public String textName() {
-                return Setting_Language.GARD;
+                return LanguageManager.getInstance().getString("nav.inventory.title");
             }
 
 
@@ -189,7 +188,7 @@ public class ItemsButtons {
             @NotNull
             @Override
             public String textName() {
-                return Setting_Language.AREA;
+                return LanguageManager.getInstance().getString("party.area");
             }
         };
     }
@@ -204,7 +203,7 @@ public class ItemsButtons {
             @NotNull
             @Override
             public String textName() {
-                return Setting_Language.WORD_SUB_G;
+                return LanguageManager.getInstance().getString("subGroup");
             }
 
             @Override
@@ -224,12 +223,12 @@ public class ItemsButtons {
             @NotNull
             @Override
             public String textName() {
-                return Setting_Language.WORD_MAIN_G;
+                return LanguageManager.getInstance().getString("mainGroup");
             }
 
             @Override
             public void action() throws Exception {
-                new OpenAddAreaApplication<>(new MainGroupImpl2(), Setting_Language.WORD_MAIN_G);
+                new OpenAddAreaApplication<>(new MainGroupImpl2(), LanguageManager.getInstance().getString("mainGroup"));
             }
         };
     }

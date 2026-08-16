@@ -11,7 +11,6 @@ import com.hamza.account.authorization.PermissionKey;
 import com.hamza.account.view.ChangePassView;
 import com.hamza.account.view.ApplicationNavigator;
 import com.hamza.controlsfx.alert.AllAlerts;
-import com.hamza.controlsfx.language.Setting_Language;
 import com.hamza.controlsfx.language.LanguageManager;
 import javafx.scene.control.TabPane;
 import javafx.scene.input.KeyCodeCombination;
@@ -42,7 +41,7 @@ public class ForAllButtons extends LoadData {
             @NotNull
             @Override
             public String textName() {
-                return Setting_Language.CALC;
+                return LanguageManager.getInstance().getString("nav.calculator");
             }
 
             @Override
@@ -81,7 +80,7 @@ public class ForAllButtons extends LoadData {
             @NotNull
             @Override
             public String textName() {
-                return Setting_Language.CHANGE_PASS;
+                return LanguageManager.getInstance().getString("nav.change.password");
             }
 
             @Override
@@ -118,7 +117,7 @@ public class ForAllButtons extends LoadData {
             @NotNull
             @Override
             public String textName() {
-                return Setting_Language.CHANGE_NAME;
+                return LanguageManager.getInstance().getString("nav.change.name");
             }
 
             @Override
@@ -164,7 +163,7 @@ public class ForAllButtons extends LoadData {
             @NotNull
             @Override
             public String textName() {
-                return Setting_Language.WORD_LOGOUT;
+                return LanguageManager.getInstance().getString("logout");
             }
 
             @Override

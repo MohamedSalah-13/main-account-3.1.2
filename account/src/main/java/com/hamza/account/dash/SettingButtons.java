@@ -18,7 +18,6 @@ import com.hamza.account.view.SettingApplication;
 import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.button.ImageDesign;
 import com.hamza.controlsfx.language.LanguageManager;
-import com.hamza.controlsfx.language.Setting_Language;
 import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.control.TabPane;
@@ -66,7 +65,7 @@ public class SettingButtons {
             @NotNull
             @Override
             public String textName() {
-                return Setting_Language.WORD_SETTING;
+                return LanguageManager.getInstance().getString("menu.settings");
             }
 
             @Override
@@ -95,7 +94,7 @@ public class SettingButtons {
             @NotNull
             @Override
             public String textName() {
-                return Setting_Language.WORD_MAIN;
+                return LanguageManager.getInstance().getString("main");
             }
 
             @Override
@@ -135,7 +134,7 @@ public class SettingButtons {
             @NotNull
             @Override
             public String textName() {
-                return Setting_Language.WORD_CLOSE;
+                return LanguageManager.getInstance().getString("common.close");
             }
 
             @Override
@@ -161,7 +160,7 @@ public class SettingButtons {
             @NotNull
             @Override
             public String textName() {
-                return Setting_Language.ABOUT;
+                return LanguageManager.getInstance().getString("nav.about");
             }
 
             @Override
@@ -186,7 +185,7 @@ public class SettingButtons {
             @NotNull
             @Override
             public String textName() {
-                return Setting_Language.WORD_BACKUP;
+                return LanguageManager.getInstance().getString("backup");
             }
 
             @Override
@@ -218,7 +217,7 @@ public class SettingButtons {
             @NotNull
             @Override
             public String textName() {
-                return Setting_Language.WORD_DELETE + " " + Setting_Language.DATA;
+                return LanguageManager.getInstance().getString("nav.delete.data");
             }
         };
     }
@@ -247,7 +246,7 @@ public class SettingButtons {
             @NotNull
             @Override
             public String textName() {
-                return Setting_Language.WORD_ADMIN;
+                return LanguageManager.getInstance().getString("Administrator");
             }
         };
     }

@@ -13,7 +13,7 @@ import com.hamza.account.table.TableOpen;
 import com.hamza.account.authorization.AppPermissions;
 import com.hamza.account.authorization.PermissionKey;
 import com.hamza.controlsfx.button.ImageDesign;
-import com.hamza.controlsfx.language.Setting_Language;
+import com.hamza.controlsfx.language.LanguageManager;
 import javafx.scene.Node;
 import javafx.scene.input.KeyCodeCombination;
 import javafx.stage.Stage;
@@ -43,7 +43,7 @@ public class UsersButtons extends LoadData {
             @NotNull
             @Override
             public String textName() {
-                return Setting_Language.WORD_USERS;
+                return LanguageManager.getInstance().getString("users");
             }
 
         };
@@ -64,7 +64,7 @@ public class UsersButtons extends LoadData {
             @NotNull
             @Override
             public String textName() {
-                return Setting_Language.WORD_ADD_USER;
+                return LanguageManager.getInstance().getString("addUser");
             }
 
             @Override
