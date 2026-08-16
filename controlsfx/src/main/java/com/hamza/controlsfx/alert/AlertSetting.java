@@ -2,7 +2,6 @@ package com.hamza.controlsfx.alert;
 
 import com.hamza.controlsfx.language.LanguageManager;
 import com.hamza.controlsfx.others.ImageSetting;
-import javafx.geometry.NodeOrientation;
 import javafx.scene.Node;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
@@ -46,13 +45,13 @@ public class AlertSetting extends Alert {
         dialogPane.getStylesheets().setAll(stylesheetPaths);
 
         dialogPane.getStyleClass().add("app-root");
-        dialogPane.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
+
+        LanguageManager languageManager = LanguageManager.getInstance();
+        dialogPane.setNodeOrientation(languageManager.getNodeOrientation());
         setContentText(message);
         setHeaderText(header);
         setTitle(title);
         returnImage(this);
-
-        LanguageManager languageManager = LanguageManager.getInstance();
 
         buttonOk(this, ButtonType.OK, languageManager.getString("ok"));
         if (b) buttonOk(this, ButtonType.CANCEL, languageManager.getString("cancel"));
