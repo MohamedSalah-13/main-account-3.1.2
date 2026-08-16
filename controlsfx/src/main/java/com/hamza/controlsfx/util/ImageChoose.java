@@ -1,5 +1,6 @@
 package com.hamza.controlsfx.util;
 
+import com.hamza.controlsfx.language.LanguageManager;
 import javafx.embed.swing.SwingFXUtils;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
@@ -40,7 +41,7 @@ public class ImageChoose {
         FileChooser fileChooser = new FileChooser();
         fileChooser.getExtensionFilters().add(
                 new FileChooser.ExtensionFilter("Image Files", "*.png", "*.jpg", "*.gif", "*.jpeg"));
-        fileChooser.setTitle("Select Image");
+        fileChooser.setTitle(LanguageManager.getInstance().getString("dialog.select.image"));
         fileChooser.setInitialDirectory(new File(System.getProperty("user.home")));
         File selectedFile = fileChooser.showOpenDialog(null);
         if (selectedFile != null) {
