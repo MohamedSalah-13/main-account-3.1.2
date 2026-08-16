@@ -5,6 +5,7 @@ import com.hamza.account.finance.MoneyMath;
 import com.hamza.account.model.domain.ItemsModel;
 import com.hamza.account.service.SelPriceItemService;
 import com.hamza.controlsfx.database.DaoException;
+import com.hamza.controlsfx.language.LanguageManager;
 import com.hamza.controlsfx.others.Utils;
 import javafx.application.Platform;
 import javafx.scene.control.*;
@@ -20,8 +21,8 @@ public class DialogCashPaid {
     public static void showCashChangeDialog(double amountDue) {
         Dialog<Void> dialog = getDialog();
         dialog.setResizable(false);
-        dialog.setTitle("حساب الباقي");
-        dialog.setHeaderText("أدخل المبلغ المدفوع نقداً");
+        dialog.setTitle(LanguageManager.getInstance().getString("invoice.dialog.change.title"));
+        dialog.setHeaderText(LanguageManager.getInstance().getString("invoice.dialog.change.header"));
         var content = createPaymentDialog(amountDue);
         dialog.getDialogPane().setContent(content);
         dialog.showAndWait();
@@ -30,8 +31,9 @@ public class DialogCashPaid {
     public static Optional<Double> showPriceSelectionDialog(ItemsModel itemsModel
             , SelPriceItemService selPriceItemService) throws DaoException {
         Dialog<Double> dialog = getDialog();
-        dialog.setTitle("تحديد السعر");
-        dialog.setHeaderText("تحديد السعر للصنف : " + itemsModel.getNameItem());
+        dialog.setTitle(LanguageManager.getInstance().getString("invoice.dialog.price.select.title"));
+        dialog.setHeaderText(LanguageManager.getInstance().getString(
+                "invoice.dialog.price.select.header", itemsModel.getNameItem()));
 
         ToggleGroup group = new ToggleGroup();
         VBox content = new VBox(10);
@@ -81,18 +83,18 @@ public class DialogCashPaid {
 
     @NotNull
     private static VBox createPaymentDialog(double amountDue) {
-        Label lblTotalText = new Label("إجمالي الفاتورة:");
+        Label lblTotalText = new Label(LanguageManager.getInstance().getString("invoice.dialog.total.label"));
         var due = MoneyMath.money(amountDue);
         Label lblTotal = new Label(MoneyMath.text(due));
 
-        Label lblPaidText = new Label("المدفوع:");
+        Label lblPaidText = new Label(LanguageManager.getInstance().getString("invoice.dialog.paid.label"));
         TextField paidField = new TextField();
         paidField.setStyle("-fx-min-width: 20em");
         Utils.setTextFormatter(paidField);
         paidField.setPromptText("0.00");
         Platform.runLater(paidField::requestFocus);
 
-        Label lblChangeText = new Label("الباقي:");
+        Label lblChangeText = new Label(LanguageManager.getInstance().getString("invoice.dialog.change.label"));
         Label lblChange = new Label("0.00");
         lblChange.setStyle("-fx-font-weight: bold; -fx-text-fill: #6e0a0a");
 

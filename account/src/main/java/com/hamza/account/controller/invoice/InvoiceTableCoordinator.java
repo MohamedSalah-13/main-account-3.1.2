@@ -10,7 +10,7 @@ import com.hamza.account.otherSetting.ButtonDeleteRow;
 import com.hamza.account.table.TableSetting;
 import com.hamza.controlsfx.button.button_column.ButtonColumn;
 import com.hamza.controlsfx.database.DaoException;
-import com.hamza.controlsfx.language.Setting_Language;
+import com.hamza.controlsfx.language.LanguageManager;
 import com.hamza.controlsfx.table.TableColumnAnnotation;
 import com.hamza.controlsfx.table.columnEdit.ColumnSetting;
 import javafx.application.Platform;
@@ -74,13 +74,13 @@ public final class InvoiceTableCoordinator<T extends BasePurchasesAndSales> {
     }
 
     private void addIdentityColumns() {
-        addColumn(table, Setting_Language.WORD_BARCODE, 0,
+        addColumn(table, LanguageManager.getInstance().getString("barcode"), 0,
                 (Callback<TableColumn.CellDataFeatures<T, String>, ObservableValue<String>>)
                         features -> features.getValue().getItems().barcodeProperty());
-        addColumn(table, Setting_Language.WORD_NAME, 1,
+        addColumn(table, LanguageManager.getInstance().getString("name"), 1,
                 (Callback<TableColumn.CellDataFeatures<T, String>, ObservableValue<String>>)
                         features -> features.getValue().getItems().nameItemProperty());
-        addColumn(table, Setting_Language.WORD_TYPE, 2,
+        addColumn(table, LanguageManager.getInstance().getString("type"), 2,
                 (Callback<TableColumn.CellDataFeatures<T, String>, ObservableValue<String>>)
                         features -> features.getValue().getUnitsType().unit_nameProperty());
     }

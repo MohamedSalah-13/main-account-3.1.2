@@ -54,7 +54,7 @@ import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.error.UserValidationException;
 import com.hamza.controlsfx.interfaceData.AppSettingInterface;
-import com.hamza.controlsfx.language.Setting_Language;
+import com.hamza.controlsfx.language.LanguageManager;
 import com.hamza.controlsfx.observer.EventBus;
 import com.hamza.controlsfx.observer.Subscriptions;
 import com.hamza.controlsfx.others.DateSetting;
@@ -195,7 +195,7 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
         String invoiceName = dataInterface.designInterface().nameTextOfInvoice();
         labelTitle.setText(invoiceName);
 
-        if (invoiceName != null && invoiceName.contains(Setting_Language.WORD_RE_SALES)) {
+        if (dataInterface.designInterface().documentType() == DocumentType.SALES_RETURN) {
             stackPane.getStyleClass().add("invoice-return");
         } else if (dataInterface.designInterface().showDataForCustomer()) {
             stackPane.getStyleClass().add("invoice-sales");
@@ -227,7 +227,7 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
     }
 
     private void labelName() {
-        var lang = com.hamza.controlsfx.language.LanguageManager.getInstance();
+        var lang = LanguageManager.getInstance();
 
         // labels - التسميات
         last1.setText(lang.getString("invoice.count.items"));
@@ -323,7 +323,9 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
 
     private void action() {
         btnNew.setOnAction(actionEvent -> {
-            if (table.getItems().isEmpty() || AllAlerts.confirm_all("تأكيد", "هل تريد إلغاء الفاتورة الحالية والبدء من جديد؟ سيتم فقد كل الأصناف المُضافة غير المحفوظة.")) {
+            if (table.getItems().isEmpty() || AllAlerts.confirm_all(
+                    LanguageManager.getInstance().getString("confirm"),
+                    LanguageManager.getInstance().getString("invoice.confirm.new.invoice"))) {
                 reset_all();
             }
         });
@@ -351,11 +353,12 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
         String selectedName = textSearchName == null ? null : textSearchName.get();
         if (selectedName == null || selectedName.isBlank()) {
             throw new UserValidationException(
-                    Setting_Language.PLEASE_INSERT_ALL_DATA + ":- \n ادخل الاسم");
+                    LanguageManager.getInstance().getString("invoice.error.name.required"));
         }
         T3 party = nameService.getObject(nameAndAccountInterface.nameList(), selectedName);
         if (party == null) {
-            throw new UserValidationException("الاسم المحدد غير موجود");
+            throw new UserValidationException(
+                    LanguageManager.getInstance().getString("invoice.error.name.not.found"));
         }
         priceTypeByNameId = t3NameData.priceId(party);
         return priceTypeByNameId;
@@ -369,7 +372,7 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
 
     private void handleItemEntryError(Exception error, boolean scaleBarcode) {
         if (scaleBarcode) {
-            AllAlerts.handleError("قراءة باركود الميزان", error);
+            AllAlerts.handleError(LanguageManager.getInstance().getString("invoice.error.scale.barcode.title"), error);
         } else {
             logError(error);
         }
@@ -646,19 +649,20 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
 
     private void printInvoice(InvoicePrintRequest request) {
         if (request != null) {
-            maskerPaneSetting.showMaskerPane("طباعة الفاتورة",
+            maskerPaneSetting.showMaskerPane(LanguageManager.getInstance().getString("invoice.masker.printing"),
                     () -> invoicePrintService.print(request));
         }
     }
 
     private void otherSetting() {
-        labelNotes.setText(Setting_Language.NOTES);
-        txtNotes.setPromptText(Setting_Language.NOTES);
-        labelInvoiceTotal.setText(Setting_Language.TOTAL);
-        radioCash.setText(Setting_Language.WORD_CASH);
-        radioDeffer.setText(Setting_Language.WORD_DEFER);
-        radioAmount.setText(Setting_Language.THE_AMOUNT);
-        radioRate.setText(Setting_Language.WORD_RATE);
+        var lang = LanguageManager.getInstance();
+        labelNotes.setText(lang.getString("invoice.notes"));
+        txtNotes.setPromptText(lang.getString("invoice.notes"));
+        labelInvoiceTotal.setText(lang.getString("total"));
+        radioCash.setText(lang.getString("cash"));
+        radioDeffer.setText(lang.getString("defer"));
+        radioAmount.setText(lang.getString("invoice.amount"));
+        radioRate.setText(lang.getString("invoice.rate"));
         radioRate.setDisable(true);
         radioAmount.setDisable(true);
 
@@ -671,7 +675,7 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
         whenEnterPressed(txtBarcode, txtPrice, txtQuantity, btnAdd);
         setTextFormatter(txtPaid, txtOtherDiscount, txtItemBalance, txtPrice, txtQuantity, txtTotals);
         Utils.replaceNonDigitChar(txtBarcode);
-        txtNum.setText(num_invoice_update > 0 ? String.valueOf(num_invoice_update) : Setting_Language.generate);
+        txtNum.setText(num_invoice_update > 0 ? String.valueOf(num_invoice_update) : lang.getString("invoice.number.generate"));
         // delegate data
         comboDelegate.setItems(FXCollections.observableArrayList(getDelegateNames()));
         // treasury data
@@ -702,7 +706,7 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
 
     private void reset_all() {
         table.getItems().clear();
-        txtNum.setText(Setting_Language.generate);
+        txtNum.setText(LanguageManager.getInstance().getString("invoice.number.generate"));
         txtPrice.setText(String.valueOf(0));
         txtQuantity.setText(String.valueOf(0));
         txtTotals.setText(String.valueOf(0));
@@ -736,9 +740,9 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
 
     private void totalSetting() {
         txtPaid.disableProperty().bind(radioCash.selectedProperty());
-        txtPaid.setPromptText("دفعة نقدية مقدمة للفاتورة الآجلة");
-        radioCash.setTooltip(new Tooltip("يُسدد صافي الفاتورة بالكامل تلقائيًا"));
-        radioDeffer.setTooltip(new Tooltip("يمكن إدخال دفعة مقدمة ويُرحّل المتبقي إلى الحساب"));
+        txtPaid.setPromptText(LanguageManager.getInstance().getString("invoice.paid.prompt.deferred"));
+        radioCash.setTooltip(new Tooltip(LanguageManager.getInstance().getString("invoice.tooltip.cash")));
+        radioDeffer.setTooltip(new Tooltip(LanguageManager.getInstance().getString("invoice.tooltip.deferred")));
         radioCash.selectedProperty().addListener((observable, oldValue, newValue) -> {
             if (newValue) {
                 refreshPaymentSummary(false);
@@ -776,10 +780,11 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
     }
 
     private void updatePaymentLabels(InvoiceType type) {
+        var lang = LanguageManager.getInstance();
         boolean deferred = type == InvoiceType.DEFER;
-        labelPaid.setText(deferred ? "دفعة مقدمة" : "المدفوع نقدًا");
-        labelRemaining.setText(deferred ? "المتبقي على الحساب" : "المتبقي");
-        labelNetAfterDiscount.setText("الصافي بعد الخصم");
+        labelPaid.setText(deferred ? lang.getString("invoice.label.paid.advance") : lang.getString("invoice.label.paid.cash"));
+        labelRemaining.setText(deferred ? lang.getString("invoice.label.remaining.account") : lang.getString("invoice.remaining"));
+        labelNetAfterDiscount.setText(lang.getString("invoice.label.net.after.discount"));
     }
 
     private void updatePaymentValidationStyle() {
@@ -918,7 +923,7 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
 
     @Override
     public String title() {
-        return Setting_Language.WORD_UPDATE;
+        return LanguageManager.getInstance().getString("update");
     }
 
     @Override
@@ -927,7 +932,7 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
     }
 
     private void logError(Exception e) {
-        AllAlerts.handleError("تنفيذ عملية الفاتورة", e);
+        AllAlerts.handleError(LanguageManager.getInstance().getString("invoice.error.operation.title"), e);
     }
 
 }

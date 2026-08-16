@@ -23,8 +23,7 @@ import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.error.UserValidationException;
 import com.hamza.controlsfx.interfaceData.AppSettingInterface;
-import com.hamza.controlsfx.language.Error_Text_Show;
-import com.hamza.controlsfx.language.Setting_Language;
+import com.hamza.controlsfx.language.LanguageManager;
 import com.hamza.controlsfx.table.TableColumnAnnotation;
 import com.hamza.controlsfx.table.colorRow.RowColor;
 import com.hamza.controlsfx.table.colorRow.RowColorInterface;
@@ -103,7 +102,7 @@ public class ShowInvoiceController<T1 extends BasePurchasesAndSales, T2 extends 
             tObject = dataInterface.totalsAndPurchaseList().totalDao().getDataById(invNum);
             list = dataInterface.listForAllPurchase(invNum);
         } catch (DaoException e) {
-            AllAlerts.handleError("تحميل تفاصيل الفاتورة", e);
+            AllAlerts.handleError(LanguageManager.getInstance().getString("invoice.error.load.details.title"), e);
         }
     }
 
@@ -115,27 +114,28 @@ public class ShowInvoiceController<T1 extends BasePurchasesAndSales, T2 extends 
     }
 
     private void otherSetting() {
-        labelCode.setText(Setting_Language.WORD_NUM_INV);
-        labelName.setText(Setting_Language.WORD_NAME);
-        labelDate.setText(Setting_Language.WORD_DATE);
+        var lang = LanguageManager.getInstance();
+        labelCode.setText(lang.getString("numInv"));
+        labelName.setText(lang.getString("name"));
+        labelDate.setText(lang.getString("date"));
 
-        labelCount.setText(Setting_Language.WORD_COUNT);
-        labelCountItems.setText(Setting_Language.COUNT_ITEMS);
-        labelTotals.setText(Setting_Language.WORD_TOTAL);
-        labelDiscount.setText(Setting_Language.WORD_DISCOUNT);
-        labelAfterDiscount.setText(Setting_Language.WORD_AFTER_DIS);
-        labelPaid.setText(Setting_Language.WORD_PAID);
-        labelRest.setText(Setting_Language.WORD_REST);
+        labelCount.setText(lang.getString("count"));
+        labelCountItems.setText(lang.getString("invoice.count.items"));
+        labelTotals.setText(lang.getString("total"));
+        labelDiscount.setText(lang.getString("discount"));
+        labelAfterDiscount.setText(lang.getString("totalAfter"));
+        labelPaid.setText(lang.getString("paid"));
+        labelRest.setText(lang.getString("rest"));
 
-        labelProfit.setText(Setting_Language.GROSS_PROFIT);
-        labelTotalCost.setText(Setting_Language.TOTAL_COST);
+        labelProfit.setText(lang.getString("invoice.gross.profit"));
+        labelTotalCost.setText(lang.getString("invoice.total.cost"));
 
-        labelType.setText(Setting_Language.WORD_TYPE);
-        labelTotal.setText(Setting_Language.WORD_TOTAL);
-        labelOtherDiscount.setText(Setting_Language.WORD_DISCOUNT);
-        labelTotalAfterDiscount.setText(Setting_Language.WORD_AFTER_DIS);
-        btnPrint.setText(Setting_Language.WORD_PRINT);
-        btnPrintBarcode.setText(Setting_Language.PRINT_BARCODE);
+        labelType.setText(lang.getString("type"));
+        labelTotal.setText(lang.getString("total"));
+        labelOtherDiscount.setText(lang.getString("discount"));
+        labelTotalAfterDiscount.setText(lang.getString("totalAfter"));
+        btnPrint.setText(lang.getString("print"));
+        btnPrintBarcode.setText(lang.getString("item.dialog.barcode.title"));
 
         // show profit
 //        var b = dataInterface.designInterface().showDataForCustomer();
@@ -229,7 +229,8 @@ public class ShowInvoiceController<T1 extends BasePurchasesAndSales, T2 extends 
     private void printBarcode() {
         ObservableList<PrintBarcodeModel> observableList = FXCollections.observableArrayList();
         if (list.isEmpty()) {
-            AllAlerts.handleError("طباعة الباركود", new UserValidationException(Error_Text_Show.PLEASE_INSERT_ALL_DATA));
+            AllAlerts.handleError(LanguageManager.getInstance().getString("item.dialog.barcode.title"),
+                    new UserValidationException(LanguageManager.getInstance().getString("msg.insert.all")));
             return;
         }
 
@@ -248,13 +249,13 @@ public class ShowInvoiceController<T1 extends BasePurchasesAndSales, T2 extends 
 
     private void addColumnTable() {
         Callback<TableColumn.CellDataFeatures<BasePurchasesAndSales, String>, ObservableValue<String>> cellCode = f -> f.getValue().getItems().idProperty().asString();
-        addColumn(tableView, Setting_Language.WORD_CODE, 0, cellCode);
+        addColumn(tableView, LanguageManager.getInstance().getString("code"), 0, cellCode);
 //                // add name from items
         Callback<TableColumn.CellDataFeatures<BasePurchasesAndSales, String>, ObservableValue<String>> cellName = f -> f.getValue().getItems().nameItemProperty();
-        addColumn(tableView, Setting_Language.WORD_NAME, 1, cellName);
+        addColumn(tableView, LanguageManager.getInstance().getString("name"), 1, cellName);
 
         Callback<TableColumn.CellDataFeatures<BasePurchasesAndSales, String>, ObservableValue<String>> cellUNit = f -> f.getValue().getUnitsType().unit_nameProperty();
-        addColumn(tableView, Setting_Language.WORD_TYPE, 2, cellUNit);
+        addColumn(tableView, LanguageManager.getInstance().getString("type"), 2, cellUNit);
 
         // remove column if not admin
         if (!dataInterface.designInterface().showDataForCustomer())

@@ -32,7 +32,7 @@ import com.hamza.controlsfx.error.BusinessRuleException;
 import com.hamza.controlsfx.error.UserValidationException;
 import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.excel.ExportData;
-import com.hamza.controlsfx.language.Setting_Language;
+import com.hamza.controlsfx.language.LanguageManager;
 import com.hamza.controlsfx.observer.EventBus;
 import com.hamza.controlsfx.others.CssToColorHelper;
 import com.hamza.controlsfx.others.DateSetting;
@@ -200,7 +200,7 @@ public class TotalsController<T2 extends BaseTotals, T3 extends BaseNames, T4 ex
 
         checkBoxShowOtherSearch.selectedProperty().addListener((observableValue, aBoolean, t1) -> {
             if (t1) {
-                textSearch.setPromptText(Setting_Language.WORD_SEARCH);
+                textSearch.setPromptText(LanguageManager.getInstance().getString("search"));
             } else {
                 dateFrom.setValue(DateSetting.firstDateInMonth);
                 dateTo.setValue(LocalDate.now());
@@ -209,29 +209,30 @@ public class TotalsController<T2 extends BaseTotals, T3 extends BaseNames, T4 ex
     }
 
     private void nameSetting() {
+        var lang = LanguageManager.getInstance();
         //label last name
-        labelSumTableSize.setText(Setting_Language.WORD_COUNT);
-        labelSumTotals.setText(Setting_Language.WORD_TOTAL);
-        labelSumDiscount.setText(Setting_Language.WORD_DISCOUNT);
-        labelSumAfterDiscount.setText(Setting_Language.WORD_REST);
+        labelSumTableSize.setText(lang.getString("count"));
+        labelSumTotals.setText(lang.getString("total"));
+        labelSumDiscount.setText(lang.getString("discount"));
+        labelSumAfterDiscount.setText(lang.getString("rest"));
         // label setting
-        labelName.setText(Setting_Language.WORD_NAME);
-        labelTextSearch.setText(Setting_Language.WORD_SEARCH);
-        labelDelegate.setText(Setting_Language.NAME_DELEGATE);
-        btnSearch.setText(Setting_Language.WORD_SEARCH);
-        menuButton.setText(Setting_Language.WORD_PRINT);
-        btnRefresh.setText(Setting_Language.WORD_REFRESH);
-        btnUpdate.setText(Setting_Language.WORD_UPDATE);
-        btnDelete.setText(Setting_Language.WORD_DELETE);
-        btnShowInvoice.setText(Setting_Language.WORD_SHOW);
+        labelName.setText(lang.getString("name"));
+        labelTextSearch.setText(lang.getString("search"));
+        labelDelegate.setText(lang.getString("NAME_DELEGATE"));
+        btnSearch.setText(lang.getString("search"));
+        menuButton.setText(lang.getString("print"));
+        btnRefresh.setText(lang.getString("refresh"));
+        btnUpdate.setText(lang.getString("update"));
+        btnDelete.setText(lang.getString("delete"));
+        btnShowInvoice.setText(lang.getString("show"));
         btnToExcel.setText("Export to Excel");
-        textSearch.setPromptText(Setting_Language.WORD_SEARCH);
-        comboName.setPromptText(Setting_Language.WORD_NAME);
-        comboDelegate.setPromptText(Setting_Language.NAME_DELEGATE);
-        checkBoxShowOtherSearch.setText(Setting_Language.OTHERS);
-        btnSelected.setText(Setting_Language.SELECT_ALL);
-        labelFrom.setText(Setting_Language.WORD_FROM);
-        labelTo.setText(Setting_Language.WORD_TO);
+        textSearch.setPromptText(lang.getString("search"));
+        comboName.setPromptText(lang.getString("name"));
+        comboDelegate.setPromptText(lang.getString("NAME_DELEGATE"));
+        checkBoxShowOtherSearch.setText(lang.getString("others"));
+        btnSelected.setText(lang.getString("common.select.all"));
+        labelFrom.setText(lang.getString("from"));
+        labelTo.setText(lang.getString("to"));
     }
 
     private void getTable() {
@@ -248,11 +249,11 @@ public class TotalsController<T2 extends BaseTotals, T3 extends BaseNames, T4 ex
         TableSetting.tableMenuSetting(getClass(), tableView);
 
         Callback<TableColumn.CellDataFeatures<T2, String>, ObservableValue<String>> colUser = f -> f.getValue().getUsers().usernameProperty();
-        addColumn(tableView, Setting_Language.WORD_USERS, tableView.getColumns().size(), colUser);
+        addColumn(tableView, LanguageManager.getInstance().getString("users"), tableView.getColumns().size(), colUser);
 
         Callback<TableColumn.CellDataFeatures<T2, String>, ObservableValue<String>> totalTime =
                 cellData -> new SimpleStringProperty(cellData.getValue().getCreated_at().toString());
-        addColumn(tableView, "وقت الدخول", tableView.getColumns().size(), totalTime);
+        addColumn(tableView, LanguageManager.getInstance().getString("column.entry.time"), tableView.getColumns().size(), totalTime);
 
 
         tableView.setRowFactory(t2TableView -> {
@@ -295,7 +296,7 @@ public class TotalsController<T2 extends BaseTotals, T3 extends BaseNames, T4 ex
 
     private void comboDelegateSetting(ComboBox<String> comboDelegate, List<String> employeeService) {
         comboDelegate.setItems(FXCollections.observableArrayList(employeeService));
-        comboDelegate.getItems().addFirst(Setting_Language.WORD_ALL);
+        comboDelegate.getItems().addFirst(LanguageManager.getInstance().getString("all"));
     }
 
     private void action() {
@@ -322,10 +323,11 @@ public class TotalsController<T2 extends BaseTotals, T3 extends BaseNames, T4 ex
         btnDelete.setOnAction(actionEvent -> {
             var list = tableView.getItems().stream().filter(DForColumnTable::isSelectedRow).toList();
             if (list.isEmpty()) {
-                AllAlerts.handleError("حذف الفواتير", new UserValidationException("من فضللك حدد الصف"));
+                AllAlerts.handleError(LanguageManager.getInstance().getString("invoice.dialog.delete.title"),
+                        new UserValidationException(LanguageManager.getInstance().getString("msg.select.row")));
             } else {
                 if (AllAlerts.confirmDelete()) {
-                    maskerPaneSetting.showMaskerPane("حذف الفواتير", () -> {
+                    maskerPaneSetting.showMaskerPane(LanguageManager.getInstance().getString("invoice.dialog.delete.title"), () -> {
                         // backup before delete
                         SaveDatabaseFile.saveBeforeClose(false);
                         dataInterface.totalDesignInterface().deleteMultiData(list.stream().map(BaseTotals::getId).toArray(Integer[]::new));
@@ -373,8 +375,8 @@ public class TotalsController<T2 extends BaseTotals, T3 extends BaseNames, T4 ex
             List<T2> list = tableView.getItems().stream().toList();
             list.forEach(t2 -> t2.setSelectedRow(t1));
 
-            if (t1) btnSelected.setText(Setting_Language.CANCEL_SELECT_ALL);
-            else btnSelected.setText(Setting_Language.SELECT_ALL);
+            if (t1) btnSelected.setText(LanguageManager.getInstance().getString("common.cancel.select.all"));
+            else btnSelected.setText(LanguageManager.getInstance().getString("common.select.all"));
         });
     }
 
@@ -382,7 +384,8 @@ public class TotalsController<T2 extends BaseTotals, T3 extends BaseNames, T4 ex
         T2 selectedItem = tableView.getSelectionModel().getSelectedItem();
         if (selectedItem != null) {
             var s = dataInterface.designInterface().nameTextOfInvoice();
-            String content = String.format(s + " , رقم الفاتورة : " + " %d , الاسم: %s , " + "الاجمالى" + " : %.2f",
+            String content = String.format(LanguageManager.getInstance().getString("invoice.clipboard.format"),
+                    s,
                     totalsDataInterface.getNum(selectedItem),
                     totalsDataInterface.getNameData(selectedItem),
                     selectedItem.getTotal());
@@ -397,7 +400,7 @@ public class TotalsController<T2 extends BaseTotals, T3 extends BaseNames, T4 ex
         // Read off the pickers before leaving the JavaFX thread.
         var from = dateFrom.getValue().toString();
         var to = dateTo.getValue().toString();
-        maskerPaneSetting.showMaskerPane("تحميل الفواتير", () -> {
+        maskerPaneSetting.showMaskerPane(LanguageManager.getInstance().getString("invoice.masker.loading"), () -> {
             var collection = totalsInterface.totalsAndPurchaseList().totalList(from, to)
                     .stream().sorted(Comparator.comparing(BaseTotals::getDate)).toList();
             // The query runs off the JavaFX thread; what the table is showing is
@@ -442,7 +445,7 @@ public class TotalsController<T2 extends BaseTotals, T3 extends BaseNames, T4 ex
             throw new RuntimeException(e);
         }
         comboName.setItems(FXCollections.observableArrayList(list));
-        comboName.getItems().addFirst(Setting_Language.WORD_ALL);
+        comboName.getItems().addFirst(LanguageManager.getInstance().getString("all"));
         comboName.getSelectionModel().selectFirst();
     }
 
@@ -516,7 +519,7 @@ public class TotalsController<T2 extends BaseTotals, T3 extends BaseNames, T4 ex
             LocalDate currentDate = LocalDate.now();
             if (invoiceDate.getYear() != currentDate.getYear()
                 || invoiceDate.getMonth() != currentDate.getMonth()) {
-                throw new BusinessRuleException("لا يمكن تعديل بيانات خارج الشهر الحالي");
+                throw new BusinessRuleException(LanguageManager.getInstance().getString("invoice.error.outside.current.month"));
             }
         }
         BuyApplication buyApp = new BuyApplication(dataInterface, i);
@@ -526,7 +529,7 @@ public class TotalsController<T2 extends BaseTotals, T3 extends BaseNames, T4 ex
     private void print() {
         String name;
         name = comboName.getSelectionModel().getSelectedItem();
-        if (comboName.getSelectionModel().isEmpty()) name = Setting_Language.WORD_ALL;
+        if (comboName.getSelectionModel().isEmpty()) name = LanguageManager.getInstance().getString("all");
         String date1 = dateFrom.getValue().toString();
         String date2 = dateTo.getValue().toString();
 
@@ -591,7 +594,7 @@ public class TotalsController<T2 extends BaseTotals, T3 extends BaseNames, T4 ex
     }
 
     private void exceptionHandle(Exception e) {
-        AllAlerts.handleError("تنفيذ إجراء على الفاتورة", e);
+        AllAlerts.handleError(LanguageManager.getInstance().getString("invoice.error.action.title"), e);
     }
 
 }
@@ -601,12 +604,12 @@ class OpenMethod<T> {
 
     public void methodData(TableView<T> tableView) throws Exception {
         if (tableView.getSelectionModel().isEmpty()) {
-            throw new UserValidationException(Setting_Language.PLEASE_SELECT_ROW);
+            throw new UserValidationException(LanguageManager.getInstance().getString("msg.select.row"));
         }
         try {
             action(tableView.getSelectionModel().getSelectedItem());
         } catch (Exception e) {
-            AllAlerts.handleError("تنفيذ إجراء على الفاتورة المحددة", e);
+            AllAlerts.handleError(LanguageManager.getInstance().getString("invoice.error.selected.action.title"), e);
         }
     }
 

@@ -32,7 +32,7 @@
                               <VBox alignment="CENTER_LEFT" spacing="3.0">
                                   <children>
                                       <Label fx:id="labelTitle" styleClass="app-title" text="فاتورة مشتريات" />
-                                      <Label styleClass="app-subtitle" text="إدارة بيانات الفاتورة، الأصناف، المدفوعات والإجماليات" />
+                                      <Label styleClass="app-subtitle" text="%invoice.subtitle" />
                                   </children>
                               </VBox>
                               <Region HBox.hgrow="SOMETIMES" />
@@ -82,7 +82,7 @@
                                           <Label fx:id="labelTotals" styleClass="form-label" text="Totals" GridPane.columnIndex="6" GridPane.rowIndex="3" />
                                           <Label fx:id="labelTreasury" styleClass="form-label" text="Treasury" GridPane.columnIndex="4" />
 
-                                          <TextField fx:id="txtNum" editable="false" promptText="رقم الفاتورة" GridPane.columnIndex="1" />
+                                          <TextField fx:id="txtNum" editable="false" promptText="%invoice.number" GridPane.columnIndex="1" />
                                           <DatePicker fx:id="date" editable="false" GridPane.columnIndex="3" />
                                           <ComboBox fx:id="comboDelegate" maxWidth="1.7976931348623157E308" GridPane.columnIndex="3" GridPane.rowIndex="1" />
                                           <ComboBox fx:id="comboTreasury" disable="true" maxWidth="1.7976931348623157E308" GridPane.columnIndex="5" />
@@ -91,7 +91,7 @@
                                           <ComboBox fx:id="comboType" maxWidth="1.7976931348623157E308" GridPane.columnIndex="1" GridPane.rowIndex="3" />
                                           <TextField fx:id="txtPrice" promptText="price" GridPane.columnIndex="3" GridPane.rowIndex="3" />
                                           <TextField fx:id="txtQuantity" promptText="quantity" GridPane.columnIndex="5" GridPane.rowIndex="3" />
-                                          <TextField fx:id="txtTotals" editable="false" promptText="إجمالي الصنف" GridPane.columnIndex="7" GridPane.rowIndex="3" />
+                                          <TextField fx:id="txtTotals" editable="false" promptText="%invoice.item.total.prompt" GridPane.columnIndex="7" GridPane.rowIndex="3" />
                                           <Button fx:id="btnAdd" mnemonicParsing="false" styleClass="primary-button" text="إضافة" GridPane.columnIndex="8" GridPane.rowIndex="3" />
                                       </children>
                                   </GridPane>
@@ -135,13 +135,13 @@
                                                 <Label fx:id="labelRemaining" styleClass="summary-label" text="المتبقي" GridPane.columnIndex="7" GridPane.rowIndex="2" />
                                                 <TextField fx:id="txtRestAfterPaid" editable="false" text="0.0" GridPane.columnIndex="8" GridPane.columnSpan="2" GridPane.rowIndex="2" />
 
-                                                <Text strokeType="OUTSIDE" strokeWidth="0.0" styleClass="summary-label" text="نوع الفاتورة" GridPane.columnIndex="7" />
+                                                <Text strokeType="OUTSIDE" strokeWidth="0.0" styleClass="summary-label" text="%invoice.type.label" GridPane.columnIndex="7" />
                                                 <TextField fx:id="txtOtherDiscount" text="0.0" GridPane.columnIndex="5" GridPane.columnSpan="2" GridPane.rowIndex="1" />
                                                 <TextField fx:id="txtRestAfterDiscount" editable="false" text="0.0" GridPane.columnIndex="5" GridPane.columnSpan="2" GridPane.rowIndex="2" />
-                                                <Label styleClass="summary-label" text="الخصم" GridPane.columnIndex="4" GridPane.rowIndex="1" />
-                                                <Label fx:id="labelNetAfterDiscount" styleClass="summary-label" text="الصافي بعد الخصم" GridPane.columnIndex="4" GridPane.rowIndex="2" />
+                                                <Label styleClass="summary-label" text="%discount" GridPane.columnIndex="4" GridPane.rowIndex="1" />
+                                                <Label fx:id="labelNetAfterDiscount" styleClass="summary-label" text="%invoice.label.net.after.discount" GridPane.columnIndex="4" GridPane.rowIndex="2" />
 
-                                                <Text strokeType="OUTSIDE" strokeWidth="0.0" styleClass="summary-label" text="الخصم" GridPane.columnIndex="4" />
+                                                <Text strokeType="OUTSIDE" strokeWidth="0.0" styleClass="summary-label" text="%discount" GridPane.columnIndex="4" />
                                                 <Label fx:id="last1" styleClass="summary-label" text="Label" />
                                                 <Text fx:id="textSumCount" strokeType="OUTSIDE" strokeWidth="0.0" styleClass="text-sum" text="0" GridPane.columnIndex="1" />
                                                 <Label fx:id="last2" styleClass="summary-label" text="Label" GridPane.rowIndex="1" />

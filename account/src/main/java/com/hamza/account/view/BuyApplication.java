@@ -3,6 +3,7 @@ package com.hamza.account.view;
 import com.hamza.account.config.Image_Setting;
 import com.hamza.account.controller.invoice.BuyController2;
 import com.hamza.account.interfaces.api.DataInterface;
+import com.hamza.controlsfx.language.LanguageManager;
 import javafx.application.Application;
 import javafx.scene.Scene;
 import javafx.scene.layout.Pane;
@@ -70,7 +71,7 @@ public class BuyApplication extends Application {
         );
 
         var btnPrintSave = getController().getBtnPrintSave();
-        btnPrintSave.setText("حفظ وطباعة F12");
+        btnPrintSave.setText(LanguageManager.getInstance().getString("invoice.btn.save.print") + " F12");
         btnPrintSave.getScene().getAccelerators().put(
                 new javafx.scene.input.KeyCodeCombination(javafx.scene.input.KeyCode.F12),
                 btnPrintSave::fire

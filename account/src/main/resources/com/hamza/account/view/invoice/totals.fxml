@@ -45,8 +45,8 @@
                                         <ToggleButton fx:id="btnSelected" mnemonicParsing="false" styleClass="app-neutral-button" text="Select All" />
                                         <MenuButton fx:id="menuButton" mnemonicParsing="false" text="طباعة">
                                             <items>
-                                                <MenuItem fx:id="menuItemPrintTotals" mnemonicParsing="false" text="طباعة إجمالى" />
-                                                <MenuItem fx:id="menuItemPrintDetailed" mnemonicParsing="false" text="طباعة تفصيلى" />
+                                                <MenuItem fx:id="menuItemPrintTotals" mnemonicParsing="false" text="%invoice.btn.print.totals" />
+                                                <MenuItem fx:id="menuItemPrintDetailed" mnemonicParsing="false" text="%invoice.btn.print.detailed" />
                                             </items>
                                             <styleClass>
                                                 <String fx:value="app-neutral-button" />
@@ -75,11 +75,11 @@
                                 <Text fx:id="textSumDiscount" strokeType="OUTSIDE" strokeWidth="0.0" styleClass="text-sum" text="0" />
                                 <Label fx:id="labelSumAfterDiscount" text="After Discount" />
                                 <Text fx:id="textSumAfterDiscount" strokeType="OUTSIDE" strokeWidth="0.0" styleClass="text-sum" text="0" />
-                                <Label fx:id="labelSumAfterDiscount1" text="مدفوع" />
+                                <Label fx:id="labelSumAfterDiscount1" text="%paid" />
                                 <Text fx:id="textCash" strokeType="OUTSIDE" strokeWidth="0.0" styleClass="text-sum" text="0" />
-                                <Label fx:id="labelSumAfterDiscount11" text="باقى" />
+                                <Label fx:id="labelSumAfterDiscount11" text="%invoice.summary.remaining" />
                                 <Text fx:id="textDeffer" strokeType="OUTSIDE" strokeWidth="0.0" styleClass="text-sum" text="0" />
-                                <Label fx:id="labelSumAfterDiscount111" layoutX="389.0" layoutY="10.0" text="الربح" />
+                                <Label fx:id="labelSumAfterDiscount111" layoutX="389.0" layoutY="10.0" text="%common.profit" />
                                 <Text fx:id="textProfit" layoutX="423.0" layoutY="24.0" strokeType="OUTSIDE" strokeWidth="0.0" styleClass="text-sum" text="0" />
                             </children>
                         </HBox>
@@ -87,7 +87,7 @@
                     <center>
                         <VBox spacing="5.0">
                             <children>
-                                <TitledPane expanded="false" text="بحث اخر">
+                                <TitledPane expanded="false" text="%invoice.other.search.title">
                                     <content>
                                         <VBox fx:id="box" spacing="5.0" styleClass="app-card">
                                             <children>
@@ -120,13 +120,13 @@
                                                             <children>
                                                                 <HBox alignment="BOTTOM_LEFT" spacing="5.0">
                                                                     <children>
-                                                                        <RadioButton fx:id="radioAll" mnemonicParsing="false" selected="true" text="الكل">
+                                                                        <RadioButton fx:id="radioAll" mnemonicParsing="false" selected="true" text="%all">
                                                                             <toggleGroup>
                                                                                 <ToggleGroup fx:id="group" />
                                                                             </toggleGroup>
                                                                         </RadioButton>
-                                                                        <RadioButton fx:id="radioCash" mnemonicParsing="false" text="نقدا" toggleGroup="$group" />
-                                                                        <RadioButton fx:id="radioDeffer" mnemonicParsing="false" text="أجل" toggleGroup="$group" />
+                                                                        <RadioButton fx:id="radioCash" mnemonicParsing="false" text="%invoice.totals.radio.cash" toggleGroup="$group" />
+                                                                        <RadioButton fx:id="radioDeffer" mnemonicParsing="false" text="%defer" toggleGroup="$group" />
                                                                     </children>
                                                                     <padding>
                                                                         <Insets bottom="5.0" />
