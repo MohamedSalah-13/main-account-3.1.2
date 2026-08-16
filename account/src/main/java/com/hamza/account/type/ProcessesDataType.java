@@ -1,30 +1,38 @@
 package com.hamza.account.type;
 
-import com.hamza.controlsfx.language.Setting_Language;
+import com.hamza.controlsfx.language.LanguageManager;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.property.StringProperty;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
 
-@Getter
-@AllArgsConstructor
+/**
+ * Only ever compared by identity, never by its label, so the label is free to track
+ * the active language: each constant's property is refreshed when
+ * {@link LanguageManager}'s locale changes.
+ */
 public enum ProcessesDataType {
 
-    DELETE(Setting_Language.WORD_DELETE),
-    INSERT(Setting_Language.WORD_INSERT),
-    UPDATE(Setting_Language.WORD_UPDATE);
+    DELETE("delete"),
+    INSERT("insert"),
+    UPDATE("update");
+
+    private final String key;
     private final StringProperty type;
 
-    ProcessesDataType(String string) {
-        this.type = new SimpleStringProperty(string);
+    ProcessesDataType(String key) {
+        this.key = key;
+        this.type = new SimpleStringProperty(LanguageManager.getInstance().getString(key));
+    }
+
+    static {
+        LanguageManager.getInstance().currentLocaleProperty().addListener((obs, oldLocale, newLocale) -> {
+            for (ProcessesDataType value : values()) {
+                value.type.set(LanguageManager.getInstance().getString(value.key));
+            }
+        });
     }
 
     public String getType() {
         return type.get();
-    }
-
-    public void setType(String type) {
-        this.type.set(type);
     }
 
     public StringProperty typeProperty() {

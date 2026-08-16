@@ -1,29 +1,44 @@
 package com.hamza.account.type;
 
-import com.hamza.controlsfx.language.Setting_Language;
+import com.hamza.controlsfx.language.LanguageManager;
 import javafx.beans.property.IntegerProperty;
 import javafx.beans.property.SimpleIntegerProperty;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.property.StringProperty;
 
+/**
+ * Persisted and read back by {@link #getId()}, never by {@link #getType()} - so the
+ * label is free to track the active language: each constant's property is refreshed
+ * when {@link LanguageManager}'s locale changes.
+ */
 public enum InvoiceType {
 
     /**
      * Represents a type of invoice with a specific identifier and description for cash transactions.
      */
-    CASH(1, Setting_Language.WORD_CASH),
+    CASH(1, "cash"),
     /**
      * Represents the deferred payment invoice type.
      * It is one of the constants of the InvoiceType enum.
      */
-    DEFER(2, Setting_Language.WORD_DEFER);
+    DEFER(2, "defer");
 
     private final IntegerProperty id;
+    private final String key;
     private final StringProperty type;
 
-    InvoiceType(int id, String type) {
+    InvoiceType(int id, String key) {
         this.id = new SimpleIntegerProperty(id);
-        this.type = new SimpleStringProperty(type);
+        this.key = key;
+        this.type = new SimpleStringProperty(LanguageManager.getInstance().getString(key));
+    }
+
+    static {
+        LanguageManager.getInstance().currentLocaleProperty().addListener((obs, oldLocale, newLocale) -> {
+            for (InvoiceType value : values()) {
+                value.type.set(LanguageManager.getInstance().getString(value.key));
+            }
+        });
     }
 
     public static InvoiceType getInvoiceTypeById(int id) {

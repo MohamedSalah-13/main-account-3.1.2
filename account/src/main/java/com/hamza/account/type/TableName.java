@@ -1,24 +1,39 @@
 package com.hamza.account.type;
 
-import com.hamza.controlsfx.language.Setting_Language;
+import com.hamza.controlsfx.language.LanguageManager;
 import javafx.beans.property.IntegerProperty;
 import javafx.beans.property.SimpleIntegerProperty;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.property.StringProperty;
 
+/**
+ * Nothing matches a database value back against {@link #getType()} - callers look
+ * these up by id - so the label is free to track the active language: each constant's
+ * property is refreshed when {@link LanguageManager}'s locale changes.
+ */
 public enum TableName {
 
-    NAMES(1, Setting_Language.WORD_NAME),
-    ACCOUNTS(2, Setting_Language.WORD_ACCOUNT),
-    TOTALS(3, Setting_Language.TOTAL),
-    RETURNS(4, Setting_Language.RETURN);
+    NAMES(1, "name"),
+    ACCOUNTS(2, "account"),
+    TOTALS(3, "setting.total"),
+    RETURNS(4, "setting.return");
 
     private final IntegerProperty id;
+    private final String key;
     private final StringProperty type;
 
-    TableName(int id, String type) {
+    TableName(int id, String key) {
         this.id = new SimpleIntegerProperty(id);
-        this.type = new SimpleStringProperty(type);
+        this.key = key;
+        this.type = new SimpleStringProperty(LanguageManager.getInstance().getString(key));
+    }
+
+    static {
+        LanguageManager.getInstance().currentLocaleProperty().addListener((obs, oldLocale, newLocale) -> {
+            for (TableName value : values()) {
+                value.type.set(LanguageManager.getInstance().getString(value.key));
+            }
+        });
     }
 
     public static TableName getTableNameById(int id) {
@@ -46,8 +61,8 @@ public enum TableName {
     public static TableName requireById(int id) {
         TableName tableName = getTableNameById(id);
         if (tableName == null) {
-            throw new IllegalArgumentException("لا يوجد نوع حركة بالرقم " + id
-                    + " - العمود information يقبل 1..4 فقط");
+            throw new IllegalArgumentException(
+                    LanguageManager.getInstance().getString("type.error.unknown.table.name", id));
         }
         return tableName;
     }
