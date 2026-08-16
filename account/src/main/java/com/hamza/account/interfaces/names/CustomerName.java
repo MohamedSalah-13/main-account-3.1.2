@@ -9,6 +9,7 @@ import com.hamza.account.model.domain.Customers;
 import com.hamza.account.model.domain.SelPriceTypeModel;
 import com.hamza.account.view.CustomerPurchasedItemsApplication;
 import com.hamza.controlsfx.database.DaoException;
+import com.hamza.controlsfx.language.LanguageManager;
 import com.hamza.controlsfx.language.Setting_Language;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.scene.control.TableColumn;
@@ -89,7 +90,7 @@ public class CustomerName implements NameData<Customers> {
 
             @Override
             public String title() {
-                return "الأصناف المشتراة من العميل";
+                return LanguageManager.getInstance().getString("screen.title.items.purchased.by.customer");
             }
         });
         app.start(new javafx.stage.Stage());

@@ -3,7 +3,7 @@ package com.hamza.account.interfaces.impl_design;
 import com.hamza.account.config.ThemeManager;
 import com.hamza.account.document.DocumentType;
 import com.hamza.account.interfaces.api.DesignInterface;
-import com.hamza.controlsfx.language.Setting_Language;
+import com.hamza.controlsfx.language.LanguageManager;
 
 public class DesignSuppliers implements DesignInterface {
 
@@ -19,27 +19,27 @@ public class DesignSuppliers implements DesignInterface {
 
     @Override
     public String nameTextOfData() {
-        return Setting_Language.WORD_SUP;
+        return LanguageManager.getInstance().getString("suppliers");
     }
 
     @Override
     public String nameTextOfAccount() {
-        return Setting_Language.WORD_SUP_ACC;
+        return LanguageManager.getInstance().getString("supAcc");
     }
 
     @Override
     public String nameTextOfTotal() {
-        return Setting_Language.TOTAL_PUR;
+        return LanguageManager.getInstance().getString("setting.total.purchase");
     }
 
     @Override
     public String nameTextOfInvoice() {
-        return Setting_Language.WORD_PUR;
+        return LanguageManager.getInstance().getString("pur");
     }
 
     @Override
     public String nameTextOfReport() {
-        return Setting_Language.WORD_REPORT_SUPP;
+        return LanguageManager.getInstance().getString("setting.report.supplier");
     }
 
 }

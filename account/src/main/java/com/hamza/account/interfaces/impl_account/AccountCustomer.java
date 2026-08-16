@@ -7,6 +7,7 @@ import com.hamza.account.model.domain.Customers;
 import com.hamza.account.model.domain.Treasury;
 import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.excel.WriteExcelInterface;
+import com.hamza.controlsfx.language.LanguageManager;
 import com.hamza.controlsfx.language.Setting_Language;
 import com.hamza.controlsfx.table.columnEdit.ColumnSetting;
 import javafx.beans.value.ObservableValue;
@@ -49,7 +50,7 @@ public record AccountCustomer(DaoFactory daoFactory) implements AccountData<Cust
     public void updateTableView(TableView<CustomerAccount> tableView) {
         // add column code
         Callback<TableColumn.CellDataFeatures<CustomerAccount, String>, ObservableValue<String>> callback = f -> f.getValue().getCustomers().idProperty().asString();
-        ColumnSetting.addColumn(tableView, "كود العميل", 0, callback);
+        ColumnSetting.addColumn(tableView, LanguageManager.getInstance().getString("customer.account.column.code"), 0, callback);
 
         // add column name
         Callback<TableColumn.CellDataFeatures<CustomerAccount, String>, ObservableValue<String>> callback_name = f -> f.getValue().getCustomers().nameProperty();

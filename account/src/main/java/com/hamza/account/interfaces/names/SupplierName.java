@@ -9,6 +9,7 @@ import com.hamza.account.model.domain.SelPriceTypeModel;
 import com.hamza.account.model.domain.Suppliers;
 import com.hamza.account.view.CustomerPurchasedItemsApplication;
 import com.hamza.controlsfx.database.DaoException;
+import com.hamza.controlsfx.language.LanguageManager;
 import com.hamza.controlsfx.language.Setting_Language;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.scene.control.TableColumn;
@@ -59,7 +60,7 @@ public class SupplierName implements NameData<Suppliers> {
 
             @Override
             public String title() {
-                return "الأصناف المشتراة من المورد";
+                return LanguageManager.getInstance().getString("screen.title.items.purchased.by.supplier");
             }
         });
         app.start(new javafx.stage.Stage());

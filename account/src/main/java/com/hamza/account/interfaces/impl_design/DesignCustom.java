@@ -3,7 +3,7 @@ package com.hamza.account.interfaces.impl_design;
 import com.hamza.account.config.ThemeManager;
 import com.hamza.account.document.DocumentType;
 import com.hamza.account.interfaces.api.DesignInterface;
-import com.hamza.controlsfx.language.Setting_Language;
+import com.hamza.controlsfx.language.LanguageManager;
 
 public class DesignCustom implements DesignInterface {
 
@@ -19,27 +19,27 @@ public class DesignCustom implements DesignInterface {
 
     @Override
     public String nameTextOfData() {
-        return Setting_Language.WORD_CUSTOM;
+        return LanguageManager.getInstance().getString("customers");
     }
 
     @Override
     public String nameTextOfAccount() {
-        return Setting_Language.WORD_CUSTOM_ACC;
+        return LanguageManager.getInstance().getString("cuAcc");
     }
 
     @Override
     public String nameTextOfTotal() {
-        return Setting_Language.TOTAL_SALES;
+        return LanguageManager.getInstance().getString("setting.total.sales");
     }
 
     @Override
     public String nameTextOfInvoice() {
-        return Setting_Language.WORD_SALES;
+        return LanguageManager.getInstance().getString("sales");
     }
 
     @Override
     public String nameTextOfReport() {
-        return Setting_Language.WORD_REPORT_CUSTOMER;
+        return LanguageManager.getInstance().getString("setting.report.customer");
     }
 
     /** The only screen of the four that takes a payment as the invoice is written. */

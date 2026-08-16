@@ -14,6 +14,7 @@ import com.hamza.account.service.TotalSalesService;
 import com.hamza.account.type.InvoiceType;
 import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.excel.WriteExcelInterface;
+import com.hamza.controlsfx.language.LanguageManager;
 import com.hamza.controlsfx.language.Setting_Language;
 import javafx.beans.property.SimpleDoubleProperty;
 import javafx.beans.value.ObservableValue;
@@ -40,20 +41,20 @@ public class TotalSalesImpDesign implements TotalDesignInterface<Total_Sales> {
         addColumn(tableView, Setting_Language.WORD_NAME, 2, cellName);
 
         Callback<TableColumn.CellDataFeatures<Total_Sales, String>, ObservableValue<String>> colNameType = f -> f.getValue().getInvoiceType().typeProperty();
-        addColumn(tableView, Setting_Language.WORD_TYPE, 3, colNameType);
+        addColumn(tableView, LanguageManager.getInstance().getString("type"), 3, colNameType);
 
 
         Callback<TableColumn.CellDataFeatures<Total_Sales, String>, ObservableValue<String>> colDelegate = f -> f.getValue().getEmployeeObject().nameProperty();
-        addColumn(tableView, Setting_Language.DELEGATE, tableView.getColumns().size(), colDelegate);
+        addColumn(tableView, LanguageManager.getInstance().getString("user.type.delegate"), tableView.getColumns().size(), colDelegate);
 
         if (AuthorizationGuard.isGranted(AppPermissions.INVOICE_PROFIT_SHOW)) {
             Callback<TableColumn.CellDataFeatures<Total_Sales, Double>, ObservableValue<Double>> totalProfit =
                     cellData -> new SimpleDoubleProperty(cellData.getValue().getTotal_profit()).asObject();
-            addColumn(tableView, "ربح الفاتورة", tableView.getColumns().size(), totalProfit);
+            addColumn(tableView, LanguageManager.getInstance().getString("report.column.invoice.profit"), tableView.getColumns().size(), totalProfit);
 
             Callback<TableColumn.CellDataFeatures<Total_Sales, Double>, ObservableValue<Double>> totalProfitPercent =
                     cellData -> new SimpleDoubleProperty(cellData.getValue().getProfit_percent()).asObject();
-            addColumn(tableView, "الربح نسبة", tableView.getColumns().size(), totalProfitPercent);
+            addColumn(tableView, LanguageManager.getInstance().getString("report.column.profit.percent"), tableView.getColumns().size(), totalProfitPercent);
         }
     }
 
