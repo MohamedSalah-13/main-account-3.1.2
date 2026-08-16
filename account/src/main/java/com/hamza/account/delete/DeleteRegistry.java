@@ -24,81 +24,81 @@ public final class DeleteRegistry {
      * and on {@code stock_movements}, so a line written without a unit still
      * resolves to a row that exists.
      */
-    public static final DeleteRule UNITS = DeleteRule.forEntity("الوحدة")
+    public static final DeleteRule UNITS = DeleteRule.forEntity("delete.entity.unit")
             .requirePermission(AppPermissions.UNITS_DELETE)
-            .protectId(1, "لا يمكن حذف الوحدة الافتراضية")
-            .referencedBy("items", "unit_id", "صنف")
-            .referencedBy("items_units", "unit", "وحدة صنف")
-            .referencedBy("sales", "type", "سطر فاتورة بيع")
-            .referencedBy("sales_re", "type", "سطر مرتجع بيع")
-            .referencedBy("purchase", "type", "سطر فاتورة شراء")
-            .referencedBy("purchase_re", "type", "سطر مرتجع شراء")
-            .referencedBy("stock_movements", "unit_id", "حركة مخزون")
+            .protectId(1, "delete.protect.unit.default")
+            .referencedBy("items", "unit_id", "delete.ref.item")
+            .referencedBy("items_units", "unit", "delete.ref.item_unit")
+            .referencedBy("sales", "type", "delete.ref.sales_line")
+            .referencedBy("sales_re", "type", "delete.ref.sales_return_line")
+            .referencedBy("purchase", "type", "delete.ref.purchase_line")
+            .referencedBy("purchase_re", "type", "delete.ref.purchase_return_line")
+            .referencedBy("stock_movements", "unit_id", "delete.ref.stock_movement")
             .build();
 
-    public static final DeleteRule ITEMS = DeleteRule.forEntity("الصنف")
+    public static final DeleteRule ITEMS = DeleteRule.forEntity("delete.entity.item")
             .requirePermission(AppPermissions.ITEMS_DELETE)
-            .referencedBy("sales", "num", "سطر فاتورة بيع")
-            .referencedBy("sales_re", "item_id", "سطر مرتجع بيع")
-            .referencedBy("purchase", "num", "سطر فاتورة شراء")
-            .referencedBy("purchase_re", "item_id", "سطر مرتجع شراء")
-            .referencedBy("stock_movements", "item_id", "حركة مخزون")
-            .referencedBy("stock_transfer_list", "item_id", "سطر تحويل مخزني")
+            .referencedBy("sales", "num", "delete.ref.sales_line")
+            .referencedBy("sales_re", "item_id", "delete.ref.sales_return_line")
+            .referencedBy("purchase", "num", "delete.ref.purchase_line")
+            .referencedBy("purchase_re", "item_id", "delete.ref.purchase_return_line")
+            .referencedBy("stock_movements", "item_id", "delete.ref.stock_movement")
+            .referencedBy("stock_transfer_list", "item_id", "delete.ref.stock_transfer_line")
             .build();
 
     /** Customer 1 is "بيع نقدى", which the sales screen falls back to. */
-    public static final DeleteRule CUSTOMERS = DeleteRule.forEntity("العميل")
+    public static final DeleteRule CUSTOMERS = DeleteRule.forEntity("delete.entity.customer")
             .requirePermission(AppPermissions.CUSTOMER_DELETE)
-            .protectId(1, "لا يمكن حذف عميل البيع النقدى")
-            .referencedBy("total_sales", "sup_code", "فاتورة بيع")
-            .referencedBy("total_sales_re", "sup_id", "مرتجع بيع")
-            .referencedBy("customers_accounts", "account_code", "حركة حساب")
+            .protectId(1, "delete.protect.customer.cash")
+            .referencedBy("total_sales", "sup_code", "delete.ref.sales_invoice")
+            .referencedBy("total_sales_re", "sup_id", "delete.ref.sales_return")
+            .referencedBy("customers_accounts", "account_code", "delete.ref.account_movement")
             .build();
 
     /** Supplier 1 is the seeded "مورد عام". */
-    public static final DeleteRule SUPPLIERS = DeleteRule.forEntity("المورد")
+    public static final DeleteRule SUPPLIERS = DeleteRule.forEntity("delete.entity.supplier")
             .requirePermission(AppPermissions.SUPPLIERS_DELETE)
-            .protectId(1, "لا يمكن حذف المورد العام")
-            .referencedBy("total_buy", "sup_code", "فاتورة شراء")
-            .referencedBy("total_buy_re", "sup_id", "مرتجع شراء")
-            .referencedBy("suppliers_accounts", "account_code", "حركة حساب")
+            .protectId(1, "delete.protect.supplier.general")
+            .referencedBy("total_buy", "sup_code", "delete.ref.purchase_invoice")
+            .referencedBy("total_buy_re", "sup_id", "delete.ref.purchase_return")
+            .referencedBy("suppliers_accounts", "account_code", "delete.ref.account_movement")
             .build();
 
     /** Treasury 1 is the seeded "الخزينة الرئيسية" and the DEFAULT behind every treasury_id. */
-    public static final DeleteRule TREASURIES = DeleteRule.forEntity("الخزينة")
+    public static final DeleteRule TREASURIES = DeleteRule.forEntity("delete.entity.treasury")
             .requirePermission(AppPermissions.TREASURY_DELETE)
-            .protectId(1, "لا يمكن حذف الخزينة الرئيسية")
-            .referencedBy("total_sales", "treasury_id", "فاتورة بيع")
-            .referencedBy("total_sales_re", "treasury_id", "مرتجع بيع")
-            .referencedBy("total_buy", "treasury_id", "فاتورة شراء")
-            .referencedBy("total_buy_re", "treasury_id", "مرتجع شراء")
-            .referencedBy("customers_accounts", "treasury_id", "حركة حساب عميل")
-            .referencedBy("suppliers_accounts", "treasury_id", "حركة حساب مورد")
-            .referencedBy("expenses_details", "treasury_id", "مصروف")
-            .referencedBy("treasury_deposit_expenses", "treasury_id", "إيداع أو صرف")
-            .referencedBy("treasury_transfers", "treasury_from", "تحويل صادر")
-            .referencedBy("treasury_transfers", "treasury_to", "تحويل وارد")
+            .protectId(1, "delete.protect.treasury.main")
+            .referencedBy("total_sales", "treasury_id", "delete.ref.sales_invoice")
+            .referencedBy("total_sales_re", "treasury_id", "delete.ref.sales_return")
+            .referencedBy("total_buy", "treasury_id", "delete.ref.purchase_invoice")
+            .referencedBy("total_buy_re", "treasury_id", "delete.ref.purchase_return")
+            .referencedBy("customers_accounts", "treasury_id", "delete.ref.customer_account_movement")
+            .referencedBy("suppliers_accounts", "treasury_id", "delete.ref.supplier_account_movement")
+            .referencedBy("expenses_details", "treasury_id", "delete.ref.expense")
+            .referencedBy("treasury_deposit_expenses", "treasury_id", "delete.ref.deposit_or_withdrawal")
+            .referencedBy("treasury_transfers", "treasury_from", "delete.ref.transfer_out")
+            .referencedBy("treasury_transfers", "treasury_to", "delete.ref.transfer_in")
             .build();
 
-    public static final DeleteRule MAIN_GROUPS = DeleteRule.forEntity("المجموعة الرئيسية")
+    public static final DeleteRule MAIN_GROUPS = DeleteRule.forEntity("delete.entity.main_group")
             .requirePermission(AppPermissions.MAIN_GROUP_DELETE)
-            .protectId(1, "لا يمكن حذف المجموعة الرئيسية الافتراضية")
-            .referencedBy("sub_group", "main_id", "مجموعة فرعية")
+            .protectId(1, "delete.protect.main_group.default")
+            .referencedBy("sub_group", "main_id", "delete.ref.sub_group")
             .build();
 
-    public static final DeleteRule SUB_GROUPS = DeleteRule.forEntity("المجموعة الفرعية")
+    public static final DeleteRule SUB_GROUPS = DeleteRule.forEntity("delete.entity.sub_group")
             .requirePermission(AppPermissions.SUB_GROUP_DELETE)
-            .protectId(1, "لا يمكن حذف المجموعة الفرعية الافتراضية")
-            .referencedBy("items", "sub_num", "صنف")
+            .protectId(1, "delete.protect.sub_group.default")
+            .referencedBy("items", "sub_num", "delete.ref.item")
             .build();
 
     /** Employee 1 is the seeded "بيع مباشر" delegate. */
-    public static final DeleteRule EMPLOYEES = DeleteRule.forEntity("الموظف")
+    public static final DeleteRule EMPLOYEES = DeleteRule.forEntity("delete.entity.employee")
             .requirePermission(AppPermissions.EMPLOYEE_DELETE)
-            .protectId(1, "لا يمكن حذف موظف البيع المباشر")
-            .referencedBy("total_sales", "delegate_id", "فاتورة بيع")
-            .referencedBy("total_sales_re", "delegate_id", "مرتجع بيع")
-            .referencedBy("expense_salary", "employee_id", "مرتب")
+            .protectId(1, "delete.protect.employee.direct_sale")
+            .referencedBy("total_sales", "delegate_id", "delete.ref.sales_invoice")
+            .referencedBy("total_sales_re", "delegate_id", "delete.ref.sales_return")
+            .referencedBy("expense_salary", "employee_id", "delete.ref.salary")
             // targeted_sales.delegate_id is ON DELETE CASCADE - a delegate's targets
             // go with the delegate - so it is not something that holds them back.
             .build();
@@ -110,7 +110,7 @@ public final class DeleteRegistry {
      * expense. Declaring it as a reference would refuse a delete the database
      * performs happily - which is why only the non-cascading keys belong here.
      */
-    public static final DeleteRule EXPENSES_DETAILS = DeleteRule.forEntity("المصروف")
+    public static final DeleteRule EXPENSES_DETAILS = DeleteRule.forEntity("delete.entity.expense")
             .requirePermission(AppPermissions.EXPENSES_DELETE)
             .build();
 

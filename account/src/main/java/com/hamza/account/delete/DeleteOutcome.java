@@ -2,6 +2,7 @@ package com.hamza.account.delete;
 
 import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.error.BusinessRuleException;
+import com.hamza.controlsfx.language.LanguageManager;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -24,7 +25,7 @@ public sealed interface DeleteOutcome {
     record Deleted(int rows) implements DeleteOutcome {
         @Override
         public String message() {
-            return "تم الحذف";
+            return LanguageManager.getInstance().getString("delete.outcome.deleted");
         }
     }
 
@@ -35,7 +36,7 @@ public sealed interface DeleteOutcome {
             String detail = references.stream()
                     .map(Reference::toString)
                     .collect(Collectors.joining("، "));
-            return "لا يمكن حذف " + entity + ": مستخدم في " + detail;
+            return LanguageManager.getInstance().getString("delete.outcome.blocked", entity, detail);
         }
     }
 
@@ -51,7 +52,7 @@ public sealed interface DeleteOutcome {
     record Denied(String entity) implements DeleteOutcome {
         @Override
         public String message() {
-            return "ليس لديك صلاحية حذف " + entity;
+            return LanguageManager.getInstance().getString("delete.outcome.denied", entity);
         }
     }
 
@@ -59,11 +60,11 @@ public sealed interface DeleteOutcome {
     record NotFound(String entity) implements DeleteOutcome {
         @Override
         public String message() {
-            return "لا يوجد " + entity + " بهذا الرقم";
+            return LanguageManager.getInstance().getString("delete.outcome.not.found", entity);
         }
     }
 
-    /** A sentence for the user, in Arabic, ready to hand to {@code AllAlerts}. */
+    /** A sentence for the user, in the active language, ready to hand to {@code AllAlerts}. */
     String message();
 
     default boolean succeeded() {

@@ -180,7 +180,7 @@ public enum DocumentType {
         return periodLock;
     }
 
-    /** What the document is called in Arabic: "فاتورة بيع", "مرتجع شراء". */
+    /** What the document is called in the active language: "فاتورة بيع"/"Sales invoice", "مرتجع شراء"/"Purchase return". */
     public String label() {
         return periodLock.label();
     }

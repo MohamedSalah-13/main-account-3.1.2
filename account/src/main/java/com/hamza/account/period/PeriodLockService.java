@@ -8,6 +8,7 @@ import com.hamza.account.features.rbac.CurrentUser;
 import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.error.BusinessRuleException;
 import com.hamza.controlsfx.error.UserValidationException;
+import com.hamza.controlsfx.language.LanguageManager;
 import lombok.extern.log4j.Log4j2;
 
 import java.time.LocalDate;
@@ -92,10 +93,10 @@ public record PeriodLockService(DaoFactory daoFactory) {
     public void close(LocalDate lockedUntil, String notes) throws DaoException {
         AuthorizationGuard.require(AppPermissions.ACCOUNTING_LOCK_MANAGE);
         if (lockedUntil == null) {
-            throw new UserValidationException("اختر تاريخ الإغلاق");
+            throw new UserValidationException(LanguageManager.getInstance().getString("period.error.select.close.date"));
         }
         if (lockedUntil.isAfter(LocalDate.now())) {
-            throw new UserValidationException("لا يمكن إغلاق فترة لم تنته بعد");
+            throw new UserValidationException(LanguageManager.getInstance().getString("period.error.future.close.date"));
         }
         dao().record(lockedUntil, notes, currentUserId());
         refresh();
@@ -127,12 +128,8 @@ public record PeriodLockService(DaoFactory daoFactory) {
         if (!lock.covers(date) || AuthorizationGuard.isGranted(AppPermissions.ACCOUNTING_LOCK_BYPASS)) {
             return;
         }
-        throw new BusinessRuleException("""
-                %s بتاريخ %s داخل فترة محاسبية مغلقة.
-                الفترة مغلقة حتى %s، وأول يوم مفتوح هو %s.
-                للتعديل داخل فترة مغلقة تحتاج صلاحية "التعديل داخل فترة مغلقة"، أو فتح الفترة."""
-                .formatted(what, date.format(DAY), lock.lockedUntil().format(DAY),
-                        lock.firstOpenDay().format(DAY)));
+        throw new BusinessRuleException(LanguageManager.getInstance().getString("period.error.locked",
+                what, date.format(DAY), lock.lockedUntil().format(DAY), lock.firstOpenDay().format(DAY)));
     }
 
     /**

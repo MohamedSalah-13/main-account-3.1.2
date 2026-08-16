@@ -45,7 +45,7 @@ public class ReferenceScanner extends AbstractDao<Reference> {
 
         StringJoiner query = new StringJoiner("\nUNION ALL\n");
         for (ReferenceCheck check : checks) {
-            // The label is bound; only the identifiers are concatenated, and
+            // The label key is bound; only the identifiers are concatenated, and
             // ReferenceCheck has already established that they are identifiers.
             query.add("SELECT ? AS label, COUNT(*) AS total FROM " + check.table()
                       + " WHERE " + check.column() + " = ?");
@@ -56,7 +56,7 @@ public class ReferenceScanner extends AbstractDao<Reference> {
             try (PreparedStatement statement = connection.prepareStatement(query.toString())) {
                 int parameter = 1;
                 for (ReferenceCheck check : checks) {
-                    statement.setString(parameter++, check.label());
+                    statement.setString(parameter++, check.labelKey());
                     statement.setInt(parameter++, id);
                 }
                 try (ResultSet rs = statement.executeQuery()) {

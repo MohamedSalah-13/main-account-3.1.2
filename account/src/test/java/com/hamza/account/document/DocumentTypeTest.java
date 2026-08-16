@@ -4,6 +4,9 @@ import com.hamza.account.features.events.InvoiceSide;
 import com.hamza.account.features.events.PartyKind;
 import com.hamza.account.authorization.AppPermissions;
 import com.hamza.account.authorization.PermissionKey;
+import com.hamza.controlsfx.language.LanguageManager;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -13,6 +16,7 @@ import org.junit.jupiter.params.provider.EnumSource;
 
 import java.util.EnumSet;
 import java.util.HashSet;
+import java.util.Locale;
 import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -29,8 +33,25 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * against {@code SALES_SHOW} in {@code BuyController2}. Collecting them in one enum is
  * only safe if the collected values are the ones those places used, so every one of
  * them is asserted here rather than trusted to the reading.
+ * <p>
+ * {@code type.label()} resolves through {@link LanguageManager}, whose current language
+ * is a machine-wide preference - {@link PeriodLock} pins it to Arabic for the class and
+ * restores whatever it was before, rather than assuming the developer's saved language.
  */
 class DocumentTypeTest {
+
+    private static Locale previousLocale;
+
+    @BeforeAll
+    static void useArabic() {
+        previousLocale = LanguageManager.getInstance().getCurrentLocale();
+        LanguageManager.getInstance().setLocale(LanguageManager.ARABIC);
+    }
+
+    @AfterAll
+    static void restoreLocale() {
+        LanguageManager.getInstance().setLocale(previousLocale);
+    }
 
     @Nested
     @DisplayName("Party and side")

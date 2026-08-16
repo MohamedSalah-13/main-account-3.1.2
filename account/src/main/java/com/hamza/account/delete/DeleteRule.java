@@ -2,6 +2,7 @@ package com.hamza.account.delete;
 
 import com.hamza.account.authorization.AppPermissions;
 import com.hamza.account.authorization.PermissionKey;
+import com.hamza.controlsfx.language.LanguageManager;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
@@ -26,29 +27,30 @@ import java.util.Map;
  */
 public final class DeleteRule {
 
-    private final String entityLabel;
+    private final String entityLabelKey;
     private final PermissionKey permission;
     private final Map<Integer, String> protectedIds;
     private final List<ReferenceCheck> references;
 
     private DeleteRule(Builder builder) {
-        this.entityLabel = builder.entityLabel;
+        this.entityLabelKey = builder.entityLabelKey;
         this.permission = builder.permission;
         this.protectedIds = Map.copyOf(builder.protectedIds);
         this.references = List.copyOf(builder.references);
     }
 
     /**
-     * @param entityLabel what the row is called when the user is told about it -
-     *                    "الوحدة", "الصنف". It goes into every message the rule
-     *                    produces, so it reads as a noun, not a table name.
+     * @param entityLabelKey the i18n bundle key for what the row is called when the
+     *                       user is told about it - "الوحدة"/"the unit", "الصنف"/"the
+     *                       item". It goes into every message the rule produces, so
+     *                       it reads as a noun, not a table name.
      */
-    public static Builder forEntity(@NotNull String entityLabel) {
-        return new Builder(entityLabel);
+    public static Builder forEntity(@NotNull String entityLabelKey) {
+        return new Builder(entityLabelKey);
     }
 
     public String entityLabel() {
-        return entityLabel;
+        return LanguageManager.getInstance().getString(entityLabelKey);
     }
 
     public PermissionKey permission() {
@@ -61,18 +63,19 @@ public final class DeleteRule {
 
     /** The reason this id may never be deleted, or null when it may. */
     public String protectionFor(int id) {
-        return protectedIds.get(id);
+        String reasonKey = protectedIds.get(id);
+        return reasonKey == null ? null : LanguageManager.getInstance().getString(reasonKey);
     }
 
     public static final class Builder {
 
-        private final String entityLabel;
+        private final String entityLabelKey;
         private final Map<Integer, String> protectedIds = new LinkedHashMap<>();
         private final List<ReferenceCheck> references = new ArrayList<>();
         private PermissionKey permission;
 
-        private Builder(String entityLabel) {
-            this.entityLabel = entityLabel;
+        private Builder(String entityLabelKey) {
+            this.entityLabelKey = entityLabelKey;
         }
 
         /**
@@ -90,8 +93,8 @@ public final class DeleteRule {
          * These are the seeded rows the schema leans on: the DEFAULT behind a column,
          * the cash customer, the main treasury.
          */
-        public Builder protectId(int id, @NotNull String reason) {
-            protectedIds.put(id, reason);
+        public Builder protectId(int id, @NotNull String reasonKey) {
+            protectedIds.put(id, reasonKey);
             return this;
         }
 
@@ -100,8 +103,8 @@ public final class DeleteRule {
          * that refuses the delete - see {@link ReferenceCheck} for which ones to
          * leave out.
          */
-        public Builder referencedBy(@NotNull String table, @NotNull String column, @NotNull String label) {
-            references.add(new ReferenceCheck(table, column, label));
+        public Builder referencedBy(@NotNull String table, @NotNull String column, @NotNull String labelKey) {
+            references.add(new ReferenceCheck(table, column, labelKey));
             return this;
         }
 

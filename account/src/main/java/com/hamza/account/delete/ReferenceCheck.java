@@ -4,7 +4,7 @@ import java.util.regex.Pattern;
 
 /**
  * "count the rows of {@code table} whose {@code column} is this id, and call them
- * {@code label} when you report them".
+ * {@code labelKey} - an i18n bundle key - when you report them".
  * <p>
  * Declare one for every foreign key that would refuse the delete - and only
  * those. A check that does not mirror a real constraint would refuse a delete the
@@ -13,7 +13,7 @@ import java.util.regex.Pattern;
  * are deliberately not declared here: those rows go with the parent, so counting
  * them would block a delete that is meant to succeed.
  */
-public record ReferenceCheck(String table, String column, String label) {
+public record ReferenceCheck(String table, String column, String labelKey) {
 
     /**
      * Identifiers reach the SQL by concatenation - they name schema objects, so

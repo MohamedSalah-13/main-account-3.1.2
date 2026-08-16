@@ -25,29 +25,29 @@ public final class OpeningBalanceRegistry {
      * balance the counter was shown, and moving it under them makes the sheet post a
      * difference nobody measured.
      */
-    public static final OpeningBalanceRule ITEMS = OpeningBalanceRule.forEntity("الصنف", "items")
-            .movedBy("purchase", "num", "سطر فاتورة شراء")
-            .movedBy("sales", "num", "سطر فاتورة بيع")
-            .movedBy("purchase_re", "item_id", "سطر مرتجع شراء")
-            .movedBy("sales_re", "item_id", "سطر مرتجع بيع")
-            .movedBy("stock_transfer_list", "item_id", "سطر تحويل مخزني")
-            .movedBy("stock_count_lines", "item_id", "سطر جرد")
-            .correctedBy("لتصحيح الرصيد استخدم شاشة الجرد الفعلي.")
+    public static final OpeningBalanceRule ITEMS = OpeningBalanceRule.forEntity("delete.entity.item", "items")
+            .movedBy("purchase", "num", "delete.ref.purchase_line")
+            .movedBy("sales", "num", "delete.ref.sales_line")
+            .movedBy("purchase_re", "item_id", "delete.ref.purchase_return_line")
+            .movedBy("sales_re", "item_id", "delete.ref.sales_return_line")
+            .movedBy("stock_transfer_list", "item_id", "delete.ref.stock_transfer_line")
+            .movedBy("stock_count_lines", "item_id", "opening.ref.stock_count_line")
+            .correctedBy("opening.correction.items")
             .build();
 
     /** A customer has moved once they have an invoice, a return, or a payment. */
-    public static final OpeningBalanceRule CUSTOMERS = OpeningBalanceRule.forEntity("العميل", "custom")
-            .movedBy("total_sales", "sup_code", "فاتورة بيع")
-            .movedBy("total_sales_re", "sup_id", "مرتجع بيع")
-            .movedBy("customers_accounts", "account_code", "حركة حساب")
-            .correctedBy("لتصحيح الرصيد سجّل حركة على حساب العميل.")
+    public static final OpeningBalanceRule CUSTOMERS = OpeningBalanceRule.forEntity("delete.entity.customer", "custom")
+            .movedBy("total_sales", "sup_code", "delete.ref.sales_invoice")
+            .movedBy("total_sales_re", "sup_id", "delete.ref.sales_return")
+            .movedBy("customers_accounts", "account_code", "delete.ref.account_movement")
+            .correctedBy("opening.correction.customers")
             .build();
 
-    public static final OpeningBalanceRule SUPPLIERS = OpeningBalanceRule.forEntity("المورد", "suppliers")
-            .movedBy("total_buy", "sup_code", "فاتورة شراء")
-            .movedBy("total_buy_re", "sup_id", "مرتجع شراء")
-            .movedBy("suppliers_accounts", "account_code", "حركة حساب")
-            .correctedBy("لتصحيح الرصيد سجّل حركة على حساب المورد.")
+    public static final OpeningBalanceRule SUPPLIERS = OpeningBalanceRule.forEntity("delete.entity.supplier", "suppliers")
+            .movedBy("total_buy", "sup_code", "delete.ref.purchase_invoice")
+            .movedBy("total_buy_re", "sup_id", "delete.ref.purchase_return")
+            .movedBy("suppliers_accounts", "account_code", "delete.ref.account_movement")
+            .correctedBy("opening.correction.suppliers")
             .build();
 
     private OpeningBalanceRegistry() {

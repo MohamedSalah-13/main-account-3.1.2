@@ -15,28 +15,28 @@ package com.hamza.account.period;
 public final class PeriodLockRegistry {
 
     public static final LockedDocument SALES_INVOICE =
-            new LockedDocument("فاتورة بيع", "total_sales", "invoice_number", "invoice_date");
+            new LockedDocument("period.doc.sales.invoice", "total_sales", "invoice_number", "invoice_date");
 
     public static final LockedDocument SALES_RETURN =
-            new LockedDocument("مرتجع بيع", "total_sales_re", "id", "invoice_date");
+            new LockedDocument("period.doc.sales.return", "total_sales_re", "id", "invoice_date");
 
     public static final LockedDocument PURCHASE_INVOICE =
-            new LockedDocument("فاتورة شراء", "total_buy", "invoice_number", "invoice_date");
+            new LockedDocument("period.doc.purchase.invoice", "total_buy", "invoice_number", "invoice_date");
 
     public static final LockedDocument PURCHASE_RETURN =
-            new LockedDocument("مرتجع شراء", "total_buy_re", "id", "invoice_date");
+            new LockedDocument("period.doc.purchase.return", "total_buy_re", "id", "invoice_date");
 
     public static final LockedDocument CUSTOMER_ACCOUNT =
-            new LockedDocument("حركة حساب عميل", "customers_accounts", "account_num", "account_date");
+            new LockedDocument("period.doc.customer.account", "customers_accounts", "account_num", "account_date");
 
     public static final LockedDocument SUPPLIER_ACCOUNT =
-            new LockedDocument("حركة حساب مورد", "suppliers_accounts", "account_num", "account_date");
+            new LockedDocument("period.doc.supplier.account", "suppliers_accounts", "account_num", "account_date");
 
     public static final LockedDocument EXPENSE =
-            new LockedDocument("مصروف", "expenses_details", "id", "date");
+            new LockedDocument("period.doc.expense", "expenses_details", "id", "date");
 
     public static final LockedDocument STOCK_COUNT =
-            new LockedDocument("جرد فعلي", "stock_count", "id", "count_date");
+            new LockedDocument("period.doc.stock.count", "stock_count", "id", "count_date");
 
     // ---- treasury -----------------------------------------------------------
     //
@@ -56,13 +56,13 @@ public final class PeriodLockRegistry {
     // how a closed month quietly moves.
 
     public static final LockedDocument TREASURY_TRANSFER =
-            new LockedDocument("تحويل خزينة", "treasury_transfers", "id", "transfer_date");
+            new LockedDocument("period.doc.treasury.transfer", "treasury_transfers", "id", "transfer_date");
 
     public static final LockedDocument TREASURY_DEPOSIT =
-            new LockedDocument("إيداع/سحب خزينة", "treasury_deposit_expenses", "id", "date_inter");
+            new LockedDocument("period.doc.treasury.deposit", "treasury_deposit_expenses", "id", "date_inter");
 
     public static final LockedDocument TREASURY_MOVEMENT =
-            new LockedDocument("حركة خزينة", "treasury_movements", "id", "movement_date");
+            new LockedDocument("period.doc.treasury.movement", "treasury_movements", "id", "movement_date");
 
     private PeriodLockRegistry() {
     }

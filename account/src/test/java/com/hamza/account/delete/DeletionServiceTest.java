@@ -3,11 +3,15 @@ package com.hamza.account.delete;
 import com.hamza.account.authorization.AppPermissions;
 import com.hamza.account.authorization.PermissionKey;
 import com.hamza.controlsfx.database.DaoException;
+import com.hamza.controlsfx.language.LanguageManager;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
+import java.util.Locale;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -21,8 +25,26 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * The delete rules, checked without a database and without a signed-in user:
  * the scanner and the permission check are both handed to the service, so the
  * order of the checks and the outcome each produces can be pinned down here.
+ * <p>
+ * {@code DeleteOutcome}'s sentences resolve through {@link LanguageManager}, whose
+ * current language is a machine-wide preference - so the assertions below, which
+ * expect Arabic, pin the locale to Arabic for the class and restore whatever it was
+ * before, rather than assuming the developer's saved language.
  */
 class DeletionServiceTest {
+
+    private static Locale previousLocale;
+
+    @BeforeAll
+    static void useArabic() {
+        previousLocale = LanguageManager.getInstance().getCurrentLocale();
+        LanguageManager.getInstance().setLocale(LanguageManager.ARABIC);
+    }
+
+    @AfterAll
+    static void restoreLocale() {
+        LanguageManager.getInstance().setLocale(previousLocale);
+    }
 
     private static final DeleteRule RULE = DeleteRule.forEntity("الوحدة")
             .requirePermission(AppPermissions.UNITS_DELETE)

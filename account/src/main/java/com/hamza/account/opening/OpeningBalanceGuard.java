@@ -5,6 +5,7 @@ import com.hamza.account.delete.ReferenceScanner;
 import com.hamza.controlsfx.database.AbstractDao;
 import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.error.BusinessRuleException;
+import com.hamza.controlsfx.language.LanguageManager;
 import org.jetbrains.annotations.NotNull;
 
 import java.sql.PreparedStatement;
@@ -114,12 +115,8 @@ public final class OpeningBalanceGuard {
 
     private String refusal(OpeningBalanceRule rule, List<Reference> movements, double stored) {
         String moved = movements.stream().map(Reference::toString).collect(Collectors.joining("، "));
-        return """
-                لا يمكن تعديل رصيد أول المدة لـ%s بعد وجود حركات عليه.
-                الحركات: %s
-                الرصيد المسجل: %s
-                %s"""
-                .formatted(rule.entity(), moved, stored, rule.correction());
+        return LanguageManager.getInstance().getString("opening.error.locked",
+                rule.entity(), moved, stored, rule.correction());
     }
 
     /** The balance as stored, which is the one every balance is computed from. */
