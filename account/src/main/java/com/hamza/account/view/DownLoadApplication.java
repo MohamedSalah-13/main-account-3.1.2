@@ -4,6 +4,7 @@ import com.hamza.account.authorization.AppPermissions;
 import com.hamza.account.backup.BackupService;
 import com.hamza.account.backup.ScheduledBackup;
 import com.hamza.account.config.ConnectionToDatabase;
+import com.hamza.account.config.FontManager;
 import com.hamza.account.config.ThemeManager;
 import com.hamza.account.config.UiScale;
 import com.hamza.account.controller.others.ServiceRegistry;
@@ -56,6 +57,7 @@ public class DownLoadApplication extends Application {
     @Override
     public void start(Stage primaryStage) {
         loadFonts();
+        FontManager.initialize();
         UiScale.initialize();
         ThemeManager.initialize();
 

@@ -110,8 +110,13 @@
 
                                 <Label fx:id="labelUiScale" styleClass="form-label" text="%settings.language.uiScaleLabel" GridPane.rowIndex="12" />
                                 <ComboBox fx:id="comboUiScale" styleClass="modern-input" GridPane.columnIndex="1" GridPane.rowIndex="12" />
+
+                                <Label fx:id="labelFont" styleClass="form-label" text="%settings.language.fontLabel" GridPane.rowIndex="13" />
+                                <ComboBox fx:id="comboFont" styleClass="modern-input" GridPane.columnIndex="1" GridPane.rowIndex="13" />
+                                <Button fx:id="btnAddFont" mnemonicParsing="false" styleClass="neutral-button" text="%settings.language.addFontButton" GridPane.columnIndex="2" GridPane.rowIndex="13" />
                             </children>
                      <rowConstraints>
+                        <RowConstraints />
                         <RowConstraints />
                         <RowConstraints />
                         <RowConstraints />

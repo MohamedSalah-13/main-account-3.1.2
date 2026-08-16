@@ -3,6 +3,7 @@ package com.hamza.account.config;
 import com.hamza.account.Main;
 import com.hamza.controlsfx.alert.AlertSetting;
 import com.hamza.controlsfx.language.LanguageManager;
+import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 
@@ -20,6 +21,20 @@ public final class ThemeManager {
     private static final Preferences PREFS = Preferences.userRoot().node(PREF_NODE);
 
     private static final String BASE_THEME_FILE = "app-theme.css";
+
+    /**
+     * app-theme.css gives each of these its own explicit, non-inherited font-family
+     * and font-size rule, because every screen's own FXML root carries one of them.
+     * That means a screen embedded as tab content inside another scene - the settings
+     * tab inside the main screen, for instance - does not pick up an ancestor's inline
+     * override just by inheritance: its own root re-declares both properties. {@link
+     * #applyUiScale} and {@link #applyFontFamily} therefore restamp every node
+     * carrying one of these classes within the given root's subtree, not just the
+     * root itself.
+     */
+    private static final String ROOT_STYLE_SELECTOR = ".app-root, .reports-root, .items-root, "
+            + ".settings-root, .treasury-root, .treasury-transfer-root, .table-screen-root, "
+            + ".main-root, .backup-root";
 
     private ThemeManager() {
     }
@@ -65,6 +80,7 @@ public final class ThemeManager {
         scene.setNodeOrientation(LanguageManager.getInstance().getNodeOrientation());
         if (scene.getRoot() != null) {
             applyUiScale(scene.getRoot());
+            applyFontFamily(scene.getRoot());
         }
     }
 
@@ -80,16 +96,39 @@ public final class ThemeManager {
         root.getStylesheets().add(getStylesheet());
         root.setNodeOrientation(LanguageManager.getInstance().getNodeOrientation());
         applyUiScale(root);
+        applyFontFamily(root);
     }
 
     /**
-     * Stamps the current {@link UiScale} as an inline style on the root, replacing
-     * any font-size it carries from a previous call rather than piling styles up.
+     * Stamps the current {@link UiScale} as an inline style on the root and on every
+     * nested node matching {@link #ROOT_STYLE_SELECTOR}, replacing any font-size each
+     * carries from a previous call rather than piling styles up.
      */
     private static void applyUiScale(Parent root) {
-        String existing = root.getStyle();
-        String withoutFontSize = existing == null ? "" : existing.replaceAll("-fx-font-size:[^;]*;", "").trim();
-        root.setStyle(UiScale.fontSizeStyle() + (withoutFontSize.isEmpty() ? "" : " " + withoutFontSize));
+        String style = UiScale.fontSizeStyle();
+        stampStyle(root, style, "-fx-font-size:[^;]*;");
+        for (Node node : root.lookupAll(ROOT_STYLE_SELECTOR)) {
+            stampStyle(node, style, "-fx-font-size:[^;]*;");
+        }
+    }
+
+    /**
+     * Stamps the current {@link FontManager} family as an inline style on the root
+     * and on every nested node matching {@link #ROOT_STYLE_SELECTOR} - the same
+     * strip-and-reapply technique {@link #applyUiScale} uses for font size.
+     */
+    private static void applyFontFamily(Parent root) {
+        String style = FontManager.fontFamilyStyle();
+        stampStyle(root, style, "-fx-font-family:[^;]*;");
+        for (Node node : root.lookupAll(ROOT_STYLE_SELECTOR)) {
+            stampStyle(node, style, "-fx-font-family:[^;]*;");
+        }
+    }
+
+    private static void stampStyle(Node node, String styleToStamp, String stripRegex) {
+        String existing = node.getStyle();
+        String stripped = existing == null ? "" : existing.replaceAll(stripRegex, "").trim();
+        node.setStyle(styleToStamp + (stripped.isEmpty() ? "" : " " + stripped));
     }
 
     public enum Theme {

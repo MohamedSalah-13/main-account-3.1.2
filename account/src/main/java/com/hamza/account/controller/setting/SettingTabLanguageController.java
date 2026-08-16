@@ -8,6 +8,8 @@ import com.hamza.account.controller.search.CustomerSearchController;
 import com.hamza.account.controller.search.SearchInterface;
 import com.hamza.account.features.choiceDialoge.ChoiceDialogSetting;
 import com.hamza.account.features.choiceDialoge.ChoosePrinter;
+import com.hamza.account.config.FontManager;
+import com.hamza.account.features.events.FontChanged;
 import com.hamza.account.features.events.LanguageChanged;
 import com.hamza.account.model.domain.Customers;
 import com.hamza.account.model.domain.Employees;
@@ -72,6 +74,10 @@ public class SettingTabLanguageController implements Initializable {
     private ComboBox<Locale> comboLanguage;
     @FXML
     private ComboBox<Double> comboUiScale;
+    @FXML
+    private ComboBox<String> comboFont;
+    @FXML
+    private Button btnAddFont;
     @FXML
     private TextField txtNameCustomer, txtNameDelegate;
     @FXML
@@ -189,6 +195,9 @@ public class SettingTabLanguageController implements Initializable {
 
         // Language selection: initialize and wire listeners
         configureLanguageCombo();
+
+        // Font selection: initialize and wire listeners
+        configureFontCombo();
 
         btnDeleteImage.setOnAction(actionEvent -> {
             textPath.setText(text);
@@ -410,6 +419,43 @@ public class SettingTabLanguageController implements Initializable {
             eventBus.publish(new LanguageChanged(newValue));
             refreshOwnText();
         });
+    }
+
+    /**
+     * Combo box of every family {@link FontManager#allFamilies()} knows about - the
+     * bundled fonts plus whatever the user has added - with a button beside it to
+     * register a new {@code .ttf}/{@code .otf} file, mirroring {@link #getFileChooser()}.
+     */
+    private void configureFontCombo() {
+        comboFont.getItems().setAll(FontManager.allFamilies());
+        comboFont.setValue(FontManager.getCurrentFamily());
+
+        comboFont.valueProperty().addListener((observable, oldValue, newValue) -> {
+            if (newValue == null || newValue.equals(FontManager.getCurrentFamily())) return;
+            FontManager.setCurrentFamily(newValue);
+            reapplyToCurrentScene();
+            eventBus.publish(new FontChanged(newValue));
+        });
+
+        btnAddFont.setOnAction(actionEvent -> addFont());
+    }
+
+    private void addFont() {
+        FileChooser fc = new FileChooser();
+        fc.getExtensionFilters().add(new FileChooser.ExtensionFilter("Font Files", "*.ttf", "*.otf"));
+        File file = fc.showOpenDialog(null);
+        if (file == null) return;
+
+        String family = FontManager.addCustomFont(file);
+        if (family == null) {
+            AllAlerts.handleError(LanguageManager.getInstance().getString("settings.language.fontAddError"),
+                    new IllegalArgumentException(file.getAbsolutePath()));
+            return;
+        }
+
+        comboFont.getItems().setAll(FontManager.allFamilies());
+        comboFont.setValue(family);
+        AllAlerts.alertSaveWithMessage(LanguageManager.getInstance().getString("settings.language.fontAdded"));
     }
 
     /**
