@@ -24,20 +24,20 @@
          <top>
                   <ToolBar styleClass="app-toolbar" BorderPane.alignment="CENTER">
                       <items>
-                          <Button fx:id="btnRefresh" mnemonicParsing="false" styleClass="app-neutral-button" text="تحديث" />
-                          <Button fx:id="btnPrint" mnemonicParsing="false" styleClass="app-neutral-button" text="طباعة" />
-                          <Button fx:id="btnPrintSummary" mnemonicParsing="false" styleClass="app-neutral-button" text="ملخص الوردية" />
+                          <Button fx:id="btnRefresh" mnemonicParsing="false" styleClass="app-neutral-button" text="%refresh" />
+                          <Button fx:id="btnPrint" mnemonicParsing="false" styleClass="app-neutral-button" text="%print" />
+                          <Button fx:id="btnPrintSummary" mnemonicParsing="false" styleClass="app-neutral-button" text="%treasury.btn.print.summary" />
                       </items>
                   </ToolBar>
          </top>
          <bottom>
                     <HBox alignment="CENTER_LEFT" spacing="20.0" styleClass="summary-card" BorderPane.alignment="CENTER">
                         <children>
-                            <Label text="إجمالى الوارد" />
+                            <Label text="%treasury.summary.total.income" />
                             <Text fx:id="sumIncome" strokeType="OUTSIDE" strokeWidth="0.0" styleClass="text-sum" text="0.0" />
-                            <Label text="إجمالى الصادر" />
+                            <Label text="%treasury.summary.total.output" />
                             <Text fx:id="sumOutput" strokeType="OUTSIDE" strokeWidth="0.0" styleClass="text-sum" text="0.0" />
-                            <Label text="الرصيد" />
+                            <Label text="%column.balance" />
                             <Text fx:id="sumBalance" strokeType="OUTSIDE" strokeWidth="0.0" styleClass="text-sum" text="0.0" />
                         </children>
                     </HBox>
@@ -63,18 +63,18 @@
                                                 <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
                                             </rowConstraints>
                                             <children>
-                                                <Label styleClass="form-label" text="الخزينة" />
-                                                <Label styleClass="form-label" text="من تاريخ" GridPane.rowIndex="2" />
-                                                <Label styleClass="form-label" text="إلى تاريخ" GridPane.columnIndex="2" GridPane.rowIndex="2" />
+                                                <Label styleClass="form-label" text="%treasury.label.treasury" />
+                                                <Label styleClass="form-label" text="%treasury.label.from.date" GridPane.rowIndex="2" />
+                                                <Label styleClass="form-label" text="%treasury.label.to.date" GridPane.columnIndex="2" GridPane.rowIndex="2" />
                                                 <ComboBox fx:id="comboTreasury" maxWidth="1.7976931348623157E308" GridPane.columnIndex="1" />
                                                 <DatePicker fx:id="dateFrom" maxWidth="1.7976931348623157E308" GridPane.columnIndex="1" GridPane.rowIndex="2" />
                                                 <DatePicker fx:id="dateTo" maxWidth="1.7976931348623157E308" GridPane.columnIndex="3" GridPane.rowIndex="2" />
-                                                <Label styleClass="form-label" text="نوع الحساب" GridPane.columnIndex="2" />
+                                                <Label styleClass="form-label" text="%treasury.label.account.type" GridPane.columnIndex="2" />
                                                 <ComboBox fx:id="comboDetails" maxWidth="1.7976931348623157E308" GridPane.columnIndex="3" />
                                                 <ComboBox fx:id="comboUsers" maxWidth="1.7976931348623157E308" GridPane.columnIndex="1" GridPane.rowIndex="1" />
-                                                <Label styleClass="form-label" text="المستخدم" GridPane.rowIndex="1" />
-                                                <Button fx:id="btnSearch" mnemonicParsing="false" styleClass="app-neutral-button" text="بحث" GridPane.columnIndex="2" GridPane.rowIndex="3" />
-                                                <CheckBox fx:id="checkTime" mnemonicParsing="false" text="إضافة وقت" GridPane.rowIndex="3" />
+                                                <Label styleClass="form-label" text="%treasury.label.user" GridPane.rowIndex="1" />
+                                                <Button fx:id="btnSearch" mnemonicParsing="false" styleClass="app-neutral-button" text="%search" GridPane.columnIndex="2" GridPane.rowIndex="3" />
+                                                <CheckBox fx:id="checkTime" mnemonicParsing="false" text="%treasury.check.add.time" GridPane.rowIndex="3" />
                                             </children>
                                         </GridPane>
                                     </children>

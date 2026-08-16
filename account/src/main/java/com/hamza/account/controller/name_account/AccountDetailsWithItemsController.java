@@ -50,7 +50,7 @@ import static com.hamza.account.controller.name_account.impl.AccountTotalsSales.
 import static com.hamza.account.controller.name_account.impl.AccountTotalsSales.salesTitle;
 import static com.hamza.account.table.TreeTableSetting.initializeColumnCellFactory;
 import static com.hamza.account.table.TreeTableSetting.initializeColumnCellFactoryInteger;
-import static com.hamza.account.view.OpenTreasuryDetailsApplication.ACCOUNT_STATEMENT_TITLE;
+import static com.hamza.account.view.OpenTreasuryDetailsApplication.accountStatementTitle;
 import static com.hamza.controlsfx.util.NumberUtils.roundToTwoDecimalPlaces;
 
 @Log4j2
@@ -409,7 +409,7 @@ public class AccountDetailsWithItemsController<T3 extends BaseNames, T4 extends 
         }
 
 
-        printReports.printAccountStatement(allItems, true, ACCOUNT_STATEMENT_TITLE, name_account, null);
+        printReports.printAccountStatement(allItems, true, accountStatementTitle(), name_account, null);
     }
 
     private List<AccountCard> getAllTreeItems(TreeItem<AccountCard> item) {

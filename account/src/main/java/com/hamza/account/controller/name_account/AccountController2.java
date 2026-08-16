@@ -51,7 +51,7 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
-import static com.hamza.account.view.OpenTreasuryDetailsApplication.ACCOUNT_STATEMENT_TITLE;
+import static com.hamza.account.view.OpenTreasuryDetailsApplication.accountStatementTitle;
 import static com.hamza.controlsfx.util.ImageChoose.createIcon;
 
 
@@ -114,7 +114,7 @@ public class AccountController2<T3 extends BaseNames, T4 extends BaseAccount>
         observableList.addListener((ListChangeListener<T4>) change -> sumTable());
         btnRefresh.fire();
 
-        btnShow.setText(ACCOUNT_STATEMENT_TITLE);
+        btnShow.setText(accountStatementTitle());
     }
 
     private void buttonGraphic() {

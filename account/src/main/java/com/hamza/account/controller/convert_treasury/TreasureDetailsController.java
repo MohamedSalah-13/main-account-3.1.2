@@ -19,7 +19,7 @@ import com.hamza.controlsfx.alert.AllAlerts;
 import javafx.application.Platform;
 import com.hamza.account.otherSetting.MaskerPaneSetting;
 import com.hamza.controlsfx.database.DaoException;
-import com.hamza.controlsfx.language.Setting_Language;
+import com.hamza.controlsfx.language.LanguageManager;
 import com.hamza.controlsfx.others.DateSetting;
 import com.hamza.controlsfx.table.TableColumnAnnotation;
 import com.hamza.controlsfx.util.ImageChoose;
@@ -49,6 +49,15 @@ import static com.hamza.account.controller.items.CardController.dataInterface;
 @FxmlPath(pathFile = "treasury/treasury-details.fxml")
 public class TreasureDetailsController {
 
+    /**
+     * These seven values are not display strings to translate - they are exactly
+     * what {@code R__views.sql} writes into {@code TreasuryBalance.information}
+     * (a UNION view over several tables, each branch's {@code information} column
+     * a literal like {@code 'المبيعات'}). filterByDetails() and sumData() compare
+     * against them with equals(), so translating them here would silently break
+     * every filter and total on this screen - the Java value has to keep matching
+     * what MySQL already produced.
+     */
     public static final String SALES_TITLE = "المبيعات";
     public static final String RETURNED_SALES_TITLE = "مرتجع المبيعات";
     public static final String PURCHASES_TITLE = "المشتريات";
@@ -125,7 +134,7 @@ public class TreasureDetailsController {
                 dateFrom.setValue(LocalDate.now());
                 filteredList.setPredicate(filterByDate().and(filterByDetails()).and(filterByUsers()).and(filterByTime()));
             } catch (DaoException e) {
-                AllAlerts.handleError("تصفية حركات الخزينة", e);
+                AllAlerts.handleError(LanguageManager.getInstance().getString("treasury.error.filter.title"), e);
             }
         }
     }
@@ -149,9 +158,9 @@ public class TreasureDetailsController {
     }
 
     private void addTableColumns() {
-        TableColumn<TreasuryBalance, String> printColumn = new TableColumn<>(Setting_Language.WORD_SHOW);
+        TableColumn<TreasuryBalance, String> printColumn = new TableColumn<>(LanguageManager.getInstance().getString("show"));
         printColumn.setCellFactory(col -> new TableCell<>() {
-            private final Button btn = new Button(Setting_Language.WORD_SHOW);
+            private final Button btn = new Button(LanguageManager.getInstance().getString("show"));
 
             {
 
@@ -200,13 +209,18 @@ public class TreasureDetailsController {
         comboTreasury.getItems().addAll(getListTreasuryModelNames());
         comboTreasury.getSelectionModel().selectFirst();
 
-        String[] strings = {"الكل", PURCHASES_TITLE, RETURNED_PURCHASES_TITLE, SALES_TITLE, RETURNED_SALES_TITLE, CUSTOMER_ACCOUNTS_TITLE, SUPPLIER_ACCOUNT_TITLE, EXPENSES_TITLE, "إيداع", "صرف"};
+        // Only the leading "all" entry is display text - filterByDetails() short-circuits
+        // on index 0 before it ever compares text, but every entry after it is one of the
+        // seven view-tied constants above, or "إيداع"/"صرف" which the same view also emits
+        // (deposit_or_expenses branch) - none of those nine may be translated.
+        String[] strings = {LanguageManager.getInstance().getString("all"), PURCHASES_TITLE, RETURNED_PURCHASES_TITLE, SALES_TITLE, RETURNED_SALES_TITLE, CUSTOMER_ACCOUNTS_TITLE, SUPPLIER_ACCOUNT_TITLE, EXPENSES_TITLE, "إيداع", "صرف"};
         comboDetails.getItems().clear();
         comboDetails.getItems().addAll(strings);
         comboDetails.getSelectionModel().selectFirst();
 
         comboUsers.getItems().clear();
-        comboUsers.getItems().add(Setting_Language.WORD_ALL);
+        // filterByUsers() short-circuits on index 0 too, so this one is safe to translate.
+        comboUsers.getItems().add(LanguageManager.getInstance().getString("all"));
         comboUsers.getItems().addAll(getUsersNames());
         comboUsers.getSelectionModel().selectFirst();
     }
@@ -216,7 +230,7 @@ public class TreasureDetailsController {
         try {
             return treasuryService.listTreasuryModelNames();
         } catch (DaoException e) {
-            AllAlerts.handleError("تحميل الخزائن", e);
+            AllAlerts.handleError(LanguageManager.getInstance().getString("treasury.error.load.title"), e);
             return List.of();
         }
     }
@@ -225,7 +239,7 @@ public class TreasureDetailsController {
         try {
             return userService.getUsersNames();
         } catch (DaoException e) {
-            AllAlerts.handleError("تحميل المستخدمين", e);
+            AllAlerts.handleError(LanguageManager.getInstance().getString("treasury.error.load.users.title"), e);
             return List.of();
         }
     }
@@ -258,7 +272,7 @@ public class TreasureDetailsController {
         // Read off the pickers before leaving the JavaFX thread.
         var from = dateFrom.getValue().toString();
         var to = dateTo.getValue().toString();
-        maskerPaneSetting.showMaskerPane("تحميل تفاصيل الخزينة", () -> {
+        maskerPaneSetting.showMaskerPane(LanguageManager.getInstance().getString("treasury.masker.loading"), () -> {
             var treasuryBalanceSummary = treasuryBalanceService.getAllTreasuryBalanceBetweenTwoDate(from, to)
                     .stream()
 //                        .filter(treasuryBalance -> treasuryBalance.getTotal_income() != 0 && treasuryBalance.getTotal_output() != 0)
@@ -306,7 +320,7 @@ public class TreasureDetailsController {
         try {
             return userService.getUsersByName(comboUsers.getSelectionModel().getSelectedItem());
         } catch (DaoException e) {
-            AllAlerts.handleError("تحميل بيانات المستخدم", e);
+            AllAlerts.handleError(LanguageManager.getInstance().getString("treasury.error.load.user.data.title"), e);
         }
         return new Users();
     }

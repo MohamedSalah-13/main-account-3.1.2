@@ -9,7 +9,7 @@ import com.hamza.account.authorization.PermissionKey;
 import com.hamza.account.view.ExpensesDetailsApplication;
 import com.hamza.account.view.OpenTreasuryDetailsApplication;
 import com.hamza.account.view.ProcessorApplication;
-import com.hamza.controlsfx.language.Setting_Language;
+import com.hamza.controlsfx.language.LanguageManager;
 import javafx.stage.Stage;
 import org.jetbrains.annotations.NotNull;
 
@@ -39,7 +39,7 @@ public class TreasuryButtons {
             @NotNull
             @Override
             public String textName() {
-                return OpenTreasuryDetailsApplication.ACCOUNT_STATEMENT_TITLE;
+                return OpenTreasuryDetailsApplication.accountStatementTitle();
             }
 
         };
@@ -61,7 +61,7 @@ public class TreasuryButtons {
             @NotNull
             @Override
             public String textName() {
-                return Setting_Language.PROCESS;
+                return LanguageManager.getInstance().getString("common.process");
             }
         };
     }
