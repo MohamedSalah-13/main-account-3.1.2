@@ -20,7 +20,7 @@
             <top>
                 <VBox spacing="10.0" styleClass="app-card" BorderPane.alignment="CENTER">
                     <children>
-                        <Text fx:id="searchByDate" strokeType="OUTSIDE" strokeWidth="0.0" styleClass="text-explain" text="Search By date" />
+                        <Text fx:id="searchByDate" strokeType="OUTSIDE" strokeWidth="0.0" styleClass="text-explain" text="%search_date" />
                         <GridPane hgap="10.0" minHeight="-Infinity" minWidth="-Infinity" vgap="10.0">
                             <columnConstraints>
                                 <ColumnConstraints hgrow="SOMETIMES" maxWidth="-Infinity" minWidth="10.0" />
@@ -33,11 +33,11 @@
                                 <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
                             </rowConstraints>
                             <children>
-                                <Label fx:id="labelFrom" text="From" />
+                                <Label fx:id="labelFrom" text="%from" />
                                 <DatePicker fx:id="dateFrom" editable="false" GridPane.columnIndex="1" />
-                                <Label fx:id="labelTo" text="To" GridPane.columnIndex="2" />
+                                <Label fx:id="labelTo" text="%to" GridPane.columnIndex="2" />
                                 <DatePicker fx:id="dateTo" editable="false" GridPane.columnIndex="3" />
-                                <Button fx:id="btnShow" mnemonicParsing="false" styleClass="app-primary-button" text="Show" GridPane.columnIndex="4" />
+                                <Button fx:id="btnShow" mnemonicParsing="false" styleClass="app-primary-button" text="%search" GridPane.columnIndex="4" />
                             </children>
                         </GridPane>
                     </children>
@@ -75,22 +75,22 @@
                                 <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
                             </rowConstraints>
                             <children>
-                                <Label fx:id="labelSales" text="Sales" />
-                                <Label fx:id="labelSalesReturn" text="Sales Return" GridPane.rowIndex="1" />
-                                <Label fx:id="labelTotalReceipt" text="Total Receipts" GridPane.rowIndex="2" />
-                                <Label fx:id="labelWithdrawals" text="Withdrawals" GridPane.rowIndex="3" />
-                                <Label fx:id="labelTotalPurchase" text="Total Purchase" GridPane.columnIndex="2" />
-                                <Label fx:id="labelTotalDamaged" text="Total Damaged" GridPane.columnIndex="2" GridPane.rowIndex="1" />
-                                <Label fx:id="labelTotalPaid" text="Total Paid" GridPane.columnIndex="2" GridPane.rowIndex="2" />
-                                <Label fx:id="labelPaymentFees" text="Payment fees" GridPane.columnIndex="2" GridPane.rowIndex="3" />
-                                <Label fx:id="labelTotalPurchaseReturn" text="Total Purchase Return" GridPane.columnIndex="4" />
-                                <Label fx:id="labelTotalCost" text="Total Cost" GridPane.columnIndex="4" GridPane.rowIndex="1" />
-                                <Label fx:id="labelExpenses" text="Expenses" GridPane.columnIndex="4" GridPane.rowIndex="2" />
-                                <Label fx:id="labelBankBalance" text="BankBalance" GridPane.columnIndex="4" GridPane.rowIndex="3" />
-                                <Label fx:id="labelGrossProfit" text="Gross Profit" GridPane.columnIndex="6" />
-                                <Label fx:id="labelNetCash" text="Net Cash" GridPane.columnIndex="6" GridPane.rowIndex="1" />
-                                <Label fx:id="labelTreasury" text="Treasury" GridPane.columnIndex="6" GridPane.rowIndex="2" />
-                                <Label fx:id="labelCashDeposit" text="Cash Deposit" GridPane.columnIndex="6" GridPane.rowIndex="3" />
+                                <Label fx:id="labelSales" text="%report.summary.total.sales" />
+                                <Label fx:id="labelSalesReturn" text="%report.summary.total.sales.return" GridPane.rowIndex="1" />
+                                <Label fx:id="labelTotalReceipt" text="%report.summary.total.receipts" GridPane.rowIndex="2" />
+                                <Label fx:id="labelWithdrawals" text="%report.summary.paid.customers" GridPane.rowIndex="3" />
+                                <Label fx:id="labelTotalPurchase" text="%report.summary.total.purchase" GridPane.columnIndex="2" />
+                                <Label fx:id="labelTotalDamaged" text="%report.summary.total.damaged" GridPane.columnIndex="2" GridPane.rowIndex="1" />
+                                <Label fx:id="labelTotalPaid" text="%paid" GridPane.columnIndex="2" GridPane.rowIndex="2" />
+                                <Label fx:id="labelPaymentFees" text="%report.summary.paid.suppliers" GridPane.columnIndex="2" GridPane.rowIndex="3" />
+                                <Label fx:id="labelTotalPurchaseReturn" text="%report.summary.total.purchase.return" GridPane.columnIndex="4" />
+                                <Label fx:id="labelTotalCost" text="%invoice.total.cost" GridPane.columnIndex="4" GridPane.rowIndex="1" />
+                                <Label fx:id="labelExpenses" text="%expenses" GridPane.columnIndex="4" GridPane.rowIndex="2" />
+                                <Label fx:id="labelBankBalance" text="%report.summary.bank.balance" GridPane.columnIndex="4" GridPane.rowIndex="3" />
+                                <Label fx:id="labelGrossProfit" text="%invoice.gross.profit" GridPane.columnIndex="6" />
+                                <Label fx:id="labelNetCash" text="%report.summary.net.cash" GridPane.columnIndex="6" GridPane.rowIndex="1" />
+                                <Label fx:id="labelTreasury" text="%treasury.label.treasury" GridPane.columnIndex="6" GridPane.rowIndex="2" />
+                                <Label fx:id="labelCashDeposit" text="%report.summary.cash.deposit" GridPane.columnIndex="6" GridPane.rowIndex="3" />
                                 <TextField fx:id="txtSales" editable="false" text="0.0" GridPane.columnIndex="1" />
                                 <TextField fx:id="txtSalesReturn" editable="false" text="0.0" GridPane.columnIndex="1" GridPane.rowIndex="1" />
                                 <TextField fx:id="txtTotalReceipt" editable="false" text="0.0" GridPane.columnIndex="1" GridPane.rowIndex="2" />
@@ -107,7 +107,7 @@
                                 <TextField fx:id="txtNetCash" editable="false" text="0.0" GridPane.columnIndex="7" GridPane.rowIndex="1" />
                                 <TextField fx:id="txtTreasury" editable="false" text="0.0" GridPane.columnIndex="7" GridPane.rowIndex="2" />
                                 <TextField fx:id="txtCashDeposit" editable="false" text="0.0" GridPane.columnIndex="7" GridPane.rowIndex="3" />
-                                <Label text="سحب من الخزينة" GridPane.rowIndex="4" />
+                                <Label text="%report.profit.loss.treasury.withdrawal" GridPane.rowIndex="4" />
                                 <TextField fx:id="txtExpenseTreasury" text="0.0" GridPane.columnIndex="1" GridPane.rowIndex="4" />
                             </children>
                         </GridPane>

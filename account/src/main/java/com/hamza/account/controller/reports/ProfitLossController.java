@@ -7,7 +7,7 @@ import com.hamza.account.openFxml.FxmlPath;
 import com.hamza.account.otherSetting.MaskerPaneSetting;
 import com.hamza.account.service.EarningsService;
 import com.hamza.account.service.UsersService;
-import com.hamza.controlsfx.language.Setting_Language;
+import com.hamza.controlsfx.language.LanguageManager;
 import com.hamza.controlsfx.others.DateSetting;
 import com.hamza.controlsfx.table.TableColumnAnnotation;
 import com.hamza.controlsfx.util.NumberUtils;
@@ -73,7 +73,7 @@ public class ProfitLossController {
         // Read off the pickers before leaving the JavaFX thread.
         var from = dateFrom.getValue();
         var to = dateTo.getValue();
-        maskerPaneSetting.showMaskerPane("تحميل تقرير الأرباح والخسائر", () -> {
+        maskerPaneSetting.showMaskerPane(LanguageManager.getInstance().getString("report.masker.loading.profit.loss"), () -> {
             List<Earnings> allEarningsData = earningsService.getEarningsByDateRange(from, to);
             List<TableData> tableData = new ArrayList<>();
 
@@ -166,28 +166,29 @@ public class ProfitLossController {
     }
 
     private void nameSetting() {
-        labelFrom.setText(Setting_Language.WORD_FROM);
-        labelTo.setText(Setting_Language.WORD_TO);
-        btnShow.setText(Setting_Language.WORD_SEARCH);
-        searchByDate.setText(Setting_Language.WORD_SEARCH_DATE);
+        var lang = LanguageManager.getInstance();
+        labelFrom.setText(lang.getString("from"));
+        labelTo.setText(lang.getString("to"));
+        btnShow.setText(lang.getString("search"));
+        searchByDate.setText(lang.getString("search_date"));
 
         // name totals
-        labelSales.setText(Setting_Language.TOTAL_SALES);
-        labelSalesReturn.setText(Setting_Language.TOTAL_SALES_RE);
-        labelTotalReceipt.setText(Setting_Language.TOTAL_RECEIPT);
-        labelBankBalance.setText(Setting_Language.BANK_BALANCE);
-        labelExpenses.setText(Setting_Language.EXPENSES);
-        labelGrossProfit.setText(Setting_Language.GROSS_PROFIT);
-        labelNetCash.setText(Setting_Language.NET_CASH);
-        labelTreasury.setText(Setting_Language.TREASURY);
-        labelCashDeposit.setText(Setting_Language.CASH_DEPOSIT);
-        labelTotalPurchase.setText(Setting_Language.TOTAL_PUR);
-        labelTotalPurchaseReturn.setText(Setting_Language.TOTAL_PUR_RE);
-        labelTotalPaid.setText(Setting_Language.WORD_PAID);
-        labelTotalDamaged.setText(Setting_Language.TOTAL_DAMAGED);
-        labelWithdrawals.setText("مدفوع ح/ العملاء");
-        labelPaymentFees.setText("مدفوع ح/ الموردين");
-        labelTotalCost.setText(Setting_Language.TOTAL_COST);
+        labelSales.setText(lang.getString("report.summary.total.sales"));
+        labelSalesReturn.setText(lang.getString("report.summary.total.sales.return"));
+        labelTotalReceipt.setText(lang.getString("report.summary.total.receipts"));
+        labelBankBalance.setText(lang.getString("report.summary.bank.balance"));
+        labelExpenses.setText(lang.getString("expenses"));
+        labelGrossProfit.setText(lang.getString("invoice.gross.profit"));
+        labelNetCash.setText(lang.getString("report.summary.net.cash"));
+        labelTreasury.setText(lang.getString("treasury.label.treasury"));
+        labelCashDeposit.setText(lang.getString("report.summary.cash.deposit"));
+        labelTotalPurchase.setText(lang.getString("report.summary.total.purchase"));
+        labelTotalPurchaseReturn.setText(lang.getString("report.summary.total.purchase.return"));
+        labelTotalPaid.setText(lang.getString("paid"));
+        labelTotalDamaged.setText(lang.getString("report.summary.total.damaged"));
+        labelWithdrawals.setText(lang.getString("report.summary.paid.customers"));
+        labelPaymentFees.setText(lang.getString("report.summary.paid.suppliers"));
+        labelTotalCost.setText(lang.getString("invoice.total.cost"));
     }
 
     private void action() {

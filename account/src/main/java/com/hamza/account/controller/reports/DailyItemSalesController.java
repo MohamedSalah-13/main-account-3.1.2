@@ -6,6 +6,7 @@ import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.model.domain.DailyItemSales;
 import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.alert.AllAlerts;
+import com.hamza.controlsfx.language.LanguageManager;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
@@ -84,7 +85,7 @@ public class DailyItemSalesController implements Initializable {
     private void onSearchAction() {
         LocalDate selectedDate = datePicker.getValue();
         if (selectedDate == null) {
-            alertError("من فضلك اختر التاريخ أولاً");
+            alertError(LanguageManager.getInstance().getString("report.error.select.date.first"));
             return;
         }
 
@@ -101,21 +102,21 @@ public class DailyItemSalesController implements Initializable {
             lblDayTotal.setText(String.format("%,.2f", dayTotal));
 
         } catch (DaoException e) {
-            AllAlerts.handleError("تحميل تقرير المبيعات اليومية", e);
+            AllAlerts.handleError(LanguageManager.getInstance().getString("report.error.load.daily.item.sales.title"), e);
         }
     }
 
     @FXML
     private void onExportPdf() {
         if (allData.isEmpty()) {
-            showWarning("يرجى البحث عن يوم يحتوي على مبيعات أولاً.");
+            showWarning(LanguageManager.getInstance().getString("report.msg.search.day.with.sales.first"));
             return;
         }
 
         String dateStr = datePicker.getValue().toString();
         FileChooser fileChooser = new FileChooser();
-        fileChooser.setTitle("حفظ التقرير");
-        fileChooser.setInitialFileName("تقرير_الأصناف_اليومى_" + dateStr + ".pdf");
+        fileChooser.setTitle(LanguageManager.getInstance().getString("party.dialog.save.report"));
+        fileChooser.setInitialFileName("Daily_Item_Sales_" + dateStr + ".pdf");
         fileChooser.getExtensionFilters().add(
                 new FileChooser.ExtensionFilter("PDF Files", "*.pdf")
         );
@@ -133,14 +134,14 @@ public class DailyItemSalesController implements Initializable {
             );
 
             if (success) {
-                showInfo("تم تصدير ملف PDF بنجاح في المسار: " + path);
+                showInfo(LanguageManager.getInstance().getString("party.export.success.saved.at", path));
                 try {
                     java.awt.Desktop.getDesktop().open(new File(path));
                 } catch (Exception e) {
                     log.error("Error opening PDF file: ", e);
                 }
             } else {
-                alertError("فشل في تصدير ملف PDF");
+                alertError(LanguageManager.getInstance().getString("report.msg.export.pdf.failed"));
             }
         }
     }
@@ -148,13 +149,13 @@ public class DailyItemSalesController implements Initializable {
     @FXML
     private void onExportExcel() {
         if (allData.isEmpty()) {
-            showWarning("يرجى البحث عن يوم يحتوي على مبيعات أولاً.");
+            showWarning(LanguageManager.getInstance().getString("report.msg.search.day.with.sales.first"));
             return;
         }
 
         String dateStr = datePicker.getValue().toString();
         FileChooser fileChooser = new FileChooser();
-        fileChooser.setTitle("حفظ تقرير الإكسيل");
+        fileChooser.setTitle(LanguageManager.getInstance().getString("report.dialog.save.excel.title"));
         fileChooser.setInitialFileName("Daily_Sales_" + dateStr + ".xlsx");
         fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("Excel Files", "*.xlsx"));
 
@@ -165,9 +166,9 @@ public class DailyItemSalesController implements Initializable {
                 // افترضنا أنك أضفت دالة تصدير الإكسيل اليومية في ExcelExportService
                 // إذا لم تقم بإضافتها، يجب إضافتها لتعمل هذه الدالة
                 excelExportService.exportDailySalesToExcel(allData, file.getAbsolutePath());
-                showInfo("تم تصدير ملف Excel بنجاح.");
+                showInfo(LanguageManager.getInstance().getString("party.export.excel.success"));
             } catch (Exception e) {
-                AllAlerts.handleError("تصدير تقرير المبيعات اليومية", e);
+                AllAlerts.handleError(LanguageManager.getInstance().getString("report.error.export.daily.item.sales.title"), e);
             }
         }
     }

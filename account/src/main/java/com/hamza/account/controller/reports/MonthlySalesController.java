@@ -5,6 +5,7 @@ import com.hamza.account.features.export.ReportExportService;
 import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.model.dao.MonthlySalesViewDao;
 import com.hamza.account.model.domain.MonthlySalesViewModel;
+import com.hamza.controlsfx.language.LanguageManager;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.embed.swing.SwingFXUtils;
@@ -108,18 +109,19 @@ public class MonthlySalesController implements Initializable {
             series.setName(String.valueOf(yearData.getSalesYear())); // اسم السلسلة هو السنة (مثال: 2025)
 
             // إضافة بيانات الشهور للسلسلة الحالية (نحول BigDecimal إلى Double ليقبله الرسم البياني)
-            series.getData().add(new XYChart.Data<>("يناير", getDoubleValue(yearData.getJanuary())));
-            series.getData().add(new XYChart.Data<>("فبراير", getDoubleValue(yearData.getFebruary())));
-            series.getData().add(new XYChart.Data<>("مارس", getDoubleValue(yearData.getMarch())));
-            series.getData().add(new XYChart.Data<>("أبريل", getDoubleValue(yearData.getApril())));
-            series.getData().add(new XYChart.Data<>("مايو", getDoubleValue(yearData.getMay())));
-            series.getData().add(new XYChart.Data<>("يونيو", getDoubleValue(yearData.getJune())));
-            series.getData().add(new XYChart.Data<>("يوليو", getDoubleValue(yearData.getJuly())));
-            series.getData().add(new XYChart.Data<>("أغسطس", getDoubleValue(yearData.getAugust())));
-            series.getData().add(new XYChart.Data<>("سبتمبر", getDoubleValue(yearData.getSeptember())));
-            series.getData().add(new XYChart.Data<>("أكتوبر", getDoubleValue(yearData.getOctober())));
-            series.getData().add(new XYChart.Data<>("نوفمبر", getDoubleValue(yearData.getNovember())));
-            series.getData().add(new XYChart.Data<>("ديسمبر", getDoubleValue(yearData.getDecember())));
+            var lang = LanguageManager.getInstance();
+            series.getData().add(new XYChart.Data<>(lang.getString("report.month.jan"), getDoubleValue(yearData.getJanuary())));
+            series.getData().add(new XYChart.Data<>(lang.getString("report.month.feb"), getDoubleValue(yearData.getFebruary())));
+            series.getData().add(new XYChart.Data<>(lang.getString("report.month.mar"), getDoubleValue(yearData.getMarch())));
+            series.getData().add(new XYChart.Data<>(lang.getString("report.month.apr"), getDoubleValue(yearData.getApril())));
+            series.getData().add(new XYChart.Data<>(lang.getString("report.month.may"), getDoubleValue(yearData.getMay())));
+            series.getData().add(new XYChart.Data<>(lang.getString("report.month.jun"), getDoubleValue(yearData.getJune())));
+            series.getData().add(new XYChart.Data<>(lang.getString("report.month.jul"), getDoubleValue(yearData.getJuly())));
+            series.getData().add(new XYChart.Data<>(lang.getString("report.month.aug"), getDoubleValue(yearData.getAugust())));
+            series.getData().add(new XYChart.Data<>(lang.getString("report.month.sep"), getDoubleValue(yearData.getSeptember())));
+            series.getData().add(new XYChart.Data<>(lang.getString("report.month.oct"), getDoubleValue(yearData.getOctober())));
+            series.getData().add(new XYChart.Data<>(lang.getString("report.month.nov"), getDoubleValue(yearData.getNovember())));
+            series.getData().add(new XYChart.Data<>(lang.getString("report.month.dec"), getDoubleValue(yearData.getDecember())));
             chartSales.getData().add(series);
         }
     }
@@ -131,7 +133,7 @@ public class MonthlySalesController implements Initializable {
     @FXML
     private void onExportPdf() {
         if (salesDataList.isEmpty()) {
-            showWarning("لا توجد بيانات لتصديرها");
+            showWarning(LanguageManager.getInstance().getString("party.error.no.data.export"));
             return;
         }
         var s = monthlySalesInterface.reportName();
@@ -146,12 +148,12 @@ public class MonthlySalesController implements Initializable {
     @FXML
     private void onExportExcel() {
         if (salesDataList.isEmpty()) {
-            showWarning("لا توجد بيانات لتصديرها");
+            showWarning(LanguageManager.getInstance().getString("party.error.no.data.export"));
             return;
         }
 
         FileChooser fileChooser = new FileChooser();
-        fileChooser.setTitle("حفظ تقرير إكسيل");
+        fileChooser.setTitle(LanguageManager.getInstance().getString("report.dialog.save.excel.title"));
         fileChooser.setInitialFileName(monthlySalesInterface.reportName() + ".xlsx");
         fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("Excel Files", "*.xlsx"));
 
@@ -161,9 +163,9 @@ public class MonthlySalesController implements Initializable {
             try {
                 ExcelExportService excelService = new ExcelExportService();
                 excelService.exportMonthlySalesToExcel(salesDataList, file.getAbsolutePath());
-                showInfo("تم تصدير ملف Excel بنجاح مع المخطط البياني");
+                showInfo(LanguageManager.getInstance().getString("report.monthly.sales.excel.success"));
             } catch (Exception e) {
-                com.hamza.controlsfx.alert.AllAlerts.handleError("تصدير تقرير المبيعات الشهرية", e);
+                com.hamza.controlsfx.alert.AllAlerts.handleError(LanguageManager.getInstance().getString("report.error.export.monthly.sales.title"), e);
             }
         }
     }

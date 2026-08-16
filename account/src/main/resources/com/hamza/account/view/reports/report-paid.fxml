@@ -39,24 +39,24 @@
                                 <RowConstraints minHeight="35.0" prefHeight="35.0" />
                             </rowConstraints>
                             <children>
-                                <Label fx:id="labelFrom" styleClass="form-label" text="Date From" />
+                                <Label fx:id="labelFrom" styleClass="form-label" text="%report.from.date" />
                                 <DatePicker fx:id="dateFrom" editable="false" GridPane.columnIndex="1" />
 
-                                <Label fx:id="labelTo" styleClass="form-label" text="Date To" GridPane.columnIndex="2" />
+                                <Label fx:id="labelTo" styleClass="form-label" text="%report.to.date" GridPane.columnIndex="2" />
                                 <DatePicker fx:id="dateTo" editable="false" GridPane.columnIndex="3" />
 
-                                <Label fx:id="labelCount" styleClass="form-label" text="Count" GridPane.rowIndex="1" />
+                                <Label fx:id="labelCount" styleClass="form-label" text="%count" GridPane.rowIndex="1" />
                                 <Text fx:id="textCount" strokeType="OUTSIDE" strokeWidth="0.0" styleClass="summary-value info-value" text="0.0" GridPane.columnIndex="1" GridPane.rowIndex="1" />
 
-                                <Label fx:id="labelTotal" styleClass="form-label" text="Total" GridPane.columnIndex="2" GridPane.rowIndex="1" />
+                                <Label fx:id="labelTotal" styleClass="form-label" text="%total" GridPane.columnIndex="2" GridPane.rowIndex="1" />
                                 <Text fx:id="textTotal" strokeType="OUTSIDE" strokeWidth="0.0" styleClass="summary-value success-value" text="0.0" GridPane.columnIndex="3" GridPane.rowIndex="1" />
                             </children>
                         </GridPane>
 
                         <HBox alignment="BOTTOM_LEFT" spacing="10.0" HBox.hgrow="SOMETIMES">
                             <children>
-                                <Button fx:id="btnSearch" mnemonicParsing="false" styleClass="primary-button" text="Search" />
-                                <Button fx:id="btnPrint" mnemonicParsing="false" styleClass="neutral-button" text="Print" />
+                                <Button fx:id="btnSearch" mnemonicParsing="false" styleClass="primary-button" text="%search" />
+                                <Button fx:id="btnPrint" mnemonicParsing="false" styleClass="neutral-button" text="%print" />
                             </children>
                         </HBox>
                     </children>

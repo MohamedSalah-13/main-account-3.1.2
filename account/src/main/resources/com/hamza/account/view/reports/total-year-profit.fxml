@@ -19,21 +19,21 @@
                     <children>
                         <VBox spacing="5.0">
                             <children>
-                                <Label styleClass="report-title" text="التقرير السنوي" />
-                                <Label styleClass="report-subtitle" text="عرض إجمالي الأرباح والبيانات السنوية" />
+                                <Label styleClass="report-title" text="%report.yearly.title" />
+                                <Label styleClass="report-subtitle" text="%report.yearly.subtitle" />
                             </children>
                         </VBox>
 
                               <Region HBox.hgrow="ALWAYS" />
 
-                              <Label styleClass="form-label" text="السنة:" />
+                              <Label styleClass="form-label" text="%report.item.sales.rank.year.colon" />
                         <ComboBox fx:id="comboYear" prefWidth="150.0" />
 
-                              <Button fx:id="searchButton" mnemonicParsing="false" styleClass="primary-button" text="بحث" />
+                              <Button fx:id="searchButton" mnemonicParsing="false" styleClass="primary-button" text="%search" />
 
-                              <Button fx:id="btnPrintPdf" mnemonicParsing="false" styleClass="pdf-button" text="تصدير PDF" />
+                              <Button fx:id="btnPrintPdf" mnemonicParsing="false" styleClass="pdf-button" text="%report.export.pdf" />
 
-                              <Button fx:id="btnExportExcel" mnemonicParsing="false" styleClass="excel-button" text="تصدير Excel" />
+                              <Button fx:id="btnExportExcel" mnemonicParsing="false" styleClass="excel-button" text="%report.export.excel" />
                     </children>
                 </HBox>
          </top>

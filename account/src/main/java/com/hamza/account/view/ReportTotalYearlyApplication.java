@@ -4,6 +4,7 @@ import com.hamza.account.config.Image_Setting;
 import com.hamza.account.controller.reports.ReportTotalByYearController;
 import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.openFxml.OpenFxmlApplication;
+import com.hamza.controlsfx.language.LanguageManager;
 import javafx.application.Application;
 import javafx.scene.Scene;
 import javafx.scene.layout.Pane;
@@ -15,7 +16,12 @@ import java.io.InputStream;
 @Getter
 public class ReportTotalYearlyApplication extends Application {
 
-    public static final String YEARLY_REPORT_NAME = "تقرير سنوى";
+    // A method, not a baked-in static final: the old literal was read once at class
+    // load and never reflected a later language switch.
+    public static String yearlyReportName() {
+        return LanguageManager.getInstance().getString("report.yearly.title");
+    }
+
     private final InputStream reports = new Image_Setting().reports;
     private final Pane pane;
 
@@ -27,7 +33,7 @@ public class ReportTotalYearlyApplication extends Application {
     public void start(Stage stage) throws Exception {
         Scene scene = new SceneAll(pane);
         stage.setScene(scene);
-        stage.setTitle(YEARLY_REPORT_NAME);
+        stage.setTitle(yearlyReportName());
         stage.getIcons().add(new javafx.scene.image.Image(new Image_Setting().reports));
         stage.setResizable(true);
 //        stage.initModality(javafx.stage.Modality.APPLICATION_MODAL);

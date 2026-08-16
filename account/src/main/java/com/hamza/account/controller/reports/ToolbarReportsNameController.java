@@ -1,7 +1,7 @@
 package com.hamza.account.controller.reports;
 
 import com.hamza.controlsfx.alert.AllAlerts;
-import com.hamza.controlsfx.language.Setting_Language;
+import com.hamza.controlsfx.language.LanguageManager;
 import javafx.fxml.FXML;
 import javafx.scene.Node;
 import javafx.scene.control.Button;
@@ -24,8 +24,8 @@ public class ToolbarReportsNameController {
     }
 
     private void nameSetting() {
-        btnPrint.setText(Setting_Language.WORD_PRINT);
-        btnRefresh.setText(Setting_Language.WORD_REFRESH);
+        btnPrint.setText(LanguageManager.getInstance().getString("print"));
+        btnRefresh.setText(LanguageManager.getInstance().getString("refresh"));
     }
 
     public void setReportToolbar(@NotNull ToolbarReportsNameInterface toolbarReportsNameInterface, Node... nodes) {
@@ -33,14 +33,14 @@ public class ToolbarReportsNameController {
             try {
                 toolbarReportsNameInterface.print();
             } catch (Exception e) {
-                AllAlerts.handleError("طباعة التقرير", e);
+                AllAlerts.handleError(LanguageManager.getInstance().getString("report.error.print.title"), e);
             }
         });
         btnRefresh.setOnAction(event -> {
             try {
                 toolbarReportsNameInterface.refresh();
             } catch (Exception e) {
-                AllAlerts.handleError("تحديث التقرير", e);
+                AllAlerts.handleError(LanguageManager.getInstance().getString("report.error.refresh.title"), e);
             }
         });
         labelTitle.setText(toolbarReportsNameInterface.setTitle());

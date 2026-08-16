@@ -7,6 +7,7 @@ import com.hamza.account.features.export.ExcelExportService;
 import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.error.UserValidationException;
+import com.hamza.controlsfx.language.LanguageManager;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
@@ -95,7 +96,8 @@ public class ComprehensiveSalesController implements Initializable {
     @FXML
     private void onSearchAction() {
         if (dpFrom.getValue() == null || dpTo.getValue() == null) {
-            AllAlerts.handleError("بحث التقرير الشامل للمبيعات", new UserValidationException("يرجى تحديد فترة البحث بدقة"));
+            AllAlerts.handleError(LanguageManager.getInstance().getString("report.error.search.comprehensive.sales.title"),
+                    new UserValidationException(LanguageManager.getInstance().getString("report.error.date.range.required")));
             return;
         }
 
@@ -109,7 +111,7 @@ public class ComprehensiveSalesController implements Initializable {
             calculateFooterTotals();
 
         } catch (DaoException e) {
-            AllAlerts.handleError("تحميل تقرير المبيعات الشامل", e);
+            AllAlerts.handleError(LanguageManager.getInstance().getString("report.error.load.comprehensive.sales.title"), e);
         }
     }
 
@@ -127,13 +129,13 @@ public class ComprehensiveSalesController implements Initializable {
     private void onExportPdf() {
         if (masterData.isEmpty()) return;
 
-        String period = "من " + dpFrom.getValue() + " إلى " + dpTo.getValue();
+        String period = LanguageManager.getInstance().getString("report.period.from.to", dpFrom.getValue(), dpTo.getValue());
 //        String path = ReportExportService.getDefaultOutputPath("تقرير_المبيعات_الشامل");
 
 //        boolean success = reportExportService.exportComprehensiveSalesReport(masterData, period, path);
 //        if (success) showInfo("تم حفظ ملف PDF في المسار:\n" + path);
 
-        new ChoosePdfFile().choosePdfFile("تقرير_المبيعات_الشامل", path ->
+        new ChoosePdfFile().choosePdfFile("Comprehensive_Sales_Report", path ->
                 reportExportService.exportComprehensiveSalesReport(masterData, period, path));
     }
 
@@ -149,9 +151,9 @@ public class ComprehensiveSalesController implements Initializable {
             try {
                 // ملاحظة: تأكد من إضافة الدالة المقابلة في ExcelExportService
                 // excelExportService.exportComprehensiveSalesToExcel(masterData, file.getAbsolutePath());
-                showInfo("تم تصدير ملف Excel بنجاح.");
+                showInfo(LanguageManager.getInstance().getString("party.export.excel.success"));
             } catch (Exception e) {
-                AllAlerts.handleError("تصدير تقرير المبيعات الشامل", e);
+                AllAlerts.handleError(LanguageManager.getInstance().getString("report.error.export.comprehensive.sales.title"), e);
             }
         }
     }

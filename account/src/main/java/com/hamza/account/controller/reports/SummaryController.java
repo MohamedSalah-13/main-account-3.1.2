@@ -7,6 +7,7 @@ import com.hamza.account.openFxml.FxmlPath;
 import com.hamza.account.openFxml.OpenFxmlApplication;
 import com.hamza.account.otherSetting.MaskerPaneSetting;
 import com.hamza.controlsfx.interfaceData.AppSettingInterface;
+import com.hamza.controlsfx.language.LanguageManager;
 import com.hamza.controlsfx.table.TableColumnAnnotation;
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
@@ -77,18 +78,18 @@ public class SummaryController implements AppSettingInterface {
 
     private void getTableItems() {
         // 2. إنشاء عمود "اسم الصنف"
-        TableColumn<TopSellingItem, String> nameCol = new TableColumn<>("اسم الصنف");
+        TableColumn<TopSellingItem, String> nameCol = new TableColumn<>(LanguageManager.getInstance().getString("invoice.item.name"));
         nameCol.setMinWidth(200);
         // "itemName" يجب أن تتطابق تماماً مع اسم المتغير في الكلاس TopSellingItem
         nameCol.setCellValueFactory(new PropertyValueFactory<>("itemName"));
 
         // 3. إنشاء عمود "الكمية"
-        TableColumn<TopSellingItem, BigDecimal> quantityCol = new TableColumn<>("إجمالي الكمية");
+        TableColumn<TopSellingItem, BigDecimal> quantityCol = new TableColumn<>(LanguageManager.getInstance().getString("report.summary.total.quantity"));
         quantityCol.setMinWidth(150);
         quantityCol.setCellValueFactory(new PropertyValueFactory<>("totalQuantity"));
 
         // 4. إنشاء عمود "متوسط السعر"
-        TableColumn<TopSellingItem, BigDecimal> priceCol = new TableColumn<>("متوسط السعر");
+        TableColumn<TopSellingItem, BigDecimal> priceCol = new TableColumn<>(LanguageManager.getInstance().getString("report.summary.average.price"));
         priceCol.setMinWidth(150);
         priceCol.setCellValueFactory(new PropertyValueFactory<>("averagePrice"));
 

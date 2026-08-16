@@ -21,20 +21,20 @@
                     <children>
                         <VBox spacing="5.0">
                             <children>
-                                <Label styleClass="report-title" text="تقرير حركة الأصناف" />
-                                <Label styleClass="report-subtitle" text="الأصناف الأكثر والأقل مبيعاً حسب الشهر والسنة" />
+                                <Label styleClass="report-title" text="%report.item.sales.rank.title" />
+                                <Label styleClass="report-subtitle" text="%report.item.sales.rank.subtitle" />
                             </children>
                         </VBox>
 
                         <Region HBox.hgrow="ALWAYS" />
 
-                        <Label styleClass="form-label" text="السنة:" />
+                        <Label styleClass="form-label" text="%report.item.sales.rank.year.colon" />
                         <ComboBox fx:id="comboYear" prefWidth="100.0" />
 
-                        <Label styleClass="form-label" text="الشهر:" />
+                        <Label styleClass="form-label" text="%report.item.sales.rank.month.colon" />
                         <ComboBox fx:id="comboMonth" prefWidth="120.0" />
 
-                        <Button mnemonicParsing="false" onAction="#searchAction" styleClass="primary-button" text="بحث وعرض" />
+                        <Button mnemonicParsing="false" onAction="#searchAction" styleClass="primary-button" text="%report.search.and.show" />
 
                         <Button onAction="#onExportPdf" styleClass="pdf-button" text="PDF" />
                         <Button onAction="#onExportExcel" styleClass="excel-button" text="Excel" />
@@ -49,13 +49,13 @@
                           <items>
                               <VBox spacing="10.0" styleClass="chart-card">
                                   <children>
-                                      <Label styleClass="section-title" text="التفاصيل - اضغط على اسم العمود للترتيب" />
+                                      <Label styleClass="section-title" text="%report.item.sales.rank.details.hint" />
                                       <TableView fx:id="tableView" minHeight="-Infinity" minWidth="-Infinity" prefHeight="250.0" prefWidth="300.0" styleClass="app-table" VBox.vgrow="ALWAYS">
                                           <columns>
-                                              <TableColumn fx:id="colItemName" prefWidth="250.0" text="اسم الصنف" />
-                                              <TableColumn fx:id="colTotalQty" prefWidth="120.0" text="الكمية المباعة" />
-                                              <TableColumn fx:id="colTotalAmount" prefWidth="150.0" text="إجمالي المبيعات" />
-                                              <TableColumn fx:id="colTotalProfit" prefWidth="150.0" text="صافي الربح" />
+                                              <TableColumn fx:id="colItemName" prefWidth="250.0" text="%invoice.item.name" />
+                                              <TableColumn fx:id="colTotalQty" prefWidth="120.0" text="%report.column.quantity.sold" />
+                                              <TableColumn fx:id="colTotalAmount" prefWidth="150.0" text="%report.summary.total.sales" />
+                                              <TableColumn fx:id="colTotalProfit" prefWidth="150.0" text="%report.item.sales.rank.net.profit" />
                                           </columns>
                                           <columnResizePolicy>
                                               <TableView fx:constant="CONSTRAINED_RESIZE_POLICY" />
@@ -66,8 +66,8 @@
       
                                           <VBox alignment="TOP_CENTER" spacing="10.0" styleClass="chart-card">
                                   <children>
-                                      <Label styleClass="section-title" text="أعلى 10 أصناف مبيعاً - بالكمية" />
-                                      <PieChart fx:id="pieChartBestSellers" title="الأكثر مبيعاً" VBox.vgrow="ALWAYS" />
+                                      <Label styleClass="section-title" text="%report.item.sales.rank.top10.hint" />
+                                      <PieChart fx:id="pieChartBestSellers" title="%report.item.sales.rank.top10.chart.title" VBox.vgrow="ALWAYS" />
                                   </children>
                               </VBox>
                           </items>

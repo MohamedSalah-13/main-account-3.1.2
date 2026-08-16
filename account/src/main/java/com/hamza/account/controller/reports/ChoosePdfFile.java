@@ -1,5 +1,6 @@
 package com.hamza.account.controller.reports;
 
+import com.hamza.controlsfx.language.LanguageManager;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 import lombok.extern.log4j.Log4j2;
@@ -14,7 +15,7 @@ public class ChoosePdfFile {
 
     public void choosePdfFile(String reportName, ExportReport exportReport) {
         FileChooser fileChooser = new FileChooser();
-        fileChooser.setTitle("حفظ التقرير");
+        fileChooser.setTitle(LanguageManager.getInstance().getString("party.dialog.save.report"));
         fileChooser.setInitialFileName(reportName + ".pdf");
         fileChooser.getExtensionFilters().add(
                 new FileChooser.ExtensionFilter("PDF Files", "*.pdf")
@@ -27,14 +28,14 @@ public class ChoosePdfFile {
             String path = file.getAbsolutePath();
             boolean success = exportReport.success(path);
             if (success) {
-                showInfo("تم تصدير ملف PDF بنجاح في المسار: " + path);
+                showInfo(LanguageManager.getInstance().getString("party.export.success.saved.at", path));
                 try {
                     java.awt.Desktop.getDesktop().open(new File(path));
                 } catch (Exception e) {
                     log.error("Error opening PDF file: ", e);
                 }
             } else {
-                alertError("فشل في تصدير ملف PDF");
+                alertError(LanguageManager.getInstance().getString("report.msg.export.pdf.failed"));
             }
         }
     }

@@ -7,6 +7,7 @@ import com.hamza.account.model.domain.ItemSalesRank;
 import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.error.UserValidationException;
+import com.hamza.controlsfx.language.LanguageManager;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
@@ -78,9 +79,15 @@ public class ItemSalesRankController implements Initializable {
 
     private void setupFilters() {
         // إضافة الشهور للقائمة (0 تعني كل السنة)
+        // The combo is read back by selectedIndex only (searchAction()), never by
+        // matching its text, so translating these entries is safe.
+        var lang = LanguageManager.getInstance();
         comboMonth.getItems().addAll(
-                "كل السنة", "يناير", "فبراير", "مارس", "أبريل", "مايو", "يونيو",
-                "يوليو", "أغسطس", "سبتمبر", "أكتوبر", "نوفمبر", "ديسمبر"
+                lang.getString("report.month.all"), lang.getString("report.month.jan"), lang.getString("report.month.feb"),
+                lang.getString("report.month.mar"), lang.getString("report.month.apr"), lang.getString("report.month.may"),
+                lang.getString("report.month.jun"), lang.getString("report.month.jul"), lang.getString("report.month.aug"),
+                lang.getString("report.month.sep"), lang.getString("report.month.oct"), lang.getString("report.month.nov"),
+                lang.getString("report.month.dec")
         );
         comboMonth.getSelectionModel().selectFirst(); // اختيار "كل السنة" كافتراضي
     }
@@ -96,7 +103,8 @@ public class ItemSalesRankController implements Initializable {
     @FXML
     private void searchAction() {
         if (comboYear.getValue() == null) {
-            AllAlerts.handleError("تحميل تقرير الأصناف الأكثر مبيعًا", new UserValidationException("من فضلك حدد السنة أولاً"));
+            AllAlerts.handleError(LanguageManager.getInstance().getString("report.error.load.item.sales.rank.title"),
+                    new UserValidationException(LanguageManager.getInstance().getString("report.error.select.year.first")));
             return;
         }
 
@@ -117,7 +125,7 @@ public class ItemSalesRankController implements Initializable {
             updatePieChart(result);
 
         } catch (DaoException e) {
-            AllAlerts.handleError("تحميل تقرير الأصناف الأكثر مبيعًا", e);
+            AllAlerts.handleError(LanguageManager.getInstance().getString("report.error.load.item.sales.rank.title"), e);
         }
     }
 
@@ -155,11 +163,12 @@ public class ItemSalesRankController implements Initializable {
     @FXML
     private void onExportPdf() {
         if (tableView.getItems().isEmpty()) {
-            AllAlerts.handleError("تصدير تقرير الأصناف", new UserValidationException("لا توجد بيانات لتصديرها"));
+            AllAlerts.handleError(LanguageManager.getInstance().getString("report.error.export.item.sales.rank.title"),
+                    new UserValidationException(LanguageManager.getInstance().getString("party.error.no.data.export")));
             return;
         }
 
-        new ChoosePdfFile().choosePdfFile("تقرير حركة الأصناف لسنة " + comboYear.getValue(), path -> {
+        new ChoosePdfFile().choosePdfFile("Item_Sales_Rank_Report_" + comboYear.getValue(), path -> {
             // 1. أخذ لقطة (Snapshot) من الـ PieChart
             byte[] chartImage = null;
             try {
@@ -174,7 +183,7 @@ public class ItemSalesRankController implements Initializable {
 
             return reportExportService.exportItemSalesRankReport(
                     tableView.getItems(),
-                    "تقرير حركة الأصناف لسنة " + comboYear.getValue(),
+                    LanguageManager.getInstance().getString("report.item.sales.rank.title.for.year", comboYear.getValue()),
                     path,
                     chartImage
             );
@@ -192,9 +201,9 @@ public class ItemSalesRankController implements Initializable {
         if (file != null) {
             try {
                 excelExportService.exportItemSalesToExcel(tableView.getItems(), file.getAbsolutePath());
-                showInfo("تم تصدير ملف Excel بنجاح");
+                showInfo(LanguageManager.getInstance().getString("party.export.excel.success"));
             } catch (Exception e) {
-                AllAlerts.handleError("تصدير تقرير الأصناف الأكثر مبيعًا", e);
+                AllAlerts.handleError(LanguageManager.getInstance().getString("report.error.export.item.sales.rank.title"), e);
             }
         }
     }

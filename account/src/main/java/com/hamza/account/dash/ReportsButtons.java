@@ -16,7 +16,7 @@ import com.hamza.account.view.ReportTotalYearlyApplication;
 import com.hamza.account.view.SceneAll;
 import com.hamza.account.view.StageManager;
 import com.hamza.controlsfx.interfaceData.AppSettingInterface;
-import com.hamza.controlsfx.language.Setting_Language;
+import com.hamza.controlsfx.language.LanguageManager;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
@@ -27,7 +27,7 @@ import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
 
-import static com.hamza.account.view.ReportTotalYearlyApplication.YEARLY_REPORT_NAME;
+import static com.hamza.account.view.ReportTotalYearlyApplication.yearlyReportName;
 
 public class ReportsButtons extends LoadData {
 
@@ -54,7 +54,7 @@ public class ReportsButtons extends LoadData {
             @NotNull
             @Override
             public String textName() {
-                return "ملخص الحسابات";
+                return LanguageManager.getInstance().getString("report.summary.accounts.title");
             }
         };
     }
@@ -76,7 +76,7 @@ public class ReportsButtons extends LoadData {
             @NotNull
             @Override
             public String textName() {
-                return YEARLY_REPORT_NAME;
+                return yearlyReportName();
             }
 
         };
@@ -97,7 +97,7 @@ public class ReportsButtons extends LoadData {
             @NotNull
             @Override
             public String textName() {
-                return Setting_Language.WORD_PROFIT_LOSS;
+                return LanguageManager.getInstance().getString("report.profit.loss.title");
             }
 
             @Override
@@ -123,7 +123,7 @@ public class ReportsButtons extends LoadData {
             @NotNull
             @Override
             public String textName() {
-                return Setting_Language.DETAILS;
+                return LanguageManager.getInstance().getString("report.details.title");
             }
 
             @Override
@@ -158,7 +158,7 @@ public class ReportsButtons extends LoadData {
             @NotNull
             @Override
             public String textName() {
-                return "تقرير حركة الأصناف (الأكثر والأقل مبيعاً)";
+                return LanguageManager.getInstance().getString("report.dashboard.item.sales.rank.stage.title");
             }
 
 
@@ -194,7 +194,7 @@ public class ReportsButtons extends LoadData {
             @NotNull
             @Override
             public String textName() {
-                return "تقرير حركة الأصناف اليومي";
+                return LanguageManager.getInstance().getString("report.daily.item.sales.title");
             }
 
 
@@ -236,7 +236,7 @@ public class ReportsButtons extends LoadData {
             @NotNull
             @Override
             public String textName() {
-                return "مدفوعات العملاء";
+                return LanguageManager.getInstance().getString("report.customer.payments.title");
             }
         };
     }
@@ -272,7 +272,7 @@ public class ReportsButtons extends LoadData {
             @NotNull
             @Override
             public String textName() {
-                return "مدفوعات الموردين";
+                return LanguageManager.getInstance().getString("report.supplier.payments.title");
             }
         };
     }

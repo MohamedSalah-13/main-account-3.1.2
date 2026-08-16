@@ -10,7 +10,7 @@ import com.hamza.account.service.TotalBuyService;
 import com.hamza.account.table.TableSetting;
 import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.alert.AllAlerts;
-import com.hamza.controlsfx.language.Setting_Language;
+import com.hamza.controlsfx.language.LanguageManager;
 import com.hamza.controlsfx.table.TableColumnAnnotation;
 import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
@@ -50,7 +50,7 @@ public class ReportTotalByYearController {
         new TableColumnAnnotation().getTable(tableView, TableDataReports.class);
         TableSetting.tableMenuSetting(getClass(), tableView);
 
-        searchButton.setText(Setting_Language.WORD_SEARCH);
+        searchButton.setText(LanguageManager.getInstance().getString("search"));
 //        btnPrintPdf.setText("Export PDF");
 //        btnExportExcel.setText("Export Excel");
 
@@ -67,7 +67,7 @@ public class ReportTotalByYearController {
             try {
                 searchAction();
             } catch (DaoException e) {
-                AllAlerts.handleError("تحميل التقرير السنوي", e);
+                AllAlerts.handleError(LanguageManager.getInstance().getString("report.error.load.yearly.title"), e);
             }
         });
 
@@ -82,7 +82,10 @@ public class ReportTotalByYearController {
                 if (empty || item == null) {
                     setStyle("");
                 } else {
-                    if (item.getReport_month_name().equals(Setting_Language.WORD_TOTAL)) {
+                    // Compared only against the value this same controller wrote in
+                    // calculateTotals() below, via the same fresh getString("total")
+                    // call, so a language switch between the two reads is not a risk.
+                    if (item.getReport_month_name().equals(LanguageManager.getInstance().getString("total"))) {
                         setStyle("-fx-background-color: #cccc69; -fx-text-fill: red; -fx-font-weight: bold; -fx-font-size: 14px;");
                     }
                 }
@@ -96,7 +99,7 @@ public class ReportTotalByYearController {
 
     private void searchAction() throws DaoException {
         if (comboYear.getValue() == null) {
-            showWarning("من فضلك حدد السنة");
+            showWarning(LanguageManager.getInstance().getString("report.error.select.year.first"));
             return;
         }
 
@@ -121,13 +124,13 @@ public class ReportTotalByYearController {
     @FXML
     private void onExportPdfAction() {
         if (tableView.getItems().isEmpty()) {
-            showWarning("لا توجد بيانات لتصديرها، قم بالبحث أولاً");
+            showWarning(LanguageManager.getInstance().getString("report.msg.search.first.to.export"));
             return;
         }
 
         FileChooser fileChooser = new FileChooser();
-        fileChooser.setTitle("حفظ التقرير");
-        fileChooser.setInitialFileName("تقرير_الأرباح_السنوي_" + comboYear.getValue() + ".pdf");
+        fileChooser.setTitle(LanguageManager.getInstance().getString("party.dialog.save.report"));
+        fileChooser.setInitialFileName("Yearly_Profit_Report_" + comboYear.getValue() + ".pdf");
         fileChooser.getExtensionFilters().add(
                 new FileChooser.ExtensionFilter("PDF Files", "*.pdf")
         );
@@ -139,19 +142,19 @@ public class ReportTotalByYearController {
             String path = file.getAbsolutePath();
             boolean success = reportExportService.exportYearlyComprehensiveReport(
                     tableView.getItems(),
-                    "تقرير الأرباح والمبيعات لسنة " + comboYear.getValue(),
+                    LanguageManager.getInstance().getString("report.yearly.profit.sales.title.for.year", comboYear.getValue()),
                     path
             );
 
             if (success) {
-                showInfo("تم تصدير ملف PDF بنجاح في المسار: " + path);
+                showInfo(LanguageManager.getInstance().getString("party.export.success.saved.at", path));
                 try {
                     java.awt.Desktop.getDesktop().open(new File(path));
                 } catch (Exception e) {
                     log.error("Error opening PDF file: ", e);
                 }
             } else {
-                showError("فشل في تصدير ملف PDF");
+                showError(LanguageManager.getInstance().getString("report.msg.export.pdf.failed"));
             }
         }
     }
@@ -159,7 +162,7 @@ public class ReportTotalByYearController {
     @FXML
     private void onExportExcelAction() {
         if (tableView.getItems().isEmpty()) {
-            showWarning("لا توجد بيانات لتصديرها");
+            showWarning(LanguageManager.getInstance().getString("party.error.no.data.export"));
             return;
         }
 
@@ -171,9 +174,9 @@ public class ReportTotalByYearController {
         if (file != null) {
             try {
                 excelExportService.exportYearlyReportToExcel(tableView.getItems(), file.getAbsolutePath());
-                showInfo("تم تصدير ملف Excel بنجاح");
+                showInfo(LanguageManager.getInstance().getString("party.export.excel.success"));
             } catch (IOException e) {
-                AllAlerts.handleError("تصدير التقرير السنوي", e);
+                AllAlerts.handleError(LanguageManager.getInstance().getString("report.error.export.yearly.title"), e);
             }
         }
     }
@@ -182,7 +185,7 @@ public class ReportTotalByYearController {
         TableDataReports totalRow = new TableDataReports();
 
         // تعيين اسم الشهر ليكون "الإجمالي" ليتم تلوينه
-        totalRow.setReport_month_name(Setting_Language.WORD_TOTAL);
+        totalRow.setReport_month_name(LanguageManager.getInstance().getString("total"));
 
         double sumPurchase = 0;
         double sumPurchaseDisc = 0;

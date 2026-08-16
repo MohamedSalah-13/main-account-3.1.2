@@ -21,8 +21,8 @@
                     <children>
                         <VBox spacing="5.0">
                             <children>
-                                <Label styleClass="report-title" text="تقرير المبيعات الشامل" />
-                                <Label styleClass="report-subtitle" text="عرض وتحليل فواتير المبيعات خلال فترة محددة" />
+                                <Label styleClass="report-title" text="%report.comprehensive.sales.title" />
+                                <Label styleClass="report-subtitle" text="%report.comprehensive.sales.subtitle" />
                             </children>
                         </VBox>
 
@@ -30,19 +30,19 @@
 
                         <VBox spacing="5.0">
                             <children>
-                                <Label styleClass="form-label" text="من تاريخ:" />
+                                <Label styleClass="form-label" text="%report.from.date" />
                                 <DatePicker fx:id="dpFrom" editable="false" prefWidth="140.0" />
                             </children>
                         </VBox>
 
                         <VBox spacing="5.0">
                             <children>
-                                <Label styleClass="form-label" text="إلى تاريخ:" />
+                                <Label styleClass="form-label" text="%report.to.date" />
                                 <DatePicker fx:id="dpTo" editable="false" prefWidth="140.0" />
                             </children>
                         </VBox>
 
-                        <Button mnemonicParsing="false" onAction="#onSearchAction" prefHeight="40.0" prefWidth="100.0" styleClass="primary-button" text="بحث">
+                        <Button mnemonicParsing="false" onAction="#onSearchAction" prefHeight="40.0" prefWidth="100.0" styleClass="primary-button" text="%search">
                             <HBox.margin>
                                 <Insets top="18.0" />
                             </HBox.margin>
@@ -72,14 +72,14 @@
 
                 <TableView fx:id="tableView" styleClass="app-table" BorderPane.alignment="CENTER">
                     <columns>
-                        <TableColumn fx:id="colInvoiceNum" prefWidth="120.0" text="رقم الفاتورة" />
-                        <TableColumn fx:id="colDate" prefWidth="160.0" text="التاريخ والوقت" />
-                        <TableColumn fx:id="colCustomer" prefWidth="200.0" text="اسم العميل" />
-                        <TableColumn fx:id="colGross" prefWidth="110.0" text="الإجمالي" />
-                        <TableColumn fx:id="colDiscount" prefWidth="100.0" text="الخصم" />
-                        <TableColumn fx:id="colNet" prefWidth="110.0" text="الصافي" />
-                        <TableColumn fx:id="colPayed" prefWidth="110.0" text="المدفوع" />
-                        <TableColumn fx:id="colRemain" prefWidth="110.0" text="المتبقي الآجل" />
+                        <TableColumn fx:id="colInvoiceNum" prefWidth="120.0" text="%invoice.number" />
+                        <TableColumn fx:id="colDate" prefWidth="160.0" text="%report.comprehensive.sales.col.date.time" />
+                        <TableColumn fx:id="colCustomer" prefWidth="200.0" text="%report.customer.receivables.col.name" />
+                        <TableColumn fx:id="colGross" prefWidth="110.0" text="%total" />
+                        <TableColumn fx:id="colDiscount" prefWidth="100.0" text="%discount" />
+                        <TableColumn fx:id="colNet" prefWidth="110.0" text="%report.comprehensive.sales.col.net" />
+                        <TableColumn fx:id="colPayed" prefWidth="110.0" text="%paid" />
+                        <TableColumn fx:id="colRemain" prefWidth="110.0" text="%invoice.remaining" />
                     </columns>
                     <columnResizePolicy>
                         <TableView fx:constant="CONSTRAINED_RESIZE_POLICY" />
@@ -92,7 +92,7 @@
                     <children>
                         <VBox alignment="CENTER" spacing="5.0">
                             <children>
-                                <Label styleClass="summary-label" text="إجمالي المبيعات الصافي" />
+                                <Label styleClass="summary-label" text="%report.comprehensive.sales.net.total" />
                                 <Label fx:id="lblTotalNet" styleClass="summary-value success-value" text="0.00" />
                             </children>
                         </VBox>
@@ -101,7 +101,7 @@
 
                         <VBox alignment="CENTER" spacing="5.0">
                             <children>
-                                <Label styleClass="summary-label" text="إجمالي النقدية المحصلة" />
+                                <Label styleClass="summary-label" text="%report.comprehensive.sales.cash.collected" />
                                 <Label fx:id="lblTotalPayed" styleClass="summary-value info-value" text="0.00" />
                             </children>
                         </VBox>
@@ -110,7 +110,7 @@
 
                         <VBox alignment="CENTER" spacing="5.0">
                             <children>
-                                <Label styleClass="summary-label" text="إجمالي الديون الآجلة" />
+                                <Label styleClass="summary-label" text="%report.comprehensive.sales.deferred.debts" />
                                 <Label fx:id="lblTotalRemain" styleClass="summary-value danger-value" text="0.00" />
                             </children>
                         </VBox>

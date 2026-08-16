@@ -11,6 +11,7 @@ import com.hamza.account.view.OpenTreasuryDetailsApplication;
 import com.hamza.account.view.SceneAll;
 import com.hamza.account.view.StageManager;
 import com.hamza.controlsfx.database.DaoException;
+import com.hamza.controlsfx.language.LanguageManager;
 import javafx.animation.FadeTransition;
 import javafx.animation.ParallelTransition;
 import javafx.animation.TranslateTransition;
@@ -112,8 +113,8 @@ public class ModernDashboardApp {
     private Button refreshButton;
 
     private final XYChart.Series<String, Number> trendSeries = new XYChart.Series<>();
-    private final PieChart.Data cashReceiptsSlice = new PieChart.Data("مقبوضات", 0);
-    private final PieChart.Data cashOutSlice = new PieChart.Data("مدفوعات ومصروفات", 0);
+    private final PieChart.Data cashReceiptsSlice = new PieChart.Data(LanguageManager.getInstance().getString("report.dashboard.cash.receipts"), 0);
+    private final PieChart.Data cashOutSlice = new PieChart.Data(LanguageManager.getInstance().getString("report.dashboard.cash.out"), 0);
     private Label cashFlowEmptyLabel;
     private PieChart cashFlowChart;
 
@@ -176,20 +177,22 @@ public class ModernDashboardApp {
     }
 
     private String periodLabel() {
+        var lang = LanguageManager.getInstance();
         return switch (selectedPeriod) {
-            case TODAY -> "اليوم";
-            case WEEK -> "هذا الأسبوع";
-            case MONTH -> "هذا الشهر";
+            case TODAY -> lang.getString("report.dashboard.period.today");
+            case WEEK -> lang.getString("report.dashboard.period.week.label");
+            case MONTH -> lang.getString("report.dashboard.period.month.label");
             case CUSTOM -> customFrom.format(RANGE_FORMAT) + " - " + customTo.format(RANGE_FORMAT);
         };
     }
 
     private Node buildPeriodSelector() {
+        var lang = LanguageManager.getInstance();
         ToggleGroup group = new ToggleGroup();
-        ToggleButton today = periodToggle("اليوم", Period.TODAY, group);
-        ToggleButton week = periodToggle("الأسبوع", Period.WEEK, group);
-        ToggleButton month = periodToggle("الشهر", Period.MONTH, group);
-        ToggleButton custom = periodToggle("مخصص", Period.CUSTOM, group);
+        ToggleButton today = periodToggle(lang.getString("report.dashboard.period.today"), Period.TODAY, group);
+        ToggleButton week = periodToggle(lang.getString("report.dashboard.period.week.toggle"), Period.WEEK, group);
+        ToggleButton month = periodToggle(lang.getString("report.dashboard.period.month.toggle"), Period.MONTH, group);
+        ToggleButton custom = periodToggle(lang.getString("report.dashboard.period.custom"), Period.CUSTOM, group);
         today.setSelected(true);
 
         // A segmented group must always keep exactly one toggle selected - without
@@ -227,14 +230,14 @@ public class ModernDashboardApp {
         fromPicker.getStyleClass().add("dashboard-date-picker");
         toPicker.getStyleClass().add("dashboard-date-picker");
 
-        Button apply = new Button("تطبيق");
+        Button apply = new Button(LanguageManager.getInstance().getString("report.dashboard.apply"));
         apply.getStyleClass().add("btn-primary");
         apply.setOnAction(e -> {
             LocalDate from = fromPicker.getValue();
             LocalDate to = toPicker.getValue();
             if (from == null || to == null || from.isAfter(to)) {
-                com.hamza.controlsfx.alert.AllAlerts.handleError("تطبيق نطاق تاريخ مخصص",
-                        new com.hamza.controlsfx.error.UserValidationException("حدد نطاق تاريخ صحيح"));
+                com.hamza.controlsfx.alert.AllAlerts.handleError(LanguageManager.getInstance().getString("report.dashboard.error.apply.custom.range.title"),
+                        new com.hamza.controlsfx.error.UserValidationException(LanguageManager.getInstance().getString("report.dashboard.error.invalid.date.range")));
                 return;
             }
             customFrom = from;
@@ -242,7 +245,8 @@ public class ModernDashboardApp {
             reload();
         });
 
-        customRangeRow = new HBox(10, new Label("من"), fromPicker, new Label("إلى"), toPicker, apply);
+        customRangeRow = new HBox(10, new Label(LanguageManager.getInstance().getString("from")), fromPicker,
+                new Label(LanguageManager.getInstance().getString("to")), toPicker, apply);
         customRangeRow.getStyleClass().add("dashboard-custom-range-row");
         customRangeRow.setAlignment(Pos.CENTER_LEFT);
         customRangeRow.setVisible(false);
@@ -255,9 +259,9 @@ public class ModernDashboardApp {
     // ------------------------------------------------------------------
 
     private Node buildHeader() {
-        Label title = new Label("لوحة المؤشرات");
+        Label title = new Label(LanguageManager.getInstance().getString("report.dashboard.title"));
         title.getStyleClass().add("dashboard-header-title");
-        Label subtitle = new Label("نظرة عامة على أداء العمل");
+        Label subtitle = new Label(LanguageManager.getInstance().getString("report.dashboard.subtitle"));
         subtitle.getStyleClass().add("dashboard-header-subtitle");
         VBox titles = new VBox(2, title, subtitle);
 
@@ -266,7 +270,7 @@ public class ModernDashboardApp {
         lastUpdatedLabel = new Label();
         lastUpdatedLabel.getStyleClass().add("dashboard-last-updated");
 
-        refreshButton = new Button("⟳ تحديث");
+        refreshButton = new Button(LanguageManager.getInstance().getString("report.dashboard.refresh.button"));
         refreshButton.getStyleClass().add("btn-secondary");
         refreshButton.setOnAction(e -> reload());
 
@@ -281,7 +285,7 @@ public class ModernDashboardApp {
 
     private void markLastUpdatedNow() {
         String time = java.time.LocalTime.now().format(DateTimeFormatter.ofPattern("HH:mm:ss"));
-        lastUpdatedLabel.setText("آخر تحديث: " + time);
+        lastUpdatedLabel.setText(LanguageManager.getInstance().getString("report.dashboard.last.updated", time));
     }
 
     // ------------------------------------------------------------------
@@ -289,31 +293,32 @@ public class ModernDashboardApp {
     // ------------------------------------------------------------------
 
     private Node buildHeroRow() {
-        StatCard sales = statCard("المبيعات", "stat-accent-primary");
+        var lang = LanguageManager.getInstance();
+        StatCard sales = statCard(lang.getString("sales"), "stat-accent-primary");
         salesValue = sales.value;
         salesDelta = new Label();
         salesDelta.getStyleClass().add("stat-delta-up");
         sales.body.getChildren().add(salesDelta);
 
-        StatCard purchases = statCard("المشتريات", "stat-accent-warning");
+        StatCard purchases = statCard(lang.getString("column.purchase"), "stat-accent-warning");
         purchasesValue = purchases.value;
         purchasesSubtitle = new Label();
         purchasesSubtitle.getStyleClass().add("stat-subtitle");
         purchases.body.getChildren().add(purchasesSubtitle);
 
-        StatCard netCash = statCard("صافي الخزينة", "stat-accent-success");
+        StatCard netCash = statCard(lang.getString("report.dashboard.net.treasury"), "stat-accent-success");
         netCashValue = netCash.value;
         netCashSubtitle = new Label();
         netCashSubtitle.getStyleClass().add("stat-subtitle");
         netCash.body.getChildren().add(netCashSubtitle);
 
-        StatCard invoices = statCard("فواتير المبيعات", "stat-accent-neutral");
+        StatCard invoices = statCard(lang.getString("report.dashboard.sales.invoices"), "stat-accent-neutral");
         invoiceCountValue = invoices.value;
         discountsSubtitle = new Label();
         discountsSubtitle.getStyleClass().add("stat-subtitle");
         invoices.body.getChildren().add(discountsSubtitle);
 
-        StatCard receivables = statCard("مستحقات العملاء", "stat-accent-danger");
+        StatCard receivables = statCard(lang.getString("report.dashboard.customer.receivables"), "stat-accent-danger");
         receivablesValue = receivables.value;
         receivablesSubtitle = new Label();
         receivablesSubtitle.getStyleClass().add("stat-subtitle");
@@ -363,7 +368,7 @@ public class ModernDashboardApp {
         trendChart.getData().add(trendSeries);
         VBox.setVgrow(trendChart, Priority.ALWAYS);
 
-        Label trendTitle = new Label("اتجاه المبيعات - آخر 14 يوم");
+        Label trendTitle = new Label(LanguageManager.getInstance().getString("report.dashboard.trend.title"));
         trendTitle.getStyleClass().add("dashboard-card-title");
         VBox trendCard = new VBox(10, trendTitle, trendChart);
         trendCard.getStyleClass().addAll("dashboard-card", "dashboard-chart-card");
@@ -377,12 +382,12 @@ public class ModernDashboardApp {
         cashFlowChart.getData().addAll(cashReceiptsSlice, cashOutSlice);
         VBox.setVgrow(cashFlowChart, Priority.ALWAYS);
 
-        cashFlowEmptyLabel = new Label("لا توجد حركة خزينة في هذه الفترة");
+        cashFlowEmptyLabel = new Label(LanguageManager.getInstance().getString("report.dashboard.cash.flow.empty"));
         cashFlowEmptyLabel.getStyleClass().add("dashboard-empty-label");
         cashFlowEmptyLabel.setVisible(false);
         cashFlowEmptyLabel.setManaged(false);
 
-        Label cashTitle = new Label("حركة الخزينة");
+        Label cashTitle = new Label(LanguageManager.getInstance().getString("report.dashboard.cash.flow.title"));
         cashTitle.getStyleClass().add("dashboard-card-title");
         VBox cashCard = new VBox(10, cashTitle, cashFlowChart, cashFlowEmptyLabel);
         cashCard.getStyleClass().addAll("dashboard-card", "dashboard-chart-card");
@@ -398,11 +403,12 @@ public class ModernDashboardApp {
     // ------------------------------------------------------------------
 
     private Node buildListsRow(boolean first) {
+        var lang = LanguageManager.getInstance();
         if (first) {
-            VBox lowStockCard = listCard("أصناف ناقصة الرصيد", "أرصدة الأصناف الأقل من الحد الأدنى");
+            VBox lowStockCard = listCard(lang.getString("report.dashboard.low.stock.title"), lang.getString("report.dashboard.low.stock.hint"));
             lowStockList = (VBox) lowStockCard.getChildren().get(1);
 
-            VBox topCustomersCard = listCard("أعلى العملاء مديونية", "اضغط لعرض تقرير المستحقات الكامل");
+            VBox topCustomersCard = listCard(lang.getString("report.dashboard.top.debtors.title"), lang.getString("report.dashboard.hint.click.full.receivables"));
             topCustomersList = (VBox) topCustomersCard.getChildren().get(1);
             makeClickable(topCustomersCard, this::openCustomerReceivables);
 
@@ -412,12 +418,12 @@ public class ModernDashboardApp {
             }
             return row;
         } else {
-            VBox topItemsCard = listCard("الأكثر مبيعاً", "اضغط لعرض التقرير الكامل");
+            VBox topItemsCard = listCard(lang.getString("report.dashboard.top.selling.title"), lang.getString("report.dashboard.hint.click.full.report"));
             topItemsList = (VBox) topItemsCard.getChildren().get(1);
             topItemsHint = (Label) ((VBox) topItemsCard.getChildren().get(0)).getChildren().get(1);
             makeClickable(topItemsCard, this::openItemSalesRank);
 
-            VBox treasuryCard = listCard("أرصدة الخزائن", "اضغط لعرض تفاصيل الخزينة");
+            VBox treasuryCard = listCard(lang.getString("report.dashboard.treasury.balances.title"), lang.getString("report.dashboard.hint.click.treasury.details"));
             treasuryList = (VBox) treasuryCard.getChildren().get(1);
             makeClickable(treasuryCard, this::openTreasuryDetails);
 
@@ -523,7 +529,7 @@ public class ModernDashboardApp {
                 log.error("Failed to refresh dashboard data: {}", e.getMessage(), e);
                 Platform.runLater(() -> {
                     refreshButton.setDisable(false);
-                    com.hamza.controlsfx.alert.AllAlerts.reportError("تحديث لوحة المؤشرات", e);
+                    com.hamza.controlsfx.alert.AllAlerts.reportError(LanguageManager.getInstance().getString("report.dashboard.error.refresh.title"), e);
                 });
             }
         });
@@ -536,21 +542,22 @@ public class ModernDashboardApp {
         applyDelta(salesDelta, summary.getSalesTotal(), m.previousSummary().getSalesTotal());
 
         purchasesValue.setText(formatMoney(summary.getPurchasesTotal()));
-        purchasesSubtitle.setText(summary.getPurchasesCount() + " فاتورة شراء");
+        purchasesSubtitle.setText(LanguageManager.getInstance().getString("report.dashboard.purchase.invoice.count", summary.getPurchasesCount()));
 
         BigDecimal netCash = summary.getTotalReceipts().subtract(summary.getTotalPaymentsAndExpenses());
         netCashValue.setText(formatMoney(netCash));
-        netCashSubtitle.setText("مقبوضات " + formatMoney(summary.getTotalReceipts())
-                + " / مدفوعات " + formatMoney(summary.getTotalPaymentsAndExpenses()));
+        netCashSubtitle.setText(LanguageManager.getInstance().getString("report.dashboard.net.cash.subtitle",
+                formatMoney(summary.getTotalReceipts()), formatMoney(summary.getTotalPaymentsAndExpenses())));
 
         invoiceCountValue.setText(String.valueOf(summary.getSalesCount()));
-        discountsSubtitle.setText("خصومات الفترة: " + formatMoney(summary.getTotalDiscounts()));
+        discountsSubtitle.setText(LanguageManager.getInstance().getString("report.dashboard.period.discounts", formatMoney(summary.getTotalDiscounts())));
 
         double totalReceivable = m.receivables().stream().mapToDouble(CustomerReceivable::getTotalReceivable).sum();
         receivablesValue.setText(formatMoney(totalReceivable));
-        receivablesSubtitle.setText(m.receivables().size() + " عميل مدين - اضغط للتفاصيل");
+        receivablesSubtitle.setText(LanguageManager.getInstance().getString("report.dashboard.debtor.customers.count", m.receivables().size()));
 
-        if (topItemsHint != null) topItemsHint.setText(periodLabel() + " - اضغط لعرض التقرير الكامل");
+        if (topItemsHint != null)
+            topItemsHint.setText(LanguageManager.getInstance().getString("report.dashboard.period.hint.full.report", periodLabel()));
 
         applyTrend(m.trend());
         applyCashFlow(summary);
@@ -562,7 +569,7 @@ public class ModernDashboardApp {
 
     private void applyDelta(Label deltaLabel, BigDecimal current, BigDecimal previous) {
         if (previous == null || previous.compareTo(BigDecimal.ZERO) == 0) {
-            deltaLabel.setText("لا توجد بيانات فترة سابقة للمقارنة");
+            deltaLabel.setText(LanguageManager.getInstance().getString("report.dashboard.no.previous.period.data"));
             deltaLabel.getStyleClass().setAll("stat-subtitle");
             return;
         }
@@ -570,7 +577,8 @@ public class ModernDashboardApp {
                 .divide(previous, 4, RoundingMode.HALF_UP)
                 .doubleValue() * 100;
         boolean up = pct >= 0;
-        deltaLabel.setText((up ? "▲ " : "▼ ") + String.format(Locale.US, "%.1f%%", Math.abs(pct)) + " عن الفترة السابقة");
+        deltaLabel.setText((up ? "▲ " : "▼ ") + String.format(Locale.US, "%.1f%%", Math.abs(pct)) + " "
+                + LanguageManager.getInstance().getString("report.dashboard.vs.previous.period"));
         deltaLabel.getStyleClass().setAll(up ? "stat-delta-up" : "stat-delta-down");
     }
 
@@ -586,8 +594,8 @@ public class ModernDashboardApp {
         double out = summary.getTotalPaymentsAndExpenses().doubleValue();
         boolean empty = receipts == 0 && out == 0;
 
-        cashReceiptsSlice.setName("مقبوضات " + formatMoney(receipts));
-        cashOutSlice.setName("مدفوعات ومصروفات " + formatMoney(out));
+        cashReceiptsSlice.setName(LanguageManager.getInstance().getString("report.dashboard.cash.receipts") + " " + formatMoney(receipts));
+        cashOutSlice.setName(LanguageManager.getInstance().getString("report.dashboard.cash.out") + " " + formatMoney(out));
         cashReceiptsSlice.setPieValue(empty ? 1 : receipts);
         cashOutSlice.setPieValue(empty ? 1 : out);
 
@@ -600,7 +608,7 @@ public class ModernDashboardApp {
     private void applyLowStock(List<ItemsMiniQuantity> items) {
         lowStockList.getChildren().clear();
         if (items.isEmpty()) {
-            lowStockList.getChildren().add(emptyRow("لا توجد أصناف ناقصة الرصيد حالياً"));
+            lowStockList.getChildren().add(emptyRow(LanguageManager.getInstance().getString("report.dashboard.no.low.stock")));
             return;
         }
         for (ItemsMiniQuantity item : items) {
@@ -619,7 +627,7 @@ public class ModernDashboardApp {
                 .limit(5)
                 .toList();
         if (top.isEmpty()) {
-            topCustomersList.getChildren().add(emptyRow("لا توجد مستحقات على العملاء"));
+            topCustomersList.getChildren().add(emptyRow(LanguageManager.getInstance().getString("report.dashboard.no.customer.receivables")));
             return;
         }
         double max = top.getFirst().getTotalReceivable();
@@ -632,21 +640,22 @@ public class ModernDashboardApp {
     private void applyTopItems(List<TopSellingItem> items) {
         topItemsList.getChildren().clear();
         if (items.isEmpty()) {
-            topItemsList.getChildren().add(emptyRow("لا توجد مبيعات مسجلة في هذه الفترة"));
+            topItemsList.getChildren().add(emptyRow(LanguageManager.getInstance().getString("report.dashboard.no.sales.this.period")));
             return;
         }
         double max = items.stream().mapToDouble(i -> i.getTotalQuantity().doubleValue()).max().orElse(0);
         for (TopSellingItem item : items) {
             double qty = item.getTotalQuantity().doubleValue();
             double ratio = max > 0 ? qty / max : 0;
-            topItemsList.getChildren().add(listRow(item.getItemName(), formatMoney(qty) + " وحدة", ratio, "accent-success"));
+            topItemsList.getChildren().add(listRow(item.getItemName(),
+                    LanguageManager.getInstance().getString("report.dashboard.unit.suffix", formatMoney(qty)), ratio, "accent-success"));
         }
     }
 
     private void applyTreasury(List<TreasuryBalance> balances) {
         treasuryList.getChildren().clear();
         if (balances.isEmpty()) {
-            treasuryList.getChildren().add(emptyRow("لا توجد خزائن مسجلة"));
+            treasuryList.getChildren().add(emptyRow(LanguageManager.getInstance().getString("report.dashboard.no.treasuries")));
             return;
         }
         double max = balances.stream().mapToDouble(TreasuryBalance::getBalance).map(Math::abs).max().orElse(0);
@@ -662,7 +671,7 @@ public class ModernDashboardApp {
     }
 
     private String formatMoney(double value) {
-        return String.format(Locale.US, "%,.2f ج.م", value);
+        return String.format(Locale.US, "%,.2f " + LanguageManager.getInstance().getString("report.dashboard.currency.symbol"), value);
     }
 
     // ------------------------------------------------------------------
@@ -682,7 +691,7 @@ public class ModernDashboardApp {
             javafx.scene.Scene scene = new javafx.scene.Scene(pane, 1100, 850);
             ThemeManager.apply(scene);
 
-            dashboardStage.setTitle("لوحة المتابعة اليومية - Dashboard");
+            dashboardStage.setTitle(LanguageManager.getInstance().getString("report.dashboard.stage.title"));
             dashboardStage.setScene(scene);
             dashboardStage.getIcons().add(new javafx.scene.image.Image(new Image_Setting().reports));
 
@@ -747,7 +756,7 @@ public class ModernDashboardApp {
         CustomerReceivableController controller = loader.getController();
         controller.setDaoFactory(daoFactory);
 
-        StageManager.show("customer-receivables", new SceneAll(root), "مستحقات العملاء");
+        StageManager.show("customer-receivables", new SceneAll(root), LanguageManager.getInstance().getString("report.dashboard.customer.receivables"));
     }
 
     private void openTreasuryDetails() throws Exception {
@@ -761,7 +770,7 @@ public class ModernDashboardApp {
         ItemSalesRankController controller = loader.getController();
         controller.setDaoFactory(daoFactory);
 
-        StageManager.show("item-sales-rank", new SceneAll(root), "تقرير حركة الأصناف (الأكثر والأقل مبيعاً)");
+        StageManager.show("item-sales-rank", new SceneAll(root), LanguageManager.getInstance().getString("report.dashboard.item.sales.rank.stage.title"));
     }
 
     @FunctionalInterface

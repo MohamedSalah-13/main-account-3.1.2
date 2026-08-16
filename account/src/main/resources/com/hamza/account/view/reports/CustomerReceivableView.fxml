@@ -18,14 +18,14 @@
                     <children>
                         <VBox spacing="5.0">
                             <children>
-                                <Label styleClass="report-title" text="تقرير أرصدة العملاء" />
-                                <Label styleClass="report-subtitle" text="الديون والمبالغ المستحقة على العملاء" />
+                                <Label styleClass="report-title" text="%report.customer.receivables.title" />
+                                <Label styleClass="report-subtitle" text="%report.customer.receivables.subtitle" />
                             </children>
                         </VBox>
 
                         <Region HBox.hgrow="ALWAYS" />
 
-                        <Button onAction="#refreshData" styleClass="neutral-button" text="تحديث البيانات" />
+                        <Button onAction="#refreshData" styleClass="neutral-button" text="%refresh" />
                         <Button onAction="#onExportPdf" styleClass="pdf-button" text="PDF" />
                         <Button onAction="#onExportExcel" styleClass="excel-button" text="Excel" />
                     </children>
@@ -35,7 +35,7 @@
 
                 <HBox alignment="CENTER_RIGHT" spacing="8.0" styleClass="summary-card" BorderPane.alignment="CENTER">
                     <children>
-                        <Label styleClass="summary-label" text="إجمالي ديون العملاء طرفكم:" />
+                        <Label styleClass="summary-label" text="%report.customer.receivables.grand.total" />
                         <Label fx:id="lblGrandTotal" styleClass="summary-value" text="0.00" />
                     </children>
                 </HBox>
@@ -43,14 +43,14 @@
          <center>
               <VBox spacing="16.0" styleClass="app-container" BorderPane.alignment="CENTER">
                   <children>
-      
+
                       <TableView fx:id="tableView" minHeight="-Infinity" minWidth="-Infinity" prefHeight="250.0" styleClass="app-table" VBox.vgrow="ALWAYS">
                           <columns>
-                              <TableColumn fx:id="colName" prefWidth="250.0" text="اسم العميل" />
-                              <TableColumn fx:id="colPhone" prefWidth="150.0" text="رقم الهاتف" />
-                              <TableColumn fx:id="colInvoices" prefWidth="150.0" text="ديون الفواتير" />
-                              <TableColumn fx:id="colOpening" prefWidth="150.0" text="مديونية سابقة" />
-                              <TableColumn fx:id="colTotal" prefWidth="150.0" text="إجمالي المستحق" />
+                              <TableColumn fx:id="colName" prefWidth="250.0" text="%report.customer.receivables.col.name" />
+                              <TableColumn fx:id="colPhone" prefWidth="150.0" text="%column.tel" />
+                              <TableColumn fx:id="colInvoices" prefWidth="150.0" text="%report.customer.receivables.col.invoices" />
+                              <TableColumn fx:id="colOpening" prefWidth="150.0" text="%report.customer.receivables.col.opening" />
+                              <TableColumn fx:id="colTotal" prefWidth="150.0" text="%report.customer.receivables.col.total" />
                           </columns>
                       </TableView>
                   </children>

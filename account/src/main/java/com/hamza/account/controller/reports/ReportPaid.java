@@ -9,8 +9,7 @@ import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.util.ImageChoose;
 import com.hamza.controlsfx.error.BusinessRuleException;
 import com.hamza.controlsfx.error.UserValidationException;
-import com.hamza.controlsfx.language.Error_Text_Show;
-import com.hamza.controlsfx.language.Setting_Language;
+import com.hamza.controlsfx.language.LanguageManager;
 import com.hamza.controlsfx.others.DateSetting;
 import com.hamza.controlsfx.table.TableColumnAnnotation;
 import javafx.collections.FXCollections;
@@ -68,12 +67,12 @@ public class ReportPaid<T extends BaseAccount> {
         btnSearch.setGraphic(ImageChoose.createIcon(imageSetting.search));
         btnPrint.setGraphic(ImageChoose.createIcon(imageSetting.print));
 
-        labelCount.setText(Setting_Language.WORD_COUNT);
-        labelTotal.setText(Setting_Language.WORD_TOTAL);
-        labelFrom.setText(Setting_Language.WORD_FROM);
-        labelTo.setText(Setting_Language.WORD_TO);
-        btnPrint.setText(Setting_Language.WORD_PRINT);
-        btnSearch.setText(Setting_Language.WORD_SEARCH);
+        labelCount.setText(LanguageManager.getInstance().getString("count"));
+        labelTotal.setText(LanguageManager.getInstance().getString("total"));
+        labelFrom.setText(LanguageManager.getInstance().getString("from"));
+        labelTo.setText(LanguageManager.getInstance().getString("to"));
+        btnPrint.setText(LanguageManager.getInstance().getString("print"));
+        btnSearch.setText(LanguageManager.getInstance().getString("search"));
 
         btnSearch.setOnAction(actionEvent -> {
             try {
@@ -89,7 +88,8 @@ public class ReportPaid<T extends BaseAccount> {
     private void searchTable() throws Exception {
         ObservableList<T> list = FXCollections.observableArrayList();
         if (dateFrom.getValue() == null || dateTo.getValue() == null) {
-            AllAlerts.handleError("بحث كشف الحساب", new UserValidationException(Error_Text_Show.NOT_POSSIBLE));
+            AllAlerts.handleError(LanguageManager.getInstance().getString("report.error.search.statement.title"),
+                    new UserValidationException(LanguageManager.getInstance().getString("msg.cannot.insert.date.less")));
             return;
         }
         list.addAll(accountData.getAccountBetweenDate(dateFrom.getValue().toString(), dateTo.getValue().toString()));
@@ -100,7 +100,8 @@ public class ReportPaid<T extends BaseAccount> {
 
     private void printTable() {
         //TODO 11/16/2025 9:15 AM Mohamed: add print
-        AllAlerts.handleError("طباعة الجدول", new BusinessRuleException("لم يتم عمل التقرير"));
+        AllAlerts.handleError(LanguageManager.getInstance().getString("report.error.print.table.title"),
+                new BusinessRuleException(LanguageManager.getInstance().getString("report.msg.not.implemented")));
     }
 
 }

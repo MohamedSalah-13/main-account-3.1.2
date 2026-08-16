@@ -2,15 +2,16 @@ package com.hamza.account.controller.reports;
 
 import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.model.dao.MonthlySalesViewDao;
+import com.hamza.controlsfx.language.LanguageManager;
 
 public interface MonthlySalesInterface {
 
     default String reportName() {
-        return "تقرير المبيعات السنوي";
+        return "Annual_Sales_Report";
     }
 
     default String reportTitle() {
-        return "تقرير إجمالي المبيعات الشهرية لكل سنة";
+        return LanguageManager.getInstance().getString("report.monthly.sales.title");
     }
 
     default MonthlySalesViewDao getMonthlySalesViewDao(DaoFactory daoFactory) {
@@ -18,7 +19,7 @@ public interface MonthlySalesInterface {
     }
 
     default String chartTitle() {
-        return "مقارنة المبيعات بين الشهور";
+        return LanguageManager.getInstance().getString("report.monthly.sales.chart.title");
     }
 
 }

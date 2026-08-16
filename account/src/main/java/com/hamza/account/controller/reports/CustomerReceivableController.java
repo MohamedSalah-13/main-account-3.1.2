@@ -4,6 +4,7 @@ import com.hamza.account.features.export.ReportExportService;
 import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.model.domain.CustomerReceivable;
 import com.hamza.controlsfx.alert.AllAlerts;
+import com.hamza.controlsfx.language.LanguageManager;
 import com.hamza.controlsfx.table.TableColumnAnnotation;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -50,17 +51,17 @@ public class CustomerReceivableController implements Initializable {
             double total = masterData.stream().mapToDouble(CustomerReceivable::getTotalReceivable).sum();
             lblGrandTotal.setText(String.format("%,.2f", total));
         } catch (Exception e) {
-            AllAlerts.handleError("تحميل أرصدة العملاء", e);
+            AllAlerts.handleError(LanguageManager.getInstance().getString("report.error.load.receivables.title"), e);
         }
     }
 
     @FXML
     private void onExportPdf() {
         if (masterData.isEmpty()) return;
-        String path = ReportExportService.getDefaultOutputPath("تقرير_ديون_العملاء");
+        String path = ReportExportService.getDefaultOutputPath("Customer_Receivables_Report");
         // استدعاء دالة التصدير من ReportExportService (يجب إضافتها هناك)
         // reportExportService.exportCustomerReceivables(masterData, path);
-        showInfo("تم تصدير ملف ديون العملاء بنجاح.");
+        showInfo(LanguageManager.getInstance().getString("report.msg.export.receivables.success"));
     }
 
     private void formatColumn(TableColumn<CustomerReceivable, Double> col) {
