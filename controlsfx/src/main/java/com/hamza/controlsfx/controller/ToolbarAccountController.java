@@ -68,15 +68,35 @@ public class ToolbarAccountController<T> {
 
     private void otherSetting() {
         LanguageManager languageManager = LanguageManager.getInstance();
-        btnPreviousRecord.setTooltip(new Tooltip(languageManager.getString("toolbar.nav.previous")));
-        btnFirstPage.setTooltip(new Tooltip(languageManager.getString("toolbar.nav.first")));
-        btnNextRecord.setTooltip(new Tooltip(languageManager.getString("toolbar.nav.next")));
-        btnLastPage.setTooltip(new Tooltip(languageManager.getString("toolbar.nav.last")));
-        btnAddNew.setTooltip(new Tooltip(languageManager.getString("new")));
-        btnSave.setTooltip(new Tooltip(languageManager.getString("common.save")));
-        btnPrint.setTooltip(new Tooltip(languageManager.getString("print")));
-        btnDelete.setTooltip(new Tooltip(languageManager.getString("delete")));
+        String previous = languageManager.getString("toolbar.nav.previous");
+        String first = languageManager.getString("toolbar.btn.first");
+        String next = languageManager.getString("toolbar.nav.next");
+        String last = languageManager.getString("toolbar.btn.last");
+        String add = languageManager.getString("new");
+        String save = languageManager.getString("common.save");
+        String print = languageManager.getString("print");
+        String delete = languageManager.getString("delete");
 
+        btnPreviousRecord.setTooltip(new Tooltip(previous));
+        btnFirstPage.setTooltip(new Tooltip(languageManager.getString("toolbar.nav.first")));
+        btnNextRecord.setTooltip(new Tooltip(next));
+        btnLastPage.setTooltip(new Tooltip(languageManager.getString("toolbar.nav.last")));
+        btnAddNew.setTooltip(new Tooltip(add));
+        btnSave.setTooltip(new Tooltip(save));
+        btnPrint.setTooltip(new Tooltip(print));
+        btnDelete.setTooltip(new Tooltip(delete));
+
+        // The FXML ships static Arabic button text (unlike the tooltips above, which
+        // were already set here); these calls are what makes the toolbar's own
+        // labels - not just its tooltips - follow a language switch.
+        btnPreviousRecord.setText(previous);
+        btnFirstPage.setText(first);
+        btnNextRecord.setText(next);
+        btnLastPage.setText(last);
+        btnAddNew.setText(add);
+        btnSave.setText(save);
+        btnPrint.setText(print);
+        btnDelete.setText(delete);
     }
 
     private void actionButton(ToolbarAccountInt<T> toolbarAccountInt) {

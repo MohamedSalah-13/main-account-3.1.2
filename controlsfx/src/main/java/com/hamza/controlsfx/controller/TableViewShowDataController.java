@@ -2,11 +2,13 @@ package com.hamza.controlsfx.controller;
 
 import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.interfaceData.TableViewShowDataInt;
+import com.hamza.controlsfx.language.LanguageManager;
 import com.hamza.controlsfx.table.TableColumnAnnotation;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
+import javafx.scene.control.Label;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TextField;
 import javafx.scene.text.Text;
@@ -29,6 +31,10 @@ public class TableViewShowDataController<T> {
     private Text textCount;
     @FXML
     private TextField textSearch;
+    @FXML
+    private Label labelSearch;
+    @FXML
+    private Text textTotalLabel;
 
     public TableViewShowDataController(TableViewShowDataInt<T> dataTable) throws DaoException {
         this.dataTable = dataTable;
@@ -37,8 +43,18 @@ public class TableViewShowDataController<T> {
 
     @FXML
     public void initialize() {
+        otherSetting();
         getTableData();
         actionClose();
+    }
+
+    private void otherSetting() {
+        LanguageManager languageManager = LanguageManager.getInstance();
+        labelSearch.setText(languageManager.getString("search"));
+        textSearch.setPromptText(languageManager.getString("search"));
+        textTotalLabel.setText(languageManager.getString("total"));
+        btnPrint.setText(languageManager.getString("print"));
+        btnClose.setText(languageManager.getString("common.close"));
     }
 
     private void getTableData() {
