@@ -2,6 +2,7 @@ package com.hamza.controlsfx.table.columnEdit;
 
 import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.database.DaoException;
+import com.hamza.controlsfx.language.LanguageManager;
 import javafx.beans.value.ObservableValue;
 import javafx.collections.ObservableList;
 import javafx.scene.control.TableCell;
@@ -26,7 +27,7 @@ public class ColumnSetting {
      */
     public static <S> void addSelectedColumn(TableView<S> tableView) {
         final ObservableList<TableColumn<S, ?>> columns = tableView.getColumns();
-        final TableColumn<S, Boolean> selectableColumn = new TableColumn<>("تحديد");
+        final TableColumn<S, Boolean> selectableColumn = new TableColumn<>(LanguageManager.getInstance().getString("table.column.select"));
         selectableColumn.setCellValueFactory(new PropertyValueFactory<>("selectedRow"));
         selectableColumn.setCellFactory(tc -> new CheckBoxTableCell<>());
         columns.addFirst(selectableColumn);
@@ -92,7 +93,7 @@ public class ColumnSetting {
             try {
                 columnEdite.updateColumn(event);
             } catch (DaoException e) {
-                AllAlerts.handleError("تحديث بيانات الجدول", e);
+                AllAlerts.handleError(LanguageManager.getInstance().getString("error.operation.table.update"), e);
             }
         });
     }
