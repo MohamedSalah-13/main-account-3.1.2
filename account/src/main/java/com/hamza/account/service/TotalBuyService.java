@@ -1,5 +1,7 @@
 package com.hamza.account.service;
 
+import com.hamza.account.document.DocumentType;
+import com.hamza.account.features.stockledger.StockMovementAssembler;
 import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.period.PeriodLock;
 import com.hamza.account.period.PeriodLockRegistry;
@@ -10,6 +12,7 @@ import com.hamza.account.document.TotalsSearchCriteria;
 import com.hamza.account.model.dao.TotalsBuyDao;
 import com.hamza.account.model.domain.Total_buy;
 import com.hamza.controlsfx.database.DaoException;
+import com.hamza.controlsfx.database.TransactionTemplate;
 import org.jetbrains.annotations.NotNull;
 
 import java.time.LocalDate;
@@ -49,7 +52,11 @@ public record TotalBuyService(DaoFactory daoFactory) {
     public int deleteMultiData(Integer[] ids) throws DaoException {
         AuthorizationGuard.require(AppPermissions.PURCHASE_DELETE);
         PeriodLock.require(PeriodLockRegistry.PURCHASE_INVOICE, List.of(ids));
-        return getTotalsBuyDao().deleteInvoicesInRange(ids);
+        return TransactionTemplate.execute(() -> {
+            daoFactory.stockMovementDao().deleteByReferences(
+                    StockMovementAssembler.referenceTypeFor(DocumentType.PURCHASE), ids);
+            return getTotalsBuyDao().deleteInvoicesInRange(ids);
+        });
     }
 
     public int deleteById(int id) throws DaoException {

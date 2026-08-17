@@ -5,6 +5,7 @@ import com.hamza.controlsfx.database.DaoException;
 
 import java.sql.PreparedStatement;
 import java.sql.Types;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -83,6 +84,27 @@ public class StockMovementDao extends AbstractDao<StockMovement> {
     public void deleteByReference(String referenceType, long referenceId) throws DaoException {
         executeUpdate("DELETE FROM stock_movements WHERE reference_type = ? AND reference_id = ?",
                 referenceType, referenceId);
+    }
+
+    /**
+     * The batch form: closes the gap where deleting an invoice removed its rows from
+     * {@code total_sales}/{@code total_buy}/etc via {@code ON DELETE CASCADE} without any
+     * Java code ever touching this table (see {@code docs/erp-roadmap.md} §8.4). Deleting
+     * its movements is the whole fix - there is nothing to reverse, because nothing reads
+     * this table's balance yet; the deleted document's contribution simply needs to
+     * become zero, exactly as {@code quantity_items_table} already sees it as zero once
+     * the source rows are gone.
+     */
+    public void deleteByReferences(String referenceType, Integer[] referenceIds) throws DaoException {
+        if (referenceIds.length == 0) {
+            return;
+        }
+        String placeholders = String.join(",", Collections.nCopies(referenceIds.length, "?"));
+        Object[] params = new Object[referenceIds.length + 1];
+        params[0] = referenceType;
+        System.arraycopy(referenceIds, 0, params, 1, referenceIds.length);
+        executeUpdate("DELETE FROM stock_movements WHERE reference_type = ? AND reference_id IN ("
+                + placeholders + ")", params);
     }
 
     /**
