@@ -38,10 +38,49 @@ public class ItemsDao extends AbstractDao<ItemsModel> {
             "items.id IN (SELECT items_id FROM items_units WHERE items_barcode = ?)";
     private static final String ITEM_UNIT_BARCODE_LIKE =
             "items.id IN (SELECT items_id FROM items_units WHERE items_barcode LIKE ?)";
+    /**
+     * {@code quantity_items_table} is keyed by (item, stock): one row per warehouse an
+     * item has ever moved through. Joining it to {@code items} directly - as every query
+     * below used to - is only safe while {@link DefaultStock} is the one stock in the
+     * database, because then item and (item, stock) are the same row. The moment a
+     * second warehouse exists, that join returns one row per warehouse per item, and
+     * each row's {@code quantityPurchase}/{@code quantitySales}/... is only that
+     * warehouse's share, not the item's total - so a catalog query silently duplicates
+     * every item and quietly halves (or worse) the balance {@link #map} computes from
+     * it.
+     * <p>
+     * This mirrors what {@code InventoryDao}'s {@code MOVEMENTS} subquery already does:
+     * pre-aggregate by {@code item_id} so there is exactly one row per item regardless
+     * of how many stocks it has moved through. {@code first_balance} is deliberately
+     * left out of the aggregate - {@code items.first_balance} is already read
+     * unambiguously from the outer join, and summing the view's copy of it here would
+     * reintroduce the same one-row-per-stock double count on the opening balance that
+     * {@code mini_quantity_view} had.
+     * <p>
+     * {@code ANY_VALUE(stock_id)} keeps {@link #STOCK_ID} resolvable for {@link #map}
+     * without pinning the aggregate to one stock: with a single warehouse it is that
+     * warehouse every time, and once a second one exists {@code itemsModel.getItemStock()}
+     * from a catalog-wide query is informational only - the per-stock truth for a
+     * specific warehouse is what {@link #findItemByIdAndStockId} and its siblings are
+     * for, and they still join the raw (unaggregated) view scoped to one {@code stock_id}.
+     */
+    private static final String ITEM_MOVEMENTS_ALL_STOCKS = """
+            (SELECT item_id,
+                    ANY_VALUE(stock_id)     AS stock_id,
+                    SUM(quantityPurchase)   AS quantityPurchase,
+                    SUM(quantitySales)      AS quantitySales,
+                    SUM(quantityPurchaseRe) AS quantityPurchaseRe,
+                    SUM(quantitySalesRe)    AS quantitySalesRe,
+                    SUM(fromStock)          AS fromStock,
+                    SUM(toStock)            AS toStock,
+                    SUM(adjustment)         AS adjustment
+             FROM quantity_items_table
+             GROUP BY item_id)
+            """;
     private static final String FILTER_ITEMS_SQL_TEXT_STARTS = """
             SELECT *
             FROM items
-            JOIN quantity_items_table ip ON items.id = ip.item_id
+            JOIN %s ip ON items.id = ip.item_id
             WHERE items.nameItem LIKE ?
                OR items.barcode LIKE ?
                OR items.id IN (SELECT item_id FROM item_barcodes WHERE barcode LIKE ?)
@@ -60,11 +99,12 @@ public class ItemsDao extends AbstractDao<ItemsModel> {
                 END,
                 items.id DESC
             LIMIT %d
-            """.formatted(ITEM_UNIT_BARCODE_LIKE, ITEM_UNIT_BARCODE_EXACT, ITEM_UNIT_BARCODE_LIKE, FILTER_ITEMS_LIMIT);
+            """.formatted(ITEM_MOVEMENTS_ALL_STOCKS,
+            ITEM_UNIT_BARCODE_LIKE, ITEM_UNIT_BARCODE_EXACT, ITEM_UNIT_BARCODE_LIKE, FILTER_ITEMS_LIMIT);
     private static final String FILTER_ITEMS_SQL_TEXT_CONTAINS = """
             SELECT *
             FROM items
-            JOIN quantity_items_table ip ON items.id = ip.item_id
+            JOIN %s ip ON items.id = ip.item_id
             WHERE items.nameItem LIKE ?
                OR items.barcode LIKE ?
                OR items.id IN (SELECT item_id FROM item_barcodes WHERE barcode LIKE ?)
@@ -79,11 +119,12 @@ public class ItemsDao extends AbstractDao<ItemsModel> {
                 END,
                 items.id DESC
             LIMIT %d
-            """.formatted(ITEM_UNIT_BARCODE_LIKE, ITEM_UNIT_BARCODE_EXACT, FILTER_ITEMS_LIMIT);
+            """.formatted(ITEM_MOVEMENTS_ALL_STOCKS,
+            ITEM_UNIT_BARCODE_LIKE, ITEM_UNIT_BARCODE_EXACT, FILTER_ITEMS_LIMIT);
     private static final String FILTER_ITEMS_SQL_NUMERIC = """
             SELECT *
             FROM items
-            JOIN quantity_items_table ip ON items.id = ip.item_id
+            JOIN %s ip ON items.id = ip.item_id
             WHERE items.id = ?
                OR items.barcode = ?
                OR items.id IN (SELECT item_id FROM item_barcodes WHERE barcode = ?)
@@ -98,7 +139,8 @@ public class ItemsDao extends AbstractDao<ItemsModel> {
                 END,
                 items.id DESC
             LIMIT %d
-            """.formatted(ITEM_UNIT_BARCODE_EXACT, ITEM_UNIT_BARCODE_EXACT, FILTER_ITEMS_LIMIT);
+            """.formatted(ITEM_MOVEMENTS_ALL_STOCKS,
+            ITEM_UNIT_BARCODE_EXACT, ITEM_UNIT_BARCODE_EXACT, FILTER_ITEMS_LIMIT);
     private final String ID = "id";
     private final String SUB_NUM = "sub_num";
     private final String BUY_PRICE = "buy_price";
@@ -127,7 +169,10 @@ public class ItemsDao extends AbstractDao<ItemsModel> {
     private final String alertDaysBeforeExpire = "alert_days_before_expire";
 
     private final String USER_ID = "user_id";
+    /** One row per (item, stock). For the finder methods that already scope to one warehouse via {@code ip.stock_id = ?}; see {@link #ITEM_MOVEMENTS_ALL_STOCKS}. */
     private final String QUERY_ITEMS = "SELECT * from items join quantity_items_table ip on items.id = ip.item_id ";
+    /** One row per item, aggregated across every warehouse. For every catalog query that names no stock. */
+    private final String QUERY_ITEMS_ALL_STOCKS = "SELECT * from items join " + ITEM_MOVEMENTS_ALL_STOCKS + " ip on items.id = ip.item_id ";
     private final DaoFactory daoFactory;
 
     ItemsDao(DaoFactory daoFactory) {
@@ -273,12 +318,12 @@ public class ItemsDao extends AbstractDao<ItemsModel> {
 
     @Override
     public ItemsModel getDataById(int id) throws DaoException {
-        return queryForObject(QUERY_ITEMS.concat(" where items.id = ? "), this::map, id);
+        return queryForObject(QUERY_ITEMS_ALL_STOCKS.concat(" where items.id = ? "), this::map, id);
     }
 
     @Override
     public ItemsModel getDataByString(String s) throws DaoException {
-        return queryForObject(QUERY_ITEMS.concat(" where items.nameItem = ? "), this::map, s);
+        return queryForObject(QUERY_ITEMS_ALL_STOCKS.concat(" where items.nameItem = ? "), this::map, s);
     }
 
     @Override
@@ -437,7 +482,7 @@ public class ItemsDao extends AbstractDao<ItemsModel> {
     }
 
     public ItemsModel findItemById(Integer itemId) throws DaoException {
-        return queryForObject(QUERY_ITEMS.concat(" where items.id = ? "), this::map, itemId);
+        return queryForObject(QUERY_ITEMS_ALL_STOCKS.concat(" where items.id = ? "), this::map, itemId);
     }
 
     public ItemsModel findItemByIdAndStockId(Integer itemId, Integer stockId) throws DaoException {
@@ -522,7 +567,7 @@ public class ItemsDao extends AbstractDao<ItemsModel> {
     }
 
     public List<ItemsModel> getItemsByMainGroupId(int mainGroupId) throws DaoException {
-        String query = QUERY_ITEMS + " where items.sub_num in (select id from sub_group where main_id = ?)";
+        String query = QUERY_ITEMS_ALL_STOCKS + " where items.sub_num in (select id from sub_group where main_id = ?)";
         return queryForObjects(query, this::map, mainGroupId);
     }
 
@@ -590,11 +635,11 @@ public class ItemsDao extends AbstractDao<ItemsModel> {
     }
 
     public List<ItemsModel> getLast50Items() throws DaoException {
-        return queryForObjects(QUERY_ITEMS.concat(" ORDER BY id DESC LIMIT 50"), this::map);
+        return queryForObjects(QUERY_ITEMS_ALL_STOCKS.concat(" ORDER BY id DESC LIMIT 50"), this::map);
     }
 
     public List<ItemsModel> getProducts(int rowsPerPage, int offset) throws DaoException {
-        return queryForObjects(QUERY_ITEMS.concat(" ORDER BY id DESC LIMIT ? OFFSET ?"), this::map, rowsPerPage, offset);
+        return queryForObjects(QUERY_ITEMS_ALL_STOCKS.concat(" ORDER BY id DESC LIMIT ? OFFSET ?"), this::map, rowsPerPage, offset);
     }
 
     public int getCountItems() {

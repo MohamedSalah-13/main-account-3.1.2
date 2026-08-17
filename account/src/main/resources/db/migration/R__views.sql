@@ -599,21 +599,31 @@ FROM expenses_details ed
          LEFT JOIN employees     e2 ON e2.id = es.employee_id;
 
 -- --------------------------------------mini_quantity_view-----------------------------------------
-
+--
+-- quantity_items_table is keyed by (item, stock), and its first_balance column is
+-- items.first_balance repeated onto every one of an item's stock rows - that repetition
+-- is fine where a query reads it once per row, but calculated_balance used to SUM it,
+-- so an item with a second stock counted its own opening balance twice. It went
+-- unnoticed because every install to date has exactly one stock (DefaultStock.ID), so
+-- the sum only ever had one row to add.
+--
+-- The fix mirrors quantity_items_table's own comment on the same mistake and
+-- InventoryDao.MOVEMENTS: sum only the movement columns, keyed by item, and add
+-- items.first_balance once from the outer join rather than from inside the aggregate.
 DROP VIEW IF EXISTS mini_quantity_view;
 CREATE VIEW mini_quantity_view AS
-WITH calculated_balance AS (SELECT item_id,
-                                   SUM((first_balance + quantityPurchase + quantitySalesRe + toStock + adjustment) -
-                                       (quantitySales + quantityPurchaseRe + fromStock)) AS balance
-                            FROM quantity_items_table
-                            GROUP BY item_id)
+WITH movement AS (SELECT item_id,
+                         SUM(quantityPurchase + quantitySalesRe + toStock + adjustment
+                                 - quantitySales - quantityPurchaseRe - fromStock) AS movement
+                  FROM quantity_items_table
+                  GROUP BY item_id)
 SELECT i.id,
        i.nameItem,
        i.mini_quantity,
-       cb.balance
+       i.first_balance + m.movement AS balance
 FROM items i
-         JOIN calculated_balance cb ON i.id = cb.item_id
-WHERE i.mini_quantity >= cb.balance;
+         JOIN movement m ON i.id = m.item_id
+WHERE i.mini_quantity >= i.first_balance + m.movement;
 
 -- --------------------------------------target_delegate--------------------------------------------
 
