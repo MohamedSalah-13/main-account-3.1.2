@@ -1,5 +1,6 @@
 package com.hamza.account.controller.items;
 
+import com.codejava.commons.fx.validation.InputValidator;
 import com.hamza.account.config.Image_Setting;
 import com.hamza.account.controller.dataByName.OpenAddAreaApplication;
 import com.hamza.account.controller.dataByName.impl.MainGroupImpl2;
@@ -111,6 +112,8 @@ public class AddItemController implements AppSettingInterface {
     @FXML
     @Getter
     private Button btnAddMainGroup, btnAddSubGroup, btnSave, btnSaveDuplicate, btnClose, btnBarcode;
+    @FXML
+    private Button btnClearPrices;
     @FXML
     private StackPane stackPane;
     @FXML
@@ -232,6 +235,11 @@ public class AddItemController implements AppSettingInterface {
         this.tableUnitsSetting = new TableUnitsSetting(unitsService, tableUnits);
         tableUnitsSetting.selectedTypeProperty().bind(comboOtherTypes.getSelectionModel().selectedItemProperty());
         tableUnitsSetting.textUnitBarcodeProperty().bindBidirectional(textUnitBarcode.textProperty());
+        // A barcode is digits, not a number - setTextFormatter's numeric
+        // converter would be the wrong tool here (it would happily reformat the
+        // text and drop a leading zero), so this is filtered the same way
+        // ExtraBarcodesTabController filters textExtraBarcode.
+        InputValidator.makeNumericOnly(textUnitBarcode);
         // The factor belongs to the item, not to the unit: picking a unit fills
         // this in with its default, and the field is where that gets corrected
         // to what a carton of *this* item actually holds.
@@ -259,6 +267,7 @@ public class AddItemController implements AppSettingInterface {
         btnAddSubGroup.setGraphic(createIcon(images.vertical_align_bottom)); // separate ImageView, same Image
         btnSaveDuplicate.setGraphic(createIcon(images.duplicate));
         btnClearImage.setGraphic(createIcon(images.erase));
+        btnClearPrices.setGraphic(createIcon(images.erase));
     }
 
     private void otherSetting() {
@@ -444,6 +453,11 @@ public class AddItemController implements AppSettingInterface {
         });
 
         btnClearImage.setOnAction(event -> imageAdd.setImage(null));
+
+        // A barcode typed into the wrong field by mistake used to be hard to
+        // fully erase - see the fix in TextFormat.DefaultStringConverter - so
+        // this is a fast way out rather than backspacing it out digit by digit.
+        btnClearPrices.setOnAction(event -> clearAll(txtBuyPrice, txtSelPrice, txtSelPrice2, txtSelPrice3));
     }
 
     private List<String> getSubGroupsNamesByMainId() {

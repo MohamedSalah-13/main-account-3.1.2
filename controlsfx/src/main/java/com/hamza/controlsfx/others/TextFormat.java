@@ -51,21 +51,20 @@ public class TextFormat {
     /**
      * DefaultStringConverter is a generic converter class that extends StringConverter to handle
      * common conversions between strings and numeric types (Double, Integer).
-     * It provides methods to convert a number to its string representation and parse
-     * a string into a number, utilizing a default value when the input is invalid or empty.
      *
      * @param <T> the type of number that the converter will handle, which must extend Number
      */
     @SuppressWarnings("unchecked")
     public static class DefaultStringConverter<T extends Number> extends StringConverter<T> {
-        private final T zero;
+        /** Only tells {@link #fromString} which numeric type to parse into - its value is never returned. */
+        private final T typeWitness;
 
         public DefaultStringConverter() {
-            this.zero = (T) (Number) 0.0; // Default type as Double
+            this.typeWitness = (T) (Number) 0.0; // Double by default
         }
 
-        public DefaultStringConverter(T zero) {
-            this.zero = zero;
+        public DefaultStringConverter(T typeWitness) {
+            this.typeWitness = typeWitness;
         }
 
         @Override
@@ -73,18 +72,29 @@ public class TextFormat {
             return number != null ? number.toString() : "";
         }
 
+        /**
+         * An empty field, or a bare "-" or "." typed on the way to a real number,
+         * is null - not zero.
+         * <p>
+         * This used to answer zero, and {@code TextFormatter} resyncs its text
+         * from the parsed value on every accepted change - so clearing a field
+         * that held anything other than zero produced a value change, which
+         * triggered that resync, which wrote "0.0" straight back over the empty
+         * text the user had just typed. The field read as refusing to erase.
+         * Null keeps the resync a no-op: {@link #toString} already turns it back
+         * into "", matching what is already there.
+         */
         @Override
         public T fromString(String string) {
-            if (string.isEmpty() || "-".equals(string) || ".".equals(string) || "-.".equals(string)) {
-                return zero;
-            } else {
-                if (zero instanceof Double) {
-                    return (T) Double.valueOf(string);
-                } else if (zero instanceof Integer) {
-                    return (T) Integer.valueOf(string);
-                }
-                throw new IllegalArgumentException("Unsupported type");
+            if (string == null || string.isEmpty() || "-".equals(string) || ".".equals(string) || "-.".equals(string)) {
+                return null;
             }
+            if (typeWitness instanceof Double) {
+                return (T) Double.valueOf(string);
+            } else if (typeWitness instanceof Integer) {
+                return (T) Integer.valueOf(string);
+            }
+            throw new IllegalArgumentException("Unsupported type");
         }
     }
 }

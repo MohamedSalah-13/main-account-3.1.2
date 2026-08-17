@@ -101,6 +101,11 @@
                                           <RowConstraints />
                                        </rowConstraints>
                                                 </GridPane>
+                                                <HBox alignment="CENTER_RIGHT">
+                                                    <children>
+                                                        <Button fx:id="btnClearPrices" mnemonicParsing="false" styleClass="neutral-button" text="%item.btn.clear.prices" />
+                                                    </children>
+                                                </HBox>
                                             </children>
                                         </VBox>
 
