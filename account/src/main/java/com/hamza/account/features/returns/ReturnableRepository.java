@@ -55,11 +55,27 @@ public interface ReturnableRepository {
      */
     Optional<SourceLine> lineById(DocumentType sourceType, int sourceLineId) throws DaoException;
 
+    /**
+     * The expiry batches a source invoice actually sold or bought of one item - what a
+     * return of it may honestly claim to be returning, in place of a date the user
+     * typed with nothing behind it. Each batch's quantity is what the source invoice
+     * recorded, <em>not</em> reduced by what other returns against it have already
+     * taken - {@link ReturnGuard}'s item-total check is what stays authoritative for
+     * quantity, exactly as {@code InvoiceExpiryService}'s own batch list is already a
+     * picker rather than the final word for an ordinary sale. Two batches of the same
+     * expiry date are summed into one.
+     */
+    List<ExpiryBatch> sourceExpiryBatches(DocumentType sourceType, int sourceId, int itemId)
+            throws DaoException;
+
     /** One item's quantity on the source invoice, already converted to base units. */
     record SoldLine(int itemId, double baseQuantity) {
     }
 
     record SourceLine(int itemId, double price, double buyPrice,
                       int unitId, double typeValue, LocalDate expirationDate) {
+    }
+
+    record ExpiryBatch(LocalDate expirationDate, double baseQuantity) {
     }
 }

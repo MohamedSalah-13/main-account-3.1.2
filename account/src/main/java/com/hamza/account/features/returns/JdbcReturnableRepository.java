@@ -108,6 +108,31 @@ public final class JdbcReturnableRepository implements ReturnableRepository {
         });
     }
 
+    @Override
+    public List<ExpiryBatch> sourceExpiryBatches(DocumentType sourceType, int sourceId, int itemId)
+            throws DaoException {
+        DocumentTableSpec spec = DocumentTableSpec.of(sourceType);
+        String sql = "SELECT expiration_date, SUM(quantity * type_value) AS base_quantity"
+                + " FROM " + spec.lineTable() + " WHERE " + DocumentTableSpec.LINE_DOCUMENT
+                + " = ? AND " + spec.lineItem() + " = ? AND expiration_date IS NOT NULL"
+                + " GROUP BY expiration_date ORDER BY expiration_date";
+        return withConnection(connection -> {
+            List<ExpiryBatch> batches = new ArrayList<>();
+            try (PreparedStatement statement = connection.prepareStatement(sql)) {
+                statement.setInt(1, sourceId);
+                statement.setInt(2, itemId);
+                try (ResultSet rows = statement.executeQuery()) {
+                    while (rows.next()) {
+                        batches.add(new ExpiryBatch(
+                                rows.getDate("expiration_date").toLocalDate(),
+                                rows.getDouble("base_quantity")));
+                    }
+                }
+            }
+            return batches;
+        });
+    }
+
     private static <T> T withConnection(SqlWork<T> work) throws DaoException {
         if (!ConnectionManager.inTransaction()) {
             throw new DaoException("Return validation requires an active transaction");

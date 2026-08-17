@@ -1,6 +1,7 @@
 package com.hamza.account.features.invoice;
 
 import com.hamza.account.document.DocumentType;
+import com.hamza.account.features.returns.ReturnableRepository;
 import com.hamza.account.model.base.BasePurchasesAndSales;
 import com.hamza.account.model.domain.ItemsModel;
 import com.hamza.account.service.ItemUnits;
@@ -24,13 +25,33 @@ public final class InvoiceExpiryService {
     private final DocumentType documentType;
     private final int documentId;
     private final ExpiryBalanceRepository repository;
+    private final int sourceInvoiceNumber;
+    private final ReturnableRepository returnableRepository;
     private final Map<ItemExpiry, Double> originalBaseQuantity = new HashMap<>();
 
     public InvoiceExpiryService(DocumentType documentType, int documentId,
                                 ExpiryBalanceRepository repository) {
+        this(documentType, documentId, repository, 0, null);
+    }
+
+    /**
+     * @param sourceInvoiceNumber the invoice this document reverses, or {@code 0} for
+     *                            none - a return entered without one falls back to
+     *                            {@link InvoiceExpiryOptions#manualEntry()}, exactly as
+     *                            every return did before this constructor existed
+     * @param returnableRepository where {@link #sourceInvoiceNumber} is read from;
+     *                             {@code null} exactly when {@code sourceInvoiceNumber}
+     *                             is {@code 0}
+     */
+    public InvoiceExpiryService(DocumentType documentType, int documentId,
+                                ExpiryBalanceRepository repository,
+                                int sourceInvoiceNumber,
+                                ReturnableRepository returnableRepository) {
         this.documentType = Objects.requireNonNull(documentType, "documentType");
         this.documentId = documentId;
         this.repository = Objects.requireNonNull(repository, "repository");
+        this.sourceInvoiceNumber = sourceInvoiceNumber;
+        this.returnableRepository = returnableRepository;
     }
 
     public InvoiceExpiryOptions optionsFor(
@@ -41,7 +62,7 @@ public final class InvoiceExpiryService {
             return InvoiceExpiryOptions.notRequired();
         }
         if (documentType.stockDirection() == DocumentType.Direction.IN) {
-            return InvoiceExpiryOptions.manualEntry();
+            return sourceBatchOptions(item);
         }
 
         Map<LocalDate, Double> balances = new LinkedHashMap<>(
@@ -108,6 +129,40 @@ public final class InvoiceExpiryService {
                     message("invoice.expiry.error.batch.insufficient",
                             selectedBatch.availableBaseQuantity()));
         }
+    }
+
+    /**
+     * What an incoming ({@code Direction.IN}) document may put a date on - reached by
+     * {@code PURCHASE} (goods newly arriving) and {@code SALES_RETURN} (goods coming
+     * back from a customer), the two document types whose stock moves this way.
+     * {@code PURCHASE_RETURN} does not reach here at all: sending stock back to a
+     * supplier is {@code Direction.OUT}, so it already picks from whatever is on the
+     * shelf today, the same path an ordinary sale takes - it is not tied to one
+     * specific earlier purchase, and correctly was not before this change either.
+     * <p>
+     * A purchase invents stock, so it is always {@link InvoiceExpiryOptions#manualEntry()} -
+     * there is no earlier batch to point at. A sales return, told apart by
+     * {@link DocumentType#isReturn()}, is not inventing anything: it is handing back
+     * what one specific sale actually sold, so it offers that invoice's own batches
+     * instead - see {@link ReturnableRepository#sourceExpiryBatches}. Falls back to
+     * manual entry when no source is known, which is every return before item 10's
+     * entry screen exists to set one.
+     */
+    private InvoiceExpiryOptions sourceBatchOptions(ItemsModel item) throws DaoException {
+        if (!documentType.isReturn() || sourceInvoiceNumber <= 0 || returnableRepository == null) {
+            return InvoiceExpiryOptions.manualEntry();
+        }
+        DocumentType sourceType = documentType.reverses();
+        List<ReturnableRepository.ExpiryBatch> sourceBatches = returnableRepository
+                .sourceExpiryBatches(sourceType, sourceInvoiceNumber, item.getId());
+        if (sourceBatches.isEmpty()) {
+            throw new BusinessRuleException(message("invoice.expiry.error.no.source.batch"));
+        }
+        List<InvoiceExpiryOptions.Batch> batches = sourceBatches.stream()
+                .map(batch -> new InvoiceExpiryOptions.Batch(
+                        batch.expirationDate(), batch.baseQuantity()))
+                .toList();
+        return InvoiceExpiryOptions.existingBatches(batches);
     }
 
     private void restoreOriginalQuantities(int itemId, Map<LocalDate, Double> balances) {

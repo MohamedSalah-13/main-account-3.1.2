@@ -10,6 +10,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
 
 import java.io.File;
+import java.time.LocalDate;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -169,6 +170,35 @@ class ReturnableRepositoryAcceptanceTest {
     }
 
     @Test
+    void sourceExpiryBatchesReadsTheSourceInvoicesOwnDatesSummedPerDate() throws Exception {
+        Connection transaction = ConnectionManager.beginTransaction();
+        assertNotNull(transaction);
+        try {
+            int itemId = insertItem(transaction);
+            int sales = nextId(transaction, "total_sales", "invoice_number");
+            insertSalesHeader(transaction, sales);
+            LocalDate january = LocalDate.of(2027, 1, 31);
+            LocalDate february = LocalDate.of(2027, 2, 28);
+            insertSalesLineWithExpiry(transaction, sales, itemId, 2, january);
+            // A second line of the same item and date - the two must be summed.
+            insertSalesLineWithExpiry(transaction, sales, itemId, 3, january);
+            insertSalesLineWithExpiry(transaction, sales, itemId, 4, february);
+
+            List<ReturnableRepository.ExpiryBatch> batches =
+                    REPOSITORY.sourceExpiryBatches(DocumentType.SALES, sales, itemId);
+
+            assertEquals(2, batches.size());
+            assertEquals(january, batches.get(0).expirationDate());
+            assertEquals(5.0, batches.get(0).baseQuantity());
+            assertEquals(february, batches.get(1).expirationDate());
+            assertEquals(4.0, batches.get(1).baseQuantity());
+        } finally {
+            transaction.rollback();
+            ConnectionManager.endTransaction(transaction);
+        }
+    }
+
+    @Test
     void theGuardRefusesASecondReturnThatWouldExceedWhatTheFirstLeft() throws Exception {
         Connection transaction = ConnectionManager.beginTransaction();
         assertNotNull(transaction);
@@ -271,6 +301,21 @@ class ReturnableRepositoryAcceptanceTest {
                 assertTrue(keys.next());
                 return keys.getInt(1);
             }
+        }
+    }
+
+    private static void insertSalesLineWithExpiry(Connection connection, int invoiceNumber,
+                                                   int itemId, double quantity,
+                                                   LocalDate expirationDate) throws Exception {
+        try (PreparedStatement statement = connection.prepareStatement(
+                "INSERT INTO sales(invoice_number,num,type,quantity,price,buy_price,"
+                        + "total_sel_price,total_buy_price,total_profit,discount,type_value,expiration_date) "
+                        + "VALUES (?,?,1,?,10,1,50,5,45,0,1,?)")) {
+            statement.setInt(1, invoiceNumber);
+            statement.setInt(2, itemId);
+            statement.setDouble(3, quantity);
+            statement.setObject(4, expirationDate);
+            assertEquals(1, statement.executeUpdate());
         }
     }
 

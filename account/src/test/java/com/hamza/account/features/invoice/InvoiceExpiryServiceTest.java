@@ -1,18 +1,22 @@
 package com.hamza.account.features.invoice;
 
 import com.hamza.account.document.DocumentType;
+import com.hamza.account.features.returns.ReturnableRepository;
 import com.hamza.account.interfaces.impl_invoiceBuy.SalesInvoice;
 import com.hamza.account.model.domain.ItemsModel;
 import com.hamza.account.model.domain.Sales;
 import com.hamza.account.model.domain.UnitsModel;
+import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.error.BusinessRuleException;
 import com.hamza.controlsfx.error.UserValidationException;
 import org.junit.jupiter.api.Test;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
@@ -113,9 +117,112 @@ class InvoiceExpiryServiceTest {
                 () -> service.optionsFor(expiryTrackedItem(), new ArrayList<>()));
     }
 
+    @Test
+    void aSalesReturnWithAKnownSourceOffersTheSourceInvoicesOwnBatches() throws Exception {
+        ItemsModel item = expiryTrackedItem();
+        FakeReturnableRepository returns = new FakeReturnableRepository();
+        returns.batches.put(item.getId(), List.of(
+                new ReturnableRepository.ExpiryBatch(JANUARY, 4.0),
+                new ReturnableRepository.ExpiryBatch(FEBRUARY, 6.0)));
+        InvoiceExpiryService service = new InvoiceExpiryService(
+                DocumentType.SALES_RETURN, 0, ignored -> Map.of(), 500, returns);
+
+        InvoiceExpiryOptions options = service.optionsFor(item, List.of());
+
+        assertEquals(InvoiceExpiryOptions.Mode.EXISTING_BATCH, options.mode());
+        assertEquals(2, options.batches().size());
+        assertEquals(DocumentType.SALES, returns.lastSourceTypeAsked);
+        assertEquals(500, returns.lastSourceIdAsked);
+    }
+
+    @Test
+    void aSalesReturnWithoutAKnownSourceStillFallsBackToManualEntry() throws Exception {
+        // Every return before item 10's entry screen sets a source - unchanged.
+        InvoiceExpiryService service = new InvoiceExpiryService(
+                DocumentType.SALES_RETURN, 0, ignored -> Map.of());
+
+        assertEquals(InvoiceExpiryOptions.Mode.MANUAL_ENTRY,
+                service.optionsFor(expiryTrackedItem(), List.of()).mode());
+    }
+
+    @Test
+    void aPurchaseAsksNoQuestionsOfTheSourceEvenIfOneWereGiven() throws Exception {
+        // PURCHASE is not a return - it invents stock, and has nothing to reverse.
+        FakeReturnableRepository returns = new FakeReturnableRepository();
+        InvoiceExpiryService service = new InvoiceExpiryService(
+                DocumentType.PURCHASE, 0, ignored -> Map.of(), 500, returns);
+
+        assertEquals(InvoiceExpiryOptions.Mode.MANUAL_ENTRY,
+                service.optionsFor(expiryTrackedItem(), List.of()).mode());
+        assertEquals(0, returns.calls);
+    }
+
+    @Test
+    void refusesASalesReturnWhoseSourceRecordedNoBatchForThisItem() {
+        FakeReturnableRepository returns = new FakeReturnableRepository();
+        InvoiceExpiryService service = new InvoiceExpiryService(
+                DocumentType.SALES_RETURN, 0, ignored -> Map.of(), 500, returns);
+
+        assertThrows(BusinessRuleException.class,
+                () -> service.optionsFor(expiryTrackedItem(), List.of()));
+    }
+
+    @Test
+    void aPurchaseReturnNeverConsultsASourceAtAll() throws Exception {
+        // PURCHASE_RETURN is Direction.OUT (goods leave the shelf back to the
+        // supplier), not Direction.IN like SALES_RETURN - it already picks from
+        // whatever stock is on hand today, the same path an ordinary sale takes, and
+        // never reaches sourceBatchOptions regardless of what the repository holds.
+        FakeReturnableRepository returns = new FakeReturnableRepository();
+        InvoiceExpiryService service = new InvoiceExpiryService(
+                DocumentType.PURCHASE_RETURN, 0, ignored -> Map.of(JANUARY, 5.0), 500, returns);
+
+        InvoiceExpiryOptions options = service.optionsFor(expiryTrackedItem(), List.of());
+
+        assertEquals(InvoiceExpiryOptions.Mode.EXISTING_BATCH, options.mode());
+        assertEquals(0, returns.calls);
+    }
+
     private static InvoiceExpiryService service(
             DocumentType type, InvoiceExpiryService.ExpiryBalanceRepository repository) {
         return new InvoiceExpiryService(type, 0, repository);
+    }
+
+    private static final class FakeReturnableRepository implements ReturnableRepository {
+        final Map<Integer, List<ExpiryBatch>> batches = new HashMap<>();
+        DocumentType lastSourceTypeAsked;
+        int lastSourceIdAsked;
+        int calls;
+
+        @Override
+        public boolean sourceExists(DocumentType sourceType, int sourceId) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public List<SoldLine> sourceLines(DocumentType sourceType, int sourceId) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public Map<Integer, Double> alreadyReturnedBaseQuantities(
+                DocumentType returnType, int sourceId, int excludingReturnId) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public Optional<SourceLine> lineById(DocumentType sourceType, int sourceLineId) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public List<ExpiryBatch> sourceExpiryBatches(
+                DocumentType sourceType, int sourceId, int itemId) throws DaoException {
+            calls++;
+            lastSourceTypeAsked = sourceType;
+            lastSourceIdAsked = sourceId;
+            return batches.getOrDefault(itemId, List.of());
+        }
     }
 
     private static ItemsModel expiryTrackedItem() {

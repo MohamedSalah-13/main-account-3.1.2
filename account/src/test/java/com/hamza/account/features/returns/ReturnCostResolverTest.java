@@ -154,5 +154,11 @@ class ReturnCostResolverTest {
             lastSourceTypeAsked = sourceType;
             return Optional.ofNullable(lines.get(sourceLineId));
         }
+
+        @Override
+        public List<ExpiryBatch> sourceExpiryBatches(
+                DocumentType sourceType, int sourceId, int itemId) {
+            throw new UnsupportedOperationException("not used by ReturnCostResolver");
+        }
     }
 }

@@ -140,5 +140,12 @@ class ReturnGuardTest {
             calls.add("lineById");
             return java.util.Optional.empty();
         }
+
+        @Override
+        public List<ExpiryBatch> sourceExpiryBatches(
+                DocumentType sourceType, int sourceId, int itemId) {
+            calls.add("sourceExpiryBatches");
+            return List.of();
+        }
     }
 }
