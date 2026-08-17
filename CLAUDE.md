@@ -25,12 +25,30 @@ mvn -o -pl account -am test -Dtest=ScheduledBackupTest -Dsurefire.failIfNoSpecif
 
 `mvn -o` (offline) works — the local repository is populated.
 
-**Test coverage is almost nothing.** JUnit 5 and Mockito are declared in the root pom and inherited by both
-modules, and surefire needs no configuration, but the whole suite is `CryptoDatabaseConfigTest` and
-`NotificationCenterTest` in `controlsfx`, plus `ScheduledBackupTest` and `PasswordHasherTest` in
-`account`. Everything else — the DAO layer, the controllers, the trial logic — has none. A passing build
-therefore says very little: do not describe a change as verified on that basis, state what was and was not
-checked, and remember that verifying most behaviour still means running the app against a database.
+**Coverage is real but uneven — know which half you are in.** JUnit 5 and Mockito are declared in the
+root pom and inherited by both modules; surefire needs no configuration. `mvn clean test` currently runs
+**632 tests across ~60 classes** — 92 in `controlsfx`, 540 in `account` — with 4 skipped (below). What is
+genuinely covered:
+
+- **The declarative specs, pinned character for character** — `DocumentDaoStatementsTest`,
+  `PartyDaoStatementsTest`, `PartyLedgerStatementsTest`, `CardItemDaoStatementsTest`,
+  `DocumentTableSpecTest`, `WipeCatalogTest`. These fail the build on a wrong column, so they are the
+  safety net for anything touching SQL.
+- **Architecture rules** — `AuthorizationArchitectureTest`, `ErrorHandlingArchitectureTest`,
+  `DefaultRoleAcceptanceTest`. They fail when a new service skips the permission guard or a new
+  exception escapes the error boundary.
+- **The invoice logic** — the `features/invoice` package has a test per class, all without a JavaFX
+  toolkit.
+
+What still has none: the controllers, the FXML screens, the reports, the trial logic, and most of the
+`model/dao` write paths.
+
+**Two tests do not run by default.** `InvoiceStockDatabaseAcceptanceTest` and
+`DocumentLineDatabaseAcceptanceTest` are gated on `-Daccount.db.acceptance=true` and need a reachable
+MySQL. A green `mvn clean test` has not run them.
+
+So a passing build now means more than it did, but still not that a screen works: state what was and was
+not checked, and remember that verifying UI behaviour means running the app against a database.
 
 **Always `clean` when verifying a change.** Incremental builds frequently report
 `Nothing to compile - all classes are up to date` and silently skip your edits, so a plain `mvn compile`
@@ -39,6 +57,20 @@ can "succeed" without ever compiling them.
 **Lombok error cascades.** One unrelated compile error aborts annotation processing, and every generated
 getter/setter then reports `cannot find symbol` — hundreds of errors across untouched files. Fix the first
 genuine error and the rest disappear; do not chase them individually.
+
+## Plans and conventions
+
+Two documents govern work here and are kept current — read them before large changes:
+
+- **[`docs/new-code-rules.md`](docs/new-code-rules.md)** — the contract every new model, DAO or service
+  must follow so the planned Spring Boot and SaaS moves stay cheap. **Read it before creating anything
+  in `model/domain/`, `model/dao/` or `service/`.** The short version: new models are plain POJOs (no
+  `javafx.beans.property`, no `DForColumnTable`), DAOs never read `CurrentUser`/`Preferences`/
+  `ServiceRegistry`, dependencies arrive through the constructor, transaction boundaries go in the
+  service via `TransactionTemplate` (no new `insertMultiData` sites), filtering and paging happen in
+  SQL, and no table ever gets a `tenant_id` column.
+- **[`docs/erp-roadmap.md`](docs/erp-roadmap.md)** — the governing roadmap (§0 carries a measured
+  status update). `docs/spring-migration-plan.md` is superseded and kept for reference only.
 
 ## Modules
 
@@ -74,8 +106,55 @@ calls `salesDao.insertList(...)` — while keeping them on one connection. Conse
 - A nested `insertMultiData` joins the outer transaction and leaves the commit to it.
 - Code needing the raw `Connection` must go through `AbstractDao.withConnection(...)`, never hold one.
 
-Layering is `Controller → Service (mostly thin records) → DAO → AbstractDao`. Services add little; the real
-logic is in controllers and DAOs.
+**`TransactionTemplate.execute(...)` is the same thing said from the service side, and is what new code
+uses.** `insertMultiData` puts the boundary inside a DAO, which is why `TotalsSalesDao.insert` opens a
+transaction and then calls into other DAOs. That works, but the boundary belongs to the operation, not
+to a table — so do not add an eighteenth `insertMultiData` site; wrap the service method instead. Both
+routes share `ConnectionManager`, so they nest safely with each other.
+
+Layering is `Controller → Service → DAO → AbstractDao`, and it is in the middle of a deliberate shift.
+The older services under `service/` are thin `record X(DaoFactory)` wrappers with the real logic sitting
+in controllers and DAOs. The newer work puts the logic in a `features/<area>/` package that has no
+JavaFX at all and a test per class — `features/invoice`, `features/stockcount`, `features/inventory`,
+`features/rbac`. **New behaviour goes there, not into a controller.** The test for whether it is in the
+right place: can it be tested without starting a JavaFX toolkit?
+
+### Authorization
+
+`UserPermissionType` — the ~130-entry enum with ids hand-matched to table rows — **is gone**.
+Permissions are now string keys: `AppPermissions.SALES_CREATE` is `key("sales.create")`, and adding one
+is a single constant. No database id, no switch, no permission-screen edit; the metadata (module,
+resource, action, risk) is derived from the key itself and synchronized on startup.
+
+`AuthorizationGuard` is the single gateway, and it answers two different questions with two methods —
+using the wrong one is the mistake to avoid:
+
+- `isGranted(key)` returns a boolean and is for **UI hints** — hiding a button, disabling a menu.
+- `require(key)` throws `BusinessRuleException` and is for **enforcement**. It belongs in the service
+  layer, and there are ~57 calls to it in `service/` today.
+
+**Hiding a button is not enforcement.** The old system only hid buttons, so anything that reached a
+service another way was unguarded. `AuthorizationArchitectureTest` is what keeps that from coming back:
+it fails the build when a service write path has no guard. Add the guard when you add the method.
+
+Roles live in `auth_role` / `auth_role_permission` / `auth_user_role`, resolved by `RbacService` over
+`JdbcRbacRepository`, with per-user overrides in `auth_user_permission_override`. The schema arrived in
+`V11__rbac.sql` (import of every legacy grant), `V12__modern_authorization.sql` (rename to `auth_*`,
+keys become dotted strings) and `V13__default_rbac_roles.sql`. `user_permission` is retained as
+read-only legacy evidence — nothing reads it for decisions.
+
+`CurrentUser.get()/getOrNull()` reads the signed-in user from `UserSessionContext` in `ServiceRegistry`.
+It is **process-wide**, which is correct for a desktop app and is one of the things that has to change
+before anything is served over a network — see `docs/new-code-rules.md`.
+
+### Errors
+
+`controlsfx.error` classifies what the user is allowed to see. `UserValidationException` (bad input) and
+`BusinessRuleException` (a rule refused it, including every permission denial) carry messages meant for
+the user and are shown as-is. Anything else is technical: `ErrorReporter` logs it behind a reference code
+and shows a generic sentence, so a stack trace or a SQL fragment never reaches a screen.
+`GlobalExceptionHandler` is the last boundary. `ErrorHandlingArchitectureTest` enforces the split, so
+throwing a raw `RuntimeException` at a user-facing path fails the build.
 
 ### The generic invoice seam
 
@@ -155,6 +234,69 @@ every statement of all eight DAOs character for character, and pins the array bo
 statement's parameter count. A repository merge that swaps two adjacent columns still produces valid
 SQL — it just saves the discount as a stock id — so the pinning is the only thing standing between that
 and a customer's database.
+
+### Saving an invoice
+
+The save path is no longer in the controller. `features/invoice` holds it, with no JavaFX anywhere in
+the package and a test per class. The pieces worth knowing before changing anything there:
+
+- **`InvoiceSaveService`** owns validation, calculation, construction and persistence — it is the
+  coarse operation, and the right size for an endpoint if this is ever served over a network. Around it:
+  `InvoiceSaveValidator`, `InvoiceLineAssembler`, `InvoiceLineTotals`, `InvoicePaymentTerms`,
+  `InvoicePostSaveService`, `InvoicePrintService`.
+- **`InvoiceNumberAllocator`** replaced "read the max and add one", which handed two users the same
+  number. `JdbcInvoiceNumberAllocator` advances `document_sequences` (added by
+  `V14__document_sequences.sql`) with `LAST_INSERT_ID(current_value + 1)`, which is atomic per
+  connection. There is one counter per `DocumentType`; a missing row is an error, not a silent zero.
+- **`InvoiceStockGuard`** is the last check before persistence. It serializes the whole stock effect of
+  the document — every line, converted to base units — and refuses the save as a whole. It reads through
+  `InvoiceStockRepository`, and `JdbcInvoiceStockRepository` already takes a `stock_id`.
+
+### One warehouse
+
+`stocks`, `items_stock` and the `stock_id` column on all four invoice tables still exist and every write
+still carries a warehouse id — but **the multi-warehouse screens were removed** (commit `0853cf4`), and
+nothing lets a user create a second stock. The id written is always `DefaultStock.ID`, the seeded
+`'الرئيسي'` row.
+
+**Every DAO that writes a `stock_id` must use that constant.** A different id produces rows no screen can
+reach. The views that group by `stock_id` keep working precisely because every row carries the same one.
+
+Three places would break the moment a second stock existed, and are documented in
+`docs/erp-roadmap.md` §11: `mini_quantity_view` sums `items.first_balance` once per warehouse row, and
+`ItemsDao.QUERY_ITEMS` joins `quantity_items_table` without `stock_id` so item rows would multiply.
+Fix those before restoring anything.
+
+### Expiry batches
+
+An item with `items.item_has_validity` tracks expiry, and `InvoiceExpiryService` decides where the date
+on a line comes from — the answer differs by direction, which is the part that surprises people:
+
+- A document that moves stock **in** (purchase, sales return) is `MANUAL_ENTRY`: the user types the date.
+- A document that moves stock **out** (sale, purchase return) is `EXISTING_BATCH`: the user picks from
+  the batches actually on hand, and the service computes each batch's remaining quantity by subtracting
+  what the unsaved document already consumes. No batch with stock left means the line is refused.
+- An item without `item_has_validity` is `NOT_REQUIRED` and the column stays null.
+
+Editing a saved document restores its own original quantities first (`captureOriginalLines`), otherwise
+a line would be judged against a balance it is itself responsible for.
+
+### Period locks and stock counts
+
+`accounting_lock` (`V9`) closes a period, and `PeriodLockRegistry` declares every dated document the
+lock protects — table, key column and date column for each: the four documents, both account ledgers,
+expenses, and the stock count. `DocumentType.periodLock()` returns the right one, so a screen never
+names a table.
+
+The stock count is in that list although it is not money: posting one moves every balance on the sheet
+at its own date, so a count posted into a closed month rewrites a valuation already reported.
+
+`stock_count` / `stock_count_lines` (`V8`) with `features/stockcount`: a count is a dated document that
+posts its differences once and is then read-only (`isEditable()` is the single answer every disabled
+control hangs off). Only `POSTED` counts affect `quantity_items_table`, so counting in progress moves
+nothing. This is what replaced correcting a balance by editing `items.first_balance` — which rewrote
+what the opening balance *was*, silently changing every earlier report and recording nothing about who
+did it.
 
 ### Units
 
@@ -331,7 +473,7 @@ before the connection goes back to the pool.
 ### FXML
 
 Controllers carry `@FxmlPath(pathFile = "...")`; `OpenFxmlApplication` loads the FXML for a controller
-instance. The ~69 FXML files live under `account/src/main/resources/com/hamza/account/view/`, and the
+instance. The ~56 FXML files live under `account/src/main/resources/com/hamza/account/view/`, and the
 annotation's path is relative to that directory.
 
 ### Notifications
@@ -404,16 +546,31 @@ Never commit `config.xml`, `config.key`, `private_key.pem`, `license.dat`, or `s
 Schema changes are **Flyway migrations**, in `account/src/main/resources/db/migration/`, applied by
 `DatabaseMigrationService` from the `DownLoadApplication` constructor before anything touches the DAOs.
 
-- `V1__baseline.sql` is the schema as shipped to clients in v4.1.3 — tables, indexes, 32 views, 8
-  triggers, 6 procedures and the seed data (including the `admin` user, without which nobody can log in).
-  It is the Flyway baseline: an existing client database is **stamped** with it, never executed, because
-  it already is that schema. A new database executes it and continues with `V2`, `V3`, …
+- `V1__baseline.sql` is the schema as shipped to clients in v4.1.3 — tables, indexes, procedures and the
+  seed data (including the `admin` user, without which nobody can log in). It is the Flyway baseline: an
+  existing client database is **stamped** with it, never executed, because it already is that schema. A
+  new database executes it and continues with `V2`, `V3`, … The current head is `V14`.
 - Everything after it is one file per change. **Never fold a migration back into `V1`** and never edit a
   migration that has shipped — a client that already ran it will not run it again, so the change would
   reach new installs only.
 
 Adding a schema change is therefore one file: `V<n>__what_it_does.sql`. Both the upgrade path and the
 fresh-install path pick it up, and Flyway derives the version — nothing to register in Java.
+
+**Views, triggers and procedures are repeatable migrations, not versioned ones.** `R__views.sql` (33
+views), `R__triggers.sql` and `R__procedures.sql` are re-run by Flyway whenever their checksum changes,
+so **changing a view means editing it in place in `R__views.sql`** — do not write a `V<n>` that drops
+and recreates one. This is what stops a client on an older schema from being left without a view that
+newer code queries. Two conventions inside them:
+
+- `DROP VIEW IF EXISTS` + `CREATE VIEW`, never `CREATE OR REPLACE VIEW`: the latter fails when the name
+  is occupied by a base table and cannot change a view's column count.
+- They run **after** all versioned migrations, so a view may reference a column added by the latest `V`.
+
+The triggers are split for a reason worth knowing: the audit triggers on `users`, `custom`, `suppliers`,
+`total_sales`, `total_buy` and `treasury` stay in `V2__audit_triggers.sql` and `V7__audit_delete_triggers.sql`,
+because moving an already-applied versioned migration fails Flyway validation on live clients.
+`R__triggers.sql` holds the ones added since. So when hunting a trigger, check all three files.
 
 Three things the service adds around Flyway, all of which have bitten before:
 
