@@ -134,5 +134,11 @@ class ReturnGuardTest {
             excludingCalledWith.add(excludingReturnId);
             return new LinkedHashMap<>(alreadyReturned);
         }
+
+        @Override
+        public java.util.Optional<SourceLine> lineById(DocumentType sourceType, int sourceLineId) {
+            calls.add("lineById");
+            return java.util.Optional.empty();
+        }
     }
 }

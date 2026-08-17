@@ -4,6 +4,7 @@ import com.hamza.account.authorization.AppPermissions;
 import com.hamza.account.controller.others.ServiceRegistry;
 import com.hamza.account.document.DocumentType;
 import com.hamza.account.features.rbac.UserSessionContext;
+import com.hamza.account.features.returns.ReturnCostResolver;
 import com.hamza.account.features.returns.ReturnGuard;
 import com.hamza.account.features.returns.ReturnSourceWriter;
 import com.hamza.account.features.stockledger.StockMovementDao;
@@ -37,6 +38,7 @@ class InvoiceSaveServiceTest {
     private InvoiceStockGuard stockGuard;
     private ReturnGuard returnGuard;
     private ReturnSourceWriter returnSourceWriter;
+    private ReturnCostResolver returnCostResolver;
     private StockMovementDao stockMovementDao;
     private InvoiceSaveService<Sales, Total_Sales, Customers, CustomerAccount> service;
     private UserSessionContext session;
@@ -50,13 +52,14 @@ class InvoiceSaveServiceTest {
         stockGuard = mock(InvoiceStockGuard.class);
         returnGuard = mock(ReturnGuard.class);
         returnSourceWriter = mock(ReturnSourceWriter.class);
+        returnCostResolver = mock(ReturnCostResolver.class);
         stockMovementDao = mock(StockMovementDao.class);
         when(repository.totalDao()).thenReturn(dao);
         service = new InvoiceSaveService<>(new SalesInvoice(), repository,
                 DocumentType.SALES, Clock.fixed(
                 Instant.parse("2026-08-13T05:00:00Z"), ZoneOffset.UTC),
                 numberAllocator, InvoiceTransactionExecutor.direct(),
-                stockGuard, returnGuard, returnSourceWriter,
+                stockGuard, returnGuard, returnSourceWriter, returnCostResolver,
                 name -> new Treasury(1, name, BigDecimal.ZERO),
                 name -> new Employees(2, name), stockMovementDao);
         session = new UserSessionContext();

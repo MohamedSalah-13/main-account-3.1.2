@@ -3,8 +3,10 @@ package com.hamza.account.features.returns;
 import com.hamza.account.document.DocumentType;
 import com.hamza.controlsfx.database.DaoException;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 /**
  * Database boundary {@link ReturnGuard} reads through - what a source invoice actually
@@ -36,7 +38,28 @@ public interface ReturnableRepository {
     Map<Integer, Double> alreadyReturnedBaseQuantities(
             DocumentType returnType, int sourceId, int excludingReturnId) throws DaoException;
 
+    /**
+     * One exact original line - what {@code ReturnCostResolver} reads to recover the
+     * price and cost it was sold or bought at, rather than today's. Empty when the id
+     * names no line, which is refused rather than silently ignored: a return that
+     * claims to reverse a line that does not exist has a data problem worth surfacing,
+     * not a cost worth guessing at.
+     *
+     * @param itemId    the item the line is for
+     * @param price     what this line charged per selling unit
+     * @param buyPrice  what this line's items cost, in the same unit - {@code 0} for a
+     *                  {@code purchase} line, which is itself the cost and keeps none
+     *                  of its own; only a {@code sales} line carries one to preserve
+     * @param unitId    the unit the line was in
+     * @param typeValue that unit's factor into the item's base unit, on this line
+     */
+    Optional<SourceLine> lineById(DocumentType sourceType, int sourceLineId) throws DaoException;
+
     /** One item's quantity on the source invoice, already converted to base units. */
     record SoldLine(int itemId, double baseQuantity) {
+    }
+
+    record SourceLine(int itemId, double price, double buyPrice,
+                      int unitId, double typeValue, LocalDate expirationDate) {
     }
 }

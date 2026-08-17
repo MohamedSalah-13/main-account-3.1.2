@@ -104,6 +104,71 @@ class ReturnableRepositoryAcceptanceTest {
     }
 
     @Test
+    void lineByIdReadsTheOriginalSalesLineIncludingItsCostAtTheTime() throws Exception {
+        Connection transaction = ConnectionManager.beginTransaction();
+        assertNotNull(transaction);
+        try {
+            int itemId = insertItem(transaction);
+            int sales = nextId(transaction, "total_sales", "invoice_number");
+            insertSalesHeader(transaction, sales);
+            int lineId = insertSalesLineReturningId(transaction, sales, itemId, 3, 12.5, 4.0);
+
+            // The item's own cost has since moved - lineById must still answer what
+            // this specific line recorded at the time, not the item's price today.
+            raiseItemBuyPrice(transaction, itemId, 9.0);
+
+            var line = REPOSITORY.lineById(DocumentType.SALES, lineId);
+            assertTrue(line.isPresent());
+            assertEquals(itemId, line.get().itemId());
+            assertEquals(12.5, line.get().price());
+            assertEquals(4.0, line.get().buyPrice());
+
+            assertTrue(REPOSITORY.lineById(DocumentType.SALES, lineId + 999_000).isEmpty());
+        } finally {
+            transaction.rollback();
+            ConnectionManager.endTransaction(transaction);
+        }
+    }
+
+    @Test
+    void aPurchaseLineHasNoCostOfItsOwnToPreserve() throws Exception {
+        Connection transaction = ConnectionManager.beginTransaction();
+        assertNotNull(transaction);
+        try {
+            int itemId = insertItem(transaction);
+            int purchase = nextId(transaction, "total_buy", "invoice_number");
+            try (PreparedStatement statement = transaction.prepareStatement(
+                    "INSERT INTO total_buy(invoice_number,sup_code,invoice_type,invoice_date,total,"
+                            + "discount,paid_up,stock_id,treasury_id,notes,user_id) "
+                            + "VALUES (?,1,1,CURRENT_DATE,10,0,10,1,1,'returnable-repo-acceptance',1)")) {
+                statement.setInt(1, purchase);
+                assertEquals(1, statement.executeUpdate());
+            }
+            int lineId;
+            try (PreparedStatement statement = transaction.prepareStatement(
+                    "INSERT INTO purchase(invoice_number,num,type,quantity,price,discount,"
+                            + "type_value,expiration_date) VALUES (?,?,1,3,8.5,0,1,NULL)",
+                    Statement.RETURN_GENERATED_KEYS)) {
+                statement.setInt(1, purchase);
+                statement.setInt(2, itemId);
+                assertEquals(1, statement.executeUpdate());
+                try (ResultSet keys = statement.getGeneratedKeys()) {
+                    assertTrue(keys.next());
+                    lineId = keys.getInt(1);
+                }
+            }
+
+            var line = REPOSITORY.lineById(DocumentType.PURCHASE, lineId);
+            assertTrue(line.isPresent());
+            assertEquals(8.5, line.get().price());
+            assertEquals(0.0, line.get().buyPrice());
+        } finally {
+            transaction.rollback();
+            ConnectionManager.endTransaction(transaction);
+        }
+    }
+
+    @Test
     void theGuardRefusesASecondReturnThatWouldExceedWhatTheFirstLeft() throws Exception {
         Connection transaction = ConnectionManager.beginTransaction();
         assertNotNull(transaction);
@@ -181,6 +246,40 @@ class ReturnableRepositoryAcceptanceTest {
             statement.setInt(1, invoiceNumber);
             statement.setInt(2, itemId);
             statement.setDouble(3, quantity);
+            assertEquals(1, statement.executeUpdate());
+        }
+    }
+
+    private static int insertSalesLineReturningId(Connection connection, int invoiceNumber,
+                                                   int itemId, double quantity, double price,
+                                                   double buyPrice) throws Exception {
+        try (PreparedStatement statement = connection.prepareStatement(
+                "INSERT INTO sales(invoice_number,num,type,quantity,price,buy_price,"
+                        + "total_sel_price,total_buy_price,total_profit,discount,type_value,expiration_date) "
+                        + "VALUES (?,?,1,?,?,?,?,?,?,0,1,NULL)",
+                Statement.RETURN_GENERATED_KEYS)) {
+            statement.setInt(1, invoiceNumber);
+            statement.setInt(2, itemId);
+            statement.setDouble(3, quantity);
+            statement.setDouble(4, price);
+            statement.setDouble(5, buyPrice);
+            statement.setDouble(6, quantity * price);
+            statement.setDouble(7, quantity * buyPrice);
+            statement.setDouble(8, quantity * (price - buyPrice));
+            assertEquals(1, statement.executeUpdate());
+            try (ResultSet keys = statement.getGeneratedKeys()) {
+                assertTrue(keys.next());
+                return keys.getInt(1);
+            }
+        }
+    }
+
+    private static void raiseItemBuyPrice(Connection connection, int itemId, double buyPrice)
+            throws Exception {
+        try (PreparedStatement statement = connection.prepareStatement(
+                "UPDATE items SET buy_price = ? WHERE id = ?")) {
+            statement.setDouble(1, buyPrice);
+            statement.setInt(2, itemId);
             assertEquals(1, statement.executeUpdate());
         }
     }

@@ -41,6 +41,17 @@ public abstract class BasePurchasesAndSales extends UnitExtends {
     private LocalDate expiration_date;
     private ObjectProperty<ItemsModel> items = new SimpleObjectProperty<>();
 
+    /**
+     * The sold/purchased line this row reverses - {@code sales.id}/{@code purchase.id},
+     * not an item column. Meaningless outside {@code Sales_Return}/{@code Purchase_Return}
+     * and {@code 0} by default, which is every row before {@code V16__return_source.sql}
+     * and every row of a return entered without picking a source invoice. Persisted to
+     * {@code sales_re.source_line_id}/{@code purchase_re.source_line_id}; read by
+     * {@code ReturnCostResolver} to recover the original line's cost before it is lost
+     * to today's item price.
+     */
+    private IntegerProperty sourceLineId = new SimpleIntegerProperty();
+
     public int getId() {
         return id.get();
     }
@@ -51,6 +62,18 @@ public abstract class BasePurchasesAndSales extends UnitExtends {
 
     public IntegerProperty idProperty() {
         return id;
+    }
+
+    public int getSourceLineId() {
+        return sourceLineId.get();
+    }
+
+    public void setSourceLineId(int sourceLineId) {
+        this.sourceLineId.set(sourceLineId);
+    }
+
+    public IntegerProperty sourceLineIdProperty() {
+        return sourceLineId;
     }
 
     public int getInvoiceNumber() {

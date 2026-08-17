@@ -6,6 +6,7 @@ import com.hamza.controlsfx.database.ConnectionManager;
 import com.hamza.controlsfx.database.DaoException;
 
 import java.sql.Connection;
+import java.sql.Date;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -13,6 +14,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 /** JDBC implementation that joins the transaction already opened by InvoiceSaveService. */
 public final class JdbcReturnableRepository implements ReturnableRepository {
@@ -75,6 +77,34 @@ public final class JdbcReturnableRepository implements ReturnableRepository {
                 }
             }
             return quantities;
+        });
+    }
+
+    @Override
+    public Optional<SourceLine> lineById(DocumentType sourceType, int sourceLineId)
+            throws DaoException {
+        DocumentTableSpec spec = DocumentTableSpec.of(sourceType);
+        // Only a `sales` line carries its own cost to preserve; `purchase` has no
+        // buy_price column at all - it is itself the cost, and keeps none of its own.
+        boolean hasBuyPrice = sourceType == DocumentType.SALES;
+        String sql = "SELECT " + spec.lineItem() + " AS item_id, price, "
+                + (hasBuyPrice ? "buy_price" : "0") + " AS buy_price, type AS unit_id,"
+                + " type_value, expiration_date FROM " + spec.lineTable()
+                + " WHERE " + DocumentTableSpec.LINE_KEY + " = ?";
+        return withConnection(connection -> {
+            try (PreparedStatement statement = connection.prepareStatement(sql)) {
+                statement.setInt(1, sourceLineId);
+                try (ResultSet rows = statement.executeQuery()) {
+                    if (!rows.next()) {
+                        return Optional.empty();
+                    }
+                    Date expiry = rows.getDate("expiration_date");
+                    return Optional.of(new SourceLine(rows.getInt("item_id"),
+                            rows.getDouble("price"), rows.getDouble("buy_price"),
+                            rows.getInt("unit_id"), rows.getDouble("type_value"),
+                            expiry == null ? null : expiry.toLocalDate()));
+                }
+            }
         });
     }
 
