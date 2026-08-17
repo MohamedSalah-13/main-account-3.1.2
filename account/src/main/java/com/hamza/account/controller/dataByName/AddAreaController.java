@@ -5,7 +5,7 @@ import com.hamza.controlsfx.error.UserValidationException;
 import com.hamza.controlsfx.interfaceData.Disable;
 import com.hamza.controlsfx.interfaceData.TableViewShowDataInt;
 import com.hamza.controlsfx.interfaceData.ToolbarAccountInt;
-import com.hamza.controlsfx.language.Setting_Language;
+import com.hamza.controlsfx.language.LanguageManager;
 import com.hamza.account.controller.others.ServiceRegistry;
 import com.hamza.controlsfx.observer.AppEvent;
 import com.hamza.controlsfx.observer.EventBus;
@@ -36,7 +36,7 @@ public class AddAreaController<T> extends VBox {
         areaObservableList.sort(Comparator.comparingInt(areaInterface.getIdFunction()));
 
         textName = new TextField();
-        textName.setPromptText(Setting_Language.WORD_NAME);
+        textName.setPromptText(LanguageManager.getInstance().getString("name"));
         textName.setPrefWidth(300);
         textCode = new TextField("0");
         textCode.setEditable(false);
@@ -46,8 +46,8 @@ public class AddAreaController<T> extends VBox {
         column2.setMaxWidth(Region.USE_PREF_SIZE);
 
 
-        Label labelCode = new Label(Setting_Language.WORD_CODE);
-        Label labelName = new Label(Setting_Language.WORD_NAME);
+        Label labelCode = new Label(LanguageManager.getInstance().getString("code"));
+        Label labelName = new Label(LanguageManager.getInstance().getString("name"));
         GridPane gridPane = new GridPane();
         gridPane.setHgap(10);
         gridPane.setVgap(10);
@@ -67,7 +67,7 @@ public class AddAreaController<T> extends VBox {
         try {
             return areaInterface.listData();
         } catch (Exception e) {
-            AllAlerts.handleError("تحميل المناطق", e);
+            AllAlerts.handleError(LanguageManager.getInstance().getString("area.error.load.title"), e);
             return List.of();
         }
     }
@@ -117,7 +117,7 @@ public class AddAreaController<T> extends VBox {
                     textCode.setText("0");
                 }
                 if (textName.getText().isEmpty()) {
-                    throw new UserValidationException(Setting_Language.PLEASE_INSERT_ALL_DATA);
+                    throw new UserValidationException(LanguageManager.getInstance().getString("msg.insert.all"));
                 }
 
                 var id = Integer.parseInt(textCode.getText());
