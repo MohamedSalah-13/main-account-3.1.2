@@ -1,6 +1,5 @@
 package com.hamza.account.controller.items;
 
-import com.codejava.commons.fx.validation.InputValidator;
 import com.hamza.account.config.Image_Setting;
 import com.hamza.account.controller.dataByName.OpenAddAreaApplication;
 import com.hamza.account.controller.dataByName.impl.MainGroupImpl2;
@@ -66,9 +65,14 @@ public class AddItemController implements AppSettingInterface {
     private final Subscriptions subscriptions = new Subscriptions();
     private final EventBus eventBus = ServiceRegistry.get(EventBus.class);
     /**
-     * Backs the unit combo, so a unit added while this dialog is open can be
-     * dropped in without rebuilding the combo and its listeners.
+     * Every unit that exists, loaded once and refreshed only when
+     * {@code UnitsChanged} says otherwise. {@link #getUnitsModelByName} reads
+     * this instead of asking the database again on every combo selection - a
+     * unit picked to price a carton, typed into a barcode field, or set as the
+     * item's base unit used to be a full round trip each time.
      */
+    private final ObservableList<UnitsModel> unitsCache = FXCollections.observableArrayList();
+    /** Names, derived from {@link #unitsCache} - what the unit combos actually display. */
     private final ObservableList<String> unitNames = FXCollections.observableArrayList();
     private final ImageChoose imageChoose = new ImageChoose();
 
@@ -134,6 +138,7 @@ public class AddItemController implements AppSettingInterface {
     @FXML
     private Button btnAddImage, btnClearImage;
     private TableUnitsSetting tableUnitsSetting;
+    private ExtraBarcodesTabController extraBarcodesTab;
 
     public AddItemController(int codeItem) {
         this.codeItem = codeItem;
@@ -156,7 +161,7 @@ public class AddItemController implements AppSettingInterface {
         // since renaming some other unit must not silently change this item's.
         subscriptions.add(eventBus.subscribe(UnitsChanged.class, event -> {
             var selected = comboType.getSelectionModel().getSelectedItem();
-            unitNames.setAll(getUnitsModelNames());
+            refreshUnitsCache();
             if (unitNames.contains(selected)) comboType.getSelectionModel().select(selected);
         }));
 
@@ -173,13 +178,15 @@ public class AddItemController implements AppSettingInterface {
     @FXML
     public void initialize() {
         bindItemForm();
+        refreshUnitsCache();
         unitSetting();
         otherSetting();
         comboTypeOption();
         addValidate();
         nameSetting();
         action();
-        extraBarcodesSetting();
+        extraBarcodesTab = new ExtraBarcodesTabController(
+                listExtraBarcodes, textExtraBarcode, btnAddExtraBarcode, btnRemoveExtraBarcode, itemForm::getBarcode);
         addBarcode();
         selectGroupSubAndType();
 
@@ -194,51 +201,10 @@ public class AddItemController implements AppSettingInterface {
         // "أخرى" ("other"), not the units tab the index was meant to name.
         tabPane.getSelectionModel().select(tabUnits);
 
-        InputValidator.makeNumericOnly(textExtraBarcode);
-
         // The dialog is opened once per item added or edited, so this instance and
         // its two observers have to go when the window does.
         subscribeToEvents();
         subscriptions.disposeWith(stackPane);
-    }
-
-    private void extraBarcodesSetting() {
-        listExtraBarcodes.setItems(FXCollections.observableArrayList());
-
-        btnAddExtraBarcode.setOnAction(actionEvent -> addExtraBarcode());
-        textExtraBarcode.setOnKeyPressed(keyEvent -> {
-            if (keyEvent.getCode() == javafx.scene.input.KeyCode.ENTER) {
-                addExtraBarcode();
-            }
-        });
-
-        btnRemoveExtraBarcode.setOnAction(actionEvent -> {
-            var selected = listExtraBarcodes.getSelectionModel().getSelectedItem();
-            if (selected != null) {
-                listExtraBarcodes.getItems().remove(selected);
-            }
-        });
-    }
-
-    private void addExtraBarcode() {
-        try {
-            String barcode = textExtraBarcode.getText().trim();
-            if (barcode.isEmpty()) {
-                return;
-            }
-            if (barcode.length() > 14) {
-                throw new UserValidationException(LanguageManager.getInstance().getString("item.error.barcode.too.long"));
-            }
-            if (barcode.equals(txtBarcode.getText()) || listExtraBarcodes.getItems().contains(barcode)) {
-                throw new UserValidationException(LanguageManager.getInstance().getString("item.error.barcode.duplicate.same.item"));
-            }
-
-            listExtraBarcodes.getItems().add(barcode);
-            textExtraBarcode.clear();
-            textExtraBarcode.requestFocus();
-        } catch (Exception e) {
-            logError(e);
-        }
     }
 
     /**
@@ -299,12 +265,11 @@ public class AddItemController implements AppSettingInterface {
         whenEnterPressed(txtItemName, txtBarcode, txtBuyPrice, txtSelPrice, txtSelPrice2, txtSelPrice3, txtBalance, txtMiniQuantity);
         setTextFormatter(txtBalance, txtBuyPrice, txtMiniQuantity, txtSelPrice, txtSelPrice2, txtSelPrice3);
         getFocusToName();
-        comboOtherTypes.getItems().addAll(getUnitsModelNames());
+        comboOtherTypes.getItems().addAll(unitNames);
         checkItemActive.setSelected(true);
     }
 
     private void comboTypeOption() {
-        unitNames.setAll(getUnitsModelNames());
         FilteredList<String> filteredItems = new FilteredList<>(unitNames, s -> true);
         comboType.setItems(filteredItems);
         comboType.getSelectionModel().selectFirst();
@@ -349,13 +314,21 @@ public class AddItemController implements AppSettingInterface {
         textUnitSelPrice3.clear();
     }
 
-    private List<String> getUnitsModelNames() {
+    /**
+     * Reloads {@link #unitsCache} and the names derived from it, from one query
+     * instead of the two ({@code getUnitsModelNames} for the combo, then
+     * {@code getUnitsByName} again for every selection) this used to make.
+     */
+    private void refreshUnitsCache() {
+        List<UnitsModel> units;
         try {
-            return unitsService.getUnitsModelNames();
+            units = unitsService.getUnitsModelList();
         } catch (DaoException e) {
             logError(e);
-            return new ArrayList<>();
+            units = new ArrayList<>();
         }
+        unitsCache.setAll(units);
+        unitNames.setAll(units.stream().map(UnitsModel::getUnit_name).toList());
     }
 
     private void permButtons() {
@@ -508,7 +481,7 @@ public class AddItemController implements AppSettingInterface {
                     comboSupGroup.getSelectionModel().select(supGroupService.getSubGroupsById(itemsModel.getSubGroups().getId()).getName());
                     comboType.getSelectionModel().select(itemsModel.getUnitsType().getUnit_name());
                     tableUnitsSetting.selectTable(itemsModel);
-                    listExtraBarcodes.setItems(FXCollections.observableArrayList(itemsModel.getExtraBarcodes()));
+                    extraBarcodesTab.setItems(itemsModel.getExtraBarcodes());
                     var itemImage = itemsModel.getItem_image();
 
                     if (itemImage != null && itemImage.length > 0) {
@@ -653,9 +626,9 @@ public class AddItemController implements AppSettingInterface {
         }
 
         var baseUnit = getUnitsModelByName(comboType.getSelectionModel().getSelectedItem());
-        // Trimmed here, once, because the codes are compared in three places that
-        // did not agree: this screen matched them as typed, while
-        // ItemsService.isBarcodeTakenByAnotherItem trims before asking the
+        // Trimmed here, once, because the codes used to be compared in three
+        // places that did not agree: this screen matched them as typed, while
+        // ItemsService.firstBarcodeTakenByAnotherItem trims before asking the
         // database. "123 " and "123" passed as two different codes locally and
         // then collided on the unique index.
         String barcode = itemForm.getBarcode().trim();
@@ -675,7 +648,7 @@ public class AddItemController implements AppSettingInterface {
         // it against items.unit_id, which does not depend on it being first.
         itemsModel.setUnitsType(baseUnit);
         itemsModel.setItemsUnitsModelList(new ArrayList<>(itemsUnitsModelList));
-        itemsModel.setExtraBarcodes(new ArrayList<>(listExtraBarcodes.getItems()));
+        itemsModel.setExtraBarcodes(new ArrayList<>(extraBarcodesTab.getItems()));
         return itemsModel;
     }
 
@@ -691,7 +664,7 @@ public class AddItemController implements AppSettingInterface {
     private void checkBarcodesAreFree(String itemBarcode, UnitsModel baseUnit, List<ItemsUnitsModel> units) throws Exception {
         List<String> codes = new ArrayList<>();
         codes.add(itemBarcode);
-        listExtraBarcodes.getItems().stream().map(String::trim).forEach(codes::add);
+        extraBarcodesTab.getItems().stream().map(String::trim).forEach(codes::add);
 
         // The base unit's row carries the item's own barcode and is not stored,
         // so counting it here would report the item as clashing with itself.
@@ -708,9 +681,14 @@ public class AddItemController implements AppSettingInterface {
             if (!seen.add(code)) {
                 throw new UserValidationException(LanguageManager.getInstance().getString("item.error.barcode.duplicate.in.item", code));
             }
-            if (itemsService.isBarcodeTakenByAnotherItem(code, codeItem)) {
-                throw new BusinessRuleException(LanguageManager.getInstance().getString("item.error.barcode.used.by.other", code));
-            }
+        }
+
+        // One query for the whole set, rather than one per code - an item with a
+        // handful of extra barcodes and a few priced units used to mean a full
+        // round trip to the database for each of them just to learn none clashed.
+        String taken = itemsService.firstBarcodeTakenByAnotherItem(codes, codeItem);
+        if (taken != null) {
+            throw new BusinessRuleException(LanguageManager.getInstance().getString("item.error.barcode.used.by.other", taken));
         }
     }
 
@@ -759,7 +737,7 @@ public class AddItemController implements AppSettingInterface {
 
         if (eventBus != null) eventBus.publish(new ItemSaved(itemsModel));
         tableUnits.getItems().clear();
-        listExtraBarcodes.getItems().clear();
+        extraBarcodesTab.clear();
         AllAlerts.alertSave();
         imageAdd.setImage(null);
         if (!isDuplicate) {
@@ -778,16 +756,20 @@ public class AddItemController implements AppSettingInterface {
         }
     }
 
+    /**
+     * Resolves a name to its {@link UnitsModel} from {@link #unitsCache} - no
+     * database call, since the cache already holds every unit that exists.
+     * {@code null} selects the base unit (id 1, the {@code DEFAULT} on every
+     * {@code type} column) the same way a blank {@code comboType} used to.
+     */
     private UnitsModel getUnitsModelByName(String selectedItemType) {
-        try {
-            if (selectedItemType == null) {
-                return unitsService.getUnitsById(1);
-            }
-            return unitsService.getUnitsByName(selectedItemType);
-        } catch (DaoException e) {
-            logError(e);
-            return null;
+        if (selectedItemType == null) {
+            return unitsCache.stream().filter(unit -> unit.getUnit_id() == 1).findFirst().orElse(null);
         }
+        return unitsCache.stream()
+                .filter(unit -> unit.getUnit_name().equals(selectedItemType))
+                .findFirst()
+                .orElse(null);
     }
 
     /**
