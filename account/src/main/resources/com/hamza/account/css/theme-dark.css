@@ -75,3 +75,176 @@
     -app-side-input-bg: rgba(255, 255, 255, 0.10);
     -app-side-muted: #94a3b8;
 }
+
+/* =========================================================
+   Invoice Type Colors - see theme-light.css for the full rule set
+   these variables feed (table header, rows, summary cards). Same
+   hues, darkened towards the background the way -app-stock-*-row
+   above already is, rather than the light theme's pale tints -
+   those would burn out against a dark surface.
+
+   Before this block, .invoice-sales/.invoice-purchases/.invoice-return
+   existed only in theme-light.css, so dark mode showed no colour
+   distinction between a sale, a purchase and a return at all - not
+   just the return, every one of the three.
+   ========================================================= */
+
+.invoice-sales {
+    -invoice-main: #be185d;
+    -invoice-main-dark: #831843;
+    -invoice-soft: #3a1625;
+    -invoice-row-hover: #4a1c30;
+    -invoice-selected: #6b2542;
+    -invoice-text: #fbcfe8;
+}
+
+.invoice-purchases {
+    -invoice-main: #22c55e;
+    -invoice-main-dark: #15803d;
+    -invoice-soft: #14291c;
+    -invoice-row-hover: #1c3826;
+    -invoice-selected: #245530;
+    -invoice-text: #bbf7d0;
+}
+
+.invoice-return {
+    -invoice-main: #f97316;
+    -invoice-main-dark: #c2410c;
+    -invoice-soft: #3a2412;
+    -invoice-row-hover: #4a2f18;
+    -invoice-selected: #6b451f;
+    -invoice-text: #fed7aa;
+}
+
+/* Table Header */
+.invoice-sales .table-view .column-header-background,
+.invoice-purchases .table-view .column-header-background,
+.invoice-return .table-view .column-header-background {
+    -fx-background-color: -invoice-main-dark;
+}
+
+.invoice-sales .table-view .column-header,
+.invoice-purchases .table-view .column-header,
+.invoice-return .table-view .column-header {
+    -fx-background-color: transparent;
+}
+
+.invoice-sales .table-view .column-header .label,
+.invoice-purchases .table-view .column-header .label,
+.invoice-return .table-view .column-header .label {
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+}
+
+/* Table Rows */
+.invoice-sales .table-row-cell,
+.invoice-purchases .table-row-cell,
+.invoice-return .table-row-cell {
+    -fx-text-background-color: -invoice-text;
+}
+
+.invoice-sales .table-row-cell:odd,
+.invoice-purchases .table-row-cell:odd,
+.invoice-return .table-row-cell:odd {
+    -fx-background-color: #1e293b;
+}
+
+.invoice-sales .table-row-cell:even,
+.invoice-purchases .table-row-cell:even,
+.invoice-return .table-row-cell:even {
+    -fx-background-color: -invoice-soft;
+}
+
+.invoice-sales .table-row-cell:hover,
+.invoice-purchases .table-row-cell:hover,
+.invoice-return .table-row-cell:hover {
+    -fx-background-color: -invoice-row-hover;
+}
+
+.invoice-sales .table-row-cell:selected,
+.invoice-purchases .table-row-cell:selected,
+.invoice-return .table-row-cell:selected {
+    -fx-background-color: -invoice-selected;
+}
+
+/* Labels and Important Text */
+.invoice-sales .label,
+.invoice-purchases .label,
+.invoice-return .label {
+    -fx-text-fill: -invoice-text;
+}
+
+.invoice-sales Text,
+.invoice-purchases Text,
+.invoice-return Text {
+    -fx-fill: -invoice-text;
+}
+
+/* Main invoice total */
+.invoice-sales #textInvoiceTotal,
+.invoice-purchases #textInvoiceTotal,
+.invoice-return #textInvoiceTotal {
+    -fx-fill: -invoice-main;
+    -fx-font-weight: bold;
+}
+
+/* =========================================================
+   Invoice Summary Cards
+   ========================================================= */
+
+.invoice-sales .summary-card,
+.invoice-purchases .summary-card,
+.invoice-return .summary-card {
+    -fx-background-color: linear-gradient(to bottom right, -invoice-main-dark, -invoice-main);
+    -fx-background-radius: 16;
+    -fx-border-radius: 16;
+    -fx-border-color: rgba(255, 255, 255, 0.20);
+    -fx-border-width: 1;
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.45), 16, 0.20, 0, 5);
+}
+
+.invoice-sales .summary-card:hover,
+.invoice-purchases .summary-card:hover,
+.invoice-return .summary-card:hover {
+    -fx-background-color: linear-gradient(to bottom right, -invoice-main, -invoice-main-dark);
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.55), 20, 0.25, 0, 7);
+}
+
+.invoice-sales .summary-card .label,
+.invoice-purchases .summary-card .label,
+.invoice-return .summary-card .label {
+    -fx-text-fill: #fff7fb;
+    -fx-font-weight: bold;
+}
+
+.invoice-sales .summary-card Text,
+.invoice-purchases .summary-card Text,
+.invoice-return .summary-card Text {
+    -fx-fill: #fff7fb;
+    -fx-font-weight: bold;
+}
+
+.invoice-sales .summary-card .text,
+.invoice-purchases .summary-card .text,
+.invoice-return .summary-card .text {
+    -fx-fill: #fff7fb;
+}
+
+.invoice-sales .summary-card .text-field,
+.invoice-purchases .summary-card .text-field,
+.invoice-return .summary-card .text-field {
+    -fx-background-color: rgba(15, 23, 42, 0.85);
+    -fx-background-radius: 10;
+    -fx-border-color: rgba(255, 255, 255, 0.30);
+    -fx-border-radius: 10;
+    -fx-text-fill: -invoice-text;
+    -fx-font-weight: bold;
+}
+
+.invoice-sales .summary-card .text-field:focused,
+.invoice-purchases .summary-card .text-field:focused,
+.invoice-return .summary-card .text-field:focused {
+    -fx-background-color: #0f172a;
+    -fx-border-color: -app-focus-shadow;
+    -fx-effect: dropshadow(gaussian, -app-focus-shadow, 10, 0.20, 0, 0);
+}

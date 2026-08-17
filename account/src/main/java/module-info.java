@@ -44,6 +44,12 @@ module com.hamza.account {
     // "opens ... to flyway.core" is not enough, because Flyway reads them through the class
     // loader, and ClassLoader.getResourceAsStream only sees packages opened unconditionally.
     opens db.migration;
+
+    // Same reason as db.migration: InvoiceThemeColorsTest reads the stylesheets through
+    // ClassLoader.getResourceAsStream (not Class.getResourceAsStream, which would need
+    // no opening for a same-module resource) so it can check every theme carries the
+    // same invoice-type classes without a JavaFX toolkit or a rendered screen.
+    opens com.hamza.account.css;
 //    requires spring.context;
 //    requires spring.beans;
 //    requires licensing.base;

@@ -213,7 +213,10 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
         btnReturnFromInvoice.setVisible(isReturn);
         btnReturnFromInvoice.setManaged(isReturn);
 
-        if (dataInterface.designInterface().documentType() == DocumentType.SALES_RETURN) {
+        // isReturn(), not a comparison against SALES_RETURN alone: that left
+        // PURCHASE_RETURN falling into the plain "purchases" branch below, styled
+        // identically to a real purchase invoice with no visual distinction at all.
+        if (isReturn) {
             stackPane.getStyleClass().add("invoice-return");
         } else if (dataInterface.designInterface().showDataForCustomer()) {
             stackPane.getStyleClass().add("invoice-sales");
