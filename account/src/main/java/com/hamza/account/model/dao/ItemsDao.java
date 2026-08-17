@@ -15,6 +15,7 @@ import org.jetbrains.annotations.NotNull;
 
 import java.sql.*;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -462,31 +463,43 @@ public class ItemsDao extends AbstractDao<ItemsModel> {
     }
 
     /**
-     * Whether any item already answers to this code, ignoring {@code exceptItemId}
-     * (the item being edited). The three tables each have their own unique index
-     * and none of them can see the others, so nothing stops the same code being
-     * an item's barcode here and a carton's there - and then a scan is a coin toss.
+     * The first of {@code codes} that already belongs to a different item,
+     * ignoring {@code exceptItemId} (the item being edited), or {@code null} if
+     * none of them do.
+     * <p>
+     * One query for the whole candidate list rather than one per code - an item
+     * with a handful of extra barcodes and a few priced units used to mean a
+     * full round trip to the database for every single one of them just to find
+     * out none clashed. The three tables each have their own unique index and
+     * none of them can see the others, so nothing stops the same code being an
+     * item's barcode here and a carton's there - and then a scan is a coin toss.
      */
-    public boolean barcodeExists(String barcode, int exceptItemId) throws DaoException {
+    public String firstBarcodeTakenByAnotherItem(List<String> codes, int exceptItemId) throws DaoException {
+        if (codes.isEmpty()) return null;
+
+        String placeholders = String.join(",", Collections.nCopies(codes.size(), "?"));
         String query = """
-                SELECT EXISTS (
-                    SELECT 1 FROM items WHERE barcode = ? AND id <> ?
+                SELECT code FROM (
+                    SELECT barcode AS code FROM items WHERE id <> ? AND barcode IN (%1$s)
                     UNION ALL
-                    SELECT 1 FROM item_barcodes WHERE barcode = ? AND item_id <> ?
+                    SELECT barcode AS code FROM item_barcodes WHERE item_id <> ? AND barcode IN (%1$s)
                     UNION ALL
-                    SELECT 1 FROM items_units WHERE items_barcode = ? AND items_id <> ?
-                )
-                """;
-        // queryForObject maps to ItemsModel; this asks a yes/no question, so it
-        // goes through the connection directly.
+                    SELECT items_barcode AS code FROM items_units WHERE items_id <> ? AND items_barcode IN (%1$s)
+                ) AS matches
+                LIMIT 1
+                """.formatted(placeholders);
+
         return withConnection(connection -> {
             try (PreparedStatement statement = connection.prepareStatement(query)) {
+                int index = 1;
                 for (int i = 0; i < 3; i++) {
-                    statement.setString(i * 2 + 1, barcode);
-                    statement.setInt(i * 2 + 2, exceptItemId);
+                    statement.setInt(index++, exceptItemId);
+                    for (String code : codes) {
+                        statement.setString(index++, code);
+                    }
                 }
                 try (ResultSet rs = statement.executeQuery()) {
-                    return rs.next() && rs.getBoolean(1);
+                    return rs.next() ? rs.getString(1) : null;
                 }
             } catch (SQLException e) {
                 throw new DaoException(e.getMessage(), e);

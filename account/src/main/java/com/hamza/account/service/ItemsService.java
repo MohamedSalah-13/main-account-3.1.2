@@ -8,6 +8,8 @@ import com.hamza.account.delete.DeletionService;
 import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.model.domain.ItemsModel;
 import com.hamza.controlsfx.database.DaoException;
+import com.hamza.controlsfx.error.BusinessRuleException;
+import com.hamza.controlsfx.language.LanguageManager;
 
 import java.util.List;
 
@@ -26,19 +28,29 @@ public record ItemsService(DaoFactory daoFactory) {
     }
 
     /**
-     * Whether this code already belongs to some other item - as its barcode, one
-     * of its extra barcodes, or the code on one of its units. Pass the id of the
-     * item being edited so its own codes do not count against it.
+     * The first of these codes that already belongs to some other item - as its
+     * barcode, one of its extra barcodes, or the code on one of its units - or
+     * {@code null} if all of them are free. Pass the id of the item being edited
+     * so its own codes do not count against it.
+     * <p>
+     * One query for the whole candidate list: a blank or duplicate entry is
+     * dropped before it reaches the database rather than asked about twice.
      */
-    public boolean isBarcodeTakenByAnotherItem(String barcode, int itemId) throws DaoException {
-        if (barcode == null || barcode.isBlank()) {
-            return false;
+    public String firstBarcodeTakenByAnotherItem(List<String> codes, int itemId) throws DaoException {
+        var candidates = codes.stream()
+                .filter(code -> code != null && !code.isBlank())
+                .map(String::trim)
+                .distinct()
+                .toList();
+        if (candidates.isEmpty()) {
+            return null;
         }
-        return daoFactory.getItemsDao().barcodeExists(barcode.trim(), itemId);
+        return daoFactory.getItemsDao().firstBarcodeTakenByAnotherItem(candidates, itemId);
     }
 
     public int updateItem(ItemsModel itemsModel) throws DaoException {
         AuthorizationGuard.require(itemsModel.getId() == 0 ? AppPermissions.ITEMS_CREATE : AppPermissions.ITEMS_UPDATE);
+        requireSellAboveBuy(itemsModel);
         if (itemsModel.getId() == 0)
             return daoFactory.getItemsDao().insert(itemsModel);
         else
@@ -47,6 +59,7 @@ public record ItemsService(DaoFactory daoFactory) {
 
     public int commitItemUpdate(ItemsModel itemsModel) throws DaoException {
         AuthorizationGuard.require(AppPermissions.ITEMS_UPDATE);
+        requireSellAboveBuy(itemsModel);
         return daoFactory.getItemsDao().update(itemsModel);
     }
 
@@ -71,6 +84,28 @@ public record ItemsService(DaoFactory daoFactory) {
     public int insertList(List<ItemsModel> list) throws DaoException {
         AuthorizationGuard.require(AppPermissions.ITEMS_ADD_EXCEL);
         return daoFactory.getItemsDao().insertList(list);
+    }
+
+    /**
+     * Zero markup is not a price; it is a loss on paper the moment the item
+     * moves. {@code AddItemController} already refuses this before the user can
+     * click save, but that is a hint on one screen - this is the same rule
+     * applied where the write actually happens, so a caller other than that
+     * screen is held to it too.
+     * <p>
+     * Deliberately not applied to {@link #updateGroup} or {@link #insertList}:
+     * both take a whole batch where an item having its group changed, say, is
+     * indistinguishable here from one having its price changed, and this
+     * codebase has no guarantee every item already on file satisfies the rule.
+     * Applying it there would refuse an unrelated bulk edit - reactivating a
+     * batch of items, say - because one of them happens to carry price data
+     * older than this rule.
+     */
+    private static void requireSellAboveBuy(ItemsModel model) throws DaoException {
+        if (model.getSelPrice1() <= model.getBuyPrice()) {
+            throw new BusinessRuleException(LanguageManager.getInstance()
+                    .getString("item.error.sell.not.above.buy.named", model.getNameItem()));
+        }
     }
 
     public int deleteItem(int id) throws DaoException {

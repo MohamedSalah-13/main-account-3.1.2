@@ -1,6 +1,5 @@
 package com.hamza.account.controller.items;
 
-import com.codejava.commons.fx.validation.InputValidator;
 import com.hamza.account.config.Image_Setting;
 import com.hamza.account.controller.dataByName.OpenAddAreaApplication;
 import com.hamza.account.controller.dataByName.impl.MainGroupImpl2;
@@ -12,6 +11,7 @@ import com.hamza.account.features.events.ItemSaved;
 import com.hamza.account.features.events.UnitsChanged;
 import com.hamza.account.model.domain.ItemsModel;
 import com.hamza.account.model.domain.ItemsUnitsModel;
+import com.hamza.account.model.domain.SelPriceTypeModel;
 import com.hamza.account.model.domain.SubGroups;
 import com.hamza.account.model.domain.UnitsModel;
 import com.hamza.account.openFxml.FxmlPath;
@@ -28,18 +28,20 @@ import com.hamza.controlsfx.interfaceData.AppSettingInterface;
 import com.hamza.controlsfx.language.LanguageManager;
 import com.hamza.controlsfx.observer.EventBus;
 import com.hamza.controlsfx.observer.Subscriptions;
-import com.hamza.controlsfx.others.DoubleSetting;
 import com.hamza.controlsfx.util.ImageChoose;
 import javafx.application.Platform;
+import javafx.beans.binding.Bindings;
 import javafx.beans.binding.BooleanBinding;
+import javafx.beans.property.BooleanProperty;
+import javafx.beans.property.SimpleBooleanProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.collections.transformation.FilteredList;
+import javafx.concurrent.Task;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
-import javafx.scene.layout.HBox;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.StackPane;
 import javafx.stage.Stage;
@@ -63,9 +65,14 @@ public class AddItemController implements AppSettingInterface {
     private final Subscriptions subscriptions = new Subscriptions();
     private final EventBus eventBus = ServiceRegistry.get(EventBus.class);
     /**
-     * Backs the unit combo, so a unit added while this dialog is open can be
-     * dropped in without rebuilding the combo and its listeners.
+     * Every unit that exists, loaded once and refreshed only when
+     * {@code UnitsChanged} says otherwise. {@link #getUnitsModelByName} reads
+     * this instead of asking the database again on every combo selection - a
+     * unit picked to price a carton, typed into a barcode field, or set as the
+     * item's base unit used to be a full round trip each time.
      */
+    private final ObservableList<UnitsModel> unitsCache = FXCollections.observableArrayList();
+    /** Names, derived from {@link #unitsCache} - what the unit combos actually display. */
     private final ObservableList<String> unitNames = FXCollections.observableArrayList();
     private final ImageChoose imageChoose = new ImageChoose();
 
@@ -74,6 +81,20 @@ public class AddItemController implements AppSettingInterface {
     private final SupGroupService supGroupService = ServiceRegistry.get(SupGroupService.class);
     private final ItemsService itemsService = ServiceRegistry.get(ItemsService.class);
     private final SelPriceItemService selPriceItemService = ServiceRegistry.get(SelPriceItemService.class);
+    /**
+     * True while the write to the database - insertMultiData's transaction across
+     * the item, its opening stock row, its units and its barcodes - is in flight
+     * on a background thread. Folded into the save buttons' disable bindings so a
+     * second click cannot start a second transaction, and into the close button's
+     * so the window cannot go away out from under the callback that is still
+     * going to touch its controls.
+     */
+    private final BooleanProperty saving = new SimpleBooleanProperty(false);
+    /**
+     * The item's own scalar fields - see {@link ItemForm}. Bound to its controls
+     * once, in {@link #bindItemForm()}.
+     */
+    private final ItemForm itemForm = new ItemForm();
     private int mainId, subId;
     @FXML
     private ComboBox<String> comboMainGroup, comboSupGroup, comboType;
@@ -86,7 +107,7 @@ public class AddItemController implements AppSettingInterface {
     @FXML
     private TabPane tabPane;
     @FXML
-    private HBox boxMain;
+    private Tab tabUnits;
     @FXML
     @Getter
     private Button btnAddMainGroup, btnAddSubGroup, btnSave, btnSaveDuplicate, btnClose, btnBarcode;
@@ -117,42 +138,55 @@ public class AddItemController implements AppSettingInterface {
     @FXML
     private Button btnAddImage, btnClearImage;
     private TableUnitsSetting tableUnitsSetting;
+    private ExtraBarcodesTabController extraBarcodesTab;
 
     public AddItemController(int codeItem) {
         this.codeItem = codeItem;
+    }
 
-        if (eventBus != null) {
-            // The units screen can be opened over this dialog; keep the selection,
-            // since renaming some other unit must not silently change this item's.
-            subscriptions.add(eventBus.subscribe(UnitsChanged.class, event -> {
-                var selected = comboType.getSelectionModel().getSelectedItem();
-                unitNames.setAll(getUnitsModelNames());
-                if (unitNames.contains(selected)) comboType.getSelectionModel().select(selected);
-            }));
+    /**
+     * The two events this dialog reacts to.
+     * <p>
+     * Subscribed from {@code initialize()} rather than from the constructor: both
+     * handlers read {@code @FXML} fields, which the loader has not injected yet
+     * while the constructor runs, so anything arriving in between would have hit a
+     * null combo. Nothing published one there today - the dialog is constructed and
+     * loaded back to back on the FX thread - which is exactly why it was worth
+     * moving before something does.
+     */
+    private void subscribeToEvents() {
+        if (eventBus == null) return;
 
-            subscriptions.add(eventBus.subscribe(GroupsChanged.class, event -> {
-                if (event.level() == GroupLevel.MAIN) {
-                    comboMainGroup.setItems(FXCollections.observableList(getMainGroupsNames()));
-                    comboMainGroup.getSelectionModel().selectLast();
-                } else {
-                    comboSupGroup.setItems(FXCollections.observableList(getSubGroupsNamesByMainId()));
-                }
-            }));
-        }
+        // The units screen can be opened over this dialog; keep the selection,
+        // since renaming some other unit must not silently change this item's.
+        subscriptions.add(eventBus.subscribe(UnitsChanged.class, event -> {
+            var selected = comboType.getSelectionModel().getSelectedItem();
+            refreshUnitsCache();
+            if (unitNames.contains(selected)) comboType.getSelectionModel().select(selected);
+        }));
+
+        subscriptions.add(eventBus.subscribe(GroupsChanged.class, event -> {
+            if (event.level() == GroupLevel.MAIN) {
+                comboMainGroup.setItems(FXCollections.observableList(getMainGroupsNames()));
+                comboMainGroup.getSelectionModel().selectLast();
+            } else {
+                comboSupGroup.setItems(FXCollections.observableList(getSubGroupsNamesByMainId()));
+            }
+        }));
     }
 
     @FXML
     public void initialize() {
-        // The dialog is opened once per item added or edited, so this instance and
-        // its two observers have to go when the window does.
-        subscriptions.disposeWith(stackPane);
+        bindItemForm();
+        refreshUnitsCache();
         unitSetting();
         otherSetting();
         comboTypeOption();
         addValidate();
         nameSetting();
         action();
-        extraBarcodesSetting();
+        extraBarcodesTab = new ExtraBarcodesTabController(
+                listExtraBarcodes, textExtraBarcode, btnAddExtraBarcode, btnRemoveExtraBarcode, itemForm::getBarcode);
         addBarcode();
         selectGroupSubAndType();
 
@@ -163,49 +197,35 @@ public class AddItemController implements AppSettingInterface {
 //        if (ADD_PACKAGE_TO_ITEMS) addPackaged();
         selectData();
 
-//        tabPane.getTabs().getFirst().setDisable(true);
-        tabPane.getSelectionModel().select(1);
+        // Was select(1) - the tab index rather than the tab. That opened on
+        // "أخرى" ("other"), not the units tab the index was meant to name.
+        tabPane.getSelectionModel().select(tabUnits);
 
-        InputValidator.makeNumericOnly(textExtraBarcode);
+        // The dialog is opened once per item added or edited, so this instance and
+        // its two observers have to go when the window does.
+        subscribeToEvents();
+        subscriptions.disposeWith(stackPane);
     }
 
-    private void extraBarcodesSetting() {
-        listExtraBarcodes.setItems(FXCollections.observableArrayList());
-
-        btnAddExtraBarcode.setOnAction(actionEvent -> addExtraBarcode());
-        textExtraBarcode.setOnKeyPressed(keyEvent -> {
-            if (keyEvent.getCode() == javafx.scene.input.KeyCode.ENTER) {
-                addExtraBarcode();
-            }
-        });
-
-        btnRemoveExtraBarcode.setOnAction(actionEvent -> {
-            var selected = listExtraBarcodes.getSelectionModel().getSelectedItem();
-            if (selected != null) {
-                listExtraBarcodes.getItems().remove(selected);
-            }
-        });
-    }
-
-    private void addExtraBarcode() {
-        try {
-            String barcode = textExtraBarcode.getText().trim();
-            if (barcode.isEmpty()) {
-                return;
-            }
-            if (barcode.length() > 14) {
-                throw new UserValidationException(LanguageManager.getInstance().getString("item.error.barcode.too.long"));
-            }
-            if (barcode.equals(txtBarcode.getText()) || listExtraBarcodes.getItems().contains(barcode)) {
-                throw new UserValidationException(LanguageManager.getInstance().getString("item.error.barcode.duplicate.same.item"));
-            }
-
-            listExtraBarcodes.getItems().add(barcode);
-            textExtraBarcode.clear();
-            textExtraBarcode.requestFocus();
-        } catch (Exception e) {
-            logError(e);
-        }
+    /**
+     * Binds every field {@link ItemForm} owns to its control, once. From here on
+     * the form is the source of truth for those fields; {@code selectData},
+     * {@code insertData} and the post-save reset go through it instead of the
+     * controls directly.
+     */
+    private void bindItemForm() {
+        itemForm.barcodeProperty().bindBidirectional(txtBarcode.textProperty());
+        itemForm.nameProperty().bindBidirectional(txtItemName.textProperty());
+        itemForm.buyPriceProperty().bindBidirectional(txtBuyPrice.textProperty());
+        itemForm.selPrice1Property().bindBidirectional(txtSelPrice.textProperty());
+        itemForm.selPrice2Property().bindBidirectional(txtSelPrice2.textProperty());
+        itemForm.selPrice3Property().bindBidirectional(txtSelPrice3.textProperty());
+        itemForm.miniQuantityProperty().bindBidirectional(txtMiniQuantity.textProperty());
+        itemForm.firstBalanceProperty().bindBidirectional(txtBalance.textProperty());
+        itemForm.activeProperty().bindBidirectional(checkItemActive.selectedProperty());
+        itemForm.hasValidateProperty().bindBidirectional(checkItemValidate.selectedProperty());
+        itemForm.validityDaysProperty().bindBidirectional(textDaysValidate.textProperty());
+        itemForm.alertBeforeExpiryProperty().bindBidirectional(textAlertBefore.textProperty());
     }
 
     private void unitSetting() {
@@ -245,12 +265,11 @@ public class AddItemController implements AppSettingInterface {
         whenEnterPressed(txtItemName, txtBarcode, txtBuyPrice, txtSelPrice, txtSelPrice2, txtSelPrice3, txtBalance, txtMiniQuantity);
         setTextFormatter(txtBalance, txtBuyPrice, txtMiniQuantity, txtSelPrice, txtSelPrice2, txtSelPrice3);
         getFocusToName();
-        comboOtherTypes.getItems().addAll(getUnitsModelNames());
+        comboOtherTypes.getItems().addAll(unitNames);
         checkItemActive.setSelected(true);
     }
 
     private void comboTypeOption() {
-        unitNames.setAll(getUnitsModelNames());
         FilteredList<String> filteredItems = new FilteredList<>(unitNames, s -> true);
         comboType.setItems(filteredItems);
         comboType.getSelectionModel().selectFirst();
@@ -295,13 +314,21 @@ public class AddItemController implements AppSettingInterface {
         textUnitSelPrice3.clear();
     }
 
-    private List<String> getUnitsModelNames() {
+    /**
+     * Reloads {@link #unitsCache} and the names derived from it, from one query
+     * instead of the two ({@code getUnitsModelNames} for the combo, then
+     * {@code getUnitsByName} again for every selection) this used to make.
+     */
+    private void refreshUnitsCache() {
+        List<UnitsModel> units;
         try {
-            return unitsService.getUnitsModelNames();
+            units = unitsService.getUnitsModelList();
         } catch (DaoException e) {
             logError(e);
-            return new ArrayList<>();
+            units = new ArrayList<>();
         }
+        unitsCache.setAll(units);
+        unitNames.setAll(units.stream().map(UnitsModel::getUnit_name).toList());
     }
 
     private void permButtons() {
@@ -312,13 +339,15 @@ public class AddItemController implements AppSettingInterface {
 
     private void action() {
 
-        btnSave.disableProperty().bind(checkEnableButton());
-        btnSaveDuplicate.disableProperty().bind(checkEnableButton().or(new BooleanBinding() {
+        btnSave.disableProperty().bind(checkEnableButton().or(saving));
+        btnSaveDuplicate.disableProperty().bind(checkEnableButton().or(saving).or(new BooleanBinding() {
             @Override
             protected boolean computeValue() {
                 return codeItem > 0;
             }
         }));
+        btnClose.disableProperty().bind(saving);
+        bindSaveTooltip();
         comboMainGroup.setItems(FXCollections.observableList(getMainGroupsNames()));
         comboMainGroup.valueProperty().addListener((observable, oldValue, newValue) -> {
             try {
@@ -331,7 +360,7 @@ public class AddItemController implements AppSettingInterface {
                 logError(e);
             }
         });
-        comboSupGroup.valueProperty().addListener((observable, oldValue, newValue) -> getSubId(newValue));
+        comboSupGroup.valueProperty().addListener((observable, oldValue, newValue) -> resolveSubGroupId(newValue));
 
         btnAddMainGroup.setOnAction(actionEvent -> {
             try {
@@ -368,8 +397,12 @@ public class AddItemController implements AppSettingInterface {
         });
 
         comboOtherTypes.valueProperty().addListener((observableValue, stringSingleSelectionModel, t1) -> {
+            // A unit deleted from the units screen while this dialog is open no
+            // longer resolves; that is not a reason to throw an NPE out of the FX
+            // event loop, where nothing catches it.
             var unitsModelByName = getUnitsModelByName(t1);
-            textUnitQuantity.setText(String.valueOf(Objects.requireNonNull(unitsModelByName).getValue()));
+            if (unitsModelByName == null) return;
+            textUnitQuantity.setText(String.valueOf(unitsModelByName.getValue()));
         });
 
         // units setting
@@ -389,7 +422,9 @@ public class AddItemController implements AppSettingInterface {
 
         tableUnits.setOnMouseClicked(mouseEvent -> {
             if (mouseEvent.getClickCount() == 2) {
+                // A double-click below the last row selects nothing.
                 var selectedItem = tableUnits.getSelectionModel().getSelectedItem();
+                if (selectedItem == null || selectedItem.getUnitsModel() == null) return;
                 comboOtherTypes.getSelectionModel().select(selectedItem.getUnitsModel().getUnit_name());
                 textUnitQuantity.setText(String.valueOf(selectedItem.getQuantityForUnit()));
                 textUnitBarcode.setText(selectedItem.getItemsBarcode());
@@ -437,11 +472,7 @@ public class AddItemController implements AppSettingInterface {
                 if (itemsModel != null) {
                     int numItem = itemsModel.getId();
                     txtCode.setText(String.valueOf(numItem));
-                    txtBarcode.setText(itemsModel.getBarcode());
-                    txtItemName.setText(itemsModel.getNameItem());
-                    txtBuyPrice.setText(String.valueOf(itemsModel.getBuyPrice()));
-                    txtMiniQuantity.setText(String.valueOf(itemsModel.getMini_quantity()));
-                    txtBalance.setText(String.valueOf(itemsModel.getFirstBalanceForStock()));
+                    itemForm.load(itemsModel);
                     lockOpeningBalanceIfItemHasMoved(numItem);
                     // combo restore data
                     mainId = itemsModel.getSubGroups().getMainGroups().getId();
@@ -449,18 +480,8 @@ public class AddItemController implements AppSettingInterface {
                     comboMainGroup.getSelectionModel().select(mainGroupService.getMainGroupsById(itemsModel.getSubGroups().getMainGroups().getId()).getName());
                     comboSupGroup.getSelectionModel().select(supGroupService.getSubGroupsById(itemsModel.getSubGroups().getId()).getName());
                     comboType.getSelectionModel().select(itemsModel.getUnitsType().getUnit_name());
-                    txtSelPrice.setText(String.valueOf(itemsModel.getSelPrice1()));
-                    txtSelPrice2.setText(String.valueOf(itemsModel.getSelPrice2()));
-                    txtSelPrice3.setText(String.valueOf(itemsModel.getSelPrice3()));
-
-                    // check
-                    checkItemActive.setSelected(itemsModel.isActiveItem());
-                    checkItemValidate.setSelected(itemsModel.isHasValidate());
-                    var numberValidityDays = itemsModel.getNumberValidityDays();
-                    textDaysValidate.setText(String.valueOf(numberValidityDays));
-                    textAlertBefore.setText(String.valueOf(itemsModel.getAlertDaysBeforeExpiry()));
                     tableUnitsSetting.selectTable(itemsModel);
-                    listExtraBarcodes.setItems(FXCollections.observableArrayList(itemsModel.getExtraBarcodes()));
+                    extraBarcodesTab.setItems(itemsModel.getExtraBarcodes());
                     var itemImage = itemsModel.getItem_image();
 
                     if (itemImage != null && itemImage.length > 0) {
@@ -499,42 +520,103 @@ public class AddItemController implements AppSettingInterface {
     }
 
     private BooleanBinding checkEnableButton() {
-        return (txtItemName.textProperty().isEmpty())
-                .or(txtBuyPrice.textProperty().lessThanOrEqualTo("0.0"))
+        return itemForm.incompleteProperty()
                 .or(comboMainGroup.valueProperty().isNull())
                 .or(comboSupGroup.valueProperty().isNull())
                 .or(comboType.valueProperty().isNull());
     }
 
+    /**
+     * Says why the save button is disabled, since {@link #checkEnableButton()}
+     * on its own does not: a user staring at a greyed-out button with nothing
+     * filled in wrong that they can see has no way to know what is missing.
+     * <p>
+     * The tooltip is swapped onto the button rather than left permanently
+     * installed, because an installed tooltip on a control still shows once
+     * nothing is missing - it would just be reporting nothing was wrong.
+     */
+    private void bindSaveTooltip() {
+        var missing = Bindings.createStringBinding(this::missingRequirementsMessage,
+                itemForm.nameProperty(), itemForm.buyPriceProperty(),
+                comboMainGroup.valueProperty(), comboSupGroup.valueProperty(), comboType.valueProperty());
+
+        var tooltip = new Tooltip();
+        tooltip.textProperty().bind(missing);
+
+        missing.addListener((observable, oldText, newText) -> btnSave.setTooltip(newText == null ? null : tooltip));
+        btnSave.setTooltip(missing.get() == null ? null : tooltip);
+    }
+
+    private String missingRequirementsMessage() {
+        var lm = LanguageManager.getInstance();
+        List<String> missing = new ArrayList<>();
+        if (itemForm.isNameBlank()) missing.add(lm.getString("column.name_item"));
+        if (itemForm.isBuyPriceNotPositive()) missing.add(lm.getString("BuyPrice"));
+        if (comboMainGroup.getValue() == null) missing.add(lm.getString("mainGroup"));
+        if (comboSupGroup.getValue() == null) missing.add(lm.getString("subGroup"));
+        if (comboType.getValue() == null) missing.add(lm.getString("type"));
+
+        return missing.isEmpty() ? null
+                : lm.getString("item.tooltip.missing.fields") + ": " + String.join("، ", missing);
+    }
+
+    /**
+     * Toggles the style class the theme keys {@code .validation-error} styling
+     * off (see {@code app-theme.css}), the way {@code BuyController2} already
+     * does for its own fields.
+     */
+    private void setValidationError(Control control, boolean invalid) {
+        if (invalid) {
+            if (!control.getStyleClass().contains("validation-error")) {
+                control.getStyleClass().add("validation-error");
+            }
+        } else {
+            control.getStyleClass().remove("validation-error");
+        }
+    }
+
+    private void clearValidationErrors() {
+        setValidationError(txtItemName, false);
+        setValidationError(txtBarcode, false);
+        setValidationError(txtSelPrice, false);
+        setValidationError(comboSupGroup, false);
+    }
+
     private ItemsModel insertData() throws Exception {
-        String barcode = txtBarcode.getText();
-        String nameItem = txtItemName.getText();
-        double buy = DoubleSetting.parseDoubleOrDefault(txtBuyPrice.getText());
-        double selPrice1 = DoubleSetting.parseDoubleOrDefault(txtSelPrice.getText());
-        double selPrice2 = DoubleSetting.parseDoubleOrDefault(txtSelPrice2.getText());
-        double selPrice3 = DoubleSetting.parseDoubleOrDefault(txtSelPrice3.getText());
-        double miniQuantity = DoubleSetting.parseDoubleOrDefault(txtMiniQuantity.getText());
-        double firstBalance = DoubleSetting.parseDoubleOrDefault(txtBalance.getText());
+        clearValidationErrors();
 
         // add subgroup
-        getSubId(comboSupGroup.getSelectionModel().getSelectedItem());
+        resolveSubGroupId(comboSupGroup.getSelectionModel().getSelectedItem());
 
-        if (barcode.isEmpty() || barcode.equals("0")) {
+        // The save button's binding only asks that the field is not empty, and a
+        // name of spaces is not empty. isNameBlank() trims first, which is what
+        // gets stored.
+        if (itemForm.isNameBlank()) {
+            setValidationError(txtItemName, true);
+            txtItemName.requestFocus();
+            throw new UserValidationException(LanguageManager.getInstance().getString("item.error.name.required"));
+        }
+
+        if (itemForm.isBarcodeBlank()) {
+            setValidationError(txtBarcode, true);
             txtBarcode.requestFocus();
             throw new UserValidationException(LanguageManager.getInstance().getString("msg.insert.all"));
         }
 
-        if (barcode.length() > 14) {
+        if (itemForm.isBarcodeTooLong()) {
+            setValidationError(txtBarcode, true);
             txtBarcode.requestFocus();
             throw new UserValidationException(LanguageManager.getInstance().getString("item.error.barcode.too.long"));
         }
 
-        if (selPrice1 <= buy) {
+        if (itemForm.isSellPriceNotAboveBuy()) {
+            setValidationError(txtSelPrice, true);
             txtSelPrice.requestFocus();
             throw new UserValidationException(LanguageManager.getInstance().getString("item.error.sell.not.above.buy"));
         }
 
         if (subId <= 0) {
+            setValidationError(comboSupGroup, true);
             comboSupGroup.requestFocus();
             throw new UserValidationException(LanguageManager.getInstance().getString("item.error.group.required"));
         }
@@ -544,23 +626,18 @@ public class AddItemController implements AppSettingInterface {
         }
 
         var baseUnit = getUnitsModelByName(comboType.getSelectionModel().getSelectedItem());
+        // Trimmed here, once, because the codes used to be compared in three
+        // places that did not agree: this screen matched them as typed, while
+        // ItemsService.firstBarcodeTakenByAnotherItem trims before asking the
+        // database. "123 " and "123" passed as two different codes locally and
+        // then collided on the unique index.
+        String barcode = itemForm.getBarcode().trim();
         checkBarcodesAreFree(barcode, baseUnit, itemsUnitsModelList);
 
         var itemsModel = new ItemsModel();
         itemsModel.setId(codeItem);
-        itemsModel.setBarcode(barcode);
-        itemsModel.setNameItem(nameItem);
-        itemsModel.setBuyPrice(buy);
-        itemsModel.setMini_quantity(miniQuantity);
-        itemsModel.setFirstBalanceForStock(firstBalance);
+        itemForm.applyTo(itemsModel);
         itemsModel.setSubGroups(new SubGroups(subId));
-        itemsModel.setSelPrice1(selPrice1);
-        itemsModel.setSelPrice2(selPrice2);
-        itemsModel.setSelPrice3(selPrice3);
-        itemsModel.setActiveItem(checkItemActive.isSelected());
-        itemsModel.setHasValidate(checkItemValidate.isSelected());
-        itemsModel.setNumberValidityDays(Integer.parseInt(textDaysValidate.getText()));
-        itemsModel.setAlertDaysBeforeExpiry(Integer.parseInt(textAlertBefore.getText()));
 
         // Set image data
         if (imageAdd.getImage() != null) {
@@ -571,7 +648,7 @@ public class AddItemController implements AppSettingInterface {
         // it against items.unit_id, which does not depend on it being first.
         itemsModel.setUnitsType(baseUnit);
         itemsModel.setItemsUnitsModelList(new ArrayList<>(itemsUnitsModelList));
-        itemsModel.setExtraBarcodes(new ArrayList<>(listExtraBarcodes.getItems()));
+        itemsModel.setExtraBarcodes(new ArrayList<>(extraBarcodesTab.getItems()));
         return itemsModel;
     }
 
@@ -587,7 +664,7 @@ public class AddItemController implements AppSettingInterface {
     private void checkBarcodesAreFree(String itemBarcode, UnitsModel baseUnit, List<ItemsUnitsModel> units) throws Exception {
         List<String> codes = new ArrayList<>();
         codes.add(itemBarcode);
-        codes.addAll(listExtraBarcodes.getItems());
+        extraBarcodesTab.getItems().stream().map(String::trim).forEach(codes::add);
 
         // The base unit's row carries the item's own barcode and is not stored,
         // so counting it here would report the item as clashing with itself.
@@ -596,6 +673,7 @@ public class AddItemController implements AppSettingInterface {
                 .filter(unit -> unit.getUnitsModel() == null || unit.getUnitsModel().getUnit_id() != baseUnitId)
                 .map(ItemsUnitsModel::getItemsBarcode)
                 .filter(code -> code != null && !code.isBlank())
+                .map(String::trim)
                 .forEach(codes::add);
 
         Set<String> seen = new HashSet<>();
@@ -603,61 +681,118 @@ public class AddItemController implements AppSettingInterface {
             if (!seen.add(code)) {
                 throw new UserValidationException(LanguageManager.getInstance().getString("item.error.barcode.duplicate.in.item", code));
             }
-            if (itemsService.isBarcodeTakenByAnotherItem(code, codeItem)) {
-                throw new BusinessRuleException(LanguageManager.getInstance().getString("item.error.barcode.used.by.other", code));
-            }
+        }
+
+        // One query for the whole set, rather than one per code - an item with a
+        // handful of extra barcodes and a few priced units used to mean a full
+        // round trip to the database for each of them just to learn none clashed.
+        String taken = itemsService.firstBarcodeTakenByAnotherItem(codes, codeItem);
+        if (taken != null) {
+            throw new BusinessRuleException(LanguageManager.getInstance().getString("item.error.barcode.used.by.other", taken));
         }
     }
 
     private void saveData(boolean isDuplicate) {
         try {
-            if (AllAlerts.confirmSave()) {
-                var itemsModel = insertData();
-                var i = itemsService.updateItem(itemsModel);
-                if (i == 1) {
-                    if (eventBus != null) eventBus.publish(new ItemSaved(itemsModel));
-                    tableUnits.getItems().clear();
-                    listExtraBarcodes.getItems().clear();
-                    AllAlerts.alertSave();
-                    imageAdd.setImage(null);
-                    if (!isDuplicate) {
-                        clearAll(txtCode, txtBarcode, txtItemName, txtBalance, txtBuyPrice, txtSelPrice, txtMiniQuantity);
-                        // The form is a blank item again, and a blank item has moved
-                        // nothing - so the opening balance is open for entry.
-                        lockOpeningBalanceIfItemHasMoved(0);
-                    }
-                    addBarcode();
-                    getFocusToName();
-
-                    // close after update
-                    if (codeItem > 0) {
-                        btnClose.fire();
-                    }
-                }
-            }
+            if (!AllAlerts.confirmSave()) return;
+            // insertData reads and marks @FXML controls on a failed check, which is
+            // only safe from the FX thread, so validation - including the barcode
+            // uniqueness reads it makes along the way - stays synchronous here.
+            var itemsModel = insertData();
+            runSaveTask(itemsModel, isDuplicate);
         } catch (Exception e) {
             logError(e);
         }
     }
 
-    private UnitsModel getUnitsModelByName(String selectedItemType) {
-        try {
-            if (selectedItemType == null) {
-                return unitsService.getUnitsById(1);
+    /**
+     * Runs the write itself - {@code insertMultiData}'s transaction across the
+     * item, its opening stock row, its units and its barcodes - off the FX
+     * thread, so a slow connection does not freeze the dialog underneath it.
+     * {@code saving} keeps a second click from starting a second transaction
+     * while this one is in flight.
+     */
+    private void runSaveTask(ItemsModel itemsModel, boolean isDuplicate) {
+        Task<Integer> task = new Task<>() {
+            @Override
+            protected Integer call() throws DaoException {
+                return itemsService.updateItem(itemsModel);
             }
-            return unitsService.getUnitsByName(selectedItemType);
-        } catch (DaoException e) {
-            logError(e);
-            return null;
+        };
+        task.setOnSucceeded(event -> {
+            saving.set(false);
+            onItemSaved(itemsModel, task.getValue(), isDuplicate);
+        });
+        task.setOnFailed(event -> saving.set(false));
+        AllAlerts.handleTaskFailure(LanguageManager.getInstance().getString("item.dialog.save.title"), task);
+
+        saving.set(true);
+        Thread thread = new Thread(task, "item-save");
+        thread.setDaemon(true);
+        thread.start();
+    }
+
+    private void onItemSaved(ItemsModel itemsModel, int rowsAffected, boolean isDuplicate) {
+        if (rowsAffected != 1) return;
+
+        if (eventBus != null) eventBus.publish(new ItemSaved(itemsModel));
+        tableUnits.getItems().clear();
+        extraBarcodesTab.clear();
+        AllAlerts.alertSave();
+        imageAdd.setImage(null);
+        if (!isDuplicate) {
+            txtCode.clear();
+            itemForm.reset();
+            // The form is a blank item again, and a blank item has moved
+            // nothing - so the opening balance is open for entry.
+            lockOpeningBalanceIfItemHasMoved(0);
+        }
+        addBarcode();
+        getFocusToName();
+
+        // close after update
+        if (codeItem > 0) {
+            btnClose.fire();
         }
     }
 
-    private void getSubId(String newValue) {
+    /**
+     * Resolves a name to its {@link UnitsModel} from {@link #unitsCache} - no
+     * database call, since the cache already holds every unit that exists.
+     * {@code null} selects the base unit (id 1, the {@code DEFAULT} on every
+     * {@code type} column) the same way a blank {@code comboType} used to.
+     */
+    private UnitsModel getUnitsModelByName(String selectedItemType) {
+        if (selectedItemType == null) {
+            return unitsCache.stream().filter(unit -> unit.getUnit_id() == 1).findFirst().orElse(null);
+        }
+        return unitsCache.stream()
+                .filter(unit -> unit.getUnit_name().equals(selectedItemType))
+                .findFirst()
+                .orElse(null);
+    }
+
+    /**
+     * Resolves the selected sub-group to its id, or to 0 when there is nothing to
+     * resolve.
+     * <p>
+     * Zero is what makes the {@code subId <= 0} check in {@link #insertData()} do
+     * something. This used to fall back to 1 - the seeded group - so an item saved
+     * with no group chosen was filed under it silently, and the check that was
+     * meant to refuse that could never fire. A failed lookup answers 0 for the same
+     * reason: keeping the previous selection's id would file the item under
+     * whichever group happened to be picked before.
+     */
+    private void resolveSubGroupId(String subGroupName) {
+        if (subGroupName == null || subGroupName.isBlank()) {
+            subId = 0;
+            return;
+        }
         try {
-            if (!comboSupGroup.getSelectionModel().isEmpty()) {
-                subId = supGroupService.getSubGroupsByMainID(newValue, mainId).getId();
-            } else subId = 1;
+            var subGroup = supGroupService.getSubGroupsByMainID(subGroupName, mainId);
+            subId = subGroup == null ? 0 : subGroup.getId();
         } catch (DaoException e) {
+            subId = 0;
             logError(e);
         }
     }
@@ -698,15 +833,32 @@ public class AddItemController implements AppSettingInterface {
 
     }
 
+    /**
+     * Names the three price tiers from {@code sel_price_type}.
+     * <p>
+     * The rows are read by position and the table is user-editable, so a missing
+     * row is a screen that would not open at all: the three reads used to be
+     * {@code getFirst()}, {@code get(1)} and {@code get(2)}, and a list of two
+     * threw {@code IndexOutOfBoundsException} out of {@code initialize()}. A tier
+     * nobody named falls back to its generic caption instead.
+     */
     private void loadNamesPrices() {
+        List<SelPriceTypeModel> priceList;
         try {
-            var priceList = selPriceItemService.getSelPriceTypeList();
-            labelSelPrice.setText(priceList.getFirst().getName());
-            labelSelPrice2.setText(priceList.get(1).getName());
-            labelSelPrice3.setText(priceList.get(2).getName());
+            priceList = selPriceItemService.getSelPriceTypeList();
         } catch (DaoException e) {
             logError(e);
+            priceList = List.of();
         }
+        var lm = LanguageManager.getInstance();
+        setPriceLabel(labelSelPrice, priceList, 0, lm.getString("selPrice"));
+        setPriceLabel(labelSelPrice2, priceList, 1, lm.getString("selPrice") + "2");
+        setPriceLabel(labelSelPrice3, priceList, 2, lm.getString("selPrice") + "3");
+    }
+
+    private void setPriceLabel(Label label, List<SelPriceTypeModel> priceList, int index, String fallback) {
+        String name = index < priceList.size() ? priceList.get(index).getName() : null;
+        label.setText(name == null || name.isBlank() ? fallback : name);
     }
 
     private void addBarcode() {
