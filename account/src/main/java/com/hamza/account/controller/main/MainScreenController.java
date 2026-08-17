@@ -175,12 +175,12 @@ public class MainScreenController extends MainItems implements Initializable {
         var monthlyPurchaseInterface = new MonthlySalesInterface() {
             @Override
             public String reportName() {
-                return "تقرير المشتريات السنوي";
+                return "Annual_Purchase_Report";
             }
 
             @Override
             public String reportTitle() {
-                return "تقرير إجمالي المشتريات الشهرية لكل سنة";
+                return LanguageManager.getInstance().getString("report.monthly.purchase.title");
             }
 
             @Override
@@ -190,7 +190,12 @@ public class MainScreenController extends MainItems implements Initializable {
 
             @Override
             public String chartTitle() {
-                return "مقارنة المشتريات بين الشهور";
+                return LanguageManager.getInstance().getString("report.monthly.purchase.chart.title");
+            }
+
+            @Override
+            public boolean isPurchase() {
+                return true;
             }
         };
         var monthlySalesInterface = new MonthlySalesInterface() {
@@ -235,8 +240,8 @@ public class MainScreenController extends MainItems implements Initializable {
         menuButtonSetting.configureButton(btnReportSummary, getReportsButtons().summaryReport());
         menuButtonSetting.configureButton(btnReportItems, getReportsButtons().itemsReport());
         menuButtonSetting.configureButton(btnReportItemsDaily, getReportsButtons().itemsReportDaily());
-        menuButtonSetting.configureButton(btnReportSalesByYear, getAction(monthlySalesInterface.reportName(), monthlySalesInterface));
-        menuButtonSetting.configureButton(btnReportPurchaseByYear, getAction(monthlyPurchaseInterface.reportName(), monthlyPurchaseInterface));
+        menuButtonSetting.configureButton(btnReportSalesByYear, getAction(monthlySalesInterface.reportTitle(), monthlySalesInterface));
+        menuButtonSetting.configureButton(btnReportPurchaseByYear, getAction(monthlyPurchaseInterface.reportTitle(), monthlyPurchaseInterface));
         menuButtonSetting.configureButton(btnReportCustomPaid, getReportsButtons().reportCustomPaid());
         menuButtonSetting.configureButton(btnReportSuppliersPaid, getReportsButtons().reportSupplierPaid());
         menuButtonSetting.configureButton(btnReportDetails, getReportsButtons().detailsReport());
@@ -367,17 +372,12 @@ public class MainScreenController extends MainItems implements Initializable {
     }
 
     private ButtonWithPerm getAction(String name, MonthlySalesInterface monthlySalesInterface) {
-        // name comes from MonthlySalesInterface.reportName() in configureAllButtons(),
-        // which is still an Arabic-only literal there ("تقرير المشتريات السنوي" etc) -
-        // this sentinel has to match it, so it stays Arabic too until those report
-        // names are migrated.
-        String sales = "مبيعات";
         return new ButtonWithPerm() {
             @Override
             public PermissionKey getPermissionType() {
-                if (name.contains(sales))
-                    return AppPermissions.REPORTS_SHOW_SALES;
-                else return AppPermissions.REPORTS_SHOW_PURCHASE;
+                return monthlySalesInterface.isPurchase()
+                        ? AppPermissions.REPORTS_SHOW_PURCHASE
+                        : AppPermissions.REPORTS_SHOW_SALES;
             }
 
             @Override

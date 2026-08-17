@@ -27,7 +27,7 @@ public class MonthlyView extends Application {
         Scene scene = new SceneAll(root);
         ChangeOrientation.sceneOrientation(scene);
         stage.setScene(scene);
-        stage.setTitle(monthlySalesInterface.reportName());
+        stage.setTitle(monthlySalesInterface.reportTitle());
         stage.show();
     }
 }

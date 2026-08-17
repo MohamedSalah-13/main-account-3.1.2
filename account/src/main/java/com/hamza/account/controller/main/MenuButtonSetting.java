@@ -2,6 +2,7 @@ package com.hamza.account.controller.main;
 
 import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.button.ImageDesign;
+import com.hamza.controlsfx.language.LanguageManager;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
 import javafx.scene.control.Button;
@@ -130,7 +131,7 @@ public final class MenuButtonSetting {
      * @param e the exception to log and display
      */
     private void logException(Exception e) {
-        AllAlerts.handleError("فتح شاشة من القائمة", e);
+        AllAlerts.handleError(LanguageManager.getInstance().getString("nav.error.open.screen"), e);
     }
 
     private void disableButton(DisableButtons.Disableable uiElement, ButtonWithPerm action) {

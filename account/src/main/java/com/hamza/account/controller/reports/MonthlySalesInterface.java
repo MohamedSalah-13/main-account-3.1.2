@@ -22,4 +22,9 @@ public interface MonthlySalesInterface {
         return LanguageManager.getInstance().getString("report.monthly.sales.chart.title");
     }
 
+    /** Which permission {@code getAction} in MainScreenController checks - purchase vs. sales. */
+    default boolean isPurchase() {
+        return false;
+    }
+
 }
