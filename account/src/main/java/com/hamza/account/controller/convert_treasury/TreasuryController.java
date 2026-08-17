@@ -6,6 +6,7 @@ import com.hamza.account.service.TreasuryService;
 import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.error.UserValidationException;
+import com.hamza.controlsfx.language.LanguageManager;
 import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
@@ -70,7 +71,7 @@ public class TreasuryController {
         try {
             treasuryTable.setItems(FXCollections.observableArrayList(treasuryService.getTreasuryModelList()));
         } catch (DaoException e) {
-            AllAlerts.handleError("تحميل الخزائن", e);
+            AllAlerts.handleError(LanguageManager.getInstance().getString("treasury.error.load.title"), e);
         }
     }
 
@@ -95,9 +96,9 @@ public class TreasuryController {
             treasuryService.insert(treasury);
             loadTreasuries();
             newTreasury();
-            showInfo("تم حفظ الخزينة بنجاح");
+            showInfo(LanguageManager.getInstance().getString("treasury.msg.save.success"));
         } catch (Exception e) {
-            AllAlerts.handleError("حفظ الخزينة", e);
+            AllAlerts.handleError(LanguageManager.getInstance().getString("treasury.op.save"), e);
         }
     }
 
@@ -105,7 +106,7 @@ public class TreasuryController {
     private void updateTreasury() {
         try {
             if (selectedTreasury == null) {
-                showError("اختر خزينة للتعديل");
+                showError(LanguageManager.getInstance().getString("treasury.msg.select.to.edit"));
                 return;
             }
 
@@ -116,9 +117,9 @@ public class TreasuryController {
 
             treasuryService.update(selectedTreasury);
             loadTreasuries();
-            showInfo("تم تعديل الخزينة بنجاح");
+            showInfo(LanguageManager.getInstance().getString("treasury.msg.update.success"));
         } catch (Exception e) {
-            AllAlerts.handleError("تعديل الخزينة", e);
+            AllAlerts.handleError(LanguageManager.getInstance().getString("treasury.op.update"), e);
         }
     }
 
@@ -138,17 +139,17 @@ public class TreasuryController {
         try {
             return new BigDecimal(text.trim());
         } catch (NumberFormatException e) {
-            throw new UserValidationException("أدخل رصيدًا صحيحًا", e);
+            throw new UserValidationException(LanguageManager.getInstance().getString("treasury.error.invalid.balance"), e);
         }
     }
 
     private void validateTreasury(Treasury treasury) throws UserValidationException {
         if (treasury.getName() == null || treasury.getName().isBlank()) {
-            throw new UserValidationException("يجب إدخال اسم الخزينة");
+            throw new UserValidationException(LanguageManager.getInstance().getString("treasury.error.name.required"));
         }
 
         if (treasury.getAmount() == null || treasury.getAmount().compareTo(BigDecimal.ZERO) < 0) {
-            throw new UserValidationException("الرصيد لا يمكن أن يكون أقل من صفر");
+            throw new UserValidationException(LanguageManager.getInstance().getString("treasury.error.balance.negative"));
         }
     }
 
