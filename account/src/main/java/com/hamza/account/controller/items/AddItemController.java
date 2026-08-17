@@ -29,7 +29,6 @@ import com.hamza.controlsfx.interfaceData.AppSettingInterface;
 import com.hamza.controlsfx.language.LanguageManager;
 import com.hamza.controlsfx.observer.EventBus;
 import com.hamza.controlsfx.observer.Subscriptions;
-import com.hamza.controlsfx.others.DoubleSetting;
 import com.hamza.controlsfx.util.ImageChoose;
 import javafx.application.Platform;
 import javafx.beans.binding.Bindings;
@@ -87,6 +86,11 @@ public class AddItemController implements AppSettingInterface {
      * going to touch its controls.
      */
     private final BooleanProperty saving = new SimpleBooleanProperty(false);
+    /**
+     * The item's own scalar fields - see {@link ItemForm}. Bound to its controls
+     * once, in {@link #bindItemForm()}.
+     */
+    private final ItemForm itemForm = new ItemForm();
     private int mainId, subId;
     @FXML
     private ComboBox<String> comboMainGroup, comboSupGroup, comboType;
@@ -168,6 +172,7 @@ public class AddItemController implements AppSettingInterface {
 
     @FXML
     public void initialize() {
+        bindItemForm();
         unitSetting();
         otherSetting();
         comboTypeOption();
@@ -234,6 +239,27 @@ public class AddItemController implements AppSettingInterface {
         } catch (Exception e) {
             logError(e);
         }
+    }
+
+    /**
+     * Binds every field {@link ItemForm} owns to its control, once. From here on
+     * the form is the source of truth for those fields; {@code selectData},
+     * {@code insertData} and the post-save reset go through it instead of the
+     * controls directly.
+     */
+    private void bindItemForm() {
+        itemForm.barcodeProperty().bindBidirectional(txtBarcode.textProperty());
+        itemForm.nameProperty().bindBidirectional(txtItemName.textProperty());
+        itemForm.buyPriceProperty().bindBidirectional(txtBuyPrice.textProperty());
+        itemForm.selPrice1Property().bindBidirectional(txtSelPrice.textProperty());
+        itemForm.selPrice2Property().bindBidirectional(txtSelPrice2.textProperty());
+        itemForm.selPrice3Property().bindBidirectional(txtSelPrice3.textProperty());
+        itemForm.miniQuantityProperty().bindBidirectional(txtMiniQuantity.textProperty());
+        itemForm.firstBalanceProperty().bindBidirectional(txtBalance.textProperty());
+        itemForm.activeProperty().bindBidirectional(checkItemActive.selectedProperty());
+        itemForm.hasValidateProperty().bindBidirectional(checkItemValidate.selectedProperty());
+        itemForm.validityDaysProperty().bindBidirectional(textDaysValidate.textProperty());
+        itemForm.alertBeforeExpiryProperty().bindBidirectional(textAlertBefore.textProperty());
     }
 
     private void unitSetting() {
@@ -473,11 +499,7 @@ public class AddItemController implements AppSettingInterface {
                 if (itemsModel != null) {
                     int numItem = itemsModel.getId();
                     txtCode.setText(String.valueOf(numItem));
-                    txtBarcode.setText(itemsModel.getBarcode());
-                    txtItemName.setText(itemsModel.getNameItem());
-                    txtBuyPrice.setText(String.valueOf(itemsModel.getBuyPrice()));
-                    txtMiniQuantity.setText(String.valueOf(itemsModel.getMini_quantity()));
-                    txtBalance.setText(String.valueOf(itemsModel.getFirstBalanceForStock()));
+                    itemForm.load(itemsModel);
                     lockOpeningBalanceIfItemHasMoved(numItem);
                     // combo restore data
                     mainId = itemsModel.getSubGroups().getMainGroups().getId();
@@ -485,16 +507,6 @@ public class AddItemController implements AppSettingInterface {
                     comboMainGroup.getSelectionModel().select(mainGroupService.getMainGroupsById(itemsModel.getSubGroups().getMainGroups().getId()).getName());
                     comboSupGroup.getSelectionModel().select(supGroupService.getSubGroupsById(itemsModel.getSubGroups().getId()).getName());
                     comboType.getSelectionModel().select(itemsModel.getUnitsType().getUnit_name());
-                    txtSelPrice.setText(String.valueOf(itemsModel.getSelPrice1()));
-                    txtSelPrice2.setText(String.valueOf(itemsModel.getSelPrice2()));
-                    txtSelPrice3.setText(String.valueOf(itemsModel.getSelPrice3()));
-
-                    // check
-                    checkItemActive.setSelected(itemsModel.isActiveItem());
-                    checkItemValidate.setSelected(itemsModel.isHasValidate());
-                    var numberValidityDays = itemsModel.getNumberValidityDays();
-                    textDaysValidate.setText(String.valueOf(numberValidityDays));
-                    textAlertBefore.setText(String.valueOf(itemsModel.getAlertDaysBeforeExpiry()));
                     tableUnitsSetting.selectTable(itemsModel);
                     listExtraBarcodes.setItems(FXCollections.observableArrayList(itemsModel.getExtraBarcodes()));
                     var itemImage = itemsModel.getItem_image();
@@ -535,25 +547,10 @@ public class AddItemController implements AppSettingInterface {
     }
 
     private BooleanBinding checkEnableButton() {
-        return (txtItemName.textProperty().isEmpty())
-                .or(isNotPositive(txtBuyPrice))
+        return itemForm.incompleteProperty()
                 .or(comboMainGroup.valueProperty().isNull())
                 .or(comboSupGroup.valueProperty().isNull())
                 .or(comboType.valueProperty().isNull());
-    }
-
-    /**
-     * Whether the field holds a number greater than zero.
-     * <p>
-     * This was {@code textProperty().lessThanOrEqualTo("0.0")}, which compares the
-     * text - and text does not order like the number it spells. "0.00" sorts after
-     * "0.0" because it is longer, so a buy price of zero typed with two decimals
-     * read as positive and enabled the save.
-     */
-    private BooleanBinding isNotPositive(TextField field) {
-        return Bindings.createBooleanBinding(
-                () -> DoubleSetting.parseDoubleOrDefault(field.getText()) <= 0,
-                field.textProperty());
     }
 
     /**
@@ -567,7 +564,7 @@ public class AddItemController implements AppSettingInterface {
      */
     private void bindSaveTooltip() {
         var missing = Bindings.createStringBinding(this::missingRequirementsMessage,
-                txtItemName.textProperty(), txtBuyPrice.textProperty(),
+                itemForm.nameProperty(), itemForm.buyPriceProperty(),
                 comboMainGroup.valueProperty(), comboSupGroup.valueProperty(), comboType.valueProperty());
 
         var tooltip = new Tooltip();
@@ -580,8 +577,8 @@ public class AddItemController implements AppSettingInterface {
     private String missingRequirementsMessage() {
         var lm = LanguageManager.getInstance();
         List<String> missing = new ArrayList<>();
-        if (txtItemName.getText() == null || txtItemName.getText().isBlank()) missing.add(lm.getString("column.name_item"));
-        if (DoubleSetting.parseDoubleOrDefault(txtBuyPrice.getText()) <= 0) missing.add(lm.getString("BuyPrice"));
+        if (itemForm.isNameBlank()) missing.add(lm.getString("column.name_item"));
+        if (itemForm.isBuyPriceNotPositive()) missing.add(lm.getString("BuyPrice"));
         if (comboMainGroup.getValue() == null) missing.add(lm.getString("mainGroup"));
         if (comboSupGroup.getValue() == null) missing.add(lm.getString("subGroup"));
         if (comboType.getValue() == null) missing.add(lm.getString("type"));
@@ -615,45 +612,31 @@ public class AddItemController implements AppSettingInterface {
     private ItemsModel insertData() throws Exception {
         clearValidationErrors();
 
-        // Trimmed here, once, because the codes are compared in three places that
-        // did not agree: this screen matched them as typed, while
-        // ItemsService.isBarcodeTakenByAnotherItem trims before asking the
-        // database. "123 " and "123" passed as two different codes locally and
-        // then collided on the unique index.
-        String barcode = txtBarcode.getText().trim();
-        String nameItem = txtItemName.getText().trim();
-        double buy = DoubleSetting.parseDoubleOrDefault(txtBuyPrice.getText());
-        double selPrice1 = DoubleSetting.parseDoubleOrDefault(txtSelPrice.getText());
-        double selPrice2 = DoubleSetting.parseDoubleOrDefault(txtSelPrice2.getText());
-        double selPrice3 = DoubleSetting.parseDoubleOrDefault(txtSelPrice3.getText());
-        double miniQuantity = DoubleSetting.parseDoubleOrDefault(txtMiniQuantity.getText());
-        double firstBalance = DoubleSetting.parseDoubleOrDefault(txtBalance.getText());
-
         // add subgroup
         resolveSubGroupId(comboSupGroup.getSelectionModel().getSelectedItem());
 
         // The save button's binding only asks that the field is not empty, and a
-        // name of spaces is not empty. It is empty once trimmed, which is what
+        // name of spaces is not empty. isNameBlank() trims first, which is what
         // gets stored.
-        if (nameItem.isEmpty()) {
+        if (itemForm.isNameBlank()) {
             setValidationError(txtItemName, true);
             txtItemName.requestFocus();
             throw new UserValidationException(LanguageManager.getInstance().getString("item.error.name.required"));
         }
 
-        if (barcode.isEmpty() || barcode.equals("0")) {
+        if (itemForm.isBarcodeBlank()) {
             setValidationError(txtBarcode, true);
             txtBarcode.requestFocus();
             throw new UserValidationException(LanguageManager.getInstance().getString("msg.insert.all"));
         }
 
-        if (barcode.length() > 14) {
+        if (itemForm.isBarcodeTooLong()) {
             setValidationError(txtBarcode, true);
             txtBarcode.requestFocus();
             throw new UserValidationException(LanguageManager.getInstance().getString("item.error.barcode.too.long"));
         }
 
-        if (selPrice1 <= buy) {
+        if (itemForm.isSellPriceNotAboveBuy()) {
             setValidationError(txtSelPrice, true);
             txtSelPrice.requestFocus();
             throw new UserValidationException(LanguageManager.getInstance().getString("item.error.sell.not.above.buy"));
@@ -670,23 +653,18 @@ public class AddItemController implements AppSettingInterface {
         }
 
         var baseUnit = getUnitsModelByName(comboType.getSelectionModel().getSelectedItem());
+        // Trimmed here, once, because the codes are compared in three places that
+        // did not agree: this screen matched them as typed, while
+        // ItemsService.isBarcodeTakenByAnotherItem trims before asking the
+        // database. "123 " and "123" passed as two different codes locally and
+        // then collided on the unique index.
+        String barcode = itemForm.getBarcode().trim();
         checkBarcodesAreFree(barcode, baseUnit, itemsUnitsModelList);
 
         var itemsModel = new ItemsModel();
         itemsModel.setId(codeItem);
-        itemsModel.setBarcode(barcode);
-        itemsModel.setNameItem(nameItem);
-        itemsModel.setBuyPrice(buy);
-        itemsModel.setMini_quantity(miniQuantity);
-        itemsModel.setFirstBalanceForStock(firstBalance);
+        itemForm.applyTo(itemsModel);
         itemsModel.setSubGroups(new SubGroups(subId));
-        itemsModel.setSelPrice1(selPrice1);
-        itemsModel.setSelPrice2(selPrice2);
-        itemsModel.setSelPrice3(selPrice3);
-        itemsModel.setActiveItem(checkItemActive.isSelected());
-        itemsModel.setHasValidate(checkItemValidate.isSelected());
-        itemsModel.setNumberValidityDays(Integer.parseInt(textDaysValidate.getText()));
-        itemsModel.setAlertDaysBeforeExpiry(Integer.parseInt(textAlertBefore.getText()));
 
         // Set image data
         if (imageAdd.getImage() != null) {
@@ -785,11 +763,8 @@ public class AddItemController implements AppSettingInterface {
         AllAlerts.alertSave();
         imageAdd.setImage(null);
         if (!isDuplicate) {
-            // The second and third selling prices were left out, so they
-            // carried over onto the next item entered - unseen, since the
-            // fields still read as the price of an item already saved.
-            clearAll(txtCode, txtBarcode, txtItemName, txtBalance, txtBuyPrice,
-                    txtSelPrice, txtSelPrice2, txtSelPrice3, txtMiniQuantity);
+            txtCode.clear();
+            itemForm.reset();
             // The form is a blank item again, and a blank item has moved
             // nothing - so the opening balance is open for entry.
             lockOpeningBalanceIfItemHasMoved(0);
