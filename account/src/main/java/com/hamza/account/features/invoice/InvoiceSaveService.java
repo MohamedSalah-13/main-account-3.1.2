@@ -3,6 +3,8 @@ package com.hamza.account.features.invoice;
 import com.hamza.account.authorization.AuthorizationGuard;
 import com.hamza.account.config.DefaultStock;
 import com.hamza.account.document.DocumentType;
+import com.hamza.account.features.stockledger.StockMovementAssembler;
+import com.hamza.account.features.stockledger.StockMovementDao;
 import com.hamza.account.interfaces.api.DataInterface;
 import com.hamza.account.interfaces.api.InvoiceBuy;
 import com.hamza.account.interfaces.api.TotalsAndPurchaseList;
@@ -37,6 +39,7 @@ public final class InvoiceSaveService<
     private final InvoiceStockGuard stockGuard;
     private final InvoiceLookup<Treasury> treasuryLookup;
     private final InvoiceLookup<Employees> delegateLookup;
+    private final StockMovementDao stockMovementDao;
 
     public InvoiceSaveService(DataInterface<T1, T2, T3, T4> dataInterface,
                               InvoiceLookup<Treasury> treasuryLookup,
@@ -46,7 +49,7 @@ public final class InvoiceSaveService<
                 new JdbcInvoiceNumberAllocator(), InvoiceTransactionExecutor.jdbc(),
                 new InvoiceStockGuard(dataInterface.designInterface().documentType(),
                         new JdbcInvoiceStockRepository()),
-                treasuryLookup, delegateLookup);
+                treasuryLookup, delegateLookup, new StockMovementDao());
     }
 
     InvoiceSaveService(InvoiceBuy<T1, T2, T3, T4> invoiceFactory,
@@ -56,7 +59,8 @@ public final class InvoiceSaveService<
                        InvoiceTransactionExecutor transactions,
                        InvoiceStockGuard stockGuard,
                        InvoiceLookup<Treasury> treasuryLookup,
-                       InvoiceLookup<Employees> delegateLookup) {
+                       InvoiceLookup<Employees> delegateLookup,
+                       StockMovementDao stockMovementDao) {
         this.invoiceFactory = invoiceFactory;
         this.repository = repository;
         this.documentType = documentType;
@@ -66,6 +70,7 @@ public final class InvoiceSaveService<
         this.stockGuard = stockGuard;
         this.treasuryLookup = treasuryLookup;
         this.delegateLookup = delegateLookup;
+        this.stockMovementDao = stockMovementDao;
     }
 
     public InvoiceSaveResult<T1, T2> save(InvoiceSaveCommand<T1> command) throws DaoException {
@@ -130,7 +135,26 @@ public final class InvoiceSaveService<
         if (affected != 1) {
             throw new DaoException("لم يتم حفظ الفاتورة؛ لم تؤثر العملية في سجل واحد");
         }
+        writeStockMovements(invoiceNumber, command, persistedLines,
+                invoice.getUsers() == null ? null : invoice.getUsers().getId());
         return new InvoiceSaveResult<>(invoiceNumber, command.updating(), invoice,
                 payment, persistedLines);
+    }
+
+    /**
+     * The dual-write half of a save: the invoice itself is already committed to its own
+     * table by the time this runs, still inside the same transaction (see
+     * {@code docs/erp-roadmap.md} §8.3-8.4). Deleting this document's existing movements
+     * before writing the current set is what makes an edit correct without recomputing
+     * anything - see {@link StockMovementDao#deleteByReference} for why that is a
+     * deliberate, temporary exception to the ledger otherwise being append-only.
+     */
+    private void writeStockMovements(int invoiceNumber, InvoiceSaveCommand<T1> command,
+                                     List<T1> persistedLines, Integer userId) throws DaoException {
+        String referenceType = StockMovementAssembler.referenceTypeFor(documentType);
+        stockMovementDao.deleteByReference(referenceType, invoiceNumber);
+        stockMovementDao.insertBatch(StockMovementAssembler.assemble(
+                documentType, DefaultStock.ID, invoiceNumber, command.invoiceDate(),
+                persistedLines, userId));
     }
 }

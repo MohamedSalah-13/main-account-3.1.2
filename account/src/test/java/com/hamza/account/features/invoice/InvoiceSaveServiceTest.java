@@ -4,6 +4,7 @@ import com.hamza.account.authorization.AppPermissions;
 import com.hamza.account.controller.others.ServiceRegistry;
 import com.hamza.account.document.DocumentType;
 import com.hamza.account.features.rbac.UserSessionContext;
+import com.hamza.account.features.stockledger.StockMovementDao;
 import com.hamza.account.interfaces.api.TotalsAndPurchaseList;
 import com.hamza.account.interfaces.impl_invoiceBuy.SalesInvoice;
 import com.hamza.account.model.domain.*;
@@ -32,6 +33,7 @@ class InvoiceSaveServiceTest {
     private DaoList<Total_Sales> dao;
     private InvoiceNumberAllocator numberAllocator;
     private InvoiceStockGuard stockGuard;
+    private StockMovementDao stockMovementDao;
     private InvoiceSaveService<Sales, Total_Sales, Customers, CustomerAccount> service;
     private UserSessionContext session;
 
@@ -42,6 +44,7 @@ class InvoiceSaveServiceTest {
         dao = mock(DaoList.class);
         numberAllocator = mock(InvoiceNumberAllocator.class);
         stockGuard = mock(InvoiceStockGuard.class);
+        stockMovementDao = mock(StockMovementDao.class);
         when(repository.totalDao()).thenReturn(dao);
         service = new InvoiceSaveService<>(new SalesInvoice(), repository,
                 DocumentType.SALES, Clock.fixed(
@@ -49,7 +52,7 @@ class InvoiceSaveServiceTest {
                 numberAllocator, InvoiceTransactionExecutor.direct(),
                 stockGuard,
                 name -> new Treasury(1, name, BigDecimal.ZERO),
-                name -> new Employees(2, name));
+                name -> new Employees(2, name), stockMovementDao);
         session = new UserSessionContext();
         ServiceRegistry.register(UserSessionContext.class, session);
         clearInvocations(repository, dao, numberAllocator);
@@ -74,6 +77,8 @@ class InvoiceSaveServiceTest {
         verify(dao).insert(result.invoice());
         verify(stockGuard).validate(any());
         verify(dao, never()).update(any());
+        verify(stockMovementDao).deleteByReference("SALE", 44);
+        verify(stockMovementDao).insertBatch(argThat(movements -> movements.size() == 1));
     }
 
     @Test
@@ -92,6 +97,8 @@ class InvoiceSaveServiceTest {
         verify(stockGuard).validate(any());
         verify(dao).update(result.invoice());
         verify(dao, never()).insert(any());
+        verify(stockMovementDao).deleteByReference("SALE", 91);
+        verify(stockMovementDao).insertBatch(argThat(movements -> movements.size() == 1));
     }
 
     @Test
@@ -104,6 +111,7 @@ class InvoiceSaveServiceTest {
         verifyNoInteractions(dao);
         verifyNoInteractions(numberAllocator);
         verifyNoInteractions(stockGuard);
+        verifyNoInteractions(stockMovementDao);
     }
 
     @Test
@@ -117,6 +125,7 @@ class InvoiceSaveServiceTest {
         assertEquals(InvoiceSaveValidator.Target.PAID, error.target());
         verifyNoInteractions(numberAllocator);
         verifyNoInteractions(stockGuard);
+        verifyNoInteractions(stockMovementDao);
         verify(dao, never()).insert(any());
     }
 
@@ -132,6 +141,7 @@ class InvoiceSaveServiceTest {
         verifyNoInteractions(numberAllocator);
         verify(dao, never()).insert(any());
         verify(dao, never()).update(any());
+        verifyNoInteractions(stockMovementDao);
     }
 
     private InvoiceSaveCommand<Sales> command(int existingId, double paid) {

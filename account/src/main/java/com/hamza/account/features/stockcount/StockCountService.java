@@ -1,6 +1,7 @@
 package com.hamza.account.features.stockcount;
 
 import com.hamza.account.config.DefaultStock;
+import com.hamza.account.features.stockledger.StockMovementAssembler;
 import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.model.domain.ItemsModel;
 import com.hamza.account.model.domain.UnitsModel;
@@ -12,6 +13,7 @@ import com.hamza.account.authorization.AppPermissions;
 import com.hamza.account.authorization.PermissionKey;
 import com.hamza.account.features.rbac.CurrentUser;
 import com.hamza.controlsfx.database.DaoException;
+import com.hamza.controlsfx.database.TransactionTemplate;
 import com.hamza.controlsfx.error.BusinessRuleException;
 import com.hamza.controlsfx.error.UserValidationException;
 
@@ -105,8 +107,12 @@ public record StockCountService(DaoFactory daoFactory) {
      * <p>
      * It saves first: posting what is on screen means the rows on screen have to be the
      * rows in the table, and a count posted from a sheet with unsaved edits would move
-     * the wrong quantities. Both go through {@code insertMultiData} on the same thread,
-     * so the save joins the transaction rather than committing separately.
+     * the wrong quantities. The save, the status flip and the {@code stock_movements}
+     * dual-write (see {@code docs/erp-roadmap.md} §8.3-8.4) now share one explicit
+     * {@link TransactionTemplate} - each is its own {@code insertMultiData} underneath,
+     * which only <em>joins</em> an already-open transaction rather than starting one, so
+     * without this wrapper the save and the status flip were in practice two separate
+     * transactions.
      * <p>
      * Posting is what makes the differences real - {@code adjustment_agg} in
      * {@code R__views.sql} counts only posted sheets - so it is guarded by its own
@@ -124,12 +130,15 @@ public record StockCountService(DaoFactory daoFactory) {
         }
 
         int moved = count.linesWithDifference().size();
-        dao().save(count);
-        if (dao().post(count.getId()) == 0) {
-            throw new BusinessRuleException("تم ترحيل هذا الجرد بالفعل");
-        }
-        count.setStatus(StockCountStatus.POSTED);
-        return moved;
+        return TransactionTemplate.execute(() -> {
+            dao().save(count);
+            if (dao().post(count.getId()) == 0) {
+                throw new BusinessRuleException("تم ترحيل هذا الجرد بالفعل");
+            }
+            count.setStatus(StockCountStatus.POSTED);
+            daoFactory.stockMovementDao().insertBatch(StockMovementAssembler.forStockCount(count));
+            return moved;
+        });
     }
 
     /**

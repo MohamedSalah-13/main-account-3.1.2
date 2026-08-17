@@ -2,6 +2,7 @@ package com.hamza.account.model.dao;
 
 import com.hamza.account.features.inventory.InventoryDao;
 import com.hamza.account.features.stockcount.StockCountDao;
+import com.hamza.account.features.stockledger.StockMovementDao;
 import com.hamza.account.period.PeriodLockDao;
 
 /**
@@ -48,6 +49,10 @@ public enum DaoFactory {
 
     public StockCountDao stockCountDao() {
         return new StockCountDao();
+    }
+
+    public StockMovementDao stockMovementDao() {
+        return new StockMovementDao();
     }
 
     public PeriodLockDao periodLockDao() {
