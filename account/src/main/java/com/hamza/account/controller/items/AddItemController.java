@@ -34,9 +34,12 @@ import com.hamza.controlsfx.util.ImageChoose;
 import javafx.application.Platform;
 import javafx.beans.binding.Bindings;
 import javafx.beans.binding.BooleanBinding;
+import javafx.beans.property.BooleanProperty;
+import javafx.beans.property.SimpleBooleanProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.collections.transformation.FilteredList;
+import javafx.concurrent.Task;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
 import javafx.scene.image.Image;
@@ -75,6 +78,15 @@ public class AddItemController implements AppSettingInterface {
     private final SupGroupService supGroupService = ServiceRegistry.get(SupGroupService.class);
     private final ItemsService itemsService = ServiceRegistry.get(ItemsService.class);
     private final SelPriceItemService selPriceItemService = ServiceRegistry.get(SelPriceItemService.class);
+    /**
+     * True while the write to the database - insertMultiData's transaction across
+     * the item, its opening stock row, its units and its barcodes - is in flight
+     * on a background thread. Folded into the save buttons' disable bindings so a
+     * second click cannot start a second transaction, and into the close button's
+     * so the window cannot go away out from under the callback that is still
+     * going to touch its controls.
+     */
+    private final BooleanProperty saving = new SimpleBooleanProperty(false);
     private int mainId, subId;
     @FXML
     private ComboBox<String> comboMainGroup, comboSupGroup, comboType;
@@ -86,6 +98,8 @@ public class AddItemController implements AppSettingInterface {
             labelMiniQuantity, labelMainGroup, labelSupGroup, labelType, labelFirstBalance;
     @FXML
     private TabPane tabPane;
+    @FXML
+    private Tab tabUnits;
     @FXML
     @Getter
     private Button btnAddMainGroup, btnAddSubGroup, btnSave, btnSaveDuplicate, btnClose, btnBarcode;
@@ -171,8 +185,9 @@ public class AddItemController implements AppSettingInterface {
 //        if (ADD_PACKAGE_TO_ITEMS) addPackaged();
         selectData();
 
-//        tabPane.getTabs().getFirst().setDisable(true);
-        tabPane.getSelectionModel().select(1);
+        // Was select(1) - the tab index rather than the tab. That opened on
+        // "أخرى" ("other"), not the units tab the index was meant to name.
+        tabPane.getSelectionModel().select(tabUnits);
 
         InputValidator.makeNumericOnly(textExtraBarcode);
 
@@ -325,13 +340,15 @@ public class AddItemController implements AppSettingInterface {
 
     private void action() {
 
-        btnSave.disableProperty().bind(checkEnableButton());
-        btnSaveDuplicate.disableProperty().bind(checkEnableButton().or(new BooleanBinding() {
+        btnSave.disableProperty().bind(checkEnableButton().or(saving));
+        btnSaveDuplicate.disableProperty().bind(checkEnableButton().or(saving).or(new BooleanBinding() {
             @Override
             protected boolean computeValue() {
                 return codeItem > 0;
             }
         }));
+        btnClose.disableProperty().bind(saving);
+        bindSaveTooltip();
         comboMainGroup.setItems(FXCollections.observableList(getMainGroupsNames()));
         comboMainGroup.valueProperty().addListener((observable, oldValue, newValue) -> {
             try {
@@ -539,7 +556,65 @@ public class AddItemController implements AppSettingInterface {
                 field.textProperty());
     }
 
+    /**
+     * Says why the save button is disabled, since {@link #checkEnableButton()}
+     * on its own does not: a user staring at a greyed-out button with nothing
+     * filled in wrong that they can see has no way to know what is missing.
+     * <p>
+     * The tooltip is swapped onto the button rather than left permanently
+     * installed, because an installed tooltip on a control still shows once
+     * nothing is missing - it would just be reporting nothing was wrong.
+     */
+    private void bindSaveTooltip() {
+        var missing = Bindings.createStringBinding(this::missingRequirementsMessage,
+                txtItemName.textProperty(), txtBuyPrice.textProperty(),
+                comboMainGroup.valueProperty(), comboSupGroup.valueProperty(), comboType.valueProperty());
+
+        var tooltip = new Tooltip();
+        tooltip.textProperty().bind(missing);
+
+        missing.addListener((observable, oldText, newText) -> btnSave.setTooltip(newText == null ? null : tooltip));
+        btnSave.setTooltip(missing.get() == null ? null : tooltip);
+    }
+
+    private String missingRequirementsMessage() {
+        var lm = LanguageManager.getInstance();
+        List<String> missing = new ArrayList<>();
+        if (txtItemName.getText() == null || txtItemName.getText().isBlank()) missing.add(lm.getString("column.name_item"));
+        if (DoubleSetting.parseDoubleOrDefault(txtBuyPrice.getText()) <= 0) missing.add(lm.getString("BuyPrice"));
+        if (comboMainGroup.getValue() == null) missing.add(lm.getString("mainGroup"));
+        if (comboSupGroup.getValue() == null) missing.add(lm.getString("subGroup"));
+        if (comboType.getValue() == null) missing.add(lm.getString("type"));
+
+        return missing.isEmpty() ? null
+                : lm.getString("item.tooltip.missing.fields") + ": " + String.join("، ", missing);
+    }
+
+    /**
+     * Toggles the style class the theme keys {@code .validation-error} styling
+     * off (see {@code app-theme.css}), the way {@code BuyController2} already
+     * does for its own fields.
+     */
+    private void setValidationError(Control control, boolean invalid) {
+        if (invalid) {
+            if (!control.getStyleClass().contains("validation-error")) {
+                control.getStyleClass().add("validation-error");
+            }
+        } else {
+            control.getStyleClass().remove("validation-error");
+        }
+    }
+
+    private void clearValidationErrors() {
+        setValidationError(txtItemName, false);
+        setValidationError(txtBarcode, false);
+        setValidationError(txtSelPrice, false);
+        setValidationError(comboSupGroup, false);
+    }
+
     private ItemsModel insertData() throws Exception {
+        clearValidationErrors();
+
         // Trimmed here, once, because the codes are compared in three places that
         // did not agree: this screen matched them as typed, while
         // ItemsService.isBarcodeTakenByAnotherItem trims before asking the
@@ -561,26 +636,31 @@ public class AddItemController implements AppSettingInterface {
         // name of spaces is not empty. It is empty once trimmed, which is what
         // gets stored.
         if (nameItem.isEmpty()) {
+            setValidationError(txtItemName, true);
             txtItemName.requestFocus();
             throw new UserValidationException(LanguageManager.getInstance().getString("item.error.name.required"));
         }
 
         if (barcode.isEmpty() || barcode.equals("0")) {
+            setValidationError(txtBarcode, true);
             txtBarcode.requestFocus();
             throw new UserValidationException(LanguageManager.getInstance().getString("msg.insert.all"));
         }
 
         if (barcode.length() > 14) {
+            setValidationError(txtBarcode, true);
             txtBarcode.requestFocus();
             throw new UserValidationException(LanguageManager.getInstance().getString("item.error.barcode.too.long"));
         }
 
         if (selPrice1 <= buy) {
+            setValidationError(txtSelPrice, true);
             txtSelPrice.requestFocus();
             throw new UserValidationException(LanguageManager.getInstance().getString("item.error.sell.not.above.buy"));
         }
 
         if (subId <= 0) {
+            setValidationError(comboSupGroup, true);
             comboSupGroup.requestFocus();
             throw new UserValidationException(LanguageManager.getInstance().getString("item.error.group.required"));
         }
@@ -658,36 +738,68 @@ public class AddItemController implements AppSettingInterface {
 
     private void saveData(boolean isDuplicate) {
         try {
-            if (AllAlerts.confirmSave()) {
-                var itemsModel = insertData();
-                var i = itemsService.updateItem(itemsModel);
-                if (i == 1) {
-                    if (eventBus != null) eventBus.publish(new ItemSaved(itemsModel));
-                    tableUnits.getItems().clear();
-                    listExtraBarcodes.getItems().clear();
-                    AllAlerts.alertSave();
-                    imageAdd.setImage(null);
-                    if (!isDuplicate) {
-                        // The second and third selling prices were left out, so they
-                        // carried over onto the next item entered - unseen, since the
-                        // fields still read as the price of an item already saved.
-                        clearAll(txtCode, txtBarcode, txtItemName, txtBalance, txtBuyPrice,
-                                txtSelPrice, txtSelPrice2, txtSelPrice3, txtMiniQuantity);
-                        // The form is a blank item again, and a blank item has moved
-                        // nothing - so the opening balance is open for entry.
-                        lockOpeningBalanceIfItemHasMoved(0);
-                    }
-                    addBarcode();
-                    getFocusToName();
-
-                    // close after update
-                    if (codeItem > 0) {
-                        btnClose.fire();
-                    }
-                }
-            }
+            if (!AllAlerts.confirmSave()) return;
+            // insertData reads and marks @FXML controls on a failed check, which is
+            // only safe from the FX thread, so validation - including the barcode
+            // uniqueness reads it makes along the way - stays synchronous here.
+            var itemsModel = insertData();
+            runSaveTask(itemsModel, isDuplicate);
         } catch (Exception e) {
             logError(e);
+        }
+    }
+
+    /**
+     * Runs the write itself - {@code insertMultiData}'s transaction across the
+     * item, its opening stock row, its units and its barcodes - off the FX
+     * thread, so a slow connection does not freeze the dialog underneath it.
+     * {@code saving} keeps a second click from starting a second transaction
+     * while this one is in flight.
+     */
+    private void runSaveTask(ItemsModel itemsModel, boolean isDuplicate) {
+        Task<Integer> task = new Task<>() {
+            @Override
+            protected Integer call() throws DaoException {
+                return itemsService.updateItem(itemsModel);
+            }
+        };
+        task.setOnSucceeded(event -> {
+            saving.set(false);
+            onItemSaved(itemsModel, task.getValue(), isDuplicate);
+        });
+        task.setOnFailed(event -> saving.set(false));
+        AllAlerts.handleTaskFailure(LanguageManager.getInstance().getString("item.dialog.save.title"), task);
+
+        saving.set(true);
+        Thread thread = new Thread(task, "item-save");
+        thread.setDaemon(true);
+        thread.start();
+    }
+
+    private void onItemSaved(ItemsModel itemsModel, int rowsAffected, boolean isDuplicate) {
+        if (rowsAffected != 1) return;
+
+        if (eventBus != null) eventBus.publish(new ItemSaved(itemsModel));
+        tableUnits.getItems().clear();
+        listExtraBarcodes.getItems().clear();
+        AllAlerts.alertSave();
+        imageAdd.setImage(null);
+        if (!isDuplicate) {
+            // The second and third selling prices were left out, so they
+            // carried over onto the next item entered - unseen, since the
+            // fields still read as the price of an item already saved.
+            clearAll(txtCode, txtBarcode, txtItemName, txtBalance, txtBuyPrice,
+                    txtSelPrice, txtSelPrice2, txtSelPrice3, txtMiniQuantity);
+            // The form is a blank item again, and a blank item has moved
+            // nothing - so the opening balance is open for entry.
+            lockOpeningBalanceIfItemHasMoved(0);
+        }
+        addBarcode();
+        getFocusToName();
+
+        // close after update
+        if (codeItem > 0) {
+            btnClose.fire();
         }
     }
 

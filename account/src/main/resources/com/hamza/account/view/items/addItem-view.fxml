@@ -120,7 +120,7 @@
 
                                 <TabPane fx:id="tabPane" minHeight="-Infinity" minWidth="-Infinity" styleClass="items-tab-pane" tabClosingPolicy="UNAVAILABLE">
                                     <tabs>
-                                        <Tab text="%tab.units">
+                                        <Tab fx:id="tabUnits" text="%tab.units">
                                             <content>
                                                 <VBox spacing="12.0" styleClass="app-card">
                                                     <children>
@@ -177,13 +177,12 @@
                                                         <HBox spacing="14.0">
                                                             <children>
                                                                 <CheckBox fx:id="checkItemActive" minWidth="-Infinity" mnemonicParsing="false" text="%item.active" />
-                                                                <CheckBox fx:id="checkItemActive1" minWidth="-Infinity" mnemonicParsing="false" text="%item.has.weight" />
                                                             </children>
                                                         </HBox>
 
-                                                        <CheckBox fx:id="checkItemValidate" disable="true" minWidth="-Infinity" mnemonicParsing="false" text="%item.validate.enabled" />
+                                                        <CheckBox fx:id="checkItemValidate" minWidth="-Infinity" mnemonicParsing="false" text="%item.validate.enabled" />
 
-                                                        <GridPane fx:id="gridValidate" disable="true" hgap="12.0" vgap="12.0">
+                                                        <GridPane fx:id="gridValidate" hgap="12.0" vgap="12.0">
                                                             <columnConstraints>
                                                                 <ColumnConstraints minWidth="120.0" />
                                                                 <ColumnConstraints minWidth="120.0" />
