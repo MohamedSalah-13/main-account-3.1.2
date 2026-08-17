@@ -27,7 +27,7 @@ mvn -o -pl account -am test -Dtest=ScheduledBackupTest -Dsurefire.failIfNoSpecif
 
 **Coverage is real but uneven — know which half you are in.** JUnit 5 and Mockito are declared in the
 root pom and inherited by both modules; surefire needs no configuration. `mvn clean test` currently runs
-**632 tests across ~60 classes** — 92 in `controlsfx`, 540 in `account` — with 4 skipped (below). What is
+**688 tests across ~64 classes** — 92 in `controlsfx`, 596 in `account` — with 13 skipped (below). What is
 genuinely covered:
 
 - **The declarative specs, pinned character for character** — `DocumentDaoStatementsTest`,
@@ -43,9 +43,12 @@ genuinely covered:
 What still has none: the controllers, the FXML screens, the reports, the trial logic, and most of the
 `model/dao` write paths.
 
-**Two tests do not run by default.** `InvoiceStockDatabaseAcceptanceTest` and
-`DocumentLineDatabaseAcceptanceTest` are gated on `-Daccount.db.acceptance=true` and need a reachable
-MySQL. A green `mvn clean test` has not run them.
+**Five classes do not run by default.** `InvoiceStockDatabaseAcceptanceTest`,
+`DocumentLineDatabaseAcceptanceTest`, `StockLedgerReconciliationAcceptanceTest`,
+`TotalDocumentDeleteReversesStockLedgerAcceptanceTest` and `PartyLedgerViewAcceptanceTest` are gated on
+`-Daccount.db.acceptance=true` and need a reachable MySQL. A green `mvn clean test` has not run them.
+The last of those is the only check that the accounting views say what `DocumentLedgerEffect` says, so
+**run it after touching `R__views.sql`** — the whole return-ledger defect lived where no test could see it.
 
 So a passing build now means more than it did, but still not that a screen works: state what was and was
 not checked, and remember that verifying UI behaviour means running the app against a database.
@@ -228,6 +231,21 @@ to take the period filter and drop it, and the customer's dated statement select
 its mapper read nine, so it failed in the mapper and the service logged it and returned an empty list.
 An unknown `information` value is refused by `TableName.requireById` with the value in the message,
 rather than reaching a caller as a bare `NullPointerException` from inside a row mapper.
+
+**What a document does to an account and to a till is `DocumentLedgerEffect`, and it is one rule, not
+four.** The cash column (`paid_up`/`paid_from_treasury`/`paid_to_treasury`) is what the treasury moved,
+in the direction `DocumentType.cashDirection()` declares; whatever it did not cover (`net - paid`) went
+onto the party's account, in the direction `DocumentType.ledgerSign()` declares. **It does not branch on
+`invoice_type`** — a cash document simply stores `paid = net`, so its account effect works out to zero on
+its own. Writing that branch by hand is what went wrong: the two account views and `treasury_balance`
+each decided a deferred return for themselves and ended up reading its cash column with two opposite
+meanings, one as the refund and one as the account credit. They were self-consistent under an
+*undocumented* convention that the stored rows also followed, so client books balanced — but nothing said
+so anywhere, and a partial refund produced nonsense. `V15__return_cash_split.sql` swapped the two halves
+of every deferred return so the column finally means what its name says, and
+`PartyLedgerViewAcceptanceTest` holds the three views to the rule against a real database.
+`totalsBetweenDatesSql()` filters `purchase <> 0` rather than `> 0` for the same reason: a return's
+`purchase` is negative, and `> 0` would report a period's receivables without the credits raised in it.
 
 **Changing a column means changing the spec, and `DocumentDaoStatementsTest` will tell you.** It pins
 every statement of all eight DAOs character for character, and pins the array bound to each against the
@@ -549,7 +567,7 @@ Schema changes are **Flyway migrations**, in `account/src/main/resources/db/migr
 - `V1__baseline.sql` is the schema as shipped to clients in v4.1.3 — tables, indexes, procedures and the
   seed data (including the `admin` user, without which nobody can log in). It is the Flyway baseline: an
   existing client database is **stamped** with it, never executed, because it already is that schema. A
-  new database executes it and continues with `V2`, `V3`, … The current head is `V14`.
+  new database executes it and continues with `V2`, `V3`, … The current head is `V15`.
 - Everything after it is one file per change. **Never fold a migration back into `V1`** and never edit a
   migration that has shipped — a client that already ran it will not run it again, so the change would
   reach new installs only.

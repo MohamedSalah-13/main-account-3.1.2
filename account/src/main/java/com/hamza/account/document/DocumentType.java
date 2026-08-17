@@ -167,6 +167,20 @@ public enum DocumentType {
     }
 
     /**
+     * Which way it moves the party's outstanding balance: an invoice adds what it did
+     * not settle in cash, a return takes the same amount off again.
+     * <p>
+     * The third sign, beside {@link #stockSign()} and {@link #cashSign()}, and the one
+     * that had never been written down - {@code account_customer_table} and
+     * {@code account_suppliers_table} each decided it for themselves with an
+     * {@code IF(invoice_type = 1, ...)}, and both got the deferred return backwards.
+     * See {@link DocumentLedgerEffect}, which is where it is now applied.
+     */
+    public int ledgerSign() {
+        return isReturn ? -1 : +1;
+    }
+
+    /**
      * Whether the document carries a delegate. Only the sales side does -
      * {@code total_buy} and {@code total_buy_re} have no {@code delegate_id} column,
      * which is why the supplier screens never ask for one.

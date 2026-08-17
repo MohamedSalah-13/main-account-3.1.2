@@ -189,14 +189,18 @@ class PartyLedgerStatementsTest {
             assertTrue(sql.contains("GROUP BY ac.account_code, s.name"), sql);
         }
 
-        /** Both take the period as two bound parameters, and both keep purchase > 0. */
+        /** Both take the period as two bound parameters, and both filter on purchase. */
         @Test
         void bothBindTheirPeriod() {
             for (String sql : new String[]{customers.totalsBetweenDatesSql(), suppliers.totalsBetweenDatesSql()}) {
                 assertEquals(2, sql.chars().filter(c -> c == '?').count(), sql);
                 assertTrue(sql.contains("BETWEEN ? AND ?"), sql);
-                // A party who only paid in the period, and bought nothing, is not listed.
-                assertTrue(sql.contains(".purchase > 0"), sql);
+                // A party who only paid in the period, and moved no goods, is not listed.
+                assertTrue(sql.contains(".purchase <> 0"), sql);
+                // Not > 0: a return's purchase is negative, and dropping it would report
+                // a period's receivables without the credits raised in it. See
+                // PartyLedgerSpec.totalsBetweenDatesSql and DocumentLedgerEffect.
+                assertFalse(sql.contains(".purchase > 0"), sql);
             }
         }
 

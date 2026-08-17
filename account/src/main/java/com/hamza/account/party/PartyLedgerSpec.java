@@ -193,9 +193,18 @@ public record PartyLedgerSpec(
      * Two things it inherits from the query it replaced, both worth knowing. It selects
      * the same columns the totals view does - including the area, for a customer, which
      * is what the mapper reads and what the old query forgot, so a dated summary came
-     * back empty however many payments were in the period. And it keeps
-     * {@code purchase > 0}: a party who only paid in that period, and bought nothing,
-     * is not on the list.
+     * back empty however many payments were in the period. And it filters on
+     * {@code purchase}: a party who only paid in that period, and moved no goods, is not
+     * on the list.
+     * <p>
+     * That filter is {@code purchase <> 0} rather than {@code purchase > 0}, which is
+     * the one thing here that is not inherited. A return's {@code purchase} is negative
+     * since the views were corrected (see {@code DocumentLedgerEffect}), so
+     * {@code > 0} would drop the return rows out of the aggregate and report a period's
+     * receivables without the credits raised in it - the very figure this change set out
+     * to fix. A payment's {@code purchase} is zero either way, so who appears on the list
+     * is unchanged for everyone except a party whose only movement in the period was a
+     * return, and they belong on it.
      */
     public String totalsBetweenDatesSql() {
         String a = ledgerAlias;
@@ -209,7 +218,7 @@ public record PartyLedgerSpec(
                        MAX(%1$s.account_date)                                               AS account_date%3$s
                 FROM %4$s %1$s
                          JOIN %5$s %2$s ON %1$s.account_code = %2$s.id%6$s
-                WHERE %1$s.account_date BETWEEN ? AND ? AND %1$s.purchase > 0
+                WHERE %1$s.account_date BETWEEN ? AND ? AND %1$s.purchase <> 0
                 GROUP BY %1$s.account_code, %2$s.name%7$s"""
                 .formatted(a, partyAlias,
                         withArea ? ",\n                       ta.id                                                                AS area_id,"

@@ -393,14 +393,22 @@ SELECT invoice_number,
        0           AS numberInv
 FROM total_sales
 UNION ALL
--- إذا كانت الفاتورة نقدا يتم خصم كل المدفوع
--- واذا كانت اجل: مبلغ من الخزينة ومبلغ من الحساب
+-- مرتجع المبيعات: عكس فاتورة البيع بالضبط، بإشارة سالبة على الأعمدة الثلاثة.
+--
+-- ما ردته الخزينة نقدا هو paid_from_treasury، والباقي (الصافي ناقص المدفوع) هو ما
+-- يُخصم من حساب العميل. لا حاجة للتفريق بين نقدي وآجل: الفاتورة النقدية تُخزَّن
+-- بـ paid = الصافي (InvoicePaymentTerms)، فيخرج أثر الحساب صفرا من تلقاء نفسه.
+--
+-- ما كان هنا قبل ذلك: IF(invoice_type = 1, total, 0) - أي أن مرتجعا آجلا لا يحرك
+-- رصيد العميل إطلاقا، فيظل مدينا بما ردّه؛ بينما treasury_balance كان يصرف نفس
+-- المبلغ من خزينة لم تُفتح. المبلغان كانا متبادلين. انظر DocumentLedgerEffect،
+-- و PartyLedgerViewAcceptanceTest يثبت اتفاق هذا الاستعلام معه.
 SELECT tsr.id,
        tsr.sup_id,
        tsr.invoice_date,
-       IF(tsr.invoice_type = 1, tsr.total, 0),
-       IF(tsr.invoice_type = 1, tsr.discount, 0),
-       tsr.paid_from_treasury,
+       -tsr.total,
+       -tsr.discount,
+       -tsr.paid_from_treasury,
        tsr.notes,
        4                    AS information,
        tsr.invoice_type     AS type,
@@ -456,12 +464,15 @@ SELECT invoice_number,
        0            AS numberInv
 FROM total_buy
 UNION ALL
+-- مرتجع المشتريات: نفس قاعدة مرتجع المبيعات معكوسة الطرف - ما قبضته الخزينة هو
+-- paid_to_treasury، والباقي يُخصم مما ندين به للمورد. الشرح الكامل عند مرتجع
+-- المبيعات في account_customer_table أعلاه، والقاعدة واحدة في DocumentLedgerEffect.
 SELECT tbr.id,
        tbr.sup_id,
        tbr.invoice_date,
-       IF(tbr.invoice_type = 1, tbr.total, 0),
-       IF(tbr.invoice_type = 1, tbr.discount, 0),
-       tbr.paid_to_treasury,
+       -tbr.total,
+       -tbr.discount,
+       -tbr.paid_to_treasury,
        tbr.notes,
        4                AS information,
        tbr.invoice_type AS type,
@@ -690,9 +701,13 @@ WITH cte_union_data AS (SELECT invoice_number AS id_no,
                                'المشتريات'    AS information
                         FROM total_buy
                         UNION ALL
+                        -- ما دخل الخزينة فعلا هو العمود النقدي وحده، في المرتجع كما في
+                        -- الفاتورة. كان هنا IF(invoice_type = 1, ...) يحمّل الخزينة في
+                        -- الحالة الآجلة بالجزء الذي يخص حساب المورد لا الخزينة - انظر
+                        -- DocumentLedgerEffect.
                         SELECT id,
                                invoice_date,
-                               IF(invoice_type = 1, paid_to_treasury, total - discount - paid_to_treasury) AS income,
+                               paid_to_treasury AS income,
                                0              AS output,
                                treasury_id,
                                date_insert,
@@ -710,10 +725,12 @@ WITH cte_union_data AS (SELECT invoice_number AS id_no,
                                'المبيعات'
                         FROM total_sales
                         UNION ALL
+                        -- وكذلك ما خرج منها: paid_from_treasury وحده. المبلغ الآجل يخص
+                        -- حساب العميل، ويظهر هناك في account_customer_table.
                         SELECT id,
                                invoice_date,
                                0,
-                               IF(invoice_type = 1, paid_from_treasury, total - discount - paid_from_treasury) AS output,
+                               paid_from_treasury AS output,
                                treasury_id,
                                date_insert,
                                user_id,
