@@ -7,6 +7,8 @@ import com.hamza.account.controller.main.DataPublisher;
 import com.hamza.account.controller.main.LoadData;
 import com.hamza.account.controller.main.MainItems;
 import com.hamza.account.controller.reports.*;
+import com.hamza.account.features.returns.JdbcReturnableRepository;
+import com.hamza.account.features.returns.ReturnReasonReportService;
 import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.openFxml.OpenFxmlApplication;
 import com.hamza.account.authorization.AppPermissions;
@@ -109,6 +111,27 @@ public class ReportsButtons extends LoadData {
             @Override
             public boolean showOnTapPane() {
                 return true;
+            }
+        };
+    }
+
+    public ButtonWithPerm returnReasonsReport() {
+        return new ButtonWithPerm() {
+            @Override
+            public PermissionKey getPermissionType() {
+                return AppPermissions.REPORTS_SHOW_RETURNS;
+            }
+
+            @Override
+            public void action() {
+                var service = new ReturnReasonReportService(new JdbcReturnableRepository());
+                DialogReturnReasonsReport.show(service);
+            }
+
+            @NotNull
+            @Override
+            public String textName() {
+                return LanguageManager.getInstance().getString("report.returns.reasons.title");
             }
         };
     }

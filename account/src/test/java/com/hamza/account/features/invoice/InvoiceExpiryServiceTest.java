@@ -233,6 +233,12 @@ class InvoiceExpiryServiceTest {
         public Optional<Integer> sourceDelegateId(int sourceSalesInvoiceNumber) {
             throw new UnsupportedOperationException();
         }
+
+        @Override
+        public List<ReasonCount> reasonCounts(
+                DocumentType returnType, LocalDate from, LocalDate to) {
+            throw new UnsupportedOperationException();
+        }
     }
 
     private static ItemsModel expiryTrackedItem() {

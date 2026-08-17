@@ -31,8 +31,10 @@ import com.hamza.account.features.invoice.InvoiceSaveService;
 import com.hamza.account.features.invoice.InvoiceSaveValidator;
 import com.hamza.account.features.invoice.InvoiceValidationException;
 import com.hamza.account.features.invoice.ReturnLineSelectionService;
+import com.hamza.account.features.invoice.ReturnedStatusService;
 import com.hamza.account.features.notification.StockLevelAlert;
 import com.hamza.account.features.returns.JdbcReturnableRepository;
+import com.hamza.account.features.returns.ReturnReason;
 import com.hamza.account.interfaces.api.DataInterface;
 import com.hamza.account.interfaces.api.TotalsDataInterface;
 import com.hamza.account.model.base.BaseAccount;
@@ -145,9 +147,13 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
     private TextArea txtNotes;
     @FXML
     private Label labelTitle;
+    @FXML
+    private Label labelReturnedBadge;
     private MaskerPaneSetting maskerPaneSetting;
     private final ReturnLineSelectionService returnLineSelectionService;
+    private final ReturnedStatusService returnedStatusService;
     private int sourceInvoiceNumber;
+    private ReturnReason selectedReturnReason;
 
     public BuyController2(DataInterface<T1, T2, T3, T4> dataInterface, int numInvoiceUpdate) throws Exception {
         super(dataInterface, numInvoiceUpdate);
@@ -173,6 +179,11 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
                         new JdbcReturnableRepository(),
                         itemsService::findItemById)
                 : null;
+        // The badge only has something to say on a sale or purchase's own screen -
+        // a return screen has nothing to report about itself.
+        this.returnedStatusService = dataInterface.designInterface().documentType().isReturn()
+                ? null
+                : new ReturnedStatusService(new JdbcReturnableRepository());
     }
 
     @Override
@@ -405,6 +416,7 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
             }
             table.refresh();
             sourceInvoiceNumber = invoiceNumber;
+            selectedReturnReason = result.get().reason();
             if (dataInterface.designInterface().documentType() == DocumentType.SALES_RETURN) {
                 var delegateId = returnLineSelectionService.sourceDelegateId(invoiceNumber);
                 if (delegateId.isPresent()) {
@@ -582,9 +594,45 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
             txtPaid.setText(String.valueOf(dataById.getPaid()));
             txtNotes.setText(dataById.getNotes());
             txtOtherDiscount.setText(String.valueOf(dataById.getDiscount()));
+            updateReturnedBadge(id);
         } catch (Exception e) {
             logError(e);
         }
+    }
+
+    /**
+     * "returned: N of M" on a saved sale or purchase, once anything has been returned
+     * against it - nothing to show for a return screen itself, or an invoice nobody
+     * has touched. Reads through {@link ReturnedStatusService}, the same numbers
+     * {@code ReturnGuard} already computes from the other direction.
+     */
+    private void updateReturnedBadge(int invoiceNumber) {
+        if (returnedStatusService == null) {
+            return;
+        }
+        try {
+            var status = returnedStatusService.statusOf(
+                    dataInterface.designInterface().documentType(), invoiceNumber);
+            if (!status.hasAnyReturn()) {
+                labelReturnedBadge.setVisible(false);
+                labelReturnedBadge.setManaged(false);
+                return;
+            }
+            String key = status.isFullyReturned()
+                    ? "invoice.returned.badge.full"
+                    : "invoice.returned.badge.partial";
+            labelReturnedBadge.setText(LanguageManager.getInstance().getString(key,
+                    quantityText(status.returnedBaseQuantity()),
+                    quantityText(status.soldBaseQuantity())));
+            labelReturnedBadge.setVisible(true);
+            labelReturnedBadge.setManaged(true);
+        } catch (Exception e) {
+            logError(e);
+        }
+    }
+
+    private static String quantityText(double value) {
+        return MoneyMath.text(java.math.BigDecimal.valueOf(value));
     }
 
     private void saveInvoice(boolean print) {
@@ -622,7 +670,7 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
                 txtNotes.getText(), codeAccount, textSearchName.get(),
                 comboTreasury.getSelectionModel().getSelectedItem(),
                 comboDelegate.getSelectionModel().getSelectedItem(),
-                getSelWithoutBalance(), sourceInvoiceNumber,
+                getSelWithoutBalance(), sourceInvoiceNumber, selectedReturnReason,
                 List.copyOf(table.getItems()));
     }
 
@@ -804,6 +852,9 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
         radioCash.setSelected(true);
         radioDeffer.setSelected(false);
         sourceInvoiceNumber = 0;
+        selectedReturnReason = null;
+        labelReturnedBadge.setVisible(false);
+        labelReturnedBadge.setManaged(false);
     }
 
     private void publisherData() {

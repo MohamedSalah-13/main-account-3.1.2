@@ -207,5 +207,11 @@ class ReturnLineSelectionServiceTest {
         public Optional<Integer> sourceDelegateId(int sourceSalesInvoiceNumber) {
             return Optional.ofNullable(delegateId);
         }
+
+        @Override
+        public List<ReasonCount> reasonCounts(
+                DocumentType returnType, LocalDate from, LocalDate to) {
+            throw new UnsupportedOperationException("not used by ReturnLineSelectionService");
+        }
     }
 }

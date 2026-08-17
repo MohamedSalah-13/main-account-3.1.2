@@ -35,6 +35,7 @@
                                       <Label styleClass="app-subtitle" text="%invoice.subtitle" />
                                   </children>
                               </VBox>
+                              <Label fx:id="labelReturnedBadge" styleClass="warning-button" visible="false" managed="false" />
                               <Region HBox.hgrow="SOMETIMES" />
                               <Button fx:id="btnNew" mnemonicParsing="false" styleClass="primary-button" text="جديد" />
                               <Button fx:id="btnSearch" mnemonicParsing="false" styleClass="neutral-button" text="بحث" />

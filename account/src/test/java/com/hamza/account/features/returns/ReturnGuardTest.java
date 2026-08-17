@@ -159,5 +159,12 @@ class ReturnGuardTest {
             calls.add("sourceDelegateId");
             return java.util.Optional.empty();
         }
+
+        @Override
+        public List<ReasonCount> reasonCounts(
+                DocumentType returnType, java.time.LocalDate from, java.time.LocalDate to) {
+            calls.add("reasonCounts");
+            return List.of();
+        }
     }
 }

@@ -10,32 +10,34 @@ import java.sql.PreparedStatement;
 import java.sql.SQLException;
 
 /**
- * Stamps {@code source_invoice_number} onto a return's header, still inside the
- * transaction {@code InvoiceSaveService.persist} is already in - the second write after
- * the header's own insert/update, in the shape {@code writeStockMovements} already is
- * in that class.
+ * Stamps {@code source_invoice_number} and {@code return_reason} onto a return's
+ * header, still inside the transaction {@code InvoiceSaveService.persist} is already
+ * in - the second write after the header's own insert/update, in the shape
+ * {@code writeStockMovements} already is in that class.
  * <p>
- * A dedicated statement rather than a new column on {@code InvoiceBuy.object_Totals}:
+ * A dedicated statement rather than new columns on {@code InvoiceBuy.object_Totals}:
  * that seam is generic across all four {@code impl_dataInterface} implementations
- * (see {@code CLAUDE.md}'s note on {@code DataInterface}), and widening it for two
- * columns that only the return families have would touch the sales and purchase sides
- * for nothing. This writes directly through {@link DocumentTableSpec}, the same way
+ * (see {@code CLAUDE.md}'s note on {@code DataInterface}), and two columns that only
+ * the return families have would touch the sales and purchase sides for nothing. This
+ * writes directly through {@link DocumentTableSpec}, the same way
  * {@link JdbcReturnableRepository} reads through it.
  */
 public final class ReturnSourceWriter {
 
     public void writeSource(DocumentType returnType, int invoiceNumber,
-                            int sourceInvoiceNumber) throws DaoException {
+                            int sourceInvoiceNumber, ReturnReason reason) throws DaoException {
         if (sourceInvoiceNumber <= 0) {
             return;
         }
         DocumentTableSpec spec = DocumentTableSpec.of(returnType);
-        String sql = "UPDATE " + spec.table() + " SET source_invoice_number = ? WHERE "
+        String sql = "UPDATE " + spec.table()
+                + " SET source_invoice_number = ?, return_reason = ? WHERE "
                 + spec.key() + " = ?";
         int affected = withConnection(connection -> {
             try (PreparedStatement statement = connection.prepareStatement(sql)) {
                 statement.setInt(1, sourceInvoiceNumber);
-                statement.setInt(2, invoiceNumber);
+                statement.setString(2, reason == null ? null : reason.storedValue());
+                statement.setInt(3, invoiceNumber);
                 return statement.executeUpdate();
             }
         });

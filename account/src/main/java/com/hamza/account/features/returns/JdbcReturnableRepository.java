@@ -5,11 +5,13 @@ import com.hamza.account.document.DocumentType;
 import com.hamza.controlsfx.database.ConnectionManager;
 import com.hamza.controlsfx.database.DaoException;
 
+import java.math.BigDecimal;
 import java.sql.Connection;
 import java.sql.Date;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -177,6 +179,32 @@ public final class JdbcReturnableRepository implements ReturnableRepository {
                     return rows.wasNull() ? Optional.empty() : Optional.of(delegateId);
                 }
             }
+        });
+    }
+
+    @Override
+    public List<ReasonCount> reasonCounts(DocumentType returnType, LocalDate from, LocalDate to)
+            throws DaoException {
+        DocumentTableSpec spec = DocumentTableSpec.of(returnType);
+        String sql = "SELECT return_reason, COUNT(*) AS return_count, SUM(total) AS total_amount"
+                + " FROM " + spec.table() + " WHERE " + spec.dateColumn()
+                + " BETWEEN ? AND ? GROUP BY return_reason ORDER BY return_reason";
+        return withConnection(connection -> {
+            List<ReasonCount> counts = new ArrayList<>();
+            try (PreparedStatement statement = connection.prepareStatement(sql)) {
+                statement.setObject(1, from);
+                statement.setObject(2, to);
+                try (ResultSet rows = statement.executeQuery()) {
+                    while (rows.next()) {
+                        String stored = rows.getString("return_reason");
+                        BigDecimal total = rows.getBigDecimal("total_amount");
+                        counts.add(new ReasonCount(ReturnReason.fromStoredValue(stored),
+                                rows.getInt("return_count"),
+                                total == null ? BigDecimal.ZERO : total));
+                    }
+                }
+            }
+            return counts;
         });
     }
 

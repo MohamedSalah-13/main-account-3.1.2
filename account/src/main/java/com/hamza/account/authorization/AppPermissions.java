@@ -111,6 +111,7 @@ public final class AppPermissions {
     public static final PermissionKey REPORTS_SHOW_DAY_DETAILS = key("reports.show.day.details");
     public static final PermissionKey REPORTS_SHOW_DELEGATE = key("reports.show.delegate");
     public static final PermissionKey REPORTS_SHOW_PROFIT = key("reports.show.profit");
+    public static final PermissionKey REPORTS_SHOW_RETURNS = key("reports.show.returns");
     public static final PermissionKey STOCK_COUNT_SHOW = key("stock.count.show");
     public static final PermissionKey STOCK_COUNT_POST = key("stock.count.post");
     public static final PermissionKey ACCOUNTING_LOCK_MANAGE = key("accounting.lock.manage");

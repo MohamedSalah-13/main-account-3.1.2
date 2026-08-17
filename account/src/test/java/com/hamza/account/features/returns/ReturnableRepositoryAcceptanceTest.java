@@ -85,7 +85,7 @@ class ReturnableRepositoryAcceptanceTest {
             int firstReturn = nextId(transaction, "total_sales_re", "id");
             insertSalesReturnHeader(transaction, firstReturn);
             insertSalesReturnLine(transaction, firstReturn, itemId, 4);
-            WRITER.writeSource(DocumentType.SALES_RETURN, firstReturn, sales);
+            WRITER.writeSource(DocumentType.SALES_RETURN, firstReturn, sales, null);
 
             assertEquals(sales, sourceInvoiceOf(transaction, firstReturn));
 
@@ -254,6 +254,67 @@ class ReturnableRepositoryAcceptanceTest {
     }
 
     @Test
+    void writeSourceStampsTheReasonAndReasonCountsGroupsByIt() throws Exception {
+        Connection transaction = ConnectionManager.beginTransaction();
+        assertNotNull(transaction);
+        try {
+            int itemId = insertItem(transaction);
+            int sales = nextId(transaction, "total_sales", "invoice_number");
+            insertSalesHeader(transaction, sales);
+            insertSalesLine(transaction, sales, itemId, 10);
+
+            int damaged = nextId(transaction, "total_sales_re", "id");
+            insertSalesReturnHeader(transaction, damaged);
+            insertSalesReturnLine(transaction, damaged, itemId, 2);
+            WRITER.writeSource(DocumentType.SALES_RETURN, damaged, sales, ReturnReason.DAMAGED);
+
+            int wrongItem = nextId(transaction, "total_sales_re", "id");
+            insertSalesReturnHeader(transaction, wrongItem);
+            insertSalesReturnLine(transaction, wrongItem, itemId, 3);
+            WRITER.writeSource(DocumentType.SALES_RETURN, wrongItem, sales, ReturnReason.WRONG_ITEM);
+
+            int noReason = nextId(transaction, "total_sales_re", "id");
+            insertSalesReturnHeader(transaction, noReason);
+            insertSalesReturnLine(transaction, noReason, itemId, 1);
+            // No writeSource call at all - a free return, exactly like every return
+            // before this feature existed. Its reason column stays NULL.
+
+            var damagedReason = readReturnReason(transaction, damaged);
+            assertEquals("DAMAGED", damagedReason);
+
+            List<ReturnableRepository.ReasonCount> counts = REPOSITORY.reasonCounts(
+                    DocumentType.SALES_RETURN, LocalDate.now().minusDays(1), LocalDate.now().plusDays(1));
+
+            var byReason = new java.util.HashMap<ReturnReason, ReturnableRepository.ReasonCount>();
+            int nullReasonCount = 0;
+            for (var count : counts) {
+                if (count.reason() == null) {
+                    nullReasonCount += count.count();
+                } else {
+                    byReason.put(count.reason(), count);
+                }
+            }
+            assertEquals(1, byReason.get(ReturnReason.DAMAGED).count());
+            assertEquals(1, byReason.get(ReturnReason.WRONG_ITEM).count());
+            assertTrue(nullReasonCount >= 1);
+        } finally {
+            transaction.rollback();
+            ConnectionManager.endTransaction(transaction);
+        }
+    }
+
+    private static String readReturnReason(Connection connection, int id) throws Exception {
+        try (PreparedStatement statement = connection.prepareStatement(
+                "SELECT return_reason FROM total_sales_re WHERE id = ?")) {
+            statement.setInt(1, id);
+            try (ResultSet rows = statement.executeQuery()) {
+                assertTrue(rows.next());
+                return rows.getString(1);
+            }
+        }
+    }
+
+    @Test
     void theGuardRefusesASecondReturnThatWouldExceedWhatTheFirstLeft() throws Exception {
         Connection transaction = ConnectionManager.beginTransaction();
         assertNotNull(transaction);
@@ -266,7 +327,7 @@ class ReturnableRepositoryAcceptanceTest {
             int firstReturn = nextId(transaction, "total_sales_re", "id");
             insertSalesReturnHeader(transaction, firstReturn);
             insertSalesReturnLine(transaction, firstReturn, itemId, 5);
-            WRITER.writeSource(DocumentType.SALES_RETURN, firstReturn, sales);
+            WRITER.writeSource(DocumentType.SALES_RETURN, firstReturn, sales, null);
 
             ReturnGuard guard = new ReturnGuard(REPOSITORY);
             com.hamza.account.model.domain.Sales_Return line =

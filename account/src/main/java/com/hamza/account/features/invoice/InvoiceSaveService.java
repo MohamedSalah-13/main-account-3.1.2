@@ -154,8 +154,8 @@ public final class InvoiceSaveService<
             throw new DaoException("لم يتم حفظ الفاتورة؛ لم تؤثر العملية في سجل واحد");
         }
         if (documentType.isReturn()) {
-            returnSourceWriter.writeSource(
-                    documentType, invoiceNumber, command.sourceInvoiceNumber());
+            returnSourceWriter.writeSource(documentType, invoiceNumber,
+                    command.sourceInvoiceNumber(), command.returnReason());
         }
         writeStockMovements(invoiceNumber, command, persistedLines,
                 invoice.getUsers() == null ? null : invoice.getUsers().getId());

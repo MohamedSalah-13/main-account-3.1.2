@@ -201,6 +201,7 @@
                                                                 <Button fx:id="btnReportDetails" mnemonicParsing="false" text="Details Report" />
                                                                 <Button fx:id="btnReportYearly" mnemonicParsing="false" text="Yearly Report" />
                                                                 <Button fx:id="btnReportProfitLoss" mnemonicParsing="false" text="Profit Loss" />
+                                                                <Button fx:id="btnReportReturnReasons" mnemonicParsing="false" text="Return Reasons" />
                                                             </children>
                                                         </VBox>
                                                     </content>

@@ -76,6 +76,7 @@ public class MainScreenController extends MainItems implements Initializable {
             btnTreasuryDetails, btnProcess, btnExpenses,
             btnReportSummary, btnReportItems, btnReportItemsDaily, btnReportSalesByYear, btnReportPurchaseByYear,
             btnReportCustomPaid, btnReportSuppliersPaid, btnReportDetails, btnReportYearly, btnReportProfitLoss,
+            btnReportReturnReasons,
             btnHome, btnSetting, btnShiftReports, btnBackup, btnDeleteData, btnAbout, btnClose;
     @FXML
     private TitledPane paneEmployees, paneSetting;
@@ -247,6 +248,7 @@ public class MainScreenController extends MainItems implements Initializable {
         menuButtonSetting.configureButton(btnReportDetails, getReportsButtons().detailsReport());
         menuButtonSetting.configureButton(btnReportYearly, getReportsButtons().reportYearly());
         menuButtonSetting.configureButton(btnReportProfitLoss, getReportsButtons().profitLossReport());
+        menuButtonSetting.configureButton(btnReportReturnReasons, getReportsButtons().returnReasonsReport());
         /*----------------------------------------------- Setting -----------------------------------------------*/
         menuButtonSetting.configureButton(btnHome, getSettingButtons().home());
         menuButtonSetting.configureButton(btnSetting, getSettingButtons().setting());
