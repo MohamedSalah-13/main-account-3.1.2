@@ -164,6 +164,70 @@ public record DocumentTableSpec(
         return SqlStatements.selectStatement(view) + " WHERE YEAR(" + dateColumn() + ") = ?";
     }
 
+    /**
+     * Whether this family's view carries a delegate name at all - only the two sales-side
+     * views join {@code employees}; a purchase has no delegate to search by.
+     */
+    public boolean hasDelegate() {
+        return type == DocumentType.SALES || type == DocumentType.SALES_RETURN;
+    }
+
+    /**
+     * Every optional condition in {@code criteria} that is present is appended, each bound
+     * value pushed onto {@code params} in the same order its {@code ?} appears - the date
+     * range is the one condition always present. Runs against {@link #view}, so {@code name}
+     * (party), {@code column_name} (delegate, sales-side only) and every other column named
+     * here are already flat columns there, exactly as {@link #selectBetweenDatesSql} reads
+     * from it.
+     */
+    public String searchSql(TotalsSearchCriteria criteria, List<Object> params) {
+        StringBuilder sql = new StringBuilder(SqlStatements.selectStatement(view))
+                .append(" WHERE ").append(dateColumn()).append(" BETWEEN ? AND ?");
+        params.add(criteria.dateFrom().toString());
+        params.add(criteria.dateTo().toString());
+
+        if (criteria.invoiceNumber() != null) {
+            sql.append(" AND ").append(key).append(" = ?");
+            params.add(criteria.invoiceNumber());
+        }
+        if (hasText(criteria.partyName())) {
+            sql.append(" AND name = ?");
+            params.add(criteria.partyName());
+        }
+        if (hasDelegate() && hasText(criteria.delegateName())) {
+            sql.append(" AND column_name = ?");
+            params.add(criteria.delegateName());
+        }
+        if (criteria.invoiceType() != null) {
+            sql.append(" AND invoice_type = ?");
+            params.add(criteria.invoiceType().getId());
+        }
+        if (hasText(criteria.enteredByUsername())) {
+            sql.append(" AND user_id = (SELECT id FROM users WHERE user_name = ?)");
+            params.add(criteria.enteredByUsername());
+        }
+        if (criteria.minTotal() != null) {
+            sql.append(" AND total >= ?");
+            params.add(criteria.minTotal());
+        }
+        if (criteria.maxTotal() != null) {
+            sql.append(" AND total <= ?");
+            params.add(criteria.maxTotal());
+        }
+        if (hasText(criteria.freeText())) {
+            String like = "%" + criteria.freeText().trim() + "%";
+            sql.append(" AND (name LIKE ? OR notes LIKE ? OR CAST(").append(key).append(" AS CHAR) LIKE ?)");
+            params.add(like);
+            params.add(like);
+            params.add(like);
+        }
+        return sql.append(" ORDER BY ").append(key).append(" DESC").toString();
+    }
+
+    private static boolean hasText(String value) {
+        return value != null && !value.isBlank();
+    }
+
     public String insertSql() {
         return SqlStatements.insertStatement(table, insertColumns.toArray(String[]::new));
     }

@@ -6,6 +6,7 @@ import com.hamza.account.period.PeriodLockRegistry;
 import com.hamza.account.authorization.AuthorizationGuard;
 import com.hamza.account.authorization.AppPermissions;
 import com.hamza.account.authorization.PermissionKey;
+import com.hamza.account.document.TotalsSearchCriteria;
 import com.hamza.account.model.dao.TotalsBuyDao;
 import com.hamza.account.model.domain.Total_buy;
 import com.hamza.controlsfx.database.DaoException;
@@ -73,5 +74,9 @@ public record TotalBuyService(DaoFactory daoFactory) {
     @NotNull
     private TotalsBuyDao getTotalsBuyDao() {
         return daoFactory.totalsPurchaseDao();
+    }
+
+    public List<Total_buy> searchTotals(TotalsSearchCriteria criteria) throws DaoException {
+        return getTotalsBuyDao().searchTotals(criteria);
     }
 }

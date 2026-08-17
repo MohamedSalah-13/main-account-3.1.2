@@ -4,6 +4,7 @@ import com.hamza.account.controller.main.DataPublisher;
 import com.hamza.account.controller.main.LoadData;
 import com.hamza.account.controller.model.PrintPurchaseWithName;
 import com.hamza.account.controller.others.ServiceRegistry;
+import com.hamza.account.document.TotalsSearchCriteria;
 import com.hamza.account.features.events.InvoiceSide;
 import com.hamza.account.interfaces.api.*;
 import com.hamza.account.interfaces.impl_account.AccountCustomer;
@@ -88,6 +89,11 @@ public class CustomData extends LoadData implements DataInterface<Sales, Total_S
             @Override
             public int getMaxId() throws Exception {
                 return totalSalesService.getMaxId();
+            }
+
+            @Override
+            public List<Total_Sales> searchTotals(TotalsSearchCriteria criteria) throws DaoException {
+                return totalSalesService.searchTotals(criteria);
             }
         };
     }

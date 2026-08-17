@@ -11,7 +11,6 @@ import com.hamza.account.model.domain.Customers;
 import com.hamza.account.model.domain.Sales;
 import com.hamza.account.model.domain.Total_Sales;
 import com.hamza.account.service.TotalSalesService;
-import com.hamza.account.type.InvoiceType;
 import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.excel.WriteExcelInterface;
 import com.hamza.controlsfx.language.LanguageManager;
@@ -25,7 +24,6 @@ import lombok.RequiredArgsConstructor;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
-import java.util.function.Predicate;
 
 import static com.hamza.controlsfx.table.columnEdit.ColumnSetting.addColumn;
 
@@ -82,24 +80,6 @@ public class TotalSalesImpDesign implements TotalDesignInterface<Total_Sales> {
     @Override
     public int deleteMultiData(@NotNull Integer... ids) throws Exception {
         return totalSalesService.deleteMultiData(ids);
-    }
-
-
-    @Override
-    public Predicate<Total_Sales> filterByName(String name) {
-        return totalSales -> totalSales.getCustomers().getName().equals(name);
-
-    }
-
-
-    @Override
-    public Predicate<Total_Sales> filterByDelegate(String name) {
-        return totalSales -> totalSales.getEmployeeObject().getName().equals(name);
-    }
-
-    @Override
-    public Predicate<Total_Sales> filterByInvoiceType(InvoiceType type) {
-        return totalSales -> totalSales.getInvoiceType() == type;
     }
 
 

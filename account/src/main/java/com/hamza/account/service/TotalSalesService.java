@@ -6,6 +6,7 @@ import com.hamza.account.period.PeriodLock;
 import com.hamza.account.period.PeriodLockRegistry;
 import com.hamza.account.authorization.AppPermissions;
 import com.hamza.account.authorization.PermissionKey;
+import com.hamza.account.document.TotalsSearchCriteria;
 import com.hamza.account.model.dao.TotalsSalesDao;
 import com.hamza.account.model.domain.Total_Sales;
 import com.hamza.controlsfx.database.DaoException;
@@ -56,6 +57,10 @@ public record TotalSalesService(DaoFactory daoFactory) {
 
     public List<Total_Sales> getTotalSalesByCustomerId(int customer_id) throws DaoException {
         return getTotalsSalesDao().getTotalSalesByCustomerId(customer_id);
+    }
+
+    public List<Total_Sales> searchTotals(TotalsSearchCriteria criteria) throws DaoException {
+        return getTotalsSalesDao().searchTotals(criteria);
     }
 
 }

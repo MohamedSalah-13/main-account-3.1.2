@@ -1,5 +1,6 @@
 package com.hamza.account.interfaces.api;
 
+import com.hamza.account.document.TotalsSearchCriteria;
 import com.hamza.account.model.base.BasePurchasesAndSales;
 import com.hamza.account.model.base.BaseTotals;
 import com.hamza.controlsfx.database.DaoList;
@@ -16,5 +17,7 @@ public interface TotalsAndPurchaseList<T1 extends BasePurchasesAndSales, T2 exte
     List<T1> purchaseOrSalesList(int from, int to) throws Exception;
 
     int getMaxId() throws Exception;
+
+    List<T2> searchTotals(TotalsSearchCriteria criteria) throws Exception;
 
 }

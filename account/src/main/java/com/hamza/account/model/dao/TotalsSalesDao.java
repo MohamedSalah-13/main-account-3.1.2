@@ -4,6 +4,7 @@ import com.hamza.account.finance.MoneyMath;
 import com.hamza.account.document.DocumentTableSpec;
 import com.hamza.account.document.DocumentType;
 import com.hamza.account.document.DocumentWriteGuard;
+import com.hamza.account.document.TotalsSearchCriteria;
 import com.hamza.account.model.domain.*;
 import com.hamza.account.trial.TrialManager;
 import com.hamza.account.type.InvoiceStatus;
@@ -18,6 +19,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.List;
 
 
@@ -259,5 +261,11 @@ public class TotalsSalesDao extends AbstractDao<Total_Sales> {
 
     public int getMaxId() throws DaoException {
         return queryForInt(maxIdSql());
+    }
+
+    public List<Total_Sales> searchTotals(TotalsSearchCriteria criteria) throws DaoException {
+        List<Object> params = new ArrayList<>();
+        String sql = SPEC.searchSql(criteria, params);
+        return queryForObjects(sql, this::map, params.toArray());
     }
 }

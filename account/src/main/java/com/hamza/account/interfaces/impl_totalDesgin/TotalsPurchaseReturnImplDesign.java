@@ -21,7 +21,6 @@ import lombok.extern.log4j.Log4j2;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
-import java.util.function.Predicate;
 
 import static com.hamza.controlsfx.table.columnEdit.ColumnSetting.addColumn;
 
@@ -67,17 +66,6 @@ public class TotalsPurchaseReturnImplDesign implements TotalDesignInterface<Tota
     @Override
     public int deleteMultiData(@NotNull Integer... ids) throws Exception {
         return totalBuyReturnService.deleteMultiData(ids);
-    }
-
-    @NotNull
-    @Override
-    public Predicate<Total_Buy_Re> filterByName(String name) {
-        return totalBuyRe -> totalBuyRe.getSuppliers().getName().equals(name);
-    }
-
-    @Override
-    public Predicate<Total_Buy_Re> filterByDelegate(String name) {
-        return null;
     }
 
     @NotNull

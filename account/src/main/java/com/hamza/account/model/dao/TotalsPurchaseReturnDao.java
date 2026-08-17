@@ -3,6 +3,7 @@ package com.hamza.account.model.dao;
 import com.hamza.account.document.DocumentTableSpec;
 import com.hamza.account.document.DocumentType;
 import com.hamza.account.document.DocumentWriteGuard;
+import com.hamza.account.document.TotalsSearchCriteria;
 import com.hamza.account.model.domain.Stock;
 import com.hamza.account.model.domain.Suppliers;
 import com.hamza.account.model.domain.Total_Buy_Re;
@@ -17,6 +18,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.List;
 
 public class TotalsPurchaseReturnDao extends AbstractDao<Total_Buy_Re> {
@@ -226,5 +228,11 @@ public class TotalsPurchaseReturnDao extends AbstractDao<Total_Buy_Re> {
 
     public int getMaxId() throws DaoException {
         return queryForInt(maxIdSql());
+    }
+
+    public List<Total_Buy_Re> searchTotals(TotalsSearchCriteria criteria) throws DaoException {
+        List<Object> params = new ArrayList<>();
+        String sql = SPEC.searchSql(criteria, params);
+        return queryForObjects(sql, this::map, params.toArray());
     }
 }

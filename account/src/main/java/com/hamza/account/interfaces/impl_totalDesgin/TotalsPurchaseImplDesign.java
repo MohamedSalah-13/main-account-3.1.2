@@ -9,7 +9,6 @@ import com.hamza.account.model.domain.SupplierAccount;
 import com.hamza.account.model.domain.Suppliers;
 import com.hamza.account.model.domain.Total_buy;
 import com.hamza.account.service.TotalBuyService;
-import com.hamza.account.type.InvoiceType;
 import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.excel.WriteExcelInterface;
 import com.hamza.controlsfx.language.Setting_Language;
@@ -22,7 +21,6 @@ import lombok.extern.log4j.Log4j2;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
-import java.util.function.Predicate;
 
 import static com.hamza.controlsfx.table.columnEdit.ColumnSetting.addColumn;
 
@@ -69,22 +67,6 @@ public class TotalsPurchaseImplDesign implements TotalDesignInterface<Total_buy>
     @Override
     public int deleteMultiData(@NotNull Integer... ids) throws Exception {
         return totalBuyService.deleteMultiData(ids);
-    }
-
-
-    @Override
-    public Predicate<Total_buy> filterByName(String name) {
-        return totalBuy -> totalBuy.getSupplierData().getName().equals(name);
-    }
-
-    @Override
-    public Predicate<Total_buy> filterByDelegate(String name) {
-        return null;
-    }
-
-    @Override
-    public Predicate<Total_buy> filterByInvoiceType(InvoiceType type) {
-        return totalBuy -> totalBuy.getInvoiceType().equals(type);
     }
 
 

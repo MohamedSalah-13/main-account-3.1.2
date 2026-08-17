@@ -7,6 +7,7 @@ import com.hamza.account.controller.main.DataPublisher;
 import com.hamza.account.controller.main.DisableButtons;
 import com.hamza.account.controller.model.PrintPurchaseWithName;
 import com.hamza.account.controller.others.ServiceRegistry;
+import com.hamza.account.document.TotalsSearchCriteria;
 import com.hamza.account.features.events.EmployeesChanged;
 import com.hamza.account.features.events.InvoiceSaved;
 import com.hamza.account.features.events.NameChanged;
@@ -21,6 +22,7 @@ import com.hamza.account.openFxml.FxmlPath;
 import com.hamza.account.otherSetting.MaskerPaneSetting;
 import com.hamza.account.service.EmployeeService;
 import com.hamza.account.service.TotalsService;
+import com.hamza.account.service.UsersService;
 import com.hamza.account.table.TableSetting;
 import com.hamza.account.type.InvoiceType;
 import com.hamza.account.authorization.AppPermissions;
@@ -36,6 +38,7 @@ import com.hamza.controlsfx.language.LanguageManager;
 import com.hamza.controlsfx.observer.EventBus;
 import com.hamza.controlsfx.others.CssToColorHelper;
 import com.hamza.controlsfx.others.DateSetting;
+import com.hamza.controlsfx.others.TextFormat;
 import com.hamza.controlsfx.table.TableColumnAnnotation;
 import com.hamza.controlsfx.table.columnEdit.ColumnSetting;
 import javafx.application.Platform;
@@ -43,7 +46,6 @@ import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.value.ObservableValue;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
-import javafx.collections.transformation.FilteredList;
 import javafx.collections.transformation.SortedList;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
@@ -65,10 +67,9 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.ResourceBundle;
-import java.util.function.Predicate;
 import java.util.function.ToDoubleFunction;
+import java.util.prefs.Preferences;
 
-import static com.hamza.controlsfx.table.TextSearch.searchTableFromExitedText;
 import static com.hamza.controlsfx.table.columnEdit.ColumnSetting.addColumn;
 import static com.hamza.controlsfx.util.ImageChoose.createIcon;
 
@@ -82,21 +83,26 @@ public class TotalsController<T2 extends BaseTotals, T3 extends BaseNames, T4 ex
     private final EventBus eventBus = ServiceRegistry.get(EventBus.class);
     private final PeriodLockService periodLockService = ServiceRegistry.get(PeriodLockService.class);
     private final EmployeeService employeeService;
+    private final UsersService usersService = ServiceRegistry.get(UsersService.class);
+    private final Preferences preferences = Preferences.userNodeForPackage(TotalsController.class);
     private final ObservableList<T2> observableList;
-    private final FilteredList<T2> filteredTable;
     private final NameAndAccountInterface nameAndAccountInterface;
     private boolean update_data = true;
     private MaskerPaneSetting maskerPaneSetting;
     @FXML
     private TableView<T2> tableView;
     @FXML
-    private CheckBox checkBoxShowOtherSearch;
-    @FXML
     private TextField textSearch;
     @FXML
-    private ComboBox<String> comboName, comboDelegate;
+    private TextField textInvoiceNumber;
     @FXML
-    private Label labelName, labelSumTableSize, labelSumTotals, labelSumDiscount, labelSumAfterDiscount, labelTextSearch, labelDelegate, labelFrom, labelTo;
+    private TextField textMinTotal;
+    @FXML
+    private TextField textMaxTotal;
+    @FXML
+    private ComboBox<String> comboName, comboDelegate, comboEnteredBy;
+    @FXML
+    private Label labelName, labelSumTableSize, labelSumTotals, labelSumDiscount, labelSumAfterDiscount, labelTextSearch, labelDelegate, labelFrom, labelTo, labelInvoiceNumber, labelMinTotal, labelMaxTotal, labelEnteredBy;
     @FXML
     private Text textSumTableSize, textSumTotals, textSumDiscount, textSumAfterDiscount, textCash, textDeffer, textProfit;
     @FXML
@@ -125,9 +131,16 @@ public class TotalsController<T2 extends BaseTotals, T3 extends BaseNames, T4 ex
         this.employeeService = employeeService;
         this.helper = helper;
         this.observableList = FXCollections.observableArrayList();
-        this.filteredTable = new FilteredList<>(observableList, t -> true);
         nameAndAccountInterface = dataInterface.nameAndAccountInterface();
+        // Each of the four document types keeps its own remembered range - one screen's
+        // date does not leak into another's.
+        String prefix = dataInterface.getClass().getSimpleName();
+        this.dateFromKey = prefix + ".search.dateFrom";
+        this.dateToKey = prefix + ".search.dateTo";
     }
+
+    private final String dateFromKey;
+    private final String dateToKey;
 
     @Override
     public void initialize(URL url, ResourceBundle resourceBundle) {
@@ -138,7 +151,6 @@ public class TotalsController<T2 extends BaseTotals, T3 extends BaseNames, T4 ex
         action();
         sumTable();
         addDataToComboName();
-//        gridPane.add(pane, 4, 2);
         // publisher data
         // Both sides arrive here; this screen shows one of them.
         if (eventBus != null) {
@@ -156,9 +168,10 @@ public class TotalsController<T2 extends BaseTotals, T3 extends BaseNames, T4 ex
             }));
         }
         subscriptions.disposeWith(stackPane);
-        addTimeSearch();
+        wireEnterKeySearch();
+        restrictToNumbers();
         permissionButtons();
-        btnRefresh.fire();
+        search();
         buttonGraphic();
     }
 
@@ -170,14 +183,11 @@ public class TotalsController<T2 extends BaseTotals, T3 extends BaseNames, T4 ex
         btnSearch.setGraphic(createIcon(images.search));
         btnRefresh.setGraphic(createIcon(images.refresh));
         btnSelected.setGraphic(createIcon(images.select));
-//        menuButton.setGraphic(createIcon(images.print));
         btnToExcel.setGraphic(createIcon(images.export));
     }
 
     private void permissionButtons() {
         var permissionDisableService = new DisableButtons.PermissionDisableService();
-        permissionDisableService.applyPermissionBasedDisable(checkBoxShowOtherSearch::setDisable, AppPermissions.SHOW_DATA_BEFORE_MONTH);
-//        permissionDisableService.applyPermissionBasedDisable(btnUpdate::setDisable, AppPermissions.UPDATE_DATA_BEFORE_MONTH);
         permissionDisableService.applyPermissionBasedDisable(btnUpdate::setDisable, dataInterface.designInterface().update());
         permissionDisableService.applyPermissionBasedDisable(btnDelete::setDisable, dataInterface.designInterface().delete());
         permissionDisableService.applyPermissionBasedDisable(btnShowInvoice::setDisable, dataInterface.designInterface().show_totals_invoice());
@@ -187,25 +197,19 @@ public class TotalsController<T2 extends BaseTotals, T3 extends BaseNames, T4 ex
             update_data = aBoolean;
     }
 
-    private void addTimeSearch() {
-        comboName.disableProperty().bind(checkBoxShowOtherSearch.selectedProperty().not());
-        comboDelegate.disableProperty().bind(checkBoxShowOtherSearch.selectedProperty().not());
-        dateFrom.disableProperty().bind(checkBoxShowOtherSearch.selectedProperty().not());
-        dateTo.disableProperty().bind(checkBoxShowOtherSearch.selectedProperty().not());
-        radioCash.disableProperty().bind(checkBoxShowOtherSearch.selectedProperty().not());
-        radioDeffer.disableProperty().bind(checkBoxShowOtherSearch.selectedProperty().not());
-        radioAll.disableProperty().bind(checkBoxShowOtherSearch.selectedProperty().not());
-        btnSearch.disableProperty().bind(checkBoxShowOtherSearch.selectedProperty().not());
-        textSearch.disableProperty().bind(checkBoxShowOtherSearch.selectedProperty());
+    /** Pressing Enter in any of the search fields runs the same search as the button. */
+    private void wireEnterKeySearch() {
+        textSearch.setOnAction(actionEvent -> btnSearch.fire());
+        textInvoiceNumber.setOnAction(actionEvent -> btnSearch.fire());
+        textMinTotal.setOnAction(actionEvent -> btnSearch.fire());
+        textMaxTotal.setOnAction(actionEvent -> btnSearch.fire());
+    }
 
-        checkBoxShowOtherSearch.selectedProperty().addListener((observableValue, aBoolean, t1) -> {
-            if (t1) {
-                textSearch.setPromptText(LanguageManager.getInstance().getString("search"));
-            } else {
-                dateFrom.setValue(DateSetting.firstDateInMonth);
-                dateTo.setValue(LocalDate.now());
-            }
-        });
+    /** Numbers only - an invoice number is a positive integer, a total is signed decimal. */
+    private void restrictToNumbers() {
+        textInvoiceNumber.setTextFormatter(TextFormat.createNumericTextFormatter());
+        textMinTotal.setTextFormatter(new TextFormatter<>(TextFormat.TEXT_FORMATTER_FILTER));
+        textMaxTotal.setTextFormatter(new TextFormatter<>(TextFormat.TEXT_FORMATTER_FILTER));
     }
 
     private void nameSetting() {
@@ -229,10 +233,14 @@ public class TotalsController<T2 extends BaseTotals, T3 extends BaseNames, T4 ex
         textSearch.setPromptText(lang.getString("search"));
         comboName.setPromptText(lang.getString("name"));
         comboDelegate.setPromptText(lang.getString("NAME_DELEGATE"));
-        checkBoxShowOtherSearch.setText(lang.getString("others"));
         btnSelected.setText(lang.getString("common.select.all"));
         labelFrom.setText(lang.getString("from"));
         labelTo.setText(lang.getString("to"));
+        labelInvoiceNumber.setText(lang.getString("invoice.number"));
+        labelMinTotal.setText(lang.getString("invoice.search.min.total"));
+        labelMaxTotal.setText(lang.getString("invoice.search.max.total"));
+        labelEnteredBy.setText(lang.getString("invoice.search.entered.by"));
+        comboEnteredBy.setPromptText(lang.getString("invoice.search.entered.by"));
     }
 
     private void getTable() {
@@ -242,7 +250,7 @@ public class TotalsController<T2 extends BaseTotals, T3 extends BaseNames, T4 ex
         tableView.getSelectionModel().setSelectionMode(SelectionMode.SINGLE);
         ColumnSetting.addSelectedColumn(tableView);
 
-        SortedList<T2> sortedList = new SortedList<>(filteredTable);
+        SortedList<T2> sortedList = new SortedList<>(observableList);
         sortedList.comparatorProperty().bind(tableView.comparatorProperty());
         tableView.setItems(sortedList);
         tableView.refresh();
@@ -277,12 +285,25 @@ public class TotalsController<T2 extends BaseTotals, T3 extends BaseNames, T4 ex
         // date setting
         DateSetting.dateAction(dateFrom);
         DateSetting.dateAction(dateTo);
-        dateFrom.setValue(DateSetting.firstDateInMonth);
+        dateFrom.setValue(loadDate(dateFromKey, DateSetting.firstDateInMonth));
+        dateTo.setValue(loadDate(dateToKey, LocalDate.now()));
 
         comboDelegateSetting(comboDelegate, getDelegateNames());
         comboDelegate.setVisible(dataInterface.designInterface().showDataForCustomer());
         labelDelegate.setVisible(dataInterface.designInterface().showDataForCustomer());
 
+        comboDelegateSetting(comboEnteredBy, getUsernames());
+    }
+
+    /** The date last searched with, so reopening the screen does not reset it to today. */
+    private LocalDate loadDate(String key, LocalDate fallback) {
+        String stored = preferences.get(key, null);
+        if (stored == null) return fallback;
+        try {
+            return LocalDate.parse(stored);
+        } catch (Exception e) {
+            return fallback;
+        }
     }
 
     private List<String> getDelegateNames() {
@@ -294,18 +315,27 @@ public class TotalsController<T2 extends BaseTotals, T3 extends BaseNames, T4 ex
         }
     }
 
-    private void comboDelegateSetting(ComboBox<String> comboDelegate, List<String> employeeService) {
-        comboDelegate.setItems(FXCollections.observableArrayList(employeeService));
-        comboDelegate.getItems().addFirst(LanguageManager.getInstance().getString("all"));
+    private List<String> getUsernames() {
+        try {
+            return usersService.getUsersNames();
+        } catch (DaoException e) {
+            log.error(e.getMessage(), e);
+            return List.of();
+        }
+    }
+
+    private void comboDelegateSetting(ComboBox<String> comboBox, List<String> items) {
+        comboBox.setItems(FXCollections.observableArrayList(items));
+        comboBox.getItems().addFirst(LanguageManager.getInstance().getString("all"));
+        comboBox.getSelectionModel().selectFirst();
     }
 
     private void action() {
         menuItemPrintTotals.setOnAction(actionEvent -> print());
         menuItemPrintDetailed.setOnAction(actionEvent -> printDetailed());
-        btnRefresh.setOnAction(actionEvent -> refreshData());
+        btnRefresh.setOnAction(actionEvent -> search());
 
-        btnSearch.setOnAction(actionEvent -> searchAction());
-        textSearch.setOnKeyReleased(keyEvent -> searchTableFromExitedText(tableView, textSearch.getText(), filteredTable));
+        btnSearch.setOnAction(actionEvent -> search());
         btnUpdate.setOnAction(actionEvent -> {
             OpenMethod<T2> openMethod = new OpenMethod<>() {
                 @Override
@@ -396,23 +426,81 @@ public class TotalsController<T2 extends BaseTotals, T3 extends BaseNames, T4 ex
         }
     }
 
-    private void refreshData() {
-        // Read off the pickers before leaving the JavaFX thread.
-        var from = dateFrom.getValue().toString();
-        var to = dateTo.getValue().toString();
+    /**
+     * Every load of this screen's data goes through here now - the initial load and an
+     * explicit search are the same query, the only difference being how many of the
+     * criteria fields are filled in. There is no client-side filtering left to fall back
+     * on: what the table shows is exactly what the database returned for the current
+     * criteria.
+     */
+    private void search() {
+        TotalsSearchCriteria criteria;
+        try {
+            criteria = buildCriteria();
+        } catch (UserValidationException e) {
+            exceptionHandle(e);
+            return;
+        }
+        preferences.put(dateFromKey, criteria.dateFrom().toString());
+        preferences.put(dateToKey, criteria.dateTo().toString());
+        TotalsSearchCriteria finalCriteria = criteria;
         maskerPaneSetting.showMaskerPane(LanguageManager.getInstance().getString("invoice.masker.loading"), () -> {
-            var collection = totalsInterface.totalsAndPurchaseList().totalList(from, to)
-                    .stream().sorted(Comparator.comparing(BaseTotals::getDate)).toList();
-            // The query runs off the JavaFX thread; what the table is showing is
-            // replaced back on it.
+            List<T2> result;
+            try {
+                result = totalsInterface.totalsAndPurchaseList().searchTotals(finalCriteria);
+            } catch (Exception e) {
+                Platform.runLater(() -> exceptionHandle(e));
+                return;
+            }
+            var sorted = result.stream().sorted(Comparator.comparing(BaseTotals::getDate)).toList();
             Platform.runLater(() -> {
-                observableList.clear();
-                observableList.setAll(collection);
-                filteredTable.setPredicate(t2 -> true);
+                observableList.setAll(sorted);
                 tableView.refresh();
                 sumTable();
             });
         });
+    }
+
+    private TotalsSearchCriteria buildCriteria() throws UserValidationException {
+        LocalDate from = dateFrom.getValue();
+        LocalDate to = dateTo.getValue();
+
+        Integer invoiceNumber = parseOptionalInt(textInvoiceNumber.getText(), LanguageManager.getInstance().getString("invoice.number"));
+        BigDecimal minTotal = parseOptionalDecimal(textMinTotal.getText(), LanguageManager.getInstance().getString("invoice.search.min.total"));
+        BigDecimal maxTotal = parseOptionalDecimal(textMaxTotal.getText(), LanguageManager.getInstance().getString("invoice.search.max.total"));
+
+        String partyName = selectedOrNull(comboName);
+        String delegateName = dataInterface.designInterface().showDataForCustomer() ? selectedOrNull(comboDelegate) : null;
+        String enteredBy = selectedOrNull(comboEnteredBy);
+        InvoiceType invoiceType = radioAll.isSelected() ? null : (radioCash.isSelected() ? InvoiceType.CASH : InvoiceType.DEFER);
+        String freeText = textSearch.getText() == null || textSearch.getText().isBlank() ? null : textSearch.getText().trim();
+
+        return new TotalsSearchCriteria(from, to, invoiceNumber, partyName, delegateName, invoiceType, enteredBy, minTotal, maxTotal, freeText);
+    }
+
+    /** The "all" entry is always first - a combo left on it means this field is not filtering. */
+    private String selectedOrNull(ComboBox<String> comboBox) {
+        int index = comboBox.getSelectionModel().getSelectedIndex();
+        if (index <= 0) return null;
+        return comboBox.getSelectionModel().getSelectedItem();
+    }
+
+    private Integer parseOptionalInt(String text, String fieldName) throws UserValidationException {
+        if (text == null || text.isBlank()) return null;
+        try {
+            return Integer.parseInt(text.trim());
+        } catch (NumberFormatException e) {
+            throw new UserValidationException(fieldName + ": " + LanguageManager.getInstance().getString("msg.invalid.number"));
+        }
+    }
+
+    private BigDecimal parseOptionalDecimal(String text, String fieldName) throws UserValidationException {
+        if (text == null || text.isBlank()) return null;
+        try {
+            return new BigDecimal(text.trim());
+        } catch (NumberFormatException e) {
+            throw new UserValidationException(fieldName + ": " + LanguageManager.getInstance().getString("msg.invalid.number"));
+        }
     }
 
     private void openExcelFile() {
@@ -447,56 +535,6 @@ public class TotalsController<T2 extends BaseTotals, T3 extends BaseNames, T4 ex
         comboName.setItems(FXCollections.observableArrayList(list));
         comboName.getItems().addFirst(LanguageManager.getInstance().getString("all"));
         comboName.getSelectionModel().selectFirst();
-    }
-
-    private void searchAction() {
-        btnRefresh.fire();
-        maskerPaneSetting.getVoidTask().setOnSucceeded(workerStateEvent -> {
-            var and = filterByComboType().and(filterByComboName());
-            filteredTable.setPredicate(and);
-            sumTable();
-        });
-    }
-
-    private Predicate<T2> filterByComboName() {
-        if (!comboName.getSelectionModel().isEmpty()) {
-            if (comboName.getSelectionModel().getSelectedIndex() == 0) return t2 -> true;
-            return totalDesignInterface.filterByName(comboName.getSelectionModel().getSelectedItem());
-        } else
-            return t2 -> true;
-    }
-
-    private Predicate<T2> filterByComboType() {
-        if (radioAll.isSelected()) return t2 -> true;
-        InvoiceType invoiceType = radioCash.isSelected() ? InvoiceType.CASH : InvoiceType.DEFER;
-        return totalDesignInterface.filterByInvoiceType(invoiceType);
-    }
-
-    private Predicate<T2> filterByDelegate() {
-        if (!dataInterface.designInterface().showDataForCustomer()) return t2 -> true;
-
-        if (!comboDelegate.getSelectionModel().isEmpty()) {
-            if (comboDelegate.getSelectionModel().getSelectedIndex() == 0) return t2 -> true;
-            return totalDesignInterface.filterByDelegate(comboDelegate.getSelectionModel().getSelectedItem());
-        }
-        return t2 -> true; // false
-    }
-
-    private Predicate<T2> filterByDate() {
-        LocalDate dateFromValue = parseDate(dateFrom.getValue().toString());
-        LocalDate dateToValue = parseDate(dateTo.getValue().toString());
-        return t2 -> {
-            LocalDate date = parseDate(t2.getDate());
-            return (isDateInRange(date, dateFromValue, dateToValue));
-        };
-    }
-
-    private LocalDate parseDate(String date) {
-        return LocalDate.parse(date);
-    }
-
-    private boolean isDateInRange(LocalDate date, LocalDate dateFrom, LocalDate dateTo) {
-        return (date.isEqual(dateFrom) || date.isAfter(dateFrom)) && (date.isEqual(dateTo) || date.isBefore(dateTo));
     }
 
     private void update(T2 t2) throws Exception {
