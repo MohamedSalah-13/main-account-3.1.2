@@ -147,5 +147,17 @@ class ReturnGuardTest {
             calls.add("sourceExpiryBatches");
             return List.of();
         }
+
+        @Override
+        public List<SourceLineRow> rawLines(DocumentType sourceType, int sourceId) {
+            calls.add("rawLines");
+            return List.of();
+        }
+
+        @Override
+        public java.util.Optional<Integer> sourceDelegateId(int sourceSalesInvoiceNumber) {
+            calls.add("sourceDelegateId");
+            return java.util.Optional.empty();
+        }
     }
 }

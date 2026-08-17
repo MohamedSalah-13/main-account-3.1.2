@@ -160,5 +160,15 @@ class ReturnCostResolverTest {
                 DocumentType sourceType, int sourceId, int itemId) {
             throw new UnsupportedOperationException("not used by ReturnCostResolver");
         }
+
+        @Override
+        public List<SourceLineRow> rawLines(DocumentType sourceType, int sourceId) {
+            throw new UnsupportedOperationException("not used by ReturnCostResolver");
+        }
+
+        @Override
+        public Optional<Integer> sourceDelegateId(int sourceSalesInvoiceNumber) {
+            throw new UnsupportedOperationException("not used by ReturnCostResolver");
+        }
     }
 }

@@ -223,6 +223,16 @@ class InvoiceExpiryServiceTest {
             lastSourceIdAsked = sourceId;
             return batches.getOrDefault(itemId, List.of());
         }
+
+        @Override
+        public List<SourceLineRow> rawLines(DocumentType sourceType, int sourceId) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public Optional<Integer> sourceDelegateId(int sourceSalesInvoiceNumber) {
+            throw new UnsupportedOperationException();
+        }
     }
 
     private static ItemsModel expiryTrackedItem() {

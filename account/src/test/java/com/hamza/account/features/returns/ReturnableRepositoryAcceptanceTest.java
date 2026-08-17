@@ -199,6 +199,61 @@ class ReturnableRepositoryAcceptanceTest {
     }
 
     @Test
+    void rawLinesListsEveryLineIndividuallyInOrderWithItsOwnCost() throws Exception {
+        Connection transaction = ConnectionManager.beginTransaction();
+        assertNotNull(transaction);
+        try {
+            int itemA = insertItem(transaction);
+            int itemB = insertItem(transaction);
+            int sales = nextId(transaction, "total_sales", "invoice_number");
+            insertSalesHeader(transaction, sales);
+            int firstLine = insertSalesLineReturningId(transaction, sales, itemA, 3, 10, 4);
+            int secondLine = insertSalesLineReturningId(transaction, sales, itemB, 2, 20, 8);
+
+            List<ReturnableRepository.SourceLineRow> rows =
+                    REPOSITORY.rawLines(DocumentType.SALES, sales);
+
+            assertEquals(2, rows.size());
+            assertEquals(firstLine, rows.get(0).lineId());
+            assertEquals(itemA, rows.get(0).itemId());
+            assertEquals(10.0, rows.get(0).price());
+            assertEquals(4.0, rows.get(0).buyPrice());
+            assertEquals(secondLine, rows.get(1).lineId());
+            assertEquals(itemB, rows.get(1).itemId());
+        } finally {
+            transaction.rollback();
+            ConnectionManager.endTransaction(transaction);
+        }
+    }
+
+    @Test
+    void sourceDelegateIdReadsTheSalesInvoicesOwnDelegate() throws Exception {
+        Connection transaction = ConnectionManager.beginTransaction();
+        assertNotNull(transaction);
+        try {
+            int itemId = insertItem(transaction);
+            int sales = nextId(transaction, "total_sales", "invoice_number");
+            try (PreparedStatement statement = transaction.prepareStatement(
+                    "INSERT INTO total_sales(invoice_number,sup_code,invoice_type,invoice_date,total,"
+                            + "discount,paid_up,stock_id,delegate_id,treasury_id,notes,user_id) "
+                            + "VALUES (?,1,1,CURRENT_DATE,10,0,10,1,1,1,'returnable-repo-acceptance',1)")) {
+                statement.setInt(1, sales);
+                assertEquals(1, statement.executeUpdate());
+            }
+            insertSalesLine(transaction, sales, itemId, 1);
+
+            var delegateId = REPOSITORY.sourceDelegateId(sales);
+
+            assertTrue(delegateId.isPresent());
+            assertEquals(1, delegateId.get());
+            assertTrue(REPOSITORY.sourceDelegateId(sales + 999_000).isEmpty());
+        } finally {
+            transaction.rollback();
+            ConnectionManager.endTransaction(transaction);
+        }
+    }
+
+    @Test
     void theGuardRefusesASecondReturnThatWouldExceedWhatTheFirstLeft() throws Exception {
         Connection transaction = ConnectionManager.beginTransaction();
         assertNotNull(transaction);

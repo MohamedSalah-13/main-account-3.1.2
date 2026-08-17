@@ -68,8 +68,31 @@ public interface ReturnableRepository {
     List<ExpiryBatch> sourceExpiryBatches(DocumentType sourceType, int sourceId, int itemId)
             throws DaoException;
 
+    /**
+     * Every line of a source invoice, individually - what a "return from this invoice"
+     * picker shows one row per, as opposed to {@link #sourceLines}, which sums them to
+     * one row per item for {@link ReturnGuard}'s quantity check. Order is the order the
+     * invoice itself lists them in.
+     */
+    List<SourceLineRow> rawLines(DocumentType sourceType, int sourceId) throws DaoException;
+
+    /**
+     * The delegate on a sales invoice - what the commission a sales return reverses
+     * should default to, rather than whichever delegate the return screen happens to
+     * have selected. Sales-only: {@code total_buy} has no {@code delegate_id} column
+     * at all ({@link DocumentType#hasDelegate()} is false for the purchase side), so
+     * this is never asked of a purchase.
+     */
+    Optional<Integer> sourceDelegateId(int sourceSalesInvoiceNumber) throws DaoException;
+
     /** One item's quantity on the source invoice, already converted to base units. */
     record SoldLine(int itemId, double baseQuantity) {
+    }
+
+    /** One exact line, as {@link #rawLines} lists it - {@link SourceLine} plus its own id and quantity. */
+    record SourceLineRow(int lineId, int itemId, double quantity, double price,
+                         double buyPrice, int unitId, double typeValue,
+                         LocalDate expirationDate) {
     }
 
     record SourceLine(int itemId, double price, double buyPrice,

@@ -133,6 +133,53 @@ public final class JdbcReturnableRepository implements ReturnableRepository {
         });
     }
 
+    @Override
+    public List<SourceLineRow> rawLines(DocumentType sourceType, int sourceId) throws DaoException {
+        DocumentTableSpec spec = DocumentTableSpec.of(sourceType);
+        boolean hasBuyPrice = sourceType == DocumentType.SALES;
+        String sql = "SELECT " + DocumentTableSpec.LINE_KEY + " AS line_id, "
+                + spec.lineItem() + " AS item_id, quantity, price, "
+                + (hasBuyPrice ? "buy_price" : "0") + " AS buy_price, type AS unit_id,"
+                + " type_value, expiration_date FROM " + spec.lineTable()
+                + " WHERE " + DocumentTableSpec.LINE_DOCUMENT + " = ? ORDER BY "
+                + DocumentTableSpec.LINE_KEY;
+        return withConnection(connection -> {
+            List<SourceLineRow> lines = new ArrayList<>();
+            try (PreparedStatement statement = connection.prepareStatement(sql)) {
+                statement.setInt(1, sourceId);
+                try (ResultSet rows = statement.executeQuery()) {
+                    while (rows.next()) {
+                        Date expiry = rows.getDate("expiration_date");
+                        lines.add(new SourceLineRow(rows.getInt("line_id"),
+                                rows.getInt("item_id"), rows.getDouble("quantity"),
+                                rows.getDouble("price"), rows.getDouble("buy_price"),
+                                rows.getInt("unit_id"), rows.getDouble("type_value"),
+                                expiry == null ? null : expiry.toLocalDate()));
+                    }
+                }
+            }
+            return lines;
+        });
+    }
+
+    @Override
+    public Optional<Integer> sourceDelegateId(int sourceSalesInvoiceNumber) throws DaoException {
+        String sql = "SELECT delegate_id FROM " + DocumentTableSpec.SALES.table()
+                + " WHERE " + DocumentTableSpec.SALES.key() + " = ?";
+        return withConnection(connection -> {
+            try (PreparedStatement statement = connection.prepareStatement(sql)) {
+                statement.setInt(1, sourceSalesInvoiceNumber);
+                try (ResultSet rows = statement.executeQuery()) {
+                    if (!rows.next()) {
+                        return Optional.empty();
+                    }
+                    int delegateId = rows.getInt("delegate_id");
+                    return rows.wasNull() ? Optional.empty() : Optional.of(delegateId);
+                }
+            }
+        });
+    }
+
     private static <T> T withConnection(SqlWork<T> work) throws DaoException {
         if (!ConnectionManager.inTransaction()) {
             throw new DaoException("Return validation requires an active transaction");

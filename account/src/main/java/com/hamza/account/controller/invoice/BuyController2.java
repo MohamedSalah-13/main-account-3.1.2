@@ -30,7 +30,9 @@ import com.hamza.account.features.invoice.InvoiceSaveResult;
 import com.hamza.account.features.invoice.InvoiceSaveService;
 import com.hamza.account.features.invoice.InvoiceSaveValidator;
 import com.hamza.account.features.invoice.InvoiceValidationException;
+import com.hamza.account.features.invoice.ReturnLineSelectionService;
 import com.hamza.account.features.notification.StockLevelAlert;
+import com.hamza.account.features.returns.JdbcReturnableRepository;
 import com.hamza.account.interfaces.api.DataInterface;
 import com.hamza.account.interfaces.api.TotalsDataInterface;
 import com.hamza.account.model.base.BaseAccount;
@@ -120,6 +122,8 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
     @Getter
     private Button btnAdd, btnSave, btnPrintSave, btnNew, btnSearch, btnUpdateItem;
     @FXML
+    private Button btnReturnFromInvoice;
+    @FXML
     private ComboBox<String> comboType, comboDelegate, comboTreasury;
     @FXML
     private TextField txtNum, txtBarcode, txtPrice, txtQuantity, txtItemBalance, txtTotals, txtOtherDiscount, txtPaid, txtRestAfterPaid, txtRestAfterDiscount;
@@ -142,6 +146,8 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
     @FXML
     private Label labelTitle;
     private MaskerPaneSetting maskerPaneSetting;
+    private final ReturnLineSelectionService returnLineSelectionService;
+    private int sourceInvoiceNumber;
 
     public BuyController2(DataInterface<T1, T2, T3, T4> dataInterface, int numInvoiceUpdate) throws Exception {
         super(dataInterface, numInvoiceUpdate);
@@ -159,6 +165,14 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
         this.invoiceItemSelectionService = new InvoiceItemSelectionService(
                 dataInterface.designInterface().documentType(), itemsService,
                 dataInterface.invoiceBuy()::getItemsPrice);
+        // Only a return has a source invoice to pick lines from - the service itself
+        // refuses to be built for anything else.
+        this.returnLineSelectionService = dataInterface.designInterface().documentType().isReturn()
+                ? new ReturnLineSelectionService(
+                        dataInterface.designInterface().documentType(),
+                        new JdbcReturnableRepository(),
+                        itemsService::findItemById)
+                : null;
     }
 
     @Override
@@ -194,6 +208,10 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
 
         String invoiceName = dataInterface.designInterface().nameTextOfInvoice();
         labelTitle.setText(invoiceName);
+
+        boolean isReturn = dataInterface.designInterface().documentType().isReturn();
+        btnReturnFromInvoice.setVisible(isReturn);
+        btnReturnFromInvoice.setManaged(isReturn);
 
         if (dataInterface.designInterface().documentType() == DocumentType.SALES_RETURN) {
             stackPane.getStyleClass().add("invoice-return");
@@ -332,6 +350,71 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
         btnSave.setOnAction(event -> saveInvoice(false));
         btnPrintSave.setOnAction(actionEvent -> saveInvoice(true));
         btnSearch.setOnAction(actionEvent -> openSearchItems());
+        btnReturnFromInvoice.setOnAction(actionEvent -> openReturnFromInvoice());
+    }
+
+    /**
+     * Prompts for the invoice this return reverses, lets the user pick which lines and
+     * how much of each, and appends them to the table exactly as a normal item
+     * selection would - except each appended row also carries
+     * {@link BasePurchasesAndSales#setSourceLineId}, which is what lets
+     * {@code ReturnCostResolver} and {@code InvoiceExpiryService} recover the original
+     * sale's cost and batches once the return is saved, and what
+     * {@code InvoiceSaveService.persist} links the header to via {@code
+     * sourceInvoiceNumber} below.
+     */
+    private void openReturnFromInvoice() {
+        if (returnLineSelectionService == null) {
+            return;
+        }
+        TextInputDialog numberDialog = new TextInputDialog();
+        numberDialog.setTitle(LanguageManager.getInstance().getString("return.dialog.title"));
+        numberDialog.setHeaderText(null);
+        numberDialog.setContentText(
+                LanguageManager.getInstance().getString("return.dialog.invoice.number.prompt"));
+        Optional<String> entered = numberDialog.showAndWait();
+        if (entered.isEmpty() || entered.get().isBlank()) {
+            return;
+        }
+        int invoiceNumber;
+        try {
+            invoiceNumber = Integer.parseInt(entered.get().trim());
+        } catch (NumberFormatException e) {
+            AllAlerts.alertError(
+                    LanguageManager.getInstance().getString("return.dialog.invoice.number.required"));
+            return;
+        }
+
+        try {
+            var lines = returnLineSelectionService.selectableLines(invoiceNumber);
+            var result = DialogReturnFromInvoice.show(invoiceNumber, lines);
+            if (result.isEmpty() || result.get().selectedLines().isEmpty()) {
+                return;
+            }
+            for (var selected : result.get().selectedLines()) {
+                var draft = selected.line().draftFor(selected.quantityInUnit());
+                // mergeRepeated=false: two picked lines of the same item must stay
+                // distinct rows, each keeping its own sourceLineId, rather than being
+                // folded into one row that could only point at one of them.
+                var addResult = invoiceLineService.add(
+                        table.getItems(), draft, false, getSelWithoutBalance());
+                addResult.line().setSourceLineId(selected.line().sourceLineId());
+            }
+            table.refresh();
+            sourceInvoiceNumber = invoiceNumber;
+            if (dataInterface.designInterface().documentType() == DocumentType.SALES_RETURN) {
+                var delegateId = returnLineSelectionService.sourceDelegateId(invoiceNumber);
+                if (delegateId.isPresent()) {
+                    var delegate = employeeService.getDelegateById(delegateId.get());
+                    if (delegate != null) {
+                        comboDelegate.getSelectionModel().select(delegate.getName());
+                    }
+                }
+            }
+        } catch (Exception e) {
+            AllAlerts.handleError(
+                    LanguageManager.getInstance().getString("return.dialog.title"), e);
+        }
     }
 
     private void openSearchItems() {
@@ -536,7 +619,7 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
                 txtNotes.getText(), codeAccount, textSearchName.get(),
                 comboTreasury.getSelectionModel().getSelectedItem(),
                 comboDelegate.getSelectionModel().getSelectedItem(),
-                getSelWithoutBalance(),
+                getSelWithoutBalance(), sourceInvoiceNumber,
                 List.copyOf(table.getItems()));
     }
 
@@ -717,6 +800,7 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
         txtNotes.clear();
         radioCash.setSelected(true);
         radioDeffer.setSelected(false);
+        sourceInvoiceNumber = 0;
     }
 
     private void publisherData() {
