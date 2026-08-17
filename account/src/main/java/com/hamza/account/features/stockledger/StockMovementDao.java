@@ -11,13 +11,18 @@ import java.util.List;
  * Writes to {@code stock_movements}. Append-only for now, with one deliberate exception
  * documented on {@link #deleteByReference}.
  * <p>
- * There is no {@code map()}/{@code loadAll()} here on purpose: nothing reads this table
- * yet (see {@code docs/erp-roadmap.md} §8), so this is a pure write path, following the
- * same manual-{@code PreparedStatement} shape as {@code StockCountDao.insertLines} rather
- * than the generic {@code AbstractDao<T>} entity machinery the four invoice-line DAOs use
- * for their read side.
+ * There is no {@code map()}/{@code loadAll()} here on purpose: nothing in the
+ * application reads a single movement row (see {@code docs/erp-roadmap.md} §8), so this
+ * is a pure write path, following the same manual-{@code PreparedStatement} shape as
+ * {@code StockCountDao.insertLines} rather than the generic {@code AbstractDao<T>}
+ * entity machinery the four invoice-line DAOs use for their read side.
+ * {@link StockLedgerReconciliationReport} reads the table too, but only in aggregate,
+ * through its own query - it has no reason to share a row shape with this class.
  */
 public class StockMovementDao extends AbstractDao<StockMovement> {
+
+    /** Matches {@code AbstractDao.executeUpdateListWithException}'s own chunk size. */
+    private static final int BATCH_SIZE = 500;
 
     public void insertBatch(List<StockMovement> movements) throws DaoException {
         if (movements.isEmpty()) {
@@ -31,6 +36,7 @@ public class StockMovementDao extends AbstractDao<StockMovement> {
                 """;
         withConnection(connection -> {
             try (PreparedStatement statement = connection.prepareStatement(query)) {
+                int pending = 0;
                 for (StockMovement movement : movements) {
                     statement.setInt(1, movement.itemId());
                     statement.setInt(2, movement.stockId());
@@ -48,8 +54,15 @@ public class StockMovementDao extends AbstractDao<StockMovement> {
                         statement.setInt(11, movement.userId());
                     }
                     statement.addBatch();
+                    pending++;
+                    if (pending == BATCH_SIZE) {
+                        statement.executeBatch();
+                        pending = 0;
+                    }
                 }
-                statement.executeBatch();
+                if (pending > 0) {
+                    statement.executeBatch();
+                }
             }
             return null;
         });
@@ -70,5 +83,16 @@ public class StockMovementDao extends AbstractDao<StockMovement> {
     public void deleteByReference(String referenceType, long referenceId) throws DaoException {
         executeUpdate("DELETE FROM stock_movements WHERE reference_type = ? AND reference_id = ?",
                 referenceType, referenceId);
+    }
+
+    /**
+     * The bulk form {@link StockMovementBackfillService} uses: clears every movement of
+     * one reference type before regenerating all of them from the current documents,
+     * rather than one {@code DELETE} per document. Same deliberate exception as
+     * {@link #deleteByReference} - not append-only yet, because nothing reads a single
+     * movement row before §8.6.
+     */
+    public void deleteAllByReferenceType(String referenceType) throws DaoException {
+        executeUpdate("DELETE FROM stock_movements WHERE reference_type = ?", referenceType);
     }
 }
