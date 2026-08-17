@@ -1,5 +1,6 @@
 package com.hamza.account.controller.items;
 
+import com.codejava.commons.fx.validation.InputValidator;
 import com.hamza.account.config.Image_Setting;
 import com.hamza.account.controller.dataByName.OpenAddAreaApplication;
 import com.hamza.account.controller.dataByName.impl.MainGroupImpl2;
@@ -232,6 +233,11 @@ public class AddItemController implements AppSettingInterface {
         this.tableUnitsSetting = new TableUnitsSetting(unitsService, tableUnits);
         tableUnitsSetting.selectedTypeProperty().bind(comboOtherTypes.getSelectionModel().selectedItemProperty());
         tableUnitsSetting.textUnitBarcodeProperty().bindBidirectional(textUnitBarcode.textProperty());
+        // A barcode is digits, not a number - setTextFormatter's numeric
+        // converter would be the wrong tool here (it would happily reformat the
+        // text and drop a leading zero), so this is filtered the same way
+        // ExtraBarcodesTabController filters textExtraBarcode.
+        InputValidator.makeNumericOnly(textUnitBarcode);
         // The factor belongs to the item, not to the unit: picking a unit fills
         // this in with its default, and the field is where that gets corrected
         // to what a carton of *this* item actually holds.
