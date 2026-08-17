@@ -43,7 +43,6 @@ public final class AppPermissions {
     public static final PermissionKey ITEMS_CREATE = key("items.create");
     public static final PermissionKey ITEMS_UPDATE = key("items.update");
     public static final PermissionKey ITEMS_DELETE = key("items.delete");
-    public static final PermissionKey ITEMS_ADD_EXCEL = key("items.add.excel");
     public static final PermissionKey MAIN_GROUP_SHOW = key("main.group.show");
     public static final PermissionKey MAIN_GROUP_CREATE = key("main.group.create");
     public static final PermissionKey MAIN_GROUP_UPDATE = key("main.group.update");
