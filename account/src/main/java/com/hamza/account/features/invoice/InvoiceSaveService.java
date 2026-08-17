@@ -3,6 +3,9 @@ package com.hamza.account.features.invoice;
 import com.hamza.account.authorization.AuthorizationGuard;
 import com.hamza.account.config.DefaultStock;
 import com.hamza.account.document.DocumentType;
+import com.hamza.account.features.returns.JdbcReturnableRepository;
+import com.hamza.account.features.returns.ReturnGuard;
+import com.hamza.account.features.returns.ReturnSourceWriter;
 import com.hamza.account.features.stockledger.StockMovementAssembler;
 import com.hamza.account.features.stockledger.StockMovementDao;
 import com.hamza.account.interfaces.api.DataInterface;
@@ -37,6 +40,8 @@ public final class InvoiceSaveService<
     private final InvoiceNumberAllocator numberAllocator;
     private final InvoiceTransactionExecutor transactions;
     private final InvoiceStockGuard stockGuard;
+    private final ReturnGuard returnGuard;
+    private final ReturnSourceWriter returnSourceWriter;
     private final InvoiceLookup<Treasury> treasuryLookup;
     private final InvoiceLookup<Employees> delegateLookup;
     private final StockMovementDao stockMovementDao;
@@ -49,6 +54,7 @@ public final class InvoiceSaveService<
                 new JdbcInvoiceNumberAllocator(), InvoiceTransactionExecutor.jdbc(),
                 new InvoiceStockGuard(dataInterface.designInterface().documentType(),
                         new JdbcInvoiceStockRepository()),
+                new ReturnGuard(new JdbcReturnableRepository()), new ReturnSourceWriter(),
                 treasuryLookup, delegateLookup, new StockMovementDao());
     }
 
@@ -58,6 +64,8 @@ public final class InvoiceSaveService<
                        InvoiceNumberAllocator numberAllocator,
                        InvoiceTransactionExecutor transactions,
                        InvoiceStockGuard stockGuard,
+                       ReturnGuard returnGuard,
+                       ReturnSourceWriter returnSourceWriter,
                        InvoiceLookup<Treasury> treasuryLookup,
                        InvoiceLookup<Employees> delegateLookup,
                        StockMovementDao stockMovementDao) {
@@ -68,6 +76,8 @@ public final class InvoiceSaveService<
         this.numberAllocator = numberAllocator;
         this.transactions = transactions;
         this.stockGuard = stockGuard;
+        this.returnGuard = returnGuard;
+        this.returnSourceWriter = returnSourceWriter;
         this.treasuryLookup = treasuryLookup;
         this.delegateLookup = delegateLookup;
         this.stockMovementDao = stockMovementDao;
@@ -103,6 +113,8 @@ public final class InvoiceSaveService<
                                               InvoicePaymentTerms payment)
             throws DaoException {
         stockGuard.validate(command);
+        returnGuard.validate(documentType, command.sourceInvoiceNumber(),
+                command.updating() ? command.existingInvoiceId() : 0, command.lines());
         int invoiceNumber = command.updating()
                 ? command.existingInvoiceId()
                 : numberAllocator.next(documentType);
@@ -134,6 +146,10 @@ public final class InvoiceSaveService<
         int affected = command.updating() ? dao.update(invoice) : dao.insert(invoice);
         if (affected != 1) {
             throw new DaoException("لم يتم حفظ الفاتورة؛ لم تؤثر العملية في سجل واحد");
+        }
+        if (documentType.isReturn()) {
+            returnSourceWriter.writeSource(
+                    documentType, invoiceNumber, command.sourceInvoiceNumber());
         }
         writeStockMovements(invoiceNumber, command, persistedLines,
                 invoice.getUsers() == null ? null : invoice.getUsers().getId());

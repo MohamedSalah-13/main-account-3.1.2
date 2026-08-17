@@ -4,6 +4,8 @@ import com.hamza.account.authorization.AppPermissions;
 import com.hamza.account.controller.others.ServiceRegistry;
 import com.hamza.account.document.DocumentType;
 import com.hamza.account.features.rbac.UserSessionContext;
+import com.hamza.account.features.returns.ReturnGuard;
+import com.hamza.account.features.returns.ReturnSourceWriter;
 import com.hamza.account.features.stockledger.StockMovementDao;
 import com.hamza.account.interfaces.api.TotalsAndPurchaseList;
 import com.hamza.account.interfaces.impl_invoiceBuy.SalesInvoice;
@@ -33,6 +35,8 @@ class InvoiceSaveServiceTest {
     private DaoList<Total_Sales> dao;
     private InvoiceNumberAllocator numberAllocator;
     private InvoiceStockGuard stockGuard;
+    private ReturnGuard returnGuard;
+    private ReturnSourceWriter returnSourceWriter;
     private StockMovementDao stockMovementDao;
     private InvoiceSaveService<Sales, Total_Sales, Customers, CustomerAccount> service;
     private UserSessionContext session;
@@ -44,13 +48,15 @@ class InvoiceSaveServiceTest {
         dao = mock(DaoList.class);
         numberAllocator = mock(InvoiceNumberAllocator.class);
         stockGuard = mock(InvoiceStockGuard.class);
+        returnGuard = mock(ReturnGuard.class);
+        returnSourceWriter = mock(ReturnSourceWriter.class);
         stockMovementDao = mock(StockMovementDao.class);
         when(repository.totalDao()).thenReturn(dao);
         service = new InvoiceSaveService<>(new SalesInvoice(), repository,
                 DocumentType.SALES, Clock.fixed(
                 Instant.parse("2026-08-13T05:00:00Z"), ZoneOffset.UTC),
                 numberAllocator, InvoiceTransactionExecutor.direct(),
-                stockGuard,
+                stockGuard, returnGuard, returnSourceWriter,
                 name -> new Treasury(1, name, BigDecimal.ZERO),
                 name -> new Employees(2, name), stockMovementDao);
         session = new UserSessionContext();
@@ -76,9 +82,12 @@ class InvoiceSaveServiceTest {
         assertEquals(44, result.persistedLines().getFirst().getInvoiceNumber());
         verify(dao).insert(result.invoice());
         verify(stockGuard).validate(any());
+        verify(returnGuard).validate(eq(DocumentType.SALES), eq(0), eq(0), any());
         verify(dao, never()).update(any());
         verify(stockMovementDao).deleteByReference("SALE", 44);
         verify(stockMovementDao).insertBatch(argThat(movements -> movements.size() == 1));
+        // SALES is not a return - nothing here has a source invoice to link.
+        verifyNoInteractions(returnSourceWriter);
     }
 
     @Test
@@ -95,6 +104,9 @@ class InvoiceSaveServiceTest {
         assertEquals(37, result.invoice().getSalesList().getFirst().getId());
         verifyNoInteractions(numberAllocator);
         verify(stockGuard).validate(any());
+        // Updating id 91: excludingReturnId is not this DAO's concern for a sale, but
+        // the guard is asked with the existing invoice id all the same.
+        verify(returnGuard).validate(eq(DocumentType.SALES), eq(0), eq(91), any());
         verify(dao).update(result.invoice());
         verify(dao, never()).insert(any());
         verify(stockMovementDao).deleteByReference("SALE", 91);
@@ -111,6 +123,7 @@ class InvoiceSaveServiceTest {
         verifyNoInteractions(dao);
         verifyNoInteractions(numberAllocator);
         verifyNoInteractions(stockGuard);
+        verifyNoInteractions(returnGuard);
         verifyNoInteractions(stockMovementDao);
     }
 
@@ -125,6 +138,7 @@ class InvoiceSaveServiceTest {
         assertEquals(InvoiceSaveValidator.Target.PAID, error.target());
         verifyNoInteractions(numberAllocator);
         verifyNoInteractions(stockGuard);
+        verifyNoInteractions(returnGuard);
         verifyNoInteractions(stockMovementDao);
         verify(dao, never()).insert(any());
     }
@@ -142,6 +156,22 @@ class InvoiceSaveServiceTest {
         verify(dao, never()).insert(any());
         verify(dao, never()).update(any());
         verifyNoInteractions(stockMovementDao);
+    }
+
+    @Test
+    void returnRefusalHappensBeforeNumberAllocationOrPersistence() throws Exception {
+        session.signIn(7, "cashier", Set.of(AppPermissions.SALES_CREATE));
+        doThrow(new BusinessRuleException("would exceed the source invoice"))
+                .when(returnGuard).validate(any(), anyInt(), anyInt(), any());
+
+        assertThrows(BusinessRuleException.class,
+                () -> service.save(command(0, 5)));
+
+        verifyNoInteractions(numberAllocator);
+        verify(dao, never()).insert(any());
+        verify(dao, never()).update(any());
+        verifyNoInteractions(stockMovementDao);
+        verifyNoInteractions(returnSourceWriter);
     }
 
     private InvoiceSaveCommand<Sales> command(int existingId, double paid) {
