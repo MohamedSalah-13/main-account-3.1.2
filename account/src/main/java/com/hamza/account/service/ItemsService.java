@@ -81,11 +81,6 @@ public record ItemsService(DaoFactory daoFactory) {
         return daoFactory.getItemsDao().updateList(itemsModel);
     }
 
-    public int insertList(List<ItemsModel> list) throws DaoException {
-        AuthorizationGuard.require(AppPermissions.ITEMS_ADD_EXCEL);
-        return daoFactory.getItemsDao().insertList(list);
-    }
-
     /**
      * Zero markup is not a price; it is a loss on paper the moment the item
      * moves. {@code AddItemController} already refuses this before the user can
@@ -93,13 +88,12 @@ public record ItemsService(DaoFactory daoFactory) {
      * applied where the write actually happens, so a caller other than that
      * screen is held to it too.
      * <p>
-     * Deliberately not applied to {@link #updateGroup} or {@link #insertList}:
-     * both take a whole batch where an item having its group changed, say, is
-     * indistinguishable here from one having its price changed, and this
-     * codebase has no guarantee every item already on file satisfies the rule.
-     * Applying it there would refuse an unrelated bulk edit - reactivating a
-     * batch of items, say - because one of them happens to carry price data
-     * older than this rule.
+     * Deliberately not applied to {@link #updateGroup}: it takes a whole batch
+     * where an item having its group changed, say, is indistinguishable here
+     * from one having its price changed, and this codebase has no guarantee
+     * every item already on file satisfies the rule. Applying it there would
+     * refuse an unrelated bulk edit - reactivating a batch of items, say -
+     * because one of them happens to carry price data older than this rule.
      */
     private static void requireSellAboveBuy(ItemsModel model) throws DaoException {
         if (model.getSelPrice1() <= model.getBuyPrice()) {
