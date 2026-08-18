@@ -60,31 +60,67 @@ public final class ReturnCostResolver {
                             .getString("return.error.source.line.missing",
                                     original.getSourceLineId())));
             T persisted = persistedLines.get(index);
-            requireNotDearerThanSold(persisted, source);
+            requireSameTermsAsSold(persisted, source);
             persisted.setBuy_price(source.buyPrice());
         }
     }
 
     /**
-     * A return may refund less than was charged - a restocking fee, or a partial
-     * goodwill credit, are real things - but never more. The picker fills the price in
-     * from the source line, and the price column is left editable for the free-return
-     * case, so without this a line sold at 120 can be refunded at 150 and the
-     * difference walks out of the till.
+     * A return of a known line refunds <em>exactly</em> what that line charged: the same
+     * price, the same unit, and the proportional share of the same line discount.
      * <p>
-     * Enforced here rather than only by locking the cell, for the reason
+     * Not "no more than" - equal. Refunding less is as wrong as refunding more, just
+     * quieter: it hands the customer back part of their money and silently keeps the
+     * rest as revenue on goods the shop now has back on the shelf. Whatever a shop
+     * wants to withhold - a restocking fee, a handling charge - is its own line or its
+     * own document, not a quietly shrunken refund with no record of the difference.
+     * <p>
+     * The unit has to match too. The price is per unit, so returning in cartons at the
+     * piece price (or the reverse) refunds a different amount per piece while still
+     * passing a bare price comparison.
+     * <p>
+     * Enforced here rather than only by locking the cells, for the reason
      * {@code CLAUDE.md} states about the whole authorization layer: hiding or disabling
      * a control is a hint, not enforcement.
      */
-    private static void requireNotDearerThanSold(
+    private static void requireSameTermsAsSold(
             BasePurchasesAndSales line, ReturnableRepository.SourceLine source)
             throws BusinessRuleException {
-        if (line.getPrice() - source.price() <= PRICE_EPSILON) {
-            return;
+        if (line.getUnitsType() != null
+                && line.getUnitsType().getUnit_id() != source.unitId()) {
+            throw new BusinessRuleException(message("return.error.unit.differs"));
         }
-        throw new BusinessRuleException(LanguageManager.getInstance().getString(
-                "return.error.price.above.source",
-                MoneyMath.text(MoneyMath.decimal(line.getPrice())),
-                MoneyMath.text(MoneyMath.decimal(source.price()))));
+        if (Math.abs(line.getPrice() - source.price()) > PRICE_EPSILON) {
+            throw new BusinessRuleException(message("return.error.price.differs",
+                    money(line.getPrice()), money(source.price())));
+        }
+        double expectedDiscount = proportionalDiscount(line.getQuantity(), source);
+        if (Math.abs(line.getDiscount() - expectedDiscount) > PRICE_EPSILON) {
+            throw new BusinessRuleException(message("return.error.discount.differs",
+                    money(line.getDiscount()), money(expectedDiscount)));
+        }
+    }
+
+    /**
+     * The share of the source line's discount that belongs to the quantity being
+     * returned - a line discount covers the whole line, so returning 2 of 5 takes back
+     * two fifths of it. Mirrors {@code ReturnableLineSelection.discountShareFor}, which
+     * is what fills the value in; this is the half that checks it.
+     */
+    private static double proportionalDiscount(
+            double returnedQuantity, ReturnableRepository.SourceLine source) {
+        if (source.discount() == 0 || source.quantity() <= 0) {
+            return 0;
+        }
+        return MoneyMath.asDouble(MoneyMath.multiply(
+                source.discount(), returnedQuantity / source.quantity()));
+    }
+
+    private static String money(double value) {
+        return MoneyMath.text(MoneyMath.decimal(value));
+    }
+
+    private static String message(String key, Object... arguments) {
+        return LanguageManager.getInstance().getString(key, arguments);
     }
 }

@@ -1,5 +1,6 @@
 package com.hamza.account.features.invoice;
 
+import com.hamza.account.finance.MoneyMath;
 import com.hamza.account.model.domain.ItemsModel;
 import com.hamza.account.model.domain.UnitsModel;
 
@@ -29,11 +30,29 @@ import java.time.LocalDate;
  */
 public record ReturnableLineSelection(
         int sourceLineId, ItemsModel item, UnitsModel unit, double soldQuantity,
-        double price, double buyPrice, double remainingBaseQuantity,
-        LocalDate expirationDate) {
+        double price, double soldDiscount, double buyPrice,
+        double remainingBaseQuantity, LocalDate expirationDate) {
 
-    /** The draft {@code InvoiceLineService.add} needs, for the given quantity in {@link #unit}. */
+    /**
+     * The draft {@code InvoiceLineService.add} needs, for the given quantity in
+     * {@link #unit} - at the source line's own price, and carrying its proportional
+     * share of the source line's discount.
+     * <p>
+     * The discount matters as much as the price and is easier to forget: it belongs to
+     * the whole sold line, so returning 2 of 5 refunds two fifths of it. Refunding the
+     * full price with no discount at all - which is what this did before the share was
+     * computed - hands back more than was ever charged.
+     */
     public InvoiceLineDraft draftFor(double quantity) {
-        return new InvoiceLineDraft(item, unit, quantity, price, 0, expirationDate);
+        return new InvoiceLineDraft(item, unit, quantity, price,
+                discountShareFor(quantity), expirationDate);
+    }
+
+    /** The part of {@link #soldDiscount} that belongs to {@code quantity} of this line. */
+    public double discountShareFor(double quantity) {
+        if (soldDiscount == 0 || soldQuantity <= 0) {
+            return 0;
+        }
+        return MoneyMath.asDouble(MoneyMath.multiply(soldDiscount, quantity / soldQuantity));
     }
 }

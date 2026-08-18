@@ -57,8 +57,8 @@ class ReturnLineSelectionServiceTest {
     void oneSelectionPerRawLineInOrder() throws DaoException {
         repository.existingSources.add(SOURCE);
         repository.lines.put(SOURCE, List.of(
-                new ReturnableRepository.SourceLineRow(11, ITEM_A, 3, 10, 4, 1, 1, null),
-                new ReturnableRepository.SourceLineRow(12, ITEM_B, 2, 20, 8, 1, 1, null)));
+                new ReturnableRepository.SourceLineRow(11, ITEM_A, 3, 10, 0, 4, 1, 1, null),
+                new ReturnableRepository.SourceLineRow(12, ITEM_B, 2, 20, 0, 8, 1, 1, null)));
 
         List<ReturnableLineSelection> selections = service.selectableLines(SOURCE);
 
@@ -75,7 +75,7 @@ class ReturnLineSelectionServiceTest {
     void remainingIsTheItemTotalLessWhatOtherReturnsAlreadyTook() throws DaoException {
         repository.existingSources.add(SOURCE);
         repository.lines.put(SOURCE, List.of(
-                new ReturnableRepository.SourceLineRow(11, ITEM_A, 5, 10, 4, 1, 1, null)));
+                new ReturnableRepository.SourceLineRow(11, ITEM_A, 5, 10, 0, 4, 1, 1, null)));
         repository.alreadyReturned.put(ITEM_A, 2.0);
 
         List<ReturnableLineSelection> selections = service.selectableLines(SOURCE);
@@ -87,8 +87,8 @@ class ReturnLineSelectionServiceTest {
     void twoLinesOfTheSameItemShareOneRemainingFigure() throws DaoException {
         repository.existingSources.add(SOURCE);
         repository.lines.put(SOURCE, List.of(
-                new ReturnableRepository.SourceLineRow(11, ITEM_A, 3, 10, 4, 1, 1, null),
-                new ReturnableRepository.SourceLineRow(12, ITEM_A, 2, 10, 4, 1, 1, null)));
+                new ReturnableRepository.SourceLineRow(11, ITEM_A, 3, 10, 0, 4, 1, 1, null),
+                new ReturnableRepository.SourceLineRow(12, ITEM_A, 2, 10, 0, 4, 1, 1, null)));
         // 5 sold total across both lines, 1 already returned - 4 remain for either.
 
         repository.alreadyReturned.put(ITEM_A, 1.0);
@@ -105,7 +105,7 @@ class ReturnLineSelectionServiceTest {
         // picker - but a negative "remaining" would be a nonsensical thing to show.
         repository.existingSources.add(SOURCE);
         repository.lines.put(SOURCE, List.of(
-                new ReturnableRepository.SourceLineRow(11, ITEM_A, 2, 10, 4, 1, 1, null)));
+                new ReturnableRepository.SourceLineRow(11, ITEM_A, 2, 10, 0, 4, 1, 1, null)));
         repository.alreadyReturned.put(ITEM_A, 999.0);
 
         assertEquals(0.0, service.selectableLines(SOURCE).get(0).remainingBaseQuantity());
@@ -115,8 +115,8 @@ class ReturnLineSelectionServiceTest {
     void aLineWhoseItemWasSinceDeletedIsSkippedRatherThanFailingTheWholePicker() throws DaoException {
         repository.existingSources.add(SOURCE);
         repository.lines.put(SOURCE, List.of(
-                new ReturnableRepository.SourceLineRow(11, 999, 1, 10, 4, 1, 1, null),
-                new ReturnableRepository.SourceLineRow(12, ITEM_A, 1, 10, 4, 1, 1, null)));
+                new ReturnableRepository.SourceLineRow(11, 999, 1, 10, 0, 4, 1, 1, null),
+                new ReturnableRepository.SourceLineRow(12, ITEM_A, 1, 10, 0, 4, 1, 1, null)));
 
         List<ReturnableLineSelection> selections = service.selectableLines(SOURCE);
 
@@ -128,7 +128,7 @@ class ReturnLineSelectionServiceTest {
     void draftForBuildsALineOfTheRequestedQuantity() throws DaoException {
         repository.existingSources.add(SOURCE);
         repository.lines.put(SOURCE, List.of(
-                new ReturnableRepository.SourceLineRow(11, ITEM_A, 5, 10, 4, 1, 1,
+                new ReturnableRepository.SourceLineRow(11, ITEM_A, 5, 10, 0, 4, 1, 1,
                         LocalDate.of(2027, 1, 1))));
 
         ReturnableLineSelection selection = service.selectableLines(SOURCE).get(0);

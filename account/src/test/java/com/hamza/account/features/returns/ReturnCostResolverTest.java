@@ -15,6 +15,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -46,10 +47,11 @@ class ReturnCostResolverTest {
     @Test
     void overridesTheAssembledLineWithTheCostAtTheTimeOfTheOriginalSale() throws DaoException {
         repository.lines.put(SOURCE_LINE, new ReturnableRepository.SourceLine(
-                ITEM, 10.0, COST_AT_SALE, 1, 1.0, null));
+                ITEM, 1.0, 10.0, 0.0, COST_AT_SALE, 1, 1.0, null));
 
         Sales_Return originalRow = returnRow(SOURCE_LINE);
         Sales_Return assembled = assembledSalesReturnLine(COST_TODAY);
+        assembled.setPrice(10.0);
 
         resolver.apply(DocumentType.SALES_RETURN, List.of(originalRow), List.of(assembled));
 
@@ -61,7 +63,7 @@ class ReturnCostResolverTest {
         // The reported case: sold at 120, the picker filled 120 in, the user edited the
         // price column to 150. Without this the extra 30 walks out of the till.
         repository.lines.put(SOURCE_LINE, new ReturnableRepository.SourceLine(
-                ITEM, 120.0, COST_AT_SALE, 1, 1.0, null));
+                ITEM, 1.0, 120.0, 0.0, COST_AT_SALE, 1, 1.0, null));
 
         Sales_Return originalRow = returnRow(SOURCE_LINE);
         Sales_Return assembled = assembledSalesReturnLine(COST_TODAY);
@@ -77,7 +79,7 @@ class ReturnCostResolverTest {
     @Test
     void allowsRefundingExactlyWhatWasCharged() throws DaoException {
         repository.lines.put(SOURCE_LINE, new ReturnableRepository.SourceLine(
-                ITEM, 120.0, COST_AT_SALE, 1, 1.0, null));
+                ITEM, 1.0, 120.0, 0.0, COST_AT_SALE, 1, 1.0, null));
 
         Sales_Return assembled = assembledSalesReturnLine(COST_TODAY);
         assembled.setPrice(120.0);
@@ -89,19 +91,57 @@ class ReturnCostResolverTest {
     }
 
     @Test
-    void allowsRefundingLessThanWasCharged() throws DaoException {
-        // A restocking fee, or a partial goodwill credit - both real, both below.
+    void refusesRefundingLessThanWasCharged() {
+        // Refunding less is as wrong as refunding more, just quieter: it hands part of
+        // the money back and keeps the rest as revenue on goods now back on the shelf.
         repository.lines.put(SOURCE_LINE, new ReturnableRepository.SourceLine(
-                ITEM, 120.0, COST_AT_SALE, 1, 1.0, null));
+                ITEM, 1.0, 120.0, 0.0, COST_AT_SALE, 1, 1.0, null));
 
         Sales_Return assembled = assembledSalesReturnLine(COST_TODAY);
         assembled.setPrice(100.0);
 
-        resolver.apply(DocumentType.SALES_RETURN,
-                List.of(returnRow(SOURCE_LINE)), List.of(assembled));
+        assertThrows(BusinessRuleException.class, () -> resolver.apply(
+                DocumentType.SALES_RETURN,
+                List.of(returnRow(SOURCE_LINE)), List.of(assembled)));
+    }
 
-        assertEquals(100.0, assembled.getPrice());
-        assertEquals(COST_AT_SALE, assembled.getBuy_price());
+    @Test
+    void requiresTheProportionalShareOfTheSourceLinesDiscount() {
+        // Sold 5 at 100 with a 50 discount on the line; returning 2 must carry 20 of it.
+        repository.lines.put(SOURCE_LINE, new ReturnableRepository.SourceLine(
+                ITEM, 5.0, 100.0, 50.0, COST_AT_SALE, 1, 1.0, null));
+
+        Sales_Return correct = assembledSalesReturnLine(COST_TODAY);
+        correct.setPrice(100.0);
+        correct.setQuantity(2);
+        correct.setDiscount(20.0);
+        assertDoesNotThrow(() -> resolver.apply(DocumentType.SALES_RETURN,
+                List.of(returnRow(SOURCE_LINE)), List.of(correct)));
+
+        // Dropping the discount refunds the full price on discounted goods.
+        Sales_Return noDiscount = assembledSalesReturnLine(COST_TODAY);
+        noDiscount.setPrice(100.0);
+        noDiscount.setQuantity(2);
+        noDiscount.setDiscount(0.0);
+        assertThrows(BusinessRuleException.class, () -> resolver.apply(
+                DocumentType.SALES_RETURN,
+                List.of(returnRow(SOURCE_LINE)), List.of(noDiscount)));
+    }
+
+    @Test
+    void refusesAReturnInADifferentUnitFromTheSale() {
+        // The price is per unit, so cartons at the piece price refunds a different
+        // amount per piece while still passing a bare price comparison.
+        repository.lines.put(SOURCE_LINE, new ReturnableRepository.SourceLine(
+                ITEM, 1.0, 120.0, 0.0, COST_AT_SALE, 1, 1.0, null));
+
+        Sales_Return assembled = assembledSalesReturnLine(COST_TODAY);
+        assembled.setPrice(120.0);
+        assembled.setUnitsType(new com.hamza.account.model.domain.UnitsModel(2, "كرتونة", 12));
+
+        assertThrows(BusinessRuleException.class, () -> resolver.apply(
+                DocumentType.SALES_RETURN,
+                List.of(returnRow(SOURCE_LINE)), List.of(assembled)));
     }
 
     @Test
@@ -155,11 +195,12 @@ class ReturnCostResolverTest {
     @Test
     void aPurchaseReturnAsksThePurchaseFamilyNotTheSalesFamily() throws DaoException {
         repository.lines.put(SOURCE_LINE, new ReturnableRepository.SourceLine(
-                ITEM, 6.0, 0.0, 1, 1.0, null));
+                ITEM, 1.0, 6.0, 0.0, 0.0, 1, 1.0, null));
 
         Purchase_Return originalRow = new Purchase_Return();
         originalRow.setSourceLineId(SOURCE_LINE);
         Purchase_Return assembled = new Purchase_Return();
+        assembled.setPrice(6.0);
 
         resolver.apply(DocumentType.PURCHASE_RETURN, List.of(originalRow), List.of(assembled));
 
@@ -174,7 +215,7 @@ class ReturnCostResolverTest {
         // only compound it.
         Sales_Return originalRow = returnRow(SOURCE_LINE);
         repository.lines.put(SOURCE_LINE, new ReturnableRepository.SourceLine(
-                ITEM, 10.0, COST_AT_SALE, 1, 1.0, null));
+                ITEM, 1.0, 10.0, 0.0, COST_AT_SALE, 1, 1.0, null));
 
         resolver.apply(DocumentType.SALES_RETURN, List.of(originalRow), List.of());
     }

@@ -110,12 +110,18 @@ public interface ReturnableRepository {
 
     /** One exact line, as {@link #rawLines} lists it - {@link SourceLine} plus its own id and quantity. */
     record SourceLineRow(int lineId, int itemId, double quantity, double price,
-                         double buyPrice, int unitId, double typeValue,
+                         double discount, double buyPrice, int unitId, double typeValue,
                          LocalDate expirationDate) {
     }
 
-    record SourceLine(int itemId, double price, double buyPrice,
-                      int unitId, double typeValue, LocalDate expirationDate) {
+    /**
+     * {@code quantity} and {@code discount} are here so a return can be held to the
+     * <em>net</em> the line actually charged, not just its unit price: a line discount
+     * belongs to the whole line, so returning part of it refunds its proportional share.
+     */
+    record SourceLine(int itemId, double quantity, double price, double discount,
+                      double buyPrice, int unitId, double typeValue,
+                      LocalDate expirationDate) {
     }
 
     record ExpiryBatch(LocalDate expirationDate, double baseQuantity) {

@@ -89,7 +89,7 @@ public final class JdbcReturnableRepository implements ReturnableRepository {
         // Only a `sales` line carries its own cost to preserve; `purchase` has no
         // buy_price column at all - it is itself the cost, and keeps none of its own.
         boolean hasBuyPrice = sourceType == DocumentType.SALES;
-        String sql = "SELECT " + spec.lineItem() + " AS item_id, price, "
+        String sql = "SELECT " + spec.lineItem() + " AS item_id, quantity, price, discount, "
                 + (hasBuyPrice ? "buy_price" : "0") + " AS buy_price, type AS unit_id,"
                 + " type_value, expiration_date FROM " + spec.lineTable()
                 + " WHERE " + DocumentTableSpec.LINE_KEY + " = ?";
@@ -102,7 +102,8 @@ public final class JdbcReturnableRepository implements ReturnableRepository {
                     }
                     Date expiry = rows.getDate("expiration_date");
                     return Optional.of(new SourceLine(rows.getInt("item_id"),
-                            rows.getDouble("price"), rows.getDouble("buy_price"),
+                            rows.getDouble("quantity"), rows.getDouble("price"),
+                            rows.getDouble("discount"), rows.getDouble("buy_price"),
                             rows.getInt("unit_id"), rows.getDouble("type_value"),
                             expiry == null ? null : expiry.toLocalDate()));
                 }
@@ -140,7 +141,7 @@ public final class JdbcReturnableRepository implements ReturnableRepository {
         DocumentTableSpec spec = DocumentTableSpec.of(sourceType);
         boolean hasBuyPrice = sourceType == DocumentType.SALES;
         String sql = "SELECT " + DocumentTableSpec.LINE_KEY + " AS line_id, "
-                + spec.lineItem() + " AS item_id, quantity, price, "
+                + spec.lineItem() + " AS item_id, quantity, price, discount, "
                 + (hasBuyPrice ? "buy_price" : "0") + " AS buy_price, type AS unit_id,"
                 + " type_value, expiration_date FROM " + spec.lineTable()
                 + " WHERE " + DocumentTableSpec.LINE_DOCUMENT + " = ? ORDER BY "
@@ -154,8 +155,9 @@ public final class JdbcReturnableRepository implements ReturnableRepository {
                         Date expiry = rows.getDate("expiration_date");
                         lines.add(new SourceLineRow(rows.getInt("line_id"),
                                 rows.getInt("item_id"), rows.getDouble("quantity"),
-                                rows.getDouble("price"), rows.getDouble("buy_price"),
-                                rows.getInt("unit_id"), rows.getDouble("type_value"),
+                                rows.getDouble("price"), rows.getDouble("discount"),
+                                rows.getDouble("buy_price"), rows.getInt("unit_id"),
+                                rows.getDouble("type_value"),
                                 expiry == null ? null : expiry.toLocalDate()));
                     }
                 }

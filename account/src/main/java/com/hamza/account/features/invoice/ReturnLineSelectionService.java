@@ -76,8 +76,8 @@ public final class ReturnLineSelectionService {
             double returnedBase = alreadyReturned.getOrDefault(row.itemId(), 0.0);
             double remainingBase = Math.max(0.0, soldBase - returnedBase);
             selections.add(new ReturnableLineSelection(row.lineId(), item, unit,
-                    row.quantity(), row.price(), row.buyPrice(), remainingBase,
-                    row.expirationDate()));
+                    row.quantity(), row.price(), row.discount(), row.buyPrice(),
+                    remainingBase, row.expirationDate()));
         }
         return selections;
     }
