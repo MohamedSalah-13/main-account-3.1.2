@@ -82,6 +82,7 @@ CREATE VIEW sales_return_names_table AS
 SELECT sr.id,
        sr.invoice_number,
        sr.item_id,
+       sr.source_line_id,
        sr.type,
        sr.type_value,
        sr.quantity,
@@ -109,6 +110,7 @@ CREATE VIEW purchase_return_names_table AS
 SELECT pr.id,
        pr.invoice_number,
        pr.item_id,
+       pr.source_line_id,
        pr.type,
        pr.type_value,
        pr.quantity,
@@ -292,6 +294,8 @@ FROM total_buy tb
 DROP VIEW IF EXISTS total_purchase_return_names_table;
 CREATE VIEW total_purchase_return_names_table AS
 SELECT tbr.id,
+       tbr.source_invoice_number,
+       tbr.return_reason,
        tbr.sup_id,
        tbr.invoice_date,
        tbr.total,
@@ -321,6 +325,8 @@ WITH sales_invoice_profit AS (SELECT invoice_number,
                               FROM sales_re
                               GROUP BY invoice_number)
 SELECT tsr.id,
+       tsr.source_invoice_number,
+       tsr.return_reason,
        tsr.sup_id,
        tsr.invoice_date,
        tsr.total,

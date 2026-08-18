@@ -92,6 +92,22 @@ public final class ReturnEntryCoordinator {
         return selectedReturnReason;
     }
 
+    /**
+     * Restores what a saved return was linked to, when one is opened for editing.
+     * <p>
+     * Without this every guard is silently off on the edit path: {@code ReturnGuard}
+     * treats a source of {@code 0} as "a free return, nothing to compare against" and
+     * returns immediately, so a saved-and-linked return could be reopened, its
+     * quantities and prices changed to anything at all, and saved again unchecked.
+     *
+     * @param sourceInvoiceNumber as stored, or {@code 0} if the return has no source
+     * @param storedReason        the stored {@code return_reason}, or {@code null}
+     */
+    public void restoreSource(int sourceInvoiceNumber, String storedReason) {
+        this.sourceInvoiceNumber = Math.max(sourceInvoiceNumber, 0);
+        this.selectedReturnReason = ReturnReason.fromStoredValue(storedReason);
+    }
+
     /** Clears the picked source and reason, and hides the badge. */
     public void reset() {
         sourceInvoiceNumber = 0;

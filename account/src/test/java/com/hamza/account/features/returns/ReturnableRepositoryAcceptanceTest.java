@@ -388,6 +388,55 @@ class ReturnableRepositoryAcceptanceTest {
         }
     }
 
+    /**
+     * The whole point of steps 1 and 2: a saved return has to come back off the
+     * database still knowing what it reversed, on the header <em>and</em> on every
+     * line. While it did not, every guard was silently off on the edit path -
+     * {@code ReturnGuard} read a source of 0, called it a free return, and returned
+     * without checking anything.
+     */
+    @Test
+    void aSavedReturnRoundTripsItsSourceOnBothTheHeaderAndItsLines() throws Exception {
+        Connection transaction = ConnectionManager.beginTransaction();
+        assertNotNull(transaction);
+        try {
+            int itemId = insertItem(transaction);
+            int sales = nextId(transaction, "total_sales", "invoice_number");
+            insertSalesHeader(transaction, sales);
+            int soldLineId = insertSalesLineReturningId(transaction, sales, itemId, 5, 10, 4);
+
+            int returnId = nextId(transaction, "total_sales_re", "id");
+            insertSalesReturnHeader(transaction, returnId);
+            insertSalesReturnLineLinked(transaction, returnId, itemId, 2, soldLineId);
+            WRITER.writeSource(DocumentType.SALES_RETURN, returnId, sales, ReturnReason.DAMAGED);
+
+            // The header, through the view the DAO actually reads.
+            try (PreparedStatement statement = transaction.prepareStatement(
+                    "SELECT source_invoice_number, return_reason"
+                            + " FROM total_sales_return_names_table WHERE id = ?")) {
+                statement.setInt(1, returnId);
+                try (ResultSet rows = statement.executeQuery()) {
+                    assertTrue(rows.next(), "the return must be readable through its view");
+                    assertEquals(sales, rows.getInt("source_invoice_number"));
+                    assertEquals("DAMAGED", rows.getString("return_reason"));
+                }
+            }
+
+            // And the line, through its own view.
+            try (PreparedStatement statement = transaction.prepareStatement(
+                    "SELECT source_line_id FROM sales_return_names_table WHERE invoice_number = ?")) {
+                statement.setInt(1, returnId);
+                try (ResultSet rows = statement.executeQuery()) {
+                    assertTrue(rows.next());
+                    assertEquals(soldLineId, rows.getInt("source_line_id"));
+                }
+            }
+        } finally {
+            transaction.rollback();
+            ConnectionManager.endTransaction(transaction);
+        }
+    }
+
     @Test
     void theGuardRefusesASecondReturnThatWouldExceedWhatTheFirstLeft() throws Exception {
         Connection transaction = ConnectionManager.beginTransaction();
@@ -506,6 +555,24 @@ class ReturnableRepositoryAcceptanceTest {
             statement.setInt(2, itemId);
             statement.setDouble(3, quantity);
             statement.setObject(4, expirationDate);
+            assertEquals(1, statement.executeUpdate());
+        }
+    }
+
+    private static void insertSalesReturnLineLinked(Connection connection, int invoiceNumber,
+                                                     int itemId, double quantity,
+                                                     int sourceLineId) throws Exception {
+        try (PreparedStatement statement = connection.prepareStatement(
+                "INSERT INTO sales_re(invoice_number,item_id,source_line_id,type,quantity,price,"
+                        + "buy_price,total_sel_price,total_buy_price,total_profit,discount,type_value,"
+                        + "expiration_date) VALUES (?,?,?,1,?,10,4,?,?,?,0,1,NULL)")) {
+            statement.setInt(1, invoiceNumber);
+            statement.setInt(2, itemId);
+            statement.setInt(3, sourceLineId);
+            statement.setDouble(4, quantity);
+            statement.setDouble(5, quantity * 10);
+            statement.setDouble(6, quantity * 4);
+            statement.setDouble(7, quantity * 6);
             assertEquals(1, statement.executeUpdate());
         }
     }

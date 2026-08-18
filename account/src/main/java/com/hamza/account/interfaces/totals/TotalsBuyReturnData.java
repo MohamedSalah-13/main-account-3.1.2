@@ -17,4 +17,13 @@ public class TotalsBuyReturnData implements TotalsDataInterface<Total_Buy_Re> {
         return totalBuyRe.getSuppliers().getName();
     }
 
+    @Override
+    public int getSourceInvoiceNumber(Total_Buy_Re t2) {
+        return t2.getSourceInvoiceNumber();
+    }
+
+    @Override
+    public String getReturnReason(Total_Buy_Re t2) {
+        return t2.getReturnReason();
+    }
 }

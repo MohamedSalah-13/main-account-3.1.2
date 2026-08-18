@@ -28,4 +28,13 @@ public class TotalsSalesReturnData implements TotalsDataInterface<Total_Sales_Re
         return Total_Sales_Re::getTotal_profit;
     }
 
+    @Override
+    public int getSourceInvoiceNumber(Total_Sales_Re t2) {
+        return t2.getSourceInvoiceNumber();
+    }
+
+    @Override
+    public String getReturnReason(Total_Sales_Re t2) {
+        return t2.getReturnReason();
+    }
 }

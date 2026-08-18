@@ -34,6 +34,21 @@ abstract class DocumentLineDao<T extends BasePurchasesAndSales> extends Abstract
 
     protected abstract Object[] lineData(T line) throws DaoException;
 
+    /**
+     * The sold/purchased line a return line reverses, as the column stores it:
+     * {@code NULL} rather than {@code 0} when there is none.
+     * <p>
+     * {@code source_line_id} is a foreign key, so a literal {@code 0} would be refused
+     * outright - there is no line zero. And {@code 0} is exactly what
+     * {@link BasePurchasesAndSales#getSourceLineId()} answers for every free return and
+     * for every row written before {@code V16__return_source.sql}, so the translation
+     * has to happen on the way out rather than being left to the caller to remember.
+     */
+    protected static Integer sourceLineIdOrNull(BasePurchasesAndSales line) {
+        int sourceLineId = line.getSourceLineId();
+        return sourceLineId > 0 ? sourceLineId : null;
+    }
+
     final int synchronizeLines(int documentId, List<T> submittedLines) throws DaoException {
         return insertMultiData(() -> {
             Set<Integer> storedIds = lockStoredIds(documentId);

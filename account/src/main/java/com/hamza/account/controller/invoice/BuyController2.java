@@ -532,6 +532,12 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
             txtPaid.setText(String.valueOf(dataById.getPaid()));
             txtNotes.setText(dataById.getNotes());
             txtOtherDiscount.setText(String.valueOf(dataById.getDiscount()));
+            // Before the guards can check an edit they have to know what this return
+            // was linked to - without it ReturnGuard reads a source of 0 and treats the
+            // whole document as a free return it has nothing to compare against.
+            returnEntry.restoreSource(
+                    totalsDataInterface.getSourceInvoiceNumber(dataById),
+                    totalsDataInterface.getReturnReason(dataById));
             returnEntry.showReturnedStatus(id);
         } catch (Exception e) {
             logError(e);

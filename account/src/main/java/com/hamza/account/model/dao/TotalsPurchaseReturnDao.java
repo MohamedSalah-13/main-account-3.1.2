@@ -26,6 +26,10 @@ public class TotalsPurchaseReturnDao extends AbstractDao<Total_Buy_Re> {
     /** Which document this DAO writes. The period lock it must respect follows from it. */
     static final DocumentType DOCUMENT_TYPE = DocumentType.PURCHASE_RETURN;
 
+    /** Added by V16__return_source.sql; written by ReturnSourceWriter, not by this DAO. */
+    static final String SOURCE_INVOICE_NUMBER = "source_invoice_number";
+    static final String RETURN_REASON = "return_reason";
+
     /** Where it lives, and every statement that reads or writes it. */
     static final DocumentTableSpec SPEC = DocumentTableSpec.of(DOCUMENT_TYPE);
 
@@ -206,6 +210,8 @@ public class TotalsPurchaseReturnDao extends AbstractDao<Total_Buy_Re> {
             var invoiceTypeById = InvoiceType.getInvoiceTypeById(type_id);
             totalBuyRe = new Total_Buy_Re(id, date, total, discount, paidToTreasuryAmount, notes, suppliers, stock, treasury, invoiceTypeById, null);
             totalBuyRe.setCreated_at(LocalDateTime.parse(rs.getString(DATE_INSERT), DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
+            totalBuyRe.setSourceInvoiceNumber(rs.getInt(SOURCE_INVOICE_NUMBER));
+            totalBuyRe.setReturnReason(rs.getString(RETURN_REASON));
             totalBuyRe.setUsers(daoFactory.usersDao().getDataById(rs.getInt(USER_ID)));
         } catch (SQLException e) {
             throw new DaoException(e);

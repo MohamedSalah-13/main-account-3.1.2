@@ -42,7 +42,9 @@ public class TotalsSalesReturnDao extends AbstractDao<Total_Sales_Re> {
     public static final String INVOICE_TYPE = "invoice_type";
     public static final String DELEGATE_ID = "delegate_id";
     public static final String TREASURY_ID = "treasury_id";
-    //    public static final String TOTAL_SALES_ID = "total_sales_id";
+        /** Added by V16__return_source.sql; written by ReturnSourceWriter, not by this DAO. */
+    static final String SOURCE_INVOICE_NUMBER = "source_invoice_number";
+    static final String RETURN_REASON = "return_reason";
     public static final String NOTES = "notes";
     public static final String DISCOUNT = "discount";
     //    public static final String DISCOUNT_TYPE = "discount_type";
@@ -230,6 +232,8 @@ public class TotalsSalesReturnDao extends AbstractDao<Total_Sales_Re> {
             totalSalesRe.setInvoiceType(InvoiceType.getInvoiceTypeById(type_id));
             totalSalesRe.setCreated_at(LocalDateTime.parse(rs.getString(DATE_INSERT), DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
             totalSalesRe.setUsers(daoFactory.usersDao().getDataById(rs.getInt(USER_ID)));
+            totalSalesRe.setSourceInvoiceNumber(rs.getInt(SOURCE_INVOICE_NUMBER));
+            totalSalesRe.setReturnReason(rs.getString(RETURN_REASON));
             totalSalesRe.setTotal_profit(rs.getDouble(TOTAL_PROFIT));
             totalSalesRe.setProfit_percent(rs.getDouble(PROFIT_PERCENT));
         } catch (SQLException e) {

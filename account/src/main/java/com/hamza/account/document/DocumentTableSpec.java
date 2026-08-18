@@ -96,8 +96,11 @@ public record DocumentTableSpec(
                     "stock_id", "delegate_id", "treasury_id", "id", "notes", "user_id"),
             List.of("sup_id", "invoice_date", "invoice_type", "total", "discount", "paid_from_treasury",
                     "stock_id", "delegate_id", "treasury_id", "notes"),
+            // source_line_id last, as the two return families both carry it and neither
+            // invoice family has it - see V16__return_source.sql.
             List.of("invoice_number", "item_id", "type", "quantity", "price", "buy_price", "total_sel_price",
-                    "total_buy_price", "total_profit", "discount", "type_value", "expiration_date"));
+                    "total_buy_price", "total_profit", "discount", "type_value", "expiration_date",
+                    "source_line_id"));
 
     public static final DocumentTableSpec PURCHASE_RETURN = new DocumentTableSpec(
             DocumentType.PURCHASE_RETURN,
@@ -108,7 +111,7 @@ public record DocumentTableSpec(
             List.of("sup_id", "invoice_date", "invoice_type", "total", "discount", "paid_to_treasury",
                     "stock_id", "treasury_id", "notes"),
             List.of("invoice_number", "item_id", "type", "quantity", "price", "discount",
-                    "type_value", "expiration_date"));
+                    "type_value", "expiration_date", "source_line_id"));
 
     public DocumentTableSpec {
         for (String identifier : new String[]{table, view, key, party, paid, lineTable, lineView, lineItem}) {

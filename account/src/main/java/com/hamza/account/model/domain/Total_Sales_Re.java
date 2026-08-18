@@ -14,6 +14,17 @@ import java.util.List;
 @NoArgsConstructor
 public class Total_Sales_Re extends BaseTotals {
 
+    /**
+     * The invoice this return reverses, or {@code 0} for a free return - what
+     * {@code ReturnGuard} and {@code ReturnCostResolver} need in order to check an
+     * <em>edit</em> of a saved return, not just its first save. Written by
+     * {@code ReturnSourceWriter} and read back through the return's view.
+     */
+    private int sourceInvoiceNumber;
+    /** Why it was returned, or {@code null}; {@code ReturnReason}'s stored name. */
+    private String returnReason;
+
+
     private ObjectProperty<Customers> customer = new SimpleObjectProperty<>();
     private ObjectProperty<Employees> employeeObject = new SimpleObjectProperty<>();
     private List<Sales_Return> salesReturnList;

@@ -33,6 +33,8 @@ public class SalesReturnDao extends DocumentLineDao<Sales_Return> {
     private final String BUY_PRICE = "buy_price";
     private final String DISCOUNT = "discount";
     private final String EXPIRATION_DATE = "expiration_date";
+    /** The sold line this return line reverses; null on a free return. */
+    private final String SOURCE_LINE_ID = "source_line_id";
 
     public SalesReturnDao(DaoFactory daofactory) {
         super(SPEC);
@@ -106,6 +108,7 @@ public class SalesReturnDao extends DocumentLineDao<Sales_Return> {
             salesReturn.setTotal_after_discount(MoneyMath.asDouble(MoneyMath.subtract(
                     totalAmount, MoneyMath.decimal(discount))));
             salesReturn.setBuy_price(resultSet.getDouble(BUY_PRICE));
+            salesReturn.setSourceLineId(resultSet.getInt(SOURCE_LINE_ID));
             salesReturn.setId(id);
 
             var date = resultSet.getDate(EXPIRATION_DATE);
@@ -146,7 +149,8 @@ public class SalesReturnDao extends DocumentLineDao<Sales_Return> {
                 , salesReturn.getBuy_price(), salesReturn.getTotalSelPrice()
                 , salesReturn.getTotal_buy_price(), salesReturn.getTotal_profit()
                 , salesReturn.getDiscount()
-                , salesReturn.getUnitsType().getValue(), salesReturn.getExpiration_date()};
+                , salesReturn.getUnitsType().getValue(), salesReturn.getExpiration_date()
+                , sourceLineIdOrNull(salesReturn)};
     }
 
     private void setData(PreparedStatement statement, Sales_Return salesReturn) throws SQLException {

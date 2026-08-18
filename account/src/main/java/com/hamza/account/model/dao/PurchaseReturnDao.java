@@ -31,6 +31,8 @@ public class PurchaseReturnDao extends DocumentLineDao<Purchase_Return> {
     private final String ID = DocumentTableSpec.LINE_KEY;
     private final String DISCOUNT = "discount";
     private final String EXPIRATION_DATE = "expiration_date";
+    /** The purchased line this return line reverses; null on a free return. */
+    private final String SOURCE_LINE_ID = "source_line_id";
     private final DaoFactory daofactory;
 
     public PurchaseReturnDao(DaoFactory daofactory) {
@@ -104,6 +106,7 @@ public class PurchaseReturnDao extends DocumentLineDao<Purchase_Return> {
             purchaseReturn.setUnitsType(unitsType);
             purchaseReturn.setItems(items);
             purchaseReturn.setNumItem(numItem);
+            purchaseReturn.setSourceLineId(resultSet.getInt(SOURCE_LINE_ID));
 
             var date = resultSet.getDate(EXPIRATION_DATE);
             if (date != null) {
@@ -138,7 +141,8 @@ public class PurchaseReturnDao extends DocumentLineDao<Purchase_Return> {
     protected Object[] lineData(Purchase_Return purchaseReturn) {
         return new Object[]{purchaseReturn.getInvoiceNumber(), purchaseReturn.getItems().getId()
                 , purchaseReturn.getUnitsType().getUnit_id(), purchaseReturn.getQuantity(), purchaseReturn.getPrice(), purchaseReturn.getDiscount()
-                , purchaseReturn.getUnitsType().getValue(), purchaseReturn.getExpiration_date()};
+                , purchaseReturn.getUnitsType().getValue(), purchaseReturn.getExpiration_date()
+                , sourceLineIdOrNull(purchaseReturn)};
     }
 
     private void setData(PreparedStatement statement, Purchase_Return purchaseReturn) throws SQLException {
