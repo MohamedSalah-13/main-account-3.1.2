@@ -17,6 +17,7 @@ import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * {@link ReturnCostResolver} against a fake {@link ReturnableRepository} - no database.
@@ -53,6 +54,67 @@ class ReturnCostResolverTest {
         resolver.apply(DocumentType.SALES_RETURN, List.of(originalRow), List.of(assembled));
 
         assertEquals(COST_AT_SALE, assembled.getBuy_price());
+    }
+
+    @Test
+    void refusesALineRefundedAboveWhatItWasSoldFor() {
+        // The reported case: sold at 120, the picker filled 120 in, the user edited the
+        // price column to 150. Without this the extra 30 walks out of the till.
+        repository.lines.put(SOURCE_LINE, new ReturnableRepository.SourceLine(
+                ITEM, 120.0, COST_AT_SALE, 1, 1.0, null));
+
+        Sales_Return originalRow = returnRow(SOURCE_LINE);
+        Sales_Return assembled = assembledSalesReturnLine(COST_TODAY);
+        assembled.setPrice(150.0);
+
+        BusinessRuleException refused = assertThrows(BusinessRuleException.class,
+                () -> resolver.apply(DocumentType.SALES_RETURN,
+                        List.of(originalRow), List.of(assembled)));
+        assertTrue(refused.getMessage().contains("150"), refused.getMessage());
+        assertTrue(refused.getMessage().contains("120"), refused.getMessage());
+    }
+
+    @Test
+    void allowsRefundingExactlyWhatWasCharged() throws DaoException {
+        repository.lines.put(SOURCE_LINE, new ReturnableRepository.SourceLine(
+                ITEM, 120.0, COST_AT_SALE, 1, 1.0, null));
+
+        Sales_Return assembled = assembledSalesReturnLine(COST_TODAY);
+        assembled.setPrice(120.0);
+
+        resolver.apply(DocumentType.SALES_RETURN,
+                List.of(returnRow(SOURCE_LINE)), List.of(assembled));
+
+        assertEquals(120.0, assembled.getPrice());
+    }
+
+    @Test
+    void allowsRefundingLessThanWasCharged() throws DaoException {
+        // A restocking fee, or a partial goodwill credit - both real, both below.
+        repository.lines.put(SOURCE_LINE, new ReturnableRepository.SourceLine(
+                ITEM, 120.0, COST_AT_SALE, 1, 1.0, null));
+
+        Sales_Return assembled = assembledSalesReturnLine(COST_TODAY);
+        assembled.setPrice(100.0);
+
+        resolver.apply(DocumentType.SALES_RETURN,
+                List.of(returnRow(SOURCE_LINE)), List.of(assembled));
+
+        assertEquals(100.0, assembled.getPrice());
+        assertEquals(COST_AT_SALE, assembled.getBuy_price());
+    }
+
+    @Test
+    void aFreeReturnIsNotPriceCheckedAtAll() throws DaoException {
+        // No source line to compare against - the price is whatever was entered, which
+        // is the whole nature of a return nothing can verify.
+        Sales_Return assembled = assembledSalesReturnLine(COST_TODAY);
+        assembled.setPrice(999.0);
+
+        resolver.apply(DocumentType.SALES_RETURN,
+                List.of(returnRow(0)), List.of(assembled));
+
+        assertEquals(999.0, assembled.getPrice());
     }
 
     @Test
@@ -168,6 +230,12 @@ class ReturnCostResolverTest {
 
         @Override
         public Optional<Integer> sourceDelegateId(int sourceSalesInvoiceNumber) {
+            throw new UnsupportedOperationException("not used by ReturnCostResolver");
+        }
+
+        @Override
+        public Optional<com.hamza.account.type.InvoiceType> sourceInvoiceType(
+                DocumentType sourceType, int sourceId) {
             throw new UnsupportedOperationException("not used by ReturnCostResolver");
         }
 

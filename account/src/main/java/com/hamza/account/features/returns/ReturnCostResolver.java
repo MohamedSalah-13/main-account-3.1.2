@@ -1,6 +1,7 @@
 package com.hamza.account.features.returns;
 
 import com.hamza.account.document.DocumentType;
+import com.hamza.account.finance.MoneyMath;
 import com.hamza.account.model.base.BasePurchasesAndSales;
 import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.error.BusinessRuleException;
@@ -31,6 +32,9 @@ import java.util.Objects;
  */
 public final class ReturnCostResolver {
 
+    /** Half a piastre - below this two prices are the same price. */
+    private static final double PRICE_EPSILON = 0.005;
+
     private final ReturnableRepository repository;
 
     public ReturnCostResolver(ReturnableRepository repository) {
@@ -55,7 +59,32 @@ public final class ReturnCostResolver {
                     .orElseThrow(() -> new BusinessRuleException(LanguageManager.getInstance()
                             .getString("return.error.source.line.missing",
                                     original.getSourceLineId())));
-            persistedLines.get(index).setBuy_price(source.buyPrice());
+            T persisted = persistedLines.get(index);
+            requireNotDearerThanSold(persisted, source);
+            persisted.setBuy_price(source.buyPrice());
         }
+    }
+
+    /**
+     * A return may refund less than was charged - a restocking fee, or a partial
+     * goodwill credit, are real things - but never more. The picker fills the price in
+     * from the source line, and the price column is left editable for the free-return
+     * case, so without this a line sold at 120 can be refunded at 150 and the
+     * difference walks out of the till.
+     * <p>
+     * Enforced here rather than only by locking the cell, for the reason
+     * {@code CLAUDE.md} states about the whole authorization layer: hiding or disabling
+     * a control is a hint, not enforcement.
+     */
+    private static void requireNotDearerThanSold(
+            BasePurchasesAndSales line, ReturnableRepository.SourceLine source)
+            throws BusinessRuleException {
+        if (line.getPrice() - source.price() <= PRICE_EPSILON) {
+            return;
+        }
+        throw new BusinessRuleException(LanguageManager.getInstance().getString(
+                "return.error.price.above.source",
+                MoneyMath.text(MoneyMath.decimal(line.getPrice())),
+                MoneyMath.text(MoneyMath.decimal(source.price()))));
     }
 }

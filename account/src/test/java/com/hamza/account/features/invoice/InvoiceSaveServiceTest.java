@@ -85,7 +85,7 @@ class InvoiceSaveServiceTest {
         assertEquals(44, result.persistedLines().getFirst().getInvoiceNumber());
         verify(dao).insert(result.invoice());
         verify(stockGuard).validate(any());
-        verify(returnGuard).validate(eq(DocumentType.SALES), eq(0), eq(0), any());
+        verify(returnGuard).validate(eq(DocumentType.SALES), eq(0), eq(0), any(), any());
         verify(dao, never()).update(any());
         verify(stockMovementDao).deleteByReference("SALE", 44);
         verify(stockMovementDao).insertBatch(argThat(movements -> movements.size() == 1));
@@ -109,7 +109,7 @@ class InvoiceSaveServiceTest {
         verify(stockGuard).validate(any());
         // Updating id 91: excludingReturnId is not this DAO's concern for a sale, but
         // the guard is asked with the existing invoice id all the same.
-        verify(returnGuard).validate(eq(DocumentType.SALES), eq(0), eq(91), any());
+        verify(returnGuard).validate(eq(DocumentType.SALES), eq(0), eq(91), any(), any());
         verify(dao).update(result.invoice());
         verify(dao, never()).insert(any());
         verify(stockMovementDao).deleteByReference("SALE", 91);
@@ -165,7 +165,7 @@ class InvoiceSaveServiceTest {
     void returnRefusalHappensBeforeNumberAllocationOrPersistence() throws Exception {
         session.signIn(7, "cashier", Set.of(AppPermissions.SALES_CREATE));
         doThrow(new BusinessRuleException("would exceed the source invoice"))
-                .when(returnGuard).validate(any(), anyInt(), anyInt(), any());
+                .when(returnGuard).validate(any(), anyInt(), anyInt(), any(), any());
 
         assertThrows(BusinessRuleException.class,
                 () -> service.save(command(0, 5)));

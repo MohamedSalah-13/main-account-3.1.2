@@ -3,6 +3,7 @@ package com.hamza.account.features.returns;
 import com.hamza.account.document.DocumentType;
 import com.hamza.controlsfx.database.ConnectionManager;
 import com.hamza.controlsfx.database.DataSourceProvider;
+import com.hamza.controlsfx.error.BusinessRuleException;
 import com.hamza.controlsfx.util.crypto.CryptoDatabaseConfig;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -20,9 +21,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -346,6 +349,45 @@ class ReturnableRepositoryAcceptanceTest {
         }
     }
 
+    /**
+     * Deleting a sale that has been returned against would remove the sale's stock-out
+     * and leave the return's stock-in behind, raising the item's balance by the
+     * returned quantity out of nothing. The link {@code V16} added is what makes that
+     * detectable; {@link ReturnLinkGuard} is what refuses it.
+     */
+    @Test
+    void aSaleThatHasBeenReturnedAgainstCannotBeDeleted() throws Exception {
+        Connection transaction = ConnectionManager.beginTransaction();
+        assertNotNull(transaction);
+        try {
+            int itemId = insertItem(transaction);
+            int sales = nextId(transaction, "total_sales", "invoice_number");
+            insertSalesHeader(transaction, sales);
+            insertSalesLine(transaction, sales, itemId, 5);
+
+            // No return yet - deleting is nobody's business but the caller's.
+            assertDoesNotThrow(() ->
+                    ReturnLinkGuard.requireNoReturns(DocumentType.SALES, sales));
+
+            int returnId = nextId(transaction, "total_sales_re", "id");
+            insertSalesReturnHeader(transaction, returnId);
+            insertSalesReturnLine(transaction, returnId, itemId, 2);
+            WRITER.writeSource(DocumentType.SALES_RETURN, returnId, sales, null);
+
+            BusinessRuleException refused = assertThrows(BusinessRuleException.class, () ->
+                    ReturnLinkGuard.requireNoReturns(DocumentType.SALES, sales));
+            assertTrue(refused.getMessage().contains(String.valueOf(sales)),
+                    "the refusal must name the invoice: " + refused.getMessage());
+
+            // An unrelated invoice in the same call is not blocked by this one.
+            assertDoesNotThrow(() ->
+                    ReturnLinkGuard.requireNoReturns(DocumentType.SALES, sales + 777));
+        } finally {
+            transaction.rollback();
+            ConnectionManager.endTransaction(transaction);
+        }
+    }
+
     @Test
     void theGuardRefusesASecondReturnThatWouldExceedWhatTheFirstLeft() throws Exception {
         Connection transaction = ConnectionManager.beginTransaction();
@@ -373,7 +415,8 @@ class ReturnableRepositoryAcceptanceTest {
 
             org.junit.jupiter.api.Assertions.assertThrows(
                     com.hamza.controlsfx.error.BusinessRuleException.class,
-                    () -> guard.validate(DocumentType.SALES_RETURN, sales, 0, List.of(line)));
+                    () -> guard.validate(DocumentType.SALES_RETURN, sales, 0,
+                            com.hamza.account.type.InvoiceType.CASH, List.of(line)));
         } finally {
             transaction.rollback();
             ConnectionManager.endTransaction(transaction);

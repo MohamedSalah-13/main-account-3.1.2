@@ -235,6 +235,12 @@ class InvoiceExpiryServiceTest {
         }
 
         @Override
+        public Optional<com.hamza.account.type.InvoiceType> sourceInvoiceType(
+                DocumentType sourceType, int sourceId) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
         public List<ReasonCount> reasonCounts(
                 DocumentType returnType, LocalDate from, LocalDate to) {
             throw new UnsupportedOperationException();

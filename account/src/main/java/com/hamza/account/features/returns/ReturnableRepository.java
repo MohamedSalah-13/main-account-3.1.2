@@ -87,6 +87,15 @@ public interface ReturnableRepository {
     Optional<Integer> sourceDelegateId(int sourceSalesInvoiceNumber) throws DaoException;
 
     /**
+     * How the source invoice was settled. A cash invoice was paid in full at the
+     * counter, so a return of it has an account balance of exactly zero to reverse -
+     * settling that return on account instead would create a debt out of a transaction
+     * that had already been closed. Empty when the invoice does not exist.
+     */
+    Optional<com.hamza.account.type.InvoiceType> sourceInvoiceType(
+            DocumentType sourceType, int sourceId) throws DaoException;
+
+    /**
      * How many returns of one type were entered for each reason in a date range, and
      * what they totalled - what a reasons report groups by. A return with no reason
      * recorded (every one before an entry screen asked for one, and any entered

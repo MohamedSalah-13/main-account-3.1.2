@@ -42,14 +42,27 @@ public final class WipeCatalog {
     public static final WipeTarget SALES_RETURNS = WipeTarget.of("salesReturns", "wipe.target.salesReturns",
             List.of(WipeTable.of("sales_re"), WipeTable.of("total_sales_re")));
 
+    /**
+     * Requires the returns, and not because of a foreign key - {@code
+     * total_sales_re.source_invoice_number} is {@code ON DELETE SET NULL}, so the
+     * database would empty this happily and leave the returns standing.
+     * <p>
+     * It is the <em>stock</em> that breaks. A sale takes goods out and its return puts
+     * them back; erasing only the sale leaves the return's stock-in with nothing to
+     * reverse, and every returned item's balance rises by the returned quantity out of
+     * nothing. The two are one movement in opposite directions and have to go together.
+     */
     public static final WipeTarget SALES = WipeTarget.of("sales", "wipe.target.sales",
-            List.of(WipeTable.of("sales"), WipeTable.of("total_sales")));
+            List.of(WipeTable.of("sales"), WipeTable.of("total_sales")),
+            "salesReturns");
 
     public static final WipeTarget PURCHASE_RETURNS = WipeTarget.of("purchaseReturns", "wipe.target.purchaseReturns",
             List.of(WipeTable.of("purchase_re"), WipeTable.of("total_buy_re")));
 
+    /** Requires its returns for the same reason {@link #SALES} does, mirrored. */
     public static final WipeTarget PURCHASES = WipeTarget.of("purchases", "wipe.target.purchases",
-            List.of(WipeTable.of("purchase"), WipeTable.of("total_buy")));
+            List.of(WipeTable.of("purchase"), WipeTable.of("total_buy")),
+            "purchaseReturns");
 
     // ---- names and their accounts --------------------------------------------
 

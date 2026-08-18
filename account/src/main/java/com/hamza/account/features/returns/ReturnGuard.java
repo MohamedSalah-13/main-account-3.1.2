@@ -3,6 +3,7 @@ package com.hamza.account.features.returns;
 import com.hamza.account.document.DocumentType;
 import com.hamza.account.model.base.BasePurchasesAndSales;
 import com.hamza.account.service.ItemUnits;
+import com.hamza.account.type.InvoiceType;
 import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.error.BusinessRuleException;
 import com.hamza.controlsfx.language.LanguageManager;
@@ -40,10 +41,11 @@ public final class ReturnGuard {
      * @param excludingReturnId  the return's own id when updating one already saved, so
      *                           it is not checked against its own previous quantities;
      *                           {@code 0} when creating a new one
+     * @param invoiceType        how the return itself is being settled
      * @param lines              the return's proposed lines
      */
     public void validate(DocumentType returnType, int sourceInvoiceNumber,
-                         int excludingReturnId,
+                         int excludingReturnId, InvoiceType invoiceType,
                          List<? extends BasePurchasesAndSales> lines) throws DaoException {
         Objects.requireNonNull(returnType, "returnType");
         if (sourceInvoiceNumber <= 0) {
@@ -58,6 +60,8 @@ public final class ReturnGuard {
             throw new BusinessRuleException(message("return.error.source.not.found"));
         }
 
+        requireSettlementMatchesSource(sourceType, sourceInvoiceNumber, invoiceType);
+
         ReturnableDocument source = ReturnableDocument.of(sourceType, sourceInvoiceNumber,
                 repository.sourceLines(sourceType, sourceInvoiceNumber));
         Map<Integer, Double> alreadyReturned = repository.alreadyReturnedBaseQuantities(
@@ -68,6 +72,34 @@ public final class ReturnGuard {
         if (!decision.isAllowed()) {
             throw new BusinessRuleException(
                     ((ReturnEligibility.Decision.Refused) decision).message());
+        }
+    }
+
+    /**
+     * A return of a cash invoice must itself be cash.
+     * <p>
+     * A cash invoice was settled in full at the counter: nothing was ever put on the
+     * party's account, so a return of it has an account balance of exactly zero to
+     * reverse. Settling that return on account instead credits a balance that never
+     * existed - and on the walk-in "بيع نقدى" customer, which is where cash sales go,
+     * there is no account at all for the credit to sit in. It simply accumulates
+     * against a party nobody will ever collect from or pay.
+     * <p>
+     * The reverse is deliberately allowed: a return of a <em>deferred</em> invoice may
+     * be settled in cash (refunding someone who still owes you is a real thing) or on
+     * account (the ordinary credit note).
+     */
+    private void requireSettlementMatchesSource(DocumentType sourceType, int sourceInvoiceNumber,
+                                                InvoiceType invoiceType) throws DaoException {
+        if (invoiceType != InvoiceType.DEFER) {
+            return;
+        }
+        InvoiceType sourceInvoiceType = repository
+                .sourceInvoiceType(sourceType, sourceInvoiceNumber)
+                .orElse(null);
+        if (sourceInvoiceType == InvoiceType.CASH) {
+            throw new BusinessRuleException(
+                    message("return.error.deferred.against.cash", sourceInvoiceNumber));
         }
     }
 

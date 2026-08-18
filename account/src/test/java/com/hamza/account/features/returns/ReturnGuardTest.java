@@ -4,6 +4,7 @@ import com.hamza.account.document.DocumentType;
 import com.hamza.account.model.domain.ItemsModel;
 import com.hamza.account.model.domain.Sales_Return;
 import com.hamza.account.model.domain.UnitsModel;
+import com.hamza.account.type.InvoiceType;
 import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.error.BusinessRuleException;
 import org.junit.jupiter.api.BeforeEach;
@@ -37,7 +38,7 @@ class ReturnGuardTest {
     void doesNothingWithoutASourceInvoice() {
         // sourceInvoiceNumber = 0 is a free return - the repository must not even be asked.
         assertDoesNotThrow(() -> guard.validate(
-                DocumentType.SALES_RETURN, 0, 0, List.of(lineOf(ITEM, 999))));
+                DocumentType.SALES_RETURN, 0, 0, InvoiceType.CASH, List.of(lineOf(ITEM, 999))));
         assertTrue(repository.calls.isEmpty());
     }
 
@@ -49,7 +50,7 @@ class ReturnGuardTest {
         ReturnGuard strict = new ReturnGuard(repository, ReturnPolicy.requiringSource());
 
         assertThrows(BusinessRuleException.class, () -> strict.validate(
-                DocumentType.SALES_RETURN, 0, 0, List.of(lineOf(ITEM, 1))));
+                DocumentType.SALES_RETURN, 0, 0, InvoiceType.CASH, List.of(lineOf(ITEM, 1))));
         assertTrue(repository.calls.isEmpty(),
                 "refusing a free return needs no query at all");
     }
@@ -61,7 +62,7 @@ class ReturnGuardTest {
         ReturnGuard strict = new ReturnGuard(repository, ReturnPolicy.requiringSource());
 
         assertDoesNotThrow(() -> strict.validate(
-                DocumentType.SALES_RETURN, SOURCE_INVOICE, 0, List.of(lineOf(ITEM, 5))));
+                DocumentType.SALES_RETURN, SOURCE_INVOICE, 0, InvoiceType.CASH, List.of(lineOf(ITEM, 5))));
     }
 
     @Test
@@ -69,8 +70,50 @@ class ReturnGuardTest {
         // No sourceExists(...) entry registered, so it answers false.
         BusinessRuleException error = assertThrows(BusinessRuleException.class, () ->
                 guard.validate(DocumentType.SALES_RETURN, SOURCE_INVOICE, 0,
-                        List.of(lineOf(ITEM, 1))));
+                        InvoiceType.CASH, List.of(lineOf(ITEM, 1))));
         assertTrue(error.getMessage() != null && !error.getMessage().isBlank());
+    }
+
+    @Test
+    void refusesADeferredReturnOfACashInvoice() {
+        // The reported case: the sale was settled in full at the counter, so nothing
+        // was ever on the customer's account for a return to reverse. Deferring it
+        // credits a balance that never existed - and cash sales go to the walk-in
+        // "بيع نقدى" customer, which has no account at all for the credit to sit in.
+        repository.registerSource(SOURCE_INVOICE);
+        repository.soldLines.add(new ReturnableRepository.SoldLine(ITEM, 5));
+        repository.sourceInvoiceType = InvoiceType.CASH;
+
+        BusinessRuleException refused = assertThrows(BusinessRuleException.class,
+                () -> guard.validate(DocumentType.SALES_RETURN, SOURCE_INVOICE, 0,
+                        InvoiceType.DEFER, List.of(lineOf(ITEM, 1))));
+        assertTrue(refused.getMessage().contains(String.valueOf(SOURCE_INVOICE)),
+                refused.getMessage());
+    }
+
+    @Test
+    void allowsACashReturnOfACashInvoice() {
+        repository.registerSource(SOURCE_INVOICE);
+        repository.soldLines.add(new ReturnableRepository.SoldLine(ITEM, 5));
+        repository.sourceInvoiceType = InvoiceType.CASH;
+
+        assertDoesNotThrow(() -> guard.validate(DocumentType.SALES_RETURN, SOURCE_INVOICE, 0,
+                InvoiceType.CASH, List.of(lineOf(ITEM, 1))));
+    }
+
+    @Test
+    void allowsEitherSettlementForAReturnOfADeferredInvoice() {
+        // A deferred sale left a balance on the account, so its return may credit that
+        // account (the ordinary credit note) or hand back cash to someone who still
+        // owes - both are real, and neither invents a balance.
+        repository.registerSource(SOURCE_INVOICE);
+        repository.soldLines.add(new ReturnableRepository.SoldLine(ITEM, 5));
+        repository.sourceInvoiceType = InvoiceType.DEFER;
+
+        assertDoesNotThrow(() -> guard.validate(DocumentType.SALES_RETURN, SOURCE_INVOICE, 0,
+                InvoiceType.DEFER, List.of(lineOf(ITEM, 1))));
+        assertDoesNotThrow(() -> guard.validate(DocumentType.SALES_RETURN, SOURCE_INVOICE, 0,
+                InvoiceType.CASH, List.of(lineOf(ITEM, 1))));
     }
 
     @Test
@@ -79,7 +122,7 @@ class ReturnGuardTest {
         repository.soldLines.add(new ReturnableRepository.SoldLine(ITEM, 5));
 
         assertDoesNotThrow(() -> guard.validate(
-                DocumentType.SALES_RETURN, SOURCE_INVOICE, 0, List.of(lineOf(ITEM, 5))));
+                DocumentType.SALES_RETURN, SOURCE_INVOICE, 0, InvoiceType.CASH, List.of(lineOf(ITEM, 5))));
     }
 
     @Test
@@ -88,7 +131,7 @@ class ReturnGuardTest {
         repository.soldLines.add(new ReturnableRepository.SoldLine(ITEM, 5));
 
         assertThrows(BusinessRuleException.class, () -> guard.validate(
-                DocumentType.SALES_RETURN, SOURCE_INVOICE, 0, List.of(lineOf(ITEM, 6))));
+                DocumentType.SALES_RETURN, SOURCE_INVOICE, 0, InvoiceType.CASH, List.of(lineOf(ITEM, 6))));
     }
 
     @Test
@@ -96,7 +139,7 @@ class ReturnGuardTest {
         repository.registerSource(SOURCE_INVOICE);
         repository.soldLines.add(new ReturnableRepository.SoldLine(ITEM, 5));
 
-        guard.validate(DocumentType.SALES_RETURN, SOURCE_INVOICE, 0, List.of(lineOf(ITEM, 1)));
+        guard.validate(DocumentType.SALES_RETURN, SOURCE_INVOICE, 0, InvoiceType.CASH, List.of(lineOf(ITEM, 1)));
 
         assertTrue(repository.sourceExistsCalledWith.contains(DocumentType.SALES));
     }
@@ -110,7 +153,7 @@ class ReturnGuardTest {
         repository.alreadyReturned.put(ITEM, 3.0);
 
         assertDoesNotThrow(() -> guard.validate(
-                DocumentType.SALES_RETURN, SOURCE_INVOICE, 42, List.of(lineOf(ITEM, 2))));
+                DocumentType.SALES_RETURN, SOURCE_INVOICE, 42, InvoiceType.CASH, List.of(lineOf(ITEM, 2))));
         assertTrue(repository.excludingCalledWith.contains(42));
     }
 
@@ -131,6 +174,7 @@ class ReturnGuardTest {
         final List<Integer> excludingCalledWith = new java.util.ArrayList<>();
         final List<SoldLine> soldLines = new java.util.ArrayList<>();
         final Map<Integer, Double> alreadyReturned = new HashMap<>();
+        com.hamza.account.type.InvoiceType sourceInvoiceType;
         private final java.util.Set<Integer> existingSources = new java.util.HashSet<>();
 
         void registerSource(int id) {
@@ -181,6 +225,13 @@ class ReturnGuardTest {
         public java.util.Optional<Integer> sourceDelegateId(int sourceSalesInvoiceNumber) {
             calls.add("sourceDelegateId");
             return java.util.Optional.empty();
+        }
+
+        @Override
+        public java.util.Optional<com.hamza.account.type.InvoiceType> sourceInvoiceType(
+                DocumentType sourceType, int sourceId) {
+            calls.add("sourceInvoiceType");
+            return java.util.Optional.ofNullable(sourceInvoiceType);
         }
 
         @Override

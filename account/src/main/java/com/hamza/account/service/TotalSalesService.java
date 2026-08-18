@@ -1,6 +1,7 @@
 package com.hamza.account.service;
 
 import com.hamza.account.document.DocumentType;
+import com.hamza.account.features.returns.ReturnLinkGuard;
 import com.hamza.account.features.stockledger.StockMovementAssembler;
 import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.authorization.AuthorizationGuard;
@@ -51,6 +52,10 @@ public record TotalSalesService(DaoFactory daoFactory) {
     public int deleteMultiData(Integer[] ids) throws DaoException {
         AuthorizationGuard.require(AppPermissions.SALES_DELETE);
         PeriodLock.require(PeriodLockRegistry.SALES_INVOICE, List.of(ids));
+        // Before anything is removed: a sale that has been returned against cannot go,
+        // or its return's stock-in is left with nothing to reverse and every returned
+        // item gains the returned quantity out of nothing.
+        ReturnLinkGuard.requireNoReturns(DocumentType.SALES, ids);
         return TransactionTemplate.execute(() -> {
             daoFactory.stockMovementDao().deleteByReferences(
                     StockMovementAssembler.referenceTypeFor(DocumentType.SALES), ids);

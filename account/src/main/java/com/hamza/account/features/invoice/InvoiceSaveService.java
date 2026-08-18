@@ -129,7 +129,8 @@ public final class InvoiceSaveService<
             throws DaoException {
         stockGuard.validate(command);
         returnGuard.validate(documentType, command.sourceInvoiceNumber(),
-                command.updating() ? command.existingInvoiceId() : 0, command.lines());
+                command.updating() ? command.existingInvoiceId() : 0,
+                payment.invoiceType(), command.lines());
         int invoiceNumber = command.updating()
                 ? command.existingInvoiceId()
                 : numberAllocator.next(documentType);
