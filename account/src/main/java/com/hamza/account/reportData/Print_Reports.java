@@ -181,10 +181,18 @@ public class Print_Reports extends ReportCompany {
         jasperData.printJasperPrint(JasperReportPaths.Report.INVENTORY_BY_TABLE, LanguageManager.getInstance().getString("items"), map, 1, "");
     }
 
+    /**
+     * @param tableName the document kind the screen is filtered to
+     *                  ({@code sales}, {@code purchase_re}, ...), or null for all
+     *                  four. The report used to print every document whatever the
+     *                  screen showed, so a card filtered to sales printed with the
+     *                  purchases still on it and totals that did not match its rows.
+     */
     public void printCardItem(@NotNull Integer itemId, double purchase, double sales, double purchase_re, double sales_re, double first_balance
-            , double amount, @NotNull String dateFrom, @NotNull String dateTo) throws DaoException, SQLException {
+            , double amount, @NotNull String dateFrom, @NotNull String dateTo, String tableName) throws DaoException, SQLException {
         HashMap<String, Object> company = getCompany();
         company.put("itemNum", itemId);
+        company.put("tableName", tableName);
         company.put("purchase", purchase);
         company.put("sales", sales);
         company.put("purchase_re", purchase_re);

@@ -36,6 +36,8 @@ public class NamesTables {
 
     public static final String TOTAL = "column.total";
     public static final String TYPE = "column.type";
+    /** The kind of document a movement came from, as the item card shows it. */
+    public static final String PROCESS_TYPE = "column.process_type";
     public static final String DISCOUNT = "column.discount";
     public static final String TOTAL_AFTER = "column.total_after";
     public static final String REST = "column.rest";

@@ -29,6 +29,10 @@
     <parameter name="amount" class="java.lang.Double"/>
     <parameter name="dateFrom" class="java.lang.String"/>
     <parameter name="dateTo" class="java.lang.String"/>
+    <!-- The document kind the screen is filtered to, or null for all four. -->
+    <parameter name="tableName" class="java.lang.String" isForPrompting="false">
+        <defaultValueExpression><![CDATA[null]]></defaultValueExpression>
+    </parameter>
     <queryString language="SQL">
         <![CDATA[SELECT id,
 	invoice_number,
@@ -43,11 +47,11 @@
 	table_name,
 	`nameItem`,
 	unit_name
-FROM account_system_db.card_item_view_details
-WHERE 
-	 account_system_db.card_item_view_details.item_num = $P{itemNum} 
-	 	 AND account_system_db.card_item_view_details.invoice_date BETWEEN $P{dateFrom} AND $P{dateTo}
-]]>
+FROM card_item_view_details
+WHERE item_num = $P{itemNum}
+  AND invoice_date BETWEEN $P{dateFrom} AND $P{dateTo}
+  AND ($P{tableName} IS NULL OR table_name = $P{tableName})
+ORDER BY invoice_date, date_insert, id]]>
     </queryString>
     <field name="id" class="java.lang.Integer">
         <property name="com.jaspersoft.studio.field.name" value="id"/>

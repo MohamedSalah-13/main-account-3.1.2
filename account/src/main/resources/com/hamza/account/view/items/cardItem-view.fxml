@@ -67,8 +67,15 @@
 
                                 <Label styleClass="summary-label" text="%item.card.profit" GridPane.columnIndex="8" GridPane.rowIndex="1" />
                                 <Text fx:id="textCostTotals" styleClass="summary-value" text="0.0" GridPane.columnIndex="9" GridPane.rowIndex="1" />
+
+                                <Label styleClass="summary-label" text="%item.card.opening.balance" GridPane.rowIndex="2" />
+                                <Text fx:id="textOpeningBalance" styleClass="summary-value" text="0.0" GridPane.columnIndex="1" GridPane.rowIndex="2" />
+
+                                <Label styleClass="summary-label" text="%item.card.closing.balance" GridPane.columnIndex="2" GridPane.rowIndex="2" />
+                                <Text fx:id="textClosingBalance" styleClass="summary-value" text="0.0" GridPane.columnIndex="3" GridPane.rowIndex="2" />
                             </children>
                             <rowConstraints>
+                                <RowConstraints />
                                 <RowConstraints />
                                 <RowConstraints />
                             </rowConstraints>

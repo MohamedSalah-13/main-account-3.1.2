@@ -489,22 +489,33 @@ FROM total_buy_re tbr
 ORDER BY created_at;
 
 -- --------------------------------------card_item_view---------------------------------------------
+--
+-- One row per invoice line of an item, over the four documents.
+--
+-- type_value is the factor the line stored, and stock_id comes from the header. Both
+-- are here for the same reason quantity_items_table reads them: a quantity is only
+-- comparable across rows once it is multiplied by the factor its own line carried, and
+-- the card used to convert with units.value_d - one number for the whole database -
+-- so an item sold by a carton of 12 was counted as if every carton held whatever the
+-- units screen last said.
 
 DROP VIEW IF EXISTS card_item_view;
 CREATE VIEW card_item_view AS
 WITH sales_data AS (SELECT s.id,
                            s.invoice_number,
                            t.invoice_date,
-                           s.num       AS item_num,
-                           s.type      AS unit_type,
+                           s.num        AS item_num,
+                           s.type       AS unit_type,
+                           s.type_value,
                            s.quantity,
                            s.price,
                            s.buy_price,
                            s.discount,
-                           c.name      AS name_custom,
+                           c.name       AS name_custom,
                            t.date_insert,
                            t.delegate_id,
-                           'sales'     AS table_name,
+                           t.stock_id,
+                           'sales'      AS table_name,
                            s.expiration_date
                     FROM sales s
                              JOIN total_sales t ON t.invoice_number = s.invoice_number
@@ -514,6 +525,7 @@ WITH sales_data AS (SELECT s.id,
                                   t.invoice_date,
                                   sre.item_id AS item_num,
                                   sre.type    AS unit_type,
+                                  sre.type_value,
                                   sre.quantity,
                                   sre.price,
                                   sre.buy_price,
@@ -521,6 +533,7 @@ WITH sales_data AS (SELECT s.id,
                                   c.name      AS name_custom,
                                   t.date_insert,
                                   t.delegate_id,
+                                  t.stock_id,
                                   'sales_re'  AS table_name,
                                   sre.expiration_date
                            FROM sales_re sre
@@ -531,6 +544,7 @@ WITH sales_data AS (SELECT s.id,
                               t.invoice_date,
                               p.num      AS item_num,
                               p.type     AS unit_type,
+                              p.type_value,
                               p.quantity,
                               p.price,
                               0          AS buy_price,
@@ -538,6 +552,7 @@ WITH sales_data AS (SELECT s.id,
                               s.name     AS name_custom,
                               t.date_insert,
                               0          AS delegate_id,
+                              t.stock_id,
                               'purchase' AS table_name,
                               p.expiration_date
                        FROM purchase p
@@ -548,6 +563,7 @@ WITH sales_data AS (SELECT s.id,
                                      t.invoice_date,
                                      pre.item_id AS item_num,
                                      pre.type    AS unit_type,
+                                     pre.type_value,
                                      pre.quantity,
                                      pre.price,
                                      0           AS buy_price,
@@ -555,6 +571,7 @@ WITH sales_data AS (SELECT s.id,
                                      s.name      AS name_custom,
                                      t.date_insert,
                                      0           AS delegate_id,
+                                     t.stock_id,
                                      'purchase_re' AS table_name,
                                      pre.expiration_date
                               FROM purchase_re pre
@@ -577,7 +594,14 @@ SELECT c.id,
        c.invoice_date,
        c.item_num,
        c.unit_type,
+       c.type_value,
+       c.stock_id,
        c.quantity,
+       -- The line in the item's base unit, signed the way the movement goes: a
+       -- purchase and a sales return put stock in, a sale and a purchase return take
+       -- it out. Every balance on the item card is a sum of this column, so the card
+       -- and quantity_items_table cannot drift apart.
+       IF(c.table_name IN ('purchase', 'sales_re'), 1, -1) * c.quantity * c.type_value AS base_quantity,
        c.price,
        c.buy_price,
        IF(c.table_name IN ('purchase','purchase_re'), 0,

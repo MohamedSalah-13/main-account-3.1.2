@@ -4,34 +4,34 @@ import com.hamza.account.config.Image_Setting;
 import com.hamza.account.controller.main.DataPublisher;
 import com.hamza.account.controller.main.LoadData;
 import com.hamza.account.controller.others.ServiceRegistry;
+import com.hamza.account.features.itemcard.ItemCardRunningBalance;
+import com.hamza.account.features.itemcard.ItemCardTotals;
 import com.hamza.account.interfaces.api.DataInterface;
 import com.hamza.account.interfaces.impl_dataInterface.CustomData;
 import com.hamza.account.interfaces.impl_dataInterface.CustomDataReturn;
 import com.hamza.account.interfaces.impl_dataInterface.SuppliersData;
 import com.hamza.account.interfaces.impl_dataInterface.SuppliersDataReturn;
 import com.hamza.account.model.base.BasePurchasesAndSales;
+import com.hamza.account.model.dao.CardItemDao;
 import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.model.domain.*;
 import com.hamza.account.openFxml.FxmlPath;
 import com.hamza.account.openFxml.OpenFxmlApplication;
 import com.hamza.account.reportData.Print_Reports;
 import com.hamza.account.service.CardItemService;
-import com.hamza.account.service.ItemsService;
-import com.hamza.account.service.UnitsService;
 import com.hamza.account.table.TableSetting;
 import com.hamza.account.type.ProcessType;
 import com.hamza.account.view.ShowInvoiceApplication;
 import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.button.api.ButtonColumnI;
 import com.hamza.controlsfx.button.button_column.ButtonColumn;
-import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.interfaceData.AppSettingInterface;
 import com.hamza.controlsfx.language.LanguageManager;
 import com.hamza.controlsfx.others.DateSetting;
 import com.hamza.controlsfx.table.TableColumnAnnotation;
 import com.hamza.controlsfx.util.ImageChoose;
 import javafx.collections.FXCollections;
-import javafx.collections.transformation.FilteredList;
+import javafx.collections.ObservableList;
 import javafx.collections.transformation.SortedList;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
@@ -43,29 +43,53 @@ import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
 import java.net.URL;
+import java.text.DecimalFormat;
 import java.time.LocalDate;
-import java.util.*;
-import java.util.function.Predicate;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
+import java.util.ResourceBundle;
 
 import static com.hamza.account.type.TypeList.processTypeList;
 import static com.hamza.controlsfx.table.Table_Setting.column_number;
 
+/**
+ * One item's stock card: every movement of it in a period, what the period moved, and
+ * what the item's balance was before and after it.
+ * <p>
+ * Three things about the numbers on this screen are worth knowing before changing it:
+ * <ul>
+ *   <li><b>Quantities are in the item's base unit.</b> A line is scaled by the factor
+ *       the line itself stored, which is what {@code quantity_items_table} counts with.
+ *       It used to be scaled by {@code units.value_d} - one factor for the whole
+ *       database - so an item sold by the carton was counted as though every carton in
+ *       the shop held the same number.</li>
+ *   <li><b>The opening and closing balances come from the database, not from the
+ *       rows.</b> A posted stock count moves the balance without producing a card
+ *       line, so a card that derived its closing balance by adding up its own rows
+ *       would disagree with every other screen after the first inventory.</li>
+ *   <li><b>The period is a query, not a filter.</b> The rows are read for the dates
+ *       asked for; the screen no longer loads the item's whole history to show a month
+ *       of it.</li>
+ * </ul>
+ */
 @Log4j2
 @FxmlPath(pathFile = "items/cardItem-view.fxml")
 public class CardController extends LoadData implements Initializable, AppSettingInterface {
+
+    /** Enough decimals for a fractional quantity, without printing 12.000000000002. */
+    private static final DecimalFormat NUMBER = new DecimalFormat("#,##0.##");
 
     private final int numItem;
 
     private final ItemsModel itemsModel;
     private final CardItemService cardItemService = ServiceRegistry.get(CardItemService.class);
-    private final UnitsService unitsService = ServiceRegistry.get(UnitsService.class);
-    private final ItemsService itemsService = ServiceRegistry.get(ItemsService.class);
     @FXML
     private TableView<CardItems> tableView;
     @FXML
     private ComboBox<String> comboBox;
     @FXML
-    private Text textPurchase, textSales, textRePurchase, textReSales, textCountTotals, textCostPurchase, textCostSales, textCostSalesRe, textCostPurchaseRe, textCostTotals, textType;
+    private Text textPurchase, textSales, textRePurchase, textReSales, textCountTotals, textCostPurchase, textCostSales, textCostSalesRe, textCostPurchaseRe, textCostTotals, textType, textOpeningBalance, textClosingBalance;
     @FXML
     private Label labelPurchase, labelSales, labelRePurchase, labelReSales, labelFrom, labelTo, labelType, labelName;
     @FXML
@@ -74,7 +98,23 @@ public class CardController extends LoadData implements Initializable, AppSettin
     private TextField textName;
     @FXML
     private DatePicker dateFrom, dateTo;
-    private FilteredList<CardItems> filteredTable;
+
+    /** The rows behind the table, in movement order - the order the balance runs in. */
+    private final ObservableList<CardItems> rows = FXCollections.observableArrayList();
+    private ItemCardTotals totals = ItemCardTotals.EMPTY;
+    private double openingBalance;
+    private double closingBalance;
+    /**
+     * The period and the document kind the rows on screen were read for - not what the
+     * pickers say now. Changing a date without pressing search must not print a report
+     * for one period with the totals of another, which is what reading the controls at
+     * print time did.
+     */
+    private LocalDate loadedFrom;
+    private LocalDate loadedTo;
+    private ProcessType loadedProcessType;
+    /** Whether the rows on screen carry a running balance - see {@link #loadCard()}. */
+    private boolean balanceShown = true;
 
     public CardController(ItemsModel itemsModel, DaoFactory daoFactory, DataPublisher dataPublisher) throws Exception {
         super(daoFactory, dataPublisher);
@@ -83,27 +123,13 @@ public class CardController extends LoadData implements Initializable, AppSettin
     }
 
     public static DataInterface<? extends BasePurchasesAndSales, ?, ?, ?> dataInterface(ProcessType processType, DaoFactory daoFactory, DataPublisher dataPublisher) throws Exception {
-        DataInterface<Purchase, Total_buy, Suppliers, SupplierAccount> dataInterfacePurchase = new SuppliersData(daoFactory, dataPublisher);
-        DataInterface<Sales, Total_Sales, Customers, CustomerAccount> dataInterfaceSales = new CustomData(daoFactory, dataPublisher);
-        DataInterface<Purchase_Return, Total_Buy_Re, Suppliers, SupplierAccount> dataInterfacePurchaseReturn = new SuppliersDataReturn(daoFactory, dataPublisher);
-        DataInterface<Sales_Return, Total_Sales_Re, Customers, CustomerAccount> dataInterfaceSalesReturn = new CustomDataReturn(daoFactory, dataPublisher);
-        switch (processType) {
-            case PURCHASE -> {
-                return dataInterfacePurchase;
-            }
-            case PURCHASE_RETURN -> {
-                return dataInterfacePurchaseReturn;
-            }
-            case SALES -> {
-                return dataInterfaceSales;
-            }
-            case SALES_RETURN -> {
-                return dataInterfaceSalesReturn;
-            }
-            default -> {
-                return null;
-            }
-        }
+        if (processType == null) return null;
+        return switch (processType) {
+            case PURCHASE -> new SuppliersData(daoFactory, dataPublisher);
+            case PURCHASE_RETURN -> new SuppliersDataReturn(daoFactory, dataPublisher);
+            case SALES -> new CustomData(daoFactory, dataPublisher);
+            case SALES_RETURN -> new CustomDataReturn(daoFactory, dataPublisher);
+        };
     }
 
     @Override
@@ -112,26 +138,18 @@ public class CardController extends LoadData implements Initializable, AppSettin
         otherSetting();
         addColumnShowInvoice();
         action();
-        getSum();
-        setFirstDate();
         applyRowColoringForBalance();
+        loadCard();
     }
 
     private void getTable() {
         new TableColumnAnnotation().getTable(tableView, CardItems.class);
         tableView.getColumns().addFirst(column_number());
-        filteredTable = new FilteredList<>(FXCollections.observableList(cardItemsList()), t2 -> true);
-        //        FilteredList<BasePurchasesAndSales> filteredTable = new FilteredList<>(FXCollections.observableArrayList(list), p -> true);
-        SortedList<CardItems> sortedList = new SortedList<>(filteredTable);
+        SortedList<CardItems> sortedList = new SortedList<>(rows);
         sortedList.comparatorProperty().bind(tableView.comparatorProperty());
         tableView.setItems(sortedList);
 
         TableSetting.tableMenuSetting(getClass(), tableView);
-    }
-
-    private void setFirstDate() {
-        Optional<CardItems> cardItemsList = filteredTable.stream().min(Comparator.comparing(CardItems::getInvoice_date)).stream().findFirst();
-        cardItemsList.ifPresent(cardItems -> dateFrom.setValue(LocalDate.parse(cardItems.getInvoice_date().toString())));
     }
 
     private void otherSetting() {
@@ -153,156 +171,127 @@ public class CardController extends LoadData implements Initializable, AppSettin
 
         DateSetting.dateAction(dateFrom);
         DateSetting.dateAction(dateTo);
+        dateFrom.setValue(firstMovementDate());
         textType.setText(itemsModel.getUnitsType().getUnit_name());
         textName.setText(itemsModel.getNameItem());
+    }
+
+    /**
+     * The card opens on the item's whole history, as it always has - but the range is
+     * asked of the database rather than discovered by loading every line the item was
+     * ever on. An item that has never moved opens on today.
+     */
+    private LocalDate firstMovementDate() {
+        try {
+            LocalDate first = cardItemService.firstMovementDate(numItem);
+            if (first != null) return first;
+        } catch (Exception e) {
+            logError(e);
+        }
+        return LocalDate.now();
     }
 
     private void action() {
         var image = new Image_Setting();
         btnSearch.setGraphic(ImageChoose.createIcon(image.search));
         btnPrint.setGraphic(ImageChoose.createIcon(image.print));
-        btnSearch.setOnAction(actionEvent -> searchAction());
+        btnSearch.setOnAction(actionEvent -> loadCard());
         btnPrint.setOnAction(actionEvent -> print());
     }
 
-    private void print() {
+    /**
+     * Reads the card for the period on screen and shows what it adds up to.
+     * <p>
+     * Both balances are read for the period asked for, so the totals, the running
+     * balance column and the printed report are all answering the same question.
+     */
+    private void loadCard() {
+        LocalDate from = dateFrom.getValue();
+        LocalDate to = dateTo.getValue();
+        if (from == null || to == null) {
+            AllAlerts.alertError(LanguageManager.getInstance().getString("item.card.date.required"));
+            return;
+        }
+        if (from.isAfter(to)) {
+            AllAlerts.alertError(LanguageManager.getInstance().getString("item.card.date.range.invalid"));
+            return;
+        }
         try {
-            List<CardItems> cardItems = cardItemsList();
-            ItemsModel itemsModel = itemsService.findItemById(numItem);
-            double purchase = cardItems.stream().filter(cardItems1 -> cardItems1.getProcessType().equals(ProcessType.PURCHASE)).mapToDouble(CardItems::getQuantity).sum();
-            double sales = cardItems.stream().filter(cardItems1 -> cardItems1.getProcessType().equals(ProcessType.SALES)).mapToDouble(CardItems::getQuantity).sum();
-            double purchase_re = cardItems.stream().filter(cardItems1 -> cardItems1.getProcessType().equals(ProcessType.PURCHASE_RETURN)).mapToDouble(CardItems::getQuantity).sum();
-            double sales_re = cardItems.stream().filter(cardItems1 -> cardItems1.getProcessType().equals(ProcessType.SALES_RETURN)).mapToDouble(CardItems::getQuantity).sum();
+            ProcessType selected = selectedProcessType();
+            List<CardItems> loaded = new ArrayList<>(cardItemService.cardRows(numItem, from, to, selected));
+            openingBalance = cardItemService.balanceBefore(numItem, from);
+            closingBalance = cardItemService.balanceOn(numItem, to);
+            // A running total over one kind of document is not a balance of anything -
+            // the sales alone never put anything back on the shelf - so a card narrowed
+            // to one kind has no balance column and no rows flagged by it.
+            balanceShown = selected == null;
+            if (balanceShown) ItemCardRunningBalance.apply(loaded, openingBalance);
 
-            double amount = itemsModel.getFirstBalanceForStock() + purchase + sales_re - (sales + purchase_re);
-            new Print_Reports().printCardItem(numItem, purchase, sales, purchase_re, sales_re, itemsModel.getFirstBalanceForStock()
-                    , amount, dateFrom.getValue().toString(), dateTo.getValue().toString());
+            rows.setAll(loaded);
+            totals = ItemCardTotals.of(loaded);
+            loadedFrom = from;
+            loadedTo = to;
+            loadedProcessType = selected;
+            showTotals();
+            balanceColumn().ifPresent(column -> column.setVisible(balanceShown));
         } catch (Exception e) {
             logError(e);
         }
-
     }
 
+    private Optional<TableColumn<CardItems, ?>> balanceColumn() {
+        return tableView.getColumns().stream().filter(column -> "balance".equals(column.getId())).findFirst();
+    }
+
+    /** The kind of document the combo is narrowed to, or null for all four. */
+    private ProcessType selectedProcessType() {
+        int index = comboBox.getSelectionModel().getSelectedIndex();
+        // Index 0 is "all"; the rest follow processTypeList, which is the enum in order.
+        if (index <= 0) return null;
+        return ProcessType.values()[index - 1];
+    }
+
+    private void showTotals() {
+        textPurchase.setText(NUMBER.format(totals.purchase()));
+        textSales.setText(NUMBER.format(totals.sales()));
+        textRePurchase.setText(NUMBER.format(totals.purchaseReturn()));
+        textReSales.setText(NUMBER.format(totals.salesReturn()));
+        textCountTotals.setText(NUMBER.format(totals.netQuantity()));
+
+        textCostPurchase.setText(NUMBER.format(totals.costPurchase()));
+        textCostSales.setText(NUMBER.format(totals.costSales()));
+        textCostSalesRe.setText(NUMBER.format(totals.costSalesReturn()));
+        textCostPurchaseRe.setText(NUMBER.format(totals.costPurchaseReturn()));
+        textCostTotals.setText(NUMBER.format(totals.profit()));
+
+        textOpeningBalance.setText(NUMBER.format(openingBalance));
+        textClosingBalance.setText(NUMBER.format(closingBalance));
+    }
+
+    /** Prints exactly what is on screen - the same period, the same rows, the same totals. */
+    private void print() {
+        if (loadedFrom == null || loadedTo == null) return;
+        try {
+            new Print_Reports().printCardItem(numItem,
+                    totals.purchase(), totals.sales(), totals.purchaseReturn(), totals.salesReturn(),
+                    openingBalance, closingBalance,
+                    loadedFrom.toString(), loadedTo.toString(),
+                    CardItemDao.tableNameOf(loadedProcessType));
+        } catch (Exception e) {
+            logError(e);
+        }
+    }
+
+    /** Flags a movement that left the item at or below nothing on the shelf. */
     private void applyRowColoringForBalance() {
         tableView.setRowFactory(itemsModelTableView -> {
             TableRow<CardItems> row = new TableRow<>();
-            row.itemProperty().addListener((observable, oldValue, newValue) -> {
-                if (newValue != null) {
-                    if (newValue.getTotals() <= 0.0) {
-                        row.setStyle("-fx-background-color: rgba(243,253,163,0.62)");
-                    } else {
-                        row.setStyle("");
-                    }
-                }
-            });
+            row.itemProperty().addListener((observable, oldValue, newValue) ->
+                    row.setStyle(newValue != null && balanceShown && newValue.getBalance() <= 0.0
+                            ? "-fx-background-color: rgba(243,253,163,0.62)"
+                            : ""));
             return row;
         });
-
-//        new RowColor().customiseRowByRow(tableView, new RowColorInterface<CardItems, Object>() {
-//            @Override
-//            public boolean checkRow(TableCell<CardItems, Object> tsTableCell) {
-//                return tsTableCell.getTableRow().getItem().getTotals() <= 0.0;
-//            }
-//        });
-
-    }
-
-    private void searchAction() {
-        filteredTable.setPredicate((filterByComboName(comboBox.getSelectionModel().getSelectedItem())).and(filterByDate()));
-//        SortedList<CardItems> sortedList = new SortedList<>(filteredTable);
-//        sortedList.comparatorProperty().bind(tableView.comparatorProperty());
-//        tableView.setItems(sortedList);
-        tableView.refresh();
-        getSum();
-    }
-
-    private Predicate<CardItems> filterByComboName(String nameProcess) {
-        if (!comboBox.getSelectionModel().isEmpty()) {
-            if (comboBox.getSelectionModel().getSelectedIndex() == 0) return t2 -> true;
-            return cardItems -> cardItems.getProcessType().getType().equals(nameProcess);
-        }
-        return t2 -> false;
-    }
-
-    private Predicate<CardItems> filterByDate() {
-        String dateFromValue = dateFrom.getValue().toString();
-        String dateToValue = dateTo.getValue().toString();
-        return t2 -> (LocalDate.parse(t2.getInvoice_date().toString()).isEqual(LocalDate.parse(dateFromValue)) || LocalDate.parse(t2.getInvoice_date().toString()).isAfter(LocalDate.parse(dateFromValue)))
-                && (LocalDate.parse(t2.getInvoice_date().toString()).isEqual(LocalDate.parse(dateToValue)) || LocalDate.parse(t2.getInvoice_date().toString()).isBefore(LocalDate.parse(dateToValue)));
-    }
-
-    private List<CardItems> cardItemsList() {
-        List<CardItems> cardItems = getCardItems();
-        filterCardItemsByProcessType(cardItems, true, ProcessType.PURCHASE);
-        filterCardItemsByProcessType(cardItems, true, ProcessType.SALES);
-        filterCardItemsByProcessType(cardItems, true, ProcessType.PURCHASE_RETURN);
-        filterCardItemsByProcessType(cardItems, true, ProcessType.SALES_RETURN);
-        return cardItems;
-    }
-
-    @NotNull
-    private List<CardItems> getCardItems() {
-        List<CardItems> cardItems = new ArrayList<>();
-        try {
-            cardItems = cardItemService.cardItemsListByNumItem(numItem)
-                    .stream()
-                    .sorted(Comparator.comparing(CardItems::getCreated_at)).toList();
-        } catch (Exception e) {
-            logError(e);
-        }
-        return cardItems;
-    }
-
-    private void filterCardItemsByProcessType(List<CardItems> cardItems, boolean isAllowed, ProcessType processType) {
-        if (!isAllowed) {
-            cardItems.stream()
-                    .filter(cardItem -> !cardItem.getProcessType().equals(processType)).toList();
-        }
-    }
-
-    private void getSum() {
-        var purchase = extracted(ProcessType.PURCHASE);
-        var sales = extracted(ProcessType.SALES);
-        var purchaseReturn = extracted(ProcessType.PURCHASE_RETURN);
-        var salesReturn = extracted(ProcessType.SALES_RETURN);
-
-        textPurchase.setText(String.valueOf(purchase));
-        textSales.setText(String.valueOf(sales));
-        textRePurchase.setText(String.valueOf(purchaseReturn));
-        textReSales.setText(String.valueOf(salesReturn));
-        textCountTotals.setText(String.valueOf((purchase + salesReturn) - (sales + purchaseReturn)));
-
-        textCostPurchase.setText(String.valueOf(sumTotals(ProcessType.PURCHASE)));
-        textCostSales.setText(String.valueOf(sumTotals(ProcessType.SALES)));
-        textCostSalesRe.setText(String.valueOf(sumTotals(ProcessType.SALES_RETURN)));
-        textCostPurchaseRe.setText(String.valueOf(sumTotals(ProcessType.PURCHASE_RETURN)));
-//        textCostTotals.setText(String.valueOf((sumTotals(ProcessType.PURCHASE) + sumTotals(ProcessType.SALES_RETURN)) - (sumTotals(ProcessType.SALES) + sumTotals(ProcessType.PURCHASE_RETURN))));
-
-        // ارباح الصنف
-        // سعر الشراء من المبيعات والبيع
-        var buyPriceSales = tableView.getItems().stream().filter(cardItems -> cardItems.getProcessType() == ProcessType.SALES).mapToDouble(CardItems::getProfit).sum();
-        var buyPriceSalesReturn = tableView.getItems().stream().filter(cardItems -> cardItems.getProcessType() == ProcessType.SALES_RETURN).mapToDouble(CardItems::getProfit).sum();
-        textCostTotals.setText(String.valueOf(buyPriceSales - buyPriceSalesReturn));
-
-
-    }
-
-    private double extracted(ProcessType processType) {
-//        return tableView.getItems().stream().filter(cardItems -> cardItems.getProcessType() == processType).mapToDouble(CardItems::getQuantity).sum();
-        return tableView.getItems().stream()
-                .filter(cardItems -> cardItems.getProcessType() == processType)
-                .mapToDouble(value -> {
-                    try {
-                        return value.getQuantity() * unitsService.getUnitsByName(value.getType_name()).getValue();
-                    } catch (DaoException e) {
-                        logError(e);
-                        return 0;
-                    }
-                }).sum();
-    }
-
-    private double sumTotals(ProcessType processType) {
-        return tableView.getItems().stream().filter(cardItems -> cardItems.getProcessType() == processType).mapToDouble(CardItems::getTotals).sum();
     }
 
     private void addColumnShowInvoice() {
