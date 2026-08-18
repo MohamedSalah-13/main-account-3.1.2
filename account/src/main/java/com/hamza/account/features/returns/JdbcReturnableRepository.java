@@ -208,16 +208,30 @@ public final class JdbcReturnableRepository implements ReturnableRepository {
         });
     }
 
+    /**
+     * Joins the save's transaction when there is one, and borrows a pooled connection
+     * when there is not - which is exactly what {@link ConnectionManager#acquire()}
+     * already does, and what this repository's two kinds of caller need:
+     * {@code ReturnGuard} and {@code ReturnCostResolver} read from inside
+     * {@code InvoiceSaveService.persist}'s transaction, while
+     * {@code ReturnLineSelectionService}, {@code ReturnedStatusService} and
+     * {@code ReturnReasonReportService} read from the UI thread with no transaction
+     * open at all.
+     * <p>
+     * There was a {@code requireTransaction} guard here, copied from
+     * {@link com.hamza.account.features.invoice.JdbcInvoiceStockRepository}, which
+     * broke every one of the read-only callers the moment the picker dialog was
+     * opened. That guard belongs where it came from and not here: the stock
+     * repository takes {@code FOR UPDATE} row locks, which are meaningless outside a
+     * transaction, and every statement in this file is a plain read.
+     */
     private static <T> T withConnection(SqlWork<T> work) throws DaoException {
-        if (!ConnectionManager.inTransaction()) {
-            throw new DaoException("Return validation requires an active transaction");
-        }
         Connection connection = null;
         try {
             connection = ConnectionManager.acquire();
             return work.run(connection);
         } catch (SQLException e) {
-            throw new DaoException("Could not validate the return", e);
+            throw new DaoException("Could not read the source document", e);
         } finally {
             ConnectionManager.release(connection);
         }

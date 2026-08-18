@@ -58,6 +58,38 @@ class ReturnableRepositoryAcceptanceTest {
         DataSourceProvider.shutdown();
     }
 
+    /**
+     * Every read here has to work with no transaction open, because that is how the
+     * UI calls them: the "return from invoice" picker, the returned-status badge and
+     * the reasons report all run on the JavaFX thread, long before any save starts.
+     * <p>
+     * This is the case a {@code requireTransaction} guard in {@code withConnection}
+     * broke - and that every other test in this class missed, because they all open a
+     * transaction first so they can roll their fixtures back. Deliberately read-only
+     * so it needs no rollback of its own.
+     */
+    @Test
+    void everyReadWorksOutsideATransaction() throws Exception {
+        assertFalse(ConnectionManager.inTransaction());
+
+        int noSuchInvoice = 999_000_000;
+        assertFalse(REPOSITORY.sourceExists(DocumentType.SALES, noSuchInvoice));
+        assertTrue(REPOSITORY.sourceLines(DocumentType.SALES, noSuchInvoice).isEmpty());
+        assertTrue(REPOSITORY.rawLines(DocumentType.SALES, noSuchInvoice).isEmpty());
+        assertTrue(REPOSITORY.alreadyReturnedBaseQuantities(
+                DocumentType.SALES_RETURN, noSuchInvoice, 0).isEmpty());
+        assertTrue(REPOSITORY.lineById(DocumentType.SALES, noSuchInvoice).isEmpty());
+        assertTrue(REPOSITORY.sourceExpiryBatches(
+                DocumentType.SALES, noSuchInvoice, 1).isEmpty());
+        assertTrue(REPOSITORY.sourceDelegateId(noSuchInvoice).isEmpty());
+        // Not asserted empty: the database under test may hold real returns in range.
+        assertNotNull(REPOSITORY.reasonCounts(DocumentType.SALES_RETURN,
+                LocalDate.now().minusYears(50), LocalDate.now().plusYears(50)));
+
+        assertFalse(ConnectionManager.inTransaction(),
+                "reading must not leave a transaction bound to this thread");
+    }
+
     @Test
     void aSecondReturnSeesWhatTheFirstAlreadyTookAndTheWriterLinksBoth() throws Exception {
         Connection transaction = ConnectionManager.beginTransaction();
