@@ -47,6 +47,9 @@ public final class ReturnGuard {
                          List<? extends BasePurchasesAndSales> lines) throws DaoException {
         Objects.requireNonNull(returnType, "returnType");
         if (sourceInvoiceNumber <= 0) {
+            if (returnType.isReturn() && policy.requireSourceInvoice()) {
+                throw new BusinessRuleException(message("return.error.source.required"));
+            }
             return;
         }
 

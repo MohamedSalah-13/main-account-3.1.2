@@ -20,6 +20,7 @@ public class PropertiesName extends PreferencesSetting {
     private static final String INVOICE_BACKUP_AFTER_SAVE = "invoice.backup.after.save";
     private static final String INVOICE_UPDATE_PRICE = "invoice.update.price";
     private static final String INVOICE_SHOW_SCREEN_PAID = "invoice.show.screen.paid";
+    private static final String RETURN_REQUIRE_SOURCE_INVOICE = "return.require.source.invoice";
     // -------------------
 
     private static final String SETTING_CURRENCY = "setting.currency";
@@ -180,6 +181,21 @@ public class PropertiesName extends PreferencesSetting {
 
     public static void setBarcodeLabelPrintName(boolean value) {
         putBoolean(BARCODE_LABEL_PRINT_NAME, value);
+    }
+
+    /**
+     * Whether a return must name the invoice it reverses. Off by default: a return
+     * entered without one is what every return before {@code V16__return_source.sql}
+     * was, and a customer who lost the receipt is a real case. Turning it on makes
+     * {@code ReturnGuard} refuse a return with no source, so nothing can be returned
+     * that no document says was ever sold.
+     */
+    public static boolean getReturnRequireSourceInvoice() {
+        return getBoolean(RETURN_REQUIRE_SOURCE_INVOICE, false);
+    }
+
+    public static void setReturnRequireSourceInvoice(boolean value) {
+        putBoolean(RETURN_REQUIRE_SOURCE_INVOICE, value);
     }
 
     public static boolean getSelWithoutBalance() {

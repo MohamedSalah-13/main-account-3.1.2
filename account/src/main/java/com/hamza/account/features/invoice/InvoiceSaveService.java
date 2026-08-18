@@ -2,10 +2,12 @@ package com.hamza.account.features.invoice;
 
 import com.hamza.account.authorization.AuthorizationGuard;
 import com.hamza.account.config.DefaultStock;
+import com.hamza.account.config.PropertiesName;
 import com.hamza.account.document.DocumentType;
 import com.hamza.account.features.returns.JdbcReturnableRepository;
 import com.hamza.account.features.returns.ReturnCostResolver;
 import com.hamza.account.features.returns.ReturnGuard;
+import com.hamza.account.features.returns.ReturnPolicy;
 import com.hamza.account.features.returns.ReturnSourceWriter;
 import com.hamza.account.features.stockledger.StockMovementAssembler;
 import com.hamza.account.features.stockledger.StockMovementDao;
@@ -56,7 +58,15 @@ public final class InvoiceSaveService<
                 new JdbcInvoiceNumberAllocator(), InvoiceTransactionExecutor.jdbc(),
                 new InvoiceStockGuard(dataInterface.designInterface().documentType(),
                         new JdbcInvoiceStockRepository()),
-                new ReturnGuard(new JdbcReturnableRepository()), new ReturnSourceWriter(),
+                // The policy is read here, at the composition root, rather than inside
+                // ReturnGuard - the guard stays a pure decision over an injected policy,
+                // which is what lets ReturnGuardTest drive both settings without touching
+                // machine-wide Preferences.
+                new ReturnGuard(new JdbcReturnableRepository(),
+                        PropertiesName.getReturnRequireSourceInvoice()
+                                ? ReturnPolicy.requiringSource()
+                                : ReturnPolicy.DEFAULT),
+                new ReturnSourceWriter(),
                 new ReturnCostResolver(new JdbcReturnableRepository()),
                 treasuryLookup, delegateLookup, new StockMovementDao());
     }

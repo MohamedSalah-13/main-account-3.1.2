@@ -57,6 +57,7 @@
                                                 <VBox spacing="12.0">
                                                     <children>
                                                         <CheckBox fx:id="checkSelWithoutBalance" mnemonicParsing="false" styleClass="modern-check-box" text="Sales Without Balance" />
+                                                        <CheckBox fx:id="checkReturnRequireSource" mnemonicParsing="false" styleClass="modern-check-box" text="Return requires source invoice" />
                                                         <CheckBox fx:id="updatePriceInInvoice" mnemonicParsing="false" styleClass="modern-check-box" text="Update Price In Invoice" />
                                                         <CheckBox fx:id="printReceiptInvoice" mnemonicParsing="false" styleClass="modern-check-box" text="Print invoice receipt" />
                                                         <CheckBox fx:id="showScreenAlone" mnemonicParsing="false" styleClass="modern-check-box" text="%settings.checks.showSeparateScreen" />

@@ -42,6 +42,29 @@ class ReturnGuardTest {
     }
 
     @Test
+    void refusesAFreeReturnWhenThePolicyRequiresASource() {
+        // The setting behind PropertiesName.getReturnRequireSourceInvoice(): a return
+        // that names no invoice cannot be checked against anything, so a business that
+        // turns this on wants it refused outright rather than merely warned about.
+        ReturnGuard strict = new ReturnGuard(repository, ReturnPolicy.requiringSource());
+
+        assertThrows(BusinessRuleException.class, () -> strict.validate(
+                DocumentType.SALES_RETURN, 0, 0, List.of(lineOf(ITEM, 1))));
+        assertTrue(repository.calls.isEmpty(),
+                "refusing a free return needs no query at all");
+    }
+
+    @Test
+    void theStrictPolicyStillAllowsAReturnThatNamesItsSource() throws DaoException {
+        repository.registerSource(SOURCE_INVOICE);
+        repository.soldLines.add(new ReturnableRepository.SoldLine(ITEM, 5));
+        ReturnGuard strict = new ReturnGuard(repository, ReturnPolicy.requiringSource());
+
+        assertDoesNotThrow(() -> strict.validate(
+                DocumentType.SALES_RETURN, SOURCE_INVOICE, 0, List.of(lineOf(ITEM, 5))));
+    }
+
+    @Test
     void refusesASourceInvoiceThatDoesNotExist() {
         // No sourceExists(...) entry registered, so it answers false.
         BusinessRuleException error = assertThrows(BusinessRuleException.class, () ->

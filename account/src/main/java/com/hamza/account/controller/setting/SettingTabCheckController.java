@@ -28,6 +28,8 @@ public class SettingTabCheckController implements Initializable {
     @FXML
     private CheckBox checkSelWithoutBalance;
     @FXML
+    private CheckBox checkReturnRequireSource;
+    @FXML
     private CheckBox checkShowColumnSelectedInItems;
     @FXML
     private CheckBox checkValidity;
@@ -77,6 +79,8 @@ public class SettingTabCheckController implements Initializable {
 
         checkSetting(checkIncreaseItemOnTable, lm.getString("settings.checks.mergeDuplicateItems"), getInvoiceIncreaseItemOneTable());
         checkSetting(checkSelWithoutBalance, lm.getString("settings.checks.sellWithoutBalance"), getSelWithoutBalance());
+        checkSetting(checkReturnRequireSource, lm.getString("settings.checks.returnRequireSource"), getReturnRequireSourceInvoice());
+        checkReturnRequireSource.selectedProperty().addListener((observable, oldValue, newValue) -> setReturnRequireSourceInvoice(newValue));
 
         checkSetting(checkShowTotals, lm.getString("settings.checks.showTotalsOnHome"), getShowMainTotals());
         checkSetting(checkInvoicePaid, lm.getString("settings.checks.showPaidScreen"), getInvoiceShowScreenPaid());

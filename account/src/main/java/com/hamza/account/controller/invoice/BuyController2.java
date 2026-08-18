@@ -635,6 +635,27 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
         return MoneyMath.text(java.math.BigDecimal.valueOf(value));
     }
 
+    /**
+     * A return with no source invoice is allowed by default and always was - nothing
+     * before {@code V16__return_source.sql} could name one. But it is the one document
+     * this whole feature cannot check: no quantity to compare against, no cost to
+     * recover, no batch to pick from. Saving one silently is how stock gets created
+     * out of nothing, so it asks first.
+     * <p>
+     * Only a prompt. Refusing it outright is
+     * {@code PropertiesName.getReturnRequireSourceInvoice()}, enforced in
+     * {@code ReturnGuard} where it cannot be clicked past.
+     */
+    private boolean confirmUnlinkedReturn() {
+        if (!dataInterface.designInterface().documentType().isReturn()
+                || sourceInvoiceNumber > 0) {
+            return true;
+        }
+        var lang = LanguageManager.getInstance();
+        return AllAlerts.confirm_all(lang.getString("confirm"),
+                lang.getString("return.confirm.no.source"));
+    }
+
     private void saveInvoice(boolean print) {
         if (editor.isSaving()) {
             return;
@@ -643,6 +664,10 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
             validateInvoiceForSave();
 
             if (!ShiftContext.requireOpenShift()) {
+                return;
+            }
+
+            if (!confirmUnlinkedReturn()) {
                 return;
             }
 
