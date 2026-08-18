@@ -72,6 +72,11 @@ class ReturnReasonReportServiceTest {
             throw new UnsupportedOperationException();
         }
 
+
+        @Override
+        public boolean lockSource(DocumentType sourceType, int sourceId) {
+            throw new UnsupportedOperationException();
+        }
         @Override
         public List<SoldLine> sourceLines(DocumentType sourceType, int sourceId) {
             throw new UnsupportedOperationException();

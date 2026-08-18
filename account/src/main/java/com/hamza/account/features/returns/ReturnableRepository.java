@@ -19,8 +19,20 @@ import java.util.Optional;
  */
 public interface ReturnableRepository {
 
-    /** Whether a document of this type and id exists at all - a return naming one that does not is refused before anything else. */
+    /**
+     * Whether a document of this type and id exists at all - a return naming one that
+     * does not is refused before anything else. Takes no lock: the picker calls this
+     * from the UI thread with no transaction open.
+     */
     boolean sourceExists(DocumentType sourceType, int sourceId) throws DaoException;
+
+    /**
+     * The same question, asked with the source's row locked for the rest of the
+     * transaction - what {@link ReturnGuard} uses at save time so that "how much is
+     * left to return" cannot be read by two tills at once. Answers exactly as
+     * {@link #sourceExists} does; only the lock differs.
+     */
+    boolean lockSource(DocumentType sourceType, int sourceId) throws DaoException;
 
     /**
      * The source invoice's lines, summed to one row per item in base units. Two lines

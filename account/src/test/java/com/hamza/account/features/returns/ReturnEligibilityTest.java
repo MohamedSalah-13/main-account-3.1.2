@@ -98,7 +98,7 @@ class ReturnEligibilityTest {
     @DisplayName("a policy that allows exceeding the source")
     class PermissivePolicy {
 
-        private static final ReturnPolicy ALLOW_OVER = new ReturnPolicy(true, false);
+        private static final ReturnPolicy ALLOW_OVER = new ReturnPolicy(true, false, 0);
 
         @Test
         void returningMoreThanWasSoldIsAllowed() {

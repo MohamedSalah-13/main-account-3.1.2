@@ -62,10 +62,7 @@ public final class InvoiceSaveService<
                 // ReturnGuard - the guard stays a pure decision over an injected policy,
                 // which is what lets ReturnGuardTest drive both settings without touching
                 // machine-wide Preferences.
-                new ReturnGuard(new JdbcReturnableRepository(),
-                        PropertiesName.getReturnRequireSourceInvoice()
-                                ? ReturnPolicy.requiringSource()
-                                : ReturnPolicy.DEFAULT),
+                new ReturnGuard(new JdbcReturnableRepository(), returnPolicy()),
                 new ReturnSourceWriter(),
                 new ReturnCostResolver(new JdbcReturnableRepository()),
                 treasuryLookup, delegateLookup, new StockMovementDao());
@@ -96,6 +93,15 @@ public final class InvoiceSaveService<
         this.treasuryLookup = treasuryLookup;
         this.delegateLookup = delegateLookup;
         this.stockMovementDao = stockMovementDao;
+    }
+
+    /** The two return settings, read here rather than inside the guard - see the constructor. */
+    private static ReturnPolicy returnPolicy() {
+        if (PropertiesName.getReturnRequireSourceInvoice()) {
+            return ReturnPolicy.requiringSource();
+        }
+        double limit = PropertiesName.getReturnFreeLimit();
+        return limit > 0 ? ReturnPolicy.cappingFreeReturns(limit) : ReturnPolicy.DEFAULT;
     }
 
     public InvoiceSaveResult<T1, T2> save(InvoiceSaveCommand<T1> command) throws DaoException {

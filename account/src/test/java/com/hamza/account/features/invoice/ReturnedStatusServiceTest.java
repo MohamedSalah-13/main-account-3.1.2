@@ -89,6 +89,11 @@ class ReturnedStatusServiceTest {
             throw new UnsupportedOperationException();
         }
 
+
+        @Override
+        public boolean lockSource(DocumentType sourceType, int sourceId) {
+            throw new UnsupportedOperationException();
+        }
         @Override
         public List<SoldLine> sourceLines(DocumentType sourceType, int sourceId) {
             return sold.getOrDefault(sourceId, List.of());

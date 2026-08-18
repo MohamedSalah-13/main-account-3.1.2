@@ -30,6 +30,8 @@ public class SettingTabCheckController implements Initializable {
     @FXML
     private CheckBox checkReturnRequireSource;
     @FXML
+    private javafx.scene.control.TextField txtReturnFreeLimit;
+    @FXML
     private CheckBox checkShowColumnSelectedInItems;
     @FXML
     private CheckBox checkValidity;
@@ -81,6 +83,17 @@ public class SettingTabCheckController implements Initializable {
         checkSetting(checkSelWithoutBalance, lm.getString("settings.checks.sellWithoutBalance"), getSelWithoutBalance());
         checkSetting(checkReturnRequireSource, lm.getString("settings.checks.returnRequireSource"), getReturnRequireSourceInvoice());
         checkReturnRequireSource.selectedProperty().addListener((observable, oldValue, newValue) -> setReturnRequireSourceInvoice(newValue));
+
+        // The ceiling only means anything while free returns are allowed at all.
+        txtReturnFreeLimit.setPromptText(lm.getString("settings.checks.returnFreeLimit"));
+        txtReturnFreeLimit.setText(String.valueOf(getReturnFreeLimit()));
+        txtReturnFreeLimit.disableProperty().bind(checkReturnRequireSource.selectedProperty());
+        txtReturnFreeLimit.focusedProperty().addListener((observable, was, isFocused) -> {
+            if (!isFocused) {
+                setReturnFreeLimit(com.hamza.account.finance.MoneyMath.asDouble(
+                        com.hamza.account.finance.MoneyMath.parseOrZero(txtReturnFreeLimit.getText())));
+            }
+        });
 
         checkSetting(checkShowTotals, lm.getString("settings.checks.showTotalsOnHome"), getShowMainTotals());
         checkSetting(checkInvoicePaid, lm.getString("settings.checks.showPaidScreen"), getInvoiceShowScreenPaid());

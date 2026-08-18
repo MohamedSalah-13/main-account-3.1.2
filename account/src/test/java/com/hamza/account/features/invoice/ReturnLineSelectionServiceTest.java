@@ -176,6 +176,11 @@ class ReturnLineSelectionServiceTest {
             return existingSources.contains(sourceId);
         }
 
+
+        @Override
+        public boolean lockSource(DocumentType sourceType, int sourceId) {
+            throw new UnsupportedOperationException("not used by ReturnLineSelectionService");
+        }
         @Override
         public List<SoldLine> sourceLines(DocumentType sourceType, int sourceId) {
             throw new UnsupportedOperationException("not used by ReturnLineSelectionService");

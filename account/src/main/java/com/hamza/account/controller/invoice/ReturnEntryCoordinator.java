@@ -186,6 +186,22 @@ public final class ReturnEntryCoordinator {
             return;
         }
 
+        // A return reverses one document. Picking from a second invoice while the first
+        // one's lines are still on the table used to be refused much later and much
+        // more confusingly - ReturnGuard would report "this item is not on invoice N",
+        // which is true but says nothing about the two sources being mixed.
+        if (sourceInvoiceNumber > 0 && sourceInvoiceNumber != invoiceNumber
+                && !lineAppender.isEmpty()) {
+            boolean replace = AllAlerts.confirm_all(lang.getString("confirm"),
+                    lang.getString("return.confirm.replace.source",
+                            sourceInvoiceNumber, invoiceNumber));
+            if (!replace) {
+                return;
+            }
+            lineAppender.clear();
+            reset();
+        }
+
         try {
             var lines = lineSelection.selectableLines(invoiceNumber);
             var result = DialogReturnFromInvoice.show(invoiceNumber, lines);
@@ -248,10 +264,17 @@ public final class ReturnEntryCoordinator {
         void select(String delegateName);
     }
 
-    /** Appends one picked line to the invoice table and hands it back for tagging. */
-    @FunctionalInterface
+    /**
+     * The invoice's line table, as much of it as this coordinator needs: append a
+     * picked line and hand it back for tagging, and clear the table when the user
+     * switches to a different source invoice.
+     */
     public interface LineAppender {
         BasePurchasesAndSales append(InvoiceLineDraft draft) throws Exception;
+
+        boolean isEmpty();
+
+        void clear();
     }
 
     @FunctionalInterface

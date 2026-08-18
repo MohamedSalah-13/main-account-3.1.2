@@ -340,7 +340,22 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
                         btnReturnFromInvoice, labelReturnedBadge,
                         name -> comboDelegate.getSelectionModel().select(name)),
                 itemsService::findItemById,
-                this::appendReturnLine,
+                new ReturnEntryCoordinator.LineAppender() {
+                    @Override
+                    public BasePurchasesAndSales append(InvoiceLineDraft draft) throws DaoException {
+                        return appendReturnLine(draft);
+                    }
+
+                    @Override
+                    public boolean isEmpty() {
+                        return table.getItems().isEmpty();
+                    }
+
+                    @Override
+                    public void clear() {
+                        table.getItems().clear();
+                    }
+                },
                 employeeService::getDelegateById,
                 error -> AllAlerts.handleError(
                         LanguageManager.getInstance().getString("return.dialog.title"), error));

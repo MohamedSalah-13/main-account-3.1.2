@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <?import javafx.scene.control.CheckBox?>
+<?import javafx.scene.control.TextField?>
 <?import javafx.scene.control.Label?>
 <?import javafx.scene.control.ScrollPane?>
 <?import javafx.scene.control.Separator?>
@@ -58,6 +59,7 @@
                                                     <children>
                                                         <CheckBox fx:id="checkSelWithoutBalance" mnemonicParsing="false" styleClass="modern-check-box" text="Sales Without Balance" />
                                                         <CheckBox fx:id="checkReturnRequireSource" mnemonicParsing="false" styleClass="modern-check-box" text="Return requires source invoice" />
+                                                        <TextField fx:id="txtReturnFreeLimit" promptText="Free return limit (0 = none)" />
                                                         <CheckBox fx:id="updatePriceInInvoice" mnemonicParsing="false" styleClass="modern-check-box" text="Update Price In Invoice" />
                                                         <CheckBox fx:id="printReceiptInvoice" mnemonicParsing="false" styleClass="modern-check-box" text="Print invoice receipt" />
                                                         <CheckBox fx:id="showScreenAlone" mnemonicParsing="false" styleClass="modern-check-box" text="%settings.checks.showSeparateScreen" />

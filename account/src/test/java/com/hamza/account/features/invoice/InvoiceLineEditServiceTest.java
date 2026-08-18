@@ -117,6 +117,36 @@ class InvoiceLineEditServiceTest {
         assertEquals(1, repository.saves);
     }
 
+    @Test
+    void refusesEditingThePriceOrDiscountOfALinePickedFromAnInvoice() {
+        // ReturnCostResolver refuses this at save anyway; saying so at the moment of
+        // the edit is the difference between a correction and a wasted document.
+        Sales line = line(item(false), PIECE, 10);
+        line.setSourceLineId(501);
+        InvoiceLineEditService service = editService(DocumentType.SALES_RETURN,
+                new TrackingRepository(item(false)), (item, price, tier) -> false);
+
+        assertThrows(BusinessRuleException.class,
+                () -> service.editPrice(line, 999.0, false, 1));
+        assertThrows(BusinessRuleException.class,
+                () -> service.editDiscount(line, 50.0));
+        assertEquals(10, line.getPrice());
+    }
+
+    @Test
+    void aLineWithNoSourceKeepsItsEditablePriceAndDiscount() throws Exception {
+        // A free return, and every ordinary invoice line - nothing to hold them to.
+        Sales line = line(item(false), PIECE, 10);
+        InvoiceLineEditService service = editService(DocumentType.SALES_RETURN,
+                new TrackingRepository(item(false)), (item, price, tier) -> false);
+
+        service.editPrice(line, 30.0, false, 1);
+        service.editDiscount(line, 5.0);
+
+        assertEquals(30, line.getPrice());
+        assertEquals(5, line.getDiscount());
+    }
+
     private static InvoiceLineEditService editService(
             DocumentType type, TrackingRepository repository,
             InvoiceItemCatalogService.ItemPriceUpdater updater) {

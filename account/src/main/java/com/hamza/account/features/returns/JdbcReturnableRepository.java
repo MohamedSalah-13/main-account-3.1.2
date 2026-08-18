@@ -36,6 +36,20 @@ public final class JdbcReturnableRepository implements ReturnableRepository {
     }
 
     @Override
+    public boolean lockSource(DocumentType sourceType, int sourceId) throws DaoException {
+        DocumentTableSpec spec = DocumentTableSpec.of(sourceType);
+        String sql = "SELECT 1 FROM " + spec.table() + " WHERE " + spec.key() + " = ? FOR UPDATE";
+        return withConnection(connection -> {
+            try (PreparedStatement statement = connection.prepareStatement(sql)) {
+                statement.setInt(1, sourceId);
+                try (ResultSet rows = statement.executeQuery()) {
+                    return rows.next();
+                }
+            }
+        });
+    }
+
+    @Override
     public List<SoldLine> sourceLines(DocumentType sourceType, int sourceId) throws DaoException {
         DocumentTableSpec spec = DocumentTableSpec.of(sourceType);
         String sql = "SELECT " + spec.lineItem() + " AS item_id,"

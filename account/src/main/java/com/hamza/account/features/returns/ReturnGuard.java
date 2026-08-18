@@ -1,6 +1,7 @@
 package com.hamza.account.features.returns;
 
 import com.hamza.account.document.DocumentType;
+import com.hamza.account.finance.MoneyMath;
 import com.hamza.account.model.base.BasePurchasesAndSales;
 import com.hamza.account.service.ItemUnits;
 import com.hamza.account.type.InvoiceType;
@@ -49,14 +50,20 @@ public final class ReturnGuard {
                          List<? extends BasePurchasesAndSales> lines) throws DaoException {
         Objects.requireNonNull(returnType, "returnType");
         if (sourceInvoiceNumber <= 0) {
-            if (returnType.isReturn() && policy.requireSourceInvoice()) {
-                throw new BusinessRuleException(message("return.error.source.required"));
+            if (returnType.isReturn()) {
+                requireFreeReturnAllowed(lines);
             }
             return;
         }
 
         DocumentType sourceType = returnType.reverses();
-        if (!repository.sourceExists(sourceType, sourceInvoiceNumber)) {
+        // lockSource, not sourceExists: this runs inside the save's transaction, and the
+        // lock is what makes the "how much is left to return" read below authoritative.
+        // Two tills returning the same invoice at once would otherwise each read the
+        // other's uncommitted rows as absent and both pass. Until now that was prevented
+        // only by accident - InvoiceStockGuard happens to lock the item rows first - and
+        // any reordering of the two guards would have opened it again silently.
+        if (!repository.lockSource(sourceType, sourceInvoiceNumber)) {
             throw new BusinessRuleException(message("return.error.source.not.found"));
         }
 
@@ -73,6 +80,49 @@ public final class ReturnGuard {
             throw new BusinessRuleException(
                     ((ReturnEligibility.Decision.Refused) decision).message());
         }
+    }
+
+    /**
+     * What a return with no source invoice is allowed to be.
+     * <p>
+     * Two settings, and they are deliberately separate questions.
+     * {@code requireSourceInvoice} refuses one outright - the strictest answer, for a
+     * shop that never wants goods back it cannot trace. {@code freeReturnLimit} is the
+     * middle ground: the customer who lost the receipt is still served, but the door is
+     * not open wide enough to drive a lorry through. Neither set is the default and
+     * leaves the behaviour every install had before any of this existed.
+     */
+    private void requireFreeReturnAllowed(List<? extends BasePurchasesAndSales> lines)
+            throws BusinessRuleException {
+        if (policy.requireSourceInvoice()) {
+            throw new BusinessRuleException(message("return.error.source.required"));
+        }
+        if (!policy.capsFreeReturns()) {
+            return;
+        }
+        double value = goodsValue(lines);
+        if (value - policy.freeReturnLimit() > 0.005) {
+            throw new BusinessRuleException(message("return.error.free.limit",
+                    MoneyMath.text(MoneyMath.decimal(value)),
+                    MoneyMath.text(MoneyMath.decimal(policy.freeReturnLimit()))));
+        }
+    }
+
+    /**
+     * What the goods being handed back are worth: quantity times price, less each
+     * line's own discount. Not the document net - a document-level discount reduces
+     * what the customer is paid, not what comes back onto the shelf, and it is the
+     * latter a ceiling on untraceable returns is about.
+     */
+    private static double goodsValue(List<? extends BasePurchasesAndSales> lines) {
+        double total = 0;
+        for (BasePurchasesAndSales line : lines) {
+            if (line == null) {
+                continue;
+            }
+            total += line.getQuantity() * line.getPrice() - line.getDiscount();
+        }
+        return total;
     }
 
     /**

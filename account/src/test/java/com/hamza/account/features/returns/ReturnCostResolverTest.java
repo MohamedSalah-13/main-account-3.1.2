@@ -241,6 +241,11 @@ class ReturnCostResolverTest {
             throw new UnsupportedOperationException("not used by ReturnCostResolver");
         }
 
+
+        @Override
+        public boolean lockSource(DocumentType sourceType, int sourceId) {
+            throw new UnsupportedOperationException("not used by ReturnCostResolver");
+        }
         @Override
         public List<SoldLine> sourceLines(DocumentType sourceType, int sourceId) {
             throw new UnsupportedOperationException("not used by ReturnCostResolver");

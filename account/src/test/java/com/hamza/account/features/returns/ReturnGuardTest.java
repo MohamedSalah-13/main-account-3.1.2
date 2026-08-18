@@ -16,6 +16,7 @@ import java.util.List;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -157,6 +158,66 @@ class ReturnGuardTest {
         assertTrue(repository.excludingCalledWith.contains(42));
     }
 
+
+    @Test
+    void refusesAFreeReturnWorthMoreThanTheCap() {
+        ReturnGuard capped = new ReturnGuard(repository, ReturnPolicy.cappingFreeReturns(100));
+
+        // 3 x 50 = 150, over the 100 ceiling.
+        BusinessRuleException refused = assertThrows(BusinessRuleException.class,
+                () -> capped.validate(DocumentType.SALES_RETURN, 0, 0, InvoiceType.CASH,
+                        List.of(pricedLine(ITEM, 3, 50))));
+        assertTrue(refused.getMessage().contains("150"), refused.getMessage());
+        assertTrue(repository.calls.isEmpty(), "a capped refusal needs no query");
+    }
+
+    @Test
+    void allowsAFreeReturnWithinTheCap() {
+        ReturnGuard capped = new ReturnGuard(repository, ReturnPolicy.cappingFreeReturns(100));
+
+        assertDoesNotThrow(() -> capped.validate(DocumentType.SALES_RETURN, 0, 0,
+                InvoiceType.CASH, List.of(pricedLine(ITEM, 2, 50))));
+    }
+
+    @Test
+    void theCapCountsTheLineDiscountAgainstTheValueReturned() {
+        ReturnGuard capped = new ReturnGuard(repository, ReturnPolicy.cappingFreeReturns(100));
+
+        // 3 x 50 = 150, less a 60 line discount = 90, under the ceiling.
+        Sales_Return line = pricedLine(ITEM, 3, 50);
+        line.setDiscount(60);
+        assertDoesNotThrow(() -> capped.validate(DocumentType.SALES_RETURN, 0, 0,
+                InvoiceType.CASH, List.of(line)));
+    }
+
+    @Test
+    void anUncappedPolicyLetsAFreeReturnOfAnySizeThrough() {
+        assertDoesNotThrow(() -> guard.validate(DocumentType.SALES_RETURN, 0, 0,
+                InvoiceType.CASH, List.of(pricedLine(ITEM, 1000, 1000))));
+    }
+
+    @Test
+    void locksTheSourceRatherThanMerelyReadingIt() throws DaoException {
+        // The lock is what makes the remaining-quantity read below authoritative when
+        // two tills return the same invoice at once. Asking without it was safe only
+        // by accident, through the item lock InvoiceStockGuard happens to take first.
+        repository.registerSource(SOURCE_INVOICE);
+        repository.soldLines.add(new ReturnableRepository.SoldLine(ITEM, 5));
+
+        guard.validate(DocumentType.SALES_RETURN, SOURCE_INVOICE, 0,
+                InvoiceType.CASH, List.of(lineOf(ITEM, 1)));
+
+        assertTrue(repository.calls.contains("lockSource"), repository.calls.toString());
+        assertFalse(repository.calls.contains("sourceExists"),
+                "the unlocked read belongs to the picker, not to the save");
+    }
+
+    private static Sales_Return pricedLine(int itemId, double quantity, double price) {
+        Sales_Return line = lineOf(itemId, quantity);
+        line.setPrice(price);
+        return line;
+    }
+
     private static Sales_Return lineOf(int itemId, double quantity) {
         Sales_Return line = new Sales_Return();
         ItemsModel item = new ItemsModel();
@@ -184,6 +245,13 @@ class ReturnGuardTest {
         @Override
         public boolean sourceExists(DocumentType sourceType, int sourceId) {
             calls.add("sourceExists");
+            sourceExistsCalledWith.add(sourceType);
+            return existingSources.contains(sourceId);
+        }
+
+        @Override
+        public boolean lockSource(DocumentType sourceType, int sourceId) {
+            calls.add("lockSource");
             sourceExistsCalledWith.add(sourceType);
             return existingSources.contains(sourceId);
         }

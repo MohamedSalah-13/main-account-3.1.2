@@ -21,6 +21,7 @@ public class PropertiesName extends PreferencesSetting {
     private static final String INVOICE_UPDATE_PRICE = "invoice.update.price";
     private static final String INVOICE_SHOW_SCREEN_PAID = "invoice.show.screen.paid";
     private static final String RETURN_REQUIRE_SOURCE_INVOICE = "return.require.source.invoice";
+    private static final String RETURN_FREE_LIMIT = "return.free.limit";
     // -------------------
 
     private static final String SETTING_CURRENCY = "setting.currency";
@@ -196,6 +197,19 @@ public class PropertiesName extends PreferencesSetting {
 
     public static void setReturnRequireSourceInvoice(boolean value) {
         putBoolean(RETURN_REQUIRE_SOURCE_INVOICE, value);
+    }
+
+    /**
+     * The most a return with no source invoice may be worth. Zero - the default - means
+     * no ceiling, which is how every install behaved before this existed. The middle
+     * setting between allowing untraceable returns freely and refusing them outright.
+     */
+    public static double getReturnFreeLimit() {
+        return getDouble(RETURN_FREE_LIMIT, 0);
+    }
+
+    public static void setReturnFreeLimit(double value) {
+        putDouble(RETURN_FREE_LIMIT, Math.max(value, 0));
     }
 
     public static boolean getSelWithoutBalance() {

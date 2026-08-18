@@ -5,6 +5,7 @@ import com.hamza.account.model.base.BasePurchasesAndSales;
 import com.hamza.account.service.ItemUnits;
 import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.error.BusinessRuleException;
+import com.hamza.controlsfx.language.LanguageManager;
 import com.hamza.controlsfx.error.UserValidationException;
 
 import java.util.Objects;
@@ -46,6 +47,7 @@ public final class InvoiceLineEditService {
     public void editPrice(BasePurchasesAndSales line, Double newPrice,
                           boolean updateCatalogPrice, int priceTier) throws DaoException {
         requireLine(line);
+        requireNotFromASourceLine(line);
         double price = newPrice == null ? 0 : newPrice;
         requirePositiveFinite(price, "يجب أن يكون السعر أكبر من صفر");
 
@@ -69,12 +71,30 @@ public final class InvoiceLineEditService {
     public void editDiscount(BasePurchasesAndSales line, Double newDiscount)
             throws DaoException {
         requireLine(line);
+        requireNotFromASourceLine(line);
         double discount = newDiscount == null ? 0 : newDiscount;
         if (!Double.isFinite(discount) || discount < 0) {
             throw new UserValidationException("خصم الصنف غير صالح");
         }
         line.setDiscount(discount);
         InvoiceLineService.recalculate(line);
+    }
+
+    /**
+     * A line picked from a source invoice already carries that invoice's own price and
+     * its share of that invoice's discount, and {@code ReturnCostResolver} refuses the
+     * save outright if either is changed. Refusing the edit here is the same rule said
+     * early enough to be useful: without it the user retypes a price, finishes the
+     * document, and only learns at save that the figure was never allowed to move.
+     * <p>
+     * A free return - no source line - is untouched: there is nothing to hold it to.
+     */
+    private static void requireNotFromASourceLine(BasePurchasesAndSales line)
+            throws BusinessRuleException {
+        if (line.getSourceLineId() > 0) {
+            throw new BusinessRuleException(LanguageManager.getInstance()
+                    .getString("return.error.line.terms.locked"));
+        }
     }
 
     private static void requireLine(BasePurchasesAndSales line)
