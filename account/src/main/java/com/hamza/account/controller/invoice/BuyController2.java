@@ -30,11 +30,7 @@ import com.hamza.account.features.invoice.InvoiceSaveResult;
 import com.hamza.account.features.invoice.InvoiceSaveService;
 import com.hamza.account.features.invoice.InvoiceSaveValidator;
 import com.hamza.account.features.invoice.InvoiceValidationException;
-import com.hamza.account.features.invoice.ReturnLineSelectionService;
-import com.hamza.account.features.invoice.ReturnedStatusService;
 import com.hamza.account.features.notification.StockLevelAlert;
-import com.hamza.account.features.returns.JdbcReturnableRepository;
-import com.hamza.account.features.returns.ReturnReason;
 import com.hamza.account.interfaces.api.DataInterface;
 import com.hamza.account.interfaces.api.TotalsDataInterface;
 import com.hamza.account.model.base.BaseAccount;
@@ -150,10 +146,7 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
     @FXML
     private Label labelReturnedBadge;
     private MaskerPaneSetting maskerPaneSetting;
-    private final ReturnLineSelectionService returnLineSelectionService;
-    private final ReturnedStatusService returnedStatusService;
-    private int sourceInvoiceNumber;
-    private ReturnReason selectedReturnReason;
+    private ReturnEntryCoordinator returnEntry;
 
     public BuyController2(DataInterface<T1, T2, T3, T4> dataInterface, int numInvoiceUpdate) throws Exception {
         super(dataInterface, numInvoiceUpdate);
@@ -171,19 +164,6 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
         this.invoiceItemSelectionService = new InvoiceItemSelectionService(
                 dataInterface.designInterface().documentType(), itemsService,
                 dataInterface.invoiceBuy()::getItemsPrice);
-        // Only a return has a source invoice to pick lines from - the service itself
-        // refuses to be built for anything else.
-        this.returnLineSelectionService = dataInterface.designInterface().documentType().isReturn()
-                ? new ReturnLineSelectionService(
-                        dataInterface.designInterface().documentType(),
-                        new JdbcReturnableRepository(),
-                        itemsService::findItemById)
-                : null;
-        // The badge only has something to say on a sale or purchase's own screen -
-        // a return screen has nothing to report about itself.
-        this.returnedStatusService = dataInterface.designInterface().documentType().isReturn()
-                ? null
-                : new ReturnedStatusService(new JdbcReturnableRepository());
     }
 
     @Override
@@ -197,6 +177,7 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
         addTextSearchName();
         addTextSearchItems();
         configureItemEntry();
+        configureReturnEntry();
         action();
         publisherData();
         disableData();
@@ -220,9 +201,8 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
         String invoiceName = dataInterface.designInterface().nameTextOfInvoice();
         labelTitle.setText(invoiceName);
 
+        // The return-only controls are ReturnEntryCoordinator.configure()'s business.
         boolean isReturn = dataInterface.designInterface().documentType().isReturn();
-        btnReturnFromInvoice.setVisible(isReturn);
-        btnReturnFromInvoice.setManaged(isReturn);
 
         // isReturn(), not a comparison against SALES_RETURN alone: that left
         // PURCHASE_RETURN falling into the plain "purchases" branch below, styled
@@ -353,6 +333,30 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
         itemEntry.configure();
     }
 
+    private void configureReturnEntry() {
+        returnEntry = new ReturnEntryCoordinator(
+                dataInterface.designInterface().documentType(),
+                new ReturnEntryCoordinator.Controls(
+                        btnReturnFromInvoice, labelReturnedBadge,
+                        name -> comboDelegate.getSelectionModel().select(name)),
+                itemsService::findItemById,
+                this::appendReturnLine,
+                employeeService::getDelegateById,
+                error -> AllAlerts.handleError(
+                        LanguageManager.getInstance().getString("return.dialog.title"), error));
+        returnEntry.configure();
+    }
+
+    /**
+     * mergeRepeated=false: two picked lines of the same item must stay distinct rows,
+     * each keeping its own {@code sourceLineId}, rather than being folded into one row
+     * that could only point at one of them.
+     */
+    private BasePurchasesAndSales appendReturnLine(InvoiceLineDraft draft) throws DaoException {
+        return invoiceLineService.add(
+                table.getItems(), draft, false, getSelWithoutBalance()).line();
+    }
+
     private void action() {
         btnNew.setOnAction(actionEvent -> {
             if (table.getItems().isEmpty() || AllAlerts.confirm_all(
@@ -364,72 +368,6 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
         btnSave.setOnAction(event -> saveInvoice(false));
         btnPrintSave.setOnAction(actionEvent -> saveInvoice(true));
         btnSearch.setOnAction(actionEvent -> openSearchItems());
-        btnReturnFromInvoice.setOnAction(actionEvent -> openReturnFromInvoice());
-    }
-
-    /**
-     * Prompts for the invoice this return reverses, lets the user pick which lines and
-     * how much of each, and appends them to the table exactly as a normal item
-     * selection would - except each appended row also carries
-     * {@link BasePurchasesAndSales#setSourceLineId}, which is what lets
-     * {@code ReturnCostResolver} and {@code InvoiceExpiryService} recover the original
-     * sale's cost and batches once the return is saved, and what
-     * {@code InvoiceSaveService.persist} links the header to via {@code
-     * sourceInvoiceNumber} below.
-     */
-    private void openReturnFromInvoice() {
-        if (returnLineSelectionService == null) {
-            return;
-        }
-        TextInputDialog numberDialog = new TextInputDialog();
-        numberDialog.setTitle(LanguageManager.getInstance().getString("return.dialog.title"));
-        numberDialog.setHeaderText(null);
-        numberDialog.setContentText(
-                LanguageManager.getInstance().getString("return.dialog.invoice.number.prompt"));
-        Optional<String> entered = numberDialog.showAndWait();
-        if (entered.isEmpty() || entered.get().isBlank()) {
-            return;
-        }
-        int invoiceNumber;
-        try {
-            invoiceNumber = Integer.parseInt(entered.get().trim());
-        } catch (NumberFormatException e) {
-            AllAlerts.alertError(
-                    LanguageManager.getInstance().getString("return.dialog.invoice.number.required"));
-            return;
-        }
-
-        try {
-            var lines = returnLineSelectionService.selectableLines(invoiceNumber);
-            var result = DialogReturnFromInvoice.show(invoiceNumber, lines);
-            if (result.isEmpty() || result.get().selectedLines().isEmpty()) {
-                return;
-            }
-            for (var selected : result.get().selectedLines()) {
-                var draft = selected.line().draftFor(selected.quantityInUnit());
-                // mergeRepeated=false: two picked lines of the same item must stay
-                // distinct rows, each keeping its own sourceLineId, rather than being
-                // folded into one row that could only point at one of them.
-                var addResult = invoiceLineService.add(
-                        table.getItems(), draft, false, getSelWithoutBalance());
-                addResult.line().setSourceLineId(selected.line().sourceLineId());
-            }
-            table.refresh();
-            sourceInvoiceNumber = invoiceNumber;
-            selectedReturnReason = result.get().reason();
-            if (dataInterface.designInterface().documentType() == DocumentType.SALES_RETURN) {
-                var delegateId = returnLineSelectionService.sourceDelegateId(invoiceNumber);
-                if (delegateId.isPresent()) {
-                    var delegate = employeeService.getDelegateById(delegateId.get());
-                    if (delegate != null) {
-                        comboDelegate.getSelectionModel().select(delegate.getName());
-                    }
-                }
-            }
-        } catch (Exception e) {
-            AllAlerts.handleError(
-                    LanguageManager.getInstance().getString("return.dialog.title"), e);
-        }
     }
 
     private void openSearchItems() {
@@ -594,67 +532,12 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
             txtPaid.setText(String.valueOf(dataById.getPaid()));
             txtNotes.setText(dataById.getNotes());
             txtOtherDiscount.setText(String.valueOf(dataById.getDiscount()));
-            updateReturnedBadge(id);
+            returnEntry.showReturnedStatus(id);
         } catch (Exception e) {
             logError(e);
         }
     }
 
-    /**
-     * "returned: N of M" on a saved sale or purchase, once anything has been returned
-     * against it - nothing to show for a return screen itself, or an invoice nobody
-     * has touched. Reads through {@link ReturnedStatusService}, the same numbers
-     * {@code ReturnGuard} already computes from the other direction.
-     */
-    private void updateReturnedBadge(int invoiceNumber) {
-        if (returnedStatusService == null) {
-            return;
-        }
-        try {
-            var status = returnedStatusService.statusOf(
-                    dataInterface.designInterface().documentType(), invoiceNumber);
-            if (!status.hasAnyReturn()) {
-                labelReturnedBadge.setVisible(false);
-                labelReturnedBadge.setManaged(false);
-                return;
-            }
-            String key = status.isFullyReturned()
-                    ? "invoice.returned.badge.full"
-                    : "invoice.returned.badge.partial";
-            labelReturnedBadge.setText(LanguageManager.getInstance().getString(key,
-                    quantityText(status.returnedBaseQuantity()),
-                    quantityText(status.soldBaseQuantity())));
-            labelReturnedBadge.setVisible(true);
-            labelReturnedBadge.setManaged(true);
-        } catch (Exception e) {
-            logError(e);
-        }
-    }
-
-    private static String quantityText(double value) {
-        return MoneyMath.text(java.math.BigDecimal.valueOf(value));
-    }
-
-    /**
-     * A return with no source invoice is allowed by default and always was - nothing
-     * before {@code V16__return_source.sql} could name one. But it is the one document
-     * this whole feature cannot check: no quantity to compare against, no cost to
-     * recover, no batch to pick from. Saving one silently is how stock gets created
-     * out of nothing, so it asks first.
-     * <p>
-     * Only a prompt. Refusing it outright is
-     * {@code PropertiesName.getReturnRequireSourceInvoice()}, enforced in
-     * {@code ReturnGuard} where it cannot be clicked past.
-     */
-    private boolean confirmUnlinkedReturn() {
-        if (!dataInterface.designInterface().documentType().isReturn()
-                || sourceInvoiceNumber > 0) {
-            return true;
-        }
-        var lang = LanguageManager.getInstance();
-        return AllAlerts.confirm_all(lang.getString("confirm"),
-                lang.getString("return.confirm.no.source"));
-    }
 
     private void saveInvoice(boolean print) {
         if (editor.isSaving()) {
@@ -667,7 +550,7 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
                 return;
             }
 
-            if (!confirmUnlinkedReturn()) {
+            if (!returnEntry.confirmIfUnlinked()) {
                 return;
             }
 
@@ -695,7 +578,8 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
                 txtNotes.getText(), codeAccount, textSearchName.get(),
                 comboTreasury.getSelectionModel().getSelectedItem(),
                 comboDelegate.getSelectionModel().getSelectedItem(),
-                getSelWithoutBalance(), sourceInvoiceNumber, selectedReturnReason,
+                getSelWithoutBalance(), returnEntry.sourceInvoiceNumber(),
+                returnEntry.selectedReturnReason(),
                 List.copyOf(table.getItems()));
     }
 
@@ -876,10 +760,7 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
         txtNotes.clear();
         radioCash.setSelected(true);
         radioDeffer.setSelected(false);
-        sourceInvoiceNumber = 0;
-        selectedReturnReason = null;
-        labelReturnedBadge.setVisible(false);
-        labelReturnedBadge.setManaged(false);
+        returnEntry.reset();
     }
 
     private void publisherData() {
