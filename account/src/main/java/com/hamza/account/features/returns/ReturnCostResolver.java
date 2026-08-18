@@ -41,8 +41,14 @@ public final class ReturnCostResolver {
         this.repository = Objects.requireNonNull(repository, "repository");
     }
 
+    /**
+     * @param sourceInvoiceNumber the invoice this return names, or {@code 0} for a
+     *                            return entered without one. It is what tells a line
+     *                            with no source apart from a whole document with none -
+     *                            see {@link #requireLineComesFromTheSource}.
+     */
     public <T extends BasePurchasesAndSales> void apply(
-            DocumentType returnType,
+            DocumentType returnType, int sourceInvoiceNumber,
             List<? extends BasePurchasesAndSales> originalRows,
             List<T> persistedLines) throws DaoException {
         if (!returnType.isReturn() || originalRows.size() != persistedLines.size()) {
@@ -52,6 +58,7 @@ public final class ReturnCostResolver {
         for (int index = 0; index < originalRows.size(); index++) {
             BasePurchasesAndSales original = originalRows.get(index);
             if (original == null || original.getSourceLineId() <= 0) {
+                requireLineComesFromTheSource(sourceInvoiceNumber);
                 continue;
             }
             ReturnableRepository.SourceLine source = repository
@@ -62,6 +69,28 @@ public final class ReturnCostResolver {
             T persisted = persistedLines.get(index);
             requireSameTermsAsSold(persisted, source);
             persisted.setBuy_price(source.buyPrice());
+        }
+    }
+
+    /**
+     * Once a return names an invoice, every line on it has to come from that invoice.
+     * <p>
+     * A line typed in by barcode carries no source line, and this class used to read
+     * that as "a free return - nothing to check it against" and skip it. That is true
+     * of a return with no source at all; it is exactly false of one line on a return
+     * that does have a source, and it was a hole wide enough to walk money out of:
+     * pick 9 of 10 from the invoice so they are locked at the purchase price, then add
+     * the tenth by barcode at any price you like. Bought 10 at 100, returned all 10
+     * for 910, and the 90 is simply gone.
+     * <p>
+     * {@code ReturnGuard} does not catch it either - it checks quantity per item, and
+     * 9 + 1 against 10 sold is perfectly in order. Only the price was wrong, and only
+     * on the line nothing was checking.
+     */
+    private static void requireLineComesFromTheSource(int sourceInvoiceNumber)
+            throws BusinessRuleException {
+        if (sourceInvoiceNumber > 0) {
+            throw new BusinessRuleException(message("return.error.line.not.from.source"));
         }
     }
 

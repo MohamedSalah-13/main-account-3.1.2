@@ -37,6 +37,7 @@ public final class InvoiceLineAssembler {
                     row.getDiscount(), row.getTotal(), row.getUnitsType(), item,
                     row.getExpiration_date());
             preserveHistoricalCost(row, detached);
+            preserveSourceLine(row, detached);
             result.add(detached);
         }
         return List.copyOf(result);
@@ -47,6 +48,25 @@ public final class InvoiceLineAssembler {
         if (source.getId() > 0) {
             target.setBuy_price(source.getBuy_price());
         }
+    }
+
+    /**
+     * Carries which sold/purchased line a return line reverses onto the detached row.
+     * <p>
+     * {@link LineFactory} has no parameter for it and deliberately gains none - it is
+     * the seam all four document families share, and only the two return families have
+     * a source line. So the value is copied across afterwards, exactly as
+     * {@link #preserveHistoricalCost} copies the cost for the same reason.
+     * <p>
+     * Without this the whole link was inert end to end: the picker set it on the table
+     * row, {@code ReturnCostResolver} read it from that row and so still corrected the
+     * cost, but the row the DAO actually wrote was this detached one - and it carried
+     * {@code 0}, so every {@code source_line_id} in the database was NULL and no saved
+     * return could be checked when reopened.
+     */
+    static void preserveSourceLine(BasePurchasesAndSales source,
+                                   BasePurchasesAndSales target) {
+        target.setSourceLineId(source.getSourceLineId());
     }
 
     @FunctionalInterface

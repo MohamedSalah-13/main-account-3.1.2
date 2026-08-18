@@ -142,7 +142,8 @@ public final class InvoiceSaveService<
                 : numberAllocator.next(documentType);
         List<T1> persistedLines = InvoiceLineAssembler.assemble(
                 command.lines(), invoiceNumber, invoiceFactory::object_TableData);
-        returnCostResolver.apply(documentType, command.lines(), persistedLines);
+        returnCostResolver.apply(documentType, command.sourceInvoiceNumber(),
+                command.lines(), persistedLines);
         T3 party = invoiceFactory.objectName(command.partyId(), command.partyName());
         Treasury treasury = treasuryLookup.find(command.treasuryName());
         Employees delegate = documentType.hasDelegate()

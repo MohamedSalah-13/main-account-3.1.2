@@ -42,6 +42,28 @@ class InvoiceLineAssemblerTest {
                 List.of(line(0, true)), 700, InvoiceLineAssemblerTest::copyWithCurrentCost));
     }
 
+    @Test
+    void carriesTheSourceLineOntoTheDetachedRow() throws DaoException {
+        // LineFactory has no parameter for it, so without an explicit copy the value the
+        // picker sets on the table row never reaches the row the DAO writes - which is
+        // how every source_line_id in the database came out NULL.
+        Sales source = line(17, false);
+        source.setSourceLineId(501);
+
+        Sales detached = InvoiceLineAssembler.assemble(
+                List.of(source), 700, InvoiceLineAssemblerTest::copyWithCurrentCost).getFirst();
+
+        assertEquals(501, detached.getSourceLineId());
+    }
+
+    @Test
+    void aLineWithNoSourceStaysAtZero() throws DaoException {
+        Sales detached = InvoiceLineAssembler.assemble(
+                List.of(line(0, false)), 700, InvoiceLineAssemblerTest::copyWithCurrentCost).getFirst();
+
+        assertEquals(0, detached.getSourceLineId());
+    }
+
     private static Sales line(int id, boolean validity) {
         ItemsModel item = new ItemsModel(12, "B12", "صنف اختبار");
         item.setHasValidate(validity);
