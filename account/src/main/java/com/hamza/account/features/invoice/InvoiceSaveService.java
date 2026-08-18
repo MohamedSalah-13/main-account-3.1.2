@@ -136,7 +136,7 @@ public final class InvoiceSaveService<
         stockGuard.validate(command);
         returnGuard.validate(documentType, command.sourceInvoiceNumber(),
                 command.updating() ? command.existingInvoiceId() : 0,
-                payment.invoiceType(), command.lines());
+                payment.invoiceType(), command.partyId(), command.lines());
         int invoiceNumber = command.updating()
                 ? command.existingInvoiceId()
                 : numberAllocator.next(documentType);

@@ -96,6 +96,19 @@ public final class ReturnLineSelectionService {
         return repository.sourceDelegateId(sourceInvoiceNumber);
     }
 
+    /**
+     * The customer or supplier the source invoice was with - what the return must be
+     * booked to. Prefilled by the picker so the ordinary flow simply lands on the
+     * right party; {@code ReturnGuard} is what refuses the wrong one.
+     */
+    public java.util.Optional<Integer> sourcePartyId(int sourceInvoiceNumber)
+            throws DaoException {
+        if (sourceInvoiceNumber <= 0) {
+            return java.util.Optional.empty();
+        }
+        return repository.sourcePartyId(returnType.reverses(), sourceInvoiceNumber);
+    }
+
     private static UnitsModel unitOf(ItemsModel item, int unitId, double typeValue) {
         return ItemUnits.unitsFor(item).stream()
                 .filter(candidate -> candidate.getUnit_id() == unitId)

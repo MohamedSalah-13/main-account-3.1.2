@@ -465,7 +465,7 @@ class ReturnableRepositoryAcceptanceTest {
             org.junit.jupiter.api.Assertions.assertThrows(
                     com.hamza.controlsfx.error.BusinessRuleException.class,
                     () -> guard.validate(DocumentType.SALES_RETURN, sales, 0,
-                            com.hamza.account.type.InvoiceType.CASH, List.of(line)));
+                            com.hamza.account.type.InvoiceType.CASH, 1, List.of(line)));
         } finally {
             transaction.rollback();
             ConnectionManager.endTransaction(transaction);

@@ -338,7 +338,10 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
                 dataInterface.designInterface().documentType(),
                 new ReturnEntryCoordinator.Controls(
                         btnReturnFromInvoice, labelReturnedBadge,
-                        name -> comboDelegate.getSelectionModel().select(name)),
+                        name -> comboDelegate.getSelectionModel().select(name),
+                        // Setting the search text is what the party is chosen by
+                        // everywhere on this screen; its listener resolves the code.
+                        name -> textSearchName.set(name)),
                 itemsService::findItemById,
                 new ReturnEntryCoordinator.LineAppender() {
                     @Override
@@ -357,6 +360,7 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
                     }
                 },
                 employeeService::getDelegateById,
+                this::partyNameById,
                 error -> AllAlerts.handleError(
                         LanguageManager.getInstance().getString("return.dialog.title"), error));
         returnEntry.configure();
@@ -367,6 +371,16 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
      * each keeping its own {@code sourceLineId}, rather than being folded into one row
      * that could only point at one of them.
      */
+    /** The customer's or supplier's name, whichever side this screen is serving. */
+    private String partyNameById(int partyId) throws Exception {
+        for (T3 party : nameAndAccountInterface.nameList()) {
+            if (party != null && party.getId() == partyId) {
+                return party.getName();
+            }
+        }
+        return null;
+    }
+
     private BasePurchasesAndSales appendReturnLine(InvoiceLineDraft draft) throws DaoException {
         return invoiceLineService.add(
                 table.getItems(), draft, false, getSelWithoutBalance()).line();

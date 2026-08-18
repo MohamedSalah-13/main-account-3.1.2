@@ -108,6 +108,14 @@ public interface ReturnableRepository {
             DocumentType sourceType, int sourceId) throws DaoException;
 
     /**
+     * Whose invoice it is - the customer or supplier on the source document. A return
+     * has to go back to the same party: goods bought from one supplier cannot be
+     * returned to another, or the one actually owed is never credited and the other is
+     * credited for goods they never supplied. Empty when the invoice does not exist.
+     */
+    Optional<Integer> sourcePartyId(DocumentType sourceType, int sourceId) throws DaoException;
+
+    /**
      * How many returns of one type were entered for each reason in a date range, and
      * what they totalled - what a reasons report groups by. A return with no reason
      * recorded (every one before an entry screen asked for one, and any entered

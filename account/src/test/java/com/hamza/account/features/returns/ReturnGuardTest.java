@@ -25,6 +25,7 @@ class ReturnGuardTest {
 
     private static final int ITEM = 7;
     private static final int SOURCE_INVOICE = 100;
+    private static final int PARTY = 3;
 
     private FakeRepository repository;
     private ReturnGuard guard;
@@ -39,7 +40,7 @@ class ReturnGuardTest {
     void doesNothingWithoutASourceInvoice() {
         // sourceInvoiceNumber = 0 is a free return - the repository must not even be asked.
         assertDoesNotThrow(() -> guard.validate(
-                DocumentType.SALES_RETURN, 0, 0, InvoiceType.CASH, List.of(lineOf(ITEM, 999))));
+                DocumentType.SALES_RETURN, 0, 0, InvoiceType.CASH, PARTY, List.of(lineOf(ITEM, 999))));
         assertTrue(repository.calls.isEmpty());
     }
 
@@ -51,7 +52,7 @@ class ReturnGuardTest {
         ReturnGuard strict = new ReturnGuard(repository, ReturnPolicy.requiringSource());
 
         assertThrows(BusinessRuleException.class, () -> strict.validate(
-                DocumentType.SALES_RETURN, 0, 0, InvoiceType.CASH, List.of(lineOf(ITEM, 1))));
+                DocumentType.SALES_RETURN, 0, 0, InvoiceType.CASH, PARTY, List.of(lineOf(ITEM, 1))));
         assertTrue(repository.calls.isEmpty(),
                 "refusing a free return needs no query at all");
     }
@@ -63,7 +64,7 @@ class ReturnGuardTest {
         ReturnGuard strict = new ReturnGuard(repository, ReturnPolicy.requiringSource());
 
         assertDoesNotThrow(() -> strict.validate(
-                DocumentType.SALES_RETURN, SOURCE_INVOICE, 0, InvoiceType.CASH, List.of(lineOf(ITEM, 5))));
+                DocumentType.SALES_RETURN, SOURCE_INVOICE, 0, InvoiceType.CASH, PARTY, List.of(lineOf(ITEM, 5))));
     }
 
     @Test
@@ -71,7 +72,7 @@ class ReturnGuardTest {
         // No sourceExists(...) entry registered, so it answers false.
         BusinessRuleException error = assertThrows(BusinessRuleException.class, () ->
                 guard.validate(DocumentType.SALES_RETURN, SOURCE_INVOICE, 0,
-                        InvoiceType.CASH, List.of(lineOf(ITEM, 1))));
+                        InvoiceType.CASH, PARTY, List.of(lineOf(ITEM, 1))));
         assertTrue(error.getMessage() != null && !error.getMessage().isBlank());
     }
 
@@ -87,7 +88,7 @@ class ReturnGuardTest {
 
         BusinessRuleException refused = assertThrows(BusinessRuleException.class,
                 () -> guard.validate(DocumentType.SALES_RETURN, SOURCE_INVOICE, 0,
-                        InvoiceType.DEFER, List.of(lineOf(ITEM, 1))));
+                        InvoiceType.DEFER, PARTY, List.of(lineOf(ITEM, 1))));
         assertTrue(refused.getMessage().contains(String.valueOf(SOURCE_INVOICE)),
                 refused.getMessage());
     }
@@ -99,7 +100,7 @@ class ReturnGuardTest {
         repository.sourceInvoiceType = InvoiceType.CASH;
 
         assertDoesNotThrow(() -> guard.validate(DocumentType.SALES_RETURN, SOURCE_INVOICE, 0,
-                InvoiceType.CASH, List.of(lineOf(ITEM, 1))));
+                InvoiceType.CASH, PARTY, List.of(lineOf(ITEM, 1))));
     }
 
     @Test
@@ -112,9 +113,9 @@ class ReturnGuardTest {
         repository.sourceInvoiceType = InvoiceType.DEFER;
 
         assertDoesNotThrow(() -> guard.validate(DocumentType.SALES_RETURN, SOURCE_INVOICE, 0,
-                InvoiceType.DEFER, List.of(lineOf(ITEM, 1))));
+                InvoiceType.DEFER, PARTY, List.of(lineOf(ITEM, 1))));
         assertDoesNotThrow(() -> guard.validate(DocumentType.SALES_RETURN, SOURCE_INVOICE, 0,
-                InvoiceType.CASH, List.of(lineOf(ITEM, 1))));
+                InvoiceType.CASH, PARTY, List.of(lineOf(ITEM, 1))));
     }
 
     @Test
@@ -123,7 +124,7 @@ class ReturnGuardTest {
         repository.soldLines.add(new ReturnableRepository.SoldLine(ITEM, 5));
 
         assertDoesNotThrow(() -> guard.validate(
-                DocumentType.SALES_RETURN, SOURCE_INVOICE, 0, InvoiceType.CASH, List.of(lineOf(ITEM, 5))));
+                DocumentType.SALES_RETURN, SOURCE_INVOICE, 0, InvoiceType.CASH, PARTY, List.of(lineOf(ITEM, 5))));
     }
 
     @Test
@@ -132,7 +133,7 @@ class ReturnGuardTest {
         repository.soldLines.add(new ReturnableRepository.SoldLine(ITEM, 5));
 
         assertThrows(BusinessRuleException.class, () -> guard.validate(
-                DocumentType.SALES_RETURN, SOURCE_INVOICE, 0, InvoiceType.CASH, List.of(lineOf(ITEM, 6))));
+                DocumentType.SALES_RETURN, SOURCE_INVOICE, 0, InvoiceType.CASH, PARTY, List.of(lineOf(ITEM, 6))));
     }
 
     @Test
@@ -140,7 +141,7 @@ class ReturnGuardTest {
         repository.registerSource(SOURCE_INVOICE);
         repository.soldLines.add(new ReturnableRepository.SoldLine(ITEM, 5));
 
-        guard.validate(DocumentType.SALES_RETURN, SOURCE_INVOICE, 0, InvoiceType.CASH, List.of(lineOf(ITEM, 1)));
+        guard.validate(DocumentType.SALES_RETURN, SOURCE_INVOICE, 0, InvoiceType.CASH, PARTY, List.of(lineOf(ITEM, 1)));
 
         assertTrue(repository.sourceExistsCalledWith.contains(DocumentType.SALES));
     }
@@ -154,7 +155,7 @@ class ReturnGuardTest {
         repository.alreadyReturned.put(ITEM, 3.0);
 
         assertDoesNotThrow(() -> guard.validate(
-                DocumentType.SALES_RETURN, SOURCE_INVOICE, 42, InvoiceType.CASH, List.of(lineOf(ITEM, 2))));
+                DocumentType.SALES_RETURN, SOURCE_INVOICE, 42, InvoiceType.CASH, PARTY, List.of(lineOf(ITEM, 2))));
         assertTrue(repository.excludingCalledWith.contains(42));
     }
 
@@ -166,7 +167,7 @@ class ReturnGuardTest {
         // 3 x 50 = 150, over the 100 ceiling.
         BusinessRuleException refused = assertThrows(BusinessRuleException.class,
                 () -> capped.validate(DocumentType.SALES_RETURN, 0, 0, InvoiceType.CASH,
-                        List.of(pricedLine(ITEM, 3, 50))));
+                        PARTY, List.of(pricedLine(ITEM, 3, 50))));
         assertTrue(refused.getMessage().contains("150"), refused.getMessage());
         assertTrue(repository.calls.isEmpty(), "a capped refusal needs no query");
     }
@@ -176,7 +177,7 @@ class ReturnGuardTest {
         ReturnGuard capped = new ReturnGuard(repository, ReturnPolicy.cappingFreeReturns(100));
 
         assertDoesNotThrow(() -> capped.validate(DocumentType.SALES_RETURN, 0, 0,
-                InvoiceType.CASH, List.of(pricedLine(ITEM, 2, 50))));
+                InvoiceType.CASH, PARTY, List.of(pricedLine(ITEM, 2, 50))));
     }
 
     @Test
@@ -187,13 +188,13 @@ class ReturnGuardTest {
         Sales_Return line = pricedLine(ITEM, 3, 50);
         line.setDiscount(60);
         assertDoesNotThrow(() -> capped.validate(DocumentType.SALES_RETURN, 0, 0,
-                InvoiceType.CASH, List.of(line)));
+                InvoiceType.CASH, PARTY, List.of(line)));
     }
 
     @Test
     void anUncappedPolicyLetsAFreeReturnOfAnySizeThrough() {
         assertDoesNotThrow(() -> guard.validate(DocumentType.SALES_RETURN, 0, 0,
-                InvoiceType.CASH, List.of(pricedLine(ITEM, 1000, 1000))));
+                InvoiceType.CASH, PARTY, List.of(pricedLine(ITEM, 1000, 1000))));
     }
 
     @Test
@@ -205,11 +206,39 @@ class ReturnGuardTest {
         repository.soldLines.add(new ReturnableRepository.SoldLine(ITEM, 5));
 
         guard.validate(DocumentType.SALES_RETURN, SOURCE_INVOICE, 0,
-                InvoiceType.CASH, List.of(lineOf(ITEM, 1)));
+                InvoiceType.CASH, PARTY, List.of(lineOf(ITEM, 1)));
 
         assertTrue(repository.calls.contains("lockSource"), repository.calls.toString());
         assertFalse(repository.calls.contains("sourceExists"),
                 "the unlocked read belongs to the picker, not to the save");
+    }
+
+    @Test
+    void refusesAReturnBookedToADifferentPartyThanTheInvoice() {
+        // Bought from supplier 1, return booked to supplier 2. Quantities, prices and
+        // stock are all in order - the goods really did come back - only the name on
+        // the document is somebody else's. It gets both accounts wrong at once: the
+        // supplier actually owed the credit never receives it, and one who never sent
+        // the goods is credited for them.
+        repository.registerSource(SOURCE_INVOICE);
+        repository.soldLines.add(new ReturnableRepository.SoldLine(ITEM, 5));
+        repository.sourcePartyId = 1;
+
+        BusinessRuleException refused = assertThrows(BusinessRuleException.class,
+                () -> guard.validate(DocumentType.SALES_RETURN, SOURCE_INVOICE, 0,
+                        InvoiceType.CASH, 2, List.of(lineOf(ITEM, 1))));
+        assertTrue(refused.getMessage().contains(String.valueOf(SOURCE_INVOICE)),
+                refused.getMessage());
+    }
+
+    @Test
+    void allowsAReturnBookedToTheInvoicesOwnParty() {
+        repository.registerSource(SOURCE_INVOICE);
+        repository.soldLines.add(new ReturnableRepository.SoldLine(ITEM, 5));
+        repository.sourcePartyId = 1;
+
+        assertDoesNotThrow(() -> guard.validate(DocumentType.SALES_RETURN, SOURCE_INVOICE, 0,
+                InvoiceType.CASH, 1, List.of(lineOf(ITEM, 1))));
     }
 
     private static Sales_Return pricedLine(int itemId, double quantity, double price) {
@@ -236,6 +265,7 @@ class ReturnGuardTest {
         final List<SoldLine> soldLines = new java.util.ArrayList<>();
         final Map<Integer, Double> alreadyReturned = new HashMap<>();
         com.hamza.account.type.InvoiceType sourceInvoiceType;
+        Integer sourcePartyId;
         private final java.util.Set<Integer> existingSources = new java.util.HashSet<>();
 
         void registerSource(int id) {
@@ -300,6 +330,12 @@ class ReturnGuardTest {
                 DocumentType sourceType, int sourceId) {
             calls.add("sourceInvoiceType");
             return java.util.Optional.ofNullable(sourceInvoiceType);
+        }
+
+        @Override
+        public java.util.Optional<Integer> sourcePartyId(DocumentType sourceType, int sourceId) {
+            calls.add("sourcePartyId");
+            return java.util.Optional.ofNullable(sourcePartyId);
         }
 
         @Override

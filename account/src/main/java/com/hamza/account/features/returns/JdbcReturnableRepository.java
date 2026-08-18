@@ -219,6 +219,26 @@ public final class JdbcReturnableRepository implements ReturnableRepository {
     }
 
     @Override
+    public Optional<Integer> sourcePartyId(DocumentType sourceType, int sourceId)
+            throws DaoException {
+        DocumentTableSpec spec = DocumentTableSpec.of(sourceType);
+        String sql = "SELECT " + spec.party() + " FROM " + spec.table()
+                + " WHERE " + spec.key() + " = ?";
+        return withConnection(connection -> {
+            try (PreparedStatement statement = connection.prepareStatement(sql)) {
+                statement.setInt(1, sourceId);
+                try (ResultSet rows = statement.executeQuery()) {
+                    if (!rows.next()) {
+                        return Optional.empty();
+                    }
+                    int partyId = rows.getInt(1);
+                    return rows.wasNull() ? Optional.empty() : Optional.of(partyId);
+                }
+            }
+        });
+    }
+
+    @Override
     public List<ReasonCount> reasonCounts(DocumentType returnType, LocalDate from, LocalDate to)
             throws DaoException {
         DocumentTableSpec spec = DocumentTableSpec.of(returnType);

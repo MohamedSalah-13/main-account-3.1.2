@@ -45,6 +45,7 @@ public final class ReturnEntryCoordinator {
     private final ReturnedStatusService returnedStatus;
     private final LineAppender lineAppender;
     private final DelegateLookup delegateLookup;
+    private final PartyLookup partyLookup;
     private final ErrorHandler errorHandler;
 
     private int sourceInvoiceNumber;
@@ -55,11 +56,13 @@ public final class ReturnEntryCoordinator {
                                   ReturnLineSelectionService.ItemLookup itemLookup,
                                   LineAppender lineAppender,
                                   DelegateLookup delegateLookup,
+                                  PartyLookup partyLookup,
                                   ErrorHandler errorHandler) {
         this.documentType = Objects.requireNonNull(documentType, "documentType");
         this.controls = Objects.requireNonNull(controls, "controls");
         this.lineAppender = Objects.requireNonNull(lineAppender, "lineAppender");
         this.delegateLookup = Objects.requireNonNull(delegateLookup, "delegateLookup");
+        this.partyLookup = Objects.requireNonNull(partyLookup, "partyLookup");
         this.errorHandler = Objects.requireNonNull(errorHandler, "errorHandler");
         Objects.requireNonNull(itemLookup, "itemLookup");
 
@@ -215,9 +218,27 @@ public final class ReturnEntryCoordinator {
             }
             sourceInvoiceNumber = invoiceNumber;
             selectedReturnReason = result.get().reason();
+            applySourceParty(invoiceNumber);
             applySourceDelegate(invoiceNumber);
         } catch (Exception e) {
             errorHandler.handle(e);
+        }
+    }
+
+    /**
+     * Points the return at the party the source invoice was with, so the ordinary flow
+     * lands on the right one without the user having to remember. Goods bought from one
+     * supplier cannot be returned to another - {@code ReturnGuard} refuses that at save
+     * - and this is the half that means nobody meets the refusal by accident.
+     */
+    private void applySourceParty(int invoiceNumber) throws Exception {
+        Optional<Integer> partyId = lineSelection.sourcePartyId(invoiceNumber);
+        if (partyId.isEmpty()) {
+            return;
+        }
+        String partyName = partyLookup.nameOf(partyId.get());
+        if (partyName != null && !partyName.isBlank()) {
+            controls.partySelector().select(partyName);
         }
     }
 
@@ -251,17 +272,25 @@ public final class ReturnEntryCoordinator {
 
     /** The form controls this coordinator owns. */
     public record Controls(Button returnFromInvoice, Label returnedBadge,
-                           DelegateSelector delegateSelector) {
+                           NameSelector delegateSelector, NameSelector partySelector) {
         public Controls {
             Objects.requireNonNull(returnFromInvoice, "returnFromInvoice");
             Objects.requireNonNull(returnedBadge, "returnedBadge");
             Objects.requireNonNull(delegateSelector, "delegateSelector");
+            Objects.requireNonNull(partySelector, "partySelector");
         }
     }
 
+    /** Puts a name into one of the form's own selectors - the delegate combo, or the party search. */
     @FunctionalInterface
-    public interface DelegateSelector {
-        void select(String delegateName);
+    public interface NameSelector {
+        void select(String name);
+    }
+
+    /** The customer's or supplier's name, by id. */
+    @FunctionalInterface
+    public interface PartyLookup {
+        String nameOf(int partyId) throws Exception;
     }
 
     /**

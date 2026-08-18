@@ -43,10 +43,11 @@ public final class ReturnGuard {
      *                           it is not checked against its own previous quantities;
      *                           {@code 0} when creating a new one
      * @param invoiceType        how the return itself is being settled
+     * @param partyId            the customer or supplier the return is booked to
      * @param lines              the return's proposed lines
      */
     public void validate(DocumentType returnType, int sourceInvoiceNumber,
-                         int excludingReturnId, InvoiceType invoiceType,
+                         int excludingReturnId, InvoiceType invoiceType, int partyId,
                          List<? extends BasePurchasesAndSales> lines) throws DaoException {
         Objects.requireNonNull(returnType, "returnType");
         if (sourceInvoiceNumber <= 0) {
@@ -67,6 +68,7 @@ public final class ReturnGuard {
             throw new BusinessRuleException(message("return.error.source.not.found"));
         }
 
+        requirePartyMatchesSource(sourceType, sourceInvoiceNumber, partyId);
         requireSettlementMatchesSource(sourceType, sourceInvoiceNumber, invoiceType);
 
         ReturnableDocument source = ReturnableDocument.of(sourceType, sourceInvoiceNumber,
@@ -123,6 +125,28 @@ public final class ReturnGuard {
             total += line.getQuantity() * line.getPrice() - line.getDiscount();
         }
         return total;
+    }
+
+    /**
+     * A return goes back to the party the invoice came from.
+     * <p>
+     * Goods bought from one supplier cannot be returned to another. Booking it to the
+     * wrong party gets both accounts wrong at once and in opposite directions: the
+     * supplier actually owed the credit never receives it and still shows the full
+     * debt, while a supplier who never sent the goods is credited for them. Nothing
+     * else in the save catches it - quantities, prices and stock are all perfectly in
+     * order, because the goods really did come back; only the name on the document is
+     * somebody else's.
+     */
+    private void requirePartyMatchesSource(DocumentType sourceType, int sourceInvoiceNumber,
+                                           int partyId) throws DaoException {
+        Integer sourceParty = repository
+                .sourcePartyId(sourceType, sourceInvoiceNumber)
+                .orElse(null);
+        if (sourceParty != null && sourceParty != partyId) {
+            throw new BusinessRuleException(message("return.error.party.differs",
+                    sourceInvoiceNumber));
+        }
     }
 
     /**
