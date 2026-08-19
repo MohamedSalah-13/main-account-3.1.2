@@ -37,7 +37,6 @@
                                 <Button fx:id="btnRefresh" mnemonicParsing="false" styleClass="app-neutral-button" text="Refresh" />
                                 <Separator orientation="VERTICAL" />
                                 <Button fx:id="btnShowInvoice" mnemonicParsing="false" styleClass="app-neutral-button" text="Show" />
-                                <Button fx:id="btnToExcel" mnemonicParsing="false" styleClass="excel-button" text="Export Excel" />
                                 <ToggleButton fx:id="btnSelected" mnemonicParsing="false" styleClass="app-neutral-button" text="Select All" />
                                 <MenuButton fx:id="menuButton" mnemonicParsing="false" text="طباعة">
                                     <items>

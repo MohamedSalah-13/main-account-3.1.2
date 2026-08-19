@@ -48,7 +48,7 @@ public class UnitsController implements Initializable, AppSettingInterface {
     @FXML
     private TableView<UnitsModel> tableView;
     @FXML
-    private Button btnSave, btnRefresh, btnClear, btnClose;
+    private Button btnSave, btnRefresh, btnClear;
     @FXML
     private Label labelName, labelCode, labelQuantity, labelTitle, labelSubtitle, labelCount, labelSectionData, labelSectionList;
     @FXML
@@ -89,7 +89,6 @@ public class UnitsController implements Initializable, AppSettingInterface {
     private void buttonGraphic() {
         btnSave.setGraphic(icon(Feather.SAVE));
         btnClear.setGraphic(icon(Feather.ROTATE_CCW));
-        btnClose.setGraphic(icon(Feather.X));
         btnRefresh.setGraphic(icon(Feather.REFRESH_CW));
 
         headerIcon.setIconCode(Feather.PACKAGE);
@@ -118,7 +117,6 @@ public class UnitsController implements Initializable, AppSettingInterface {
         labelQuantity.setTooltip(new Tooltip(lm.getString("unit.default.factor.hint")));
         textCount.setTooltip(new Tooltip(lm.getString("unit.default.factor.hint")));
         btnSave.setText(lm.getString("common.save"));
-        btnClose.setText(lm.getString("common.close"));
         btnRefresh.setText(lm.getString("refresh"));
         btnClear.setText(lm.getString("common.clear"));
         textCode.setText(lm.getString("item.code.generate"));
@@ -130,7 +128,6 @@ public class UnitsController implements Initializable, AppSettingInterface {
                 .or(textCount.textProperty().isEmpty()));
         btnSave.setOnAction(actionEvent -> insertData());
         btnClear.setOnAction(actionEvent -> resetData());
-        btnClose.setOnAction(actionEvent -> btnClose.getScene().getWindow().hide());
         btnRefresh.setOnAction(actionEvent -> refreshTable());
         tableView.setOnKeyPressed(keyEvent -> {
             if (keyEvent.getCode() == KeyCode.DELETE) {

@@ -46,8 +46,6 @@
                                 <Button fx:id="btnSave" defaultButton="true" mnemonicParsing="false" styleClass="app-primary-button" text="Save" />
                                 <Button fx:id="btnClear" mnemonicParsing="false" styleClass="app-neutral-button" text="Clear" />
                                 <Button fx:id="btnRefresh" mnemonicParsing="false" styleClass="app-neutral-button" text="refresh" />
-                                <Separator orientation="VERTICAL" />
-                                <Button fx:id="btnClose" cancelButton="true" mnemonicParsing="false" styleClass="app-danger-button" text="Close" />
                             </items>
                         </ToolBar>
                     </children>

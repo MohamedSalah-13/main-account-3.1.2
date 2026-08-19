@@ -1,39 +1,40 @@
 package com.hamza.account.controller.invoice;
 
-import com.hamza.account.finance.MoneyMath;
+import com.hamza.account.authorization.AppPermissions;
 import com.hamza.account.config.Image_Setting;
 import com.hamza.account.config.SaveDatabaseFile;
 import com.hamza.account.controller.main.DataPublisher;
 import com.hamza.account.controller.main.DisableButtons;
 import com.hamza.account.controller.model.PrintPurchaseWithName;
+import com.hamza.account.controller.model.PrintTotalsData;
 import com.hamza.account.controller.others.ServiceRegistry;
 import com.hamza.account.document.TotalsSearchCriteria;
 import com.hamza.account.features.events.EmployeesChanged;
 import com.hamza.account.features.events.InvoiceSaved;
 import com.hamza.account.features.events.NameChanged;
-import com.hamza.account.controller.model.PrintTotalsData;
+import com.hamza.account.finance.MoneyMath;
 import com.hamza.account.interfaces.api.DataInterface;
 import com.hamza.account.interfaces.api.NameAndAccountInterface;
 import com.hamza.account.interfaces.api.TotalsDataInterface;
-import com.hamza.account.model.base.*;
+import com.hamza.account.model.base.BaseAccount;
+import com.hamza.account.model.base.BaseNames;
+import com.hamza.account.model.base.BaseTotals;
+import com.hamza.account.model.base.DForColumnTable;
 import com.hamza.account.model.dao.DaoFactory;
-import com.hamza.account.period.PeriodLockService;
 import com.hamza.account.openFxml.FxmlPath;
 import com.hamza.account.otherSetting.MaskerPaneSetting;
+import com.hamza.account.period.PeriodLockService;
 import com.hamza.account.service.EmployeeService;
 import com.hamza.account.service.TotalsService;
 import com.hamza.account.service.UsersService;
 import com.hamza.account.table.TableSetting;
 import com.hamza.account.type.InvoiceType;
-import com.hamza.account.authorization.AppPermissions;
-import com.hamza.account.authorization.PermissionKey;
 import com.hamza.account.view.BuyApplication;
 import com.hamza.account.view.ShowInvoiceApplication;
 import com.hamza.controlsfx.alert.AllAlerts;
+import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.error.BusinessRuleException;
 import com.hamza.controlsfx.error.UserValidationException;
-import com.hamza.controlsfx.database.DaoException;
-import com.hamza.controlsfx.excel.ExportData;
 import com.hamza.controlsfx.language.LanguageManager;
 import com.hamza.controlsfx.observer.EventBus;
 import com.hamza.controlsfx.others.CssToColorHelper;
@@ -60,8 +61,8 @@ import javafx.stage.Stage;
 import javafx.util.Callback;
 import lombok.extern.log4j.Log4j2;
 
-import java.net.URL;
 import java.math.BigDecimal;
+import java.net.URL;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -87,6 +88,8 @@ public class TotalsController<T2 extends BaseTotals, T3 extends BaseNames, T4 ex
     private final Preferences preferences = Preferences.userNodeForPackage(TotalsController.class);
     private final ObservableList<T2> observableList;
     private final NameAndAccountInterface nameAndAccountInterface;
+    private final String dateFromKey;
+    private final String dateToKey;
     private boolean update_data = true;
     private MaskerPaneSetting maskerPaneSetting;
     @FXML
@@ -106,7 +109,7 @@ public class TotalsController<T2 extends BaseTotals, T3 extends BaseNames, T4 ex
     @FXML
     private Text textSumTableSize, textSumTotals, textSumDiscount, textSumAfterDiscount, textCash, textDeffer, textProfit;
     @FXML
-    private Button btnUpdate, btnDelete, btnSearch, btnShowInvoice, btnRefresh, btnToExcel;
+    private Button btnUpdate, btnDelete, btnSearch, btnShowInvoice, btnRefresh;
     @FXML
     private ToolBar toolBar;
     @FXML
@@ -138,9 +141,6 @@ public class TotalsController<T2 extends BaseTotals, T3 extends BaseNames, T4 ex
         this.dateFromKey = prefix + ".search.dateFrom";
         this.dateToKey = prefix + ".search.dateTo";
     }
-
-    private final String dateFromKey;
-    private final String dateToKey;
 
     @Override
     public void initialize(URL url, ResourceBundle resourceBundle) {
@@ -183,7 +183,6 @@ public class TotalsController<T2 extends BaseTotals, T3 extends BaseNames, T4 ex
         btnSearch.setGraphic(createIcon(images.search));
         btnRefresh.setGraphic(createIcon(images.refresh));
         btnSelected.setGraphic(createIcon(images.select));
-        btnToExcel.setGraphic(createIcon(images.export));
     }
 
     private void permissionButtons() {
@@ -197,7 +196,9 @@ public class TotalsController<T2 extends BaseTotals, T3 extends BaseNames, T4 ex
             update_data = aBoolean;
     }
 
-    /** Pressing Enter in any of the search fields runs the same search as the button. */
+    /**
+     * Pressing Enter in any of the search fields runs the same search as the button.
+     */
     private void wireEnterKeySearch() {
         textSearch.setOnAction(actionEvent -> btnSearch.fire());
         textInvoiceNumber.setOnAction(actionEvent -> btnSearch.fire());
@@ -205,7 +206,9 @@ public class TotalsController<T2 extends BaseTotals, T3 extends BaseNames, T4 ex
         textMaxTotal.setOnAction(actionEvent -> btnSearch.fire());
     }
 
-    /** Numbers only - an invoice number is a positive integer, a total is signed decimal. */
+    /**
+     * Numbers only - an invoice number is a positive integer, a total is signed decimal.
+     */
     private void restrictToNumbers() {
         textInvoiceNumber.setTextFormatter(TextFormat.createNumericTextFormatter());
         textMinTotal.setTextFormatter(new TextFormatter<>(TextFormat.TEXT_FORMATTER_FILTER));
@@ -229,7 +232,6 @@ public class TotalsController<T2 extends BaseTotals, T3 extends BaseNames, T4 ex
         btnUpdate.setText(lang.getString("update"));
         btnDelete.setText(lang.getString("delete"));
         btnShowInvoice.setText(lang.getString("show"));
-        btnToExcel.setText("Export to Excel");
         textSearch.setPromptText(lang.getString("search"));
         comboName.setPromptText(lang.getString("name"));
         comboDelegate.setPromptText(lang.getString("NAME_DELEGATE"));
@@ -295,7 +297,9 @@ public class TotalsController<T2 extends BaseTotals, T3 extends BaseNames, T4 ex
         comboDelegateSetting(comboEnteredBy, getUsernames());
     }
 
-    /** The date last searched with, so reopening the screen does not reset it to today. */
+    /**
+     * The date last searched with, so reopening the screen does not reset it to today.
+     */
     private LocalDate loadDate(String key, LocalDate fallback) {
         String stored = preferences.get(key, null);
         if (stored == null) return fallback;
@@ -400,7 +404,7 @@ public class TotalsController<T2 extends BaseTotals, T3 extends BaseNames, T4 ex
             }
 
         });
-        btnToExcel.setOnAction(actionEvent -> openExcelFile());
+
         btnSelected.selectedProperty().addListener((observableValue, aBoolean, t1) -> {
             List<T2> list = tableView.getItems().stream().toList();
             list.forEach(t2 -> t2.setSelectedRow(t1));
@@ -478,7 +482,9 @@ public class TotalsController<T2 extends BaseTotals, T3 extends BaseNames, T4 ex
         return new TotalsSearchCriteria(from, to, invoiceNumber, partyName, delegateName, invoiceType, enteredBy, minTotal, maxTotal, freeText);
     }
 
-    /** The "all" entry is always first - a combo left on it means this field is not filtering. */
+    /**
+     * The "all" entry is always first - a combo left on it means this field is not filtering.
+     */
     private String selectedOrNull(ComboBox<String> comboBox) {
         int index = comboBox.getSelectionModel().getSelectedIndex();
         if (index <= 0) return null;
@@ -500,24 +506,6 @@ public class TotalsController<T2 extends BaseTotals, T3 extends BaseNames, T4 ex
             return new BigDecimal(text.trim());
         } catch (NumberFormatException e) {
             throw new UserValidationException(fieldName + ": " + LanguageManager.getInstance().getString("msg.invalid.number"));
-        }
-    }
-
-    private void openExcelFile() {
-        try {
-            List<T2> items = new ArrayList<>();
-            for (int i = 0; i < tableView.getItems().size(); i++) {
-                if (totalDesignInterface.totalsDataInterface().selected(tableView.getItems().get(i))) {
-                    items.add(tableView.getItems().get(i));
-                }
-            }
-            if (items.isEmpty()) {
-                return;
-            }
-            var i = ExportData.exportDataToExcel(items.stream().sorted(Comparator.comparing(BaseTotals::getId)).toList(), totalDesignInterface.writeExcelInterface(items));
-            if (i >= 1) AllAlerts.alertSave();
-        } catch (Exception e) {
-            exceptionHandle(e);
         }
     }
 
@@ -556,7 +544,7 @@ public class TotalsController<T2 extends BaseTotals, T3 extends BaseNames, T4 ex
         if (!update_data) {
             LocalDate currentDate = LocalDate.now();
             if (invoiceDate.getYear() != currentDate.getYear()
-                || invoiceDate.getMonth() != currentDate.getMonth()) {
+                    || invoiceDate.getMonth() != currentDate.getMonth()) {
                 throw new BusinessRuleException(LanguageManager.getInstance().getString("invoice.error.outside.current.month"));
             }
         }

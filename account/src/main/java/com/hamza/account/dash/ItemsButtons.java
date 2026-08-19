@@ -1,5 +1,7 @@
 package com.hamza.account.dash;
 
+import com.hamza.account.authorization.AppPermissions;
+import com.hamza.account.authorization.PermissionKey;
 import com.hamza.account.config.Image_Setting;
 import com.hamza.account.controller.dataByName.OpenAddAreaApplication;
 import com.hamza.account.controller.dataByName.impl.AreaImpl;
@@ -12,11 +14,8 @@ import com.hamza.account.controller.main.ButtonWithPerm;
 import com.hamza.account.controller.main.DataPublisher;
 import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.openFxml.OpenFxmlApplication;
-import com.hamza.account.authorization.AppPermissions;
-import com.hamza.account.authorization.PermissionKey;
 import com.hamza.account.view.AddGroupApp;
 import com.hamza.account.view.AddItemApplication;
-import com.hamza.account.view.OpenApplication;
 import com.hamza.controlsfx.language.LanguageManager;
 import javafx.scene.control.TabPane;
 import javafx.stage.Stage;
@@ -92,13 +91,23 @@ public class ItemsButtons {
 
             @Override
             public void action() throws Exception {
-                new OpenApplication<>(new UnitsController(textName()));
+//                new OpenApplication<>(new UnitsController(textName()));
             }
 
             @NotNull
             @Override
             public String textName() {
                 return LanguageManager.getInstance().getString("tab.units");
+            }
+
+            @Override
+            public void actionAddPaneToTabPane(TabPane tabPane) throws Exception {
+                addTape(tabPane, new OpenFxmlApplication(new UnitsController(textName())).getPane(), textName(), new Image_Setting().itemWhite);
+            }
+
+            @Override
+            public boolean showOnTapPane() {
+                return true;
             }
         };
     }
