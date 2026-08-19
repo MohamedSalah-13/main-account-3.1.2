@@ -1,6 +1,6 @@
 package com.hamza.account.controller.items;
 
-import com.hamza.account.config.Image_Setting;
+import com.hamza.account.config.UiScale;
 import com.hamza.account.controller.others.ServiceRegistry;
 import com.hamza.account.model.domain.ItemsModel;
 import com.hamza.account.model.domain.MainGroups;
@@ -24,9 +24,14 @@ import javafx.scene.text.Text;
 import javafx.stage.Popup;
 import lombok.extern.log4j.Log4j2;
 import org.jetbrains.annotations.NotNull;
+import org.kordamp.ikonli.Ikon;
+import org.kordamp.ikonli.feather.Feather;
+import org.kordamp.ikonli.javafx.FontIcon;
 
 import java.io.FileNotFoundException;
 import java.util.List;
+import java.util.function.ObjDoubleConsumer;
+import java.util.function.ToDoubleFunction;
 
 import static com.hamza.controlsfx.others.Utils.setTextFormatter;
 
@@ -52,7 +57,11 @@ public class UpdateSomeItems {
     @FXML
     private Text textPath;
     @FXML
-    private ImageView imageInformation;
+    private FontIcon imageInformation;
+    @FXML
+    private FontIcon headerIcon;
+    @FXML
+    private FontIcon iconBuyPercent, iconSellPercent;
     @FXML
     private Button btnSave, btnClose;
     @FXML
@@ -81,13 +90,39 @@ public class UpdateSomeItems {
         checkSetting();
     }
 
+    /**
+     * The size icons render at, scaled from {@link UiScale} the same way
+     * {@code UnitsController} does, so a screen opened at a larger font size
+     * still gets icons to match.
+     */
+    private int iconSize() {
+        return (int) Math.round(16 * UiScale.factor());
+    }
+
+    private FontIcon icon(Ikon code) {
+        FontIcon fontIcon = new FontIcon(code);
+        fontIcon.setIconSize(iconSize());
+        fontIcon.getStyleClass().add("icon-graphic");
+        return fontIcon;
+    }
+
     private void comboSetting() {
         var lm = LanguageManager.getInstance();
         btnSave.setText(lm.getString("common.save"));
         btnClose.setText(lm.getString("common.close"));
-        var imageSetting = new Image_Setting();
-        btnSave.setGraphic(ImageChoose.createIcon(imageSetting.save));
-        btnClose.setGraphic(ImageChoose.createIcon(imageSetting.cancel));
+        btnSave.setGraphic(icon(Feather.SAVE));
+        btnClose.setGraphic(icon(Feather.X));
+
+        headerIcon.setIconCode(Feather.SLIDERS);
+        headerIcon.setIconSize(iconSize() * 2);
+
+        imageInformation.setIconCode(Feather.INFO);
+        imageInformation.setIconSize(iconSize());
+
+        iconBuyPercent.setIconCode(Feather.PERCENT);
+        iconSellPercent.setIconCode(Feather.PERCENT);
+        iconBuyPercent.setIconSize(iconSize());
+        iconSellPercent.setIconSize(iconSize());
 
         checkUpdateGroup.setText(lm.getString("item.update.group"));
         checkUpdateActive.setText(lm.getString("item.update.active"));
@@ -118,10 +153,8 @@ public class UpdateSomeItems {
 
         comboSubGroup.valueProperty().addListener((observableValue, string, t1) -> {
             try {
-                for (ItemsModel itemsModel : itemsModelList) {
-                    itemsModel.setSubGroups(supGroupService.getSubGroupsByName(comboSubGroup.getSelectionModel().getSelectedItem()));
-//                    System.out.println(itemsModel.getSubGroups());
-                }
+                var selectedSubGroup = supGroupService.getSubGroupsByName(t1);
+                itemsModelList.forEach(itemsModel -> itemsModel.setSubGroups(selectedSubGroup));
             } catch (DaoException e) {
                 logError(e);
             }
@@ -143,7 +176,6 @@ public class UpdateSomeItems {
         radioDeleteImage.disableProperty().bind(checkDeleteImage.selectedProperty().not());
         radioAddImage.disableProperty().bind(checkDeleteImage.selectedProperty().not());
 
-//        radioDeleteImage.setOnAction(actionEvent -> textPath.setText(""));
         radioAddImage.setOnAction(actionEvent -> {
             try {
                 imageChoose.onAddImage(imageView);
@@ -158,9 +190,9 @@ public class UpdateSomeItems {
 
         final Popup popup = new Popup();
         popup.setAutoHide(true);
-        var e = new Text(lm.getString("item.popup.image.info"));
-        e.getStyleClass().add("text-explain");
-        popup.getContent().add(e);
+        var infoText = new Text(lm.getString("item.popup.image.info"));
+        infoText.getStyleClass().add("text-explain");
+        popup.getContent().add(infoText);
         imageInformation.setOnMouseEntered(mouseEvent -> popup.show(imageInformation, mouseEvent.getScreenX() - 150, mouseEvent.getScreenY() - 50));
         imageInformation.setOnMouseExited(mouseEvent -> popup.hide());
 
@@ -211,112 +243,131 @@ public class UpdateSomeItems {
 
     private void saveData() {
         try {
-            var i = updateGroups(itemsModelList);
-            log.info("Update groups result: {}", i);
-            if (i == 1) {
-                maskerPaneSetting.showMaskerPane(LanguageManager.getInstance().getString("item.dialog.update.items.title"),
-                        () -> itemsService.updateGroup(itemsModelList));
-
-                maskerPaneSetting.getVoidTask().setOnSucceeded(workerStateEvent -> {
-                    AllAlerts.alertSave();
-                    checkUpdateGroup.setSelected(false);
-                    checkUpdateActive.setSelected(false);
-                    checkUpdateBuy.setSelected(false);
-                    checkUpdateSell.setSelected(false);
-                    checkDeleteImage.setSelected(false);
-                    checkMini.setSelected(false);
-                    checkFirstBalance.setSelected(false);
-                });
+            if (!applyRequestedUpdates(itemsModelList)) {
+                return;
             }
+
+            maskerPaneSetting.showMaskerPane(LanguageManager.getInstance().getString("item.dialog.update.items.title"),
+                    () -> itemsService.updateGroup(itemsModelList));
+
+            maskerPaneSetting.getVoidTask().setOnSucceeded(workerStateEvent -> {
+                AllAlerts.alertSave();
+                checkUpdateGroup.setSelected(false);
+                checkUpdateActive.setSelected(false);
+                checkUpdateBuy.setSelected(false);
+                checkUpdateSell.setSelected(false);
+                checkDeleteImage.setSelected(false);
+                checkMini.setSelected(false);
+                checkFirstBalance.setSelected(false);
+            });
         } catch (Exception e) {
             logError(e);
         }
-
-
     }
 
-    private int updateGroups(List<ItemsModel> itemsModelList) throws Exception {
-        // check groups
+    /**
+     * Applies every checked bulk-edit option to {@code itemsModelList} in memory and
+     * reports whether at least one was applied - which is what {@link #saveData()}
+     * uses to decide whether the batch is worth sending to the database at all.
+     * <p>
+     * Each option used to live in one branch of an if/else chain, so checking more
+     * than one box silently applied only the first that matched - and the buy-price
+     * branch fell out of the chain without ever signalling "applied", so raising buy
+     * prices in bulk computed new values in memory and then threw them away instead
+     * of reaching the database. Every option is now independent of the others.
+     */
+    private boolean applyRequestedUpdates(List<ItemsModel> itemsModelList) throws Exception {
+        boolean anyApplied = false;
+
         if (checkUpdateGroup.isSelected()) {
-            if (comboSubGroup.getSelectionModel().isEmpty()) {
-                comboSubGroup.getSelectionModel().selectFirst();
-                throw new UserValidationException(LanguageManager.getInstance().getString("item.error.select.group"));
-            }
-            return 1;
+            requireSubGroupSelected();
+            anyApplied = true;
+        }
+        if (checkUpdateActive.isSelected()) {
+            applyActiveUpdate(itemsModelList);
+            anyApplied = true;
+        }
+        if (checkUpdateBuy.isSelected()) {
+            applyPercentageChange(itemsModelList, textBuyPrice, ItemsModel::getBuyPrice, ItemsModel::setBuyPrice);
+            anyApplied = true;
+        }
+        if (checkUpdateSell.isSelected()) {
+            applyPercentageChange(itemsModelList, textSellPrice, ItemsModel::getSelPrice1, ItemsModel::setSelPrice1);
+            anyApplied = true;
+        }
+        if (checkMini.isSelected()) {
+            var mini = requirePositiveNumber(textMini.getText());
+            itemsModelList.forEach(itemsModel -> itemsModel.setMini_quantity(mini));
+            anyApplied = true;
+        }
+        if (checkFirstBalance.isSelected()) {
+            var firstBalance = requireNumber(textFirstBalance.getText());
+            itemsModelList.forEach(itemsModel -> itemsModel.setFirstBalanceForStock(firstBalance));
+            anyApplied = true;
+        }
+        if (checkDeleteImage.isSelected()) {
+            applyImageUpdate(itemsModelList);
+            anyApplied = true;
         }
 
-        // check activation
-        else if (checkUpdateActive.isSelected()) {
-            var selectionModel = comboActive.getSelectionModel();
-            if (selectionModel.isEmpty()) {
-                throw new UserValidationException(LanguageManager.getInstance().getString("item.error.select.status"));
-            }
-            if (selectionModel.getSelectedItem().equals(LanguageManager.getInstance().getString("activated"))) {
-                isActiveProperty = true;
-            }
-            itemsModelList.forEach(itemsModel -> itemsModel.setActiveItem(isActiveProperty));
-            return 1;
+        return anyApplied;
+    }
+
+    private void requireSubGroupSelected() throws UserValidationException {
+        if (comboSubGroup.getSelectionModel().isEmpty()) {
+            comboSubGroup.getSelectionModel().selectFirst();
+            throw new UserValidationException(LanguageManager.getInstance().getString("item.error.select.group"));
         }
+    }
 
-        // check buy
-        else if (checkUpdateBuy.isSelected()) {
-            var percentageIncrease = Double.parseDouble(textBuyPrice.getText());
-            if (percentageIncrease <= 0) {
-                throw new UserValidationException(LanguageManager.getInstance().getString("item.error.increase.positive"));
-            }
-
-            itemsModelList.forEach(itemsModel -> {
-                var buyPrice = itemsModel.getBuyPrice();
-                var v = ((buyPrice * percentageIncrease) / 100) + buyPrice;
-                itemsModel.setBuyPrice(v);
-            });
+    private void applyActiveUpdate(List<ItemsModel> itemsModelList) throws UserValidationException {
+        var selectionModel = comboActive.getSelectionModel();
+        if (selectionModel.isEmpty()) {
+            throw new UserValidationException(LanguageManager.getInstance().getString("item.error.select.status"));
         }
+        isActiveProperty = selectionModel.getSelectedItem().equals(LanguageManager.getInstance().getString("activated"));
+        itemsModelList.forEach(itemsModel -> itemsModel.setActiveItem(isActiveProperty));
+    }
 
-        // check sell
-        else if (checkUpdateSell.isSelected()) {
-            var percentageDecrease = Double.parseDouble(textSellPrice.getText());
-            if (percentageDecrease <= 0) {
-                throw new UserValidationException(LanguageManager.getInstance().getString("item.error.increase.positive"));
-            }
+    private void applyPercentageChange(List<ItemsModel> itemsModelList, TextField field,
+                                        ToDoubleFunction<ItemsModel> getter, ObjDoubleConsumer<ItemsModel> setter) throws UserValidationException {
+        var percentage = requirePositiveNumber(field.getText());
+        itemsModelList.forEach(itemsModel -> {
+            var current = getter.applyAsDouble(itemsModel);
+            setter.accept(itemsModel, current + (current * percentage / 100));
+        });
+    }
 
-            itemsModelList.forEach(itemsModel -> {
-                var selPrice1 = itemsModel.getSelPrice1();
-                var v = ((selPrice1 * percentageDecrease) / 100) + selPrice1;
-                itemsModel.setSelPrice1(v);
-            });
-            return 1;
+    /**
+     * The chosen image is the same for every item, so it is converted to bytes once
+     * and the resulting array shared across the batch - the previous version
+     * re-encoded it inside the per-item loop and raised one error alert per item on
+     * failure instead of one for the whole batch.
+     */
+    private void applyImageUpdate(List<ItemsModel> itemsModelList) throws Exception {
+        if (radioDeleteImage.isSelected()) {
+            itemsModelList.forEach(itemsModel -> itemsModel.setItem_image(null));
         }
-
-        // check mini
-        else if (checkMini.isSelected()) {
-            itemsModelList.forEach(itemsModel -> itemsModel.setMini_quantity(Double.parseDouble(textMini.getText())));
-            return 1;
+        if (radioAddImage.isSelected()) {
+            var imageBytes = imageChoose.convertFxImageToBytes(imageView.getImage());
+            itemsModelList.forEach(itemsModel -> itemsModel.setItem_image(imageBytes));
         }
+    }
 
-        // check first balance
-        else if (checkFirstBalance.isSelected()) {
-            itemsModelList.forEach(itemsModel -> itemsModel.setFirstBalanceForStock(Double.parseDouble(textFirstBalance.getText())));
-            return 1;
+    private double requireNumber(String text) throws UserValidationException {
+        try {
+            return Double.parseDouble(text);
+        } catch (NumberFormatException | NullPointerException e) {
+            throw new UserValidationException(LanguageManager.getInstance().getString("msg.insert.all"));
         }
+    }
 
-        // check image
-        else if (checkDeleteImage.isSelected()) {
-            if (radioDeleteImage.isSelected()) {
-                itemsModelList.forEach(itemsModel -> itemsModel.setItem_image(null));
-            }
-
-            if (radioAddImage.isSelected()) {
-                itemsModelList.forEach(itemsModel -> {
-                    try {
-                        itemsModel.setItem_image(imageChoose.convertFxImageToBytes(imageView.getImage()));
-                    } catch (Exception e) {
-                        logError(e);
-                    }
-                });
-            }
-            return 1;
+    private double requirePositiveNumber(String text) throws UserValidationException {
+        var value = requireNumber(text);
+        if (value <= 0) {
+            throw new UserValidationException(LanguageManager.getInstance().getString("item.error.increase.positive"));
         }
-        return 0;
+        return value;
     }
 
     private void logError(Exception e) {

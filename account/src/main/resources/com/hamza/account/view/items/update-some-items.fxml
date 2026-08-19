@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <?import javafx.scene.control.*?>
-<?import javafx.scene.image.*?>
 <?import javafx.scene.layout.*?>
 <?import javafx.scene.text.Text?>
+<?import org.kordamp.ikonli.javafx.FontIcon?>
 
 <StackPane fx:id="stackPane"
            styleClass="app-root"
@@ -13,6 +13,12 @@
     <children>
         <VBox spacing="14.0" styleClass="app-container">
             <children>
+                <HBox alignment="CENTER_LEFT" spacing="12.0" styleClass="app-card">
+                    <children>
+                        <FontIcon fx:id="headerIcon" styleClass="page-header-icon"/>
+                        <Label styleClass="app-title" text="%item.dialog.convert.title"/>
+                    </children>
+                </HBox>
                 <VBox spacing="14.0" styleClass="app-card">
                     <children>
                         <GridPane hgap="12.0" vgap="12.0">
@@ -52,16 +58,10 @@
                                 <TextField fx:id="textBuyPrice"
                                            GridPane.columnIndex="1"
                                            GridPane.rowIndex="3"/>
-                                <ImageView fitHeight="25.0"
-                                           fitWidth="25.0"
-                                           pickOnBounds="true"
-                                           preserveRatio="true"
-                                           GridPane.columnIndex="2"
-                                           GridPane.rowIndex="3">
-                                    <image>
-                                        <Image url="@../../image/percent_24dp_666666_FILL0_wght400_GRAD0_opsz24.png"/>
-                                    </image>
-                                </ImageView>
+                                <FontIcon fx:id="iconBuyPercent"
+                                          styleClass="icon-graphic"
+                                          GridPane.columnIndex="2"
+                                          GridPane.rowIndex="3"/>
 
                                 <CheckBox fx:id="checkUpdateSell"
                                           mnemonicParsing="false"
@@ -70,16 +70,10 @@
                                 <TextField fx:id="textSellPrice"
                                            GridPane.columnIndex="1"
                                            GridPane.rowIndex="4"/>
-                                <ImageView fitHeight="25.0"
-                                           fitWidth="25.0"
-                                           pickOnBounds="true"
-                                           preserveRatio="true"
-                                           GridPane.columnIndex="2"
-                                           GridPane.rowIndex="4">
-                                    <image>
-                                        <Image url="@../../image/percent_24dp_666666_FILL0_wght400_GRAD0_opsz24.png"/>
-                                    </image>
-                                </ImageView>
+                                <FontIcon fx:id="iconSellPercent"
+                                          styleClass="icon-graphic"
+                                          GridPane.columnIndex="2"
+                                          GridPane.rowIndex="4"/>
 
                                 <CheckBox fx:id="checkMini"
                                           mnemonicParsing="false"
@@ -118,15 +112,8 @@
                                                      mnemonicParsing="false"
                                                      text="%add"
                                                      toggleGroup="$group"/>
-                                        <ImageView fx:id="imageInformation"
-                                                   fitHeight="15.0"
-                                                   fitWidth="15.0"
-                                                   pickOnBounds="true"
-                                                   preserveRatio="true">
-                                            <image>
-                                                <Image url="@../../image/icons8-information-48.png"/>
-                                            </image>
-                                        </ImageView>
+                                        <FontIcon fx:id="imageInformation"
+                                                  styleClass="icon-graphic"/>
                                         <Text fx:id="textPath"
                                               strokeType="OUTSIDE"
                                               strokeWidth="0.0"
