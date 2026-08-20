@@ -49,8 +49,8 @@ public class TotalsPurchaseImplDesign implements TotalDesignInterface<Total_buy>
 
     @NotNull
     @Override
-    public Class<? super Total_buy> classForColumn() {
-        return Total_buy.class;
+    public List<TableColumn<Total_buy, ?>> columns() {
+        return List.of();
     }
 
 

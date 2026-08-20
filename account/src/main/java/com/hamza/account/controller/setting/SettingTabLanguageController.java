@@ -12,6 +12,7 @@ import com.hamza.account.config.FontManager;
 import com.hamza.account.features.events.FontChanged;
 import com.hamza.account.features.events.LanguageChanged;
 import com.hamza.account.model.domain.Customers;
+import com.hamza.account.config.NamesTables;
 import com.hamza.account.model.domain.Employees;
 import com.hamza.account.openFxml.FxmlPath;
 import com.hamza.account.service.CustomerService;
@@ -20,6 +21,8 @@ import com.hamza.account.view.TableWithTextSearchApplication;
 import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.language.LanguageManager;
+import com.hamza.controlsfx.language.Setting_Language;
+import com.hamza.controlsfx.table.Columns;
 import com.hamza.controlsfx.observer.EventBus;
 import com.hamza.controlsfx.observer.Publisher;
 import com.hamza.controlsfx.others.TextFormat;
@@ -251,8 +254,17 @@ public class SettingTabLanguageController implements Initializable {
 
             TableWithTextSearchApplication<Employees> tableWithTextSearchApplication = new TableWithTextSearchApplication<>(new SearchInterface<>() {
                 @Override
-                public Class<? super Employees> getSearchClass() {
-                    return Employees.class;
+                public List<TableColumn<Employees, ?>> columns() {
+                    return List.of(
+                            Columns.number(NamesTables.CODE, Employees::getId),
+                            Columns.text(NamesTables.NAME, Employees::getName),
+                            Columns.date(Setting_Language.string_birth, Employees::getBirth_date),
+                            Columns.date(Setting_Language.string_hire, Employees::getHire_date),
+                            Columns.number(NamesTables.SALARY, Employees::getSalary),
+                            Columns.text(NamesTables.EMAIL, Employees::getEmail),
+                            Columns.text(NamesTables.TEL, Employees::getTel),
+                            Columns.text(NamesTables.ADDRESS, Employees::getAddress)
+                    );
                 }
 
                 @Override

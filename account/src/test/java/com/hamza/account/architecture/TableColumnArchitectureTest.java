@@ -30,7 +30,7 @@ class TableColumnArchitectureTest {
     private static final int ANNOTATION_BASELINE = 170;
 
     /** Call sites of the reflective builder when the rule was written. Only ever lower this. */
-    private static final int BUILDER_CALL_BASELINE = 21;
+    private static final int BUILDER_CALL_BASELINE = 18;
 
     private static final Pattern ANNOTATION = Pattern.compile("@ColumnData\\b");
     private static final Pattern BUILDER_CALL = Pattern.compile("new\\s+TableColumnAnnotation\\s*\\(\\s*\\)");

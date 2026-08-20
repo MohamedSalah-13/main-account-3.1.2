@@ -1,6 +1,7 @@
 package com.hamza.controlsfx.interfaceData;
 
 import com.hamza.controlsfx.database.DaoException;
+import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 
 import java.util.ArrayList;
@@ -26,7 +27,11 @@ public interface TableViewShowDataInt<T> {
         return new ArrayList<>();
     }
 
-
-    Class<? super T> classForColumn();
+    /**
+     * Build with {@code com.hamza.controlsfx.table.Columns} - see rule ق-ل1 in
+     * {@code docs/new-code-rules.md}. Replaced {@code classForColumn()}, which
+     * resolved a field by name at run time through {@code PropertyValueFactory}.
+     */
+    List<TableColumn<T, ?>> columns();
 
 }

@@ -18,6 +18,7 @@ import com.hamza.account.interfaces.api.NameAndAccountInterface;
 import com.hamza.account.interfaces.api.TotalsDataInterface;
 import com.hamza.account.model.base.BaseAccount;
 import com.hamza.account.model.base.BaseNames;
+import com.hamza.account.config.NamesTables;
 import com.hamza.account.model.base.BaseTotals;
 import com.hamza.account.model.base.DForColumnTable;
 import com.hamza.account.model.dao.DaoFactory;
@@ -40,7 +41,7 @@ import com.hamza.controlsfx.observer.EventBus;
 import com.hamza.controlsfx.others.CssToColorHelper;
 import com.hamza.controlsfx.others.DateSetting;
 import com.hamza.controlsfx.others.TextFormat;
-import com.hamza.controlsfx.table.TableColumnAnnotation;
+import com.hamza.controlsfx.table.Columns;
 import com.hamza.controlsfx.table.columnEdit.ColumnSetting;
 import javafx.application.Platform;
 import javafx.beans.property.SimpleStringProperty;
@@ -245,8 +246,26 @@ public class TotalsController<T2 extends BaseTotals, T3 extends BaseNames, T4 ex
         comboEnteredBy.setPromptText(lang.getString("invoice.search.entered.by"));
     }
 
+    /**
+     * The columns every totals screen shares, reflected off {@link BaseTotals}
+     * until this migrated off {@code TableColumnAnnotation} - see rule ق-ل1.
+     */
+    private List<TableColumn<T2, ?>> baseTotalsColumns() {
+        return List.of(
+                Columns.number(NamesTables.CODE, BaseTotals::getId),
+                Columns.text(NamesTables.DATE, BaseTotals::getDate),
+                Columns.number(NamesTables.TOTAL, BaseTotals::getTotal),
+                Columns.number(NamesTables.DISCOUNT, BaseTotals::getDiscount),
+                Columns.number(NamesTables.TOTAL_AMOUNT, BaseTotals::getTotal_after_discount),
+                Columns.number(NamesTables.CREDITOR, BaseTotals::getPaid),
+                Columns.number(NamesTables.REST, BaseTotals::getRest),
+                Columns.text(NamesTables.NOTES, BaseTotals::getNotes)
+        );
+    }
+
     private void getTable() {
-        new TableColumnAnnotation().getTable(tableView, BaseTotals.class, totalDesignInterface.classForColumn());
+        tableView.getColumns().addAll(baseTotalsColumns());
+        tableView.getColumns().addAll(totalDesignInterface.columns());
         totalDesignInterface.getTable(tableView);
         tableView.setEditable(true);
         tableView.getSelectionModel().setSelectionMode(SelectionMode.SINGLE);

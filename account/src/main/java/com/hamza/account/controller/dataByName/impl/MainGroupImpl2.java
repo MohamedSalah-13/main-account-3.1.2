@@ -4,10 +4,13 @@ import com.hamza.account.controller.dataByName.AreaInterface;
 import com.hamza.account.controller.others.ServiceRegistry;
 import com.hamza.account.features.events.GroupLevel;
 import com.hamza.account.features.events.GroupsChanged;
+import com.hamza.account.config.NamesTables;
 import com.hamza.account.model.base.BaseGroups;
 import com.hamza.account.model.domain.MainGroups;
 import com.hamza.account.service.MainGroupService;
 import com.hamza.controlsfx.observer.AppEvent;
+import com.hamza.controlsfx.table.Columns;
+import javafx.scene.control.TableColumn;
 
 import java.util.List;
 import java.util.function.ToIntFunction;
@@ -19,6 +22,14 @@ public class MainGroupImpl2 implements AreaInterface<BaseGroups> {
     @Override
     public Class<BaseGroups> classData() {
         return BaseGroups.class;
+    }
+
+    @Override
+    public List<TableColumn<BaseGroups, ?>> columns() {
+        return List.of(
+                Columns.number(NamesTables.CODE, BaseGroups::getId),
+                Columns.text(NamesTables.NAME, BaseGroups::getName)
+        );
     }
 
     @Override

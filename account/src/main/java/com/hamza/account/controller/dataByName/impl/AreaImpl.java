@@ -4,6 +4,8 @@ import com.hamza.account.controller.dataByName.AreaInterface;
 import com.hamza.account.controller.others.ServiceRegistry;
 import com.hamza.account.features.events.AreasChanged;
 import com.hamza.account.model.domain.Area;
+import com.hamza.controlsfx.table.Columns;
+import javafx.scene.control.TableColumn;
 import com.hamza.account.service.AreaService;
 import com.hamza.controlsfx.observer.AppEvent;
 
@@ -18,6 +20,11 @@ public class AreaImpl implements AreaInterface<Area> {
     @Override
     public Class<Area> classData() {
         return Area.class;
+    }
+
+    @Override
+    public List<TableColumn<Area, ?>> columns() {
+        return List.of(Columns.text("المنطقة", Area::getArea_name));
     }
 
     @Override

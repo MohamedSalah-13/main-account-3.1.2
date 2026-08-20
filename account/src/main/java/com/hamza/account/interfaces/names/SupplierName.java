@@ -20,8 +20,8 @@ import java.util.List;
 
 public class SupplierName implements NameData<Suppliers> {
     @Override
-    public @NotNull Class<? super Suppliers> classForColumn() {
-        return Suppliers.class;
+    public @NotNull List<TableColumn<Suppliers, ?>> columns() {
+        return List.of();
     }
 
     @Override

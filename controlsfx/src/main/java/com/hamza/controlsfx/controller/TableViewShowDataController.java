@@ -3,7 +3,6 @@ package com.hamza.controlsfx.controller;
 import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.interfaceData.TableViewShowDataInt;
 import com.hamza.controlsfx.language.LanguageManager;
-import com.hamza.controlsfx.table.TableColumnAnnotation;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
@@ -58,7 +57,7 @@ public class TableViewShowDataController<T> {
     }
 
     private void getTableData() {
-        new TableColumnAnnotation().getTable(tableView, dataTable.classForColumn());
+        tableView.getColumns().addAll(dataTable.columns());
         tableView.setItems(dataList);
         textCount.setText(String.valueOf(dataList.size()));
     }

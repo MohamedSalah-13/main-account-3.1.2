@@ -12,6 +12,7 @@ import com.hamza.controlsfx.observer.EventBus;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.scene.control.Label;
+import javafx.scene.control.TableColumn;
 import javafx.scene.control.TextField;
 import javafx.scene.layout.ColumnConstraints;
 import javafx.scene.layout.GridPane;
@@ -80,8 +81,8 @@ public class AddAreaController<T> extends VBox {
             }
 
             @Override
-            public Class<? super T> classForColumn() {
-                return areaInterface.classData();
+            public List<TableColumn<T, ?>> columns() {
+                return areaInterface.columns();
             }
         };
 

@@ -1,11 +1,13 @@
 package com.hamza.account.controller.others;
 
+import com.hamza.account.config.NamesTables;
 import com.hamza.account.model.base.BaseGroups;
 import com.hamza.account.model.domain.SubGroups;
 import com.hamza.account.openFxml.FxmlPath;
 import com.hamza.account.service.MainGroupService;
 import com.hamza.account.service.SupGroupService;
 import com.hamza.controlsfx.alert.AllAlerts;
+import com.hamza.controlsfx.table.Columns;
 import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.error.UserValidationException;
 import com.hamza.controlsfx.interfaceData.Disable;
@@ -22,6 +24,7 @@ import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
 import javafx.scene.control.ComboBox;
+import javafx.scene.control.TableColumn;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
 import javafx.scene.layout.VBox;
@@ -64,8 +67,11 @@ public class AddSubGroupController {
             }
 
             @Override
-            public Class<? super SubGroups> classForColumn() {
-                return BaseGroups.class;
+            public List<TableColumn<SubGroups, ?>> columns() {
+                return List.of(
+                        Columns.number(NamesTables.CODE, BaseGroups::getId),
+                        Columns.text(NamesTables.NAME, BaseGroups::getName)
+                );
             }
         };
     }

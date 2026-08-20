@@ -62,8 +62,8 @@ public class TotalSalesReturnImplDesign implements TotalDesignInterface<Total_Sa
     }
 
     @Override
-    public @NotNull Class<? super Total_Sales_Re> classForColumn() {
-        return Total_Sales_Re.class;
+    public @NotNull List<TableColumn<Total_Sales_Re, ?>> columns() {
+        return List.of();
     }
 
     @NotNull

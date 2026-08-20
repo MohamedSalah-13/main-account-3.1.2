@@ -725,9 +725,16 @@ main (pom)
 تصميم جديد: انقل الأعمدة إلى الـ controller وانتهى الأمر. **موضعان لا يُعالَجان هكذا**،
 وهما وحدهما ما يحتاج بندًا في الخطة:
 
-`TableController` و`TableWithTextSearchController` شاشتان **عامّتان** تخدمان 17 تنفيذًا
-لـ `DataTable.classForColumn()`. لا تعرفان الموديل، فلا تستطيعان كتابة أعمدتهما؛ والحلّ
-الحرفي («اكتب الأعمدة في الـ controller») ينسخ الكود 17 مرة.
+`TableController` و`TableWithTextSearchController` شاشتان **عامّتان**. لا تعرفان
+الموديل، فلا تستطيعان كتابة أعمدتهما؛ والحلّ الحرفي («اكتب الأعمدة في الـ controller»)
+ينسخ الكود في كل موضع.
+
+> **تصحيح (2026-08-20):** الوصف الأصلي هنا («17 تنفيذًا لـ `DataTable.classForColumn()`»)
+> كان ناقصًا. عند التنفيذ تبيّن وجود **ثلاثة seams** متطابقة الشكل لا واحد: `DataTable<T>`
+> يخدم `TableController`، و`SearchInterface<T>.getSearchClass()` يخدم `TableWithTextSearchController`
+> (seam منفصل تمامًا، لا علاقة له بـ`DataTable`)، و`TableViewShowDataInt<T>` (في `controlsfx`)
+> يخدم شاشتين أخريين (`TableViewShowDataController`، `ApplicationDataWithToolbarIndexApp`).
+> المجموع الحقيقي: 19 موضعًا عبر الثلاثة، لا 17.
 
 - [x] **12.1 — بُني (2026-08-20).** [`Columns`](../controlsfx/src/main/java/com/hamza/controlsfx/table/Columns.java)
       في `controlsfx`: `text(key, Function<S,String>)`، `number(key, Function<S,? extends Number>)`
@@ -740,8 +747,24 @@ main (pom)
       `TableColumn.setId(...)` بنفسه. مغطّى بـ`ColumnsTest` (5 اختبارات، بلا حاجة لمُشغّل
       JavaFX - `TableColumn` قابل للبناء خارج الـ toolkit، لكن `TableView` ليس كذلك، فالاختبار
       يمرّر `null` بدلًا منه في `CellDataFeatures`).
-- [ ] **12.2** تغيير الـ seam: `DataTable<T>.columns()` تعيد `List<TableColumn<T,?>>` بدل
-      `classForColumn()`. السبعة عشر تنفيذًا تتحوّل واحدًا واحدًا.
+- [x] **12.2 — أُنجز (2026-08-20).** الثلاثة seams غُيّرت إلى `columns()` تعيد
+      `List<TableColumn<T,?>>`:
+      [`DataTable<T>`](../account/src/main/java/com/hamza/account/interfaces/api/DataTable.java) (10 implementors)،
+      [`SearchInterface<T>`](../account/src/main/java/com/hamza/account/controller/search/SearchInterface.java) (4)،
+      [`TableViewShowDataInt<T>`](../controlsfx/src/main/java/com/hamza/controlsfx/interfaceData/TableViewShowDataInt.java) (4، في `controlsfx`).
+      كل عمود مُنقول حرفيًّا من حقول `@ColumnData` الحيّة التي كانت الانعكاس يقرؤها فعليًّا -
+      لا من الكلاس الذي يسمّيه `classForColumn()` بالضرورة. هذا الفارق كان مهمًّا: أكثر من
+      نصف تلك الكلاسات (`Customers`، `Suppliers`، `Total_Sales` وأخواتها الثلاث،
+      `SubGroups`) لا تحمل أي `@ColumnData` خاصّ بها، والانعكاس الفعلي كان يقرأ عمود أساس
+      مشترك (`BaseNames` عبر شاشة الأسماء، `BaseTotals` عبر شاشة الإجماليات، `BaseGroups`
+      عبر شاشة الفئات الفرعية) بينما `classForColumn()` نفسه كان زائدًا - يُرضي توقيع الواجهة
+      بلا أي أثر مرئي. القراءة الأولى الخاطفة لهذا الملف كانت لتُنتج ترحيلًا صامتًا لعمود فارغ
+      في شاشتين على الأقل (`CustomerSearchController`، `AddSubGroupController`)؛ صحّح ذلك
+      قراءة كل ملف كاملًا قبل التحويل، لا الاكتفاء بنتيجة `grep`.
+      `TableColumnArchitectureTest.BUILDER_CALL_BASELINE` هبط من 21 إلى 18 (الثلاثة مواضع
+      المُزالة: `TableController`، `TotalsController`، `TableWithTextSearchController`).
+      **لم يُتحقّق بصريًّا من أي شاشة** - لا مُشغّل JavaFX متاح في بيئة التنفيذ؛ `mvn clean test`
+      يمرّ (842 اختبارًا) لكنه لا يفحص شكل جدول مرسوم فعليًّا.
 - [ ] **12.3** تحويل الـ19 موضعًا المباشرة (لا يعتمد على 12.1 لكنه يستفيد منه).
 - [ ] **12.4** حذف `ColumnData.java` و`TableColumnAnnotation.java`.
 - [ ] **12.5** بعدها فقط: تنظيف الـ32 موديلًا من `javafx.beans.property` (ق-ل2)، ثم حذف

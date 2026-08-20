@@ -6,6 +6,7 @@ import com.hamza.account.controller.others.ServiceRegistry;
 import com.hamza.account.features.rbac.RbacService;
 import com.hamza.account.interfaces.api.DataTable;
 import com.hamza.account.model.dao.DaoFactory;
+import com.hamza.account.config.NamesTables;
 import com.hamza.account.model.domain.Users;
 import com.hamza.account.openFxml.AddForAllApplication;
 import com.hamza.account.service.UsersService;
@@ -21,10 +22,12 @@ import com.hamza.controlsfx.button.button_column.ButtonColumn;
 import com.hamza.controlsfx.button.button_column.Button_Toggle_Table;
 import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.language.LanguageManager;
+import com.hamza.controlsfx.table.Columns;
 import com.hamza.account.features.events.UsersChanged;
 import com.hamza.controlsfx.observer.EventBus;
 import javafx.beans.property.BooleanProperty;
 import javafx.scene.Node;
+import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import lombok.extern.log4j.Log4j2;
 import org.jetbrains.annotations.NotNull;
@@ -104,8 +107,12 @@ public class UserController implements TableInterface<Users> {
             }
 
             @Override
-            public @NotNull Class<? super Users> classForColumn() {
-                return Users.class;
+            public @NotNull List<TableColumn<Users, ?>> columns() {
+                return List.of(
+                        Columns.number(NamesTables.CODE, Users::getId),
+                        Columns.text(NamesTables.NAME, Users::getUsername),
+                        Columns.text(NamesTables.PASS, Users::getPasswordHash)
+                );
             }
 
         };

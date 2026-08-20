@@ -62,8 +62,8 @@ public class TotalSalesImpDesign implements TotalDesignInterface<Total_Sales> {
     }
 
     @Override
-    public Class<? super Total_Sales> classForColumn() {
-        return Total_Sales.class;
+    public List<TableColumn<Total_Sales, ?>> columns() {
+        return List.of();
     }
 
 

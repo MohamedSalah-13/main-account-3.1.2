@@ -4,7 +4,10 @@ import com.hamza.account.config.PropertiesName;
 import com.hamza.account.config.ThemeManager;
 import com.hamza.account.controller.main.DisableButtons;
 import com.hamza.account.controller.others.ServiceRegistry;
+import com.hamza.account.config.NamesTables;
 import com.hamza.account.model.domain.ItemsMiniQuantity;
+import com.hamza.controlsfx.table.Columns;
+import javafx.scene.control.TableColumn;
 import com.hamza.account.service.ItemMiniQuantityService;
 import com.hamza.account.authorization.AppPermissions;
 import com.hamza.account.authorization.PermissionKey;
@@ -109,8 +112,13 @@ public class LowStockSource implements NotificationSource {
                     }
 
                     @Override
-                    public Class<? super ItemsMiniQuantity> classForColumn() {
-                        return ItemsMiniQuantity.class;
+                    public List<TableColumn<ItemsMiniQuantity, ?>> columns() {
+                        return List.of(
+                                Columns.number(NamesTables.CODE, ItemsMiniQuantity::getId),
+                                Columns.text(NamesTables.NAME_ITEM, ItemsMiniQuantity::getNameItem),
+                                Columns.number(NamesTables.MINI_QUANTITY, ItemsMiniQuantity::getMiniQuantity),
+                                Columns.number(NamesTables.BALANCE, ItemsMiniQuantity::getBalance)
+                        );
                     }
                 };
                 Pane pane = new TableViewShowDataApplication<>(table).getPane();

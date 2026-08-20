@@ -12,7 +12,6 @@ import com.hamza.controlsfx.language.Setting_Language;
 import com.hamza.controlsfx.observer.EventBus;
 import com.hamza.controlsfx.observer.Subscriptions;
 import com.hamza.controlsfx.others.CssToColorHelper;
-import com.hamza.controlsfx.table.TableColumnAnnotation;
 import com.hamza.controlsfx.table.columnEdit.ColumnSetting;
 import javafx.animation.PauseTransition;
 import javafx.collections.FXCollections;
@@ -167,7 +166,7 @@ public class TableController<T> implements Initializable {
 
     private void getTable() {
         tableView.getColumns().clear();
-        new TableColumnAnnotation().getTable(tableView, tableInterface.table_data().classForColumn());
+        tableView.getColumns().addAll(tableInterface.table_data().columns());
         tableInterface.table_data().getTable(tableView);
         ColumnSetting.addSelectedColumn(tableView);
         tableView.setEditable(true);

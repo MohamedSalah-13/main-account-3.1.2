@@ -48,8 +48,8 @@ public class TotalsPurchaseReturnImplDesign implements TotalDesignInterface<Tota
     }
 
     @Override
-    public @NotNull Class<? super Total_Buy_Re> classForColumn() {
-        return Total_Buy_Re.class;
+    public @NotNull List<TableColumn<Total_Buy_Re, ?>> columns() {
+        return List.of();
     }
 
     @NotNull

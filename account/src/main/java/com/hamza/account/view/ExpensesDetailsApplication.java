@@ -4,6 +4,7 @@ import com.hamza.account.controller.others.AddExpensesController;
 import com.hamza.account.features.events.ExpensesChanged;
 import com.hamza.account.controller.others.ServiceRegistry;
 import com.hamza.account.interfaces.api.DataTable;
+import com.hamza.account.config.NamesTables;
 import com.hamza.account.model.domain.ExpensesDetails;
 import com.hamza.account.openFxml.AddForAllApplication;
 import com.hamza.account.otherSetting.AddSumToColumn;
@@ -15,6 +16,7 @@ import com.hamza.account.authorization.AppPermissions;
 import com.hamza.account.authorization.PermissionKey;
 import com.hamza.controlsfx.language.LanguageManager;
 import com.hamza.controlsfx.observer.Publisher;
+import com.hamza.controlsfx.table.Columns;
 import com.hamza.controlsfx.table.columnEdit.ColumnSetting;
 import javafx.application.Application;
 import javafx.beans.property.BooleanProperty;
@@ -107,8 +109,13 @@ public class ExpensesDetailsApplication extends Application implements TableInte
             }
 
             @Override
-            public @NotNull Class<? super ExpensesDetails> classForColumn() {
-                return ExpensesDetails.class;
+            public @NotNull List<TableColumn<ExpensesDetails, ?>> columns() {
+                return List.of(
+                        Columns.number(NamesTables.CODE, ExpensesDetails::getId),
+                        Columns.date(NamesTables.DATE, ExpensesDetails::getLocalDate),
+                        Columns.number(NamesTables.AMOUNT, ExpensesDetails::getAmount),
+                        Columns.text(NamesTables.NOTES, ExpensesDetails::getNotes)
+                );
             }
         };
     }

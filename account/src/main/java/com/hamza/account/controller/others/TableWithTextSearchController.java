@@ -5,7 +5,6 @@ import com.hamza.account.openFxml.FxmlPath;
 import com.hamza.account.table.TableSetting;
 import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.language.Setting_Language;
-import com.hamza.controlsfx.table.TableColumnAnnotation;
 import javafx.animation.PauseTransition;
 import javafx.application.Platform;
 import javafx.beans.property.ObjectProperty;
@@ -44,7 +43,7 @@ public class TableWithTextSearchController<T> {
     }
 
     private void getTable() {
-        new TableColumnAnnotation().getTable(tableView, searchInterface.getSearchClass());
+        tableView.getColumns().addAll(searchInterface.columns());
         tableView.setItems(itemsModels);
         if (searchInterface.selectMultiple())
             tableView.selectionModelProperty().get().setSelectionMode(javafx.scene.control.SelectionMode.MULTIPLE);

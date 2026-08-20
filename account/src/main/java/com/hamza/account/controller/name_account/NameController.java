@@ -6,6 +6,7 @@ import com.hamza.account.interfaces.api.DataInterface;
 import com.hamza.account.interfaces.api.DataTable;
 import com.hamza.account.interfaces.api.DesignInterface;
 import com.hamza.account.model.base.BaseAccount;
+import com.hamza.account.config.NamesTables;
 import com.hamza.account.model.base.BaseNames;
 import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.delete.DeleteRegistry;
@@ -25,6 +26,7 @@ import com.hamza.account.features.events.NameChanged;
 import com.hamza.controlsfx.observer.AppEvent;
 import com.hamza.controlsfx.observer.EventBus;
 import com.hamza.controlsfx.others.CssToColorHelper;
+import com.hamza.controlsfx.table.Columns;
 import javafx.beans.property.*;
 import javafx.scene.control.*;
 import javafx.scene.input.MouseButton;
@@ -140,8 +142,15 @@ public class NameController<T3 extends BaseNames, T4 extends BaseAccount>
             }
 
             @Override
-            public @NotNull Class<? super T3> classForColumn() {
-                return BaseNames.class;
+            public @NotNull List<TableColumn<T3, ?>> columns() {
+                return List.of(
+                        Columns.number(NamesTables.CODE, BaseNames::getId),
+                        Columns.text(NamesTables.NAME, BaseNames::getName),
+                        Columns.text(NamesTables.TEL, BaseNames::getTel),
+                        Columns.text(NamesTables.ADDRESS, BaseNames::getAddress),
+                        Columns.text(NamesTables.NOTES, BaseNames::getNotes),
+                        Columns.number(NamesTables.FIRST_BALANCE, BaseNames::getFirst_balance)
+                );
             }
         };
     }

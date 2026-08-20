@@ -2,8 +2,10 @@ package com.hamza.account.controller.others;
 
 import com.hamza.account.controller.main.DataPublisher;
 import com.hamza.account.interfaces.api.DataTable;
+import com.hamza.account.config.NamesTables;
 import com.hamza.account.model.domain.Employees;
 import com.hamza.account.openFxml.AddForAllApplication;
+import com.hamza.controlsfx.table.Columns;
 import com.hamza.account.service.EmployeeService;
 import com.hamza.account.table.ActionButtonToolBar;
 import com.hamza.account.table.TableInterface;
@@ -82,8 +84,17 @@ public class EmployeesController implements TableInterface<Employees> {
             }
 
             @Override
-            public @NotNull Class<? super Employees> classForColumn() {
-                return Employees.class;
+            public @NotNull List<TableColumn<Employees, ?>> columns() {
+                return List.of(
+                        Columns.number(NamesTables.CODE, Employees::getId),
+                        Columns.text(NamesTables.NAME, Employees::getName),
+                        Columns.date(Setting_Language.string_birth, Employees::getBirth_date),
+                        Columns.date(Setting_Language.string_hire, Employees::getHire_date),
+                        Columns.number(NamesTables.SALARY, Employees::getSalary),
+                        Columns.text(NamesTables.EMAIL, Employees::getEmail),
+                        Columns.text(NamesTables.TEL, Employees::getTel),
+                        Columns.text(NamesTables.ADDRESS, Employees::getAddress)
+                );
             }
         };
     }

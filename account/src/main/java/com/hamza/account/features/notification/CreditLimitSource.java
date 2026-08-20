@@ -4,6 +4,8 @@ import com.hamza.account.config.ThemeManager;
 import com.hamza.account.controller.main.DisableButtons;
 import com.hamza.account.controller.others.ServiceRegistry;
 import com.hamza.account.model.domain.CustomerReceivable;
+import com.hamza.controlsfx.table.Columns;
+import javafx.scene.control.TableColumn;
 import com.hamza.account.model.domain.Customers;
 import com.hamza.account.service.CustomerService;
 import com.hamza.account.authorization.AppPermissions;
@@ -140,8 +142,15 @@ public class CreditLimitSource implements NotificationSource {
                     }
 
                     @Override
-                    public Class<? super CustomerReceivable> classForColumn() {
-                        return CustomerReceivable.class;
+                    public List<TableColumn<CustomerReceivable, ?>> columns() {
+                        return List.of(
+                                Columns.text("Customer Name", CustomerReceivable::getCustomerName),
+                                Columns.text("Customer Phone", CustomerReceivable::getCustomerPhone),
+                                Columns.number("Invoices", CustomerReceivable::getInvoicesDebt),
+                                Columns.number("Opening Balance", CustomerReceivable::getOpeningBalance),
+                                Columns.number("Total Payments", CustomerReceivable::getTotalPayments),
+                                Columns.number("Total Receivable", CustomerReceivable::getTotalReceivable)
+                        );
                     }
                 };
                 Pane pane = new TableViewShowDataApplication<>(table).getPane();

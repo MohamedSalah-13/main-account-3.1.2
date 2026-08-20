@@ -6,7 +6,6 @@ import com.hamza.controlsfx.interfaceData.TableViewShowDataInt;
 import com.hamza.controlsfx.interfaceData.ToolbarAccountInt;
 import com.hamza.controlsfx.language.Setting_Language;
 import com.hamza.controlsfx.observer.Subscriptions;
-import com.hamza.controlsfx.table.TableColumnAnnotation;
 import javafx.collections.FXCollections;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Node;
@@ -45,7 +44,7 @@ public class ApplicationDataWithToolbarIndexApp<T> extends Dialog<T> {
         setTitle(title);
 
         TableView<T> tableView = new TableView<>();
-        new TableColumnAnnotation().getTable(tableView, tableViewShowDataInt.classForColumn());
+        tableView.getColumns().addAll(tableViewShowDataInt.columns());
         tableView.setPrefHeight(200);
         tableView.setItems(FXCollections.observableArrayList(tableViewShowDataInt.dataList()));
         dialogPane.setExpandableContent(tableView);

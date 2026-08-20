@@ -23,8 +23,8 @@ public class CustomerName implements NameData<Customers> {
 
 
     @Override
-    public @NotNull Class<? super Customers> classForColumn() {
-        return Customers.class;
+    public @NotNull List<TableColumn<Customers, ?>> columns() {
+        return List.of();
     }
 
     @Override
