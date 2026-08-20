@@ -59,8 +59,8 @@ public class TotalsPurchaseReturnImplDesign implements TotalDesignInterface<Tota
     }
 
     @Override
-    public int deleteData(Total_Buy_Re totalBuyRe) throws DaoException {
-        return totalBuyReturnService.deleteById(Math.toIntExact(totalBuyRe.getId()));
+    public int deleteData(int id) throws DaoException {
+        return totalBuyReturnService.deleteById(id);
     }
 
     @Override

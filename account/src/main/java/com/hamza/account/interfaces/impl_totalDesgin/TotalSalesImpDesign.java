@@ -73,8 +73,8 @@ public class TotalSalesImpDesign implements TotalDesignInterface<Total_Sales> {
     }
 
     @Override
-    public int deleteData(Total_Sales totalSales) throws DaoException {
-        return totalSalesService.deleteById(totalSales.getId());
+    public int deleteData(int id) throws DaoException {
+        return totalSalesService.deleteById(id);
     }
 
     @Override

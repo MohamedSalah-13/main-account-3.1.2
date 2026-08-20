@@ -73,8 +73,8 @@ public class TotalSalesReturnImplDesign implements TotalDesignInterface<Total_Sa
     }
 
     @Override
-    public int deleteData(Total_Sales_Re totalSalesRe) throws DaoException {
-        return totalSalesReturnService.deleteById(Math.toIntExact(totalSalesRe.getId()));
+    public int deleteData(int id) throws DaoException {
+        return totalSalesReturnService.deleteById(id);
     }
 
     @Override

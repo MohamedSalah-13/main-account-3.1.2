@@ -10,7 +10,7 @@ public interface TotalDesignInterface<T extends BaseTotals> extends DataTable<T>
 
     TotalsDataInterface<T> totalsDataInterface();
 
-    int deleteData(T t2) throws Exception;
+    int deleteData(int id) throws Exception;
 
     int deleteMultiData(@NotNull Integer... ids) throws Exception;
 
