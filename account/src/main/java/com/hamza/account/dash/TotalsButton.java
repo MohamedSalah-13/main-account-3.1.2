@@ -14,7 +14,6 @@ import com.hamza.account.service.EmployeeService;
 import com.hamza.account.service.TotalsService;
 import com.hamza.account.view.BuyApplication;
 import com.hamza.account.view.TotalsApplication;
-import javafx.scene.Node;
 import javafx.scene.control.TabPane;
 import javafx.stage.Stage;
 import lombok.extern.log4j.Log4j2;
@@ -45,20 +44,10 @@ public class TotalsButton<T2 extends BaseTotals, T3 extends BaseNames, T4 extend
                 initializeTotalsApp();
             }
 
-            @Override
-            public Node imageMenu() {
-                return dataInterface.designInterface().imageButtonTotals();
-            }
-
             @NotNull
             @Override
             public String textName() {
                 return dataInterface.designInterface().nameTextOfTotal();
-            }
-
-            @Override
-            public Node imageNode() {
-                return dataInterface.designInterface().imageButtonTotals();
             }
 
             @Override
@@ -88,20 +77,10 @@ public class TotalsButton<T2 extends BaseTotals, T3 extends BaseNames, T4 extend
                 buyApp.start(new Stage());
             }
 
-            @Override
-            public Node imageMenu() {
-                return dataInterface.designInterface().imageMenu();
-            }
-
             @NotNull
             @Override
             public String textName() {
                 return dataInterface.designInterface().nameTextOfInvoice();
-            }
-
-            @Override
-            public Node imageNode() {
-                return dataInterface.designInterface().imageButton();
             }
 
 //            @Override

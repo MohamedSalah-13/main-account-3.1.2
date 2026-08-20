@@ -4,7 +4,6 @@ import com.hamza.account.document.DocumentType;
 import com.hamza.account.features.events.PartyKind;
 import com.hamza.account.authorization.AppPermissions;
 import com.hamza.account.authorization.PermissionKey;
-import javafx.scene.Node;
 
 public interface DesignInterface {
 
@@ -59,35 +58,6 @@ public interface DesignInterface {
      * @return the name text of the report
      */
     String nameTextOfReport();
-
-    /**
-     * Returns a Node representation for an image button.
-     *
-     * @return a Node associated with an image button, or null if not implemented
-     */
-    default Node imageButton() {
-        return null;
-    }
-
-    /**
-     * Provides a default image node for menus.
-     *
-     * @return a Node representing the image for the menu item, or null if not provided.
-     */
-    default Node imageMenu() {
-        return null;
-    }
-
-    /**
-     * Provides a graphical node representing the totals image button.
-     * This method can be overridden by implementing classes to return
-     * a specific Node for displaying totals in the user interface.
-     *
-     * @return a Node representing the totals image button, or null if not provided
-     */
-    default Node imageButtonTotals() {
-        return null;
-    }
 
     /**
      * True on the two customer screens - the sale and its return - and false on the
