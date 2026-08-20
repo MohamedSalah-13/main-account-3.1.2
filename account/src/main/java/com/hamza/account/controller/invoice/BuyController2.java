@@ -602,13 +602,13 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
         }
     }
 
-    private InvoiceSaveCommand<T1> captureSaveCommand() throws InvoiceValidationException {
+    private InvoiceSaveCommand captureSaveCommand() throws InvoiceValidationException {
         DiscountType discountType = radioAmount.isSelected()
                 ? DiscountType.AMOUNT
                 : DiscountType.RATE;
         updatePaymentViewModel(false);
         InvoicePaymentTerms payment = editor.requireValidPayment();
-        return new InvoiceSaveCommand<>(
+        return new InvoiceSaveCommand(
                 num_invoice_update, date.getValue(), payment.invoiceType(),
                 payment.discountAmount(), discountType, payment.paidAmount(),
                 txtNotes.getText(), codeAccount, textSearchName.get(),
@@ -619,11 +619,11 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
                 List.copyOf(table.getItems()));
     }
 
-    private void saveInBackground(boolean print, InvoiceSaveCommand<T1> command) {
+    private void saveInBackground(boolean print, InvoiceSaveCommand command) {
         editor.setSaving(true);
-        javafx.concurrent.Task<InvoiceSaveResult<T1, T2>> task = new javafx.concurrent.Task<>() {
+        javafx.concurrent.Task<InvoiceSaveResult> task = new javafx.concurrent.Task<>() {
             @Override
-            protected InvoiceSaveResult<T1, T2> call() throws Exception {
+            protected InvoiceSaveResult call() throws Exception {
                 return invoiceSaveService.save(command);
             }
         };
@@ -647,8 +647,8 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
         worker.start();
     }
 
-    private void afterSuccessfulSave(boolean print, InvoiceSaveCommand<T1> command,
-                                     InvoiceSaveResult<T1, T2> result) {
+    private void afterSuccessfulSave(boolean print, InvoiceSaveCommand command,
+                                     InvoiceSaveResult result) {
         AllAlerts.alertSave();
         if (designInterface.showScreenPaidInInvoice()
                 && getInvoiceShowScreenPaid()
@@ -713,17 +713,23 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
     }
 
     private InvoicePrintRequest preparePrintRequest(boolean print,
-                                                    InvoiceSaveCommand<T1> command,
-                                                    InvoiceSaveResult<T1, T2> result) {
+                                                    InvoiceSaveCommand command,
+                                                    InvoiceSaveResult result) {
         if (!print) {
             return null;
         }
-        return invoicePrintService.prepare(command.lines(), command.partyName(),
-                result.invoiceNumber(), result.payment().discount(),
-                LocalDateTime.now().format(DATE_TIME_FORMATTER), command.invoiceDate(),
-                getPrintPaperReceiptInvoice(),
-                ShowInvoiceDetails.invoiceDetails(dataInterface, result.invoice()),
-                dataInterface.designInterface().nameTextOfInvoice());
+        try {
+            return invoicePrintService.prepare(command.lines(), command.partyName(),
+                    result.invoiceNumber(), result.payment().discount(),
+                    LocalDateTime.now().format(DATE_TIME_FORMATTER), command.invoiceDate(),
+                    getPrintPaperReceiptInvoice(),
+                    ShowInvoiceDetails.invoiceDetails(dataInterface,
+                            totalsAndPurchaseList.totalDao().getDataById(result.invoiceNumber())),
+                    dataInterface.designInterface().nameTextOfInvoice());
+        } catch (DaoException e) {
+            logError(e);
+            return null;
+        }
     }
 
     private void printInvoice(InvoicePrintRequest request) {

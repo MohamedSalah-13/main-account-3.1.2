@@ -151,7 +151,7 @@ class InvoiceStockDatabaseAcceptanceTest {
         }
     }
 
-    private static InvoiceSaveCommand<Sales> command(int itemId, double quantity) {
+    private static InvoiceSaveCommand command(int itemId, double quantity) {
         ItemsModel item = new ItemsModel(itemId, "acceptance", "acceptance");
         Sales line = new Sales();
         line.setItems(item);
@@ -159,7 +159,7 @@ class InvoiceStockDatabaseAcceptanceTest {
         line.setQuantity(quantity);
         line.setPrice(10);
         line.setTotal(quantity * 10);
-        return new InvoiceSaveCommand<>(0, LocalDate.now(), InvoiceType.CASH,
+        return new InvoiceSaveCommand(0, LocalDate.now(), InvoiceType.CASH,
                 0, DiscountType.AMOUNT, quantity * 10, "", 1, "party",
                 "treasury", "delegate", false, List.of(line));
     }

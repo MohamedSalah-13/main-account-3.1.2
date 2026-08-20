@@ -17,13 +17,13 @@ public final class InvoiceLineAssembler {
     }
 
     public static <T extends BasePurchasesAndSales> List<T> assemble(
-            List<T> source, int documentId, LineFactory<T> factory) throws DaoException {
+            List<? extends BasePurchasesAndSales> source, int documentId, LineFactory<T> factory) throws DaoException {
         if (source == null || source.isEmpty()) {
             throw new UserValidationException("لا يمكن حفظ فاتورة بدون أصناف");
         }
 
         List<T> result = new ArrayList<>(source.size());
-        for (T row : source) {
+        for (BasePurchasesAndSales row : source) {
             if (row == null || row.getItems() == null || row.getUnitsType() == null) {
                 throw new UserValidationException("بيانات أحد سطور الفاتورة غير مكتملة");
             }

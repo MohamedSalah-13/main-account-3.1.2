@@ -104,7 +104,7 @@ public final class InvoiceSaveService<
         return limit > 0 ? ReturnPolicy.cappingFreeReturns(limit) : ReturnPolicy.DEFAULT;
     }
 
-    public InvoiceSaveResult<T1, T2> save(InvoiceSaveCommand<T1> command) throws DaoException {
+    public InvoiceSaveResult save(InvoiceSaveCommand command) throws DaoException {
         if (command == null) {
             throw new DaoException("بيانات الفاتورة مفقودة");
         }
@@ -130,8 +130,8 @@ public final class InvoiceSaveService<
         return transactions.execute(() -> persist(command, payment));
     }
 
-    private InvoiceSaveResult<T1, T2> persist(InvoiceSaveCommand<T1> command,
-                                              InvoicePaymentTerms payment)
+    private InvoiceSaveResult persist(InvoiceSaveCommand command,
+                                      InvoicePaymentTerms payment)
             throws DaoException {
         stockGuard.validate(command);
         returnGuard.validate(documentType, command.sourceInvoiceNumber(),
@@ -177,7 +177,7 @@ public final class InvoiceSaveService<
         }
         writeStockMovements(invoiceNumber, command, persistedLines,
                 invoice.getUsers() == null ? null : invoice.getUsers().getId());
-        return new InvoiceSaveResult<>(invoiceNumber, command.updating(), invoice,
+        return new InvoiceSaveResult(invoiceNumber, command.updating(), invoice,
                 payment, persistedLines);
     }
 
@@ -189,7 +189,7 @@ public final class InvoiceSaveService<
      * anything - see {@link StockMovementDao#deleteByReference} for why that is a
      * deliberate, temporary exception to the ledger otherwise being append-only.
      */
-    private void writeStockMovements(int invoiceNumber, InvoiceSaveCommand<T1> command,
+    private void writeStockMovements(int invoiceNumber, InvoiceSaveCommand command,
                                      List<T1> persistedLines, Integer userId) throws DaoException {
         String referenceType = StockMovementAssembler.referenceTypeFor(documentType);
         stockMovementDao.deleteByReference(referenceType, invoiceNumber);

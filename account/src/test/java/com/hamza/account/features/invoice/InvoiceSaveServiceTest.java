@@ -73,17 +73,18 @@ class InvoiceSaveServiceTest {
         when(numberAllocator.next(DocumentType.SALES)).thenReturn(44);
         when(dao.insert(any())).thenReturn(1);
 
-        InvoiceSaveResult<Sales, Total_Sales> result = service.save(command(0, 5));
+        InvoiceSaveResult result = service.save(command(0, 5));
+        Total_Sales invoice = (Total_Sales) result.invoice();
 
         assertEquals(44, result.invoiceNumber());
         assertFalse(result.updated());
-        assertEquals(18, result.invoice().getTotal());
-        assertEquals(3, result.invoice().getDiscount());
-        assertEquals(15, result.invoice().getTotal_after_discount());
-        assertEquals(5, result.invoice().getPaid());
-        assertEquals(10, result.invoice().getRest());
+        assertEquals(18, invoice.getTotal());
+        assertEquals(3, invoice.getDiscount());
+        assertEquals(15, invoice.getTotal_after_discount());
+        assertEquals(5, invoice.getPaid());
+        assertEquals(10, invoice.getRest());
         assertEquals(44, result.persistedLines().getFirst().getInvoiceNumber());
-        verify(dao).insert(result.invoice());
+        verify(dao).insert(invoice);
         verify(stockGuard).validate(any());
         verify(returnGuard).validate(eq(DocumentType.SALES), eq(0), eq(0), any(), anyInt(), any());
         verify(dao, never()).update(any());
@@ -98,19 +99,20 @@ class InvoiceSaveServiceTest {
         session.signIn(7, "manager", Set.of(AppPermissions.SALES_UPDATE));
         when(dao.update(any())).thenReturn(1);
 
-        InvoiceSaveResult<Sales, Total_Sales> result = service.save(command(91, 5, 37));
+        InvoiceSaveResult result = service.save(command(91, 5, 37));
+        Total_Sales invoice = (Total_Sales) result.invoice();
 
         assertEquals(91, result.invoiceNumber());
         assertTrue(result.updated());
         assertEquals(37, result.persistedLines().getFirst().getId(),
                 "an edited line must reach the DAO with its stored identity");
-        assertEquals(37, result.invoice().getSalesList().getFirst().getId());
+        assertEquals(37, invoice.getSalesList().getFirst().getId());
         verifyNoInteractions(numberAllocator);
         verify(stockGuard).validate(any());
         // Updating id 91: excludingReturnId is not this DAO's concern for a sale, but
         // the guard is asked with the existing invoice id all the same.
         verify(returnGuard).validate(eq(DocumentType.SALES), eq(0), eq(91), any(), anyInt(), any());
-        verify(dao).update(result.invoice());
+        verify(dao).update(invoice);
         verify(dao, never()).insert(any());
         verify(stockMovementDao).deleteByReference("SALE", 91);
         verify(stockMovementDao).insertBatch(argThat(movements -> movements.size() == 1));
@@ -133,7 +135,7 @@ class InvoiceSaveServiceTest {
     @Test
     void invalidPaymentDoesNotAllocateNumberOrWrite() throws Exception {
         session.signIn(7, "cashier", Set.of(AppPermissions.SALES_CREATE));
-        InvoiceSaveCommand<Sales> invalid = command(0, 100);
+        InvoiceSaveCommand invalid = command(0, 100);
 
         InvoiceValidationException error = assertThrows(
                 InvoiceValidationException.class, () -> service.save(invalid));
@@ -177,12 +179,12 @@ class InvoiceSaveServiceTest {
         verifyNoInteractions(returnSourceWriter);
     }
 
-    private InvoiceSaveCommand<Sales> command(int existingId, double paid) {
+    private InvoiceSaveCommand command(int existingId, double paid) {
         return command(existingId, paid, 0);
     }
 
-    private InvoiceSaveCommand<Sales> command(int existingId, double paid, int lineId) {
-        return new InvoiceSaveCommand<>(existingId, LocalDate.of(2026, 8, 13),
+    private InvoiceSaveCommand command(int existingId, double paid, int lineId) {
+        return new InvoiceSaveCommand(existingId, LocalDate.of(2026, 8, 13),
                 InvoiceType.DEFER, 3, DiscountType.AMOUNT, paid, " test ",
                 8, "عميل", "الرئيسية", "مندوب", List.of(line(lineId)));
     }

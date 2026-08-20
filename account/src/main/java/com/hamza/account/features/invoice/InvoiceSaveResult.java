@@ -6,12 +6,12 @@ import com.hamza.account.model.base.BaseTotals;
 import java.util.List;
 
 /** Values produced by a successful atomic invoice header/line save. */
-public record InvoiceSaveResult<T1 extends BasePurchasesAndSales, T2 extends BaseTotals>(
+public record InvoiceSaveResult(
         int invoiceNumber,
         boolean updated,
-        T2 invoice,
+        BaseTotals invoice,
         InvoicePaymentTerms payment,
-        List<T1> persistedLines) {
+        List<? extends BasePurchasesAndSales> persistedLines) {
 
     public InvoiceSaveResult {
         persistedLines = List.copyOf(persistedLines);
