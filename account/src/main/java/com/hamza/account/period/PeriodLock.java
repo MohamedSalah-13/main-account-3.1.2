@@ -78,6 +78,18 @@ public final class PeriodLock {
         }
     }
 
+    /**
+     * Where the closed period ends, or null when nothing is closed - for a caller that
+     * wants to <em>report</em> the lock rather than be stopped by it. The item merge
+     * counts how many of the lines it is about to move fall inside a closed period and
+     * says so; it is allowed either way, because it changes no figure in that period,
+     * only which item the figures are filed under.
+     */
+    public static java.time.LocalDate lockedUntil() {
+        PeriodLockService service = service();
+        return service == null ? null : service.current().lockedUntil();
+    }
+
     public static void require(LockedDocument document, List<? extends Number> ids) throws DaoException {
         PeriodLockService service = service();
         if (service != null) {
