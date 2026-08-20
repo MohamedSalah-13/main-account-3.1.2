@@ -296,7 +296,7 @@ public class UpdateSomeItems {
             anyApplied = true;
         }
         if (checkMini.isSelected()) {
-            var mini = requirePositiveNumber(textMini.getText());
+            var mini = requireNonNegativeNumber(textMini.getText());
             itemsModelList.forEach(itemsModel -> itemsModel.setMini_quantity(mini));
             anyApplied = true;
         }
@@ -366,6 +366,20 @@ public class UpdateSomeItems {
         var value = requireNumber(text);
         if (value <= 0) {
             throw new UserValidationException(LanguageManager.getInstance().getString("item.error.increase.positive"));
+        }
+        return value;
+    }
+
+    /**
+     * Zero is a valid minimum quantity - it means "no minimum set", not "everything
+     * is low" (see {@code StockLevel}) - so this only rejects negative values, unlike
+     * {@link #requirePositiveNumber(String)}.
+     */
+    private double requireNonNegativeNumber(String text) throws UserValidationException {
+        var value = requireNumber(text);
+        if (value < 0) {
+            throw new UserValidationException(LanguageManager.getInstance()
+                    .getString("item.error.price.negative", checkMini.getText()));
         }
         return value;
     }
