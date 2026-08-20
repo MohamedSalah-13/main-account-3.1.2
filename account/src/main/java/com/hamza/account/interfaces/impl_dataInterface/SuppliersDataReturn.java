@@ -122,11 +122,6 @@ public class SuppliersDataReturn extends LoadData implements DataInterface<Purch
     }
 
     @Override
-    public PermAccountAndNameInt permAccountAndNameInt() {
-        return null;
-    }
-
-    @Override
     public void addList(List<Total_Buy_Re> items, List<PrintPurchaseWithName> printPurchaseWithNames) throws DaoException {
         for (Total_Buy_Re totalBuy : items) {
             var listPrint = listForAllPurchase(totalBuy.getId());

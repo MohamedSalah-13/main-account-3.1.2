@@ -121,11 +121,6 @@ public class CustomDataReturn extends LoadData implements DataInterface<Sales_Re
         return accountData;
     }
 
-    @Override
-    public PermAccountAndNameInt permAccountAndNameInt() {
-        return null;
-    }
-
 
     @Override
     public void addList(List<Total_Sales_Re> items, List<PrintPurchaseWithName> printPurchaseWithNames) throws DaoException {

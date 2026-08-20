@@ -19,7 +19,6 @@ import com.hamza.account.model.domain.SupplierAccount;
 import com.hamza.account.model.domain.Suppliers;
 import com.hamza.account.model.domain.Total_buy;
 import com.hamza.account.perm.PermAccountAndNameInt;
-import com.hamza.account.perm.PermSuppliersAccountAndName;
 import com.hamza.account.service.PurchaseService;
 import com.hamza.account.service.TotalBuyService;
 import com.hamza.controlsfx.database.DaoException;
@@ -46,7 +45,6 @@ public class SuppliersData
 
     private final AccountData<SupplierAccount> accountData = new AccountSuppliers(daoFactory);
 
-    private final PermAccountAndNameInt permAccountAndNameInt = new PermSuppliersAccountAndName();
 
     private final TotalsAndPurchaseList<Purchase, Total_buy> totalsAndPurchaseList = new TotalsAndPurchaseList<>() {
         @Override
@@ -124,11 +122,6 @@ public class SuppliersData
     @Override
     public AccountData<SupplierAccount> accountData() {
         return accountData;
-    }
-
-    @Override
-    public PermAccountAndNameInt permAccountAndNameInt() {
-        return permAccountAndNameInt;
     }
 
     @Override

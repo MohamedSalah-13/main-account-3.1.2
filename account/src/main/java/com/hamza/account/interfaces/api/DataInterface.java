@@ -45,7 +45,9 @@ public interface DataInterface<T1 extends BasePurchasesAndSales, T2 extends Base
 
     AccountData<T4> accountData();
 
-    PermAccountAndNameInt permAccountAndNameInt();
+    default PermAccountAndNameInt permAccountAndNameInt() {
+        return PermAccountAndNameInt.forParty(designInterface().documentType().partyKind());
+    }
 
     void addList(List<T2> items, List<PrintPurchaseWithName> printPurchaseWithNames) throws DaoException;
 }
