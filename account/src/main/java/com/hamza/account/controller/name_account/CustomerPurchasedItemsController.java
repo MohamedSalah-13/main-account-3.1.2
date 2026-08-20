@@ -3,6 +3,7 @@ package com.hamza.account.controller.name_account;
 import com.hamza.account.features.export.PdfExportService;
 import com.hamza.account.interfaces.CustomerPurchaseInterface;
 import com.hamza.account.model.dao.DaoFactory;
+import com.hamza.account.config.NamesTables;
 import com.hamza.account.model.domain.CustomerPurchasedItem;
 import com.hamza.account.openFxml.FxmlPath;
 import com.hamza.account.service.CustomerPurchasedItemsService;
@@ -16,7 +17,7 @@ import com.hamza.controlsfx.excel.ExportData;
 import com.hamza.controlsfx.interfaceData.AppSettingInterface;
 import com.hamza.controlsfx.language.LanguageManager;
 import com.hamza.controlsfx.others.DateSetting;
-import com.hamza.controlsfx.table.TableColumnAnnotation;
+import com.hamza.controlsfx.table.Columns;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
@@ -90,7 +91,13 @@ public class CustomerPurchasedItemsController implements Initializable, AppSetti
     }
 
     private void setupTable() {
-        new TableColumnAnnotation().getTable(tableView, CustomerPurchasedItem.class);
+        tableView.getColumns().addAll(
+                Columns.text(NamesTables.ITEM_NAME, CustomerPurchasedItem::getItemName),
+                Columns.number(NamesTables.QUANTITY, CustomerPurchasedItem::getQuantity),
+                Columns.number(NamesTables.SEL_PRICE, CustomerPurchasedItem::getSellingPrice),
+                Columns.date(NamesTables.DATE, CustomerPurchasedItem::getInvoiceDate),
+                Columns.number(NamesTables.CODE_INVOICE, CustomerPurchasedItem::getInvoiceNumber)
+        );
         tableView.setItems(filteredData);
         TableSetting.tableMenuSetting(getClass(), tableView);
 //        tableView.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);

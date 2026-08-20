@@ -4,6 +4,7 @@ import com.hamza.account.config.AppIcon;
 import com.hamza.account.config.IconFactory;
 import com.hamza.account.controller.others.ServiceRegistry;
 import com.hamza.account.features.events.UnitsChanged;
+import com.hamza.account.config.NamesTables;
 import com.hamza.account.model.domain.UnitsModel;
 import com.hamza.account.openFxml.FxmlPath;
 import com.hamza.account.openFxml.OpenFxmlApplication;
@@ -16,7 +17,7 @@ import com.hamza.controlsfx.error.UserValidationException;
 import com.hamza.controlsfx.interfaceData.AppSettingInterface;
 import com.hamza.controlsfx.language.LanguageManager;
 import com.hamza.controlsfx.observer.EventBus;
-import com.hamza.controlsfx.table.TableColumnAnnotation;
+import com.hamza.controlsfx.table.Columns;
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
@@ -80,7 +81,11 @@ public class UnitsController implements Initializable, AppSettingInterface {
 
     private void tableSetting() {
         tableView.getColumns().clear();
-        new TableColumnAnnotation().getTable(tableView, UnitsModel.class);
+        tableView.getColumns().addAll(
+                Columns.number(NamesTables.CODE, UnitsModel::getUnit_id),
+                Columns.text(NamesTables.NAME, UnitsModel::getUnit_name),
+                Columns.number(NamesTables.DEFAULT_FACTOR, UnitsModel::getValue)
+        );
         refreshTable();
     }
 

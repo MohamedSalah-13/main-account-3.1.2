@@ -2,6 +2,7 @@ package com.hamza.account.controller.reports;
 
 import com.hamza.account.config.Image_Setting;
 import com.hamza.account.interfaces.api.AccountData;
+import com.hamza.account.config.NamesTables;
 import com.hamza.account.model.base.BaseAccount;
 import com.hamza.account.openFxml.FxmlPath;
 import com.hamza.account.table.TableSetting;
@@ -11,7 +12,7 @@ import com.hamza.controlsfx.error.BusinessRuleException;
 import com.hamza.controlsfx.error.UserValidationException;
 import com.hamza.controlsfx.language.LanguageManager;
 import com.hamza.controlsfx.others.DateSetting;
-import com.hamza.controlsfx.table.TableColumnAnnotation;
+import com.hamza.controlsfx.table.Columns;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
@@ -50,7 +51,13 @@ public class ReportPaid<T extends BaseAccount> {
     }
 
     private void getTable() {
-        new TableColumnAnnotation().getTable(tableView, BaseAccount.class);
+        tableView.getColumns().addAll(
+                Columns.number(NamesTables.CODE, BaseAccount::getId),
+                Columns.number(NamesTables.DEBTOR, BaseAccount::getPurchase),
+                Columns.number(NamesTables.CREDITOR, BaseAccount::getPaid),
+                Columns.number(NamesTables.AMOUNT, BaseAccount::getAmount),
+                Columns.text(NamesTables.DATE, BaseAccount::getDate)
+        );
         accountData.updateTableView(tableView);
         TableSetting.tableMenuSetting(getClass(), tableView);
 

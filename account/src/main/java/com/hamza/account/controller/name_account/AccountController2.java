@@ -13,6 +13,7 @@ import com.hamza.account.features.events.AccountChanged;
 import com.hamza.account.features.events.InvoiceSaved;
 import com.hamza.account.features.events.NameChanged;
 import com.hamza.account.interfaces.api.DataInterface;
+import com.hamza.account.config.NamesTables;
 import com.hamza.account.model.base.BaseAccount;
 import com.hamza.account.model.base.BaseNames;
 import com.hamza.account.model.dao.DaoFactory;
@@ -28,7 +29,7 @@ import com.hamza.controlsfx.excel.ExcelException;
 import com.hamza.controlsfx.excel.ExportData;
 import com.hamza.controlsfx.language.LanguageManager;
 import com.hamza.controlsfx.observer.EventBus;
-import com.hamza.controlsfx.table.TableColumnAnnotation;
+import com.hamza.controlsfx.table.Columns;
 import com.hamza.controlsfx.table.columnEdit.ColumnSetting;
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
@@ -128,7 +129,13 @@ public class AccountController2<T3 extends BaseNames, T4 extends BaseAccount>
 
     private void getTable() {
         tableView.getColumns().clear();
-        new TableColumnAnnotation().getTable(tableView, BaseAccount.class);
+        tableView.getColumns().addAll(
+                Columns.number(NamesTables.CODE, BaseAccount::getId),
+                Columns.number(NamesTables.DEBTOR, BaseAccount::getPurchase),
+                Columns.number(NamesTables.CREDITOR, BaseAccount::getPaid),
+                Columns.number(NamesTables.AMOUNT, BaseAccount::getAmount),
+                Columns.text(NamesTables.DATE, BaseAccount::getDate)
+        );
         tableView.getSelectionModel().setSelectionMode(SelectionMode.SINGLE);
 //        observableList.setAll(nameAndAccountInterface.accountTotalList(null, null));
         filteredTable = new FilteredList<>(observableList);

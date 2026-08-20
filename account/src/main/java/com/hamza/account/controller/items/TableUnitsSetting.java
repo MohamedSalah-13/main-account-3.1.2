@@ -1,6 +1,7 @@
 package com.hamza.account.controller.items;
 
 import com.hamza.account.model.domain.ItemsModel;
+import com.hamza.account.config.NamesTables;
 import com.hamza.account.model.domain.ItemsUnitsModel;
 import com.hamza.account.model.domain.UnitsModel;
 import com.hamza.account.otherSetting.ButtonDeleteRow;
@@ -8,7 +9,7 @@ import com.hamza.account.service.UnitsService;
 import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.button.button_column.ButtonColumn;
 import com.hamza.controlsfx.language.LanguageManager;
-import com.hamza.controlsfx.table.TableColumnAnnotation;
+import com.hamza.controlsfx.table.Columns;
 import com.hamza.controlsfx.table.columnEdit.ColumnSetting;
 import javafx.collections.FXCollections;
 import javafx.scene.control.TableColumn;
@@ -124,7 +125,15 @@ public class TableUnitsSetting extends TableUnitsSettingProperty {
     }
 
     private void getTable() {
-        new TableColumnAnnotation().getTable(tableUnits, ItemsUnitsModel.class);
+        tableUnits.getColumns().addAll(
+                Columns.number(NamesTables.CODE, ItemsUnitsModel::getId),
+                Columns.text(NamesTables.BARCODE, ItemsUnitsModel::getItemsBarcode),
+                Columns.number(NamesTables.QUANTITY, ItemsUnitsModel::getQuantityForUnit),
+                Columns.number(NamesTables.BUY_PRICE, ItemsUnitsModel::getBuyPrice),
+                Columns.number(NamesTables.SEL_PRICE, ItemsUnitsModel::getSelPrice),
+                Columns.number(NamesTables.SEL_PRICE + "2", ItemsUnitsModel::getSelPrice2),
+                Columns.number(NamesTables.SEL_PRICE + "3", ItemsUnitsModel::getSelPrice3)
+        );
         TableColumn<ItemsUnitsModel, String> columnActiveName = new TableColumn<>(LanguageManager.getInstance().getString("item.column.unit"));
         columnActiveName.setCellValueFactory(f -> f.getValue().unitsModelProperty().get().unit_nameProperty());
         tableUnits.getColumns().add(2, columnActiveName);

@@ -5,7 +5,7 @@ import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.model.domain.CustomerReceivable;
 import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.language.LanguageManager;
-import com.hamza.controlsfx.table.TableColumnAnnotation;
+import com.hamza.controlsfx.table.Columns;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
@@ -34,7 +34,14 @@ public class CustomerReceivableController implements Initializable {
     @Override
     public void initialize(URL location, ResourceBundle resources) {
         tableView.getColumns().clear();
-        new TableColumnAnnotation().getTable(tableView, CustomerReceivable.class);
+        tableView.getColumns().addAll(
+                Columns.text("Customer Name", CustomerReceivable::getCustomerName),
+                Columns.text("Customer Phone", CustomerReceivable::getCustomerPhone),
+                Columns.number("Invoices", CustomerReceivable::getInvoicesDebt),
+                Columns.number("Opening Balance", CustomerReceivable::getOpeningBalance),
+                Columns.number("Total Payments", CustomerReceivable::getTotalPayments),
+                Columns.number("Total Receivable", CustomerReceivable::getTotalReceivable)
+        );
     }
 
     public void setDaoFactory(DaoFactory daoFactory) {

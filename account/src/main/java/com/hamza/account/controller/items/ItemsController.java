@@ -12,6 +12,7 @@ import com.hamza.account.features.events.ItemSaved;
 import com.hamza.account.features.events.SelPriceNamesChanged;
 import com.hamza.account.features.events.ItemsChanged;
 import com.hamza.account.model.dao.DaoFactory;
+import com.hamza.account.config.NamesTables;
 import com.hamza.account.model.domain.ItemsModel;
 import com.hamza.account.openFxml.FxmlPath;
 import com.hamza.account.service.*;
@@ -31,7 +32,7 @@ import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.error.UserValidationException;
 import com.hamza.controlsfx.language.LanguageManager;
 import com.hamza.controlsfx.observer.EventBus;
-import com.hamza.controlsfx.table.TableColumnAnnotation;
+import com.hamza.controlsfx.table.Columns;
 import com.hamza.controlsfx.table.columnEdit.ColumnSetting;
 import com.hamza.controlsfx.table.columnEdit.TableColumnEdite;
 import javafx.application.Platform;
@@ -136,7 +137,18 @@ public class ItemsController extends LoadData {
     }
 
     private void table_data() {
-        new TableColumnAnnotation().getTable(tableView, ItemsModel.class);
+        tableView.getColumns().addAll(
+                Columns.number(NamesTables.CODE, ItemsModel::getId),
+                Columns.text(NamesTables.STRING, ItemsModel::getBarcode),
+                Columns.text(NamesTables.NAME_ITEM, ItemsModel::getNameItem),
+                Columns.number(NamesTables.BUY_PRICE, ItemsModel::getBuyPrice),
+                Columns.number(NamesTables.SEL_PRICE, ItemsModel::getSelPrice1),
+                Columns.number(NamesTables.SEL_PRICE + "2", ItemsModel::getSelPrice2),
+                Columns.number(NamesTables.SEL_PRICE + "3", ItemsModel::getSelPrice3),
+                Columns.number(NamesTables.MINI_QUANTITY, ItemsModel::getMini_quantity),
+                Columns.number(NamesTables.FIRST_BALANCE, ItemsModel::getFirstBalanceForStock),
+                Columns.number(NamesTables.SUM_ALL_BALANCE, ItemsModel::getSumAllBalance)
+        );
         tableView.getSelectionModel().setSelectionMode(SelectionMode.SINGLE);
         tableView.setEditable(true);
 

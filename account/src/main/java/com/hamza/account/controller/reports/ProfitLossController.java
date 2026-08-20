@@ -1,5 +1,6 @@
 package com.hamza.account.controller.reports;
 
+import com.hamza.account.config.NamesTables;
 import com.hamza.account.controller.model.TableData;
 import com.hamza.account.controller.others.ServiceRegistry;
 import com.hamza.account.model.domain.Earnings;
@@ -9,7 +10,7 @@ import com.hamza.account.service.EarningsService;
 import com.hamza.account.service.UsersService;
 import com.hamza.controlsfx.language.LanguageManager;
 import com.hamza.controlsfx.others.DateSetting;
-import com.hamza.controlsfx.table.TableColumnAnnotation;
+import com.hamza.controlsfx.table.Columns;
 import com.hamza.controlsfx.util.NumberUtils;
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
@@ -65,7 +66,19 @@ public class ProfitLossController {
     }
 
     private void getTable() {
-        new TableColumnAnnotation().getTable(tableView, TableData.class);
+        tableView.getColumns().addAll(
+                Columns.text(NamesTables.NAME, TableData::getUsername),
+                Columns.number(NamesTables.PURCHASE, TableData::getTotalPurchase),
+                Columns.number(NamesTables.PURCHASE_RETURN, TableData::getTotalPurchaseReturn),
+                Columns.number(NamesTables.SALES, TableData::getTotalSales),
+                Columns.number(NamesTables.SALES_RETURN, TableData::getTotalSalesReturn),
+                Columns.number("مدفوع المبيعات", TableData::getTotalReceipt),
+                Columns.number("مدفوع المشتريات", TableData::getTotalPaid),
+                Columns.number("حساب المبيعات", TableData::getAccount_customer),
+                Columns.number("حساب المشتريات", TableData::getAccount_supplier),
+                Columns.number(NamesTables.DAMAGED, TableData::getTotalDamaged),
+                Columns.number(NamesTables.OTHER_EXPENSES, TableData::getTotalExpense)
+        );
         searchTable();
     }
 

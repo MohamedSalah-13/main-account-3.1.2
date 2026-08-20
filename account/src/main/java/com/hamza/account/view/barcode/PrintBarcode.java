@@ -7,7 +7,7 @@ import com.hamza.account.table.TableSetting;
 import com.hamza.controlsfx.button.button_column.ButtonColumn;
 import com.hamza.controlsfx.interfaceData.AppSettingInterface;
 import com.hamza.controlsfx.language.Setting_Language;
-import com.hamza.controlsfx.table.TableColumnAnnotation;
+import com.hamza.controlsfx.table.Columns;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
@@ -39,7 +39,12 @@ public class PrintBarcode implements AppSettingInterface {
     }
 
     private void otherSetting() {
-        new TableColumnAnnotation().getTable(tableView, PrintBarcodeModel.class);
+        tableView.getColumns().addAll(
+                Columns.text("باركود", PrintBarcodeModel::getBarcode),
+                Columns.text("اسم الصنف", PrintBarcodeModel::getName),
+                Columns.number("السعر", PrintBarcodeModel::getPrice),
+                Columns.number("الكمية", PrintBarcodeModel::getQuantity)
+        );
         tableView.setItems(observableList);
         tableView.setEditable(true);
         tableView.getSelectionModel().setCellSelectionEnabled(true);

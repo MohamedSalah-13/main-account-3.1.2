@@ -1,6 +1,7 @@
 package com.hamza.account.controller.others;
 
 import com.hamza.account.config.Image_Setting;
+import com.hamza.account.config.NamesTables;
 import com.hamza.account.model.domain.Audit_log;
 import com.hamza.account.openFxml.FxmlPath;
 import com.hamza.account.otherSetting.MaskerPaneSetting;
@@ -13,7 +14,7 @@ import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.language.Setting_Language;
 import com.hamza.controlsfx.others.DateSetting;
-import com.hamza.controlsfx.table.TableColumnAnnotation;
+import com.hamza.controlsfx.table.Columns;
 import com.hamza.controlsfx.table.columnEdit.ColumnSetting;
 import com.hamza.controlsfx.util.ImageChoose;
 import javafx.application.Platform;
@@ -122,7 +123,13 @@ public class ProcessesController implements Initializable {
     }
 
     private void getTable() {
-        new TableColumnAnnotation().getTable(tableView, Audit_log.class);
+        tableView.getColumns().addAll(
+                Columns.number("كود العملية", Audit_log::getCode),
+                Columns.text("رقم السجل", Audit_log::getRecord_id),
+                Columns.text("بيانات القديمة", Audit_log::getOld_data),
+                Columns.text("بيانات جديدة", Audit_log::getNew_data),
+                Columns.text(NamesTables.NOTES, Audit_log::getNotes)
+        );
 //        tableView.setItems(observableListTable);
         tableView.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
 

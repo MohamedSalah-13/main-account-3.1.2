@@ -5,13 +5,14 @@ import com.hamza.account.features.invoice.InvoiceLineService;
 import com.hamza.account.features.key_setting.MoveRow;
 import com.hamza.account.features.key_setting.UpdateInterface;
 import com.hamza.account.features.key_setting.UpdateQuantity;
+import com.hamza.account.config.NamesTables;
 import com.hamza.account.model.base.BasePurchasesAndSales;
 import com.hamza.account.otherSetting.ButtonDeleteRow;
 import com.hamza.account.table.TableSetting;
 import com.hamza.controlsfx.button.button_column.ButtonColumn;
 import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.language.LanguageManager;
-import com.hamza.controlsfx.table.TableColumnAnnotation;
+import com.hamza.controlsfx.table.Columns;
 import com.hamza.controlsfx.table.columnEdit.ColumnSetting;
 import javafx.application.Platform;
 import javafx.beans.value.ObservableValue;
@@ -60,7 +61,13 @@ public final class InvoiceTableCoordinator<T extends BasePurchasesAndSales> {
     }
 
     public void configure() {
-        new TableColumnAnnotation().getTable(table, BasePurchasesAndSales.class);
+        table.getColumns().addAll(
+                Columns.number(NamesTables.QUANTITY, BasePurchasesAndSales::getQuantity),
+                Columns.number(NamesTables.PRICE, BasePurchasesAndSales::getPrice),
+                Columns.number(NamesTables.TOTAL, BasePurchasesAndSales::getTotal),
+                Columns.number(NamesTables.DISCOUNT, BasePurchasesAndSales::getDiscount),
+                Columns.number(NamesTables.TOTAL_AFTER, BasePurchasesAndSales::getTotal_after_discount)
+        );
         addIdentityColumns();
         addDeleteColumn();
         table.setItems(lines);

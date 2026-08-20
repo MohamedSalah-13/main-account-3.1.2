@@ -4,6 +4,7 @@ import com.hamza.account.config.Image_Setting;
 import com.hamza.account.controller.main.DataPublisher;
 import com.hamza.account.controller.others.ServiceRegistry;
 import com.hamza.account.model.dao.DaoFactory;
+import com.hamza.account.config.NamesTables;
 import com.hamza.account.model.domain.TreasuryBalance;
 import com.hamza.account.model.domain.Users;
 import com.hamza.account.openFxml.FxmlPath;
@@ -21,7 +22,7 @@ import com.hamza.account.otherSetting.MaskerPaneSetting;
 import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.language.LanguageManager;
 import com.hamza.controlsfx.others.DateSetting;
-import com.hamza.controlsfx.table.TableColumnAnnotation;
+import com.hamza.controlsfx.table.Columns;
 import com.hamza.controlsfx.util.ImageChoose;
 import com.hamza.controlsfx.util.NumberUtils;
 import javafx.beans.property.DoubleProperty;
@@ -148,7 +149,16 @@ public class TreasureDetailsController {
     }
 
     private void getTable() {
-        new TableColumnAnnotation().getTable(tableView, TreasuryBalance.class);
+        tableView.getColumns().addAll(
+                Columns.number(NamesTables.CODE, TreasuryBalance::getId),
+                Columns.date(NamesTables.DATE, TreasuryBalance::getDate),
+                Columns.text("نوع العملية", TreasuryBalance::getInformation),
+                Columns.text(NamesTables.NAME, TreasuryBalance::getName),
+                Columns.number("إجمالى الوارد", TreasuryBalance::getTotal_income),
+                Columns.number("إجمالى الصادر", TreasuryBalance::getTotal_output),
+                Columns.number("الرصيد", TreasuryBalance::getBalance),
+                Columns.text("المستخدم", TreasuryBalance::getUser_name)
+        );
         filteredList = new FilteredList<>(treasuryBalances);
         SortedList<TreasuryBalance> sortedList = new SortedList<>(filteredList);
         sortedList.comparatorProperty().bind(tableView.comparatorProperty());

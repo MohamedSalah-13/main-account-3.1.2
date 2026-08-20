@@ -9,6 +9,7 @@ import com.hamza.account.interfaces.api.DataInterface;
 import com.hamza.account.interfaces.api.DesignInterface;
 import com.hamza.account.interfaces.api.InvoiceBuy;
 import com.hamza.account.features.invoice.InvoiceLineService;
+import com.hamza.account.config.NamesTables;
 import com.hamza.account.model.base.BasePurchasesAndSales;
 import com.hamza.account.model.domain.ItemsModel;
 import com.hamza.account.openFxml.FxmlPath;
@@ -22,7 +23,7 @@ import com.hamza.controlsfx.button.api.ButtonColumnI;
 import com.hamza.controlsfx.button.button_column.ButtonColumn;
 import com.hamza.controlsfx.language.LanguageManager;
 import com.hamza.controlsfx.language.Setting_Language;
-import com.hamza.controlsfx.table.TableColumnAnnotation;
+import com.hamza.controlsfx.table.Columns;
 import com.hamza.controlsfx.table.columnEdit.ColumnSetting;
 import javafx.beans.property.ListProperty;
 import javafx.beans.property.SimpleListProperty;
@@ -175,7 +176,18 @@ public class SearchItemsController<T1 extends BasePurchasesAndSales>
     }
 
     private void getTableItems() {
-        new TableColumnAnnotation().getTable(tableItems, ItemsModel.class);
+        tableItems.getColumns().addAll(
+                Columns.number(NamesTables.CODE, ItemsModel::getId),
+                Columns.text(NamesTables.STRING, ItemsModel::getBarcode),
+                Columns.text(NamesTables.NAME_ITEM, ItemsModel::getNameItem),
+                Columns.number(NamesTables.BUY_PRICE, ItemsModel::getBuyPrice),
+                Columns.number(NamesTables.SEL_PRICE, ItemsModel::getSelPrice1),
+                Columns.number(NamesTables.SEL_PRICE + "2", ItemsModel::getSelPrice2),
+                Columns.number(NamesTables.SEL_PRICE + "3", ItemsModel::getSelPrice3),
+                Columns.number(NamesTables.MINI_QUANTITY, ItemsModel::getMini_quantity),
+                Columns.number(NamesTables.FIRST_BALANCE, ItemsModel::getFirstBalanceForStock),
+                Columns.number(NamesTables.SUM_ALL_BALANCE, ItemsModel::getSumAllBalance)
+        );
         tableItems.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
         tableItems.setItems(itemsModels);
         tableItems.getColumns().get(3).setVisible(!designInterface.showDataForCustomer());
@@ -187,7 +199,13 @@ public class SearchItemsController<T1 extends BasePurchasesAndSales>
 
 
     private void createTablePurchase() {
-        new TableColumnAnnotation().getTable(tableView, BasePurchasesAndSales.class);
+        tableView.getColumns().addAll(
+                Columns.number(NamesTables.QUANTITY, BasePurchasesAndSales::getQuantity),
+                Columns.number(NamesTables.PRICE, BasePurchasesAndSales::getPrice),
+                Columns.number(NamesTables.TOTAL, BasePurchasesAndSales::getTotal),
+                Columns.number(NamesTables.DISCOUNT, BasePurchasesAndSales::getDiscount),
+                Columns.number(NamesTables.TOTAL_AFTER, BasePurchasesAndSales::getTotal_after_discount)
+        );
 
         TableColumn<T1, ?> tableColumnSelPriceType = addColumn(Setting_Language.NAME_ITEM
                 , f -> f.getValue().getItems().nameItemProperty());

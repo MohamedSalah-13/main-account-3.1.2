@@ -11,6 +11,7 @@ import com.hamza.account.interfaces.api.DataInterface;
 import com.hamza.account.interfaces.api.PurchaseSalesInterface;
 import com.hamza.account.model.base.BaseAccount;
 import com.hamza.account.model.base.BaseNames;
+import com.hamza.account.config.NamesTables;
 import com.hamza.account.model.base.BasePurchasesAndSales;
 import com.hamza.account.model.base.BaseTotals;
 import com.hamza.account.model.dao.DaoFactory;
@@ -24,7 +25,7 @@ import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.error.UserValidationException;
 import com.hamza.controlsfx.interfaceData.AppSettingInterface;
 import com.hamza.controlsfx.language.LanguageManager;
-import com.hamza.controlsfx.table.TableColumnAnnotation;
+import com.hamza.controlsfx.table.Columns;
 import com.hamza.controlsfx.table.colorRow.RowColor;
 import com.hamza.controlsfx.table.colorRow.RowColorInterface;
 import javafx.beans.value.ObservableValue;
@@ -107,7 +108,13 @@ public class ShowInvoiceController<T1 extends BasePurchasesAndSales, T2 extends 
     }
 
     private void getTable() {
-        new TableColumnAnnotation().getTable(tableView, BasePurchasesAndSales.class);
+        tableView.getColumns().addAll(
+                Columns.number(NamesTables.QUANTITY, BasePurchasesAndSales::getQuantity),
+                Columns.number(NamesTables.PRICE, BasePurchasesAndSales::getPrice),
+                Columns.number(NamesTables.TOTAL, BasePurchasesAndSales::getTotal),
+                Columns.number(NamesTables.DISCOUNT, BasePurchasesAndSales::getDiscount),
+                Columns.number(NamesTables.TOTAL_AFTER, BasePurchasesAndSales::getTotal_after_discount)
+        );
         tableView.setItems(FXCollections.observableArrayList(list));
         tableView.getSelectionModel().setSelectionMode(SelectionMode.SINGLE);
         addColumnTable();

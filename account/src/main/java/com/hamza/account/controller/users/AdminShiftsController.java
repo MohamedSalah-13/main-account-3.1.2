@@ -1,6 +1,7 @@
 package com.hamza.account.controller.users;
 
 import com.hamza.account.controller.others.ServiceRegistry;
+import com.hamza.account.config.NamesTables;
 import com.hamza.account.model.domain.UserShift;
 import com.hamza.account.openFxml.FxmlPath;
 import com.hamza.account.service.UserShiftService;
@@ -11,7 +12,7 @@ import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.error.BusinessRuleException;
 import com.hamza.controlsfx.error.UserValidationException;
 import com.hamza.controlsfx.language.LanguageManager;
-import com.hamza.controlsfx.table.TableColumnAnnotation;
+import com.hamza.controlsfx.table.Columns;
 import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
@@ -41,7 +42,20 @@ public class AdminShiftsController {
     }
 
     private void setupTable() {
-        new TableColumnAnnotation().getTable(tableView, UserShift.class);
+        tableView.getColumns().addAll(
+                Columns.number(NamesTables.CODE, UserShift::getId),
+                Columns.text("اسم المستخدم", UserShift::getUsername),
+                Columns.text("وقت الفتح", row -> String.valueOf(row.getOpenTime())),
+                Columns.text("وقت الغلق", row -> String.valueOf(row.getCloseTime())),
+                Columns.number("الرصيد الافتتاحي", UserShift::getOpenBalance),
+                Columns.number("الرصيد الختامي", UserShift::getCloseBalance),
+                Columns.text("الحالة", UserShift::getStatus),
+                Columns.number("إجمالي المبيعات", UserShift::getTotalSales),
+                Columns.number("مرتجعات المبيعات", UserShift::getTotalSalesReturns),
+                Columns.number("المصروفات", UserShift::getTotalExpenses),
+                Columns.number("الرصيد المتوقع", UserShift::getExpectedBalance),
+                Columns.number("الفرق", UserShift::getDifference)
+        );
     }
 
     private void setupActions() {

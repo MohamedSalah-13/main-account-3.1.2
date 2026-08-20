@@ -11,7 +11,7 @@ import com.hamza.account.table.TableSetting;
 import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.language.LanguageManager;
-import com.hamza.controlsfx.table.TableColumnAnnotation;
+import com.hamza.controlsfx.table.Columns;
 import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
@@ -47,7 +47,20 @@ public class ReportTotalByYearController {
 
     @FXML
     public void initialize() {
-        new TableColumnAnnotation().getTable(tableView, TableDataReports.class);
+        tableView.getColumns().addAll(
+                Columns.text("الشهر", TableDataReports::getReport_month_name),
+                Columns.number("المشتريات", TableDataReports::getPurchase),
+                Columns.number("خصم المشتريات", TableDataReports::getPurchases_discount),
+                Columns.number("المبيعات", TableDataReports::getSales),
+                Columns.number("خصم المبيعات", TableDataReports::getSales_discount),
+                Columns.number("مرتجع المشتريات", TableDataReports::getPurchases_return),
+                Columns.number("خصم مرتجع المشتريات", TableDataReports::getPurchases_return_discount),
+                Columns.number("مرتجع المبيعات", TableDataReports::getSales_return),
+                Columns.number("خصم مرتجع المبيعات", TableDataReports::getSales_return_discount),
+                Columns.number("المصروفات", TableDataReports::getExpense),
+                Columns.number("الربح", TableDataReports::getProfit),
+                Columns.text("الربح نسبة", TableDataReports::getProfitPercent)
+        );
         TableSetting.tableMenuSetting(getClass(), tableView);
 
         searchButton.setText(LanguageManager.getInstance().getString("search"));

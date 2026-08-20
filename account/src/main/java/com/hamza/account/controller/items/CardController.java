@@ -1,6 +1,7 @@
 package com.hamza.account.controller.items;
 
 import com.hamza.account.config.Image_Setting;
+import com.hamza.account.config.NamesTables;
 import com.hamza.account.controller.main.DataPublisher;
 import com.hamza.account.controller.main.LoadData;
 import com.hamza.account.controller.others.ServiceRegistry;
@@ -28,7 +29,7 @@ import com.hamza.controlsfx.button.button_column.ButtonColumn;
 import com.hamza.controlsfx.interfaceData.AppSettingInterface;
 import com.hamza.controlsfx.language.LanguageManager;
 import com.hamza.controlsfx.others.DateSetting;
-import com.hamza.controlsfx.table.TableColumnAnnotation;
+import com.hamza.controlsfx.table.Columns;
 import com.hamza.controlsfx.util.ImageChoose;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -143,7 +144,21 @@ public class CardController extends LoadData implements Initializable, AppSettin
     }
 
     private void getTable() {
-        new TableColumnAnnotation().getTable(tableView, CardItems.class);
+        TableColumn<CardItems, Number> balanceColumn = Columns.number(NamesTables.BALANCE, CardItems::getBalance);
+        balanceColumn.setId("balance");
+        tableView.getColumns().addAll(
+                Columns.number(NamesTables.CODE_INVOICE, CardItems::getInvoice_num),
+                Columns.date(NamesTables.DATE, CardItems::getInvoice_date),
+                Columns.text(NamesTables.NAME, CardItems::getName_account),
+                Columns.text(NamesTables.TYPE, CardItems::getType_name),
+                Columns.number(NamesTables.QUANTITY, CardItems::getQuantity),
+                Columns.number(NamesTables.PRICE, CardItems::getPrice),
+                Columns.number(NamesTables.DISCOUNT, CardItems::getDiscount),
+                Columns.number(NamesTables.TOTAL, CardItems::getTotals),
+                balanceColumn,
+                Columns.text(NamesTables.PROCESS_TYPE, CardItems::getProcessTypeName),
+                Columns.text(NamesTables.DELEGATE, CardItems::getDelegate_name)
+        );
         tableView.getColumns().addFirst(column_number());
         SortedList<CardItems> sortedList = new SortedList<>(rows);
         sortedList.comparatorProperty().bind(tableView.comparatorProperty());
