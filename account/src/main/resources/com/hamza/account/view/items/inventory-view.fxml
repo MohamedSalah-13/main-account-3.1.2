@@ -18,7 +18,7 @@
 
 <!-- fx:id on the root is what the screen's event-bus subscriptions are tied to:
      Subscriptions.disposeWith closes them when this node leaves the scene graph. -->
-<AnchorPane fx:id="root" styleClass="app-root" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1">
+<AnchorPane fx:id="root" styleClass="app-root" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.hamza.account.controller.items.InventoryController">
     <children>
         <BorderPane styleClass="app-container" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
             <top>

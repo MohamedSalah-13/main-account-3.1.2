@@ -8,7 +8,7 @@
 <StackPane fx:id="stackPane"
            styleClass="app-root"
 
-           xmlns:fx="http://javafx.com/fxml/1"
+           xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.hamza.account.controller.items.UpdateSomeItems"
            xmlns="http://javafx.com/javafx/21">
     <children>
         <VBox spacing="14.0" styleClass="app-container">

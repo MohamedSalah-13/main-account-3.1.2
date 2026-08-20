@@ -750,7 +750,8 @@ public class ModernDashboardApp {
     }
 
     private void openCustomerReceivables() throws Exception {
-        FXMLLoader loader = new FXMLLoader(Main.class.getResource("view/reports/CustomerReceivableView.fxml"));
+        FXMLLoader loader = new FXMLLoader(Main.class.getResource("view/reports/CustomerReceivableView.fxml"),
+                LanguageManager.getInstance().getResourceBundle());
         Parent root = loader.load();
 
         CustomerReceivableController controller = loader.getController();
@@ -764,7 +765,8 @@ public class ModernDashboardApp {
     }
 
     private void openItemSalesRank() throws Exception {
-        FXMLLoader loader = new FXMLLoader(Main.class.getResource("view/reports/ItemSalesRankView.fxml"));
+        FXMLLoader loader = new FXMLLoader(Main.class.getResource("view/reports/ItemSalesRankView.fxml"),
+                LanguageManager.getInstance().getResourceBundle());
         Parent root = loader.load();
 
         ItemSalesRankController controller = loader.getController();

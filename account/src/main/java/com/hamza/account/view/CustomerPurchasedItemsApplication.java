@@ -5,6 +5,7 @@ import com.hamza.account.interfaces.CustomerPurchaseInterface;
 import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.controlsfx.others.ChangeOrientation;
 import javafx.application.Application;
+import com.hamza.controlsfx.language.LanguageManager;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Scene;
 import javafx.stage.Modality;
@@ -20,9 +21,11 @@ public class CustomerPurchasedItemsApplication extends Application {
     public CustomerPurchasedItemsApplication(DaoFactory daoFactory, int customerId, String customerName
             , CustomerPurchaseInterface customerPurchaseInterface) throws IOException {
         this.customerPurchaseInterface = customerPurchaseInterface;
-        FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource("/com/hamza/account/view/customer-purchased-items-view.fxml"));
-        fxmlLoader.setController(new CustomerPurchasedItemsController(daoFactory, customerId, customerName
-                , customerPurchaseInterface));
+        FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource("/com/hamza/account/view/customer-purchased-items-view.fxml"),
+                LanguageManager.getInstance().getResourceBundle());
+        CustomerPurchasedItemsController controller = new CustomerPurchasedItemsController(daoFactory, customerId, customerName
+                , customerPurchaseInterface);
+        fxmlLoader.setControllerFactory(type -> controller);
         this.scene = new SceneAll(fxmlLoader.load());
     }
 

@@ -11,7 +11,7 @@
 <?import javafx.scene.layout.Region?>
 <?import javafx.scene.layout.VBox?>
 
-<VBox fx:id="root" spacing="10.0" styleClass="settings-root" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1">
+<VBox fx:id="root" spacing="10.0" styleClass="settings-root" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.hamza.account.controller.setting.SettingTabPeriodLockController">
     <padding>
         <Insets bottom="12.0" left="12.0" right="12.0" top="12.0" />
     </padding>

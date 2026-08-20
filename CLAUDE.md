@@ -72,6 +72,15 @@ Two documents govern work here and are kept current — read them before large c
   `ServiceRegistry`, dependencies arrive through the constructor, transaction boundaries go in the
   service via `TransactionTemplate` (no new `insertMultiData` sites), filtering and paging happen in
   SQL, and no table ever gets a `tenant_id` column.
+
+  **§5 of that file is the one to read before editing anything at all, not just before creating.**
+  It is the "one touch" contract: any file you open for any reason leaves compliant. Table columns
+  are built in code, never with `@ColumnData` (`PropertyValueFactory` is reflection by string — a
+  renamed field yields a silently empty column); a model you touch leaves without `javafx`; an FXML
+  you touch declares `fx:controller` and is loaded with a `ResourceBundle`; icons are Ikonli, not
+  `InputStream` fields; a service throws a message *key*, never an Arabic literal. Each rule is
+  meant to be pinned by an architecture test the way `AuthorizationArchitectureTest` already is —
+  a rule without a test is a wish.
 - **[`docs/erp-roadmap.md`](docs/erp-roadmap.md)** — the governing roadmap (§0 carries a measured
   status update). `docs/spring-migration-plan.md` is superseded and kept for reference only.
 

@@ -3,7 +3,7 @@
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.VBox?>
 
-<VBox xmlns:fx="http://javafx.com/fxml/1"
+<VBox xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.hamza.account.controller.setting.SettingController"
       xmlns="http://javafx.com/javafx/21"
       fx:id="box"
       spacing="0.0"

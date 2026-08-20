@@ -6,6 +6,7 @@ import com.hamza.account.controller.reports.MonthlySalesInterface;
 import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.controlsfx.others.ChangeOrientation;
 import javafx.application.Application;
+import com.hamza.controlsfx.language.LanguageManager;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
@@ -18,7 +19,8 @@ public class MonthlyView extends Application {
     private final MonthlySalesInterface monthlySalesInterface;
     @Override
     public void start(Stage primaryStage) throws Exception {
-        FXMLLoader loader = new FXMLLoader(Main.class.getResource("view/MonthlySalesView.fxml"));
+        FXMLLoader loader = new FXMLLoader(Main.class.getResource("view/MonthlySalesView.fxml"),
+                LanguageManager.getInstance().getResourceBundle());
         Parent root = loader.load();
 //
         MonthlySalesController controller = loader.getController();

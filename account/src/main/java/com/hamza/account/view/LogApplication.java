@@ -37,7 +37,8 @@ public final class LogApplication {
     public void show(Stage stage) throws Exception {
         FXMLLoader loader = new FXMLLoader(getClass().getResource("login.fxml"),
                 LanguageManager.getInstance().getResourceBundle());
-        loader.setController(new LoginController(this::authenticate, onLoginSuccess));
+        LoginController controller = new LoginController(this::authenticate, onLoginSuccess);
+        loader.setControllerFactory(type -> controller);
 
         Scene scene = new Scene(loader.load());
         ThemeManager.apply(scene);

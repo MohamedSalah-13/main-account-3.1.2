@@ -19,7 +19,7 @@
   the full width. SettingTabNotificationsController collapses this back to a
   single column on a narrow window.
 -->
-<AnchorPane styleClass="app-root" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1">
+<AnchorPane styleClass="app-root" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.hamza.account.controller.setting.SettingTabNotificationsController">
     <children>
         <ScrollPane fitToHeight="true" fitToWidth="true" styleClass="settings-scroll-pane"
                     AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0"

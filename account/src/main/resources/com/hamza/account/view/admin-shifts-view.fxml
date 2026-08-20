@@ -6,7 +6,7 @@
 <?import javafx.scene.layout.AnchorPane?>
 <?import javafx.scene.layout.VBox?>
 
-<AnchorPane xmlns:fx="http://javafx.com/fxml/1"
+<AnchorPane xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.hamza.account.controller.users.AdminShiftsController"
             prefWidth="1200.0" prefHeight="700.0">
 
     <children>

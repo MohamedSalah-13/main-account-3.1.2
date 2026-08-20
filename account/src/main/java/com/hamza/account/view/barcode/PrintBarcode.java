@@ -83,7 +83,7 @@ public class PrintBarcode implements AppSettingInterface {
     @Override
     public Pane pane() throws Exception {
         FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource("print_barcode.fxml"));
-        fxmlLoader.setController(this);
+        fxmlLoader.setControllerFactory(type -> this);
         return fxmlLoader.load();
     }
 

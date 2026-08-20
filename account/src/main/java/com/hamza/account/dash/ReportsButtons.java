@@ -164,7 +164,8 @@ public class ReportsButtons extends LoadData {
 
             @Override
             public void action() throws IOException {
-                FXMLLoader loader = new FXMLLoader(Main.class.getResource("view/reports/ItemSalesRankView.fxml"));
+                FXMLLoader loader = new FXMLLoader(Main.class.getResource("view/reports/ItemSalesRankView.fxml"),
+                LanguageManager.getInstance().getResourceBundle());
                 Parent root = loader.load();
 
                 ItemSalesRankController controller = loader.getController();
@@ -201,7 +202,8 @@ public class ReportsButtons extends LoadData {
 
             @Override
             public void action() throws IOException {
-                FXMLLoader loader = new FXMLLoader(Main.class.getResource("view/reports/DailyItemSalesView.fxml"));
+                FXMLLoader loader = new FXMLLoader(Main.class.getResource("view/reports/DailyItemSalesView.fxml"),
+                LanguageManager.getInstance().getResourceBundle());
                 Parent root = loader.load();
 
                 DailyItemSalesController controller = loader.getController();

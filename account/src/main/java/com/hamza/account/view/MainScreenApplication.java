@@ -43,7 +43,8 @@ public final class MainScreenApplication {
     public void show(Stage stage) throws Exception {
         FXMLLoader loader = new FXMLLoader(getClass().getResource("mainScreen-view.fxml"),
                 LanguageManager.getInstance().getResourceBundle());
-        loader.setController(new MainScreenController(daoFactory));
+        MainScreenController controller = new MainScreenController(daoFactory);
+        loader.setControllerFactory(type -> controller);
         Parent root = loader.load();
         Scene scene = new SceneAll(root);
         ChangeOrientation.sceneOrientation(scene);
