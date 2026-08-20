@@ -14,7 +14,6 @@ public class BuyData<T1 extends BasePurchasesAndSales, T2 extends BaseTotals, T3
     protected final DesignInterface designInterface;
     protected final int num_invoice_update;
     protected final TotalsAndPurchaseList<T1, T2> totalsAndPurchaseList;
-    protected final PurchaseSalesInterface purchaseSalesInterface;
     protected final NameData<T3> t3NameData;
     protected final AccountData<T4> accountData;
     protected final NameService<T3> nameService;
@@ -29,7 +28,6 @@ public class BuyData<T1 extends BasePurchasesAndSales, T2 extends BaseTotals, T3
         this.invoiceBuy = dataInterface.invoiceBuy();
         this.t3NameData = dataInterface.nameData();
         this.totalsAndPurchaseList = dataInterface.totalsAndPurchaseList();
-        this.purchaseSalesInterface = dataInterface.purchaseSalesInterface();
         this.nameAndAccountInterface = dataInterface.nameAndAccountInterface();
         this.accountData = dataInterface.accountData();
         this.nameService = new NameService<>(t3NameData);

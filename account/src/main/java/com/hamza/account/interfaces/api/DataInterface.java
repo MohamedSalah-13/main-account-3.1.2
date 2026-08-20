@@ -45,11 +45,6 @@ public interface DataInterface<T1 extends BasePurchasesAndSales, T2 extends Base
 
     AccountData<T4> accountData();
 
-    default PurchaseSalesInterface purchaseSalesInterface() {
-        return new PurchaseSalesInterface() {
-        };
-    }
-
     PermAccountAndNameInt permAccountAndNameInt();
 
     void loadNameAndAccount();

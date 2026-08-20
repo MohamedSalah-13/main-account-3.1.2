@@ -8,7 +8,6 @@ import com.hamza.account.controller.main.DataPublisher;
 import com.hamza.account.controller.main.LoadOtherData;
 import com.hamza.account.controller.model.ModelPrintInvoice;
 import com.hamza.account.interfaces.api.DataInterface;
-import com.hamza.account.interfaces.api.PurchaseSalesInterface;
 import com.hamza.account.model.base.BaseAccount;
 import com.hamza.account.model.base.BaseNames;
 import com.hamza.account.config.NamesTables;
@@ -59,7 +58,6 @@ public class ShowInvoiceController<T1 extends BasePurchasesAndSales, T2 extends 
         extends LoadOtherData<T3, T4> implements Initializable, AppSettingInterface {
 
     private final DataInterface<T1, T2, T3, T4> dataInterface;
-    private final PurchaseSalesInterface t1PurchaseSalesInterface;
     private final String name;
     private final int invNum;
     @FXML
@@ -86,7 +84,6 @@ public class ShowInvoiceController<T1 extends BasePurchasesAndSales, T2 extends 
         this.invNum = num;
         this.name = name;
         this.dataInterface = dataInterface;
-        this.t1PurchaseSalesInterface = dataInterface.purchaseSalesInterface();
     }
 
 
@@ -171,7 +168,7 @@ public class ShowInvoiceController<T1 extends BasePurchasesAndSales, T2 extends 
         ToDoubleFunction<BasePurchasesAndSales> quantityFunction = BasePurchasesAndSales::getQuantity;
         ToDoubleFunction<BasePurchasesAndSales> discountFunction = BasePurchasesAndSales::getDiscount;
         ToDoubleFunction<BasePurchasesAndSales> totalAfterDiscountFunction = BasePurchasesAndSales::getTotal_after_discount;
-        ToDoubleFunction<BasePurchasesAndSales> totalProfitAfterDiscountInItem = t1PurchaseSalesInterface.getTotalBuy();
+        ToDoubleFunction<BasePurchasesAndSales> totalProfitAfterDiscountInItem = BasePurchasesAndSales::getTotal_buy_price;
 
         double sumQuantity = tableView.getItems().stream().mapToDouble(quantityFunction).sum();
         BigDecimal sumTotal = MoneyMath.sum(tableView.getItems().stream().mapToDouble(totalFunction));
@@ -201,12 +198,12 @@ public class ShowInvoiceController<T1 extends BasePurchasesAndSales, T2 extends 
     private void printData() {
         List<ModelPrintInvoice> modelPrintInvoices = new ArrayList<>();
         for (T1 t11 : list) {
-            ItemsModel itemsModel = t1PurchaseSalesInterface.getItems(t11);
-            double price = t1PurchaseSalesInterface.getPrice(t11);
-            double quantity = t1PurchaseSalesInterface.getQuantity(t11);
-            double total = t1PurchaseSalesInterface.getTotal(t11);
-            String unitName = t1PurchaseSalesInterface.getUnitsType(t11).getUnit_name();
-            double discount = t1PurchaseSalesInterface.getDiscount(t11);
+            ItemsModel itemsModel = t11.getItems();
+            double price = t11.getPrice();
+            double quantity = t11.getQuantity();
+            double total = t11.getTotal();
+            String unitName = t11.getUnitsType().getUnit_name();
+            double discount = t11.getDiscount();
             ModelPrintInvoice modelPrintInvoice = new ModelPrintInvoice(itemsModel.getNameItem(), itemsModel.getBarcode(), unitName, price
                     , quantity, total, discount, total - discount);
             modelPrintInvoices.add(modelPrintInvoice);
@@ -225,7 +222,7 @@ public class ShowInvoiceController<T1 extends BasePurchasesAndSales, T2 extends 
                 @Override
                 public boolean checkRow(TableCell<T1, String> tsTableCell) {
                     if (tsTableCell != null) {
-                        return t1PurchaseSalesInterface.getItems(tsTableCell.getTableRow().getItem()).getNameItem().equals(name);
+                        return tsTableCell.getTableRow().getItem().getItems().getNameItem().equals(name);
                     }
                     return false;
                 }
@@ -242,7 +239,7 @@ public class ShowInvoiceController<T1 extends BasePurchasesAndSales, T2 extends 
         }
 
         for (BasePurchasesAndSales t11 : list) {
-            var itemsModel = t1PurchaseSalesInterface.getItems(t11);
+            var itemsModel = t11.getItems();
             observableList.add(new PrintBarcodeModel(itemsModel.getBarcode(), itemsModel.getNameItem()
                     , itemsModel.getSelPrice1()));
         }
