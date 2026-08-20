@@ -163,7 +163,6 @@ public class AddNameController<T3 extends BaseNames, T4 extends BaseAccount>
     public void afterSaved() {
         Thread thread = new Thread(() -> {
             try {
-                dataInterface.loadNameAndAccount();
                 Thread.sleep(1000);
                 if (eventBus != null) {
                     var kind = nameAndAccountInterface.partyKind();

@@ -114,11 +114,6 @@ public class CustomData extends LoadData implements DataInterface<Sales, Total_S
     }
 
     @Override
-    public void loadNameAndAccount() {
-//        LoadDataAndList.get2ListCustomers();
-    }
-
-    @Override
     public void addList(List<Total_Sales> items, List<PrintPurchaseWithName> printPurchaseWithNames) throws DaoException {
         for (Total_Sales totalSales : items) {
             var listPrint = listForAllPurchase(totalSales.getId());

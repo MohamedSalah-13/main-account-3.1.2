@@ -116,11 +116,6 @@ public class SuppliersData
     }
 
     @Override
-    public void loadNameAndAccount() {
-//        LoadDataAndList.get2ListSuppliers();
-    }
-
-    @Override
     public void addList(List<Total_buy> items, List<PrintPurchaseWithName> printPurchaseWithNames) throws DaoException {
         for (Total_buy totalBuy : items) {
             var listPrint = listForAllPurchase(totalBuy.getId());

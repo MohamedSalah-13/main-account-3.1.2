@@ -47,7 +47,5 @@ public interface DataInterface<T1 extends BasePurchasesAndSales, T2 extends Base
 
     PermAccountAndNameInt permAccountAndNameInt();
 
-    void loadNameAndAccount();
-
     void addList(List<T2> items, List<PrintPurchaseWithName> printPurchaseWithNames) throws DaoException;
 }
