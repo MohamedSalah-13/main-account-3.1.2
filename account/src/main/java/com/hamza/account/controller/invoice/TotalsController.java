@@ -14,7 +14,6 @@ import com.hamza.account.features.events.InvoiceSaved;
 import com.hamza.account.features.events.NameChanged;
 import com.hamza.account.finance.MoneyMath;
 import com.hamza.account.interfaces.api.DataInterface;
-import com.hamza.account.interfaces.api.NameAndAccountInterface;
 import com.hamza.account.interfaces.api.TotalsDataInterface;
 import com.hamza.account.model.base.BaseAccount;
 import com.hamza.account.model.base.BaseNames;
@@ -88,7 +87,6 @@ public class TotalsController<T2 extends BaseTotals, T3 extends BaseNames, T4 ex
     private final UsersService usersService = ServiceRegistry.get(UsersService.class);
     private final Preferences preferences = Preferences.userNodeForPackage(TotalsController.class);
     private final ObservableList<T2> observableList;
-    private final NameAndAccountInterface nameAndAccountInterface;
     private final String dateFromKey;
     private final String dateToKey;
     private boolean update_data = true;
@@ -135,7 +133,6 @@ public class TotalsController<T2 extends BaseTotals, T3 extends BaseNames, T4 ex
         this.employeeService = employeeService;
         this.helper = helper;
         this.observableList = FXCollections.observableArrayList();
-        nameAndAccountInterface = dataInterface.nameAndAccountInterface();
         // Each of the four document types keeps its own remembered range - one screen's
         // date does not leak into another's.
         String prefix = dataInterface.getClass().getSimpleName();
@@ -439,7 +436,7 @@ public class TotalsController<T2 extends BaseTotals, T3 extends BaseNames, T4 ex
             var s = dataInterface.designInterface().nameTextOfInvoice();
             String content = String.format(LanguageManager.getInstance().getString("invoice.clipboard.format"),
                     s,
-                    totalsDataInterface.getNum(selectedItem),
+                    selectedItem.getId(),
                     totalsDataInterface.getNameData(selectedItem),
                     selectedItem.getTotal());
             final Clipboard clipboard = Clipboard.getSystemClipboard();
@@ -533,7 +530,7 @@ public class TotalsController<T2 extends BaseTotals, T3 extends BaseNames, T4 ex
         try {
             list = nameAndAccountInterface.nameList()
                     .stream()
-                    .map(nameData.getName())
+                    .map(BaseNames::getName)
                     .sorted()
                     .toList();
         } catch (Exception e) {
@@ -545,7 +542,7 @@ public class TotalsController<T2 extends BaseTotals, T3 extends BaseNames, T4 ex
     }
 
     private void update(T2 t2) throws Exception {
-        int i = totalsDataInterface.getNum(t2);
+        int i = t2.getId();
 
         // The accounting lock decides this now, not the calendar. What was here refused
         // any invoice outside the current month: on the first of the month yesterday's
@@ -580,11 +577,11 @@ public class TotalsController<T2 extends BaseTotals, T3 extends BaseNames, T4 ex
 
         List<PrintTotalsData> printTotalsDataList = new ArrayList<>();
         List<T2> list = tableView.getItems().stream()
-                .filter(t2 -> totalDesignInterface.totalsDataInterface().selected(t2))
+                .filter(t2 -> t2.isSelectedRow())
                 .toList();
         list.forEach(t2 -> {
             TotalsDataInterface<T2> anInterface = totalDesignInterface.totalsDataInterface();
-            printTotalsDataList.add(new PrintTotalsData(anInterface.getNum(t2), anInterface.getNameData(t2)
+            printTotalsDataList.add(new PrintTotalsData(t2.getId(), anInterface.getNameData(t2)
                     , t2.getDate(), t2.getInvoiceType().getType()
                     , t2.getTotal(), t2.getDiscount(), t2.getTotal_after_discount()
                     , t2.getPaid()));
@@ -597,7 +594,7 @@ public class TotalsController<T2 extends BaseTotals, T3 extends BaseNames, T4 ex
         try {
             List<T2> items = new ArrayList<>();
             for (int i = 0; i < tableView.getItems().size(); i++) {
-                if (totalDesignInterface.totalsDataInterface().selected(tableView.getItems().get(i))) {
+                if (tableView.getItems().get(i).isSelectedRow()) {
                     items.add(tableView.getItems().get(i));
                 }
             }
@@ -612,7 +609,7 @@ public class TotalsController<T2 extends BaseTotals, T3 extends BaseNames, T4 ex
     }
 
     private void showInvoiceData(T2 t2) throws Exception {
-        int id = totalsDataInterface.getNum(t2);
+        int id = t2.getId();
         String name = totalsDataInterface.getNameData(t2);
         new ShowInvoiceApplication(dataPublisher, dataInterface, daoFactory, id, name);
     }

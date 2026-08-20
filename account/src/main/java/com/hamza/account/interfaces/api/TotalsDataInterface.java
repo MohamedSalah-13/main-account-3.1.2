@@ -10,20 +10,12 @@ import java.util.function.ToDoubleFunction;
 
 public interface TotalsDataInterface<T extends BaseTotals> {
 
-    default int getNum(T t) {
-        return t.getId();
-    }
-
     default LocalDateTime getDateInsert(T t2) {
         return t2.getCreated_at() == null ? LocalDateTime.now() : t2.getCreated_at();
     }
 
     default Employees getDelegateData(T t2) {
         return new Employees();
-    }
-
-    default boolean selected(T t2) {
-        return t2.isSelectedRow();
     }
 
     /**

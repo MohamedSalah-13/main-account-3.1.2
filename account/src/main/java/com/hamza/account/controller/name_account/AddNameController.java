@@ -151,10 +151,10 @@ public class AddNameController<T3 extends BaseNames, T4 extends BaseAccount>
                 , dataByString, area2);
 
         if (id > 0) {
-            nameData.setId(t3, id);
+            t3.setId(id);
             return dataInterface.nameAndAccountInterface().saveName(t3);
         } else {
-            nameData.setId(t3, 0);
+            t3.setId(0);
             return dataInterface.nameAndAccountInterface().saveName(t3);
         }
     }
@@ -186,22 +186,22 @@ public class AddNameController<T3 extends BaseNames, T4 extends BaseAccount>
             try {
                 dataALlList = nameAndAccountInterface.nameList()
                         .stream()
-                        .filter(e -> nameData.getId(e) == id).findFirst();
+                        .filter(e -> e.getId() == id).findFirst();
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }
 
             if (dataALlList.isPresent()) {
                 T3 t3 = dataALlList.get();
-                int id1 = nameData.getId(t3);
+                int id1 = t3.getId();
                 txtCode.setText(String.valueOf(id1));
-                txtName.setText(nameData.getName(t3));
-                txtTel.setText(nameData.getTel(t3));
-                txtAddress.setText(nameData.getAddress(t3));
-                txtBalance.setText(String.valueOf(nameData.firstBalance(t3)));
+                txtName.setText(t3.getName());
+                txtTel.setText(t3.getTel());
+                txtAddress.setText(t3.getAddress());
+                txtBalance.setText(String.valueOf(t3.getFirst_balance()));
                 txtLimit.setText(String.valueOf(nameData.limit(t3)));
-                txtOther.setText(nameData.getNotes(t3));
-                comboArea.getSelectionModel().select(nameData.getArea(t3).getArea_name());
+                txtOther.setText(t3.getNotes());
+                comboArea.getSelectionModel().select(t3.getArea().getArea_name());
 
                 if (dataInterface.designInterface().showDataForCustomer()) {
                     comboSelPrice.getSelectionModel().select(nameData.getPriceType(t3));

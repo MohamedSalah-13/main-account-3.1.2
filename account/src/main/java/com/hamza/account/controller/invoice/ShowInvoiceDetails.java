@@ -25,7 +25,7 @@ public class ShowInvoiceDetails {
         if (type == null) type = InvoiceType.CASH.getType();
 
         HashMap<String, Object> hashMap = new HashMap<>();
-        hashMap.put(ShowInvoiceNameData.ID, totalsDataInterface.getNum(t2));
+        hashMap.put(ShowInvoiceNameData.ID, t2.getId());
         hashMap.put(ShowInvoiceNameData.NAME, totalsDataInterface.getNameData(t2));
         hashMap.put(ShowInvoiceNameData.DATE, t2.getDate());
         hashMap.put(ShowInvoiceNameData.STOCK, t2.getStockData().getName());

@@ -89,7 +89,7 @@ public class AccountController2<T3 extends BaseNames, T4 extends BaseAccount>
             subscriptions.add(eventBus.subscribe(NameChanged.class, event -> {
                 if (event.kind() != kind) return;
                 try {
-                    items.addAll(nameAndAccountInterface.nameList().stream().map(nameData.getName()).toList());
+                    items.addAll(nameAndAccountInterface.nameList().stream().map(BaseNames::getName).toList());
                 } catch (Exception e) {
                     throw new RuntimeException(e);
                 }
@@ -201,7 +201,7 @@ public class AccountController2<T3 extends BaseNames, T4 extends BaseAccount>
 
     private void actionButton() {
         try {
-            items.addAll(nameAndAccountInterface.nameList().stream().map(nameData.getName()).toList());
+            items.addAll(nameAndAccountInterface.nameList().stream().map(BaseNames::getName).toList());
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
