@@ -2,7 +2,6 @@ package com.hamza.account.model.domain;
 
 import com.hamza.account.config.NamesTables;
 import com.hamza.account.model.base.DForColumnTable;
-import com.hamza.controlsfx.table.ColumnData;
 import javafx.beans.property.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -15,25 +14,20 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 public class UserShift extends DForColumnTable {
 
-    @ColumnData(titleName = NamesTables.CODE)
     private int id;
 
     private int userId;
 
-    @ColumnData(titleName = "اسم المستخدم")
     private final StringProperty username = new SimpleStringProperty();
 
     private LocalDateTime openTime;
 
     private LocalDateTime closeTime;
 
-    @ColumnData(titleName = "الرصيد الافتتاحي")
     private final DoubleProperty openBalance = new SimpleDoubleProperty(0.0);
 
-    @ColumnData(titleName = "الرصيد الختامي")
     private final DoubleProperty closeBalance = new SimpleDoubleProperty(0.0);
 
-    @ColumnData(titleName = "الحالة")
     private final StringProperty status = new SimpleStringProperty();
 
     private String notes;

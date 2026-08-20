@@ -2,7 +2,6 @@ package com.hamza.account.model.base;
 
 import com.hamza.account.config.NamesTables;
 import com.hamza.account.model.domain.ItemsModel;
-import com.hamza.controlsfx.table.ColumnData;
 import javafx.beans.property.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -18,15 +17,10 @@ public abstract class BasePurchasesAndSales extends UnitExtends {
     private IntegerProperty id = new SimpleIntegerProperty();
     private int invoiceNumber;
     private int numItem;
-    @ColumnData(titleName = NamesTables.QUANTITY)
     private DoubleProperty quantity = new SimpleDoubleProperty();
-    @ColumnData(titleName = NamesTables.PRICE)
     private DoubleProperty price = new SimpleDoubleProperty();
-    @ColumnData(titleName = NamesTables.TOTAL)
     private DoubleProperty total = new SimpleDoubleProperty();
-    @ColumnData(titleName = NamesTables.DISCOUNT)
     private DoubleProperty discount = new SimpleDoubleProperty();
-    @ColumnData(titleName = NamesTables.TOTAL_AFTER)
     private DoubleProperty total_after_discount = new SimpleDoubleProperty();
 
     // for profit for sales

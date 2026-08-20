@@ -1,7 +1,6 @@
 package com.hamza.account.model.domain;
 
 import com.hamza.account.model.base.BaseEntity;
-import com.hamza.controlsfx.table.ColumnData;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -13,7 +12,6 @@ import lombok.Setter;
 @NoArgsConstructor
 public class Area extends BaseEntity {
 
-    @ColumnData(titleName = "المنطقة")
     private String area_name;
 
     public Area(int id, String area_name) {

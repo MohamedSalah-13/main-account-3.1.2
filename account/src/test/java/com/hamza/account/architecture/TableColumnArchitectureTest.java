@@ -2,124 +2,58 @@ package com.hamza.account.architecture;
 
 import org.junit.jupiter.api.Test;
 
-import java.util.Set;
+import java.nio.file.Path;
 import java.util.TreeSet;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Guards rule ق-ل1 of {@code docs/new-code-rules.md}: table columns are built in
- * code, never declared with {@code @ColumnData}.
+ * code, not read by reflection off a field name.
  * <p>
- * {@code TableColumnAnnotation} builds columns through {@code PropertyValueFactory},
- * which resolves a field by <i>string</i> at run time. A renamed field therefore
- * produces a silently empty column - no compile error, no exception. That is what
- * these 132 annotations are: 132 unchecked strings.
+ * {@code TableColumnAnnotation} and {@code ColumnData} used to be how every
+ * column got built - through {@code PropertyValueFactory}, resolving a field by
+ * <i>string</i> at run time, so a renamed field produced a silently empty
+ * column with no compile error and no exception. §12 of
+ * {@code docs/erp-roadmap.md} replaced every one of the 18 direct call sites and
+ * the 3 generic seams (§12.2, §12.3) with explicit column lists built through
+ * {@code com.hamza.controlsfx.table.Columns}, then deleted both classes (§12.4)
+ * once nothing referenced them. That deletion is itself the strongest form of
+ * this guard: {@code @ColumnData} is no longer a type that exists, so writing it
+ * anywhere is a compile error, not a lint failure to catch after the fact.
  * <p>
- * Both counts here may <b>only go down</b>. The end state is the deletion of
- * {@code ColumnData} and {@code TableColumnAnnotation}, tracked as §12 of
- * {@code docs/erp-roadmap.md}. Note the ordering constraint recorded there:
- * this rule must be finished <i>before</i> the models are cleaned (ق-ل2), because
- * {@code PropertyValueFactory} is precisely what holds the properties in place.
+ * What is left to guard is regression by reintroduction - someone adding either
+ * class back, under the same name, and the reflective pattern creeping in again.
  */
 class TableColumnArchitectureTest {
 
-    /** Annotation sites when the rule was written. Only ever lower this number. */
-    private static final int ANNOTATION_BASELINE = 132;
+    private static final Path CONTROLSFX_TABLE =
+            Path.of("..", "controlsfx", "src", "main", "java", "com", "hamza", "controlsfx", "table");
 
-    /** Call sites of the reflective builder when the rule was written. Only ever lower this. */
-    private static final int BUILDER_CALL_BASELINE = 0;
+    private static final String[] DELETED_CLASSES = {"ColumnData.java", "TableColumnAnnotation.java"};
 
-    private static final Pattern ANNOTATION = Pattern.compile("@ColumnData\\b");
-    private static final Pattern BUILDER_CALL = Pattern.compile("new\\s+TableColumnAnnotation\\s*\\(\\s*\\)");
-
-    /** Files carrying at least one {@code @ColumnData}. Only ever remove entries. */
-    private static final Set<String> FILES_STILL_USING_THE_ANNOTATION = Set.of(
-            "com/hamza/account/controller/model/TableData.java",
-            "com/hamza/account/controller/model/TableTotals.java",
-            "com/hamza/account/model/base/BaseAccount.java",
-            "com/hamza/account/model/base/BaseEntity.java",
-            "com/hamza/account/model/base/BaseGroups.java",
-            "com/hamza/account/model/base/BaseNames.java",
-            "com/hamza/account/model/base/BasePurchasesAndSales.java",
-            "com/hamza/account/model/base/BaseTotals.java",
-            "com/hamza/account/model/base/UnitExtends.java",
-            "com/hamza/account/model/domain/Area.java",
-            "com/hamza/account/model/domain/CardItems.java",
-            "com/hamza/account/model/domain/CustomerPurchasedItem.java",
-            "com/hamza/account/model/domain/CustomerReceivable.java",
-            "com/hamza/account/model/domain/Employees.java",
-            "com/hamza/account/model/domain/Expenses.java",
-            "com/hamza/account/model/domain/ItemsMiniQuantity.java",
-            "com/hamza/account/model/domain/ItemsModel.java",
-            "com/hamza/account/model/domain/ItemsUnitsModel.java",
-            "com/hamza/account/model/domain/SelPriceTypeModel.java",
-            "com/hamza/account/model/domain/Stock.java",
-            "com/hamza/account/model/domain/TableDataReports.java",
-            "com/hamza/account/model/domain/Treasury.java",
-            "com/hamza/account/model/domain/TreasuryBalance.java",
-            "com/hamza/account/model/domain/UnitsModel.java",
-            "com/hamza/account/model/domain/UserShift.java",
-            "com/hamza/account/model/domain/Users.java",
-            "com/hamza/account/view/barcode/PrintBarcodeModel.java");
-
-    private static int countAcrossMainJava(Pattern pattern) {
-        int total = 0;
-        for (String file : SourceTree.javaFiles(SourceTree.MAIN_JAVA)) {
-            Matcher matcher = pattern.matcher(SourceTree.withoutComments(SourceTree.readJava(file)));
-            while (matcher.find()) {
-                total++;
-            }
+    @Test
+    void theDeletedClassesStayDeleted() {
+        for (String name : DELETED_CLASSES) {
+            Path path = CONTROLSFX_TABLE.resolve(name);
+            assertFalse(java.nio.file.Files.exists(path),
+                    name + " was deleted in §12.4 because nothing referenced it any more "
+                            + "(rule ق-ل1) - it should not come back under the same name.");
         }
-        return total;
     }
 
-    private static Set<String> filesUsingTheAnnotation() {
+    @Test
+    void noSourceFileMentionsTheDeletedReflectionPath() {
         var offenders = new TreeSet<String>();
         for (String file : SourceTree.javaFiles(SourceTree.MAIN_JAVA)) {
-            if (ANNOTATION.matcher(SourceTree.withoutComments(SourceTree.readJava(file))).find()) {
+            String source = SourceTree.withoutComments(SourceTree.readJava(file));
+            if (source.contains("TableColumnAnnotation") || source.contains("@ColumnData")) {
                 offenders.add(file);
             }
         }
-        return offenders;
-    }
-
-    @Test
-    void theAnnotationCountOnlyGoesDown() {
-        int actual = countAcrossMainJava(ANNOTATION);
-        assertTrue(actual <= ANNOTATION_BASELINE,
-                "Declare table columns in the controller, not with @ColumnData (docs/new-code-rules.md, section 5 rule 1). "
-                        + "PropertyValueFactory resolves the field by name at run time, so a rename "
-                        + "yields an empty column with no compile error. Baseline "
-                        + ANNOTATION_BASELINE + ", found " + actual
-                        + ". If you removed some, lower ANNOTATION_BASELINE to " + actual + ".");
-    }
-
-    @Test
-    void theReflectiveBuilderCountOnlyGoesDown() {
-        int actual = countAcrossMainJava(BUILDER_CALL);
-        assertTrue(actual <= BUILDER_CALL_BASELINE,
-                "No new call to TableColumnAnnotation (docs/new-code-rules.md, section 5 rule 1). Baseline "
-                        + BUILDER_CALL_BASELINE + ", found " + actual
-                        + ". If you removed some, lower BUILDER_CALL_BASELINE to " + actual + ".");
-    }
-
-    @Test
-    void noNewFileAdoptsTheAnnotation() {
-        var unexpected = new TreeSet<>(filesUsingTheAnnotation());
-        unexpected.removeAll(FILES_STILL_USING_THE_ANNOTATION);
-        assertTrue(unexpected.isEmpty(),
-                "New files declaring columns with @ColumnData (docs/new-code-rules.md, section 5 rule 1): " + unexpected);
-    }
-
-    @Test
-    void theDebtListStaysHonest() {
-        var cleaned = new TreeSet<>(FILES_STILL_USING_THE_ANNOTATION);
-        cleaned.removeAll(filesUsingTheAnnotation());
-        assertTrue(cleaned.isEmpty(),
-                "These files no longer use @ColumnData - strike them off "
-                        + "FILES_STILL_USING_THE_ANNOTATION so the remaining debt stays accurate: " + cleaned);
+        assertTrue(offenders.isEmpty(),
+                "Neither class exists any more, so any live reference here would already fail to "
+                        + "compile - this only catches a reintroduction under the same name: " + offenders);
     }
 }

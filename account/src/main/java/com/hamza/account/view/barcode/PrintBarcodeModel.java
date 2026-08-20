@@ -1,6 +1,5 @@
 package com.hamza.account.view.barcode;
 
-import com.hamza.controlsfx.table.ColumnData;
 import javafx.beans.property.DoubleProperty;
 import javafx.beans.property.IntegerProperty;
 import javafx.beans.property.SimpleDoubleProperty;
@@ -11,13 +10,9 @@ import javafx.beans.property.SimpleIntegerProperty;
 @lombok.NoArgsConstructor
 public class PrintBarcodeModel {
 
-    @ColumnData(titleName = "باركود")
     private String barcode;
-    @ColumnData(titleName = "اسم الصنف")
     private String name;
-    @ColumnData(titleName = "السعر")
     private DoubleProperty price = new SimpleDoubleProperty();
-    @ColumnData(titleName = "الكمية")
     private IntegerProperty quantity = new SimpleIntegerProperty();
     private String buttonColumnName;
 

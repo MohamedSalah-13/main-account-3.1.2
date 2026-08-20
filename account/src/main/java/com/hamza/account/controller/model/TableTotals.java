@@ -1,6 +1,5 @@
 package com.hamza.account.controller.model;
 
-import com.hamza.controlsfx.table.ColumnData;
 import javafx.beans.property.DoubleProperty;
 import javafx.beans.property.SimpleDoubleProperty;
 import javafx.beans.property.SimpleStringProperty;
@@ -16,33 +15,19 @@ import lombok.Setter;
 @NoArgsConstructor
 public class TableTotals {
 
-    @ColumnData(titleName = "الاسم")
     private StringProperty name = new SimpleStringProperty();
-    @ColumnData(titleName = "يناير")
     private DoubleProperty jan = new SimpleDoubleProperty();
-    @ColumnData(titleName = "فبراير")
     private DoubleProperty feb = new SimpleDoubleProperty();
-    @ColumnData(titleName = "مارس")
     private DoubleProperty mar = new SimpleDoubleProperty();
-    @ColumnData(titleName = "إبريل")
     private DoubleProperty april = new SimpleDoubleProperty();
-    @ColumnData(titleName = "مايو")
     private DoubleProperty may = new SimpleDoubleProperty();
-    @ColumnData(titleName = "يونيو")
     private DoubleProperty jun = new SimpleDoubleProperty();
-    @ColumnData(titleName = "يوليو")
     private DoubleProperty july = new SimpleDoubleProperty();
-    @ColumnData(titleName = "أغسطس")
     private DoubleProperty aug = new SimpleDoubleProperty();
-    @ColumnData(titleName = "سبتمبر")
     private DoubleProperty sep = new SimpleDoubleProperty();
-    @ColumnData(titleName = "اكتوبر")
     private DoubleProperty oct = new SimpleDoubleProperty();
-    @ColumnData(titleName = "نوفمبر")
     private DoubleProperty nov = new SimpleDoubleProperty();
-    @ColumnData(titleName = "ديسمبر")
     private DoubleProperty des = new SimpleDoubleProperty();
-    @ColumnData(titleName = "الاجمالى")
     private DoubleProperty totals = new SimpleDoubleProperty();
 
     public TableTotals(String name, double jan, double feb, double mar, double april, double may,

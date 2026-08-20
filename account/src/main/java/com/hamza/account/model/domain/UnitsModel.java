@@ -2,7 +2,6 @@ package com.hamza.account.model.domain;
 
 import com.hamza.account.config.NamesTables;
 import com.hamza.account.model.base.DForColumnTable;
-import com.hamza.controlsfx.table.ColumnData;
 import javafx.beans.property.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -14,7 +13,6 @@ import lombok.Setter;
 public class UnitsModel extends DForColumnTable {
 
     private int unit_id;
-    @ColumnData(titleName = NamesTables.NAME)
     private StringProperty unit_name = new SimpleStringProperty();
     /**
      * {@code units.value_d} - one number for the whole database, so it cannot
@@ -23,7 +21,6 @@ public class UnitsModel extends DForColumnTable {
      * unit row with no factor of its own; the factor that counts is per item, in
      * {@code items_units.quantity}.
      */
-    @ColumnData(titleName = NamesTables.DEFAULT_FACTOR)
     private DoubleProperty value = new SimpleDoubleProperty();
 
     public UnitsModel(int unit_id) {

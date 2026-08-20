@@ -1,7 +1,6 @@
 package com.hamza.account.model.domain;
 
 import com.hamza.account.config.NamesTables;
-import com.hamza.controlsfx.table.ColumnData;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.property.StringProperty;
 import lombok.AllArgsConstructor;
@@ -15,9 +14,7 @@ import lombok.Setter;
 @NoArgsConstructor
 public class Expenses {
 
-    @ColumnData(titleName = NamesTables.CODE)
     private int id;
-    @ColumnData(titleName = NamesTables.NAME)
     private StringProperty name = new SimpleStringProperty();
 
     public Expenses(int id) {

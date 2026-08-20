@@ -2,7 +2,6 @@ package com.hamza.account.model.domain;
 
 import com.hamza.account.config.NamesTables;
 import com.hamza.account.model.base.DForColumnTable;
-import com.hamza.controlsfx.table.ColumnData;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -16,13 +15,9 @@ import java.math.BigDecimal;
 @AllArgsConstructor
 public class Treasury extends DForColumnTable {
 
-    @ColumnData(titleName = NamesTables.CODE)
     private int id;
-    @ColumnData(titleName = NamesTables.NAME)
     private String name;
-    @ColumnData(titleName = NamesTables.FIRST_BALANCE)
     private BigDecimal amount = BigDecimal.ZERO;
-    @ColumnData(titleName = "user_id")
     private int userId;
 
     public Treasury(int id) {

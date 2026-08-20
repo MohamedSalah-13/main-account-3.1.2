@@ -6,7 +6,6 @@ import com.hamza.account.model.domain.Treasury;
 import com.hamza.account.type.DiscountType;
 import com.hamza.account.type.InvoiceStatus;
 import com.hamza.account.type.InvoiceType;
-import com.hamza.controlsfx.table.ColumnData;
 import javafx.beans.property.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -15,17 +14,11 @@ import lombok.Setter;
 @Getter
 public abstract class BaseTotals extends DForColumnTable {
 
-    @ColumnData(titleName = NamesTables.CODE)
     private IntegerProperty id = new SimpleIntegerProperty();
-    @ColumnData(titleName = NamesTables.DATE)
     private StringProperty date = new SimpleStringProperty();
-    @ColumnData(titleName = NamesTables.TOTAL)
     private DoubleProperty total = new SimpleDoubleProperty(0.0);
-    @ColumnData(titleName = NamesTables.DISCOUNT)
     private DoubleProperty discount = new SimpleDoubleProperty(0.0);
-    @ColumnData(titleName = NamesTables.TOTAL_AMOUNT)
     private DoubleProperty total_after_discount = new SimpleDoubleProperty(0.0);
-    @ColumnData(titleName = NamesTables.CREDITOR)
     private DoubleProperty paid = new SimpleDoubleProperty(0.0);
     private double rest;
     private String notes;

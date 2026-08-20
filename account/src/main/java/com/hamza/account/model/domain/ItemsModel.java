@@ -2,7 +2,6 @@ package com.hamza.account.model.domain;
 
 import com.hamza.account.config.NamesTables;
 import com.hamza.account.model.base.UnitExtends;
-import com.hamza.controlsfx.table.ColumnData;
 import javafx.beans.property.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -16,19 +15,12 @@ import java.util.List;
 @NoArgsConstructor
 public class ItemsModel extends UnitExtends {
 
-    @ColumnData(titleName = NamesTables.CODE)
     private IntegerProperty id = new SimpleIntegerProperty();
-    @ColumnData(titleName = NamesTables.STRING)
     private StringProperty barcode = new SimpleStringProperty();
-    @ColumnData(titleName = NamesTables.NAME_ITEM)
     private StringProperty nameItem = new SimpleStringProperty();
-    @ColumnData(titleName = NamesTables.BUY_PRICE)
     private DoubleProperty buyPrice = new SimpleDoubleProperty();
-    @ColumnData(titleName = NamesTables.SEL_PRICE)
     private DoubleProperty selPrice1 = new SimpleDoubleProperty();
-    @ColumnData(titleName = NamesTables.SEL_PRICE + "2")
     private DoubleProperty selPrice2 = new SimpleDoubleProperty();
-    @ColumnData(titleName = NamesTables.SEL_PRICE + "3")
     private DoubleProperty selPrice3 = new SimpleDoubleProperty();
     private double mini_quantity;
     private double firstBalanceForStock;

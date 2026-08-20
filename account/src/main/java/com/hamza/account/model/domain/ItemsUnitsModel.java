@@ -2,7 +2,6 @@ package com.hamza.account.model.domain;
 
 import com.hamza.account.config.NamesTables;
 import com.hamza.account.model.base.DForColumnTable;
-import com.hamza.controlsfx.table.ColumnData;
 import javafx.beans.property.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -15,7 +14,6 @@ import lombok.Setter;
 @NoArgsConstructor
 public class ItemsUnitsModel extends DForColumnTable {
 
-    @ColumnData(titleName = NamesTables.CODE)
     private int id;
     private int itemsId;
     private String itemsBarcode;
@@ -29,12 +27,9 @@ public class ItemsUnitsModel extends DForColumnTable {
      * always done. The three selling prices mirror the item's, since the tier a
      * customer is on has to answer for a carton as much as for a piece.
      */
-    @ColumnData(titleName = NamesTables.BUY_PRICE)
     private DoubleProperty buyPrice = new SimpleDoubleProperty();
     private double selPrice;
-    @ColumnData(titleName = NamesTables.SEL_PRICE + "2")
     private DoubleProperty selPrice2 = new SimpleDoubleProperty();
-    @ColumnData(titleName = NamesTables.SEL_PRICE + "3")
     private DoubleProperty selPrice3 = new SimpleDoubleProperty();
 
     public double getBuyPrice() {

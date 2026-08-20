@@ -3,7 +3,6 @@ package com.hamza.account.model.domain;
 import com.hamza.account.config.NamesTables;
 import com.hamza.account.model.base.DForColumnTable;
 import com.hamza.account.type.UsersType;
-import com.hamza.controlsfx.table.ColumnData;
 import javafx.beans.property.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -22,13 +21,9 @@ import static com.hamza.controlsfx.language.Setting_Language.string_hire;
 @AllArgsConstructor
 public class Employees extends DForColumnTable {
 
-    @ColumnData(titleName = NamesTables.CODE)
     private IntegerProperty id = new SimpleIntegerProperty();
-    @ColumnData(titleName = NamesTables.NAME)
     private StringProperty name = new SimpleStringProperty();
-    @ColumnData(titleName = string_birth)
     private LocalDate birth_date;
-    @ColumnData(titleName = string_hire)
     private LocalDate hire_date;
     private double salary;
     private String email = "";

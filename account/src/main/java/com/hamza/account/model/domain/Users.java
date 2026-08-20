@@ -2,7 +2,6 @@ package com.hamza.account.model.domain;
 
 import com.hamza.account.config.NamesTables;
 import com.hamza.account.model.base.DForColumnTable;
-import com.hamza.controlsfx.table.ColumnData;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.property.StringProperty;
 import lombok.AllArgsConstructor;
@@ -16,11 +15,8 @@ import lombok.Setter;
 @NoArgsConstructor
 public class Users extends DForColumnTable {
 
-    @ColumnData(titleName = NamesTables.CODE)
     private int id;
-    @ColumnData(titleName = NamesTables.NAME)
     private StringProperty username = new SimpleStringProperty();
-    @ColumnData(titleName = NamesTables.PASS)
     private String passwordHash;
     //    private ActivityType activity;
     private int user_available;

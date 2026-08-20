@@ -2,7 +2,6 @@ package com.hamza.account.model.domain;
 
 import com.hamza.account.config.NamesTables;
 import com.hamza.account.model.base.DForColumnTable;
-import com.hamza.controlsfx.table.ColumnData;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.property.StringProperty;
 import lombok.AllArgsConstructor;
@@ -18,22 +17,14 @@ import java.time.LocalDate;
 @AllArgsConstructor
 public class TreasuryBalance extends DForColumnTable {
 
-    @ColumnData(titleName = NamesTables.CODE)
     private int id;
-    @ColumnData(titleName = NamesTables.DATE)
     private LocalDate date;
-    @ColumnData(titleName = "نوع العملية")
     private String information;
-    @ColumnData(titleName = NamesTables.NAME)
     private StringProperty name = new SimpleStringProperty();
-    @ColumnData(titleName = "إجمالى الوارد")
     private double total_income;
-    @ColumnData(titleName = "إجمالى الصادر")
     private double total_output;
-    @ColumnData(titleName = "الرصيد")
     private double balance;
     private int user_id;
-    @ColumnData(titleName = "المستخدم")
     private String user_name;
     private int treasury_id;
 

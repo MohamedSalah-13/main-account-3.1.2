@@ -4,7 +4,6 @@ package com.hamza.account.model.base;
 import com.hamza.account.config.NamesTables;
 import com.hamza.account.model.domain.Treasury;
 import com.hamza.account.type.TableName;
-import com.hamza.controlsfx.table.ColumnData;
 import javafx.beans.property.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -15,16 +14,12 @@ import lombok.Setter;
 @NoArgsConstructor
 public abstract class BaseAccount extends DForColumnTable {
 
-    @ColumnData(titleName = NamesTables.CODE)
     private IntegerProperty id = new SimpleIntegerProperty();
-    @ColumnData(titleName = NamesTables.DEBTOR)
     private DoubleProperty purchase = new SimpleDoubleProperty();
-    @ColumnData(titleName = NamesTables.CREDITOR)
     private DoubleProperty paid = new SimpleDoubleProperty();
     private double amount;
     private StringProperty type = new SimpleStringProperty();
     private String notes;
-    @ColumnData(titleName = NamesTables.DATE)
     private StringProperty date = new SimpleStringProperty();
 
     private int invoice_number;

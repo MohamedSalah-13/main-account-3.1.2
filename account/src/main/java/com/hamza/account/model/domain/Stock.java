@@ -2,7 +2,6 @@ package com.hamza.account.model.domain;
 
 import com.hamza.account.config.NamesTables;
 import com.hamza.account.model.base.DForColumnTable;
-import com.hamza.controlsfx.table.ColumnData;
 import javafx.beans.property.IntegerProperty;
 import javafx.beans.property.SimpleIntegerProperty;
 import javafx.beans.property.SimpleStringProperty;
@@ -14,9 +13,7 @@ import lombok.Setter;
 @Getter
 public class Stock extends DForColumnTable {
 
-    @ColumnData(titleName = NamesTables.CODE)
     private IntegerProperty id = new SimpleIntegerProperty();
-    @ColumnData(titleName = NamesTables.NAME)
     private StringProperty name = new SimpleStringProperty();
     private String address;
 
