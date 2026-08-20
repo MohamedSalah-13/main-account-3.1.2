@@ -31,18 +31,58 @@ public class SuppliersDataReturn extends LoadData implements DataInterface<Purch
     private final TotalBuyReturnService totalBuyReturnService = ServiceRegistry.get(TotalBuyReturnService.class);
     private final PurchaseReService purchaseReService = ServiceRegistry.get(PurchaseReService.class);
 
+    private final DesignInterface designInterface = new DesignSuppliersReturn();
+
+    private final TotalDesignInterface<Total_Buy_Re> totalDesignInterface = new TotalsPurchaseReturnImplDesign(this, totalBuyReturnService);
+
+    private final InvoiceBuy<Purchase_Return, Total_Buy_Re, Suppliers, SupplierAccount> invoiceBuy = new PurchaseInvoiceReturn();
+
+    private final NameData<Suppliers> nameData = new SupplierName();
+
+    private final NameAndAccountInterface<Suppliers, SupplierAccount> nameAndAccountInterface = new SupplierAndAccount();
+
+    private final AccountData<SupplierAccount> accountData = new AccountSuppliers(daoFactory);
+
+    private final TotalsAndPurchaseList<Purchase_Return, Total_Buy_Re> totalsAndPurchaseList = new TotalsAndPurchaseList<>() {
+        @Override
+        public DaoList<Total_Buy_Re> totalDao() {
+            return daoFactory.totalsBuyReturnDao();
+        }
+
+        @Override
+        public List<Total_Buy_Re> totalList(String dateFrom, String dateTo) throws DaoException {
+//                return daoFactory.totalsBuyReturnDao().loadDataBetweenDate(dateFrom, dateTo);
+            return totalBuyReturnService.getTotalBuyReturnsByDateRange(dateFrom, dateTo);
+        }
+
+        @Override
+        public List<Purchase_Return> purchaseOrSalesList(int from, int to) throws DaoException {
+            return purchaseReService.findBetweenTwoInvoiceNumber(from, to);
+        }
+
+        @Override
+        public int getMaxId() throws Exception {
+            return totalBuyReturnService.getMaxId();
+        }
+
+        @Override
+        public List<Total_Buy_Re> searchTotals(TotalsSearchCriteria criteria) throws DaoException {
+            return totalBuyReturnService.searchTotals(criteria);
+        }
+    };
+
     public SuppliersDataReturn(DaoFactory daoFactory, DataPublisher dataPublisher) throws Exception {
         super(daoFactory, dataPublisher);
     }
 
     @Override
     public DesignInterface designInterface() {
-        return new DesignSuppliersReturn();
+        return designInterface;
     }
 
     @Override
     public TotalDesignInterface<Total_Buy_Re> totalDesignInterface() {
-        return new TotalsPurchaseReturnImplDesign(this, totalBuyReturnService);
+        return totalDesignInterface;
     }
 
     @Override
@@ -58,53 +98,27 @@ public class SuppliersDataReturn extends LoadData implements DataInterface<Purch
 
     @Override
     public InvoiceBuy<Purchase_Return, Total_Buy_Re, Suppliers, SupplierAccount> invoiceBuy() {
-        return new PurchaseInvoiceReturn();
+        return invoiceBuy;
     }
 
     @Override
     public NameData<Suppliers> nameData() {
-        return new SupplierName();
+        return nameData;
     }
 
     @Override
     public TotalsAndPurchaseList<Purchase_Return, Total_Buy_Re> totalsAndPurchaseList() {
-        return new TotalsAndPurchaseList<>() {
-            @Override
-            public DaoList<Total_Buy_Re> totalDao() {
-                return daoFactory.totalsBuyReturnDao();
-            }
-
-            @Override
-            public List<Total_Buy_Re> totalList(String dateFrom, String dateTo) throws DaoException {
-//                return daoFactory.totalsBuyReturnDao().loadDataBetweenDate(dateFrom, dateTo);
-                return totalBuyReturnService.getTotalBuyReturnsByDateRange(dateFrom, dateTo);
-            }
-
-            @Override
-            public List<Purchase_Return> purchaseOrSalesList(int from, int to) throws DaoException {
-                return purchaseReService.findBetweenTwoInvoiceNumber(from, to);
-            }
-
-            @Override
-            public int getMaxId() throws Exception {
-                return totalBuyReturnService.getMaxId();
-            }
-
-            @Override
-            public List<Total_Buy_Re> searchTotals(TotalsSearchCriteria criteria) throws DaoException {
-                return totalBuyReturnService.searchTotals(criteria);
-            }
-        };
+        return totalsAndPurchaseList;
     }
 
     @Override
     public NameAndAccountInterface<Suppliers, SupplierAccount> nameAndAccountInterface() throws Exception {
-        return new SupplierAndAccount();
+        return nameAndAccountInterface;
     }
 
     @Override
     public AccountData<SupplierAccount> accountData() {
-        return new AccountSuppliers(daoFactory);
+        return accountData;
     }
 
     @Override
