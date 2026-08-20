@@ -1,5 +1,6 @@
 package com.hamza.account.interfaces.impl_dataInterface;
 
+import com.hamza.account.document.DocumentType;
 import com.hamza.account.controller.main.DataPublisher;
 import com.hamza.account.controller.main.LoadData;
 import com.hamza.account.controller.model.PrintPurchaseWithName;
@@ -8,7 +9,6 @@ import com.hamza.account.document.TotalsSearchCriteria;
 import com.hamza.account.features.events.InvoiceSide;
 import com.hamza.account.interfaces.api.*;
 import com.hamza.account.interfaces.impl_account.AccountSuppliers;
-import com.hamza.account.interfaces.impl_design.DesignSuppliers;
 import com.hamza.account.interfaces.impl_invoiceBuy.PurchaseInvoice;
 import com.hamza.account.interfaces.impl_namesDao.SupplierAndAccount;
 import com.hamza.account.interfaces.impl_totalDesgin.TotalsPurchaseImplDesign;
@@ -33,7 +33,7 @@ public class SuppliersData
     private final TotalBuyService totalBuyService = ServiceRegistry.get(TotalBuyService.class);
     private final PurchaseService purchaseService = ServiceRegistry.get(PurchaseService.class);
 
-    private final DesignInterface designInterface = new DesignSuppliers();
+    private final DesignInterface designInterface = () -> DocumentType.PURCHASE;
 
     private final TotalDesignInterface<Total_buy> totalDesignInterface = new TotalsPurchaseImplDesign(totalBuyService, this);
 

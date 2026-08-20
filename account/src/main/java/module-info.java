@@ -84,8 +84,6 @@ module com.hamza.account {
     opens com.hamza.account.interfaces.impl_totalDesgin to javafx.fxml;
     opens com.hamza.account.features.choiceDialoge to javafx.fxml;
     opens com.hamza.account.model.domain to javafx.fxml;
-    exports com.hamza.account.interfaces.impl_design;
-    opens com.hamza.account.interfaces.impl_design to javafx.fxml;
     exports com.hamza.account.table;
     exports com.hamza.account.features.checkbox.impl.setting;
     opens com.hamza.account.features.checkbox.impl.setting to javafx.fxml;

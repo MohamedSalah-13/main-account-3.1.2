@@ -1,5 +1,6 @@
 package com.hamza.account.interfaces.impl_dataInterface;
 
+import com.hamza.account.document.DocumentType;
 import com.hamza.account.controller.main.DataPublisher;
 import com.hamza.account.controller.main.LoadData;
 import com.hamza.account.controller.model.PrintPurchaseWithName;
@@ -8,7 +9,6 @@ import com.hamza.account.document.TotalsSearchCriteria;
 import com.hamza.account.features.events.InvoiceSide;
 import com.hamza.account.interfaces.api.*;
 import com.hamza.account.interfaces.impl_account.AccountCustomer;
-import com.hamza.account.interfaces.impl_design.DesignCustom;
 import com.hamza.account.interfaces.impl_invoiceBuy.SalesInvoice;
 import com.hamza.account.interfaces.impl_namesDao.CustomerAndAccount;
 import com.hamza.account.interfaces.impl_totalDesgin.TotalSalesImpDesign;
@@ -31,7 +31,7 @@ public class CustomData extends LoadData implements DataInterface<Sales, Total_S
     private final TotalSalesService totalSalesService = ServiceRegistry.get(TotalSalesService.class);
     private final SalesService salesService = ServiceRegistry.get(SalesService.class);
 
-    private final DesignInterface designInterface = new DesignCustom();
+    private final DesignInterface designInterface = () -> DocumentType.SALES;
 
     private final TotalDesignInterface<Total_Sales> totalDesignInterface = new TotalSalesImpDesign(this, totalSalesService);
 

@@ -5,52 +5,45 @@ import com.hamza.account.features.events.PartyKind;
 import com.hamza.account.authorization.AppPermissions;
 import com.hamza.account.authorization.PermissionKey;
 
+/**
+ * What one of the four invoice/name/account/total/report screens is called and guarded
+ * by. Every default below reads it off {@link #documentType()} - the five captions, the
+ * five permissions, and whether the screen is a customer's or a supplier's used to be
+ * written out per implementation, which is how a permission ended up being the only
+ * field that told a sale from a sales return apart, and how two of the four returned
+ * {@code null} for a permission nothing had gotten around to answering. This interface
+ * now has exactly one thing left to say.
+ */
+@FunctionalInterface
 public interface DesignInterface {
 
-    /**
-     * Which of the four documents this screen is showing.
-     * <p>
-     * Everything below it that is not a caption or an icon follows from this: the five
-     * permissions, and whether the screen is a customer's or a supplier's. They used to
-     * be written out in each implementation, which is how a permission ended up being
-     * the only way to tell a sale from a sales return.
-     */
+    /** Which of the four documents this screen is showing. */
     DocumentType documentType();
 
-    /**
-     * Retrieves the name text of the data.
-     *
-     * @return a {@link String} representing the name text of the data.
-     */
-    String nameTextOfData();
+    /** What the names screen is called: customers or suppliers. */
+    default String nameTextOfData() {
+        return documentType().partyKind().nameText();
+    }
 
-    /**
-     * Retrieves the text representation of the account's name.
-     *
-     * @return a string representing the account's name text
-     */
-    String nameTextOfAccount();
+    /** What the account screen is called: a customer's account or a supplier's. */
+    default String nameTextOfAccount() {
+        return documentType().partyKind().accountText();
+    }
 
-    /**
-     * Provides the name text for the total section.
-     *
-     * @return the text representing the name of the total section.
-     */
-    String nameTextOfTotal();
+    /** What the totals list is called for this document. */
+    default String nameTextOfTotal() {
+        return documentType().totalText();
+    }
 
-    /**
-     * Retrieves the display name for an invoice.
-     *
-     * @return the name text of the invoice
-     */
-    String nameTextOfInvoice();
+    /** What a single document of this type is called. */
+    default String nameTextOfInvoice() {
+        return documentType().invoiceText();
+    }
 
-    /**
-     * Provides the text name for the report.
-     *
-     * @return the name text of the report
-     */
-    String nameTextOfReport();
+    /** What the report screen is called for this document. */
+    default String nameTextOfReport() {
+        return documentType().reportText();
+    }
 
     /**
      * True on the two customer screens - the sale and its return - and false on the
@@ -62,7 +55,7 @@ public interface DesignInterface {
     }
 
     default boolean showScreenPaidInInvoice() {
-        return false;
+        return documentType().paidInInvoice();
     }
 
     default PermissionKey show() {

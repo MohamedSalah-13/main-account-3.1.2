@@ -1,5 +1,6 @@
 package com.hamza.account.interfaces.impl_dataInterface;
 
+import com.hamza.account.document.DocumentType;
 import com.hamza.account.controller.main.DataPublisher;
 import com.hamza.account.controller.main.LoadData;
 import com.hamza.account.controller.model.PrintPurchaseWithName;
@@ -8,7 +9,6 @@ import com.hamza.account.document.TotalsSearchCriteria;
 import com.hamza.account.features.events.InvoiceSide;
 import com.hamza.account.interfaces.api.*;
 import com.hamza.account.interfaces.impl_account.AccountSuppliers;
-import com.hamza.account.interfaces.impl_design.DesignSuppliersReturn;
 import com.hamza.account.interfaces.impl_invoiceBuy.PurchaseInvoiceReturn;
 import com.hamza.account.interfaces.impl_namesDao.SupplierAndAccount;
 import com.hamza.account.interfaces.impl_totalDesgin.TotalsPurchaseReturnImplDesign;
@@ -31,7 +31,7 @@ public class SuppliersDataReturn extends LoadData implements DataInterface<Purch
     private final TotalBuyReturnService totalBuyReturnService = ServiceRegistry.get(TotalBuyReturnService.class);
     private final PurchaseReService purchaseReService = ServiceRegistry.get(PurchaseReService.class);
 
-    private final DesignInterface designInterface = new DesignSuppliersReturn();
+    private final DesignInterface designInterface = () -> DocumentType.PURCHASE_RETURN;
 
     private final TotalDesignInterface<Total_Buy_Re> totalDesignInterface = new TotalsPurchaseReturnImplDesign(this, totalBuyReturnService);
 

@@ -6,6 +6,7 @@ import com.hamza.account.period.LockedDocument;
 import com.hamza.account.period.PeriodLockRegistry;
 import com.hamza.account.authorization.AppPermissions;
 import com.hamza.account.authorization.PermissionKey;
+import com.hamza.controlsfx.language.LanguageManager;
 
 /**
  * The four documents the business writes: a sale, its return, a purchase, its return.
@@ -40,7 +41,8 @@ public enum DocumentType {
             AppPermissions.SALES_UPDATE,
             AppPermissions.SALES_DELETE,
             AppPermissions.TOTAL_SALES_SHOW,
-            AppPermissions.TOTAL_SALES_SHOW_INVOICE),
+            AppPermissions.TOTAL_SALES_SHOW_INVOICE,
+            "setting.total.sales", "sales", "setting.report.customer", true),
 
     SALES_RETURN(PartyKind.CUSTOMER, InvoiceSide.SALES, true,
             Direction.IN, Direction.OUT, true,
@@ -50,7 +52,8 @@ public enum DocumentType {
             AppPermissions.SALES_RE_UPDATE,
             AppPermissions.SALES_RE_DELETE,
             AppPermissions.TOTAL_SALES_RE_SHOW,
-            AppPermissions.TOTAL_SALES_RE_SHOW_INVOICE),
+            AppPermissions.TOTAL_SALES_RE_SHOW_INVOICE,
+            "setting.total.sales.return", "ReSal", "setting.report.customer.return", false),
 
     PURCHASE(PartyKind.SUPPLIER, InvoiceSide.PURCHASE, false,
             Direction.IN, Direction.OUT, false,
@@ -60,7 +63,8 @@ public enum DocumentType {
             AppPermissions.PURCHASE_UPDATE,
             AppPermissions.PURCHASE_DELETE,
             AppPermissions.TOTAL_PURCHASE_SHOW,
-            AppPermissions.TOTAL_PURCHASE_SHOW_INVOICE),
+            AppPermissions.TOTAL_PURCHASE_SHOW_INVOICE,
+            "setting.total.purchase", "pur", "setting.report.supplier", false),
 
     PURCHASE_RETURN(PartyKind.SUPPLIER, InvoiceSide.PURCHASE, true,
             Direction.OUT, Direction.IN, false,
@@ -70,7 +74,8 @@ public enum DocumentType {
             AppPermissions.PURCHASE_RE_UPDATE,
             AppPermissions.PURCHASE_RE_DELETE,
             AppPermissions.TOTAL_PURCHASE_RE_SHOW,
-            AppPermissions.TOTAL_PURCHASE_RE_SHOW_INVOICE);
+            AppPermissions.TOTAL_PURCHASE_RE_SHOW_INVOICE,
+            "setting.total.purchase.return", "RePur", "setting.report.supplier.return", false);
 
     /**
      * Which way a document moves a balance. {@code quantity_items_table} adds the
@@ -106,12 +111,17 @@ public enum DocumentType {
     private final PermissionKey delete;
     private final PermissionKey showTotals;
     private final PermissionKey showTotalsInvoice;
+    private final String totalTextKey;
+    private final String invoiceTextKey;
+    private final String reportTextKey;
+    private final boolean paidInInvoice;
 
     DocumentType(PartyKind partyKind, InvoiceSide side, boolean isReturn,
                  Direction stock, Direction cash, boolean hasDelegate,
                  LockedDocument periodLock,
                  PermissionKey show, PermissionKey create, PermissionKey update, PermissionKey delete,
-                 PermissionKey showTotals, PermissionKey showTotalsInvoice) {
+                 PermissionKey showTotals, PermissionKey showTotalsInvoice,
+                 String totalTextKey, String invoiceTextKey, String reportTextKey, boolean paidInInvoice) {
         this.partyKind = partyKind;
         this.side = side;
         this.isReturn = isReturn;
@@ -125,6 +135,10 @@ public enum DocumentType {
         this.delete = delete;
         this.showTotals = showTotals;
         this.showTotalsInvoice = showTotalsInvoice;
+        this.totalTextKey = totalTextKey;
+        this.invoiceTextKey = invoiceTextKey;
+        this.reportTextKey = reportTextKey;
+        this.paidInInvoice = paidInInvoice;
     }
 
     /** Whose account this document moves: a customer's or a supplier's. */
@@ -221,6 +235,30 @@ public enum DocumentType {
 
     public PermissionKey showTotalsInvoicePermission() {
         return showTotalsInvoice;
+    }
+
+    /** What the totals list is called for this document. */
+    public String totalText() {
+        return LanguageManager.getInstance().getString(totalTextKey);
+    }
+
+    /** What a single document of this type is called. */
+    public String invoiceText() {
+        return LanguageManager.getInstance().getString(invoiceTextKey);
+    }
+
+    /** What the report screen is called for this document. */
+    public String reportText() {
+        return LanguageManager.getInstance().getString(reportTextKey);
+    }
+
+    /**
+     * Whether the screen takes a payment as the document is written, instead of only
+     * afterwards through the account. Only {@link #SALES} does - the one asymmetry
+     * {@code DesignCustom} used to carry that no other implementation did.
+     */
+    public boolean paidInInvoice() {
+        return paidInInvoice;
     }
 
     /**

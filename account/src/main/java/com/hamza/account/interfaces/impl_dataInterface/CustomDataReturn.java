@@ -1,5 +1,6 @@
 package com.hamza.account.interfaces.impl_dataInterface;
 
+import com.hamza.account.document.DocumentType;
 import com.hamza.account.controller.main.DataPublisher;
 import com.hamza.account.controller.main.LoadData;
 import com.hamza.account.controller.model.PrintPurchaseWithName;
@@ -8,7 +9,6 @@ import com.hamza.account.document.TotalsSearchCriteria;
 import com.hamza.account.features.events.InvoiceSide;
 import com.hamza.account.interfaces.api.*;
 import com.hamza.account.interfaces.impl_account.AccountCustomer;
-import com.hamza.account.interfaces.impl_design.DesignCustomReturn;
 import com.hamza.account.interfaces.impl_invoiceBuy.SalesInvoiceReturn;
 import com.hamza.account.interfaces.impl_namesDao.CustomerAndAccount;
 import com.hamza.account.interfaces.impl_totalDesgin.TotalSalesReturnImplDesign;
@@ -31,7 +31,7 @@ public class CustomDataReturn extends LoadData implements DataInterface<Sales_Re
     private final TotalSalesReturnService totalSalesReturnService = ServiceRegistry.get(TotalSalesReturnService.class);
     private final SalesReService salesReService = ServiceRegistry.get(SalesReService.class);
 
-    private final DesignInterface designInterface = new DesignCustomReturn();
+    private final DesignInterface designInterface = () -> DocumentType.SALES_RETURN;
 
     private final TotalDesignInterface<Total_Sales_Re> totalDesignInterface = new TotalSalesReturnImplDesign(this, totalSalesReturnService);
 
