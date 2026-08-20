@@ -7,6 +7,7 @@ import com.hamza.account.controller.dataByName.OpenAddAreaApplication;
 import com.hamza.account.controller.dataByName.impl.AreaImpl;
 import com.hamza.account.controller.dataByName.impl.MainGroupImpl2;
 import com.hamza.account.controller.items.InventoryController;
+import com.hamza.account.controller.items.MergeItemsController;
 import com.hamza.account.controller.items.ItemsController;
 import com.hamza.account.controller.items.StockCountController;
 import com.hamza.account.controller.items.UnitsController;
@@ -171,6 +172,41 @@ public class ItemsButtons {
             @Override
             public void actionAddPaneToTabPane(TabPane tabPane) throws Exception {
                 addTape(tabPane, new OpenFxmlApplication(stockCount).getPane(), textName(), new Image_Setting().itemWhite);
+            }
+
+            @Override
+            public boolean showOnTapPane() {
+                return true;
+            }
+        };
+    }
+
+    /**
+     * Merging duplicate items. Behind its own permission, and opened as a tab beside the
+     * item list it repairs - the work is comparing rows against each other, which needs
+     * the room a tab has and a dialog does not.
+     */
+    public ButtonWithPerm mergeItems() {
+        return new ButtonWithPerm() {
+            @Override
+            public PermissionKey getPermissionType() {
+                return AppPermissions.ITEMS_MERGE;
+            }
+
+            @Override
+            public void action() {
+            }
+
+            @NotNull
+            @Override
+            public String textName() {
+                return LanguageManager.getInstance().getString("item.merge.title");
+            }
+
+            @Override
+            public void actionAddPaneToTabPane(TabPane tabPane) throws Exception {
+                addTape(tabPane, new OpenFxmlApplication(new MergeItemsController()).getPane(),
+                        textName(), new Image_Setting().itemWhite);
             }
 
             @Override

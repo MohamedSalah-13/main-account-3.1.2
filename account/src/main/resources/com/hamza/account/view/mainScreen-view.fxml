@@ -113,6 +113,7 @@
                                                                 <Button fx:id="btnArea" mnemonicParsing="false" text="Area" />
                                                                 <Button fx:id="btnInventory" mnemonicParsing="false" text="Inventory" />
                                                                 <Button fx:id="btnStockCount" mnemonicParsing="false" text="Stock Count" />
+                                                                <Button fx:id="btnMergeItems" mnemonicParsing="false" text="Merge Items" />
                                                             </children>
                                                         </VBox>
                                                     </content>
