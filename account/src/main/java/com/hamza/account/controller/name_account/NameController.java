@@ -204,11 +204,6 @@ public class NameController<T3 extends BaseNames, T4 extends BaseAccount>
     }
 
     @Override
-    public String styleSheet() {
-        return designInterface.styleSheet();
-    }
-
-    @Override
     public void helper(CssToColorHelper helper) {
         this.helper = helper;
     }

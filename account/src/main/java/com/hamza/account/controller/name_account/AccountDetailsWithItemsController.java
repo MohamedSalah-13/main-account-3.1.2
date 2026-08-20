@@ -1,5 +1,6 @@
 package com.hamza.account.controller.name_account;
 
+import com.hamza.account.config.ThemeManager;
 import com.hamza.account.config.Image_Setting;
 import com.hamza.account.controller.main.DataPublisher;
 import com.hamza.account.controller.main.LoadOtherData;
@@ -471,7 +472,7 @@ public class AccountDetailsWithItemsController<T3 extends BaseNames, T4 extends 
     @Override
     public Pane pane() throws IOException {
         var pane1 = new OpenFxmlApplication(this).getPane();
-        pane1.getStyleClass().add(dataInterface.designInterface().styleSheet());
+        pane1.getStyleClass().add(ThemeManager.getStylesheet());
         return pane1;
     }
 

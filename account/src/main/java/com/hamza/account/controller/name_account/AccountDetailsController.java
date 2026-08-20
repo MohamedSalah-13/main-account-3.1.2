@@ -1,5 +1,6 @@
 package com.hamza.account.controller.name_account;
 
+import com.hamza.account.config.ThemeManager;
 import com.hamza.account.config.Image_Setting;
 import com.hamza.account.controller.main.DataPublisher;
 import com.hamza.account.controller.main.DisableButtons;
@@ -130,7 +131,7 @@ public class AccountDetailsController<T3 extends BaseNames, T4 extends BaseAccou
         labelTo.setText(lm.getString("to"));
         // disable search
         // change style
-        pane.getStylesheets().add(dataInterface.designInterface().styleSheet());
+        pane.getStylesheets().add(ThemeManager.getStylesheet());
     }
 
     private void miniDate(String name) {
@@ -272,7 +273,7 @@ public class AccountDetailsController<T3 extends BaseNames, T4 extends BaseAccou
     @Override
     public Pane pane() throws IOException {
         var pane1 = new OpenFxmlApplication(this).getPane();
-        pane1.getStyleClass().add(dataInterface.designInterface().styleSheet());
+        pane1.getStyleClass().add(ThemeManager.getStylesheet());
         return pane1;
     }
 

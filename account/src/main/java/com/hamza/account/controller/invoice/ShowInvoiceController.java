@@ -1,5 +1,6 @@
 package com.hamza.account.controller.invoice;
 
+import com.hamza.account.config.ThemeManager;
 import com.hamza.account.finance.MoneyMath;
 import com.hamza.account.authorization.AppPermissions;
 import com.hamza.account.authorization.AuthorizationGuard;
@@ -272,7 +273,7 @@ public class ShowInvoiceController<T1 extends BasePurchasesAndSales, T2 extends 
 
     @Override
     public @NotNull Pane pane() throws IOException {
-        String style = dataInterface.designInterface().styleSheet();
+        String style = ThemeManager.getStylesheet();
         var pane = new OpenFxmlApplication(this).getPane();
         pane.getStylesheets().add(style);
         return pane;

@@ -1,6 +1,5 @@
 package com.hamza.account.interfaces.impl_design;
 
-import com.hamza.account.config.ThemeManager;
 import com.hamza.account.document.DocumentType;
 import com.hamza.account.interfaces.api.DesignInterface;
 import com.hamza.controlsfx.language.LanguageManager;
@@ -10,11 +9,6 @@ public class DesignCustomReturn implements DesignInterface {
     @Override
     public DocumentType documentType() {
         return DocumentType.SALES_RETURN;
-    }
-
-    @Override
-    public String styleSheet() {
-        return ThemeManager.getStylesheet();
     }
 
     @Override

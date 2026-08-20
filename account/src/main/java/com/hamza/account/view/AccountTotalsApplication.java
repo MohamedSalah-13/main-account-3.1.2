@@ -1,5 +1,6 @@
 package com.hamza.account.view;
 
+import com.hamza.account.config.ThemeManager;
 import com.hamza.account.controller.main.DataPublisher;
 import com.hamza.account.controller.name_account.AccountController2;
 import com.hamza.account.interfaces.api.DataInterface;
@@ -20,7 +21,7 @@ public class AccountTotalsApplication {
         AccountController2<?, ?> accountDetailsController = new AccountController2<>(daoFactory, dataPublisher, dataInterface);
         pane = new OpenFxmlApplication(accountDetailsController).getPane();
         pane.getChildren().add(helper);
-        pane.getStylesheets().add(dataInterface.designInterface().styleSheet());
+        pane.getStylesheets().add(ThemeManager.getStylesheet());
     }
 
 }

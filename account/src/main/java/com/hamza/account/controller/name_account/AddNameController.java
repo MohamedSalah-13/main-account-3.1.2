@@ -278,11 +278,6 @@ public class AddNameController<T3 extends BaseNames, T4 extends BaseAccount>
         }
     }
 
-    @Override
-    public String styleSheet() {
-        return dataInterface.designInterface().styleSheet();
-    }
-
     private List<SelPriceTypeModel> getPriceType() {
         try {
             return selPriceItemService.getSelPriceTypeList();

@@ -1,5 +1,6 @@
 package com.hamza.account.view;
 
+import com.hamza.account.config.ThemeManager;
 import com.hamza.account.controller.invoice.TotalsController;
 import com.hamza.account.controller.main.DataPublisher;
 import com.hamza.account.interfaces.api.DataInterface;
@@ -22,7 +23,7 @@ public class TotalsApplication {
         CssToColorHelper helper = new CssToColorHelper();
         controller = new TotalsController<>(dataInterface, daoFactory, dataPublisher, employeeService, helper);
         pane = new OpenFxmlApplication(controller).getPane();
-        pane.getStylesheets().add(dataInterface.designInterface().styleSheet());
+        pane.getStylesheets().add(ThemeManager.getStylesheet());
         pane.getChildren().add(helper);
     }
 

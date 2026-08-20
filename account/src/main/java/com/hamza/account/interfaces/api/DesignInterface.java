@@ -18,13 +18,6 @@ public interface DesignInterface {
     DocumentType documentType();
 
     /**
-     * Returns the stylesheet for the user interface design.
-     *
-     * @return a string representing the path or identifier of the stylesheet for the user interface.
-     */
-    String styleSheet();
-
-    /**
      * Retrieves the name text of the data.
      *
      * @return a {@link String} representing the name text of the data.

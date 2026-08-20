@@ -1,5 +1,6 @@
 package com.hamza.account.controller.invoice;
 
+import com.hamza.account.config.ThemeManager;
 import com.hamza.account.authorization.AuthorizationGuard;
 import com.hamza.account.authorization.PermissionKey;
 import com.hamza.account.authorization.AppPermissions;
@@ -995,7 +996,7 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
     @Override
     public @NotNull Pane pane() throws IOException {
         var pane = new OpenFxmlApplication(this).getPane();
-        String style = dataInterface.designInterface().styleSheet();
+        String style = ThemeManager.getStylesheet();
         pane.getStylesheets().addAll(style);
         return pane;
     }
