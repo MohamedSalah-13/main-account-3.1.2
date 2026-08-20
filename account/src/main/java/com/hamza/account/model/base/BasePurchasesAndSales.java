@@ -16,8 +16,8 @@ import java.time.LocalDate;
 public abstract class BasePurchasesAndSales extends UnitExtends {
 
     private IntegerProperty id = new SimpleIntegerProperty();
-    private IntegerProperty invoiceNumber = new SimpleIntegerProperty();
-    private IntegerProperty numItem = new SimpleIntegerProperty();
+    private int invoiceNumber;
+    private int numItem;
     @ColumnData(titleName = NamesTables.QUANTITY)
     private DoubleProperty quantity = new SimpleDoubleProperty();
     @ColumnData(titleName = NamesTables.PRICE)
@@ -30,10 +30,8 @@ public abstract class BasePurchasesAndSales extends UnitExtends {
     private DoubleProperty total_after_discount = new SimpleDoubleProperty();
 
     // for profit for sales
-//    @ColumnData(titleName = NamesTables.BUY_PRICE)
-    private DoubleProperty buy_price = new SimpleDoubleProperty();
-//    @ColumnData(titleName = NamesTables.TOTAL_BUY_PRICE)
-    private DoubleProperty total_buy_price = new SimpleDoubleProperty();
+    private double buy_price;
+    private double total_buy_price;
 
 
     // for other class - purchase , purchaseRe , salesRe
@@ -50,7 +48,7 @@ public abstract class BasePurchasesAndSales extends UnitExtends {
      * {@code ReturnCostResolver} to recover the original line's cost before it is lost
      * to today's item price.
      */
-    private IntegerProperty sourceLineId = new SimpleIntegerProperty();
+    private int sourceLineId;
 
     public int getId() {
         return id.get();
@@ -65,39 +63,27 @@ public abstract class BasePurchasesAndSales extends UnitExtends {
     }
 
     public int getSourceLineId() {
-        return sourceLineId.get();
-    }
-
-    public void setSourceLineId(int sourceLineId) {
-        this.sourceLineId.set(sourceLineId);
-    }
-
-    public IntegerProperty sourceLineIdProperty() {
         return sourceLineId;
     }
 
+    public void setSourceLineId(int sourceLineId) {
+        this.sourceLineId = sourceLineId;
+    }
+
     public int getInvoiceNumber() {
-        return invoiceNumber.get();
-    }
-
-    public void setInvoiceNumber(int invoiceNumber) {
-        this.invoiceNumber.set(invoiceNumber);
-    }
-
-    public IntegerProperty invoiceNumberProperty() {
         return invoiceNumber;
     }
 
+    public void setInvoiceNumber(int invoiceNumber) {
+        this.invoiceNumber = invoiceNumber;
+    }
+
     public int getNumItem() {
-        return numItem.get();
+        return numItem;
     }
 
     public void setNumItem(int numItem) {
-        this.numItem.set(numItem);
-    }
-
-    public IntegerProperty numItemProperty() {
-        return numItem;
+        this.numItem = numItem;
     }
 
     public double getQuantity() {
@@ -173,27 +159,19 @@ public abstract class BasePurchasesAndSales extends UnitExtends {
     }
 
     public double getBuy_price() {
-        return buy_price.get();
-    }
-
-    public void setBuy_price(double buy_price) {
-        this.buy_price.set(buy_price);
-    }
-
-    public DoubleProperty buy_priceProperty() {
         return buy_price;
     }
 
+    public void setBuy_price(double buy_price) {
+        this.buy_price = buy_price;
+    }
+
     public double getTotal_buy_price() {
-        return total_buy_price.get();
+        return total_buy_price;
     }
 
     public void setTotal_buy_price(double total_buy_price) {
-        this.total_buy_price.set(total_buy_price);
-    }
-
-    public DoubleProperty total_buy_priceProperty() {
-        return total_buy_price;
+        this.total_buy_price = total_buy_price;
     }
 
 }

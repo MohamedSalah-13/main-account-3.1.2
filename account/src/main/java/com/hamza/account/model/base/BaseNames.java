@@ -17,14 +17,10 @@ public abstract class BaseNames extends DForColumnTable {
     private IntegerProperty id = new SimpleIntegerProperty();
     @ColumnData(titleName = NamesTables.NAME)
     private StringProperty name = new SimpleStringProperty();
-    @ColumnData(titleName = NamesTables.TEL)
-    private StringProperty tel = new SimpleStringProperty();
-    @ColumnData(titleName = NamesTables.ADDRESS)
-    private StringProperty address = new SimpleStringProperty();
-    @ColumnData(titleName = NamesTables.NOTES)
-    private StringProperty notes = new SimpleStringProperty();
-    @ColumnData(titleName = NamesTables.FIRST_BALANCE)
-    private DoubleProperty first_balance = new SimpleDoubleProperty();
+    private String tel;
+    private String address;
+    private String notes;
+    private double first_balance;
     private ObjectProperty<Area> area = new SimpleObjectProperty<>();
 
 
@@ -53,51 +49,35 @@ public abstract class BaseNames extends DForColumnTable {
     }
 
     public String getTel() {
-        return tel.get();
-    }
-
-    public void setTel(String tel) {
-        this.tel.set(tel);
-    }
-
-    public StringProperty telProperty() {
         return tel;
     }
 
+    public void setTel(String tel) {
+        this.tel = tel;
+    }
+
     public String getAddress() {
-        return address.get();
-    }
-
-    public void setAddress(String address) {
-        this.address.set(address);
-    }
-
-    public StringProperty addressProperty() {
         return address;
     }
 
+    public void setAddress(String address) {
+        this.address = address;
+    }
+
     public String getNotes() {
-        return notes.get();
-    }
-
-    public void setNotes(String notes) {
-        this.notes.set(notes);
-    }
-
-    public StringProperty notesProperty() {
         return notes;
     }
 
+    public void setNotes(String notes) {
+        this.notes = notes;
+    }
+
     public double getFirst_balance() {
-        return first_balance.get();
+        return first_balance;
     }
 
     public void setFirst_balance(double first_balance) {
-        this.first_balance.set(first_balance);
-    }
-
-    public DoubleProperty first_balanceProperty() {
-        return first_balance;
+        this.first_balance = first_balance;
     }
 
     public Area getArea() {

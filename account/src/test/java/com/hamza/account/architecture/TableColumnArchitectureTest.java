@@ -16,7 +16,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * {@code TableColumnAnnotation} builds columns through {@code PropertyValueFactory},
  * which resolves a field by <i>string</i> at run time. A renamed field therefore
  * produces a silently empty column - no compile error, no exception. That is what
- * these 170 annotations are: 170 unchecked strings.
+ * these 132 annotations are: 132 unchecked strings.
  * <p>
  * Both counts here may <b>only go down</b>. The end state is the deletion of
  * {@code ColumnData} and {@code TableColumnAnnotation}, tracked as §12 of
@@ -27,7 +27,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class TableColumnArchitectureTest {
 
     /** Annotation sites when the rule was written. Only ever lower this number. */
-    private static final int ANNOTATION_BASELINE = 170;
+    private static final int ANNOTATION_BASELINE = 132;
 
     /** Call sites of the reflective builder when the rule was written. Only ever lower this. */
     private static final int BUILDER_CALL_BASELINE = 0;
@@ -47,13 +47,11 @@ class TableColumnArchitectureTest {
             "com/hamza/account/model/base/BaseTotals.java",
             "com/hamza/account/model/base/UnitExtends.java",
             "com/hamza/account/model/domain/Area.java",
-            "com/hamza/account/model/domain/Audit_log.java",
             "com/hamza/account/model/domain/CardItems.java",
             "com/hamza/account/model/domain/CustomerPurchasedItem.java",
             "com/hamza/account/model/domain/CustomerReceivable.java",
             "com/hamza/account/model/domain/Employees.java",
             "com/hamza/account/model/domain/Expenses.java",
-            "com/hamza/account/model/domain/ExpensesDetails.java",
             "com/hamza/account/model/domain/ItemsMiniQuantity.java",
             "com/hamza/account/model/domain/ItemsModel.java",
             "com/hamza/account/model/domain/ItemsUnitsModel.java",
@@ -62,7 +60,6 @@ class TableColumnArchitectureTest {
             "com/hamza/account/model/domain/TableDataReports.java",
             "com/hamza/account/model/domain/Treasury.java",
             "com/hamza/account/model/domain/TreasuryBalance.java",
-            "com/hamza/account/model/domain/TreasuryData.java",
             "com/hamza/account/model/domain/UnitsModel.java",
             "com/hamza/account/model/domain/UserShift.java",
             "com/hamza/account/model/domain/Users.java",

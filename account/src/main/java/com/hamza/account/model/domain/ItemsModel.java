@@ -30,16 +30,14 @@ public class ItemsModel extends UnitExtends {
     private DoubleProperty selPrice2 = new SimpleDoubleProperty();
     @ColumnData(titleName = NamesTables.SEL_PRICE + "3")
     private DoubleProperty selPrice3 = new SimpleDoubleProperty();
-    @ColumnData(titleName = NamesTables.MINI_QUANTITY)
-    private DoubleProperty mini_quantity = new SimpleDoubleProperty();
-    @ColumnData(titleName = NamesTables.FIRST_BALANCE)
-    private DoubleProperty firstBalanceForStock = new SimpleDoubleProperty();
+    private double mini_quantity;
+    private double firstBalanceForStock;
 
-    private ObjectProperty<SubGroups> subGroups = new SimpleObjectProperty<>();
-    private ObjectProperty<Stock> itemStock = new SimpleObjectProperty<>();
+    private SubGroups subGroups;
+    private Stock itemStock;
     private byte[] item_image;
 
-    private BooleanProperty activeItem = new SimpleBooleanProperty();
+    private boolean activeItem;
     private boolean hasValidate;
 
     private int numberValidityDays;
@@ -48,16 +46,15 @@ public class ItemsModel extends UnitExtends {
     private List<ItemsUnitsModel> itemsUnitsModelList=new ArrayList<>();;
     private List<String> extraBarcodes = new ArrayList<>();
 
-    @ColumnData(titleName = NamesTables.SUM_ALL_BALANCE)
-    private DoubleProperty sumAllBalance = new SimpleDoubleProperty();
-    private DoubleProperty sumPurchase = new SimpleDoubleProperty();
-    private DoubleProperty sumSales = new SimpleDoubleProperty();
-    private DoubleProperty sumPurchaseRe = new SimpleDoubleProperty();
-    private DoubleProperty sumSalesRe = new SimpleDoubleProperty();
-    private DoubleProperty fromStock = new SimpleDoubleProperty();
-    private DoubleProperty toStock = new SimpleDoubleProperty();
-    private DoubleProperty sumAllBalanceByBuyPrice = new SimpleDoubleProperty();
-    private DoubleProperty sumAllBalanceBySelPrice = new SimpleDoubleProperty();
+    private double sumAllBalance;
+    private double sumPurchase;
+    private double sumSales;
+    private double sumPurchaseRe;
+    private double sumSalesRe;
+    private double fromStock;
+    private double toStock;
+    private double sumAllBalanceByBuyPrice;
+    private double sumAllBalanceBySelPrice;
 
     public ItemsModel(Integer id) {
         initialize(id, null, null);
@@ -172,170 +169,114 @@ public class ItemsModel extends UnitExtends {
     }
 
     public double getMini_quantity() {
-        return mini_quantity.get();
-    }
-
-    public void setMini_quantity(double mini_quantity) {
-        this.mini_quantity.set(mini_quantity);
-    }
-
-    public DoubleProperty mini_quantityProperty() {
         return mini_quantity;
     }
 
+    public void setMini_quantity(double mini_quantity) {
+        this.mini_quantity = mini_quantity;
+    }
+
     public SubGroups getSubGroups() {
-        return subGroups.get();
-    }
-
-    public void setSubGroups(SubGroups subGroups) {
-        this.subGroups.set(subGroups);
-    }
-
-    public ObjectProperty<SubGroups> subGroupsProperty() {
         return subGroups;
     }
 
+    public void setSubGroups(SubGroups subGroups) {
+        this.subGroups = subGroups;
+    }
+
     public Stock getItemStock() {
-        return itemStock.get();
-    }
-
-    public void setItemStock(Stock itemStock) {
-        this.itemStock.set(itemStock);
-    }
-
-    public ObjectProperty<Stock> itemStockProperty() {
         return itemStock;
     }
 
+    public void setItemStock(Stock itemStock) {
+        this.itemStock = itemStock;
+    }
+
     public double getFirstBalanceForStock() {
-        return firstBalanceForStock.get();
-    }
-
-    public void setFirstBalanceForStock(double firstBalanceForStock) {
-        this.firstBalanceForStock.set(firstBalanceForStock);
-    }
-
-    public DoubleProperty firstBalanceForStockProperty() {
         return firstBalanceForStock;
     }
 
+    public void setFirstBalanceForStock(double firstBalanceForStock) {
+        this.firstBalanceForStock = firstBalanceForStock;
+    }
+
     public double getSumAllBalance() {
-        return sumAllBalance.get();
-    }
-
-    public void setSumAllBalance(double sumAllBalance) {
-        this.sumAllBalance.set(sumAllBalance);
-    }
-
-    public DoubleProperty sumAllBalanceProperty() {
         return sumAllBalance;
     }
 
+    public void setSumAllBalance(double sumAllBalance) {
+        this.sumAllBalance = sumAllBalance;
+    }
+
     public double getSumPurchase() {
-        return sumPurchase.get();
-    }
-
-    public void setSumPurchase(double sumPurchase) {
-        this.sumPurchase.set(sumPurchase);
-    }
-
-    public DoubleProperty sumPurchaseProperty() {
         return sumPurchase;
     }
 
+    public void setSumPurchase(double sumPurchase) {
+        this.sumPurchase = sumPurchase;
+    }
+
     public double getSumSales() {
-        return sumSales.get();
-    }
-
-    public void setSumSales(double sumSales) {
-        this.sumSales.set(sumSales);
-    }
-
-    public DoubleProperty sumSalesProperty() {
         return sumSales;
     }
 
+    public void setSumSales(double sumSales) {
+        this.sumSales = sumSales;
+    }
+
     public double getSumPurchaseRe() {
-        return sumPurchaseRe.get();
-    }
-
-    public void setSumPurchaseRe(double sumPurchaseRe) {
-        this.sumPurchaseRe.set(sumPurchaseRe);
-    }
-
-    public DoubleProperty sumPurchaseReProperty() {
         return sumPurchaseRe;
     }
 
+    public void setSumPurchaseRe(double sumPurchaseRe) {
+        this.sumPurchaseRe = sumPurchaseRe;
+    }
+
     public double getSumSalesRe() {
-        return sumSalesRe.get();
-    }
-
-    public void setSumSalesRe(double sumSalesRe) {
-        this.sumSalesRe.set(sumSalesRe);
-    }
-
-    public DoubleProperty sumSalesReProperty() {
         return sumSalesRe;
     }
 
+    public void setSumSalesRe(double sumSalesRe) {
+        this.sumSalesRe = sumSalesRe;
+    }
+
     public double getFromStock() {
-        return fromStock.get();
-    }
-
-    public void setFromStock(double fromStock) {
-        this.fromStock.set(fromStock);
-    }
-
-    public DoubleProperty fromStockProperty() {
         return fromStock;
     }
 
+    public void setFromStock(double fromStock) {
+        this.fromStock = fromStock;
+    }
+
     public double getToStock() {
-        return toStock.get();
-    }
-
-    public void setToStock(double toStock) {
-        this.toStock.set(toStock);
-    }
-
-    public DoubleProperty toStockProperty() {
         return toStock;
     }
 
+    public void setToStock(double toStock) {
+        this.toStock = toStock;
+    }
+
     public double getSumAllBalanceByBuyPrice() {
-        return sumAllBalanceByBuyPrice.get();
-    }
-
-    public void setSumAllBalanceByBuyPrice(double sumAllBalanceByBuyPrice) {
-        this.sumAllBalanceByBuyPrice.set(sumAllBalanceByBuyPrice);
-    }
-
-    public DoubleProperty sumAllBalanceByBuyPriceProperty() {
         return sumAllBalanceByBuyPrice;
     }
 
+    public void setSumAllBalanceByBuyPrice(double sumAllBalanceByBuyPrice) {
+        this.sumAllBalanceByBuyPrice = sumAllBalanceByBuyPrice;
+    }
+
     public double getSumAllBalanceBySelPrice() {
-        return sumAllBalanceBySelPrice.get();
-    }
-
-    public void setSumAllBalanceBySelPrice(double sumAllBalanceBySelPrice) {
-        this.sumAllBalanceBySelPrice.set(sumAllBalanceBySelPrice);
-    }
-
-    public DoubleProperty sumAllBalanceBySelPriceProperty() {
         return sumAllBalanceBySelPrice;
     }
 
+    public void setSumAllBalanceBySelPrice(double sumAllBalanceBySelPrice) {
+        this.sumAllBalanceBySelPrice = sumAllBalanceBySelPrice;
+    }
+
     public boolean isActiveItem() {
-        return activeItem.get();
+        return activeItem;
     }
 
     public void setActiveItem(boolean activeItem) {
-        this.activeItem.set(activeItem);
-    }
-
-    public BooleanProperty activeItemProperty() {
-        return activeItem;
+        this.activeItem = activeItem;
     }
 }

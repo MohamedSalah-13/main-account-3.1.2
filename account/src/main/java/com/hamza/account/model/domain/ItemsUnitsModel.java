@@ -18,10 +18,8 @@ public class ItemsUnitsModel extends DForColumnTable {
     @ColumnData(titleName = NamesTables.CODE)
     private int id;
     private int itemsId;
-    @ColumnData(titleName = NamesTables.BARCODE)
-    private StringProperty itemsBarcode = new SimpleStringProperty();
-    @ColumnData(titleName = NamesTables.QUANTITY)
-    private DoubleProperty quantityForUnit = new SimpleDoubleProperty();
+    private String itemsBarcode;
+    private double quantityForUnit;
     private ObjectProperty<UnitsModel> unitsModel = new SimpleObjectProperty<>();
 
     /**
@@ -33,8 +31,7 @@ public class ItemsUnitsModel extends DForColumnTable {
      */
     @ColumnData(titleName = NamesTables.BUY_PRICE)
     private DoubleProperty buyPrice = new SimpleDoubleProperty();
-    @ColumnData(titleName = NamesTables.SEL_PRICE)
-    private DoubleProperty selPrice = new SimpleDoubleProperty();
+    private double selPrice;
     @ColumnData(titleName = NamesTables.SEL_PRICE + "2")
     private DoubleProperty selPrice2 = new SimpleDoubleProperty();
     @ColumnData(titleName = NamesTables.SEL_PRICE + "3")
@@ -53,15 +50,11 @@ public class ItemsUnitsModel extends DForColumnTable {
     }
 
     public double getSelPrice() {
-        return selPrice.get();
+        return selPrice;
     }
 
     public void setSelPrice(double selPrice) {
-        this.selPrice.set(selPrice);
-    }
-
-    public DoubleProperty selPriceProperty() {
-        return selPrice;
+        this.selPrice = selPrice;
     }
 
     public double getSelPrice2() {
@@ -89,27 +82,19 @@ public class ItemsUnitsModel extends DForColumnTable {
     }
 
     public String getItemsBarcode() {
-        return itemsBarcode.get();
-    }
-
-    public void setItemsBarcode(String itemsBarcode) {
-        this.itemsBarcode.set(itemsBarcode);
-    }
-
-    public StringProperty itemsBarcodeProperty() {
         return itemsBarcode;
     }
 
+    public void setItemsBarcode(String itemsBarcode) {
+        this.itemsBarcode = itemsBarcode;
+    }
+
     public double getQuantityForUnit() {
-        return quantityForUnit.get();
+        return quantityForUnit;
     }
 
     public void setQuantityForUnit(double quantityForUnit) {
-        this.quantityForUnit.set(quantityForUnit);
-    }
-
-    public DoubleProperty quantityForUnitProperty() {
-        return quantityForUnit;
+        this.quantityForUnit = quantityForUnit;
     }
 
     public UnitsModel getUnitsModel() {

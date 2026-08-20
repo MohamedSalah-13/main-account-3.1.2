@@ -30,14 +30,10 @@ public class Employees extends DForColumnTable {
     private LocalDate birth_date;
     @ColumnData(titleName = string_hire)
     private LocalDate hire_date;
-    @ColumnData(titleName = NamesTables.SALARY)
-    private DoubleProperty salary = new SimpleDoubleProperty(0);
-    @ColumnData(titleName = NamesTables.EMAIL)
-    private StringProperty email = new SimpleStringProperty("");
-    @ColumnData(titleName = NamesTables.TEL)
-    private StringProperty tel = new SimpleStringProperty("");
-    @ColumnData(titleName = NamesTables.ADDRESS)
-    private StringProperty address = new SimpleStringProperty("");
+    private double salary;
+    private String email = "";
+    private String tel = "";
+    private String address = "";
     private UsersType job_id;
     private byte[] item_image;
 
@@ -56,10 +52,10 @@ public class Employees extends DForColumnTable {
         this.name = new SimpleStringProperty(name);
         this.birth_date = birth_date;
         this.hire_date = hire_date;
-        this.salary = new SimpleDoubleProperty(salary);
-        this.email = new SimpleStringProperty(email);
-        this.tel = new SimpleStringProperty(tel);
-        this.address = new SimpleStringProperty(address);
+        this.salary = salary;
+        this.email = email;
+        this.tel = tel;
+        this.address = address;
         this.job_id = job_id;
     }
 
@@ -88,51 +84,35 @@ public class Employees extends DForColumnTable {
     }
 
     public double getSalary() {
-        return salary.get();
-    }
-
-    public void setSalary(double salary) {
-        this.salary.set(salary);
-    }
-
-    public DoubleProperty salaryProperty() {
         return salary;
     }
 
+    public void setSalary(double salary) {
+        this.salary = salary;
+    }
+
     public String getEmail() {
-        return email.get();
-    }
-
-    public void setEmail(String email) {
-        this.email.set(email);
-    }
-
-    public StringProperty emailProperty() {
         return email;
     }
 
+    public void setEmail(String email) {
+        this.email = email;
+    }
+
     public String getTel() {
-        return tel.get();
-    }
-
-    public void setTel(String tel) {
-        this.tel.set(tel);
-    }
-
-    public StringProperty telProperty() {
         return tel;
     }
 
+    public void setTel(String tel) {
+        this.tel = tel;
+    }
+
     public String getAddress() {
-        return address.get();
+        return address;
     }
 
     public void setAddress(String address) {
-        this.address.set(address);
-    }
-
-    public StringProperty addressProperty() {
-        return address;
+        this.address = address;
     }
 }
 

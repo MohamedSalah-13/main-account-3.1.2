@@ -2,7 +2,8 @@ package com.hamza.account.model.domain;
 
 import com.hamza.account.model.base.DForColumnTable;
 import com.hamza.account.type.TreasuryMovementType;
-import javafx.beans.property.*;
+import javafx.beans.property.LongProperty;
+import javafx.beans.property.SimpleLongProperty;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -16,11 +17,11 @@ public class TreasuryMovementData extends DForColumnTable {
 
     private LongProperty id = new SimpleLongProperty();
 
-    private StringProperty movementDate = new SimpleStringProperty();
+    private String movementDate;
 
-    private StringProperty treasuryName = new SimpleStringProperty();
+    private String treasuryName;
 
-    private StringProperty movementTypeName = new SimpleStringProperty();
+    private String movementTypeName;
 
     private BigDecimal amountIn = BigDecimal.ZERO;
 
@@ -28,7 +29,7 @@ public class TreasuryMovementData extends DForColumnTable {
 
     private BigDecimal balanceAfter = BigDecimal.ZERO;
 
-    private StringProperty notes = new SimpleStringProperty();
+    private String notes;
 
     private TreasuryMovementType movementType;
 
@@ -44,51 +45,4 @@ public class TreasuryMovementData extends DForColumnTable {
         return id;
     }
 
-    public String getMovementDate() {
-        return movementDate.get();
-    }
-
-    public void setMovementDate(String movementDate) {
-        this.movementDate.set(movementDate);
-    }
-
-    public StringProperty movementDateProperty() {
-        return movementDate;
-    }
-
-    public String getTreasuryName() {
-        return treasuryName.get();
-    }
-
-    public void setTreasuryName(String treasuryName) {
-        this.treasuryName.set(treasuryName);
-    }
-
-    public StringProperty treasuryNameProperty() {
-        return treasuryName;
-    }
-
-    public String getMovementTypeName() {
-        return movementTypeName.get();
-    }
-
-    public void setMovementTypeName(String movementTypeName) {
-        this.movementTypeName.set(movementTypeName);
-    }
-
-    public StringProperty movementTypeNameProperty() {
-        return movementTypeName;
-    }
-
-    public String getNotes() {
-        return notes.get();
-    }
-
-    public void setNotes(String notes) {
-        this.notes.set(notes);
-    }
-
-    public StringProperty notesProperty() {
-        return notes;
-    }
 }

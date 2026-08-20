@@ -13,8 +13,7 @@ import lombok.Setter;
 @NoArgsConstructor
 public class UnitsModel extends DForColumnTable {
 
-    @ColumnData(titleName = NamesTables.CODE)
-    private IntegerProperty unit_id = new SimpleIntegerProperty();
+    private int unit_id;
     @ColumnData(titleName = NamesTables.NAME)
     private StringProperty unit_name = new SimpleStringProperty();
     /**
@@ -28,7 +27,7 @@ public class UnitsModel extends DForColumnTable {
     private DoubleProperty value = new SimpleDoubleProperty();
 
     public UnitsModel(int unit_id) {
-        this.unit_id = new SimpleIntegerProperty(unit_id);
+        this.unit_id = unit_id;
     }
 
     public UnitsModel(String unit_name) {
@@ -40,20 +39,6 @@ public class UnitsModel extends DForColumnTable {
         this.unit_name = new SimpleStringProperty(unit_name);
         this.value = new SimpleDoubleProperty(value);
     }
-
-    public int getUnit_id() {
-        return unit_id.get();
-    }
-
-    public void setUnit_id(int unit_id) {
-        this.unit_id.set(unit_id);
-    }
-
-
-    public IntegerProperty unit_idProperty() {
-        return unit_id;
-    }
-
 
     public String getUnit_name() {
         return unit_name.get();

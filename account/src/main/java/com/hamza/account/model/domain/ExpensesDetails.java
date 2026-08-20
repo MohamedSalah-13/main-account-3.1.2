@@ -1,10 +1,6 @@
 package com.hamza.account.model.domain;
 
-import com.hamza.account.config.NamesTables;
 import com.hamza.account.model.base.DForColumnTable;
-import com.hamza.controlsfx.table.ColumnData;
-import javafx.beans.property.ObjectProperty;
-import javafx.beans.property.SimpleObjectProperty;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -18,52 +14,13 @@ import java.time.LocalDate;
 @NoArgsConstructor
 public class ExpensesDetails extends DForColumnTable {
 
-    @ColumnData(titleName = NamesTables.CODE)
     private int id;
-    @ColumnData(titleName = NamesTables.DATE)
     private LocalDate localDate;
-    @ColumnData(titleName = NamesTables.AMOUNT)
     private double amount;
-    @ColumnData(titleName = NamesTables.NOTES)
     private String notes;
 
-    private ObjectProperty<Employees> employees = new SimpleObjectProperty<>();
-    private ObjectProperty<Treasury> treasuryModel = new SimpleObjectProperty<>();
-    private ObjectProperty<Expenses> expenses = new SimpleObjectProperty<>();
+    private Employees employees;
+    private Treasury treasuryModel;
+    private Expenses expenses;
 
-    public Employees getEmployees() {
-        return employees.get();
-    }
-
-    public void setEmployees(Employees employees) {
-        this.employees.set(employees);
-    }
-
-    public ObjectProperty<Employees> employeesProperty() {
-        return employees;
-    }
-
-    public Treasury getTreasuryModel() {
-        return treasuryModel.get();
-    }
-
-    public void setTreasuryModel(Treasury treasury) {
-        this.treasuryModel.set(treasury);
-    }
-
-    public ObjectProperty<Treasury> treasuryModelProperty() {
-        return treasuryModel;
-    }
-
-    public Expenses getExpenses() {
-        return expenses.get();
-    }
-
-    public void setExpenses(Expenses expenses) {
-        this.expenses.set(expenses);
-    }
-
-    public ObjectProperty<Expenses> expensesProperty() {
-        return expenses;
-    }
 }

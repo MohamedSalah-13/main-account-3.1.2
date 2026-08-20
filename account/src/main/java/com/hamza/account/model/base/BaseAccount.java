@@ -21,15 +21,14 @@ public abstract class BaseAccount extends DForColumnTable {
     private DoubleProperty purchase = new SimpleDoubleProperty();
     @ColumnData(titleName = NamesTables.CREDITOR)
     private DoubleProperty paid = new SimpleDoubleProperty();
-    @ColumnData(titleName = NamesTables.AMOUNT)
-    private DoubleProperty amount = new SimpleDoubleProperty();
+    private double amount;
     private StringProperty type = new SimpleStringProperty();
-    private StringProperty notes = new SimpleStringProperty();
+    private String notes;
     @ColumnData(titleName = NamesTables.DATE)
     private StringProperty date = new SimpleStringProperty();
 
-    private IntegerProperty invoice_number = new SimpleIntegerProperty(0);
-    private ObjectProperty<Treasury> treasury = new SimpleObjectProperty<>();
+    private int invoice_number;
+    private Treasury treasury;
 
     private TableName information;
     private String information_name;
@@ -38,9 +37,9 @@ public abstract class BaseAccount extends DForColumnTable {
         this.id.set(id);
         this.date.set(date);
         this.paid.set(paid);
-        this.notes.set(notes);
-        this.invoice_number.set(invoice_number);
-        this.setTreasury(treasury);
+        this.notes = notes;
+        this.invoice_number = invoice_number;
+        this.treasury = treasury;
     }
 
     public int getId() {
@@ -80,15 +79,11 @@ public abstract class BaseAccount extends DForColumnTable {
     }
 
     public double getAmount() {
-        return amount.get();
+        return amount;
     }
 
     public void setAmount(double amount) {
-        this.amount.set(amount);
-    }
-
-    public DoubleProperty amountProperty() {
-        return amount;
+        this.amount = amount;
     }
 
     public String getType() {
@@ -104,15 +99,11 @@ public abstract class BaseAccount extends DForColumnTable {
     }
 
     public String getNotes() {
-        return notes.get();
+        return notes;
     }
 
     public void setNotes(String notes) {
-        this.notes.set(notes);
-    }
-
-    public StringProperty notesProperty() {
-        return notes;
+        this.notes = notes;
     }
 
     public String getDate() {
@@ -128,27 +119,19 @@ public abstract class BaseAccount extends DForColumnTable {
     }
 
     public int getInvoice_number() {
-        return invoice_number.get();
-    }
-
-    public void setInvoice_number(int invoice_number) {
-        this.invoice_number.set(invoice_number);
-    }
-
-    public IntegerProperty invoice_numberProperty() {
         return invoice_number;
     }
 
+    public void setInvoice_number(int invoice_number) {
+        this.invoice_number = invoice_number;
+    }
+
     public Treasury getTreasury() {
-        return treasury.get();
+        return treasury;
     }
 
     public void setTreasury(Treasury treasury) {
-        this.treasury.set(treasury);
-    }
-
-    public ObjectProperty<Treasury> treasuryProperty() {
-        return treasury;
+        this.treasury = treasury;
     }
 
 }

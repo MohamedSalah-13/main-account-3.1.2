@@ -18,7 +18,7 @@ import java.util.List;
 public class Total_Sales extends BaseTotals {
 
     private ObjectProperty<Customers> customers = new SimpleObjectProperty<>();
-    private ObjectProperty<Employees> employeeObject = new SimpleObjectProperty<>();
+    private Employees employeeObject;
     private List<Sales> salesList = new ArrayList<>();
     private double total_profit;
     private double profit_percent;
@@ -39,15 +39,4 @@ public class Total_Sales extends BaseTotals {
         return customers;
     }
 
-    public Employees getEmployeeObject() {
-        return employeeObject.get();
-    }
-
-    public void setEmployeeObject(Employees employeeObject) {
-        this.employeeObject.set(employeeObject);
-    }
-
-    public ObjectProperty<Employees> employeeObjectProperty() {
-        return employeeObject;
-    }
 }

@@ -27,16 +27,14 @@ public abstract class BaseTotals extends DForColumnTable {
     private DoubleProperty total_after_discount = new SimpleDoubleProperty(0.0);
     @ColumnData(titleName = NamesTables.CREDITOR)
     private DoubleProperty paid = new SimpleDoubleProperty(0.0);
-    @ColumnData(titleName = NamesTables.REST)
-    private DoubleProperty rest = new SimpleDoubleProperty(0.0);
-    @ColumnData(titleName = NamesTables.NOTES)
-    private StringProperty notes = new SimpleStringProperty();
+    private double rest;
+    private String notes;
 
-    private ObjectProperty<Stock> stockData = new SimpleObjectProperty<>();
-    private ObjectProperty<Treasury> treasuryModel = new SimpleObjectProperty<>();
+    private Stock stockData;
+    private Treasury treasuryModel;
 
-    private DoubleProperty otherPaid = new SimpleDoubleProperty();
-    private DoubleProperty amountAfterOtherPaid = new SimpleDoubleProperty();
+    private double otherPaid;
+    private double amountAfterOtherPaid;
     private InvoiceType invoiceType;
     private InvoiceStatus invoice_status;
     private DiscountType discountType;
@@ -114,74 +112,50 @@ public abstract class BaseTotals extends DForColumnTable {
     }
 
     public double getRest() {
-        return rest.get();
-    }
-
-    public void setRest(double rest) {
-        this.rest.set(rest);
-    }
-
-    public DoubleProperty restProperty() {
         return rest;
     }
 
+    public void setRest(double rest) {
+        this.rest = rest;
+    }
+
     public String getNotes() {
-        return notes.get();
-    }
-
-    public void setNotes(String notes) {
-        this.notes.set(notes);
-    }
-
-    public StringProperty notesProperty() {
         return notes;
     }
 
+    public void setNotes(String notes) {
+        this.notes = notes;
+    }
+
     public Stock getStockData() {
-        return stockData.get();
-    }
-
-    public void setStockData(Stock stockData) {
-        this.stockData.set(stockData);
-    }
-
-    public ObjectProperty<Stock> stockDataProperty() {
         return stockData;
     }
 
+    public void setStockData(Stock stockData) {
+        this.stockData = stockData;
+    }
+
     public Treasury getTreasuryModel() {
-        return treasuryModel.get();
-    }
-
-    public void setTreasuryModel(Treasury treasury) {
-        this.treasuryModel.set(treasury);
-    }
-
-    public ObjectProperty<Treasury> treasuryModelProperty() {
         return treasuryModel;
     }
 
+    public void setTreasuryModel(Treasury treasury) {
+        this.treasuryModel = treasury;
+    }
+
     public double getOtherPaid() {
-        return otherPaid.get();
-    }
-
-    public void setOtherPaid(double otherPaid) {
-        this.otherPaid.set(otherPaid);
-    }
-
-    public DoubleProperty otherPaidProperty() {
         return otherPaid;
     }
 
+    public void setOtherPaid(double otherPaid) {
+        this.otherPaid = otherPaid;
+    }
+
     public double getAmountAfterOtherPaid() {
-        return amountAfterOtherPaid.get();
+        return amountAfterOtherPaid;
     }
 
     public void setAmountAfterOtherPaid(double amountAfterOtherPaid) {
-        this.amountAfterOtherPaid.set(amountAfterOtherPaid);
-    }
-
-    public DoubleProperty amountAfterOtherPaidProperty() {
-        return amountAfterOtherPaid;
+        this.amountAfterOtherPaid = amountAfterOtherPaid;
     }
 }

@@ -18,8 +18,7 @@ public class Stock extends DForColumnTable {
     private IntegerProperty id = new SimpleIntegerProperty();
     @ColumnData(titleName = NamesTables.NAME)
     private StringProperty name = new SimpleStringProperty();
-    @ColumnData(titleName = NamesTables.ADDRESS)
-    private StringProperty address = new SimpleStringProperty();
+    private String address;
 
     public Stock(int id) {
         this.id = new SimpleIntegerProperty(id);
@@ -36,7 +35,7 @@ public class Stock extends DForColumnTable {
 
     public Stock(int id, String name, String address) {
         this(id, name);
-        this.address = new SimpleStringProperty(address);
+        this.address = address;
     }
 
     public int getId() {
@@ -64,15 +63,11 @@ public class Stock extends DForColumnTable {
     }
 
     public String getAddress() {
-        return address.get();
+        return address;
     }
 
     public void setAddress(String address) {
-        this.address.set(address);
-    }
-
-    public StringProperty addressProperty() {
-        return address;
+        this.address = address;
     }
 
 }
