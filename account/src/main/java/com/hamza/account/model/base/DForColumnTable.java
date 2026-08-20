@@ -11,8 +11,24 @@ import lombok.Setter;
 import java.time.LocalDateTime;
 
 /**
- * @apiNote This Class used To add button to column
- * in tableView a {@link ButtonColumnI}
+ * Base of every row model, and the reason all ~20 of them still carry
+ * {@code javafx.beans.property} - see rule ق-ج1 in {@code docs/new-code-rules.md}.
+ * <p>
+ * {@code buttonColumnName} names the button {@link ButtonColumnI} adds to a row.
+ * {@code selectedRow} backs the row-selection checkbox column
+ * ({@code ColumnSetting.addSelectedColumn}), which needs a real
+ * {@code BooleanProperty} to bind to and is kept as a documented exception even
+ * where the rest of a model's properties have been cleaned (§12.5 of
+ * {@code docs/erp-roadmap.md}).
+ * <p>
+ * {@code users} is the "who created this row" every insert DAO reads via
+ * {@code getUsers().getId()} - correct for this desktop app's one
+ * process-wide signed-in user, and exactly the field ق-ج1 warns will break the
+ * moment this runs behind a request-scoped session: a field initializer runs at
+ * construction, not at insert, so on a server it would capture whichever
+ * request happened to be active. Moving the read to each DAO's insert call is
+ * the fix; not done here.
+ *
  * @see ButtonColumnI#columnName()
  */
 

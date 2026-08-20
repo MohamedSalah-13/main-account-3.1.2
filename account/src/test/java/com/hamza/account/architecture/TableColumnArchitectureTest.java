@@ -3,6 +3,8 @@ package com.hamza.account.architecture;
 import org.junit.jupiter.api.Test;
 
 import java.nio.file.Path;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.TreeSet;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -19,12 +21,14 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * {@code docs/erp-roadmap.md} replaced every one of the 18 direct call sites and
  * the 3 generic seams (§12.2, §12.3) with explicit column lists built through
  * {@code com.hamza.controlsfx.table.Columns}, then deleted both classes (§12.4)
- * once nothing referenced them. That deletion is itself the strongest form of
- * this guard: {@code @ColumnData} is no longer a type that exists, so writing it
- * anywhere is a compile error, not a lint failure to catch after the fact.
+ * once nothing referenced them.
  * <p>
- * What is left to guard is regression by reintroduction - someone adding either
- * class back, under the same name, and the reflective pattern creeping in again.
+ * That deletion closes only the wrapper, not the underlying risk: JavaFX's own
+ * {@code PropertyValueFactory} is still called directly in 33 places here (and 4
+ * more in {@code controlsfx} - see the sibling test there), all outside the
+ * screens §12 touched. {@link #theDirectPropertyValueFactoryCountOnlyGoesDown()}
+ * is what keeps that number from growing while those call sites wait for their
+ * own one-touch migration to {@code Columns}.
  */
 class TableColumnArchitectureTest {
 
@@ -32,6 +36,12 @@ class TableColumnArchitectureTest {
             Path.of("..", "controlsfx", "src", "main", "java", "com", "hamza", "controlsfx", "table");
 
     private static final String[] DELETED_CLASSES = {"ColumnData.java", "TableColumnAnnotation.java"};
+
+    /** Call sites when this rule was tightened after §12.4. Only ever lower this. */
+    private static final int DIRECT_PROPERTY_VALUE_FACTORY_BASELINE = 33;
+
+    private static final Pattern DIRECT_PROPERTY_VALUE_FACTORY =
+            Pattern.compile("new\\s+PropertyValueFactory\\s*<>\\s*\\(");
 
     @Test
     void theDeletedClassesStayDeleted() {
@@ -55,5 +65,23 @@ class TableColumnArchitectureTest {
         assertTrue(offenders.isEmpty(),
                 "Neither class exists any more, so any live reference here would already fail to "
                         + "compile - this only catches a reintroduction under the same name: " + offenders);
+    }
+
+    @Test
+    void theDirectPropertyValueFactoryCountOnlyGoesDown() {
+        int actual = 0;
+        for (String file : SourceTree.javaFiles(SourceTree.MAIN_JAVA)) {
+            Matcher matcher = DIRECT_PROPERTY_VALUE_FACTORY.matcher(SourceTree.withoutComments(SourceTree.readJava(file)));
+            while (matcher.find()) {
+                actual++;
+            }
+        }
+        assertTrue(actual <= DIRECT_PROPERTY_VALUE_FACTORY_BASELINE,
+                "new PropertyValueFactory<>(\"field\") resolves the field by name at run time - a "
+                        + "rename yields a silently empty column, the exact risk §12 removed "
+                        + "TableColumnAnnotation for (rule ق-ل1). Build the column with "
+                        + "com.hamza.controlsfx.table.Columns instead. Baseline "
+                        + DIRECT_PROPERTY_VALUE_FACTORY_BASELINE + ", found " + actual
+                        + ". If you migrated some, lower DIRECT_PROPERTY_VALUE_FACTORY_BASELINE to " + actual + ".");
     }
 }
