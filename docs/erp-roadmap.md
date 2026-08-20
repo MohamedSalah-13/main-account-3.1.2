@@ -729,9 +729,17 @@ main (pom)
 لـ `DataTable.classForColumn()`. لا تعرفان الموديل، فلا تستطيعان كتابة أعمدتهما؛ والحلّ
 الحرفي («اكتب الأعمدة في الـ controller») ينسخ الكود 17 مرة.
 
-- [ ] **12.1** `Columns` في `controlsfx`: مصنع أعمدة مكتوب
-      (`text(key, Function<S,String>)`، `number`، `date`) يحمل مفتاح الترجمة والتنسيق
-      والمحاذاة. مرجع الدالة مفحوص عند التصريف، وصفر انعكاس.
+- [x] **12.1 — بُني (2026-08-20).** [`Columns`](../controlsfx/src/main/java/com/hamza/controlsfx/table/Columns.java)
+      في `controlsfx`: `text(key, Function<S,String>)`، `number(key, Function<S,? extends Number>)`
+      (يحفظ نوع الرقم كما هو - `Integer` يبقى `Integer` ولا يتحوّل إلى `double`)، `date`
+      (تنسيق ISO، وتاريخ `null` يُعرض خليًّا لا كلمة "null")، و`column(key, extractor)` كباب
+      خلفي لأي نوع آخر. العنوان يُحلّ عبر نفس `LanguageManager` الذي تحلّه `TableColumnAnnotation`
+      اليوم، فشاشة تنتقل تُبقي نفس مفاتيح الحزمة. **لا يضبط `id` العمود** — `TableColumnAnnotation`
+      كان يضبطه دائمًا إلى اسم الحقل، وبعض المستدعين يعتمد على القيمة تحديدًا
+      (`CardController` يبحث عن `"balance".equals(column.getId())`)، فمن يحتاجه يستدعي
+      `TableColumn.setId(...)` بنفسه. مغطّى بـ`ColumnsTest` (5 اختبارات، بلا حاجة لمُشغّل
+      JavaFX - `TableColumn` قابل للبناء خارج الـ toolkit، لكن `TableView` ليس كذلك، فالاختبار
+      يمرّر `null` بدلًا منه في `CellDataFeatures`).
 - [ ] **12.2** تغيير الـ seam: `DataTable<T>.columns()` تعيد `List<TableColumn<T,?>>` بدل
       `classForColumn()`. السبعة عشر تنفيذًا تتحوّل واحدًا واحدًا.
 - [ ] **12.3** تحويل الـ19 موضعًا المباشرة (لا يعتمد على 12.1 لكنه يستفيد منه).
@@ -743,3 +751,7 @@ main (pom)
 > عكس الترتيب يكسر الجداول **صامتة** — بلا خطأ تصريف وبلا استثناء، مجرد أعمدة فارغة.
 > ولهذا السبب نفسه اختبار «العدّ لا يزيد» على `@ColumnData` يجب أن يُكتب مع 12.1 لا بعد
 > 12.4.
+
+> **12.1 مبنيّ ولا يزال بلا مستخدم واحد.** بناء `Columns` لا يغيّر عدّاد `TableColumnArchitectureTest`
+> بمفرده - العدّاد يهبط فقط حين تتحوّل شاشة فعليًّا (12.2 أو 12.3)، وذلك عمل بصري يحتاج تحقّقًا
+> بتشغيل التطبيق لم يُنفَّذ بعد.

@@ -1,6 +1,7 @@
 package com.hamza.account.controller.others;
 
 import com.hamza.account.config.Image_Setting;
+import com.hamza.account.config.AppIcon;
 import com.hamza.account.config.UiScale;
 import com.hamza.account.controller.items.ColumnImage;
 import com.hamza.account.controller.items.PaginationTableSetting;
@@ -37,7 +38,6 @@ import javafx.scene.layout.StackPane;
 import javafx.util.Callback;
 import lombok.Getter;
 import org.jetbrains.annotations.NotNull;
-import org.kordamp.ikonli.Ikon;
 import org.kordamp.ikonli.feather.Feather;
 import org.kordamp.ikonli.javafx.FontIcon;
 
@@ -125,18 +125,11 @@ public class SearchItemsController<T1 extends BasePurchasesAndSales>
 
     private void buttonSetting() {
         btnSave.setText(Setting_Language.OK);
-        btnSave.setGraphic(icon(Feather.CHECK));
+        btnSave.setGraphic(AppIcon.CONFIRM.graphic());
         btnClose.setText(Setting_Language.WORD_CANCEL);
-        btnClose.setGraphic(icon(Feather.X));
+        btnClose.setGraphic(AppIcon.CLOSE.graphic());
         btnClose.setId("btnClose");
-        btnAdd2.setGraphic(icon(Feather.PLUS));
-    }
-
-    private FontIcon icon(Ikon code) {
-        FontIcon fontIcon = new FontIcon(code);
-        fontIcon.setIconSize((int) Math.round(16 * UiScale.factor()));
-        fontIcon.getStyleClass().add("icon-graphic");
-        return fontIcon;
+        btnAdd2.setGraphic(AppIcon.ADD.graphic());
     }
 
     private void otherSetting() {

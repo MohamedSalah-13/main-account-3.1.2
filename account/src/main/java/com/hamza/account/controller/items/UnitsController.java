@@ -1,6 +1,7 @@
 package com.hamza.account.controller.items;
 
-import com.hamza.account.config.UiScale;
+import com.hamza.account.config.AppIcon;
+import com.hamza.account.config.IconFactory;
 import com.hamza.account.controller.others.ServiceRegistry;
 import com.hamza.account.features.events.UnitsChanged;
 import com.hamza.account.model.domain.UnitsModel;
@@ -26,7 +27,6 @@ import javafx.scene.layout.Pane;
 import javafx.scene.layout.StackPane;
 import lombok.extern.log4j.Log4j2;
 import org.jetbrains.annotations.NotNull;
-import org.kordamp.ikonli.Ikon;
 import org.kordamp.ikonli.feather.Feather;
 import org.kordamp.ikonli.javafx.FontIcon;
 
@@ -69,30 +69,13 @@ public class UnitsController implements Initializable, AppSettingInterface {
         buttonGraphic();
     }
 
-    /**
-     * The size the toolbar icons and the header icon render at, scaled from
-     * {@link UiScale} so a screen opened while a larger font size is set gets
-     * icons to match - the same reasoning that puts every dimension in
-     * app-theme.css in em rather than a fixed pixel count.
-     */
-    private int iconSize() {
-        return (int) Math.round(16 * UiScale.factor());
-    }
-
-    private FontIcon icon(Ikon code) {
-        FontIcon fontIcon = new FontIcon(code);
-        fontIcon.setIconSize(iconSize());
-        fontIcon.getStyleClass().add("icon-graphic");
-        return fontIcon;
-    }
-
     private void buttonGraphic() {
-        btnSave.setGraphic(icon(Feather.SAVE));
-        btnClear.setGraphic(icon(Feather.ROTATE_CCW));
-        btnRefresh.setGraphic(icon(Feather.REFRESH_CW));
+        btnSave.setGraphic(AppIcon.SAVE.graphic());
+        btnClear.setGraphic(AppIcon.CLEAR.graphic());
+        btnRefresh.setGraphic(AppIcon.REFRESH.graphic());
 
         headerIcon.setIconCode(Feather.PACKAGE);
-        headerIcon.setIconSize(iconSize() * 2);
+        headerIcon.setIconSize(IconFactory.baseSize() * 2);
     }
 
     private void tableSetting() {

@@ -1,6 +1,7 @@
 package com.hamza.account.controller.items;
 
-import com.hamza.account.config.UiScale;
+import com.hamza.account.config.AppIcon;
+import com.hamza.account.config.IconFactory;
 import com.hamza.account.controller.others.ServiceRegistry;
 import com.hamza.account.model.domain.ItemsModel;
 import com.hamza.account.model.domain.MainGroups;
@@ -24,7 +25,6 @@ import javafx.scene.text.Text;
 import javafx.stage.Popup;
 import lombok.extern.log4j.Log4j2;
 import org.jetbrains.annotations.NotNull;
-import org.kordamp.ikonli.Ikon;
 import org.kordamp.ikonli.feather.Feather;
 import org.kordamp.ikonli.javafx.FontIcon;
 
@@ -90,39 +90,23 @@ public class UpdateSomeItems {
         checkSetting();
     }
 
-    /**
-     * The size icons render at, scaled from {@link UiScale} the same way
-     * {@code UnitsController} does, so a screen opened at a larger font size
-     * still gets icons to match.
-     */
-    private int iconSize() {
-        return (int) Math.round(16 * UiScale.factor());
-    }
-
-    private FontIcon icon(Ikon code) {
-        FontIcon fontIcon = new FontIcon(code);
-        fontIcon.setIconSize(iconSize());
-        fontIcon.getStyleClass().add("icon-graphic");
-        return fontIcon;
-    }
-
     private void comboSetting() {
         var lm = LanguageManager.getInstance();
         btnSave.setText(lm.getString("common.save"));
         btnClose.setText(lm.getString("common.close"));
-        btnSave.setGraphic(icon(Feather.SAVE));
-        btnClose.setGraphic(icon(Feather.X));
+        btnSave.setGraphic(AppIcon.SAVE.graphic());
+        btnClose.setGraphic(AppIcon.CLOSE.graphic());
 
         headerIcon.setIconCode(Feather.SLIDERS);
-        headerIcon.setIconSize(iconSize() * 2);
+        headerIcon.setIconSize(IconFactory.baseSize() * 2);
 
         imageInformation.setIconCode(Feather.INFO);
-        imageInformation.setIconSize(iconSize());
+        imageInformation.setIconSize(IconFactory.baseSize());
 
         iconBuyPercent.setIconCode(Feather.PERCENT);
         iconSellPercent.setIconCode(Feather.PERCENT);
-        iconBuyPercent.setIconSize(iconSize());
-        iconSellPercent.setIconSize(iconSize());
+        iconBuyPercent.setIconSize(IconFactory.baseSize());
+        iconSellPercent.setIconSize(IconFactory.baseSize());
 
         checkUpdateGroup.setText(lm.getString("item.update.group"));
         checkUpdateActive.setText(lm.getString("item.update.active"));
