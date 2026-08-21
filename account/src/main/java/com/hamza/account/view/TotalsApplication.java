@@ -15,7 +15,7 @@ import lombok.Getter;
 public class TotalsApplication {
 
     private final Pane pane;
-    private final TotalsController<?, ?, ?> controller;
+    private final TotalsController<?, ?> controller;
 
     public TotalsApplication(DataInterface<?, ?, ?, ?> dataInterface, DaoFactory daoFactory
             , DataPublisher dataPublisher, EmployeeService employeeService) throws Exception {

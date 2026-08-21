@@ -21,7 +21,7 @@ import com.hamza.account.model.domain.CustomerAccount;
 import com.hamza.account.model.domain.Customers;
 import com.hamza.account.model.domain.Sales;
 import com.hamza.account.model.domain.Total_Sales;
-import com.hamza.account.perm.PermAccountAndNameInt;
+import com.hamza.account.model.base.BaseTotals;
 import com.hamza.account.service.EmployeeService;
 import com.hamza.account.service.TreasuryService;
 import com.hamza.account.service.SalesService;
@@ -38,7 +38,7 @@ public class CustomData extends LoadData implements DataInterface<Sales, Total_S
 
     private final DesignInterface designInterface = () -> DocumentType.SALES;
 
-    private final TotalDesignInterface<Total_Sales> totalDesignInterface = new TotalSalesImpDesign(this, totalSalesService);
+    private final TotalDesignInterface totalDesignInterface = new TotalSalesImpDesign(totalSalesService);
 
     private final InvoiceBuy<Sales, Total_Sales, Customers, CustomerAccount> invoiceBuy = new SalesInvoice();
 
@@ -87,7 +87,7 @@ public class CustomData extends LoadData implements DataInterface<Sales, Total_S
     }
 
     @Override
-    public TotalDesignInterface<Total_Sales> totalDesignInterface() {
+    public TotalDesignInterface totalDesignInterface() {
         return totalDesignInterface;
     }
 
@@ -144,8 +144,9 @@ public class CustomData extends LoadData implements DataInterface<Sales, Total_S
     }
 
     @Override
-    public void addList(List<Total_Sales> items, List<PrintPurchaseWithName> printPurchaseWithNames) throws DaoException {
-        for (Total_Sales totalSales : items) {
+    public void addList(List<? extends BaseTotals> items, List<PrintPurchaseWithName> printPurchaseWithNames) throws DaoException {
+        for (BaseTotals row : items) {
+            Total_Sales totalSales = (Total_Sales) row;
             var listPrint = listForAllPurchase(totalSales.getId());
             for (Sales value : listPrint) {
                 PrintPurchaseWithName purchase = new PrintPurchaseWithName();

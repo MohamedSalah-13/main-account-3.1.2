@@ -27,7 +27,7 @@ public interface DataInterface<T1 extends BasePurchasesAndSales, T2 extends Base
 
     DesignInterface designInterface();
 
-    TotalDesignInterface<T2> totalDesignInterface();
+    TotalDesignInterface totalDesignInterface();
 
     /**
      * Which side an {@link com.hamza.account.features.events.InvoiceSaved} from
@@ -62,7 +62,7 @@ public interface DataInterface<T1 extends BasePurchasesAndSales, T2 extends Base
     /** The header of a saved document, resolved - see {@link InvoiceHeaderView}. */
     default InvoiceHeaderView loadInvoiceHeader(int invoiceNumber) throws DaoException {
         T2 totals = totalsAndPurchaseList().totalDao().getDataById(invoiceNumber);
-        TotalsDataInterface<T2> totalsData = totalDesignInterface().totalsDataInterface();
+        TotalsDataInterface totalsData = totalDesignInterface().totalsDataInterface();
         return new InvoiceHeaderView(totals,
                 totalsData.getNameData(totals),
                 totalsData.getDelegateData(totals).getName(),
@@ -72,5 +72,5 @@ public interface DataInterface<T1 extends BasePurchasesAndSales, T2 extends Base
                 totalsData.getDateInsert(totals));
     }
 
-    void addList(List<T2> items, List<PrintPurchaseWithName> printPurchaseWithNames) throws DaoException;
+    void addList(List<? extends BaseTotals> items, List<PrintPurchaseWithName> printPurchaseWithNames) throws DaoException;
 }

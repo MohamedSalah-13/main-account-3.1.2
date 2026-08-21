@@ -1,16 +1,12 @@
 package com.hamza.account.interfaces.impl_totalDesgin;
 
-import com.hamza.account.interfaces.api.DataInterface;
 import com.hamza.account.interfaces.api.TotalDesignInterface;
 import com.hamza.account.interfaces.api.TotalsDataInterface;
 import com.hamza.account.interfaces.totals.TotalsBuyData;
-import com.hamza.account.model.domain.Purchase;
-import com.hamza.account.model.domain.SupplierAccount;
-import com.hamza.account.model.domain.Suppliers;
+import com.hamza.account.model.base.BaseTotals;
 import com.hamza.account.model.domain.Total_buy;
 import com.hamza.account.service.TotalBuyService;
 import com.hamza.controlsfx.database.DaoException;
-import com.hamza.controlsfx.excel.WriteExcelInterface;
 import com.hamza.controlsfx.language.Setting_Language;
 import javafx.beans.value.ObservableValue;
 import javafx.scene.control.TableColumn;
@@ -26,36 +22,35 @@ import static com.hamza.controlsfx.table.columnEdit.ColumnSetting.addColumn;
 
 @Log4j2
 @RequiredArgsConstructor
-public class TotalsPurchaseImplDesign implements TotalDesignInterface<Total_buy> {
+public class TotalsPurchaseImplDesign implements TotalDesignInterface {
 
     private final TotalBuyService totalBuyService;
-    private final DataInterface<Purchase, Total_buy, Suppliers, SupplierAccount> dataInterface;
+
+    /** Every row on this screen is a {@link Total_buy}; see {@link TotalsDataInterface}. */
+    private static Total_buy cast(BaseTotals t2) {
+        return (Total_buy) t2;
+    }
 
     @Override
-    public void getTable(TableView<Total_buy> tableView) {
-        Callback<TableColumn.CellDataFeatures<Total_buy, String>, ObservableValue<String>> cellName = f -> f.getValue().getSupplierData().nameProperty();
+    public void getTable(TableView<BaseTotals> tableView) {
+        Callback<TableColumn.CellDataFeatures<BaseTotals, String>, ObservableValue<String>> cellName = f -> cast(f.getValue()).getSupplierData().nameProperty();
         addColumn(tableView, Setting_Language.WORD_NAME, 2, cellName);
 
-        Callback<TableColumn.CellDataFeatures<Total_buy, String>, ObservableValue<String>> colNameType = f -> f.getValue().getInvoiceType().typeProperty();
+        Callback<TableColumn.CellDataFeatures<BaseTotals, String>, ObservableValue<String>> colNameType = f -> f.getValue().getInvoiceType().typeProperty();
         addColumn(tableView, Setting_Language.WORD_TYPE, 3, colNameType);
 
 
     }
 
-    @Override
-    public List<Total_buy> dataList() throws Exception {
-        return totalBuyService.getListByCurrentMonth();
-    }
-
     @NotNull
     @Override
-    public List<TableColumn<Total_buy, ?>> columns() {
+    public List<TableColumn<BaseTotals, ?>> columns() {
         return List.of();
     }
 
 
     @Override
-    public TotalsDataInterface<Total_buy> totalsDataInterface() {
+    public TotalsDataInterface totalsDataInterface() {
         return new TotalsBuyData();
     }
 
@@ -69,42 +64,4 @@ public class TotalsPurchaseImplDesign implements TotalDesignInterface<Total_buy>
         return totalBuyService.deleteMultiData(ids);
     }
 
-
-    @Override
-    public WriteExcelInterface<Total_buy> writeExcelInterface(List<Total_buy> items) {
-        return new WriteExcelInterface<>() {
-
-            @NotNull
-            @Override
-            public Object[] columnHeader() {
-                return new Object[]{Setting_Language.WORD_CODE, Setting_Language.WORD_DATE, Setting_Language.WORD_NAME, Setting_Language.WORD_TYPE, Setting_Language.WORD_TOTAL, Setting_Language.TOTAL_DISCOUNT, Setting_Language.THE_AMOUNT, Setting_Language.WORD_PAID, Setting_Language.WORD_REST};
-            }
-
-
-            @NotNull
-            @Override
-            public Object[] dataRow(Total_buy totalBuy) {
-                return new Object[]{totalBuy.getId(), totalBuy.getDate(), totalBuy.supplierDataProperty().get().getName(), totalBuy.getInvoiceType().getType(), totalBuy.getTotal(), totalBuy.getDiscount(), totalBuy.getTotal_after_discount(), totalBuy.getPaid(), totalBuy.getRest()};
-            }
-
-
-            @NotNull
-            @Override
-            public List<Total_buy> itemsList() {
-                return items;
-            }
-
-            @Override
-            public boolean addDataToFile() {
-                return true;
-            }
-
-
-            @NotNull
-            @Override
-            public String sheetName() {
-                return dataInterface.designInterface().nameTextOfTotal();
-            }
-        };
-    }
 }

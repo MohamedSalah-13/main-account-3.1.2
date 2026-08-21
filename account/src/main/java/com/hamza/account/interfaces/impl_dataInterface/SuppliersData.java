@@ -21,14 +21,13 @@ import com.hamza.account.model.domain.Purchase;
 import com.hamza.account.model.domain.SupplierAccount;
 import com.hamza.account.model.domain.Suppliers;
 import com.hamza.account.model.domain.Total_buy;
-import com.hamza.account.perm.PermAccountAndNameInt;
+import com.hamza.account.model.base.BaseTotals;
 import com.hamza.account.service.EmployeeService;
 import com.hamza.account.service.TreasuryService;
 import com.hamza.account.service.PurchaseService;
 import com.hamza.account.service.TotalBuyService;
 import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.database.DaoList;
-import com.hamza.controlsfx.observer.Publisher;
 
 import java.util.List;
 
@@ -40,7 +39,7 @@ public class SuppliersData
 
     private final DesignInterface designInterface = () -> DocumentType.PURCHASE;
 
-    private final TotalDesignInterface<Total_buy> totalDesignInterface = new TotalsPurchaseImplDesign(totalBuyService, this);
+    private final TotalDesignInterface totalDesignInterface = new TotalsPurchaseImplDesign(totalBuyService);
 
     private final InvoiceBuy<Purchase, Total_buy, Suppliers, SupplierAccount> invoiceBuy = new PurchaseInvoice();
 
@@ -89,7 +88,7 @@ public class SuppliersData
     }
 
     @Override
-    public TotalDesignInterface<Total_buy> totalDesignInterface() {
+    public TotalDesignInterface totalDesignInterface() {
         return totalDesignInterface;
     }
 
@@ -146,8 +145,9 @@ public class SuppliersData
     }
 
     @Override
-    public void addList(List<Total_buy> items, List<PrintPurchaseWithName> printPurchaseWithNames) throws DaoException {
-        for (Total_buy totalBuy : items) {
+    public void addList(List<? extends BaseTotals> items, List<PrintPurchaseWithName> printPurchaseWithNames) throws DaoException {
+        for (BaseTotals row : items) {
+            Total_buy totalBuy = (Total_buy) row;
             var listPrint = listForAllPurchase(totalBuy.getId());
             for (Purchase value : listPrint) {
                 PrintPurchaseWithName purchase = new PrintPurchaseWithName();

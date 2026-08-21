@@ -21,7 +21,7 @@ import com.hamza.account.model.domain.CustomerAccount;
 import com.hamza.account.model.domain.Customers;
 import com.hamza.account.model.domain.Sales_Return;
 import com.hamza.account.model.domain.Total_Sales_Re;
-import com.hamza.account.perm.PermAccountAndNameInt;
+import com.hamza.account.model.base.BaseTotals;
 import com.hamza.account.service.EmployeeService;
 import com.hamza.account.service.TreasuryService;
 import com.hamza.account.service.SalesReService;
@@ -38,7 +38,7 @@ public class CustomDataReturn extends LoadData implements DataInterface<Sales_Re
 
     private final DesignInterface designInterface = () -> DocumentType.SALES_RETURN;
 
-    private final TotalDesignInterface<Total_Sales_Re> totalDesignInterface = new TotalSalesReturnImplDesign(this, totalSalesReturnService);
+    private final TotalDesignInterface totalDesignInterface = new TotalSalesReturnImplDesign(totalSalesReturnService);
 
     private final InvoiceBuy<Sales_Return, Total_Sales_Re, Customers, CustomerAccount> invoiceBuy = new SalesInvoiceReturn();
 
@@ -86,7 +86,7 @@ public class CustomDataReturn extends LoadData implements DataInterface<Sales_Re
     }
 
     @Override
-    public TotalDesignInterface<Total_Sales_Re> totalDesignInterface() {
+    public TotalDesignInterface totalDesignInterface() {
         return totalDesignInterface;
     }
 
@@ -144,8 +144,9 @@ public class CustomDataReturn extends LoadData implements DataInterface<Sales_Re
     }
 
     @Override
-    public void addList(List<Total_Sales_Re> items, List<PrintPurchaseWithName> printPurchaseWithNames) throws DaoException {
-        for (Total_Sales_Re totalSalesRe : items) {
+    public void addList(List<? extends BaseTotals> items, List<PrintPurchaseWithName> printPurchaseWithNames) throws DaoException {
+        for (BaseTotals row : items) {
+            Total_Sales_Re totalSalesRe = (Total_Sales_Re) row;
             var listPrint = listForAllPurchase(totalSalesRe.getId());
             for (Sales_Return value : listPrint) {
                 PrintPurchaseWithName purchase = new PrintPurchaseWithName();

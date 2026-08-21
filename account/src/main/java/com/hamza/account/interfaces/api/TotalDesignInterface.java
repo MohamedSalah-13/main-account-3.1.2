@@ -1,19 +1,19 @@
 package com.hamza.account.interfaces.api;
 
 import com.hamza.account.model.base.BaseTotals;
-import com.hamza.controlsfx.excel.WriteExcelInterface;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.List;
+/**
+ * How one document family's totals screen is built and its rows deleted. Fixed on
+ * {@link BaseTotals} - see {@link TotalsDataInterface} for why the four implementations
+ * narrow with a checked cast instead of naming the concrete row type here.
+ */
+public interface TotalDesignInterface extends DataTable<BaseTotals> {
 
-public interface TotalDesignInterface<T extends BaseTotals> extends DataTable<T> {
-
-    TotalsDataInterface<T> totalsDataInterface();
+    TotalsDataInterface totalsDataInterface();
 
     int deleteData(int id) throws Exception;
 
     int deleteMultiData(@NotNull Integer... ids) throws Exception;
-
-    WriteExcelInterface<T> writeExcelInterface(List<T> items);
 
 }

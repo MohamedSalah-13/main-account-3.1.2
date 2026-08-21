@@ -1,16 +1,12 @@
 package com.hamza.account.interfaces.impl_totalDesgin;
 
-import com.hamza.account.interfaces.api.DataInterface;
 import com.hamza.account.interfaces.api.TotalDesignInterface;
 import com.hamza.account.interfaces.api.TotalsDataInterface;
 import com.hamza.account.interfaces.totals.TotalsBuyReturnData;
-import com.hamza.account.model.domain.Purchase_Return;
-import com.hamza.account.model.domain.SupplierAccount;
-import com.hamza.account.model.domain.Suppliers;
+import com.hamza.account.model.base.BaseTotals;
 import com.hamza.account.model.domain.Total_Buy_Re;
 import com.hamza.account.service.TotalBuyReturnService;
 import com.hamza.controlsfx.database.DaoException;
-import com.hamza.controlsfx.excel.WriteExcelInterface;
 import com.hamza.controlsfx.language.Setting_Language;
 import javafx.beans.value.ObservableValue;
 import javafx.scene.control.TableColumn;
@@ -26,35 +22,34 @@ import static com.hamza.controlsfx.table.columnEdit.ColumnSetting.addColumn;
 
 @Log4j2
 @RequiredArgsConstructor
-public class TotalsPurchaseReturnImplDesign implements TotalDesignInterface<Total_Buy_Re> {
+public class TotalsPurchaseReturnImplDesign implements TotalDesignInterface {
 
-    private final DataInterface<Purchase_Return, Total_Buy_Re, Suppliers, SupplierAccount> dataInterface;
     private final TotalBuyReturnService totalBuyReturnService;
 
+    /** Every row on this screen is a {@link Total_Buy_Re}; see {@link TotalsDataInterface}. */
+    private static Total_Buy_Re cast(BaseTotals t2) {
+        return (Total_Buy_Re) t2;
+    }
+
     @Override
-    public void getTable(TableView<Total_Buy_Re> tableView) {
-        Callback<TableColumn.CellDataFeatures<Total_Buy_Re, String>, ObservableValue<String>> cellName = f -> f.getValue().getSuppliers().nameProperty();
+    public void getTable(TableView<BaseTotals> tableView) {
+        Callback<TableColumn.CellDataFeatures<BaseTotals, String>, ObservableValue<String>> cellName = f -> cast(f.getValue()).getSuppliers().nameProperty();
         addColumn(tableView, Setting_Language.WORD_NAME, 2, cellName);
 
-        Callback<TableColumn.CellDataFeatures<Total_Buy_Re, String>, ObservableValue<String>> colNameType = f -> f.getValue().getInvoiceType().typeProperty();
+        Callback<TableColumn.CellDataFeatures<BaseTotals, String>, ObservableValue<String>> colNameType = f -> f.getValue().getInvoiceType().typeProperty();
         addColumn(tableView, Setting_Language.WORD_TYPE, 3, colNameType);
 
 
     }
 
     @Override
-    public List<Total_Buy_Re> dataList() throws Exception {
-        return totalBuyReturnService.getListByCurrentMonth();
-    }
-
-    @Override
-    public @NotNull List<TableColumn<Total_Buy_Re, ?>> columns() {
+    public @NotNull List<TableColumn<BaseTotals, ?>> columns() {
         return List.of();
     }
 
     @NotNull
     @Override
-    public TotalsDataInterface<Total_Buy_Re> totalsDataInterface() {
+    public TotalsDataInterface totalsDataInterface() {
         return new TotalsBuyReturnData();
     }
 
@@ -66,53 +61,6 @@ public class TotalsPurchaseReturnImplDesign implements TotalDesignInterface<Tota
     @Override
     public int deleteMultiData(@NotNull Integer... ids) throws Exception {
         return totalBuyReturnService.deleteMultiData(ids);
-    }
-
-    @NotNull
-    @Override
-    public WriteExcelInterface<Total_Buy_Re> writeExcelInterface(List<Total_Buy_Re> items) {
-        return new WriteExcelInterface<>() {
-            @NotNull
-            @Override
-            public Object[] columnHeader() {
-                return new Object[]{Setting_Language.WORD_CODE
-                        , Setting_Language.WORD_DATE
-                        , Setting_Language.WORD_NAME
-                        , Setting_Language.WORD_TOTAL
-                        , Setting_Language.WORD_DISCOUNT
-                        , Setting_Language.WORD_TOTAL
-                };
-            }
-
-            @NotNull
-            @Override
-            public Object[] dataRow(Total_Buy_Re totalBuy) {
-                return new Object[]{totalBuy.getId()
-                        , totalBuy.getDate()
-                        , totalBuy.getSuppliers().getName()
-                        , totalBuy.getTotal()
-                        , totalBuy.getDiscount()
-                        , totalBuy.getTotal() - totalBuy.getDiscount()
-                };
-            }
-
-            @NotNull
-            @Override
-            public List<Total_Buy_Re> itemsList() {
-                return items;
-            }
-
-            @Override
-            public boolean addDataToFile() {
-                return true;
-            }
-
-            @NotNull
-            @Override
-            public String sheetName() {
-                return dataInterface.designInterface().nameTextOfTotal();
-            }
-        };
     }
 
 }
