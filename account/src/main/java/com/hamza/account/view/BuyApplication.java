@@ -20,7 +20,7 @@ public class BuyApplication extends Application {
     private static final Map<Integer, Stage> openInvoices = new HashMap<>();
 
     private final Pane pane;
-    private final BuyController2<?, ?, ?, ?> controller;
+    private final BuyController2<?, ?> controller;
     private final int numInvoiceUpdate;
     private String title = "Buy";
 

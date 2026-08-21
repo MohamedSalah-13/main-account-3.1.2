@@ -52,19 +52,18 @@ import static com.hamza.account.config.PropertiesName.getSearchItemsSplitPaneDiv
 import static com.hamza.account.config.PropertiesName.setSearchItemsSplitPaneDivider;
 
 @FxmlPath(pathFile = "search-view.fxml")
-public class SearchItemsController<T1 extends BasePurchasesAndSales>
-        implements Initializable {
+public class SearchItemsController implements Initializable {
 
     private final DesignInterface designInterface;
-    private final DataInterface<T1, ?, ?, ?> dataInterface;
-    private final InvoiceBuy<T1, ?, ?, ?> invoiceBuy;
+    private final DataInterface<?, ?, ?, ?> dataInterface;
+    private final InvoiceBuy<?, ?, ?, ?> invoiceBuy;
     private final ObservableList<ItemsModel> itemsModels = FXCollections.observableArrayList();
-    private final ListProperty<T1> selectedItem = new SimpleListProperty<>();
+    private final ListProperty<BasePurchasesAndSales> selectedItem = new SimpleListProperty<>();
     private final TableView<ItemsModel> tableItems = new TableView<>();
     private final ItemsService itemsService = ServiceRegistry.get(ItemsService.class);
     @Getter
     @FXML
-    private TableView<T1> tableView;
+    private TableView<BasePurchasesAndSales> tableView;
     @FXML
     private TextField txtSearch;
     @FXML
@@ -86,7 +85,7 @@ public class SearchItemsController<T1 extends BasePurchasesAndSales>
     @FXML
     private Label labelTitle, labelSubtitle, labelCount;
 
-    public SearchItemsController(DataInterface<T1, ?, ?, ?> dataInterface) {
+    public SearchItemsController(DataInterface<?, ?, ?, ?> dataInterface) {
         this.dataInterface = dataInterface;
         this.invoiceBuy = dataInterface.invoiceBuy();
         this.designInterface = dataInterface.designInterface();
@@ -115,7 +114,7 @@ public class SearchItemsController<T1 extends BasePurchasesAndSales>
         labelTitle.setText(Setting_Language.WORD_SEARCH);
         labelSubtitle.setText(lm.getString("search.items.subtitle"));
 
-        tableView.getItems().addListener((javafx.collections.ListChangeListener<T1>) change -> updateAddedCount());
+        tableView.getItems().addListener((javafx.collections.ListChangeListener<BasePurchasesAndSales>) change -> updateAddedCount());
         updateAddedCount();
     }
 
@@ -207,7 +206,7 @@ public class SearchItemsController<T1 extends BasePurchasesAndSales>
                 Columns.number(NamesTables.TOTAL_AFTER, BasePurchasesAndSales::getTotal_after_discount)
         );
 
-        TableColumn<T1, ?> tableColumnSelPriceType = addColumn(Setting_Language.NAME_ITEM
+        TableColumn<BasePurchasesAndSales, ?> tableColumnSelPriceType = addColumn(Setting_Language.NAME_ITEM
                 , f -> f.getValue().getItems().nameItemProperty());
         tableView.getColumns().addFirst(tableColumnSelPriceType);
 //        tableView.getColumns().getFirst().setPrefWidth(250);
@@ -293,8 +292,9 @@ public class SearchItemsController<T1 extends BasePurchasesAndSales>
     }
 
     private void addData(ItemsModel itemsModel, double price) {
-        List<T1> list = new ArrayList<>();
-        Optional<T1> first = tableView.getItems().stream().filter(t1 -> t1.getItems().equals(itemsModel)).findFirst();
+        List<BasePurchasesAndSales> list = new ArrayList<>();
+        Optional<BasePurchasesAndSales> first = tableView.getItems().stream()
+                .filter(t1 -> t1.getItems().equals(itemsModel)).findFirst();
         if (first.isEmpty()) {
             // The row starts in the item's base unit, whose factor is 1 - not in
             // whatever units.value_d happens to say about that unit.
@@ -311,7 +311,7 @@ public class SearchItemsController<T1 extends BasePurchasesAndSales>
         this.selectedItem.set(selectedItem);
     }
 
-    public ListProperty<T1> selectedItemProperty() {
+    public ListProperty<BasePurchasesAndSales> selectedItemProperty() {
         return selectedItem;
     }
 }

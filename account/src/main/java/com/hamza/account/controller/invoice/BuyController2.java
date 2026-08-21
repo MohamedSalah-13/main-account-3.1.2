@@ -28,12 +28,11 @@ import com.hamza.account.features.invoice.InvoicePrintRequest;
 import com.hamza.account.features.invoice.InvoicePrintService;
 import com.hamza.account.features.invoice.InvoiceSaveCommand;
 import com.hamza.account.features.invoice.InvoiceSaveResult;
-import com.hamza.account.features.invoice.InvoiceSaveService;
 import com.hamza.account.features.invoice.InvoiceSaveValidator;
 import com.hamza.account.features.invoice.InvoiceValidationException;
 import com.hamza.account.features.notification.StockLevelAlert;
 import com.hamza.account.interfaces.api.DataInterface;
-import com.hamza.account.interfaces.api.TotalsDataInterface;
+import com.hamza.account.interfaces.api.InvoiceHeaderView;
 import com.hamza.account.model.base.BaseAccount;
 import com.hamza.account.model.base.BaseNames;
 import com.hamza.account.model.base.BasePurchasesAndSales;
@@ -93,10 +92,10 @@ import static com.hamza.controlsfx.util.ImageChoose.createIcon;
 
 @Log4j2
 @FxmlPath(pathFile = "invoice/buy-view2.fxml")
-public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTotals, T3 extends BaseNames, T4 extends BaseAccount>
-        extends BuyData<T1, T2, T3, T4> implements Initializable, AppSettingInterface {
+public class BuyController2<T3 extends BaseNames, T4 extends BaseAccount>
+        extends BuyData<T3, T4> implements Initializable, AppSettingInterface {
 
-    private final InvoiceEditorViewModel<T1> editor = new InvoiceEditorViewModel<>();
+    private final InvoiceEditorViewModel<BasePurchasesAndSales> editor = new InvoiceEditorViewModel<>();
     private final Subscriptions subscriptions = new Subscriptions();
     private final EventBus eventBus = ServiceRegistry.get(EventBus.class);
     private final InvoicePrintService invoicePrintService = new InvoicePrintService();
@@ -104,9 +103,8 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
     private final ItemsService itemsService = ServiceRegistry.get(ItemsService.class);
     private final EmployeeService employeeService = ServiceRegistry.get(EmployeeService.class);
     private final TreasuryService treasuryService = ServiceRegistry.get(TreasuryService.class);
-    private final InvoiceSaveService<T1, T2, T3, T4> invoiceSaveService;
     private final InvoicePostSaveService invoicePostSaveService;
-    private final InvoiceLineService<T1> invoiceLineService;
+    private final InvoiceLineService<BasePurchasesAndSales> invoiceLineService;
     private final InvoiceExpiryService invoiceExpiryService;
     private final InvoiceItemSelectionService invoiceItemSelectionService;
     private InvoiceItemEntryCoordinator itemEntry;
@@ -127,7 +125,7 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
     @FXML
     private TextField txtNum, txtBarcode, txtPrice, txtQuantity, txtItemBalance, txtTotals, txtOtherDiscount, txtPaid, txtRestAfterPaid, txtRestAfterDiscount;
     @FXML
-    private TableView<T1> table;
+    private TableView<BasePurchasesAndSales> table;
     @FXML
     private HBox boxTableArrow;
     @FXML
@@ -149,10 +147,8 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
     private MaskerPaneSetting maskerPaneSetting;
     private ReturnEntryCoordinator returnEntry;
 
-    public BuyController2(DataInterface<T1, T2, T3, T4> dataInterface, int numInvoiceUpdate) throws Exception {
+    public BuyController2(DataInterface<?, ?, T3, T4> dataInterface, int numInvoiceUpdate) throws Exception {
         super(dataInterface, numInvoiceUpdate);
-        this.invoiceSaveService = new InvoiceSaveService<>(dataInterface,
-                treasuryService::getTreasuryByName, employeeService::getDelegateByName);
         this.invoicePostSaveService = new InvoicePostSaveService(
                 eventBus, dataInterface.invoiceSide());
         this.invoiceLineService = new InvoiceLineService<>(
@@ -402,7 +398,7 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
 
     private void openSearchItems() {
         try {
-            SearchItemsApplication<T1> itemsApplication = new SearchItemsApplication<>(dataInterface);
+            SearchItemsApplication itemsApplication = new SearchItemsApplication(dataInterface);
 
             itemsApplication.start(new Stage());
             itemsApplication.getSearchItems().selectedItemProperty().addListener((observableValue, t1s, t1) -> {
@@ -538,22 +534,19 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
 
     private void selectData() {
         try {
-//            T2 dataById = totalsAndPurchaseList.totalDao().getDataById(num_invoice_update);
-            T2 dataById = totalsAndPurchaseList.totalDao().getDataById(num_invoice_update);
-            TotalsDataInterface<T2> totalsDataInterface = dataInterface.totalDesignInterface().totalsDataInterface();
+            InvoiceHeaderView header = dataInterface.loadInvoiceHeader(num_invoice_update);
+            BaseTotals dataById = header.totals();
             int id = dataById.getId();
-            String name = totalsDataInterface.getNameData(dataById);
             InvoiceType invoiceType = dataById.getInvoiceType();
             String invoiceDate = dataById.getDate();
-            String getDelegate = totalsDataInterface.getDelegateData(dataById).getName();
 
             date.setValue(LocalDate.parse(invoiceDate));
-            textSearchName.set(name);
-            comboDelegate.getSelectionModel().select(getDelegate);
+            textSearchName.set(header.partyName());
+            comboDelegate.getSelectionModel().select(header.delegateName());
             txtNum.setText(String.valueOf(id));
-            codeAccount = totalsDataInterface.getIdData(dataById);
-//            List<T1> collection = dataInterface.totalsAndPurchaseList().purchaseOrSalesDao().loadAllById(num_invoice_update);
-            List<T1> collection = dataInterface.totalsAndPurchaseList().purchaseOrSalesList(id, id);
+            codeAccount = header.partyId();
+            List<? extends BasePurchasesAndSales> collection =
+                    dataInterface.totalsAndPurchaseList().purchaseOrSalesList(id, id);
             editor.replaceLines(collection);
             invoiceLineService.captureOriginalLines(collection);
             invoiceExpiryService.captureOriginalLines(collection);
@@ -566,8 +559,7 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
             // was linked to - without it ReturnGuard reads a source of 0 and treats the
             // whole document as a free return it has nothing to compare against.
             returnEntry.restoreSource(
-                    totalsDataInterface.getSourceInvoiceNumber(dataById),
-                    totalsDataInterface.getReturnReason(dataById));
+                    header.sourceInvoiceNumber(), header.returnReason());
             returnEntry.showReturnedStatus(id);
         } catch (Exception e) {
             logError(e);
@@ -624,7 +616,7 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
         javafx.concurrent.Task<InvoiceSaveResult> task = new javafx.concurrent.Task<>() {
             @Override
             protected InvoiceSaveResult call() throws Exception {
-                return invoiceSaveService.save(command);
+                return dataInterface.saveInvoice(command);
             }
         };
         task.runningProperty().addListener((observable, wasRunning, running) ->
@@ -723,8 +715,8 @@ public class BuyController2<T1 extends BasePurchasesAndSales, T2 extends BaseTot
                     result.invoiceNumber(), result.payment().discount(),
                     LocalDateTime.now().format(DATE_TIME_FORMATTER), command.invoiceDate(),
                     getPrintPaperReceiptInvoice(),
-                    ShowInvoiceDetails.invoiceDetails(dataInterface,
-                            totalsAndPurchaseList.totalDao().getDataById(result.invoiceNumber())),
+                    ShowInvoiceDetails.invoiceDetails(
+                            dataInterface.loadInvoiceHeader(result.invoiceNumber())),
                     dataInterface.designInterface().nameTextOfInvoice());
         } catch (DaoException e) {
             logError(e);

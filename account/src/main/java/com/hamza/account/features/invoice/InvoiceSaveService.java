@@ -11,7 +11,6 @@ import com.hamza.account.features.returns.ReturnPolicy;
 import com.hamza.account.features.returns.ReturnSourceWriter;
 import com.hamza.account.features.stockledger.StockMovementAssembler;
 import com.hamza.account.features.stockledger.StockMovementDao;
-import com.hamza.account.interfaces.api.DataInterface;
 import com.hamza.account.interfaces.api.InvoiceBuy;
 import com.hamza.account.interfaces.api.TotalsAndPurchaseList;
 import com.hamza.account.model.base.BaseAccount;
@@ -50,13 +49,21 @@ public final class InvoiceSaveService<
     private final InvoiceLookup<Employees> delegateLookup;
     private final StockMovementDao stockMovementDao;
 
-    public InvoiceSaveService(DataInterface<T1, T2, T3, T4> dataInterface,
+    /**
+     * Built by the {@link com.hamza.account.interfaces.api.DataInterface} implementation
+     * itself, from its own concrete fields - not from the interface, which the screens
+     * above it now hold through wildcards. Taking the two collaborators directly is
+     * what keeps this class fully generic while its callers name nothing.
+     */
+    public InvoiceSaveService(InvoiceBuy<T1, T2, T3, T4> invoiceFactory,
+                              TotalsAndPurchaseList<T1, T2> repository,
+                              DocumentType documentType,
                               InvoiceLookup<Treasury> treasuryLookup,
                               InvoiceLookup<Employees> delegateLookup) {
-        this(dataInterface.invoiceBuy(), dataInterface.totalsAndPurchaseList(),
-                dataInterface.designInterface().documentType(), Clock.systemDefaultZone(),
+        this(invoiceFactory, repository,
+                documentType, Clock.systemDefaultZone(),
                 new JdbcInvoiceNumberAllocator(), InvoiceTransactionExecutor.jdbc(),
-                new InvoiceStockGuard(dataInterface.designInterface().documentType(),
+                new InvoiceStockGuard(documentType,
                         new JdbcInvoiceStockRepository()),
                 // The policy is read here, at the composition root, rather than inside
                 // ReturnGuard - the guard stays a pure decision over an injected policy,

@@ -3,7 +3,6 @@ package com.hamza.account.view;
 import com.hamza.account.config.Image_Setting;
 import com.hamza.account.controller.others.SearchItemsController;
 import com.hamza.account.interfaces.api.DataInterface;
-import com.hamza.account.model.base.BasePurchasesAndSales;
 import com.hamza.account.openFxml.OpenFxmlApplication;
 import com.hamza.controlsfx.language.Setting_Language;
 import javafx.application.Application;
@@ -14,13 +13,12 @@ import lombok.extern.log4j.Log4j2;
 
 @Getter
 @Log4j2
-public class SearchItemsApplication<T1 extends BasePurchasesAndSales>
-        extends Application {
+public class SearchItemsApplication extends Application {
 
-    private final SearchItemsController<T1> searchItems;
+    private final SearchItemsController searchItems;
 
-    public SearchItemsApplication(DataInterface<T1, ?, ?, ?> dataInterface) {
-        searchItems = new SearchItemsController<>(dataInterface);
+    public SearchItemsApplication(DataInterface<?, ?, ?, ?> dataInterface) {
+        searchItems = new SearchItemsController(dataInterface);
     }
 
     @Override

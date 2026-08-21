@@ -7,6 +7,9 @@ import com.hamza.account.controller.model.PrintPurchaseWithName;
 import com.hamza.account.controller.others.ServiceRegistry;
 import com.hamza.account.document.TotalsSearchCriteria;
 import com.hamza.account.features.events.InvoiceSide;
+import com.hamza.account.features.invoice.InvoiceSaveCommand;
+import com.hamza.account.features.invoice.InvoiceSaveResult;
+import com.hamza.account.features.invoice.InvoiceSaveService;
 import com.hamza.account.interfaces.api.*;
 import com.hamza.account.interfaces.impl_account.AccountCustomer;
 import com.hamza.account.interfaces.impl_invoiceBuy.SalesInvoiceReturn;
@@ -19,6 +22,8 @@ import com.hamza.account.model.domain.Customers;
 import com.hamza.account.model.domain.Sales_Return;
 import com.hamza.account.model.domain.Total_Sales_Re;
 import com.hamza.account.perm.PermAccountAndNameInt;
+import com.hamza.account.service.EmployeeService;
+import com.hamza.account.service.TreasuryService;
 import com.hamza.account.service.SalesReService;
 import com.hamza.account.service.TotalSalesReturnService;
 import com.hamza.controlsfx.database.DaoException;
@@ -121,6 +126,22 @@ public class CustomDataReturn extends LoadData implements DataInterface<Sales_Re
         return accountData;
     }
 
+
+    /**
+     * The save pipeline is built here, where T1/T2 are still concrete classes, and is
+     * reached from the invoice screen only through this method - which names neither.
+     * Built per save rather than kept in a field: its constructor reads the two return
+     * settings, and the settings screen writes them while the app is running.
+     */
+    @Override
+    public InvoiceSaveResult saveInvoice(InvoiceSaveCommand command) throws DaoException {
+        InvoiceSaveService<Sales_Return, Total_Sales_Re, Customers, CustomerAccount> invoiceSaveService =
+                new InvoiceSaveService<>(invoiceBuy, totalsAndPurchaseList,
+                        designInterface.documentType(),
+                        ServiceRegistry.get(TreasuryService.class)::getTreasuryByName,
+                        ServiceRegistry.get(EmployeeService.class)::getDelegateByName);
+        return invoiceSaveService.save(command);
+    }
 
     @Override
     public void addList(List<Total_Sales_Re> items, List<PrintPurchaseWithName> printPurchaseWithNames) throws DaoException {
