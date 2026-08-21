@@ -174,24 +174,42 @@ throwing a raw `RuntimeException` at a user-facing path fails the build.
 is the central abstraction. Four implementations in `interfaces/impl_dataInterface` — `CustomData`,
 `CustomDataReturn`, `SuppliersData`, `SuppliersDataReturn` — let one set of controllers
 (`BuyController2`, `TotalsController`, `AccountController2`) serve customer/supplier × sale/return. When
-changing invoice behaviour, check all four implementations, and expect heavily generic signatures.
+changing invoice behaviour, check all four implementations. The signatures above the interface are no
+longer heavily generic - see the next paragraph for what replaced them and why.
 
-**A class declares only the type parameters it actually uses.** The four used to be copied onto every
-class that so much as touched a `DataInterface` — 27 of them, most using none of the four for anything
-but passing the interface along. They now say what they mean: `NameController<T3, T4>`,
-`TotalsController<T2, T3, T4>`, `SearchItemsController<T1>`, and the seven `view/*Application` classes
-name none at all. Everything unused is a wildcard (`DataInterface<?, ?, T3, T4>`), and constructing the
-next controller down from it works because Java captures the wildcards — `new NameController<>(...)`
-needs no help. `LoadOtherData<T3, T4>` is the shared base for the name and account screens, which is
-why `TotalsService` keeps a second, T2-precise handle (`totalsInterface`) on the same object.
+**No consumer names T1 or T2 any more.** The four used to be copied onto every class that so much as
+touched a `DataInterface` — 27 of them. Today every screen declares at most `<T3, T4>`:
+`BuyController2`, `BuyData`, `ShowInvoiceController`, `TotalsController`, `TotalsService`,
+`TotalsButton`, `NameController`, and the `view/*Application` classes name none at all. The line and
+header types are held through wildcards (`DataInterface<?, ?, T3, T4>`) and never correlated, and
+constructing the next controller down works because Java captures the wildcards — `new
+NameController<>(...)` needs no help. **`MainItems` is the exception and has to be**: it constructs the
+four implementations, so it names all four parameters.
 
-`BuyData`, `BuyController2` and `ShowInvoiceController` still name all four, and genuinely use them.
-**The four cannot be deleted outright until the models are one.** Each parameter is bounded by exactly
-one base class, so widening them to the bases compiles at every *use* site - but the four
-implementations override methods that take the concrete type (`addList(List<Total_Sales>, …)`), and a
-widened parameter no longer overrides. Making it work would mean unchecked casts inside the
-implementations, which is the safety the generics are there for. A single `Document` model removes the
-parameters for free; nothing short of it does.
+Three things made that possible, and they are the pattern to reuse:
+
+- **A generic collaborator is built inside the implementation and exposed through a plain method.**
+  `DataInterface.saveInvoice(InvoiceSaveCommand): InvoiceSaveResult` — `InvoiceSaveService` stays fully
+  generic, but the four classes construct it where T1/T2 are still `Sales`/`Total_Sales`, so the
+  concrete type is never reconstructed from a wildcard and no cast is needed.
+- **Two questions that had to be correlated are answered once, together.** Through wildcards, each call
+  captures an independent type the compiler will not relate to another call's. `loadInvoiceHeader(int)`
+  returns an `InvoiceHeaderView` with the party name, delegate, source invoice and entry time already
+  resolved — a `default` method, since T2 is in scope inside the interface itself.
+- **Where neither works, a checked cast, in the file that already knows the answer.**
+  `TotalsDataInterface` and `TotalDesignInterface` are fixed on `BaseTotals`: `getCustomers()`,
+  `getCustomer()`, `getSuppliers()` and `getSupplierData()` are four different methods on four different
+  classes, and `TableColumn<S, ?>` is invariant in `S`, so there is no covariant escape the way there is
+  for `List`. The eight classes in `interfaces/totals/` and `interfaces/impl_totalDesgin/` each carry one
+  private `cast(BaseTotals)`. That is a JVM-verified cast on an ordinary class — not the unchecked
+  generics cast the warning below is about.
+
+**`DataInterface` itself still declares all four, and cannot stop until the models are one.** Each
+parameter is bounded by exactly one base class, so widening them compiles at every *use* site - but the
+four implementations override methods that take the concrete type (`InvoiceBuy.object_Totals` returns
+`Total_Sales` and calls `setSalesList(List<Sales>)`), and a widened parameter no longer overrides.
+Making it work would mean unchecked casts inside the implementations, which is the safety the generics
+are there for. A single `Document` model removes the parameters for free; nothing short of it does.
 
 **What the four are is declared in `account.document`, not spread over the screens.** `DocumentType`
 (SALES, SALES_RETURN, PURCHASE, PURCHASE_RETURN) answers what a document *means* — whose account it
