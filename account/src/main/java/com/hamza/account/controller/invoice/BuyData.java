@@ -1,5 +1,7 @@
 package com.hamza.account.controller.invoice;
 
+import com.hamza.account.document.InvoiceBuy;
+import com.hamza.account.document.TotalsAndPurchaseList;
 import com.hamza.account.interfaces.api.*;
 import com.hamza.account.model.base.BaseAccount;
 import com.hamza.account.model.base.BaseNames;

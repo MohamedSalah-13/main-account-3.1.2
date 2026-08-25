@@ -27,7 +27,7 @@ mvn -o -pl account -am test -Dtest=ScheduledBackupTest -Dsurefire.failIfNoSpecif
 
 **Coverage is real but uneven — know which half you are in.** JUnit 5 and Mockito are declared in the
 root pom and inherited by both modules; surefire needs no configuration. `mvn clean test` currently runs
-**888 tests across ~90 classes** — 98 in `controlsfx`, 790 in `account` — with 29 skipped (below). What is
+**890 tests across ~90 classes** — 98 in `controlsfx`, 792 in `account` — with 29 skipped (below). What is
 genuinely covered:
 
 - **The declarative specs, pinned character for character** — `DocumentDaoStatementsTest`,
@@ -37,8 +37,9 @@ genuinely covered:
   safety net for anything touching SQL. The last two read the foreign keys straight out of the
   migration files, so the schema itself is what they check against.
 - **Architecture rules** — `AuthorizationArchitectureTest`, `ErrorHandlingArchitectureTest`,
-  `DefaultRoleAcceptanceTest`. They fail when a new service skips the permission guard or a new
-  exception escapes the error boundary.
+  `DefaultRoleAcceptanceTest`, `DocumentPackageArchitectureTest`. They fail when a new service skips
+  the permission guard, a new exception escapes the error boundary, or `account.document` starts
+  importing one of the two packages that import it.
 - **The invoice logic** — the `features/invoice` package has a test per class, all without a JavaFX
   toolkit.
 
@@ -227,6 +228,18 @@ answer for themselves; `show()`, `update()`, `delete()`, `show_totals()`, `show_
 sale by comparing its permission against `SALES_SHOW` — a permission was the only field that differed
 between `DesignCustom` and `DesignCustomReturn`, and using it as an identity check is what a new
 document type would have broken.
+
+**`InvoiceBuy` and `TotalsAndPurchaseList` live there too**, and moved out of
+`interfaces.api` for a reason worth keeping: `DataInterface` exposes the save operation as
+`saveInvoice(InvoiceSaveCommand)`, so `interfaces.api` has to see `features.invoice`'s two
+records - and `InvoiceSaveService` used to need these two interfaces back out of
+`interfaces.api`, which made the two packages depend on each other. `account.document`
+imports neither and both already imported it, so it is the one place that breaks the cycle
+rather than moving it. It also happens to be where they belong: how a document family
+builds a line and a header, and how it reads its own rows, is the same kind of per-family
+declaration as `DocumentType` and `DocumentTableSpec`. **Keep `account.document` free of
+imports from `interfaces.*` and `features.invoice` - that is the property the whole
+arrangement rests on.**
 
 `DocumentTableSpec` is the other half: where a document's rows *live*. The four tables answer the same
 questions with different words — the key is `invoice_number` on the two invoices and `id` on the two
