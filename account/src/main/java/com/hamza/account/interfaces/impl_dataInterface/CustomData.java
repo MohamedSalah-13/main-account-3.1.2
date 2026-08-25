@@ -7,6 +7,9 @@ import com.hamza.account.controller.model.PrintPurchaseWithName;
 import com.hamza.account.controller.others.ServiceRegistry;
 import com.hamza.account.document.TotalsSearchCriteria;
 import com.hamza.account.features.events.InvoiceSide;
+import com.hamza.account.features.invoice.InvoiceSaveCommand;
+import com.hamza.account.features.invoice.InvoiceSaveResult;
+import com.hamza.account.features.invoice.InvoiceSaveService;
 import com.hamza.account.interfaces.api.*;
 import com.hamza.account.interfaces.impl_account.AccountCustomer;
 import com.hamza.account.interfaces.impl_invoiceBuy.SalesInvoice;
@@ -18,7 +21,9 @@ import com.hamza.account.model.domain.CustomerAccount;
 import com.hamza.account.model.domain.Customers;
 import com.hamza.account.model.domain.Sales;
 import com.hamza.account.model.domain.Total_Sales;
-import com.hamza.account.perm.PermAccountAndNameInt;
+import com.hamza.account.model.base.BaseTotals;
+import com.hamza.account.service.EmployeeService;
+import com.hamza.account.service.TreasuryService;
 import com.hamza.account.service.SalesService;
 import com.hamza.account.service.TotalSalesService;
 import com.hamza.controlsfx.database.DaoException;
@@ -33,7 +38,7 @@ public class CustomData extends LoadData implements DataInterface<Sales, Total_S
 
     private final DesignInterface designInterface = () -> DocumentType.SALES;
 
-    private final TotalDesignInterface<Total_Sales> totalDesignInterface = new TotalSalesImpDesign(this, totalSalesService);
+    private final TotalDesignInterface totalDesignInterface = new TotalSalesImpDesign(totalSalesService);
 
     private final InvoiceBuy<Sales, Total_Sales, Customers, CustomerAccount> invoiceBuy = new SalesInvoice();
 
@@ -82,7 +87,7 @@ public class CustomData extends LoadData implements DataInterface<Sales, Total_S
     }
 
     @Override
-    public TotalDesignInterface<Total_Sales> totalDesignInterface() {
+    public TotalDesignInterface totalDesignInterface() {
         return totalDesignInterface;
     }
 
@@ -122,9 +127,26 @@ public class CustomData extends LoadData implements DataInterface<Sales, Total_S
         return accountData;
     }
 
+    /**
+     * The save pipeline is built here, where T1/T2 are still concrete classes, and is
+     * reached from the invoice screen only through this method - which names neither.
+     * Built per save rather than kept in a field: its constructor reads the two return
+     * settings, and the settings screen writes them while the app is running.
+     */
     @Override
-    public void addList(List<Total_Sales> items, List<PrintPurchaseWithName> printPurchaseWithNames) throws DaoException {
-        for (Total_Sales totalSales : items) {
+    public InvoiceSaveResult saveInvoice(InvoiceSaveCommand command) throws DaoException {
+        InvoiceSaveService<Sales, Total_Sales, Customers, CustomerAccount> invoiceSaveService =
+                new InvoiceSaveService<>(invoiceBuy, totalsAndPurchaseList,
+                        designInterface.documentType(),
+                        ServiceRegistry.get(TreasuryService.class)::getTreasuryByName,
+                        ServiceRegistry.get(EmployeeService.class)::getDelegateByName);
+        return invoiceSaveService.save(command);
+    }
+
+    @Override
+    public void addList(List<? extends BaseTotals> items, List<PrintPurchaseWithName> printPurchaseWithNames) throws DaoException {
+        for (BaseTotals row : items) {
+            Total_Sales totalSales = (Total_Sales) row;
             var listPrint = listForAllPurchase(totalSales.getId());
             for (Sales value : listPrint) {
                 PrintPurchaseWithName purchase = new PrintPurchaseWithName();

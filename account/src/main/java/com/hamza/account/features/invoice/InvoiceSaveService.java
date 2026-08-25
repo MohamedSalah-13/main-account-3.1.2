@@ -11,7 +11,6 @@ import com.hamza.account.features.returns.ReturnPolicy;
 import com.hamza.account.features.returns.ReturnSourceWriter;
 import com.hamza.account.features.stockledger.StockMovementAssembler;
 import com.hamza.account.features.stockledger.StockMovementDao;
-import com.hamza.account.interfaces.api.DataInterface;
 import com.hamza.account.interfaces.api.InvoiceBuy;
 import com.hamza.account.interfaces.api.TotalsAndPurchaseList;
 import com.hamza.account.model.base.BaseAccount;
@@ -50,13 +49,21 @@ public final class InvoiceSaveService<
     private final InvoiceLookup<Employees> delegateLookup;
     private final StockMovementDao stockMovementDao;
 
-    public InvoiceSaveService(DataInterface<T1, T2, T3, T4> dataInterface,
+    /**
+     * Built by the {@link com.hamza.account.interfaces.api.DataInterface} implementation
+     * itself, from its own concrete fields - not from the interface, which the screens
+     * above it now hold through wildcards. Taking the two collaborators directly is
+     * what keeps this class fully generic while its callers name nothing.
+     */
+    public InvoiceSaveService(InvoiceBuy<T1, T2, T3, T4> invoiceFactory,
+                              TotalsAndPurchaseList<T1, T2> repository,
+                              DocumentType documentType,
                               InvoiceLookup<Treasury> treasuryLookup,
                               InvoiceLookup<Employees> delegateLookup) {
-        this(dataInterface.invoiceBuy(), dataInterface.totalsAndPurchaseList(),
-                dataInterface.designInterface().documentType(), Clock.systemDefaultZone(),
+        this(invoiceFactory, repository,
+                documentType, Clock.systemDefaultZone(),
                 new JdbcInvoiceNumberAllocator(), InvoiceTransactionExecutor.jdbc(),
-                new InvoiceStockGuard(dataInterface.designInterface().documentType(),
+                new InvoiceStockGuard(documentType,
                         new JdbcInvoiceStockRepository()),
                 // The policy is read here, at the composition root, rather than inside
                 // ReturnGuard - the guard stays a pure decision over an injected policy,
@@ -104,7 +111,7 @@ public final class InvoiceSaveService<
         return limit > 0 ? ReturnPolicy.cappingFreeReturns(limit) : ReturnPolicy.DEFAULT;
     }
 
-    public InvoiceSaveResult<T1, T2> save(InvoiceSaveCommand<T1> command) throws DaoException {
+    public InvoiceSaveResult save(InvoiceSaveCommand command) throws DaoException {
         if (command == null) {
             throw new DaoException("بيانات الفاتورة مفقودة");
         }
@@ -130,8 +137,8 @@ public final class InvoiceSaveService<
         return transactions.execute(() -> persist(command, payment));
     }
 
-    private InvoiceSaveResult<T1, T2> persist(InvoiceSaveCommand<T1> command,
-                                              InvoicePaymentTerms payment)
+    private InvoiceSaveResult persist(InvoiceSaveCommand command,
+                                      InvoicePaymentTerms payment)
             throws DaoException {
         stockGuard.validate(command);
         returnGuard.validate(documentType, command.sourceInvoiceNumber(),
@@ -177,7 +184,7 @@ public final class InvoiceSaveService<
         }
         writeStockMovements(invoiceNumber, command, persistedLines,
                 invoice.getUsers() == null ? null : invoice.getUsers().getId());
-        return new InvoiceSaveResult<>(invoiceNumber, command.updating(), invoice,
+        return new InvoiceSaveResult(invoiceNumber, command.updating(), invoice,
                 payment, persistedLines);
     }
 
@@ -189,7 +196,7 @@ public final class InvoiceSaveService<
      * anything - see {@link StockMovementDao#deleteByReference} for why that is a
      * deliberate, temporary exception to the ledger otherwise being append-only.
      */
-    private void writeStockMovements(int invoiceNumber, InvoiceSaveCommand<T1> command,
+    private void writeStockMovements(int invoiceNumber, InvoiceSaveCommand command,
                                      List<T1> persistedLines, Integer userId) throws DaoException {
         String referenceType = StockMovementAssembler.referenceTypeFor(documentType);
         stockMovementDao.deleteByReference(referenceType, invoiceNumber);

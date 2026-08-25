@@ -9,11 +9,11 @@ import com.hamza.account.controller.main.DataPublisher;
 import com.hamza.account.controller.main.LoadOtherData;
 import com.hamza.account.controller.model.ModelPrintInvoice;
 import com.hamza.account.interfaces.api.DataInterface;
+import com.hamza.account.interfaces.api.InvoiceHeaderView;
 import com.hamza.account.model.base.BaseAccount;
 import com.hamza.account.model.base.BaseNames;
 import com.hamza.account.config.NamesTables;
 import com.hamza.account.model.base.BasePurchasesAndSales;
-import com.hamza.account.model.base.BaseTotals;
 import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.model.domain.ItemsModel;
 import com.hamza.account.openFxml.FxmlPath;
@@ -55,10 +55,9 @@ import static com.hamza.controlsfx.util.NumberUtils.roundToTwoDecimalPlaces;
 
 @Log4j2
 @FxmlPath(pathFile = "invoice/showInv-view.fxml")
-public class ShowInvoiceController<T1 extends BasePurchasesAndSales, T2 extends BaseTotals, T3 extends BaseNames, T4 extends BaseAccount>
+public class ShowInvoiceController<T3 extends BaseNames, T4 extends BaseAccount>
         extends LoadOtherData<T3, T4> implements Initializable, AppSettingInterface {
 
-    private final DataInterface<T1, T2, T3, T4> dataInterface;
     private final String name;
     private final int invNum;
     @FXML
@@ -74,17 +73,16 @@ public class ShowInvoiceController<T1 extends BasePurchasesAndSales, T2 extends 
     private VBox root;
     @FXML
     private Button btnPrint, btnPrintBarcode;
-    private List<T1> list;
-    private T2 tObject;
+    private List<? extends BasePurchasesAndSales> list;
+    private InvoiceHeaderView header;
     private String date_insert;
 
-    public ShowInvoiceController(DataInterface<T1, T2, T3, T4> dataInterface
+    public ShowInvoiceController(DataInterface<?, ?, T3, T4> dataInterface
             , DaoFactory daoFactory, DataPublisher dataPublisher
             , int num, String name) throws Exception {
         super(dataInterface, daoFactory, dataPublisher);
         this.invNum = num;
         this.name = name;
-        this.dataInterface = dataInterface;
     }
 
 
@@ -98,7 +96,7 @@ public class ShowInvoiceController<T1 extends BasePurchasesAndSales, T2 extends 
 
     private void loadData() {
         try {
-            tObject = dataInterface.totalsAndPurchaseList().totalDao().getDataById(invNum);
+            header = dataInterface.loadInvoiceHeader(invNum);
             list = dataInterface.listForAllPurchase(invNum);
         } catch (DaoException e) {
             AllAlerts.handleError(LanguageManager.getInstance().getString("invoice.error.load.details.title"), e);
@@ -151,7 +149,7 @@ public class ShowInvoiceController<T1 extends BasePurchasesAndSales, T2 extends 
         textTotalProfit.setVisible(b);
 
         // other data
-        HashMap<String, Object> hashMap = ShowInvoiceDetails.invoiceDetails(dataInterface, tObject);
+        HashMap<String, Object> hashMap = ShowInvoiceDetails.invoiceDetails(header);
         txtCode.setText(String.valueOf(hashMap.get(ShowInvoiceNameData.ID)));
         txtName.setText(String.valueOf(hashMap.get(ShowInvoiceNameData.NAME)));
         txtDate.setText(String.valueOf(hashMap.get(ShowInvoiceNameData.DATE)));
@@ -198,7 +196,7 @@ public class ShowInvoiceController<T1 extends BasePurchasesAndSales, T2 extends 
 
     private void printData() {
         List<ModelPrintInvoice> modelPrintInvoices = new ArrayList<>();
-        for (T1 t11 : list) {
+        for (BasePurchasesAndSales t11 : list) {
             ItemsModel itemsModel = t11.getItems();
             double price = t11.getPrice();
             double quantity = t11.getQuantity();
@@ -213,15 +211,17 @@ public class ShowInvoiceController<T1 extends BasePurchasesAndSales, T2 extends 
             printReports.printReceiptInvoice(modelPrintInvoices, txtName.getText(), invNum
                     , Double.parseDouble(textInvoiceDiscount.getText()), date_insert, txtDate.getText(), 0);
         } else
-            printReports.printInvoice(modelPrintInvoices, ShowInvoiceDetails.invoiceDetails(dataInterface, tObject), dataInterface.designInterface().nameTextOfInvoice());
+            printReports.printInvoice(modelPrintInvoices, ShowInvoiceDetails.invoiceDetails(header), dataInterface.designInterface().nameTextOfInvoice());
     }
 
     private void rowColorForSearchItemsName() {
         if (name != null) {
-            TableColumn<T1, String> itemsTableColumn = (TableColumn<T1, String>) tableView.getColumns().get(1);
+            @SuppressWarnings("unchecked")
+            TableColumn<BasePurchasesAndSales, String> itemsTableColumn =
+                    (TableColumn<BasePurchasesAndSales, String>) tableView.getColumns().get(1);
             new RowColor().customiseRowByCell(itemsTableColumn, new RowColorInterface<>() {
                 @Override
-                public boolean checkRow(TableCell<T1, String> tsTableCell) {
+                public boolean checkRow(TableCell<BasePurchasesAndSales, String> tsTableCell) {
                     if (tsTableCell != null) {
                         return tsTableCell.getTableRow().getItem().getItems().getNameItem().equals(name);
                     }

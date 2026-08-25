@@ -77,8 +77,8 @@ import static com.hamza.controlsfx.util.ImageChoose.createIcon;
 
 @Log4j2
 @FxmlPath(pathFile = "invoice/totals.fxml")
-public class TotalsController<T2 extends BaseTotals, T3 extends BaseNames, T4 extends BaseAccount>
-        extends TotalsService<T2, T3, T4> implements Initializable {
+public class TotalsController<T3 extends BaseNames, T4 extends BaseAccount>
+        extends TotalsService<T3, T4> implements Initializable {
 
     private final CssToColorHelper helper;
     private final EventBus eventBus = ServiceRegistry.get(EventBus.class);
@@ -86,13 +86,13 @@ public class TotalsController<T2 extends BaseTotals, T3 extends BaseNames, T4 ex
     private final EmployeeService employeeService;
     private final UsersService usersService = ServiceRegistry.get(UsersService.class);
     private final Preferences preferences = Preferences.userNodeForPackage(TotalsController.class);
-    private final ObservableList<T2> observableList;
+    private final ObservableList<BaseTotals> observableList;
     private final String dateFromKey;
     private final String dateToKey;
     private boolean update_data = true;
     private MaskerPaneSetting maskerPaneSetting;
     @FXML
-    private TableView<T2> tableView;
+    private TableView<BaseTotals> tableView;
     @FXML
     private TextField textSearch;
     @FXML
@@ -126,7 +126,7 @@ public class TotalsController<T2 extends BaseTotals, T3 extends BaseNames, T4 ex
     @FXML
     private MenuItem menuItemPrintTotals, menuItemPrintDetailed;
 
-    public TotalsController(DataInterface<?, T2, T3, T4> dataInterface, DaoFactory daoFactory
+    public TotalsController(DataInterface<?, ?, T3, T4> dataInterface, DaoFactory daoFactory
             , DataPublisher dataPublisher, EmployeeService employeeService
             , CssToColorHelper helper) throws Exception {
         super(dataInterface, daoFactory, dataPublisher);
@@ -247,7 +247,7 @@ public class TotalsController<T2 extends BaseTotals, T3 extends BaseNames, T4 ex
      * The columns every totals screen shares, reflected off {@link BaseTotals}
      * until this migrated off {@code TableColumnAnnotation} - see rule ق-ل1.
      */
-    private List<TableColumn<T2, ?>> baseTotalsColumns() {
+    private List<TableColumn<BaseTotals, ?>> baseTotalsColumns() {
         return List.of(
                 Columns.number(NamesTables.CODE, BaseTotals::getId),
                 Columns.text(NamesTables.DATE, BaseTotals::getDate),
@@ -268,22 +268,22 @@ public class TotalsController<T2 extends BaseTotals, T3 extends BaseNames, T4 ex
         tableView.getSelectionModel().setSelectionMode(SelectionMode.SINGLE);
         ColumnSetting.addSelectedColumn(tableView);
 
-        SortedList<T2> sortedList = new SortedList<>(observableList);
+        SortedList<BaseTotals> sortedList = new SortedList<>(observableList);
         sortedList.comparatorProperty().bind(tableView.comparatorProperty());
         tableView.setItems(sortedList);
         tableView.refresh();
         TableSetting.tableMenuSetting(getClass(), tableView);
 
-        Callback<TableColumn.CellDataFeatures<T2, String>, ObservableValue<String>> colUser = f -> f.getValue().getUsers().usernameProperty();
+        Callback<TableColumn.CellDataFeatures<BaseTotals, String>, ObservableValue<String>> colUser = f -> f.getValue().getUsers().usernameProperty();
         addColumn(tableView, LanguageManager.getInstance().getString("users"), tableView.getColumns().size(), colUser);
 
-        Callback<TableColumn.CellDataFeatures<T2, String>, ObservableValue<String>> totalTime =
+        Callback<TableColumn.CellDataFeatures<BaseTotals, String>, ObservableValue<String>> totalTime =
                 cellData -> new SimpleStringProperty(cellData.getValue().getCreated_at().toString());
         addColumn(tableView, LanguageManager.getInstance().getString("column.entry.time"), tableView.getColumns().size(), totalTime);
 
 
         tableView.setRowFactory(t2TableView -> {
-            TableRow<T2> row = new TableRow<>();
+            TableRow<BaseTotals> row = new TableRow<>();
             row.itemProperty().addListener((observable, oldValue, newValue) -> {
                 if (newValue != null) {
                     if (newValue.getTotal() <= 0.0) {
@@ -357,9 +357,9 @@ public class TotalsController<T2 extends BaseTotals, T3 extends BaseNames, T4 ex
 
         btnSearch.setOnAction(actionEvent -> search());
         btnUpdate.setOnAction(actionEvent -> {
-            OpenMethod<T2> openMethod = new OpenMethod<>() {
+            OpenMethod<BaseTotals> openMethod = new OpenMethod<>() {
                 @Override
-                public void action(T2 t2) throws Exception {
+                public void action(BaseTotals t2) throws Exception {
                     update(t2);
                 }
             };
@@ -393,9 +393,9 @@ public class TotalsController<T2 extends BaseTotals, T3 extends BaseNames, T4 ex
 
         });
         btnShowInvoice.setOnAction(actionEvent -> {
-            OpenMethod<T2> openMethod = new OpenMethod<>() {
+            OpenMethod<BaseTotals> openMethod = new OpenMethod<>() {
                 @Override
-                public void action(T2 t2) throws Exception {
+                public void action(BaseTotals t2) throws Exception {
                     showInvoiceData(t2);
                 }
             };
@@ -422,7 +422,7 @@ public class TotalsController<T2 extends BaseTotals, T3 extends BaseNames, T4 ex
         });
 
         btnSelected.selectedProperty().addListener((observableValue, aBoolean, t1) -> {
-            List<T2> list = tableView.getItems().stream().toList();
+            List<BaseTotals> list = tableView.getItems().stream().toList();
             list.forEach(t2 -> t2.setSelectedRow(t1));
 
             if (t1) btnSelected.setText(LanguageManager.getInstance().getString("common.cancel.select.all"));
@@ -431,7 +431,7 @@ public class TotalsController<T2 extends BaseTotals, T3 extends BaseNames, T4 ex
     }
 
     private void copyInvoiceDetailsToClipboard() {
-        T2 selectedItem = tableView.getSelectionModel().getSelectedItem();
+        BaseTotals selectedItem = tableView.getSelectionModel().getSelectedItem();
         if (selectedItem != null) {
             var s = dataInterface.designInterface().nameTextOfInvoice();
             String content = String.format(LanguageManager.getInstance().getString("invoice.clipboard.format"),
@@ -465,9 +465,9 @@ public class TotalsController<T2 extends BaseTotals, T3 extends BaseNames, T4 ex
         preferences.put(dateToKey, criteria.dateTo().toString());
         TotalsSearchCriteria finalCriteria = criteria;
         maskerPaneSetting.showMaskerPane(LanguageManager.getInstance().getString("invoice.masker.loading"), () -> {
-            List<T2> result;
+            List<? extends BaseTotals> result;
             try {
-                result = totalsInterface.totalsAndPurchaseList().searchTotals(finalCriteria);
+                result = totalsAndPurchaseList.searchTotals(finalCriteria);
             } catch (Exception e) {
                 Platform.runLater(() -> exceptionHandle(e));
                 return;
@@ -541,7 +541,7 @@ public class TotalsController<T2 extends BaseTotals, T3 extends BaseNames, T4 ex
         comboName.getSelectionModel().selectFirst();
     }
 
-    private void update(T2 t2) throws Exception {
+    private void update(BaseTotals t2) throws Exception {
         int i = t2.getId();
 
         // The accounting lock decides this now, not the calendar. What was here refused
@@ -576,11 +576,11 @@ public class TotalsController<T2 extends BaseTotals, T3 extends BaseNames, T4 ex
         String date2 = dateTo.getValue().toString();
 
         List<PrintTotalsData> printTotalsDataList = new ArrayList<>();
-        List<T2> list = tableView.getItems().stream()
+        List<BaseTotals> list = tableView.getItems().stream()
                 .filter(t2 -> t2.isSelectedRow())
                 .toList();
         list.forEach(t2 -> {
-            TotalsDataInterface<T2> anInterface = totalDesignInterface.totalsDataInterface();
+            TotalsDataInterface anInterface = totalDesignInterface.totalsDataInterface();
             printTotalsDataList.add(new PrintTotalsData(t2.getId(), anInterface.getNameData(t2)
                     , t2.getDate(), t2.getInvoiceType().getType()
                     , t2.getTotal(), t2.getDiscount(), t2.getTotal_after_discount()
@@ -592,14 +592,14 @@ public class TotalsController<T2 extends BaseTotals, T3 extends BaseNames, T4 ex
 
     private void printDetailed() {
         try {
-            List<T2> items = new ArrayList<>();
+            List<BaseTotals> items = new ArrayList<>();
             for (int i = 0; i < tableView.getItems().size(); i++) {
                 if (tableView.getItems().get(i).isSelectedRow()) {
                     items.add(tableView.getItems().get(i));
                 }
             }
             List<PrintPurchaseWithName> printPurchaseWithNames = new ArrayList<>();
-            totalsInterface.addList(items, printPurchaseWithNames);
+            dataInterface.addList(items, printPurchaseWithNames);
             String date1 = dateFrom.getValue().toString();
             String date2 = dateTo.getValue().toString();
             printReports.printMultiInvoice(printPurchaseWithNames, dataInterface.designInterface().nameTextOfTotal(), date1, date2, null);
@@ -608,7 +608,7 @@ public class TotalsController<T2 extends BaseTotals, T3 extends BaseNames, T4 ex
         }
     }
 
-    private void showInvoiceData(T2 t2) throws Exception {
+    private void showInvoiceData(BaseTotals t2) throws Exception {
         int id = t2.getId();
         String name = totalsDataInterface.getNameData(t2);
         new ShowInvoiceApplication(dataPublisher, dataInterface, daoFactory, id, name);
@@ -631,7 +631,7 @@ public class TotalsController<T2 extends BaseTotals, T3 extends BaseNames, T4 ex
         textProfit.setText(MoneyMath.text(profit));
     }
 
-    private BigDecimal getMoneySum(ToDoubleFunction<T2> valueFunction) {
+    private BigDecimal getMoneySum(ToDoubleFunction<BaseTotals> valueFunction) {
         return MoneyMath.sum(tableView.getItems().stream().mapToDouble(valueFunction));
     }
 

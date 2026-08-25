@@ -11,7 +11,7 @@ import java.time.LocalDate;
 import java.util.List;
 
 /** Immutable input captured from the invoice screen before persistence starts. */
-public record InvoiceSaveCommand<T extends BasePurchasesAndSales>(
+public record InvoiceSaveCommand(
         int existingInvoiceId,
         LocalDate invoiceDate,
         InvoiceType invoiceType,
@@ -35,7 +35,7 @@ public record InvoiceSaveCommand<T extends BasePurchasesAndSales>(
         int sourceInvoiceNumber,
         /** Why the document was returned, or {@code null} - unset until item 10's dialog offers one. */
         ReturnReason returnReason,
-        List<T> lines) {
+        List<? extends BasePurchasesAndSales> lines) {
 
     public InvoiceSaveCommand {
         invoiceDiscount = MoneyMath.money(invoiceDiscount);
@@ -53,7 +53,7 @@ public record InvoiceSaveCommand<T extends BasePurchasesAndSales>(
                               DiscountType discountType, BigDecimal enteredPaid,
                               String notes, int partyId, String partyName,
                               String treasuryName, String delegateName,
-                              boolean allowInsufficientStock, List<T> lines) {
+                              boolean allowInsufficientStock, List<? extends BasePurchasesAndSales> lines) {
         this(existingInvoiceId, invoiceDate, invoiceType, invoiceDiscount,
                 discountType, enteredPaid, notes, partyId, partyName,
                 treasuryName, delegateName, allowInsufficientStock, 0, null, lines);
@@ -64,7 +64,7 @@ public record InvoiceSaveCommand<T extends BasePurchasesAndSales>(
                               InvoiceType invoiceType, BigDecimal invoiceDiscount,
                               DiscountType discountType, BigDecimal enteredPaid,
                               String notes, int partyId, String partyName,
-                              String treasuryName, String delegateName, List<T> lines) {
+                              String treasuryName, String delegateName, List<? extends BasePurchasesAndSales> lines) {
         this(existingInvoiceId, invoiceDate, invoiceType, invoiceDiscount,
                 discountType, enteredPaid, notes, partyId, partyName,
                 treasuryName, delegateName, false, lines);
@@ -75,7 +75,7 @@ public record InvoiceSaveCommand<T extends BasePurchasesAndSales>(
                               InvoiceType invoiceType, double invoiceDiscount,
                               DiscountType discountType, double enteredPaid,
                               String notes, int partyId, String partyName,
-                              String treasuryName, String delegateName, List<T> lines) {
+                              String treasuryName, String delegateName, List<? extends BasePurchasesAndSales> lines) {
         this(existingInvoiceId, invoiceDate, invoiceType,
                 MoneyMath.decimal(invoiceDiscount), discountType,
                 MoneyMath.decimal(enteredPaid), notes, partyId, partyName,
@@ -87,7 +87,7 @@ public record InvoiceSaveCommand<T extends BasePurchasesAndSales>(
                               DiscountType discountType, double enteredPaid,
                               String notes, int partyId, String partyName,
                               String treasuryName, String delegateName,
-                              boolean allowInsufficientStock, List<T> lines) {
+                              boolean allowInsufficientStock, List<? extends BasePurchasesAndSales> lines) {
         this(existingInvoiceId, invoiceDate, invoiceType,
                 MoneyMath.decimal(invoiceDiscount), discountType,
                 MoneyMath.decimal(enteredPaid), notes, partyId, partyName,
@@ -101,7 +101,7 @@ public record InvoiceSaveCommand<T extends BasePurchasesAndSales>(
                               String notes, int partyId, String partyName,
                               String treasuryName, String delegateName,
                               boolean allowInsufficientStock, int sourceInvoiceNumber,
-                              ReturnReason returnReason, List<T> lines) {
+                              ReturnReason returnReason, List<? extends BasePurchasesAndSales> lines) {
         this(existingInvoiceId, invoiceDate, invoiceType,
                 MoneyMath.decimal(invoiceDiscount), discountType,
                 MoneyMath.decimal(enteredPaid), notes, partyId, partyName,

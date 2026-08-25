@@ -7,6 +7,9 @@ import com.hamza.account.controller.model.PrintPurchaseWithName;
 import com.hamza.account.controller.others.ServiceRegistry;
 import com.hamza.account.document.TotalsSearchCriteria;
 import com.hamza.account.features.events.InvoiceSide;
+import com.hamza.account.features.invoice.InvoiceSaveCommand;
+import com.hamza.account.features.invoice.InvoiceSaveResult;
+import com.hamza.account.features.invoice.InvoiceSaveService;
 import com.hamza.account.interfaces.api.*;
 import com.hamza.account.interfaces.impl_account.AccountSuppliers;
 import com.hamza.account.interfaces.impl_invoiceBuy.PurchaseInvoice;
@@ -18,12 +21,13 @@ import com.hamza.account.model.domain.Purchase;
 import com.hamza.account.model.domain.SupplierAccount;
 import com.hamza.account.model.domain.Suppliers;
 import com.hamza.account.model.domain.Total_buy;
-import com.hamza.account.perm.PermAccountAndNameInt;
+import com.hamza.account.model.base.BaseTotals;
+import com.hamza.account.service.EmployeeService;
+import com.hamza.account.service.TreasuryService;
 import com.hamza.account.service.PurchaseService;
 import com.hamza.account.service.TotalBuyService;
 import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.database.DaoList;
-import com.hamza.controlsfx.observer.Publisher;
 
 import java.util.List;
 
@@ -35,7 +39,7 @@ public class SuppliersData
 
     private final DesignInterface designInterface = () -> DocumentType.PURCHASE;
 
-    private final TotalDesignInterface<Total_buy> totalDesignInterface = new TotalsPurchaseImplDesign(totalBuyService, this);
+    private final TotalDesignInterface totalDesignInterface = new TotalsPurchaseImplDesign(totalBuyService);
 
     private final InvoiceBuy<Purchase, Total_buy, Suppliers, SupplierAccount> invoiceBuy = new PurchaseInvoice();
 
@@ -84,7 +88,7 @@ public class SuppliersData
     }
 
     @Override
-    public TotalDesignInterface<Total_buy> totalDesignInterface() {
+    public TotalDesignInterface totalDesignInterface() {
         return totalDesignInterface;
     }
 
@@ -124,9 +128,26 @@ public class SuppliersData
         return accountData;
     }
 
+    /**
+     * The save pipeline is built here, where T1/T2 are still concrete classes, and is
+     * reached from the invoice screen only through this method - which names neither.
+     * Built per save rather than kept in a field: its constructor reads the two return
+     * settings, and the settings screen writes them while the app is running.
+     */
     @Override
-    public void addList(List<Total_buy> items, List<PrintPurchaseWithName> printPurchaseWithNames) throws DaoException {
-        for (Total_buy totalBuy : items) {
+    public InvoiceSaveResult saveInvoice(InvoiceSaveCommand command) throws DaoException {
+        InvoiceSaveService<Purchase, Total_buy, Suppliers, SupplierAccount> invoiceSaveService =
+                new InvoiceSaveService<>(invoiceBuy, totalsAndPurchaseList,
+                        designInterface.documentType(),
+                        ServiceRegistry.get(TreasuryService.class)::getTreasuryByName,
+                        ServiceRegistry.get(EmployeeService.class)::getDelegateByName);
+        return invoiceSaveService.save(command);
+    }
+
+    @Override
+    public void addList(List<? extends BaseTotals> items, List<PrintPurchaseWithName> printPurchaseWithNames) throws DaoException {
+        for (BaseTotals row : items) {
+            Total_buy totalBuy = (Total_buy) row;
             var listPrint = listForAllPurchase(totalBuy.getId());
             for (Purchase value : listPrint) {
                 PrintPurchaseWithName purchase = new PrintPurchaseWithName();

@@ -98,9 +98,9 @@ class InvoiceStockGuardTest {
         assertEquals("lock:[5, 20]", repository.calls.get(1));
     }
 
-    private static InvoiceSaveCommand<Sales> command(
+    private static InvoiceSaveCommand command(
             int existingId, boolean allowInsufficient, Sales... lines) {
-        return new InvoiceSaveCommand<>(existingId, LocalDate.of(2026, 8, 13),
+        return new InvoiceSaveCommand(existingId, LocalDate.of(2026, 8, 13),
                 InvoiceType.CASH, 0, DiscountType.AMOUNT, 10,
                 "", 1, "party", "treasury", "delegate",
                 allowInsufficient, List.of(lines));

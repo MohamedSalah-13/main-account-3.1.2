@@ -30,7 +30,7 @@ public final class InvoiceStockGuard {
         this.repository = Objects.requireNonNull(repository, "repository");
     }
 
-    public void validate(InvoiceSaveCommand<? extends BasePurchasesAndSales> command)
+    public void validate(InvoiceSaveCommand command)
             throws DaoException {
         Objects.requireNonNull(command, "command");
         List<InvoiceStockRepository.StoredLine> original = command.updating()
@@ -50,7 +50,7 @@ public final class InvoiceStockGuard {
     }
 
     private void validateTotalBalances(
-            InvoiceSaveCommand<? extends BasePurchasesAndSales> command,
+            InvoiceSaveCommand command,
             List<InvoiceStockRepository.StoredLine> original,
             List<LineQuantity> proposed,
             List<Integer> itemIds,

@@ -8,7 +8,6 @@ import com.hamza.account.controller.others.ServiceRegistry;
 import com.hamza.account.interfaces.api.DataInterface;
 import com.hamza.account.model.base.BaseAccount;
 import com.hamza.account.model.base.BaseNames;
-import com.hamza.account.model.base.BaseTotals;
 import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.service.EmployeeService;
 import com.hamza.account.service.TotalsService;
@@ -20,16 +19,14 @@ import lombok.extern.log4j.Log4j2;
 import org.jetbrains.annotations.NotNull;
 
 @Log4j2
-public class TotalsButton<T2 extends BaseTotals, T3 extends BaseNames, T4 extends BaseAccount>
-        extends TotalsService<T2, T3, T4> {
+public class TotalsButton<T3 extends BaseNames, T4 extends BaseAccount>
+        extends TotalsService<T3, T4> {
 
-    private final DataInterface<?, T2, T3, T4> dataInterface;
     private final EmployeeService employeeService = ServiceRegistry.get(EmployeeService.class);
 
-    public TotalsButton(DataInterface<?, T2, T3, T4> dataInterface, DaoFactory daoFactory
+    public TotalsButton(DataInterface<?, ?, T3, T4> dataInterface, DaoFactory daoFactory
             , DataPublisher dataPublisher) throws Exception {
         super(dataInterface, daoFactory, dataPublisher);
-        this.dataInterface = dataInterface;
     }
 
     public ButtonWithPerm totals() {

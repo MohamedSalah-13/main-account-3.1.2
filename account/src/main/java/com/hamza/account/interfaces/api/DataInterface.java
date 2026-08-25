@@ -2,6 +2,8 @@ package com.hamza.account.interfaces.api;
 
 import com.hamza.account.controller.model.PrintPurchaseWithName;
 import com.hamza.account.features.events.InvoiceSide;
+import com.hamza.account.features.invoice.InvoiceSaveCommand;
+import com.hamza.account.features.invoice.InvoiceSaveResult;
 import com.hamza.account.model.base.BaseAccount;
 import com.hamza.account.model.base.BaseNames;
 import com.hamza.account.model.base.BasePurchasesAndSales;
@@ -25,7 +27,7 @@ public interface DataInterface<T1 extends BasePurchasesAndSales, T2 extends Base
 
     DesignInterface designInterface();
 
-    TotalDesignInterface<T2> totalDesignInterface();
+    TotalDesignInterface totalDesignInterface();
 
     /**
      * Which side an {@link com.hamza.account.features.events.InvoiceSaved} from
@@ -49,5 +51,26 @@ public interface DataInterface<T1 extends BasePurchasesAndSales, T2 extends Base
         return PermAccountAndNameInt.forParty(designInterface().documentType().partyKind());
     }
 
-    void addList(List<T2> items, List<PrintPurchaseWithName> printPurchaseWithNames) throws DaoException;
+    /**
+     * Saves one document. The save pipeline stays generic, but it is built - and kept -
+     * inside the implementation, where T1/T2 are still concrete classes; a screen only
+     * ever sees the plain command and result. That is what lets the invoice screen stop
+     * naming the two type parameters without a single unchecked cast.
+     */
+    InvoiceSaveResult saveInvoice(InvoiceSaveCommand command) throws DaoException;
+
+    /** The header of a saved document, resolved - see {@link InvoiceHeaderView}. */
+    default InvoiceHeaderView loadInvoiceHeader(int invoiceNumber) throws DaoException {
+        T2 totals = totalsAndPurchaseList().totalDao().getDataById(invoiceNumber);
+        TotalsDataInterface totalsData = totalDesignInterface().totalsDataInterface();
+        return new InvoiceHeaderView(totals,
+                totalsData.getNameData(totals),
+                totalsData.getDelegateData(totals).getName(),
+                totalsData.getIdData(totals),
+                totalsData.getSourceInvoiceNumber(totals),
+                totalsData.getReturnReason(totals),
+                totalsData.getDateInsert(totals));
+    }
+
+    void addList(List<? extends BaseTotals> items, List<PrintPurchaseWithName> printPurchaseWithNames) throws DaoException;
 }
