@@ -70,7 +70,7 @@ public class MainScreenController extends MainItems implements Initializable {
     private AnchorPane rightPaneRoot;
     @FXML
     private Button btnSales, btnSalesReturn, btnTotalSale, btnPurchase, btnTotalPurchase, btnPurchaseRe, btnTotalPurchaseRe, btnItems,
-            btnAddItem, btnUnits, btnMainGroup, btnSubGroup, btnArea, btnInventory, btnStockCount,
+            btnAddItem, btnUnits, btnMainGroup, btnSubGroup, btnArea, btnInventory, btnStockCount, btnMergeItems,
             btnAddCustomerName, btnCustomer, btnAccountCustom, btnAddSupplierName, btnSuppliers,
             btnAccountSuppliers, btnAddEmployee, btnEmployees, btnAddUser, btnUsers,
             btnTreasuryDetails, btnProcess, btnExpenses,
@@ -220,6 +220,7 @@ public class MainScreenController extends MainItems implements Initializable {
         menuButtonSetting.configureButton(btnArea, getItemsButtons().areasList());
         menuButtonSetting.configureButton(btnInventory, getItemsButtons().inventory());
         menuButtonSetting.configureButton(btnStockCount, getItemsButtons().stockCount());
+        menuButtonSetting.configureButton(btnMergeItems, getItemsButtons().mergeItems());
         /*----------------------------------------------- Custom -----------------------------------------------*/
         menuButtonSetting.configureButton(btnAddCustomerName, getNameCustomer().addName());
         menuButtonSetting.configureButton(btnCustomer, getNameCustomer().namesData());

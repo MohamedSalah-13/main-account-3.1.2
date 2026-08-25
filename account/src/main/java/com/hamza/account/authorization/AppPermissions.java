@@ -44,6 +44,8 @@ public final class AppPermissions {
     public static final PermissionKey ITEMS_UPDATE = key("items.update");
     public static final PermissionKey ITEMS_DELETE = key("items.delete");
     public static final PermissionKey ITEMS_ADD_EXCEL = key("items.add.excel");
+    /** Folding one item into another and deleting it. Held with {@link #ITEMS_DELETE}, never instead of it. */
+    public static final PermissionKey ITEMS_MERGE = key("items.merge");
     public static final PermissionKey MAIN_GROUP_SHOW = key("main.group.show");
     public static final PermissionKey MAIN_GROUP_CREATE = key("main.group.create");
     public static final PermissionKey MAIN_GROUP_UPDATE = key("main.group.update");

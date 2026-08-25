@@ -27,13 +27,15 @@ mvn -o -pl account -am test -Dtest=ScheduledBackupTest -Dsurefire.failIfNoSpecif
 
 **Coverage is real but uneven — know which half you are in.** JUnit 5 and Mockito are declared in the
 root pom and inherited by both modules; surefire needs no configuration. `mvn clean test` currently runs
-**840 tests across ~85 classes** — 97 in `controlsfx`, 743 in `account` — with 25 skipped (below). What is
+**888 tests across ~90 classes** — 98 in `controlsfx`, 790 in `account` — with 29 skipped (below). What is
 genuinely covered:
 
 - **The declarative specs, pinned character for character** — `DocumentDaoStatementsTest`,
   `PartyDaoStatementsTest`, `PartyLedgerStatementsTest`, `CardItemDaoStatementsTest`,
-  `DocumentTableSpecTest`, `WipeCatalogTest`. These fail the build on a wrong column, so they are the
-  safety net for anything touching SQL.
+  `DocumentTableSpecTest`, `WipeCatalogTest`, `ItemMergeStatementsTest`,
+  `ItemReferenceRegistryTest`. These fail the build on a wrong column, so they are the
+  safety net for anything touching SQL. The last two read the foreign keys straight out of the
+  migration files, so the schema itself is what they check against.
 - **Architecture rules** — `AuthorizationArchitectureTest`, `ErrorHandlingArchitectureTest`,
   `DefaultRoleAcceptanceTest`. They fail when a new service skips the permission guard or a new
   exception escapes the error boundary.
@@ -43,12 +45,16 @@ genuinely covered:
 What still has none: the controllers, the FXML screens, the reports, the trial logic, and most of the
 `model/dao` write paths.
 
-**Five classes do not run by default.** `InvoiceStockDatabaseAcceptanceTest`,
+**Six classes do not run by default.** `InvoiceStockDatabaseAcceptanceTest`,
 `DocumentLineDatabaseAcceptanceTest`, `StockLedgerReconciliationAcceptanceTest`,
-`TotalDocumentDeleteReversesStockLedgerAcceptanceTest` and `PartyLedgerViewAcceptanceTest` are gated on
+`TotalDocumentDeleteReversesStockLedgerAcceptanceTest`, `PartyLedgerViewAcceptanceTest` and
+`ItemMergeDatabaseAcceptanceTest` are gated on
 `-Daccount.db.acceptance=true` and need a reachable MySQL. A green `mvn clean test` has not run them.
-The last of those is the only check that the accounting views say what `DocumentLedgerEffect` says, so
-**run it after touching `R__views.sql`** — the whole return-ledger defect lived where no test could see it.
+`PartyLedgerViewAcceptanceTest` is the only check that the accounting views say what
+`DocumentLedgerEffect` says, so **run it after touching `R__views.sql`** — the whole return-ledger defect
+lived where no test could see it. `ItemMergeDatabaseAcceptanceTest` is the only check that a merge leaves
+the surviving item holding both histories, and **it has never been run** — no MySQL was reachable when it
+was written.
 
 So a passing build now means more than it did, but still not that a screen works: state what was and was
 not checked, and remember that verifying UI behaviour means running the app against a database.
@@ -515,6 +521,49 @@ Deletes are audited by triggers, not by the application: `V2` and `V7` write the
 wipe avoids copying the database into the log on its way out — `WipeService` sets it and clears it
 before the connection goes back to the pool.
 
+### Merging items
+
+`features/itemmerge` folds one item into another and deletes it: every line it ever appeared on is
+repointed at the survivor first. It exists because before `item_barcodes` (V3) an item had exactly one
+barcode, so five flavours of one packet were five items — and each carries years of real invoices that
+cannot be deleted with the row. `docs/item-merge-plan.md` is the agreed plan and the decisions behind it.
+
+**It writes no figure.** A document line carries its own price, buy price, profit and unit factor, and
+the stock balance is a sum over those same lines (`quantity_items_table`), so moving a line changes
+nothing but which item it is filed under. The single value written is the source's `items.first_balance`,
+added to the target's — it is the only number never derived from a line, and its row is about to go.
+
+**`ItemReferenceRegistry` is the whole correctness of it.** Twelve places name an item, and the schema
+calls the column `num` on `sales` and `purchase`, `item_id` on their returns, `items_id` on
+`items_units`, and twice on `items_package` — spread over four migrations. Missing one is not a visible
+failure: four of them cascade, so those rows are destroyed with the source and that item's history in
+that table is simply gone. `ItemReferenceRegistryTest` reads the foreign keys out of the migration files
+and fails the build both ways — nothing in the schema undeclared, nothing declared that the schema does
+not have. **Add a table with an item column and that test tells you, before a customer's database does.**
+
+Four references cannot take a plain `UPDATE`, and each has a step of its own: `stock_count_lines` is
+summed into the target's row (both `system_qty` and `counted_qty`, so the difference the counter found
+survives), `items_stock` gains a row per warehouse the target lacks, `items_units` rows are **moved not
+copied** (`UNIQUE(items_barcode)` is global, so a copy collides with the row it came from), and
+`items_package` is repointed on both columns and then de-duplicated. Every code the source answered to
+is kept on the target before the cascade takes it — the code printed on the old packet still has to find
+something, which is the point of the exercise.
+
+Two refusals, both cases where the moved lines would be arithmetically valid and still mean the wrong
+thing: **a different base unit**, and **expiry tracking the target does not do**. A closed accounting
+period is not one of them — no figure in it changes — but the preview says how many lines fall inside
+one, and the log records it.
+
+The source is deleted through `DeletionService` with `DeleteRegistry.ITEMS` rather than a `DELETE` of
+its own, so a table this feature forgot refuses the delete and rolls the whole merge back. That is a
+free second check on the registry, on every run.
+
+`item_merge` / `item_merge_lines` (V17) are the record. Nothing else would remember: the audit triggers
+are on `items`, `custom`, `suppliers`, `total_sales`, `total_buy` and `treasury`, **not** on the line
+tables, so the rows that change hands leave no trace at all. Neither table has a foreign key to `items` —
+the source is deleted by definition, and a key on the target would refuse to let that item be deleted
+later on the strength of a log entry.
+
 ### FXML
 
 Controllers carry `@FxmlPath(pathFile = "...")`; `OpenFxmlApplication` loads the FXML for a controller
@@ -594,7 +643,7 @@ Schema changes are **Flyway migrations**, in `account/src/main/resources/db/migr
 - `V1__baseline.sql` is the schema as shipped to clients in v4.1.3 — tables, indexes, procedures and the
   seed data (including the `admin` user, without which nobody can log in). It is the Flyway baseline: an
   existing client database is **stamped** with it, never executed, because it already is that schema. A
-  new database executes it and continues with `V2`, `V3`, … The current head is `V15`.
+  new database executes it and continues with `V2`, `V3`, … The current head is `V17`.
 - Everything after it is one file per change. **Never fold a migration back into `V1`** and never edit a
   migration that has shipped — a client that already ran it will not run it again, so the change would
   reach new installs only.

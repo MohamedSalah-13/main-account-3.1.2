@@ -107,8 +107,17 @@ public final class WipeCatalog {
     public static final WipeTarget STOCK_COUNTS = WipeTarget.of("stockCounts", "wipe.target.stockCounts",
             List.of(WipeTable.of("stock_count_lines"), WipeTable.of("stock_count")));
 
+    /**
+     * {@code item_merge} and its lines (V17) go with the items for the same reason the
+     * counts do: the log names items by id and by the name they had, and an erased
+     * catalogue leaves it describing rows nobody can look up. It has no foreign key to
+     * {@code items} - deliberately, since the merged item is deleted by definition - so
+     * nothing but this line would take it.
+     */
     public static final WipeTarget ITEMS = WipeTarget.of("items", "wipe.target.items",
-            List.of(WipeTable.of("item_barcodes"),
+            List.of(WipeTable.of("item_merge_lines"),
+                    WipeTable.of("item_merge"),
+                    WipeTable.of("item_barcodes"),
                     WipeTable.of("items_package"),
                     WipeTable.of("items_units"),
                     WipeTable.of("items_stock"),
