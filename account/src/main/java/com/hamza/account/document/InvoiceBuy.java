@@ -1,4 +1,4 @@
-package com.hamza.account.interfaces.api;
+package com.hamza.account.document;
 
 import com.hamza.account.model.base.BaseAccount;
 import com.hamza.account.model.base.BaseNames;

@@ -10,6 +10,8 @@ import com.hamza.account.features.events.InvoiceSide;
 import com.hamza.account.features.invoice.InvoiceSaveCommand;
 import com.hamza.account.features.invoice.InvoiceSaveResult;
 import com.hamza.account.features.invoice.InvoiceSaveService;
+import com.hamza.account.document.InvoiceBuy;
+import com.hamza.account.document.TotalsAndPurchaseList;
 import com.hamza.account.interfaces.api.*;
 import com.hamza.account.interfaces.impl_account.AccountSuppliers;
 import com.hamza.account.interfaces.impl_invoiceBuy.PurchaseInvoice;

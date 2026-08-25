@@ -1,7 +1,7 @@
 package com.hamza.account.interfaces.impl_invoiceBuy;
 
 import com.hamza.account.finance.MoneyMath;
-import com.hamza.account.interfaces.api.InvoiceBuy;
+import com.hamza.account.document.InvoiceBuy;
 import com.hamza.account.model.domain.*;
 import com.hamza.account.type.DiscountType;
 import com.hamza.account.type.InvoiceType;

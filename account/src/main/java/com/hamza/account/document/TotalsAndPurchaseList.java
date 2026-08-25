@@ -1,6 +1,5 @@
-package com.hamza.account.interfaces.api;
+package com.hamza.account.document;
 
-import com.hamza.account.document.TotalsSearchCriteria;
 import com.hamza.account.model.base.BasePurchasesAndSales;
 import com.hamza.account.model.base.BaseTotals;
 import com.hamza.controlsfx.database.DaoList;

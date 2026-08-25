@@ -7,7 +7,7 @@ import com.hamza.account.controller.items.ColumnImage;
 import com.hamza.account.controller.items.PaginationTableSetting;
 import com.hamza.account.interfaces.api.DataInterface;
 import com.hamza.account.interfaces.api.DesignInterface;
-import com.hamza.account.interfaces.api.InvoiceBuy;
+import com.hamza.account.document.InvoiceBuy;
 import com.hamza.account.features.invoice.InvoiceLineService;
 import com.hamza.account.config.NamesTables;
 import com.hamza.account.model.base.BasePurchasesAndSales;

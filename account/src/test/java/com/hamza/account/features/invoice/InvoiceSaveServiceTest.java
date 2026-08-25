@@ -8,7 +8,7 @@ import com.hamza.account.features.returns.ReturnCostResolver;
 import com.hamza.account.features.returns.ReturnGuard;
 import com.hamza.account.features.returns.ReturnSourceWriter;
 import com.hamza.account.features.stockledger.StockMovementDao;
-import com.hamza.account.interfaces.api.TotalsAndPurchaseList;
+import com.hamza.account.document.TotalsAndPurchaseList;
 import com.hamza.account.interfaces.impl_invoiceBuy.SalesInvoice;
 import com.hamza.account.model.domain.*;
 import com.hamza.account.type.DiscountType;

@@ -1,6 +1,8 @@
 package com.hamza.account.interfaces.api;
 
 import com.hamza.account.controller.model.PrintPurchaseWithName;
+import com.hamza.account.document.InvoiceBuy;
+import com.hamza.account.document.TotalsAndPurchaseList;
 import com.hamza.account.features.events.InvoiceSide;
 import com.hamza.account.features.invoice.InvoiceSaveCommand;
 import com.hamza.account.features.invoice.InvoiceSaveResult;
