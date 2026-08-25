@@ -54,8 +54,18 @@ What still has none: the controllers, the FXML screens, the reports, the trial l
 `PartyLedgerViewAcceptanceTest` is the only check that the accounting views say what
 `DocumentLedgerEffect` says, so **run it after touching `R__views.sql`** — the whole return-ledger defect
 lived where no test could see it. `ItemMergeDatabaseAcceptanceTest` is the only check that a merge leaves
-the surviving item holding both histories, and **it has never been run** — no MySQL was reachable when it
-was written.
+the surviving item holding both histories; **it was run for the first time on 2026-08-25 and all four
+tests passed** against a real MySQL — so the multi-table `UPDATE … JOIN` statements are valid, the
+candidates query's shadowed `i` alias works, and the surviving balance does come out as the sum.
+
+**The merge one is safe to run on a working database; do not assume that of the other five.** It opens
+one transaction and rolls it back in a `finally`, so even the audit triggers' rows go with it - and that
+was checked rather than trusted: querying afterwards, `item_merge`, `item_merge_lines` and every `MRG-%`
+barcode its fixtures create all counted zero. The others have not been checked the same way, and at
+least one acceptance run has left rows behind in a development database before, so read the fixture
+before pointing one at data you care about. Two things bite when running any of them: surefire's working
+directory is the module, so the config read is `account/config.xml`, **not** the root `config.xml` -
+they are different files - and `-pl account` needs `-am` or it builds against a stale `controlsfx`.
 
 So a passing build now means more than it did, but still not that a screen works: state what was and was
 not checked, and remember that verifying UI behaviour means running the app against a database.
