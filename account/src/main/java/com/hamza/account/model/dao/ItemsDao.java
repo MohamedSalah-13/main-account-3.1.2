@@ -193,9 +193,8 @@ public class ItemsDao extends AbstractDao<ItemsModel> {
 
         return insertMultiData(() -> {
             int itemId = insertItem(itemsModel);
-            daoFactory.getItemsStockDao().insert(new Items_Stock_Model(
-                    itemsModel.getId(), DefaultStock.ID, itemsModel.getFirstBalanceForStock(), itemsModel.getFirstBalanceForStock()
-            ));
+            daoFactory.getItemsStockDao().insertForAllStocks(
+                    itemId, DefaultStock.ID, itemsModel.getFirstBalanceForStock());
 
             // A new item's units were dropped on the floor here: only update()
             // ever wrote them, so an item saved with a carton had none until it
@@ -215,7 +214,7 @@ public class ItemsDao extends AbstractDao<ItemsModel> {
      * the item has moved - see {@link #update}. Two lists kept in step by hand is how a
      * value ends up written into the wrong column.
      */
-    private record UpdateStatement(String sql, Object[] values) {
+    private record UpdateStatement(String sql, Object[] values, boolean writesOpening) {
     }
 
     /**
@@ -239,6 +238,10 @@ public class ItemsDao extends AbstractDao<ItemsModel> {
 
         return insertMultiData(() -> {
             executeUpdateWithException(statement.sql(), statement.values());
+            if (statement.writesOpening()) {
+                daoFactory.getItemsStockDao().updateOpeningBalance(
+                        itemsModel.getId(), DefaultStock.ID, itemsModel.getFirstBalanceForStock());
+            }
 
             saveUnits(itemsModel);
 
@@ -259,14 +262,14 @@ public class ItemsDao extends AbstractDao<ItemsModel> {
                     SqlStatements.updateStatement(TABLE_NAME, ID, BARCODE, NAME_ITEM, SUB_NUM, BUY_PRICE
                             , selPrice1, selPrice2, selPrice3, itemActive, itemHasValidity, numberValidityDays
                             , alertDaysBeforeExpire, UNIT_ID, MINI_QUANTITY, FIRST_BALANCE, ITEM_IMAGE, USER_ID),
-                    getData(itemsModel));
+                    getData(itemsModel), true);
         }
 
         return new UpdateStatement(
                 SqlStatements.updateStatement(TABLE_NAME, ID, BARCODE, NAME_ITEM, SUB_NUM, BUY_PRICE
                         , selPrice1, selPrice2, selPrice3, itemActive, itemHasValidity, numberValidityDays
                         , alertDaysBeforeExpire, UNIT_ID, MINI_QUANTITY, ITEM_IMAGE, USER_ID),
-                dataWithoutOpeningBalance(itemsModel));
+                dataWithoutOpeningBalance(itemsModel), false);
     }
 
     /**

@@ -139,6 +139,8 @@ SELECT st.id,
        stt.stock_name AS name_to,
        stl.item_id,
        stl.quantity,
+       stl.type,
+       stl.type_value,
        i.nameItem
 FROM stock_transfer st
          JOIN stock_transfer_list stl ON st.id = stl.stock_transfer_id
@@ -166,10 +168,12 @@ WITH purchase_agg AS (SELECT stock_id, num AS item_id,
                              SUM(quantity * type_value) AS qty
                       FROM sales_return_names_table
                       GROUP BY stock_id, item_id),
-     transfer_from_agg AS (SELECT stock_from AS stock_id, item_id, SUM(quantity) AS qty
+     transfer_from_agg AS (SELECT stock_from AS stock_id, item_id,
+                                  SUM(quantity * type_value) AS qty
                            FROM stock_transfer_view
                            GROUP BY stock_from, item_id),
-     transfer_to_agg AS (SELECT stock_to AS stock_id, item_id, SUM(quantity) AS qty
+     transfer_to_agg AS (SELECT stock_to AS stock_id, item_id,
+                                SUM(quantity * type_value) AS qty
                          FROM stock_transfer_view
                          GROUP BY stock_to, item_id),
      -- A posted stock count moves the balance by the difference the counter found:
@@ -184,21 +188,12 @@ WITH purchase_agg AS (SELECT stock_id, num AS item_id,
                                  JOIN stock_count sc ON sc.id = scl.count_id
                         WHERE sc.status = 'POSTED'
                         GROUP BY sc.stock_id, scl.item_id)
--- The opening balance comes from items, not from items_stock.
---
--- It was stored in both: ItemsDao.insert writes the two together, and ItemsDao.update
--- writes only items.first_balance - Items_StockDao has no update method at all. So the
--- moment anyone edited an item's opening balance the two copies parted company, and
--- since every screen reads items.first_balance (SELECT * over items joined to this
--- view returns the items column, being the first of that name) while mini_quantity_view
--- reads this one, the low-stock alert was judging a balance no screen ever showed.
---
--- Reading items.first_balance here makes the one number every screen already uses the
--- only one there is. items_stock.first_balance stays in the schema - migrations that
--- have shipped are not edited - but nothing reads it now.
+-- V18 makes items_stock the per-warehouse source of the opening balance. The legacy
+-- items.first_balance column remains a compatibility mirror of warehouse 1; reading it
+-- here would repeat that one warehouse's opening on every warehouse row.
 SELECT ist.item_id,
        ist.stock_id,
-       i.first_balance,
+       ist.first_balance,
        COALESCE(pa.qty,   0) AS quantityPurchase,
        COALESCE(sa.qty,   0) AS quantitySales,
        COALESCE(pra.qty,  0) AS quantityPurchaseRe,
@@ -641,30 +636,36 @@ FROM expenses_details ed
 
 -- --------------------------------------mini_quantity_view-----------------------------------------
 --
--- quantity_items_table is keyed by (item, stock), and its first_balance column is
--- items.first_balance repeated onto every one of an item's stock rows - that repetition
--- is fine where a query reads it once per row, but calculated_balance used to SUM it,
--- so an item with a second stock counted its own opening balance twice. It went
--- unnoticed because every install to date has exactly one stock (DefaultStock.ID), so
--- the sum only ever had one row to add.
+-- One row in quantity_items_table is one warehouse. Aggregate each complete warehouse
+-- balance, including that warehouse's own opening, so a second warehouse neither
+-- repeats warehouse 1's opening nor loses an opening of its own.
 --
--- The fix mirrors quantity_items_table's own comment on the same mistake and
--- InventoryDao.MOVEMENTS: sum only the movement columns, keyed by item, and add
--- items.first_balance once from the outer join rather than from inside the aggregate.
+-- This is deliberately a company-wide total across every warehouse, not one warehouse's
+-- balance - it answers "does this shop, everywhere, need to reorder", which is what a
+-- notification and the mini-quantity report are for. A transfer's toStock/fromStock
+-- cancel out in the sum, which is correct here: moving stock between two warehouses the
+-- shop owns changes nothing about how much of the item it has in total.
+--
+-- StockLevelAlert is the other, narrower question - "does the warehouse this sale is
+-- leaving from have enough" - and judges the balance InvoiceItemSelectionService already
+-- resolved through a stock-scoped lookup (ItemsDao.findItemByIdAndStockId and its
+-- siblings), not this view. The two are not the same check and should not be merged
+-- into one: a shop with plenty in a back warehouse should still be warned that the
+-- counter it sells from is empty.
 DROP VIEW IF EXISTS mini_quantity_view;
 CREATE VIEW mini_quantity_view AS
-WITH movement AS (SELECT item_id,
-                         SUM(quantityPurchase + quantitySalesRe + toStock + adjustment
-                                 - quantitySales - quantityPurchaseRe - fromStock) AS movement
-                  FROM quantity_items_table
-                  GROUP BY item_id)
+WITH stock_balance AS (SELECT item_id,
+                              SUM(first_balance + quantityPurchase + quantitySalesRe + toStock + adjustment
+                                      - quantitySales - quantityPurchaseRe - fromStock) AS balance
+                       FROM quantity_items_table
+                       GROUP BY item_id)
 SELECT i.id,
        i.nameItem,
        i.mini_quantity,
-       i.first_balance + m.movement AS balance
+       b.balance
 FROM items i
-         JOIN movement m ON i.id = m.item_id
-WHERE i.mini_quantity >= i.first_balance + m.movement;
+         JOIN stock_balance b ON i.id = b.item_id
+WHERE i.mini_quantity >= b.balance;
 
 -- --------------------------------------target_delegate--------------------------------------------
 

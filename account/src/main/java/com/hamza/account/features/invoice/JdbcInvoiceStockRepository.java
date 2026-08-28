@@ -20,6 +20,11 @@ import java.util.StringJoiner;
 
 /** JDBC implementation that joins the transaction already opened by InvoiceSaveService. */
 public final class JdbcInvoiceStockRepository implements InvoiceStockRepository {
+    @Override
+    public Map<Integer, String> lockItems(List<Integer> itemIds) throws DaoException {
+        return lockItems(com.hamza.account.config.DefaultStock.ID, itemIds);
+    }
+
 
     @Override
     public List<StoredLine> originalLinesForUpdate(DocumentType type, int documentId)
@@ -43,7 +48,7 @@ public final class JdbcInvoiceStockRepository implements InvoiceStockRepository 
     }
 
     @Override
-    public Map<Integer, String> lockItems(List<Integer> itemIds) throws DaoException {
+    public Map<Integer, String> lockItems(int stockId, List<Integer> itemIds) throws DaoException {
         if (itemIds.isEmpty()) {
             return Map.of();
         }
@@ -51,7 +56,8 @@ public final class JdbcInvoiceStockRepository implements InvoiceStockRepository 
         Map<Integer, String> items = withConnection(connection -> {
             Map<Integer, String> result = new LinkedHashMap<>();
             try (PreparedStatement statement = connection.prepareStatement(sql)) {
-                bindIds(statement, 1, itemIds);
+                statement.setInt(1, stockId);
+                bindIds(statement, 2, itemIds);
                 try (ResultSet rows = statement.executeQuery()) {
                     while (rows.next()) {
                         result.put(rows.getInt("id"), rows.getString("nameItem"));
@@ -67,7 +73,7 @@ public final class JdbcInvoiceStockRepository implements InvoiceStockRepository 
     }
 
     @Override
-    public Map<Integer, Double> currentBaseBalances(List<Integer> itemIds)
+    public Map<Integer, Double> currentBaseBalances(int stockId, List<Integer> itemIds)
             throws DaoException {
         if (itemIds.isEmpty()) {
             return Map.of();
@@ -76,7 +82,7 @@ public final class JdbcInvoiceStockRepository implements InvoiceStockRepository 
         return withConnection(connection -> {
             Map<Integer, Double> balances = new LinkedHashMap<>();
             try (PreparedStatement statement = connection.prepareStatement(sql)) {
-                statement.setInt(1, DefaultStock.ID);
+                statement.setInt(1, stockId);
                 bindIds(statement, 2, itemIds);
                 try (ResultSet rows = statement.executeQuery()) {
                     while (rows.next()) {
@@ -89,7 +95,12 @@ public final class JdbcInvoiceStockRepository implements InvoiceStockRepository 
     }
 
     @Override
-    public Map<BatchKey, Double> currentExpiryBalances(List<Integer> itemIds)
+    public Map<Integer, Double> currentBaseBalances(List<Integer> itemIds) throws DaoException {
+        return currentBaseBalances(DefaultStock.ID, itemIds);
+    }
+
+    @Override
+    public Map<BatchKey, Double> currentExpiryBalances(int stockId, List<Integer> itemIds)
             throws DaoException {
         if (itemIds.isEmpty()) {
             return Map.of();
@@ -100,7 +111,7 @@ public final class JdbcInvoiceStockRepository implements InvoiceStockRepository 
             try (PreparedStatement statement = connection.prepareStatement(sql)) {
                 int parameter = 1;
                 for (int branch = 0; branch < 4; branch++) {
-                    statement.setInt(parameter++, DefaultStock.ID);
+                    statement.setInt(parameter++, stockId);
                     parameter = bindIds(statement, parameter, itemIds);
                 }
                 try (ResultSet rows = statement.executeQuery()) {
@@ -115,6 +126,11 @@ public final class JdbcInvoiceStockRepository implements InvoiceStockRepository 
         });
     }
 
+    @Override
+    public Map<BatchKey, Double> currentExpiryBalances(List<Integer> itemIds) throws DaoException {
+        return currentExpiryBalances(DefaultStock.ID, itemIds);
+    }
+
     static String originalLinesForUpdateSql(DocumentType type) {
         DocumentTableSpec spec = DocumentTableSpec.of(type);
         return "SELECT " + spec.lineItem() + " AS item_id,"
@@ -124,14 +140,14 @@ public final class JdbcInvoiceStockRepository implements InvoiceStockRepository 
     }
 
     static String lockItemsSql(int itemCount) {
-        return "SELECT id,nameItem FROM items WHERE id IN ("
-                + placeholders(itemCount) + ") ORDER BY id FOR UPDATE";
+        return "SELECT i.id,i.nameItem FROM items_stock s JOIN items i ON i.id=s.item_id WHERE s.stock_id=? AND i.id IN ("
+                + placeholders(itemCount) + ") ORDER BY i.id FOR UPDATE";
     }
 
     static String baseBalancesSql(int itemCount) {
         return """
                 SELECT i.id,
-                       i.first_balance
+                       COALESCE(q.first_balance, 0)
                        + COALESCE(q.quantityPurchase, 0)
                        + COALESCE(q.quantitySalesRe, 0)
                        + COALESCE(q.toStock, 0)

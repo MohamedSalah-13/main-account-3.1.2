@@ -10,6 +10,8 @@ import com.hamza.account.controller.items.InventoryController;
 import com.hamza.account.controller.items.MergeItemsController;
 import com.hamza.account.controller.items.ItemsController;
 import com.hamza.account.controller.items.StockCountController;
+import com.hamza.account.controller.items.StockTransferController;
+import com.hamza.account.controller.items.StocksController;
 import com.hamza.account.controller.items.UnitsController;
 import com.hamza.account.controller.main.ButtonWithPerm;
 import com.hamza.account.controller.main.DataPublisher;
@@ -181,6 +183,26 @@ public class ItemsButtons {
         };
     }
 
+    public ButtonWithPerm stocks() throws Exception {
+        return new ButtonWithPerm() {
+            final StocksController controller = new StocksController();
+            @Override public PermissionKey getPermissionType() { return AppPermissions.STOCK_SHOW; }
+            @Override public void action() { }
+            @NotNull @Override public String textName() { return LanguageManager.getInstance().getString("stocks.title"); }
+            @Override public void actionAddPaneToTabPane(TabPane tabPane) throws Exception { addTape(tabPane, new OpenFxmlApplication(controller).getPane(), textName(), new Image_Setting().itemWhite); }
+            @Override public boolean showOnTapPane() { return true; }
+        };
+    }
+    public ButtonWithPerm stockTransfers() throws Exception {
+        return new ButtonWithPerm() {
+            final StockTransferController controller = new StockTransferController();
+            @Override public PermissionKey getPermissionType() { return AppPermissions.STOCK_TRANSFER_POST; }
+            @Override public void action() { }
+            @NotNull @Override public String textName() { return LanguageManager.getInstance().getString("setting.store.transfers"); }
+            @Override public void actionAddPaneToTabPane(TabPane tabPane) throws Exception { addTape(tabPane, new OpenFxmlApplication(controller).getPane(), textName(), new Image_Setting().itemWhite); }
+            @Override public boolean showOnTapPane() { return true; }
+        };
+    }
     /**
      * Merging duplicate items. Behind its own permission, and opened as a tab beside the
      * item list it repairs - the work is comparing rows against each other, which needs

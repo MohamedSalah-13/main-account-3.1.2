@@ -1,5 +1,6 @@
 package com.hamza.account.controller.items;
 
+import com.hamza.account.config.DefaultStock;
 import com.hamza.account.config.Image_Setting;
 import com.hamza.account.config.NamesTables;
 import com.hamza.account.controller.main.DataPublisher;
@@ -20,6 +21,7 @@ import com.hamza.account.openFxml.FxmlPath;
 import com.hamza.account.openFxml.OpenFxmlApplication;
 import com.hamza.account.reportData.Print_Reports;
 import com.hamza.account.service.CardItemService;
+import com.hamza.account.service.StockService;
 import com.hamza.account.table.TableSetting;
 import com.hamza.account.type.ProcessType;
 import com.hamza.account.view.ShowInvoiceApplication;
@@ -85,10 +87,14 @@ public class CardController extends LoadData implements Initializable, AppSettin
 
     private final ItemsModel itemsModel;
     private final CardItemService cardItemService = ServiceRegistry.get(CardItemService.class);
+    private final StockService stockService = ServiceRegistry.get(StockService.class);
+    private int stockId = DefaultStock.ID;
     @FXML
     private TableView<CardItems> tableView;
     @FXML
     private ComboBox<String> comboBox;
+    @FXML
+    private ComboBox<Stock> comboStock;
     @FXML
     private Text textPurchase, textSales, textRePurchase, textReSales, textCountTotals, textCostPurchase, textCostSales, textCostSalesRe, textCostPurchaseRe, textCostTotals, textType, textOpeningBalance, textClosingBalance;
     @FXML
@@ -183,6 +189,15 @@ public class CardController extends LoadData implements Initializable, AppSettin
         comboBox.getItems().add(lm.getString("all"));
         comboBox.getItems().addAll(processTypeList);
         comboBox.getSelectionModel().select(0);
+        try {
+            comboStock.setItems(FXCollections.observableArrayList(stockService.getStocks()));
+            comboStock.setConverter(new javafx.util.StringConverter<>() {
+                @Override public String toString(Stock stock) { return stock == null ? "" : stock.getName(); }
+                @Override public Stock fromString(String value) { return null; }
+            });
+            comboStock.getSelectionModel().select(comboStock.getItems().stream().filter(s -> s.getId() == DefaultStock.ID).findFirst().orElse(null));
+            comboStock.valueProperty().addListener((obs, oldStock, newStock) -> { if (newStock != null) { stockId = newStock.getId(); loadCard(); } });
+        } catch (Exception e) { logError(e); }
 
         DateSetting.dateAction(dateFrom);
         DateSetting.dateAction(dateTo);
@@ -198,7 +213,7 @@ public class CardController extends LoadData implements Initializable, AppSettin
      */
     private LocalDate firstMovementDate() {
         try {
-            LocalDate first = cardItemService.firstMovementDate(numItem);
+            LocalDate first = cardItemService.firstMovementDate(stockId, numItem);
             if (first != null) return first;
         } catch (Exception e) {
             logError(e);
@@ -233,9 +248,9 @@ public class CardController extends LoadData implements Initializable, AppSettin
         }
         try {
             ProcessType selected = selectedProcessType();
-            List<CardItems> loaded = new ArrayList<>(cardItemService.cardRows(numItem, from, to, selected));
-            openingBalance = cardItemService.balanceBefore(numItem, from);
-            closingBalance = cardItemService.balanceOn(numItem, to);
+            List<CardItems> loaded = new ArrayList<>(cardItemService.cardRows(stockId, numItem, from, to, selected));
+            openingBalance = cardItemService.balanceBefore(stockId, numItem, from);
+            closingBalance = cardItemService.balanceOn(stockId, numItem, to);
             // A running total over one kind of document is not a balance of anything -
             // the sales alone never put anything back on the shelf - so a card narrowed
             // to one kind has no balance column and no rows flagged by it.
@@ -287,7 +302,7 @@ public class CardController extends LoadData implements Initializable, AppSettin
     private void print() {
         if (loadedFrom == null || loadedTo == null) return;
         try {
-            new Print_Reports().printCardItem(numItem,
+            new Print_Reports().printCardItem(stockId, numItem,
                     totals.purchase(), totals.sales(), totals.purchaseReturn(), totals.salesReturn(),
                     openingBalance, closingBalance,
                     loadedFrom.toString(), loadedTo.toString(),

@@ -9,20 +9,26 @@ import com.hamza.controlsfx.language.LanguageManager;
 import com.hamza.controlsfx.error.UserValidationException;
 
 import java.util.Objects;
+import java.util.function.IntSupplier;
 
 /** Business rules for edits committed from the invoice table. */
 public final class InvoiceLineEditService {
 
     private final DocumentType documentType;
     private final InvoiceItemCatalogService catalogService;
-    private final int stockId;
+    private final IntSupplier stockId;
 
     public InvoiceLineEditService(DocumentType documentType,
                                   InvoiceItemCatalogService catalogService,
                                   int stockId) {
+        this(documentType, catalogService, () -> stockId);
+    }
+    public InvoiceLineEditService(DocumentType documentType,
+                                  InvoiceItemCatalogService catalogService,
+                                  IntSupplier stockId) {
         this.documentType = Objects.requireNonNull(documentType, "documentType");
         this.catalogService = Objects.requireNonNull(catalogService, "catalogService");
-        this.stockId = stockId;
+        this.stockId = Objects.requireNonNull(stockId, "stockId");
     }
 
     public void editName(BasePurchasesAndSales line, String newName) throws DaoException {
@@ -31,7 +37,7 @@ public final class InvoiceLineEditService {
             throw new UserValidationException("اسم الصنف مطلوب");
         }
         String normalized = newName.trim();
-        catalogService.updateName(line.getItems().getId(), stockId, normalized);
+        catalogService.updateName(line.getItems().getId(), stockId.getAsInt(), normalized);
         line.getItems().setNameItem(normalized);
     }
 
@@ -61,7 +67,7 @@ public final class InvoiceLineEditService {
         }
 
         if (updateCatalogPrice) {
-            catalogService.updateBasePrice(line.getItems().getId(), stockId,
+            catalogService.updateBasePrice(line.getItems().getId(), stockId.getAsInt(),
                     line.getUnitsType(), price, priceTier);
         }
         line.setPrice(price);

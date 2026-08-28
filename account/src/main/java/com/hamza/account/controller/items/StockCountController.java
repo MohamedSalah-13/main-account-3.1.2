@@ -8,10 +8,12 @@ import com.hamza.account.features.stockcount.StockCount;
 import com.hamza.account.features.stockcount.StockCountLine;
 import com.hamza.account.features.stockcount.StockCountService;
 import com.hamza.account.model.domain.ItemsModel;
+import com.hamza.account.model.domain.Stock;
 import com.hamza.account.model.domain.UnitsModel;
 import com.hamza.account.openFxml.FxmlPath;
 import com.hamza.account.service.ItemUnits;
 import com.hamza.account.service.ItemsService;
+import com.hamza.account.service.StockService;
 import com.hamza.account.table.TableSetting;
 import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.database.DaoException;
@@ -24,6 +26,7 @@ import javafx.collections.ObservableList;
 import javafx.concurrent.Task;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
+import javafx.scene.control.ComboBox;
 import javafx.scene.control.DatePicker;
 import javafx.scene.control.Label;
 import javafx.scene.control.ProgressIndicator;
@@ -75,6 +78,8 @@ public class StockCountController {
 
     private final StockCountService stockCountService = ServiceRegistry.get(StockCountService.class);
     private final ItemsService itemsService = ServiceRegistry.get(ItemsService.class);
+    private final StockService stockService = ServiceRegistry.get(StockService.class);
+    private int stockId = DefaultStock.ID;
     private final EventBus eventBus = ServiceRegistry.get(EventBus.class);
 
     private final ObservableList<StockCountLine> lines = FXCollections.observableArrayList();
@@ -85,6 +90,8 @@ public class StockCountController {
     private TableView<StockCountLine> tableView;
     @FXML
     private TextField textScan, textNotes;
+    @FXML
+    private ComboBox<Stock> comboStock;
     @FXML
     private DatePicker datePicker;
     @FXML
@@ -102,9 +109,24 @@ public class StockCountController {
     public void initialize() {
         buildTable();
         buildActions();
+        loadStocks();
         loadDraft();
     }
 
+    private void loadStocks() {
+        try {
+            comboStock.setItems(FXCollections.observableArrayList(stockService.getStocks()));
+            comboStock.setConverter(new javafx.util.StringConverter<>() {
+                @Override public String toString(Stock stock) { return stock == null ? "" : stock.getName(); }
+                @Override public Stock fromString(String value) { return null; }
+            });
+            comboStock.getSelectionModel().select(comboStock.getItems().stream()
+                    .filter(stock -> stock.getId() == DefaultStock.ID).findFirst().orElse(null));
+            comboStock.valueProperty().addListener((obs, oldStock, newStock) -> {
+                if (newStock != null && newStock.getId() != stockId) { stockId = newStock.getId(); loadDraft(); }
+            });
+        } catch (Exception e) { reportFailure("Failed to load stocks", e); }
+    }
     // ------------------------------------------------------------------
     // Table
     // ------------------------------------------------------------------
@@ -268,7 +290,7 @@ public class StockCountController {
         Task<StockCount> task = new Task<>() {
             @Override
             protected StockCount call() throws DaoException {
-                return stockCountService.openDraft();
+                return stockCountService.openDraft(stockId);
             }
         };
         task.setOnSucceeded(event -> {
@@ -324,7 +346,7 @@ public class StockCountController {
         Task<ItemsModel> task = new Task<>() {
             @Override
             protected ItemsModel call() throws DaoException {
-                ItemsModel byBarcode = itemsService.getItemByBarcodeAndStockId(text, DefaultStock.ID);
+                ItemsModel byBarcode = itemsService.getItemByBarcodeAndStockId(text, stockId);
                 if (byBarcode != null) {
                     return byBarcode;
                 }

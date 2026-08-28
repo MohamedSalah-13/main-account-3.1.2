@@ -1,5 +1,7 @@
 package com.hamza.account.features.inventory;
 
+import com.hamza.account.config.DefaultStock;
+
 /**
  * What the inventory screen is asking for: which items, and which slice of them.
  * <p>
@@ -25,7 +27,8 @@ public record InventoryQuery(String search,
                              int mainGroupId,
                              boolean includeInactive,
                              int page,
-                             int pageSize) {
+                             int pageSize,
+                             int stockId) {
 
     public static final int DEFAULT_PAGE_SIZE = 50;
 
@@ -38,11 +41,17 @@ public record InventoryQuery(String search,
         mainGroupId = Math.max(mainGroupId, ALL_GROUPS);
         page = Math.max(page, 0);
         pageSize = pageSize < 1 ? DEFAULT_PAGE_SIZE : pageSize;
+        stockId = stockId <= 0 ? DefaultStock.ID : stockId;
     }
 
     /** The whole stock, first page. */
+    public InventoryQuery(String search, StockFilter level, int mainGroupId, boolean includeInactive,
+                          int page, int pageSize) {
+        this(search, level, mainGroupId, includeInactive, page, pageSize, DefaultStock.ID);
+    }
+
     public static InventoryQuery all() {
-        return new InventoryQuery("", StockFilter.ALL, ALL_GROUPS, true, 0, DEFAULT_PAGE_SIZE);
+        return new InventoryQuery("", StockFilter.ALL, ALL_GROUPS, true, 0, DEFAULT_PAGE_SIZE, DefaultStock.ID);
     }
 
     /**
@@ -50,7 +59,7 @@ public record InventoryQuery(String search,
      * being counted, which is why this copies everything else across.
      */
     public InventoryQuery withPage(int newPage) {
-        return new InventoryQuery(search, level, mainGroupId, includeInactive, newPage, pageSize);
+        return new InventoryQuery(search, level, mainGroupId, includeInactive, newPage, pageSize, stockId);
     }
 
     /**
@@ -59,19 +68,23 @@ public record InventoryQuery(String search,
      * narrowing below does the same, for the same reason.
      */
     public InventoryQuery withSearch(String newSearch) {
-        return new InventoryQuery(newSearch, level, mainGroupId, includeInactive, 0, pageSize);
+        return new InventoryQuery(newSearch, level, mainGroupId, includeInactive, 0, pageSize, stockId);
     }
 
     public InventoryQuery withLevel(StockFilter newLevel) {
-        return new InventoryQuery(search, newLevel, mainGroupId, includeInactive, 0, pageSize);
+        return new InventoryQuery(search, newLevel, mainGroupId, includeInactive, 0, pageSize, stockId);
     }
 
     public InventoryQuery withMainGroup(int newMainGroupId) {
-        return new InventoryQuery(search, level, newMainGroupId, includeInactive, 0, pageSize);
+        return new InventoryQuery(search, level, newMainGroupId, includeInactive, 0, pageSize, stockId);
     }
 
     public InventoryQuery withInactive(boolean newIncludeInactive) {
-        return new InventoryQuery(search, level, mainGroupId, newIncludeInactive, 0, pageSize);
+        return new InventoryQuery(search, level, mainGroupId, newIncludeInactive, 0, pageSize, stockId);
+    }
+
+    public InventoryQuery withStock(int newStockId) {
+        return new InventoryQuery(search, level, mainGroupId, includeInactive, 0, pageSize, newStockId);
     }
 
     public boolean hasSearch() {

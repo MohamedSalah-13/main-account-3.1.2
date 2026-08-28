@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import java.lang.String?>
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.ComboBox?>
+<?import javafx.scene.control.DatePicker?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.TableView?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.layout.AnchorPane?>
+<?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Region?>
+<?import javafx.scene.layout.VBox?>
+
+<AnchorPane fx:id="root" styleClass="app-root" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.hamza.account.controller.items.StockTransferController">
+    <children>
+        <BorderPane styleClass="app-container" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
+            <top>
+                <VBox spacing="8.0" BorderPane.alignment="CENTER">
+                    <children>
+                        <Label styleClass="page-title" text="%setting.store.transfers" />
+
+                        <HBox alignment="CENTER_LEFT" spacing="8.0" styleClass="app-card">
+                            <children>
+                                <Label styleClass="form-label" text="%stocks.transfer.from" />
+                                <ComboBox fx:id="comboFromStock" minWidth="160.0" />
+                                <Label styleClass="form-label" text="%stocks.transfer.to" />
+                                <ComboBox fx:id="comboToStock" minWidth="160.0" />
+                                <Label styleClass="form-label" text="%stocks.transfer.date" />
+                                <DatePicker fx:id="datePicker" minWidth="140.0" />
+                                <Region HBox.hgrow="ALWAYS" />
+                                <Button fx:id="btnPost" mnemonicParsing="false" styleClass="primary-button" text="%stocks.transfer.post.button" />
+                            </children>
+                            <padding>
+                                <Insets bottom="6.0" left="6.0" right="6.0" top="6.0" />
+                            </padding>
+                        </HBox>
+
+                        <HBox alignment="CENTER_LEFT" spacing="8.0" styleClass="app-card">
+                            <children>
+                                <Label styleClass="form-label" text="%stocks.transfer.item" />
+                                <HBox fx:id="itemSearchBox" alignment="CENTER_LEFT" minWidth="260.0" />
+                                <Label styleClass="form-label" text="%item.column.unit" />
+                                <ComboBox fx:id="comboUnit" minWidth="120.0" />
+                                <Label styleClass="form-label" text="%quantity" />
+                                <TextField fx:id="txtQuantity" minWidth="100.0" />
+                                <Button fx:id="btnAddLine" mnemonicParsing="false" styleClass="neutral-button" text="%stocks.transfer.add.line" />
+                                <Button fx:id="btnRemoveLine" mnemonicParsing="false" styleClass="neutral-button" text="%stocks.transfer.remove.line" />
+                            </children>
+                            <padding>
+                                <Insets bottom="6.0" left="6.0" right="6.0" top="6.0" />
+                            </padding>
+                        </HBox>
+                    </children>
+                    <padding>
+                        <Insets bottom="4.0" left="6.0" right="6.0" top="6.0" />
+                    </padding>
+                </VBox>
+            </top>
+            <center>
+                <VBox spacing="8.0" BorderPane.alignment="CENTER">
+                    <children>
+                        <TableView fx:id="tableLines" styleClass="modern-table" prefHeight="180.0" />
+
+                        <Label styleClass="section-title" text="%stocks.transfer.history.title" />
+                        <HBox alignment="CENTER_LEFT" spacing="8.0">
+                            <children>
+                                <Button fx:id="btnRefreshHistory" mnemonicParsing="false" styleClass="neutral-button" text="%refresh" />
+                                <Button fx:id="btnReverse" mnemonicParsing="false" styleClass="danger-button" text="%stocks.transfer.reverse" />
+                            </children>
+                        </HBox>
+                        <TableView fx:id="tableHistory" styleClass="modern-table" VBox.vgrow="ALWAYS" />
+                    </children>
+                    <padding>
+                        <Insets bottom="6.0" left="6.0" right="6.0" />
+                    </padding>
+                </VBox>
+            </center>
+        </BorderPane>
+    </children>
+</AnchorPane>

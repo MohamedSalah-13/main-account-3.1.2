@@ -21,6 +21,7 @@
         <paragraph rightIndent="5"/>
     </style>
     <parameter name="itemNum" class="java.lang.Integer"/>
+    <parameter name="stockId" class="java.lang.Integer"/>
     <parameter name="purchase" class="java.lang.Double"/>
     <parameter name="sales" class="java.lang.Double"/>
     <parameter name="purchase_re" class="java.lang.Double"/>
@@ -49,6 +50,7 @@
 	unit_name
 FROM card_item_view_details
 WHERE item_num = $P{itemNum}
+  AND stock_id = $P{stockId}
   AND invoice_date BETWEEN $P{dateFrom} AND $P{dateTo}
   AND ($P{tableName} IS NULL OR table_name = $P{tableName})
 ORDER BY invoice_date, date_insert, id]]>

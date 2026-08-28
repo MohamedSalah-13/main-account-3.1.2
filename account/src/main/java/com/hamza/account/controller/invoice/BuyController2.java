@@ -100,6 +100,7 @@ public class BuyController2<T3 extends BaseNames, T4 extends BaseAccount>
     private final EventBus eventBus = ServiceRegistry.get(EventBus.class);
     private final InvoicePrintService invoicePrintService = new InvoicePrintService();
     private final CustomerService customerService = ServiceRegistry.get(CustomerService.class);
+    private final StockService stockService = ServiceRegistry.get(StockService.class);
     private final ItemsService itemsService = ServiceRegistry.get(ItemsService.class);
     private final EmployeeService employeeService = ServiceRegistry.get(EmployeeService.class);
     private final TreasuryService treasuryService = ServiceRegistry.get(TreasuryService.class);
@@ -109,12 +110,14 @@ public class BuyController2<T3 extends BaseNames, T4 extends BaseAccount>
     private final InvoiceItemSelectionService invoiceItemSelectionService;
     private InvoiceItemEntryCoordinator itemEntry;
     private int priceTypeByNameId = 1; // use a first price type
+    /** The invoice stock context; kept at the legacy default until warehouse selection is exposed. */
+    private int invoiceStockId = DefaultStock.ID;
     private int codeAccount;
     private boolean updatingPaymentUi;
     private StringProperty textSearchName, textSearchItems;
     private TextSearchController<T3> nameSearchController;
     @FXML
-    private Label labelNum, labelName, labelBarcode, labelDate, labelCondition, labelDelegate, labelTreasury, labelSearchBy, labelPrice, labelQuantity, labelItemBalance, labelTotals, last1, last2, last3, last4, last5, labelNotes, labelInvoiceTotal, labelPaid, labelRemaining, labelNetAfterDiscount;
+    private Label labelNum, labelName, labelStock, labelBarcode, labelDate, labelCondition, labelDelegate, labelTreasury, labelSearchBy, labelPrice, labelQuantity, labelItemBalance, labelTotals, last1, last2, last3, last4, last5, labelNotes, labelInvoiceTotal, labelPaid, labelRemaining, labelNetAfterDiscount;
     @FXML
     @Getter
     private Button btnAdd, btnSave, btnPrintSave, btnNew, btnSearch, btnUpdateItem;
@@ -122,6 +125,8 @@ public class BuyController2<T3 extends BaseNames, T4 extends BaseAccount>
     private Button btnReturnFromInvoice;
     @FXML
     private ComboBox<String> comboType, comboDelegate, comboTreasury;
+    @FXML
+    private ComboBox<Stock> comboStock;
     @FXML
     private TextField txtNum, txtBarcode, txtPrice, txtQuantity, txtItemBalance, txtTotals, txtOtherDiscount, txtPaid, txtRestAfterPaid, txtRestAfterDiscount;
     @FXML
@@ -157,7 +162,7 @@ public class BuyController2<T3 extends BaseNames, T4 extends BaseAccount>
         CardItemService cardItemService = ServiceRegistry.get(CardItemService.class);
         this.invoiceExpiryService = new InvoiceExpiryService(
                 dataInterface.designInterface().documentType(), numInvoiceUpdate,
-                cardItemService::expiryBalancesByItem);
+                itemId -> cardItemService.expiryBalancesByItem(invoiceStockId, itemId));
         this.invoiceItemSelectionService = new InvoiceItemSelectionService(
                 dataInterface.designInterface().documentType(), itemsService,
                 dataInterface.invoiceBuy()::getItemsPrice);
@@ -256,11 +261,13 @@ public class BuyController2<T3 extends BaseNames, T4 extends BaseAccount>
         labelItemBalance.setText(lang.getString("invoice.item.balance"));
         labelTotals.setText(lang.getString("invoice.totals"));
         labelTreasury.setText(lang.getString("invoice.treasury"));
+        labelStock.setText(lang.getString("invoice.stock"));
         labelNotes.setText(lang.getString("invoice.notes"));
 
         // combo prompts - نصوص الاختيارات
         comboTreasury.setPromptText(lang.getString("invoice.treasury"));
         comboDelegate.setPromptText(lang.getString("invoice.delegate"));
+        comboStock.setPromptText(lang.getString("invoice.stock"));
         comboType.setPromptText(lang.getString("invoice.type"));
 
         // text field prompts - نصوص الحقول
@@ -320,7 +327,7 @@ public class BuyController2<T3 extends BaseNames, T4 extends BaseAccount>
                 editor,
                 invoiceItemSelectionService,
                 textSearchItems,
-                DefaultStock.ID,
+                () -> invoiceStockId,
                 this::resolveSelectedPriceTier,
                 this::scaleBarcodeSettings,
                 () -> getInvoiceAddItemDirect(),
@@ -535,6 +542,9 @@ public class BuyController2<T3 extends BaseNames, T4 extends BaseAccount>
     private void selectData() {
         try {
             InvoiceHeaderView header = dataInterface.loadInvoiceHeader(num_invoice_update);
+            invoiceStockId = header.stockId();
+            if (comboStock != null) comboStock.getSelectionModel().select(
+                    comboStock.getItems().stream().filter(stock -> stock.getId() == invoiceStockId).findFirst().orElse(null));
             BaseTotals dataById = header.totals();
             int id = dataById.getId();
             InvoiceType invoiceType = dataById.getInvoiceType();
@@ -608,7 +618,7 @@ public class BuyController2<T3 extends BaseNames, T4 extends BaseAccount>
                 comboDelegate.getSelectionModel().getSelectedItem(),
                 getSelWithoutBalance(), returnEntry.sourceInvoiceNumber(),
                 returnEntry.selectedReturnReason(),
-                List.copyOf(table.getItems()));
+                List.copyOf(table.getItems()), invoiceStockId);
     }
 
     private void saveInBackground(boolean print, InvoiceSaveCommand command) {
@@ -754,6 +764,19 @@ public class BuyController2<T3 extends BaseNames, T4 extends BaseAccount>
         Utils.replaceNonDigitChar(txtBarcode);
         txtNum.setText(num_invoice_update > 0 ? String.valueOf(num_invoice_update) : lang.getString("invoice.number.generate"));
         // delegate data
+        comboStock.setItems(FXCollections.observableArrayList(getStocks()));
+        comboStock.setConverter(new javafx.util.StringConverter<>() {
+            @Override public String toString(Stock stock) { return stock == null ? "" : stock.getName(); }
+            @Override public Stock fromString(String value) { return null; }
+        });
+        comboStock.getSelectionModel().select(comboStock.getItems().stream()
+                .filter(stock -> stock.getId() == DefaultStock.ID).findFirst().orElse(null));
+        comboStock.getSelectionModel().selectedItemProperty().addListener((obs, oldStock, newStock) -> {
+            if (newStock != null) invoiceStockId = newStock.getId();
+        });
+        comboStock.disableProperty().bind(Bindings.isNotEmpty(table.getItems()));
+
+        // delegate data
         comboDelegate.setItems(FXCollections.observableArrayList(getDelegateNames()));
         // treasury data
         comboTreasury.setItems(FXCollections.observableArrayList(getListTreasuryModelNames()));
@@ -768,6 +791,11 @@ public class BuyController2<T3 extends BaseNames, T4 extends BaseAccount>
         this.txtBarcode.clear();
         Platform.runLater(() -> txtBarcode.requestFocus());
 
+    }
+
+    @NotNull
+    private List<Stock> getStocks() {
+        try { return stockService.getStocks(); } catch (DaoException e) { logError(e); return List.of(); }
     }
 
     @NotNull
@@ -922,7 +950,7 @@ public class BuyController2<T3 extends BaseNames, T4 extends BaseAccount>
         InvoiceItemCatalogService catalogService = new InvoiceItemCatalogService(
                 documentType, itemsService, invoiceBuy::updateItemPrice);
         InvoiceLineEditService editService = new InvoiceLineEditService(
-                documentType, catalogService, DefaultStock.ID);
+                documentType, catalogService, () -> invoiceStockId);
         new InvoiceTableCoordinator<>(table, editor.lines(), editService,
                 () -> priceTypeByNameId, () -> getInvoiceUpdatePrice(),
                 editor::refreshTotals, getClass(), CurrentUser.get().getId() == 1)

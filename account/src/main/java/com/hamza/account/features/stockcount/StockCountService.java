@@ -46,20 +46,21 @@ public record StockCountService(DaoFactory daoFactory) {
      * closing it again leaves no empty counts behind.
      */
     public StockCount openDraft() throws DaoException {
+        return openDraft(DefaultStock.ID);
+    }
+
+    public StockCount openDraft(int stockId) throws DaoException {
         AuthorizationGuard.require(AppPermissions.STOCK_COUNT_SHOW);
-        StockCount existing = dao().findOpenDraft(DefaultStock.ID);
-        if (existing != null) {
-            return existing;
-        }
+        StockCount existing = dao().findOpenDraft(stockId);
+        if (existing != null) return existing;
 
         StockCount fresh = new StockCount();
-        fresh.setStockId(DefaultStock.ID);
+        fresh.setStockId(stockId);
         fresh.setCountDate(LocalDate.now());
         var user = CurrentUser.getOrNull();
         fresh.setUserId(user == null ? 1 : user.getId());
         return fresh;
     }
-
     public StockCount findById(int id) throws DaoException {
         AuthorizationGuard.require(AppPermissions.STOCK_COUNT_SHOW);
         return dao().findById(id);

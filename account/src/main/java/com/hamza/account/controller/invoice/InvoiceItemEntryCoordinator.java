@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.function.BooleanSupplier;
 import java.util.function.IntConsumer;
+import java.util.function.IntSupplier;
 import java.util.function.Supplier;
 
 import static com.hamza.controlsfx.util.NumberUtils.roundToTwoDecimalPlaces;
@@ -32,7 +33,7 @@ public final class InvoiceItemEntryCoordinator {
     private final InvoiceEditorViewModel<?> editor;
     private final InvoiceItemSelectionService selectionService;
     private final StringProperty searchText;
-    private final int stockId;
+    private final IntSupplier stockId;
     private final CheckedIntSupplier priceTier;
     private final Supplier<InvoiceItemSelectionService.ScaleBarcodeSettings> scaleSettings;
     private final BooleanSupplier addDirectly;
@@ -42,12 +43,19 @@ public final class InvoiceItemEntryCoordinator {
     private boolean applyingSelection;
     private int currentPriceTier = 1;
 
+    public InvoiceItemEntryCoordinator(Controls controls, InvoiceEditorViewModel<?> editor,
+            InvoiceItemSelectionService selectionService, StringProperty searchText, int stockId,
+            CheckedIntSupplier priceTier, Supplier<InvoiceItemSelectionService.ScaleBarcodeSettings> scaleSettings,
+            BooleanSupplier addDirectly, Runnable addLine, IntConsumer openItem, ErrorHandler errorHandler) {
+        this(controls, editor, selectionService, searchText, () -> stockId, priceTier,
+                scaleSettings, addDirectly, addLine, openItem, errorHandler);
+    }
     public InvoiceItemEntryCoordinator(
             Controls controls,
             InvoiceEditorViewModel<?> editor,
             InvoiceItemSelectionService selectionService,
             StringProperty searchText,
-            int stockId,
+            IntSupplier stockId,
             CheckedIntSupplier priceTier,
             Supplier<InvoiceItemSelectionService.ScaleBarcodeSettings> scaleSettings,
             BooleanSupplier addDirectly,
@@ -58,7 +66,7 @@ public final class InvoiceItemEntryCoordinator {
         this.editor = Objects.requireNonNull(editor, "editor");
         this.selectionService = Objects.requireNonNull(selectionService, "selectionService");
         this.searchText = Objects.requireNonNull(searchText, "searchText");
-        this.stockId = stockId;
+        this.stockId = Objects.requireNonNull(stockId, "stockId");
         this.priceTier = Objects.requireNonNull(priceTier, "priceTier");
         this.scaleSettings = Objects.requireNonNull(scaleSettings, "scaleSettings");
         this.addDirectly = Objects.requireNonNull(addDirectly, "addDirectly");
@@ -130,7 +138,7 @@ public final class InvoiceItemEntryCoordinator {
         InvoiceItemSelectionService.ScaleBarcodeSettings settings = scaleSettings.get();
         try {
             InvoiceItemSelection selection = selectionService.selectByBarcode(
-                    barcode, stockId, resolvePriceTier(), settings);
+                    barcode, stockId.getAsInt(), resolvePriceTier(), settings);
             apply(selection, true);
             if (addDirectly.getAsBoolean()) {
                 addLine.run();
@@ -147,7 +155,7 @@ public final class InvoiceItemEntryCoordinator {
     private void selectByName(String itemName) {
         try {
             InvoiceItemSelection selection = selectionService.selectByName(
-                    itemName, stockId, resolvePriceTier());
+                    itemName, stockId.getAsInt(), resolvePriceTier());
             apply(selection, false);
             controls.price().requestFocus();
         } catch (Exception e) {

@@ -7,6 +7,7 @@ import com.hamza.controlsfx.database.SqlStatements;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.List;
 
 public class StockDao extends AbstractDao<Stock> {
@@ -35,6 +36,28 @@ public class StockDao extends AbstractDao<Stock> {
     public int insert(Stock stock) throws DaoException {
         String s = SqlStatements.insertStatement(TABLE_NAME, STOCK_NAME, STOCK_ADDRESS, USER_ID);
         return executeUpdate(s, getData(stock));
+    }
+
+    /**
+     * Inserts a new warehouse and answers its generated id, so the caller can
+     * backfill {@code items_stock} for every existing item in the same transaction -
+     * see {@link com.hamza.account.service.StockService#save}.
+     */
+    public int insertReturningId(Stock stock) throws DaoException {
+        String sql = SqlStatements.insertStatement(TABLE_NAME, STOCK_NAME, STOCK_ADDRESS, USER_ID);
+        Object[] parameters = getData(stock);
+        return withConnection(connection -> {
+            try (var statement = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+                for (int i = 0; i < parameters.length; i++) {
+                    statement.setObject(i + 1, parameters[i]);
+                }
+                statement.executeUpdate();
+                try (var keys = statement.getGeneratedKeys()) {
+                    if (keys.next()) return keys.getInt(1);
+                }
+                throw new DaoException("Stock id was not generated");
+            }
+        });
     }
 
     @Override

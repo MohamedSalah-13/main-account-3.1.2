@@ -83,11 +83,13 @@
                                           <Label fx:id="labelBarcode" styleClass="form-label" text="barcode" GridPane.rowIndex="2" />
                                           <Label fx:id="labelTotals" styleClass="form-label" text="Totals" GridPane.columnIndex="6" GridPane.rowIndex="3" />
                                           <Label fx:id="labelTreasury" styleClass="form-label" text="Treasury" GridPane.columnIndex="4" />
+                                          <Label fx:id="labelStock" styleClass="form-label" text="%invoice.stock" GridPane.columnIndex="4" GridPane.rowIndex="1" />
 
                                           <TextField fx:id="txtNum" editable="false" promptText="%invoice.number" GridPane.columnIndex="1" />
                                           <DatePicker fx:id="date" editable="false" GridPane.columnIndex="3" />
                                           <ComboBox fx:id="comboDelegate" maxWidth="1.7976931348623157E308" GridPane.columnIndex="3" GridPane.rowIndex="1" />
                                           <ComboBox fx:id="comboTreasury" disable="true" maxWidth="1.7976931348623157E308" GridPane.columnIndex="5" />
+                                          <ComboBox fx:id="comboStock" maxWidth="1.7976931348623157E308" GridPane.columnIndex="5" GridPane.rowIndex="1" />
                                           <TextField fx:id="txtItemBalance" editable="false" promptText="balance" GridPane.columnIndex="5" GridPane.rowIndex="2" />
                                           <TextField fx:id="txtBarcode" promptText="باركود الصنف" GridPane.columnIndex="1" GridPane.rowIndex="2" />
                                           <ComboBox fx:id="comboType" maxWidth="1.7976931348623157E308" GridPane.columnIndex="1" GridPane.rowIndex="3" />

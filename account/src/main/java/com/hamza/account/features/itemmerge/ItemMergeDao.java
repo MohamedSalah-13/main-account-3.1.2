@@ -148,6 +148,10 @@ public class ItemMergeDao extends AbstractDao<MergeItem> {
         return executeUpdate(ItemMergeStatements.INSERT_MISSING_ITEMS_STOCK, targetId, targetId, sourceId);
     }
 
+    public int addItemsStockBalances(int targetId, int sourceId) throws DaoException {
+        return executeUpdate(ItemMergeStatements.ADD_ITEMS_STOCK_BALANCES, targetId, sourceId);
+    }
+
     /** The source's units, except those the target already has and its base unit. */
     public int moveUnits(int targetId, int sourceId, int targetBaseUnitId) throws DaoException {
         return executeUpdate(ItemMergeStatements.MOVE_ABSENT_UNITS, targetId, targetId, sourceId, targetBaseUnitId);

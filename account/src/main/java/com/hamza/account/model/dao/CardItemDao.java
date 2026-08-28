@@ -81,7 +81,7 @@ public class CardItemDao extends AbstractDao<CardItems> {
     static String balanceSql(boolean inclusive) {
         String comparison = inclusive ? "<=" : "<";
         return """
-                SELECT i.first_balance
+                SELECT ist.first_balance
                      + COALESCE((SELECT SUM(base_quantity) FROM (
                            SELECT p.quantity * p.type_value AS base_quantity
                            FROM purchase p
@@ -108,8 +108,8 @@ public class CardItemDao extends AbstractDao<CardItems> {
                                  JOIN stock_count c ON c.id = l.count_id
                                  WHERE c.status = 'POSTED' AND c.stock_id = ? AND l.item_id = ?
                                    AND c.count_date %s ?), 0) AS balance
-                FROM items i
-                WHERE i.id = ?
+                FROM items_stock ist
+                WHERE ist.item_id = ? AND ist.stock_id = ?
                 """.formatted(comparison, comparison, comparison, comparison, comparison);
     }
 
@@ -133,34 +133,42 @@ public class CardItemDao extends AbstractDao<CardItems> {
      * @param processType the only kind of document to return, or null for all four
      */
     public List<CardItems> cardRows(int itemId, LocalDate from, LocalDate to, ProcessType processType) throws DaoException {
+        return cardRows(DefaultStock.ID, itemId, from, to, processType);
+    }
+
+    public List<CardItems> cardRows(int stockId, int itemId, LocalDate from, LocalDate to,
+                                    ProcessType processType) throws DaoException {
         String tableName = tableNameOf(processType);
         if (tableName == null) {
             return queryForObjects(cardRowsSql(false), this::map,
-                    itemId, DefaultStock.ID, Date.valueOf(from), Date.valueOf(to));
+                    itemId, stockId, Date.valueOf(from), Date.valueOf(to));
         }
         return queryForObjects(cardRowsSql(true), this::map,
-                itemId, DefaultStock.ID, Date.valueOf(from), Date.valueOf(to), tableName);
+                itemId, stockId, Date.valueOf(from), Date.valueOf(to), tableName);
     }
-
     /** @see #balanceSql(boolean) */
     public double balanceOn(int itemId, LocalDate date, boolean inclusive) throws DaoException {
+        return balanceOn(DefaultStock.ID, itemId, date, inclusive);
+    }
+
+    public double balanceOn(int stockId, int itemId, LocalDate date, boolean inclusive) throws DaoException {
         return withConnection(connection -> {
             try (var statement = connection.prepareStatement(balanceSql(inclusive))) {
                 Date on = Date.valueOf(date);
                 int parameter = 1;
                 for (int branch = 0; branch < 5; branch++) {
-                    statement.setInt(parameter++, DefaultStock.ID);
+                    statement.setInt(parameter++, stockId);
                     statement.setInt(parameter++, itemId);
                     statement.setDate(parameter++, on);
                 }
-                statement.setInt(parameter, itemId);
+                statement.setInt(parameter++, itemId);
+                statement.setInt(parameter, stockId);
                 try (ResultSet resultSet = statement.executeQuery()) {
                     return resultSet.next() ? resultSet.getDouble("balance") : 0.0;
                 }
             }
         });
     }
-
     /**
      * The date of the item's first movement, or null if it has never moved.
      * <p>
@@ -169,11 +177,15 @@ public class CardItemDao extends AbstractDao<CardItems> {
      * date in Java, which is the one query the screen could least afford.
      */
     public LocalDate firstMovementDate(int itemId) throws DaoException {
+        return firstMovementDate(DefaultStock.ID, itemId);
+    }
+
+    public LocalDate firstMovementDate(int stockId, int itemId) throws DaoException {
         return withConnection(connection -> {
             try (var statement = connection.prepareStatement(firstMovementSql())) {
                 int parameter = 1;
                 for (int branch = 0; branch < 4; branch++) {
-                    statement.setInt(parameter++, DefaultStock.ID);
+                    statement.setInt(parameter++, stockId);
                     statement.setInt(parameter++, itemId);
                 }
                 try (ResultSet resultSet = statement.executeQuery()) {
@@ -184,7 +196,6 @@ public class CardItemDao extends AbstractDao<CardItems> {
             }
         });
     }
-
     static String firstMovementSql() {
         return """
                 SELECT MIN(invoice_date) AS first_date FROM (
@@ -217,18 +228,21 @@ public class CardItemDao extends AbstractDao<CardItems> {
      * an item's unit factor later must not rewrite what an old carton meant.
      */
     public Map<LocalDate, Double> expiryBalancesByItem(int itemId) throws DaoException {
+        return expiryBalancesByItem(DefaultStock.ID, itemId);
+    }
+
+    public Map<LocalDate, Double> expiryBalancesByItem(int stockId, int itemId) throws DaoException {
         return withConnection(connection -> {
             Map<LocalDate, Double> balances = new LinkedHashMap<>();
             try (var statement = connection.prepareStatement(expiryBalanceSql())) {
                 int parameter = 1;
                 for (int branch = 0; branch < 4; branch++) {
-                    statement.setInt(parameter++, DefaultStock.ID);
+                    statement.setInt(parameter++, stockId);
                     statement.setInt(parameter++, itemId);
                 }
                 try (ResultSet resultSet = statement.executeQuery()) {
                     while (resultSet.next()) {
-                        balances.put(
-                                resultSet.getDate("expiration_date").toLocalDate(),
+                        balances.put(resultSet.getDate("expiration_date").toLocalDate(),
                                 resultSet.getDouble("available_quantity"));
                     }
                 }
@@ -236,7 +250,6 @@ public class CardItemDao extends AbstractDao<CardItems> {
             return balances;
         });
     }
-
     String expiryBalanceSql() {
         return """
                 SELECT expiration_date, SUM(base_quantity) AS available_quantity

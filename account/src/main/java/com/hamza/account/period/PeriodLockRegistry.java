@@ -38,6 +38,13 @@ public final class PeriodLockRegistry {
     public static final LockedDocument STOCK_COUNT =
             new LockedDocument("period.doc.stock.count", "stock_count", "id", "count_date");
 
+    /**
+     * A transfer moves balances at its own date exactly as a stock count does, so
+     * moving stock into or out of a closed month's valuation is refused the same way.
+     */
+    public static final LockedDocument STOCK_TRANSFER =
+            new LockedDocument("period.doc.stock.transfer", "stock_transfer", "id", "transfer_date");
+
     // ---- treasury -----------------------------------------------------------
     //
     // Declared, and only one of them is enforced anywhere - because at the time of

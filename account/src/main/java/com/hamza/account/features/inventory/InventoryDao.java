@@ -33,14 +33,9 @@ import java.util.List;
  * and - since the opening balance is added outside the aggregate - stops the opening
  * being counted once per stock row.
  * <p>
- * The opening balance is read from {@code items.first_balance}, which is the number
- * the item screen writes and the number this sheet has always shown. Note that
- * {@code items_stock.first_balance} is a second copy: {@code ItemsDao.insert} writes
- * both, {@code ItemsDao.update} writes only the first, so editing an item's opening
- * balance moves this sheet and leaves {@code mini_quantity_view} - which reads the
- * view's copy - behind. Reading the view's copy here would have quietly changed the
- * balances of every install that ever edited an opening balance, so the divergence is
- * left where it is rather than half-fixed from the reporting side.
+ * The opening balance comes from the selected warehouse row in
+ * {@code quantity_items_table}. This keeps the report aligned with the per-warehouse
+ * opening balances introduced by {@code V18__warehouse_opening_balances.sql}.
  */
 public class InventoryDao extends AbstractDao<InventoryRow> {
 
@@ -50,6 +45,7 @@ public class InventoryDao extends AbstractDao<InventoryRow> {
      */
     private static final String MOVEMENTS = """
             (SELECT item_id,
+                    SUM(first_balance)       AS opening,
                     SUM(quantityPurchase)   AS qty_purchase,
                     SUM(quantitySales)      AS qty_sales,
                     SUM(quantityPurchaseRe) AS qty_purchase_re,
@@ -58,6 +54,7 @@ public class InventoryDao extends AbstractDao<InventoryRow> {
                     SUM(toStock)            AS qty_to_stock,
                     SUM(adjustment)         AS qty_adjustment
              FROM quantity_items_table
+             WHERE stock_id = ?
              GROUP BY item_id)
             """;
 
@@ -75,7 +72,7 @@ public class InventoryDao extends AbstractDao<InventoryRow> {
      * system said raises the balance. Added by {@code V8}.
      */
     private static final String BALANCE = """
-            (i.first_balance + q.qty_purchase + q.qty_sales_re + q.qty_to_stock + q.qty_adjustment
+            (q.opening + q.qty_purchase + q.qty_sales_re + q.qty_to_stock + q.qty_adjustment
                              - q.qty_sales - q.qty_purchase_re - q.qty_from_stock)""";
 
     private static final String SELECT_ROWS = """
@@ -86,7 +83,7 @@ public class InventoryDao extends AbstractDao<InventoryRow> {
                    i.buy_price,
                    i.sel_price1,
                    i.mini_quantity,
-                   i.first_balance AS opening,
+                   q.opening,
                    u.unit_name,
                    q.qty_purchase,
                    q.qty_sales,
@@ -126,7 +123,9 @@ public class InventoryDao extends AbstractDao<InventoryRow> {
      */
     public List<InventoryRow> rows(InventoryQuery query) throws DaoException {
         Filter filter = filter(query);
-        List<Object> parameters = new ArrayList<>(filter.parameters());
+        List<Object> parameters = new ArrayList<>();
+        parameters.add(query.stockId());
+        parameters.addAll(filter.parameters());
         parameters.add(query.pageSize());
         parameters.add(query.offset());
         return queryForObjects(SELECT_ROWS + filter.sql() + ORDER_BY + " LIMIT ? OFFSET ? ",
@@ -141,8 +140,11 @@ public class InventoryDao extends AbstractDao<InventoryRow> {
      */
     public List<InventoryRow> allRows(InventoryQuery query) throws DaoException {
         Filter filter = filter(query);
+        List<Object> parameters = new ArrayList<>();
+        parameters.add(query.stockId());
+        parameters.addAll(filter.parameters());
         return queryForObjects(SELECT_ROWS + filter.sql() + ORDER_BY,
-                this::map, filter.parameters().toArray());
+                this::map, parameters.toArray());
     }
 
     /**
@@ -154,7 +156,9 @@ public class InventoryDao extends AbstractDao<InventoryRow> {
         String sql = SELECT_SUMMARY + filter.sql();
         return withConnection(connection -> {
             try (PreparedStatement statement = connection.prepareStatement(sql)) {
-                List<Object> parameters = filter.parameters();
+                List<Object> parameters = new ArrayList<>();
+                parameters.add(query.stockId());
+                parameters.addAll(filter.parameters());
                 for (int i = 0; i < parameters.size(); i++) {
                     statement.setObject(i + 1, parameters.get(i));
                 }

@@ -22,5 +22,6 @@ public record InvoiceHeaderView(
         int partyId,
         int sourceInvoiceNumber,
         String returnReason,
-        LocalDateTime dateInsert) {
+        LocalDateTime dateInsert,
+        int stockId) {
 }

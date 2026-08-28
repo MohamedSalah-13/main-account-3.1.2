@@ -2,6 +2,37 @@
 
 This file provides guidance to Codex (Codex.ai/code) when working with code in this repository.
 
+## Autonomous Working Mode
+
+Use this workflow by default:
+
+**Inspect → Understand → Plan internally → Implement → Test → Fix → Verify → Report**
+
+- Inspect the relevant project files first and understand the existing architecture, conventions,
+  dependencies, and implementation before making changes.
+- Form the implementation plan internally, then execute it. Do not stop after presenting a plan, and do
+  not ask for approval between ordinary implementation steps.
+- Make reasonable technical decisions independently by following the project's current architecture and
+  established patterns. Prefer inspecting and reusing the repository's existing solutions over asking the
+  user to choose between equivalent technical approaches.
+- Continue until the requested work is complete or a genuine blocker exists. Run the relevant clean build,
+  compilation, and tests when possible; investigate and fix build or test failures caused by the changes,
+  then verify again before reporting.
+- Keep changes within the requested scope. Do not impose a dependency-injection framework, replace the
+  existing architecture, or perform unrelated restructuring.
+- Finish with a concise report of what changed, what was verified, and any genuine remaining limitations.
+
+Ask the user only when:
+
+- A fundamental ambiguity cannot be resolved from the repository and the possible interpretations would
+  materially change business or user-facing behaviour.
+- An operation is destructive, risks irreversible data loss, or requires a destructive database migration.
+- Completing the request requires removing major existing functionality.
+- Required credentials, secrets, API keys, licences, or unavailable external resources are missing.
+- A business decision cannot reasonably be inferred from the requirements or the existing project.
+
+Do not ask questions whose answers can be determined safely by inspecting the repository.
+
 ## What this is
 
 A JavaFX 21 desktop accounting application for Arabic-speaking businesses (invoicing, inventory,

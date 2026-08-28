@@ -98,6 +98,30 @@ class InvoiceStockDatabaseAcceptanceTest {
     }
 
     @Test
+    void saleInWarehouseADoesNotDeductWarehouseB() throws Exception {
+        Connection transaction = ConnectionManager.beginTransaction();
+        try {
+            int itemId = insertItem(transaction, marker(), 10);
+            int stockA = ensureStock(transaction, "S" + UUID.randomUUID());
+            int stockB = ensureStock(transaction, "S" + UUID.randomUUID());
+            ensureStockRow(transaction, itemId, stockA, 10);
+            ensureStockRow(transaction, itemId, stockB, 10);
+            int invoice = nextId(transaction, "total_sales", "invoice_number");
+            executeSalesHeader(transaction, invoice, stockA);
+            insertLine(transaction, "sales", "num", invoice, itemId, 3);
+            JdbcInvoiceStockRepository repository = new JdbcInvoiceStockRepository();
+            repository.lockItems(stockA, List.of(itemId));
+            assertEquals(7.0, repository.currentBaseBalances(stockA, List.of(itemId)).get(itemId));
+            assertEquals(10.0, repository.currentBaseBalances(stockB, List.of(itemId)).get(itemId));
+            CardItemDao card = new CardItemDao();
+            assertEquals(7.0, card.balanceOn(stockA, itemId, LocalDate.now(), true));
+            assertEquals(10.0, card.balanceOn(stockB, itemId, LocalDate.now(), true));
+        } finally {
+            transaction.rollback();
+            ConnectionManager.endTransaction(transaction);
+        }
+    }
+    @Test
     void secondTransactionWaitsForItemLockAndSeesTheCommittedBalance() throws Exception {
         String marker = marker();
         int itemId = insertCommittedItem(marker, 5);
@@ -206,6 +230,36 @@ class InvoiceStockDatabaseAcceptanceTest {
         }
     }
 
+    private static int ensureStock(Connection connection, String name) throws Exception {
+        try (PreparedStatement statement = connection.prepareStatement(
+                "INSERT INTO stocks(stock_name,user_id) VALUES (?,1)", Statement.RETURN_GENERATED_KEYS)) {
+            statement.setString(1, name);
+            assertEquals(1, statement.executeUpdate());
+            try (ResultSet keys = statement.getGeneratedKeys()) {
+                assertTrue(keys.next());
+                return keys.getInt(1);
+            }
+        }
+    }
+    private static void ensureStockRow(Connection connection, int itemId, int stockId, double opening)
+            throws Exception {
+        try (PreparedStatement statement = connection.prepareStatement(
+                "INSERT INTO items_stock(item_id,stock_id,first_balance,current_quantity) VALUES (?,?,?,?)")) {
+            statement.setInt(1, itemId); statement.setInt(2, stockId);
+            statement.setDouble(3, opening); statement.setDouble(4, opening);
+            statement.executeUpdate();
+        }
+    }
+
+    private static void executeSalesHeader(Connection connection, int invoice, int stockId)
+            throws Exception {
+        try (PreparedStatement statement = connection.prepareStatement(
+                "INSERT INTO total_sales(invoice_number,sup_code,invoice_type,invoice_date,total,discount,paid_up,stock_id,delegate_id,treasury_id,notes,user_id) "
+                        + "VALUES (?,1,1,CURRENT_DATE,30,0,30,?,1,1,'acceptance',1)")) {
+            statement.setInt(1, invoice); statement.setInt(2, stockId);
+            assertEquals(1, statement.executeUpdate());
+        }
+    }
     private static void updateOpeningBalance(
             Connection connection, int itemId, double balance) throws Exception {
         try (PreparedStatement statement = connection.prepareStatement(

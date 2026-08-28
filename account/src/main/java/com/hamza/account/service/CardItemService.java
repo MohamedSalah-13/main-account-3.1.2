@@ -22,9 +22,17 @@ public record CardItemService(DaoFactory daoFactory) {
         return daoFactory.cardItemDao().cardRows(itemId, from, to, processType);
     }
 
+    public List<CardItems> cardRows(int stockId, int itemId, LocalDate from, LocalDate to, ProcessType processType) throws DaoException {
+        return daoFactory.cardItemDao().cardRows(stockId, itemId, from, to, processType);
+    }
+
     /** What the item's balance was at the end of {@code date}, in base units. */
     public double balanceOn(int itemId, LocalDate date) throws DaoException {
         return daoFactory.cardItemDao().balanceOn(itemId, date, true);
+    }
+
+    public double balanceOn(int stockId, int itemId, LocalDate date) throws DaoException {
+        return daoFactory.cardItemDao().balanceOn(stockId, itemId, date, true);
     }
 
     /** What the item's balance was before {@code date} began, in base units. */
@@ -32,13 +40,25 @@ public record CardItemService(DaoFactory daoFactory) {
         return daoFactory.cardItemDao().balanceOn(itemId, date, false);
     }
 
+    public double balanceBefore(int stockId, int itemId, LocalDate date) throws DaoException {
+        return daoFactory.cardItemDao().balanceOn(stockId, itemId, date, false);
+    }
+
     /** The date of the item's first movement, or null if it has never moved. */
     public LocalDate firstMovementDate(int itemId) throws DaoException {
         return daoFactory.cardItemDao().firstMovementDate(itemId);
     }
 
+    public LocalDate firstMovementDate(int stockId, int itemId) throws DaoException {
+        return daoFactory.cardItemDao().firstMovementDate(stockId, itemId);
+    }
+
     public Map<LocalDate, Double> expiryBalancesByItem(int itemId) throws DaoException {
         return daoFactory.cardItemDao().expiryBalancesByItem(itemId);
+    }
+
+    public Map<LocalDate, Double> expiryBalancesByItem(int stockId, int itemId) throws DaoException {
+        return daoFactory.cardItemDao().expiryBalancesByItem(stockId, itemId);
     }
 
     public List<CardItems> cardItemsList() throws Exception {

@@ -78,6 +78,7 @@
                                 <RowConstraints />
                                 <RowConstraints />
                                 <RowConstraints />
+                                <RowConstraints />
                             </rowConstraints>
                         </GridPane>
                     </children>
@@ -114,7 +115,9 @@
                                                 <Label styleClass="form-label" text="%item.card.base.unit" GridPane.rowIndex="2" />
                                                 <Text fx:id="textType" strokeType="OUTSIDE" strokeWidth="0.0" styleClass="summary-value" GridPane.columnIndex="1" GridPane.rowIndex="2" />
 
-                                                <HBox alignment="CENTER_LEFT" spacing="8.0" GridPane.columnIndex="3" GridPane.rowIndex="2">
+                                                <Label styleClass="form-label" text="%invoice.stock" GridPane.columnIndex="2" GridPane.rowIndex="2" />
+                                                <ComboBox fx:id="comboStock" maxWidth="1.7976931348623157E308" GridPane.columnIndex="3" GridPane.rowIndex="2" />
+                                                <HBox alignment="CENTER_LEFT" spacing="8.0" GridPane.columnIndex="3" GridPane.rowIndex="3">
                                                     <children>
                                                         <Button fx:id="btnSearch" mnemonicParsing="false" styleClass="primary-button" text="Search" />
                                                         <Button fx:id="btnPrint" mnemonicParsing="false" styleClass="neutral-button" text="Print" />

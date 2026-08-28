@@ -116,6 +116,12 @@ public final class AppPermissions {
     public static final PermissionKey REPORTS_SHOW_RETURNS = key("reports.show.returns");
     public static final PermissionKey STOCK_COUNT_SHOW = key("stock.count.show");
     public static final PermissionKey STOCK_COUNT_POST = key("stock.count.post");
+    public static final PermissionKey STOCK_TRANSFER_POST = key("stock.transfer.post");
+    public static final PermissionKey STOCK_TRANSFER_DELETE = key("stock.transfer.delete");
+    public static final PermissionKey STOCK_SHOW = key("stock.show");
+    public static final PermissionKey STOCK_CREATE = key("stock.create");
+    public static final PermissionKey STOCK_UPDATE = key("stock.update");
+    public static final PermissionKey STOCK_DELETE = key("stock.delete");
     public static final PermissionKey ACCOUNTING_LOCK_MANAGE = key("accounting.lock.manage");
     public static final PermissionKey ACCOUNTING_LOCK_BYPASS = key("accounting.lock.bypass");
     public static final PermissionKey USERS_SHOW = key("users.show");

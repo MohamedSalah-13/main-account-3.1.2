@@ -1,5 +1,6 @@
 package com.hamza.account.controller.items;
 
+import com.hamza.account.config.DefaultStock;
 import com.hamza.account.controller.others.ServiceRegistry;
 import com.hamza.account.features.events.ItemSaved;
 import com.hamza.account.features.events.ItemsChanged;
@@ -14,6 +15,7 @@ import com.hamza.account.features.inventory.InventoryRow;
 import com.hamza.account.features.inventory.InventoryService;
 import com.hamza.account.features.inventory.InventorySummary;
 import com.hamza.account.features.inventory.StockFilter;
+import com.hamza.account.model.domain.Stock;
 import com.hamza.account.features.export.ExcelExportService;
 import com.hamza.account.openFxml.FxmlPath;
 import com.hamza.account.reportData.Print_Reports;
@@ -33,6 +35,7 @@ import javafx.concurrent.Task;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
 import javafx.scene.control.CheckBox;
+import javafx.scene.control.ComboBox;
 import javafx.scene.control.ChoiceBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.Pagination;
@@ -135,6 +138,8 @@ public class InventoryController {
     @FXML
     private ChoiceBox<StockFilter> choiceLevel;
     @FXML
+    private ComboBox<Stock> comboStock;
+    @FXML
     private ChoiceBox<GroupChoice> choiceGroup;
     @FXML
     private CheckBox checkInactive;
@@ -148,6 +153,7 @@ public class InventoryController {
         buildTable();
         buildPagination();
         buildLevelPicker();
+        buildStockPicker();
         buildGroupPicker();
         buildActions();
         explainTotals();
@@ -277,6 +283,25 @@ public class InventoryController {
         VBox.setVgrow(pagination, Priority.ALWAYS);
     }
 
+    private void buildStockPicker() {
+        try {
+            comboStock.setItems(FXCollections.observableArrayList(stockService.getStocks()));
+            comboStock.setConverter(new StringConverter<>() {
+                @Override public String toString(Stock stock) { return stock == null ? "" : stock.getName(); }
+                @Override public Stock fromString(String value) { return null; }
+            });
+            comboStock.getSelectionModel().select(comboStock.getItems().stream()
+                    .filter(stock -> stock.getId() == DefaultStock.ID).findFirst().orElse(null));
+            comboStock.valueProperty().addListener((observable, oldStock, newStock) -> {
+                if (!adjustingFilters && newStock != null && newStock.getId() != query.stockId()) {
+                    load(query.withStock(newStock.getId()));
+                }
+            });
+        } catch (DaoException e) {
+            log.error("Failed to read stocks for inventory", e);
+        }
+    }
+
     /**
      * The stock-state filter. It narrows the query rather than the loaded rows, so the
      * totals and the row count narrow with it - filtering in memory would have left
@@ -390,7 +415,7 @@ public class InventoryController {
         btnRefresh.setOnAction(actionEvent -> reload());
         btnPrint.setOnAction(actionEvent -> printSheet());
         btnExcel.setOnAction(actionEvent -> exportToExcel());
-        btnClearFilters.setOnAction(actionEvent -> load(InventoryQuery.all()));
+        btnClearFilters.setOnAction(actionEvent -> load(InventoryQuery.all().withStock(query.stockId())));
 
         checkInactive.selectedProperty().addListener((observable, oldValue, newValue) -> {
             if (!adjustingFilters) {
@@ -446,6 +471,8 @@ public class InventoryController {
                 textSearch.setText(query.search());
             }
             choiceLevel.setValue(query.level());
+            comboStock.getItems().stream().filter(stock -> stock.getId() == query.stockId())
+                    .findFirst().ifPresent(comboStock.getSelectionModel()::select);
             checkInactive.setSelected(query.includeInactive());
             choiceGroup.getItems().stream()
                     .filter(choice -> choice.id() == query.mainGroupId())
@@ -674,7 +701,8 @@ public class InventoryController {
      */
     private String stockName() {
         try {
-            return stockService.getDefaultStock().getName();
+            Stock stock = comboStock.getValue();
+            return stock == null ? stockService.getDefaultStock().getName() : stock.getName();
         } catch (DaoException e) {
             log.error(e.getMessage(), e);
             return "";

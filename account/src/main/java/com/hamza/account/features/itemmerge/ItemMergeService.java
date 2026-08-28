@@ -135,6 +135,7 @@ public record ItemMergeService(DaoFactory daoFactory) {
         }
         dao().mergeStockCountLines(targetId, sourceId);
         dao().fillMissingItemsStock(targetId, sourceId);
+        dao().addItemsStockBalances(targetId, sourceId);
         dao().moveUnits(targetId, sourceId, target.unitId());
         dao().keepBarcodes(targetId, sourceId);
         dao().mergePackages(targetId, sourceId);

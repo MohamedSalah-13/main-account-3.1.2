@@ -44,6 +44,36 @@ public class Items_StockDao extends AbstractDao<Items_Stock_Model> {
                 , itemsStockModel.getItemsModel().getId(), itemsStockModel.getStock().getId(), itemsStockModel.getFirstBalance(), itemsStockModel.getCurrentQuantity());
     }
 
+    public int insertForAllStocks(int itemId, int defaultStockId, double openingBalance) throws DaoException {
+        String sql = """
+                INSERT INTO items_stock (item_id, stock_id, first_balance)
+                SELECT ?, s.stock_id, CASE WHEN s.stock_id = ? THEN ? ELSE 0 END
+                FROM stocks s
+                """;
+        return executeUpdate(sql, itemId, defaultStockId, openingBalance);
+    }
+
+    /**
+     * The other direction of {@link #insertForAllStocks}: a warehouse created after
+     * items already exist has none of their rows, so {@code quantity_items_table} -
+     * built from {@code items_stock}, not {@code items} - would show it as empty
+     * however much stock a transfer moves into it. Every item starts this warehouse
+     * at zero; there is no history to backfill for one that did not exist yet.
+     */
+    public int insertForAllItems(int stockId) throws DaoException {
+        String sql = """
+                INSERT INTO items_stock (item_id, stock_id, first_balance)
+                SELECT i.id, ?, 0
+                FROM items i
+                """;
+        return executeUpdate(sql, stockId);
+    }
+
+    public int updateOpeningBalance(int itemId, int stockId, double openingBalance) throws DaoException {
+        return executeUpdate("UPDATE items_stock SET first_balance=? WHERE item_id=? AND stock_id=?",
+                openingBalance, itemId, stockId);
+    }
+
     @Override
     public Items_Stock_Model map(ResultSet rs) throws DaoException {
         Items_Stock_Model stockModel = new Items_Stock_Model();

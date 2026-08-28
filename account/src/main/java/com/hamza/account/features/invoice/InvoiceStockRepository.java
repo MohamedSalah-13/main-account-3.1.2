@@ -15,11 +15,23 @@ public interface InvoiceStockRepository {
 
     Map<Integer, String> lockItems(List<Integer> itemIds) throws DaoException;
 
+    default Map<Integer, String> lockItems(int stockId, List<Integer> itemIds) throws DaoException {
+        return lockItems(itemIds);
+    }
+
     Map<Integer, Double> currentBaseBalances(List<Integer> itemIds)
-            throws DaoException;
+        throws DaoException;
+
+    default Map<Integer, Double> currentBaseBalances(int stockId, List<Integer> itemIds) throws DaoException {
+        return currentBaseBalances(itemIds);
+    }
 
     Map<BatchKey, Double> currentExpiryBalances(List<Integer> itemIds)
-            throws DaoException;
+        throws DaoException;
+
+    default Map<BatchKey, Double> currentExpiryBalances(int stockId, List<Integer> itemIds) throws DaoException {
+        return currentExpiryBalances(itemIds);
+    }
 
     record StoredLine(int itemId, double baseQuantity, LocalDate expirationDate) {
     }

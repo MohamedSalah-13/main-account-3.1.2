@@ -10,7 +10,7 @@ class JdbcInvoiceStockRepositoryTest {
 
     @Test
     void locksItemsInStableOrder() {
-        assertEquals("SELECT id,nameItem FROM items WHERE id IN (?,?,?) ORDER BY id FOR UPDATE",
+        assertEquals("SELECT i.id,i.nameItem FROM items_stock s JOIN items i ON i.id=s.item_id WHERE s.stock_id=? AND i.id IN (?,?,?) ORDER BY i.id FOR UPDATE",
                 JdbcInvoiceStockRepository.lockItemsSql(3));
     }
 

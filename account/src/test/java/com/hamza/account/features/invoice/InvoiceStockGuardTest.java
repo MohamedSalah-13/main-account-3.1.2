@@ -9,6 +9,7 @@ import com.hamza.account.type.InvoiceType;
 import com.hamza.controlsfx.error.BusinessRuleException;
 import org.junit.jupiter.api.Test;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -32,7 +33,7 @@ class InvoiceStockGuardTest {
         assertThrows(BusinessRuleException.class,
                 () -> guard.validate(command(0, false, line(12, 6, null))));
 
-        assertEquals(List.of("lock:[12]", "base:[12]"), repository.calls);
+        assertEquals(List.of("lock:[12]", "base:1:[12]"), repository.calls);
     }
 
     @Test
@@ -98,12 +99,27 @@ class InvoiceStockGuardTest {
         assertEquals("lock:[5, 20]", repository.calls.get(1));
     }
 
+    @Test
+    void saleInWarehouseADoesNotUseWarehouseBBalance() {
+        FakeRepository repository = new FakeRepository();
+        repository.stockBalances.put(2, Map.of(12, 5.0));
+        repository.stockBalances.put(3, Map.of(12, 0.0));
+        InvoiceStockGuard guard = new InvoiceStockGuard(DocumentType.SALES, repository);
+
+        assertDoesNotThrow(() -> guard.validate(command(0, false, 2, line(12, 5, null))));
+        assertThrows(BusinessRuleException.class, () -> guard.validate(command(0, false, 3, line(12, 1, null))));
+    }
+
     private static InvoiceSaveCommand command(
             int existingId, boolean allowInsufficient, Sales... lines) {
+        return command(existingId, allowInsufficient, 1, lines);
+    }
+
+    private static InvoiceSaveCommand command(int existingId, boolean allowInsufficient, int stockId, Sales... lines) {
         return new InvoiceSaveCommand(existingId, LocalDate.of(2026, 8, 13),
-                InvoiceType.CASH, 0, DiscountType.AMOUNT, 10,
+                InvoiceType.CASH, BigDecimal.ZERO, DiscountType.AMOUNT, BigDecimal.TEN,
                 "", 1, "party", "treasury", "delegate",
-                allowInsufficient, List.of(lines));
+                allowInsufficient, 0, null, List.of(lines), stockId);
     }
 
     private static Sales line(int itemId, double quantity, LocalDate expiry) {
@@ -125,6 +141,7 @@ class InvoiceStockGuardTest {
     private static final class FakeRepository implements InvoiceStockRepository {
         private final List<StoredLine> original = new ArrayList<>();
         private final Map<Integer, Double> baseBalances = new LinkedHashMap<>();
+        private final Map<Integer, Map<Integer, Double>> stockBalances = new LinkedHashMap<>();
         private final Map<BatchKey, Double> expiryBalances = new LinkedHashMap<>();
         private final List<String> calls = new ArrayList<>();
 
@@ -147,6 +164,12 @@ class InvoiceStockGuardTest {
         public Map<Integer, Double> currentBaseBalances(List<Integer> itemIds) {
             calls.add("base:" + itemIds);
             return new LinkedHashMap<>(baseBalances);
+        }
+
+        @Override
+        public Map<Integer, Double> currentBaseBalances(int stockId, List<Integer> itemIds) {
+            calls.add("base:" + stockId + ":" + itemIds);
+            return new LinkedHashMap<>(stockBalances.getOrDefault(stockId, baseBalances));
         }
 
         @Override

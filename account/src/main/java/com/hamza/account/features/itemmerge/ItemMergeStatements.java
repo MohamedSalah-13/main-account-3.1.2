@@ -206,6 +206,13 @@ public final class ItemMergeStatements {
                      LEFT JOIN items_stock t ON t.item_id = ? AND t.stock_id = s.stock_id
             WHERE s.item_id = ? AND t.id IS NULL""";
 
+    /** Adds each source warehouse opening to the matching target warehouse. */
+    public static final String ADD_ITEMS_STOCK_BALANCES = """
+            UPDATE items_stock t
+                     JOIN items_stock s ON s.stock_id = t.stock_id
+            SET t.first_balance = t.first_balance + s.first_balance
+            WHERE t.item_id = ? AND s.item_id = ?""";
+
     // ---- units ---------------------------------------------------------------
 
     /**

@@ -190,8 +190,16 @@ public class Print_Reports extends ReportCompany {
      */
     public void printCardItem(@NotNull Integer itemId, double purchase, double sales, double purchase_re, double sales_re, double first_balance
             , double amount, @NotNull String dateFrom, @NotNull String dateTo, String tableName) throws DaoException, SQLException {
+        printCardItem(com.hamza.account.config.DefaultStock.ID, itemId, purchase, sales, purchase_re, sales_re,
+                first_balance, amount, dateFrom, dateTo, tableName);
+    }
+
+    public void printCardItem(int stockId, @NotNull Integer itemId, double purchase, double sales, double purchase_re,
+                              double sales_re, double first_balance, double amount, @NotNull String dateFrom,
+                              @NotNull String dateTo, String tableName) throws DaoException, SQLException {
         HashMap<String, Object> company = getCompany();
         company.put("itemNum", itemId);
+        company.put("stockId", stockId);
         company.put("tableName", tableName);
         company.put("purchase", purchase);
         company.put("sales", sales);

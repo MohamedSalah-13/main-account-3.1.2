@@ -16,6 +16,7 @@ import com.hamza.account.features.rbac.RbacService;
 import com.hamza.account.features.rbac.UserSessionContext;
 import com.hamza.account.features.itemmerge.ItemMergeService;
 import com.hamza.account.features.stockcount.StockCountService;
+import com.hamza.account.features.stocktransfer.StockTransferService;
 import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.period.PeriodLockService;
 import com.hamza.account.service.*;
@@ -142,6 +143,7 @@ public class DownLoadApplication extends Application {
         ServiceRegistry.register(StockService.class, new StockService(daoFactory));
         ServiceRegistry.register(InventoryService.class, new InventoryService(daoFactory));
         ServiceRegistry.register(StockCountService.class, new StockCountService(daoFactory));
+        ServiceRegistry.register(StockTransferService.class, new StockTransferService(daoFactory));
         ServiceRegistry.register(ItemMergeService.class, new ItemMergeService(daoFactory));
         ServiceRegistry.register(PeriodLockService.class, new PeriodLockService(daoFactory));
         ServiceRegistry.register(EmployeeService.class, new EmployeeService(daoFactory));

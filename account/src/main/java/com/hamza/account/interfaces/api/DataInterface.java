@@ -71,7 +71,8 @@ public interface DataInterface<T1 extends BasePurchasesAndSales, T2 extends Base
                 totalsData.getIdData(totals),
                 totalsData.getSourceInvoiceNumber(totals),
                 totalsData.getReturnReason(totals),
-                totalsData.getDateInsert(totals));
+                totalsData.getDateInsert(totals),
+                totals.getStockData() == null ? com.hamza.account.config.DefaultStock.ID : totals.getStockData().getId());
     }
 
     void addList(List<? extends BaseTotals> items, List<PrintPurchaseWithName> printPurchaseWithNames) throws DaoException;

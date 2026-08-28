@@ -1,5 +1,6 @@
 package com.hamza.account.delete;
 
+import com.hamza.account.config.DefaultStock;
 import com.hamza.account.features.events.PartyKind;
 import com.hamza.account.authorization.AppPermissions;
 import com.hamza.account.authorization.PermissionKey;
@@ -112,6 +113,35 @@ public final class DeleteRegistry {
      */
     public static final DeleteRule EXPENSES_DETAILS = DeleteRule.forEntity("delete.entity.expense")
             .requirePermission(AppPermissions.EXPENSES_DELETE)
+            .build();
+
+    /**
+     * Stock {@code DefaultStock.ID} is the seeded {@code 'الرئيسي'} row every document
+     * still writes to; see {@link DefaultStock}. {@code items_stock}, the four invoice
+     * totals tables and {@code stock_count} all carry a non-cascading {@code stock_id},
+     * and {@code stock_transfer} carries two.
+     */
+    public static final DeleteRule STOCKS = DeleteRule.forEntity("delete.entity.stock")
+            .requirePermission(AppPermissions.STOCK_DELETE)
+            .protectId(DefaultStock.ID, "delete.protect.stock.default")
+            .referencedBy("items_stock", "stock_id", "delete.ref.item_stock")
+            .referencedBy("stock_movements", "stock_id", "delete.ref.stock_movement")
+            .referencedBy("total_sales", "stock_id", "delete.ref.sales_invoice")
+            .referencedBy("total_sales_re", "stock_id", "delete.ref.sales_return")
+            .referencedBy("total_buy", "stock_id", "delete.ref.purchase_invoice")
+            .referencedBy("total_buy_re", "stock_id", "delete.ref.purchase_return")
+            .referencedBy("stock_transfer", "stock_from", "delete.ref.transfer_out")
+            .referencedBy("stock_transfer", "stock_to", "delete.ref.transfer_in")
+            .referencedBy("stock_count", "stock_id", "delete.ref.stock_count")
+            .build();
+
+    /**
+     * The transfer header. {@code stock_transfer_list} cascades with it - see
+     * {@code V1__baseline.sql} - a transfer's lines have no meaning without the
+     * transfer, unlike an invoice line, which is itself the record of a sale.
+     */
+    public static final DeleteRule STOCK_TRANSFERS = DeleteRule.forEntity("delete.entity.stock_transfer")
+            .requirePermission(AppPermissions.STOCK_TRANSFER_DELETE)
             .build();
 
     /**

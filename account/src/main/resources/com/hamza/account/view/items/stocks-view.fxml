@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.TableView?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.layout.AnchorPane?>
+<?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Region?>
+<?import javafx.scene.layout.VBox?>
+
+<AnchorPane styleClass="app-root" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.hamza.account.controller.items.StocksController">
+    <children>
+        <BorderPane styleClass="app-container" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
+            <top>
+                <VBox spacing="8.0" BorderPane.alignment="CENTER">
+                    <children>
+                        <Label styleClass="page-title" text="%stocks.title" />
+
+                        <HBox alignment="CENTER_LEFT" spacing="8.0" styleClass="app-card">
+                            <children>
+                                <TextField fx:id="name" minWidth="200.0" promptText="%stocks.name" />
+                                <TextField fx:id="address" minWidth="220.0" promptText="%stocks.address" />
+                                <Region HBox.hgrow="ALWAYS" />
+                                <Button mnemonicParsing="false" onAction="#clear" styleClass="neutral-button" text="%stocks.new" />
+                                <Button mnemonicParsing="false" onAction="#remove" styleClass="danger-button" text="%stocks.delete" />
+                                <Button mnemonicParsing="false" onAction="#save" styleClass="primary-button" text="%common.save" />
+                            </children>
+                            <padding>
+                                <Insets bottom="6.0" left="6.0" right="6.0" top="6.0" />
+                            </padding>
+                        </HBox>
+                    </children>
+                    <padding>
+                        <Insets bottom="4.0" left="6.0" right="6.0" top="6.0" />
+                    </padding>
+                </VBox>
+            </top>
+            <center>
+                <VBox BorderPane.alignment="CENTER">
+                    <children>
+                        <TableView fx:id="table" styleClass="modern-table" VBox.vgrow="ALWAYS" />
+                    </children>
+                    <padding>
+                        <Insets bottom="6.0" left="6.0" right="6.0" />
+                    </padding>
+                </VBox>
+            </center>
+        </BorderPane>
+    </children>
+</AnchorPane>

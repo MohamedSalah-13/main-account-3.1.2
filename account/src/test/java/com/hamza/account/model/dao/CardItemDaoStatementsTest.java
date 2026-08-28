@@ -81,15 +81,17 @@ class CardItemDaoStatementsTest {
         void addsOpeningBalanceMovementsAndPostedStockCounts() {
             String sql = normalise(CardItemDao.balanceSql(true));
 
-            assertTrue(sql.contains("select i.first_balance"));
+            assertTrue(sql.contains("select ist.first_balance"));
+            assertTrue(sql.contains("from items_stock ist"));
+            assertTrue(sql.contains("where ist.item_id = ? and ist.stock_id = ?"));
             assertTrue(sql.contains("sum(base_quantity)"));
             assertTrue(sql.contains("p.quantity * p.type_value as base_quantity"));
             assertTrue(sql.contains("-(s.quantity * s.type_value)"));
             assertTrue(sql.contains("-(r.quantity * r.type_value)"));
             assertTrue(sql.contains("sum(l.counted_qty * l.type_value - l.system_qty)"));
             assertTrue(sql.contains("c.status = 'posted'"), "a draft count moves nothing");
-            assertEquals(5, occurrences(sql, "stock_id = ?"));
-            assertEquals(16, sql.chars().filter(character -> character == '?').count());
+            assertEquals(6, occurrences(sql, "stock_id = ?"));
+            assertEquals(17, sql.chars().filter(character -> character == '?').count());
         }
 
         @Test

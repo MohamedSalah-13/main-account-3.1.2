@@ -171,7 +171,7 @@ public final class InvoiceSaveService<
                 invoiceNumber, payment.invoiceType(), command.invoiceDate().toString(),
                 payment.subtotal(), payment.discount(), discountType, payment.net(),
                 payment.paid(), payment.remaining(), command.notes(), party,
-                new Stock(DefaultStock.ID), delegate, persistedLines, treasury);
+                new Stock(command.stockId()), delegate, persistedLines, treasury);
 
         DaoList<T2> dao = repository.totalDao();
         int affected = command.updating() ? dao.update(invoice) : dao.insert(invoice);
@@ -201,7 +201,7 @@ public final class InvoiceSaveService<
         String referenceType = StockMovementAssembler.referenceTypeFor(documentType);
         stockMovementDao.deleteByReference(referenceType, invoiceNumber);
         stockMovementDao.insertBatch(StockMovementAssembler.assemble(
-                documentType, DefaultStock.ID, invoiceNumber, command.invoiceDate(),
+                documentType, command.stockId(), invoiceNumber, command.invoiceDate(),
                 persistedLines, userId));
     }
 }

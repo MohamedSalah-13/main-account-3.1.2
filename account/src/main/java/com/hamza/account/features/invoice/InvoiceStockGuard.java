@@ -44,9 +44,9 @@ public final class InvoiceStockGuard {
         proposed.forEach(line -> affectedIds.add(line.itemId()));
         List<Integer> itemIds = List.copyOf(affectedIds);
 
-        Map<Integer, String> itemNames = repository.lockItems(itemIds);
+        Map<Integer, String> itemNames = repository.lockItems(command.stockId(), itemIds);
         validateTotalBalances(command, original, proposed, itemIds, itemNames);
-        validateExpiryBalances(original, proposed, itemIds, itemNames);
+        validateExpiryBalances(command.stockId(), original, proposed, itemIds, itemNames);
     }
 
     private void validateTotalBalances(
@@ -60,7 +60,7 @@ public final class InvoiceStockGuard {
             return;
         }
         Map<Integer, Double> finalBalances = new LinkedHashMap<>(
-                repository.currentBaseBalances(itemIds));
+                repository.currentBaseBalances(command.stockId(), itemIds));
         int sign = documentType.stockSign();
         original.forEach(line -> finalBalances.merge(
                 line.itemId(), -sign * line.baseQuantity(), Double::sum));
@@ -79,12 +79,13 @@ public final class InvoiceStockGuard {
     }
 
     private void validateExpiryBalances(
+            int stockId,
             List<InvoiceStockRepository.StoredLine> original,
             List<LineQuantity> proposed,
             List<Integer> itemIds,
             Map<Integer, String> itemNames) throws DaoException {
         Map<InvoiceStockRepository.BatchKey, Double> finalBalances =
-                new LinkedHashMap<>(repository.currentExpiryBalances(itemIds));
+                new LinkedHashMap<>(repository.currentExpiryBalances(stockId, itemIds));
         TreeSet<InvoiceStockRepository.BatchKey> affectedBatches = new TreeSet<>(
                 java.util.Comparator.comparingInt(InvoiceStockRepository.BatchKey::itemId)
                         .thenComparing(InvoiceStockRepository.BatchKey::expirationDate));
