@@ -957,6 +957,27 @@
     -fx-font-size: 0.909em;
 }
 
+/* The sidebar remains open when the language changes, so its reading direction
+   is refreshed in place by MainScreenController. */
+.sidebar-rtl .sidebar-user-content,
+.sidebar-rtl .sidebar-user-name,
+.sidebar-rtl .sidebar-user-role {
+    -fx-alignment: CENTER_RIGHT;
+    -fx-text-alignment: RIGHT;
+}
+
+.sidebar-ltr .sidebar-user-content,
+.sidebar-ltr .sidebar-user-name,
+.sidebar-ltr .sidebar-user-role {
+    -fx-alignment: CENTER_LEFT;
+    -fx-text-alignment: LEFT;
+}
+
+.sidebar-user-name,
+.sidebar-user-role {
+    -fx-max-width: Infinity;
+}
+
 .main-accordion,
 .main-accordion .titled-pane > *.content {
     -fx-background-color: transparent;
@@ -973,6 +994,14 @@
     -fx-border-radius: 0.909em;
     -fx-border-color: -app-side-border;
     -fx-padding: 0.636em 0.818em;
+}
+
+.sidebar-rtl .main-accordion .titled-pane > .title {
+    -fx-alignment: CENTER_RIGHT;
+}
+
+.sidebar-ltr .main-accordion .titled-pane > .title {
+    -fx-alignment: CENTER_LEFT;
 }
 
 .main-accordion .titled-pane:expanded > .title {
@@ -998,7 +1027,16 @@
     -fx-border-color: -app-side-border;
     -fx-padding: 0.545em 0.818em;
     -fx-max-width: Infinity;
-    -fx-alignment: CENTER-RIGHT;
+}
+
+.sidebar-rtl .side-button-box .button {
+    -fx-alignment: CENTER_RIGHT;
+    -fx-text-alignment: RIGHT;
+}
+
+.sidebar-ltr .side-button-box .button {
+    -fx-alignment: CENTER_LEFT;
+    -fx-text-alignment: LEFT;
 }
 
 .side-button-box .button:hover {

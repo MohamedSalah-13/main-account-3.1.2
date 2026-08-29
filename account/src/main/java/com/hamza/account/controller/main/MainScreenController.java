@@ -14,6 +14,8 @@ import com.hamza.account.features.events.LanguageChanged;
 import com.hamza.account.features.events.UserRenamed;
 import com.hamza.account.features.notification.NotificationBootstrap;
 import com.hamza.account.features.rbac.CurrentUser;
+import com.hamza.account.features.shortcuts.SidebarShortcut;
+import com.hamza.account.features.shortcuts.SidebarShortcutManager;
 import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.model.dao.MonthlySalesViewDao;
 import com.hamza.account.model.domain.Company;
@@ -42,6 +44,7 @@ import java.io.InputStream;
 import java.net.URI;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.Map;
 import java.util.ResourceBundle;
 
 import static com.hamza.account.config.PropertiesName.getPathImageMainScreen;
@@ -144,6 +147,7 @@ public class MainScreenController extends MainItems implements Initializable {
     }
 
     private void setupRightPane() throws Exception {
+        applySidebarDirection();
         rightPaneSetting();
         setupBrand();
         setupUser();
@@ -162,6 +166,7 @@ public class MainScreenController extends MainItems implements Initializable {
      */
     private void refreshSidebarText() {
         try {
+            applySidebarDirection();
             rightPaneSetting();
             setupUser();
             setupYouTube();
@@ -268,8 +273,28 @@ public class MainScreenController extends MainItems implements Initializable {
         menuItemLogout.setDisable(false);
 
         dontShowData();
+        configureSidebarShortcuts();
     }
 
+    private void configureSidebarShortcuts() {
+        Map<SidebarShortcut, Button> shortcuts = Map.ofEntries(
+                Map.entry(SidebarShortcut.SALES, btnSales), Map.entry(SidebarShortcut.SALES_RETURN, btnSalesReturn), Map.entry(SidebarShortcut.TOTAL_SALES, btnTotalSale),
+                Map.entry(SidebarShortcut.PURCHASE, btnPurchase), Map.entry(SidebarShortcut.PURCHASE_RETURN, btnPurchaseRe), Map.entry(SidebarShortcut.TOTAL_PURCHASE, btnTotalPurchase), Map.entry(SidebarShortcut.TOTAL_PURCHASE_RETURN, btnTotalPurchaseRe),
+                Map.entry(SidebarShortcut.ITEMS, btnItems), Map.entry(SidebarShortcut.ADD_ITEM, btnAddItem), Map.entry(SidebarShortcut.UNITS, btnUnits), Map.entry(SidebarShortcut.MAIN_GROUP, btnMainGroup), Map.entry(SidebarShortcut.SUB_GROUP, btnSubGroup), Map.entry(SidebarShortcut.AREA, btnArea), Map.entry(SidebarShortcut.INVENTORY, btnInventory), Map.entry(SidebarShortcut.STOCK_COUNT, btnStockCount), Map.entry(SidebarShortcut.STOCKS, btnStocks), Map.entry(SidebarShortcut.STOCK_TRANSFERS, btnStockTransfers), Map.entry(SidebarShortcut.MERGE_ITEMS, btnMergeItems),
+                Map.entry(SidebarShortcut.ADD_CUSTOMER, btnAddCustomerName), Map.entry(SidebarShortcut.CUSTOMERS, btnCustomer), Map.entry(SidebarShortcut.CUSTOMER_ACCOUNT, btnAccountCustom),
+                Map.entry(SidebarShortcut.ADD_SUPPLIER, btnAddSupplierName), Map.entry(SidebarShortcut.SUPPLIERS, btnSuppliers), Map.entry(SidebarShortcut.SUPPLIER_ACCOUNT, btnAccountSuppliers),
+                Map.entry(SidebarShortcut.ADD_EMPLOYEE, btnAddEmployee), Map.entry(SidebarShortcut.EMPLOYEES, btnEmployees), Map.entry(SidebarShortcut.ADD_USER, btnAddUser), Map.entry(SidebarShortcut.USERS, btnUsers),
+                Map.entry(SidebarShortcut.TREASURY_DETAILS, btnTreasuryDetails), Map.entry(SidebarShortcut.TREASURY_PROCESS, btnProcess), Map.entry(SidebarShortcut.EXPENSES, btnExpenses),
+                Map.entry(SidebarShortcut.REPORT_SUMMARY, btnReportSummary), Map.entry(SidebarShortcut.REPORT_ITEMS, btnReportItems), Map.entry(SidebarShortcut.REPORT_ITEMS_DAILY, btnReportItemsDaily), Map.entry(SidebarShortcut.REPORT_SALES_YEAR, btnReportSalesByYear), Map.entry(SidebarShortcut.REPORT_PURCHASE_YEAR, btnReportPurchaseByYear), Map.entry(SidebarShortcut.REPORT_CUSTOMER_PAID, btnReportCustomPaid), Map.entry(SidebarShortcut.REPORT_SUPPLIER_PAID, btnReportSuppliersPaid), Map.entry(SidebarShortcut.REPORT_DETAILS, btnReportDetails), Map.entry(SidebarShortcut.REPORT_YEARLY, btnReportYearly), Map.entry(SidebarShortcut.REPORT_PROFIT_LOSS, btnReportProfitLoss), Map.entry(SidebarShortcut.REPORT_RETURN_REASONS, btnReportReturnReasons),
+                Map.entry(SidebarShortcut.HOME, btnHome), Map.entry(SidebarShortcut.SETTINGS, btnSetting), Map.entry(SidebarShortcut.SHIFT_REPORTS, btnShiftReports), Map.entry(SidebarShortcut.BACKUP, btnBackup), Map.entry(SidebarShortcut.DELETE_DATA, btnDeleteData), Map.entry(SidebarShortcut.ABOUT, btnAbout), Map.entry(SidebarShortcut.CLOSE, btnClose), Map.entry(SidebarShortcut.YOUTUBE, btnYouTube));
+        if (mainContentBox.getScene() != null) {
+            SidebarShortcutManager.install(mainContentBox.getScene(), shortcuts);
+        } else {
+            mainContentBox.sceneProperty().addListener((observable, oldScene, scene) -> {
+                if (scene != null) SidebarShortcutManager.install(scene, shortcuts);
+            });
+        }
+    }
     private void rightPaneSetting() {
         var imageSetting = new Image_Setting();
         var lm = LanguageManager.getInstance();
@@ -292,7 +317,17 @@ public class MainScreenController extends MainItems implements Initializable {
 
     private void titlePaneSetting(TitledPane titledPane, String text, InputStream stream) {
         titledPane.setText(text);
+        titledPane.setContentDisplay(LanguageManager.getInstance().isRtl()
+                ? ContentDisplay.RIGHT : ContentDisplay.LEFT);
         titledPane.setGraphic(new ImageDesign(stream, 20));
+    }
+
+    /** Keeps sidebar text and category icons aligned to the active reading direction. */
+    private void applySidebarDirection() {
+        boolean rtl = LanguageManager.getInstance().isRtl();
+        rightPaneRoot.setNodeOrientation(LanguageManager.getInstance().getNodeOrientation());
+        rightPaneRoot.getStyleClass().removeAll("sidebar-rtl", "sidebar-ltr");
+        rightPaneRoot.getStyleClass().add(rtl ? "sidebar-rtl" : "sidebar-ltr");
     }
 
     // ------------------------------------------------------------------

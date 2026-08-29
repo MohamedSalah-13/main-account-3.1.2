@@ -45,7 +45,7 @@
 
                                 <MenuButton fx:id="menuUser" maxWidth="Infinity" mnemonicParsing="false" styleClass="sidebar-user-menu">
                                     <graphic>
-                                        <HBox alignment="CENTER_RIGHT" spacing="8.0">
+                                        <HBox spacing="8.0" styleClass="sidebar-user-content">
                                             <children>
                                                 <Label fx:id="lblUserInitial" styleClass="sidebar-user-avatar" text="?" />
                                                 <VBox spacing="0.0" HBox.hgrow="ALWAYS">

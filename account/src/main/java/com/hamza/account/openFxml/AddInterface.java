@@ -66,6 +66,14 @@ public interface AddInterface extends MainData {
      */
     @NotNull BooleanBinding checkDataToEnableButton();
 
+    /**
+     * Whether a successful save of a new record should leave its dialog ready
+     * for another entry. Edits keep the conventional save-and-close flow.
+     */
+    default boolean keepDialogOpenAfterSave() {
+        return false;
+    }
+
     default boolean resize() {
         return false;
     }

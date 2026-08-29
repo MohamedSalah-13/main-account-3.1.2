@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<VBox xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.hamza.account.controller.setting.SettingTabShortcutsController" spacing="12.0" styleClass="settings-root">
+    <children>
+        <Label fx:id="labelTitle" styleClass="section-title" />
+        <Label fx:id="labelDescription" wrapText="true" />
+        <TableView fx:id="table" VBox.vgrow="ALWAYS">
+            <columns>
+                <TableColumn fx:id="columnCommand" prefWidth="280.0" />
+                <TableColumn fx:id="columnShortcut" prefWidth="180.0" />
+            </columns>
+        </TableView>
+        <GridPane hgap="10.0" vgap="8.0">
+            <children>
+                <Label fx:id="labelCommand" GridPane.rowIndex="0" />
+                <Label fx:id="labelShortcut" GridPane.rowIndex="1" />
+                <TextField fx:id="txtShortcut" editable="false" GridPane.columnIndex="1" GridPane.rowIndex="1" />
+            </children>
+        </GridPane>
+        <HBox spacing="8.0">
+            <children>
+                <Button fx:id="btnReset" styleClass="neutral-button" />
+                <Button fx:id="btnResetAll" styleClass="neutral-button" />
+                <Label fx:id="labelMessage" wrapText="true" HBox.hgrow="ALWAYS" />
+            </children>
+        </HBox>
+    </children>
+</VBox>

@@ -48,6 +48,11 @@ public class AddForAllApplication {
             }
 
             @Override
+            public boolean keepDialogOpenAfterSave() {
+                return controller.keepDialogOpenAfterSave();
+            }
+
+            @Override
             public void afterSaved() {
                 controller.afterSaved();
             }

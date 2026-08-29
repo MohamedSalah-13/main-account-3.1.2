@@ -161,21 +161,19 @@ public class AddNameController<T3 extends BaseNames, T4 extends BaseAccount>
 
     @Override
     public void afterSaved() {
-        Thread thread = new Thread(() -> {
-            try {
-                Thread.sleep(1000);
-                if (eventBus != null) {
-                    var kind = nameAndAccountInterface.partyKind();
-                    eventBus.publish(new NameChanged(kind));
-                    eventBus.publish(new AccountChanged(kind));
-                }
-            } catch (InterruptedException e) {
-                log.error(e.getMessage(), e);
-            }
-        });
-        thread.setDaemon(true);
-        thread.start();
+        if (eventBus != null) {
+            var kind = nameAndAccountInterface.partyKind();
+            eventBus.publish(new NameChanged(kind));
+            eventBus.publish(new AccountChanged(kind));
+        }
         resetData();
+        Platform.runLater(() -> txtName.requestFocus());
+    }
+
+    /** New customer/supplier entries commonly arrive in batches; edits do not. */
+    @Override
+    public boolean keepDialogOpenAfterSave() {
+        return id == 0;
     }
 
     @Override

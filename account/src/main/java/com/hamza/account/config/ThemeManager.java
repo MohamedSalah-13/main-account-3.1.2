@@ -3,9 +3,11 @@ package com.hamza.account.config;
 import com.hamza.account.Main;
 import com.hamza.controlsfx.alert.AlertSetting;
 import com.hamza.controlsfx.language.LanguageManager;
+import javafx.application.Platform;
 import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
+import javafx.stage.Window;
 
 import java.util.Objects;
 import java.util.prefs.Preferences;
@@ -34,7 +36,7 @@ public final class ThemeManager {
      */
     private static final String ROOT_STYLE_SELECTOR = ".app-root, .reports-root, .items-root, "
             + ".settings-root, .treasury-root, .treasury-transfer-root, .table-screen-root, "
-            + ".main-root, .backup-root";
+            + ".main-root, .backup-root, .settings-main-root";
 
     private ThemeManager() {
     }
@@ -67,6 +69,23 @@ public final class ThemeManager {
         return getCurrentTheme().getCssExternalForm();
     }
 
+    /**
+     * Reapplies theme, orientation, UI scale and the selected font to every
+     * showing JavaFX window. This is the live-update path for appearance settings:
+     * it avoids relying on a screen being reopened before its font can change.
+     */
+    public static void refreshOpenWindows() {
+        Runnable refresh = () -> Window.getWindows().stream()
+                .filter(Window::isShowing)
+                .map(Window::getScene)
+                .filter(Objects::nonNull)
+                .forEach(ThemeManager::apply);
+        if (Platform.isFxApplicationThread()) {
+            refresh.run();
+        } else {
+            Platform.runLater(refresh);
+        }
+    }
     public static void apply(Scene scene) {
         if (scene == null) return;
 

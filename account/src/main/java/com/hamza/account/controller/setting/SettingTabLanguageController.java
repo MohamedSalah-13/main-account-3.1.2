@@ -6,8 +6,6 @@ import com.hamza.account.controller.main.DataPublisher;
 import com.hamza.account.controller.others.ServiceRegistry;
 import com.hamza.account.controller.search.CustomerSearchController;
 import com.hamza.account.controller.search.SearchInterface;
-import com.hamza.account.features.choiceDialoge.ChoiceDialogSetting;
-import com.hamza.account.features.choiceDialoge.ChoosePrinter;
 import com.hamza.account.config.FontManager;
 import com.hamza.account.features.events.FontChanged;
 import com.hamza.account.features.events.LanguageChanged;
@@ -27,10 +25,8 @@ import com.hamza.controlsfx.observer.EventBus;
 import com.hamza.controlsfx.observer.Publisher;
 import com.hamza.controlsfx.others.TextFormat;
 import com.hamza.controlsfx.util.ImageChoose;
-import javafx.collections.ObservableSet;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
-import javafx.print.Printer;
 import javafx.scene.control.*;
 import javafx.stage.FileChooser;
 import javafx.util.StringConverter;
@@ -58,15 +54,13 @@ public class SettingTabLanguageController implements Initializable {
     private final EmployeeService employeeService = ServiceRegistry.get(EmployeeService.class);
     private final EventBus eventBus = ServiceRegistry.get(EventBus.class);
     @FXML
-    private Button btnPrintNormal, btnPrintBarcode, btnPrintOther, btnPath, btnPrinterSettingNormal, btnPrinterSettingBarcode, btnPrinterSettingOther, btnDeleteImage;
+    private Button btnPath, btnDeleteImage;
     @FXML
     private ComboBox<String> comboCurrency;
     @FXML
     private Label labelRate, labelLanguage, labelCurrency;
     @FXML
-    private Label labelPrintNormal, labelPrintBarcode, labelPrintOther, labelPath;
-    @FXML
-    private TextField textPrintNormal, textPrintBarcode, textPrintOther;
+    private Label labelPath;
     @FXML
     private TextField textRateSel, textSerial;
     @FXML
@@ -81,6 +75,8 @@ public class SettingTabLanguageController implements Initializable {
     private ComboBox<String> comboFont;
     @FXML
     private Button btnAddFont;
+    @FXML
+    private Label labelFontPreview, labelFontSupport;
     @FXML
     private TextField txtNameCustomer, txtNameDelegate;
     @FXML
@@ -126,14 +122,8 @@ public class SettingTabLanguageController implements Initializable {
     private void setGraphic() {
         var imageSetting = new Image_Setting();
         btnDeleteImage.setGraphic(ImageChoose.createIcon(imageSetting.erase));
-        btnPrinterSettingOther.setGraphic(ImageChoose.createIcon(new Image_Setting().setting));
-        btnPrinterSettingBarcode.setGraphic(ImageChoose.createIcon(new Image_Setting().setting));
-        btnPrinterSettingNormal.setGraphic(ImageChoose.createIcon(new Image_Setting().setting));
 
         clearSetting(btnPath);
-        clearSetting(btnPrintNormal);
-        clearSetting(btnPrintBarcode);
-        clearSetting(btnPrintOther);
         clearSetting(btnSaveCustomer);
         clearSetting(btnSaveDelegate);
     }
@@ -148,31 +138,12 @@ public class SettingTabLanguageController implements Initializable {
         textSerial.setTextFormatter(TextFormat.createNumericTextFormatter());
 
         btnDeleteImage.setText("");
-        btnPrinterSettingOther.setText("");
-        btnPrinterSettingBarcode.setText("");
-        btnPrinterSettingNormal.setText("");
 
         labelRate.setText(LanguageManager.getInstance().getString("rate"));
         labelLanguage.setText(LanguageManager.getInstance().getString("settings.language"));
-
-        labelPrintNormal.setText(LanguageManager.getInstance().getString("settings.printer.normal"));
-        labelPrintBarcode.setText(LanguageManager.getInstance().getString("settings.printer.barcode"));
-        labelPrintOther.setText(LanguageManager.getInstance().getString("settings.printer.invoice"));
         labelPath.setText(LanguageManager.getInstance().getString("settings.image.pathLabel"));
         labelCurrency.setText(LanguageManager.getInstance().getString("settings.currency"));
-
-        textPrintNormal.setText(getSettingPrinterNormal());
-        textPrintBarcode.setText(getSettingPrinterBarcode());
-        textPrintOther.setText(getSettingPrinterThermal());
-
-        btnPrintNormal.setOnAction(actionEvent -> savePrint(textPrintNormal));
-        btnPrintBarcode.setOnAction(actionEvent -> savePrint(textPrintBarcode));
-        btnPrintOther.setOnAction(actionEvent -> savePrint(textPrintOther));
         btnPath.setOnAction(actionEvent -> getFileChooser());
-
-        btnPrinterSettingNormal.setOnAction(actionEvent -> openSettingPrinter(textPrintNormal.getText()));
-        btnPrinterSettingBarcode.setOnAction(actionEvent -> openSettingPrinter(textPrintBarcode.getText()));
-        btnPrinterSettingOther.setOnAction(actionEvent -> openSettingPrinter(textPrintOther.getText()));
         // add imagePath
         var text = LanguageManager.getInstance().getString("settings.image.none");
         textPath.setText(getPathImageMainScreen().isEmpty() ? text : getPathImageMainScreen());
@@ -289,18 +260,6 @@ public class SettingTabLanguageController implements Initializable {
         }
     }
 
-    private void openSettingPrinter(String printerName) {
-        try {
-            // Passed as separate arguments rather than one command line. exec(String)
-            // splits on whitespace and keeps the quotes as literal characters, so a
-            // printer whose name contains a space was never reached; ProcessBuilder
-            // hands each argument over whole and needs no quoting.
-            new ProcessBuilder("rundll32", "printui.dll,PrintUIEntry", "/e", "/n", printerName).start();
-        } catch (IOException e) {
-            AllAlerts.handleError(LanguageManager.getInstance().getString("settings.printerSettings.context"), e);
-        }
-    }
-
 
     private void chooseCurrency() {
         List<Map.Entry<Locale, Currency>> entries = listOfCurrency2().stream()
@@ -326,23 +285,6 @@ public class SettingTabLanguageController implements Initializable {
         } else {
             comboCurrency.getSelectionModel().select(currency1);
         }
-    }
-
-    private void savePrint(TextField field) {
-        ObservableSet<Printer> printers = javafx.print.Printer.getAllPrinters();
-        Optional<String> stringOptional = new ChoiceDialogSetting(printers.stream().map(Printer::getName).toList(), new ChoosePrinter()).showAndWait();
-        stringOptional.ifPresent(book -> {
-            field.setText(book);
-            if (field.equals(textPrintNormal)) {
-                setSettingPrinterNormal(book);
-            }
-            if (field.equals(textPrintBarcode)) {
-                setSettingPrinterBarcode(book);
-            }
-            if (field.equals(textPrintOther)) {
-                setSettingPrinterThermal(book);
-            }
-        });
     }
 
     private void getFileChooser() {
@@ -441,11 +383,13 @@ public class SettingTabLanguageController implements Initializable {
     private void configureFontCombo() {
         comboFont.getItems().setAll(FontManager.allFamilies());
         comboFont.setValue(FontManager.getCurrentFamily());
+        updateFontPreview(comboFont.getValue());
 
         comboFont.valueProperty().addListener((observable, oldValue, newValue) -> {
             if (newValue == null || newValue.equals(FontManager.getCurrentFamily())) return;
             FontManager.setCurrentFamily(newValue);
             reapplyToCurrentScene();
+            updateFontPreview(newValue);
             eventBus.publish(new FontChanged(newValue));
         });
 
@@ -467,9 +411,20 @@ public class SettingTabLanguageController implements Initializable {
 
         comboFont.getItems().setAll(FontManager.allFamilies());
         comboFont.setValue(family);
+        updateFontPreview(family);
         AllAlerts.alertSaveWithMessage(LanguageManager.getInstance().getString("settings.language.fontAdded"));
     }
 
+    private void updateFontPreview(String family) {
+        labelFontPreview.setFont(FontManager.previewFont(family));
+        labelFontPreview.setText(LanguageManager.getInstance().getString("settings.language.fontPreviewSample"));
+        String supportKey = switch (FontManager.arabicSupport(family)) {
+            case SUPPORTED -> "settings.language.fontSupportsArabic";
+            case NOT_SUPPORTED -> "settings.language.fontDoesNotSupportArabic";
+            case UNDETERMINED -> "settings.language.fontArabicSupportUnknown";
+        };
+        labelFontSupport.setText(LanguageManager.getInstance().getString(supportKey));
+    }
     /**
      * This tab's other labels are read from {@link LanguageManager} too, but only once,
      * in {@code otherSetting()} at load time - so, unlike {@code labelLanguage}, they do
@@ -481,20 +436,15 @@ public class SettingTabLanguageController implements Initializable {
      */
     private void refreshOwnText() {
         labelLanguage.setText(LanguageManager.getInstance().getString("settings.language"));
+        updateFontPreview(comboFont.getValue());
     }
 
     /**
-     * Re-runs {@code ThemeManager.apply} on whichever scene this tab is currently
-     * showing in, which stamps both the theme stylesheet and the {@link
-     * com.hamza.account.config.UiScale} font size - the tab itself lives in the same
-     * tab-paned scene as the sidebar, so both take effect on the whole app immediately.
+     * Appearance choices are global preferences. Reapply them to every showing
+     * window so a font change is visible immediately in the main screen, settings
+     * and any currently open dialog.
      */
     private void reapplyToCurrentScene() {
-        var scene = labelLanguage.getScene();
-        if (scene != null) {
-            com.hamza.account.config.ThemeManager.apply(scene);
-        } else if (labelLanguage.getParent() != null) {
-            com.hamza.account.config.ThemeManager.apply(labelLanguage.getParent());
-        }
+        com.hamza.account.config.ThemeManager.refreshOpenWindows();
     }
 }

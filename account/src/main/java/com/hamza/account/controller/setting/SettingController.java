@@ -83,6 +83,8 @@ public class SettingController implements Initializable, AppSettingInterface {
         Tab tabChecks = pane.getTabs().get(3);
         tabChecks.setContent(getTabChecks());
         tabChecks.setText(lm.getString("show"));
+        pane.getTabs().add(new Tab(lm.getString("settings.printers.tabTitle"), getTabPrinters()));
+        pane.getTabs().add(new Tab(lm.getString("settings.shortcuts.tabTitle"), getTabShortcuts()));
         // add tab notifications
         pane.getTabs().add(new Tab(lm.getString("settings.notifications.tabTitle"), getTabNotifications()));
         // add tab accounting period
@@ -90,6 +92,10 @@ public class SettingController implements Initializable, AppSettingInterface {
         // add tab backup
 //        Pane backupAppPane = backupSetting();
         pane.getTabs().add(new Tab(lm.getString("backup"), backup()));
+    }
+
+    private Pane getTabShortcuts() throws Exception {
+        return new OpenFxmlApplication(new SettingTabShortcutsController()).getPane();
     }
 
     private Pane getTabNotifications() throws Exception {
@@ -119,6 +125,10 @@ public class SettingController implements Initializable, AppSettingInterface {
     private Pane getTabChecks() throws Exception {
         SettingTabCheckController checkController = new SettingTabCheckController(dataPublisher);
         return new OpenFxmlApplication(checkController).getPane();
+    }
+
+    private Pane getTabPrinters() throws Exception {
+        return new OpenFxmlApplication(new SettingTabPrintersController()).getPane();
     }
 
     private Parent backup() throws IOException {

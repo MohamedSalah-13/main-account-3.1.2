@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.ComboBox?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.ScrollPane?>
+<?import javafx.scene.control.TextArea?>
+<?import javafx.scene.layout.AnchorPane?>
+<?import javafx.scene.layout.ColumnConstraints?>
+<?import javafx.scene.layout.GridPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.VBox?>
+
+<AnchorPane styleClass="app-root" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.hamza.account.controller.setting.SettingTabPrintersController">
+    <children>
+        <ScrollPane fitToHeight="true" fitToWidth="true" styleClass="settings-scroll-pane" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
+            <content>
+                <VBox spacing="18.0" styleClass="app-container">
+                    <children>
+                        <VBox spacing="5.0">
+                            <children>
+                                <Label styleClass="settings-title" text="%settings.printers.pageTitle" />
+                                <Label styleClass="settings-subtitle" text="%settings.printers.pageSubtitle" wrapText="true" />
+                            </children>
+                        </VBox>
+                        <HBox alignment="CENTER_LEFT" spacing="12.0" styleClass="app-card">
+                            <children>
+                                <Label fx:id="labelStatus" styleClass="info-text" HBox.hgrow="ALWAYS" />
+                                <Button fx:id="btnRefresh" mnemonicParsing="false" styleClass="neutral-button" text="%settings.printers.refresh" />
+                            </children>
+                        </HBox>
+                        <VBox spacing="12.0" styleClass="app-card">
+                            <children>
+                                <Label styleClass="section-title" text="%settings.printers.defaultSection" />
+                                <HBox alignment="CENTER_LEFT" spacing="12.0">
+                                    <children>
+                                        <ComboBox fx:id="comboSystemDefault" maxWidth="1.7976931348623157E308" styleClass="modern-input" HBox.hgrow="ALWAYS" />
+                                        <Button fx:id="btnSetDefault" mnemonicParsing="false" styleClass="neutral-button" text="%settings.printers.setDefault" />
+                                    </children>
+                                </HBox>
+                                <Label fx:id="labelDefaultStatus" styleClass="info-text" wrapText="true" />
+                            </children>
+                        </VBox>
+                        <GridPane hgap="12.0" styleClass="app-card" vgap="14.0">
+                            <columnConstraints>
+                                <ColumnConstraints />
+                                <ColumnConstraints hgrow="ALWAYS" maxWidth="1.7976931348623157E308" />
+                                <ColumnConstraints />
+                            </columnConstraints>
+                            <children>
+                                <Label styleClass="section-title" text="%settings.printers.rolesSection" GridPane.columnSpan="3" />
+                                <Label styleClass="form-label" text="%settings.printer.normal" GridPane.rowIndex="1" />
+                                <ComboBox fx:id="comboNormal" maxWidth="1.7976931348623157E308" styleClass="modern-input" GridPane.columnIndex="1" GridPane.rowIndex="1" />
+                                <Button fx:id="btnNormalSettings" mnemonicParsing="false" styleClass="neutral-button" text="%settings.printers.deviceSettings" GridPane.columnIndex="2" GridPane.rowIndex="1" />
+                                <Label styleClass="form-label" text="%settings.printer.barcode" GridPane.rowIndex="2" />
+                                <ComboBox fx:id="comboBarcode" maxWidth="1.7976931348623157E308" styleClass="modern-input" GridPane.columnIndex="1" GridPane.rowIndex="2" />
+                                <Button fx:id="btnBarcodeSettings" mnemonicParsing="false" styleClass="neutral-button" text="%settings.printers.deviceSettings" GridPane.columnIndex="2" GridPane.rowIndex="2" />
+                                <Label styleClass="form-label" text="%settings.printer.invoice" GridPane.rowIndex="3" />
+                                <ComboBox fx:id="comboThermal" maxWidth="1.7976931348623157E308" styleClass="modern-input" GridPane.columnIndex="1" GridPane.rowIndex="3" />
+                                <Button fx:id="btnThermalSettings" mnemonicParsing="false" styleClass="neutral-button" text="%settings.printers.deviceSettings" GridPane.columnIndex="2" GridPane.rowIndex="3" />
+                            </children>
+                        </GridPane>
+                        <VBox spacing="8.0" styleClass="app-card">
+                            <children>
+                                <Label styleClass="section-title" text="%settings.printers.capabilitiesTitle" />
+                                <Label styleClass="settings-subtitle" text="%settings.printers.capabilitiesHint" wrapText="true" />
+                                <TextArea fx:id="textCapabilities" editable="false" focusTraversable="false" prefRowCount="6" wrapText="true" />
+                            </children>
+                        </VBox>
+                    </children>
+                </VBox>
+            </content>
+        </ScrollPane>
+    </children>
+</AnchorPane>

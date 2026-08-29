@@ -81,39 +81,14 @@
                                 <Label fx:id="labelCurrency" styleClass="form-label" text="Currency" GridPane.rowIndex="8" />
                                 <ComboBox fx:id="comboCurrency" maxWidth="1.7976931348623157E308" GridPane.columnIndex="1" GridPane.rowIndex="8" />
 
-                                <Label fx:id="labelPrintNormal" styleClass="form-label" text="Normal Printer" GridPane.rowIndex="9" />
-                                <TextField fx:id="textPrintNormal" editable="false" styleClass="modern-input" GridPane.columnIndex="1" GridPane.rowIndex="9" />
-                                <HBox alignment="CENTER_LEFT" spacing="6.0" GridPane.columnIndex="2" GridPane.rowIndex="9">
-                                    <children>
-                                        <Button fx:id="btnPrintNormal" mnemonicParsing="false" styleClass="icon-button" text="..." />
-                                        <Button fx:id="btnPrinterSettingNormal" mnemonicParsing="false" styleClass="neutral-button" text="Setting" />
-                                    </children>
-                                </HBox>
+                                <Label fx:id="labelUiScale" styleClass="form-label" text="%settings.language.uiScaleLabel" GridPane.rowIndex="9" />
+                                <ComboBox fx:id="comboUiScale" styleClass="modern-input" GridPane.columnIndex="1" GridPane.rowIndex="9" />
 
-                                <Label fx:id="labelPrintBarcode" styleClass="form-label" text="Barcode Printer" GridPane.rowIndex="10" />
-                                <TextField fx:id="textPrintBarcode" editable="false" styleClass="modern-input" GridPane.columnIndex="1" GridPane.rowIndex="10" />
-                                <HBox alignment="CENTER_LEFT" spacing="6.0" GridPane.columnIndex="2" GridPane.rowIndex="10">
-                                    <children>
-                                        <Button fx:id="btnPrintBarcode" mnemonicParsing="false" styleClass="icon-button" text="..." />
-                                        <Button fx:id="btnPrinterSettingBarcode" mnemonicParsing="false" styleClass="neutral-button" text="Setting" />
-                                    </children>
-                                </HBox>
-
-                                <Label fx:id="labelPrintOther" styleClass="form-label" text="Other Printer" GridPane.rowIndex="11" />
-                                <TextField fx:id="textPrintOther" editable="false" styleClass="modern-input" GridPane.columnIndex="1" GridPane.rowIndex="11" />
-                                <HBox alignment="CENTER_LEFT" spacing="6.0" GridPane.columnIndex="2" GridPane.rowIndex="11">
-                                    <children>
-                                        <Button fx:id="btnPrintOther" mnemonicParsing="false" styleClass="icon-button" text="..." />
-                                        <Button fx:id="btnPrinterSettingOther" mnemonicParsing="false" styleClass="neutral-button" text="Setting" />
-                                    </children>
-                                </HBox>
-
-                                <Label fx:id="labelUiScale" styleClass="form-label" text="%settings.language.uiScaleLabel" GridPane.rowIndex="12" />
-                                <ComboBox fx:id="comboUiScale" styleClass="modern-input" GridPane.columnIndex="1" GridPane.rowIndex="12" />
-
-                                <Label fx:id="labelFont" styleClass="form-label" text="%settings.language.fontLabel" GridPane.rowIndex="13" />
-                                <ComboBox fx:id="comboFont" styleClass="modern-input" GridPane.columnIndex="1" GridPane.rowIndex="13" />
-                                <Button fx:id="btnAddFont" mnemonicParsing="false" styleClass="neutral-button" text="%settings.language.addFontButton" GridPane.columnIndex="2" GridPane.rowIndex="13" />
+                                <Label fx:id="labelFont" styleClass="form-label" text="%settings.language.fontLabel" GridPane.rowIndex="10" />
+                                <ComboBox fx:id="comboFont" styleClass="modern-input" GridPane.columnIndex="1" GridPane.rowIndex="10" />
+                                <Button fx:id="btnAddFont" mnemonicParsing="false" styleClass="neutral-button" text="%settings.language.addFontButton" GridPane.columnIndex="2" GridPane.rowIndex="10" />
+                                <Label fx:id="labelFontPreview" maxWidth="1.7976931348623157E308" styleClass="font-preview" text="%settings.language.fontPreviewSample" wrapText="true" GridPane.columnIndex="1" GridPane.columnSpan="2" GridPane.rowIndex="11" />
+                                <Label fx:id="labelFontSupport" styleClass="font-support" text="%settings.language.fontArabicSupportUnknown" GridPane.columnIndex="1" GridPane.columnSpan="2" GridPane.rowIndex="12" />
                             </children>
                      <rowConstraints>
                         <RowConstraints />

@@ -28,6 +28,14 @@ public interface AppSettingInterface extends ActionSave {
         return false;
     }
 
+    /**
+     * Keeps a successful data-entry dialog open so the caller can immediately
+     * enter another record. The default preserves the usual save-and-close flow.
+     */
+    default boolean keepDialogOpenAfterSave() {
+        return false;
+    }
+
     default double minHeight() {
         return 200;
     }

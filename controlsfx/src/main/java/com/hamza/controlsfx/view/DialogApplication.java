@@ -65,6 +65,13 @@ public class DialogApplication<T> extends Dialog<T> {
                     }
 
                     // نجاح: خزّن النتيجة ليمررها resultConverter
+                    if (appSettingInterface.keepDialogOpenAfterSave()) {
+                        appSettingInterface.afterSaved();
+                        AllAlerts.alertSave();
+                        evt.consume();
+                        return;
+                    }
+
                     saveResultRef.set(res);
                     // لا تستهلك الحدث لكي يُغلق الـ Dialog بشكل طبيعي
                 } catch (Exception e) {
