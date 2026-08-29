@@ -15,6 +15,7 @@ import com.hamza.account.features.rbac.JdbcRbacRepository;
 import com.hamza.account.features.rbac.RbacService;
 import com.hamza.account.features.rbac.UserSessionContext;
 import com.hamza.account.features.itemmerge.ItemMergeService;
+import com.hamza.account.features.profitloss.ProfitLossService;
 import com.hamza.account.features.stockcount.StockCountService;
 import com.hamza.account.features.stocktransfer.StockTransferService;
 import com.hamza.account.model.dao.DaoFactory;
@@ -160,6 +161,7 @@ public class DownLoadApplication extends Application {
         ServiceRegistry.register(TotalBuyReturnService.class, new TotalBuyReturnService(daoFactory));
         ServiceRegistry.register(TotalSalesReturnService.class, new TotalSalesReturnService(daoFactory));
         ServiceRegistry.register(EarningsService.class, new EarningsService(daoFactory));
+        ServiceRegistry.register(ProfitLossService.class, new ProfitLossService(daoFactory.profitLossDao()));
         ServiceRegistry.register(CustomerService.class, new CustomerService(daoFactory));
         ServiceRegistry.register(SuppliersService.class, new SuppliersService(daoFactory));
         ServiceRegistry.register(AccountCustomerService.class, new AccountCustomerService(daoFactory));
@@ -236,3 +238,4 @@ public class DownLoadApplication extends Application {
     private record BootstrapResult(DaoFactory daoFactory, MigrationResult migrationResult) {
     }
 }
+

@@ -2,6 +2,7 @@ package com.hamza.account.model.dao;
 
 import com.hamza.account.features.inventory.InventoryDao;
 import com.hamza.account.features.itemmerge.ItemMergeDao;
+import com.hamza.account.features.profitloss.ProfitLossDao;
 import com.hamza.account.features.stockcount.StockCountDao;
 import com.hamza.account.features.stockledger.StockMovementDao;
 import com.hamza.account.period.PeriodLockDao;
@@ -164,6 +165,10 @@ public enum DaoFactory {
         return new EarningsDao();
     }
 
+    public ProfitLossDao profitLossDao() {
+        return new ProfitLossDao();
+    }
+
 
     public TreasuryBalanceDao treasuryBalanceDao() {
         return new TreasuryBalanceDao();
@@ -230,3 +235,4 @@ public enum DaoFactory {
     }
 
 }
+

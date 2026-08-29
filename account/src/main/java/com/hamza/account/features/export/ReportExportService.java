@@ -1,6 +1,7 @@
 package com.hamza.account.features.export;
 
 import com.hamza.account.model.domain.*;
+import com.hamza.account.features.profitloss.ProfitLossRow;
 import com.itextpdf.kernel.geom.PageSize;
 import javafx.collections.ObservableList;
 import lombok.extern.log4j.Log4j2;
@@ -254,6 +255,12 @@ public class ReportExportService {
         );
     }
 
+    public boolean exportProfitLossReport(List<ProfitLossRow> data, String title, String[] headers, String outputPath) {
+        List<String[]> rows = new ArrayList<>();
+        for (ProfitLossRow row : data) rows.add(new String[]{row.date().toString(), format(row.netSales().doubleValue()), format(row.costOfSales().doubleValue()), format(row.grossProfit().doubleValue()), format(row.expenses().doubleValue()), format(row.netProfit().doubleValue())});
+        double total = data.stream().map(ProfitLossRow::netProfit).reduce(java.math.BigDecimal.ZERO, java.math.BigDecimal::add).doubleValue();
+        return pdfExportService.exportGenericReport(outputPath, title, null, headers, new float[]{16,17,17,17,16,17}, rows, "", format(total), null, PageSize.A4.rotate());
+    }
     /**
      * تنسيق الأرقام
      */
@@ -330,3 +337,4 @@ public class ReportExportService {
         );
     }
 }
+
