@@ -2,7 +2,7 @@ package com.hamza.account.features.shortcuts;
 
 /** Stable preference identifiers for every actionable command in the main sidebar. */
 public enum SidebarShortcut {
-    SALES("Ctrl+1"), SALES_RETURN(""), TOTAL_SALES(""),
+    SALES("Ctrl+1"), SALES_RETURN(""), TOTAL_SALES(""), TOTAL_SALES_RETURN(""),
     PURCHASE("Ctrl+2"), PURCHASE_RETURN(""), TOTAL_PURCHASE(""), TOTAL_PURCHASE_RETURN(""),
     ITEMS("Ctrl+3"), ADD_ITEM(""), UNITS(""), MAIN_GROUP(""), SUB_GROUP(""), AREA(""), INVENTORY(""), STOCK_COUNT(""), STOCKS(""), STOCK_TRANSFERS(""), MERGE_ITEMS(""),
     ADD_CUSTOMER(""), CUSTOMERS("Ctrl+4"), CUSTOMER_ACCOUNT(""),

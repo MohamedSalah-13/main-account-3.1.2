@@ -72,7 +72,7 @@ public class MainScreenController extends MainItems implements Initializable {
     @FXML
     private AnchorPane rightPaneRoot;
     @FXML
-    private Button btnSales, btnSalesReturn, btnTotalSale, btnPurchase, btnTotalPurchase, btnPurchaseRe, btnTotalPurchaseRe, btnItems,
+    private Button btnSales, btnSalesReturn, btnTotalSale, btnTotalSalesReturn, btnPurchase, btnTotalPurchase, btnPurchaseRe, btnTotalPurchaseRe, btnItems,
             btnAddItem, btnUnits, btnMainGroup, btnSubGroup, btnArea, btnInventory, btnStockCount, btnStocks, btnStockTransfers, btnMergeItems,
             btnAddCustomerName, btnCustomer, btnAccountCustom, btnAddSupplierName, btnSuppliers,
             btnAccountSuppliers, btnAddEmployee, btnEmployees, btnAddUser, btnUsers,
@@ -211,6 +211,7 @@ public class MainScreenController extends MainItems implements Initializable {
         menuButtonSetting.configureButton(btnSales, getTotalSales().addInvoice());
         menuButtonSetting.configureButton(btnSalesReturn, getTotalSalesReturn().addInvoice());
         menuButtonSetting.configureButton(btnTotalSale, getTotalSales().totals());
+        menuButtonSetting.configureButton(btnTotalSalesReturn, getTotalSalesReturn().totals());
         /*----------------------------------------------- Purchase -----------------------------------------------*/
         menuButtonSetting.configureButton(btnPurchase, getTotalPurchase().addInvoice());
         menuButtonSetting.configureButton(btnTotalPurchase, getTotalPurchase().totals());
@@ -278,7 +279,7 @@ public class MainScreenController extends MainItems implements Initializable {
 
     private void configureSidebarShortcuts() {
         Map<SidebarShortcut, Button> shortcuts = Map.ofEntries(
-                Map.entry(SidebarShortcut.SALES, btnSales), Map.entry(SidebarShortcut.SALES_RETURN, btnSalesReturn), Map.entry(SidebarShortcut.TOTAL_SALES, btnTotalSale),
+                Map.entry(SidebarShortcut.SALES, btnSales), Map.entry(SidebarShortcut.SALES_RETURN, btnSalesReturn), Map.entry(SidebarShortcut.TOTAL_SALES, btnTotalSale), Map.entry(SidebarShortcut.TOTAL_SALES_RETURN, btnTotalSalesReturn),
                 Map.entry(SidebarShortcut.PURCHASE, btnPurchase), Map.entry(SidebarShortcut.PURCHASE_RETURN, btnPurchaseRe), Map.entry(SidebarShortcut.TOTAL_PURCHASE, btnTotalPurchase), Map.entry(SidebarShortcut.TOTAL_PURCHASE_RETURN, btnTotalPurchaseRe),
                 Map.entry(SidebarShortcut.ITEMS, btnItems), Map.entry(SidebarShortcut.ADD_ITEM, btnAddItem), Map.entry(SidebarShortcut.UNITS, btnUnits), Map.entry(SidebarShortcut.MAIN_GROUP, btnMainGroup), Map.entry(SidebarShortcut.SUB_GROUP, btnSubGroup), Map.entry(SidebarShortcut.AREA, btnArea), Map.entry(SidebarShortcut.INVENTORY, btnInventory), Map.entry(SidebarShortcut.STOCK_COUNT, btnStockCount), Map.entry(SidebarShortcut.STOCKS, btnStocks), Map.entry(SidebarShortcut.STOCK_TRANSFERS, btnStockTransfers), Map.entry(SidebarShortcut.MERGE_ITEMS, btnMergeItems),
                 Map.entry(SidebarShortcut.ADD_CUSTOMER, btnAddCustomerName), Map.entry(SidebarShortcut.CUSTOMERS, btnCustomer), Map.entry(SidebarShortcut.CUSTOMER_ACCOUNT, btnAccountCustom),

@@ -75,6 +75,7 @@
                                                                 <Button fx:id="btnSales" mnemonicParsing="false" text="Sales" />
                                                                 <Button fx:id="btnSalesReturn" mnemonicParsing="false" text="Sales Return" />
                                                                 <Button fx:id="btnTotalSale" mnemonicParsing="false" text="Total Sales" />
+                                                                <Button fx:id="btnTotalSalesReturn" mnemonicParsing="false" text="Total Sales Returns" />
                                                             </children>
                                                         </VBox>
                                                     </content>

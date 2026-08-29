@@ -1354,3 +1354,27 @@
 .notification-row.notification-critical {
     -fx-background-color: -app-danger-soft;
 }
+
+/* ---------- Totals screen identities ---------- */
+
+.totals-screen-title {
+    -fx-font-size: 1.273em;
+    -fx-font-weight: bold;
+    -fx-padding: 0 0.455em;
+}
+
+.totals-sales .app-card { -fx-border-color: -app-primary; }
+.totals-sales .summary-bar { -fx-background-color: linear-gradient(to right, -app-primary-darker, -app-primary); }
+.totals-sales .totals-screen-title { -fx-text-fill: -app-primary-dark; }
+
+.totals-sales-return .app-card { -fx-border-color: -app-warning-border; }
+.totals-sales-return .summary-bar { -fx-background-color: linear-gradient(to right, -app-warning, -app-warning-hover); }
+.totals-sales-return .totals-screen-title { -fx-text-fill: -app-warning; }
+
+.totals-purchase .app-card { -fx-border-color: -app-success-border; }
+.totals-purchase .summary-bar { -fx-background-color: linear-gradient(to right, -app-success, -app-success-hover); }
+.totals-purchase .totals-screen-title { -fx-text-fill: -app-success; }
+
+.totals-purchase-return .app-card { -fx-border-color: -app-danger-border; }
+.totals-purchase-return .summary-bar { -fx-background-color: linear-gradient(to right, -app-danger, -app-danger-hover); }
+.totals-purchase-return .totals-screen-title { -fx-text-fill: -app-danger; }

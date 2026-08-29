@@ -104,7 +104,7 @@ public class TotalsController<T3 extends BaseNames, T4 extends BaseAccount>
     @FXML
     private ComboBox<String> comboName, comboDelegate, comboEnteredBy;
     @FXML
-    private Label labelName, labelSumTableSize, labelSumTotals, labelSumDiscount, labelSumAfterDiscount, labelTextSearch, labelDelegate, labelFrom, labelTo, labelInvoiceNumber, labelMinTotal, labelMaxTotal, labelEnteredBy;
+    private Label labelScreenTitle, labelName, labelSumTableSize, labelSumTotals, labelSumDiscount, labelSumAfterDiscount, labelTextSearch, labelDelegate, labelFrom, labelTo, labelInvoiceNumber, labelMinTotal, labelMaxTotal, labelEnteredBy;
     @FXML
     private Text textSumTableSize, textSumTotals, textSumDiscount, textSumAfterDiscount, textCash, textDeffer, textProfit;
     @FXML
@@ -143,6 +143,7 @@ public class TotalsController<T3 extends BaseNames, T4 extends BaseAccount>
     @Override
     public void initialize(URL url, ResourceBundle resourceBundle) {
         maskerPaneSetting = new MaskerPaneSetting(stackPane);
+        applyTotalsIdentity();
         nameSetting();
         getTable();
         otherSetting();
@@ -173,6 +174,20 @@ public class TotalsController<T3 extends BaseNames, T4 extends BaseAccount>
         buttonGraphic();
     }
 
+    /** Gives each of the four totals lists a persistent, immediately recognizable identity. */
+    private void applyTotalsIdentity() {
+        stackPane.getStyleClass().removeAll(
+                "totals-sales", "totals-sales-return", "totals-purchase", "totals-purchase-return");
+        var type = dataInterface.designInterface().documentType();
+        String identityClass = switch (type) {
+            case SALES -> "totals-sales";
+            case SALES_RETURN -> "totals-sales-return";
+            case PURCHASE -> "totals-purchase";
+            case PURCHASE_RETURN -> "totals-purchase-return";
+        };
+        stackPane.getStyleClass().add(identityClass);
+        labelScreenTitle.setText(type.totalText());
+    }
     private void buttonGraphic() {
         var images = new Image_Setting();
         btnShowInvoice.setGraphic(createIcon(images.show));

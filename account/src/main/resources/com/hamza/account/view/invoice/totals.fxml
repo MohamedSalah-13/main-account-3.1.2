@@ -32,6 +32,7 @@
                     <top>
                         <HBox alignment="CENTER_LEFT" minHeight="-Infinity" minWidth="-Infinity" spacing="5.0" styleClass="app-card">
                             <children>
+                                <Label fx:id="labelScreenTitle" styleClass="totals-screen-title" />
                                 <Button fx:id="btnUpdate" mnemonicParsing="false" styleClass="app-neutral-button" text="Update" />
                                 <Button fx:id="btnDelete" mnemonicParsing="false" styleClass="app-neutral-button" text="Delete" />
                                 <Button fx:id="btnRefresh" mnemonicParsing="false" styleClass="app-neutral-button" text="Refresh" />
