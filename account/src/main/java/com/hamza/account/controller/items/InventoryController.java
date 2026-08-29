@@ -6,6 +6,7 @@ import com.hamza.account.features.events.ItemSaved;
 import com.hamza.account.features.events.ItemsChanged;
 import com.hamza.account.features.events.InvoiceSaved;
 import com.hamza.account.features.events.StockCountPosted;
+import com.hamza.account.features.events.StocksChanged;
 import com.hamza.account.features.inventory.ColumnKind;
 import com.hamza.account.features.inventory.InventoryColumn;
 import com.hamza.account.features.inventory.InventoryColumns;
@@ -284,19 +285,31 @@ public class InventoryController {
     }
 
     private void buildStockPicker() {
+        comboStock.setConverter(new StringConverter<>() {
+            @Override public String toString(Stock stock) { return stock == null ? "" : stock.getName(); }
+            @Override public Stock fromString(String value) { return null; }
+        });
+        reloadStockItems();
+        comboStock.valueProperty().addListener((observable, oldStock, newStock) -> {
+            if (!adjustingFilters && newStock != null && newStock.getId() != query.stockId()) {
+                load(query.withStock(newStock.getId()));
+            }
+        });
+    }
+
+    /**
+     * (Re)reads the warehouse list, keeping the current selection if it still exists -
+     * a warehouse created after this screen was built is otherwise never offered, since
+     * {@code ItemsButtons} constructs this controller once per session, well before the
+     * screen is ever opened.
+     */
+    private void reloadStockItems() {
         try {
+            int keep = comboStock.getValue() == null ? query.stockId() : comboStock.getValue().getId();
             comboStock.setItems(FXCollections.observableArrayList(stockService.getStocks()));
-            comboStock.setConverter(new StringConverter<>() {
-                @Override public String toString(Stock stock) { return stock == null ? "" : stock.getName(); }
-                @Override public Stock fromString(String value) { return null; }
-            });
-            comboStock.getSelectionModel().select(comboStock.getItems().stream()
-                    .filter(stock -> stock.getId() == DefaultStock.ID).findFirst().orElse(null));
-            comboStock.valueProperty().addListener((observable, oldStock, newStock) -> {
-                if (!adjustingFilters && newStock != null && newStock.getId() != query.stockId()) {
-                    load(query.withStock(newStock.getId()));
-                }
-            });
+            comboStock.getItems().stream().filter(stock -> stock.getId() == keep).findFirst()
+                    .or(() -> comboStock.getItems().stream().filter(stock -> stock.getId() == DefaultStock.ID).findFirst())
+                    .ifPresent(comboStock.getSelectionModel()::select);
         } catch (DaoException e) {
             log.error("Failed to read stocks for inventory", e);
         }
@@ -398,6 +411,9 @@ public class InventoryController {
         // A posted count corrects balances without anything being bought or sold, and
         // the sheet shows the correction in its own column.
         subscriptions.add(eventBus.subscribe(StockCountPosted.class, event -> reload()));
+        // A warehouse created after this screen was built is otherwise never offered
+        // in comboStock - see reloadStockItems.
+        subscriptions.add(eventBus.subscribe(StocksChanged.class, event -> reloadStockItems()));
         subscriptions.disposeWith(root);
     }
 

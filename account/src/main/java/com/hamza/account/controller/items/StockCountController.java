@@ -3,6 +3,7 @@ package com.hamza.account.controller.items;
 import com.hamza.account.config.DefaultStock;
 import com.hamza.account.controller.others.ServiceRegistry;
 import com.hamza.account.features.events.StockCountPosted;
+import com.hamza.account.features.events.StocksChanged;
 import com.hamza.account.features.inventory.ColumnKind;
 import com.hamza.account.features.stockcount.StockCount;
 import com.hamza.account.features.stockcount.StockCountLine;
@@ -19,6 +20,7 @@ import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.language.LanguageManager;
 import com.hamza.controlsfx.observer.EventBus;
+import com.hamza.controlsfx.observer.Subscriptions;
 import javafx.application.Platform;
 import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.collections.FXCollections;
@@ -81,6 +83,7 @@ public class StockCountController {
     private final StockService stockService = ServiceRegistry.get(StockService.class);
     private int stockId = DefaultStock.ID;
     private final EventBus eventBus = ServiceRegistry.get(EventBus.class);
+    private final Subscriptions subscriptions = new Subscriptions();
 
     private final ObservableList<StockCountLine> lines = FXCollections.observableArrayList();
 
@@ -114,18 +117,33 @@ public class StockCountController {
     }
 
     private void loadStocks() {
+        comboStock.setConverter(new javafx.util.StringConverter<>() {
+            @Override public String toString(Stock stock) { return stock == null ? "" : stock.getName(); }
+            @Override public Stock fromString(String value) { return null; }
+        });
+        reloadStockItems();
+        comboStock.valueProperty().addListener((obs, oldStock, newStock) -> {
+            if (newStock != null && newStock.getId() != stockId) { stockId = newStock.getId(); loadDraft(); }
+        });
+        subscriptions.add(eventBus.subscribe(StocksChanged.class, event -> reloadStockItems()));
+        subscriptions.disposeWith(root);
+    }
+
+    /**
+     * (Re)reads the warehouse list, keeping the current selection - a warehouse
+     * created after this screen was built is otherwise never offered, since
+     * {@code ItemsButtons} constructs it once per session.
+     */
+    private void reloadStockItems() {
         try {
+            int keep = stockId;
             comboStock.setItems(FXCollections.observableArrayList(stockService.getStocks()));
-            comboStock.setConverter(new javafx.util.StringConverter<>() {
-                @Override public String toString(Stock stock) { return stock == null ? "" : stock.getName(); }
-                @Override public Stock fromString(String value) { return null; }
-            });
-            comboStock.getSelectionModel().select(comboStock.getItems().stream()
-                    .filter(stock -> stock.getId() == DefaultStock.ID).findFirst().orElse(null));
-            comboStock.valueProperty().addListener((obs, oldStock, newStock) -> {
-                if (newStock != null && newStock.getId() != stockId) { stockId = newStock.getId(); loadDraft(); }
-            });
-        } catch (Exception e) { reportFailure("Failed to load stocks", e); }
+            comboStock.getItems().stream().filter(stock -> stock.getId() == keep).findFirst()
+                    .or(() -> comboStock.getItems().stream().filter(stock -> stock.getId() == DefaultStock.ID).findFirst())
+                    .ifPresent(comboStock.getSelectionModel()::select);
+        } catch (Exception e) {
+            reportFailure("Failed to load stocks", e);
+        }
     }
     // ------------------------------------------------------------------
     // Table

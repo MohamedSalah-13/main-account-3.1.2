@@ -12,6 +12,7 @@ import com.hamza.account.controller.others.ServiceRegistry;
 import com.hamza.account.controller.search.ItemsSearch;
 import com.hamza.account.controller.setting.SettingTabLanguageController;
 import com.hamza.account.features.events.EmployeesChanged;
+import com.hamza.account.features.events.StocksChanged;
 import com.hamza.account.finance.MoneyMath;
 import com.hamza.account.features.invoice.InvoiceItemSelectionService;
 import com.hamza.account.features.invoice.InvoiceItemCatalogService;
@@ -764,13 +765,11 @@ public class BuyController2<T3 extends BaseNames, T4 extends BaseAccount>
         Utils.replaceNonDigitChar(txtBarcode);
         txtNum.setText(num_invoice_update > 0 ? String.valueOf(num_invoice_update) : lang.getString("invoice.number.generate"));
         // delegate data
-        comboStock.setItems(FXCollections.observableArrayList(getStocks()));
         comboStock.setConverter(new javafx.util.StringConverter<>() {
             @Override public String toString(Stock stock) { return stock == null ? "" : stock.getName(); }
             @Override public Stock fromString(String value) { return null; }
         });
-        comboStock.getSelectionModel().select(comboStock.getItems().stream()
-                .filter(stock -> stock.getId() == DefaultStock.ID).findFirst().orElse(null));
+        reloadStockItems();
         comboStock.getSelectionModel().selectedItemProperty().addListener((obs, oldStock, newStock) -> {
             if (newStock != null) invoiceStockId = newStock.getId();
         });
@@ -796,6 +795,19 @@ public class BuyController2<T3 extends BaseNames, T4 extends BaseAccount>
     @NotNull
     private List<Stock> getStocks() {
         try { return stockService.getStocks(); } catch (DaoException e) { logError(e); return List.of(); }
+    }
+
+    /**
+     * (Re)reads the warehouse list, keeping the current selection - {@code invoiceStockId},
+     * which {@link #selectData()} already set from a loaded invoice's own row. A
+     * warehouse created after this controller was built is otherwise never offered
+     * here: {@code ItemsButtons} constructs one purchase/sales controller per session,
+     * well before the screen is opened, so its combo is whatever existed at login.
+     */
+    private void reloadStockItems() {
+        comboStock.setItems(FXCollections.observableArrayList(getStocks()));
+        comboStock.getItems().stream().filter(stock -> stock.getId() == invoiceStockId).findFirst()
+                .ifPresent(comboStock.getSelectionModel()::select);
     }
 
     @NotNull
@@ -829,6 +841,9 @@ public class BuyController2<T3 extends BaseNames, T4 extends BaseAccount>
         if (eventBus != null) {
             subscriptions.add(eventBus.subscribe(EmployeesChanged.class
                     , event -> comboDelegate.setItems(FXCollections.observableArrayList(getDelegateNames()))));
+            // A warehouse created after this controller was built is otherwise never
+            // offered in comboStock - see reloadStockItems.
+            subscriptions.add(eventBus.subscribe(StocksChanged.class, event -> reloadStockItems()));
         }
         // An invoice window is opened per invoice and closed again; the bus behind
         // it lives for the whole process.

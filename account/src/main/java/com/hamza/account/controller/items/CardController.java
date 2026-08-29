@@ -6,6 +6,7 @@ import com.hamza.account.config.NamesTables;
 import com.hamza.account.controller.main.DataPublisher;
 import com.hamza.account.controller.main.LoadData;
 import com.hamza.account.controller.others.ServiceRegistry;
+import com.hamza.account.features.events.StocksChanged;
 import com.hamza.account.features.itemcard.ItemCardRunningBalance;
 import com.hamza.account.features.itemcard.ItemCardTotals;
 import com.hamza.account.interfaces.api.DataInterface;
@@ -30,6 +31,7 @@ import com.hamza.controlsfx.button.api.ButtonColumnI;
 import com.hamza.controlsfx.button.button_column.ButtonColumn;
 import com.hamza.controlsfx.interfaceData.AppSettingInterface;
 import com.hamza.controlsfx.language.LanguageManager;
+import com.hamza.controlsfx.observer.EventBus;
 import com.hamza.controlsfx.others.DateSetting;
 import com.hamza.controlsfx.table.Columns;
 import com.hamza.controlsfx.util.ImageChoose;
@@ -88,6 +90,7 @@ public class CardController extends LoadData implements Initializable, AppSettin
     private final ItemsModel itemsModel;
     private final CardItemService cardItemService = ServiceRegistry.get(CardItemService.class);
     private final StockService stockService = ServiceRegistry.get(StockService.class);
+    private final EventBus eventBus = ServiceRegistry.get(EventBus.class);
     private int stockId = DefaultStock.ID;
     @FXML
     private TableView<CardItems> tableView;
@@ -189,21 +192,37 @@ public class CardController extends LoadData implements Initializable, AppSettin
         comboBox.getItems().add(lm.getString("all"));
         comboBox.getItems().addAll(processTypeList);
         comboBox.getSelectionModel().select(0);
-        try {
-            comboStock.setItems(FXCollections.observableArrayList(stockService.getStocks()));
-            comboStock.setConverter(new javafx.util.StringConverter<>() {
-                @Override public String toString(Stock stock) { return stock == null ? "" : stock.getName(); }
-                @Override public Stock fromString(String value) { return null; }
-            });
-            comboStock.getSelectionModel().select(comboStock.getItems().stream().filter(s -> s.getId() == DefaultStock.ID).findFirst().orElse(null));
-            comboStock.valueProperty().addListener((obs, oldStock, newStock) -> { if (newStock != null) { stockId = newStock.getId(); loadCard(); } });
-        } catch (Exception e) { logError(e); }
+        comboStock.setConverter(new javafx.util.StringConverter<>() {
+            @Override public String toString(Stock stock) { return stock == null ? "" : stock.getName(); }
+            @Override public Stock fromString(String value) { return null; }
+        });
+        reloadStockItems();
+        comboStock.valueProperty().addListener((obs, oldStock, newStock) -> { if (newStock != null) { stockId = newStock.getId(); loadCard(); } });
+        subscriptions.add(eventBus.subscribe(StocksChanged.class, event -> reloadStockItems()));
+        subscriptions.disposeWith(tableView);
 
         DateSetting.dateAction(dateFrom);
         DateSetting.dateAction(dateTo);
         dateFrom.setValue(firstMovementDate());
         textType.setText(itemsModel.getUnitsType().getUnit_name());
         textName.setText(itemsModel.getNameItem());
+    }
+
+    /**
+     * (Re)reads the warehouse list, keeping the current selection - a warehouse
+     * created after this screen was built is otherwise never offered, since
+     * {@code ItemsButtons} constructs it once per session.
+     */
+    private void reloadStockItems() {
+        try {
+            int keep = stockId;
+            comboStock.setItems(FXCollections.observableArrayList(stockService.getStocks()));
+            comboStock.getItems().stream().filter(s -> s.getId() == keep).findFirst()
+                    .or(() -> comboStock.getItems().stream().filter(s -> s.getId() == DefaultStock.ID).findFirst())
+                    .ifPresent(comboStock.getSelectionModel()::select);
+        } catch (Exception e) {
+            logError(e);
+        }
     }
 
     /**

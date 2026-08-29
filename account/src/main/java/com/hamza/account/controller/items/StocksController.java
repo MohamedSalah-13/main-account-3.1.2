@@ -1,12 +1,14 @@
 package com.hamza.account.controller.items;
 
 import com.hamza.account.controller.others.ServiceRegistry;
+import com.hamza.account.features.events.StocksChanged;
 import com.hamza.account.model.domain.Stock;
 import com.hamza.account.openFxml.FxmlPath;
 import com.hamza.account.service.StockService;
 import com.hamza.account.table.TableSetting;
 import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.language.LanguageManager;
+import com.hamza.controlsfx.observer.EventBus;
 import com.hamza.controlsfx.table.Columns;
 import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
@@ -17,6 +19,7 @@ import javafx.scene.control.TextField;
 public class StocksController {
 
     private final StockService service = ServiceRegistry.get(StockService.class);
+    private final EventBus eventBus = ServiceRegistry.get(EventBus.class);
 
     @FXML
     private TableView<Stock> table;
@@ -49,6 +52,7 @@ public class StocksController {
             AllAlerts.alertSave();
             clear();
             refresh();
+            if (eventBus != null) eventBus.publish(new StocksChanged());
         } catch (Exception e) {
             AllAlerts.handleError(LanguageManager.getInstance().getString("stocks.title"), e);
         }
@@ -66,6 +70,7 @@ public class StocksController {
             AllAlerts.alertDelete();
             clear();
             refresh();
+            if (eventBus != null) eventBus.publish(new StocksChanged());
         } catch (Exception e) {
             AllAlerts.handleError(LanguageManager.getInstance().getString("stocks.title"), e);
         }

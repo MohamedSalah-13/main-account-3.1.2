@@ -3,6 +3,7 @@ package com.hamza.account.controller.items;
 import com.hamza.account.config.DefaultStock;
 import com.hamza.account.controller.others.ServiceRegistry;
 import com.hamza.account.controller.search.ItemsSearch;
+import com.hamza.account.features.events.StocksChanged;
 import com.hamza.account.features.rbac.CurrentUser;
 import com.hamza.account.features.stocktransfer.StockTransferCommand;
 import com.hamza.account.features.stocktransfer.StockTransferLine;
@@ -19,6 +20,8 @@ import com.hamza.account.table.TableSetting;
 import com.hamza.account.view.TextSearchApplication;
 import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.language.LanguageManager;
+import com.hamza.controlsfx.observer.EventBus;
+import com.hamza.controlsfx.observer.Subscriptions;
 import com.hamza.controlsfx.others.Utils;
 import com.hamza.controlsfx.table.Columns;
 import javafx.collections.FXCollections;
@@ -57,6 +60,8 @@ public class StockTransferController {
     private final StockService stockService = ServiceRegistry.get(StockService.class);
     private final ItemsService itemsService = ServiceRegistry.get(ItemsService.class);
     private final StockTransferService transferService = ServiceRegistry.get(StockTransferService.class);
+    private final EventBus eventBus = ServiceRegistry.get(EventBus.class);
+    private final Subscriptions subscriptions = new Subscriptions();
 
     private final ObservableList<PendingLine> lines = FXCollections.observableArrayList();
     private final ObservableList<StockTransferSummary> history = FXCollections.observableArrayList();
@@ -99,18 +104,38 @@ public class StockTransferController {
     // ------------------------------------------------------------------
 
     private void buildStockCombos() {
+        StringConverter<Stock> converter = new StringConverter<>() {
+            @Override public String toString(Stock stock) { return stock == null ? "" : stock.getName(); }
+            @Override public Stock fromString(String value) { return null; }
+        };
+        comboFromStock.setConverter(converter);
+        comboToStock.setConverter(converter);
+        reloadStockItems();
+        subscriptions.add(eventBus.subscribe(StocksChanged.class, event -> reloadStockItems()));
+        subscriptions.disposeWith(root);
+    }
+
+    /**
+     * (Re)reads the warehouse list for both combos, keeping whichever selections are
+     * still valid - a warehouse created after this screen was built is otherwise never
+     * offered, since {@code ItemsButtons} constructs it once per session.
+     */
+    private void reloadStockItems() {
         try {
+            Integer keepFrom = comboFromStock.getValue() == null ? null : comboFromStock.getValue().getId();
+            Integer keepTo = comboToStock.getValue() == null ? null : comboToStock.getValue().getId();
             ObservableList<Stock> stocks = FXCollections.observableArrayList(stockService.getStocks());
-            StringConverter<Stock> converter = new StringConverter<>() {
-                @Override public String toString(Stock stock) { return stock == null ? "" : stock.getName(); }
-                @Override public Stock fromString(String value) { return null; }
-            };
             comboFromStock.setItems(stocks);
-            comboFromStock.setConverter(converter);
             comboToStock.setItems(FXCollections.observableArrayList(stocks));
-            comboToStock.setConverter(converter);
-            stocks.stream().filter(stock -> stock.getId() == DefaultStock.ID).findFirst()
+
+            comboFromStock.getItems().stream()
+                    .filter(stock -> stock.getId() == (keepFrom == null ? DefaultStock.ID : keepFrom))
+                    .findFirst()
                     .ifPresent(comboFromStock.getSelectionModel()::select);
+            if (keepTo != null) {
+                comboToStock.getItems().stream().filter(stock -> stock.getId() == keepTo).findFirst()
+                        .ifPresent(comboToStock.getSelectionModel()::select);
+            }
         } catch (Exception e) {
             reportFailure(e);
         }
