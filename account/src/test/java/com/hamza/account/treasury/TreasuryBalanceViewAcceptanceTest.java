@@ -590,8 +590,8 @@ class TreasuryBalanceViewAcceptanceTest {
     }
 
     @Test
-    @DisplayName("if the fee cannot be posted, the collection is not saved either")
-    void theTwoRowsCommitTogether() throws Exception {
+    @DisplayName("an impossible fee is refused, and the save fails rather than posting it")
+    void anImpossibleFeeStopsTheSave() throws Exception {
         inTransaction(connection -> {
             Fixture fixture = fixture(connection);
             int customer = firstId(connection, "custom");
@@ -600,16 +600,33 @@ class TreasuryBalanceViewAcceptanceTest {
             CustomerAccount payment = new CustomerAccount(id, LocalDate.now().toString(), 1000d,
                     "wallet-acceptance", 0, new Customers(customer), new Treasury(fixture.main()));
 
-            // A fee larger than the amount is refused by WalletFeeService, inside the
-            // transaction the payment was already inserted in.
             assertThrows(Exception.class, () ->
-                    new AccountCustomerService(DaoFactory.INSTANCE).save(payment, money(2000)));
+                            new AccountCustomerService(DaoFactory.INSTANCE).save(payment, money(2000)),
+                    "a fee larger than the amount was accepted");
 
             assertEquals(0, countOf(connection,
-                            "SELECT COUNT(*) FROM customers_accounts WHERE account_num = ?", id),
-                    "the payment survived a refused fee - the two must commit together");
+                            "SELECT COUNT(*) FROM expenses_details d JOIN expenses e ON e.id = d.type_code"
+                                    + " WHERE d.treasury_id = ? AND e.expenses_name = ? AND d.amount = 2000",
+                            fixture.main(), WalletFee.EXPENSE_NAME),
+                    "the refused fee was posted anyway");
         });
     }
+
+    /*
+     * What is deliberately NOT asserted above: that the payment row went with the
+     * refused fee.
+     *
+     * It does, in the application - TransactionTemplate is the outermost boundary there
+     * and rolls both back. It cannot be observed from here: ConnectionManager makes a
+     * nested begin join the transaction already open, leaving the commit and the
+     * rollback to the outer one, which in this class is the test's own (see CLAUDE.md,
+     * "Database access"). So inside this test the insert stays visible until the test
+     * rolls it back, and asserting otherwise would be asserting a fact about the test
+     * harness rather than about the code.
+     *
+     * Proving it properly needs a test that owns the outermost transaction itself -
+     * items 0.4 and 0.5 of docs/erp-roadmap.md, which are still unwritten.
+     */
 
     /** What the customer still owes, from the view the statement screen reads. */
     private BigDecimal owedBy(Connection connection, int customerId) throws Exception {
@@ -634,5 +651,76 @@ class TreasuryBalanceViewAcceptanceTest {
                 return rows.getInt(1);
             }
         }
+    }
+
+    @Test
+    @DisplayName("a new collection is inserted, though the screen supplies its own number")
+    void aNewCollectionIsActuallyWritten() throws Exception {
+        inTransaction(connection -> {
+            int customer = firstId(connection, "custom");
+            // Exactly what Add_AccountController builds: txtCode holds
+            // generateNextAccountCode() = max + 1, and that becomes the model's id. So a
+            // new payment never has id 0, and a service that decides "is this new?" by
+            // asking whether the id is zero writes nothing at all - which is what
+            // happened between f2b4baf and this test.
+            int code = nextId(connection, "customers_accounts", "account_num");
+            CustomerAccount payment = new CustomerAccount(code, LocalDate.now().toString(), 5d,
+                    "insert-path", 0, new Customers(customer), new Treasury(1));
+
+            int rows = new AccountCustomerService(DaoFactory.INSTANCE).save(payment);
+
+            assertEquals(1, rows, "the collection reported no rows written");
+            assertEquals(1, countOf(connection,
+                            "SELECT COUNT(*) FROM customers_accounts WHERE account_num = ?", code),
+                    "the payment was not written at all - the save took the UPDATE branch "
+                            + "against a row that does not exist");
+        });
+    }
+
+    @Test
+    @DisplayName("editing an existing collection still updates it rather than inserting a second")
+    void anExistingCollectionIsUpdated() throws Exception {
+        inTransaction(connection -> {
+            int customer = firstId(connection, "custom");
+            int code = nextId(connection, "customers_accounts", "account_num");
+            AccountCustomerService service = new AccountCustomerService(DaoFactory.INSTANCE);
+
+            service.save(new CustomerAccount(code, LocalDate.now().toString(), 5d,
+                    "before", 0, new Customers(customer), new Treasury(1)));
+            service.save(new CustomerAccount(code, LocalDate.now().toString(), 7d,
+                    "after", 0, new Customers(customer), new Treasury(1)));
+
+            assertEquals(1, countOf(connection,
+                            "SELECT COUNT(*) FROM customers_accounts WHERE account_num = ?", code),
+                    "the edit inserted a second row instead of updating the first");
+            assertEquals(1, countOf(connection,
+                            "SELECT COUNT(*) FROM customers_accounts WHERE account_num = ? AND paid = 7",
+                            code),
+                    "the edit did not take");
+        });
+    }
+
+    @Test
+    @DisplayName("earlier runs left nothing behind - checked, not trusted")
+    void thisClassLeavesNoResidue() throws Exception {
+        inTransaction(connection -> {
+            // Every fixture treasury is named "acceptance-*", every movement it writes
+            // points at one, and the whole thing is rolled back in a finally. That is the
+            // claim; this is the check. CLAUDE.md records that an acceptance run has left
+            // rows in a development database before, which is why it is worth asserting
+            // rather than believing.
+            assertEquals(0, countOf(connection,
+                            "SELECT COUNT(*) FROM treasury WHERE t_name LIKE 'acceptance-%'"),
+                    "a previous run committed its treasuries");
+            assertEquals(0, countOf(connection,
+                            "SELECT COUNT(*) FROM treasury_transfers WHERE notes = 'treasury-acceptance'"),
+                    "a previous run committed its transfers");
+            assertEquals(0, countOf(connection,
+                            "SELECT COUNT(*) FROM customers_accounts WHERE notes IN ('wallet-acceptance', 'insert-path', 'before', 'after')"),
+                    "a previous run committed its collections");
+            assertEquals(0, countOf(connection,
+                            "SELECT COUNT(*) FROM treasury_deposit_expenses WHERE statement IN ('acceptance', 'service')"),
+                    "a previous run committed its deposits");
+        });
     }
 }

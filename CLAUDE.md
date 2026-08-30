@@ -27,7 +27,7 @@ mvn -o -pl account -am test -Dtest=ScheduledBackupTest -Dsurefire.failIfNoSpecif
 
 **Coverage is real but uneven — know which half you are in.** JUnit 5 and Mockito are declared in the
 root pom and inherited by both modules; surefire needs no configuration. `mvn clean test` currently runs
-**988 tests across ~107 classes** — 98 in `controlsfx`, 890 in `account` — with 44 skipped (below). What is
+**994 tests across ~108 classes** — 98 in `controlsfx`, 896 in `account` — with 47 skipped (below). What is
 genuinely covered:
 
 - **The declarative specs, pinned character for character** — `DocumentDaoStatementsTest`,
@@ -50,6 +50,13 @@ genuinely covered:
 
 What still has none: the controllers, the FXML screens, the reports, the trial logic, and most of the
 `model/dao` write paths.
+
+**The treasury acceptance tests were run for the first time on 2026-08-30**, against the developer's
+own MySQL, and found two real defects that no unit test could have: the wallet-fee split was wrong
+because *every new party payment had been silently discarded since `f2b4baf`* (see
+`AccountCustomerService.isNew`), and one of the new cases was asserting a rollback it could not
+observe from inside an enclosing transaction. Fifteen cases pass now, twice in a row, and the class
+checks for its own residue rather than trusting the rollback.
 
 **Twelve classes do not run by default.** `InvoiceStockDatabaseAcceptanceTest`,
 `DocumentLineDatabaseAcceptanceTest`, `StockLedgerReconciliationAcceptanceTest`,

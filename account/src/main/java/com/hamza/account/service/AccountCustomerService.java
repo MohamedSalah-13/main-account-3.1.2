@@ -68,11 +68,14 @@ public record AccountCustomerService(DaoFactory daoFactory) {
      * it on every edit would double it or rewrite an expense already reported.
      */
     public int save(CustomerAccount account, BigDecimal walletFee) throws DaoException {
-        boolean isNew = account.getId() == 0;
+        boolean isNew = isNew(account);
         AuthorizationGuard.require(isNew
                 ? AppPermissions.CUSTOMER_ACCOUNT_CREATE : AppPermissions.CUSTOMER_ACCOUNT_UPDATE);
-        if (!isNew || walletFee == null || walletFee.signum() <= 0) {
-            return isNew ? accountDao().insert(account) : accountDao().update(account);
+        if (!isNew) {
+            return accountDao().update(account);
+        }
+        if (walletFee == null || walletFee.signum() <= 0) {
+            return accountDao().insert(account);
         }
         return TransactionTemplate.execute(() -> {
             int rows = accountDao().insert(account);
@@ -84,6 +87,26 @@ public record AccountCustomerService(DaoFactory daoFactory) {
                     WalletFee.EXPENSE_NAME);
             return rows;
         });
+    }
+
+    /**
+     * Whether this payment is a new one - answered by looking for the row, not by
+     * asking whether the id is zero.
+     * <p>
+     * <b>This is a bug fix, and the bug was silent.</b> The application assigns the
+     * account number itself: the screen fills its code field with {@code max + 1} and
+     * hands that to the model, so {@code getId()} is <b>never</b> zero, not even for a
+     * brand new payment. From 2026-08-12 (`f2b4baf`, which replaced the controller's
+     * own {@code numInvoice > 0} check with this service) until this fix, every new
+     * collection therefore took the UPDATE branch, matched no row, returned 0, and the
+     * dialog closed reporting nothing - the payment was simply never written. Editing
+     * kept working, because there the id does match a row, which is why it survived.
+     * <p>
+     * Reading the row is one query and it cannot be got wrong by the next caller,
+     * which an "isNew" flag threaded through the screens could.
+     */
+    private boolean isNew(CustomerAccount account) throws DaoException {
+        return account.getId() <= 0 || accountDao().getAccountByNumForUpdate(account.getId()) == null;
     }
 
     public double sumTotal() {
