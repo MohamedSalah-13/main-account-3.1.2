@@ -775,6 +775,21 @@ Schema changes are **Flyway migrations**, in `account/src/main/resources/db/migr
 Adding a schema change is therefore one file: `V<n>__what_it_does.sql`. Both the upgrade path and the
 fresh-install path pick it up, and Flyway derives the version — nothing to register in Java.
 
+**A repeatable migration cannot be a prerequisite of a versioned one, and `V1_1` is the scar.**
+Repeatables run *after* every versioned migration, so anything a versioned migration can reach —
+directly, or through a trigger it fires — has to be created by a versioned one.
+`write_audit_log` was not: it lived only in `R__procedures.sql`, while `V1` and `V2` create the
+eighteen audit triggers that call it. Nothing noticed for nineteen migrations because none of them
+wrote to an audited table; `V20`'s `UPDATE treasury SET opening_date` does, and **a brand-new
+database died there**, half-built, with `PROCEDURE write_audit_log does not exist`. Existing clients
+were never affected — they are stamped at `V1` and already hold the procedure — so this broke only
+a first install, the one case nobody runs twice. `V1_1__audit_log_procedure.sql` is numbered below
+`V20` on purpose: a `V22` would run after the migration it is fixing and fix nothing. A client
+already past it meets a pending migration below its current version and ignores it, which is
+correct. The definition stays in `R__procedures.sql` too, and **that copy is still the one to
+edit** — the versioned file is a snapshot, the repeatable has the last word.
+`AuditProcedureMigrationTest` pins all of it.
+
 **Views, triggers and procedures are repeatable migrations, not versioned ones.** `R__views.sql` (33
 views; `treasury_balance_after_convert` was removed from it, and the `DROP` for it stays because a
 client that ran an older copy still has it), `R__triggers.sql` and `R__procedures.sql` are re-run by Flyway whenever their checksum changes,
