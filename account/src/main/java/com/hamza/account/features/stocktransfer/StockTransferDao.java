@@ -146,6 +146,37 @@ final class StockTransferDao extends AbstractDao<Void> {
         });
     }
 
+    /** One row per line, for the printed transfer log - see {@link StockTransferReportRow}. */
+    List<StockTransferReportRow> reportRows(java.time.LocalDate from, java.time.LocalDate to) throws DaoException {
+        String sql = """
+                SELECT v.id, v.transfer_date, v.name_from, v.name_to, v.nameItem, v.quantity, u.unit_name
+                FROM stock_transfer_view v
+                         LEFT JOIN units u ON u.unit_id = v.type
+                WHERE v.transfer_date BETWEEN ? AND ?
+                ORDER BY v.transfer_date, v.id
+                """;
+        return withConnection(connection -> {
+            List<StockTransferReportRow> result = new java.util.ArrayList<>();
+            try (var statement = connection.prepareStatement(sql)) {
+                statement.setObject(1, from);
+                statement.setObject(2, to);
+                try (var rows = statement.executeQuery()) {
+                    while (rows.next()) {
+                        result.add(new StockTransferReportRow(
+                                rows.getInt("id"),
+                                rows.getDate("transfer_date").toLocalDate(),
+                                rows.getString("name_from"),
+                                rows.getString("name_to"),
+                                rows.getString("nameItem"),
+                                rows.getString("unit_name"),
+                                rows.getDouble("quantity")));
+                    }
+                }
+            }
+            return result;
+        });
+    }
+
     private static void bindIds(java.sql.PreparedStatement statement, int startAt, List<Integer> itemIds)
             throws java.sql.SQLException {
         for (int i = 0; i < itemIds.size(); i++) {

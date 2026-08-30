@@ -69,6 +69,12 @@
                             <children>
                                 <Button fx:id="btnRefreshHistory" mnemonicParsing="false" styleClass="neutral-button" text="%refresh" />
                                 <Button fx:id="btnReverse" mnemonicParsing="false" styleClass="danger-button" text="%stocks.transfer.reverse" />
+                                <Region HBox.hgrow="ALWAYS" />
+                                <Label styleClass="form-label" text="%stocks.transfer.date" />
+                                <DatePicker fx:id="datePrintFrom" minWidth="130.0" />
+                                <Label styleClass="form-label" text="%to" />
+                                <DatePicker fx:id="datePrintTo" minWidth="130.0" />
+                                <Button fx:id="btnPrintHistory" mnemonicParsing="false" styleClass="neutral-button" text="%stocks.transfer.print.history" />
                             </children>
                         </HBox>
                         <TableView fx:id="tableHistory" styleClass="modern-table" VBox.vgrow="ALWAYS" />

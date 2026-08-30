@@ -15,6 +15,7 @@ import com.hamza.account.features.inventory.InventoryQuery;
 import com.hamza.account.features.inventory.InventoryRow;
 import com.hamza.account.features.inventory.InventoryService;
 import com.hamza.account.features.inventory.InventorySummary;
+import com.hamza.account.features.inventory.StockBalanceRow;
 import com.hamza.account.features.inventory.StockFilter;
 import com.hamza.account.model.domain.Stock;
 import com.hamza.account.features.export.ExcelExportService;
@@ -131,7 +132,7 @@ public class InventoryController {
     @FXML
     private Label labelTotalQuantity, labelExpectedProfit, labelStockStates, labelCostHint, labelStatus;
     @FXML
-    private Button btnPrint, btnRefresh, btnExcel, btnClearFilters;
+    private Button btnPrint, btnRefresh, btnExcel, btnClearFilters, btnPrintCrossStock;
     @FXML
     private ProgressIndicator progress;
     @FXML
@@ -431,6 +432,7 @@ public class InventoryController {
         btnRefresh.setOnAction(actionEvent -> reload());
         btnPrint.setOnAction(actionEvent -> printSheet());
         btnExcel.setOnAction(actionEvent -> exportToExcel());
+        btnPrintCrossStock.setOnAction(actionEvent -> printCrossStockComparison());
         btnClearFilters.setOnAction(actionEvent -> load(InventoryQuery.all().withStock(query.stockId())));
 
         checkInactive.selectedProperty().addListener((observable, oldValue, newValue) -> {
@@ -706,6 +708,37 @@ public class InventoryController {
         });
 
         Thread thread = new Thread(task, "inventory-print");
+        thread.setDaemon(true);
+        thread.start();
+    }
+
+    /**
+     * One row per (item, warehouse), across every warehouse at once - the question
+     * the sheet above cannot answer, since it is deliberately scoped to whichever
+     * warehouse {@link #comboStock} has selected.
+     */
+    private void printCrossStockComparison() {
+        btnPrintCrossStock.setDisable(true);
+        progress.setVisible(true);
+
+        Task<List<StockBalanceRow>> task = new Task<>() {
+            @Override
+            protected List<StockBalanceRow> call() throws DaoException {
+                return inventoryService.crossWarehouseBalances();
+            }
+        };
+        task.setOnSucceeded(event -> {
+            btnPrintCrossStock.setDisable(false);
+            progress.setVisible(false);
+            new Print_Reports().printItemsAcrossStocks(task.getValue());
+        });
+        task.setOnFailed(event -> {
+            btnPrintCrossStock.setDisable(false);
+            progress.setVisible(false);
+            AllAlerts.handleError(LanguageManager.getInstance().getString("item.inventory.error.print.title"), task.getException());
+        });
+
+        Thread thread = new Thread(task, "inventory-cross-stock-print");
         thread.setDaemon(true);
         thread.start();
     }

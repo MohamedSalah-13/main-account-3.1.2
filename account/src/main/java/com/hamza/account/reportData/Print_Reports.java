@@ -12,6 +12,8 @@ import com.hamza.account.features.barcodeprint.BarcodeNameOverflow;
 import com.hamza.account.features.checkbox.impl.setting.BarcodePrintDoubleLabel;
 import com.hamza.account.features.checkbox.impl.setting.BarcodePrintName;
 import com.hamza.account.features.inventory.InventoryRow;
+import com.hamza.account.features.inventory.StockBalanceRow;
+import com.hamza.account.features.stocktransfer.StockTransferReportRow;
 import com.hamza.account.model.domain.*;
 import com.hamza.account.otherSetting.BarcodeDetails;
 import com.hamza.account.service.ShiftReportService;
@@ -173,6 +175,23 @@ public class Print_Reports extends ReportCompany {
         HashMap<String, Object> map = getStringObjectHashMap(list, null);
         map.put("stock_name", stock_name);
         jasperData.printJasperPrint(JasperReportPaths.Report.INVENTORY_BY_TABLE, LanguageManager.getInstance().getString("items"), map, 1, "");
+    }
+
+    public void printStocksList(@NotNull List<Stock> list) {
+        HashMap<String, Object> map = getStringObjectHashMap(list, null);
+        jasperData.printJasperPrint(JasperReportPaths.Report.STOCKS_LIST, LanguageManager.getInstance().getString("stocks.title"), map, 1, printerNameNormal);
+    }
+
+    public void printStockTransferHistory(@NotNull List<StockTransferReportRow> list, @NotNull String dateFrom, @NotNull String dateTo) {
+        HashMap<String, Object> map = getStringObjectHashMap(list, null);
+        map.put("dateFrom", dateFrom);
+        map.put("dateTo", dateTo);
+        jasperData.printJasperPrint(JasperReportPaths.Report.STOCK_TRANSFER_HISTORY, LanguageManager.getInstance().getString("stocks.transfer.history.title"), map, 1, printerNameNormal);
+    }
+
+    public void printItemsAcrossStocks(@NotNull List<StockBalanceRow> list) {
+        HashMap<String, Object> map = getStringObjectHashMap(list, null);
+        jasperData.printJasperPrint(JasperReportPaths.Report.ITEMS_ACROSS_STOCKS, LanguageManager.getInstance().getString("item.inventory.report.cross.stock.title"), map, 1, printerNameNormal);
     }
 
     /**

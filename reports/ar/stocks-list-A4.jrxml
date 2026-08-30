@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports"
+              xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+              xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd"
+              name="stocks_list" columnDirection="RTL" pageWidth="595" pageHeight="842" columnWidth="555"
+              leftMargin="20" rightMargin="20" topMargin="20" bottomMargin="20" uuid="a11e2a1a-1e1a-4b1a-9a1a-1a1a1a1a1a01">
+    <style name="Style1" hTextAlign="Center" vTextAlign="Middle" fontSize="10">
+        <box>
+            <pen lineWidth="0.5" lineStyle="Solid" lineColor="#A6A6A6"/>
+        </box>
+    </style>
+    <style name="Table_CH" mode="Opaque" backcolor="#EDF5FC">
+        <box>
+            <pen lineWidth="0.5" lineColor="#000000"/>
+        </box>
+    </style>
+    <style name="Table_TD" mode="Opaque" backcolor="#FFFFFF">
+        <box>
+            <pen lineWidth="0.5" lineColor="#000000"/>
+        </box>
+    </style>
+    <subDataset name="Dataset1" uuid="a11e2a1a-1e1a-4b1a-9a1a-1a1a1a1a1a02">
+        <field name="id" class="java.lang.Integer"/>
+        <field name="name" class="java.lang.String"/>
+        <field name="address" class="java.lang.String"/>
+    </subDataset>
+    <parameter name="CollectionBeanParam" class="net.sf.jasperreports.engine.data.JRBeanCollectionDataSource"/>
+    <queryString>
+        <![CDATA[]]>
+    </queryString>
+    <title>
+        <band height="47">
+            <staticText>
+                <reportElement style="Style1" x="140" y="3" width="275" height="36" uuid="a11e2a1a-1e1a-4b1a-9a1a-1a1a1a1a1a03"/>
+                <textElement textAlignment="Center" verticalAlignment="Middle">
+                    <font size="18" isBold="true"/>
+                </textElement>
+                <text><![CDATA[قائمة المخازن]]></text>
+            </staticText>
+            <textField pattern="yyyy/M/dd h:mm a">
+                <reportElement style="Style1" x="435" y="10" width="120" height="23" uuid="a11e2a1a-1e1a-4b1a-9a1a-1a1a1a1a1a04"/>
+                <textFieldExpression><![CDATA[new java.util.Date()]]></textFieldExpression>
+            </textField>
+        </band>
+    </title>
+    <detail>
+        <band height="200" splitType="Stretch">
+            <componentElement>
+                <reportElement x="0" y="0" width="555" height="200" uuid="a11e2a1a-1e1a-4b1a-9a1a-1a1a1a1a1a05"/>
+                <jr:table xmlns:jr="http://jasperreports.sourceforge.net/jasperreports/components"
+                          xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports/components http://jasperreports.sourceforge.net/xsd/components.xsd">
+                    <datasetRun subDataset="Dataset1" uuid="a11e2a1a-1e1a-4b1a-9a1a-1a1a1a1a1a06">
+                        <dataSourceExpression><![CDATA[$P{CollectionBeanParam}]]></dataSourceExpression>
+                    </datasetRun>
+                    <jr:column width="65" uuid="a11e2a1a-1e1a-4b1a-9a1a-1a1a1a1a1a07">
+                        <jr:columnHeader style="Table_CH" height="25">
+                            <staticText>
+                                <reportElement style="Style1" x="0" y="0" width="65" height="25" uuid="a11e2a1a-1e1a-4b1a-9a1a-1a1a1a1a1a08"/>
+                                <text><![CDATA[الرقم]]></text>
+                            </staticText>
+                        </jr:columnHeader>
+                        <jr:detailCell style="Table_TD" height="22">
+                            <textField>
+                                <reportElement style="Style1" x="0" y="0" width="65" height="22" uuid="a11e2a1a-1e1a-4b1a-9a1a-1a1a1a1a1a09"/>
+                                <textFieldExpression><![CDATA[$F{id}]]></textFieldExpression>
+                            </textField>
+                        </jr:detailCell>
+                    </jr:column>
+                    <jr:column width="245" uuid="a11e2a1a-1e1a-4b1a-9a1a-1a1a1a1a1a10">
+                        <jr:columnHeader style="Table_CH" height="25">
+                            <staticText>
+                                <reportElement style="Style1" x="0" y="0" width="245" height="25" uuid="a11e2a1a-1e1a-4b1a-9a1a-1a1a1a1a1a11"/>
+                                <text><![CDATA[الاسم]]></text>
+                            </staticText>
+                        </jr:columnHeader>
+                        <jr:detailCell style="Table_TD" height="22">
+                            <textField isBlankWhenNull="true">
+                                <reportElement style="Style1" x="0" y="0" width="245" height="22" uuid="a11e2a1a-1e1a-4b1a-9a1a-1a1a1a1a1a12"/>
+                                <textFieldExpression><![CDATA[$F{name}]]></textFieldExpression>
+                            </textField>
+                        </jr:detailCell>
+                    </jr:column>
+                    <jr:column width="245" uuid="a11e2a1a-1e1a-4b1a-9a1a-1a1a1a1a1a13">
+                        <jr:columnHeader style="Table_CH" height="25">
+                            <staticText>
+                                <reportElement style="Style1" x="0" y="0" width="245" height="25" uuid="a11e2a1a-1e1a-4b1a-9a1a-1a1a1a1a1a14"/>
+                                <text><![CDATA[العنوان]]></text>
+                            </staticText>
+                        </jr:columnHeader>
+                        <jr:detailCell style="Table_TD" height="22">
+                            <textField isBlankWhenNull="true">
+                                <reportElement style="Style1" x="0" y="0" width="245" height="22" uuid="a11e2a1a-1e1a-4b1a-9a1a-1a1a1a1a1a15"/>
+                                <textFieldExpression><![CDATA[$F{address}]]></textFieldExpression>
+                            </textField>
+                        </jr:detailCell>
+                    </jr:column>
+                </jr:table>
+            </componentElement>
+        </band>
+    </detail>
+    <pageFooter>
+        <band height="25">
+            <textField>
+                <reportElement x="0" y="0" width="555" height="25" uuid="a11e2a1a-1e1a-4b1a-9a1a-1a1a1a1a1a16"/>
+                <textElement textAlignment="Center">
+                    <font isBold="true"/>
+                </textElement>
+                <textFieldExpression><![CDATA["صفحة " + $V{PAGE_NUMBER}]]></textFieldExpression>
+            </textField>
+        </band>
+    </pageFooter>
+</jasperReport>

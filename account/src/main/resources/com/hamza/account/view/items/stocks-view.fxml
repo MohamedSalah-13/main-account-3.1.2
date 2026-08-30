@@ -24,6 +24,7 @@
                                 <TextField fx:id="name" minWidth="200.0" promptText="%stocks.name" />
                                 <TextField fx:id="address" minWidth="220.0" promptText="%stocks.address" />
                                 <Region HBox.hgrow="ALWAYS" />
+                                <Button mnemonicParsing="false" onAction="#print" styleClass="neutral-button" text="%stocks.print.list" />
                                 <Button mnemonicParsing="false" onAction="#clear" styleClass="neutral-button" text="%stocks.new" />
                                 <Button mnemonicParsing="false" onAction="#remove" styleClass="danger-button" text="%stocks.delete" />
                                 <Button mnemonicParsing="false" onAction="#save" styleClass="primary-button" text="%common.save" />

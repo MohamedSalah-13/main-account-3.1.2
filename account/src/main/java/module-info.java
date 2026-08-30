@@ -151,6 +151,13 @@ module com.hamza.account {
     // code path that only runs when someone presses "طباعة".
     exports com.hamza.account.features.inventory;
     opens com.hamza.account.features.inventory;
+    // Same reason as com.hamza.account.features.inventory just above: the transfer
+    // history report reads StockTransferReportRow by bean getter, and a package
+    // reflection reaches into has to be exported (and opened, since Commons BeanUtils
+    // calls setAccessible) or JasperReports fails the moment "طباعة" is pressed - not
+    // at compile time, since javac never checks module boundaries against reflection.
+    exports com.hamza.account.features.stocktransfer;
+    opens com.hamza.account.features.stocktransfer;
     exports com.hamza.account.features.stockcount;
     opens com.hamza.account.features.stockcount;
     opens com.hamza.account.features.events;

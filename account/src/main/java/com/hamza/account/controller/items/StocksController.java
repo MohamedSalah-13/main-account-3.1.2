@@ -4,6 +4,7 @@ import com.hamza.account.controller.others.ServiceRegistry;
 import com.hamza.account.features.events.StocksChanged;
 import com.hamza.account.model.domain.Stock;
 import com.hamza.account.openFxml.FxmlPath;
+import com.hamza.account.reportData.Print_Reports;
 import com.hamza.account.service.StockService;
 import com.hamza.account.table.TableSetting;
 import com.hamza.controlsfx.alert.AllAlerts;
@@ -71,6 +72,15 @@ public class StocksController {
             clear();
             refresh();
             if (eventBus != null) eventBus.publish(new StocksChanged());
+        } catch (Exception e) {
+            AllAlerts.handleError(LanguageManager.getInstance().getString("stocks.title"), e);
+        }
+    }
+
+    @FXML
+    private void print() {
+        try {
+            new Print_Reports().printStocksList(table.getItems());
         } catch (Exception e) {
             AllAlerts.handleError(LanguageManager.getInstance().getString("stocks.title"), e);
         }

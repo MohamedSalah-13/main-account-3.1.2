@@ -13,6 +13,7 @@ import com.hamza.account.model.domain.ItemsModel;
 import com.hamza.account.model.domain.Stock;
 import com.hamza.account.model.domain.UnitsModel;
 import com.hamza.account.openFxml.FxmlPath;
+import com.hamza.account.reportData.Print_Reports;
 import com.hamza.account.service.ItemUnits;
 import com.hamza.account.service.ItemsService;
 import com.hamza.account.service.StockService;
@@ -81,7 +82,9 @@ public class StockTransferController {
     @FXML
     private TextField txtQuantity;
     @FXML
-    private Button btnAddLine, btnRemoveLine, btnPost, btnRefreshHistory, btnReverse;
+    private Button btnAddLine, btnRemoveLine, btnPost, btnRefreshHistory, btnReverse, btnPrintHistory;
+    @FXML
+    private DatePicker datePrintFrom, datePrintTo;
     @FXML
     private TableView<PendingLine> tableLines;
     @FXML
@@ -96,6 +99,8 @@ public class StockTransferController {
         buildActions();
         Utils.setTextFormatter(txtQuantity);
         datePicker.setValue(LocalDate.now());
+        datePrintFrom.setValue(LocalDate.now().minusDays(30));
+        datePrintTo.setValue(LocalDate.now());
         loadHistory();
     }
 
@@ -189,6 +194,7 @@ public class StockTransferController {
         btnPost.setOnAction(event -> post());
         btnRefreshHistory.setOnAction(event -> loadHistory());
         btnReverse.setOnAction(event -> reverseSelected());
+        btnPrintHistory.setOnAction(event -> printHistory());
     }
 
     // ------------------------------------------------------------------
@@ -278,6 +284,21 @@ public class StockTransferController {
     private void loadHistory() {
         try {
             history.setAll(transferService.recent(200));
+        } catch (Exception e) {
+            reportFailure(e);
+        }
+    }
+
+    private void printHistory() {
+        LocalDate from = datePrintFrom.getValue();
+        LocalDate to = datePrintTo.getValue();
+        if (from == null || to == null) {
+            AllAlerts.alertError(message("stocks.transfer.error.select.dates"));
+            return;
+        }
+        try {
+            new Print_Reports().printStockTransferHistory(
+                    transferService.reportRows(from, to), from.toString(), to.toString());
         } catch (Exception e) {
             reportFailure(e);
         }

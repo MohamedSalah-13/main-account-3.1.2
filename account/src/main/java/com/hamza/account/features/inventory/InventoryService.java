@@ -45,4 +45,9 @@ public record InventoryService(DaoFactory daoFactory) {
     public InventorySummary summary(InventoryQuery query) throws DaoException {
         return daoFactory.inventoryDao().summary(query);
     }
+
+    /** Every item's balance in every warehouse, for the cross-warehouse comparison report. */
+    public List<StockBalanceRow> crossWarehouseBalances() throws DaoException {
+        return daoFactory.inventoryDao().crossWarehouseBalances();
+    }
 }

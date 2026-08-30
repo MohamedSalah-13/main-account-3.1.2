@@ -265,6 +265,36 @@ public class InventoryDao extends AbstractDao<InventoryRow> {
         }
     }
 
+    /**
+     * One row per (item, warehouse) with a balance, for the cross-warehouse comparison
+     * report - the question the single-{@code stockId} query above cannot answer,
+     * because it is deliberately scoped to one warehouse at a time.
+     */
+    private static final String CROSS_WAREHOUSE_SQL = """
+            SELECT i.id, i.nameItem, i.barcode, s.stock_name,
+                   (q.first_balance + q.quantityPurchase + q.quantitySalesRe + q.toStock + q.adjustment
+                        - q.quantitySales - q.quantityPurchaseRe - q.fromStock) AS balance
+            FROM quantity_items_table q
+                     JOIN items  i ON i.id = q.item_id
+                     JOIN stocks s ON s.stock_id = q.stock_id
+            ORDER BY i.nameItem, s.stock_name
+            """;
+
+    public List<StockBalanceRow> crossWarehouseBalances() throws DaoException {
+        return withConnection(connection -> {
+            List<StockBalanceRow> rows = new ArrayList<>();
+            try (PreparedStatement statement = connection.prepareStatement(CROSS_WAREHOUSE_SQL);
+                 ResultSet resultSet = statement.executeQuery()) {
+                while (resultSet.next()) {
+                    rows.add(new StockBalanceRow(resultSet.getInt("id"), resultSet.getString("nameItem"),
+                            resultSet.getString("barcode"), resultSet.getString("stock_name"),
+                            resultSet.getDouble("balance")));
+                }
+            }
+            return rows;
+        });
+    }
+
     /** A {@code WHERE} clause and the values it needs, kept together. */
     private record Filter(String sql, List<Object> parameters) {
     }

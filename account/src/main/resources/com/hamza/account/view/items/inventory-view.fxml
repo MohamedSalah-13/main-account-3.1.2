@@ -50,6 +50,7 @@
 
                                 <Button fx:id="btnRefresh" mnemonicParsing="false" styleClass="neutral-button" text="%refresh" />
                                 <Button fx:id="btnExcel" mnemonicParsing="false" styleClass="excel-button" text="Excel" />
+                                <Button fx:id="btnPrintCrossStock" mnemonicParsing="false" styleClass="neutral-button" text="%item.inventory.btn.cross.stock" />
                                 <Button fx:id="btnPrint" mnemonicParsing="false" styleClass="primary-button" text="%print" />
                             </children>
                             <padding>

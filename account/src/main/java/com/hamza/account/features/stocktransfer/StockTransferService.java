@@ -66,6 +66,12 @@ public final class StockTransferService {
         return dao.recent(limit);
     }
 
+    /** Line-level detail over a date range, for the printed transfer log. */
+    public List<StockTransferReportRow> reportRows(java.time.LocalDate from, java.time.LocalDate to) throws DaoException {
+        AuthorizationGuard.require(AppPermissions.STOCK_TRANSFER_POST);
+        return dao.reportRows(from, to);
+    }
+
     private static String message(String key, Object... args) {
         return args.length == 0
                 ? LanguageManager.getInstance().getString(key)
