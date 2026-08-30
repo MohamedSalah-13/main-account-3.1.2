@@ -16,6 +16,7 @@ import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
 
 import java.io.File;
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -222,7 +223,12 @@ class ProfitDefinitionDatabaseAcceptanceTest {
                     "the cost column moved when it stopped being aggregated in the view itself");
 
             // Against the net, not the gross: the numerator is net of every discount.
-            assertEquals(money(SALE_PROFIT * 100 / SALE_NET), scalar(connection,
+            // 50/170 does not divide, and the view rounds it - so the expectation is
+            // rounded here rather than money() being taught to round everything, which
+            // is what catches an expected figure that was never exact to begin with.
+            BigDecimal percent = BigDecimal.valueOf(SALE_PROFIT * 100 / SALE_NET)
+                    .setScale(2, RoundingMode.HALF_UP);
+            assertEquals(percent, scalar(connection,
                             "SELECT profit_percent FROM total_sales_names_table WHERE invoice_number = ?",
                             fixture.sale()),
                     "profit_percent is not the profit over the net it was earned on");
@@ -365,8 +371,8 @@ class ProfitDefinitionDatabaseAcceptanceTest {
         int employee = firstId(connection, "employees", "id");
         int treasury = firstId(connection, "treasury", "id");
         int stock = firstId(connection, "stocks", "stock_id");
-        int item = firstId(connection, "items", "id");
         int unit = firstId(connection, "units", "unit_id");
+        int item = anItem(connection, unit);
 
         long sale = insertSale(connection, customer, employee, treasury, stock);
         insertSaleLine(connection, sale, item, unit, 10, 10, 6, LINE_ONE_REVENUE, LINE_ONE_COST);
@@ -381,11 +387,14 @@ class ProfitDefinitionDatabaseAcceptanceTest {
                 """, expenseType(connection), sqlDate(), EXPENSE, treasury);
 
         // Not an expense, and here to prove the report has stopped counting it as one.
+        // It needs a second till to go to - treasury_transfers_not_same_chk refuses a
+        // transfer to the treasury it left, which is the database saying the same thing
+        // this test does: moving money to yourself is not a movement.
         execute(connection, """
                 INSERT INTO treasury_transfers (treasury_from, treasury_to, amount, transfer_date,
                                                 notes, user_id)
                 VALUES (?, ?, ?, ?, 'profit-acceptance', 1)
-                """, treasury, treasury, 999, sqlDate());
+                """, treasury, anotherTreasury(connection), 999, sqlDate());
 
         return new Fixture(sale, refund);
     }
@@ -497,6 +506,39 @@ class ProfitDefinitionDatabaseAcceptanceTest {
                     + "views it reads group the whole database by date. Move DAY, or clear that "
                     + "year.");
         }
+    }
+
+    /** Somewhere for the transfer to go. Its name is unique; the transaction is rolled back. */
+    private int anotherTreasury(Connection connection) throws Exception {
+        execute(connection, """
+                INSERT INTO treasury (t_name, amount, treasury_type, is_active, sort_order,
+                                      fee_percent, opening_date, user_id)
+                VALUES (?, 0, 'CASH', 1, 0, 0, ?, 1)
+                """, "profit-acceptance-" + System.nanoTime(), sqlDate());
+        return scalar(connection, "SELECT LAST_INSERT_ID()").intValue();
+    }
+
+    /**
+     * An item to hang the lines on, created rather than borrowed.
+     * <p>
+     * Everything else the fixture needs - a customer, an employee, a treasury, a
+     * warehouse, a unit - is seeded by {@code V1__baseline.sql}, so a database that has
+     * been migrated has one. {@code items} is not seeded: a shop enters its own. Taking
+     * whichever item happens to be first would make the test require a populated
+     * database, which is the difference between running against a scratch schema and
+     * only ever running against a developer's working one.
+     */
+    private int anItem(Connection connection, int unit) throws Exception {
+        BigDecimal existing = scalar(connection, "SELECT COALESCE(MIN(id), 0) FROM items");
+        if (existing.intValue() > 0) {
+            return existing.intValue();
+        }
+        execute(connection, """
+                INSERT INTO items (barcode, nameItem, sub_num, buy_price, sel_price1, unit_id, user_id)
+                VALUES (?, ?, ?, 6, 10, ?, 1)
+                """, "PROFIT-ACCEPTANCE", "profit-acceptance", firstId(connection, "sub_group", "id"),
+                unit);
+        return scalar(connection, "SELECT LAST_INSERT_ID()").intValue();
     }
 
     private int expenseType(Connection connection) throws Exception {
