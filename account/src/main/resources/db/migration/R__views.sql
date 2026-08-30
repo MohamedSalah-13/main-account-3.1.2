@@ -246,7 +246,7 @@ FROM items_stock ist
 --
 -- The stored `sales.total_profit` column is left exactly as it is: it is history, and
 -- rewriting it would restate invoices nobody touched. Nothing reads it for an answer
--- any more, which is the part that matters. ProfitViewsStatePolicyTest holds that.
+-- any more, which is the part that matters. ProfitDefinitionTest holds that.
 --
 -- Not included, on purpose: per-item profit. `card_item_view_details` and
 -- `view_item_sales_rank` ask which *item* earns most, and an invoice-level discount
@@ -284,14 +284,7 @@ WITH TotalPaidAmounts AS (SELECT numberInv AS InvoiceNumber,
                                  SUM(paid) AS TotalPaid
                           FROM customers_accounts
                           WHERE numberInv > 0
-                          GROUP BY numberInv),
-     -- الربح من document_profit وحده. لا يُحسب هنا.
-     -- The profit comes from document_profit and is not recomputed here; the cost is
-     -- the same SUM the view itself uses, kept as a column the screen already shows.
-     sales_invoice_cost AS (SELECT invoice_number,
-                                   SUM(total_buy_price) AS total_buy_price
-                            FROM sales
-                            GROUP BY invoice_number)
+                          GROUP BY numberInv)
 SELECT ts.invoice_number,
        ts.sup_code,
        ts.invoice_type,
@@ -309,8 +302,13 @@ SELECT ts.invoice_number,
        e.column_name,
        t.t_name,
        ts.user_id,
+       -- الربح والتكلفة من document_profit وحده. لا يُحسبان هنا.
+       -- Both come from document_profit, which already sums the lines' cost to reach
+       -- the profit. Grouping `sales` a second time here to reproduce that same SUM
+       -- doubled the aggregation on the most-opened list in the application, for a
+       -- number the view was handing over anyway.
        ROUND(dp.profit, 2)                                          AS total_profit,
-       sic.total_buy_price,
+       dp.cost_of_sales                                             AS total_buy_price,
        -- على صافي الفاتورة بعد الخصم، وهو المقام الذي يعنيه البسط.
        -- Against the net the profit was earned on - the numerator is now net of every
        -- discount, so a gross denominator would understate the percentage instead.
@@ -321,7 +319,6 @@ FROM total_sales ts
          JOIN stocks    s  ON s.stock_id = ts.stock_id
          JOIN employees e  ON ts.delegate_id = e.id
          JOIN treasury  t  ON ts.treasury_id = t.id
-         LEFT JOIN sales_invoice_cost   sic ON ts.invoice_number = sic.invoice_number
          LEFT JOIN document_profit      dp  ON dp.document_kind = 'sales'
                                            AND dp.document_id = ts.invoice_number
          LEFT JOIN TotalPaidAmounts     tpa ON ts.invoice_number = tpa.InvoiceNumber;
@@ -386,10 +383,6 @@ FROM total_buy_re tbr
 
 DROP VIEW IF EXISTS total_sales_return_names_table;
 CREATE VIEW total_sales_return_names_table AS
-WITH sales_invoice_cost AS (SELECT invoice_number,
-                                   SUM(total_buy_price) AS total_buy_price
-                            FROM sales_re
-                            GROUP BY invoice_number)
 SELECT tsr.id,
        tsr.source_invoice_number,
        tsr.return_reason,
@@ -416,14 +409,16 @@ SELECT tsr.id,
        -- reading is "this return gave back 40 of profit", so the magnitude is shown -
        -- the negation is here, in the open, rather than in a second definition.
        ROUND(-dp.profit, 2)                                      AS total_profit,
-       sic.total_buy_price,
+       -- والتكلفة معه، بنفس النفي - لا تُجمع مرة ثانية.
+       -- The cost is negated with it, and for the same reason. It was a second
+       -- GROUP BY over sales_re for the SUM document_profit had already taken.
+       -dp.cost_of_sales                                         AS total_buy_price,
        ROUND((-dp.profit * 100) / NULLIF(tsr.total - tsr.discount, 0), 2) AS profit_percent
 FROM total_sales_re tsr
          JOIN custom    c ON c.id = tsr.sup_id
          JOIN stocks    s ON s.stock_id = tsr.stock_id
          JOIN treasury  t ON tsr.treasury_id = t.id
          JOIN employees e ON e.id = tsr.delegate_id
-         LEFT JOIN sales_invoice_cost sic ON tsr.id = sic.invoice_number
          LEFT JOIN document_profit    dp  ON dp.document_kind = 'sales_return'
                                          AND dp.document_id = tsr.id;
 

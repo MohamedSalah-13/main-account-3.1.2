@@ -85,6 +85,20 @@ class ProfitDefinitionTest {
     }
 
     @Test
+    @DisplayName("neither invoice list sums the lines' cost a second time")
+    void theInvoiceListsDoNotReaggregateTheCost() {
+        for (String view : List.of("total_sales_names_table", "total_sales_return_names_table")) {
+            assertFalse(viewBody(view).contains("SUM(total_buy_price)"),
+                    view + " is grouping the line table again to reach the cost of sales. "
+                            + "document_profit has already taken that SUM - it is how it "
+                            + "reaches the profit - and exposes it as cost_of_sales. A view "
+                            + "with a UNION cannot be merged, so it is materialised in full "
+                            + "on every read; a second aggregation over the same lines "
+                            + "doubles that, on the most-opened list in the application.");
+        }
+    }
+
+    @Test
     @DisplayName("the yearly report's profit is the documents' profit, not sales minus purchases")
     void theYearlyReportAgrees() {
         String yearly = viewBody("view_yearly_monthly_report");
