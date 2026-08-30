@@ -1,11 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
-<BorderPane xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.hamza.account.controller.reports.ProfitLossController">
- <top><HBox spacing="10" styleClass="app-card"><DatePicker fx:id="dateFrom"/><DatePicker fx:id="dateTo"/><Button text="%search" onAction="#load"/><Button text="%print" onAction="#print"/></HBox></top>
- <center><TableView fx:id="tableView"/></center>
- <bottom><GridPane hgap="12" styleClass="summary-bar"><Label text="%profitloss.net.sales"/><Label fx:id="netSales" GridPane.columnIndex="1"/><Label text="%profitloss.cost.sales" GridPane.columnIndex="2"/><Label fx:id="costOfSales" GridPane.columnIndex="3"/><Label text="%profitloss.gross.profit" GridPane.columnIndex="4"/><Label fx:id="grossProfit" GridPane.columnIndex="5"/><Label text="%profitloss.expenses" GridPane.rowIndex="1"/><Label fx:id="expenses" GridPane.columnIndex="1" GridPane.rowIndex="1"/><Label text="%profitloss.net.profit" GridPane.columnIndex="2" GridPane.rowIndex="1"/><Label fx:id="netProfit" GridPane.columnIndex="3" GridPane.rowIndex="1"/></GridPane></bottom>
-</BorderPane>
-
-
-
+<StackPane fx:id="stackPane" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.hamza.account.controller.reports.ProfitLossController">
+ <BorderPane>
+  <top><HBox fx:id="toolbar" spacing="10" styleClass="app-card"><DatePicker fx:id="dateFrom"/><DatePicker fx:id="dateTo"/><Button text="%search" onAction="#load"/><Button text="%print" onAction="#print"/></HBox></top>
+  <center><TableView fx:id="tableView"/></center>
+  <bottom><GridPane hgap="12" styleClass="summary-bar"><Label text="%profitloss.net.sales"/><Label fx:id="netSales" GridPane.columnIndex="1"/><Label text="%profitloss.cost.sales" GridPane.columnIndex="2"/><Label fx:id="costOfSales" GridPane.columnIndex="3"/><Label text="%profitloss.gross.profit" GridPane.columnIndex="4"/><Label fx:id="grossProfit" GridPane.columnIndex="5"/><Label text="%profitloss.expenses" GridPane.rowIndex="1"/><Label fx:id="expenses" GridPane.columnIndex="1" GridPane.rowIndex="1"/><Label text="%profitloss.net.profit" GridPane.columnIndex="2" GridPane.rowIndex="1"/><Label fx:id="netProfit" GridPane.columnIndex="3" GridPane.rowIndex="1"/></GridPane></bottom>
+ </BorderPane>
+</StackPane>

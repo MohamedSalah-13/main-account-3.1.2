@@ -213,6 +213,71 @@ FROM items_stock ist
 
 -- --------------------------------------total_sales_names_table------------------------------------
 
+-- --------------------------------------document_profit---------------------------------------------
+--
+-- ما ربحه مستند واحد. تعريف واحد، في مكان واحد.
+--
+-- The profit of one document, stated once.
+--
+-- There were four answers to "how much did we make", and they disagreed with each
+-- other by exactly the discounts:
+--
+--   * ProfitLossDao          (total - discount) - SUM(total_buy_price)   <- the right one
+--   * total_sales_names_table         SUM(sales.total_profit)            <- gross of every discount
+--   * total_sales_return_names_table  SUM(sales_re.total_profit)         <- the same, on returns
+--   * view_yearly_monthly_report      sales - purchases - expenses       <- a different concept
+--
+-- `sales.total_profit` is stored per line as `quantity * price - total_buy_price`
+-- (SalesInvoice.object_Totals), which is the profit *before* the line's own discount
+-- and before the invoice's. So the invoice list showed one profit and the profit and
+-- loss screen showed another for the same invoice, and neither said which it was.
+-- This is the same shape of defect as the three treasury balances: self-consistent
+-- readings of an undocumented convention, right up until a discount appears.
+--
+-- The rule: an invoice earns what it was actually paid for, less what its goods
+-- actually cost. `total - discount` is the net revenue that DocumentLedgerEffect.net()
+-- already defines, and `SUM(total_buy_price)` is the recorded cost of the lines.
+--
+-- Signed, and deliberately: a return reverses a sale, so its revenue, its cost and
+-- its profit are all negative here. That is what lets anything sum the two families
+-- together without knowing which is which - it is DocumentType.stockSign() applied to
+-- money. A screen that lists returns on their own and wants the magnitude negates it
+-- back, and says so where it does.
+--
+-- The stored `sales.total_profit` column is left exactly as it is: it is history, and
+-- rewriting it would restate invoices nobody touched. Nothing reads it for an answer
+-- any more, which is the part that matters. ProfitViewsStatePolicyTest holds that.
+--
+-- Not included, on purpose: per-item profit. `card_item_view_details` and
+-- `view_item_sales_rank` ask which *item* earns most, and an invoice-level discount
+-- has no owner among the lines - splitting it needs an allocation rule nobody has
+-- agreed. They stay gross of the invoice discount and are commented as the different
+-- question they are, the way mini_quantity_view is.
+
+DROP VIEW IF EXISTS document_profit;
+CREATE VIEW document_profit AS
+SELECT 'sales'                                              AS document_kind,
+       ts.invoice_number                                    AS document_id,
+       ts.invoice_date                                      AS document_date,
+       ts.total - ts.discount                               AS net_revenue,
+       COALESCE(c.cost_of_sales, 0)                         AS cost_of_sales,
+       (ts.total - ts.discount) - COALESCE(c.cost_of_sales, 0) AS profit
+FROM total_sales ts
+         LEFT JOIN (SELECT invoice_number, SUM(total_buy_price) AS cost_of_sales
+                    FROM sales
+                    GROUP BY invoice_number) c ON c.invoice_number = ts.invoice_number
+UNION ALL
+SELECT 'sales_return',
+       tsr.id,
+       tsr.invoice_date,
+       -(tsr.total - tsr.discount),
+       -COALESCE(c.cost_of_sales, 0),
+       -((tsr.total - tsr.discount) - COALESCE(c.cost_of_sales, 0))
+FROM total_sales_re tsr
+         LEFT JOIN (SELECT invoice_number, SUM(total_buy_price) AS cost_of_sales
+                    FROM sales_re
+                    GROUP BY invoice_number) c ON c.invoice_number = tsr.id;
+
 DROP VIEW IF EXISTS total_sales_names_table;
 CREATE VIEW total_sales_names_table AS
 WITH TotalPaidAmounts AS (SELECT numberInv AS InvoiceNumber,
@@ -220,11 +285,13 @@ WITH TotalPaidAmounts AS (SELECT numberInv AS InvoiceNumber,
                           FROM customers_accounts
                           WHERE numberInv > 0
                           GROUP BY numberInv),
-     sales_invoice_profit AS (SELECT invoice_number,
-                                     SUM(total_profit)    AS total_profit,
-                                     SUM(total_buy_price) AS total_buy_price
-                              FROM sales
-                              GROUP BY invoice_number)
+     -- الربح من document_profit وحده. لا يُحسب هنا.
+     -- The profit comes from document_profit and is not recomputed here; the cost is
+     -- the same SUM the view itself uses, kept as a column the screen already shows.
+     sales_invoice_cost AS (SELECT invoice_number,
+                                   SUM(total_buy_price) AS total_buy_price
+                            FROM sales
+                            GROUP BY invoice_number)
 SELECT ts.invoice_number,
        ts.sup_code,
        ts.invoice_type,
@@ -242,16 +309,21 @@ SELECT ts.invoice_number,
        e.column_name,
        t.t_name,
        ts.user_id,
-       ROUND(sip.total_profit, 2)                                   AS total_profit,
-       sip.total_buy_price,
-       ROUND((sip.total_profit * 100) / NULLIF(ts.total, 0), 2)     AS profit_percent,
+       ROUND(dp.profit, 2)                                          AS total_profit,
+       sic.total_buy_price,
+       -- على صافي الفاتورة بعد الخصم، وهو المقام الذي يعنيه البسط.
+       -- Against the net the profit was earned on - the numerator is now net of every
+       -- discount, so a gross denominator would understate the percentage instead.
+       ROUND((dp.profit * 100) / NULLIF(ts.total - ts.discount, 0), 2) AS profit_percent,
        COALESCE(tpa.TotalPaid, 0)                                   AS OtherPaid
 FROM total_sales ts
          JOIN custom    c  ON c.id = ts.sup_code
          JOIN stocks    s  ON s.stock_id = ts.stock_id
          JOIN employees e  ON ts.delegate_id = e.id
          JOIN treasury  t  ON ts.treasury_id = t.id
-         LEFT JOIN sales_invoice_profit sip ON ts.invoice_number = sip.invoice_number
+         LEFT JOIN sales_invoice_cost   sic ON ts.invoice_number = sic.invoice_number
+         LEFT JOIN document_profit      dp  ON dp.document_kind = 'sales'
+                                           AND dp.document_id = ts.invoice_number
          LEFT JOIN TotalPaidAmounts     tpa ON ts.invoice_number = tpa.InvoiceNumber;
 
 -- --------------------------------------total_purchase_names_table---------------------------------
@@ -314,11 +386,10 @@ FROM total_buy_re tbr
 
 DROP VIEW IF EXISTS total_sales_return_names_table;
 CREATE VIEW total_sales_return_names_table AS
-WITH sales_invoice_profit AS (SELECT invoice_number,
-                                     SUM(total_profit)    AS total_profit,
-                                     SUM(total_buy_price) AS total_buy_price
-                              FROM sales_re
-                              GROUP BY invoice_number)
+WITH sales_invoice_cost AS (SELECT invoice_number,
+                                   SUM(total_buy_price) AS total_buy_price
+                            FROM sales_re
+                            GROUP BY invoice_number)
 SELECT tsr.id,
        tsr.source_invoice_number,
        tsr.return_reason,
@@ -338,15 +409,23 @@ SELECT tsr.id,
        t.t_name,
        e.column_name,
        tsr.user_id,
-       ROUND(sip.total_profit, 2)                                AS total_profit,
-       sip.total_buy_price,
-       ROUND((sip.total_profit * 100) / NULLIF(tsr.total, 0), 2) AS profit_percent
+       -- بالسالب في document_profit لأنه عكس بيع؛ هذه الشاشة تسرد المرتجعات وحدها
+       -- فتعرض المقدار موجباً كما كانت دائماً.
+       -- document_profit carries a return negative, because it reverses a sale and has
+       -- to sum with one. This screen lists returns on their own, where the useful
+       -- reading is "this return gave back 40 of profit", so the magnitude is shown -
+       -- the negation is here, in the open, rather than in a second definition.
+       ROUND(-dp.profit, 2)                                      AS total_profit,
+       sic.total_buy_price,
+       ROUND((-dp.profit * 100) / NULLIF(tsr.total - tsr.discount, 0), 2) AS profit_percent
 FROM total_sales_re tsr
          JOIN custom    c ON c.id = tsr.sup_id
          JOIN stocks    s ON s.stock_id = tsr.stock_id
          JOIN treasury  t ON tsr.treasury_id = t.id
          JOIN employees e ON e.id = tsr.delegate_id
-         LEFT JOIN sales_invoice_profit sip ON tsr.id = sip.invoice_number;
+         LEFT JOIN sales_invoice_cost sic ON tsr.id = sic.invoice_number
+         LEFT JOIN document_profit    dp  ON dp.document_kind = 'sales_return'
+                                         AND dp.document_id = tsr.id;
 
 -- --------------------------------------account_customer_table-------------------------------------
 
@@ -940,16 +1019,18 @@ GROUP BY ast.account_code, c.name;
 
 DROP VIEW IF EXISTS earnings_reports;
 CREATE VIEW earnings_reports AS
-WITH computed_profit AS (SELECT ts.invoice_number,
-                                SUM(snt.total_profit) AS profit
-                         FROM sales_names_table snt
-                                  JOIN total_sales ts ON snt.invoice_number = ts.invoice_number
-                         GROUP BY ts.invoice_number),
-     computed_profit_sales_return AS (SELECT ts.id,
-                                             SUM(snt.total_profit) AS profit
-                                      FROM sales_return_names_table snt
-                                               JOIN total_sales_re ts ON snt.invoice_number = ts.id
-                                      GROUP BY ts.id),
+-- الربح من document_profit، لا من مجموع أسطر total_profit.
+-- Both profits come from document_profit. They used to be SUM(total_profit) over the
+-- line views, which is gross of every discount - a fourth answer, in a view no screen
+-- reads today (EarningsService is registered and nothing consumes it). It is corrected
+-- rather than left, because the day something does read it is not the day to discover
+-- it disagrees with the profit and loss screen.
+WITH computed_profit AS (SELECT document_id AS invoice_number, profit
+                         FROM document_profit
+                         WHERE document_kind = 'sales'),
+     computed_profit_sales_return AS (SELECT document_id AS id, -profit AS profit
+                                      FROM document_profit
+                                      WHERE document_kind = 'sales_return'),
      sales_query AS (SELECT ts.invoice_number AS id,
                             ts.invoice_date,
                             ts.total,
@@ -1235,6 +1316,26 @@ FROM suppliers c
 
 DROP VIEW IF EXISTS view_yearly_monthly_report;
 CREATE VIEW view_yearly_monthly_report AS
+--
+-- التقرير الشهري/السنوي. الربح هنا هو نفسه ربح شاشة الأرباح والخسائر.
+--
+-- Two things were wrong here and they compounded each other.
+--
+-- 1. The profit was `sales - purchases - expenses`, a purchases-based figure, while
+--    the profit and loss screen reported `net revenue - cost of goods sold -
+--    expenses`. For any business that does not buy and sell the same quantity in the
+--    same month - which is every business - the two disagree, and an owner reading
+--    both saw two profits for one month with nothing to say which was meant. The
+--    profit now comes from document_profit, so all three screens answer with one
+--    number. The purchases columns stay: they are worth reading, they just no longer
+--    define the profit.
+--
+-- 2. `expenses` was SUM(amount) over `treasury_transfers` - money moved from one till
+--    to another, which is not an expense at all and nets to zero across the business.
+--    Real expenses (`expenses_details`, which is where the wage runs and the e-wallet
+--    commissions land) were not in the report. It reads expenses_details now, on its
+--    business `date`, exactly as ProfitLossDao does.
+--
 SELECT
     t.action_year AS report_year,
     t.action_month AS report_month,
@@ -1253,45 +1354,51 @@ SELECT
 
     ROUND(SUM(t.expenses), 2) AS expenses,
 
-    -- Net Profit Calculation: (Sales - Sales_RE - Sales_Discount) - (Purchases - Purchases_RE - Purchases_Discount) - Expenses
-    ROUND(
-            (SUM(t.sales) - SUM(t.sales_return) - SUM(t.sales_discount)) -
-            (SUM(t.purchases) - SUM(t.purchases_return) - SUM(t.purchases_discount)) -
-            SUM(t.expenses),
-            2) AS estimated_net_profit
+    -- صافي الربح = ربح المستندات (بيع ومرتجعه) - المصروفات
+    -- The documents' profit, less the expenses. `profit` is already signed per
+    -- document by document_profit, so a return subtracts itself and no branch here
+    -- has to know which way it goes.
+    ROUND(SUM(t.profit) - SUM(t.expenses), 2) AS estimated_net_profit
 
 FROM (
          -- 1. Sales
          SELECT
-             YEAR(invoice_date) AS action_year, MONTH(invoice_date) AS action_month,
+             YEAR(ts.invoice_date) AS action_year, MONTH(ts.invoice_date) AS action_month,
              0 AS purchases, 0 AS purchases_discount,
-             total AS sales, discount AS sales_discount,
+             ts.total AS sales, ts.discount AS sales_discount,
              0 AS purchases_return, 0 AS purchases_return_discount,
              0 AS sales_return, 0 AS sales_return_discount,
-             0 AS expenses
-         FROM total_sales
+             0 AS expenses,
+             COALESCE(dp.profit, 0) AS profit
+         FROM total_sales ts
+                  LEFT JOIN document_profit dp ON dp.document_kind = 'sales'
+                                              AND dp.document_id = ts.invoice_number
 
          UNION ALL
 
-         -- 2. Sales Returns
+         -- 2. Sales Returns - dp.profit is already negative here.
          SELECT
-             YEAR(invoice_date), MONTH(invoice_date),
+             YEAR(tsr.invoice_date), MONTH(tsr.invoice_date),
              0, 0,
              0, 0,
              0, 0,
-             total, discount,
-             0
-         FROM total_sales_re
+             tsr.total, tsr.discount,
+             0,
+             COALESCE(dp.profit, 0)
+         FROM total_sales_re tsr
+                  LEFT JOIN document_profit dp ON dp.document_kind = 'sales_return'
+                                              AND dp.document_id = tsr.id
 
          UNION ALL
 
-         -- 3. Purchases
+         -- 3. Purchases - shown, but no longer part of the profit.
          SELECT
              YEAR(invoice_date), MONTH(invoice_date),
              total, discount,
              0, 0,
              0, 0,
              0, 0,
+             0,
              0
          FROM total_buy
 
@@ -1304,6 +1411,7 @@ FROM (
              0, 0,
              total, discount,
              0, 0,
+             0,
              0
          FROM total_buy_re
 
@@ -1311,13 +1419,14 @@ FROM (
 
          -- 5. Expenses
          SELECT
-             YEAR(date_insert), MONTH(date_insert),
+             YEAR(date), MONTH(date),
              0, 0,
              0, 0,
              0, 0,
              0, 0,
-             amount
-         FROM treasury_transfers
+             amount,
+             0
+         FROM expenses_details
      ) AS t
 
 GROUP BY
@@ -1338,6 +1447,13 @@ SELECT
     SUM(quantity) AS total_qty,
     ROUND(SUM(total_sales), 2) AS total_amount,
     -- حساب صافي الربح من الصنف (المبيعات - التكلفة)
+    -- سؤال مختلف عن document_profit عن قصد: ربح الصنف، قبل خصم الفاتورة.
+    -- Deliberately a different question from document_profit, not a disagreement with
+    -- it: this ranks *items*, and an invoice-level discount belongs to no single line
+    -- - splitting it across them needs an allocation rule nobody has agreed on. So
+    -- this is gross of the invoice discount and the totals here will not add up to the
+    -- profit and loss screen. Documented rather than "fixed", the way
+    -- mini_quantity_view's company-wide total is.
     ROUND(SUM(total_sales - (quantity * buy_price)), 2) AS total_profit
 FROM sales_names_table
 GROUP BY num, nameItem, YEAR(invoice_date), MONTH(invoice_date);
