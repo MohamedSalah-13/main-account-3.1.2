@@ -29,17 +29,14 @@ public final class JasperReportPaths {
     public static class Report {
         public static final String HEADER = BASE_PATH + "Header2.jasper";
         public static final String ITEMS = BASE_PATH + "items-A4.jrxml";
-        public static final String ITEMS_BY_DELEGATE = BASE_PATH + "report-by-delegate-items-A4.jrxml";
         public static final String MONTHLY = BASE_PATH + "report-by-month-A4.jrxml";
         public static final String DELEGATE = BASE_PATH + "report-by-delegate-A4.jrxml";
         public static final String NAMES_DATA = BASE_PATH + "name-customer-by-area-A4.jrxml";
         public static final String CARD_ITEMS = BASE_PATH + "items-card-A4.jrxml";
         public static final String EXPENSE_RECEIPT = BASE_PATH + "receipt-payment-A4.jrxml";
         public static final String INVENTORY_BY_TABLE = BASE_PATH + "items-inventory-A4.jrxml";
-        public static final String CONVERT_STOCK = BASE_PATH + "convert-stock-A4.jrxml";
         public static final String TREASURY_STATEMENT_A4_TEMPLATE = BASE_PATH + "treasury-statement-A4.jrxml";
         public static final String ROSARY_SUMMARY = BASE_PATH + "rosary-summary-80mm.jrxml";
-        public static final String REPORT_ITEMS_QUANTITY_80MM_TEMPLATE = BASE_PATH + "report-items-quantity-80mm.jrxml";
     }
 
     public static class Barcode {

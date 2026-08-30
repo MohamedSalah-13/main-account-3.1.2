@@ -100,16 +100,6 @@ public class Print_Reports extends ReportCompany {
         jasperData.printJasperPrint(JasperReportPaths.Report.ITEMS, wordItems, map, 1, printerNameNormal);
     }
 
-    public void printReportItemsByDelegate(@NotNull List<CardItems> list, @NotNull String reportName, @NotNull String from, @NotNull String to, @NotNull String delegate) {
-        HashMap<String, Object> company = getStringObjectHashMap(list, null);
-        company.put("dateFrom", from);
-        company.put("dateTo", to);
-        company.put("delegate", delegate);
-        company.put("reportName", reportName);
-        addHeaderToReports(company, reportName);
-        jasperData.printJasperPrint(JasperReportPaths.Report.ITEMS_BY_DELEGATE, LanguageManager.getInstance().getString("setting.report.items"), company, 1, "");
-    }
-
 
     public void printReportByMonth(@NotNull List<TableTotals> list, @NotNull String title) {
         HashMap<String, Object> map = getStringObjectHashMap(list, null);
@@ -265,13 +255,6 @@ public class Print_Reports extends ReportCompany {
                     afterDiscount, MoneyMath.decimal(delivery))));
         }
         jasperData.printJasperPrint(JasperReportPaths.Invoice.THERMAL, LanguageManager.getInstance().getString("print"), map, 1, printerNameThermal);
-    }
-
-    public void printReceiptItemsQuantity(List<ItemsModel> list, String dateFrom, String dateTo) {
-        HashMap<String, Object> map = getStringObjectHashMap(list, null);
-        map.put("dateFrom", dateFrom);
-        map.put("dateTo", dateTo);
-        jasperData.printJasperPrint(JasperReportPaths.Report.REPORT_ITEMS_QUANTITY_80MM_TEMPLATE, LanguageManager.getInstance().getString("print"), map, 1, printerNameThermal);
     }
 
     public void printReportDelegate(String name, Integer year, Integer firstMonth, Integer lastMonth) throws Exception {
