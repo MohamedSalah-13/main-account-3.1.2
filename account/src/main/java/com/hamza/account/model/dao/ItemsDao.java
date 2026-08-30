@@ -645,8 +645,52 @@ public class ItemsDao extends AbstractDao<ItemsModel> {
         return queryForObjects(QUERY_ITEMS_ALL_STOCKS.concat(" ORDER BY id DESC LIMIT ? OFFSET ?"), this::map, rowsPerPage, offset);
     }
 
+    /** The grouped read-only catalogue deliberately has no page boundary. */
+    public List<ItemsModel> getAllProducts() throws DaoException {
+        return queryForObjects(QUERY_ITEMS_ALL_STOCKS.concat(" ORDER BY items.id DESC"), this::map);
+    }
+
+    public List<ItemsModel> getProducts(int rowsPerPage, int offset, Integer mainGroupId, Integer subGroupId) throws DaoException {
+        if (subGroupId != null) {
+            return queryForObjects(QUERY_ITEMS_ALL_STOCKS.concat(" WHERE items.sub_num = ? ORDER BY items.id DESC LIMIT ? OFFSET ?"),
+                    this::map, subGroupId, rowsPerPage, offset);
+        }
+        if (mainGroupId != null) {
+            return queryForObjects(QUERY_ITEMS_ALL_STOCKS.concat(" WHERE items.sub_num IN (SELECT id FROM sub_group WHERE main_id = ?) ORDER BY items.id DESC LIMIT ? OFFSET ?"),
+                    this::map, mainGroupId, rowsPerPage, offset);
+        }
+        return getProducts(rowsPerPage, offset);
+    }
+
     public int getCountItems() {
         return queryForIntOrDefault("SELECT COUNT(*) FROM items", 0);
+    }
+
+    public int getCountItems(Integer mainGroupId, Integer subGroupId) throws DaoException {
+        if (subGroupId != null) return countItems("SELECT COUNT(*) FROM items WHERE sub_num = ?", subGroupId);
+        if (mainGroupId != null) return countItems("SELECT COUNT(*) FROM items WHERE sub_num IN (SELECT id FROM sub_group WHERE main_id = ?)", mainGroupId);
+        return getCountItems();
+    }
+
+    private int countItems(String sql, int groupId) throws DaoException {
+        return withConnection(connection -> {
+            try (PreparedStatement statement = connection.prepareStatement(sql)) {
+                statement.setInt(1, groupId);
+                try (ResultSet resultSet = statement.executeQuery()) {
+                    return resultSet.next() ? resultSet.getInt(1) : 0;
+                }
+            } catch (SQLException e) {
+                throw new DaoException(e.getMessage(), e);
+            }
+        });
+    }
+
+    /** Updates only the fields exposed by the items-table quick-edit mode. */
+    public int quickUpdate(ItemsModel item) throws DaoException {
+        String sql = SqlStatements.updateStatement(TABLE_NAME, ID, BARCODE, NAME_ITEM, BUY_PRICE,
+                selPrice1, selPrice2, selPrice3, USER_ID);
+        return executeUpdate(sql, item.getBarcode(), item.getNameItem(), item.getBuyPrice(),
+                item.getSelPrice1(), item.getSelPrice2(), item.getSelPrice3(), item.getUsers().getId(), item.getId());
     }
 
 }

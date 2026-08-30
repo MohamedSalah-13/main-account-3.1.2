@@ -64,6 +64,25 @@ public record ItemsService(DaoFactory daoFactory) {
     }
 
     /**
+     * Saves only the fields editable from the item list. The full item update replaces
+     * units and extra barcodes, neither of which belongs to an in-table edit.
+     */
+    public int quickUpdate(ItemsModel itemsModel) throws DaoException {
+        AuthorizationGuard.require(AppPermissions.ITEMS_UPDATE);
+        if (itemsModel.getNameItem() == null || itemsModel.getNameItem().isBlank()) {
+            throw new BusinessRuleException(LanguageManager.getInstance().getString("item.error.name.required"));
+        }
+        List<String> barcode = itemsModel.getBarcode() == null ? List.of() : List.of(itemsModel.getBarcode());
+        String duplicateBarcode = firstBarcodeTakenByAnotherItem(barcode, itemsModel.getId());
+        if (duplicateBarcode != null) {
+            throw new BusinessRuleException(LanguageManager.getInstance()
+                    .getString("item.error.barcode.used.by.other", duplicateBarcode));
+        }
+        requireSellAboveBuy(itemsModel);
+        return daoFactory.getItemsDao().quickUpdate(itemsModel);
+    }
+
+    /**
      * Whether this item's opening balance is closed to editing, which it is as soon as
      * anything has moved it - an invoice line, a return, a transfer or a stock count.
      * <p>
@@ -126,8 +145,20 @@ public record ItemsService(DaoFactory daoFactory) {
         return daoFactory.getItemsDao().getProducts(rowsPerPage, offset);
     }
 
+    public List<ItemsModel> getAllProducts() throws DaoException {
+        return daoFactory.getItemsDao().getAllProducts();
+    }
+
     public int getCountItems() {
         return daoFactory.getItemsDao().getCountItems();
+    }
+
+    public int getCountItems(Integer mainGroupId, Integer subGroupId) throws DaoException {
+        return daoFactory.getItemsDao().getCountItems(mainGroupId, subGroupId);
+    }
+
+    public List<ItemsModel> getProducts(int rowsPerPage, int offset, Integer mainGroupId, Integer subGroupId) throws DaoException {
+        return daoFactory.getItemsDao().getProducts(rowsPerPage, offset, mainGroupId, subGroupId);
     }
 
     public List<ItemsModel> getMainItemsListWithoutInactiveByMainGroupId(int mainGroupId) throws DaoException {

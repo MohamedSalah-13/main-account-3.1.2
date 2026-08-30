@@ -43,7 +43,10 @@ public enum AppIcon {
     SETTINGS(Feather.SETTINGS),
     EXIT(Feather.LOG_OUT),
     DUPLICATE(Feather.COPY),
-    SHOW(Feather.EYE);
+    SHOW(Feather.EYE),
+    MAIN_GROUP(Feather.FOLDER),
+    SUB_GROUP(Feather.FOLDER_PLUS),
+    ITEM(Feather.PACKAGE);
 
     private final Ikon glyph;
 

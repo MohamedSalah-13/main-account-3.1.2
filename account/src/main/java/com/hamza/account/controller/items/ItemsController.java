@@ -2,6 +2,7 @@ package com.hamza.account.controller.items;
 
 import com.hamza.account.authorization.AppPermissions;
 import com.hamza.account.authorization.AuthorizationGuard;
+import com.hamza.account.config.AppIcon;
 import com.hamza.account.config.Image_Setting;
 import com.hamza.account.config.NamesTables;
 import com.hamza.account.controller.main.DataPublisher;
@@ -13,10 +14,13 @@ import com.hamza.account.features.events.*;
 import com.hamza.account.features.rbac.CurrentUser;
 import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.model.domain.ItemsModel;
+import com.hamza.account.model.domain.MainGroups;
+import com.hamza.account.model.domain.SubGroups;
 import com.hamza.account.openFxml.FxmlPath;
 import com.hamza.account.service.ItemsService;
 import com.hamza.account.service.MainGroupService;
 import com.hamza.account.service.SelPriceItemService;
+import com.hamza.account.service.SupGroupService;
 import com.hamza.account.table.EditCell;
 import com.hamza.account.table.TableSetting;
 import com.hamza.account.view.AddItemApplication;
@@ -36,23 +40,26 @@ import javafx.application.Platform;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
+import javafx.concurrent.Task;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
 import javafx.scene.input.KeyCode;
 import javafx.scene.layout.StackPane;
+import javafx.scene.layout.VBox;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.kordamp.ikonli.javafx.FontIcon;
 
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-import static com.hamza.account.config.PropertiesName.getItemEditFromTable;
 import static com.hamza.controlsfx.util.ImageChoose.createIcon;
 
 @FxmlPath(pathFile = "items/items-view.fxml")
@@ -62,7 +69,7 @@ public class ItemsController extends LoadData {
     private final TableView<ItemsModel> tableView = new TableView<>();
     private final ItemsService itemsService = ServiceRegistry.get(ItemsService.class);
     private final MainGroupService mainGroupService = ServiceRegistry.get(MainGroupService.class);
-    //    private final SupGroupService supGroupService = ServiceRegistry.get(SupGroupService.class);
+    private final SupGroupService supGroupService = ServiceRegistry.get(SupGroupService.class);
     private final SelPriceItemService selPriceService = ServiceRegistry.get(SelPriceItemService.class);
 
     @FXML
@@ -76,10 +83,23 @@ public class ItemsController extends LoadData {
     @FXML
     private ToggleButton btnSelected;
     @FXML
+    private ToggleButton btnQuickEdit;
+    @FXML
+    private ToggleButton btnGroupTree;
+    @FXML
+    private ToggleButton btnGroupedView;
+    @FXML
     private MenuButton menuButtonOther, menuButtonPrint;
     @FXML
     private Pagination pagination;
+    @FXML
+    private TreeView<GroupNode> groupTree;
+    @FXML
+    private TreeTableView<GroupedItemRow> groupedTreeTable;
+    @FXML
+    private VBox groupTreePane;
     private PaginationTableSetting paginationTableSetting;
+    private boolean groupTreeListenerAdded;
 
     public ItemsController(DaoFactory daoFactory, DataPublisher dataPublisher) throws Exception {
         super(daoFactory, dataPublisher);
@@ -88,12 +108,14 @@ public class ItemsController extends LoadData {
     public void initialize() {
         otherSetting();
         table_data();
+        configureGroupedView();
         action();
         buttonGraphic();
         permissionButtons();
         paginationTableSetting = new PaginationTableSetting(tableView, itemsService
                 , txtSearch, pagination);
         paginationTableSetting.initializePagination();
+        loadGroupTree();
         // The tab can be opened again and again; the publishers live as long as the
         // main screen, so what this instance registered has to go with its tab.
         subscriptions.disposeWith(stackPane);
@@ -102,17 +124,15 @@ public class ItemsController extends LoadData {
     private void otherSetting() {
 
         menuItemConvertGroup.setText(LanguageManager.getInstance().getString("item.dialog.convert.title"));
-        // combo items
-        ObservableList<String> observableListMain = FXCollections.observableArrayList(getMainGroupsNames());
-
         if (eventBus != null) {
             subscriptions.add(eventBus.subscribe(GroupsChanged.class, event -> {
-                if (event.level() == GroupLevel.MAIN) observableListMain.setAll(getMainGroupsNames());
+                loadGroupTree();
+                if (btnGroupedView.isSelected()) loadGroupedView();
             }));
         }
         if (eventBus != null) {
-            subscriptions.add(eventBus.subscribe(ItemSaved.class, event -> btnRefresh.fire()));
-            subscriptions.add(eventBus.subscribe(ItemsChanged.class, event -> btnRefresh.fire()));
+            subscriptions.add(eventBus.subscribe(ItemSaved.class, event -> refreshCurrentView()));
+            subscriptions.add(eventBus.subscribe(ItemsChanged.class, event -> refreshCurrentView()));
         }
     }
 
@@ -121,6 +141,7 @@ public class ItemsController extends LoadData {
         permissionDisableService.applyPermissionBasedDisable(btnNew::setDisable, AppPermissions.ITEMS_CREATE);
         permissionDisableService.applyPermissionBasedDisable(btnUpdate::setDisable, AppPermissions.ITEMS_UPDATE);
         permissionDisableService.applyPermissionBasedDisable(btnDelete::setDisable, AppPermissions.ITEMS_DELETE);
+        permissionDisableService.applyPermissionBasedDisable(btnQuickEdit::setDisable, AppPermissions.ITEMS_UPDATE);
     }
 
     private List<String> getMainGroupsNames() {
@@ -129,6 +150,161 @@ public class ItemsController extends LoadData {
         } catch (DaoException e) {
             logErrors(e);
             return new ArrayList<>();
+        }
+    }
+
+    private void loadGroupTree() {
+        TreeItem<GroupNode> root = new TreeItem<>(new GroupNode(null, null,
+                LanguageManager.getInstance().getString("item.group.all"), GroupRowType.ROOT));
+        root.setGraphic(icon(AppIcon.MAIN_GROUP, "items-group-root-icon"));
+        root.setExpanded(true);
+        try {
+            Map<Integer, TreeItem<GroupNode>> mainNodes = new java.util.LinkedHashMap<>();
+            for (MainGroups mainGroup : mainGroupService.getMainGroupList()) {
+                TreeItem<GroupNode> mainNode = new TreeItem<>(new GroupNode(mainGroup.getId(), null,
+                        mainGroup.getName(), GroupRowType.MAIN));
+                mainNode.setGraphic(icon(AppIcon.MAIN_GROUP, "items-main-group-icon"));
+                mainNode.setExpanded(true);
+                root.getChildren().add(mainNode);
+                mainNodes.put(mainGroup.getId(), mainNode);
+            }
+            for (SubGroups subGroup : supGroupService.getSubGroupsList()) {
+                if (subGroup.getMainGroups() == null) continue;
+                TreeItem<GroupNode> parent = mainNodes.get(subGroup.getMainGroups().getId());
+                if (parent != null) {
+                    TreeItem<GroupNode> subNode = new TreeItem<>(new GroupNode(parent.getValue().mainGroupId(),
+                            subGroup.getId(), subGroup.getName(), GroupRowType.SUB));
+                    subNode.setGraphic(icon(AppIcon.SUB_GROUP, "items-sub-group-icon"));
+                    parent.getChildren().add(subNode);
+                }
+            }
+        } catch (Exception e) {
+            logErrors(e);
+        }
+        groupTree.setRoot(root);
+        groupTree.getSelectionModel().select(root);
+        if (!groupTreeListenerAdded) {
+            groupTreeListenerAdded = true;
+            groupTree.getSelectionModel().selectedItemProperty().addListener((observable, oldValue, selected) -> {
+                if (selected != null) {
+                    GroupNode node = selected.getValue();
+                    paginationTableSetting.setGroupFilter(node.mainGroupId(), node.subGroupId());
+                }
+            });
+        }
+    }
+
+    private FontIcon icon(AppIcon appIcon, String styleClass) {
+        FontIcon icon = appIcon.graphic(18);
+        icon.getStyleClass().add(styleClass);
+        return icon;
+    }
+
+    private enum GroupRowType { ROOT, MAIN, SUB, ITEM }
+
+    private record GroupNode(Integer mainGroupId, Integer subGroupId, String name, GroupRowType type) {
+        @Override
+        public String toString() {
+            return name;
+        }
+    }
+
+    private void configureGroupedView() {
+        groupedTreeTable.setShowRoot(false);
+        groupedTreeTable.setEditable(false);
+        groupedTreeTable.setRowFactory(view -> new TreeTableRow<>() {
+            @Override
+            protected void updateItem(GroupedItemRow item, boolean empty) {
+                super.updateItem(item, empty);
+                getStyleClass().removeAll("items-grouped-main-row", "items-grouped-sub-row", "items-grouped-item-row");
+                if (!empty && item != null) {
+                    getStyleClass().add(switch (item.type()) {
+                        case MAIN -> "items-grouped-main-row";
+                        case SUB -> "items-grouped-sub-row";
+                        default -> "items-grouped-item-row";
+                    });
+                }
+            }
+        });
+        groupedTreeTable.getColumns().setAll(
+                groupedColumn(NamesTables.CODE, GroupedItemRow::code),
+                groupedColumn(NamesTables.STRING, GroupedItemRow::barcode),
+                groupedColumn(NamesTables.NAME_ITEM, GroupedItemRow::name),
+                groupedColumn(NamesTables.BUY_PRICE, GroupedItemRow::buyPrice),
+                groupedColumn(NamesTables.SEL_PRICE, GroupedItemRow::sellPrice));
+    }
+
+    private TreeTableColumn<GroupedItemRow, String> groupedColumn(String title,
+                                                                     java.util.function.Function<GroupedItemRow, String> value) {
+        TreeTableColumn<GroupedItemRow, String> column = new TreeTableColumn<>(title);
+        column.setCellValueFactory(cell -> new SimpleStringProperty(value.apply(cell.getValue().getValue())));
+        return column;
+    }
+
+    private void loadGroupedView() {
+        Task<GroupedCatalog> task = new Task<>() {
+            @Override
+            protected GroupedCatalog call() throws Exception {
+                return new GroupedCatalog(mainGroupService.getMainGroupList(), supGroupService.getSubGroupsList(),
+                        itemsService.getAllProducts());
+            }
+        };
+        task.setOnSucceeded(event -> {
+            if (btnGroupedView.isSelected()) buildGroupedTree(task.getValue());
+        });
+        task.setOnFailed(event -> logErrors(new RuntimeException(task.getException())));
+        Thread thread = new Thread(task, "items-grouped-catalog");
+        thread.setDaemon(true);
+        thread.start();
+    }
+
+    private void buildGroupedTree(GroupedCatalog catalog) {
+        TreeItem<GroupedItemRow> root = new TreeItem<>(GroupedItemRow.group("", GroupRowType.ROOT));
+        Map<Integer, TreeItem<GroupedItemRow>> mainNodes = new LinkedHashMap<>();
+        Map<Integer, TreeItem<GroupedItemRow>> subNodes = new LinkedHashMap<>();
+        for (MainGroups main : catalog.mainGroups()) {
+            TreeItem<GroupedItemRow> node = new TreeItem<>(GroupedItemRow.group(main.getName(), GroupRowType.MAIN));
+            node.setGraphic(icon(AppIcon.MAIN_GROUP, "items-main-group-icon"));
+            node.setExpanded(true);
+            root.getChildren().add(node);
+            mainNodes.put(main.getId(), node);
+        }
+        for (SubGroups sub : catalog.subGroups()) {
+            if (sub.getMainGroups() == null) continue;
+            TreeItem<GroupedItemRow> mainNode = mainNodes.get(sub.getMainGroups().getId());
+            if (mainNode == null) continue;
+            TreeItem<GroupedItemRow> node = new TreeItem<>(GroupedItemRow.group(sub.getName(), GroupRowType.SUB));
+            node.setGraphic(icon(AppIcon.SUB_GROUP, "items-sub-group-icon"));
+            node.setExpanded(true);
+            mainNode.getChildren().add(node);
+            subNodes.put(sub.getId(), node);
+        }
+        for (ItemsModel item : catalog.items()) {
+            TreeItem<GroupedItemRow> parent = item.getSubGroups() == null ? null : subNodes.get(item.getSubGroups().getId());
+            if (parent == null && item.getSubGroups() != null && item.getSubGroups().getMainGroups() != null) {
+                parent = mainNodes.get(item.getSubGroups().getMainGroups().getId());
+            }
+            if (parent != null) {
+                TreeItem<GroupedItemRow> itemNode = new TreeItem<>(GroupedItemRow.item(item));
+                itemNode.setGraphic(icon(AppIcon.ITEM, "items-leaf-icon"));
+                parent.getChildren().add(itemNode);
+            }
+        }
+        groupedTreeTable.setRoot(root);
+    }
+
+    private record GroupedCatalog(List<MainGroups> mainGroups, List<SubGroups> subGroups, List<ItemsModel> items) {
+    }
+
+    private record GroupedItemRow(String code, String barcode, String name, String buyPrice, String sellPrice,
+                                  GroupRowType type) {
+        static GroupedItemRow group(String name, GroupRowType type) {
+            return new GroupedItemRow("", "", name, "", "", type);
+        }
+
+        static GroupedItemRow item(ItemsModel item) {
+            return new GroupedItemRow(String.valueOf(item.getId()), item.getBarcode(), item.getNameItem(),
+                    String.valueOf(item.getBuyPrice()), String.valueOf(item.getSelPrice1()), GroupRowType.ITEM);
         }
     }
 
@@ -155,7 +331,8 @@ public class ItemsController extends LoadData {
         tableView.getColumns().add(3, addColumnUnitsType());
 
         // edite column
-        if (getItemEditFromTable()) setUpEditableTableColumns();
+        setUpEditableTableColumns();
+        tableView.setEditable(false);
 
         ColumnSetting.addSelectedColumn(tableView);
         TableSetting.tableMenuSetting(getClass(), tableView);
@@ -187,8 +364,6 @@ public class ItemsController extends LoadData {
         enableEditingDouble(5, "sel_price");
         enableEditingDouble(6, "sel_price2");
         enableEditingDouble(7, "sel_price3");
-        enableEditingDouble(8, "mini");
-        enableEditingDouble(9, "first");
     }
 
     private TableColumn<ItemsModel, String> addColumnUnitsType() {
@@ -247,6 +422,10 @@ public class ItemsController extends LoadData {
         });
         btnDelete.setOnAction(actionEvent -> delete());
         btnRefresh.setOnAction(actionEvent -> paginationTableSetting.initializePagination());
+        btnQuickEdit.setOnAction(actionEvent -> tableView.setEditable(btnQuickEdit.isSelected()
+                && AuthorizationGuard.isGranted(AppPermissions.ITEMS_UPDATE)));
+        btnGroupTree.setOnAction(actionEvent -> setGroupTreeVisible(btnGroupTree.isSelected()));
+        btnGroupedView.setOnAction(actionEvent -> setGroupedView(btnGroupedView.isSelected()));
 
         tableView.setOnKeyPressed(keyEvent -> {
             if (keyEvent.getCode() == KeyCode.DELETE) {
@@ -259,6 +438,26 @@ public class ItemsController extends LoadData {
             }
         });
 
+    }
+
+    private void setGroupTreeVisible(boolean visible) {
+        groupTreePane.setVisible(visible);
+        groupTreePane.setManaged(visible);
+    }
+
+    private void setGroupedView(boolean grouped) {
+        pagination.setVisible(!grouped);
+        pagination.setManaged(!grouped);
+        groupedTreeTable.setVisible(grouped);
+        groupedTreeTable.setManaged(grouped);
+        btnQuickEdit.setDisable(grouped || !AuthorizationGuard.isGranted(AppPermissions.ITEMS_UPDATE));
+        tableView.setEditable(!grouped && btnQuickEdit.isSelected());
+        if (grouped) loadGroupedView();
+    }
+
+    private void refreshCurrentView() {
+        if (btnGroupedView.isSelected()) loadGroupedView();
+        else btnRefresh.fire();
     }
 
 
@@ -509,7 +708,16 @@ public class ItemsController extends LoadData {
                     item.setMini_quantity(newValue);
                 }
 
-                updateItemAndRefresh(item, t.getTableView());
+                try {
+                    updateItemAndRefresh(item, t.getTableView());
+                } catch (DaoException e) {
+                    if ("buy_price".equals(fieldType)) item.setBuyPrice(t.getOldValue());
+                    else if ("sel_price".equals(fieldType)) item.setSelPrice1(t.getOldValue());
+                    else if ("sel_price2".equals(fieldType)) item.setSelPrice2(t.getOldValue());
+                    else if ("sel_price3".equals(fieldType)) item.setSelPrice3(t.getOldValue());
+                    t.getTableView().refresh();
+                    throw e;
+                }
             }
         };
 
@@ -531,8 +739,14 @@ public class ItemsController extends LoadData {
                     } else if ("barcode".equals(type)) {
                         item.setBarcode(newValue);
                     }
-
-                    updateItemAndRefresh(item, t.getTableView());
+                    try {
+                        updateItemAndRefresh(item, t.getTableView());
+                    } catch (DaoException e) {
+                        if ("name".equals(type)) item.setNameItem(t.getOldValue());
+                        else if ("barcode".equals(type)) item.setBarcode(t.getOldValue());
+                        t.getTableView().refresh();
+                        throw e;
+                    }
 
                 }
             } catch (DaoException e) {
@@ -545,10 +759,10 @@ public class ItemsController extends LoadData {
     }
 
     private void updateItemAndRefresh(ItemsModel item, TableView<ItemsModel> tableView) throws DaoException {
-        item.setItemsUnitsModelList(new ArrayList<>());
         item.setUsers(CurrentUser.get());
-        var i = itemsService.commitItemUpdate(item);
+        var i = itemsService.quickUpdate(item);
         if (i >= 0) {
+            if (eventBus != null) eventBus.publish(new ItemSaved(item));
             tableView.refresh();
             tableView.requestFocus();
             tableView.getSelectionModel().selectNext();

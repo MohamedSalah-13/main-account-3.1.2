@@ -518,6 +518,51 @@
     -fx-padding: 0.455em 0.545em;
 }
 
+/* ---------- Item-group navigation ---------- */
+
+.items-group-root-icon {
+    -fx-icon-color: -app-primary;
+}
+
+.items-main-group-icon {
+    -fx-icon-color: -app-danger;
+}
+
+.items-sub-group-icon {
+    -fx-icon-color: -app-warning;
+}
+
+.items-leaf-icon {
+    -fx-icon-color: -app-success;
+}
+
+.tree-view .tree-cell {
+    -fx-padding: 0.455em 0.364em;
+    -fx-font-size: 1.091em;
+}
+
+.tree-table-row-cell.items-grouped-main-row {
+    -fx-background-color: -app-danger-soft;
+}
+
+.tree-table-row-cell.items-grouped-main-row .tree-table-cell {
+    -fx-text-fill: -app-danger;
+    -fx-font-weight: bold;
+}
+
+.tree-table-row-cell.items-grouped-sub-row {
+    -fx-background-color: -app-warning-soft;
+}
+
+.tree-table-row-cell.items-grouped-sub-row .tree-table-cell {
+    -fx-text-fill: -app-warning;
+    -fx-font-weight: bold;
+}
+
+.tree-table-row-cell.items-grouped-item-row .tree-table-cell {
+    -fx-text-fill: -app-text-strong;
+}
+
 /* ---------- Stock states on an inventory row ----------
    Set by InventoryController's row factory from StockLevel, which is the same
    function the sales screens use to decide an item is low - so a row shaded here

@@ -9,6 +9,8 @@
 <?import javafx.scene.control.Separator?>
 <?import javafx.scene.control.TextField?>
 <?import javafx.scene.control.ToggleButton?>
+<?import javafx.scene.control.TreeView?>
+<?import javafx.scene.control.TreeTableView?>
 <?import javafx.scene.layout.BorderPane?>
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.StackPane?>
@@ -29,6 +31,9 @@
                                         <Button fx:id="btnDelete" mnemonicParsing="false" styleClass="danger-button" text="%item.btn.delete" />
                                         <Separator orientation="VERTICAL" />
                                         <Button fx:id="btnRefresh" mnemonicParsing="false" styleClass="neutral-button" text="%item.btn.refresh" />
+                                        <ToggleButton fx:id="btnGroupTree" mnemonicParsing="false" selected="true" styleClass="neutral-button" text="%item.btn.group.tree" />
+                                        <ToggleButton fx:id="btnGroupedView" mnemonicParsing="false" styleClass="neutral-button" text="%item.btn.grouped.view" />
+                                        <ToggleButton fx:id="btnQuickEdit" mnemonicParsing="false" styleClass="warning-button" text="%item.btn.quick.edit" />
                                         <ToggleButton fx:id="btnSelected" mnemonicParsing="false" styleClass="items-toggle" text="%item.btn.select" />
 
                                         <MenuButton fx:id="menuButtonPrint" mnemonicParsing="false" styleClass="modern-menu-button" text="%item.menu.print">
@@ -62,9 +67,18 @@
                             <children>
 
                                 <Pagination fx:id="pagination" styleClass="modern-pagination" VBox.vgrow="ALWAYS" />
+                                <TreeTableView fx:id="groupedTreeTable" managed="false" styleClass="modern-table-view" visible="false" VBox.vgrow="ALWAYS" />
                             </children>
                         </VBox>
                     </center>
+                    <left>
+                        <VBox fx:id="groupTreePane" minWidth="210.0" prefWidth="240.0" spacing="8.0" styleClass="app-card">
+                            <children>
+                                <Label styleClass="form-label" text="%item.group.tree.title" />
+                                <TreeView fx:id="groupTree" VBox.vgrow="ALWAYS" />
+                            </children>
+                        </VBox>
+                    </left>
                 </BorderPane>
             </content>
         </ScrollPane>
