@@ -407,10 +407,17 @@ third view is dropped; do not reintroduce a fourth.
 **What writes:** `TreasuryTransferService` and `TreasuryCashService`, each refusing in a fixed order -
 permission, then the period lock, then the arithmetic, then the balance. The balance is derived, so
 checking it and then inserting is a read-then-write on a number nothing holds still: the source treasury
-is locked with `SELECT … FOR UPDATE` first, the way `StockTransferDao.lockSource` does. Both tables
-(`treasury_transfers`, `treasury_deposit_expenses`) had views, delete rules and period-lock rules
-declared for years with no writer at all - which is why the shift report has always shown "total
-deposits" over rows nobody could create.
+is locked with `SELECT … FOR UPDATE` first, the way `StockTransferDao.lockSource` does.
+
+Both are **reintroductions, not new features**, and the history is the point. Screens for both existed
+until `8376368` (2026-08-10, shipped in v4.3.0) removed them - controller, DAO, service, domain and
+FXML - and kept the tables deliberately: "a migration that dropped them because no Java reads them any
+more would take the rows of every install that already has them". What went was a transfer service
+whose whole body was `getById` and `delete`: no permission, no period lock, no balance check, and the
+insert done from the controller. So between 4.3.0 and this work the views, the delete rules and the
+period-lock rules stood over tables nothing could write - which is why the shift report was showing
+"total deposits" over rows no screen could create any more. The rules are what the second attempt adds;
+the data is what the first one was careful to keep.
 
 **The owner's money is not the business's.** Capital paid in is not income and drawings are not an
 expense: counted as either, the treasury still balances and the profit - the number the owner reads - is
