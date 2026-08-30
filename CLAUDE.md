@@ -36,13 +36,15 @@ genuinely covered:
   `ItemReferenceRegistryTest`. These fail the build on a wrong column, so they are the
   safety net for anything touching SQL. The last two read the foreign keys straight out of the
   migration files, so the schema itself is what they check against.
-- **Architecture rules** — `AuthorizationArchitectureTest`, `ErrorHandlingArchitectureTest`,
-  `DefaultRoleAcceptanceTest`, `DocumentPackageArchitectureTest`, `DefaultStockUsageArchitectureTest`,
-  `LocalizationArchitectureTest`. They fail when a new service skips the permission guard, a new
-  exception escapes the error boundary, `account.document` starts importing one of the two packages
-  that import it, or a new stock-aware operation reaches for `DefaultStock.ID` instead of taking a
-  `stockId`. The last two carry an explicit allow-list of files, reviewed once at the point the rule
-  was written: adding a file to it is a decision made in the same review that adds the reference.
+- **Architecture rules** — nine `*ArchitectureTest` classes now, plus `DefaultRoleAcceptanceTest`:
+  `AuthorizationArchitectureTest`, `ErrorHandlingArchitectureTest`, `DocumentPackageArchitectureTest`,
+  `DefaultStockUsageArchitectureTest`, `LocalizationArchitectureTest`, `FxmlArchitectureTest`,
+  `ModelPurityArchitectureTest`, `TableColumnArchitectureTest`, `StocksChangedArchitectureTest`. They
+  fail when a new service skips the permission guard, a new exception escapes the error boundary,
+  `account.document` starts importing one of the two packages that import it, or a new stock-aware
+  operation reaches for `DefaultStock.ID` instead of taking a `stockId`. Two of them carry an explicit
+  allow-list of files, reviewed once at the point the rule was written: adding a file to it is a
+  decision made in the same review that adds the reference.
 - **The invoice logic** — the `features/invoice` package has a test per class, all without a JavaFX
   toolkit.
 
