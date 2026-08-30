@@ -17,6 +17,8 @@ package com.hamza.account.config;
  * {@code DefaultStockUsageArchitectureTest} carries the list of files allowed to
  * reference it at all. A new file that does fails the build; adding it to the list is a
  * decision made in the same review that adds the reference.
+ *
+ * @see com.hamza.account.treasury.DefaultTreasury the same idea on the money side
  */
 public final class DefaultStock {
 

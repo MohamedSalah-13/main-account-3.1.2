@@ -24,6 +24,19 @@ public interface NameAndAccountInterface<T1 extends BaseNames, T2 extends BaseAc
 
     int saveAccount(T2 account) throws Exception;
 
+    /**
+     * Saves a payment together with the e-wallet fee it cost, in one transaction.
+     * <p>
+     * The two rows belong to one event: the customer settled the whole amount and the
+     * wallet kept a slice of it. Committing one without the other leaves either an
+     * unexplained expense or a treasury holding money the wallet actually took - see
+     * {@link com.hamza.account.features.treasury.WalletFee}.
+     * <p>
+     * A zero fee is the ordinary case and writes nothing extra, which is why
+     * {@link #saveAccount(BaseAccount)} remains and simply means "no fee".
+     */
+    int saveAccount(T2 account, java.math.BigDecimal walletFee) throws Exception;
+
     int deleteAccount(int id) throws Exception;
 
     List<T2> accountList() throws Exception;

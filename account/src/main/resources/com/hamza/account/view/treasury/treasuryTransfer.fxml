@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<BorderPane xmlns:fx="http://javafx.com/fxml"
+            fx:id="root"
+            fx:controller="com.hamza.account.controller.convert_treasury.TreasuryTransferController"
+            styleClass="app-root">
+
+    <top>
+        <VBox spacing="18" styleClass="page-container">
+            <padding>
+                <Insets top="24" right="28" bottom="18" left="28"/>
+            </padding>
+
+            <VBox spacing="6">
+                <Label text="%treasury.transfer.title" styleClass="page-title"/>
+                <Label text="%treasury.transfer.subtitle" styleClass="page-subtitle"/>
+            </VBox>
+
+            <VBox spacing="16" styleClass="app-card">
+                <GridPane hgap="18" vgap="14">
+                    <columnConstraints>
+                        <ColumnConstraints minWidth="130" prefWidth="140"/>
+                        <ColumnConstraints minWidth="260" hgrow="ALWAYS"/>
+                        <ColumnConstraints minWidth="130" prefWidth="140"/>
+                        <ColumnConstraints minWidth="260" hgrow="ALWAYS"/>
+                    </columnConstraints>
+
+                    <Label text="%treasury.transfer.field.from" styleClass="form-label"
+                           GridPane.rowIndex="0" GridPane.columnIndex="0"/>
+                    <ComboBox fx:id="fromCombo" maxWidth="Infinity" styleClass="modern-input"
+                              GridPane.rowIndex="0" GridPane.columnIndex="1"/>
+
+                    <Label text="%treasury.transfer.field.to" styleClass="form-label"
+                           GridPane.rowIndex="0" GridPane.columnIndex="2"/>
+                    <ComboBox fx:id="toCombo" maxWidth="Infinity" styleClass="modern-input"
+                              GridPane.rowIndex="0" GridPane.columnIndex="3"/>
+
+                    <Label text="%treasury.transfer.field.amount" styleClass="form-label"
+                           GridPane.rowIndex="1" GridPane.columnIndex="0"/>
+                    <TextField fx:id="amountField" styleClass="modern-input"
+                               GridPane.rowIndex="1" GridPane.columnIndex="1"/>
+
+                    <Label text="%treasury.transfer.field.date" styleClass="form-label"
+                           GridPane.rowIndex="1" GridPane.columnIndex="2"/>
+                    <DatePicker fx:id="datePicker" maxWidth="Infinity" styleClass="modern-input"
+                                GridPane.rowIndex="1" GridPane.columnIndex="3"/>
+
+                    <Label text="%treasury.transfer.field.notes" styleClass="form-label"
+                           GridPane.rowIndex="2" GridPane.columnIndex="0"/>
+                    <TextField fx:id="notesField" styleClass="modern-input"
+                               GridPane.rowIndex="2" GridPane.columnIndex="1"
+                               GridPane.columnSpan="3"/>
+                </GridPane>
+
+                <Label fx:id="availableLabel" styleClass="page-subtitle"/>
+
+                <HBox spacing="12" alignment="CENTER_LEFT">
+                    <Button text="%treasury.transfer.btn.save" onAction="#saveTransfer"
+                            styleClass="primary-button"/>
+                    <Button text="%common.delete" onAction="#deleteTransfer"
+                            styleClass="warning-button"/>
+                    <Button text="%common.refresh" onAction="#reload"
+                            styleClass="neutral-button"/>
+                </HBox>
+            </VBox>
+        </VBox>
+    </top>
+
+    <center>
+        <VBox spacing="12" styleClass="table-section">
+            <padding>
+                <Insets top="8" right="28" bottom="28" left="28"/>
+            </padding>
+
+            <HBox alignment="CENTER_RIGHT">
+                <Label text="%treasury.transfer.section.recent" styleClass="section-title"/>
+            </HBox>
+
+            <!-- Columns are built in the controller with Columns.*, never with a field-name
+                 string: rule 1 of section 5 in docs/new-code-rules.md. -->
+            <TableView fx:id="transfersTable" styleClass="app-table" VBox.vgrow="ALWAYS"/>
+        </VBox>
+    </center>
+
+</BorderPane>

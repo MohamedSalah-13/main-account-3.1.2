@@ -7,6 +7,7 @@ import com.hamza.account.controller.main.DataPublisher;
 import com.hamza.account.features.notification.StockLevel;
 import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.model.domain.*;
+import com.hamza.account.treasury.TreasuryBalanceSummary;
 import com.hamza.account.view.OpenTreasuryDetailsApplication;
 import com.hamza.account.view.SceneAll;
 import com.hamza.account.view.StageManager;
@@ -484,7 +485,7 @@ public class ModernDashboardApp {
             List<DailySalesPoint> trend,
             List<ItemsMiniQuantity> lowStockItems,
             List<CustomerReceivable> receivables,
-            List<TreasuryBalance> treasuryBalances,
+            List<TreasuryBalanceSummary> treasuryBalances,
             List<TopSellingItem> topSellingItems
     ) {
     }
@@ -503,7 +504,7 @@ public class ModernDashboardApp {
 
         List<CustomerReceivable> receivables = daoFactory.customerReceivableDao().getReceivablesReport();
 
-        List<TreasuryBalance> treasuryBalances = daoFactory.treasuryBalanceDao().getSumTreasuryBalance();
+        List<TreasuryBalanceSummary> treasuryBalances = daoFactory.treasuryCurrentBalanceDao().loadAll();
 
         List<TopSellingItem> topSellingItems = daoFactory.topSellingItemDao().getTopSellingItems(range.from(), range.to());
 
@@ -652,17 +653,18 @@ public class ModernDashboardApp {
         }
     }
 
-    private void applyTreasury(List<TreasuryBalance> balances) {
+    private void applyTreasury(List<TreasuryBalanceSummary> balances) {
         treasuryList.getChildren().clear();
         if (balances.isEmpty()) {
             treasuryList.getChildren().add(emptyRow(LanguageManager.getInstance().getString("report.dashboard.no.treasuries")));
             return;
         }
-        double max = balances.stream().mapToDouble(TreasuryBalance::getBalance).map(Math::abs).max().orElse(0);
-        for (TreasuryBalance balance : balances) {
-            double ratio = max > 0 ? Math.abs(balance.getBalance()) / max : 0;
-            String accent = balance.getBalance() < 0 ? "accent-danger" : "accent-success";
-            treasuryList.getChildren().add(listRow(balance.getName(), formatMoney(balance.getBalance()), ratio, accent));
+        double max = balances.stream().mapToDouble(b -> b.balance().abs().doubleValue()).max().orElse(0);
+        for (TreasuryBalanceSummary balance : balances) {
+            double value = balance.balance().doubleValue();
+            double ratio = max > 0 ? Math.abs(value) / max : 0;
+            String accent = balance.isNegative() ? "accent-danger" : "accent-success";
+            treasuryList.getChildren().add(listRow(balance.name(), formatMoney(value), ratio, accent));
         }
     }
 

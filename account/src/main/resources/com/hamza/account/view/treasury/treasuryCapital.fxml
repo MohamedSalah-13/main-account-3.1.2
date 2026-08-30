@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<BorderPane xmlns:fx="http://javafx.com/fxml"
+            fx:id="root"
+            fx:controller="com.hamza.account.controller.convert_treasury.TreasuryCapitalController"
+            styleClass="app-root">
+
+    <top>
+        <VBox spacing="18" styleClass="page-container">
+            <padding>
+                <Insets top="24" right="28" bottom="18" left="28"/>
+            </padding>
+
+            <VBox spacing="6">
+                <Label text="%treasury.capital.title" styleClass="page-title"/>
+                <Label text="%treasury.capital.subtitle" styleClass="page-subtitle"/>
+            </VBox>
+
+            <VBox spacing="16" styleClass="app-card">
+                <HBox spacing="12" alignment="CENTER_LEFT">
+                    <Label text="%treasury.label.from.date" styleClass="form-label"/>
+                    <DatePicker fx:id="fromDate" styleClass="modern-input"/>
+                    <Label text="%treasury.label.to.date" styleClass="form-label"/>
+                    <DatePicker fx:id="toDate" styleClass="modern-input"/>
+                    <Button text="%common.refresh" onAction="#reload" styleClass="primary-button"/>
+                </HBox>
+
+                <HBox spacing="28" alignment="CENTER_LEFT">
+                    <Label fx:id="paidInLabel" styleClass="section-title"/>
+                    <Label fx:id="drawnLabel" styleClass="section-title"/>
+                    <Label fx:id="netLabel" styleClass="section-title"/>
+                </HBox>
+
+                <Label text="%treasury.capital.hint" wrapText="true" styleClass="page-subtitle"/>
+            </VBox>
+        </VBox>
+    </top>
+
+    <center>
+        <VBox spacing="12" styleClass="table-section">
+            <padding>
+                <Insets top="8" right="28" bottom="28" left="28"/>
+            </padding>
+
+            <HBox alignment="CENTER_RIGHT">
+                <Label text="%treasury.capital.section.movements" styleClass="section-title"/>
+            </HBox>
+
+            <TableView fx:id="movementsTable" styleClass="app-table" VBox.vgrow="ALWAYS"/>
+        </VBox>
+    </center>
+
+</BorderPane>

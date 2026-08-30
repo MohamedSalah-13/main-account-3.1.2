@@ -5,6 +5,7 @@
 <?import javafx.scene.layout.*?>
 
 <BorderPane xmlns:fx="http://javafx.com/fxml"
+            fx:id="root"
             fx:controller="com.hamza.account.controller.convert_treasury.TreasuryController"
             styleClass="app-root">
 
@@ -15,9 +16,8 @@
             </padding>
 
             <VBox spacing="6">
-                <Label text="إدارة الخزائن" styleClass="page-title"/>
-                <Label text="إضافة وتعديل الخزائن ومتابعة الأرصدة الافتتاحية بسهولة"
-                       styleClass="page-subtitle"/>
+                <Label text="%treasury.screen.title" styleClass="page-title"/>
+                <Label text="%treasury.screen.subtitle" styleClass="page-subtitle"/>
             </VBox>
 
             <VBox spacing="16" styleClass="app-card">
@@ -29,37 +29,70 @@
                         <ColumnConstraints minWidth="260" hgrow="ALWAYS"/>
                     </columnConstraints>
 
-                    <Label text="اسم الخزينة:" styleClass="form-label"
+                    <Label text="%treasury.field.name" styleClass="form-label"
                            GridPane.rowIndex="0" GridPane.columnIndex="0"/>
 
                     <TextField fx:id="nameField"
-                               promptText="أدخل اسم الخزينة"
+                               promptText="%treasury.field.name.prompt"
                                styleClass="modern-input"
                                GridPane.rowIndex="0" GridPane.columnIndex="1"/>
 
-                    <Label text="رصيد افتتاحي:" styleClass="form-label"
+                    <Label text="%treasury.field.opening" styleClass="form-label"
                            GridPane.rowIndex="0" GridPane.columnIndex="2"/>
 
                     <TextField fx:id="amountField"
-                               promptText="أدخل الرصيد الافتتاحي"
+                               promptText="%treasury.field.opening.prompt"
                                styleClass="modern-input"
                                GridPane.rowIndex="0" GridPane.columnIndex="3"/>
+
+                    <Label text="%treasury.field.type" styleClass="form-label"
+                           GridPane.rowIndex="1" GridPane.columnIndex="0"/>
+
+                    <ComboBox fx:id="typeCombo"
+                              maxWidth="Infinity"
+                              styleClass="modern-input"
+                              GridPane.rowIndex="1" GridPane.columnIndex="1"/>
+
+                    <Label text="%treasury.field.state" styleClass="form-label"
+                           GridPane.rowIndex="1" GridPane.columnIndex="2"/>
+
+                    <CheckBox fx:id="activeCheck"
+                              text="%treasury.field.active"
+                              selected="true"
+                              GridPane.rowIndex="1" GridPane.columnIndex="3"/>
+
+                    <Label text="%treasury.field.fee" styleClass="form-label"
+                           GridPane.rowIndex="2" GridPane.columnIndex="0"/>
+
+                    <TextField fx:id="feeField"
+                               promptText="%treasury.field.fee.prompt"
+                               styleClass="modern-input"
+                               GridPane.rowIndex="2" GridPane.columnIndex="1"/>
+
+                    <Label text="%treasury.hint.fee" wrapText="true" styleClass="page-subtitle"
+                           GridPane.rowIndex="2" GridPane.columnIndex="2"
+                           GridPane.columnSpan="2"/>
                 </GridPane>
 
+                <Label fx:id="openingHint"
+                       text="%treasury.hint.opening"
+                       wrapText="true"
+                       styleClass="page-subtitle"/>
+
                 <HBox spacing="12" alignment="CENTER_LEFT">
-                    <Button text="جديد"
+                    <Button text="%common.new"
                             onAction="#newTreasury"
                             styleClass="secondary-button"/>
 
-                    <Button text="حفظ"
+                    <Button text="%common.save"
                             onAction="#saveTreasury"
                             styleClass="primary-button"/>
 
-                    <Button text="تعديل"
+                    <Button text="%common.edit"
                             onAction="#updateTreasury"
                             styleClass="warning-button"/>
 
-                    <Button text="تحديث"
+                    <Button text="%common.refresh"
                             onAction="#loadTreasuries"
                             styleClass="neutral-button"/>
                 </HBox>
@@ -74,18 +107,14 @@
             </padding>
 
             <HBox alignment="CENTER_RIGHT">
-                <Label text="قائمة الخزائن" styleClass="section-title"/>
+                <Label text="%treasury.section.list" styleClass="section-title"/>
             </HBox>
 
+            <!-- Columns are built in the controller with Columns.*, not declared here with
+                 a field-name string: see rule ق-ل1 in docs/new-code-rules.md. -->
             <TableView fx:id="treasuryTable"
                        styleClass="app-table"
-                       VBox.vgrow="ALWAYS">
-                <columns>
-                    <TableColumn fx:id="idColumn" text="الكود" prefWidth="90"/>
-                    <TableColumn fx:id="nameColumn" text="اسم الخزينة" prefWidth="320"/>
-                    <TableColumn fx:id="amountColumn" text="الرصيد" prefWidth="180"/>
-                </columns>
-            </TableView>
+                       VBox.vgrow="ALWAYS"/>
         </VBox>
     </center>
 

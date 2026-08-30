@@ -79,6 +79,11 @@ public final class DeleteRegistry {
             .referencedBy("treasury_deposit_expenses", "treasury_id", "delete.ref.deposit_or_withdrawal")
             .referencedBy("treasury_transfers", "treasury_from", "delete.ref.transfer_out")
             .referencedBy("treasury_transfers", "treasury_to", "delete.ref.transfer_in")
+            // Declared although the table is empty: its key is not ON DELETE CASCADE, so
+            // the day anything writes a movement, an undeclared reference stops being a
+            // clean refusal and becomes a raw SQL error on a user's screen. Adding the
+            // line now costs one query on a delete; adding it later costs remembering.
+            .referencedBy("treasury_movements", "treasury_id", "delete.ref.treasury_movement")
             .build();
 
     public static final DeleteRule MAIN_GROUPS = DeleteRule.forEntity("delete.entity.main_group")

@@ -27,7 +27,7 @@ mvn -o -pl account -am test -Dtest=ScheduledBackupTest -Dsurefire.failIfNoSpecif
 
 **Coverage is real but uneven — know which half you are in.** JUnit 5 and Mockito are declared in the
 root pom and inherited by both modules; surefire needs no configuration. `mvn clean test` currently runs
-**938 tests across ~100 classes** — 98 in `controlsfx`, 840 in `account` — with 32 skipped (below). What is
+**994 tests across ~108 classes** — 98 in `controlsfx`, 896 in `account` — with 47 skipped (below). What is
 genuinely covered:
 
 - **The declarative specs, pinned character for character** — `DocumentDaoStatementsTest`,
@@ -51,22 +51,32 @@ genuinely covered:
 What still has none: the controllers, the FXML screens, the reports, the trial logic, and most of the
 `model/dao` write paths.
 
-**Eleven classes do not run by default.** `InvoiceStockDatabaseAcceptanceTest`,
+**The treasury acceptance tests were run for the first time on 2026-08-30**, against the developer's
+own MySQL, and found two real defects that no unit test could have: the wallet-fee split was wrong
+because *every new party payment had been silently discarded since `f2b4baf`* (see
+`AccountCustomerService.isNew`), and one of the new cases was asserting a rollback it could not
+observe from inside an enclosing transaction. Fifteen cases pass now, twice in a row, and the class
+checks for its own residue rather than trusting the rollback.
+
+**Twelve classes do not run by default.** `InvoiceStockDatabaseAcceptanceTest`,
 `DocumentLineDatabaseAcceptanceTest`, `StockLedgerReconciliationAcceptanceTest`,
 `StockMovementBackfillAcceptanceTest`, `StockTransferDatabaseAcceptanceTest`,
 `TotalDocumentDeleteReversesStockLedgerAcceptanceTest`,
 `PurchaseDeleteReversesNonDefaultWarehouseBalanceAcceptanceTest`, `PartyLedgerViewAcceptanceTest`,
-`ReturnSourceAcceptanceTest`, `ReturnableRepositoryAcceptanceTest` and
-`ItemMergeDatabaseAcceptanceTest` are gated on `-Daccount.db.acceptance=true` and need a reachable
-MySQL. A green `mvn clean test` has not run them.
+`ReturnSourceAcceptanceTest`, `ReturnableRepositoryAcceptanceTest`, `ItemMergeDatabaseAcceptanceTest`
+and `TreasuryBalanceViewAcceptanceTest` are gated on `-Daccount.db.acceptance=true` and need a
+reachable MySQL. A green `mvn clean test` has not run them.
 `PartyLedgerViewAcceptanceTest` is the only check that the accounting views say what
 `DocumentLedgerEffect` says, so **run it after touching `R__views.sql`** — the whole return-ledger defect
-lived where no test could see it. `ItemMergeDatabaseAcceptanceTest` is the only check that a merge leaves
+lived where no test could see it. `TreasuryBalanceViewAcceptanceTest` is the same kind of check on the
+treasury side and has **never been run**: it is the only thing that says
+`treasury_current_balance` produces the number a person would reach with a pen.
+`ItemMergeDatabaseAcceptanceTest` is the only check that a merge leaves
 the surviving item holding both histories; **it was run for the first time on 2026-08-25 and all four
 tests passed** against a real MySQL — so the multi-table `UPDATE … JOIN` statements are valid, the
 candidates query's shadowed `i` alias works, and the surviving balance does come out as the sum.
 
-**The merge one is safe to run on a working database; do not assume that of the other ten.** It opens
+**The merge one is safe to run on a working database; do not assume that of the other eleven.** It opens
 one transaction and rolls it back in a `finally`, so even the audit triggers' rows go with it - and that
 was checked rather than trusted: querying afterwards, `item_merge`, `item_merge_lines` and every `MRG-%`
 barcode its fixtures create all counted zero. The others have not been checked the same way, and at
@@ -106,6 +116,10 @@ Two documents govern work here and are kept current — read them before large c
   `InputStream` fields; a service throws a message *key*, never an Arabic literal. Each rule is
   meant to be pinned by an architecture test the way `AuthorizationArchitectureTest` already is —
   a rule without a test is a wish.
+- **[`docs/treasury-plan.md`](docs/treasury-plan.md)** — the treasury and capital contract: what a
+  balance is, why it is derived rather than written, and what phase D (wallet fees) still owes.
+  Sections 14-16 record what was actually delivered. **Read it before touching anything under
+  `account.treasury`, `features/treasury` or the treasury half of `R__views.sql`.**
 - **[`docs/erp-roadmap.md`](docs/erp-roadmap.md)** — the governing roadmap (§0 carries a measured
   status update). `docs/spring-migration-plan.md` is superseded and kept for reference only.
 
@@ -366,6 +380,56 @@ Three things had to be true before any of this was safe, and all three now are:
 
 `mini_quantity_view`'s company-wide total is deliberately a *different question* from the per-warehouse
 check the sale-time low-stock alert makes, and is documented as such rather than "fixed".
+
+### The treasury
+
+Several treasuries are an everyday case - a cash drawer, an e-wallet (فودافون كاش، انستاباي), a bank
+account - and every cash document has always carried a `treasury_id`. What was missing until
+`docs/treasury-plan.md` was worked through is everything around that column.
+
+**A balance is derived, never stored, and there is exactly one place it comes from:**
+`treasury_current_balance` = the opening balance + everything in - everything out. There used to be
+three answers - `treasury.amount` (written once at insert and never updated), `treasury_balance` (the
+documents, without the opening balance or the transfers) and `treasury_balance_after_convert` (the
+opening balance and the transfers, without the documents) - and the screens read different ones. The
+third view is dropped; do not reintroduce a fourth.
+
+- **`treasury.amount` is the opening balance.** Not the current one. The column carries a COMMENT
+  saying so since `V20`, and editing it needs `treasury.opening` on top of `treasury.update`, checked by
+  comparing against the stored row rather than by trusting a screen to ask.
+- **`treasury_movements` is deliberately dead.** It is a complete cash ledger with `balance_after`,
+  designed and never wired - and wiring it now would be a fourth definition of a balance to reconcile.
+  It belongs to the general ledger (§9 of the roadmap), not to this. Nothing may write a row to it.
+- **The Arabic literals `treasury_balance` writes into `information` are `MovementLabel`**, and
+  `MovementLabelTest` reads them out of `R__views.sql` and fails both ways. The statement screen compares
+  that column with `equals()`, so translating either side silently empties every filter on it.
+
+**What writes:** `TreasuryTransferService` and `TreasuryCashService`, each refusing in a fixed order -
+permission, then the period lock, then the arithmetic, then the balance. The balance is derived, so
+checking it and then inserting is a read-then-write on a number nothing holds still: the source treasury
+is locked with `SELECT … FOR UPDATE` first, the way `StockTransferDao.lockSource` does. Both tables
+(`treasury_transfers`, `treasury_deposit_expenses`) had views, delete rules and period-lock rules
+declared for years with no writer at all - which is why the shift report has always shown "total
+deposits" over rows nobody could create.
+
+**The owner's money is not the business's.** Capital paid in is not income and drawings are not an
+expense: counted as either, the treasury still balances and the profit - the number the owner reads - is
+wrong by the whole amount. `treasury_deposit_expenses.category` (`NORMAL`/`CAPITAL_IN`/`OWNER_DRAW`,
+`V21`) says which, a CHECK ties each category to its only possible direction, and
+`ProfitLossExcludesCapitalTest` fails the build if `ProfitLossDao` ever reaches into that table. That
+last one was a structural accident before it was a rule - one `UNION ALL` added "so deposits show up"
+would have ended it.
+
+**Statements live in `account.treasury.TreasuryStatements`** and are pinned character for character,
+including each one's parameter count: a delete with the wrong count is a delete of everything.
+
+**An e-wallet fee is an expense, never a deduction.** A customer settling 1000 on فودافون كاش has paid
+1000 and their account closes by all of it; the wallet keeps its percentage
+(`treasury.fee_percent`), and that is posted as an expense on the same treasury under the heading
+`V21` seeds. Netting it off the collection instead would leave that customer owing the fee for ever, on
+every wallet payment they make. The payment and the fee are written in **one transaction** by
+`AccountCustomerService.save(account, fee)` / `AccountSupplierService.save(account, fee)`, and only on
+insert - editing a payment leaves its fee row alone.
 
 ### Expiry batches
 
@@ -692,9 +756,11 @@ Schema changes are **Flyway migrations**, in `account/src/main/resources/db/migr
 - `V1__baseline.sql` is the schema as shipped to clients in v4.1.3 — tables, indexes, procedures and the
   seed data (including the `admin` user, without which nobody can log in). It is the Flyway baseline: an
   existing client database is **stamped** with it, never executed, because it already is that schema. A
-  new database executes it and continues with `V2`, `V3`, … The current head is `V19`: `V18` backfills
-  `items_stock` for warehouses that predate multi-warehouse support returning, and `V19` gives a stock
-  transfer line the unit and factor it was entered in.
+  new database executes it and continues with `V2`, `V3`, … The current head is `V21`. The last four:
+  `V18` backfills `items_stock` for warehouses that predate multi-warehouse returning, `V19` gives a
+  transfer line its unit and factor, `V20` gives a treasury a type and declares `amount` to be the
+  opening balance, and `V21` gives a hand-entered cash movement a category so the owner's capital is
+  neither income nor expense.
 - Everything after it is one file per change. **Never fold a migration back into `V1`** and never edit a
   migration that has shipped — a client that already ran it will not run it again, so the change would
   reach new installs only.
@@ -703,7 +769,8 @@ Adding a schema change is therefore one file: `V<n>__what_it_does.sql`. Both the
 fresh-install path pick it up, and Flyway derives the version — nothing to register in Java.
 
 **Views, triggers and procedures are repeatable migrations, not versioned ones.** `R__views.sql` (33
-views), `R__triggers.sql` and `R__procedures.sql` are re-run by Flyway whenever their checksum changes,
+views; `treasury_balance_after_convert` was removed from it, and the `DROP` for it stays because a
+client that ran an older copy still has it), `R__triggers.sql` and `R__procedures.sql` are re-run by Flyway whenever their checksum changes,
 so **changing a view means editing it in place in `R__views.sql`** — do not write a `V<n>` that drops
 and recreates one. This is what stops a client on an older schema from being left without a view that
 newer code queries. Two conventions inside them:

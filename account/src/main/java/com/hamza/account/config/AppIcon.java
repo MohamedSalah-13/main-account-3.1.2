@@ -46,7 +46,10 @@ public enum AppIcon {
     SHOW(Feather.EYE),
     MAIN_GROUP(Feather.FOLDER),
     SUB_GROUP(Feather.FOLDER_PLUS),
-    ITEM(Feather.PACKAGE);
+    ITEM(Feather.PACKAGE),
+    TREASURY_CASH(Feather.DOLLAR_SIGN),
+    TREASURY_WALLET(Feather.SMARTPHONE),
+    TREASURY_BANK(Feather.CREDIT_CARD);
 
     private final Ikon glyph;
 

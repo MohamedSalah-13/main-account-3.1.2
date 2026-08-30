@@ -125,6 +125,18 @@ public enum DaoFactory {
         return new TreasuryDao();
     }
 
+    public TreasuryCurrentBalanceDao treasuryCurrentBalanceDao() {
+        return new TreasuryCurrentBalanceDao();
+    }
+
+    public TreasuryTransferDao treasuryTransferDao() {
+        return new TreasuryTransferDao();
+    }
+
+    public CashMovementDao cashMovementDao() {
+        return new CashMovementDao();
+    }
+
     public CustomerAccountDao customerAccountDao() {
         return new CustomerAccountDao();
     }

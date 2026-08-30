@@ -47,21 +47,17 @@ public final class PeriodLockRegistry {
 
     // ---- treasury -----------------------------------------------------------
     //
-    // Declared, and only one of them is enforced anywhere - because at the time of
-    // writing nothing in the application writes the other two.
+    // Two of the three are now enforced. TreasuryTransferService and TreasuryCashService
+    // check them on every write and on every delete, which is what these declarations
+    // were left here for - a rule declared and not reached is honest; a rule nobody
+    // remembered to write is how a closed month quietly moves.
     //
-    //   treasury_transfers        - no writer in Java at all; the table appears only in
-    //                               WipeCatalog, DeleteRegistry, and a read in UserShiftDao
-    //   treasury_deposit_expenses - the same
-    //   treasury_movements        - written by TreasuryMovementDao.insertMovement, which
-    //                               is itself unreachable: no DaoFactory method returns
-    //                               it and nothing constructs it
+    //   treasury_transfers        - TreasuryTransferService
+    //   treasury_deposit_expenses - TreasuryCashService
+    //   treasury_movements        - still unreachable, and deliberately so: it is a
+    //                               fourth definition of a treasury balance, and the
+    //                               balance is derived. See docs/treasury-plan.md §2.
     //
-    // They are declared rather than left out so that whoever revives a treasury screen
-    // finds the rule already written down, and enforcing it is one line at the write.
-    // A rule declared and not reached is honest; a rule nobody remembered to write is
-    // how a closed month quietly moves.
-
     public static final LockedDocument TREASURY_TRANSFER =
             new LockedDocument("period.doc.treasury.transfer", "treasury_transfers", "id", "transfer_date");
 
