@@ -56,7 +56,10 @@ class ProfitLossExcludesCapitalTest {
         assertTrue(source.contains("expenses_details"),
                 "ProfitLossDao no longer reads expenses_details either; this test would pass "
                         + "for the wrong reason");
-        assertTrue(source.contains("total_sales"), "the report no longer reads sales");
+        assertTrue(source.contains("document_profit"),
+                "ProfitLossDao no longer reads document_profit, which is the single "
+                        + "definition of what a sale earned. Whatever it reads instead is a "
+                        + "second answer to the same question - see ProfitDefinitionTest.");
     }
 
     private static String read(Path path) {
