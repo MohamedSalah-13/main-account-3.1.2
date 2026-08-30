@@ -1,27 +1,24 @@
 package com.hamza.account.config;
 
 /**
- * The one stock every document belongs to.
+ * Which warehouse, when nothing else says.
  * <p>
- * Multi-warehouse support was removed from the application: the transfer screens,
- * the warehouse management screen and the per-document warehouse pickers are gone,
- * and nothing lets a user create a second stock any more.
+ * <b>Not "the only one".</b> Multi-warehouse support was removed once and came back in
+ * {@code fbadd53}: the stocks screen, warehouse transfers and per-warehouse balances
+ * are all live again, and an operation that reads or writes a specific warehouse's
+ * balance takes a {@code stockId}. This constant answers the narrower question - a
+ * combo's initial selection, a compatibility overload kept for an old caller, the one
+ * opening-balance field the item screen has never had a picker for - and it is the
+ * seeded {@code 'الرئيسي'} row from {@code V1__baseline.sql}, the DEFAULT behind every
+ * {@code stock_id} column.
  * <p>
- * The <b>schema is deliberately unchanged</b>. {@code stocks}, {@code items_stock}
- * and the {@code stock_id} columns on the four invoice tables all still exist, and
- * every write still carries a warehouse id - it is just always this one, the
- * {@code 'الرئيسي'} row seeded by {@code V1__baseline.sql}. Keeping the columns
- * means no migration runs against a client database, and re-introducing warehouses
- * later is a matter of restoring screens rather than restoring data.
- * <p>
- * Two things follow from that, and both are load-bearing:
- * <ul>
- *   <li>Every DAO that writes a {@code stock_id} must use this constant. Writing a
- *       different id would produce rows no screen can reach.</li>
- *   <li>The views that aggregate balances ({@code quantity_items_table} and the
- *       {@code *_names_table} family) still group by {@code stock_id}. They keep
- *       working untouched precisely because every row carries the same id.</li>
- * </ul>
+ * Reaching for it instead of threading a real {@code stockId} through is how a
+ * warehouse gets silently ignored, and that is not a judgement a regex can make - so
+ * {@code DefaultStockUsageArchitectureTest} carries the list of files allowed to
+ * reference it at all. A new file that does fails the build; adding it to the list is a
+ * decision made in the same review that adds the reference.
+ *
+ * @see com.hamza.account.treasury.DefaultTreasury the same idea on the money side
  */
 public final class DefaultStock {
 

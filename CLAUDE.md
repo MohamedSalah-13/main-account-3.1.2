@@ -27,7 +27,7 @@ mvn -o -pl account -am test -Dtest=ScheduledBackupTest -Dsurefire.failIfNoSpecif
 
 **Coverage is real but uneven — know which half you are in.** JUnit 5 and Mockito are declared in the
 root pom and inherited by both modules; surefire needs no configuration. `mvn clean test` currently runs
-**890 tests across ~90 classes** — 98 in `controlsfx`, 792 in `account` — with 29 skipped (below). What is
+**980 tests across ~106 classes** — 98 in `controlsfx`, 882 in `account` — with 42 skipped (below). What is
 genuinely covered:
 
 - **The declarative specs, pinned character for character** — `DocumentDaoStatementsTest`,
@@ -37,28 +37,37 @@ genuinely covered:
   safety net for anything touching SQL. The last two read the foreign keys straight out of the
   migration files, so the schema itself is what they check against.
 - **Architecture rules** — `AuthorizationArchitectureTest`, `ErrorHandlingArchitectureTest`,
-  `DefaultRoleAcceptanceTest`, `DocumentPackageArchitectureTest`. They fail when a new service skips
-  the permission guard, a new exception escapes the error boundary, or `account.document` starts
-  importing one of the two packages that import it.
+  `DefaultRoleAcceptanceTest`, `DocumentPackageArchitectureTest`, `DefaultStockUsageArchitectureTest`,
+  `LocalizationArchitectureTest`. They fail when a new service skips the permission guard, a new
+  exception escapes the error boundary, `account.document` starts importing one of the two packages
+  that import it, or a new stock-aware operation reaches for `DefaultStock.ID` instead of taking a
+  `stockId`. The last two carry an explicit allow-list of files, reviewed once at the point the rule
+  was written: adding a file to it is a decision made in the same review that adds the reference.
 - **The invoice logic** — the `features/invoice` package has a test per class, all without a JavaFX
   toolkit.
 
 What still has none: the controllers, the FXML screens, the reports, the trial logic, and most of the
 `model/dao` write paths.
 
-**Six classes do not run by default.** `InvoiceStockDatabaseAcceptanceTest`,
+**Twelve classes do not run by default.** `InvoiceStockDatabaseAcceptanceTest`,
 `DocumentLineDatabaseAcceptanceTest`, `StockLedgerReconciliationAcceptanceTest`,
-`TotalDocumentDeleteReversesStockLedgerAcceptanceTest`, `PartyLedgerViewAcceptanceTest` and
-`ItemMergeDatabaseAcceptanceTest` are gated on
-`-Daccount.db.acceptance=true` and need a reachable MySQL. A green `mvn clean test` has not run them.
+`StockMovementBackfillAcceptanceTest`, `StockTransferDatabaseAcceptanceTest`,
+`TotalDocumentDeleteReversesStockLedgerAcceptanceTest`,
+`PurchaseDeleteReversesNonDefaultWarehouseBalanceAcceptanceTest`, `PartyLedgerViewAcceptanceTest`,
+`ReturnSourceAcceptanceTest`, `ReturnableRepositoryAcceptanceTest`, `ItemMergeDatabaseAcceptanceTest`
+and `TreasuryBalanceViewAcceptanceTest` are gated on `-Daccount.db.acceptance=true` and need a
+reachable MySQL. A green `mvn clean test` has not run them.
 `PartyLedgerViewAcceptanceTest` is the only check that the accounting views say what
 `DocumentLedgerEffect` says, so **run it after touching `R__views.sql`** — the whole return-ledger defect
-lived where no test could see it. `ItemMergeDatabaseAcceptanceTest` is the only check that a merge leaves
+lived where no test could see it. `TreasuryBalanceViewAcceptanceTest` is the same kind of check on the
+treasury side and has **never been run**: it is the only thing that says
+`treasury_current_balance` produces the number a person would reach with a pen.
+`ItemMergeDatabaseAcceptanceTest` is the only check that a merge leaves
 the surviving item holding both histories; **it was run for the first time on 2026-08-25 and all four
 tests passed** against a real MySQL — so the multi-table `UPDATE … JOIN` statements are valid, the
 candidates query's shadowed `i` alias works, and the surviving balance does come out as the sum.
 
-**The merge one is safe to run on a working database; do not assume that of the other five.** It opens
+**The merge one is safe to run on a working database; do not assume that of the other eleven.** It opens
 one transaction and rolls it back in a `finally`, so even the audit triggers' rows go with it - and that
 was checked rather than trusted: querying afterwards, `item_merge`, `item_merge_lines` and every `MRG-%`
 barcode its fixtures create all counted zero. The others have not been checked the same way, and at
@@ -98,6 +107,10 @@ Two documents govern work here and are kept current — read them before large c
   `InputStream` fields; a service throws a message *key*, never an Arabic literal. Each rule is
   meant to be pinned by an architecture test the way `AuthorizationArchitectureTest` already is —
   a rule without a test is a wish.
+- **[`docs/treasury-plan.md`](docs/treasury-plan.md)** — the treasury and capital contract: what a
+  balance is, why it is derived rather than written, and what phase D (wallet fees) still owes.
+  Sections 14-16 record what was actually delivered. **Read it before touching anything under
+  `account.treasury`, `features/treasury` or the treasury half of `R__views.sql`.**
 - **[`docs/erp-roadmap.md`](docs/erp-roadmap.md)** — the governing roadmap (§0 carries a measured
   status update). `docs/spring-migration-plan.md` is superseded and kept for reference only.
 
@@ -326,20 +339,80 @@ the package and a test per class. The pieces worth knowing before changing anyth
   the document — every line, converted to base units — and refuses the save as a whole. It reads through
   `InvoiceStockRepository`, and `JdbcInvoiceStockRepository` already takes a `stock_id`.
 
-### One warehouse
+### Warehouses
 
-`stocks`, `items_stock` and the `stock_id` column on all four invoice tables still exist and every write
-still carries a warehouse id — but **the multi-warehouse screens were removed** (commit `0853cf4`), and
-nothing lets a user create a second stock. The id written is always `DefaultStock.ID`, the seeded
-`'الرئيسي'` row.
+There are several again. The screens were removed once (commit `0853cf4`) and **came back in
+`fbadd53`, backed by invariants the first pass had not had**: the stocks screen, warehouse transfers,
+and per-warehouse awareness in the invoice, inventory, card and stock-count screens. `stocks`,
+`items_stock` and the `stock_id` column on all four invoice tables were never dropped, which is why
+restoring the screens needed no data migration.
 
-**Every DAO that writes a `stock_id` must use that constant.** A different id produces rows no screen can
-reach. The views that group by `stock_id` keep working precisely because every row carries the same one.
+**`DefaultStock.ID` no longer means "the only one" — it means "which one, if nothing else says".** An
+operation that reads or writes a specific warehouse's balance takes a `stockId`; the constant answers a
+combo's initial selection, a compatibility overload kept for an old caller, or the one opening-balance
+field the item screen has never had a picker for. That distinction cannot be checked by a regex, so
+`DefaultStockUsageArchitectureTest` carries the list of files allowed to reference it at all: a new file
+that reaches for it instead of threading a real `stockId` through fails the build.
 
-Three places would break the moment a second stock existed, and are documented in
-`docs/erp-roadmap.md` §11: `mini_quantity_view` sums `items.first_balance` once per warehouse row, and
-`ItemsDao.QUERY_ITEMS` joins `quantity_items_table` without `stock_id` so item rows would multiply.
-Fix those before restoring anything.
+Three things had to be true before any of this was safe, and all three now are:
+
+- **A new warehouse backfills `items_stock` for every existing item, and a new item for every existing
+  warehouse** (`StockDao`, `ItemsDao`, `Items_StockDao`). `quantity_items_table` is driven by
+  `items_stock`, so a missing row is a silently dropped balance. `V18__warehouse_opening_balances.sql`
+  backfills the warehouses that predate the change.
+- **A catalog query must not multiply rows.** `quantity_items_table` is keyed by (item, stock), so
+  joining it to `items` returns one row per warehouse. `ItemsDao` now has two joins and the choice is
+  the point: `QUERY_ITEMS_ALL_STOCKS` pre-aggregates by `item_id` for every query that names no stock,
+  and the raw `QUERY_ITEMS` is only for finders that already scope with `ip.stock_id = ?`.
+- **A transfer line carries the unit and factor it was entered in**
+  (`V19__stock_transfer_units.sql`), converts to base units before checking the source balance, is
+  refused inside a closed period (`PeriodLockRegistry.STOCK_TRANSFER`), and is reversed through
+  `DeleteRegistry`/`DeletionService` rather than by a delete of its own.
+
+`mini_quantity_view`'s company-wide total is deliberately a *different question* from the per-warehouse
+check the sale-time low-stock alert makes, and is documented as such rather than "fixed".
+
+### The treasury
+
+Several treasuries are an everyday case - a cash drawer, an e-wallet (فودافون كاش، انستاباي), a bank
+account - and every cash document has always carried a `treasury_id`. What was missing until
+`docs/treasury-plan.md` was worked through is everything around that column.
+
+**A balance is derived, never stored, and there is exactly one place it comes from:**
+`treasury_current_balance` = the opening balance + everything in - everything out. There used to be
+three answers - `treasury.amount` (written once at insert and never updated), `treasury_balance` (the
+documents, without the opening balance or the transfers) and `treasury_balance_after_convert` (the
+opening balance and the transfers, without the documents) - and the screens read different ones. The
+third view is dropped; do not reintroduce a fourth.
+
+- **`treasury.amount` is the opening balance.** Not the current one. The column carries a COMMENT
+  saying so since `V20`, and editing it needs `treasury.opening` on top of `treasury.update`, checked by
+  comparing against the stored row rather than by trusting a screen to ask.
+- **`treasury_movements` is deliberately dead.** It is a complete cash ledger with `balance_after`,
+  designed and never wired - and wiring it now would be a fourth definition of a balance to reconcile.
+  It belongs to the general ledger (§9 of the roadmap), not to this. Nothing may write a row to it.
+- **The Arabic literals `treasury_balance` writes into `information` are `MovementLabel`**, and
+  `MovementLabelTest` reads them out of `R__views.sql` and fails both ways. The statement screen compares
+  that column with `equals()`, so translating either side silently empties every filter on it.
+
+**What writes:** `TreasuryTransferService` and `TreasuryCashService`, each refusing in a fixed order -
+permission, then the period lock, then the arithmetic, then the balance. The balance is derived, so
+checking it and then inserting is a read-then-write on a number nothing holds still: the source treasury
+is locked with `SELECT … FOR UPDATE` first, the way `StockTransferDao.lockSource` does. Both tables
+(`treasury_transfers`, `treasury_deposit_expenses`) had views, delete rules and period-lock rules
+declared for years with no writer at all - which is why the shift report has always shown "total
+deposits" over rows nobody could create.
+
+**The owner's money is not the business's.** Capital paid in is not income and drawings are not an
+expense: counted as either, the treasury still balances and the profit - the number the owner reads - is
+wrong by the whole amount. `treasury_deposit_expenses.category` (`NORMAL`/`CAPITAL_IN`/`OWNER_DRAW`,
+`V21`) says which, a CHECK ties each category to its only possible direction, and
+`ProfitLossExcludesCapitalTest` fails the build if `ProfitLossDao` ever reaches into that table. That
+last one was a structural accident before it was a rule - one `UNION ALL` added "so deposits show up"
+would have ended it.
+
+**Statements live in `account.treasury.TreasuryStatements`** and are pinned character for character,
+including each one's parameter count: a delete with the wrong count is a delete of everything.
 
 ### Expiry batches
 
@@ -666,7 +739,11 @@ Schema changes are **Flyway migrations**, in `account/src/main/resources/db/migr
 - `V1__baseline.sql` is the schema as shipped to clients in v4.1.3 — tables, indexes, procedures and the
   seed data (including the `admin` user, without which nobody can log in). It is the Flyway baseline: an
   existing client database is **stamped** with it, never executed, because it already is that schema. A
-  new database executes it and continues with `V2`, `V3`, … The current head is `V17`.
+  new database executes it and continues with `V2`, `V3`, … The current head is `V21`. The last four:
+  `V18` backfills `items_stock` for warehouses that predate multi-warehouse returning, `V19` gives a
+  transfer line its unit and factor, `V20` gives a treasury a type and declares `amount` to be the
+  opening balance, and `V21` gives a hand-entered cash movement a category so the owner's capital is
+  neither income nor expense.
 - Everything after it is one file per change. **Never fold a migration back into `V1`** and never edit a
   migration that has shipped — a client that already ran it will not run it again, so the change would
   reach new installs only.
@@ -675,7 +752,8 @@ Adding a schema change is therefore one file: `V<n>__what_it_does.sql`. Both the
 fresh-install path pick it up, and Flyway derives the version — nothing to register in Java.
 
 **Views, triggers and procedures are repeatable migrations, not versioned ones.** `R__views.sql` (33
-views), `R__triggers.sql` and `R__procedures.sql` are re-run by Flyway whenever their checksum changes,
+views; `treasury_balance_after_convert` was removed from it, and the `DROP` for it stays because a
+client that ran an older copy still has it), `R__triggers.sql` and `R__procedures.sql` are re-run by Flyway whenever their checksum changes,
 so **changing a view means editing it in place in `R__views.sql`** — do not write a `V<n>` that drops
 and recreates one. This is what stops a client on an older schema from being left without a view that
 newer code queries. Two conventions inside them:
