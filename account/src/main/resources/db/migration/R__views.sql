@@ -806,7 +806,43 @@ WITH cte_union_data AS (SELECT invoice_number AS id_no,
                                date_insert,
                                user_id,
                                IF(deposit_or_expenses = 1, 'إيداع', 'صرف')
-                        FROM treasury_deposit_expenses)
+                        FROM treasury_deposit_expenses
+                        UNION ALL
+                        -- الرصيد الافتتاحي: ما كان في الوعاء قبل أن يعرفه النظام. سطر واحد
+                        -- لكل خزينة، ويُحذف من الكشف إن كان صفرا. treasury.amount معناه هذا
+                        -- وحده منذ V20 - انظر docs/treasury-plan.md §3.
+                        SELECT id,
+                               COALESCE(opening_date, DATE(date_insert)) AS date_val,
+                               IF(amount > 0, amount, 0)                 AS income,
+                               IF(amount < 0, -amount, 0)                AS output,
+                               id                                        AS treasury_id,
+                               date_insert,
+                               user_id,
+                               'رصيد افتتاحي'
+                        FROM treasury
+                        WHERE amount <> 0
+                        UNION ALL
+                        -- التحويل بين خزينتين صف واحد يظهر مرتين: صادرا من المصدر وواردا
+                        -- إلى الهدف. بدونهما كان مجموع الخزائن صحيحا وكل خزينة على حدة غلط.
+                        SELECT id,
+                               transfer_date,
+                               0,
+                               amount,
+                               treasury_from,
+                               date_insert,
+                               user_id,
+                               'تحويل صادر'
+                        FROM treasury_transfers
+                        UNION ALL
+                        SELECT id,
+                               transfer_date,
+                               amount,
+                               0,
+                               treasury_to,
+                               date_insert,
+                               user_id,
+                               'تحويل وارد'
+                        FROM treasury_transfers)
 SELECT c.id_no,
        c.date_val,
        c.income,
@@ -838,24 +874,34 @@ FROM treasury_transfers tt
          JOIN treasury tFrom ON tFrom.id = tt.treasury_from
          JOIN treasury tTo   ON tTo.id   = tt.treasury_to;
 
--- --------------------------------------treasury_balance_after_convert-----------------------------
+-- --------------------------------------treasury_current_balance-----------------------------------
 
+-- كان هنا treasury_balance_after_convert: رصيد ثالث يجمع treasury.amount مع التحويلات
+-- ويتجاهل كل المستندات. لم يقرأه سطر واحد في التطبيق، وكان يكفي أن يقرأه أحد ليعرض رقما
+-- ثالثا مختلفا عن الشاشتين. حُذف، ولا يعاد. المصدر الوحيد لأي رصيد خزينة هو الview أدناه.
 DROP VIEW IF EXISTS treasury_balance_after_convert;
-CREATE VIEW treasury_balance_after_convert AS
-WITH sum_treasury_amount_from AS (SELECT treasury_from, COALESCE(SUM(amount), 0) AS sum_transfer_from
-                                  FROM treasury_transfers
-                                  GROUP BY treasury_from),
-     sum_treasury_amount_to AS (SELECT treasury_to, COALESCE(SUM(amount), 0) AS sum_transfer_to
-                                FROM treasury_transfers
-                                GROUP BY treasury_to)
-SELECT treasury.*,
-       f.sum_transfer_from,
-       t.sum_transfer_to,
-       (treasury.amount + COALESCE(t.sum_transfer_to, 0) - COALESCE(f.sum_transfer_from, 0))
-           AS amount_after_transfer
-FROM treasury
-         LEFT JOIN sum_treasury_amount_from f ON f.treasury_from = treasury.id
-         LEFT JOIN sum_treasury_amount_to   t ON t.treasury_to   = treasury.id;
+
+DROP VIEW IF EXISTS treasury_current_balance;
+CREATE VIEW treasury_current_balance AS
+SELECT t.id,
+       t.t_name,
+       t.treasury_type,
+       t.is_active,
+       t.sort_order,
+       t.fee_percent,
+       t.amount                                                            AS opening,
+       COALESCE(m.total_in, 0)                                             AS total_in,
+       COALESCE(m.total_out, 0)                                            AS total_out,
+       ROUND(t.amount + COALESCE(m.total_in, 0) - COALESCE(m.total_out, 0), 2) AS balance
+FROM treasury t
+         LEFT JOIN (SELECT treasury_id,
+                           SUM(income) AS total_in,
+                           SUM(output) AS total_out
+                    FROM treasury_balance
+                    -- الافتتاحي معروض في عموده الخاص، فلا يُجمع مرتين. الحرفية العربية هي
+                    -- نفسها التي يكتبها الفرع أعلاه، وتقابلها MovementLabel.OPENING في Java.
+                    WHERE information <> 'رصيد افتتاحي'
+                    GROUP BY treasury_id) m ON m.treasury_id = t.id;
 
 -- --------------------------------------account_customer_totals------------------------------------
 

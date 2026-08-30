@@ -58,6 +58,17 @@ public final class AppPermissions {
     public static final PermissionKey TREASURY_SHOW = key("treasury.show");
     public static final PermissionKey TREASURY_UPDATE = key("treasury.update");
     public static final PermissionKey TREASURY_DELETE = key("treasury.delete");
+    // Separated on purpose: a cashier deposits and withdraws, and only the owner moves
+    // money between treasuries or touches an opening balance. One "treasury.update" for
+    // all four would have made the split impossible to express in a role.
+    public static final PermissionKey TREASURY_TRANSFER = key("treasury.transfer");
+    public static final PermissionKey TREASURY_DEPOSIT = key("treasury.deposit");
+    public static final PermissionKey TREASURY_BALANCE_SHOW = key("treasury.balance.show");
+    // The owner's own money, and the number every balance is measured from. Both are
+    // the owner's alone: a cashier who could record "capital paid in" could cover a
+    // shortage with it, and one who could edit an opening balance could cover anything.
+    public static final PermissionKey TREASURY_CAPITAL = key("treasury.capital");
+    public static final PermissionKey TREASURY_OPENING = key("treasury.opening");
     public static final PermissionKey UNITS_SHOW = key("units.show");
     public static final PermissionKey UNITS_CREATE = key("units.create");
     public static final PermissionKey UNITS_UPDATE = key("units.update");

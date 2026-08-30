@@ -2,7 +2,7 @@ package com.hamza.account.features.notification;
 
 import com.hamza.account.controller.main.DisableButtons;
 import com.hamza.account.controller.others.ServiceRegistry;
-import com.hamza.account.model.domain.TreasuryBalance;
+import com.hamza.account.treasury.TreasuryBalanceSummary;
 import com.hamza.account.service.TreasuryBalanceService;
 import com.hamza.account.authorization.AppPermissions;
 import com.hamza.account.authorization.PermissionKey;
@@ -70,17 +70,17 @@ public class TreasuryBalanceSource implements NotificationSource {
         }
 
         return service.getTreasuryBalanceSummary().stream()
-                .filter(balance -> balance.getBalance() < 0)
+                .filter(TreasuryBalanceSummary::isNegative)
                 .map(this::toNotification)
                 .toList();
     }
 
-    private AppNotification toNotification(TreasuryBalance balance) {
-        return AppNotification.builder(ID + "." + balance.getTreasury_id())
+    private AppNotification toNotification(TreasuryBalanceSummary balance) {
+        return AppNotification.builder(ID + "." + balance.id())
                 .category(category())
                 .severity(NotificationSeverity.ERROR)
                 .title("رصيد الخزينة بالسالب")
-                .message(balance.getName() + " - الرصيد: " + balance.getBalance())
+                .message(balance.name() + " - الرصيد: " + balance.balance())
                 .payload(balance)
                 .build();
     }

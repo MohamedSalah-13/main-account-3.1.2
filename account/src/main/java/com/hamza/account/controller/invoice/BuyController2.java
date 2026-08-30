@@ -44,6 +44,7 @@ import com.hamza.account.model.domain.*;
 import com.hamza.account.openFxml.FxmlPath;
 import com.hamza.account.openFxml.OpenFxmlApplication;
 import com.hamza.account.otherSetting.MaskerPaneSetting;
+import com.hamza.account.treasury.DefaultTreasury;
 import com.hamza.account.service.*;
 import com.hamza.account.session.ShiftContext;
 import com.hamza.account.type.DiscountType;
@@ -850,7 +851,7 @@ public class BuyController2<T3 extends BaseNames, T4 extends BaseAccount>
         comboTreasury.setItems(FXCollections.observableArrayList(getListTreasuryModelNames()));
 
         try {
-            comboTreasury.getSelectionModel().select(treasuryService.getTreasuryById(1).getName());
+            comboTreasury.getSelectionModel().select(treasuryService.getTreasuryById(DefaultTreasury.ID).getName());
         } catch (DaoException e) {
             logError(e);
         }

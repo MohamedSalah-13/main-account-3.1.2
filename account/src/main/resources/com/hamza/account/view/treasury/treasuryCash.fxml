@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<BorderPane xmlns:fx="http://javafx.com/fxml"
+            fx:id="root"
+            fx:controller="com.hamza.account.controller.convert_treasury.TreasuryCashController"
+            styleClass="app-root">
+
+    <top>
+        <VBox spacing="18" styleClass="page-container">
+            <padding>
+                <Insets top="24" right="28" bottom="18" left="28"/>
+            </padding>
+
+            <VBox spacing="6">
+                <Label text="%treasury.cash.title" styleClass="page-title"/>
+                <Label text="%treasury.cash.subtitle" styleClass="page-subtitle"/>
+            </VBox>
+
+            <VBox spacing="16" styleClass="app-card">
+                <GridPane hgap="18" vgap="14">
+                    <columnConstraints>
+                        <ColumnConstraints minWidth="130" prefWidth="140"/>
+                        <ColumnConstraints minWidth="260" hgrow="ALWAYS"/>
+                        <ColumnConstraints minWidth="130" prefWidth="140"/>
+                        <ColumnConstraints minWidth="260" hgrow="ALWAYS"/>
+                    </columnConstraints>
+
+                    <Label text="%treasury.cash.field.treasury" styleClass="form-label"
+                           GridPane.rowIndex="0" GridPane.columnIndex="0"/>
+                    <ComboBox fx:id="treasuryCombo" maxWidth="Infinity" styleClass="modern-input"
+                              GridPane.rowIndex="0" GridPane.columnIndex="1"/>
+
+                    <Label text="%treasury.cash.field.direction" styleClass="form-label"
+                           GridPane.rowIndex="0" GridPane.columnIndex="2"/>
+                    <ComboBox fx:id="directionCombo" maxWidth="Infinity" styleClass="modern-input"
+                              GridPane.rowIndex="0" GridPane.columnIndex="3"/>
+
+                    <Label text="%treasury.cash.field.amount" styleClass="form-label"
+                           GridPane.rowIndex="1" GridPane.columnIndex="0"/>
+                    <TextField fx:id="amountField" styleClass="modern-input"
+                               GridPane.rowIndex="1" GridPane.columnIndex="1"/>
+
+                    <Label text="%treasury.cash.field.date" styleClass="form-label"
+                           GridPane.rowIndex="1" GridPane.columnIndex="2"/>
+                    <DatePicker fx:id="datePicker" maxWidth="Infinity" styleClass="modern-input"
+                                GridPane.rowIndex="1" GridPane.columnIndex="3"/>
+
+                    <Label text="%treasury.cash.field.statement" styleClass="form-label"
+                           GridPane.rowIndex="2" GridPane.columnIndex="0"/>
+                    <TextField fx:id="statementField" styleClass="modern-input"
+                               GridPane.rowIndex="2" GridPane.columnIndex="1"/>
+
+                    <Label text="%treasury.cash.field.description" styleClass="form-label"
+                           GridPane.rowIndex="2" GridPane.columnIndex="2"/>
+                    <TextField fx:id="descriptionField" styleClass="modern-input"
+                               GridPane.rowIndex="2" GridPane.columnIndex="3"/>
+
+                    <Label text="%treasury.cash.field.category" styleClass="form-label"
+                           GridPane.rowIndex="3" GridPane.columnIndex="0"/>
+                    <ComboBox fx:id="categoryCombo" maxWidth="Infinity" styleClass="modern-input"
+                              GridPane.rowIndex="3" GridPane.columnIndex="1"/>
+
+                    <Label fx:id="categoryHint" text="%treasury.cash.hint.category"
+                           wrapText="true" styleClass="page-subtitle"
+                           GridPane.rowIndex="3" GridPane.columnIndex="2"
+                           GridPane.columnSpan="2"/>
+                </GridPane>
+
+                <Label fx:id="availableLabel" styleClass="page-subtitle"/>
+
+                <HBox spacing="12" alignment="CENTER_LEFT">
+                    <Button text="%treasury.cash.btn.save" onAction="#saveMovement"
+                            styleClass="primary-button"/>
+                    <Button text="%common.delete" onAction="#deleteMovement"
+                            styleClass="warning-button"/>
+                    <Button text="%common.refresh" onAction="#reload"
+                            styleClass="neutral-button"/>
+                </HBox>
+            </VBox>
+        </VBox>
+    </top>
+
+    <center>
+        <VBox spacing="12" styleClass="table-section">
+            <padding>
+                <Insets top="8" right="28" bottom="28" left="28"/>
+            </padding>
+
+            <HBox alignment="CENTER_RIGHT">
+                <Label text="%treasury.cash.section.recent" styleClass="section-title"/>
+            </HBox>
+
+            <TableView fx:id="movementsTable" styleClass="app-table" VBox.vgrow="ALWAYS"/>
+        </VBox>
+    </center>
+
+</BorderPane>

@@ -207,7 +207,7 @@ public class Add_AccountController<T3 extends BaseNames, T4 extends BaseAccount>
                 // balance before paid
                 double balance = Double.parseDouble(txtBalance.getText());
                 txtBalance.setText(String.valueOf(balance + paid));
-                comboTreasury.getSelectionModel().select(t4.getTreasury().getName());
+                selectTreasury(t4.getTreasury().getName());
                 getAmount(paid);
 
             });
@@ -263,6 +263,23 @@ public class Add_AccountController<T3 extends BaseNames, T4 extends BaseAccount>
         }
         comboTreasury.setItems(FXCollections.observableArrayList(collection));
         comboTreasury.getSelectionModel().selectFirst();
+    }
+
+    /**
+     * Selects the treasury a saved movement was entered against, adding its name to
+     * the list first when it is not there.
+     * <p>
+     * The picker offers active treasuries only, and a treasury may be closed after
+     * documents have been entered against it - it keeps its history and simply
+     * leaves the pickers. Without this, opening such a movement would silently show
+     * whichever treasury happened to be first and save it back under that one.
+     */
+    private void selectTreasury(String name) {
+        if (name == null || name.isBlank()) return;
+        if (!comboTreasury.getItems().contains(name)) {
+            comboTreasury.getItems().add(name);
+        }
+        comboTreasury.getSelectionModel().select(name);
     }
 
     private void getAmount(double paid) {

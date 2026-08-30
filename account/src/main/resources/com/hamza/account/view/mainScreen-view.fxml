@@ -179,7 +179,11 @@
                                                     <content>
                                                         <VBox styleClass="side-button-box">
                                                             <children>
+                                                                <Button fx:id="btnTreasuries" mnemonicParsing="false" text="الخزائن" />
                                                                 <Button fx:id="btnTreasuryDetails" mnemonicParsing="false" text="كشف حساب" />
+                                                                <Button fx:id="btnTreasuryCash" mnemonicParsing="false" text="إيداع وسحب" />
+                                                                <Button fx:id="btnTreasuryTransfer" mnemonicParsing="false" text="تحويل بين الخزائن" />
+                                                                <Button fx:id="btnTreasuryCapital" mnemonicParsing="false" text="حركة رأس المال" />
                                                                 <Button fx:id="btnProcess" mnemonicParsing="false" text="Process" />
                                                                 <Button fx:id="btnExpenses" mnemonicParsing="false" text="Expenses" />
                                                             </children>

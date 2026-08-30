@@ -11,6 +11,7 @@ import com.hamza.account.openFxml.FxmlPath;
 import com.hamza.account.reportData.Print_Reports;
 import com.hamza.account.service.TreasuryBalanceService;
 import com.hamza.account.service.TreasuryService;
+import com.hamza.account.treasury.MovementLabel;
 import com.hamza.account.service.UsersService;
 import com.hamza.account.table.TableSetting;
 import com.hamza.account.type.ProcessType;
@@ -50,22 +51,6 @@ import static com.hamza.account.controller.items.CardController.dataInterface;
 @FxmlPath(pathFile = "treasury/treasury-details.fxml")
 public class TreasureDetailsController {
 
-    /**
-     * These seven values are not display strings to translate - they are exactly
-     * what {@code R__views.sql} writes into {@code TreasuryBalance.information}
-     * (a UNION view over several tables, each branch's {@code information} column
-     * a literal like {@code 'المبيعات'}). filterByDetails() and sumData() compare
-     * against them with equals(), so translating them here would silently break
-     * every filter and total on this screen - the Java value has to keep matching
-     * what MySQL already produced.
-     */
-    public static final String SALES_TITLE = "المبيعات";
-    public static final String RETURNED_SALES_TITLE = "مرتجع المبيعات";
-    public static final String PURCHASES_TITLE = "المشتريات";
-    public static final String RETURNED_PURCHASES_TITLE = "مرتجع المشتريات";
-    public static final String CUSTOMER_ACCOUNTS_TITLE = "حسابات العملاء";
-    public static final String SUPPLIER_ACCOUNT_TITLE = "حسابات الموردين";
-    public static final String EXPENSES_TITLE = "المصروفات";
     private final ObservableList<TreasuryBalance> treasuryBalances = FXCollections.observableArrayList();
     //    private final OpenTimeSearchApplication openTimeSearchApplication;
     private final LongProperty countInvoiceSales = new SimpleLongProperty(0);
@@ -220,12 +205,14 @@ public class TreasureDetailsController {
         comboTreasury.getSelectionModel().selectFirst();
 
         // Only the leading "all" entry is display text - filterByDetails() short-circuits
-        // on index 0 before it ever compares text, but every entry after it is one of the
-        // seven view-tied constants above, or "إيداع"/"صرف" which the same view also emits
-        // (deposit_or_expenses branch) - none of those nine may be translated.
-        String[] strings = {LanguageManager.getInstance().getString("all"), PURCHASES_TITLE, RETURNED_PURCHASES_TITLE, SALES_TITLE, RETURNED_SALES_TITLE, CUSTOMER_ACCOUNTS_TITLE, SUPPLIER_ACCOUNT_TITLE, EXPENSES_TITLE, "إيداع", "صرف"};
+        // on index 0 before it ever compares text. Everything after it is a value MySQL
+        // already wrote into treasury_balance.information, so none of them may be
+        // translated - and taking the list from MovementLabel rather than typing it here
+        // is what keeps the filter complete: the two entries this array used to miss
+        // (the opening balance and the two halves of a transfer) were invisible to it.
         comboDetails.getItems().clear();
-        comboDetails.getItems().addAll(strings);
+        comboDetails.getItems().add(LanguageManager.getInstance().getString("all"));
+        comboDetails.getItems().addAll(MovementLabel.allTexts());
         comboDetails.getSelectionModel().selectFirst();
 
         comboUsers.getItems().clear();
@@ -300,13 +287,13 @@ public class TreasureDetailsController {
 
     private void sumData() {
         var items = tableView.getItems().stream().filter(filterByUsers()).toList();
-        var filteredSalesData = items.stream().filter(treasuryBalance -> treasuryBalance.getInformation().equals(SALES_TITLE));
-        var filteredSalesReData = items.stream().filter(treasuryBalance -> treasuryBalance.getInformation().equals(RETURNED_SALES_TITLE));
-        var filteredPurchaseData = items.stream().filter(treasuryBalance -> treasuryBalance.getInformation().equals(PURCHASES_TITLE));
-        var filteredPurchaseReData = items.stream().filter(treasuryBalance -> treasuryBalance.getInformation().equals(RETURNED_PURCHASES_TITLE));
-        var filteredCustomerAccountsData = items.stream().filter(treasuryBalance -> treasuryBalance.getInformation().equals(CUSTOMER_ACCOUNTS_TITLE));
-        var filteredSuppAccountsData = items.stream().filter(treasuryBalance -> treasuryBalance.getInformation().equals(SUPPLIER_ACCOUNT_TITLE));
-        var filteredExpensesData = items.stream().filter(treasuryBalance -> treasuryBalance.getInformation().equals(EXPENSES_TITLE));
+        var filteredSalesData = items.stream().filter(treasuryBalance -> treasuryBalance.getInformation().equals(MovementLabel.SALES.text()));
+        var filteredSalesReData = items.stream().filter(treasuryBalance -> treasuryBalance.getInformation().equals(MovementLabel.SALES_RETURNS.text()));
+        var filteredPurchaseData = items.stream().filter(treasuryBalance -> treasuryBalance.getInformation().equals(MovementLabel.PURCHASES.text()));
+        var filteredPurchaseReData = items.stream().filter(treasuryBalance -> treasuryBalance.getInformation().equals(MovementLabel.PURCHASE_RETURNS.text()));
+        var filteredCustomerAccountsData = items.stream().filter(treasuryBalance -> treasuryBalance.getInformation().equals(MovementLabel.CUSTOMER_ACCOUNTS.text()));
+        var filteredSuppAccountsData = items.stream().filter(treasuryBalance -> treasuryBalance.getInformation().equals(MovementLabel.SUPPLIER_ACCOUNTS.text()));
+        var filteredExpensesData = items.stream().filter(treasuryBalance -> treasuryBalance.getInformation().equals(MovementLabel.EXPENSES.text()));
 
         sumSales.set(filteredSalesData.mapToDouble(TreasuryBalance::getTotal_income).sum());
         sumPurchases.set(filteredPurchaseData.mapToDouble(TreasuryBalance::getTotal_output).sum());
@@ -316,8 +303,8 @@ public class TreasureDetailsController {
         sumSuppPaid.set(filteredSuppAccountsData.mapToDouble(TreasuryBalance::getTotal_output).sum());
         sumExpenses.set(filteredExpensesData.mapToDouble(TreasuryBalance::getTotal_output).sum());
 
-        countInvoiceSales.set(items.stream().filter(treasuryBalance -> treasuryBalance.getInformation().equals(SALES_TITLE)).count());
-        countInvoicePurchase.set(items.stream().filter(treasuryBalance -> treasuryBalance.getInformation().equals(PURCHASES_TITLE)).count());
+        countInvoiceSales.set(items.stream().filter(treasuryBalance -> treasuryBalance.getInformation().equals(MovementLabel.SALES.text())).count());
+        countInvoicePurchase.set(items.stream().filter(treasuryBalance -> treasuryBalance.getInformation().equals(MovementLabel.PURCHASES.text())).count());
     }
 
     private Predicate<TreasuryBalance> filterByUsers() {

@@ -1,6 +1,7 @@
 package com.hamza.account.document;
 
 import com.hamza.account.party.PartyLedgerSpec;
+import com.hamza.account.treasury.MovementLabel;
 import com.hamza.controlsfx.database.ConnectionManager;
 import com.hamza.controlsfx.database.DataSourceProvider;
 import com.hamza.controlsfx.util.crypto.CryptoDatabaseConfig;
@@ -237,12 +238,17 @@ class PartyLedgerViewAcceptanceTest {
         }
     }
 
+    /**
+     * The label is now declared once, in {@link MovementLabel}, and held against the
+     * view by {@code MovementLabelTest} - so a branch renamed in {@code R__views.sql}
+     * fails there rather than making this test look for a row that no longer exists.
+     */
     private static String treasuryLabel(DocumentType type) {
         return switch (type) {
-            case SALES -> "المبيعات";
-            case SALES_RETURN -> "مرتجع المبيعات";
-            case PURCHASE -> "المشتريات";
-            case PURCHASE_RETURN -> "مرتجع المشتريات";
+            case SALES -> MovementLabel.SALES.text();
+            case SALES_RETURN -> MovementLabel.SALES_RETURNS.text();
+            case PURCHASE -> MovementLabel.PURCHASES.text();
+            case PURCHASE_RETURN -> MovementLabel.PURCHASE_RETURNS.text();
         };
     }
 
