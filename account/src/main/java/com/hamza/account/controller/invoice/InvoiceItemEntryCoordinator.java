@@ -77,7 +77,8 @@ public final class InvoiceItemEntryCoordinator {
 
     public void configure() {
         controls.updateItem().setOnAction(event -> openItem.accept(
-                controls.barcode().getText().isBlank() ? 0 : editor.selectedItem().getId()));
+                controls.barcode().getText().isBlank() || editor.selectedItem() == null
+                        ? 0 : editor.selectedItem().getId()));
         controls.add().setOnAction(event -> addLine.run());
         controls.barcode().setOnKeyPressed(event -> {
             if (event.getCode() == KeyCode.ENTER && !controls.barcode().getText().isBlank()) {

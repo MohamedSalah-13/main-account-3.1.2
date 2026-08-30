@@ -9,16 +9,23 @@ import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyCodeCombination;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
-import lombok.RequiredArgsConstructor;
-
-@RequiredArgsConstructor
 public class AddItemApplication extends Application {
 
     private final int num;
+    private final String initialBarcode;
+
+    public AddItemApplication(int num) {
+        this(num, null);
+    }
+
+    public AddItemApplication(int num, String initialBarcode) {
+        this.num = num;
+        this.initialBarcode = initialBarcode;
+    }
 
     @Override
     public void start(Stage stage) throws Exception {
-        var addItemController = new AddItemController(num);
+        var addItemController = new AddItemController(num, initialBarcode);
         Scene scene = new SceneAll(addItemController.pane());
         stage.setScene(scene);
         var lm = LanguageManager.getInstance();

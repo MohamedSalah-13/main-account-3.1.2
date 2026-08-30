@@ -63,6 +63,7 @@ import static com.hamza.controlsfx.util.ImageChoose.createIcon;
 public class AddItemController implements AppSettingInterface {
 
     private final int codeItem;
+    private final String initialBarcode;
     private final Subscriptions subscriptions = new Subscriptions();
     private final EventBus eventBus = ServiceRegistry.get(EventBus.class);
     /**
@@ -144,7 +145,12 @@ public class AddItemController implements AppSettingInterface {
     private ExtraBarcodesTabController extraBarcodesTab;
 
     public AddItemController(int codeItem) {
+        this(codeItem, null);
+    }
+
+    public AddItemController(int codeItem, String initialBarcode) {
         this.codeItem = codeItem;
+        this.initialBarcode = initialBarcode;
     }
 
     /**
@@ -195,6 +201,9 @@ public class AddItemController implements AppSettingInterface {
 
         // add image if insert new before select data
         btnClearImage.fire();
+        if (codeItem == 0 && initialBarcode != null && !initialBarcode.isBlank()) {
+            itemForm.setBarcode(initialBarcode.trim());
+        }
         permButtons();
         buttonGraphic();
 //        if (ADD_PACKAGE_TO_ITEMS) addPackaged();

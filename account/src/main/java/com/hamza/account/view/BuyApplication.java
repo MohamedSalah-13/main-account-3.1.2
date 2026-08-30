@@ -2,6 +2,7 @@ package com.hamza.account.view;
 
 import com.hamza.account.config.Image_Setting;
 import com.hamza.account.controller.invoice.BuyController2;
+import com.hamza.account.controller.invoice.InvoiceScreenMode;
 import com.hamza.account.interfaces.api.DataInterface;
 import com.hamza.controlsfx.language.LanguageManager;
 import javafx.application.Application;
@@ -22,13 +23,23 @@ public class BuyApplication extends Application {
     private final Pane pane;
     private final BuyController2<?, ?> controller;
     private final int numInvoiceUpdate;
+    private final InvoiceScreenMode screenMode;
     private String title = "Buy";
 
     public BuyApplication(DataInterface<?, ?, ?, ?> dataInterface, int numInvoiceUpdate) throws Exception {
-        controller = new BuyController2<>(dataInterface, numInvoiceUpdate);
+        this(dataInterface, numInvoiceUpdate, InvoiceScreenMode.STANDARD);
+    }
+
+    public BuyApplication(DataInterface<?, ?, ?, ?> dataInterface, int numInvoiceUpdate,
+                          InvoiceScreenMode screenMode) throws Exception {
+        controller = new BuyController2<>(dataInterface, numInvoiceUpdate, screenMode);
         pane = controller.pane();
         this.numInvoiceUpdate = numInvoiceUpdate;
+        this.screenMode = screenMode;
         title = dataInterface.designInterface().nameTextOfInvoice();
+        if (screenMode == InvoiceScreenMode.QUICK) {
+            title += " - " + LanguageManager.getInstance().getString("invoice.quick.title");
+        }
     }
 
     @Override
@@ -75,6 +86,18 @@ public class BuyApplication extends Application {
         btnPrintSave.getScene().getAccelerators().put(
                 new javafx.scene.input.KeyCodeCombination(javafx.scene.input.KeyCode.F12),
                 btnPrintSave::fire
+        );
+
+        var btnAddItem = getController().getBtnUpdateItem();
+        btnAddItem.getScene().getAccelerators().put(
+                new javafx.scene.input.KeyCodeCombination(javafx.scene.input.KeyCode.F4),
+                btnAddItem::fire
+        );
+
+        var btnSwitchMode = getController().getBtnQuickMode();
+        btnSwitchMode.getScene().getAccelerators().put(
+                new javafx.scene.input.KeyCodeCombination(javafx.scene.input.KeyCode.F6),
+                btnSwitchMode::fire
         );
 
     }

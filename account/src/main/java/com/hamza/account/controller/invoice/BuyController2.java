@@ -15,6 +15,7 @@ import com.hamza.account.features.events.EmployeesChanged;
 import com.hamza.account.features.events.StocksChanged;
 import com.hamza.account.finance.MoneyMath;
 import com.hamza.account.features.invoice.InvoiceItemSelectionService;
+import com.hamza.account.features.invoice.InvoiceItemSelection;
 import com.hamza.account.features.scalebarcode.ScaleBarcodeValueType;
 import com.hamza.account.features.invoice.InvoiceItemCatalogService;
 import com.hamza.account.features.invoice.InvoiceExpiryOptions;
@@ -69,12 +70,15 @@ import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.control.*;
+import javafx.scene.control.cell.TextFieldTableCell;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.StackPane;
 import javafx.scene.text.Text;
 import javafx.stage.Stage;
+import javafx.util.converter.DefaultStringConverter;
+import javafx.util.converter.DoubleStringConverter;
 import lombok.Getter;
 import lombok.extern.log4j.Log4j2;
 import org.jetbrains.annotations.NotNull;
@@ -110,6 +114,7 @@ public class BuyController2<T3 extends BaseNames, T4 extends BaseAccount>
     private final InvoiceLineService<BasePurchasesAndSales> invoiceLineService;
     private final InvoiceExpiryService invoiceExpiryService;
     private final InvoiceItemSelectionService invoiceItemSelectionService;
+    private final InvoiceScreenMode screenMode;
     private InvoiceItemEntryCoordinator itemEntry;
     private int priceTypeByNameId = 1; // use a first price type
     /** The invoice stock context; kept at the legacy default until warehouse selection is exposed. */
@@ -122,7 +127,7 @@ public class BuyController2<T3 extends BaseNames, T4 extends BaseAccount>
     private Label labelNum, labelName, labelStock, labelBarcode, labelDate, labelCondition, labelDelegate, labelTreasury, labelSearchBy, labelPrice, labelQuantity, labelItemBalance, labelTotals, last1, last2, last3, last4, last5, labelNotes, labelInvoiceTotal, labelPaid, labelRemaining, labelNetAfterDiscount;
     @FXML
     @Getter
-    private Button btnAdd, btnSave, btnPrintSave, btnNew, btnSearch, btnUpdateItem;
+    private Button btnAdd, btnSave, btnPrintSave, btnNew, btnSearch, btnUpdateItem, btnQuickMode;
     @FXML
     private Button btnReturnFromInvoice;
     @FXML
@@ -155,7 +160,13 @@ public class BuyController2<T3 extends BaseNames, T4 extends BaseAccount>
     private ReturnEntryCoordinator returnEntry;
 
     public BuyController2(DataInterface<?, ?, T3, T4> dataInterface, int numInvoiceUpdate) throws Exception {
+        this(dataInterface, numInvoiceUpdate, InvoiceScreenMode.STANDARD);
+    }
+
+    public BuyController2(DataInterface<?, ?, T3, T4> dataInterface, int numInvoiceUpdate,
+                          InvoiceScreenMode screenMode) throws Exception {
         super(dataInterface, numInvoiceUpdate);
+        this.screenMode = screenMode == null ? InvoiceScreenMode.STANDARD : screenMode;
         this.invoicePostSaveService = new InvoicePostSaveService(
                 eventBus, dataInterface.invoiceSide());
         this.invoiceLineService = new InvoiceLineService<>(
@@ -176,12 +187,16 @@ public class BuyController2<T3 extends BaseNames, T4 extends BaseAccount>
         applyInvoiceThemeClass();
         labelName();
         tableSetting();
+        if (screenMode == InvoiceScreenMode.QUICK) {
+            configureQuickTableEntry();
+        }
         bindEditorState();
         otherSetting();
         addTextSearchName();
         addTextSearchItems();
         configureItemEntry();
         configureReturnEntry();
+        configureScreenMode();
         action();
         publisherData();
         disableData();
@@ -280,8 +295,37 @@ public class BuyController2<T3 extends BaseNames, T4 extends BaseAccount>
         btnSearch.setText(lang.getString("invoice.btn.search"));
         btnSave.setText(lang.getString("invoice.btn.save"));
         btnPrintSave.setText(lang.getString("invoice.btn.save.print"));
-        btnUpdateItem.setText(lang.getString("invoice.btn.update.item"));
+        btnUpdateItem.setText(lang.getString(screenMode == InvoiceScreenMode.QUICK
+                ? "invoice.btn.add.or.update.item" : "invoice.btn.update.item"));
         btnAdd.setText(lang.getString("invoice.btn.add"));
+        btnQuickMode.setText(lang.getString(screenMode == InvoiceScreenMode.QUICK
+                ? "invoice.screen.standard" : "invoice.screen.quick"));
+    }
+
+    private void configureScreenMode() {
+        if (screenMode == InvoiceScreenMode.QUICK) {
+            stackPane.getStyleClass().add("invoice-quick");
+        }
+        btnQuickMode.setOnAction(event -> switchScreenMode());
+    }
+
+    private void switchScreenMode() {
+        try {
+            if (num_invoice_update > 0) {
+                throw new UserValidationException(LanguageManager.getInstance()
+                        .getString("invoice.quick.switch.unsaved"));
+            }
+            if (hasInvoiceLines() && !AllAlerts.confirm_all(
+                    LanguageManager.getInstance().getString("confirm"),
+                    LanguageManager.getInstance().getString("invoice.confirm.new.invoice"))) {
+                return;
+            }
+            new com.hamza.account.view.BuyApplication(dataInterface, 0, screenMode.opposite())
+                    .start(new Stage());
+            ((Stage) btnQuickMode.getScene().getWindow()).close();
+        } catch (Exception e) {
+            logError(e);
+        }
     }
 
     private void addTextSearchName() {
@@ -332,7 +376,7 @@ public class BuyController2<T3 extends BaseNames, T4 extends BaseAccount>
                 () -> invoiceStockId,
                 this::resolveSelectedPriceTier,
                 this::scaleBarcodeSettings,
-                () -> getInvoiceAddItemDirect(),
+                () -> screenMode == InvoiceScreenMode.QUICK || getInvoiceAddItemDirect(),
                 this::addData,
                 this::addItem,
                 this::handleItemEntryError);
@@ -394,7 +438,7 @@ public class BuyController2<T3 extends BaseNames, T4 extends BaseAccount>
 
     private void action() {
         btnNew.setOnAction(actionEvent -> {
-            if (table.getItems().isEmpty() || AllAlerts.confirm_all(
+            if (!hasInvoiceLines() || AllAlerts.confirm_all(
                     LanguageManager.getInstance().getString("confirm"),
                     LanguageManager.getInstance().getString("invoice.confirm.new.invoice"))) {
                 reset_all();
@@ -583,6 +627,7 @@ public class BuyController2<T3 extends BaseNames, T4 extends BaseAccount>
         if (editor.isSaving()) {
             return;
         }
+        boolean restoreQuickDraft = removeQuickDraftForSave();
         try {
             validateInvoiceForSave();
 
@@ -598,12 +643,31 @@ public class BuyController2<T3 extends BaseNames, T4 extends BaseAccount>
                 return;
             }
             saveInBackground(print, captureSaveCommand());
+            restoreQuickDraft = false;
         } catch (InvoiceValidationException e) {
             focusValidationTarget(e.target());
             logError(e);
         } catch (Exception e) {
             logError(e);
+        } finally {
+            if (restoreQuickDraft) {
+                ensureQuickDraftRow();
+                editor.refreshTotals();
+            }
         }
+    }
+
+    private boolean removeQuickDraftForSave() {
+        if (screenMode != InvoiceScreenMode.QUICK || table.getItems().isEmpty()) {
+            return false;
+        }
+        BasePurchasesAndSales last = table.getItems().getLast();
+        if (!isQuickDraft(last)) {
+            return false;
+        }
+        table.getItems().removeLast();
+        editor.refreshTotals();
+        return true;
     }
 
     private InvoiceSaveCommand captureSaveCommand() throws InvoiceValidationException {
@@ -638,6 +702,10 @@ public class BuyController2<T3 extends BaseNames, T4 extends BaseAccount>
         });
         task.setOnSucceeded(event -> afterSuccessfulSave(print, command, task.getValue()));
         task.setOnFailed(event -> {
+            if (screenMode == InvoiceScreenMode.QUICK) {
+                ensureQuickDraftRow();
+                editor.refreshTotals();
+            }
             Throwable failure = task.getException();
             if (failure instanceof InvoiceValidationException validation) {
                 focusValidationTarget(validation.target());
@@ -836,6 +904,10 @@ public class BuyController2<T3 extends BaseNames, T4 extends BaseAccount>
         radioCash.setSelected(true);
         radioDeffer.setSelected(false);
         returnEntry.reset();
+        if (screenMode == InvoiceScreenMode.QUICK) {
+            ensureQuickDraftRow();
+            Platform.runLater(() -> editQuickBarcodeRow(0));
+        }
     }
 
     private void publisherData() {
@@ -973,6 +1045,165 @@ public class BuyController2<T3 extends BaseNames, T4 extends BaseAccount>
                 .configure();
     }
 
+    /**
+     * The quick screen deliberately has one item-entry surface: the invoice table.
+     * A trailing draft row is never valid for saving and is removed immediately before
+     * the normal save validation runs.  It gives a scanner operator somewhere to type
+     * without maintaining a second barcode/name form above the table.
+     */
+    @SuppressWarnings("unchecked")
+    private void configureQuickTableEntry() {
+        hideQuickItemInputs();
+
+        TableColumn<BasePurchasesAndSales, String> barcodeColumn =
+                (TableColumn<BasePurchasesAndSales, String>) table.getColumns().get(InvoiceTableCoordinator.BARCODE_COLUMN);
+        TableColumn<BasePurchasesAndSales, String> nameColumn =
+                (TableColumn<BasePurchasesAndSales, String>) table.getColumns().get(InvoiceTableCoordinator.NAME_COLUMN);
+
+        barcodeColumn.setCellFactory(TextFieldTableCell.forTableColumn(new DefaultStringConverter()));
+        barcodeColumn.setOnEditCommit(event -> selectQuickBarcode(
+                event.getRowValue(), event.getNewValue(), event.getTablePosition().getRow()));
+
+        nameColumn.setCellFactory(TextFieldTableCell.forTableColumn(new DefaultStringConverter()));
+        nameColumn.setOnEditCommit(event -> openQuickItemSearch(
+                event.getRowValue(), event.getTablePosition().getRow()));
+
+        TableColumn<BasePurchasesAndSales, Double> quantityColumn =
+                (TableColumn<BasePurchasesAndSales, Double>) table.getColumns().get(InvoiceTableCoordinator.QUANTITY_COLUMN);
+        quantityColumn.setCellFactory(TextFieldTableCell.forTableColumn(new DoubleStringConverter()));
+        quantityColumn.setOnEditCommit(event -> {
+            BasePurchasesAndSales line = event.getRowValue();
+            line.setQuantity(event.getNewValue() == null ? 1 : event.getNewValue());
+            InvoiceLineService.recalculate(line);
+            table.refresh();
+            advanceQuickRow(event.getTablePosition().getRow());
+        });
+
+        ensureQuickDraftRow();
+        table.getItems().addListener((javafx.collections.ListChangeListener<BasePurchasesAndSales>) change -> {
+            if (table.getItems().isEmpty()) {
+                Platform.runLater(() -> {
+                    ensureQuickDraftRow();
+                    editQuickBarcodeRow(0);
+                });
+            } else if (!isQuickDraft(table.getItems().getLast())) {
+                // A non-empty table without a trailing draft means the draft row itself
+                // was just deleted (e.g. via the row delete button) while real lines remain.
+                Platform.runLater(this::ensureQuickDraftRow);
+            }
+        });
+        Platform.runLater(() -> editQuickBarcodeRow(table.getItems().size() - 1));
+    }
+
+    private boolean hasInvoiceLines() {
+        return table.getItems().stream().anyMatch(line ->
+                screenMode != InvoiceScreenMode.QUICK || !isQuickDraft(line));
+    }
+
+    private void hideQuickItemInputs() {
+        List<javafx.scene.Node> controls = List.of(labelBarcode, txtBarcode, labelSearchBy,
+                labelCondition, comboType, labelPrice, txtPrice, labelQuantity, txtQuantity,
+                labelItemBalance, txtItemBalance, labelTotals, txtTotals, btnAdd, btnUpdateItem);
+        controls.forEach(control -> {
+            control.setVisible(false);
+            control.setManaged(false);
+        });
+    }
+
+    private void selectQuickBarcode(BasePurchasesAndSales line, String barcode, int row) {
+        if (barcode == null || barcode.isBlank()) {
+            editQuickBarcodeRow(row);
+            return;
+        }
+        try {
+            InvoiceItemSelection selection = invoiceItemSelectionService.selectByBarcode(
+                    barcode, invoiceStockId, resolveSelectedPriceTier(), scaleBarcodeSettings());
+            applyQuickSelection(line, selection);
+            editQuickQuantityRow(row);
+        } catch (Exception e) {
+            line.getItems().setBarcode(barcode.trim());
+            table.refresh();
+            handleItemEntryError(e, false);
+            editQuickBarcodeRow(row);
+        }
+    }
+
+    private void openQuickItemSearch(BasePurchasesAndSales targetRow, int row) {
+        try {
+            new QuickItemPicker(itemsService, item -> dataInterface.designInterface().showDataForCustomer()
+                    ? invoiceBuy.getItemsPrice(item, priceTypeByNameId) : item.getBuyPrice())
+                    .show(item -> selectQuickName(targetRow, item, row));
+        } catch (Exception e) {
+            logError(e);
+            editQuickBarcodeRow(row);
+        }
+    }
+
+    private void selectQuickName(BasePurchasesAndSales line, ItemsModel item, int row) {
+        try {
+            InvoiceItemSelection selection = invoiceItemSelectionService.selectByName(
+                    item.getNameItem(), invoiceStockId, resolveSelectedPriceTier());
+            applyQuickSelection(line, selection);
+            editQuickQuantityRow(row);
+        } catch (Exception e) {
+            handleItemEntryError(e, false);
+            editQuickBarcodeRow(row);
+        }
+    }
+
+    private void applyQuickSelection(BasePurchasesAndSales line, InvoiceItemSelection selection) {
+        line.setItems(selection.item());
+        line.setUnitsType(selection.selectedUnit());
+        line.setNumItem(selection.item().getId());
+        line.setQuantity(selection.quantity());
+        line.setPrice(selection.price());
+        line.setDiscount(0);
+        InvoiceLineService.recalculate(line);
+        table.refresh();
+    }
+
+    private void advanceQuickRow(int completedRow) {
+        ensureQuickDraftRow();
+        editor.refreshTotals();
+        Platform.runLater(() -> editQuickBarcodeRow(Math.min(completedRow + 1,
+                table.getItems().size() - 1)));
+    }
+
+    private void ensureQuickDraftRow() {
+        if (table.getItems().isEmpty() || !isQuickDraft(table.getItems().getLast())) {
+            table.getItems().add(dataInterface.invoiceBuy().object_TableData(0, 0, 0,
+                    0, 0, 0, 0, new UnitsModel(), new ItemsModel(), null));
+        }
+    }
+
+    private boolean isQuickDraft(BasePurchasesAndSales line) {
+        return line == null || line.getItems() == null || line.getItems().getId() <= 0;
+    }
+
+    private void editQuickBarcodeRow(int row) {
+        if (row < 0 || row >= table.getItems().size()) return;
+        Platform.runLater(() -> {
+            if (row < 0 || row >= table.getItems().size()) return;
+            table.requestFocus();
+            table.getSelectionModel().clearSelection();
+            table.getSelectionModel().select(row, table.getColumns().getFirst());
+            table.getFocusModel().focus(row, table.getColumns().getFirst());
+            table.scrollTo(row);
+            // InvoiceTableCoordinator restores focus after a cell closes. Queue the edit
+            // after that restoration, otherwise JavaFX silently leaves the draft cell idle.
+            Platform.runLater(() -> {
+                table.getFocusModel().focus(row, table.getColumns().getFirst());
+                table.edit(row, table.getColumns().getFirst());
+            });
+        });
+    }
+
+    private void editQuickQuantityRow(int row) {
+        table.getSelectionModel().select(row, table.getColumns().get(3));
+        table.scrollTo(row);
+        table.edit(row, table.getColumns().get(3));
+    }
+
     private void disableData() {
         comboDelegate.setVisible(designInterface.showDataForCustomer());
         labelDelegate.setVisible(designInterface.showDataForCustomer());
@@ -1029,7 +1260,8 @@ public class BuyController2<T3 extends BaseNames, T4 extends BaseAccount>
 
     private void addItem(int num) {
         try {
-            new AddItemApplication(num).start(new Stage());
+            String barcode = num == 0 ? txtBarcode.getText() : null;
+            new AddItemApplication(num, barcode).start(new Stage());
         } catch (Exception e) {
             logError(e);
         }

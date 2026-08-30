@@ -34,6 +34,17 @@ import static com.hamza.controlsfx.table.columnEdit.ColumnSetting.addColumn;
 /** Owns the JavaFX wiring for the editable invoice-lines table. */
 public final class InvoiceTableCoordinator<T extends BasePurchasesAndSales> {
 
+    /** Column order as built by {@link #configure()} — other screens that reach into the
+     * table by index (e.g. the quick-entry mode) must stay in sync with this layout. */
+    public static final int BARCODE_COLUMN = 0;
+    public static final int NAME_COLUMN = 1;
+    public static final int TYPE_COLUMN = 2;
+    public static final int QUANTITY_COLUMN = 3;
+    public static final int PRICE_COLUMN = 4;
+    public static final int TOTAL_COLUMN = 5;
+    public static final int DISCOUNT_COLUMN = 6;
+    public static final int TOTAL_AFTER_COLUMN = 7;
+
     private final TableView<T> table;
     private final ObservableList<T> lines;
     private final InvoiceLineEditService editService;
@@ -81,13 +92,13 @@ public final class InvoiceTableCoordinator<T extends BasePurchasesAndSales> {
     }
 
     private void addIdentityColumns() {
-        addColumn(table, LanguageManager.getInstance().getString("barcode"), 0,
+        addColumn(table, LanguageManager.getInstance().getString("barcode"), BARCODE_COLUMN,
                 (Callback<TableColumn.CellDataFeatures<T, String>, ObservableValue<String>>)
                         features -> features.getValue().getItems().barcodeProperty());
-        addColumn(table, LanguageManager.getInstance().getString("name"), 1,
+        addColumn(table, LanguageManager.getInstance().getString("name"), NAME_COLUMN,
                 (Callback<TableColumn.CellDataFeatures<T, String>, ObservableValue<String>>)
                         features -> features.getValue().getItems().nameItemProperty());
-        addColumn(table, LanguageManager.getInstance().getString("type"), 2,
+        addColumn(table, LanguageManager.getInstance().getString("type"), TYPE_COLUMN,
                 (Callback<TableColumn.CellDataFeatures<T, String>, ObservableValue<String>>)
                         features -> features.getValue().getUnitsType().unit_nameProperty());
     }
@@ -104,17 +115,17 @@ public final class InvoiceTableCoordinator<T extends BasePurchasesAndSales> {
 
     private void configureEdits() {
         ColumnSetting columns = new ColumnSetting();
-        columns.enableStringEditing(1, event -> withRefreshOnFailure(() ->
+        columns.enableStringEditing(NAME_COLUMN, event -> withRefreshOnFailure(() ->
                 editService.editName(rowAt(event.getTablePosition().getRow()),
                         event.getNewValue())), table);
-        columns.enableDoubleEditing(3, event -> withRefreshOnFailure(() ->
+        columns.enableDoubleEditing(QUANTITY_COLUMN, event -> withRefreshOnFailure(() ->
                 editService.editQuantity(rowAt(event.getTablePosition().getRow()),
                         event.getNewValue())), table);
-        columns.enableDoubleEditing(4, event -> withRefreshOnFailure(() ->
+        columns.enableDoubleEditing(PRICE_COLUMN, event -> withRefreshOnFailure(() ->
                 editService.editPrice(rowAt(event.getTablePosition().getRow()),
                         event.getNewValue(), updateCatalogPrice.getAsBoolean(),
                         priceTier.getAsInt())), table);
-        columns.enableDoubleEditing(6, event -> withRefreshOnFailure(() ->
+        columns.enableDoubleEditing(DISCOUNT_COLUMN, event -> withRefreshOnFailure(() ->
                 editService.editDiscount(rowAt(event.getTablePosition().getRow()),
                         event.getNewValue())), table);
     }

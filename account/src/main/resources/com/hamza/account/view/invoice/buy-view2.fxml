@@ -40,6 +40,7 @@
                               <Button fx:id="btnNew" mnemonicParsing="false" styleClass="primary-button" text="جديد" />
                               <Button fx:id="btnSearch" mnemonicParsing="false" styleClass="neutral-button" text="بحث" />
                               <Button fx:id="btnReturnFromInvoice" mnemonicParsing="false" styleClass="neutral-button" text="ارتجاع من فاتورة" visible="false" managed="false" />
+                              <Button fx:id="btnQuickMode" mnemonicParsing="false" styleClass="neutral-button" text="%invoice.screen.quick" />
                               <Separator orientation="VERTICAL" />
                               <Button fx:id="btnSave" mnemonicParsing="false" styleClass="success-button" text="حفظ" />
                               <Button fx:id="btnPrintSave" mnemonicParsing="false" styleClass="primary-button" text="حفظ وطباعة" />
