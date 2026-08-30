@@ -6,7 +6,11 @@ import com.hamza.account.controller.invoice.ShowInvoiceNameData;
 import com.hamza.account.controller.model.ModelPrintInvoice;
 import com.hamza.account.controller.model.PrintPurchaseWithName;
 import com.hamza.account.controller.model.TableTotals;
+import com.hamza.account.features.barcodeprint.BarcodeLabelLayout;
+import com.hamza.account.features.barcodeprint.BarcodeLabelText;
+import com.hamza.account.features.barcodeprint.BarcodeNameOverflow;
 import com.hamza.account.features.checkbox.impl.setting.BarcodePrintDoubleLabel;
+import com.hamza.account.features.checkbox.impl.setting.BarcodePrintName;
 import com.hamza.account.features.inventory.InventoryRow;
 import com.hamza.account.model.domain.*;
 import com.hamza.account.otherSetting.BarcodeDetails;
@@ -375,14 +379,19 @@ public class Print_Reports extends ReportCompany {
         HashMap<String, Object> map = getCompany();
         BarcodePrintDoubleLabel barcodePrintDoubleLabel = new BarcodePrintDoubleLabel();
         String detailsOfBarcode = new BarcodeDetails().getDetailsOfBarcode(barcode, price);
-        map.put("name", name);
+        BarcodeLabelText.RenderedName renderedName = BarcodeLabelText.renderName(name,
+                BarcodeNameOverflow.fromSetting(getBarcodeLabelNameOverflow()),
+                getBarcodeLabelNameMaxCharacters(), getBarcodeLabelNameFontSize());
+        map.put("name", new BarcodePrintName().getBoolean_saved() && renderedName.visible() ? renderedName.value() : "");
         map.put("details", detailsOfBarcode);
         map.put("barcode", barcode);
+        map.put("show_name", new BarcodePrintName().getBoolean_saved() && renderedName.visible());
+        map.put("name_font_size", renderedName.fontSize());
 
         int labelCount = barcodePrintDoubleLabel.getBoolean_saved() ? 2 : 1;
         map.put("label_count", labelCount);
 
-        jasperData.printJasperPrint(JasperReportPaths.Barcode.VERSION_1, LanguageManager.getInstance().getString("barcode"), map, copies, printerNameBarcode);
+        jasperData.printJasperPrint(JasperReportPaths.Barcode.VERSION_1, LanguageManager.getInstance().getString("barcode"), map, copies, printerNameBarcode, design -> BarcodeLabelLayout.apply(design, getBarcodeLabelWidthMm(), getBarcodeLabelHeightMm()));
 
     }
 

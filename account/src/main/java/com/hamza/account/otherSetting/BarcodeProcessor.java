@@ -1,6 +1,7 @@
 package com.hamza.account.otherSetting;
 
 import com.hamza.account.config.PropertiesName;
+import com.hamza.account.features.scalebarcode.ScaleBarcodeValueType;
 import com.hamza.account.service.ItemsService;
 import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.language.LanguageManager;
@@ -18,13 +19,18 @@ public class BarcodeProcessor {
     private final ItemsService itemsService;
 
     public BarcodeResult processBarcode(String barcode, boolean showBarcodeByWeight) throws DaoException {
+        return processBarcode(barcode, DEFAULT_STOCK_ID, showBarcodeByWeight
+                ? ScaleBarcodeValueType.WEIGHT : ScaleBarcodeValueType.TOTAL_PRICE);
+    }
+
+    public BarcodeResult processBarcode(String barcode, int stockId, ScaleBarcodeValueType valueType) throws DaoException {
         var barcodeComponents = splitBarcode(barcode);
-        var item = itemsService.getItemByBarcodeAndStockId(barcodeComponents.itemBarcode(), DEFAULT_STOCK_ID);
+        var item = itemsService.getItemByBarcodeAndStockId(barcodeComponents.itemBarcode(), stockId);
         var unitPrice = item.getSelPrice1();
         var calculatedValues = calculatePriceAndWeight(
                 barcodeComponents.weightValue(),
                 unitPrice,
-                showBarcodeByWeight
+                valueType == ScaleBarcodeValueType.WEIGHT
         );
 
         return BarcodeResult.builder()

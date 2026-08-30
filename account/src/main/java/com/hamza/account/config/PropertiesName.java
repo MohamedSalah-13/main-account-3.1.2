@@ -6,6 +6,11 @@ public class PropertiesName extends PreferencesSetting {
     public static final String BARCODE_LABEL_PRINT_PRICE = "barcode.label.print.price";
     public static final String BARCODE_LABEL_PRINT_BARCODE = "barcode.label.print.barcode";
     public static final String BARCODE_LABEL_PRINT_NAME = "barcode.label.print.name";
+    private static final String BARCODE_LABEL_NAME_OVERFLOW = "barcode.label.name.overflow";
+    private static final String BARCODE_LABEL_NAME_MAX_CHARACTERS = "barcode.label.name.max.characters";
+    private static final String BARCODE_LABEL_NAME_FONT_SIZE = "barcode.label.name.font.size";
+    private static final String BARCODE_LABEL_WIDTH_MM = "barcode.label.width.mm";
+    private static final String BARCODE_LABEL_HEIGHT_MM = "barcode.label.height.mm";
     private static final String PANE_INDEX = "pane.index";
     private static final String SETTING_EXPANDED = "setting.expanded";
     private static final String ITEMS_SUB_GROUP = "items.sub.group";
@@ -43,6 +48,7 @@ public class PropertiesName extends PreferencesSetting {
     private static final String SETTING_BARCODE_START = "setting.barcode.start";
     private static final String SETTING_BARCODE_LENGTH = "setting.barcode.length";
     private static final String SETTING_BARCODE_SCALE_ACTIVE = "setting.barcode.scale.active";
+    private static final String SETTING_BARCODE_VALUE_TYPE = "setting.barcode.value.type";
     private static final String SETTING_BARCODE_VALIDATE_CHECK_DIGIT = "setting.barcode.validate.check.digit";
     private static final String SETTING_BARCODE_MAX_WEIGHT = "setting.barcode.max.weight";
     private static final String SETTING_BARCODE_MIN_WEIGHT = "setting.barcode.min.weight";
@@ -184,6 +190,36 @@ public class PropertiesName extends PreferencesSetting {
         putBoolean(BARCODE_LABEL_PRINT_NAME, value);
     }
 
+
+    public static double getBarcodeLabelWidthMm() { return getDouble(BARCODE_LABEL_WIDTH_MM, 41); }
+    public static void setBarcodeLabelWidthMm(double value) { putDouble(BARCODE_LABEL_WIDTH_MM, Math.max(value, 10)); }
+    public static double getBarcodeLabelHeightMm() { return getDouble(BARCODE_LABEL_HEIGHT_MM, 28); }
+    public static void setBarcodeLabelHeightMm(double value) { putDouble(BARCODE_LABEL_HEIGHT_MM, Math.max(value, 10)); }
+    /** How a name that cannot fit on a fixed-size barcode label is rendered. */
+    public static String getBarcodeLabelNameOverflow() {
+        return getString(BARCODE_LABEL_NAME_OVERFLOW, "ELLIPSIS");
+    }
+
+    public static void setBarcodeLabelNameOverflow(String value) {
+        putString(BARCODE_LABEL_NAME_OVERFLOW, value);
+    }
+
+    /** Approximate character budget for the product name on one label. */
+    public static int getBarcodeLabelNameMaxCharacters() {
+        return getInt(BARCODE_LABEL_NAME_MAX_CHARACTERS, 28);
+    }
+
+    public static void setBarcodeLabelNameMaxCharacters(int value) {
+        putInt(BARCODE_LABEL_NAME_MAX_CHARACTERS, value);
+    }
+
+    public static int getBarcodeLabelNameFontSize() {
+        return getInt(BARCODE_LABEL_NAME_FONT_SIZE, 7);
+    }
+
+    public static void setBarcodeLabelNameFontSize(int value) {
+        putInt(BARCODE_LABEL_NAME_FONT_SIZE, value);
+    }
     /**
      * Whether a return must name the invoice it reverses. Off by default: a return
      * entered without one is what every return before {@code V16__return_source.sql}
@@ -330,6 +366,14 @@ public class PropertiesName extends PreferencesSetting {
 
     public static void setSettingBarcodeScaleActive(boolean value) {
         putBoolean(SETTING_BARCODE_SCALE_ACTIVE, value);
+    }
+
+    public static String getSettingBarcodeValueType() {
+        return getString(SETTING_BARCODE_VALUE_TYPE, "WEIGHT");
+    }
+
+    public static void setSettingBarcodeValueType(String value) {
+        putString(SETTING_BARCODE_VALUE_TYPE, value);
     }
 
     public static boolean getSettingBarcodeValidateCheckDigit() {

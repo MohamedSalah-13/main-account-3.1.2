@@ -1378,3 +1378,17 @@
 .totals-purchase-return .app-card { -fx-border-color: -app-danger-border; }
 .totals-purchase-return .summary-bar { -fx-background-color: linear-gradient(to right, -app-danger, -app-danger-hover); }
 .totals-purchase-return .totals-screen-title { -fx-text-fill: -app-danger; }
+/* Optional table grid, kept off by default for the lighter Atlantafx-like view. */
+.table-column-dividers .table-view {
+    -fx-table-cell-border-color: -app-table-border;
+}
+
+.table-column-dividers .table-view .column-header {
+    -fx-border-color: transparent -app-table-border transparent transparent;
+    -fx-border-width: 0 0.091em 0 0;
+}
+
+.table-column-dividers .table-view .column-header-background .filler {
+    -fx-border-color: transparent transparent transparent -app-table-border;
+    -fx-border-width: 0 0 0 0.091em;
+}

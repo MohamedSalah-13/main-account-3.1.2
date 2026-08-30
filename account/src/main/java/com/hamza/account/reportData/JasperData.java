@@ -18,6 +18,8 @@ import javax.print.attribute.standard.Copies;
 import javax.print.attribute.standard.PrinterName;
 import java.sql.Connection;
 import java.util.HashMap;
+import java.util.function.Consumer;
+import java.util.function.Consumer;
 
 public class JasperData {
 
@@ -32,6 +34,17 @@ public class JasperData {
         try {
             JasperPrint jasperPrint = prepareJasperPrint(nameUrl, parameters);
             processJasperPrint(title, jasperPrint, copies, printerName);
+        } catch (JRException e) {
+            handleJrException(e);
+        }
+    }
+
+    public void printJasperPrint(String nameUrl, String title, HashMap<String, Object> parameters, int copies, String printerName, Consumer<JasperDesign> customizer) {
+        try {
+            JasperDesign design = JRXmlLoader.load(nameUrl);
+            customizer.accept(design);
+            JasperReport report = JasperCompileManager.compileReport(design);
+            processJasperPrint(title, JasperFillManager.fillReport(report, parameters, new JREmptyDataSource()), copies, printerName);
         } catch (JRException e) {
             handleJrException(e);
         }

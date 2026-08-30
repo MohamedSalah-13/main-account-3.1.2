@@ -1,6 +1,7 @@
 package com.hamza.account.controller.others;
 
 import com.hamza.account.config.Image_Setting;
+import com.hamza.account.config.TableAppearance;
 import com.hamza.account.controller.main.DisableButtons;
 import com.hamza.account.openFxml.FxmlPath;
 import com.hamza.account.table.ActionButtonToolBar;
@@ -171,6 +172,7 @@ public class TableController<T> implements Initializable {
         ColumnSetting.addSelectedColumn(tableView);
         tableView.setEditable(true);
         tableView.getSelectionModel().setSelectionMode(SelectionMode.SINGLE);
+        TableAppearance.apply(tableView);
     }
 
     private void otherSetting() {

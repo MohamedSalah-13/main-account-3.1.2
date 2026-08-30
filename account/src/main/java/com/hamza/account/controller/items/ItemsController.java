@@ -1,30 +1,27 @@
 package com.hamza.account.controller.items;
 
+import com.hamza.account.authorization.AppPermissions;
+import com.hamza.account.authorization.AuthorizationGuard;
 import com.hamza.account.config.Image_Setting;
+import com.hamza.account.config.NamesTables;
 import com.hamza.account.controller.main.DataPublisher;
 import com.hamza.account.controller.main.DisableButtons;
 import com.hamza.account.controller.main.LoadData;
 import com.hamza.account.controller.others.SelectedButton;
 import com.hamza.account.controller.others.ServiceRegistry;
-import com.hamza.account.features.events.GroupLevel;
-import com.hamza.account.features.events.GroupsChanged;
-import com.hamza.account.features.events.ItemSaved;
-import com.hamza.account.features.events.SelPriceNamesChanged;
-import com.hamza.account.features.events.ItemsChanged;
+import com.hamza.account.features.events.*;
+import com.hamza.account.features.rbac.CurrentUser;
 import com.hamza.account.model.dao.DaoFactory;
-import com.hamza.account.config.NamesTables;
 import com.hamza.account.model.domain.ItemsModel;
 import com.hamza.account.openFxml.FxmlPath;
-import com.hamza.account.service.*;
+import com.hamza.account.service.ItemsService;
+import com.hamza.account.service.MainGroupService;
+import com.hamza.account.service.SelPriceItemService;
 import com.hamza.account.table.EditCell;
 import com.hamza.account.table.TableSetting;
-import com.hamza.account.authorization.AppPermissions;
-import com.hamza.account.authorization.AuthorizationGuard;
-import com.hamza.account.authorization.PermissionKey;
 import com.hamza.account.view.AddItemApplication;
 import com.hamza.account.view.CardApplication;
 import com.hamza.account.view.ConvertItemsGroup;
-import com.hamza.account.features.rbac.CurrentUser;
 import com.hamza.account.view.barcode.PrintBarcodeApp;
 import com.hamza.account.view.barcode.PrintBarcodeModel;
 import com.hamza.controlsfx.alert.AllAlerts;
@@ -65,7 +62,7 @@ public class ItemsController extends LoadData {
     private final TableView<ItemsModel> tableView = new TableView<>();
     private final ItemsService itemsService = ServiceRegistry.get(ItemsService.class);
     private final MainGroupService mainGroupService = ServiceRegistry.get(MainGroupService.class);
-//    private final SupGroupService supGroupService = ServiceRegistry.get(SupGroupService.class);
+    //    private final SupGroupService supGroupService = ServiceRegistry.get(SupGroupService.class);
     private final SelPriceItemService selPriceService = ServiceRegistry.get(SelPriceItemService.class);
 
     @FXML
@@ -105,7 +102,6 @@ public class ItemsController extends LoadData {
     private void otherSetting() {
 
         menuItemConvertGroup.setText(LanguageManager.getInstance().getString("item.dialog.convert.title"));
-        menuItemConvertGroup.setDisable(true);
         // combo items
         ObservableList<String> observableListMain = FXCollections.observableArrayList(getMainGroupsNames());
 
@@ -290,7 +286,8 @@ public class ItemsController extends LoadData {
             var itemsModels = printItems();
             if (!itemsModels.isEmpty()) {
                 new ConvertItemsGroup(itemsModels).start(new Stage());
-            } else AllAlerts.handleError(LanguageManager.getInstance().getString("item.dialog.convert.title"), new UserValidationException(LanguageManager.getInstance().getString("msg.insert.all")));
+            } else
+                AllAlerts.handleError(LanguageManager.getInstance().getString("item.dialog.convert.title"), new UserValidationException(LanguageManager.getInstance().getString("msg.insert.all")));
         } catch (Exception e) {
             logErrors(e);
         }

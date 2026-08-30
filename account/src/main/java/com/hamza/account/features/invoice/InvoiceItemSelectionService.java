@@ -2,6 +2,7 @@ package com.hamza.account.features.invoice;
 
 import com.hamza.account.document.DocumentType;
 import com.hamza.account.features.events.InvoiceSide;
+import com.hamza.account.features.scalebarcode.ScaleBarcodeValueType;
 import com.hamza.account.finance.MoneyMath;
 import com.hamza.account.model.domain.ItemsModel;
 import com.hamza.account.model.domain.UnitsModel;
@@ -69,7 +70,7 @@ public final class InvoiceItemSelectionService {
                 : scaleSettings;
 
         if (settings.matches(query)) {
-            BarcodeResult result = scaleBarcodeReader.read(query);
+            BarcodeResult result = scaleBarcodeReader.read(query, stockId, settings.valueType());
             ItemsModel item = requireItem(result == null ? null : result.item(),
                     "لا يوجد صنف لباركود الميزان: " + query);
             return selection(item, ItemUnits.baseUnit(item), priceTier,
@@ -116,7 +117,7 @@ public final class InvoiceItemSelectionService {
 
     private static ScaleBarcodeReader scaleReader(ItemsService itemsService) {
         BarcodeProcessor processor = new BarcodeProcessor(itemsService);
-        return barcode -> processor.processBarcode(barcode, true);
+        return (barcode, stockId, valueType) -> processor.processBarcode(barcode, stockId, valueType);
     }
 
     private static ItemsModel requireItem(ItemsModel item, String message)
@@ -148,18 +149,22 @@ public final class InvoiceItemSelectionService {
 
     @FunctionalInterface
     interface ScaleBarcodeReader {
-        BarcodeResult read(String barcode) throws DaoException;
+        BarcodeResult read(String barcode, int stockId, ScaleBarcodeValueType valueType) throws DaoException;
     }
 
-    public record ScaleBarcodeSettings(boolean active, int prefix, int prefixLength) {
+    public record ScaleBarcodeSettings(boolean active, int prefix, int prefixLength, ScaleBarcodeValueType valueType) {
+        public ScaleBarcodeSettings(boolean active, int prefix, int prefixLength) {
+            this(active, prefix, prefixLength, ScaleBarcodeValueType.WEIGHT);
+        }
         public ScaleBarcodeSettings {
+            valueType = valueType == null ? ScaleBarcodeValueType.WEIGHT : valueType;
             if (prefixLength < 0) {
                 throw new IllegalArgumentException("prefixLength must not be negative");
             }
         }
 
         public static ScaleBarcodeSettings disabled() {
-            return new ScaleBarcodeSettings(false, 0, 0);
+            return new ScaleBarcodeSettings(false, 0, 0, ScaleBarcodeValueType.WEIGHT);
         }
 
         public boolean matches(String barcode) {

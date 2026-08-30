@@ -100,6 +100,7 @@ public final class ThemeManager {
         if (scene.getRoot() != null) {
             applyUiScale(scene.getRoot());
             applyFontFamily(scene.getRoot());
+            TableAppearance.apply(scene.getRoot());
         }
     }
 
@@ -116,6 +117,7 @@ public final class ThemeManager {
         root.setNodeOrientation(LanguageManager.getInstance().getNodeOrientation());
         applyUiScale(root);
         applyFontFamily(root);
+        TableAppearance.apply(root);
     }
 
     /**

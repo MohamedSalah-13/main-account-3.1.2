@@ -1,5 +1,7 @@
 package com.hamza.account.table;
 
+import com.hamza.account.config.TableAppearance;
+
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TreeTableColumn;
@@ -13,6 +15,7 @@ public class TableSetting {
     public static <S> void tableMenuSetting(@NotNull Class<?> clazz, @NotNull TableView<S> tableView) {
         Preferences preferences = Preferences.userNodeForPackage(clazz);
         tableView.tableMenuButtonVisibleProperty().setValue(true);
+        TableAppearance.apply(tableView);
 
         // استخدام معرف الجدول كجزء من المفتاح لتجنب التداخل بين الجداول في نفس الكلاس
         String tablePrefix = (tableView.getId() != null && !tableView.getId().isEmpty())
@@ -52,6 +55,7 @@ public class TableSetting {
     public static <S> void tableMenuSetting(@NotNull Class<?> clazz, @NotNull TreeTableView<S> treeTableView) {
         Preferences preferences = Preferences.userNodeForPackage(clazz);
         treeTableView.tableMenuButtonVisibleProperty().setValue(true);
+        TableAppearance.apply(treeTableView);
 
         String tablePrefix = (treeTableView.getId() != null && !treeTableView.getId().isEmpty())
                 ? treeTableView.getId() + "_" : "treeTable_";

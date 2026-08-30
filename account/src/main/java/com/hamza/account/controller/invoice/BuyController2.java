@@ -15,6 +15,7 @@ import com.hamza.account.features.events.EmployeesChanged;
 import com.hamza.account.features.events.StocksChanged;
 import com.hamza.account.finance.MoneyMath;
 import com.hamza.account.features.invoice.InvoiceItemSelectionService;
+import com.hamza.account.features.scalebarcode.ScaleBarcodeValueType;
 import com.hamza.account.features.invoice.InvoiceItemCatalogService;
 import com.hamza.account.features.invoice.InvoiceExpiryOptions;
 import com.hamza.account.features.invoice.InvoiceExpiryService;
@@ -437,7 +438,7 @@ public class BuyController2<T3 extends BaseNames, T4 extends BaseAccount>
     private InvoiceItemSelectionService.ScaleBarcodeSettings scaleBarcodeSettings() {
         return new InvoiceItemSelectionService.ScaleBarcodeSettings(
                 getSettingBarcodeScaleActive(), getSettingBarcodeStart(),
-                getSettingBarcodeCountScale());
+                getSettingBarcodeCountScale(), ScaleBarcodeValueType.valueOf(getSettingBarcodeValueType()));
     }
 
     private void handleItemEntryError(Exception error, boolean scaleBarcode) {

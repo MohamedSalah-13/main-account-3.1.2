@@ -1,6 +1,9 @@
 package com.hamza.account.controller.setting;
 
+import com.hamza.account.config.PropertiesName;
 import com.hamza.account.controller.others.ServiceRegistry;
+import com.hamza.account.features.barcodeprint.BarcodeNameOverflow;
+import com.hamza.account.features.scalebarcode.ScaleBarcodeValueType;
 import com.hamza.account.features.checkbox.api.CheckBox_Setting;
 import com.hamza.account.features.checkbox.impl.setting.BarcodePrintDoubleLabel;
 import com.hamza.account.features.checkbox.impl.setting.BarcodePrintName;
@@ -25,6 +28,7 @@ import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
 import javafx.scene.layout.BorderPane;
+import javafx.scene.shape.Rectangle;
 import javafx.scene.layout.VBox;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
@@ -58,13 +62,15 @@ public class SettingTabBarcodeController implements Initializable {
     @FXML
     private BorderPane borderPane;
     @FXML
-    private ComboBox<String> comboMain, comboSub, comboType;
+    private ComboBox<String> comboMain, comboSub, comboType, comboNameOverflow, comboScaleValueType;
     @FXML
-    private Label labelMain, labelSub, labelType;
+    private Label labelMain, labelSub, labelType, previewName, previewBarcode, previewDetails, previewSize;
+    @FXML
+    private Rectangle previewFrame;
     @FXML
     private TextField textBarcodeStart, textCountScale, textCountBarcode, textCountItem;
     @FXML
-    private TextField textPrice1, textPrice2, textPrice3;
+    private TextField textPrice1, textPrice2, textPrice3, textNameMaxCharacters, textNameFontSize, textLabelWidthMm, textLabelHeightMm;
 
     @Override
     public void initialize(URL url, ResourceBundle resourceBundle) {
@@ -72,8 +78,10 @@ public class SettingTabBarcodeController implements Initializable {
         action();
         comboSetting(daoFactory);
         barcodeScaleSetting();
+        barcodeLabelSetting();
         showCurrency.setDisable(true);
         showCurrency.setText(LanguageManager.getInstance().getString("settings.barcode.showCurrency"));
+        configureLabelPreview();
     }
 
     private void otherSetting() {
@@ -159,6 +167,83 @@ public class SettingTabBarcodeController implements Initializable {
         }
     }
 
+    private void configureLabelPreview() {
+        showName.selectedProperty().addListener((observable, oldValue, value) -> updateLabelPreview());
+        showPrice.selectedProperty().addListener((observable, oldValue, value) -> updateLabelPreview());
+        showBarcode.selectedProperty().addListener((observable, oldValue, value) -> updateLabelPreview());
+        textNameMaxCharacters.textProperty().addListener((observable, oldValue, value) -> updateLabelPreview());
+        textNameFontSize.textProperty().addListener((observable, oldValue, value) -> updateLabelPreview());
+        comboNameOverflow.valueProperty().addListener((observable, oldValue, value) -> updateLabelPreview());
+        textLabelWidthMm.textProperty().addListener((observable, oldValue, value) -> updateLabelPreview());
+        textLabelHeightMm.textProperty().addListener((observable, oldValue, value) -> updateLabelPreview());
+        updateLabelPreview();
+    }
+
+    private void updateLabelPreview() {
+        if (previewName == null || textNameMaxCharacters == null || comboNameOverflow == null) return;
+        int limit = readPreviewInteger(textNameMaxCharacters, 28);
+        int fontSize = readPreviewInteger(textNameFontSize, 7);
+        int index = Math.max(0, comboNameOverflow.getSelectionModel().getSelectedIndex());
+        var rendered = com.hamza.account.features.barcodeprint.BarcodeLabelText.renderName(
+                LanguageManager.getInstance().getString("settings.barcode.previewSampleName"),
+                BarcodeNameOverflow.values()[index], limit, fontSize);
+        previewName.setText(showName.isSelected() && rendered.visible() ? rendered.value() : "");
+        previewName.setStyle("-fx-font-size: " + rendered.fontSize() + "px;");
+        previewFrame.setWidth(Math.min(260, Math.max(70, getBarcodeLabelWidthMm() * 4)));
+        previewFrame.setHeight(Math.min(145, Math.max(45, getBarcodeLabelHeightMm() * 4)));
+        previewBarcode.setText("||| ||| ||| ||| |||");
+        previewSize.setText(String.format(LanguageManager.getInstance().getString("settings.barcode.preview.size"), getBarcodeLabelWidthMm(), getBarcodeLabelHeightMm()));
+        previewDetails.setText((showBarcode.isSelected() ? "1234567890123" : "")
+                + (showBarcode.isSelected() && showPrice.isSelected() ? " - " : "")
+                + (showPrice.isSelected() ? "125.00" : ""));
+    }
+
+    private int readPreviewInteger(TextField field, int fallback) {
+        try { return Integer.parseInt(field.getText()); } catch (NumberFormatException ignored) { return fallback; }
+    }
+
+    private void barcodeLabelSetting() {
+        var language = LanguageManager.getInstance();
+        comboNameOverflow.setItems(FXCollections.observableArrayList(
+                language.getString("settings.barcode.nameOverflow.ellipsis"),
+                language.getString("settings.barcode.nameOverflow.shrink"),
+                language.getString("settings.barcode.nameOverflow.hide")));
+        comboNameOverflow.getSelectionModel().select(switch (BarcodeNameOverflow.fromSetting(getBarcodeLabelNameOverflow())) {
+            case ELLIPSIS -> 0;
+            case SHRINK -> 1;
+            case HIDE -> 2;
+        });
+        comboNameOverflow.valueProperty().addListener((observable, oldValue, value) -> {
+            int index = comboNameOverflow.getSelectionModel().getSelectedIndex();
+            if (index >= 0) setBarcodeLabelNameOverflow(BarcodeNameOverflow.values()[index].name());
+        });
+        setPositiveInteger(textNameMaxCharacters, getBarcodeLabelNameMaxCharacters(), 1, 200,
+                PropertiesName::setBarcodeLabelNameMaxCharacters);
+        setPositiveInteger(textNameFontSize, getBarcodeLabelNameFontSize(), 4, 30,
+                PropertiesName::setBarcodeLabelNameFontSize);
+    }
+
+    private void setPositiveDecimal(TextField field, double value, java.util.function.DoubleConsumer saver) {
+        field.setText(String.valueOf(value));
+        field.textProperty().addListener((observable, oldValue, text) -> {
+            try {
+                double parsed = Double.parseDouble(text);
+                if (parsed >= 10 && parsed <= 300) { saver.accept(parsed); updateLabelPreview(); }
+            } catch (NumberFormatException ignored) { }
+        });
+    }
+
+    private void setPositiveInteger(TextField field, int value, int minimum, int maximum,
+                                    java.util.function.IntConsumer saver) {
+        field.setText(String.valueOf(value));
+        field.textProperty().addListener((observable, oldValue, text) -> {
+            if (text.matches("\\d+")) {
+                int parsed = Integer.parseInt(text);
+                if (parsed >= minimum && parsed <= maximum) saver.accept(parsed);
+            }
+        });
+    }
+
     private void barcodeScaleSetting() {
 
         checkActivateBarcodeScale.setSelected(getSettingBarcodeScaleActive());
@@ -170,6 +255,12 @@ public class SettingTabBarcodeController implements Initializable {
         setTextBarcodeData(textCountScale, getSettingBarcodeCountScale());
         setTextBarcodeData(textCountBarcode, getSettingBarcodeLength());
         setTextBarcodeData(textCountItem, getSettingBarcodeCountItem());
+        comboScaleValueType.setItems(FXCollections.observableArrayList(
+                LanguageManager.getInstance().getString("settings.barcode.valueType.weight"),
+                LanguageManager.getInstance().getString("settings.barcode.valueType.totalPrice")));
+        comboScaleValueType.getSelectionModel().select(ScaleBarcodeValueType.valueOf(getSettingBarcodeValueType()).ordinal());
+        comboScaleValueType.valueProperty().addListener((observable, oldValue, value) ->
+                setSettingBarcodeValueType(ScaleBarcodeValueType.values()[comboScaleValueType.getSelectionModel().getSelectedIndex()].name()));
     }
 
     private void setTextBarcodeData(TextField textField, int property) {

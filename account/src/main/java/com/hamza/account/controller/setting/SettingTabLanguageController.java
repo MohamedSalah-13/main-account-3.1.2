@@ -74,6 +74,8 @@ public class SettingTabLanguageController implements Initializable {
     @FXML
     private ComboBox<String> comboFont;
     @FXML
+    private CheckBox checkColumnDividers, checkFillColumns;
+    @FXML
     private Button btnAddFont;
     @FXML
     private Label labelFontPreview, labelFontSupport;
@@ -172,6 +174,7 @@ public class SettingTabLanguageController implements Initializable {
 
         // Font selection: initialize and wire listeners
         configureFontCombo();
+        configureTableAppearance();
 
         btnDeleteImage.setOnAction(actionEvent -> {
             textPath.setText(text);
@@ -413,6 +416,19 @@ public class SettingTabLanguageController implements Initializable {
         comboFont.setValue(family);
         updateFontPreview(family);
         AllAlerts.alertSaveWithMessage(LanguageManager.getInstance().getString("settings.language.fontAdded"));
+    }
+
+    private void configureTableAppearance() {
+        checkColumnDividers.setSelected(com.hamza.account.config.TableAppearance.showColumnDividers());
+        checkFillColumns.setSelected(com.hamza.account.config.TableAppearance.fillAvailableWidth());
+        checkColumnDividers.selectedProperty().addListener((observable, oldValue, selected) -> {
+            com.hamza.account.config.TableAppearance.setShowColumnDividers(selected);
+            reapplyToCurrentScene();
+        });
+        checkFillColumns.selectedProperty().addListener((observable, oldValue, selected) -> {
+            com.hamza.account.config.TableAppearance.setFillAvailableWidth(selected);
+            reapplyToCurrentScene();
+        });
     }
 
     private void updateFontPreview(String family) {

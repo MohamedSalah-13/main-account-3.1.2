@@ -72,7 +72,7 @@ class InvoiceItemSelectionServiceTest {
         var lookup = lookup(item);
         var service = new InvoiceItemSelectionService(
                 DocumentType.SALES, lookup, (model, tier) -> model.getSelPrice2(),
-                barcode -> new BarcodeResult(item, 999, 999, 0.375));
+                (barcode, stockId, valueType) -> new BarcodeResult(item, 999, 999, 0.375));
 
         InvoiceItemSelection selection = service.selectByBarcode(
                 "2700001003751", 1, 2,
@@ -112,7 +112,7 @@ class InvoiceItemSelectionServiceTest {
             DocumentType type, ItemsModel item,
             InvoiceItemSelectionService.ItemPriceResolver resolver) {
         return new InvoiceItemSelectionService(type, lookup(item), resolver,
-                barcode -> new BarcodeResult(item, item.getSelPrice1(), item.getSelPrice1(), 1));
+                (barcode, stockId, valueType) -> new BarcodeResult(item, item.getSelPrice1(), item.getSelPrice1(), 1));
     }
 
     private static InvoiceItemSelectionService.ItemLookup lookup(ItemsModel item) {

@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <?import javafx.scene.control.Button?>
+<?import javafx.scene.control.CheckBox?>
 <?import javafx.scene.control.ComboBox?>
 <?import javafx.scene.control.Label?>
 <?import javafx.scene.control.RadioButton?>
@@ -89,6 +90,14 @@
                                 <Button fx:id="btnAddFont" mnemonicParsing="false" styleClass="neutral-button" text="%settings.language.addFontButton" GridPane.columnIndex="2" GridPane.rowIndex="10" />
                                 <Label fx:id="labelFontPreview" maxWidth="1.7976931348623157E308" styleClass="font-preview" text="%settings.language.fontPreviewSample" wrapText="true" GridPane.columnIndex="1" GridPane.columnSpan="2" GridPane.rowIndex="11" />
                                 <Label fx:id="labelFontSupport" styleClass="font-support" text="%settings.language.fontArabicSupportUnknown" GridPane.columnIndex="1" GridPane.columnSpan="2" GridPane.rowIndex="12" />
+
+                                <Label styleClass="form-label" text="%settings.tables.sectionTitle" GridPane.rowIndex="13" />
+                                <VBox spacing="6.0" GridPane.columnIndex="1" GridPane.columnSpan="2" GridPane.rowIndex="13">
+                                    <children>
+                                        <CheckBox fx:id="checkColumnDividers" mnemonicParsing="false" styleClass="modern-radio" text="%settings.tables.showColumnDividers" />
+                                        <CheckBox fx:id="checkFillColumns" mnemonicParsing="false" styleClass="modern-radio" text="%settings.tables.fillColumns" />
+                                    </children>
+                                </VBox>
                             </children>
                      <rowConstraints>
                         <RowConstraints />
