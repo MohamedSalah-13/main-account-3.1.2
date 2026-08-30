@@ -89,7 +89,7 @@ class InvoiceItemSelectionServiceTest {
     void missingItemProducesUserFacingValidation() {
         var service = new InvoiceItemSelectionService(
                 DocumentType.SALES, lookup(null), (model, tier) -> 10,
-                barcode -> null);
+                (barcode, stockId, valueType) -> null);
 
         assertThrows(UserValidationException.class,
                 () -> service.selectByName("غير موجود", 1, 1));
