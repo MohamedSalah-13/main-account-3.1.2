@@ -11,6 +11,11 @@ import com.hamza.account.features.treasury.CashMovementCommand;
 import com.hamza.account.features.treasury.TreasuryCashService;
 import com.hamza.account.features.treasury.TreasuryTransferCommand;
 import com.hamza.account.features.treasury.TreasuryTransferService;
+import com.hamza.account.treasury.WalletFee;
+import com.hamza.account.model.domain.CustomerAccount;
+import com.hamza.account.model.domain.Customers;
+import com.hamza.account.model.domain.Treasury;
+import com.hamza.account.service.AccountCustomerService;
 import com.hamza.account.features.profitloss.ProfitLossDao;
 import com.hamza.account.features.profitloss.ProfitLossRow;
 import com.hamza.account.model.dao.DaoFactory;
@@ -107,7 +112,7 @@ class TreasuryBalanceViewAcceptanceTest {
         UserSessionContext session = new UserSessionContext();
         session.signIn(1, "admin",
                 List.of(AppPermissions.TREASURY_TRANSFER, AppPermissions.TREASURY_DEPOSIT,
-                        AppPermissions.TREASURY_CAPITAL));
+                        AppPermissions.TREASURY_CAPITAL, AppPermissions.CUSTOMER_ACCOUNT_CREATE));
         ServiceRegistry.register(UserSessionContext.class, session);
     }
 
@@ -550,5 +555,84 @@ class TreasuryBalanceViewAcceptanceTest {
         return new ProfitLossDao().load(day, day).stream()
                 .map(ProfitLossRow::netProfit)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
+    }
+
+    @Test
+    @DisplayName("a wallet collection: the customer settles all of it, the treasury nets the fee")
+    void theWalletFeeIsAnExpenseNotADeduction() throws Exception {
+        inTransaction(connection -> {
+            Fixture fixture = fixture(connection);
+            int customer = firstId(connection, "custom");
+            LocalDate today = LocalDate.now();
+
+            BigDecimal treasuryBefore = balance(connection, fixture.main()).balance();
+            BigDecimal owedBefore = owedBy(connection, customer);
+
+            // 1000 collected on a wallet charging 1%: 10 kept, 990 credited.
+            CustomerAccount payment = new CustomerAccount(
+                    nextId(connection, "customers_accounts", "account_num"),
+                    today.toString(), 1000d, "wallet-acceptance", 0,
+                    new Customers(customer), new Treasury(fixture.main()));
+
+            new AccountCustomerService(DaoFactory.INSTANCE).save(payment, money(10));
+
+            assertEquals(treasuryBefore.add(money(990)),
+                    balance(connection, fixture.main()).balance(),
+                    "the treasury did not end with the collection less the fee");
+            assertEquals(owedBefore.subtract(money(1000)), owedBy(connection, customer),
+                    "the customer was charged the fee - their account must close by the whole 1000");
+            assertEquals(1, countOf(connection,
+                            "SELECT COUNT(*) FROM expenses_details d JOIN expenses e ON e.id = d.type_code"
+                                    + " WHERE d.treasury_id = ? AND d.amount = 10 AND e.expenses_name = ?",
+                            fixture.main(), WalletFee.EXPENSE_NAME),
+                    "the fee was not posted as an expense under its own heading");
+        });
+    }
+
+    @Test
+    @DisplayName("if the fee cannot be posted, the collection is not saved either")
+    void theTwoRowsCommitTogether() throws Exception {
+        inTransaction(connection -> {
+            Fixture fixture = fixture(connection);
+            int customer = firstId(connection, "custom");
+            int id = nextId(connection, "customers_accounts", "account_num");
+
+            CustomerAccount payment = new CustomerAccount(id, LocalDate.now().toString(), 1000d,
+                    "wallet-acceptance", 0, new Customers(customer), new Treasury(fixture.main()));
+
+            // A fee larger than the amount is refused by WalletFeeService, inside the
+            // transaction the payment was already inserted in.
+            assertThrows(Exception.class, () ->
+                    new AccountCustomerService(DaoFactory.INSTANCE).save(payment, money(2000)));
+
+            assertEquals(0, countOf(connection,
+                            "SELECT COUNT(*) FROM customers_accounts WHERE account_num = ?", id),
+                    "the payment survived a refused fee - the two must commit together");
+        });
+    }
+
+    /** What the customer still owes, from the view the statement screen reads. */
+    private BigDecimal owedBy(Connection connection, int customerId) throws Exception {
+        String sql = "SELECT COALESCE(SUM(purchase) - SUM(discount) - SUM(paid), 0)"
+                + " FROM account_customer_table WHERE account_code = ?";
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setInt(1, customerId);
+            try (ResultSet rows = statement.executeQuery()) {
+                assertTrue(rows.next());
+                return money(rows.getBigDecimal(1));
+            }
+        }
+    }
+
+    private int countOf(Connection connection, String sql, Object... parameters) throws Exception {
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            for (int i = 0; i < parameters.length; i++) {
+                statement.setObject(i + 1, parameters[i]);
+            }
+            try (ResultSet rows = statement.executeQuery()) {
+                assertTrue(rows.next());
+                return rows.getInt(1);
+            }
+        }
     }
 }

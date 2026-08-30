@@ -10,6 +10,7 @@ import com.hamza.account.model.base.BaseAccount;
 import com.hamza.account.model.base.BaseNames;
 import com.hamza.account.model.base.BasePurchasesAndSales;
 import com.hamza.account.model.base.BaseTotals;
+import com.hamza.account.treasury.WalletFee;
 import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.model.domain.Treasury;
 import com.hamza.account.openFxml.AddInterface;
@@ -33,6 +34,7 @@ import javafx.stage.Stage;
 import org.controlsfx.control.SearchableComboBox;
 import org.jetbrains.annotations.NotNull;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -67,6 +69,17 @@ public class Add_AccountController<T3 extends BaseNames, T4 extends BaseAccount>
     private Label labelCode, labelName, labelDate, labelBalance, labelPaid, labelDetails, labelAmount, labelTreasure, lAmountInv;
     @FXML
     private ComboBox<String> comboTreasury;
+
+    /**
+     * The wallet fee row. Hidden entirely for a treasury that charges nothing, which
+     * is every cash drawer and most installs - a field that is always zero is a field
+     * every user learns to ignore, including on the day it is not zero.
+     */
+    @FXML
+    private Label labelFee;
+
+    @FXML
+    private TextField txtFee;
 
     public Add_AccountController(DaoFactory daoFactory, DataPublisher dataPublisher
             , DataInterface<?, ?, T3, T4> dataInterface
@@ -107,6 +120,7 @@ public class Add_AccountController<T3 extends BaseNames, T4 extends BaseAccount>
         labelDetails.setText(lm.getString("column.notes"));
         labelAmount.setText(lm.getString("rest"));
         labelTreasure.setText(lm.getString("invoice.treasury"));
+        labelFee.setText(lm.getString("treasury.fee.label"));
         txtNotes.setPromptText(lm.getString("column.notes"));
         comboTreasury.setPromptText(lm.getString("invoice.treasury"));
 
@@ -139,6 +153,14 @@ public class Add_AccountController<T3 extends BaseNames, T4 extends BaseAccount>
 
         txtPaid.disableProperty().bind(searchableName.valueProperty().isNull());
 
+        // The fee follows the treasury and the amount, and is a suggestion: the wallet's
+        // own receipt is what actually happened, so the user can overwrite it.
+        setTextFormatter(txtFee);
+        comboTreasury.getSelectionModel().selectedItemProperty()
+                .addListener((observable, was, now) -> refreshWalletFee());
+        txtPaid.textProperty().addListener((observable, was, now) -> refreshWalletFee());
+        showFeeRow(false);
+
         txtNotes.setOnMouseClicked(event -> {
             if (event.getClickCount() == 2) {
                 try {
@@ -148,6 +170,59 @@ public class Add_AccountController<T3 extends BaseNames, T4 extends BaseAccount>
                 }
             }
         });
+    }
+
+    /**
+     * Shows the fee row and fills in what this wallet would charge, or hides it.
+     * <p>
+     * Reads the treasury each time rather than caching: the percentage is edited on
+     * another screen, and this one lives for as long as the window is open.
+     */
+    private void refreshWalletFee() {
+        String name = comboTreasury.getSelectionModel().getSelectedItem();
+        if (name == null || numInvoice != 0) {
+            showFeeRow(false);
+            return;
+        }
+        try {
+            Treasury treasury = treasuryService.getTreasuryByName(name);
+            BigDecimal percent = treasury == null ? null : treasury.getFeePercent();
+            if (percent == null || percent.signum() <= 0) {
+                showFeeRow(false);
+                return;
+            }
+            BigDecimal paid = BigDecimal.valueOf(DoubleSetting.parseDoubleOrDefault(txtPaid.getText()));
+            showFeeRow(true);
+            txtFee.setText(WalletFee.on(paid, percent).toPlainString());
+        } catch (DaoException e) {
+            logException(e);
+            showFeeRow(false);
+        }
+    }
+
+    private void showFeeRow(boolean visible) {
+        labelFee.setVisible(visible);
+        labelFee.setManaged(visible);
+        txtFee.setVisible(visible);
+        txtFee.setManaged(visible);
+        if (!visible) {
+            txtFee.clear();
+        }
+    }
+
+    /** Zero unless a wallet fee is actually on screen - an invisible field cannot charge anybody. */
+    private BigDecimal walletFee() throws UserValidationException {
+        if (!txtFee.isVisible() || txtFee.getText() == null || txtFee.getText().isBlank()) {
+            return BigDecimal.ZERO;
+        }
+        BigDecimal fee = BigDecimal.valueOf(DoubleSetting.parseDoubleOrDefault(txtFee.getText()));
+        BigDecimal paid = BigDecimal.valueOf(DoubleSetting.parseDoubleOrDefault(txtPaid.getText()));
+        if (fee.signum() != 0 && !WalletFee.isPlausible(paid, fee)) {
+            Platform.runLater(() -> txtFee.requestFocus());
+            throw new UserValidationException(
+                    LanguageManager.getInstance().getString("treasury.fee.error.too.large"));
+        }
+        return fee;
     }
 
     @Override
@@ -178,7 +253,9 @@ public class Add_AccountController<T3 extends BaseNames, T4 extends BaseAccount>
 
         T4 t4 = accountData.objectData(code, value.toString(), paid, txtNotes.getText(), 0, code_id, treasury);
 
-        return dataInterface.nameAndAccountInterface().saveAccount(t4);
+        // The payment and the wallet's fee go together or not at all - the service opens
+        // one transaction over both. A cash treasury sends zero and nothing extra is written.
+        return dataInterface.nameAndAccountInterface().saveAccount(t4, walletFee());
     }
 
     @Override

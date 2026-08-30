@@ -9,9 +9,14 @@ import com.hamza.account.authorization.AuthorizationGuard;
 import com.hamza.account.authorization.AppPermissions;
 import com.hamza.account.authorization.PermissionKey;
 import com.hamza.account.model.domain.CustomerAccount;
+import com.hamza.account.treasury.WalletFee;
+import com.hamza.account.features.treasury.WalletFeeService;
 import com.hamza.controlsfx.database.DaoException;
+import com.hamza.controlsfx.database.TransactionTemplate;
 import lombok.extern.log4j.Log4j2;
 
+import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -47,9 +52,38 @@ public record AccountCustomerService(DaoFactory daoFactory) {
     }
 
     public int save(CustomerAccount account) throws DaoException {
-        AuthorizationGuard.require(account.getId() == 0
+        return save(account, BigDecimal.ZERO);
+    }
+
+    /**
+     * The payment and the e-wallet fee it cost, in one transaction.
+     * <p>
+     * The customer settled the whole amount - their account closes by all of it - and
+     * the wallet kept a slice, which is the shop's expense on the same treasury. Two
+     * rows, one event: committing either alone leaves the books saying something that
+     * did not happen. See {@link com.hamza.account.features.treasury.WalletFee}.
+     * <p>
+     * The fee is written on <b>insert only</b>. Editing a payment leaves its fee row
+     * alone: the fee belongs to the transfer that actually took place, and recomputing
+     * it on every edit would double it or rewrite an expense already reported.
+     */
+    public int save(CustomerAccount account, BigDecimal walletFee) throws DaoException {
+        boolean isNew = account.getId() == 0;
+        AuthorizationGuard.require(isNew
                 ? AppPermissions.CUSTOMER_ACCOUNT_CREATE : AppPermissions.CUSTOMER_ACCOUNT_UPDATE);
-        return account.getId() == 0 ? accountDao().insert(account) : accountDao().update(account);
+        if (!isNew || walletFee == null || walletFee.signum() <= 0) {
+            return isNew ? accountDao().insert(account) : accountDao().update(account);
+        }
+        return TransactionTemplate.execute(() -> {
+            int rows = accountDao().insert(account);
+            new WalletFeeService(daoFactory).post(
+                    account.getTreasury().getId(),
+                    LocalDate.parse(account.getDate()),
+                    BigDecimal.valueOf(account.getPaid()),
+                    walletFee,
+                    WalletFee.EXPENSE_NAME);
+            return rows;
+        });
     }
 
     public double sumTotal() {

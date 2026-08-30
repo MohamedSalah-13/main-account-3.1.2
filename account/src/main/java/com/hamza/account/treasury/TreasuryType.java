@@ -1,5 +1,7 @@
 package com.hamza.account.treasury;
 
+import com.hamza.account.config.AppIcon;
+
 import java.util.Arrays;
 
 /**
@@ -18,16 +20,16 @@ import java.util.Arrays;
  */
 public enum TreasuryType {
 
-    CASH("treasury.type.cash", "fas-cash-register"),
-    WALLET("treasury.type.wallet", "fas-mobile-alt"),
-    BANK("treasury.type.bank", "fas-university");
+    CASH("treasury.type.cash", AppIcon.TREASURY_CASH),
+    WALLET("treasury.type.wallet", AppIcon.TREASURY_WALLET),
+    BANK("treasury.type.bank", AppIcon.TREASURY_BANK);
 
     private final String labelKey;
-    private final String iconLiteral;
+    private final AppIcon icon;
 
-    TreasuryType(String labelKey, String iconLiteral) {
+    TreasuryType(String labelKey, AppIcon icon) {
         this.labelKey = labelKey;
-        this.iconLiteral = iconLiteral;
+        this.icon = icon;
     }
 
     /** i18n key of the Arabic name shown to the user - never the literal itself. */
@@ -35,9 +37,13 @@ public enum TreasuryType {
         return labelKey;
     }
 
-    /** Ikonli literal, per §5 of {@code docs/new-code-rules.md} (no image streams). */
-    public String iconLiteral() {
-        return iconLiteral;
+    /**
+     * A semantic {@link AppIcon}, not a raw Ikonli literal: this project ships the
+     * Feather pack alone, so a FontAwesome literal would compile happily and render
+     * nothing at all.
+     */
+    public AppIcon icon() {
+        return icon;
     }
 
     /** The value written to {@code treasury.treasury_type}. */

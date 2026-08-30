@@ -59,6 +59,14 @@ public class TreasuryController {
     @FXML
     private CheckBox activeCheck;
 
+    /**
+     * What an e-wallet keeps out of a collection, as a percentage. Zero for a cash
+     * drawer, which is what every treasury holds until somebody types otherwise - the
+     * collection screen hides its fee row entirely while this is zero.
+     */
+    @FXML
+    private TextField feeField;
+
     @FXML
     private TableView<TreasuryBalanceSummary> treasuryTable;
 
@@ -122,7 +130,8 @@ public class TreasuryController {
                 Columns.number("treasury.column.opening", TreasuryBalanceSummary::opening),
                 Columns.number("treasury.column.in", TreasuryBalanceSummary::totalIn),
                 Columns.number("treasury.column.out", TreasuryBalanceSummary::totalOut),
-                Columns.number("treasury.column.balance", TreasuryBalanceSummary::balance));
+                Columns.number("treasury.column.balance", TreasuryBalanceSummary::balance),
+                Columns.number("treasury.column.fee", TreasuryBalanceSummary::feePercent));
     }
 
     @FXML
@@ -141,6 +150,7 @@ public class TreasuryController {
         amountField.clear();
         typeCombo.getSelectionModel().select(TreasuryType.CASH);
         activeCheck.setSelected(true);
+        feeField.clear();
         treasuryTable.getSelectionModel().clearSelection();
     }
 
@@ -190,6 +200,7 @@ public class TreasuryController {
         treasury.setAmount(parseAmount(amountField.getText()));
         treasury.setType(typeCombo.getValue());
         treasury.setActive(activeCheck.isSelected());
+        treasury.setFeePercent(parseAmount(feeField.getText()));
 
         // Who entered the row. Falls back to the seeded admin (id 1, the DEFAULT behind
         // every user_id column) rather than failing: this screen can be reached before a
@@ -222,6 +233,7 @@ public class TreasuryController {
         amountField.setText(String.valueOf(selectedTreasury.getAmount()));
         typeCombo.getSelectionModel().select(selectedTreasury.getType());
         activeCheck.setSelected(selectedTreasury.isActive());
+        feeField.setText(String.valueOf(selectedTreasury.getFeePercent()));
     }
 
     private BigDecimal parseAmount(String value) throws UserValidationException {
@@ -244,6 +256,10 @@ public class TreasuryController {
         }
         if (treasury.getAmount() == null || treasury.getAmount().compareTo(BigDecimal.ZERO) < 0) {
             throw new UserValidationException(text("treasury.error.balance.negative"));
+        }
+        BigDecimal fee = treasury.getFeePercent();
+        if (fee == null || fee.signum() < 0 || fee.compareTo(new BigDecimal("100")) > 0) {
+            throw new UserValidationException(text("treasury.error.fee.range"));
         }
     }
 

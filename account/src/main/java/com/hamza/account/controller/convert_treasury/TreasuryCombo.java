@@ -5,6 +5,7 @@ import com.hamza.controlsfx.error.UserValidationException;
 import com.hamza.controlsfx.language.LanguageManager;
 import javafx.collections.FXCollections;
 import javafx.scene.control.ComboBox;
+import javafx.scene.control.ListCell;
 import javafx.util.StringConverter;
 
 import java.math.BigDecimal;
@@ -38,6 +39,11 @@ final class TreasuryCombo {
                 return combo.getValue();
             }
         });
+        // A drawer, a wallet and a bank account read alike in a list of names; the glyph
+        // is what stops a collection landing on the wrong kind of vessel.
+        combo.setButtonCell(typedCell());
+        combo.setCellFactory(list -> typedCell());
+
         if (selected != null) {
             rows.stream()
                     .filter(row -> row.id() == selected.id())
@@ -47,6 +53,17 @@ final class TreasuryCombo {
         } else {
             combo.getSelectionModel().selectFirst();
         }
+    }
+
+    private static ListCell<TreasuryBalanceSummary> typedCell() {
+        return new ListCell<>() {
+            @Override
+            protected void updateItem(TreasuryBalanceSummary row, boolean empty) {
+                super.updateItem(row, empty);
+                setText(empty || row == null ? null : row.name());
+                setGraphic(empty || row == null ? null : row.type().icon().graphic());
+            }
+        };
     }
 
     /** "Available balance: 1,234.00", or empty when nothing is picked. */

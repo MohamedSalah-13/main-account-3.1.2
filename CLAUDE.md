@@ -27,7 +27,7 @@ mvn -o -pl account -am test -Dtest=ScheduledBackupTest -Dsurefire.failIfNoSpecif
 
 **Coverage is real but uneven — know which half you are in.** JUnit 5 and Mockito are declared in the
 root pom and inherited by both modules; surefire needs no configuration. `mvn clean test` currently runs
-**980 tests across ~106 classes** — 98 in `controlsfx`, 882 in `account` — with 42 skipped (below). What is
+**988 tests across ~107 classes** — 98 in `controlsfx`, 890 in `account` — with 44 skipped (below). What is
 genuinely covered:
 
 - **The declarative specs, pinned character for character** — `DocumentDaoStatementsTest`,
@@ -415,6 +415,14 @@ would have ended it.
 
 **Statements live in `account.treasury.TreasuryStatements`** and are pinned character for character,
 including each one's parameter count: a delete with the wrong count is a delete of everything.
+
+**An e-wallet fee is an expense, never a deduction.** A customer settling 1000 on فودافون كاش has paid
+1000 and their account closes by all of it; the wallet keeps its percentage
+(`treasury.fee_percent`), and that is posted as an expense on the same treasury under the heading
+`V21` seeds. Netting it off the collection instead would leave that customer owing the fee for ever, on
+every wallet payment they make. The payment and the fee are written in **one transaction** by
+`AccountCustomerService.save(account, fee)` / `AccountSupplierService.save(account, fee)`, and only on
+insert - editing a payment leaves its fee row alone.
 
 ### Expiry batches
 

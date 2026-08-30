@@ -31,6 +31,7 @@
                   <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
                         <RowConstraints minHeight="10.0" vgrow="SOMETIMES" />
                   <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
+                  <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
                     </rowConstraints>
                     <children>
                         <Label fx:id="labelCode" text="Code" />
@@ -47,6 +48,9 @@
                         <TextField fx:id="txtPaid" GridPane.columnIndex="1" GridPane.rowIndex="5" />
                         <TextField fx:id="txtAmount" editable="false" GridPane.columnIndex="1" GridPane.rowIndex="7" />
                         <TextArea fx:id="txtNotes" prefHeight="40.0" GridPane.columnIndex="1" GridPane.rowIndex="8" />
+                        <!-- Shown only for a treasury that charges a fee; see WalletFee. -->
+                        <Label fx:id="labelFee" text="Fee" GridPane.rowIndex="9" />
+                        <TextField fx:id="txtFee" GridPane.columnIndex="1" GridPane.rowIndex="9" />
                         <DatePicker fx:id="date" editable="false" maxWidth="1.7976931348623157E308" GridPane.columnIndex="1" GridPane.rowIndex="1" />
                         <Label fx:id="lAmountInv" text="Amount From inv" GridPane.rowIndex="6" />
                         <TextField fx:id="txtAmountInv" disable="true" editable="false" GridPane.columnIndex="1" GridPane.rowIndex="6" />

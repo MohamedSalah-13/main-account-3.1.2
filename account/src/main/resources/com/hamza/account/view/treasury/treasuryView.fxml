@@ -60,6 +60,18 @@
                               text="%treasury.field.active"
                               selected="true"
                               GridPane.rowIndex="1" GridPane.columnIndex="3"/>
+
+                    <Label text="%treasury.field.fee" styleClass="form-label"
+                           GridPane.rowIndex="2" GridPane.columnIndex="0"/>
+
+                    <TextField fx:id="feeField"
+                               promptText="%treasury.field.fee.prompt"
+                               styleClass="modern-input"
+                               GridPane.rowIndex="2" GridPane.columnIndex="1"/>
+
+                    <Label text="%treasury.hint.fee" wrapText="true" styleClass="page-subtitle"
+                           GridPane.rowIndex="2" GridPane.columnIndex="2"
+                           GridPane.columnSpan="2"/>
                 </GridPane>
 
                 <Label fx:id="openingHint"
