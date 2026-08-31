@@ -229,6 +229,10 @@ figcaption b{color:var(--ink);font-weight:600}
 .f-high .stripe{background:var(--high)}
 .f-warn .stripe{background:var(--warn)}
 .f-low .stripe{background:var(--ink-3)}
+.f-done .stripe{background:var(--ok)}
+.f-done .find-in{opacity:.9}
+.f-done h4{text-decoration:line-through;text-decoration-color:var(--ink-3);text-decoration-thickness:1px}
+.chip-done{background:var(--ok-bg);border-color:var(--ok);color:var(--ok);font-weight:600}
 .find-in{padding:15px 20px 17px}
 .find-top{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:7px}
 .fid{
@@ -310,10 +314,10 @@ footer{
     <div class="mast-meta">
       <span><b>76,200</b> سطر إنتاج</span>
       <span><b>19,021</b> سطر اختبار</span>
-      <span><b>1,013</b> اختبار ناجح</span>
+      <span><b>1,022</b> اختبار ناجح</span>
       <span><b>25</b> migration</span>
       <span><b>33</b> view</span>
-      <span>الفرع <b>main</b> · <b>9401910</b></span>
+      <span>الفرع <b>main</b> · <b>f9f26db</b></span>
     </div>
   </div>
 </header>
@@ -722,7 +726,8 @@ footer{
       <div class="find-top"><span class="fid">ن-١</span><span class="chip">حرجة</span><span class="chip">المصروفات</span>
         <h4>حلقة مقطوعة: اسم الموظف على كل مصروف فارغ منذ الأساس</h4></div>
       <p>الـ DAO يكتب <code>expenses_details.emp_id</code>، والـ view يقرأ الاسم عبر <code>LEFT JOIN expense_salary</code>. و<strong><code>expense_salary</code> لا يكتب فيه أى سطر كود فى المشروع كله</strong> — تحقّقتُ من الـ Java والـ SQL والسكربتات القديمة.</p>
-      <p>ثلاث نتائج: اسم الموظف يعود <code>''</code> دائماً؛ والبحث فى شاشة المصروفات يبحث فى <code>column_name</code> فلا يطابق شيئاً أبداً؛ و<code>DeleteRegistry.EMPLOYEES</code> يحمى الموظف بفحص <code>expense_salary</code> — <strong>جدول فارغ دائماً</strong> — فيُحذف موظف له سنوات مرتبات بلا اعتراض واحد.</p>
+      <p>الجدول <strong>ليس فارغاً</strong>: فيه ثلاثة صفوف قديمة <code>(4,4),(4,7),(4,10)</code> ظاهرة فى نسخ <code>mysqldump</code>، كتبها شىء سابق على الكود الحالى. وهذا يجعل الأثر أدقّ — وأسوأ — لا أخفّ.</p>
+      <p>ثلاث نتائج: اسم الموظف يعود <code>''</code> لكل مصروف عدا ثلاثة صفوف تاريخية؛ والبحث فى شاشة المصروفات يبحث فى <code>column_name</code> فلا يطابق شيئاً عملياً؛ و<code>DeleteRegistry.EMPLOYEES</code> يحمى الموظف بفحص <code>expense_salary</code> — فيمنع حذف <strong>الموظف رقم 4 وحده</strong>، لأسباب قديمة لا علاقة لها بأى مرتّب حالى، بينما <strong>كل موظف آخر له سنوات مرتبات يظل قابلاً للحذف بلا اعتراض</strong>. حارس يحمى الصف الخطأ أسوأ من حارس غائب، لأنه يبدو موجوداً.</p>
       <p><strong>العلاج:</strong> قرار واحد — إمّا أن يكتب الحفظ صفاً فى <code>expense_salary</code>، وإمّا أن يقرأ الـ view من <code>emp_id</code> مباشرة ويُضاف له مفتاح أجنبى وتُحدَّث قاعدة الحذف. الثانى أبسط والأول أسلم مرجعياً.</p>
       <div class="where">ExpensesDetailsDao.java:70,89,122 · R__views.sql:696–708 · DeleteRegistry.java:107</div>
     </div></div>
@@ -750,7 +755,8 @@ footer{
       <p><code>openShift</code> و<code>closeShift</code> بلا <code>AuthorizationGuard.require</code>. و<code>AdminShiftsController</code> — شاشة كل ورديات كل المستخدمين بأرصدتها وفروقها — يحمل الحارس فى السطر 84 <strong>معطَّلاً بـ <code>//</code></strong>. أى مستخدم مسجَّل يرى ويغلق ورديات الجميع.</p>
       <p>الكتالوج لا يحوى إلا صلاحية شفتات واحدة (<code>user.shift.manage</code>) وتُستخدم للحذف والغلق القسرى فقط.</p>
       <p><strong>العلاج:</strong> <code>shift.open</code> / <code>shift.close</code> / <code>shift.view.all</code> فى <code>AppPermissions</code>، وفرضها فى <code>UserShiftService</code> لا فى الشاشة.</p>
-      <div class="where">UserShiftService.java:18,40 · AdminShiftsController.java:84 · AppPermissions.java:145</div>
+      <p><strong>تحديث:</strong> الاختبار الجديد <code>serviceWritePathsAskPermissionFirst</code> (انظر ن-١٨) صار يرصد <code>openShift</code> و<code>closeShift</code> تحديداً، ومسجَّلان كدَين معلوم لا كخطأ مخفى. والتأجيل صحيح: <strong>مفتاح صلاحية جديد يبدأ ممنوحاً لأحد</strong>، فإطلاقه بلا منحه فى <code>V13__default_rbac_roles.sql</code> فى نفس التغيير يمنع كل أمين صندوق من فتح ورديته بعد الترقية. أمّا <code>AdminShiftsController:84</code> فشكل آخر — الحارس مكتوب فعلاً ومعطَّل بتعليق، وهو <em>قراءة</em>، فيمكن أن يُعاد بصلاحية قائمة بلا هذه المشكلة.</p>
+      <div class="where">UserShiftService.java:18,40 · AdminShiftsController.java:84 · AppPermissions.java:145 · V13__default_rbac_roles.sql</div>
     </div></div>
 
     <div class="find f-high"><div class="stripe"></div><div class="find-in">
@@ -852,12 +858,29 @@ footer{
       <div class="where">StockTransferService.java:20,64,70 · AddExpensesController.java:176 · ServiceRegistry.java</div>
     </div></div>
 
-    <div class="find f-low"><div class="stripe"></div><div class="find-in">
-      <div class="find-top"><span class="fid">ن-١٨</span><span class="chip">منخفضة</span><span class="chip">توثيق</span>
+    <div class="find f-done"><div class="stripe"></div><div class="find-in">
+      <div class="find-top"><span class="fid">ن-١٨</span><span class="chip chip-done">تمّ إصلاحها</span><span class="chip">توثيق</span>
         <h4>الوثائق تسبق الواقع فى موضعين</h4></div>
-      <p><code>CLAUDE.md</code> يصف <code>AuthorizationArchitectureTest</code> بأنه «يُفشل البناء حين لا يُحرَس مسار كتابة فى خدمة» — بينما يفحص فعلياً ألا تنادى الـ controllers الـ DAO مباشرة. وخاصية «المُنشئ يقوم بالتوصيل» فى <code>DownLoadApplication</code> لم تعد صحيحة: الإقلاع صار <code>Task</code> فى الخلفية بشاشة تحميل. وأعداد الاختبارات (994/47) صارت 1,013/56.</p>
-      <p>هذا مذكور لأن الوثائق هنا <strong>تُقرأ ويُعتمد عليها</strong> — وهى ميزة، وهو أيضاً سبب أن انحرافها تكلفة حقيقية.</p>
-      <div class="where">CLAUDE.md · AuthorizationArchitectureTest.java · DownLoadApplication.java:60</div>
+      <p><code>CLAUDE.md</code> يصف <code>AuthorizationArchitectureTest</code> بأنه «يُفشل البناء حين لا يُحرَس مسار كتابة فى خدمة» — بينما يفحص فعلياً ألا تنادى الـ controllers الـ DAO مباشرة. وخاصية «المُنشئ يقوم بالتوصيل» فى <code>DownLoadApplication</code> لم تعد صحيحة: الإقلاع صار <code>Task</code> فى الخلفية بشاشة تحميل. وأعداد الاختبارات (994/47) تغيّرت.</p>
+      <p><strong>الحل المطبَّق (<code>9dd200b</code>):</strong> بدل تصحيح الوصف، <strong>كُتب الاختبار الذى كان الوصف يعد به</strong> — <code>serviceWritePathsAskPermissionFirst</code>، لكل دالة على حدة، يُفشل البناء فى الاتجاهين. يرصد أربع دوال: <code>CompanyService#load</code> و<code>WalletFeeService#post</code> مشروعتان، و<code>UserShiftService#openShift</code>/<code>#closeShift</code> هما ن-٤ نفسها — فصارت ملاحظة مرصودة آلياً بدل ثغرة صامتة. وصُحّحت جملة المُنشئ والأعداد.</p>
+      <div class="where">CLAUDE.md · AuthorizationArchitectureTest.java:111 · commit 9dd200b</div>
+    </div></div>
+
+    <div class="find f-done"><div class="stripe"></div><div class="find-in">
+      <div class="find-top"><span class="fid">ن-١٩</span><span class="chip chip-done">تمّ إصلاحها</span><span class="chip">أمن</span>
+        <h4>كلمة مرور MySQL حقيقية فى تاريخ مدفوع</h4></div>
+      <p><code>scripts/main/RunAllSqlScripts.bat</code> كان يحمل <code>set "PASS=…"</code> بكلمة مرور فعلية، مدفوعة فى التاريخ منذ <code>01c7ac8</code>. أُزيلت فى <code>3b73a1b</code>.</p>
+      <p><strong>لكن الإزالة ليست العلاج الكامل.</strong> ما دام السطر كان فى تاريخ مدفوع، فكلمة المرور تلك <strong>يجب أن تُعامل كمعلنة</strong> وتُغيَّر على كل قاعدة بيانات استُخدمت فيها — الـ commit يُصلح الملف، لا السرّ. وهذا هو نفس ما تقوله وثائق المشروع بالفعل عن مفتاح <code>config.xml</code> الاحتياطى.</p>
+      <p>لم أرصدها فى المراجعة الأصلية: فحصى للأسرار غطّى <code>src/</code> والـ migrations ولم يمتدّ إلى <code>scripts/main/</code> المهجورة.</p>
+      <div class="where">scripts/main/RunAllSqlScripts.bat · 01c7ac8 → 3b73a1b</div>
+    </div></div>
+
+    <div class="find f-done"><div class="stripe"></div><div class="find-in">
+      <div class="find-top"><span class="fid">ن-٢٠</span><span class="chip chip-done">تمّ إصلاحها</span><span class="chip">التقارير</span>
+        <h4>عميل بلا منطقة يختفى من ملخّص الذمم</h4></div>
+      <p><code>account_customer_totals</code> كان يربط <code>table_area</code> بـ <code>JOIN</code> داخلى. عميل حُذفت منطقته يسقط من ملخّص الذمم <strong>بينما يظل دَينه قائماً فى الكشف التفصيلى</strong> — فالمجموع لا يساوى تفاصيله، ولا شىء يشير إلى النقص. صار <code>LEFT JOIN</code> فى <code>47eac47</code> ومُثبَّت باختبار فى <code>eef7e4c</code>.</p>
+      <p>هذه <strong>ثغرة فاتتنى</strong>، وليست جديدة: <code>CLAUDE.md</code> يوثّق الخطأ نفسه بالحرف على قوائم العملاء ويقول إنه عولج هناك — وقد نجا فى view الملخّص. قرأتُ هذا الـ view لاستخراج رقم الذمم ولم أفحص نوع ربطه.</p>
+      <div class="where">R__views.sql · account_customer_totals · 47eac47 · eef7e4c</div>
     </div></div>
 
   </div>
@@ -873,8 +896,8 @@ footer{
       <tbody>
         <tr><td>كود إنتاج</td><td class="num">76,200 / 747</td><td><span class="dot d-ok"></span>سطر / ملف — حجم معقول لنطاق التطبيق</td></tr>
         <tr><td>كود اختبار</td><td class="num">19,021 / 112</td><td><span class="dot d-ok"></span>نسبة 25٪ — جيدة لتطبيق سطح مكتب</td></tr>
-        <tr><td>اختبارات ناجحة</td><td class="num">1,013</td><td><span class="dot d-ok"></span>صفر إخفاق · 56 متخطَّى · 111 صنف</td></tr>
-        <tr><td>مقيَّدة بـ MySQL</td><td class="num">13 صنفاً</td><td><span class="dot d-warn"></span>لا تعمل فى <code>mvn clean test</code> — واحدة منها أخفقت 3 أيام دون أن يدرى أحد</td></tr>
+        <tr><td>اختبارات ناجحة</td><td class="num">1,022</td><td><span class="dot d-ok"></span>صفر إخفاق · صفر متخطَّى، بعد تشغيل المقيَّدة معها</td></tr>
+        <tr><td>مقيَّدة بـ MySQL</td><td class="num">13 صنفاً</td><td><span class="dot d-warn"></span>لا تعمل فى <code>mvn clean test</code> — الثلاثة عشر تنجح معاً، لكن واحدة أخفقت 3 أيام دون أن يدرى أحد</td></tr>
         <tr><td>طبقة الشاشات</td><td class="num">24,347 / 122</td><td><span class="dot d-crit"></span>أكبر حزمة، <strong>وبلا اختبار واحد</strong></td></tr>
         <tr><td>أكبر ملف</td><td class="num">1,293</td><td><span class="dot d-warn"></span><code>BuyController2</code> — 63 دالة، 16 حقل FXML</td></tr>
         <tr><td>نماذج تحمل javafx</td><td class="num">16 / 50</td><td><span class="dot d-warn"></span>دَين محصور بقائمة سقّاطة تُفشل البناء لو زاد</td></tr>
@@ -950,7 +973,8 @@ footer{
 
 <footer>
   <div class="prose">
-    <p>مراجعة أُجريت على الفرع <code>main</code> عند <code>9401910</code> بتاريخ 2026-08-31. الأنظمة الثمانية فُحصت فى الكود والـ schema والـ views معاً، و<code>mvn clean test</code> شُغِّل للتحقّق (1,013 اختباراً، صفر إخفاق). <strong>لم تُشغَّل الاختبارات الثلاثة عشر المقيَّدة بـ MySQL ولا التطبيق نفسه</strong> — فما يخصّ سلوك الشاشات هنا مقروء من الكود، لا مُشاهَد.</p>
+    <p>مراجعة أُجريت على الفرع <code>main</code> عند <code>9401910</code> بتاريخ 2026-08-31. الأنظمة الثمانية فُحصت فى الكود والـ schema والـ views معاً، و<code>mvn clean test</code> شُغِّل للتحقّق. <strong>لم يُشغَّل التطبيق نفسه</strong> — فما يخصّ سلوك الشاشات هنا مقروء من الكود، لا مُشاهَد.</p>
+    <p><strong>مُحدَّثة عند <code>f9f26db</code>:</strong> ن-١٨ و ن-١٩ و ن-٢٠ أُصلحت، ون-١ صُحّحت صياغتها بعد التحقّق من نسخ <code>mysqldump</code> — <code>expense_salary</code> فيه ثلاثة صفوف قديمة لا صفر، وهو ما يجعل حارس الحذف يحمى الصف الخطأ بدل أن يكون غائباً. ون-١٩ و ن-٢٠ ملاحظتان <strong>فاتتا هذه المراجعة</strong> ووجدهما فحص لاحق؛ مذكورتان هنا لأن تقريراً يُعتمد عليه يجب أن يقول أين لم ينظر. والاختبارات الثلاثة عشر المقيَّدة صارت تنجح مجتمعة: 1,022 اختباراً بلا تخطٍّ.</p>
   </div>
 </footer>
 
