@@ -27,7 +27,7 @@ mvn -o -pl account -am test -Dtest=ScheduledBackupTest -Dsurefire.failIfNoSpecif
 
 **Coverage is real but uneven — know which half you are in.** JUnit 5 and Mockito are declared in the
 root pom and inherited by both modules; surefire needs no configuration. `mvn clean test` currently runs
-**994 tests across ~108 classes** — 98 in `controlsfx`, 896 in `account` — with 47 skipped (below). What is
+**1,014 tests across 111 classes** — 98 in `controlsfx`, 916 in `account` — with 56 skipped (below). What is
 genuinely covered:
 
 - **The declarative specs, pinned character for character** — `DocumentDaoStatementsTest`,
@@ -154,7 +154,9 @@ Two documents govern work here and are kept current — read them before large c
 
 ### Startup
 
-`Main` → `DownLoadApplication`. Its **constructor** does the wiring in order: read and decrypt `config.xml`,
+`Main` → `DownLoadApplication`. Its **`start(Stage)`** does the wiring in order, on a background
+`Task` named `application-bootstrap` behind a loading screen — not in a constructor, and not on the
+JavaFX thread: read and decrypt `config.xml`,
 initialise the Hikari pool, verify the database is reachable, run the trial/licence check, then register
 every service in `ServiceRegistry`. `LogApplication` (login) opens from `start()`.
 
@@ -203,8 +205,19 @@ using the wrong one is the mistake to avoid:
   layer, and there are ~57 calls to it in `service/` today.
 
 **Hiding a button is not enforcement.** The old system only hid buttons, so anything that reached a
-service another way was unguarded. `AuthorizationArchitectureTest` is what keeps that from coming back:
-it fails the build when a service write path has no guard. Add the guard when you add the method.
+service another way was unguarded. `AuthorizationArchitectureTest` is what keeps that from
+coming back, and it now says so in two independent ways: `controllersDoNotWriteBusinessRowsDirectlyThroughDaos`
+fails the build when a screen reaches a DAO write without crossing a service, and
+`serviceWritePathsAskPermissionFirst` fails it when a service method writes a row without calling
+`require` — per method, so a class where `delete` is guarded and `open` is not still fails. Add the
+guard when you add the method.
+
+**Only the first of those two existed until 2026-08-31, while this file described the second.** A
+service method with no `require` passed every check there was, and two of them did: `openShift` and
+`closeShift`, which any signed-in user could call for anyone. The four methods that write without a
+guard of their own are named in `WRITES_WITHOUT_A_GUARD` — two are legitimate (a read that seeds the
+company row; the wallet fee, whose only callers guard first) and two are that debt, recorded rather
+than quietly excused. The list fails the build in both directions, so it cannot become fiction.
 
 Roles live in `auth_role` / `auth_role_permission` / `auth_user_role`, resolved by `RbacService` over
 `JdbcRbacRepository`, with per-user overrides in `auth_user_permission_override`. The schema arrived in
@@ -569,7 +582,7 @@ subscriptions.disposeWith(stackPane);   // last line of initialize()
 ```
 
 **New events go on the `EventBus`, not into `DataPublisher`.** `controlsfx.observer.EventBus` is
-registered in `ServiceRegistry` by the `DownLoadApplication` constructor and keyed by event type;
+registered in `ServiceRegistry` during `DownLoadApplication`'s bootstrap task and keyed by event type;
 events are records implementing `AppEvent`, under `account.features.events`. A screen pulls the bus
 from the registry rather than having a publisher threaded through its constructor, and the compiler
 checks the payload — where a dozen `Publisher<String>` fields can only be told apart by which field
