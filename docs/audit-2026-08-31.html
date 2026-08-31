@@ -750,13 +750,17 @@ footer{
     </div></div>
 
     <div class="find f-crit"><div class="stripe"></div><div class="find-in">
-      <div class="find-top"><span class="fid">ن-٤</span><span class="chip">حرجة</span><span class="chip">الشفتات</span><span class="chip">صلاحيات</span>
-        <h4>شاشات الورديات بلا حارس، والحارس موجود معلَّقاً كتعليق</h4></div>
-      <p><code>openShift</code> و<code>closeShift</code> بلا <code>AuthorizationGuard.require</code>. و<code>AdminShiftsController</code> — شاشة كل ورديات كل المستخدمين بأرصدتها وفروقها — يحمل الحارس فى السطر 84 <strong>معطَّلاً بـ <code>//</code></strong>. أى مستخدم مسجَّل يرى ويغلق ورديات الجميع.</p>
+      <div class="find-top"><span class="fid">ن-٤</span><span class="chip">حرجة</span><span class="chip">نصفها أُغلق</span><span class="chip">الشفتات</span><span class="chip">صلاحيات</span>
+        <h4>الورديات بلا حارس — قراءةً وكتابةً</h4></div>
+      <p><code>openShift</code> و<code>closeShift</code> بلا <code>AuthorizationGuard.require</code>. و<strong><code>getAllShifts()</code> — التى تُغذّى شاشة كل ورديات كل المستخدمين — كانت بلا أى حارس</strong>: أى مستخدم مسجَّل يقرأ رصيد فتح وغلق كل أمين صندوق والفرق بينهما، أى الرقم الذى يُحاسَب عليه.</p>
       <p>الكتالوج لا يحوى إلا صلاحية شفتات واحدة (<code>user.shift.manage</code>) وتُستخدم للحذف والغلق القسرى فقط.</p>
-      <p><strong>العلاج:</strong> <code>shift.open</code> / <code>shift.close</code> / <code>shift.view.all</code> فى <code>AppPermissions</code>، وفرضها فى <code>UserShiftService</code> لا فى الشاشة.</p>
-      <p><strong>تحديث:</strong> الاختبار الجديد <code>serviceWritePathsAskPermissionFirst</code> (انظر ن-١٨) صار يرصد <code>openShift</code> و<code>closeShift</code> تحديداً، ومسجَّلان كدَين معلوم لا كخطأ مخفى. والتأجيل صحيح: <strong>مفتاح صلاحية جديد يبدأ ممنوحاً لأحد</strong>، فإطلاقه بلا منحه فى <code>V13__default_rbac_roles.sql</code> فى نفس التغيير يمنع كل أمين صندوق من فتح ورديته بعد الترقية. أمّا <code>AdminShiftsController:84</code> فشكل آخر — الحارس مكتوب فعلاً ومعطَّل بتعليق، وهو <em>قراءة</em>، فيمكن أن يُعاد بصلاحية قائمة بلا هذه المشكلة.</p>
-      <div class="where">UserShiftService.java:18,40 · AdminShiftsController.java:84 · AppPermissions.java:145 · V13__default_rbac_roles.sql</div>
+
+      <p><strong>نصفها أُغلق (<code>a4a9330</code>):</strong> <code>getAllShifts()</code> صارت تطلب <code>USER_SHIFT_MANAGE</code> — نفس المفتاح الذى يحكم الحذف والغلق القسرى، <strong>فلم يكسب أحد صلاحية ولم يفقدها أحد</strong>. و<code>getUserShifts</code> تُركت مفتوحة عمداً مع اختبار يثبّت ذلك، حتى تظل قراراً لا سهواً.</p>
+
+      <p><strong>وتصحيح لقراءتى:</strong> قلتُ إن الحارس فى <code>AdminShiftsController:84</code> «مكتوب فعلاً ومعطَّل بتعليق» فيكفى رفع التعليق. هذا خطأ: الكتلة تنادى <code>LogApplication.hasPermission(AppPermissions.SHIFT_MANAGER)</code> <strong>وكلاهما غير موجود</strong> — أُحفورة من نظام الصلاحيات السابق ما كانت لتُترجَم أصلاً. وكانت تحرس <code>forceCloseShift</code> المحروسة بالفعل فى الخدمة، لا الدخول للشاشة. الخلاصة كانت صحيحة والآلية خاطئة، والثغرة الحقيقية كانت طبقة أدنى.</p>
+
+      <p><strong>والنصف الباقى — الفتح والغلق — مؤجَّل بحق، والسبب أدقّ ممّا ذكرتُ أولاً.</strong> قلتُ إن المفتاح الجديد «يبدأ غير ممنوح لأحد»؛ الصحيح أن <code>synchronizeCatalog</code> يمنح كل صلاحية مفعَّلة لدور <code>SYSTEM_ADMIN</code> عند كل إقلاع، و<code>V11</code> يُسنِد ذلك الدور للمستخدم 1. فالمالك <em>لا</em> يُحبَس أبداً — <strong>ويُحبَس أمناء الصناديق وحدهم، وهم بالضبط من يفتح الورديات</strong>. وهذا أسوأ من الحبس الكامل: من يجرّب الترقية هو المالك، فيراها سليمة. و<code>V13</code> يقول فى سطره الأول إن أدواره «عمداً غير مُسنَدة لأحد: الترقية يجب ألا تخمّن وظيفة شخص وتوسّع صلاحياته بصمت» — فالمنح <strong>قرار بشرى يُتَّخذ مع التغيير</strong>، لا خطوة تُؤتمَت.</p>
+      <div class="where">UserShiftService.java:18,40,124 · AppPermissions.java:145 · JdbcRbacRepository.java:73 · V11__rbac.sql:101 · V13__default_rbac_roles.sql:1 · a4a9330</div>
     </div></div>
 
     <div class="find f-high"><div class="stripe"></div><div class="find-in">
@@ -934,7 +938,7 @@ footer{
     <ol>
       <li><strong>ن-١ — أصلح حلقة اسم الموظف.</strong> اختر أحد الطرفين واكتب اختباراً يثبت أن الاسم يعود غير فارغ بعد الحفظ. هذا يُعيد أيضاً حماية حذف الموظف.</li>
       <li><strong>ن-٢ — combo خزائن على شاشة المصروفات.</strong> تعديل صغير، وأثره على كشفَى خزينتين معاً.</li>
-      <li><strong>ن-٤ — أعِد الحارس المعلَّق.</strong> ثلاث صلاحيات جديدة و<code>require</code> فى الخدمة. أرخص بند فى القائمة كلها.</li>
+      <li><strong>ن-٤ — النصف الباقى: <code>shift.open</code> و<code>shift.close</code>.</strong> القراءة أُغلقت فى <code>a4a9330</code>. والكتابة تحتاج مفتاحين جديدين <strong>مع منحهما لأدوار أمناء الصناديق فى نفس الـ migration</strong> — وإلا مرّت الترقية سليمة عند المالك وحرمت كل كاشير من فتح ورديته.</li>
       <li><strong>ن-٩ — احمل <code>reports/</code> فى المثبِّت.</strong> سطر واحد فى السكربت يمنع «العميل الجديد لا يطبع».</li>
     </ol>
   </div>
@@ -974,7 +978,13 @@ footer{
 <footer>
   <div class="prose">
     <p>مراجعة أُجريت على الفرع <code>main</code> عند <code>9401910</code> بتاريخ 2026-08-31. الأنظمة الثمانية فُحصت فى الكود والـ schema والـ views معاً، و<code>mvn clean test</code> شُغِّل للتحقّق. <strong>لم يُشغَّل التطبيق نفسه</strong> — فما يخصّ سلوك الشاشات هنا مقروء من الكود، لا مُشاهَد.</p>
-    <p><strong>مُحدَّثة عند <code>f9f26db</code>:</strong> ن-١٨ و ن-١٩ و ن-٢٠ أُصلحت، ون-١ صُحّحت صياغتها بعد التحقّق من نسخ <code>mysqldump</code> — <code>expense_salary</code> فيه ثلاثة صفوف قديمة لا صفر، وهو ما يجعل حارس الحذف يحمى الصف الخطأ بدل أن يكون غائباً. ون-١٩ و ن-٢٠ ملاحظتان <strong>فاتتا هذه المراجعة</strong> ووجدهما فحص لاحق؛ مذكورتان هنا لأن تقريراً يُعتمد عليه يجب أن يقول أين لم ينظر. والاختبارات الثلاثة عشر المقيَّدة صارت تنجح مجتمعة: 1,022 اختباراً بلا تخطٍّ.</p>
+    <p><strong>مُحدَّثة عند <code>a4a9330</code>:</strong> ن-١٨ و ن-١٩ و ن-٢٠ أُصلحت، ونصف ن-٤ (القراءة) أُغلق. وثلاث ملاحظات من هذا التقرير صُحّحت بعد التحقّق:</p>
+    <ul>
+      <li><strong>ن-١</strong> — <code>expense_salary</code> فيه ثلاثة صفوف قديمة لا صفر (من نسخ <code>mysqldump</code>)، وهو ما يجعل حارس الحذف يحمى الصف الخطأ بدل أن يكون غائباً.</li>
+      <li><strong>ن-٤</strong> — «الحارس معلَّق بتعليق فيكفى رفعه» كانت قراءة خاطئة: الكتلة أُحفورة تنادى رموزاً غير موجودة، وتحرس شيئاً محروساً أصلاً. الثغرة كانت فى <code>getAllShifts()</code> طبقةً أدنى.</li>
+      <li><strong>ن-٤</strong> — «مفتاح جديد يبدأ غير ممنوح لأحد» غير دقيق: يُمنح تلقائياً لـ <code>SYSTEM_ADMIN</code> وحده، فيسلم المالك ويُحبَس أمناء الصناديق — وهو الأخطر لأن من يجرّب الترقية هو المالك.</li>
+    </ul>
+    <p>ون-١٩ و ن-٢٠ ملاحظتان <strong>فاتتا هذه المراجعة</strong> ووجدهما فحص لاحق. مذكورة كلها هنا لأن تقريراً يُعتمد عليه يجب أن يقول أين أخطأ وأين لم ينظر. والاختبارات الثلاثة عشر المقيَّدة صارت تنجح مجتمعة: 1,022 اختباراً بلا تخطٍّ.</p>
   </div>
 </footer>
 
