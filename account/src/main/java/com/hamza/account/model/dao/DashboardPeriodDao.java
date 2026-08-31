@@ -26,11 +26,13 @@ public class DashboardPeriodDao extends AbstractDao<DashboardPeriodSummary> {
                 (
                     COALESCE((SELECT SUM(paid_up) FROM total_sales WHERE invoice_date BETWEEN ? AND ?), 0) +
                     COALESCE((SELECT SUM(paid_to_treasury) FROM total_buy_re WHERE invoice_date BETWEEN ? AND ?), 0) +
+                    COALESCE((SELECT SUM(paid) FROM customers_accounts WHERE account_date BETWEEN ? AND ?), 0) +
                     COALESCE((SELECT SUM(amount) FROM treasury_deposit_expenses WHERE date_inter BETWEEN ? AND ? AND deposit_or_expenses = 1), 0)
                 ) AS total_receipts,
                 (
                     COALESCE((SELECT SUM(paid_up) FROM total_buy WHERE invoice_date BETWEEN ? AND ?), 0) +
                     COALESCE((SELECT SUM(paid_from_treasury) FROM total_sales_re WHERE invoice_date BETWEEN ? AND ?), 0) +
+                    COALESCE((SELECT SUM(paid) FROM suppliers_accounts WHERE account_date BETWEEN ? AND ?), 0) +
                     COALESCE((SELECT SUM(amount) FROM treasury_deposit_expenses WHERE date_inter BETWEEN ? AND ? AND deposit_or_expenses = 2), 0) +
                     COALESCE((SELECT SUM(amount) FROM expenses_details WHERE date BETWEEN ? AND ?), 0)
                 ) AS total_payments_and_expenses,
@@ -46,8 +48,14 @@ public class DashboardPeriodDao extends AbstractDao<DashboardPeriodSummary> {
         super();
     }
 
-    // Every placeholder pair in SQL is the same (from, to) BETWEEN bound - 15 pairs, 30 params total.
-    private static final int PLACEHOLDER_PAIRS = 15;
+    // Every placeholder pair in SQL is the same (from, to) BETWEEN bound - 17 pairs, 34
+    // params total. It was 15 until customers_accounts and suppliers_accounts were added
+    // to the two cash columns: this view and daily_dashboard_report counted a day's money
+    // without the collections and the payments made against party accounts, so they
+    // disagreed with treasury_balance by exactly those. Counting the pairs by hand is the
+    // price of one constant; DashboardPeriodSummaryTest counts them from the SQL itself so
+    // a subquery added without touching this line fails the build rather than the screen.
+    private static final int PLACEHOLDER_PAIRS = 17;
 
     public DashboardPeriodSummary getSummary(LocalDate from, LocalDate to) throws DaoException {
         Date fromSql = Date.valueOf(from);

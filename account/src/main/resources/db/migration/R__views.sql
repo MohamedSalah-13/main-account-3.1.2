@@ -1184,18 +1184,31 @@ SELECT
     -- ==========================================
     -- 5. المقبوضات (النقدية الداخلة للخزينة اليوم)
     -- ==========================================
+    -- تحصيلات العملاء منها، وإلا اختلفت اللوحة عن كشف الخزينة بمقدار كل تحصيل.
+    -- customers_accounts.paid is here because treasury_balance counts it as income, and
+    -- these two numbers describe the same day's till. Without it the dashboard was short
+    -- by every collection made against a customer's account - which in a shop that sells
+    -- on credit is most of the money that came in.
     (
         COALESCE((SELECT SUM(paid_up) FROM total_sales WHERE invoice_date = CURDATE()), 0) +
         COALESCE((SELECT SUM(paid_to_treasury) FROM total_buy_re WHERE invoice_date = CURDATE()), 0) +
+        COALESCE((SELECT SUM(paid) FROM customers_accounts WHERE account_date = CURDATE()), 0) +
         COALESCE((SELECT SUM(amount) FROM treasury_deposit_expenses WHERE date_inter = CURDATE() AND deposit_or_expenses = 1), 0)
         ) AS total_receipts_today,
 
     -- ==========================================
     -- 6. المدفوعات والمصروفات (النقدية الخارجة اليوم)
     -- ==========================================
+    -- ومدفوعات الموردين هنا، للسبب نفسه.
+    -- suppliers_accounts.paid, for the same reason: treasury_balance counts it as money
+    -- out. Transfers between the business's own tills are deliberately in neither column
+    -- - they net to zero across a company-wide figure, which is what this is. That is a
+    -- different question from the shift summary, where the missing treasury filter is
+    -- itself the defect.
     (
         COALESCE((SELECT SUM(paid_up) FROM total_buy WHERE invoice_date = CURDATE()), 0) +
         COALESCE((SELECT SUM(paid_from_treasury) FROM total_sales_re WHERE invoice_date = CURDATE()), 0) +
+        COALESCE((SELECT SUM(paid) FROM suppliers_accounts WHERE account_date = CURDATE()), 0) +
         COALESCE((SELECT SUM(amount) FROM treasury_deposit_expenses WHERE date_inter = CURDATE() AND deposit_or_expenses = 2), 0) +
         COALESCE((SELECT SUM(amount) FROM expenses_details WHERE date = CURDATE()), 0)
         ) AS total_payments_and_expenses_today,
