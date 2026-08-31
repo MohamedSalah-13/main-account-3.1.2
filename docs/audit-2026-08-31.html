@@ -341,6 +341,7 @@ footer{
     <div class="score g-warn"><div class="k">Delegates</div><div class="v">C−</div><div class="n">عمولة محسوبة ولا شاشة تقرأها</div></div>
     <div class="score g-ok"><div class="k">Treasury</div><div class="v">A</div><div class="n">تعريف واحد للرصيد، مُختبَر</div></div>
     <div class="score g-ok"><div class="k">Warehouses</div><div class="v">B+</div><div class="n">قواعد سليمة، تكلفة قراءة عالية</div></div>
+    <div class="score g-ok"><div class="k">Read guards</div><div class="v">↑</div><div class="n">قاعدة جانب القراءة أُضيفت أثناء المراجعة</div></div>
     <div class="score g-warn"><div class="k">Users / RBAC</div><div class="v">B+</div><div class="n">RBAC ممتاز، إدارة الحساب أضعف</div></div>
     <div class="score g-warn"><div class="k">Reports</div><div class="v">C+</div><div class="n">33 قالب خارج الـ jar</div></div>
   </div>
@@ -561,7 +562,7 @@ footer{
       <div class="prose">
         <p>الجدول نفسه سليم (مفاتيح أجنبية على <code>job</code> و<code>user_id</code>، قيد فريد على الاسم)، والحذف يمرّ بالمسار الصحيح <code>DeletionService</code> بقاعدة معلنة. لكن القاعدة <strong>تفحص جدولاً ميتاً</strong> كما سبق، فحمايتها من ناحية المرتبات وهمية.</p>
         <p>و<code>UsersType</code> enum بمعرفات 1..4 مربوطة يدوياً بصفوف <code>jobs</code> — وهو <em>بالضبط</em> النمط الذى قُتل من أجله <code>UserPermissionType</code> ذو الـ130 مدخلاً. وما زال الـ enum يحمل <code>javafx.beans.property</code> فى قيمه، أى حالة قابلة للتغيير مشتركة على مستوى الـ process.</p>
-        <p>ولا يوجد حارس على قراءة قائمة الموظفين، والراتب عمود فيها — فمن يفتح الشاشة يرى رواتب الجميع.</p>
+        <p><strong>وقراءة الرواتب كانت مفتوحة تماماً</strong> — أُغلقت فى <code>b951ae8</code>. والشكل الذى كانت عليه يستحق التسجيل لأنه يتكرّر: الشاشة كانت تُخفى <em>عمود</em> الراتب عمّن لا يملك <code>employees.show.salary</code> بـ <code>isGranted()</code>، بينما الرقم يُقرأ من قاعدة البيانات ويُسلَّم للمُنادِى على أى حال. <strong>إخفاء عمود ليس فرضاً، تماماً كإخفاء زر</strong> — وهو المبدأ الذى تقوله وثائق المشروع بالفعل عن الأزرار، مطبَّقاً طبقةً أعمق. وبقى تسريب واحد مقصود ومسجَّل: ن-٢١.</p>
       </div>
     </div>
   </div>
@@ -887,6 +888,16 @@ footer{
       <div class="where">R__views.sql · account_customer_totals · 47eac47 · eef7e4c</div>
     </div></div>
 
+    <div class="find f-warn"><div class="stripe"></div><div class="find-in">
+      <div class="find-top"><span class="fid">ن-٢١</span><span class="chip">متوسطة</span><span class="chip">مفتوحة</span><span class="chip">الموظفين</span><span class="chip">المناديب</span>
+        <h4>قائمة المناديب ما زالت تسلّم الراتب</h4></div>
+      <p>بعد إغلاق قراءات الموظفين فى <code>b951ae8</code>، بقيت ثلاث دوال مفتوحة عمداً: <code>getDelegateList</code> و<code>getDelegateByName</code> و<code>getDelegateById</code>. وهى <strong>تسرّب راتباً فعلاً</strong> — المندوب <code>Employees</code>، والنموذج يحمل عمود <code>salary</code>.</p>
+      <p><strong>وحراستها ليست الحل</strong>، وهذا هو جوهر الملاحظة: كل شاشة فاتورة تحتاج قائمة المناديب، وأمين الصندوق يكتب الفواتير. اشتراط <code>employee.show</code> لملء combo يعنى أن من يكتب فاتورة يقرأ كشف الرواتب — علاج أسوأ من الداء.</p>
+      <p><strong>العلاج الحقيقى projection</strong> يحمل <code>id</code> و<code>name</code> فقط — تغيير فى النموذج وفى مَن يستدعيه، لا سطر حارس. مسجَّلة صراحةً فى قائمة استثناءات <code>readsOfOtherPeoplesMoneyAskPermissionFirst</code> بسببها، فهى <em>دَين معلوم</em> لا ثغرة صامتة — وهذا الفرق هو كل ما يفصل بينها وبين ن-١.</p>
+      <p>ونفس الشكل يستحق النظر فى <code>getEmployeeNames</code>: عولجت بفصلها عن <code>getEmployeesList</code> لتقرأ الصفوف وتُبقى الأسماء وحدها — وهو الحل الصحيح هنا، لكنه يقرأ الراتب من قاعدة البيانات ثم يطرحه، والـ projection يمنع ذلك من المصدر.</p>
+      <div class="where">EmployeeService.java:56–68 · AuthorizationArchitectureTest.java:138 · b951ae8</div>
+    </div></div>
+
   </div>
 </section>
 
@@ -920,6 +931,7 @@ footer{
     <p>هذه ليست مجاملة — هى أشياء نادرة فعلاً فى مشاريع بهذا الحجم، ومن يعمل على المشروع لاحقاً يجب ألا يفكّكها:</p>
     <ul>
       <li><strong>الاختبارات المعمارية السقّاطة.</strong> تسع منها، تحمل قوائم دَين تُفشل البناء <em>فى الاتجاهين</em>: ملف جديد يخالف القاعدة يسقط، وملف نُظِّف ولم يُشطب من القائمة يسقط أيضاً. هذا ما يمنع القوائم من أن تصير خيالاً — ولم أرَ هذا النمط مطبَّقاً بهذا الانضباط من قبل.</li>
+      <li><strong>قاعدة جانب القراءة (<code>b951ae8</code>) — أهمّ ما أضيف أثناء هذه المراجعة.</strong> كل قاعدة معمارية هنا كانت تراقب <em>الكتابة</em>، وقراءة بلا فعل فى اسمها ولا كتابة فى الـ DAO كانت خفية عنها كلها — وهكذا عاشت ثلاث تسريبات من شكل واحد شهوراً. القاعدة الجديدة <code>readsOfOtherPeoplesMoneyAskPermissionFirst</code> تعمل <strong>بنوع الإرجاع</strong>: دالة ترجع <code>Employees</code> أو <code>UserShift</code> أو <code>ShiftSummary</code> أو <code>ProfitLossRow</code> تسلّم رقماً يخصّ شخصاً، فتطلب صلاحية. وضيقها مقصود — ليست «كل قراءة تُحرَس»، لأن معظم القراءات بيانات كتالوج ومفتوحة بحق. وكتابتها كشفت رابعاً بنفسها: <code>buildAggregateReport</code> بلا مُنادٍ وبلا حارس، وحُرس <em>لأنه</em> بلا مُنادٍ — الباب المفتوح على لا شىء هو الباب الذى تُوصَل به أول شاشة قادمة.</li>
       <li><strong>تثبيت الـ SQL حرفاً بحرف.</strong> <code>DocumentDaoStatementsTest</code> يثبّت كل جملة فى ثمانية DAOs، ويثبّت عدد المعاملات لكل واحدة. دمج يبدّل عمودين متجاورين ينتج SQL صالحاً يحفظ الخصم كرقم مخزن — هذا التثبيت هو الوحيد الواقف بين ذلك وقاعدة بيانات عميل.</li>
       <li><strong>التعليقات تشرح «لماذا» لا «ماذا».</strong> وكثير منها يشرح ما الذى انكسر سابقاً وكيف. تعليقات <code>DocumentLedgerEffect</code> و<code>V1_1__audit_log_procedure.sql</code> و<code>TreasuryCashService</code> وثائق تصميم حقيقية لا زخرفة.</li>
       <li><strong>القواعد المعلنة مرة واحدة.</strong> <code>DocumentTableSpec</code> و<code>PartyTableSpec</code> و<code>DeleteRegistry</code> و<code>WipeCatalog</code> و<code>ItemReferenceRegistry</code> — كل واحد ألغى ملفاً مكرّراً أربع أو ثمانى مرات. و<code>WipeCatalogTest</code> و<code>ItemReferenceRegistryTest</code> يقرآن المفاتيح الأجنبية من ملفات الـ migration نفسها، فيصير الـ schema هو المرجع لا نسخة عنه.</li>
@@ -985,6 +997,7 @@ footer{
       <li><strong>ن-٤</strong> — «مفتاح جديد يبدأ غير ممنوح لأحد» غير دقيق: يُمنح تلقائياً لـ <code>SYSTEM_ADMIN</code> وحده، فيسلم المالك ويُحبَس أمناء الصناديق — وهو الأخطر لأن من يجرّب الترقية هو المالك.</li>
     </ul>
     <p>ون-١٩ و ن-٢٠ ملاحظتان <strong>فاتتا هذه المراجعة</strong> ووجدهما فحص لاحق. مذكورة كلها هنا لأن تقريراً يُعتمد عليه يجب أن يقول أين أخطأ وأين لم ينظر. والاختبارات الثلاثة عشر المقيَّدة صارت تنجح مجتمعة: 1,022 اختباراً بلا تخطٍّ.</p>
+    <p><strong>وعند <code>b951ae8</code>:</strong> قراءات الموظفين أُغلقت، وأُضيفت قاعدة معمارية لجانب القراءة لم تكن موجودة حين كُتب هذا التقرير — فسدّت الصنف كله لا الحالات الثلاث. وكشفت رابعاً (<code>buildAggregateReport</code>) وأبقت واحداً مقصوداً هو <strong>ن-٢١</strong>، وهى الملاحظة الوحيدة التى وُلدت من إصلاح لا من فحص.</p>
   </div>
 </footer>
 
