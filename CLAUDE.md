@@ -58,28 +58,46 @@ because *every new party payment had been silently discarded since `f2b4baf`* (s
 observe from inside an enclosing transaction. Fifteen cases pass now, twice in a row, and the class
 checks for its own residue rather than trusting the rollback.
 
-**Twelve classes do not run by default.** `InvoiceStockDatabaseAcceptanceTest`,
+**Thirteen classes do not run by default.** `InvoiceStockDatabaseAcceptanceTest`,
 `DocumentLineDatabaseAcceptanceTest`, `StockLedgerReconciliationAcceptanceTest`,
 `StockMovementBackfillAcceptanceTest`, `StockTransferDatabaseAcceptanceTest`,
 `TotalDocumentDeleteReversesStockLedgerAcceptanceTest`,
 `PurchaseDeleteReversesNonDefaultWarehouseBalanceAcceptanceTest`, `PartyLedgerViewAcceptanceTest`,
-`ReturnSourceAcceptanceTest`, `ReturnableRepositoryAcceptanceTest`, `ItemMergeDatabaseAcceptanceTest`
-and `TreasuryBalanceViewAcceptanceTest` are gated on `-Daccount.db.acceptance=true` and need a
-reachable MySQL. A green `mvn clean test` has not run them.
+`ReturnSourceAcceptanceTest`, `ReturnableRepositoryAcceptanceTest`, `ItemMergeDatabaseAcceptanceTest`,
+`TreasuryBalanceViewAcceptanceTest` and `ProfitDefinitionDatabaseAcceptanceTest` are gated on
+`-Daccount.db.acceptance=true` and need a reachable MySQL. A green `mvn clean test` does not run them.
+
+**On 2026-08-31 all thirteen were run together for the first time, and after one fixture fix all
+pass: 1022 tests, nothing skipped.** Before that day the honest statement was that most of them had
+never been run at all. What the run is worth knowing for:
+
+- **It was run against a schema built from nothing**, not against the developer's database - which is
+  also how the fresh-install defect behind `V1_1__audit_log_procedure.sql` was found. Build a scratch
+  schema, migrate it, run, drop it; then query the real database for the fixture's own marks rather
+  than trusting the rollback. It costs one throwaway class and removes the whole question.
+- **`ItemMergeDatabaseAcceptanceTest` had been failing since 2026-08-28 and nobody could know.** It
+  passed on 2026-08-25 when its fixture wrote the opening balance to `items.first_balance`; `fbadd53`
+  moved `quantity_items_table` onto `items_stock.first_balance` three days later and the fixture kept
+  writing a hard-coded zero there, so it claimed an opening of 5 against a view reading 0. The merge
+  itself was right the whole time - it sums `items_stock.first_balance` per warehouse. **A gated test
+  is not a passing test.** Run them after anything that moves a view or a balance.
+
 `PartyLedgerViewAcceptanceTest` is the only check that the accounting views say what
 `DocumentLedgerEffect` says, so **run it after touching `R__views.sql`** — the whole return-ledger defect
 lived where no test could see it. `TreasuryBalanceViewAcceptanceTest` is the same kind of check on the
-treasury side and has **never been run**: it is the only thing that says
-`treasury_current_balance` produces the number a person would reach with a pen.
-`ItemMergeDatabaseAcceptanceTest` is the only check that a merge leaves
-the surviving item holding both histories; **it was run for the first time on 2026-08-25 and all four
-tests passed** against a real MySQL — so the multi-table `UPDATE … JOIN` statements are valid, the
-candidates query's shadowed `i` alias works, and the surviving balance does come out as the sum.
+treasury side: it is the only thing that says `treasury_current_balance` produces the number a person
+would reach with a pen. `ProfitDefinitionDatabaseAcceptanceTest` is the third of that family and the
+only thing that says the profit and loss screen, the yearly report and both invoice lists report one
+number — the text-matching `ProfitDefinitionTest` says they all read `document_profit`, not that the
+figure is right. `ItemMergeDatabaseAcceptanceTest` is the only check that a merge leaves the surviving
+item holding both histories.
 
-**The merge one is safe to run on a working database; do not assume that of the other eleven.** It opens
+**The merge one is safe to run on a working database; do not assume that of the other twelve.** It opens
 one transaction and rolls it back in a `finally`, so even the audit triggers' rows go with it - and that
 was checked rather than trusted: querying afterwards, `item_merge`, `item_merge_lines` and every `MRG-%`
-barcode its fixtures create all counted zero. The others have not been checked the same way, and at
+barcode its fixtures create all counted zero. `ProfitDefinitionDatabaseAcceptanceTest` was checked the
+same way and is the same shape, and it also refuses to run in a year that already holds documents,
+since the views it reads group the whole database by date. The others have not been checked, and at
 least one acceptance run has left rows behind in a development database before, so read the fixture
 before pointing one at data you care about. Two things bite when running any of them: surefire's working
 directory is the module, so the config read is `account/config.xml`, **not** the root `config.xml` -

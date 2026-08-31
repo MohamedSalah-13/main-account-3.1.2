@@ -238,8 +238,18 @@ class ItemMergeDatabaseAcceptanceTest {
         }
         // quantity_items_table is driven by items_stock, so an item with no row there has
         // no balance to read at all - which would make every assertion here pass vacuously.
-        execute(connection, "INSERT INTO items_stock (item_id, stock_id, first_balance, current_quantity) VALUES (?, ?, 0, 0)",
-                id, STOCK);
+        //
+        // The opening balance goes in here as well as on the item, and the two have to
+        // agree. This row used to be written with a hard-coded 0, which was correct when
+        // the test was written on 2026-08-20: the view read `items.first_balance` then, so
+        // the item's own column was the opening. fbadd53 (2026-08-28, multi-warehouse)
+        // moved the view onto `items_stock.first_balance` per warehouse and left
+        // `items.first_balance` as a compatibility mirror of warehouse 1 - and from that
+        // day this fixture claimed an opening of 5 while the view read 0. Nobody saw it,
+        // because the class is gated and was last run on 2026-08-25, three days before.
+        execute(connection, """
+                INSERT INTO items_stock (item_id, stock_id, first_balance, current_quantity)
+                VALUES (?, ?, ?, 0)""", id, STOCK, firstBalance);
         return id;
     }
 
