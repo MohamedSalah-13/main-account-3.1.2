@@ -1,6 +1,9 @@
 @echo off
 REM Run all .sql files in scripts\main against a MySQL database
-REM Usage: run_all_sql.bat localhost 3306 root secret mydb
+REM Usage: set MYSQL_PWD=secret ^&^& RunAllSqlScripts.bat localhost 3306 root "" mydb
+REM        RunAllSqlScripts.bat localhost 3306 root secret mydb
+REM Prefer MYSQL_PWD: a password given as the 4th argument is visible to anything
+REM that can read this machine's command lines or your shell history.
 
 setlocal enabledelayedexpansion
 
@@ -13,8 +16,19 @@ if "%PORT%"=="" set "PORT=3306"
 set "USER=%~3"
 if "%USER%"=="" set "USER=root"
 
+REM No default password. Take the 4th argument if given, otherwise MYSQL_PWD.
 set "PASS=%~4"
-if "%PASS%"=="" set "PASS=m13ido"
+if "%PASS%"=="" set "PASS=%MYSQL_PWD%"
+if "%PASS%"=="" (
+  echo Error: no MySQL password supplied.
+  echo Set MYSQL_PWD in the environment, or pass it as the 4th argument.
+  exit /b 1
+)
+
+REM Hand the password to the client through the environment rather than
+REM --password= on the command line, which would expose it in the process list.
+set "MYSQL_PWD=%PASS%"
+set "PASS="
 
 set "DB=%~5"
 if "%DB%"=="" set "DB=account_system_db"
@@ -37,15 +51,15 @@ REM ==============================================================
 
 REM 1. حذف جميع الـ Triggers
 echo Dropping all existing triggers in %DB% ...
-"%MYSQL_BIN%" --host=%HOST% --port=%PORT% --user=%USER% --password=%PASS% -sN -e "SELECT CONCAT('DROP TRIGGER IF EXISTS `', trigger_name, '`;') FROM information_schema.triggers WHERE trigger_schema = '%DB%';" > temp_drop_triggers.sql
-"%MYSQL_BIN%" --host=%HOST% --port=%PORT% --user=%USER% --password=%PASS% %DB% < temp_drop_triggers.sql
+"%MYSQL_BIN%" --host=%HOST% --port=%PORT% --user=%USER% -sN -e "SELECT CONCAT('DROP TRIGGER IF EXISTS `', trigger_name, '`;') FROM information_schema.triggers WHERE trigger_schema = '%DB%';" > temp_drop_triggers.sql
+"%MYSQL_BIN%" --host=%HOST% --port=%PORT% --user=%USER% %DB% < temp_drop_triggers.sql
 del temp_drop_triggers.sql
 echo Triggers dropped successfully.
 
 REM 2. حذف جميع الـ Views
 echo Dropping all existing views in %DB% ...
-"%MYSQL_BIN%" --host=%HOST% --port=%PORT% --user=%USER% --password=%PASS% -sN -e "SELECT CONCAT('DROP VIEW IF EXISTS `', table_name, '`;') FROM information_schema.VIEWS WHERE table_schema = '%DB%';" > temp_drop_views.sql
-"%MYSQL_BIN%" --host=%HOST% --port=%PORT% --user=%USER% --password=%PASS% %DB% < temp_drop_views.sql
+"%MYSQL_BIN%" --host=%HOST% --port=%PORT% --user=%USER% -sN -e "SELECT CONCAT('DROP VIEW IF EXISTS `', table_name, '`;') FROM information_schema.VIEWS WHERE table_schema = '%DB%';" > temp_drop_views.sql
+"%MYSQL_BIN%" --host=%HOST% --port=%PORT% --user=%USER% %DB% < temp_drop_views.sql
 del temp_drop_views.sql
 echo Views dropped successfully.
 
@@ -70,6 +84,5 @@ exit /b 0
 
 :run_sql
 set "FILE=%~1"
-REM Note: passing password on CLI; consider MYSQL_PWD env var if preferred.
-"%MYSQL_BIN%" --host=%HOST% --port=%PORT% --user=%USER% --default-character-set=utf8mb4 --password=%PASS% -vvv %DB% < "%FILE%" >> migration_log.txt 2>&1
+"%MYSQL_BIN%" --host=%HOST% --port=%PORT% --user=%USER% --default-character-set=utf8mb4 -vvv %DB% < "%FILE%" >> migration_log.txt 2>&1
 exit /b %errorlevel%

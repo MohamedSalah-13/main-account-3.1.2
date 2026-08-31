@@ -786,6 +786,20 @@ to it so existing installs keep working; writing refuses it. Values written now 
 
 Never commit `config.xml`, `config.key`, `private_key.pem`, `license.dat`, or `secret_key.txt`.
 
+**A MySQL password was committed to this repository and is in the pushed history.**
+`scripts/main/RunAllSqlScripts.bat` carried `set "PASS=m13ido"` as its default from `01c7ac8`
+until 2026-08-31. The script no longer has it — it requires a password and takes it from
+`MYSQL_PWD`, and no longer passes `--password=` on any command line, where it was visible in the
+process list — but removing it from the file does not remove it from git. **Treat that password as
+public and change it on any server where it was ever used.** This is the second credential of this
+kind, after the `config.xml` encrypted with the built-in key above; both are in history, and the
+lesson is the same one twice.
+
+**Also: `DatabaseMigrationService` runs `mysqldump` before applying anything, and those dumps land
+in `backups/` and `account/backups/` inside the repository.** They are full database contents —
+every customer, every invoice, and any row holding a credential. They are git-ignored today; check
+that before adding a path, and never relax it.
+
 ## Database schema
 
 Schema changes are **Flyway migrations**, in `account/src/main/resources/db/migration/`, applied by
