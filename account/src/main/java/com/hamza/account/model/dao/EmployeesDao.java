@@ -7,9 +7,11 @@ import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.database.SqlStatements;
 
 import java.sql.Blob;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -154,8 +156,61 @@ public class EmployeesDao extends AbstractDao<Employees> {
         return employees;
     }
 
+    /**
+     * The delegate job, which is a row in an editable table and a literal in this file.
+     * Extracted only so that the two statements below cannot drift apart; that it is a
+     * hand-matched id at all is finding 16 of docs/audit-2026-08-31.html and is not fixed
+     * here.
+     */
+    private static final int DELEGATE_JOB = 4;
+
     public List<Employees> loadAllDelegate() throws DaoException {
-        return queryForObjects(SqlStatements.selectStatement(EMPLOYEES).concat(" where job = 4"), this::map);
+        return queryForObjects(
+                SqlStatements.selectStatement(EMPLOYEES).concat(" where job = " + DELEGATE_JOB),
+                this::map);
+    }
+
+    /**
+     * Names, without the rest of the row.
+     * <p>
+     * The combo boxes that need these - the delegate on an invoice, the employee on an
+     * expense - used to get them by loading every column of every employee and keeping the
+     * name. {@code salary} is one of those columns, so a cashier opening an invoice pulled
+     * the whole payroll across the connection to fill a dropdown. Nothing showed it, which
+     * is exactly why it lasted: the leak was in what was fetched, not in what was drawn.
+     * <p>
+     * Ordered by name, which the list it replaces never was. {@code loadAll} is
+     * {@code SELECT *} with no {@code ORDER BY}, so the combo's order was whatever the
+     * server happened to return - and comparing the two against a real MySQL is how that
+     * surfaced: the projection can be answered from an index on the name where
+     * {@code SELECT *} walks the primary key, and the same rows came back in a different
+     * order. An undefined order is being replaced with a defined one, not a stable order
+     * with a different one; alphabetical is what a person picking a name from a dropdown
+     * expects, and it cannot drift with the query plan.
+     */
+    public List<String> loadAllNames() throws DaoException {
+        return names("SELECT " + COLUMN_NAME + " FROM " + EMPLOYEES + " ORDER BY " + COLUMN_NAME);
+    }
+
+    /** The delegates' names, on the same terms as {@link #loadAllNames()}. */
+    public List<String> loadAllDelegateNames() throws DaoException {
+        return names("SELECT " + COLUMN_NAME + " FROM " + EMPLOYEES
+                + " WHERE job = " + DELEGATE_JOB + " ORDER BY " + COLUMN_NAME);
+    }
+
+    private List<String> names(String query) throws DaoException {
+        return withConnection(connection -> {
+            List<String> names = new ArrayList<>();
+            try (PreparedStatement statement = connection.prepareStatement(query);
+                 ResultSet rows = statement.executeQuery()) {
+                while (rows.next()) {
+                    names.add(rows.getString(1));
+                }
+            } catch (SQLException e) {
+                throw new DaoException(e);
+            }
+            return names;
+        });
     }
 
     public List<Employees> getFilterEmployees(String searchText) throws DaoException {

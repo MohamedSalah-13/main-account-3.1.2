@@ -42,14 +42,12 @@ public record EmployeeService(DaoFactory daoFactory) {
      * It used to derive from {@link #getEmployeesList()}, which would now mean the
      * expenses screen needed {@code employee.show} to fill a combo box with names - a
      * cashier recording a wage payment is not asking to read the payroll. A name is not
-     * a salary, so this reads the rows and keeps only the names, and the guard stays on
-     * the method that hands over the figures.
+     * a salary, so the guard stays on the method that hands over the figures, and this
+     * asks the database for names alone rather than reading rows and discarding most of
+     * each: the salary no longer crosses the connection to fill a dropdown.
      */
     public List<String> getEmployeeNames() throws DaoException {
-        return getEmployeesDao().loadAll()
-                .stream()
-                .map(Employees::getName)
-                .toList();
+        return getEmployeesDao().loadAllNames();
     }
 
     /**
@@ -72,11 +70,14 @@ public record EmployeeService(DaoFactory daoFactory) {
         return daoFactory.employeesDao();
     }
 
+    /**
+     * The delegate combo on every invoice screen - names only, and no salary is read to
+     * produce them. It derived from {@link #getDelegateList()}, so filling a dropdown
+     * pulled every column of every delegate, {@code salary} included, across the
+     * connection. Nothing displayed it; the leak was in what was fetched.
+     */
     public List<String> getDelegateNames() throws DaoException {
-        return getDelegateList()
-                .stream()
-                .map(Employees::getName)
-                .toList();
+        return getEmployeesDao().loadAllDelegateNames();
     }
 
     public Employees getDelegateByName(String name) throws DaoException {
