@@ -992,7 +992,11 @@ SELECT act.account_code,
        ta.area_name                                                AS area_name
 FROM account_customer_table act
          JOIN custom     c  ON act.account_code = c.id
-         JOIN table_area ta ON ta.id = c.area_id
+         -- LEFT, as in PartyLedgerSpec.totalsBetweenDatesSql() and in the customer
+         -- searches: the join is here to read the area's name, and an inner one dropped
+         -- a customer whose area row had been deleted out of the receivables summary
+         -- entirely - they owe what they owe with or without an area.
+         LEFT JOIN table_area ta ON ta.id = c.area_id
 GROUP BY act.account_code, c.name, ta.id, ta.area_name;
 
 -- --------------------------------------account_suppliers_totals-----------------------------------
