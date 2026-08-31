@@ -106,7 +106,23 @@ public record UserShiftService(DaoFactory daoFactory) {
         return daoFactory.userShiftDao().getShiftsByUserId(userId);
     }
 
+    /**
+     * Every user's shifts, for the administrator screen - guarded, unlike
+     * {@link #getUserShifts(int)}, which returns the caller their own.
+     * <p>
+     * A row here carries a cashier's opening and closing cash and the difference between
+     * them: the number they are answerable for. Any signed-in user could read all of it
+     * for everyone, because a read reaches no {@code require} and the architecture test
+     * that guards write paths cannot see a read at all.
+     * <p>
+     * {@code USER_SHIFT_MANAGE} already exists and is already what deleting and
+     * force-closing a shift require, so nothing is granted or revoked by this: whoever can
+     * close someone else's shift can read it, and whoever cannot, cannot. That is why this
+     * one is fixed here while {@code openShift} and {@code closeShift} are not - they would
+     * need a key that no ordinary user holds yet.
+     */
     public List<UserShift> getAllShifts() throws DaoException {
+        AuthorizationGuard.require(AppPermissions.USER_SHIFT_MANAGE);
         return daoFactory.userShiftDao().loadAll();
     }
 

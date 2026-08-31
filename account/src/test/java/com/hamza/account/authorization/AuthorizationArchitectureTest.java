@@ -155,12 +155,26 @@ class AuthorizationArchitectureTest {
             "WalletFeeService#post",
 
             // DEBT, not an exemption. Opening and closing a shift are unguarded, so any
-            // signed-in user can open or close one - and AdminShiftsController, the screen
-            // showing every user's shifts, has its guard sitting commented out. Fixing it
-            // means new permission keys, and a new key starts granted to nobody, which
-            // would stop cashiers opening a shift until the roles are set up. That is a
-            // decision about a live install, not a refactor, so it is recorded here rather
-            // than made quietly. See finding 4 of docs/audit-2026-08-31.html.
+            // signed-in user can open or close one. Fixing it means new permission keys,
+            // and that is a decision about a live install rather than a refactor, so it is
+            // recorded here rather than made quietly. See finding 4 of
+            // docs/audit-2026-08-31.html.
+            //
+            // Precisely, because "a new key is granted to nobody" is too strong and was
+            // written that way here at first: JdbcRbacRepository.synchronizeCatalog grants
+            // every enabled permission to SYSTEM_ADMIN on every startup, and V11 assigns
+            // that role to user 1 - so the owner would never be locked out. Everyone else
+            // would. Cashiers are exactly who opens a shift, and V13 says in its first line
+            // that its starter roles are deliberately assigned to nobody, because "an
+            // upgrade must never guess a person's job and silently broaden access". So the
+            // grant has to be a human decision taken with this change, not a line in a
+            // migration - which is the whole reason this is debt and not a five-minute fix.
+            //
+            // The read on the same feature was a five-minute fix and is done:
+            // UserShiftService.getAllShifts required nothing while returning every
+            // cashier's cash difference, and it now requires USER_SHIFT_MANAGE - a key that
+            // already exists and already gates force-closing, so nobody gained or lost
+            // access. A read is invisible to this test, which only sees write paths.
             "UserShiftService#openShift",
             "UserShiftService#closeShift");
 

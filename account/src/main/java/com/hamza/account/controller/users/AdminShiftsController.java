@@ -81,10 +81,14 @@ public class AdminShiftsController {
                 return;
             }
 
-//            if (!LogApplication.hasPermission(AppPermissions.SHIFT_MANAGER)) {
-//                AllAlerts.alertError("ليس لديك صلاحية إدارة الورديات");
-//                return;
-//            }
+            // The permission check that used to sit here, commented out, is gone rather
+            // than restored. It named AppPermissions.SHIFT_MANAGER and
+            // LogApplication.hasPermission, neither of which exists any more - it is a
+            // fossil of the pre-AppPermissions system that could not have compiled if
+            // anyone had tried to uncomment it. And it was never the gap: forceCloseShift
+            // requires USER_SHIFT_MANAGE in the service, where enforcement belongs. What
+            // was genuinely unguarded was reading this screen at all, and that is fixed in
+            // UserShiftService.getAllShifts.
 
             if (!selected.isOpen()) {
                 AllAlerts.handleError(LanguageManager.getInstance().getString("user.shift.force.close.title"),
