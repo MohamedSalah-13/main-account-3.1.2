@@ -1,5 +1,7 @@
 package com.hamza.account.service;
 
+import com.hamza.account.authorization.AppPermissions;
+import com.hamza.account.authorization.AuthorizationGuard;
 import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.model.domain.ShiftSummary;
 import com.hamza.account.model.domain.UserShift;
@@ -48,9 +50,20 @@ public record ShiftReportService(DaoFactory daoFactory, UserShiftService userShi
 
     /**
      * تقرير تجميعي لورديات فترة زمنية معينة.
+     * <p>
+     * {@code userId} is nullable, and null means every user - so this returns the opening
+     * cash, closing cash and difference of every cashier in a period. Nothing calls it
+     * today, which is exactly why the guard goes on now: an unguarded method that leaks
+     * other people's money figures is not safe because it is unreachable, it is a door
+     * left open for whichever screen is wired to it first, by someone who will reasonably
+     * assume the service already asked.
+     * <p>
+     * {@code USER_SHIFT_MANAGE} is the same key that {@code UserShiftService.getAllShifts}
+     * requires, and it costs nothing here because there is no caller to break.
      */
     public List<UserShift> buildAggregateReport(LocalDateTime from, LocalDateTime to, Integer userId)
             throws DaoException {
+        AuthorizationGuard.require(AppPermissions.USER_SHIFT_MANAGE);
         return daoFactory.userShiftDao().getShiftsBetween(from, to, userId);
     }
 

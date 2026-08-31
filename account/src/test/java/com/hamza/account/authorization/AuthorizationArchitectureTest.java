@@ -134,6 +134,110 @@ class AuthorizationArchitectureTest {
                         + "it excuses is how an exception becomes invisible.");
     }
 
+    /**
+     * A service method handing over someone else's money figure asks permission too.
+     * <p>
+     * {@link #serviceWritePathsAskPermissionFirst()} watches writes, and every
+     * architecture test in this suite did the same - which is why three separate leaks
+     * lived here for months without any of them noticing. A read has no verb in its name
+     * and touches no DAO write, so it is invisible to all of them:
+     * <ul>
+     *   <li>{@code ProfitLossService.load} - the profit, every sale's cost, every expense.
+     *       Checked only by the sidebar button that opened the screen.</li>
+     *   <li>{@code UserShiftService.getAllShifts} - every cashier's opening cash, closing
+     *       cash, and the difference they answer for. Checked by nothing at all.</li>
+     *   <li>{@code EmployeeService.getEmployeesList} - what everybody is paid. The screen
+     *       hid the salary column from anyone without {@code employees.show.salary}; the
+     *       figure was fetched and handed over regardless.</li>
+     * </ul>
+     * Hiding a button is not enforcement, and neither is hiding a column.
+     * <p>
+     * The rule is by <b>return type</b>, because that is what can be decided by reading:
+     * a method whose return mentions one of {@link #TYPES_CARRYING_SOMEONE_ELSES_MONEY}
+     * hands the caller a figure about a person, and must call {@code require}. It is not a
+     * general "reads must be guarded" rule - most reads are catalogue data and are
+     * rightly open. It is narrow on purpose: the point is the money, not the reading.
+     */
+    @Test
+    void readsOfOtherPeoplesMoneyAskPermissionFirst() throws IOException {
+        var offenders = new java.util.TreeSet<String>();
+        for (Path root : SERVICE_ROOTS) {
+            try (var files = Files.walk(root)) {
+                files.filter(path -> path.toString().endsWith("Service.java"))
+                        .forEach(path -> offenders.addAll(unguardedSensitiveReads(path)));
+            }
+        }
+
+        var unexpected = new java.util.TreeSet<>(offenders);
+        unexpected.removeAll(READS_SCOPED_TO_THE_CALLER);
+        assertTrue(unexpected.isEmpty(),
+                "these service methods hand over a figure about a person without asking "
+                        + "permission: " + unexpected + ". Either require a permission, or - if "
+                        + "the method only ever returns the caller their own, or carries no "
+                        + "figure - add it to READS_SCOPED_TO_THE_CALLER with the reason.");
+
+        var stale = new java.util.TreeSet<>(READS_SCOPED_TO_THE_CALLER);
+        stale.removeAll(offenders);
+        assertTrue(stale.isEmpty(),
+                "these are on the exception list but are guarded now: " + stale
+                        + ". Delete them from READS_SCOPED_TO_THE_CALLER.");
+    }
+
+    /**
+     * Models that carry a figure about a person: a salary, or a till's cash and the
+     * difference a cashier answers for, or a business's profit. Add a model here when it
+     * gains such a column - that is the whole of the maintenance this rule asks for.
+     */
+    private static final java.util.List<String> TYPES_CARRYING_SOMEONE_ELSES_MONEY =
+            java.util.List.of("Employees", "UserShift", "ShiftSummary", "ProfitLossRow");
+
+    /**
+     * The reads that hand over one of those types and correctly do not ask. Every one is
+     * either scoped to the caller by its own argument, or open for a reason that outweighs
+     * what it leaks - and where it is the latter, that is written down rather than implied.
+     */
+    private static final java.util.Set<String> READS_SCOPED_TO_THE_CALLER = java.util.Set.of(
+            // Your own shift is yours. The cashier's screen closes their day on these, and
+            // each takes the user id it is scoped by.
+            "UserShiftService#getUserShifts",
+            "UserShiftService#getOpenShift",
+            "UserShiftService#getCurrentShiftSummary",
+
+            // The delegate on an invoice. Cashiers write invoices, so guarding these breaks
+            // the delegate combo on every invoice screen - which is worse than what they
+            // leak. But they DO leak: a delegate is an Employees and the model carries
+            // salary. The real fix is a projection of id and name, which is a change to the
+            // model and its callers rather than a line in a service, and until then the
+            // invoice screens use getDelegateNames, which is already only names.
+            "EmployeeService#getDelegateList",
+            "EmployeeService#getDelegateByName",
+            "EmployeeService#getDelegateById");
+
+    /** The methods in one service file that return such a type and never call the guard. */
+    private static java.util.List<String> unguardedSensitiveReads(Path path) {
+        String source = read(path);
+        String type = path.getFileName().toString().replace(".java", "");
+        var offenders = new java.util.ArrayList<String>();
+        var signature = java.util.regex.Pattern
+                .compile("(?m)^    (?:public|protected)[^;{=]*\\{").matcher(source);
+        while (signature.find()) {
+            String declaration = signature.group();
+            int parameters = declaration.indexOf('(');
+            if (parameters < 0) {
+                continue;
+            }
+            String returned = declaration.substring(0, parameters);
+            if (TYPES_CARRYING_SOMEONE_ELSES_MONEY.stream().noneMatch(returned::contains)) {
+                continue;
+            }
+            String body = bodyOf(source, signature.end() - 1);
+            if (!body.contains("AuthorizationGuard.require(")) {
+                offenders.add(type + "#" + methodName(declaration));
+            }
+        }
+        return offenders;
+    }
+
     private static final java.util.List<Path> SERVICE_ROOTS = java.util.List.of(
             Path.of("src", "main", "java", "com", "hamza", "account", "service"),
             Path.of("src", "main", "java", "com", "hamza", "account", "features"));

@@ -17,17 +17,52 @@ import java.util.List;
 
 public record EmployeeService(DaoFactory daoFactory) {
 
+    /**
+     * Every employee, salary included - so it asks permission first.
+     * <p>
+     * {@code Employees} carries {@code salary}, so any method returning one hands over
+     * what everybody in the business is paid. This was open to any signed-in user. The
+     * employees screen hid the salary <em>column</em> from anyone without
+     * {@code employees.show.salary}, which is a UI hint and was never enforcement: the
+     * figure was still read out of the database and handed to the caller, and anything
+     * reaching the service another way got all of it.
+     * <p>
+     * {@code EMPLOYEE_SHOW} already exists and already decides whether the employees
+     * screen opens, so nobody gains or loses access by this being checked where it
+     * counts rather than only on a button.
+     */
     public List<Employees> getEmployeesList() throws DaoException {
+        AuthorizationGuard.require(AppPermissions.EMPLOYEE_SHOW);
         return getEmployeesDao().loadAll();
     }
 
+    /**
+     * Names only, and deliberately not guarded.
+     * <p>
+     * It used to derive from {@link #getEmployeesList()}, which would now mean the
+     * expenses screen needed {@code employee.show} to fill a combo box with names - a
+     * cashier recording a wage payment is not asking to read the payroll. A name is not
+     * a salary, so this reads the rows and keeps only the names, and the guard stays on
+     * the method that hands over the figures.
+     */
     public List<String> getEmployeeNames() throws DaoException {
-        return getEmployeesList()
+        return getEmployeesDao().loadAll()
                 .stream()
                 .map(Employees::getName)
                 .toList();
     }
 
+    /**
+     * The delegates, unguarded - an invoice needs one, and cashiers write invoices.
+     * <p>
+     * <b>This still hands over a salary</b>, because a delegate is an {@code Employees}
+     * and the model carries the column. Guarding it would break the delegate combo on
+     * every invoice screen, which is worse; the real fix is a projection carrying an id
+     * and a name and nothing else, and that is a change to the model and its callers
+     * rather than a line here. Recorded rather than quietly left:
+     * {@link #getDelegateNames()} is what the invoice screens actually use, and it is
+     * already only names.
+     */
     public List<Employees> getDelegateList() throws DaoException {
         return getEmployeesDao().loadAllDelegate();
     }
@@ -67,11 +102,15 @@ public record EmployeeService(DaoFactory daoFactory) {
         else return getEmployeesDao().update(employees);
     }
 
+    /** The employees screen's search - same rows, same salary, same guard. */
     public List<Employees> getFilterEmployees(String searchText) throws DaoException {
+        AuthorizationGuard.require(AppPermissions.EMPLOYEE_SHOW);
         return getEmployeesDao().getFilterEmployees(searchText);
     }
 
+    /** The employees screen's paging - same rows, same salary, same guard. */
     public List<Employees> getProducts(int rowsPerPage, int offset) throws DaoException {
+        AuthorizationGuard.require(AppPermissions.EMPLOYEE_SHOW);
         return getEmployeesDao().getProducts(rowsPerPage, offset);
     }
 
