@@ -1,0 +1,958 @@
+<title>دفتر مراجعة AccountK</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Reem+Kufi:wght@400;500;600;700&family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+
+<style>
+:root{
+  --paper:#FAF9F3;
+  --surface:#FFFFFF;
+  --surface-2:#F3F2EA;
+  --ink:#191C17;
+  --ink-2:#575C51;
+  --ink-3:#858A7C;
+  --rule:#DFDDD0;
+  --rule-soft:#EBE9DE;
+  --seal:#8A4326;
+  --crit:#A02A24;
+  --high:#B4541C;
+  --warn:#8A6A0B;
+  --ok:#2C6B4C;
+  --crit-bg:#F6E9E7;
+  --high-bg:#F8EDE4;
+  --warn-bg:#F6F0DD;
+  --ok-bg:#E6F0E9;
+  --shadow:0 1px 2px rgba(25,28,23,.05),0 8px 24px -16px rgba(25,28,23,.28);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --paper:#131510;
+    --surface:#1B1E17;
+    --surface-2:#22261D;
+    --ink:#EAE9DD;
+    --ink-2:#A2A697;
+    --ink-3:#7C8073;
+    --rule:#2F3329;
+    --rule-soft:#262A21;
+    --seal:#CE8058;
+    --crit:#E5786D;
+    --high:#DE9560;
+    --warn:#D6AC48;
+    --ok:#66B78D;
+    --crit-bg:#2C1C1A;
+    --high-bg:#2B211A;
+    --warn-bg:#2A2618;
+    --ok-bg:#18271F;
+    --shadow:0 1px 2px rgba(0,0,0,.4),0 10px 30px -18px rgba(0,0,0,.8);
+  }
+}
+:root[data-theme="dark"]{
+  --paper:#131510;
+  --surface:#1B1E17;
+  --surface-2:#22261D;
+  --ink:#EAE9DD;
+  --ink-2:#A2A697;
+  --ink-3:#7C8073;
+  --rule:#2F3329;
+  --rule-soft:#262A21;
+  --seal:#CE8058;
+  --crit:#E5786D;
+  --high:#DE9560;
+  --warn:#D6AC48;
+  --ok:#66B78D;
+  --crit-bg:#2C1C1A;
+  --high-bg:#2B211A;
+  --warn-bg:#2A2618;
+  --ok-bg:#18271F;
+  --shadow:0 1px 2px rgba(0,0,0,.4),0 10px 30px -18px rgba(0,0,0,.8);
+}
+
+*{box-sizing:border-box}
+body{
+  margin:0;
+  background:var(--paper);
+  color:var(--ink);
+  font-family:"IBM Plex Sans Arabic","Segoe UI",system-ui,sans-serif;
+  font-size:16px;
+  line-height:1.78;
+  -webkit-font-smoothing:antialiased;
+}
+.doc{direction:rtl;text-align:right}
+.wrap{max-width:1140px;margin:0 auto;padding:0 28px}
+.prose{max-width:74ch}
+
+code,.mono,kbd{
+  font-family:"IBM Plex Mono","Consolas",monospace;
+  font-size:.855em;
+  direction:ltr;
+  unicode-bidi:embed;
+  display:inline-block;
+}
+code{
+  background:var(--surface-2);
+  border:1px solid var(--rule-soft);
+  border-radius:3px;
+  padding:.05em .38em;
+  color:var(--ink);
+}
+
+/* ---------- masthead ---------- */
+.mast{border-bottom:2px solid var(--ink);margin-bottom:0}
+.mast-in{padding:56px 0 26px}
+.eyebrow{
+  font-family:"IBM Plex Mono",monospace;
+  font-size:11.5px;letter-spacing:.19em;text-transform:uppercase;
+  color:var(--seal);direction:ltr;text-align:right;margin:0 0 20px;
+}
+h1{
+  font-family:"Reem Kufi","IBM Plex Sans Arabic",sans-serif;
+  font-weight:600;font-size:clamp(38px,6.4vw,64px);line-height:1.12;
+  margin:0 0 14px;text-wrap:balance;letter-spacing:-.005em;
+}
+.dek{font-size:19px;line-height:1.66;color:var(--ink-2);max-width:60ch;margin:0}
+.mast-meta{
+  display:flex;flex-wrap:wrap;gap:8px 30px;margin-top:30px;
+  font-family:"IBM Plex Mono",monospace;font-size:11.5px;
+  color:var(--ink-3);direction:ltr;justify-content:flex-end;
+}
+.mast-meta b{color:var(--ink-2);font-weight:500}
+
+/* ---------- verdict ---------- */
+.verdict{
+  border:1px solid var(--rule);border-radius:4px;background:var(--surface);
+  padding:30px 34px;margin:40px 0 8px;box-shadow:var(--shadow);
+}
+.verdict p{margin:0 0 16px}
+.verdict p:last-child{margin-bottom:0}
+.lede{font-size:18.5px;line-height:1.7}
+.lede strong{font-weight:600}
+
+/* ---------- score strip ---------- */
+.scores{
+  display:grid;grid-template-columns:repeat(auto-fit,minmax(158px,1fr));
+  gap:1px;background:var(--rule);border:1px solid var(--rule);
+  border-radius:4px;overflow:hidden;margin:34px 0 12px;
+}
+.score{background:var(--surface);padding:16px 18px 18px}
+.score .k{
+  font-family:"IBM Plex Mono",monospace;font-size:10.5px;letter-spacing:.13em;
+  text-transform:uppercase;color:var(--ink-3);direction:ltr;text-align:right;
+}
+.score .v{
+  font-family:"Reem Kufi",sans-serif;font-size:30px;font-weight:600;line-height:1.15;
+  margin-top:5px;font-variant-numeric:tabular-nums;
+}
+.score .n{font-size:12.5px;color:var(--ink-2);line-height:1.45;margin-top:3px}
+.g-ok .v{color:var(--ok)} .g-warn .v{color:var(--warn)} .g-crit .v{color:var(--crit)}
+
+/* ---------- sections ---------- */
+section{padding-top:64px}
+.sec-head{
+  display:flex;align-items:baseline;gap:14px;
+  border-bottom:1px solid var(--ink);padding-bottom:11px;margin-bottom:30px;
+}
+.sec-head .tag{
+  font-family:"IBM Plex Mono",monospace;font-size:11px;letter-spacing:.15em;
+  color:var(--seal);direction:ltr;text-transform:uppercase;white-space:nowrap;
+}
+h2{
+  font-family:"Reem Kufi",sans-serif;font-weight:600;
+  font-size:clamp(25px,3.4vw,33px);margin:0;line-height:1.25;flex:1;
+}
+h3{
+  font-family:"Reem Kufi",sans-serif;font-weight:500;
+  font-size:21px;margin:38px 0 12px;line-height:1.35;
+}
+h4{font-size:16px;font-weight:600;margin:26px 0 8px;color:var(--ink)}
+p{margin:0 0 15px}
+.prose ul,.prose ol{margin:0 0 16px;padding-inline-start:22px}
+.prose li{margin-bottom:9px}
+
+/* ---------- figures ---------- */
+figure{
+  margin:34px 0;padding:26px 22px 18px;background:var(--surface);
+  border:1px solid var(--rule);border-radius:4px;box-shadow:var(--shadow);
+}
+.fig-scroll{overflow-x:auto;padding-bottom:6px}
+figure svg{display:block;width:100%;min-width:640px;height:auto;color:var(--ink)}
+figcaption{
+  margin-top:16px;padding-top:13px;border-top:1px solid var(--rule-soft);
+  font-size:13.5px;line-height:1.62;color:var(--ink-2);
+}
+figcaption b{color:var(--ink);font-weight:600}
+
+/* ---------- system cards ---------- */
+.sys{
+  border:1px solid var(--rule);border-radius:4px;background:var(--surface);
+  margin-bottom:20px;overflow:hidden;
+}
+.sys-head{
+  display:flex;align-items:center;gap:14px;flex-wrap:wrap;
+  padding:15px 22px;border-bottom:1px solid var(--rule-soft);background:var(--surface-2);
+}
+.sys-head h3{margin:0;font-size:20px;flex:1;min-width:150px}
+.sys-body{padding:20px 22px 22px}
+.sys-body p{margin:0 0 13px}
+.sys-body p:last-child{margin-bottom:0}
+.sys-body .prose{max-width:none}
+.grade{
+  font-family:"IBM Plex Mono",monospace;font-size:11px;font-weight:600;
+  letter-spacing:.1em;padding:4px 11px;border-radius:99px;direction:ltr;
+  white-space:nowrap;border:1px solid;
+}
+.gr-ok{color:var(--ok);background:var(--ok-bg);border-color:var(--ok)}
+.gr-warn{color:var(--warn);background:var(--warn-bg);border-color:var(--warn)}
+.gr-high{color:var(--high);background:var(--high-bg);border-color:var(--high)}
+.gr-crit{color:var(--crit);background:var(--crit-bg);border-color:var(--crit)}
+
+.kv{
+  display:grid;grid-template-columns:auto 1fr;gap:5px 16px;
+  margin:0 0 16px;font-size:13.5px;padding:13px 15px;
+  background:var(--surface-2);border-radius:3px;border:1px solid var(--rule-soft);
+}
+.kv dt{
+  font-family:"IBM Plex Mono",monospace;font-size:10.5px;letter-spacing:.1em;
+  text-transform:uppercase;color:var(--ink-3);direction:ltr;text-align:right;
+  padding-top:4px;white-space:nowrap;
+}
+.kv dd{margin:0;color:var(--ink-2);line-height:1.6}
+
+/* ---------- findings ledger ---------- */
+.ledger{display:flex;flex-direction:column;gap:11px;margin:26px 0}
+.find{
+  display:grid;grid-template-columns:5px 1fr;
+  border:1px solid var(--rule);border-radius:4px;background:var(--surface);
+  overflow:hidden;
+}
+.find .stripe{background:var(--ink-3)}
+.f-crit .stripe{background:var(--crit)}
+.f-high .stripe{background:var(--high)}
+.f-warn .stripe{background:var(--warn)}
+.f-low .stripe{background:var(--ink-3)}
+.find-in{padding:15px 20px 17px}
+.find-top{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:7px}
+.fid{
+  font-family:"IBM Plex Mono",monospace;font-size:11.5px;font-weight:600;
+  color:var(--seal);direction:ltr;letter-spacing:.05em;
+}
+.chip{
+  font-size:11.5px;padding:2px 9px;border-radius:99px;
+  background:var(--surface-2);border:1px solid var(--rule);color:var(--ink-2);
+}
+.find h4{margin:0;font-size:16.5px;font-weight:600;line-height:1.45;flex-basis:100%}
+.find p{margin:0 0 9px;font-size:15px;line-height:1.7;color:var(--ink-2)}
+.find p:last-child{margin-bottom:0}
+.find p strong{color:var(--ink);font-weight:600}
+.where{
+  font-family:"IBM Plex Mono",monospace;font-size:11.5px;color:var(--ink-3);
+  direction:ltr;text-align:right;margin-top:10px;padding-top:9px;
+  border-top:1px dashed var(--rule);line-height:1.75;
+}
+
+/* ---------- tables ---------- */
+.tw{overflow-x:auto;margin:26px 0;border:1px solid var(--rule);border-radius:4px;background:var(--surface)}
+table{border-collapse:collapse;width:100%;min-width:520px;font-size:14.5px}
+th,td{padding:11px 16px;text-align:right;border-bottom:1px solid var(--rule-soft);vertical-align:top}
+thead th{
+  background:var(--surface-2);font-family:"IBM Plex Mono",monospace;
+  font-size:10.5px;letter-spacing:.11em;text-transform:uppercase;
+  color:var(--ink-3);font-weight:500;white-space:nowrap;
+}
+tbody tr:last-child td{border-bottom:none}
+td.num{font-variant-numeric:tabular-nums;font-family:"IBM Plex Mono",monospace;font-size:13px;direction:ltr;text-align:right}
+.dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-inline-start:7px;vertical-align:middle}
+.d-ok{background:var(--ok)} .d-warn{background:var(--warn)} .d-crit{background:var(--crit)} .d-high{background:var(--high)}
+
+/* ---------- callout ---------- */
+.note{
+  border-inline-start:3px solid var(--seal);background:var(--surface-2);
+  padding:16px 20px;border-radius:0 3px 3px 0;margin:24px 0;font-size:15px;
+  line-height:1.72;color:var(--ink-2);
+}
+.note strong{color:var(--ink)}
+
+/* ---------- roadmap ---------- */
+.phase{
+  border:1px solid var(--rule);border-radius:4px;background:var(--surface);
+  padding:20px 24px;margin-bottom:14px;
+}
+.phase-top{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;margin-bottom:12px}
+.phase-n{
+  font-family:"IBM Plex Mono",monospace;font-size:11px;letter-spacing:.14em;
+  color:var(--seal);direction:ltr;text-transform:uppercase;
+}
+.phase h3{margin:0;font-size:19px}
+.phase ol{margin:0;padding-inline-start:20px}
+.phase li{margin-bottom:8px;font-size:15px;line-height:1.68;color:var(--ink-2)}
+.phase li strong{color:var(--ink);font-weight:600}
+
+footer{
+  margin-top:76px;border-top:2px solid var(--ink);
+  padding:24px 0 60px;font-size:13px;color:var(--ink-3);line-height:1.7;
+}
+
+@media (max-width:640px){
+  .wrap{padding:0 18px}
+  .mast-in{padding:38px 0 20px}
+  body{font-size:15.5px}
+  .verdict{padding:22px 20px}
+  .sys-body,.find-in{padding-left:16px;padding-right:16px}
+}
+</style>
+
+<div class="doc">
+
+<header class="mast">
+  <div class="wrap mast-in">
+    <p class="eyebrow">Code &amp; Architecture Audit · 2026-08-31</p>
+    <h1>دفتر مراجعة AccountK</h1>
+    <p class="dek">مراجعة كاملة للمشروع: البنية، جودة الكود، والأنظمة الثمانية — المخازن، الخزينة، المناديب، الموظفين، الشفتات، المصروفات، المستخدمين، والتقارير.</p>
+    <div class="mast-meta">
+      <span><b>76,200</b> سطر إنتاج</span>
+      <span><b>19,021</b> سطر اختبار</span>
+      <span><b>1,013</b> اختبار ناجح</span>
+      <span><b>25</b> migration</span>
+      <span><b>33</b> view</span>
+      <span>الفرع <b>main</b> · <b>9401910</b></span>
+    </div>
+  </div>
+</header>
+
+<div class="wrap">
+
+<!-- ============ الخلاصة ============ -->
+<section id="verdict" style="padding-top:44px">
+  <div class="verdict">
+    <p class="lede">هذا مشروع <strong>أفضل بكثير من متوسط ما يُكتب فى هذا المجال</strong>، وفيه انضباط هندسى نادر: قواعد معلنة فى مكان واحد، اختبارات تُثبّت الـ SQL حرفاً بحرف، واختبارات معمارية «سقّاطة» تمنع الدَّين من النمو. القلب المحاسبى — المستندات، الأرصدة، الخزينة، الأصناف — مبنى على مبادئ مكتوبة ومُختبَرة.</p>
+    <p>لكن هذه الجودة <strong>ليست موزّعة بالتساوى</strong>. الأنظمة التى مرّت بإعادة كتابة حديثة (الخزينة، دمج الأصناف، المرتجعات، الصلاحيات، جرد المخزون) ممتازة. والأنظمة التى لم تُلمس منذ الأساس — <strong>الشفتات، المصروفات، الموظفين، المناديب</strong> — ما زالت على النمط القديم، ولا تعرف بالقواعد التى وُضعت حولها. الفجوة بين النصفين هى الخلاصة الحقيقية لهذه المراجعة.</p>
+    <p>أخطر ما وُجد ليس خطأ فى منطق، بل <strong>ثلاثة أنظمة صامتة</strong>: جدول <code>expense_salary</code> لا يكتب فيه أى كود بينما الـ view يقرأ منه، فاسم الموظف على كل مصروف فارغ منذ الأساس؛ وكل مصروف يُخصم من الخزينة رقم 1 مهما اختار المستخدم؛ وملخص الوردية يحسب نصف الحركات النقدية فقط ولا يعرف الخزائن أصلاً. الثلاثة تعطى أرقاماً <em>تبدو معقولة</em> — وهذا بالضبط سبب بقائها.</p>
+  </div>
+
+  <div class="scores">
+    <div class="score g-ok"><div class="k">Architecture</div><div class="v">A−</div><div class="n">قواعد معلنة، طبقات واضحة، دَين محصور</div></div>
+    <div class="score g-ok"><div class="k">Data model</div><div class="v">B+</div><div class="n">مفاتيح وقيود جيدة، جدولان ميتان</div></div>
+    <div class="score g-warn"><div class="k">Testing</div><div class="v">B</div><div class="n">ممتاز للـ SQL، صفر للشاشات</div></div>
+    <div class="score g-crit"><div class="k">Shifts</div><div class="v">D</div><div class="n">بلا حارس، بلا خزينة، نصف الحركات</div></div>
+    <div class="score g-crit"><div class="k">Expenses</div><div class="v">D+</div><div class="n">خزينة ثابتة، رابط موظف ميت</div></div>
+    <div class="score g-warn"><div class="k">Delegates</div><div class="v">C−</div><div class="n">عمولة محسوبة ولا شاشة تقرأها</div></div>
+    <div class="score g-ok"><div class="k">Treasury</div><div class="v">A</div><div class="n">تعريف واحد للرصيد، مُختبَر</div></div>
+    <div class="score g-ok"><div class="k">Warehouses</div><div class="v">B+</div><div class="n">قواعد سليمة، تكلفة قراءة عالية</div></div>
+    <div class="score g-warn"><div class="k">Users / RBAC</div><div class="v">B+</div><div class="n">RBAC ممتاز، إدارة الحساب أضعف</div></div>
+    <div class="score g-warn"><div class="k">Reports</div><div class="v">C+</div><div class="n">33 قالب خارج الـ jar</div></div>
+  </div>
+</section>
+
+<!-- ============ المخطط ============ -->
+<section id="map">
+  <div class="sec-head"><span class="tag">Figure 1</span><h2>المخطط المعمارى</h2></div>
+
+  <div class="prose">
+    <p>البنية أربع طبقات، وإلى جانبها <strong>رفّ من «السجلات المعلنة»</strong> — ملفات لا تفعل شيئاً بنفسها، بل تُصرّح بالقاعدة مرة واحدة فتقرأها كل الشاشات. هذا هو أقوى ما فى المشروع، وهو ما يجعل تغيير عمود أو إضافة نوع مستند تعديلاً فى مكان واحد بدل ثمانية.</p>
+    <p>الأسهم الحمراء فى المخطط هى المواضع التى <em>تلتفّ</em> حول هذا الترتيب — وكلها فى الأنظمة الثلاثة التى لم تُعَد كتابتها.</p>
+  </div>
+
+  <figure>
+    <div class="fig-scroll">
+      <svg viewBox="0 0 960 600" role="img" aria-label="مخطط الطبقات الأربع للتطبيق، ورفّ السجلات المعلنة الذى تقرأه، وثلاثة مسارات تلتفّ حول القواعد">
+        <defs>
+          <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M 0 0 L 10 5 L 0 10 z" fill="currentColor"/>
+          </marker>
+          <marker id="arR" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M 0 0 L 10 5 L 0 10 z" fill="#A02A24"/>
+          </marker>
+        </defs>
+
+        <text x="940" y="26" text-anchor="end" font-family="IBM Plex Mono, monospace" font-size="11" fill="currentColor" opacity=".55">DECLARED RULES</text>
+        <text x="520" y="26" text-anchor="end" font-family="IBM Plex Mono, monospace" font-size="11" fill="currentColor" opacity=".55">LAYERS</text>
+
+        <!-- layer bands -->
+        <g font-family="IBM Plex Sans Arabic, sans-serif">
+          <rect x="60" y="42" width="460" height="76" rx="3" fill="none" stroke="currentColor" stroke-width="1.4"/>
+          <text x="500" y="70" text-anchor="end" font-size="16" font-weight="600" fill="currentColor">Controller · الشاشات</text>
+          <text x="500" y="94" text-anchor="end" font-size="12" fill="currentColor" opacity=".6">122 ملف · 24,347 سطر · بلا اختبارات</text>
+          <text x="500" y="111" text-anchor="end" font-family="IBM Plex Mono, monospace" font-size="10.5" fill="currentColor" opacity=".45">BuyController2 · 1,293 lines</text>
+
+          <rect x="60" y="146" width="460" height="76" rx="3" fill="none" stroke="currentColor" stroke-width="1.4"/>
+          <text x="500" y="174" text-anchor="end" font-size="16" font-weight="600" fill="currentColor">Service · features/</text>
+          <text x="500" y="198" text-anchor="end" font-size="12" fill="currentColor" opacity=".6">الصلاحية ← قفل الفترة ← الحساب ← الرصيد</text>
+          <text x="500" y="215" text-anchor="end" font-family="IBM Plex Mono, monospace" font-size="10.5" fill="currentColor" opacity=".45">TransactionTemplate.execute()</text>
+
+          <rect x="60" y="250" width="460" height="66" rx="3" fill="none" stroke="currentColor" stroke-width="1.4"/>
+          <text x="500" y="278" text-anchor="end" font-size="16" font-weight="600" fill="currentColor">DAO · model/dao</text>
+          <text x="500" y="301" text-anchor="end" font-size="12" fill="currentColor" opacity=".6">map() + مصفوفة القيم فقط — والـ SQL من السجلات</text>
+
+          <rect x="60" y="344" width="460" height="66" rx="3" fill="none" stroke="currentColor" stroke-width="1.4"/>
+          <text x="500" y="372" text-anchor="end" font-size="16" font-weight="600" fill="currentColor">AbstractDao · ConnectionManager</text>
+          <text x="500" y="395" text-anchor="end" font-size="12" fill="currentColor" opacity=".6">اتصال لكل عملية · المعاملة مربوطة بالـ thread</text>
+
+          <rect x="60" y="438" width="460" height="58" rx="3" fill="currentColor" fill-opacity=".055" stroke="currentColor" stroke-width="1.4"/>
+          <text x="500" y="464" text-anchor="end" font-size="15" font-weight="600" fill="currentColor">HikariCP → MySQL</text>
+          <text x="500" y="485" text-anchor="end" font-size="12" fill="currentColor" opacity=".6">33 view · 18 audit trigger · Flyway V1…V21</text>
+        </g>
+
+        <!-- vertical flow arrows -->
+        <g stroke="currentColor" stroke-width="1.3" marker-end="url(#ar)" opacity=".55">
+          <line x1="290" y1="118" x2="290" y2="142"/>
+          <line x1="290" y1="222" x2="290" y2="246"/>
+          <line x1="290" y1="316" x2="290" y2="340"/>
+          <line x1="290" y1="410" x2="290" y2="434"/>
+        </g>
+
+        <!-- registry rail -->
+        <g font-family="IBM Plex Mono, monospace" font-size="11">
+          <rect x="620" y="42" width="320" height="46" rx="3" fill="currentColor" fill-opacity=".05" stroke="currentColor" stroke-width="1" stroke-opacity=".45"/>
+          <text x="928" y="61" text-anchor="end" fill="currentColor">AppPermissions · AuthorizationGuard</text>
+          <text x="928" y="78" text-anchor="end" fill="currentColor" opacity=".55">123 permission keys</text>
+
+          <rect x="620" y="98" width="320" height="46" rx="3" fill="currentColor" fill-opacity=".05" stroke="currentColor" stroke-width="1" stroke-opacity=".45"/>
+          <text x="928" y="117" text-anchor="end" fill="currentColor">PeriodLockRegistry</text>
+          <text x="928" y="134" text-anchor="end" fill="currentColor" opacity=".55">أى مستند مؤرَّخ يحميه القفل</text>
+
+          <rect x="620" y="154" width="320" height="46" rx="3" fill="currentColor" fill-opacity=".05" stroke="currentColor" stroke-width="1" stroke-opacity=".45"/>
+          <text x="928" y="173" text-anchor="end" fill="currentColor">DeleteRegistry · WipeCatalog</text>
+          <text x="928" y="190" text-anchor="end" fill="currentColor" opacity=".55">ما يجوز حذفه، مُصرَّحاً به</text>
+
+          <rect x="620" y="210" width="320" height="60" rx="3" fill="currentColor" fill-opacity=".05" stroke="currentColor" stroke-width="1" stroke-opacity=".45"/>
+          <text x="928" y="229" text-anchor="end" fill="currentColor">DocumentType · DocumentTableSpec</text>
+          <text x="928" y="246" text-anchor="end" fill="currentColor">DocumentLedgerEffect</text>
+          <text x="928" y="263" text-anchor="end" fill="currentColor" opacity=".55">قاعدة واحدة لأربعة مستندات</text>
+
+          <rect x="620" y="280" width="320" height="46" rx="3" fill="currentColor" fill-opacity=".05" stroke="currentColor" stroke-width="1" stroke-opacity=".45"/>
+          <text x="928" y="299" text-anchor="end" fill="currentColor">PartyTableSpec · PartyLedgerSpec</text>
+          <text x="928" y="316" text-anchor="end" fill="currentColor" opacity=".55">عميل ومورّد بملف واحد</text>
+
+          <rect x="620" y="336" width="320" height="46" rx="3" fill="currentColor" fill-opacity=".05" stroke="currentColor" stroke-width="1" stroke-opacity=".45"/>
+          <text x="928" y="355" text-anchor="end" fill="currentColor">TreasuryStatements · ItemReferenceRegistry</text>
+          <text x="928" y="372" text-anchor="end" fill="currentColor" opacity=".55">مُثبَّتة حرفاً بحرف باختبار</text>
+        </g>
+
+        <g stroke="currentColor" stroke-width="1.1" stroke-dasharray="3 3" opacity=".45" marker-end="url(#ar)" fill="none">
+          <path d="M 618 65 L 560 65 L 560 172 L 524 172"/>
+          <path d="M 618 121 L 580 121 L 580 180 L 524 180"/>
+          <path d="M 618 177 L 596 177 L 596 190 L 524 190"/>
+          <path d="M 618 240 L 566 240 L 566 278 L 524 278"/>
+          <path d="M 618 303 L 566 303 L 566 288 L 524 288"/>
+          <path d="M 618 359 L 548 359 L 548 298 L 524 298"/>
+        </g>
+
+        <!-- bypasses -->
+        <g stroke="#A02A24" stroke-width="1.7" fill="none" marker-end="url(#arR)">
+          <path d="M 56 80 L 26 80 L 26 190 L 56 190"/>
+          <path d="M 56 196 L 40 196 L 40 280 L 56 280"/>
+        </g>
+        <g font-family="IBM Plex Sans Arabic, sans-serif" font-size="11.5" fill="#A02A24">
+          <text x="60" y="527" font-weight="600">ثلاثة مسارات تلتفّ حول الترتيب</text>
+          <text x="60" y="547" opacity=".95">١ · شاشات الورديات تنادى الخدمة بلا أى حارس صلاحيات (الحارس معلَّق كتعليق)</text>
+          <text x="60" y="565" opacity=".95">٢ · شاشة المصروفات تكتب الخزينة رقم 1 حرفياً، فلا تصل إلى اختيار خزينة أصلاً</text>
+          <text x="60" y="583" opacity=".95">٣ · قفل الفترة على المصروفات يعيش داخل الـ DAO لا الخدمة — قاعدة غير مرئية من فوق</text>
+        </g>
+      </svg>
+    </div>
+    <figcaption><b>البنية والالتفافات حولها.</b> الطبقات الأربع تقرأ قواعدها من رفّ السجلات المعلنة على اليمين — وهذا ما يجعل تغييراً واحداً يسرى على كل الشاشات. الأسهم الحمراء هى المواضع التى تتخطّى طبقة كاملة، وكلها الثلاثة فى الشفتات والمصروفات.</figcaption>
+  </figure>
+</section>
+
+<!-- ============ الأنظمة ============ -->
+<section id="systems">
+  <div class="sec-head"><span class="tag">Systems</span><h2>مراجعة الأنظمة الثمانية</h2></div>
+
+  <!-- الخزينة -->
+  <div class="sys">
+    <div class="sys-head"><h3>الخزينة</h3><span class="grade gr-ok">A</span></div>
+    <div class="sys-body">
+      <dl class="kv">
+        <dt>Core</dt><dd><code>features/treasury</code> · <code>account/treasury</code> · <code>treasury_current_balance</code></dd>
+        <dt>Rules</dt><dd>صلاحية ← قفل فترة ← حساب ← <code>SELECT … FOR UPDATE</code> ← رصيد</dd>
+        <dt>Tests</dt><dd><code>TreasuryBalanceViewAcceptanceTest</code> (مُقيَّد بـ MySQL)</dd>
+      </dl>
+      <div class="prose">
+        <p>أفضل نظام فى المشروع، ويستحق أن يكون النموذج لباقيها. <strong>الرصيد مُشتقّ ولا يُخزَّن، ومن مصدر واحد فقط</strong> — بعد أن كانت هناك ثلاثة تعريفات متنافسة تقرأها شاشات مختلفة. <code>treasury.amount</code> صار يعنى الرصيد الافتتاحى وحده، موثّقاً بـ <code>COMMENT</code> فى الـ schema. والتحويل يقفل المصدر قبل قراءة رصيده، وهو الشىء الصحيح تماماً لعدد لا يمسكه أحد ثابتاً.</p>
+        <p>التفرقة بين <strong>مال المالك ومال المنشأة</strong> (<code>CashCategory</code>: NORMAL / CAPITAL_IN / OWNER_DRAW) مع قيد <code>CHECK</code> يربط كل تصنيف باتجاهه الوحيد، واختبار يُفشل البناء لو ذُكر الجدول داخل <code>ProfitLossDao</code> — هذا مستوى من الحذر المحاسبى نادر.</p>
+        <p>ما ينقصه ثغرتان صغيرتان: <strong>الحذف لا يفحص تصنيف الصف</strong> (ن-٧)، و<strong>المصروفات تدخل الخزينة من باب خلفى</strong> بلا قفل ولا فحص رصيد (ن-٦).</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- المخازن -->
+  <div class="sys">
+    <div class="sys-head"><h3>المخازن</h3><span class="grade gr-ok">B+</span></div>
+    <div class="sys-body">
+      <dl class="kv">
+        <dt>Core</dt><dd><code>features/stocktransfer</code> · <code>features/stockcount</code> · <code>features/stockledger</code> · <code>quantity_items_table</code></dd>
+        <dt>Guards</dt><dd><code>DefaultStockUsageArchitectureTest</code> · <code>InvoiceStockGuard</code> · <code>PeriodLockRegistry.STOCK_TRANSFER</code></dd>
+        <dt>Risk</dt><dd>تكلفة قراءة الرصيد</dd>
+      </dl>
+      <div class="prose">
+        <p>عودة تعدّد المخازن جرت <strong>بشروط لم تكن موجودة فى المحاولة الأولى</strong>، وهذا هو الفرق: مخزن جديد يملأ <code>items_stock</code> لكل صنف قائم، وصنف جديد لكل مخزن قائم، فى نفس المعاملة. وسطر النقل يحمل الوحدة والمعامل الذى أُدخل بهما (<code>V19</code>) فيُحوَّل للوحدة الأساس قبل فحص الرصيد. و<code>DefaultStock.ID</code> صار يعنى «أيّها إن لم يُقَل غير ذلك» لا «الوحيد» — مع اختبار يحمل قائمة الملفات المسموح لها بذكره.</p>
+        <p>المشكلة الحقيقية <strong>أداء</strong>: كل رصيد مخزنى هو تجميع كامل فوق أربعة جداول أسطر عبر views تربط <code>items</code> و<code>units</code> و<code>custom</code> و<code>total_*</code> — لمجرد الوصول إلى <code>stock_id</code> و<code>invoice_date</code>. ولا يوجد فهرس على <code>stock_id</code> فى أى من جداول الأسطر. المفارقة أن <code>stock_movements</code> — الدفتر الصحيح، المفهرس بـ <code>(item_id, stock_id, movement_date)</code> — <strong>يُكتب فيه فعلاً</strong> عند حفظ الفاتورة والجرد، ومعه تقرير مطابقة… ولا أحد يقرأه للأرصدة (ن-١٥).</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- الشفتات -->
+  <div class="sys">
+    <div class="sys-head"><h3>الشفتات (الورديات)</h3><span class="grade gr-crit">D — الأضعف</span></div>
+    <div class="sys-body">
+      <dl class="kv">
+        <dt>Core</dt><dd><code>UserShiftService</code> · <code>UserShiftDao.calculateShiftSummary</code> · <code>ShiftContext</code></dd>
+        <dt>Guards</dt><dd>لا شىء على الفتح والغلق · <code>user.shift.manage</code> للحذف فقط</dd>
+        <dt>Tests</dt><dd>لا يوجد</dd>
+      </dl>
+      <div class="prose">
+        <p>هذا النظام يعطى رقماً — «الفرق» بين النقدية الفعلية والمتوقعة — يُحاسَب عليه الكاشير. والرقم <strong>خاطئ بنيوياً فى أربعة اتجاهات</strong> مجتمعة، لا واحد:</p>
+        <ul>
+          <li><strong>لا يعرف الخزائن.</strong> <code>calculateShiftSummary</code> لا تُصفّى بـ <code>treasury_id</code> إطلاقاً. فى منشأة بها درج نقدية ومحفظة إلكترونية وحساب بنكى — وهى الحالة التى بُنيت الخزينة كلها من أجلها — تُجمع تحصيلات فودافون كاش والإيداعات البنكية داخل «الرصيد المتوقع فى الدرج».</li>
+          <li><strong>يقرأ نصف الحركات النقدية.</strong> يجمع المبيعات ومرتجعاتها والمصروفات والإيداع/الصرف — ويُسقط <em>تحصيلات العملاء</em> و<em>مدفوعات الموردين</em> و<em>المشتريات النقدية</em> و<em>مرتجعات المشتريات</em> و<em>التحويلات</em>. كاشير حصّل 5,000 من ذمم العملاء يظهر بزيادة 5,000؛ وآخر دفع لمورّد نقداً يظهر بعجز بنفس المبلغ.</li>
+          <li><strong>بلا حارس صلاحيات.</strong> الفتح والغلق بلا <code>require</code>، و<code>AdminShiftsController</code> — شاشة كل ورديات كل المستخدمين — حارسها موجود <em>معلَّقاً كتعليق</em> فى السطر 84.</li>
+          <li><strong>الإلزام مُعطَّل.</strong> <code>ShiftContext.enforceShiftRequired = false</code> ولا سطر واحد يضبطه، فـ <code>requireOpenShift()</code> ترجع <code>true</code> دائماً. النظام كله استشارى.</li>
+        </ul>
+        <p>وفوق ذلك تناقض معمارى: <code>user_shifts</code> <strong>تخزّن</strong> الإجماليات كأعمدة، بينما عقيدة الخزينة المكتوبة هى «الرصيد يُشتق ولا يُخزَّن». تعديل فاتورة بعد غلق الوردية يترك أرقام الوردية قديمة إلى الأبد، ولا شىء يلاحظ.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- المصروفات والاجازات -->
+  <div class="sys">
+    <div class="sys-head"><h3>المصروفات والإجازات</h3><span class="grade gr-crit">D+</span></div>
+    <div class="sys-body">
+      <dl class="kv">
+        <dt>Core</dt><dd><code>ExpensesDetailsService</code> · <code>ExpensesDetailsDao</code> · <code>expenses_details_view</code></dd>
+        <dt>Leaves</dt><dd>غير موجود — لا جدول ولا كود</dd>
+        <dt>Dead</dt><dd><code>expense_salary</code> — لا يكتب فيه شىء، والـ view يقرأ منه</dd>
+      </dl>
+      <div class="prose">
+        <p><strong>الإجازات ليست ناقصة، بل غير موجودة.</strong> لا جدول، ولا شاشة، ولا سطر كود. إن كان هذا مقصوداً فلا بأس؛ وإن كان مفترضاً فالمنشأة تدير رصيد إجازات موظفيها خارج النظام تماماً.</p>
+        <p>وفى المصروفات نفسها ثلاثة أعطال، أخطرها <strong>حلقة مقطوعة بصمت</strong>: <code>ExpensesDetailsDao</code> يكتب اسم الموظف فى العمود <code>expenses_details.emp_id</code>، بينما <code>expenses_details_view</code> يقرأ الاسم عبر <code>LEFT JOIN expense_salary</code>. والجدول الثانى <strong>لا يكتب فيه أى كود فى المشروع كله</strong>. النتيجة: اسم الموظف على كل مصروف ومرتّب فارغ (<code>''</code>) منذ الأساس، والبحث بالاسم لا يمكن أن يطابق شيئاً أبداً، وقاعدة حذف الموظف التى تعتمد على <code>expense_salary</code> تفحص جدولاً فارغاً — فيُحذف موظف له سنوات مرتبات بلا اعتراض.</p>
+        <p>والثانى: <code>AddExpensesController</code> يكتب <code>new Treasury(1)</code> <strong>حرفياً</strong>. كل مصروف فى المنشأة يُخصم من الخزينة الأولى مهما كان مصدره الفعلى.</p>
+        <p>والثالث محاسبى: <code>expenses_details</code> لم تحصل على تصنيف مثل الذى حصلت عليه الحركات النقدية. فـ«السلف» — وهى <em>ذمة مدينة على الموظف</em> — تُخصم من الربح كمصروف، وحين يردّها لا يوجد مسار يعكسها. نفس شكل الخطأ الذى عولج بـ <code>CashCategory</code>، فى الجدول المجاور.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- المناديب -->
+  <div class="sys">
+    <div class="sys-head"><h3>المناديب والمستهدفات</h3><span class="grade gr-warn">C−</span></div>
+    <div class="sys-body">
+      <dl class="kv">
+        <dt>Core</dt><dd><code>targeted_sales</code> · <code>target_delegate</code> (view) · <code>employees.job = 4</code></dd>
+        <dt>Consumers</dt><dd><strong>صفر</strong> — لا شاشة ولا خدمة تقرأ الـ view</dd>
+      </dl>
+      <div class="prose">
+        <p>«المندوب» ليس كياناً، بل <strong>موظف قيمة وظيفته 4</strong> — ورقم 4 مكتوب حرفياً داخل <code>EmployeesDao.loadAllDelegate</code> كـ <code>where job = 4</code>. وجدول <code>jobs</code> قابل للتحرير، فتغيير صف واحد يُفرغ قائمة المناديب فى كل مكان.</p>
+        <p>الـ view <code>target_delegate</code> يحسب عمولة بثلاث شرائح — <strong>ولا يقرأه أى شىء فى الكود</strong>. وفيه ثلاث مشكلات لو قُرئ يوماً: <code>targeted_sales</code> بلا قيد فريد على <code>delegate_id</code> فمندوب بهدفين يُنتج صفَّى عمولة؛ والهدف <strong>بلا نطاق زمنى</strong>، فهدف وُضع فى يناير يُطبَّق على كل شهر إلى الأبد؛ والأهم أن الشريحة الأخيرة <strong>بلا حدّ أدنى</strong> — مندوب لم يقترب من هدفه يتقاضى <code>rate_3</code> على كامل مبيعاته، فكلمة «مستهدف» لا تعنى شيئاً فى الحساب.</p>
+        <p>وشهر فيه مرتجعات بلا مبيعات يختفى من الـ view تماماً (الـ CTE يبدأ <code>FROM sales_sums</code>)، فلا تظهر عمولة سالبة.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- الموظفين -->
+  <div class="sys">
+    <div class="sys-head"><h3>الموظفين</h3><span class="grade gr-warn">C+</span></div>
+    <div class="sys-body">
+      <dl class="kv">
+        <dt>Core</dt><dd><code>EmployeeService</code> · <code>employees</code> · <code>jobs</code></dd>
+        <dt>Good</dt><dd>الحذف يمرّ بـ <code>DeletionService</code> · صلاحيات إنشاء/تعديل منفصلة</dd>
+      </dl>
+      <div class="prose">
+        <p>الجدول نفسه سليم (مفاتيح أجنبية على <code>job</code> و<code>user_id</code>، قيد فريد على الاسم)، والحذف يمرّ بالمسار الصحيح <code>DeletionService</code> بقاعدة معلنة. لكن القاعدة <strong>تفحص جدولاً ميتاً</strong> كما سبق، فحمايتها من ناحية المرتبات وهمية.</p>
+        <p>و<code>UsersType</code> enum بمعرفات 1..4 مربوطة يدوياً بصفوف <code>jobs</code> — وهو <em>بالضبط</em> النمط الذى قُتل من أجله <code>UserPermissionType</code> ذو الـ130 مدخلاً. وما زال الـ enum يحمل <code>javafx.beans.property</code> فى قيمه، أى حالة قابلة للتغيير مشتركة على مستوى الـ process.</p>
+        <p>ولا يوجد حارس على قراءة قائمة الموظفين، والراتب عمود فيها — فمن يفتح الشاشة يرى رواتب الجميع.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- المستخدمين -->
+  <div class="sys">
+    <div class="sys-head"><h3>المستخدمين والصلاحيات</h3><span class="grade gr-ok">B+</span></div>
+    <div class="sys-body">
+      <dl class="kv">
+        <dt>Core</dt><dd><code>features/rbac</code> · <code>AppPermissions</code> (123 مفتاح) · <code>auth_role*</code></dd>
+        <dt>Passwords</dt><dd>bcrypt، مع ترقية ذاتية للقديم المخزَّن نصاً</dd>
+      </dl>
+      <div class="prose">
+        <p>الـ RBAC نفسه <strong>ممتاز</strong>، وأنضج جزء بعد الخزينة: كشف حلقات فى وراثة الأدوار، حماية أدوار النظام من التعديل والإسناد والوراثة، استثناءات فردية بمدة انتهاء وسبب إلزامى بين 3 و255 حرفاً، وتحديث فورى لجلسة المستخدم بعد أى تغيير. والانتقال من enum بمعرفات إلى مفاتيح نصية (<code>sales.create</code>) جعل إضافة صلاحية ثابتاً واحداً بدل تعديل قاعدة بيانات وشاشة.</p>
+        <p>والتفرقة بين <code>isGranted()</code> للتلميح البصرى و<code>require()</code> للفرض تفرقة صحيحة ومكتوبة.</p>
+        <p>الضعف فى <strong>إدارة الحساب حول</strong> الـ RBAC لا فيه: التجزئة تتم فى الـ controller و<code>UsersService.updateOwnPassword</code> يستقبل الهاش جاهزاً — فلا تستطيع الخدمة أن تضمن أنه مُجزَّأ أصلاً؛ ولا توجد أى سياسة لكلمة المرور (طول، تعقيد، أو حتى وجود)؛ و<code>delete</code> لا يمرّ بـ <code>DeletionService</code> فحذف مستخدم له مستندات ينتهى بخطأ SQL خام بدل رسالة مفهومة.</p>
+        <div class="note"><strong>ملاحظة على التوثيق:</strong> <code>CLAUDE.md</code> يقول إن <code>AuthorizationArchitectureTest</code> «يُفشل البناء حين لا يُحرَس مسار كتابة فى خدمة». الاختبار فعلياً يفحص شيئاً آخر — أن الـ controllers لا تنادى <code>dao.insert/update/deleteById</code> مباشرة. خاصية مفيدة، لكنها أضعف من الموصوفة، والفرق مهم لأن أحداً قد يعتمد على حماية غير موجودة.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- التقارير -->
+  <div class="sys">
+    <div class="sys-head"><h3>التقارير</h3><span class="grade gr-warn">C+</span></div>
+    <div class="sys-body">
+      <dl class="kv">
+        <dt>Core</dt><dd>17 controller · 33 قالب <code>.jrxml</code> · 33 view · <code>document_profit</code></dd>
+        <dt>Packaging</dt><dd>القوالب <strong>خارج</strong> الـ jar، تُحلّ بالنسبة لمجلد التشغيل</dd>
+      </dl>
+      <div class="prose">
+        <p>الطبقة الحسابية جيدة: <code>ProfitLossDao</code> يقرأ الربح والتكلفة من <code>document_profit</code> — تعريف واحد للربح، بعد أن كانت ثلاثة تختلف بمقدار الخصومات. وفتح نطاق زمنى من طرف واحد صار مدعوماً بدل أن يُتجاهَل بصمت. والتصدير (Excel / PDF) موجود ومنفصل.</p>
+        <p>لكن هناك <strong>تعريفاً خامساً للنقدية</strong> فى <code>daily_dashboard_report</code>: «المقبوضات اليوم» تجمع <code>total_sales.paid_up</code> و<code>total_buy_re.paid_to_treasury</code> والإيداعات — وتُسقط <code>customers_accounts.paid</code>. و«المدفوعات» تُسقط <code>suppliers_accounts.paid</code>. فلوحة اليوم تختلف عن كشف الخزينة لنفس اليوم بمقدار كل تحصيل وكل سداد.</p>
+        <p>والأخطر عملياً <strong>ليس فى الكود</strong>: <code>packaging/build-installer.ps1</code> يُدخل الـ jar وحده إلى <code>jpackage</code>. و<code>FILE_REPORTS = new File("reports/")</code> يُحلّ بالنسبة لمجلد التشغيل. فالعميل بعد تثبيت نظيف <strong>لا يستطيع طباعة أى شىء</strong> حتى ينسخ أحدهم مجلد <code>reports/</code> يدوياً بجوار الملف التنفيذى — والرسالة الختامية للسكربت تذكّر بـ <code>config.xml</code> و<code>config.key</code> فقط.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ مخطط النقدية ============ -->
+<section id="cash">
+  <div class="sec-head"><span class="tag">Figure 2</span><h2>ثلاثة أجوبة عن سؤال واحد</h2></div>
+
+  <div class="prose">
+    <p>«كم دخل الخزينة وكم خرج منها؟» — سؤال واحد، تجيب عنه ثلاثة أماكن فى النظام بثلاث إجابات مختلفة. الجدول التالى يضع المصادر العشرة أمام قارئيها الثلاثة.</p>
+  </div>
+
+  <figure>
+    <div class="fig-scroll">
+      <svg viewBox="0 0 920 600" role="img" aria-label="مصفوفة تُظهر أن treasury_current_balance يقرأ المصادر النقدية العشرة كلها بينما ملخص الوردية يقرأ أربعة ولوحة اليوم تقرأ ستة">
+        <g font-family="IBM Plex Mono, monospace" font-size="11.5" fill="currentColor">
+          <text x="905" y="34" text-anchor="end" opacity=".55">SOURCE</text>
+        </g>
+
+        <!-- column headers -->
+        <g font-family="IBM Plex Mono, monospace" font-size="10.5" fill="currentColor">
+          <text x="465" y="24" text-anchor="middle" font-weight="600">treasury_current</text>
+          <text x="465" y="38" text-anchor="middle" font-weight="600">_balance</text>
+          <text x="465" y="55" text-anchor="middle" opacity=".55">كشف الخزينة</text>
+
+          <text x="300" y="24" text-anchor="middle" font-weight="600">calculateShift</text>
+          <text x="300" y="38" text-anchor="middle" font-weight="600">Summary</text>
+          <text x="300" y="55" text-anchor="middle" opacity=".55">ملخص الوردية</text>
+
+          <text x="135" y="24" text-anchor="middle" font-weight="600">daily_dashboard</text>
+          <text x="135" y="38" text-anchor="middle" font-weight="600">_report</text>
+          <text x="135" y="55" text-anchor="middle" opacity=".55">لوحة اليوم</text>
+        </g>
+
+        <line x1="55" y1="66" x2="905" y2="66" stroke="currentColor" stroke-width="1.3"/>
+
+        <!-- rows -->
+        <g font-family="IBM Plex Sans Arabic, sans-serif" font-size="13" fill="currentColor">
+          <text x="905" y="94" text-anchor="end">المبيعات النقدية</text>
+          <text x="905" y="140" text-anchor="end">مرتجع المبيعات</text>
+          <text x="905" y="186" text-anchor="end">المشتريات النقدية</text>
+          <text x="905" y="232" text-anchor="end">مرتجع المشتريات</text>
+          <text x="905" y="278" text-anchor="end">تحصيلات العملاء</text>
+          <text x="905" y="324" text-anchor="end">مدفوعات الموردين</text>
+          <text x="905" y="370" text-anchor="end">المصروفات</text>
+          <text x="905" y="416" text-anchor="end">إيداع / صرف يدوى</text>
+          <text x="905" y="462" text-anchor="end">تحويل بين الخزائن</text>
+          <text x="905" y="508" text-anchor="end">الرصيد الافتتاحى</text>
+        </g>
+        <g font-family="IBM Plex Mono, monospace" font-size="9.5" fill="currentColor" opacity=".5">
+          <text x="905" y="108" text-anchor="end">total_sales.paid_up</text>
+          <text x="905" y="154" text-anchor="end">total_sales_re.paid_from_treasury</text>
+          <text x="905" y="200" text-anchor="end">total_buy.paid_up</text>
+          <text x="905" y="246" text-anchor="end">total_buy_re.paid_to_treasury</text>
+          <text x="905" y="292" text-anchor="end">customers_accounts.paid</text>
+          <text x="905" y="338" text-anchor="end">suppliers_accounts.paid</text>
+          <text x="905" y="384" text-anchor="end">expenses_details.amount</text>
+          <text x="905" y="430" text-anchor="end">treasury_deposit_expenses</text>
+          <text x="905" y="476" text-anchor="end">treasury_transfers ×2</text>
+          <text x="905" y="522" text-anchor="end">treasury.amount</text>
+        </g>
+
+        <g stroke="currentColor" stroke-opacity=".13" stroke-width="1">
+          <line x1="55" y1="115" x2="905" y2="115"/><line x1="55" y1="161" x2="905" y2="161"/>
+          <line x1="55" y1="207" x2="905" y2="207"/><line x1="55" y1="253" x2="905" y2="253"/>
+          <line x1="55" y1="299" x2="905" y2="299"/><line x1="55" y1="345" x2="905" y2="345"/>
+          <line x1="55" y1="391" x2="905" y2="391"/><line x1="55" y1="437" x2="905" y2="437"/>
+          <line x1="55" y1="483" x2="905" y2="483"/>
+        </g>
+
+        <!-- column A : all filled -->
+        <g fill="currentColor">
+          <rect x="453" y="88" width="24" height="18" rx="3"/><rect x="453" y="134" width="24" height="18" rx="3"/>
+          <rect x="453" y="180" width="24" height="18" rx="3"/><rect x="453" y="226" width="24" height="18" rx="3"/>
+          <rect x="453" y="272" width="24" height="18" rx="3"/><rect x="453" y="318" width="24" height="18" rx="3"/>
+          <rect x="453" y="364" width="24" height="18" rx="3"/><rect x="453" y="410" width="24" height="18" rx="3"/>
+          <rect x="453" y="456" width="24" height="18" rx="3"/><rect x="453" y="502" width="24" height="18" rx="3"/>
+        </g>
+
+        <!-- column B : shift -->
+        <g fill="currentColor">
+          <rect x="288" y="88" width="24" height="18" rx="3"/><rect x="288" y="134" width="24" height="18" rx="3"/>
+          <rect x="288" y="364" width="24" height="18" rx="3"/><rect x="288" y="410" width="24" height="18" rx="3"/>
+        </g>
+        <g fill="none" stroke="#A02A24" stroke-width="1.4" stroke-dasharray="3 2.5">
+          <rect x="288" y="180" width="24" height="18" rx="3"/><rect x="288" y="226" width="24" height="18" rx="3"/>
+          <rect x="288" y="272" width="24" height="18" rx="3"/><rect x="288" y="318" width="24" height="18" rx="3"/>
+          <rect x="288" y="456" width="24" height="18" rx="3"/><rect x="288" y="502" width="24" height="18" rx="3"/>
+        </g>
+
+        <!-- column C : dashboard -->
+        <g fill="currentColor">
+          <rect x="123" y="88" width="24" height="18" rx="3"/><rect x="123" y="134" width="24" height="18" rx="3"/>
+          <rect x="123" y="180" width="24" height="18" rx="3"/><rect x="123" y="226" width="24" height="18" rx="3"/>
+          <rect x="123" y="364" width="24" height="18" rx="3"/><rect x="123" y="410" width="24" height="18" rx="3"/>
+        </g>
+        <g fill="none" stroke="#A02A24" stroke-width="1.4" stroke-dasharray="3 2.5">
+          <rect x="123" y="272" width="24" height="18" rx="3"/><rect x="123" y="318" width="24" height="18" rx="3"/>
+          <rect x="123" y="456" width="24" height="18" rx="3"/><rect x="123" y="502" width="24" height="18" rx="3"/>
+        </g>
+
+        <!-- treasury scoping footer -->
+        <line x1="55" y1="536" x2="905" y2="536" stroke="currentColor" stroke-width="1.3"/>
+        <g font-family="IBM Plex Sans Arabic, sans-serif" font-size="12.5" fill="currentColor">
+          <text x="905" y="561" text-anchor="end" font-weight="600">مُقيَّد بـ treasury_id ؟</text>
+          <text x="465" y="561" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="11.5" font-weight="600">نعم</text>
+          <text x="300" y="561" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="11.5" font-weight="600" fill="#A02A24">لا</text>
+          <text x="135" y="561" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="11.5" font-weight="600">يوم واحد فقط</text>
+        </g>
+
+        <g font-family="IBM Plex Sans Arabic, sans-serif" font-size="11.5" fill="currentColor" opacity=".65">
+          <text x="905" y="590" text-anchor="end">■ محسوب &nbsp;·&nbsp; ⬚ مُسقَط</text>
+        </g>
+      </svg>
+    </div>
+    <figcaption><b>ما تعدّه كل جهة نقدية.</b> عمود الخزينة كامل — وهو التعريف الصحيح المُختبَر. ملخص الوردية يُسقط ستة مصادر ولا يُقيّد بخزينة، فيُحمِّل الكاشير فرقاً ليس من صنعه. ولوحة اليوم تُسقط تحصيلات العملاء ومدفوعات الموردين، فتختلف عن كشف الخزينة لنفس اليوم.</figcaption>
+  </figure>
+</section>
+
+<!-- ============ الملاحظات ============ -->
+<section id="findings">
+  <div class="sec-head"><span class="tag">Findings</span><h2>سجل الملاحظات</h2></div>
+  <div class="prose"><p>مرتّبة بالخطورة. كل ملاحظة لها رقم يمكن الإحالة إليه، والموضع الدقيق أسفلها.</p></div>
+
+  <div class="ledger">
+
+    <div class="find f-crit"><div class="stripe"></div><div class="find-in">
+      <div class="find-top"><span class="fid">ن-١</span><span class="chip">حرجة</span><span class="chip">المصروفات</span>
+        <h4>حلقة مقطوعة: اسم الموظف على كل مصروف فارغ منذ الأساس</h4></div>
+      <p>الـ DAO يكتب <code>expenses_details.emp_id</code>، والـ view يقرأ الاسم عبر <code>LEFT JOIN expense_salary</code>. و<strong><code>expense_salary</code> لا يكتب فيه أى سطر كود فى المشروع كله</strong> — تحقّقتُ من الـ Java والـ SQL والسكربتات القديمة.</p>
+      <p>ثلاث نتائج: اسم الموظف يعود <code>''</code> دائماً؛ والبحث فى شاشة المصروفات يبحث فى <code>column_name</code> فلا يطابق شيئاً أبداً؛ و<code>DeleteRegistry.EMPLOYEES</code> يحمى الموظف بفحص <code>expense_salary</code> — <strong>جدول فارغ دائماً</strong> — فيُحذف موظف له سنوات مرتبات بلا اعتراض واحد.</p>
+      <p><strong>العلاج:</strong> قرار واحد — إمّا أن يكتب الحفظ صفاً فى <code>expense_salary</code>، وإمّا أن يقرأ الـ view من <code>emp_id</code> مباشرة ويُضاف له مفتاح أجنبى وتُحدَّث قاعدة الحذف. الثانى أبسط والأول أسلم مرجعياً.</p>
+      <div class="where">ExpensesDetailsDao.java:70,89,122 · R__views.sql:696–708 · DeleteRegistry.java:107</div>
+    </div></div>
+
+    <div class="find f-crit"><div class="stripe"></div><div class="find-in">
+      <div class="find-top"><span class="fid">ن-٢</span><span class="chip">حرجة</span><span class="chip">المصروفات</span><span class="chip">الخزينة</span>
+        <h4>كل مصروف يُخصم من الخزينة رقم 1 حرفياً</h4></div>
+      <p>شاشة المصروفات تكتب <code>expensesDetails.setTreasuryModel(new Treasury(1))</code> ثابتاً، ولا تعرض للمستخدم أى اختيار خزينة. فى منشأة بمحفظة إلكترونية أو حساب بنكى، مصروف دُفع من المحفظة يُنقص درج النقدية بدلاً منها — <strong>وكشفا الخزينتين يصيران خاطئين معاً</strong> بنفس المبلغ وفى اتجاهين متعاكسين.</p>
+      <p><strong>العلاج:</strong> combo خزائن على الشاشة، بمبدئية <code>DefaultTreasury</code> — تماماً كما تفعل شاشة الإيداع/الصرف بالفعل.</p>
+      <div class="where">AddExpensesController.java:119</div>
+    </div></div>
+
+    <div class="find f-crit"><div class="stripe"></div><div class="find-in">
+      <div class="find-top"><span class="fid">ن-٣</span><span class="chip">حرجة</span><span class="chip">الشفتات</span>
+        <h4>ملخص الوردية يقرأ أربعة مصادر من عشرة، وبلا خزينة</h4></div>
+      <p><code>calculateShiftSummary</code> تجمع المبيعات ومرتجعاتها والمصروفات والإيداع/الصرف فقط، <strong>بلا تصفية <code>treasury_id</code> إطلاقاً</strong>. المُسقَط: تحصيلات العملاء، مدفوعات الموردين، المشتريات النقدية، مرتجعات المشتريات، والتحويلات (انظر الشكل 2).</p>
+      <p>أثره مباشر على شخص: كاشير حصّل 5,000 من الذمم يقفل الوردية بزيادة 5,000؛ وآخر دفع 3,000 لمورّد نقداً يقفل بعجز 3,000. و«الفرق» هو الرقم الذى يُحاسَب عليه.</p>
+      <p><strong>العلاج:</strong> الوردية تحتاج <code>treasury_id</code> على <code>user_shifts</code>، ثم يُبنى الملخص من <code>treasury_balance</code> نفسه بشرطى المستخدم والفترة والخزينة — <strong>لا بعشرة استعلامات موازية</strong>. مصدر واحد، كما فى الخزينة.</p>
+      <div class="where">UserShiftDao.java:205–265 · ShiftSummary.java:45 · V1__baseline.sql:866</div>
+    </div></div>
+
+    <div class="find f-crit"><div class="stripe"></div><div class="find-in">
+      <div class="find-top"><span class="fid">ن-٤</span><span class="chip">حرجة</span><span class="chip">الشفتات</span><span class="chip">صلاحيات</span>
+        <h4>شاشات الورديات بلا حارس، والحارس موجود معلَّقاً كتعليق</h4></div>
+      <p><code>openShift</code> و<code>closeShift</code> بلا <code>AuthorizationGuard.require</code>. و<code>AdminShiftsController</code> — شاشة كل ورديات كل المستخدمين بأرصدتها وفروقها — يحمل الحارس فى السطر 84 <strong>معطَّلاً بـ <code>//</code></strong>. أى مستخدم مسجَّل يرى ويغلق ورديات الجميع.</p>
+      <p>الكتالوج لا يحوى إلا صلاحية شفتات واحدة (<code>user.shift.manage</code>) وتُستخدم للحذف والغلق القسرى فقط.</p>
+      <p><strong>العلاج:</strong> <code>shift.open</code> / <code>shift.close</code> / <code>shift.view.all</code> فى <code>AppPermissions</code>، وفرضها فى <code>UserShiftService</code> لا فى الشاشة.</p>
+      <div class="where">UserShiftService.java:18,40 · AdminShiftsController.java:84 · AppPermissions.java:145</div>
+    </div></div>
+
+    <div class="find f-high"><div class="stripe"></div><div class="find-in">
+      <div class="find-top"><span class="fid">ن-٥</span><span class="chip">عالية</span><span class="chip">الشفتات</span>
+        <h4>إلزام الوردية معطَّل بثابت لا يضبطه شىء</h4></div>
+      <p><code>ShiftContext.enforceShiftRequired = false</code>، والتعليق يقول «مستقبلاً: يُقرأ من إعدادات النظام» — ولم يحدث. فـ <code>requireOpenShift()</code> ترجع <code>true</code> دائماً، والنداءان الوحيدان لها فى شاشة الفاتورة والمصروفات <strong>لا يمنعان شيئاً</strong>. النظام كله استشارى بينما شكله شكل نظام مُلزِم.</p>
+      <div class="where">ShiftContext.java:23 · BuyController2.java:635 · AddExpensesController.java:106</div>
+    </div></div>
+
+    <div class="find f-high"><div class="stripe"></div><div class="find-in">
+      <div class="find-top"><span class="fid">ن-٦</span><span class="chip">عالية</span><span class="chip">الخزينة</span>
+        <h4>المصروف يخرج من الخزينة بلا قفل ولا فحص رصيد</h4></div>
+      <p><code>TreasuryCashService</code> تقفل الخزينة بـ <code>SELECT … FOR UPDATE</code> ثم تتحقق من كفاية الرصيد قبل أى سحب. و<code>ExpensesDetailsDao.insert</code> — وهو سحب نقدى مثله تماماً — <strong>لا يفعل أياً من الاثنين</strong>. فنفس الحدث يخضع لقاعدتين مختلفتين حسب الشاشة المستخدمة، ورصيد الخزينة قد يصير سالباً بصمت.</p>
+      <p>ملاحظة عادلة: قفل الفترة <em>مفروض</em> هنا — لكنه فى الـ DAO لا فى الخدمة، فهو قاعدة غير مرئية من طبقة الخدمة.</p>
+      <div class="where">ExpensesDetailsDao.java:64–73 · TreasuryCashService.java:66–79</div>
+    </div></div>
+
+    <div class="find f-high"><div class="stripe"></div><div class="find-in">
+      <div class="find-top"><span class="fid">ن-٧</span><span class="chip">عالية</span><span class="chip">الخزينة</span>
+        <h4>حذف حركة رأس المال بصلاحية أمين الصندوق</h4></div>
+      <p><code>record()</code> تطلب <code>treasury.capital</code> فوق <code>treasury.deposit</code> لأى حركة تخصّ مال المالك — بتعليق صريح: «من يحرّك الدرج يجب ألا يستطيع تسمية العجز رأس مال». لكن <code>delete()</code> تطلب <code>treasury.deposit</code> وحدها <strong>ولا تفحص تصنيف الصف المحذوف</strong>. فما لا يستطيع إنشاءه يستطيع محوه.</p>
+      <div class="where">TreasuryCashService.java:104–108</div>
+    </div></div>
+
+    <div class="find f-high"><div class="stripe"></div><div class="find-in">
+      <div class="find-top"><span class="fid">ن-٨</span><span class="chip">عالية</span><span class="chip">التقارير</span>
+        <h4>لوحة اليوم تعرّف النقدية تعريفاً خامساً</h4></div>
+      <p>«المقبوضات» فى <code>daily_dashboard_report</code> تُسقط <code>customers_accounts.paid</code>، و«المدفوعات» تُسقط <code>suppliers_accounts.paid</code> — بينما <code>treasury_balance</code> يعدّهما. فلوحة اليوم تختلف عن كشف الخزينة لنفس اليوم بمقدار كل تحصيل وكل سداد تم فيه. وهذا هو نفس صنف الخطأ الذى عولج بحذف <code>treasury_balance_after_convert</code>.</p>
+      <div class="where">R__views.sql · daily_dashboard_report §5,§6</div>
+    </div></div>
+
+    <div class="find f-high"><div class="stripe"></div><div class="find-in">
+      <div class="find-top"><span class="fid">ن-٩</span><span class="chip">عالية</span><span class="chip">التقارير</span><span class="chip">توزيع</span>
+        <h4>المثبِّت لا يحمل قوالب الطباعة الـ33</h4></div>
+      <p><code>build-installer.ps1</code> ينسخ الـ jar وحده إلى مجلد إدخال <code>jpackage</code>. و<code>Configs.FILE_REPORTS = new File("reports/")</code> يُحلّ بالنسبة لمجلد التشغيل. النتيجة: <strong>عميل بعد تثبيت نظيف لا يطبع أى شىء</strong> — فاتورة ولا كشف ولا باركود — حتى ينسخ أحدهم المجلد يدوياً. والتحذير الختامى للسكربت يذكر <code>config.xml</code> و<code>config.key</code> فقط.</p>
+      <p><strong>العلاج:</strong> إمّا نقل القوالب إلى <code>src/main/resources</code> وقراءتها من الـ classpath (الأسلم)، وإمّا إضافة <code>Copy-Item reports/ $stage</code> قبل <code>jpackage</code>.</p>
+      <div class="where">packaging/build-installer.ps1:76–90 · Configs.java:11</div>
+    </div></div>
+
+    <div class="find f-high"><div class="stripe"></div><div class="find-in">
+      <div class="find-top"><span class="fid">ن-١٠</span><span class="chip">عالية</span><span class="chip">المناديب</span>
+        <h4>العمولة تُدفع بالشريحة الدنيا حتى بلا بلوغ أى هدف</h4></div>
+      <p>شرط الـ view: إن بلغ الهدف الأول فـ <code>rate_1</code>، وإلا إن بلغ الثانى فـ <code>rate_2</code>، <strong>وإلا <code>rate_3</code> على كامل المبيعات</strong> — بلا حدّ أدنى. مندوب لم يقترب من هدفه يتقاضى عمولة، فكلمة «مستهدف» بلا أثر حسابى.</p>
+      <p>ومعها: <code>targeted_sales</code> بلا قيد فريد على <code>delegate_id</code> فمندوب بهدفين يُنتج صفَّى عمولة؛ والهدف بلا نطاق زمنى فيسرى على كل شهر أبداً؛ وشهر بمرتجعات بلا مبيعات يختفى من الـ view.</p>
+      <p>مخفَّف بأن <strong>لا شىء يقرأ هذا الـ view</strong> — لكن هذا نفسه هو الخطر: أول شاشة تُوصَل به ستدفع أرقاماً خاطئة كأنها محسوبة.</p>
+      <div class="where">R__views.sql · target_delegate · V1__baseline.sql:824</div>
+    </div></div>
+
+    <div class="find f-warn"><div class="stripe"></div><div class="find-in">
+      <div class="find-top"><span class="fid">ن-١١</span><span class="chip">متوسطة</span><span class="chip">الموارد البشرية</span>
+        <h4>لا يوجد نظام إجازات</h4></div>
+      <p>لا جدول ولا شاشة ولا سطر كود — بحثتُ فى الـ Java والـ schema. الموظف له تاريخ تعيين وراتب ووظيفة، وليس له رصيد إجازات ولا سجل غياب. إن كان مقصوداً فليُذكَر فى الوثائق؛ وإن كان مفترضاً فهو نظام كامل ناقص، لا ثغرة.</p>
+      <div class="where">لا موضع — غائب من الـ schema والكود</div>
+    </div></div>
+
+    <div class="find f-warn"><div class="stripe"></div><div class="find-in">
+      <div class="find-top"><span class="fid">ن-١٢</span><span class="chip">متوسطة</span><span class="chip">محاسبى</span>
+        <h4>«السلف» تُخصم من الربح كمصروف</h4></div>
+      <p>سلفة الموظف <em>ذمة مدينة</em>، لا مصروف. لكن <code>ProfitLossDao</code> يجمع <code>expenses_details</code> كاملاً، فتُنقص السلفة الربح يوم صرفها، <strong>ولا يوجد مسار يعكسها يوم ردّها</strong>. هذا نفس الخطأ الذى عولج فى الجدول المجاور بـ <code>CashCategory</code> (رأس مال / مسحوبات) مع قيد <code>CHECK</code> واختبار — والعلاج معروف ومطبَّق بالفعل على بُعد جدول واحد.</p>
+      <div class="where">ProfitLossDao.java:34 · V21__treasury_capital.sql (النموذج)</div>
+    </div></div>
+
+    <div class="find f-warn"><div class="stripe"></div><div class="find-in">
+      <div class="find-top"><span class="fid">ن-١٣</span><span class="chip">متوسطة</span><span class="chip">الشفتات</span>
+        <h4>الوردية تخزّن ما ينبغى أن يُشتق، وتبتلع أخطاءها</h4></div>
+      <p><code>user_shifts</code> تحمل ثمانية أعمدة إجماليات تُكتب مرة عند الغلق — بينما عقيدة الخزينة المكتوبة هى «الرصيد يُشتق ولا يُخزَّن، ولا يوجد تعريف رابع». تعديل أو حذف فاتورة بعد الغلق يترك أرقام الوردية قديمة إلى الأبد.</p>
+      <p>ومعها <code>getDoubleSafe</code> تبتلع <code>SQLException</code> وترجع <code>0.0</code> — <strong>فى رقم مالى</strong> — بتعليق يبرّر ذلك بأن الأعمدة «قد لا تكون موجودة لو لم يُشغَّل الـ migration»، وهو شرط لم يعد ممكناً بعد أن صارت الـ migrations تعمل عند كل إقلاع.</p>
+      <div class="where">UserShiftDao.java:158–172 · V1__baseline.sql:866</div>
+    </div></div>
+
+    <div class="find f-warn"><div class="stripe"></div><div class="find-in">
+      <div class="find-top"><span class="fid">ن-١٤</span><span class="chip">متوسطة</span><span class="chip">أداء</span>
+        <h4>كل رصيد مخزنى تجميع كامل على كل التاريخ</h4></div>
+      <p><code>quantity_items_table</code> يجمع فوق أربعة جداول أسطر عبر views تربط <code>items</code>+<code>units</code>+<code>custom</code>+<code>total_*</code> — لمجرد الوصول إلى <code>stock_id</code> و<code>invoice_date</code>. ولا فهرس على <code>stock_id</code> فى أى منها. وكل فتح لقائمة الأصناف يمرّ من هنا.</p>
+      <p>والمفارقة أن الحل مبنى بالفعل: <code>stock_movements</code> يُكتب فيه عند حفظ الفاتورة والجرد، ومفهرس بـ <code>(item_id, stock_id, movement_date)</code>، ومعه <code>StockLedgerReconciliationReport</code> يثبت مطابقته. <strong>نصف الهجرة تمّ — جانب الكتابة حىّ وجانب القراءة لا.</strong></p>
+      <div class="where">R__views.sql · quantity_items_table · StockMovementDao.java · InvoiceSaveService.java:202</div>
+    </div></div>
+
+    <div class="find f-warn"><div class="stripe"></div><div class="find-in">
+      <div class="find-top"><span class="fid">ن-١٥</span><span class="chip">متوسطة</span><span class="chip">المستخدمين</span>
+        <h4>لا سياسة لكلمة المرور، والتجزئة خارج الخدمة</h4></div>
+      <p>لا حدّ أدنى للطول ولا تعقيد ولا حتى إلزام بوجود كلمة مرور (<code>user_pass</code> يقبل <code>NULL</code>). والتجزئة تتم فى الـ controller: <code>UsersService.updateOwnPassword(int, String passwordHash)</code> يستقبل الهاش جاهزاً، <strong>فلا تستطيع الخدمة أن تضمن أنه مُجزَّأ</strong> — ولو وصلها نص صريح لقبله <code>PasswordHasher.matches</code> لاحقاً كـ«قديم» ورقّاه.</p>
+      <p>و<code>UsersService.delete</code> لا يمرّ بـ <code>DeletionService</code> ولا توجد قاعدة حذف للمستخدمين، فحذف مستخدم له مستندات ينتهى بخطأ SQL خام يظهر للمستخدم كرمز مرجعى.</p>
+      <div class="where">UsersService.java:44,59 · AddUserController.java:93 · PasswordHasher.java:35</div>
+    </div></div>
+
+    <div class="find f-warn"><div class="stripe"></div><div class="find-in">
+      <div class="find-top"><span class="fid">ن-١٦</span><span class="chip">متوسطة</span><span class="chip">نمط</span>
+        <h4>enum بمعرفات مربوطة يدوياً بصفوف جدول — ما زال حيّاً</h4></div>
+      <p><code>UsersType</code> (1..4 ↔ <code>jobs</code>) و<code>ExpensesType</code> (1..6 ↔ <code>expenses</code>)، و<code>where job = 4</code> مكتوبة حرفياً فى <code>EmployeesDao.loadAllDelegate</code>. هذا <em>بالضبط</em> النمط الذى قُتل من أجله <code>UserPermissionType</code>: تعديل صف فى جدول قابل للتحرير يكسر الكود بصمت. و<code>UsersType</code> ما زال يحمل <code>javafx.beans.property</code> فى قيم الـ enum — حالة مشتركة قابلة للتغيير على مستوى الـ process.</p>
+      <p>وأثر عملى: أنواع المصروفات <strong>غير قابلة للإضافة</strong> — لا يستطيع العميل إنشاء بند مصروف جديد.</p>
+      <div class="where">UsersType.java · ExpensesType.java · EmployeesDao.java:158</div>
+    </div></div>
+
+    <div class="find f-low"><div class="stripe"></div><div class="find-in">
+      <div class="find-top"><span class="fid">ن-١٧</span><span class="chip">منخفضة</span><span class="chip">تصميم</span>
+        <h4>مخالفات صغيرة متفرّقة</h4></div>
+      <p><code>StockTransferService</code> يأخذ <code>DaoFactory</code> فى مُنشئه <strong>ويتجاهله</strong> ويبنى الـ DAO بنفسه — مخالفة مباشرة لـ <code>new-code-rules</code>، وتجعله غير قابل للاختبار بلا قاعدة بيانات. و<code>recent()</code> و<code>reportRows()</code> — قراءتان — محروستان بصلاحية الترحيل <code>STOCK_TRANSFER_POST</code>. و<code>AddExpensesController:176</code> يبنى <code>binding.or(...)</code> ويُهمل نتيجته، فالتحقّق ميت (يلتقطه <code>insertData</code> لحسن الحظ). و<code>ServiceRegistry</code> على <code>HashMap</code> غير متزامن يرجع <code>null</code> بصمت.</p>
+      <div class="where">StockTransferService.java:20,64,70 · AddExpensesController.java:176 · ServiceRegistry.java</div>
+    </div></div>
+
+    <div class="find f-low"><div class="stripe"></div><div class="find-in">
+      <div class="find-top"><span class="fid">ن-١٨</span><span class="chip">منخفضة</span><span class="chip">توثيق</span>
+        <h4>الوثائق تسبق الواقع فى موضعين</h4></div>
+      <p><code>CLAUDE.md</code> يصف <code>AuthorizationArchitectureTest</code> بأنه «يُفشل البناء حين لا يُحرَس مسار كتابة فى خدمة» — بينما يفحص فعلياً ألا تنادى الـ controllers الـ DAO مباشرة. وخاصية «المُنشئ يقوم بالتوصيل» فى <code>DownLoadApplication</code> لم تعد صحيحة: الإقلاع صار <code>Task</code> فى الخلفية بشاشة تحميل. وأعداد الاختبارات (994/47) صارت 1,013/56.</p>
+      <p>هذا مذكور لأن الوثائق هنا <strong>تُقرأ ويُعتمد عليها</strong> — وهى ميزة، وهو أيضاً سبب أن انحرافها تكلفة حقيقية.</p>
+      <div class="where">CLAUDE.md · AuthorizationArchitectureTest.java · DownLoadApplication.java:60</div>
+    </div></div>
+
+  </div>
+</section>
+
+<!-- ============ جودة الكود ============ -->
+<section id="quality">
+  <div class="sec-head"><span class="tag">Quality</span><h2>جودة الكود بالأرقام</h2></div>
+
+  <div class="tw">
+    <table>
+      <thead><tr><th>المقياس</th><th>القيمة</th><th>القراءة</th></tr></thead>
+      <tbody>
+        <tr><td>كود إنتاج</td><td class="num">76,200 / 747</td><td><span class="dot d-ok"></span>سطر / ملف — حجم معقول لنطاق التطبيق</td></tr>
+        <tr><td>كود اختبار</td><td class="num">19,021 / 112</td><td><span class="dot d-ok"></span>نسبة 25٪ — جيدة لتطبيق سطح مكتب</td></tr>
+        <tr><td>اختبارات ناجحة</td><td class="num">1,013</td><td><span class="dot d-ok"></span>صفر إخفاق · 56 متخطَّى · 111 صنف</td></tr>
+        <tr><td>مقيَّدة بـ MySQL</td><td class="num">13 صنفاً</td><td><span class="dot d-warn"></span>لا تعمل فى <code>mvn clean test</code> — واحدة منها أخفقت 3 أيام دون أن يدرى أحد</td></tr>
+        <tr><td>طبقة الشاشات</td><td class="num">24,347 / 122</td><td><span class="dot d-crit"></span>أكبر حزمة، <strong>وبلا اختبار واحد</strong></td></tr>
+        <tr><td>أكبر ملف</td><td class="num">1,293</td><td><span class="dot d-warn"></span><code>BuyController2</code> — 63 دالة، 16 حقل FXML</td></tr>
+        <tr><td>نماذج تحمل javafx</td><td class="num">16 / 50</td><td><span class="dot d-warn"></span>دَين محصور بقائمة سقّاطة تُفشل البناء لو زاد</td></tr>
+        <tr><td>PropertyValueFactory</td><td class="num">33</td><td><span class="dot d-warn"></span>حقل يُحلّ بالاسم وقت التشغيل — عمود فارغ بصمت لو أُعيدت التسمية</td></tr>
+        <tr><td>حروف عربية فى الكود</td><td class="num">147 ملفاً</td><td><span class="dot d-warn"></span>محصورة بسقّاطة فى <code>features/</code> فقط</td></tr>
+        <tr><td>الترجمة</td><td class="num">1,601 / 1,602</td><td><span class="dot d-ok"></span>ar / en — 6 قيم فقط غير مترجمة، ومفتاح واحد ناقص</td></tr>
+        <tr><td>printStackTrace</td><td class="num">0</td><td><span class="dot d-ok"></span>حدود أخطاء نظيفة عبر <code>ErrorReporter</code></td></tr>
+        <tr><td>الفهارس</td><td class="num">49</td><td><span class="dot d-warn"></span>تغطية جيدة عدا <code>stock_id</code> على جداول الأسطر</td></tr>
+        <tr><td>النشاط</td><td class="num">259 / 60 يوماً</td><td><span class="dot d-ok"></span>وتيرة عالية ومنتظمة منذ مارس</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>ما يستحق الحفاظ عليه</h3>
+  <div class="prose">
+    <p>هذه ليست مجاملة — هى أشياء نادرة فعلاً فى مشاريع بهذا الحجم، ومن يعمل على المشروع لاحقاً يجب ألا يفكّكها:</p>
+    <ul>
+      <li><strong>الاختبارات المعمارية السقّاطة.</strong> تسع منها، تحمل قوائم دَين تُفشل البناء <em>فى الاتجاهين</em>: ملف جديد يخالف القاعدة يسقط، وملف نُظِّف ولم يُشطب من القائمة يسقط أيضاً. هذا ما يمنع القوائم من أن تصير خيالاً — ولم أرَ هذا النمط مطبَّقاً بهذا الانضباط من قبل.</li>
+      <li><strong>تثبيت الـ SQL حرفاً بحرف.</strong> <code>DocumentDaoStatementsTest</code> يثبّت كل جملة فى ثمانية DAOs، ويثبّت عدد المعاملات لكل واحدة. دمج يبدّل عمودين متجاورين ينتج SQL صالحاً يحفظ الخصم كرقم مخزن — هذا التثبيت هو الوحيد الواقف بين ذلك وقاعدة بيانات عميل.</li>
+      <li><strong>التعليقات تشرح «لماذا» لا «ماذا».</strong> وكثير منها يشرح ما الذى انكسر سابقاً وكيف. تعليقات <code>DocumentLedgerEffect</code> و<code>V1_1__audit_log_procedure.sql</code> و<code>TreasuryCashService</code> وثائق تصميم حقيقية لا زخرفة.</li>
+      <li><strong>القواعد المعلنة مرة واحدة.</strong> <code>DocumentTableSpec</code> و<code>PartyTableSpec</code> و<code>DeleteRegistry</code> و<code>WipeCatalog</code> و<code>ItemReferenceRegistry</code> — كل واحد ألغى ملفاً مكرّراً أربع أو ثمانى مرات. و<code>WipeCatalogTest</code> و<code>ItemReferenceRegistryTest</code> يقرآن المفاتيح الأجنبية من ملفات الـ migration نفسها، فيصير الـ schema هو المرجع لا نسخة عنه.</li>
+      <li><strong>انضباط الـ migrations.</strong> ختم قاعدة قائمة بـ <code>V1</code> بدل تنفيذها، ورفض ختم schema غريبة، و<code>mysqldump</code> قبل أى تطبيق، والـ views كـ repeatable. و<code>V1_1</code> — المرقَّم <em>تحت</em> <code>V20</code> عمداً لأن <code>V22</code> كان سيعمل بعد ما يُصلحه — قطعة تفكير صحيحة.</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ============ الخطة ============ -->
+<section id="plan">
+  <div class="sec-head"><span class="tag">Roadmap</span><h2>خطة العمل المقترحة</h2></div>
+  <div class="prose"><p>مرتّبة بالأثر على أرقام يقرأها أو يُحاسَب عليها شخص، لا بسهولة التنفيذ.</p></div>
+
+  <div class="phase">
+    <div class="phase-top"><span class="phase-n">Phase 1 · أوقف النزيف</span><h3>ما يعطى رقماً خاطئاً الآن</h3></div>
+    <ol>
+      <li><strong>ن-١ — أصلح حلقة اسم الموظف.</strong> اختر أحد الطرفين واكتب اختباراً يثبت أن الاسم يعود غير فارغ بعد الحفظ. هذا يُعيد أيضاً حماية حذف الموظف.</li>
+      <li><strong>ن-٢ — combo خزائن على شاشة المصروفات.</strong> تعديل صغير، وأثره على كشفَى خزينتين معاً.</li>
+      <li><strong>ن-٤ — أعِد الحارس المعلَّق.</strong> ثلاث صلاحيات جديدة و<code>require</code> فى الخدمة. أرخص بند فى القائمة كلها.</li>
+      <li><strong>ن-٩ — احمل <code>reports/</code> فى المثبِّت.</strong> سطر واحد فى السكربت يمنع «العميل الجديد لا يطبع».</li>
+    </ol>
+  </div>
+
+  <div class="phase">
+    <div class="phase-top"><span class="phase-n">Phase 2 · أعِد بناء الوردية</span><h3>على نموذج الخزينة، لا بترقيع</h3></div>
+    <ol>
+      <li><strong>أضف <code>treasury_id</code> إلى <code>user_shifts</code></strong> فى migration جديدة، بمبدئية <code>DefaultTreasury</code> للصفوف القائمة.</li>
+      <li><strong>ابنِ الملخص من <code>treasury_balance</code></strong> باستعلام واحد مشروط بالمستخدم والفترة والخزينة — <em>مصدر واحد</em>، تماماً كما فعلت الخزينة حين حذفت التعريف الثالث.</li>
+      <li><strong>أضف <code>ShiftBalanceViewAcceptanceTest</code></strong> على نمط <code>TreasuryBalanceViewAcceptanceTest</code>: وردية بتحصيل عميل وسداد مورّد ومشترى نقدى، والفرق يساوى صفراً.</li>
+      <li><strong>اربط الإلزام بإعداد حقيقى</strong> (ن-٥) أو احذف <code>enforceShiftRequired</code> وصرّح بأن الورديات اختيارية — <em>لكن لا تتركه ثابتاً يوحى بالفرض</em>.</li>
+      <li><strong>وحّد <code>daily_dashboard_report</code></strong> مع <code>treasury_balance</code> (ن-٨).</li>
+    </ol>
+  </div>
+
+  <div class="phase">
+    <div class="phase-top"><span class="phase-n">Phase 3 · أكمل ما بدأ</span><h3>هجرات نصفها مبنى بالفعل</h3></div>
+    <ol>
+      <li><strong>ن-١٤ — اجعل <code>quantity_items_table</code> يقرأ من <code>stock_movements</code>.</strong> الكتابة والفهارس وتقرير المطابقة كلها جاهزة؛ الباقى تبديل مصدر القراءة والتحقّق بالتقرير الموجود.</li>
+      <li><strong>ن-١٢ — <code>expense_category</code> على <code>expenses_details</code></strong> بقيد <code>CHECK</code>، على نفس نموذج <code>CashCategory</code>، لإخراج السلف من قائمة الأرباح.</li>
+      <li><strong>ن-٦ — انقل قواعد المصروف إلى خدمة</strong> تقفل الخزينة وتفحص الرصيد، بدل بابين لنفس الحدث.</li>
+      <li><strong>ن-٧ — افحص تصنيف الصف فى <code>TreasuryCashService.delete</code>.</strong></li>
+    </ol>
+  </div>
+
+  <div class="phase">
+    <div class="phase-top"><span class="phase-n">Phase 4 · قرارات مؤجَّلة</span><h3>تحتاج قراراً منك قبل الكود</h3></div>
+    <ol>
+      <li><strong>المناديب:</strong> إمّا إكمال النظام (شاشة أهداف بنطاق زمنى، قيد فريد، حدّ أدنى للشريحة، شاشة عمولات) — وإمّا <strong>حذف <code>target_delegate</code></strong> صراحةً حتى لا يوصَل به أحد لاحقاً ويثق برقمه.</li>
+      <li><strong>الإجازات (ن-١١):</strong> نظام كامل، أو سطر فى الوثائق يقول إنه خارج النطاق. الحالة الحالية — لا هذا ولا ذاك — هى الأسوأ.</li>
+      <li><strong>ن-١٦ — كسر ربط الـ enum بالجداول:</strong> أنواع المصروفات على الأخص، لأن العميل لا يستطيع اليوم إضافة بند مصروف واحد.</li>
+      <li><strong>اختبارات الشاشات:</strong> 24,347 سطراً بلا اختبار واحد. TestFX على <code>BuyController2</code> وحده يغطى أكثر مما يبدو.</li>
+    </ol>
+  </div>
+</section>
+
+<footer>
+  <div class="prose">
+    <p>مراجعة أُجريت على الفرع <code>main</code> عند <code>9401910</code> بتاريخ 2026-08-31. الأنظمة الثمانية فُحصت فى الكود والـ schema والـ views معاً، و<code>mvn clean test</code> شُغِّل للتحقّق (1,013 اختباراً، صفر إخفاق). <strong>لم تُشغَّل الاختبارات الثلاثة عشر المقيَّدة بـ MySQL ولا التطبيق نفسه</strong> — فما يخصّ سلوك الشاشات هنا مقروء من الكود، لا مُشاهَد.</p>
+  </div>
+</footer>
+
+</div>
+</div>
