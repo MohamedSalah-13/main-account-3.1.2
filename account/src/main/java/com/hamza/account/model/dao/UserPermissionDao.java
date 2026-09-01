@@ -53,7 +53,18 @@ public class UserPermissionDao extends AbstractDao<Users_Permission> {
         Users_Permission usersPermission = new Users_Permission();
         try {
             usersPermission.setId(rs.getInt(ID));
-            usersPermission.setUserPermissionType(UserPermissionType.getUserPermissionById(rs.getInt(PERMISSION_ID)));
+            int permissionId = rs.getInt(PERMISSION_ID);
+            UserPermissionType permissionType = UserPermissionType.getUserPermissionById(permissionId);
+            if (permissionType == null) {
+                // The enum's ids are hand-matched to this table's rows, so an install
+                // carrying an id this build has no constant for maps to null. The row is
+                // kept - it is not this screen's business to delete a client's data - but
+                // it is named here, because the id is the only way to tell afterwards
+                // which row it was.
+                log.warn("user_permission row {} carries permission_id {}, which no "
+                        + "UserPermissionType knows; it will be ignored", usersPermission.getId(), permissionId);
+            }
+            usersPermission.setUserPermissionType(permissionType);
             usersPermission.setUsers(new Users(rs.getInt(USER_ID)));
             var aBoolean = rs.getBoolean(CHECK_STATUS);
             usersPermission.setStatus(aBoolean);

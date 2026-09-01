@@ -127,9 +127,27 @@ public class UserPermissionController implements AppSettingInterface {
         }
     }
 
-    private boolean isPermissionGranted(List<Users_Permission> userPermissions, UserPermissionType permissionType) {
+    /**
+     * Whether this user holds the permission, over the rows read from
+     * {@code user_permission}.
+     *
+     * <p>{@code ==}, not {@code equals}, and the row's type is never dereferenced: a row
+     * whose {@code permission_id} matches no constant of {@link UserPermissionType} maps
+     * to <b>null</b>, because {@code UserPermissionType.getUserPermissionById} answers
+     * null for an id it does not know. The enum's ids are hand-matched to the table's
+     * rows, so any install whose {@code user_permission} carries an id this build has no
+     * constant for - a row seeded by another version, or one left behind by a permission
+     * since removed - produced a null here. Calling {@code equals} on it threw, and the
+     * throw was inside {@code initialize()}, so <b>the whole permissions screen failed to
+     * open</b> rather than one checkbox reading wrong.
+     *
+     * <p>An unknown row simply is not the permission being asked about, so skipping it is
+     * also the right answer: the checkbox falls back to {@code false}, which is what an
+     * ungranted permission looks like.
+     */
+    static boolean isPermissionGranted(List<Users_Permission> userPermissions, UserPermissionType permissionType) {
         return userPermissions.stream().filter(permission ->
-                permission.getUserPermissionType().equals(permissionType)).map(Users_Permission::isStatus).findFirst().orElse(false);
+                permission.getUserPermissionType() == permissionType).map(Users_Permission::isStatus).findFirst().orElse(false);
     }
 
     private HashMap<CheckBox, UserPermissionType> mapUserPermissionCheckBox() {
