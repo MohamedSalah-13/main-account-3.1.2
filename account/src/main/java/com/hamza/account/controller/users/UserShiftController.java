@@ -6,8 +6,11 @@ import com.hamza.account.model.domain.UserShift;
 import com.hamza.account.openFxml.FxmlPath;
 import com.hamza.account.reportData.Print_Reports;
 import com.hamza.account.service.ShiftReportService;
+import com.hamza.account.service.TreasuryService;
 import com.hamza.account.service.UserShiftService;
 import com.hamza.account.session.ShiftContext;
+import com.hamza.account.treasury.DefaultTreasury;
+import com.hamza.account.model.domain.Treasury;
 import com.hamza.account.features.rbac.CurrentUser;
 import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.database.DaoException;
@@ -35,12 +38,15 @@ public class UserShiftController {
     private final int currentUserId;
     private final ShiftReportService shiftReportService = ServiceRegistry.get(ShiftReportService.class);
     private final UserShiftService userShiftService = ServiceRegistry.get(UserShiftService.class);
+    private final TreasuryService treasuryService = ServiceRegistry.get(TreasuryService.class);
 
     private final Print_Reports printReports = new Print_Reports();
     @FXML
-    private Label labelTitle, labelShiftStatus, labelOpenTime, labelOpenBalance;
+    private Label labelTitle, labelShiftStatus, labelOpenTime, labelOpenBalance, labelShiftTreasury;
     @FXML
     private VBox boxOpenShift, boxCloseShift;
+    @FXML
+    private ComboBox<String> comboOpenTreasury;
     @FXML
     private TextField txtOpenBalance, txtCloseBalance;
     @FXML
@@ -57,7 +63,8 @@ public class UserShiftController {
     private TableColumn<UserShift, Number> colOpenBalance, colCloseBalance;
     @FXML
     private Label labelSummaryTotalSales, labelSummaryReturns, labelSummaryExpenses,
-            labelSummaryExpected, labelSummaryDifference, labelSummaryInvoices;
+            labelSummaryExpected, labelSummaryDifference, labelSummaryInvoices,
+            labelSummaryOtherIn, labelSummaryOtherOut;
     @FXML
     private Button btnPrintXReport;
 
@@ -68,10 +75,33 @@ public class UserShiftController {
 
     @FXML
     public void initialize() {
+        loadTreasuries();
         setupTextFormatters();
         setupTableColumns();
         setupActions();
         refreshView();
+    }
+
+    /**
+     * The tills a shift can be opened on - the open ones, with the main treasury
+     * preselected.
+     * <p>
+     * A shift did not name a till at all before V22, and every figure it is judged
+     * by is filtered by one: in a business with a drawer and an e-wallet, the
+     * wallet's collections were being counted into the cash expected in the drawer.
+     */
+    private void loadTreasuries() {
+        try {
+            comboOpenTreasury.setItems(FXCollections.observableArrayList(treasuryService.listTreasuryModelNames()));
+            Treasury main = treasuryService.getTreasuryById(DefaultTreasury.ID);
+            if (main != null && comboOpenTreasury.getItems().contains(main.getName())) {
+                comboOpenTreasury.getSelectionModel().select(main.getName());
+            } else {
+                comboOpenTreasury.getSelectionModel().selectFirst();
+            }
+        } catch (DaoException e) {
+            AllAlerts.handleError(LanguageManager.getInstance().getString("treasury.error.load.title"), e);
+        }
     }
 
     private void setupTextFormatters() {
@@ -140,6 +170,7 @@ public class UserShiftController {
         labelOpenTime.setText(shift.getOpenTime() != null
                 ? shift.getOpenTime().format(DATE_TIME_FORMATTER) : "-");
         labelOpenBalance.setText(String.valueOf(shift.getOpenBalance()));
+        labelShiftTreasury.setText(shift.getTreasuryName() == null ? "-" : shift.getTreasuryName());
     }
 
     private void showNoOpenShift() {
@@ -147,6 +178,7 @@ public class UserShiftController {
         labelShiftStatus.setStyle("-fx-text-fill: red; -fx-font-weight: bold;");
         labelOpenTime.setText("-");
         labelOpenBalance.setText("0.0");
+        labelShiftTreasury.setText("-");
     }
 
     private void loadShiftHistory() {
@@ -184,6 +216,8 @@ public class UserShiftController {
                     : (diff > 0 ? "-fx-text-fill: orange; -fx-font-weight: bold;"
                        : "-fx-text-fill: green;  -fx-font-weight: bold;"));
             labelSummaryInvoices.setText(String.valueOf(s.getInvoicesCount()));
+            labelSummaryOtherIn.setText(format(s.getOtherIn()));
+            labelSummaryOtherOut.setText(format(s.getOtherOut()));
         } catch (DaoException e) {
             log.error("Error loading live summary", e);
         }
@@ -196,6 +230,8 @@ public class UserShiftController {
         labelSummaryExpected.setText("-");
         labelSummaryDifference.setText("-");
         labelSummaryInvoices.setText("-");
+        labelSummaryOtherIn.setText("-");
+        labelSummaryOtherOut.setText("-");
     }
 
     private String format(double v) {
@@ -219,8 +255,9 @@ public class UserShiftController {
                 return;
             }
             String notes = safeTrim(txtOpenNotes.getText());
+            int treasuryId = selectedTreasuryId();
 
-            if (userShiftService.openShift(currentUserId, openBalance, notes) > 0) {
+            if (userShiftService.openShift(currentUserId, treasuryId, openBalance, notes) > 0) {
                 AllAlerts.alertSaveWithMessage(LanguageManager.getInstance().getString("user.shift.msg.open.success"));
                 clearOpenShiftFields();
                 refreshView();
@@ -231,6 +268,18 @@ public class UserShiftController {
             AllAlerts.handleError(LanguageManager.getInstance().getString("user.shift.open"),
                     new UserValidationException(LanguageManager.getInstance().getString("user.shift.msg.invalid.balance")));
         }
+    }
+
+    /**
+     * The till the shift is being opened on. Zero if nothing is chosen, which the
+     * service refuses - the picker is a hint and the rule lives where the row is
+     * written.
+     */
+    private int selectedTreasuryId() throws DaoException {
+        String name = comboOpenTreasury.getSelectionModel().getSelectedItem();
+        if (name == null || name.isBlank()) return 0;
+        Treasury treasury = treasuryService.getTreasuryByName(name);
+        return treasury == null ? 0 : treasury.getId();
     }
 
     private void printXReport() {
@@ -299,6 +348,11 @@ public class UserShiftController {
                 s.getTotalSales(),
                 s.getTotalSalesReturns(),
                 s.getTotalExpenses(),
+                // The two lines that were missing entirely: a cashier reading a
+                // difference has to be able to see the collections and payments that
+                // went through the till, not only the sales.
+                s.getOtherIn(),
+                s.getOtherOut(),
                 s.getExpectedBalance(),
                 closeBalance,
                 diffLabel);

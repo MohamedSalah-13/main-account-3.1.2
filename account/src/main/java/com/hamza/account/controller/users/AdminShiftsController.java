@@ -45,6 +45,10 @@ public class AdminShiftsController {
         tableView.getColumns().addAll(
                 Columns.number(NamesTables.CODE, UserShift::getId),
                 Columns.text("اسم المستخدم", UserShift::getUsername),
+                // Which till the shift was on. Two shifts on two treasuries were
+                // indistinguishable here, and since V22 the expected balance and the
+                // difference beside them are per-till figures.
+                Columns.text("invoice.treasury", UserShift::getTreasuryName),
                 Columns.text("وقت الفتح", row -> String.valueOf(row.getOpenTime())),
                 Columns.text("وقت الغلق", row -> String.valueOf(row.getCloseTime())),
                 Columns.number("الرصيد الافتتاحي", UserShift::getOpenBalance),

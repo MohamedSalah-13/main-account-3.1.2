@@ -36,6 +36,20 @@ public record ShiftReportService(DaoFactory daoFactory, UserShiftService userShi
         if (shift == null) {
             throw new BusinessRuleException("الوردية غير موجودة!");
         }
+        double totalIn = shift.getTotalCashIn();
+        double totalOut = shift.getTotalCashOut();
+
+        // A shift closed before V22 has no in/out columns filled in: its expectation
+        // was computed under the old four-source rule and stored, and it cannot be
+        // recomputed - which till it was on was never recorded. Carrying the stored
+        // figure across as one net movement reprints what the shift said on the day,
+        // rather than collapsing it to the opening balance.
+        if (totalIn == 0 && totalOut == 0 && shift.getExpectedBalance() != shift.getOpenBalance()) {
+            double net = shift.getExpectedBalance() - shift.getOpenBalance();
+            totalIn = net > 0 ? net : 0;
+            totalOut = net < 0 ? -net : 0;
+        }
+
         ShiftSummary summary = ShiftSummary.builder()
                 .openBalance(shift.getOpenBalance())
                 .totalSales(shift.getTotalSales())
@@ -43,6 +57,11 @@ public record ShiftReportService(DaoFactory daoFactory, UserShiftService userShi
                 .totalExpenses(shift.getTotalExpenses())
                 .totalDeposits(shift.getTotalDeposits())
                 .totalWithdrawals(shift.getTotalWithdrawals())
+                .otherIn(Math.max(0, totalIn - shift.getTotalSales() - shift.getTotalDeposits()))
+                .otherOut(Math.max(0, totalOut - shift.getTotalSalesReturns()
+                        - shift.getTotalExpenses() - shift.getTotalWithdrawals()))
+                .totalIn(totalIn)
+                .totalOut(totalOut)
                 .invoicesCount(shift.getInvoicesCount())
                 .build();
         return new ShiftReportData(shift, summary, shift.getCloseTime(), "Z-Report");

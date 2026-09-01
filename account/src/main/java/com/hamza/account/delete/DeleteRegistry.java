@@ -84,6 +84,10 @@ public final class DeleteRegistry {
             // clean refusal and becomes a raw SQL error on a user's screen. Adding the
             // line now costs one query on a delete; adding it later costs remembering.
             .referencedBy("treasury_movements", "treasury_id", "delete.ref.treasury_movement")
+            // A shift is opened on a till (V22). Its key is not ON DELETE CASCADE and
+            // must not be: the row is a cashier's record of a day's cash, and it does
+            // not stop being one because the drawer was later retired.
+            .referencedBy("user_shifts", "treasury_id", "delete.ref.user_shift")
             .build();
 
     public static final DeleteRule MAIN_GROUPS = DeleteRule.forEntity("delete.entity.main_group")

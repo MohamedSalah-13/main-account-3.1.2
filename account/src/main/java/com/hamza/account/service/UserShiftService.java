@@ -9,15 +9,27 @@ import com.hamza.account.model.domain.UserShift;
 import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.error.BusinessRuleException;
 import com.hamza.controlsfx.error.UserValidationException;
+import com.hamza.controlsfx.language.LanguageManager;
 
 import java.time.LocalDateTime;
 import java.util.List;
 
 public record UserShiftService(DaoFactory daoFactory) {
 
-    public int openShift(int userId, double openBalance, String notes) throws DaoException {
+    /**
+     * Opens a shift on one till.
+     * <p>
+     * The till is the new argument and the point of it: every figure the shift is
+     * judged by is filtered by {@code treasury_id}, so a shift that does not name
+     * one has no expected balance that means anything - see V22 and
+     * {@code ShiftCashSummary}.
+     */
+    public int openShift(int userId, int treasuryId, double openBalance, String notes) throws DaoException {
         if (userId <= 0) {
             throw new UserValidationException("معرّف المستخدم غير صالح!");
+        }
+        if (treasuryId <= 0) {
+            throw new UserValidationException(LanguageManager.getInstance().getString("expenses.error.select.treasury"));
         }
         if (openBalance < 0) {
             throw new UserValidationException("لا يمكن أن يكون الرصيد الافتتاحي بالسالب!");
@@ -26,7 +38,7 @@ public record UserShiftService(DaoFactory daoFactory) {
             throw new BusinessRuleException("يوجد وردية مفتوحة بالفعل لهذا المستخدم!");
         }
 
-        UserShift shift = new UserShift(userId);
+        UserShift shift = new UserShift(userId, treasuryId);
         shift.setOpenTime(LocalDateTime.now());
         shift.setOpenBalance(openBalance);
         shift.setOpen(true);
@@ -52,7 +64,7 @@ public record UserShiftService(DaoFactory daoFactory) {
 
         // حساب الملخص خلال الفترة
         ShiftSummary summary = daoFactory.userShiftDao().calculateShiftSummary(
-                userId, openShift.getOpenTime(), closeTime);
+                userId, openShift.getTreasuryId(), openShift.getOpenTime(), closeTime);
         summary.setOpenBalance(openShift.getOpenBalance());
 
         double expected = summary.getExpectedBalance();
@@ -66,6 +78,8 @@ public record UserShiftService(DaoFactory daoFactory) {
         openShift.setTotalExpenses(summary.getTotalExpenses());
         openShift.setTotalDeposits(summary.getTotalDeposits());
         openShift.setTotalWithdrawals(summary.getTotalWithdrawals());
+        openShift.setTotalCashIn(summary.getTotalIn());
+        openShift.setTotalCashOut(summary.getTotalOut());
         openShift.setExpectedBalance(expected);
         openShift.setDifference(diff);
         openShift.setInvoicesCount(summary.getInvoicesCount());
@@ -89,7 +103,7 @@ public record UserShiftService(DaoFactory daoFactory) {
             throw new BusinessRuleException("لا توجد وردية مفتوحة لهذا المستخدم!");
         }
         ShiftSummary summary = daoFactory.userShiftDao()
-                .calculateShiftSummary(userId, openShift.getOpenTime(), LocalDateTime.now());
+                .calculateShiftSummary(userId, openShift.getTreasuryId(), openShift.getOpenTime(), LocalDateTime.now());
         summary.setOpenBalance(openShift.getOpenBalance());
         return summary;
     }
@@ -156,15 +170,23 @@ public record UserShiftService(DaoFactory daoFactory) {
 
         var summary = daoFactory.userShiftDao().calculateShiftSummary(
                 shift.getUserId(),
+                shift.getTreasuryId(),
                 shift.getOpenTime(),
                 shift.getCloseTime()
         );
+        // The DAO answers movements only; the opening cash belongs to the shift and
+        // has to be put back before anything reads getExpectedBalance(). Missing here
+        // - and only here - a force-closed shift was reported short by exactly what
+        // the cashier started the day with.
+        summary.setOpenBalance(shift.getOpenBalance());
 
         shift.setTotalSales(summary.getTotalSales());
         shift.setTotalSalesReturns(summary.getTotalSalesReturns());
         shift.setTotalExpenses(summary.getTotalExpenses());
         shift.setTotalDeposits(summary.getTotalDeposits());
         shift.setTotalWithdrawals(summary.getTotalWithdrawals());
+        shift.setTotalCashIn(summary.getTotalIn());
+        shift.setTotalCashOut(summary.getTotalOut());
         shift.setInvoicesCount(summary.getInvoicesCount());
         shift.setExpectedBalance(summary.getExpectedBalance());
         shift.setDifference(summary.calculateDifference(closeBalance));

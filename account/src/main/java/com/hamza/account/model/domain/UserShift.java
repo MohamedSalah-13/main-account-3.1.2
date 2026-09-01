@@ -18,6 +18,14 @@ public class UserShift extends DForColumnTable {
 
     private int userId;
 
+    /**
+     * The till this shift was opened on. The summary is filtered by it - a shift on
+     * the drawer must not be charged with what the e-wallet collected (V22).
+     */
+    private int treasuryId = com.hamza.account.treasury.DefaultTreasury.ID;
+
+    private final StringProperty treasuryName = new SimpleStringProperty();
+
     private final StringProperty username = new SimpleStringProperty();
 
     private LocalDateTime openTime;
@@ -44,6 +52,11 @@ public class UserShift extends DForColumnTable {
     private double totalDeposits;
     private double totalWithdrawals;
 
+    /** Everything that entered and left the till during the shift, all headings. */
+    private double totalCashIn;
+
+    private double totalCashOut;
+
     private double expectedBalance;
 
     private double difference;
@@ -53,6 +66,16 @@ public class UserShift extends DForColumnTable {
     public UserShift(int userId) {
         this.userId = userId;
     }
+
+    public UserShift(int userId, int treasuryId) {
+        this.userId = userId;
+        this.treasuryId = treasuryId;
+    }
+
+    // ===== treasuryName =====
+    public String getTreasuryName() { return treasuryName.get(); }
+    public void setTreasuryName(String name) { this.treasuryName.set(name); }
+    public StringProperty treasuryNameProperty() { return treasuryName; }
 
     // ===== username =====
     public String getUsername() { return username.get(); }

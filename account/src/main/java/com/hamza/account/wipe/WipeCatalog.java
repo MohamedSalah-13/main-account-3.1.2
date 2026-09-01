@@ -158,6 +158,12 @@ public final class WipeCatalog {
                     WipeTable.of("treasury_deposit_expenses"),
                     WipeTable.of("treasury_transfers"),
                     WipeTable.of("treasury_movements"),
+                    // A shift is opened on a till since V22, and that key does not
+                    // cascade - so the treasury below cannot be emptied while any
+                    // shift still points at it. It belongs with this target rather
+                    // than with the users one: a shift row is a day's cash, and the
+                    // users wipe keeps user 1 and takes the rest by cascade.
+                    WipeTable.of("user_shifts"),
                     WipeTable.of("employees",
                             "INSERT INTO employees (id, column_name, birth_date, hire_date, salary, job) "
                             + "VALUES (1, 'بيع مباشر', CURRENT_DATE(), CURRENT_DATE(), 0, 4)"),
