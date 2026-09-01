@@ -318,6 +318,7 @@ footer{
       <span><b>25</b> migration</span>
       <span><b>33</b> view</span>
       <span>الفرع <b>main</b> · <b>f9f26db</b></span>
+      <span>مُحدَّث <b>2026-09-01</b> · <b>963cd24</b></span>
     </div>
   </div>
 </header>
@@ -330,14 +331,15 @@ footer{
     <p class="lede">هذا مشروع <strong>أفضل بكثير من متوسط ما يُكتب فى هذا المجال</strong>، وفيه انضباط هندسى نادر: قواعد معلنة فى مكان واحد، اختبارات تُثبّت الـ SQL حرفاً بحرف، واختبارات معمارية «سقّاطة» تمنع الدَّين من النمو. القلب المحاسبى — المستندات، الأرصدة، الخزينة، الأصناف — مبنى على مبادئ مكتوبة ومُختبَرة.</p>
     <p>لكن هذه الجودة <strong>ليست موزّعة بالتساوى</strong>. الأنظمة التى مرّت بإعادة كتابة حديثة (الخزينة، دمج الأصناف، المرتجعات، الصلاحيات، جرد المخزون) ممتازة. والأنظمة التى لم تُلمس منذ الأساس — <strong>الشفتات، المصروفات، الموظفين، المناديب</strong> — ما زالت على النمط القديم، ولا تعرف بالقواعد التى وُضعت حولها. الفجوة بين النصفين هى الخلاصة الحقيقية لهذه المراجعة.</p>
     <p>أخطر ما وُجد ليس خطأ فى منطق، بل <strong>ثلاثة أنظمة صامتة</strong>: جدول <code>expense_salary</code> لا يكتب فيه أى كود بينما الـ view يقرأ منه، فاسم الموظف على كل مصروف فارغ منذ الأساس؛ وكل مصروف يُخصم من الخزينة رقم 1 مهما اختار المستخدم؛ وملخص الوردية يحسب نصف الحركات النقدية فقط ولا يعرف الخزائن أصلاً. الثلاثة تعطى أرقاماً <em>تبدو معقولة</em> — وهذا بالضبط سبب بقائها.</p>
+    <p><strong>الثلاثة أُغلقت جميعاً فى 2026-09-01</strong> (<code>8061e52</code>، <code>090e397</code>، <code>963cd24</code>)، ومعها ن-٤ التى كان نصفها مُغلقاً — فلم تعد فى السجل ملاحظة حرجة مفتوحة. والتشخيص أعلاه مُبقًى كما كُتب: هو قراءة يوم المراجعة، والفجوة بين نصفَى المشروع التى وصفها لم تُغلق بأربعة إصلاحات. ما تغيّر مسجَّل داخل كل ملاحظة وفى تذييل الصفحة.</p>
   </div>
 
   <div class="scores">
     <div class="score g-ok"><div class="k">Architecture</div><div class="v">A−</div><div class="n">قواعد معلنة، طبقات واضحة، دَين محصور</div></div>
     <div class="score g-ok"><div class="k">Data model</div><div class="v">B+</div><div class="n">مفاتيح وقيود جيدة، جدولان ميتان</div></div>
     <div class="score g-warn"><div class="k">Testing</div><div class="v">B</div><div class="n">ممتاز للـ SQL، صفر للشاشات</div></div>
-    <div class="score g-crit"><div class="k">Shifts</div><div class="v">D</div><div class="n">بلا حارس، بلا خزينة، نصف الحركات</div></div>
-    <div class="score g-crit"><div class="k">Expenses</div><div class="v">D+</div><div class="n">خزينة ثابتة، رابط موظف ميت</div></div>
+    <div class="score g-crit"><div class="k">Shifts</div><div class="v">D</div><div class="n">الخزينة والحركات أُصلحتا · الحارس والإلزام باقيان</div></div>
+    <div class="score g-crit"><div class="k">Expenses</div><div class="v">D+</div><div class="n">الخزينة والرابط أُصلحا · لا فحص رصيد</div></div>
     <div class="score g-warn"><div class="k">Delegates</div><div class="v">C−</div><div class="n">عمولة محسوبة ولا شاشة تقرأها</div></div>
     <div class="score g-ok"><div class="k">Treasury</div><div class="v">A</div><div class="n">تعريف واحد للرصيد، مُختبَر</div></div>
     <div class="score g-ok"><div class="k">Warehouses</div><div class="v">B+</div><div class="n">قواعد سليمة، تكلفة قراءة عالية</div></div>
@@ -393,7 +395,7 @@ footer{
 
           <rect x="60" y="438" width="460" height="58" rx="3" fill="currentColor" fill-opacity=".055" stroke="currentColor" stroke-width="1.4"/>
           <text x="500" y="464" text-anchor="end" font-size="15" font-weight="600" fill="currentColor">HikariCP → MySQL</text>
-          <text x="500" y="485" text-anchor="end" font-size="12" fill="currentColor" opacity=".6">33 view · 18 audit trigger · Flyway V1…V21</text>
+          <text x="500" y="485" text-anchor="end" font-size="12" fill="currentColor" opacity=".6">33 view · 18 audit trigger · Flyway V1…V23</text>
         </g>
 
         <!-- vertical flow arrows -->
@@ -448,13 +450,13 @@ footer{
         </g>
         <g font-family="IBM Plex Sans Arabic, sans-serif" font-size="11.5" fill="#A02A24">
           <text x="60" y="527" font-weight="600">ثلاثة مسارات تلتفّ حول الترتيب</text>
-          <text x="60" y="547" opacity=".95">١ · شاشات الورديات تنادى الخدمة بلا أى حارس صلاحيات (الحارس معلَّق كتعليق)</text>
-          <text x="60" y="565" opacity=".95">٢ · شاشة المصروفات تكتب الخزينة رقم 1 حرفياً، فلا تصل إلى اختيار خزينة أصلاً</text>
+          <text x="60" y="547" opacity=".95">١ · شاشات الورديات تنادى الخدمة بلا أى حارس صلاحيات على الفتح والغلق</text>
+          <text x="60" y="565" opacity=".55" text-decoration="line-through">٢ · شاشة المصروفات تكتب الخزينة رقم 1 حرفياً — أُصلح فى 8061e52</text>
           <text x="60" y="583" opacity=".95">٣ · قفل الفترة على المصروفات يعيش داخل الـ DAO لا الخدمة — قاعدة غير مرئية من فوق</text>
         </g>
       </svg>
     </div>
-    <figcaption><b>البنية والالتفافات حولها.</b> الطبقات الأربع تقرأ قواعدها من رفّ السجلات المعلنة على اليمين — وهذا ما يجعل تغييراً واحداً يسرى على كل الشاشات. الأسهم الحمراء هى المواضع التى تتخطّى طبقة كاملة، وكلها الثلاثة فى الشفتات والمصروفات.</figcaption>
+    <figcaption><b>البنية والالتفافات حولها.</b> الطبقات الأربع تقرأ قواعدها من رفّ السجلات المعلنة على اليمين — وهذا ما يجعل تغييراً واحداً يسرى على كل الشاشات. الأسهم الحمراء هى المواضع التى تتخطّى طبقة كاملة، وكلها الثلاثة فى الشفتات والمصروفات — والثانى منها أُغلق فى <code>8061e52</code>.</figcaption>
   </figure>
 </section>
 
@@ -712,7 +714,7 @@ footer{
         </g>
       </svg>
     </div>
-    <figcaption><b>ما تعدّه كل جهة نقدية.</b> عمود الخزينة كامل — وهو التعريف الصحيح المُختبَر. ملخص الوردية يُسقط ستة مصادر ولا يُقيّد بخزينة، فيُحمِّل الكاشير فرقاً ليس من صنعه. ولوحة اليوم تُسقط تحصيلات العملاء ومدفوعات الموردين، فتختلف عن كشف الخزينة لنفس اليوم.</figcaption>
+    <figcaption><b>ما تعدّه كل جهة نقدية.</b> عمود الخزينة كامل — وهو التعريف الصحيح المُختبَر. ملخص الوردية كان يُسقط ستة مصادر ولا يُقيّد بخزينة، فيُحمِّل الكاشير فرقاً ليس من صنعه — يقرأ عمود الخزينة نفسه منذ <code>090e397</code>. ولوحة اليوم تُسقط تحصيلات العملاء ومدفوعات الموردين، فتختلف عن كشف الخزينة لنفس اليوم.</figcaption>
   </figure>
 </section>
 
@@ -723,31 +725,40 @@ footer{
 
   <div class="ledger">
 
-    <div class="find f-crit"><div class="stripe"></div><div class="find-in">
-      <div class="find-top"><span class="fid">ن-١</span><span class="chip">حرجة</span><span class="chip">المصروفات</span>
+    <div class="find f-done"><div class="stripe"></div><div class="find-in">
+      <div class="find-top"><span class="fid">ن-١</span><span class="chip chip-done">تمّ إصلاحها</span><span class="chip">المصروفات</span>
         <h4>حلقة مقطوعة: اسم الموظف على كل مصروف فارغ منذ الأساس</h4></div>
       <p>الـ DAO يكتب <code>expenses_details.emp_id</code>، والـ view يقرأ الاسم عبر <code>LEFT JOIN expense_salary</code>. و<strong><code>expense_salary</code> لا يكتب فيه أى سطر كود فى المشروع كله</strong> — تحقّقتُ من الـ Java والـ SQL والسكربتات القديمة.</p>
       <p>الجدول <strong>ليس فارغاً</strong>: فيه ثلاثة صفوف قديمة <code>(4,4),(4,7),(4,10)</code> ظاهرة فى نسخ <code>mysqldump</code>، كتبها شىء سابق على الكود الحالى. وهذا يجعل الأثر أدقّ — وأسوأ — لا أخفّ.</p>
       <p>ثلاث نتائج: اسم الموظف يعود <code>''</code> لكل مصروف عدا ثلاثة صفوف تاريخية؛ والبحث فى شاشة المصروفات يبحث فى <code>column_name</code> فلا يطابق شيئاً عملياً؛ و<code>DeleteRegistry.EMPLOYEES</code> يحمى الموظف بفحص <code>expense_salary</code> — فيمنع حذف <strong>الموظف رقم 4 وحده</strong>، لأسباب قديمة لا علاقة لها بأى مرتّب حالى، بينما <strong>كل موظف آخر له سنوات مرتبات يظل قابلاً للحذف بلا اعتراض</strong>. حارس يحمى الصف الخطأ أسوأ من حارس غائب، لأنه يبدو موجوداً.</p>
       <p><strong>العلاج:</strong> قرار واحد — إمّا أن يكتب الحفظ صفاً فى <code>expense_salary</code>، وإمّا أن يقرأ الـ view من <code>emp_id</code> مباشرة ويُضاف له مفتاح أجنبى وتُحدَّث قاعدة الحذف. الثانى أبسط والأول أسلم مرجعياً.</p>
-      <div class="where">ExpensesDetailsDao.java:70,89,122 · R__views.sql:696–708 · DeleteRegistry.java:107</div>
+      <p><strong>الحل المطبَّق (<code>963cd24</code>):</strong> الطرف الثانى. الـ view يقرأ الاسم من <code>emp_id</code> — العمود الذى يكتبه التطبيق أصلاً — و<code>V23</code> يجعله رابطاً حقيقياً: ينقل ما تعرفه الصفوف الثلاثة القديمة وحدها فتحتفظ بموظفها، ويحوّل الصفر (سنتينل «لا موظف») وأى موظف حُذف إلى <code>NULL</code>، ثم يضيف المفتاح الأجنبى الذى لم يكن موجوداً. والـ DAO يكتب <code>NULL</code> بدل الصفر: لا يوجد موظف رقم 0، فالمندوب المزروع هو 1. و<code>expense_salary</code> باقٍ بصفوفه الثلاثة شاهداً على ما كان يُقصد، كما بقى <code>user_permission</code> — لا شىء يقرأه لاتخاذ قرار.</p>
+      <p><strong>وما سمح لها بالبقاء عولج معها:</strong> لا شىء كان يقارن <code>DeleteRegistry</code> بالـ schema — <code>WipeCatalog</code> له هذا الاختبار منذ كُتب، والسجل لم يكن له. <code>DeleteRegistryTest</code> يفحص الاتجاهين: مفتاح غير مُعلن يحوّل رفضاً نظيفاً إلى خطأ SQL خام على شاشة، ومفتاح مُعلن لا وجود له يرفض حذفاً لسبب غير قائم. <strong>ووجد ثانياً يوم كُتب</strong> — <code>stock_count_lines.unit_id</code> — فحذف وحدة مستخدَمة فى جرد كان يصل للمستخدم كخطأ SQL. مُعلن الآن.</p>
+      <div class="where">V23__expense_employee_link.sql · R__views.sql · ExpensesDetailsDao.java · DeleteRegistryTest.java · SchemaForeignKeys.java · 963cd24</div>
     </div></div>
 
-    <div class="find f-crit"><div class="stripe"></div><div class="find-in">
-      <div class="find-top"><span class="fid">ن-٢</span><span class="chip">حرجة</span><span class="chip">المصروفات</span><span class="chip">الخزينة</span>
+    <div class="find f-done"><div class="stripe"></div><div class="find-in">
+      <div class="find-top"><span class="fid">ن-٢</span><span class="chip chip-done">تمّ إصلاحها</span><span class="chip">المصروفات</span><span class="chip">الخزينة</span>
         <h4>كل مصروف يُخصم من الخزينة رقم 1 حرفياً</h4></div>
       <p>شاشة المصروفات تكتب <code>expensesDetails.setTreasuryModel(new Treasury(1))</code> ثابتاً، ولا تعرض للمستخدم أى اختيار خزينة. فى منشأة بمحفظة إلكترونية أو حساب بنكى، مصروف دُفع من المحفظة يُنقص درج النقدية بدلاً منها — <strong>وكشفا الخزينتين يصيران خاطئين معاً</strong> بنفس المبلغ وفى اتجاهين متعاكسين.</p>
       <p><strong>العلاج:</strong> combo خزائن على الشاشة، بمبدئية <code>DefaultTreasury</code> — تماماً كما تفعل شاشة الإيداع/الصرف بالفعل.</p>
-      <div class="where">AddExpensesController.java:119</div>
+      <p><strong>الحل المطبَّق (<code>8061e52</code>):</strong> كذلك تماماً — الخزائن المفتوحة وحدها، والرئيسية مختارة مسبقاً فيبقى السلوك الافتراضى كما كان ويصير الاختيار هو الجديد. وفتح مصروف محفوظ يستعيد خزينته هو، ويعيدها للقائمة إن كانت قد أُغلقت بعدها — بدون ذلك يُحفظ الصف تحت أول خزينة فى القائمة.</p>
+      <p><strong>وزيادة على الحد الأدنى، لأن الإصلاح بدونها غير قابل للتحقّق:</strong> <code>expenses_details_view</code> صار يحمل <code>treasury_name</code> بـ <code>LEFT JOIN</code>، وقائمة المصروفات صار لها عمود «الخزينة». بلا عمود، لا سبيل لمعرفة من أى خزنة خرج مصروف إلا بفتح كل صف.</p>
+      <p><strong>ما لم يُعالَج:</strong> الصفوف القائمة كلها <code>treasury_id = 1</code> صحيحاً كان أم لا؛ لا مهاجرة تعرف الحقيقة، فلا شىء يُصحَّح آلياً.</p>
+      <div class="where">AddExpensesController.java · addExpenses.fxml · R__views.sql · ExpensesDetailsApplication.java · 8061e52</div>
     </div></div>
 
-    <div class="find f-crit"><div class="stripe"></div><div class="find-in">
-      <div class="find-top"><span class="fid">ن-٣</span><span class="chip">حرجة</span><span class="chip">الشفتات</span>
+    <div class="find f-done"><div class="stripe"></div><div class="find-in">
+      <div class="find-top"><span class="fid">ن-٣</span><span class="chip chip-done">تمّ إصلاحها</span><span class="chip">الشفتات</span>
         <h4>ملخص الوردية يقرأ أربعة مصادر من عشرة، وبلا خزينة</h4></div>
       <p><code>calculateShiftSummary</code> تجمع المبيعات ومرتجعاتها والمصروفات والإيداع/الصرف فقط، <strong>بلا تصفية <code>treasury_id</code> إطلاقاً</strong>. المُسقَط: تحصيلات العملاء، مدفوعات الموردين، المشتريات النقدية، مرتجعات المشتريات، والتحويلات (انظر الشكل 2).</p>
       <p>أثره مباشر على شخص: كاشير حصّل 5,000 من الذمم يقفل الوردية بزيادة 5,000؛ وآخر دفع 3,000 لمورّد نقداً يقفل بعجز 3,000. و«الفرق» هو الرقم الذى يُحاسَب عليه.</p>
       <p><strong>العلاج:</strong> الوردية تحتاج <code>treasury_id</code> على <code>user_shifts</code>، ثم يُبنى الملخص من <code>treasury_balance</code> نفسه بشرطى المستخدم والفترة والخزينة — <strong>لا بعشرة استعلامات موازية</strong>. مصدر واحد، كما فى الخزينة.</p>
-      <div class="where">UserShiftDao.java:205–265 · ShiftSummary.java:45 · V1__baseline.sql:866</div>
+      <p><strong>الحل المطبَّق (<code>090e397</code>):</strong> كما وُصف بالضبط. <code>V22</code> يعطى الوردية <code>treasury_id</code> — تُختار على الشاشة بمبدئية الخزينة الرئيسية — والملخص يُبنى من <code>treasury_balance</code> باستعلام واحد مجمَّع بالبند، مشروط بالمستخدم والفترة والخزينة. ومعه عمودان <code>total_cash_in</code>/<code>total_cash_out</code>: الرصيد المتوقع صار الافتتاحى + كل وارد − كل صادر، والأعمدة الخمسة القديمة بقيت تفصيلاً للتقرير لا يُشتقّ منه شىء — كانت خمسة والبنود عشرة، فلم يكن للتحصيل مكان يقع فيه.</p>
+      <p>وما لا تحمله البنود المسمّاة يظهر سطرَى «حركات واردة/صادرة أخرى» على الشاشة وفى رسالة تأكيد الغلق، لا مطويّاً بصمت داخل الرقم: من يقرأ فرقاً لا بد أن يرى التحصيلات والمدفوعات التى مرّت بالدرج. والمنطق فى <code>features/shift/ShiftCashSummary</code> بلا JavaFX وبلا قاعدة بيانات، بثمانية اختبارات — منها الحالة التى وُجد من أجلها: من حصّل 5,000 يقفل بلا فرق.</p>
+      <p><strong>وثلاثة ظهرت أثناء العمل:</strong> المفتاح الأجنبى الجديد لا يُلغى بـ CASCADE فكان مسح الخزائن سيفشل — و<code>WipeCatalogTest</code> كان أعمى عن كل مفتاح يُضاف بـ <code>ALTER</code> بعد الأساس، فصار يقرأها؛ و<code>forceCloseShift</code> لم تكن تعيد الرصيد الافتتاحى إلى الملخص، فكل وردية تُغلق قسريّاً كانت تظهر عاجزة بمقدار ما بدأ به الكاشير يومه بالضبط؛ وورديات أُغلقت قبل <code>V22</code> تحتفظ بأرقامها المخزَّنة — حُسبت بالقاعدة القديمة ولا يمكن إعادة حسابها لأن خزينتها لم تُسجَّل قط.</p>
+      <p><strong>وما زال مفتوحاً من نفس الملاحظة:</strong> <code>enforceShiftRequired = false</code> فالنظام كله استشارى (ن-٥)، والفتح والغلق بلا حارس (النصف الباقى من ن-٤)، و<code>user_shifts</code> ما زال يخزّن الإجماليات حيث عقيدة الخزينة أن الرصيد يُشتقّ. و<code>treasury_balance</code> اتحاد فوق عشرة جداول، فالملخص اللحظى أثقل من الاستعلامات المفهرسة التى حلّ محلّها.</p>
+      <div class="where">V22__user_shift_treasury.sql · UserShiftDao.java · ShiftCashSummary.java · UserShiftService.java · user-shift-view.fxml · 090e397</div>
     </div></div>
 
     <div class="find f-crit"><div class="stripe"></div><div class="find-in">
@@ -948,8 +959,8 @@ footer{
   <div class="phase">
     <div class="phase-top"><span class="phase-n">Phase 1 · أوقف النزيف</span><h3>ما يعطى رقماً خاطئاً الآن</h3></div>
     <ol>
-      <li><strong>ن-١ — أصلح حلقة اسم الموظف.</strong> اختر أحد الطرفين واكتب اختباراً يثبت أن الاسم يعود غير فارغ بعد الحفظ. هذا يُعيد أيضاً حماية حذف الموظف.</li>
-      <li><strong>ن-٢ — combo خزائن على شاشة المصروفات.</strong> تعديل صغير، وأثره على كشفَى خزينتين معاً.</li>
+      <li><strong>ن-١ — أصلح حلقة اسم الموظف.</strong> <span class="chip chip-done">تمّ</span> الـ view يقرأ من <code>emp_id</code>، ومعه مفتاح أجنبى وقاعدة حذف صحيحة واختبار يقارن السجل بالـ schema (<code>963cd24</code>).</li>
+      <li><strong>ن-٢ — combo خزائن على شاشة المصروفات.</strong> <span class="chip chip-done">تمّ</span> ومعه عمود خزينة فى القائمة، وإلا لا سبيل للتحقّق (<code>8061e52</code>).</li>
       <li><strong>ن-٤ — النصف الباقى: <code>shift.open</code> و<code>shift.close</code>.</strong> القراءة أُغلقت فى <code>a4a9330</code>. والكتابة تحتاج مفتاحين جديدين <strong>مع منحهما لأدوار أمناء الصناديق فى نفس الـ migration</strong> — وإلا مرّت الترقية سليمة عند المالك وحرمت كل كاشير من فتح ورديته.</li>
       <li><strong>ن-٩ — احمل <code>reports/</code> فى المثبِّت.</strong> سطر واحد فى السكربت يمنع «العميل الجديد لا يطبع».</li>
     </ol>
@@ -958,8 +969,8 @@ footer{
   <div class="phase">
     <div class="phase-top"><span class="phase-n">Phase 2 · أعِد بناء الوردية</span><h3>على نموذج الخزينة، لا بترقيع</h3></div>
     <ol>
-      <li><strong>أضف <code>treasury_id</code> إلى <code>user_shifts</code></strong> فى migration جديدة، بمبدئية <code>DefaultTreasury</code> للصفوف القائمة.</li>
-      <li><strong>ابنِ الملخص من <code>treasury_balance</code></strong> باستعلام واحد مشروط بالمستخدم والفترة والخزينة — <em>مصدر واحد</em>، تماماً كما فعلت الخزينة حين حذفت التعريف الثالث.</li>
+      <li><strong>أضف <code>treasury_id</code> إلى <code>user_shifts</code></strong> فى migration جديدة، بمبدئية <code>DefaultTreasury</code> للصفوف القائمة. <span class="chip chip-done">تمّ</span> <code>V22</code>.</li>
+      <li><strong>ابنِ الملخص من <code>treasury_balance</code></strong> باستعلام واحد مشروط بالمستخدم والفترة والخزينة — <em>مصدر واحد</em>، تماماً كما فعلت الخزينة حين حذفت التعريف الثالث. <span class="chip chip-done">تمّ</span> <code>090e397</code>.</li>
       <li><strong>أضف <code>ShiftBalanceViewAcceptanceTest</code></strong> على نمط <code>TreasuryBalanceViewAcceptanceTest</code>: وردية بتحصيل عميل وسداد مورّد ومشترى نقدى، والفرق يساوى صفراً.</li>
       <li><strong>اربط الإلزام بإعداد حقيقى</strong> (ن-٥) أو احذف <code>enforceShiftRequired</code> وصرّح بأن الورديات اختيارية — <em>لكن لا تتركه ثابتاً يوحى بالفرض</em>.</li>
       <li><strong>وحّد <code>daily_dashboard_report</code></strong> مع <code>treasury_balance</code> (ن-٨).</li>
@@ -997,6 +1008,13 @@ footer{
       <li><strong>ن-٤</strong> — «مفتاح جديد يبدأ غير ممنوح لأحد» غير دقيق: يُمنح تلقائياً لـ <code>SYSTEM_ADMIN</code> وحده، فيسلم المالك ويُحبَس أمناء الصناديق — وهو الأخطر لأن من يجرّب الترقية هو المالك.</li>
     </ul>
     <p>ون-١٩ و ن-٢٠ ملاحظتان <strong>فاتتا هذه المراجعة</strong> ووجدهما فحص لاحق. مذكورة كلها هنا لأن تقريراً يُعتمد عليه يجب أن يقول أين أخطأ وأين لم ينظر. والاختبارات الثلاثة عشر المقيَّدة صارت تنجح مجتمعة: 1,022 اختباراً بلا تخطٍّ.</p>
+    <p><strong>وعند <code>963cd24</code> (2026-09-01):</strong> الحرجة الثلاث الباقية أُغلقت — ن-٢ ثم ن-٣ ثم ن-١ — فلم يبقَ فى السجل حرجٌ مفتوح. وثلاثة أشياء تعلّمها هذا الدور تستحق التسجيل بقدر الإصلاحات نفسها:</p>
+    <ul>
+      <li><strong>كل إصلاح كشف ما سمح له بالبقاء.</strong> ن-١ بقيت لأن لا شىء كان يقارن <code>DeleteRegistry</code> بالـ schema؛ الاختبار الذى سدّها وجد ثغرة ثانية يوم كُتب (<code>stock_count_lines.unit_id</code>). ون-٣ كشفت أن <code>WipeCatalogTest</code> كان أعمى عن كل مفتاح أجنبى يُضاف بـ <code>ALTER</code> بعد الأساس. <strong>القاعدة بلا اختبار أمنية</strong> — وهى جملة وثائق المشروع نفسها، مطبَّقة على السجلّات هذه المرة.</li>
+      <li><strong>عطبان قديمان ظهرا فى الطريق</strong> ولم يكونا فى هذا التقرير: <code>forceCloseShift</code> لم تكن تعيد الرصيد الافتتاحى إلى الملخص، فكل وردية تُغلق قسريّاً تظهر عاجزة بمقدار ما بدأ به الكاشير يومه؛ والباركود المولَّد فى شاشة الأصناف كان <code>max(item id) + 1</code> بلا فحص، فيصطدم بكود موجود على الحقل الوحيد الذى لا يكتبه المستخدم.</li>
+      <li><strong>وما لا يمكن استرجاعه قيل صراحةً بدل تقديره:</strong> صفوف المصروفات القائمة كلها <code>treasury_id = 1</code> صحيحاً كان أم لا، والورديات المغلقة قبل <code>V22</code> لا تُعاد حسابها لأن خزينتها لم تُسجَّل قط. لا مهاجرة تعرف الحقيقة، فلا شىء خُمِّن.</li>
+    </ul>
+    <p><strong>وما زال مفتوحاً من الحرجة:</strong> النصف الباقى من ن-٤ (حارس الفتح والغلق، ومعه منح المفتاح لأدوار أمناء الصناديق فى نفس الـ migration)، ولا فحص رصيد عند صرف مصروف (ن-٦)، و<code>enforceShiftRequired</code> ما زال ثابتاً على <code>false</code> (ن-٥). والملاحظات من ن-٥ إلى ن-٢١ لم تُمسّ إلا حيث ذُكر.</p>
     <p><strong>وعند <code>b951ae8</code>:</strong> قراءات الموظفين أُغلقت، وأُضيفت قاعدة معمارية لجانب القراءة لم تكن موجودة حين كُتب هذا التقرير — فسدّت الصنف كله لا الحالات الثلاث. وكشفت رابعاً (<code>buildAggregateReport</code>) وأبقت واحداً مقصوداً هو <strong>ن-٢١</strong>، وهى الملاحظة الوحيدة التى وُلدت من إصلاح لا من فحص.</p>
   </div>
 </footer>
