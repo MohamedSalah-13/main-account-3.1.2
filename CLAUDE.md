@@ -36,10 +36,11 @@ genuinely covered:
   `ItemReferenceRegistryTest`. These fail the build on a wrong column, so they are the
   safety net for anything touching SQL. The last two read the foreign keys straight out of the
   migration files, so the schema itself is what they check against.
-- **Architecture rules** — nine `*ArchitectureTest` classes now, plus `DefaultRoleAcceptanceTest`:
+- **Architecture rules** — eleven `*ArchitectureTest` classes now, plus `DefaultRoleAcceptanceTest`:
   `AuthorizationArchitectureTest`, `ErrorHandlingArchitectureTest`, `DocumentPackageArchitectureTest`,
   `DefaultStockUsageArchitectureTest`, `LocalizationArchitectureTest`, `FxmlArchitectureTest`,
-  `ModelPurityArchitectureTest`, `TableColumnArchitectureTest`, `StocksChangedArchitectureTest`. They
+  `ModelPurityArchitectureTest`, `TableColumnArchitectureTest`, `StocksChangedArchitectureTest`,
+  `FxmlWiringArchitectureTest`, `KeyboardNavigationArchitectureTest`. They
   fail when a new service skips the permission guard, a new exception escapes the error boundary,
   `account.document` starts importing one of the two packages that import it, or a new stock-aware
   operation reaches for `DefaultStock.ID` instead of taking a `stockId`. Two of them carry an explicit
@@ -131,7 +132,10 @@ Two documents govern work here and are kept current — read them before large c
   are built in code, never with `@ColumnData` (`PropertyValueFactory` is reflection by string — a
   renamed field yields a silently empty column); a model you touch leaves without `javafx`; an FXML
   you touch declares `fx:controller` and is loaded with a `ResourceBundle`; icons are Ikonli, not
-  `InputStream` fields; a service throws a message *key*, never an Arabic literal. Each rule is
+  `InputStream` fields; a service throws a message *key*, never an Arabic literal; a screen you
+  touch leaves with its logic in a testable named class and its Enter order declared once with
+  `Utils.whenEnterPressed` — a barcode scanner ends its read with an Enter, and 18 of the 23
+  data-entry screens still swallow it. Each rule is
   meant to be pinned by an architecture test the way `AuthorizationArchitectureTest` already is —
   a rule without a test is a wish.
 - **[`docs/treasury-plan.md`](docs/treasury-plan.md)** — the treasury and capital contract: what a
