@@ -383,6 +383,35 @@ the package and a test per class. The pieces worth knowing before changing anyth
   the document — every line, converted to base units — and refuses the save as a whole. It reads through
   `InvoiceStockRepository`, and `JdbcInvoiceStockRepository` already takes a `stock_id`.
 
+### The quick invoice
+
+The same four document families open in one of two screens: `InvoiceScreenMode.STANDARD`, which
+has a barcode/name/price/quantity form above the table, and `QUICK`, which hides that form and makes
+**the table itself the only entry surface**. F6 switches; both are `BuyController2` with the same
+save path, the same guards and the same `DataInterface`.
+
+The quick screen keeps a trailing **entry row** for the operator to scan into. Two rules make that
+safe, and both were missing when it was first written - the screen could not be saved at all:
+
+- **The entry row is a control, not a sale.** `InvoiceLineTotals.isPlaceholder` (a row naming no
+  item) is what the totals, the line count and `linesForSave()` filter it out by. It used to be
+  counted, so `hasInvalidLine` - which `btnSave.disableProperty()` is bound to - was permanently
+  true, and `comboStock` was permanently disabled for the same reason (`isNotEmpty(getItems())`).
+  Anything reading a total must go through the summary, never through `table.getItems().size()`.
+- **A line is added through `BuyController2.addLine`, from either screen.** That method is where the
+  line validation, the expiry-batch dialog, the repeated-item merge and the low-stock alert live.
+  The quick screen used to set the fields on its entry row directly and so had none of them: an item
+  with `item_has_validity` could be scanned onto a quick invoice and was then refused at save with no
+  way to supply the date.
+
+`QuickInvoiceTable` owns the entry row, the cell editors and the keyboard flow (its javadoc carries
+the key table); the barcode and name cells open **only** on the entry row, so there is one code path
+for adding a line and none for changing one in place. `ItemSuggestionField` is the name search on
+both screens - a debounced, background, keyboard-driven suggestion popup that replaced the read-only
+field plus modal table. Its `chosenName` property, not its text, is what
+`InvoiceItemEntryCoordinator` listens on: the listener resolves a whole line, so it must fire once
+per choice and not once per keystroke.
+
 ### Warehouses
 
 There are several again. The screens were removed once (commit `0853cf4`) and **came back in
@@ -532,6 +561,17 @@ own" and falls back to the item's price × the factor, which is what every row h
 were readable — so nothing was repriced by the migration. `ItemUnits.sellPrice`/`buyPrice` resolve it;
 `hasOwnSellPrice` is what stops the invoice's "update the item's price as you type" option from
 dividing an outright carton price by twelve and dragging the piece price down with it.
+
+**A sold line records its cost through `ItemUnits.buyPrice` as well, and that is the figure the
+profit is.** `SalesInvoice`/`SalesInvoiceReturn` used to write `items.buy_price * type_value` into
+`buy_price`, so a unit bought at its own price was costed at a number the business never paid and
+`document_profit` was wrong by the difference on every line sold that way - while the same sale was
+validated against `ItemUnits.buyPrice`, so the floor and the recorded cost disagreed.
+`SalesLineCostTest` pins it. The factor is guarded on the same principle: `InvoiceLineAssembler`
+normalises every persisted line's unit through `ItemUnits.factor`, because the four DAOs write
+`type_value` straight from `getUnitsType().getValue()` and `quantity_items_table` multiplies a
+balance by it - a hand-built `UnitsModel` carries zero, which would persist a line that moves no
+stock at all.
 
 The base unit never has an override: it is `items.unit_id`, its row in the loaded list is the one
 `ItemsDao` synthesizes, and `ItemsDao.saveUnits` filters it back out on the way to the database — which

@@ -3,6 +3,7 @@ package com.hamza.account.interfaces.impl_invoiceBuy;
 import com.hamza.account.finance.MoneyMath;
 import com.hamza.account.document.InvoiceBuy;
 import com.hamza.account.model.domain.*;
+import com.hamza.account.service.ItemUnits;
 import com.hamza.account.type.DiscountType;
 import com.hamza.account.type.InvoiceType;
 import com.hamza.controlsfx.database.DaoException;
@@ -30,8 +31,16 @@ public class SalesInvoice implements InvoiceBuy<Sales, Total_Sales, Customers, C
         sales.setTotal_after_discount(MoneyMath.asDouble(MoneyMath.subtract(
                 MoneyMath.decimal(total), MoneyMath.decimal(discount))));
         sales.setTotal(total);
-        sales.setBuy_price(MoneyMath.asDouble(MoneyMath.multiply(
-                itemsModel.getBuyPrice(), type.getValue())));
+        // ItemUnits.buyPrice, not itemsModel.getBuyPrice() * type.getValue(): a unit may
+        // carry a purchase price of its own (items_units.buy_price), which is the whole
+        // point of buying by the carton. Multiplying the piece cost by the factor instead
+        // recorded a cost the business never paid, and document_profit is computed from
+        // this column - so the profit the owner reads was wrong by the difference on every
+        // line sold in such a unit. It also guards the factor: a UnitsModel built by hand
+        // can carry 0, which would have recorded a cost of zero and booked the whole sale
+        // as profit.
+        sales.setBuy_price(ItemUnits.buyPrice(
+                itemsModel, type, itemsModel.getBuyPrice()));
         sales.setItems(itemsModel);
         sales.setExpiration_date(expireDate);
         return sales;
