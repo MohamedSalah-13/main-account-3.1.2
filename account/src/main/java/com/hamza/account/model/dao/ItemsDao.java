@@ -391,6 +391,44 @@ public class ItemsDao extends AbstractDao<ItemsModel> {
      * and none of them can see the others, so nothing stops the same code being
      * an item's barcode here and a carton's there - and then a scan is a coin toss.
      */
+    /**
+     * The name of the item that already answers to {@code code} - as its own barcode,
+     * one of its extra codes, or the code on one of its units - or {@code null} if the
+     * code is free. {@code exceptItemId} is the item being edited, so its own codes do
+     * not count against it.
+     * <p>
+     * The same three tables {@link #barcodeExists} asks about, answering with the item
+     * instead of a yes/no. A refusal on a field the user is still typing in has to say
+     * which item is holding the code: "used by another item" on its own leaves them
+     * hunting through the catalogue for it.
+     */
+    public String itemNameHoldingBarcode(String code, int exceptItemId) throws DaoException {
+        if (code == null || code.isBlank()) return null;
+
+        String query = """
+                SELECT items.nameItem FROM items
+                WHERE items.id <> ?
+                  AND (items.barcode = ?
+                       OR items.id IN (SELECT item_id FROM item_barcodes WHERE barcode = ?)
+                       OR items.id IN (SELECT items_id FROM items_units WHERE items_barcode = ?))
+                LIMIT 1
+                """;
+
+        return withConnection(connection -> {
+            try (PreparedStatement statement = connection.prepareStatement(query)) {
+                statement.setInt(1, exceptItemId);
+                statement.setString(2, code);
+                statement.setString(3, code);
+                statement.setString(4, code);
+                try (ResultSet rs = statement.executeQuery()) {
+                    return rs.next() ? rs.getString(1) : null;
+                }
+            } catch (SQLException e) {
+                throw new DaoException(e.getMessage(), e);
+            }
+        });
+    }
+
     public boolean barcodeExists(String barcode, int exceptItemId) throws DaoException {
         String query = """
                 SELECT EXISTS (

@@ -25,6 +25,22 @@ public record ItemsService(DaoFactory daoFactory) {
      * of its extra barcodes, or the code on one of its units. Pass the id of the
      * item being edited so its own codes do not count against it.
      */
+    /**
+     * The name of the item already holding {@code code}, or {@code null} if it is free.
+     * {@code itemId} is the item being edited, so its own codes do not count against it.
+     * <p>
+     * This is the question the item screen asks while the user is still typing;
+     * {@link #isBarcodeTakenByAnotherItem} is the same question the save asks. Both are
+     * needed - the first is a hint the moment a code is entered, the second is the rule,
+     * applied where the row is written.
+     */
+    public String itemNameHoldingBarcode(String code, int itemId) throws DaoException {
+        if (code == null || code.isBlank()) {
+            return null;
+        }
+        return daoFactory.getItemsDao().itemNameHoldingBarcode(code.trim(), itemId);
+    }
+
     public boolean isBarcodeTakenByAnotherItem(String barcode, int itemId) throws DaoException {
         if (barcode == null || barcode.isBlank()) {
             return false;

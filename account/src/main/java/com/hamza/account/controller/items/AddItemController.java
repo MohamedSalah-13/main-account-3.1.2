@@ -111,6 +111,8 @@ public class AddItemController implements AppSettingInterface {
     private Button btnAdd;
     @FXML
     private TextField textExtraBarcode;
+    /** Asks, one code at a time, whether another item already holds it. */
+    private BarcodeAvailability barcodeAvailability;
     @FXML
     private Button btnAddExtraBarcode, btnRemoveExtraBarcode;
     @FXML
@@ -156,6 +158,8 @@ public class AddItemController implements AppSettingInterface {
         addValidate();
         nameSetting();
         action();
+        barcodeAvailability = new BarcodeAvailability(itemsService::itemNameHoldingBarcode, () -> codeItem);
+        checkItemBarcodeWhileTyping();
         extraBarcodesSetting();
         addBarcode();
         selectGroupSubAndType();
@@ -191,6 +195,27 @@ public class AddItemController implements AppSettingInterface {
         });
     }
 
+    /**
+     * Checks the item's own barcode when the field is left.
+     * <p>
+     * Deliberately does not pull the focus back: this runs from a focus-lost listener,
+     * and a field that takes the focus again on its way out is a field the user cannot
+     * leave - the close button included. The message is the hint; the refusal is
+     * {@link #checkBarcodesAreFree}, which the save goes through whatever happened here.
+     */
+    private void checkItemBarcodeWhileTyping() {
+        txtBarcode.focusedProperty().addListener((observable, hadFocus, hasFocus) -> {
+            if (hasFocus) {
+                return;
+            }
+            try {
+                barcodeAvailability.requireFree(txtBarcode.getText());
+            } catch (Exception e) {
+                logError(e);
+            }
+        });
+    }
+
     private void addExtraBarcode() {
         try {
             String barcode = textExtraBarcode.getText().trim();
@@ -203,6 +228,10 @@ public class AddItemController implements AppSettingInterface {
             if (barcode.equals(txtBarcode.getText()) || listExtraBarcodes.getItems().contains(barcode)) {
                 throw new Exception("هذا الباركود مُضاف بالفعل لهذا الصنف");
             }
+            // Asked before the code enters the list, not at save: an extra barcode that
+            // belongs to another item used to sit here through the whole form being
+            // filled in and be refused at the end, naming a code among several.
+            barcodeAvailability.requireFree(barcode);
 
             listExtraBarcodes.getItems().add(barcode);
             textExtraBarcode.clear();
@@ -581,9 +610,9 @@ public class AddItemController implements AppSettingInterface {
             if (!seen.add(code)) {
                 throw new Exception("الباركود مكرر داخل نفس الصنف: " + code);
             }
-            if (itemsService.isBarcodeTakenByAnotherItem(code, codeItem)) {
-                throw new Exception("الباركود مستخدم لصنف آخر: " + code);
-            }
+            // Names the item rather than only saying one exists - the same question,
+            // answered with something the user can act on.
+            barcodeAvailability.requireFree(code);
         }
     }
 
