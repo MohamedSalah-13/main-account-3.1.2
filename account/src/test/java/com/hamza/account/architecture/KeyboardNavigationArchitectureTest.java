@@ -66,7 +66,6 @@ class KeyboardNavigationArchitectureTest {
             "com/hamza/account/controller/name_account/AccountDetailsWithItemsController.java",
             "com/hamza/account/controller/name_account/AddNameController.java",
             "com/hamza/account/controller/others/AddEmployeeController.java",
-            "com/hamza/account/controller/others/AddExpensesController.java",
             "com/hamza/account/controller/others/AddSubGroupController.java",
             "com/hamza/account/controller/setting/SettingTabBarcodeController.java",
             "com/hamza/account/controller/setting/SettingTabLanguageController.java",

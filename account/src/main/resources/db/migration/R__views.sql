@@ -700,11 +700,17 @@ SELECT ed.id,
        ed.amount,
        ed.notes,
        ed.treasury_id,
+       -- Which till the money left is now a choice on the expenses screen rather
+       -- than a hard-coded 1, so the list has to be able to say which one it was.
+       -- LEFT JOIN: a treasury row that has gone must not drop the expense out of
+       -- the list the way a customer's area once dropped the customer.
+       IFNULL(t.t_name, '') AS treasury_name,
        ed.emp_id,
        e.expenses_name,
        IFNULL(e2.column_name, '') AS column_name
 FROM expenses_details ed
          JOIN expenses e ON e.id = ed.type_code
+         LEFT JOIN treasury      t  ON t.id = ed.treasury_id
          LEFT JOIN expense_salary es ON ed.id = es.expenses_details_id
          LEFT JOIN employees     e2 ON e2.id = es.employee_id;
 

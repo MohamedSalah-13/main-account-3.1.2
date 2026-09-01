@@ -114,6 +114,12 @@ public class ExpensesDetailsApplication extends Application implements TableInte
                         Columns.number(NamesTables.CODE, ExpensesDetails::getId),
                         Columns.date(NamesTables.DATE, ExpensesDetails::getLocalDate),
                         Columns.number(NamesTables.AMOUNT, ExpensesDetails::getAmount),
+                        // Which till the money left. It used to be treasury 1 for
+                        // every expense whatever was typed, so there was nothing to
+                        // show; it is a choice on the screen now, and an expense
+                        // whose treasury cannot be read back is one nobody can check.
+                        Columns.text("invoice.treasury", expense -> expense.getTreasuryModel() == null
+                                ? "" : expense.getTreasuryModel().getName()),
                         Columns.text(NamesTables.NOTES, ExpensesDetails::getNotes)
                 );
             }

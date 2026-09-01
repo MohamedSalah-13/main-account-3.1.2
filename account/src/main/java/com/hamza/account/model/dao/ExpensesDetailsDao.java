@@ -49,6 +49,7 @@ public class ExpensesDetailsDao extends AbstractDao<ExpensesDetails> {
     private final String EMPLOYEE_NAME = "column_name";
     private final String EXPENSES_NAME = "expenses_name";
     private final String TREASURY_ID = "treasury_id";
+    private final String TREASURY_NAME = "treasury_name";
     private final String USER_ID = "user_id";
 
     public ExpensesDetailsDao() {
@@ -116,7 +117,9 @@ public class ExpensesDetailsDao extends AbstractDao<ExpensesDetails> {
             expensesDetails.setAmount(rs.getDouble(AMOUNT));
             expensesDetails.setNotes(rs.getString(NOTES));
 
-            expensesDetails.setTreasuryModel(new Treasury(rs.getInt(TREASURY_ID)));
+            // The name comes off the view, so neither the list nor the edit screen
+            // has to ask for it a row at a time.
+            expensesDetails.setTreasuryModel(new Treasury(rs.getInt(TREASURY_ID), rs.getString(TREASURY_NAME)));
             expensesDetails.setExpenses(new Expenses(rs.getInt(TYPE_CODE), rs.getString(EXPENSES_NAME)));
             String string = rs.getString(EMPLOYEE_NAME);
             expensesDetails.setEmployees(new Employees(rs.getInt(EMP_ID), string));
