@@ -224,9 +224,12 @@ class TreasuryBalanceViewAcceptanceTest {
                 VALUES (?, ?, 0, ?, 0, 'treasury-acceptance', ?, 1)
                 """, firstId(connection, "suppliers"), today(), SUPPLIER_PAID, main);
 
+        // emp_id is NULL, not 0: V23 made it a real foreign key, and 0 was only ever
+        // the screen's sentinel for "no employee". This is what the production path,
+        // ExpensesDetailsDao.employeeIdOrNull, writes.
         execute(connection, """
                 INSERT INTO expenses_details (type_code, date, amount, notes, emp_id, treasury_id, user_id)
-                VALUES (?, ?, ?, 'treasury-acceptance', 0, ?, 1)
+                VALUES (?, ?, ?, 'treasury-acceptance', NULL, ?, 1)
                 """, expenseType(connection), today(), EXPENSE, main);
 
         // deposit_or_expenses: 1 = deposit, 2 = withdrawal.
