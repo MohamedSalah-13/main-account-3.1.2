@@ -2,6 +2,8 @@ package com.hamza.account.wipe;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
+import com.hamza.account.schema.SchemaForeignKeys;
+import com.hamza.account.schema.SchemaForeignKeys.ForeignKey;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -36,60 +38,11 @@ import static org.junit.jupiter.api.Assertions.fail;
  */
 class WipeCatalogTest {
 
-    /** {@code FOREIGN KEY (col) REFERENCES parent (col)}, with whatever follows up to the comma. */
-    private static final Pattern FOREIGN_KEY = Pattern.compile(
-            "FOREIGN KEY\\s*\\((\\w+)\\)\\s*REFERENCES\\s*(\\w+)\\s*\\(\\w+\\)([^,]*)");
-
-    private static final Pattern CREATE_TABLE = Pattern.compile(
-            "CREATE TABLE IF NOT EXISTS\\s+(\\w+)\\s*\\((.*?)\\n\\);", Pattern.DOTALL);
-
     /**
-     * A key added to a table that already exists, which the later migrations do
-     * through a helper rather than in a {@code CREATE TABLE} body:
-     * {@code CALL add_constraint_if_missing('child', 'name', 'FOREIGN KEY ...')}.
-     * Without this the reader was blind to every key added after the baseline, and
-     * the first one to arrive that way - {@code user_shifts.treasury_id} in V22 -
-     * would have gone unchecked in both directions.
+     * The keys, read out of the migrations by {@link SchemaForeignKeys} - shared with
+     * {@code DeleteRegistryTest}, which asks the same schema a different question.
      */
-    private static final Pattern ALTER_CONSTRAINT = Pattern.compile(
-            "add_constraint_if_missing\\s*\\(\\s*'(\\w+)'\\s*,\\s*'\\w+'\\s*,\\s*'([^']*)'", Pattern.DOTALL);
-
-    private static final List<ForeignKey> FOREIGN_KEYS = readForeignKeys();
-
-    /** A key that refuses a delete: the cascading ones take their rows with them. */
-    private record ForeignKey(String child, String column, String parent) {
-    }
-
-    private static List<ForeignKey> readForeignKeys() {
-        List<ForeignKey> keys = new ArrayList<>();
-        for (String migration : List.of("V1__baseline.sql", "V3__item_barcodes.sql", "V5__item_units.sql",
-                "V8__stock_count.sql", "V9__accounting_lock.sql", "V22__user_shift_treasury.sql")) {
-            String sql = read("db/migration/" + migration);
-
-            Matcher tables = CREATE_TABLE.matcher(sql);
-            while (tables.find()) {
-                String child = tables.group(1);
-                Matcher fk = FOREIGN_KEY.matcher(tables.group(2));
-                while (fk.find()) {
-                    if (!fk.group(3).contains("ON DELETE CASCADE")) {
-                        keys.add(new ForeignKey(child, fk.group(1), fk.group(2)));
-                    }
-                }
-            }
-
-            Matcher altered = ALTER_CONSTRAINT.matcher(sql);
-            while (altered.find()) {
-                String child = altered.group(1);
-                Matcher fk = FOREIGN_KEY.matcher(altered.group(2));
-                while (fk.find()) {
-                    if (!fk.group(3).contains("ON DELETE CASCADE")) {
-                        keys.add(new ForeignKey(child, fk.group(1), fk.group(2)));
-                    }
-                }
-            }
-        }
-        return List.copyOf(keys);
-    }
+    private static final List<ForeignKey> FOREIGN_KEYS = SchemaForeignKeys.all();
 
     private static String read(String resource) {
         try (InputStream in = WipeCatalogTest.class.getClassLoader().getResourceAsStream(resource)) {

@@ -35,6 +35,11 @@ public final class DeleteRegistry {
             .referencedBy("purchase", "type", "delete.ref.purchase_line")
             .referencedBy("purchase_re", "type", "delete.ref.purchase_return_line")
             .referencedBy("stock_movements", "unit_id", "delete.ref.stock_movement")
+            // Found by DeleteRegistryTest the day it was written: a counted line
+            // carries the unit it was counted in (V8) and that key does not cascade,
+            // so deleting a unit used on a stock count reached the database as a raw
+            // SQL error instead of a refusal with a reason.
+            .referencedBy("stock_count_lines", "unit_id", "delete.ref.stock_count")
             .build();
 
     public static final DeleteRule ITEMS = DeleteRule.forEntity("delete.entity.item")
@@ -108,6 +113,14 @@ public final class DeleteRegistry {
             .protectId(1, "delete.protect.employee.direct_sale")
             .referencedBy("total_sales", "delegate_id", "delete.ref.sales_invoice")
             .referencedBy("total_sales_re", "delegate_id", "delete.ref.sales_return")
+            // The real link, and the one the application writes (V23). Until then the
+            // only declared reference was expense_salary below, which nothing has
+            // ever written to: it blocked the deletion of the one employee its three
+            // legacy rows happen to name and let every other one through, with years
+            // of salaries behind them.
+            .referencedBy("expenses_details", "emp_id", "delete.ref.expense")
+            // Kept: the table still holds those three rows and its key still refuses
+            // a delete. Nothing reads it for a decision any more - see V23.
             .referencedBy("expense_salary", "employee_id", "delete.ref.salary")
             // targeted_sales.delegate_id is ON DELETE CASCADE - a delegate's targets
             // go with the delegate - so it is not something that holds them back.

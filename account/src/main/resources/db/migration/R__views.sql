@@ -707,12 +707,17 @@ SELECT ed.id,
        IFNULL(t.t_name, '') AS treasury_name,
        ed.emp_id,
        e.expenses_name,
+       -- The name comes off expenses_details.emp_id, which is the column the
+       -- application has always written. It used to be read through
+       -- `LEFT JOIN expense_salary ON ed.id = es.expenses_details_id`, and nothing
+       -- in the project has ever written a row to expense_salary - so this was ''
+       -- on every salary and every advance ever entered, and the list's search by
+       -- employee name could not match anything. See V23 and finding ن-١.
        IFNULL(e2.column_name, '') AS column_name
 FROM expenses_details ed
          JOIN expenses e ON e.id = ed.type_code
-         LEFT JOIN treasury      t  ON t.id = ed.treasury_id
-         LEFT JOIN expense_salary es ON ed.id = es.expenses_details_id
-         LEFT JOIN employees     e2 ON e2.id = es.employee_id;
+         LEFT JOIN treasury  t  ON t.id = ed.treasury_id
+         LEFT JOIN employees e2 ON e2.id = ed.emp_id;
 
 -- --------------------------------------mini_quantity_view-----------------------------------------
 --

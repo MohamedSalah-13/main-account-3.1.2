@@ -80,7 +80,7 @@ public class ExpensesDetailsDao extends AbstractDao<ExpensesDetails> {
                 , expensesDetails.getLocalDate().toString()
                 , expensesDetails.getAmount()
                 , expensesDetails.getNotes()
-                , expensesDetails.getEmployees().getId()
+                , employeeIdOrNull(expensesDetails)
                 , expensesDetails.getTreasuryModel().getId()
                 , expensesDetails.getId()
 
@@ -104,8 +104,22 @@ public class ExpensesDetailsDao extends AbstractDao<ExpensesDetails> {
     public Object[] getData(ExpensesDetails expensesDetails) throws DaoException {
         return new Object[]{expensesDetails.getExpenses().getId(), expensesDetails.getLocalDate().toString()
                 , expensesDetails.getAmount(), expensesDetails.getNotes()
-                , expensesDetails.getEmployees().getId(), expensesDetails.getTreasuryModel().getId()
+                , employeeIdOrNull(expensesDetails), expensesDetails.getTreasuryModel().getId()
                 , expensesDetails.getUsers().getId()};
+    }
+
+    /**
+     * The employee, or {@code null} for the kinds of expense that have none.
+     * <p>
+     * The screen carries "no employee" as {@code Employees(0)} and 0 was written
+     * straight into the column, which was fine while nothing checked it. Since V23
+     * {@code emp_id} is a real foreign key and nullable, and there is no employee 0
+     * - the seeded delegate is id 1 - so the sentinel has to become NULL on the way
+     * to the database rather than a row that points at nothing.
+     */
+    private static Object employeeIdOrNull(ExpensesDetails expensesDetails) {
+        var employees = expensesDetails.getEmployees();
+        return employees == null || employees.getId() <= 0 ? null : employees.getId();
     }
 
     @Override
