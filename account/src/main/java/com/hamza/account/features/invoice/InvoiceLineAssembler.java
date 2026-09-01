@@ -3,6 +3,7 @@ package com.hamza.account.features.invoice;
 import com.hamza.account.model.base.BasePurchasesAndSales;
 import com.hamza.account.model.domain.ItemsModel;
 import com.hamza.account.model.domain.UnitsModel;
+import com.hamza.account.service.ItemUnits;
 import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.error.UserValidationException;
 
@@ -34,13 +35,30 @@ public final class InvoiceLineAssembler {
 
             T detached = factory.create(
                     row.getId(), documentId, item.getId(), row.getPrice(), row.getQuantity(),
-                    row.getDiscount(), row.getTotal(), row.getUnitsType(), item,
+                    row.getDiscount(), row.getTotal(), storableUnit(row.getUnitsType()), item,
                     row.getExpiration_date());
             preserveHistoricalCost(row, detached);
             preserveSourceLine(row, detached);
             result.add(detached);
         }
         return List.copyOf(result);
+    }
+
+    /**
+     * The unit as it is safe to store. The four DAOs write {@code type_value} from
+     * {@code getUnitsType().getValue()} and {@code quantity_items_table} computes a
+     * balance as {@code quantity * type_value}, so a factor of zero - which a
+     * {@link UnitsModel} built by hand carries - would persist a line that moves no
+     * stock at all. {@link ItemUnits#factor} is the one place that guards it; this is
+     * the last point every persisted line passes through, so it is guarded here rather
+     * than in each of the four DAOs.
+     */
+    private static UnitsModel storableUnit(UnitsModel unit) {
+        double factor = ItemUnits.factor(unit);
+        if (unit.getValue() == factor) {
+            return unit;
+        }
+        return new UnitsModel(unit.getUnit_id(), unit.getUnit_name(), factor);
     }
 
     static void preserveHistoricalCost(BasePurchasesAndSales source,

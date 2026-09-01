@@ -381,9 +381,12 @@ class ProfitDefinitionDatabaseAcceptanceTest {
         long refund = insertReturn(connection, customer, employee, treasury, stock);
         insertReturnLine(connection, refund, item, unit);
 
+        // emp_id is NULL, not 0: V23 made it a real foreign key, and 0 was only ever
+        // the screen's sentinel for "no employee". This is what the production path,
+        // ExpensesDetailsDao.employeeIdOrNull, writes.
         execute(connection, """
                 INSERT INTO expenses_details (type_code, date, amount, notes, emp_id, treasury_id, user_id)
-                VALUES (?, ?, ?, 'profit-acceptance', 0, ?, 1)
+                VALUES (?, ?, ?, 'profit-acceptance', NULL, ?, 1)
                 """, expenseType(connection), sqlDate(), EXPENSE, treasury);
 
         // Not an expense, and here to prove the report has stopped counting it as one.

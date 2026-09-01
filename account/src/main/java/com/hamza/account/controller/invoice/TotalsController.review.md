@@ -1,8 +1,8 @@
 # مراجعة الكود: TotalsController.java
 
 **المسار:** account/src/main/java/com/hamza/account/controller/invoice/TotalsController.java
-**آخر مراجعة:** 2026-08-17
-**التقدم:** 4 / 5 خطوات منفذة
+**آخر مراجعة:** 2026-09-01
+**التقدم:** 5 / 5 خطوات منفذة (الخطوة 5 تحسين كفاءة اختياري)
 
 ## ملاحظة مهمة
 
@@ -18,11 +18,14 @@
       المندوب بقى جزء من `TotalsSearchCriteria` وبيتبعت فعليًا في كل بحث عن طريق
       `DocumentTableSpec.searchSql` (لما `hasDelegate()` تبقى true).
 
-- [ ] 2. **لسه قائم:** الـ task بتاع الحذف (`btnDelete.setOnAction`) بيسجل `setOnSucceeded` بس على
-      `maskerPaneSetting.getVoidTask()` من غير `setOnFailed`. لو `deleteMultiData` رمى exception
-      جوه الـ background task، المستخدم مش هياخد أي رسالة خطأ - الفشل بيبقى صامت، بعكس
-      `search()` الجديدة اللي بقت بتمسك الـ exception وتعرضه عن طريق `exceptionHandle` جوه
-      `Platform.runLater`.
+- [x] 2. ~~الـ task بتاع الحذف بيسجل `setOnSucceeded` من غير `setOnFailed`، فالفشل صامت~~ -
+      **اتحل من برّه الكلاس ومحتاجش تعديل هنا.** `MaskerPaneSetting.showMaskerPane(operation, ...)`
+      بقى بينادي `AllAlerts.handleTaskFailure(operation, voidTask)`، اللي بتسجل
+      `WORKER_STATE_FAILED` وتعرض الخطأ بإسم العملية - فأي فشل في `deleteMultiData` بيوصل
+      للمستخدم من غير ما الشاشة تعمل حاجة. (اتضاف في `af3270d`، بعد ما الخطوة دي اتكتبت.)
+      وكمان `TotalSalesService.deleteMultiData` كلها جوه `TransactionTemplate.execute`، فالفشل
+      ما بيسبش حذفًا نصّه تم - يعني مفيش حاجة محتاجة `refresh` بعد الفشل كمان.
+      **الخطوة دي مقفولة؛ الملاحظة القديمة كانت قديمة مش غلط وقتها.**
 
 - [x] 3. ~~`addDataToComboName()` بتلف الـ Exception في RuntimeException~~ - لسه موجودة زي ما هي
       (مش جزء من نطاق إعادة التصميم الحالية)، سايبها هنا كملاحظة مش كخطوة لسه، لأنها منفصلة عن
@@ -41,4 +44,5 @@
 - الكود المتعلّق القديم (`// gridPane.add(pane, 4, 2)`، `// menuButton.setGraphic(...)`) اتشال
   مع إعادة التصميم.
 - التعليق الطويل في `update()` لسه موثّق كويس - مفيش داعي لأي تعديل هناك.
-- الخطوة 2 هي الأهم اللي لسه باقية.
+- الخطوة 2 اتقفلت في 2026-09-01 بعد مراجعة `MaskerPaneSetting`؛ اللي باقي هو الخطوة 5
+  (كفاءة `sumTable()`) وهي أولوية منخفضة.

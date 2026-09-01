@@ -1437,3 +1437,76 @@
     -fx-border-color: transparent transparent transparent -app-table-border;
     -fx-border-width: 0 0 0 0.091em;
 }
+
+/* =========================================================
+   Quick invoice
+   The style class .invoice-quick was being added to the screen's root since the
+   mode was introduced, with no rule anywhere defining it - so the quick screen
+   was indistinguishable from the standard one beyond a window title. It reads
+   at arm's length now, which is what a till needs.
+   ========================================================= */
+.invoice-quick .table-view {
+    -fx-font-size: 1.05em;
+}
+
+.invoice-quick .table-view .table-cell {
+    -fx-padding: 0.55em 0.6em;
+}
+
+/* The trailing entry row - the one being typed into. Dashed, so it reads as a
+   row that is not yet part of the invoice rather than as a selected line. */
+.table-row-cell.quick-entry-row {
+    -fx-background-color: -app-warning-soft;
+    -fx-border-color: -app-warning-border;
+    -fx-border-width: 0.091em 0 0 0;
+    -fx-border-style: dashed;
+}
+
+.table-row-cell.quick-entry-row .table-cell {
+    -fx-text-fill: -app-text-strong;
+}
+
+/* =========================================================
+   Item suggestions (ItemSuggestionField)
+   ========================================================= */
+.item-suggestion-list {
+    -fx-background-color: -app-surface;
+    -fx-border-color: -app-border;
+    -fx-border-width: 0.091em;
+    -fx-background-radius: 0.4em;
+    -fx-border-radius: 0.4em;
+    -fx-effect: dropshadow(gaussian, -app-shadow, 12, 0, 0, 4);
+}
+
+.item-suggestion-list .list-cell {
+    -fx-background-color: transparent;
+    -fx-padding: 0.25em 0.6em;
+}
+
+.item-suggestion-list .list-cell:filled:selected {
+    -fx-background-color: -app-primary;
+}
+
+.item-suggestion-list .list-cell:filled:selected .label {
+    -fx-text-fill: white;
+}
+
+.item-suggestion-name {
+    -fx-text-fill: -app-text-strong;
+    -fx-font-weight: bold;
+}
+
+.item-suggestion-barcode,
+.item-suggestion-figures {
+    -fx-text-fill: -app-text-muted;
+    -fx-font-size: 0.9em;
+}
+
+/* The list gives way by truncating the item name, never by scrolling sideways -
+   a horizontal scrollbar cannot be reached from the keyboard, which is the only
+   way this control is meant to be used. */
+.item-suggestion-list .scroll-bar:horizontal {
+    -fx-pref-height: 0;
+    -fx-max-height: 0;
+    -fx-opacity: 0;
+}
