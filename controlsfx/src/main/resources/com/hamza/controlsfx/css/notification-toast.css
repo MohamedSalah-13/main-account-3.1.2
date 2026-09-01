@@ -1,0 +1,53 @@
+/* =========================================================
+   Corner toast (NotificationToaster)
+
+   Lives on the popup's own scene, never on the window it appears over.
+   That is the whole point of the class: ControlsFX added its stylesheet to the
+   owner's scene, and the CSS reapply that caused tore down whatever table cell
+   was being edited at the time.
+   ========================================================= */
+
+.notification-toast {
+    -fx-background-color: #ffffff;
+    -fx-background-radius: 8;
+    -fx-border-radius: 8;
+    -fx-border-width: 1 1 1 5;
+    -fx-border-color: #e2e8f0 #e2e8f0 #e2e8f0 #94a3b8;
+    -fx-effect: dropshadow(gaussian, rgba(15, 23, 42, 0.28), 18, 0, 0, 6);
+    -fx-cursor: hand;
+}
+
+.notification-toast .toast-title {
+    -fx-font-weight: bold;
+    -fx-font-size: 13px;
+    -fx-text-fill: #172554;
+}
+
+.notification-toast .toast-body {
+    -fx-font-size: 12px;
+    -fx-text-fill: #475569;
+}
+
+/* The severity stripe. NotificationSeverity.styleClass() supplies these names,
+   so a new severity needs a rule here and nothing else. */
+.notification-info {
+    -fx-border-color: #e2e8f0 #e2e8f0 #e2e8f0 #2563eb;
+}
+
+.notification-success {
+    -fx-border-color: #e2e8f0 #e2e8f0 #e2e8f0 #166534;
+}
+
+.notification-warning {
+    -fx-border-color: #e2e8f0 #e2e8f0 #e2e8f0 #c2410c;
+}
+
+.notification-error,
+.notification-critical {
+    -fx-border-color: #e2e8f0 #e2e8f0 #e2e8f0 #b91c1c;
+}
+
+.notification-critical {
+    -fx-border-width: 1 1 1 6;
+    -fx-effect: dropshadow(gaussian, rgba(185, 28, 28, 0.40), 20, 0, 0, 6);
+}
