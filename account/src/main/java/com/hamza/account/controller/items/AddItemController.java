@@ -143,6 +143,13 @@ public class AddItemController implements AppSettingInterface {
     private Button btnAddImage, btnClearImage;
     private TableUnitsSetting tableUnitsSetting;
     private ExtraBarcodesTabController extraBarcodesTab;
+    /**
+     * Asks the database whether a code is already some other item's, one code at
+     * a time, as it is entered. The save still checks the whole set - see
+     * {@link #checkBarcodesAreFree} - this is what stops a duplicate being typed
+     * in and carried through the rest of the form first.
+     */
+    private BarcodeAvailability barcodeAvailability;
 
     public AddItemController(int codeItem) {
         this(codeItem, null);
@@ -186,6 +193,9 @@ public class AddItemController implements AppSettingInterface {
 
     @FXML
     public void initialize() {
+        // Built first: action() hangs a focus listener on the barcode field off it,
+        // and the extra-barcodes tab is handed it.
+        barcodeAvailability = new BarcodeAvailability(itemsService::itemNameHoldingBarcode, () -> codeItem);
         bindItemForm();
         refreshUnitsCache();
         unitSetting();
@@ -195,7 +205,8 @@ public class AddItemController implements AppSettingInterface {
         nameSetting();
         action();
         extraBarcodesTab = new ExtraBarcodesTabController(
-                listExtraBarcodes, textExtraBarcode, btnAddExtraBarcode, btnRemoveExtraBarcode, itemForm::getBarcode);
+                listExtraBarcodes, textExtraBarcode, btnAddExtraBarcode, btnRemoveExtraBarcode, itemForm::getBarcode,
+                barcodeAvailability);
         addBarcode();
         selectGroupSubAndType();
 
@@ -401,6 +412,14 @@ public class AddItemController implements AppSettingInterface {
         btnSaveDuplicate.setOnAction(actionEvent -> saveData(true));
         btnBarcode.setOnAction(actionEvent -> addBarcode());
 
+        // Checked when the field is left, not on every keystroke: a barcode is
+        // typed or scanned digit by digit, and every prefix of it would otherwise
+        // be a query. Enter moves the focus on (whenEnterPressed), so a scanner
+        // ending its read triggers this too.
+        txtBarcode.focusedProperty().addListener((observable, wasFocused, isFocused) -> {
+            if (!isFocused) verifyBarcodeIsFree(txtBarcode);
+        });
+
         txtBarcode.textProperty().addListener((observable, oldValue, newValue) -> {
             var itemsUnitsModelList = tableUnitsSetting.getItemsUnitsModelList();
             if (itemsUnitsModelList.isEmpty()) {
@@ -425,6 +444,10 @@ public class AddItemController implements AppSettingInterface {
 
         // units setting
         btnAdd.setOnAction(actionEvent -> {
+            // A unit carries a code of its own, so it is the third way a
+            // duplicate gets onto this screen - refused here for the same reason
+            // the extra-barcode list refuses one.
+            if (!verifyBarcodeIsFree(textUnitBarcode)) return;
             tableUnitsSetting.addUnit();
             // The next unit starts from a clean sheet - a price left in the field
             // would otherwise be charged for a unit nobody priced, and a barcode
@@ -715,6 +738,28 @@ public class AddItemController implements AppSettingInterface {
         }
     }
 
+    /**
+     * Marks and reports a code that belongs to another item, and answers whether
+     * the field is usable.
+     * <p>
+     * Deliberately does not pull the focus back: this runs from a focus-lost
+     * listener, and a field that takes the focus again on its way out is a field
+     * the user cannot leave - the close button included. The red marking and the
+     * message are the hint; the refusal is {@link #checkBarcodesAreFree}, which
+     * the save goes through whatever happened here.
+     */
+    private boolean verifyBarcodeIsFree(TextField field) {
+        try {
+            barcodeAvailability.requireFree(field.getText());
+            setValidationError(field, false);
+            return true;
+        } catch (Exception e) {
+            setValidationError(field, true);
+            AllAlerts.handleError(LanguageManager.getInstance().getString("item.dialog.save.title"), e);
+            return false;
+        }
+    }
+
     private void saveData(boolean isDuplicate) {
         try {
             if (!AllAlerts.confirmSave()) return;
@@ -884,13 +929,34 @@ public class AddItemController implements AppSettingInterface {
         label.setText(name == null || name.isBlank() ? fallback : name);
     }
 
+    /**
+     * Offers a code for a new item: the first number from {@code max(item id) + 1}
+     * upwards that no item already answers to.
+     * <p>
+     * It used to offer {@code max(item id) + 1} itself, unchecked. That is a row
+     * number, not a barcode, and a shop that types its own short numeric codes -
+     * or that has deleted items and had ids reused - collides with it regularly;
+     * the collision then surfaced at save, on the one field the user never
+     * touched. The generated code is now checked against the same three tables
+     * every other code on this screen is checked against.
+     * <p>
+     * A code cannot always be found - a database refusing the lookup, or a
+     * thousand consecutive taken numbers - and that is not a reason to refuse to
+     * open the dialog. The field is left empty and the user types one; the save
+     * already refuses a blank barcode.
+     */
     private void addBarcode() {
-//        String randomItemBarcode = generateRandomBarcode(itemsService.getMaxItemId() + 1);
-        String randomItemBarcode = String.valueOf(itemsService.getMaxItemId() + 1);
-        if (codeItem == 0) {
-            txtBarcode.setText(randomItemBarcode);
-            txtCode.setText(LanguageManager.getInstance().getString("item.code.generate"));
+        if (codeItem != 0) return;
+
+        String generated = null;
+        try {
+            generated = barcodeAvailability.firstFreeFrom(itemsService.getMaxItemId() + 1L);
+        } catch (Exception e) {
+            log.warn("Could not generate a free barcode; leaving the field empty", e);
         }
+
+        txtBarcode.setText(generated == null ? "" : generated);
+        txtCode.setText(LanguageManager.getInstance().getString("item.code.generate"));
     }
 
     private void addValidate() {

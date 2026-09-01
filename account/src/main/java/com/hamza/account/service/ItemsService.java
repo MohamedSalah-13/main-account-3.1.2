@@ -48,6 +48,23 @@ public record ItemsService(DaoFactory daoFactory) {
         return daoFactory.getItemsDao().firstBarcodeTakenByAnotherItem(candidates, itemId);
     }
 
+    /**
+     * The name of the item already holding {@code code}, or {@code null} if it is
+     * free. {@code itemId} is the item being edited, so its own codes do not count
+     * against it.
+     * <p>
+     * This is the one-code question the item screen asks while the user is still
+     * typing; {@link #firstBarcodeTakenByAnotherItem} is the whole-set question the
+     * save asks. Both are needed - the first is a hint the moment a code is entered,
+     * the second is the rule, applied where the row is written.
+     */
+    public String itemNameHoldingBarcode(String code, int itemId) throws DaoException {
+        if (code == null || code.isBlank()) {
+            return null;
+        }
+        return daoFactory.getItemsDao().itemNameHoldingBarcode(code.trim(), itemId);
+    }
+
     public int updateItem(ItemsModel itemsModel) throws DaoException {
         AuthorizationGuard.require(itemsModel.getId() == 0 ? AppPermissions.ITEMS_CREATE : AppPermissions.ITEMS_UPDATE);
         requireSellAboveBuy(itemsModel);

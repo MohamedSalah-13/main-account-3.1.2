@@ -22,18 +22,26 @@ import java.util.function.Supplier;
  * so this class does not need to know {@link ItemForm} exists - only that
  * something can tell it the current barcode when it is asked, which is all a
  * duplicate-of-the-item-itself check needs.
+ * <p>
+ * A code that belongs to some <em>other</em> item is refused here too, by
+ * {@link BarcodeAvailability}, rather than only at save: the list is filled in
+ * one code at a time, and a refusal at the end names a code without saying
+ * which of the several on the screen it came from.
  */
 public class ExtraBarcodesTabController {
 
     private final ListView<String> listExtraBarcodes;
     private final TextField textExtraBarcode;
     private final Supplier<String> itemBarcode;
+    private final BarcodeAvailability availability;
 
     public ExtraBarcodesTabController(ListView<String> listExtraBarcodes, TextField textExtraBarcode,
-                                       Button btnAdd, Button btnRemove, Supplier<String> itemBarcode) {
+                                       Button btnAdd, Button btnRemove, Supplier<String> itemBarcode,
+                                       BarcodeAvailability availability) {
         this.listExtraBarcodes = listExtraBarcodes;
         this.textExtraBarcode = textExtraBarcode;
         this.itemBarcode = itemBarcode;
+        this.availability = availability;
 
         listExtraBarcodes.setItems(FXCollections.observableArrayList());
         InputValidator.makeNumericOnly(textExtraBarcode);
@@ -57,6 +65,10 @@ public class ExtraBarcodesTabController {
             if (barcode.equals(itemBarcode.get()) || listExtraBarcodes.getItems().contains(barcode)) {
                 throw new UserValidationException(LanguageManager.getInstance().getString("item.error.barcode.duplicate.same.item"));
             }
+
+            // The database is asked before the code reaches the list, so a code
+            // another item already answers to never gets typed in and forgotten.
+            availability.requireFree(barcode);
 
             listExtraBarcodes.getItems().add(barcode);
             textExtraBarcode.clear();

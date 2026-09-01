@@ -555,6 +555,44 @@ public class ItemsDao extends AbstractDao<ItemsModel> {
         });
     }
 
+    /**
+     * The name of the item that already answers to {@code code} - as its own
+     * barcode, one of its extra codes, or the code on one of its units - or
+     * {@code null} if the code is free. {@code exceptItemId} is the item being
+     * edited, so its own codes do not count against it.
+     * <p>
+     * Same three tables as {@link #firstBarcodeTakenByAnotherItem}, asked for one
+     * code instead of a list: this one answers a field the user is still typing
+     * in, and a refusal there has to say which item is holding the code, not just
+     * that something is.
+     */
+    public String itemNameHoldingBarcode(String code, int exceptItemId) throws DaoException {
+        if (code == null || code.isBlank()) return null;
+
+        String query = """
+                SELECT items.nameItem FROM items
+                WHERE items.id <> ?
+                  AND (items.barcode = ?
+                       OR items.id IN (SELECT item_id FROM item_barcodes WHERE barcode = ?)
+                       OR items.id IN (SELECT items_id FROM items_units WHERE items_barcode = ?))
+                LIMIT 1
+                """;
+
+        return withConnection(connection -> {
+            try (PreparedStatement statement = connection.prepareStatement(query)) {
+                statement.setInt(1, exceptItemId);
+                statement.setString(2, code);
+                statement.setString(3, code);
+                statement.setString(4, code);
+                try (ResultSet rs = statement.executeQuery()) {
+                    return rs.next() ? rs.getString(1) : null;
+                }
+            } catch (SQLException e) {
+                throw new DaoException(e.getMessage(), e);
+            }
+        });
+    }
+
     public int maxItemId() {
         try {
             return withConnection(connection -> {
