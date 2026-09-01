@@ -26,8 +26,35 @@ public record InvoiceLineTotals(int lineCount, double quantity,
                 MoneyMath.decimal(net), hasInvalidLine);
     }
 
-    public static InvoiceLineTotals from(List<? extends BasePurchasesAndSales> lines) {
+    /**
+     * Whether a row is an entry placeholder rather than a line of the invoice.
+     *
+     * <p>The quick screen keeps a trailing empty row for the scanner operator to type
+     * into, and that row is a control, not a sale: it carries no item, no price and no
+     * quantity. Counting it made {@link #hasInvalidLine()} permanently true - which is
+     * bound to the save buttons' {@code disable} - so the quick invoice could never be
+     * saved at all. It is excluded here, once, rather than at each of the six bindings
+     * that read a total.
+     *
+     * <p>A row that names no item cannot be saved either way: {@code InvoiceLineService}
+     * refuses a draft whose item id is not positive, and {@code InvoiceLineAssembler}
+     * refuses one whose item is null. So nothing real is ever hidden by this.
+     */
+    public static boolean isPlaceholder(BasePurchasesAndSales line) {
+        return line == null || line.getItems() == null || line.getItems().getId() <= 0;
+    }
+
+    /** The rows that are actually lines of the invoice - see {@link #isPlaceholder}. */
+    public static <T extends BasePurchasesAndSales> List<T> realLines(List<T> lines) {
         if (lines == null || lines.isEmpty()) {
+            return List.of();
+        }
+        return lines.stream().filter(line -> !isPlaceholder(line)).toList();
+    }
+
+    public static InvoiceLineTotals from(List<? extends BasePurchasesAndSales> source) {
+        List<? extends BasePurchasesAndSales> lines = realLines(source);
+        if (lines.isEmpty()) {
             return new InvoiceLineTotals(0, 0, MoneyMath.ZERO, MoneyMath.ZERO,
                     MoneyMath.ZERO, false);
         }

@@ -63,12 +63,38 @@ class InvoiceEditorViewModelTest {
         assertTrue(editor.isPaymentValid());
     }
 
+    /**
+     * The property the save buttons' {@code disable} is bound to. The quick screen
+     * always carries a trailing entry row, and while that row was counted it made
+     * {@code invalidLines} permanently true - which left Save and Save-and-print
+     * disabled for the whole life of the screen, F10 and F12 included.
+     */
+    @Test
+    void theQuickScreensEntryRowNeitherCountsNorInvalidates() {
+        InvoiceEditorViewModel<Purchase> editor = new InvoiceEditorViewModel<>();
+        Purchase entryRow = new Purchase();
+        entryRow.setItems(new ItemsModel());
+
+        editor.lines().addAll(line(2, 20, 0, 10), entryRow);
+
+        assertEquals(1, editor.totals().lineCount());
+        assertEquals(new BigDecimal("20.00"), editor.totals().netAmount());
+        assertFalse(editor.invalidLinesProperty().get());
+    }
+
+    /**
+     * Every row names an item: a row that names none is the quick screen's entry
+     * placeholder, which {@link InvoiceLineTotals#isPlaceholder} keeps out of the totals.
+     */
     private static Purchase line(double quantity, double total, double discount, double price) {
         Purchase line = new Purchase();
         line.setQuantity(quantity);
         line.setTotal(total);
         line.setDiscount(discount);
         line.setPrice(price);
+        ItemsModel item = new ItemsModel();
+        item.setId(1);
+        line.setItems(item);
         return line;
     }
 }
