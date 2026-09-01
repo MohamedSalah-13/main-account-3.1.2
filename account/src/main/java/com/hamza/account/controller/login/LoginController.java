@@ -4,6 +4,7 @@ import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.account.interfaces.ActionLogin;
 import com.hamza.controlsfx.others.ImageSetting;
 import com.hamza.controlsfx.others.ShowPassService;
+import javafx.beans.binding.Bindings;
 import javafx.beans.binding.BooleanBinding;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
@@ -11,6 +12,7 @@ import javafx.scene.Node;
 import javafx.scene.control.Button;
 import javafx.scene.control.CheckBox;
 import javafx.scene.control.PasswordField;
+import javafx.scene.control.TextInputControl;
 import javafx.scene.control.TextField;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
@@ -84,9 +86,16 @@ public class LoginController extends LoginService implements Initializable {
         });
     }
 
+    /** True while the field holds nothing but whitespace. */
+    private static BooleanBinding blank(TextInputControl field) {
+        return Bindings.createBooleanBinding(
+                () -> field.getText() == null || field.getText().isBlank(), field.textProperty());
+    }
+
     private BooleanBinding booleanBinding() {
-        return (txtUsername.textProperty().isEmpty())
-                .or(pass.textProperty().isEmpty());
+        // Blank, not empty: a name or a password of spaces is neither, and sending one
+        // is a login attempt that can only ever fail.
+        return blank(txtUsername).or(blank(pass));
     }
 
 

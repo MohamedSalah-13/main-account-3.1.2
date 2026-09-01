@@ -4,7 +4,6 @@ import com.hamza.account.controller.others.ServiceRegistry;
 import com.hamza.account.model.domain.Users;
 import com.hamza.account.openFxml.AddInterface;
 import com.hamza.account.openFxml.FxmlPath;
-import com.hamza.account.security.PasswordHasher;
 import com.hamza.account.service.UsersService;
 import com.hamza.controlsfx.language.Setting_Language;
 import com.hamza.account.features.events.UsersChanged;
@@ -13,6 +12,7 @@ import com.hamza.controlsfx.others.ShowPassService;
 import com.hamza.controlsfx.others.Utils;
 import com.hamza.controlsfx.type.ActivityType;
 import javafx.application.Platform;
+import javafx.beans.binding.Bindings;
 import javafx.beans.binding.BooleanBinding;
 import javafx.beans.property.SimpleBooleanProperty;
 import javafx.collections.FXCollections;
@@ -83,20 +83,14 @@ public class AddUserController implements AddInterface {
         users.setUsername(txtName.getText());
 //        var byType = ActivityType.getByType(comboActive.getSelectionModel().getSelectedItem());
         users.setActive(true);
-        String newPass = txtPass.getText();
+        // The hashing and the rules live in the service now: a blank password while
+        // editing still means "keep the current one", and a blank one on a new user is
+        // refused there rather than merely being unreachable through this screen.
         if (codeId > 0) {
             users.setId(codeId);
-            if (newPass == null || newPass.isBlank()) {
-                // password field left empty while editing: keep the current password unchanged
-                users.setPasswordHash(usersService.getUsersById(codeId).getPasswordHash());
-            } else {
-                users.setPasswordHash(PasswordHasher.hash(newPass));
-            }
-            return usersService.update(users);
-        } else {
-            users.setPasswordHash(PasswordHasher.hash(newPass));
-            return usersService.insert(users);
+            return usersService.update(users, txtPass.getText());
         }
+        return usersService.insert(users, txtPass.getText());
     }
 
     @Override
@@ -130,14 +124,24 @@ public class AddUserController implements AddInterface {
         comboActive.getSelectionModel().clearSelection();
     }
 
+    /** True while the field holds nothing but whitespace. */
+    private static BooleanBinding blank(TextInputControl field) {
+        return Bindings.createBooleanBinding(
+                () -> field.getText() == null || field.getText().isBlank(), field.textProperty());
+    }
+
     @NotNull
     @Override
     public BooleanBinding checkDataToEnableButton() {
         if (codeId > 0) {
             // editing: password is optional (blank = keep current password)
-            return txtName.textProperty().isEmpty();
+            return blank(txtName);
         }
-        return (txtName.textProperty().isEmpty()).or(txtPass.textProperty().isEmpty());
+        // Blank, not empty. isEmpty() is false for " ", so a space enabled this button
+        // and produced a user whose password was a space - which the login screen
+        // accepted. The service refuses it either way; this only stops the button
+        // offering it.
+        return blank(txtName).or(blank(txtPass));
     }
 
 }

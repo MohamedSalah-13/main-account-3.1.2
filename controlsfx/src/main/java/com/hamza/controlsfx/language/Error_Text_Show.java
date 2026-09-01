@@ -10,6 +10,8 @@ public class Error_Text_Show {
     public static final String UNABLE_TO_SET_CONNECT_TO_AUTO_SAVE = INSTANCE.getString("msg.auto.save");
     public static final String UNABLE_CLOSED = INSTANCE.getString("msg.unable.close");
     public static final String CANT_DELETE = INSTANCE.getString("msg.cant.delete");
+    public static final String USER_NAME_REQUIRED = INSTANCE.getString("msg.user.name.required");
+    public static final String USER_PASSWORD_REQUIRED = INSTANCE.getString("msg.user.password.required");
     public static final String UNABLE_CONNECT = INSTANCE.getString("msg.unable.connect");
 
     public static final String DUPLICATE_ENTRY = INSTANCE.getString("msg.duplicate");
