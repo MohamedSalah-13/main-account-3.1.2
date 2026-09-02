@@ -412,6 +412,16 @@ field plus modal table. Its `chosenName` property, not its text, is what
 `InvoiceItemEntryCoordinator` listens on: the listener resolves a whole line, so it must fire once
 per choice and not once per keystroke.
 
+**The decisions that class makes are not in it.** `features/invoice/QuickEntryRules` answers them over
+a plain list — is this row the entry row, may it be deleted, does Ctrl + reach it, which cell does
+Enter open, where does the caret land after a line is added — and `QuickEntryRulesTest` pins each. A
+table, a focus model and a cell editor all need a running toolkit, so a rule written inline in
+`QuickInvoiceTable` is a rule nothing can check, and every one of these was a defect at some point in
+this screen's short life. What is left there is the JavaFX: the editors, the accelerators, and the
+two nested `runLater`s that an edit queued behind a closing cell editor needs. `ItemSuggestionField`
+is still uncovered, and deliberately: its one testable rule is a token comparison that drops answers
+to superseded queries, woven into a focus check.
+
 ### Warehouses
 
 There are several again. The screens were removed once (commit `0853cf4`) and **came back in
