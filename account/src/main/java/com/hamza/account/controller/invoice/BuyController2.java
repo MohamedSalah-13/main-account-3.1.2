@@ -427,7 +427,12 @@ public class BuyController2<T3 extends BaseNames, T4 extends BaseAccount>
 
                     @Override
                     public boolean isEmpty() {
-                        return table.getItems().isEmpty();
+                        // realLines, not the rows: the quick screen's trailing entry
+                        // row is never absent, so asking the table directly reported a
+                        // table full of lines when nothing had been picked - and the
+                        // "replace the source invoice?" confirmation appeared on an
+                        // empty return.
+                        return InvoiceLineTotals.realLines(table.getItems()).isEmpty();
                     }
 
                     @Override
