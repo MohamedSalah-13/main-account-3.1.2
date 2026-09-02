@@ -40,8 +40,14 @@ public class BuyApplication extends Application {
     private record OpenInvoice(DocumentType documentType, int number) {
     }
 
+    /**
+     * A <b>new</b> invoice opens in the screen last chosen with F6; an edit always
+     * opens in the standard one, which is the only screen that can load an existing
+     * document - {@code BuyController2.switchScreenMode} refuses to switch there.
+     */
     public BuyApplication(DataInterface<?, ?, ?, ?> dataInterface, int numInvoiceUpdate) throws Exception {
-        this(dataInterface, numInvoiceUpdate, InvoiceScreenMode.STANDARD);
+        this(dataInterface, numInvoiceUpdate,
+                numInvoiceUpdate == 0 ? InvoiceScreenMode.remembered() : InvoiceScreenMode.STANDARD);
     }
 
     public BuyApplication(DataInterface<?, ?, ?, ?> dataInterface, int numInvoiceUpdate,

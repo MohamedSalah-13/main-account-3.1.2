@@ -25,6 +25,7 @@ public class PropertiesName extends PreferencesSetting {
     private static final String INVOICE_BACKUP_AFTER_SAVE = "invoice.backup.after.save";
     private static final String INVOICE_UPDATE_PRICE = "invoice.update.price";
     private static final String INVOICE_SHOW_SCREEN_PAID = "invoice.show.screen.paid";
+    private static final String INVOICE_SCREEN_MODE = "invoice.screen.mode";
     private static final String RETURN_REQUIRE_SOURCE_INVOICE = "return.require.source.invoice";
     private static final String RETURN_FREE_LIMIT = "return.free.limit";
     // -------------------
@@ -451,6 +452,19 @@ public class PropertiesName extends PreferencesSetting {
 
     public static void setInvoiceUpdatePrice(boolean value) {
         putBoolean(INVOICE_UPDATE_PRICE, value);
+    }
+
+    /**
+     * The invoice screen last chosen with F6, as an {@code InvoiceScreenMode} name.
+     * Stored as text rather than as the enum, so this class stays free of the
+     * controller package; {@code InvoiceScreenMode.remembered()} is what reads it.
+     */
+    public static String getInvoiceScreenMode() {
+        return getString(INVOICE_SCREEN_MODE, "");
+    }
+
+    public static void setInvoiceScreenMode(String value) {
+        putString(INVOICE_SCREEN_MODE, value);
     }
 
     public static double getSearchItemsSplitPaneDivider() {

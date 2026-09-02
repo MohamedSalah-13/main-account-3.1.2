@@ -326,7 +326,11 @@ public class BuyController2<T3 extends BaseNames, T4 extends BaseAccount>
                     LanguageManager.getInstance().getString("invoice.confirm.new.invoice"))) {
                 return;
             }
-            new com.hamza.account.view.BuyApplication(dataInterface, 0, screenMode.opposite())
+            // Remembered before the window opens, so the next new invoice - from the
+            // dashboard as much as from here - starts in the screen just chosen.
+            InvoiceScreenMode chosen = screenMode.opposite();
+            chosen.remember();
+            new com.hamza.account.view.BuyApplication(dataInterface, 0, chosen)
                     .start(new Stage());
             ((Stage) btnQuickMode.getScene().getWindow()).close();
         } catch (Exception e) {
