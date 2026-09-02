@@ -9,6 +9,8 @@ public class Error_Text_Show {
 
 
     public static final String CANT_DELETE = INSTANCE.getString("msg.cant.delete");
+    public static final String USER_NAME_REQUIRED = INSTANCE.getString("msg.user.name.required");
+    public static final String USER_PASSWORD_REQUIRED = INSTANCE.getString("msg.user.password.required");
 
     public static final String UNABLE_CONNECT = INSTANCE.getString("msg.unable.connect");
 
