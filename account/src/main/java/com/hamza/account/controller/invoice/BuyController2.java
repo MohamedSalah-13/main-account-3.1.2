@@ -326,7 +326,11 @@ public class BuyController2<T3 extends BaseNames, T4 extends BaseAccount>
                     LanguageManager.getInstance().getString("invoice.confirm.new.invoice"))) {
                 return;
             }
-            new com.hamza.account.view.BuyApplication(dataInterface, 0, screenMode.opposite())
+            // Remembered before the window opens, so the next new invoice - from the
+            // dashboard as much as from here - starts in the screen just chosen.
+            InvoiceScreenMode chosen = screenMode.opposite();
+            chosen.remember();
+            new com.hamza.account.view.BuyApplication(dataInterface, 0, chosen)
                     .start(new Stage());
             ((Stage) btnQuickMode.getScene().getWindow()).close();
         } catch (Exception e) {
@@ -427,7 +431,12 @@ public class BuyController2<T3 extends BaseNames, T4 extends BaseAccount>
 
                     @Override
                     public boolean isEmpty() {
-                        return table.getItems().isEmpty();
+                        // realLines, not the rows: the quick screen's trailing entry
+                        // row is never absent, so asking the table directly reported a
+                        // table full of lines when nothing had been picked - and the
+                        // "replace the source invoice?" confirmation appeared on an
+                        // empty return.
+                        return InvoiceLineTotals.realLines(table.getItems()).isEmpty();
                     }
 
                     @Override
