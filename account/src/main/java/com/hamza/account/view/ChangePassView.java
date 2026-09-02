@@ -27,9 +27,11 @@ public class ChangePassView {
             @Override
             public boolean updatePass(String newPass) throws Exception {
                 Users users = ServiceRegistry.get(UsersService.class).getUsersById(CurrentUser.get().getId());
-                users.setPasswordHash(PasswordHasher.hash(newPass));
+                // The plain password goes down: the service hashes it, so it can refuse a
+                // blank one. Hashing here first handed it something it could not check.
                 boolean updated = ServiceRegistry.get(UsersService.class)
-                        .updateOwnPassword(users.getId(), users.getPasswordHash()) == 1;
+                        .updateOwnPassword(users.getId(), newPass) == 1;
+                users.setPasswordHash(PasswordHasher.hash(newPass));
                 if (updated) ServiceRegistry.get(UserSessionContext.class).updateCurrentUser(users);
                 return updated;
             }
