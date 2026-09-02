@@ -4,6 +4,7 @@ import com.hamza.account.controller.search.ItemSuggestionField;
 import com.hamza.account.features.invoice.InvoiceItemSelection;
 import com.hamza.account.features.invoice.InvoiceLineDraft;
 import com.hamza.account.features.invoice.InvoiceLineTotals;
+import com.hamza.account.features.invoice.QuickEntryRules;
 import com.hamza.account.model.base.BasePurchasesAndSales;
 import com.hamza.account.model.domain.ItemsModel;
 import javafx.application.Platform;
@@ -163,7 +164,7 @@ public final class QuickInvoiceTable {
 
         ensureEntryRow();
         table.getItems().addListener((javafx.collections.ListChangeListener<BasePurchasesAndSales>) change -> {
-            if (table.getItems().isEmpty() || !isEntryRow(table.getItems().getLast())) {
+            if (QuickEntryRules.needsEntryRow(table.getItems())) {
                 // Either the table was emptied, or the entry row itself was just removed
                 // (the row delete button) while real lines remain.
                 Platform.runLater(this::ensureEntryRow);
@@ -176,7 +177,7 @@ public final class QuickInvoiceTable {
 
     /** Adds the trailing entry row back if it is missing. */
     public void ensureEntryRow() {
-        if (table.getItems().isEmpty() || !isEntryRow(table.getItems().getLast())) {
+        if (QuickEntryRules.needsEntryRow(table.getItems())) {
             table.getItems().add(host.newEntryRow());
         }
     }
@@ -219,7 +220,7 @@ public final class QuickInvoiceTable {
 
     /** Whether this row is the trailing entry row rather than a line of the invoice. */
     public static boolean isEntryRow(BasePurchasesAndSales line) {
-        return InvoiceLineTotals.isPlaceholder(line);
+        return QuickEntryRules.isEntryRow(line);
     }
 
     private void configureKeys() {
@@ -256,35 +257,29 @@ public final class QuickInvoiceTable {
      * entry row, so the key is stopped here instead.
      */
     private void consumeOnEntryRow(KeyEvent event) {
-        int row = focusedRow();
-        if (row >= 0 && isEntryRow(table.getItems().get(row))) {
+        if (QuickEntryRules.swallowsQuantityNudge(table.getItems(), focusedRow())) {
             event.consume();
         }
     }
 
     private void editFocusedCell() {
         int row = focusedRow();
-        if (row < 0) {
+        if (row == QuickEntryRules.ENTRY_ROW) {
             focusEntryRow();
             return;
         }
         TableColumn<BasePurchasesAndSales, ?> column =
                 table.getFocusModel().getFocusedCell().getTableColumn();
         int index = column == null ? -1 : table.getColumns().indexOf(column);
-        if (index < 0 || !column.isEditable()) {
-            index = isEntryRow(table.getItems().get(row))
-                    ? InvoiceTableCoordinator.BARCODE_COLUMN
-                    : InvoiceTableCoordinator.QUANTITY_COLUMN;
-        }
-        editCell(row, index);
+        editCell(row, QuickEntryRules.columnToEditOnEnter(table.getItems(), row, index,
+                column != null && column.isEditable(),
+                InvoiceTableCoordinator.BARCODE_COLUMN,
+                InvoiceTableCoordinator.QUANTITY_COLUMN));
     }
 
     private void deleteFocusedLine() {
         int row = focusedRow();
-        if (row < 0 || row >= table.getItems().size()) {
-            return;
-        }
-        if (isEntryRow(table.getItems().get(row))) {
+        if (!QuickEntryRules.canDelete(table.getItems(), row)) {
             return;
         }
         table.getItems().remove(row);
@@ -292,10 +287,11 @@ public final class QuickInvoiceTable {
         host.totalsChanged();
     }
 
+    /** The focused row, or {@link QuickEntryRules#ENTRY_ROW} when the focus is nowhere. */
     private int focusedRow() {
         var focused = table.getFocusModel().getFocusedCell();
-        int row = focused == null ? -1 : focused.getRow();
-        return row >= 0 && row < table.getItems().size() ? row : -1;
+        return QuickEntryRules.focusedRow(table.getItems(),
+                focused == null ? QuickEntryRules.ENTRY_ROW : focused.getRow());
     }
 
     private void selectByBarcode(String barcode) {
@@ -341,12 +337,8 @@ public final class QuickInvoiceTable {
         }
         restoreEntryRow(entryRow);
         host.totalsChanged();
-        if (added == null) {
-            focusEntryRow();
-            return;
-        }
-        int row = table.getItems().indexOf(added);
-        if (row < 0) {
+        int row = QuickEntryRules.rowToEditAfterAdd(table.getItems(), added);
+        if (row == QuickEntryRules.ENTRY_ROW) {
             focusEntryRow();
         } else {
             editCell(row, InvoiceTableCoordinator.QUANTITY_COLUMN);
@@ -354,10 +346,8 @@ public final class QuickInvoiceTable {
     }
 
     private BasePurchasesAndSales removeEntryRow() {
-        if (!table.getItems().isEmpty() && isEntryRow(table.getItems().getLast())) {
-            return table.getItems().removeLast();
-        }
-        return null;
+        int row = QuickEntryRules.entryRowIndex(table.getItems());
+        return row == QuickEntryRules.ENTRY_ROW ? null : table.getItems().remove(row);
     }
 
     private void restoreEntryRow(BasePurchasesAndSales entryRow) {
