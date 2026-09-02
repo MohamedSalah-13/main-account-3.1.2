@@ -175,9 +175,7 @@ public class TotalsController<T1 extends BasePurchasesAndSales, T2 extends BaseT
         permissionDisableService.applyPermissionBasedDisable(btnDelete::setDisable, dataInterface.designInterface().delete());
         permissionDisableService.applyPermissionBasedDisable(btnShowInvoice::setDisable, dataInterface.designInterface().show_totals_invoice());
 
-        var aBoolean = permissionDisableService.getABoolean(UserPermissionType.UPDATE_DATA_BEFORE_MONTH);
-        if (aBoolean != null)
-            update_data = aBoolean;
+        update_data = permissionDisableService.getABoolean(UserPermissionType.UPDATE_DATA_BEFORE_MONTH);
     }
 
     private void addTimeSearch() {
