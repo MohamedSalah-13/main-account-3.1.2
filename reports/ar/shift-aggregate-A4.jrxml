@@ -21,11 +21,11 @@
     <field name="username" class="java.lang.String"/>
     <field name="openTime" class="java.time.LocalDateTime"/>
     <field name="closeTime" class="java.time.LocalDateTime"/>
-    <field name="openBalance" class="java.lang.Double"/>
-    <field name="closeBalance" class="java.lang.Double"/>
-    <field name="expectedBalance" class="java.lang.Double"/>
-    <field name="difference" class="java.lang.Double"/>
-    <field name="status" class="java.lang.String"/>
+    <field name="openBalance" class="java.math.BigDecimal"/>
+    <field name="closeBalance" class="java.math.BigDecimal"/>
+    <field name="expectedBalance" class="java.math.BigDecimal"/>
+    <field name="difference" class="java.math.BigDecimal"/>
+    <field name="status" class="com.hamza.account.features.shift.ShiftStatus"/>
 
     <title>
         <band height="80">
@@ -34,7 +34,7 @@
                 <textElement textAlignment="Center">
                     <font size="16" isBold="true"/>
                 </textElement>
-                <textFieldExpression><![CDATA["Shift Aggregate Report"]]></textFieldExpression>
+                <textFieldExpression>$R{report.shifts.aggregate.title}</textFieldExpression>
             </textField>
 
             <textField>
@@ -42,7 +42,7 @@
                 <textElement textAlignment="Center">
                     <font size="10"/>
                 </textElement>
-                <textFieldExpression><![CDATA["From: " + $P{dateFrom} + "    To: " + $P{dateTo} + "    User: " + $P{username}]]></textFieldExpression>
+                <textFieldExpression><![CDATA[$R{report.from} + ": " + $P{dateFrom} + "    " + $R{report.to} + ": " + $P{dateTo} + "    " + $R{user.shift.column.username} + ": " + $P{username}]]></textFieldExpression>
             </textField>
 
             <line>
@@ -58,41 +58,41 @@
                 <textElement textAlignment="Center"><font isBold="true"/></textElement>
                 <text><![CDATA[#]]></text>
             </staticText>
-            <staticText>
+            <textField>
                 <reportElement x="30" y="0" width="95" height="20" mode="Opaque" backcolor="#EAEAEA"/>
                 <textElement textAlignment="Center"><font isBold="true"/></textElement>
-                <text><![CDATA[User]]></text>
-            </staticText>
-            <staticText>
+                <textFieldExpression>$R{user.shift.column.username}</textFieldExpression>
+            </textField>
+            <textField>
                 <reportElement x="125" y="0" width="105" height="20" mode="Opaque" backcolor="#EAEAEA"/>
                 <textElement textAlignment="Center"><font isBold="true"/></textElement>
-                <text><![CDATA[Open Time]]></text>
-            </staticText>
-            <staticText>
+                <textFieldExpression>$R{user.shift.column.open.time}</textFieldExpression>
+            </textField>
+            <textField>
                 <reportElement x="230" y="0" width="105" height="20" mode="Opaque" backcolor="#EAEAEA"/>
                 <textElement textAlignment="Center"><font isBold="true"/></textElement>
-                <text><![CDATA[Close Time]]></text>
-            </staticText>
-            <staticText>
+                <textFieldExpression>$R{user.shift.column.close.time}</textFieldExpression>
+            </textField>
+            <textField>
                 <reportElement x="335" y="0" width="70" height="20" mode="Opaque" backcolor="#EAEAEA"/>
                 <textElement textAlignment="Center"><font isBold="true"/></textElement>
-                <text><![CDATA[Open]]></text>
-            </staticText>
-            <staticText>
+                <textFieldExpression>$R{user.shift.column.open.balance}</textFieldExpression>
+            </textField>
+            <textField>
                 <reportElement x="405" y="0" width="70" height="20" mode="Opaque" backcolor="#EAEAEA"/>
                 <textElement textAlignment="Center"><font isBold="true"/></textElement>
-                <text><![CDATA[Close]]></text>
-            </staticText>
-            <staticText>
+                <textFieldExpression>$R{user.shift.column.close.balance}</textFieldExpression>
+            </textField>
+            <textField>
                 <reportElement x="475" y="0" width="40" height="20" mode="Opaque" backcolor="#EAEAEA"/>
                 <textElement textAlignment="Center"><font isBold="true"/></textElement>
-                <text><![CDATA[Exp]]></text>
-            </staticText>
-            <staticText>
+                <textFieldExpression>$R{user.shift.column.expected.short}</textFieldExpression>
+            </textField>
+            <textField>
                 <reportElement x="515" y="0" width="40" height="20" mode="Opaque" backcolor="#EAEAEA"/>
                 <textElement textAlignment="Center"><font isBold="true"/></textElement>
-                <text><![CDATA[Diff]]></text>
-            </staticText>
+                <textFieldExpression>$R{user.shift.column.difference.short}</textFieldExpression>
+            </textField>
         </band>
     </columnHeader>
 
@@ -151,7 +151,7 @@
                 <textElement textAlignment="Right">
                     <font size="10" isBold="true"/>
                 </textElement>
-                <textFieldExpression><![CDATA["Total Shifts: " + $V{REPORT_COUNT}]]></textFieldExpression>
+                <textFieldExpression><![CDATA[$R{user.shift.total.count} + ": " + $V{REPORT_COUNT}]]></textFieldExpression>
             </textField>
         </band>
     </summary>

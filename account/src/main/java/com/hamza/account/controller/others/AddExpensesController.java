@@ -9,7 +9,6 @@ import com.hamza.account.service.EmployeeService;
 import com.hamza.account.service.ExpensesDetailsService;
 import com.hamza.account.service.ExpensesService;
 import com.hamza.account.service.TreasuryService;
-import com.hamza.account.session.ShiftContext;
 import com.hamza.account.treasury.DefaultTreasury;
 import com.hamza.account.type.ExpensesType;
 import com.hamza.controlsfx.alert.AllAlerts;
@@ -115,10 +114,6 @@ public class AddExpensesController implements AddInterface {
 
     @Override
     public int insertData() throws DaoException {
-        if (!ShiftContext.requireOpenShift()) {
-            return 0;
-        }
-
         ExpensesDetails expensesDetails = new ExpensesDetails();
         ExpensesType byType = ExpensesType.fromType(comboType.getSelectionModel().getSelectedItem());
         if (byType == null) throw new UserValidationException(LanguageManager.getInstance().getString("expenses.error.invalid.type"));
@@ -146,7 +141,9 @@ public class AddExpensesController implements AddInterface {
         expensesDetails.setEmployees(employees);
         if (codeId > 0) {
             expensesDetails.setId(codeId);
-            return expensesDetailsService.update(expensesDetails);
+            var reason = com.hamza.account.controller.users.ShiftCorrectionReasonPrompt.forUpdate();
+            if (reason.isEmpty()) return 0;
+            return expensesDetailsService.update(expensesDetails, reason.get());
         }
         return expensesDetailsService.insert(expensesDetails);
     }

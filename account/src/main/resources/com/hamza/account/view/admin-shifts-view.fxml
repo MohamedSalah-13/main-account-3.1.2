@@ -1,24 +1,76 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
+<?import javafx.geometry.Insets?>
 <?import javafx.scene.control.Button?>
+<?import javafx.scene.control.CheckBox?>
+<?import javafx.scene.control.ComboBox?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.ScrollPane?>
 <?import javafx.scene.control.TableView?>
+<?import javafx.scene.control.ProgressIndicator?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.control.TitledPane?>
 <?import javafx.scene.control.ToolBar?>
 <?import javafx.scene.layout.AnchorPane?>
+<?import javafx.scene.layout.GridPane?>
 <?import javafx.scene.layout.VBox?>
 
-<AnchorPane xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.hamza.account.controller.users.AdminShiftsController"
-            prefWidth="1200.0" prefHeight="700.0">
-
+<AnchorPane xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
+            fx:controller="com.hamza.account.controller.users.AdminShiftsController"
+            prefWidth="1200.0" prefHeight="760.0">
     <children>
         <VBox spacing="10.0" AnchorPane.topAnchor="0.0" AnchorPane.rightAnchor="0.0"
-              AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" style="-fx-padding: 15;">
-
+              AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0">
+            <padding><Insets top="15" right="15" bottom="15" left="15" /></padding>
+            <TitledPane text="%user.shift.policy.title" expanded="true">
+                <content>
+                    <VBox spacing="10">
+                        <padding><Insets top="12" right="12" bottom="12" left="12" /></padding>
+                        <GridPane hgap="12" vgap="10">
+                            <Label text="%user.shift.policy.mode" GridPane.columnIndex="0" GridPane.rowIndex="0" />
+                            <ComboBox fx:id="comboShiftMode" GridPane.columnIndex="1" GridPane.rowIndex="0" />
+                            <Label text="%user.shift.policy.tolerance" GridPane.columnIndex="0" GridPane.rowIndex="1" />
+                            <TextField fx:id="txtVarianceTolerance" GridPane.columnIndex="1" GridPane.rowIndex="1" />
+                            <CheckBox fx:id="checkBlindClose" text="%user.shift.policy.blind.close" GridPane.columnIndex="2" GridPane.rowIndex="0" />
+                            <CheckBox fx:id="checkAutoPrintZ" text="%user.shift.policy.auto.print" GridPane.columnIndex="3" GridPane.rowIndex="0" />
+                            <CheckBox fx:id="checkVarianceReason" text="%user.shift.policy.reason.required" GridPane.columnIndex="2" GridPane.rowIndex="1" />
+                            <CheckBox fx:id="checkSupervisorApproval" text="%user.shift.policy.supervisor.required" GridPane.columnIndex="3" GridPane.rowIndex="1" />
+                        </GridPane>
+                        <Label text="%user.shift.policy.treasuries" />
+                        <ScrollPane fitToWidth="true" prefHeight="120">
+                            <content><VBox fx:id="treasuryPolicyRows" spacing="8" /></content>
+                        </ScrollPane>
+                        <Button fx:id="btnSavePolicy" text="%save" styleClass="btn-primary" />
+                    </VBox>
+                </content>
+            </TitledPane>
             <ToolBar>
                 <Button fx:id="btnRefresh" text="%refresh" />
-                <Button fx:id="btnForceClose" text="%user.shift.btn.force.close" style="-fx-background-color: #d9534f; -fx-text-fill: white;" />
+                <Button fx:id="btnForceClose" text="%user.shift.btn.force.close" styleClass="btn-danger" />
             </ToolBar>
-
             <TableView fx:id="tableView" VBox.vgrow="ALWAYS" />
+            <TitledPane fx:id="ledgerPane" text="%user.shift.ledger.title" expanded="true">
+                <content>
+                    <VBox spacing="8">
+                        <padding><Insets top="10" right="10" bottom="10" left="10" /></padding>
+                        <ToolBar>
+                            <Label text="%user.shift.ledger.filter.action" />
+                            <ComboBox fx:id="comboLedgerAction" promptText="%user.shift.ledger.filter.all" prefWidth="125" />
+                            <Label text="%user.shift.ledger.filter.source" />
+                            <ComboBox fx:id="comboLedgerSource" promptText="%user.shift.ledger.filter.all" prefWidth="170" />
+                            <Label text="%user.shift.ledger.filter.source.id" />
+                            <TextField fx:id="txtLedgerSourceId" promptText="%user.shift.ledger.filter.source.id.prompt" prefWidth="105" />
+                            <Button fx:id="btnLedgerRefresh" text="%refresh" styleClass="btn-primary" />
+                            <Button fx:id="btnLedgerClear" text="%reset" />
+                            <Button fx:id="btnLedgerReconcile" text="%user.shift.reconciliation.run" />
+                            <ProgressIndicator fx:id="ledgerProgress" visible="false" managed="true" prefWidth="24" prefHeight="24" />
+                            <Label fx:id="labelLedgerState" />
+                        </ToolBar>
+                        <Label fx:id="labelLedgerReconciliation" wrapText="true" />
+                        <TableView fx:id="ledgerTable" prefHeight="260" VBox.vgrow="ALWAYS" />
+                    </VBox>
+                </content>
+            </TitledPane>
         </VBox>
     </children>
 </AnchorPane>

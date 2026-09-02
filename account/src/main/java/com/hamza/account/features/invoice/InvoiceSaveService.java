@@ -11,6 +11,12 @@ import com.hamza.account.features.returns.ReturnPolicy;
 import com.hamza.account.features.returns.ReturnSourceWriter;
 import com.hamza.account.features.stockledger.StockMovementAssembler;
 import com.hamza.account.features.stockledger.StockMovementDao;
+import com.hamza.account.features.shift.ShiftGate;
+import com.hamza.account.features.shift.ShiftAttributionWriter;
+import com.hamza.account.features.shift.JdbcShiftCashEffectReader;
+import com.hamza.account.features.shift.ShiftCashEffect;
+import com.hamza.account.features.shift.ShiftCashLedger;
+import com.hamza.account.features.shift.ShiftCashSource;
 import com.hamza.account.document.InvoiceBuy;
 import com.hamza.account.document.TotalsAndPurchaseList;
 import com.hamza.account.model.base.BaseAccount;
@@ -48,6 +54,10 @@ public final class InvoiceSaveService<
     private final InvoiceLookup<Treasury> treasuryLookup;
     private final InvoiceLookup<Employees> delegateLookup;
     private final StockMovementDao stockMovementDao;
+    private final ShiftGate shiftGate;
+    private final ShiftAttributionWriter shiftAttribution;
+    private final ShiftCashLedger shiftCashLedger;
+    private final JdbcShiftCashEffectReader shiftEffectReader;
 
     /**
      * Built by the {@link com.hamza.account.interfaces.api.DataInterface} implementation
@@ -72,7 +82,8 @@ public final class InvoiceSaveService<
                 new ReturnGuard(new JdbcReturnableRepository(), returnPolicy()),
                 new ReturnSourceWriter(),
                 new ReturnCostResolver(new JdbcReturnableRepository()),
-                treasuryLookup, delegateLookup, new StockMovementDao());
+                treasuryLookup, delegateLookup, new StockMovementDao(), ShiftGate.jdbc(),
+                ShiftAttributionWriter.jdbc(), ShiftCashLedger.jdbc(), new JdbcShiftCashEffectReader());
     }
 
     InvoiceSaveService(InvoiceBuy<T1, T2, T3, T4> invoiceFactory,
@@ -87,6 +98,66 @@ public final class InvoiceSaveService<
                        InvoiceLookup<Treasury> treasuryLookup,
                        InvoiceLookup<Employees> delegateLookup,
                        StockMovementDao stockMovementDao) {
+        this(invoiceFactory, repository, documentType, clock, numberAllocator, transactions,
+                stockGuard, returnGuard, returnSourceWriter, returnCostResolver,
+                treasuryLookup, delegateLookup, stockMovementDao, ShiftGate.disabled());
+    }
+
+    InvoiceSaveService(InvoiceBuy<T1, T2, T3, T4> invoiceFactory,
+                       TotalsAndPurchaseList<T1, T2> repository,
+                       DocumentType documentType, Clock clock,
+                       InvoiceNumberAllocator numberAllocator,
+                       InvoiceTransactionExecutor transactions,
+                       InvoiceStockGuard stockGuard,
+                       ReturnGuard returnGuard,
+                       ReturnSourceWriter returnSourceWriter,
+                       ReturnCostResolver returnCostResolver,
+                       InvoiceLookup<Treasury> treasuryLookup,
+                       InvoiceLookup<Employees> delegateLookup,
+                       StockMovementDao stockMovementDao,
+                       ShiftGate shiftGate) {
+        this(invoiceFactory, repository, documentType, clock, numberAllocator, transactions,
+                stockGuard, returnGuard, returnSourceWriter, returnCostResolver,
+                treasuryLookup, delegateLookup, stockMovementDao, shiftGate,
+                ShiftAttributionWriter.disabled(), ShiftCashLedger.disabled(), null);
+    }
+
+    InvoiceSaveService(InvoiceBuy<T1, T2, T3, T4> invoiceFactory,
+                       TotalsAndPurchaseList<T1, T2> repository,
+                       DocumentType documentType, Clock clock,
+                       InvoiceNumberAllocator numberAllocator,
+                       InvoiceTransactionExecutor transactions,
+                       InvoiceStockGuard stockGuard,
+                       ReturnGuard returnGuard,
+                       ReturnSourceWriter returnSourceWriter,
+                       ReturnCostResolver returnCostResolver,
+                       InvoiceLookup<Treasury> treasuryLookup,
+                       InvoiceLookup<Employees> delegateLookup,
+                       StockMovementDao stockMovementDao,
+                       ShiftGate shiftGate,
+                       ShiftAttributionWriter shiftAttribution) {
+        this(invoiceFactory, repository, documentType, clock, numberAllocator, transactions,
+                stockGuard, returnGuard, returnSourceWriter, returnCostResolver, treasuryLookup,
+                delegateLookup, stockMovementDao, shiftGate, shiftAttribution,
+                ShiftCashLedger.disabled(), null);
+    }
+
+    InvoiceSaveService(InvoiceBuy<T1, T2, T3, T4> invoiceFactory,
+                       TotalsAndPurchaseList<T1, T2> repository,
+                       DocumentType documentType, Clock clock,
+                       InvoiceNumberAllocator numberAllocator,
+                       InvoiceTransactionExecutor transactions,
+                       InvoiceStockGuard stockGuard,
+                       ReturnGuard returnGuard,
+                       ReturnSourceWriter returnSourceWriter,
+                       ReturnCostResolver returnCostResolver,
+                       InvoiceLookup<Treasury> treasuryLookup,
+                       InvoiceLookup<Employees> delegateLookup,
+                       StockMovementDao stockMovementDao,
+                       ShiftGate shiftGate,
+                       ShiftAttributionWriter shiftAttribution,
+                       ShiftCashLedger shiftCashLedger,
+                       JdbcShiftCashEffectReader shiftEffectReader) {
         this.invoiceFactory = invoiceFactory;
         this.repository = repository;
         this.documentType = documentType;
@@ -100,6 +171,10 @@ public final class InvoiceSaveService<
         this.treasuryLookup = treasuryLookup;
         this.delegateLookup = delegateLookup;
         this.stockMovementDao = stockMovementDao;
+        this.shiftGate = shiftGate;
+        this.shiftAttribution = shiftAttribution;
+        this.shiftCashLedger = shiftCashLedger;
+        this.shiftEffectReader = shiftEffectReader;
     }
 
     /** The two return settings, read here rather than inside the guard - see the constructor. */
@@ -173,10 +248,38 @@ public final class InvoiceSaveService<
                 payment.paid(), payment.remaining(), command.notes(), party,
                 new Stock(command.stockId()), delegate, persistedLines, treasury);
 
+        int userId = invoice.getUsers() == null ? 0 : invoice.getUsers().getId();
+        ShiftCashEffect previous = command.updating() && shiftEffectReader != null
+                ? shiftEffectReader.document(documentType, invoiceNumber) : null;
+        var previousShiftId = previous == null ? java.util.OptionalInt.empty()
+                : shiftGate.requireCashCorrection(userId, previous.treasuryId(),
+                    previous.income().add(previous.output()).abs(), previous.originalShiftId());
+        var shiftId = previous == null
+                ? shiftGate.requireCashAction(userId, treasury.getId(),
+                    com.hamza.account.finance.MoneyMath.decimal(payment.paid()))
+                : shiftGate.requireCashCorrection(userId, treasury.getId(),
+                    com.hamza.account.finance.MoneyMath.decimal(payment.paid()), previous.originalShiftId());
+
         DaoList<T2> dao = repository.totalDao();
         int affected = command.updating() ? dao.update(invoice) : dao.insert(invoice);
         if (affected != 1) {
             throw new DaoException("لم يتم حفظ الفاتورة؛ لم تؤثر العملية في سجل واحد");
+        }
+        if (!command.updating()) {
+            shiftAttribution.assignDocument(documentType, invoiceNumber, shiftId);
+        }
+        ShiftCashSource cashSource = ShiftCashSource.document(documentType);
+        var paid = com.hamza.account.finance.MoneyMath.decimal(payment.paid());
+        ShiftCashEffect current = documentType.cashSign() > 0
+                ? ShiftCashEffect.incoming(cashSource, invoiceNumber, treasury.getId(),
+                    shiftId.isPresent() ? shiftId.getAsInt() : null, paid)
+                : ShiftCashEffect.outgoing(cashSource, invoiceNumber, treasury.getId(),
+                    shiftId.isPresent() ? shiftId.getAsInt() : null, paid);
+        if (command.updating() && previous != null) {
+            shiftCashLedger.updated(previousShiftId, shiftId, userId, previous, current,
+                    command.correctionReason());
+        } else {
+            shiftCashLedger.created(shiftId, userId, current);
         }
         if (documentType.isReturn()) {
             returnSourceWriter.writeSource(documentType, invoiceNumber,

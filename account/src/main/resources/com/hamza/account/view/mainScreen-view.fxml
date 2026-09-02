@@ -225,6 +225,7 @@
                                                             <children>
                                                                 <Button fx:id="btnHome" mnemonicParsing="false" styleClass="sidebar-nav-active" text="Home" />
                                                                 <Button fx:id="btnSetting" mnemonicParsing="false" text="Setting" />
+                                                                <Button fx:id="btnMyShift" mnemonicParsing="false" text="My Shift" />
                                                                 <Button fx:id="btnShiftReports" mnemonicParsing="false" text="Shift Reports" />
                                                                 <Button fx:id="btnBackup" mnemonicParsing="false" text="Backup" />
                                                                 <Button fx:id="btnDeleteData" mnemonicParsing="false" text="Delete Data" />

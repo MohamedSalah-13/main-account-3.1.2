@@ -143,6 +143,14 @@ public final class AppPermissions {
     public static final PermissionKey AREA_DELETE = key("area.delete");
     public static final PermissionKey AUDIT_DELETE = key("audit.delete");
     public static final PermissionKey USER_SHIFT_MANAGE = key("user.shift.manage");
+    public static final PermissionKey SHIFT_SELF_VIEW = key("shift.self.view");
+    public static final PermissionKey SHIFT_SELF_OPEN = key("shift.self.open");
+    public static final PermissionKey SHIFT_SELF_CLOSE = key("shift.self.close");
+    public static final PermissionKey SHIFT_X_REPORT_VIEW = key("shift.xreport.view");
+    public static final PermissionKey SHIFT_FORCE_CLOSE = key("shift.force.close");
+    public static final PermissionKey SHIFT_POLICY_MANAGE = key("shift.policy.manage");
+    public static final PermissionKey SHIFT_REPORT_REPRINT = key("shift.report.reprint");
+    public static final PermissionKey SHIFT_LEDGER_VIEW = key("shift.ledger.view");
     public static final PermissionKey PUBLIC_ACCESS = PermissionKey.publicAccess();
     public static final PermissionKey DISABLE_BUTTON = PermissionKey.deny();
 

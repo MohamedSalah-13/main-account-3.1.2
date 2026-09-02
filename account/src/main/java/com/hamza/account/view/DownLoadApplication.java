@@ -18,6 +18,10 @@ import com.hamza.account.features.itemmerge.ItemMergeService;
 import com.hamza.account.features.profitloss.ProfitLossService;
 import com.hamza.account.features.stockcount.StockCountService;
 import com.hamza.account.features.stocktransfer.StockTransferService;
+import com.hamza.account.features.shift.JdbcShiftPolicyRepository;
+import com.hamza.account.features.shift.ShiftPolicyService;
+import com.hamza.account.features.shift.ShiftCashAuditService;
+import com.hamza.account.features.shift.ShiftReconciliationService;
 import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.period.PeriodLockService;
 import com.hamza.account.service.*;
@@ -127,7 +131,8 @@ public class DownLoadApplication extends Application {
     }
 
     private static void registerServices(DaoFactory daoFactory) {
-        ServiceRegistry.register(EventBus.class, new EventBus());
+        EventBus eventBus = new EventBus();
+        ServiceRegistry.register(EventBus.class, eventBus);
 
         UserSessionContext userSession = new UserSessionContext();
         JdbcRbacRepository authorizationRepository = new JdbcRbacRepository();
@@ -171,7 +176,14 @@ public class DownLoadApplication extends Application {
         ServiceRegistry.register(ItemMiniQuantityService.class, new ItemMiniQuantityService(daoFactory));
         ServiceRegistry.register(AreaService.class, new AreaService(daoFactory));
         ServiceRegistry.register(SelPriceItemService.class, new SelPriceItemService(daoFactory));
-        ServiceRegistry.register(UserShiftService.class, new UserShiftService(daoFactory));
+        ShiftPolicyService shiftPolicies = new ShiftPolicyService(new JdbcShiftPolicyRepository(), eventBus);
+        UserShiftService shiftService = new UserShiftService(
+                daoFactory, userSession, shiftPolicies, eventBus, java.time.Clock.systemDefaultZone());
+        ServiceRegistry.register(ShiftPolicyService.class, shiftPolicies);
+        ServiceRegistry.register(ShiftCashAuditService.class, new ShiftCashAuditService());
+        ServiceRegistry.register(ShiftReconciliationService.class, new ShiftReconciliationService());
+        ServiceRegistry.register(UserShiftService.class, shiftService);
+        ServiceRegistry.register(ShiftReportService.class, new ShiftReportService(daoFactory, shiftService));
         ServiceRegistry.register(PurchaseService.class, new PurchaseService(daoFactory));
         ServiceRegistry.register(PurchaseReService.class, new PurchaseReService(daoFactory));
         ServiceRegistry.register(SalesService.class, new SalesService(daoFactory));

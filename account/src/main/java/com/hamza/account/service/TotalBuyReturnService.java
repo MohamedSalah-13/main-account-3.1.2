@@ -13,6 +13,7 @@ import com.hamza.account.model.dao.TotalsPurchaseReturnDao;
 import com.hamza.account.model.domain.Total_Buy_Re;
 import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.database.TransactionTemplate;
+import com.hamza.account.features.shift.ShiftDocumentDeletionJournal;
 import org.jetbrains.annotations.NotNull;
 
 import java.time.LocalDate;
@@ -43,12 +44,19 @@ public record TotalBuyReturnService(DaoFactory daoFactory) {
 
     /** Refused whole if any of them falls inside a closed period - see TotalSalesService. */
     public int deleteMultiData(Integer[] ids) throws DaoException {
+        return deleteMultiData(ids, null);
+    }
+
+    public int deleteMultiData(Integer[] ids, String correctionReason) throws DaoException {
         AuthorizationGuard.require(AppPermissions.PURCHASE_RE_DELETE);
         PeriodLock.require(PeriodLockRegistry.PURCHASE_RETURN, List.of(ids));
         return TransactionTemplate.execute(() -> {
+            var journal = new ShiftDocumentDeletionJournal(daoFactory).capture(DocumentType.PURCHASE_RETURN, ids);
             daoFactory.stockMovementDao().deleteByReferences(
                     StockMovementAssembler.referenceTypeFor(DocumentType.PURCHASE_RETURN), ids);
-            return getTotalsPurchaseReturnDao().deleteInvoicesInRange(ids);
+            int rows = getTotalsPurchaseReturnDao().deleteInvoicesInRange(ids);
+            journal.appendReversals(rows, correctionReason);
+            return rows;
         });
     }
 

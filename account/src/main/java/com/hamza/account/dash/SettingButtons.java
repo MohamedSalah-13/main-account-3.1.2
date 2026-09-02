@@ -123,7 +123,7 @@ public class SettingButtons {
         return new ButtonWithPerm() {
             @Override
             public PermissionKey getPermissionType() {
-                return AppPermissions.PUBLIC_ACCESS;
+                return AppPermissions.USER_SHIFT_MANAGE;
             }
 
             @Override
@@ -246,7 +246,7 @@ public class SettingButtons {
             @NotNull
             @Override
             public String textName() {
-                return LanguageManager.getInstance().getString("Administrator");
+                return LanguageManager.getInstance().getString("user.shift.admin.button");
             }
         };
     }

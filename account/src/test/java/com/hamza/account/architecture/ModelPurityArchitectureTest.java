@@ -51,7 +51,6 @@ class ModelPurityArchitectureTest {
             "com/hamza/account/model/domain/TreasuryData.java",
             "com/hamza/account/model/domain/TreasuryMovementData.java",
             "com/hamza/account/model/domain/UnitsModel.java",
-            "com/hamza/account/model/domain/UserShift.java",
             "com/hamza/account/model/domain/Users.java");
 
     private static Set<String> modelsImportingJavaFx() {

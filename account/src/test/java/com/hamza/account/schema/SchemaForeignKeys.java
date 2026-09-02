@@ -44,7 +44,8 @@ public final class SchemaForeignKeys {
     private static final List<String> MIGRATIONS = List.of(
             "V1__baseline.sql", "V3__item_barcodes.sql", "V5__item_units.sql",
             "V8__stock_count.sql", "V9__accounting_lock.sql",
-            "V22__user_shift_treasury.sql", "V23__expense_employee_link.sql");
+            "V22__user_shift_treasury.sql", "V23__expense_employee_link.sql",
+            "V24__strong_optional_shift_policy.sql", "V25__shift_cash_attribution.sql");
 
     private static final List<ForeignKey> KEYS = read();
 

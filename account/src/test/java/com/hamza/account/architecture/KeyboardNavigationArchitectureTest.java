@@ -70,8 +70,7 @@ class KeyboardNavigationArchitectureTest {
             "com/hamza/account/controller/setting/SettingTabBarcodeController.java",
             "com/hamza/account/controller/setting/SettingTabLanguageController.java",
             "com/hamza/account/controller/users/AddUserController.java",
-            "com/hamza/account/controller/users/UserPermissionController.java",
-            "com/hamza/account/controller/users/UserShiftController.java");
+            "com/hamza/account/controller/users/UserPermissionController.java");
 
     @Test
     void everyNewDataEntryScreenDeclaresItsEnterOrder() {

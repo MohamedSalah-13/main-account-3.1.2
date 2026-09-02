@@ -1,57 +1,41 @@
 package com.hamza.account.controller.invoice;
 
-import com.hamza.account.config.ThemeManager;
+import com.hamza.account.authorization.AppPermissions;
 import com.hamza.account.authorization.AuthorizationGuard;
 import com.hamza.account.authorization.PermissionKey;
-import com.hamza.account.authorization.AppPermissions;
-
 import com.hamza.account.config.DefaultStock;
 import com.hamza.account.config.Image_Setting;
-import com.hamza.account.controller.others.TextSearchController;
+import com.hamza.account.config.ThemeManager;
 import com.hamza.account.controller.others.ServiceRegistry;
+import com.hamza.account.controller.others.TextSearchController;
 import com.hamza.account.controller.search.ItemSuggestionField;
 import com.hamza.account.controller.setting.SettingTabLanguageController;
+import com.hamza.account.controller.users.ShiftCorrectionReasonPrompt;
+import com.hamza.account.document.DocumentType;
 import com.hamza.account.features.events.EmployeesChanged;
 import com.hamza.account.features.events.StocksChanged;
-import com.hamza.account.finance.MoneyMath;
-import com.hamza.account.features.invoice.InvoiceItemSelectionService;
-import com.hamza.account.features.invoice.InvoiceItemSelection;
-import com.hamza.account.features.scalebarcode.ScaleBarcodeValueType;
-import com.hamza.account.features.invoice.InvoiceItemCatalogService;
-import com.hamza.account.features.invoice.InvoiceExpiryOptions;
-import com.hamza.account.features.invoice.InvoiceExpiryService;
-import com.hamza.account.features.invoice.InvoiceLineDraft;
-import com.hamza.account.features.invoice.InvoiceLineEditService;
-import com.hamza.account.features.invoice.InvoiceLineService;
-import com.hamza.account.features.invoice.InvoiceLineTotals;
-import com.hamza.account.features.invoice.InvoiceEditorViewModel;
-import com.hamza.account.features.invoice.InvoicePaymentTerms;
-import com.hamza.account.features.invoice.InvoicePostSaveService;
-import com.hamza.account.features.invoice.InvoicePrintRequest;
-import com.hamza.account.features.invoice.InvoicePrintService;
-import com.hamza.account.features.invoice.InvoiceSaveCommand;
-import com.hamza.account.features.invoice.InvoiceSaveResult;
-import com.hamza.account.features.invoice.InvoiceSaveValidator;
-import com.hamza.account.features.invoice.InvoiceValidationException;
+import com.hamza.account.features.invoice.*;
 import com.hamza.account.features.notification.StockLevelAlert;
+import com.hamza.account.features.rbac.CurrentUser;
+import com.hamza.account.features.scalebarcode.ScaleBarcodeValueType;
+import com.hamza.account.finance.MoneyMath;
 import com.hamza.account.interfaces.api.DataInterface;
 import com.hamza.account.interfaces.api.InvoiceHeaderView;
 import com.hamza.account.model.base.BaseAccount;
 import com.hamza.account.model.base.BaseNames;
 import com.hamza.account.model.base.BasePurchasesAndSales;
 import com.hamza.account.model.base.BaseTotals;
-import com.hamza.account.model.domain.*;
+import com.hamza.account.model.domain.ItemsModel;
+import com.hamza.account.model.domain.Stock;
+import com.hamza.account.model.domain.UnitsModel;
 import com.hamza.account.openFxml.FxmlPath;
 import com.hamza.account.openFxml.OpenFxmlApplication;
 import com.hamza.account.otherSetting.MaskerPaneSetting;
-import com.hamza.account.treasury.DefaultTreasury;
 import com.hamza.account.service.*;
-import com.hamza.account.session.ShiftContext;
+import com.hamza.account.treasury.DefaultTreasury;
 import com.hamza.account.type.DiscountType;
 import com.hamza.account.type.InvoiceType;
-import com.hamza.account.document.DocumentType;
 import com.hamza.account.view.AddItemApplication;
-import com.hamza.account.features.rbac.CurrentUser;
 import com.hamza.account.view.SearchItemsApplication;
 import com.hamza.account.view.TextSearchApplication;
 import com.hamza.controlsfx.alert.AllAlerts;
@@ -71,15 +55,12 @@ import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.control.*;
-import javafx.scene.control.cell.TextFieldTableCell;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.StackPane;
 import javafx.scene.text.Text;
 import javafx.stage.Stage;
-import javafx.util.converter.DefaultStringConverter;
-import javafx.util.converter.DoubleStringConverter;
 import lombok.Getter;
 import lombok.extern.log4j.Log4j2;
 import org.jetbrains.annotations.NotNull;
@@ -88,7 +69,9 @@ import java.io.IOException;
 import java.net.URL;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.ResourceBundle;
 
 import static com.hamza.account.config.PropertiesName.*;
 import static com.hamza.account.controller.invoice.DialogCashPaid.showCashChangeDialog;
@@ -121,7 +104,9 @@ public class BuyController2<T3 extends BaseNames, T4 extends BaseAccount>
     private QuickInvoiceTable quickTable;
     private ItemSuggestionField itemSearchField;
     private int priceTypeByNameId = 1; // use a first price type
-    /** The invoice stock context; kept at the legacy default until warehouse selection is exposed. */
+    /**
+     * The invoice stock context; kept at the legacy default until warehouse selection is exposed.
+     */
     private int invoiceStockId = DefaultStock.ID;
     private int codeAccount;
     private boolean updatingPaymentUi;
@@ -183,6 +168,12 @@ public class BuyController2<T3 extends BaseNames, T4 extends BaseAccount>
         this.invoiceItemSelectionService = new InvoiceItemSelectionService(
                 dataInterface.designInterface().documentType(), itemsService,
                 dataInterface.invoiceBuy()::getItemsPrice);
+    }
+
+    static PermissionKey itemMutationPermission(String barcode) {
+        return barcode == null || barcode.isBlank()
+                ? AppPermissions.ITEMS_CREATE
+                : AppPermissions.ITEMS_UPDATE;
     }
 
     @Override
@@ -384,7 +375,9 @@ public class BuyController2<T3 extends BaseNames, T4 extends BaseAccount>
         gridPane.add(itemSearchField, 3, 2);
     }
 
-    /** What an item is worth on this screen: the customer's tier, or the cost when buying. */
+    /**
+     * What an item is worth on this screen: the customer's tier, or the cost when buying.
+     */
     private double itemPriceForThisScreen(ItemsModel item) {
         try {
             return dataInterface.designInterface().showDataForCustomer()
@@ -412,6 +405,12 @@ public class BuyController2<T3 extends BaseNames, T4 extends BaseAccount>
                 this::handleItemEntryError);
         itemEntry.configure();
     }
+
+    /**
+     * mergeRepeated=false: two picked lines of the same item must stay distinct rows,
+     * each keeping its own {@code sourceLineId}, rather than being folded into one row
+     * that could only point at one of them.
+     */
 
     private void configureReturnEntry() {
         returnEntry = new ReturnEntryCoordinator(
@@ -452,11 +451,8 @@ public class BuyController2<T3 extends BaseNames, T4 extends BaseAccount>
     }
 
     /**
-     * mergeRepeated=false: two picked lines of the same item must stay distinct rows,
-     * each keeping its own {@code sourceLineId}, rather than being folded into one row
-     * that could only point at one of them.
+     * The customer's or supplier's name, whichever side this screen is serving.
      */
-    /** The customer's or supplier's name, whichever side this screen is serving. */
     private String partyNameById(int partyId) throws Exception {
         for (T3 party : nameAndAccountInterface.nameList()) {
             if (party != null && party.getId() == partyId) {
@@ -569,7 +565,7 @@ public class BuyController2<T3 extends BaseNames, T4 extends BaseAccount>
      * at save with no way to supply the date.
      *
      * @return the row that was added or merged into, or null if the user cancelled the
-     *         expiry dialog - the only step that can decline without an error.
+     * expiry dialog - the only step that can decline without an error.
      */
     private BasePurchasesAndSales addLine(InvoiceLineDraft draft) throws Exception {
         // Captured before the row is added: the caller resets its selection once the
@@ -665,7 +661,6 @@ public class BuyController2<T3 extends BaseNames, T4 extends BaseAccount>
         }
     }
 
-
     private void saveInvoice(boolean print) {
         if (editor.isSaving()) {
             return;
@@ -673,18 +668,21 @@ public class BuyController2<T3 extends BaseNames, T4 extends BaseAccount>
         try {
             validateInvoiceForSave();
 
-            if (!ShiftContext.requireOpenShift()) {
+            if (!returnEntry.confirmIfUnlinked()) {
                 return;
             }
 
-            if (!returnEntry.confirmIfUnlinked()) {
-                return;
+            String correctionReason = "";
+            if (num_invoice_update > 0) {
+                var reason = ShiftCorrectionReasonPrompt.forUpdate();
+                if (reason.isEmpty()) return;
+                correctionReason = reason.get();
             }
 
             if (!AllAlerts.confirmSave()) {
                 return;
             }
-            saveInBackground(print, captureSaveCommand());
+            saveInBackground(print, captureSaveCommand(correctionReason));
         } catch (InvoiceValidationException e) {
             focusValidationTarget(e.target());
             logError(e);
@@ -703,7 +701,7 @@ public class BuyController2<T3 extends BaseNames, T4 extends BaseAccount>
         return InvoiceLineTotals.realLines(table.getItems());
     }
 
-    private InvoiceSaveCommand captureSaveCommand() throws InvoiceValidationException {
+    private InvoiceSaveCommand captureSaveCommand(String correctionReason) throws InvoiceValidationException {
         DiscountType discountType = radioAmount.isSelected()
                 ? DiscountType.AMOUNT
                 : DiscountType.RATE;
@@ -717,7 +715,7 @@ public class BuyController2<T3 extends BaseNames, T4 extends BaseAccount>
                 comboDelegate.getSelectionModel().getSelectedItem(),
                 getSelWithoutBalance(), returnEntry.sourceInvoiceNumber(),
                 returnEntry.selectedReturnReason(),
-                List.copyOf(linesForSave()), invoiceStockId);
+                List.copyOf(linesForSave()), invoiceStockId, correctionReason);
     }
 
     private void saveInBackground(boolean print, InvoiceSaveCommand command) {
@@ -864,8 +862,15 @@ public class BuyController2<T3 extends BaseNames, T4 extends BaseAccount>
         txtNum.setText(num_invoice_update > 0 ? String.valueOf(num_invoice_update) : lang.getString("invoice.number.generate"));
         // delegate data
         comboStock.setConverter(new javafx.util.StringConverter<>() {
-            @Override public String toString(Stock stock) { return stock == null ? "" : stock.getName(); }
-            @Override public Stock fromString(String value) { return null; }
+            @Override
+            public String toString(Stock stock) {
+                return stock == null ? "" : stock.getName();
+            }
+
+            @Override
+            public Stock fromString(String value) {
+                return null;
+            }
         });
         reloadStockItems();
         comboStock.getSelectionModel().selectedItemProperty().addListener((obs, oldStock, newStock) -> {
@@ -895,7 +900,12 @@ public class BuyController2<T3 extends BaseNames, T4 extends BaseAccount>
 
     @NotNull
     private List<Stock> getStocks() {
-        try { return stockService.getStocks(); } catch (DaoException e) { logError(e); return List.of(); }
+        try {
+            return stockService.getStocks();
+        } catch (DaoException e) {
+            logError(e);
+            return List.of();
+        }
     }
 
     /**
@@ -920,7 +930,6 @@ public class BuyController2<T3 extends BaseNames, T4 extends BaseAccount>
         }
         return new ArrayList<>();
     }
-
 
     private void reset_all() {
         table.getItems().clear();
@@ -1141,7 +1150,9 @@ public class BuyController2<T3 extends BaseNames, T4 extends BaseAccount>
         quickTable.configure();
     }
 
-    /** Whether anything has been entered - the quick screen's entry row does not count. */
+    /**
+     * Whether anything has been entered - the quick screen's entry row does not count.
+     */
     private boolean hasInvoiceLines() {
         return editor.totals().lineCount() > 0;
     }
@@ -1210,12 +1221,6 @@ public class BuyController2<T3 extends BaseNames, T4 extends BaseAccount>
                 () -> !AuthorizationGuard.isGranted(itemMutationPermission(txtBarcode.getText())),
                 txtBarcode.textProperty());
         btnUpdateItem.disableProperty().bind(observableValue.or(itemMutationDenied));
-    }
-
-    static PermissionKey itemMutationPermission(String barcode) {
-        return barcode == null || barcode.isBlank()
-                ? AppPermissions.ITEMS_CREATE
-                : AppPermissions.ITEMS_UPDATE;
     }
 
     private void addItem(int num) {

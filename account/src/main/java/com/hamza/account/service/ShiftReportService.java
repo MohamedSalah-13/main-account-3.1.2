@@ -9,6 +9,7 @@ import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.error.BusinessRuleException;
 
 import java.time.LocalDateTime;
+import java.math.BigDecimal;
 import java.util.List;
 
 /**
@@ -20,9 +21,10 @@ public record ShiftReportService(DaoFactory daoFactory, UserShiftService userShi
      * بيانات تقرير X (لحظي) — وردية مفتوحة.
      */
     public ShiftReportData buildXReport(int userId) throws DaoException {
+        AuthorizationGuard.require(AppPermissions.SHIFT_X_REPORT_VIEW);
         UserShift shift = userShiftService.getOpenShift(userId);
         if (shift == null) {
-            throw new BusinessRuleException("لا توجد وردية مفتوحة لهذا المستخدم!");
+            throw new BusinessRuleException(message("user.shift.msg.no.open.shift"));
         }
         ShiftSummary summary = userShiftService.getCurrentShiftSummary(userId);
         return new ShiftReportData(shift, summary, LocalDateTime.now(), "X-Report");
@@ -32,22 +34,36 @@ public record ShiftReportService(DaoFactory daoFactory, UserShiftService userShi
      * بيانات تقرير Z — بعد غلق الوردية (يُستدعى بـ shiftId).
      */
     public ShiftReportData buildZReport(int shiftId) throws DaoException {
+        AuthorizationGuard.require(AppPermissions.SHIFT_REPORT_REPRINT);
+        return buildZReportInternal(shiftId, null);
+    }
+
+    public ShiftReportData buildOwnZReport(int shiftId, int userId) throws DaoException {
+        AuthorizationGuard.require(AppPermissions.SHIFT_SELF_CLOSE);
+        return buildZReportInternal(shiftId, userId);
+    }
+
+    private ShiftReportData buildZReportInternal(int shiftId, Integer expectedUserId) throws DaoException {
         UserShift shift = daoFactory.userShiftDao().getDataById(shiftId);
         if (shift == null) {
-            throw new BusinessRuleException("الوردية غير موجودة!");
+            throw new BusinessRuleException(message("user.shift.msg.not.found"));
         }
-        double totalIn = shift.getTotalCashIn();
-        double totalOut = shift.getTotalCashOut();
+        if (expectedUserId != null && shift.getUserId() != expectedUserId) {
+            throw new BusinessRuleException(message("user.shift.error.self.only"));
+        }
+        BigDecimal totalIn = shift.getTotalCashIn();
+        BigDecimal totalOut = shift.getTotalCashOut();
 
         // A shift closed before V22 has no in/out columns filled in: its expectation
         // was computed under the old four-source rule and stored, and it cannot be
         // recomputed - which till it was on was never recorded. Carrying the stored
         // figure across as one net movement reprints what the shift said on the day,
         // rather than collapsing it to the opening balance.
-        if (totalIn == 0 && totalOut == 0 && shift.getExpectedBalance() != shift.getOpenBalance()) {
-            double net = shift.getExpectedBalance() - shift.getOpenBalance();
-            totalIn = net > 0 ? net : 0;
-            totalOut = net < 0 ? -net : 0;
+        if (totalIn.signum() == 0 && totalOut.signum() == 0
+                && shift.getExpectedBalance().compareTo(shift.getOpenBalance()) != 0) {
+            BigDecimal net = shift.getExpectedBalance().subtract(shift.getOpenBalance());
+            totalIn = net.signum() > 0 ? net : BigDecimal.ZERO;
+            totalOut = net.signum() < 0 ? net.negate() : BigDecimal.ZERO;
         }
 
         ShiftSummary summary = ShiftSummary.builder()
@@ -57,9 +73,9 @@ public record ShiftReportService(DaoFactory daoFactory, UserShiftService userShi
                 .totalExpenses(shift.getTotalExpenses())
                 .totalDeposits(shift.getTotalDeposits())
                 .totalWithdrawals(shift.getTotalWithdrawals())
-                .otherIn(Math.max(0, totalIn - shift.getTotalSales() - shift.getTotalDeposits()))
-                .otherOut(Math.max(0, totalOut - shift.getTotalSalesReturns()
-                        - shift.getTotalExpenses() - shift.getTotalWithdrawals()))
+                .otherIn(totalIn.subtract(shift.getTotalSales()).subtract(shift.getTotalDeposits()).max(BigDecimal.ZERO))
+                .otherOut(totalOut.subtract(shift.getTotalSalesReturns())
+                        .subtract(shift.getTotalExpenses()).subtract(shift.getTotalWithdrawals()).max(BigDecimal.ZERO))
                 .totalIn(totalIn)
                 .totalOut(totalOut)
                 .invoicesCount(shift.getInvoicesCount())
@@ -95,5 +111,9 @@ public record ShiftReportService(DaoFactory daoFactory, UserShiftService userShi
             LocalDateTime printTime,
             String reportType
     ) {
+    }
+
+    private static String message(String key) {
+        return com.hamza.controlsfx.language.LanguageManager.getInstance().getString(key);
     }
 }

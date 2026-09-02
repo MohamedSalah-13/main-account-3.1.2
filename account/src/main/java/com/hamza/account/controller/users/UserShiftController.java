@@ -12,12 +12,17 @@ import com.hamza.account.session.ShiftContext;
 import com.hamza.account.treasury.DefaultTreasury;
 import com.hamza.account.model.domain.Treasury;
 import com.hamza.account.features.rbac.CurrentUser;
+import com.hamza.account.features.shift.ShiftPolicyService;
+import com.hamza.account.features.shift.ShiftTrackingMode;
+import com.hamza.account.authorization.AppPermissions;
+import com.hamza.account.authorization.AuthorizationGuard;
 import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.error.BusinessRuleException;
 import com.hamza.controlsfx.error.UserValidationException;
 import com.hamza.controlsfx.language.LanguageManager;
 import javafx.beans.property.SimpleIntegerProperty;
+import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
@@ -26,8 +31,10 @@ import javafx.scene.layout.VBox;
 import lombok.extern.log4j.Log4j2;
 
 import java.time.format.DateTimeFormatter;
+import java.math.BigDecimal;
 
 import static com.hamza.controlsfx.others.Utils.setTextFormatter;
+import static com.hamza.controlsfx.others.Utils.whenEnterPressed;
 
 @Log4j2
 @FxmlPath(pathFile = "user-shift-view.fxml")
@@ -39,6 +46,7 @@ public class UserShiftController {
     private final ShiftReportService shiftReportService = ServiceRegistry.get(ShiftReportService.class);
     private final UserShiftService userShiftService = ServiceRegistry.get(UserShiftService.class);
     private final TreasuryService treasuryService = ServiceRegistry.get(TreasuryService.class);
+    private final ShiftPolicyService shiftPolicyService = ServiceRegistry.get(ShiftPolicyService.class);
 
     private final Print_Reports printReports = new Print_Reports();
     @FXML
@@ -79,6 +87,7 @@ public class UserShiftController {
         setupTextFormatters();
         setupTableColumns();
         setupActions();
+        applyPermissionHints();
         refreshView();
     }
 
@@ -122,9 +131,9 @@ public class UserShiftController {
         });
 
         // استخدام الـ properties الأصلية من الدومين (ربط حقيقي لا نسخة جديدة)
-        colOpenBalance.setCellValueFactory(c -> c.getValue().openBalanceProperty());
-        colCloseBalance.setCellValueFactory(c -> c.getValue().closeBalanceProperty());
-        colStatus.setCellValueFactory(c -> c.getValue().statusProperty());
+        colOpenBalance.setCellValueFactory(c -> new ReadOnlyObjectWrapper<>(c.getValue().getOpenBalance()));
+        colCloseBalance.setCellValueFactory(c -> new ReadOnlyObjectWrapper<>(c.getValue().getCloseBalance()));
+        colStatus.setCellValueFactory(c -> new SimpleStringProperty(localizedStatus(c.getValue())));
     }
 
     private void setupActions() {
@@ -134,6 +143,15 @@ public class UserShiftController {
         if (btnPrintXReport != null) {
             btnPrintXReport.setOnAction(e -> printXReport());
         }
+        whenEnterPressed(txtOpenBalance, comboOpenTreasury, txtOpenNotes, btnOpenShift);
+        whenEnterPressed(txtCloseBalance, txtCloseNotes, btnCloseShift);
+    }
+
+    private void applyPermissionHints() {
+        btnOpenShift.setDisable(!AuthorizationGuard.isGranted(AppPermissions.SHIFT_SELF_OPEN));
+        btnCloseShift.setDisable(!AuthorizationGuard.isGranted(AppPermissions.SHIFT_SELF_CLOSE));
+        btnPrintXReport.setVisible(AuthorizationGuard.isGranted(AppPermissions.SHIFT_X_REPORT_VIEW));
+        btnPrintXReport.setManaged(btnPrintXReport.isVisible());
     }
 
     private void refreshView() {
@@ -150,13 +168,17 @@ public class UserShiftController {
                 showOpenShiftInfo(openShift);
                 boxOpenShift.setDisable(true);
                 boxCloseShift.setDisable(false);
-                txtCloseBalance.setText(String.valueOf(openShift.getOpenBalance()));
+                txtCloseBalance.setDisable(!isReconcile(openShift.getTreasuryId()));
+                if (!isReconcile(openShift.getTreasuryId())) txtCloseBalance.setText(openShift.getOpenBalance().toPlainString());
+                else if (blindClose()) txtCloseBalance.clear();
+                else txtCloseBalance.setText(openShift.getOpenBalance().toPlainString());
             } else {
                 ShiftContext.clear();
                 showNoOpenShift();
                 boxOpenShift.setDisable(false);
                 boxCloseShift.setDisable(true);
                 txtCloseBalance.clear();
+                txtCloseBalance.setDisable(false);
                 txtCloseNotes.clear();
             }
         } catch (DaoException e) {
@@ -166,7 +188,7 @@ public class UserShiftController {
 
     private void showOpenShiftInfo(UserShift shift) {
         labelShiftStatus.setText(LanguageManager.getInstance().getString("user.shift.status.open"));
-        labelShiftStatus.setStyle("-fx-text-fill: green; -fx-font-weight: bold;");
+        setSemanticStyle(labelShiftStatus, "success-value");
         labelOpenTime.setText(shift.getOpenTime() != null
                 ? shift.getOpenTime().format(DATE_TIME_FORMATTER) : "-");
         labelOpenBalance.setText(String.valueOf(shift.getOpenBalance()));
@@ -175,7 +197,7 @@ public class UserShiftController {
 
     private void showNoOpenShift() {
         labelShiftStatus.setText(LanguageManager.getInstance().getString("user.shift.status.none.open"));
-        labelShiftStatus.setStyle("-fx-text-fill: red; -fx-font-weight: bold;");
+        setSemanticStyle(labelShiftStatus, "danger-value");
         labelOpenTime.setText("-");
         labelOpenBalance.setText("0.0");
         labelShiftTreasury.setText("-");
@@ -203,21 +225,20 @@ public class UserShiftController {
                 return;
             }
             ShiftSummary s = userShiftService.getCurrentShiftSummary(currentUserId);
-            double closeBalance = parseBalanceSafe(txtCloseBalance.getText(), s.getOpenBalance());
-            double diff = s.calculateDifference(closeBalance);
+            BigDecimal closeBalance = parseBalanceSafe(txtCloseBalance.getText(), s.getOpenBalance());
+            BigDecimal diff = s.calculateDifference(closeBalance);
 
             labelSummaryTotalSales.setText(format(s.getTotalSales()));
             labelSummaryReturns.setText(format(s.getTotalSalesReturns()));
             labelSummaryExpenses.setText(format(s.getTotalExpenses()));
-            labelSummaryExpected.setText(format(s.getExpectedBalance()));
-            labelSummaryDifference.setText(format(diff));
-            labelSummaryDifference.setStyle(diff < 0
-                    ? "-fx-text-fill: red;  -fx-font-weight: bold;"
-                    : (diff > 0 ? "-fx-text-fill: orange; -fx-font-weight: bold;"
-                       : "-fx-text-fill: green;  -fx-font-weight: bold;"));
+            labelSummaryExpected.setText(blindClose() ? "-" : format(s.getExpectedBalance()));
+            labelSummaryDifference.setText(blindClose() ? "-" : format(diff));
             labelSummaryInvoices.setText(String.valueOf(s.getInvoicesCount()));
             labelSummaryOtherIn.setText(format(s.getOtherIn()));
             labelSummaryOtherOut.setText(format(s.getOtherOut()));
+            if (blindClose()) return;
+            setSemanticStyle(labelSummaryDifference, diff.signum() < 0
+                    ? "danger-value" : (diff.signum() > 0 ? "info-value" : "success-value"));
         } catch (DaoException e) {
             log.error("Error loading live summary", e);
         }
@@ -234,11 +255,11 @@ public class UserShiftController {
         labelSummaryOtherOut.setText("-");
     }
 
-    private String format(double v) {
+    private String format(BigDecimal v) {
         return String.format("%,.2f", v);
     }
 
-    private double parseBalanceSafe(String text, double fallback) {
+    private BigDecimal parseBalanceSafe(String text, BigDecimal fallback) {
         try {
             return parseBalance(text);
         } catch (Exception e) {
@@ -248,8 +269,8 @@ public class UserShiftController {
 
     private void openShift() {
         try {
-            double openBalance = parseBalance(txtOpenBalance.getText());
-            if (openBalance < 0) {
+            BigDecimal openBalance = parseBalance(txtOpenBalance.getText());
+            if (openBalance.signum() < 0) {
                 AllAlerts.handleError(LanguageManager.getInstance().getString("user.shift.open"),
                         new UserValidationException(LanguageManager.getInstance().getString("user.shift.msg.open.balance.negative")));
                 return;
@@ -299,8 +320,8 @@ public class UserShiftController {
                 return;
             }
 
-            double closeBalance = parseBalance(txtCloseBalance.getText());
-            if (closeBalance < 0) {
+            BigDecimal closeBalance = parseBalance(txtCloseBalance.getText());
+            if (closeBalance.signum() < 0) {
                 AllAlerts.handleError(LanguageManager.getInstance().getString("user.shift.close.title"),
                         new UserValidationException(LanguageManager.getInstance().getString("user.shift.msg.close.balance.negative")));
                 return;
@@ -308,7 +329,7 @@ public class UserShiftController {
 
             // عرض ملخص التأكيد قبل الغلق
             ShiftSummary s = userShiftService.getCurrentShiftSummary(currentUserId);
-            double diff = s.calculateDifference(closeBalance);
+            BigDecimal diff = s.calculateDifference(closeBalance);
             String msg = buildCloseConfirmMessage(s, closeBalance, diff);
             if (!AllAlerts.confirm_all("Details", msg)) {
                 return;
@@ -320,8 +341,11 @@ public class UserShiftController {
                 ShiftContext.clear();
                 // طباعة Z-Report تلقائياً
                 try {
-                    var zData = shiftReportService.buildZReport(closedShiftId);
+                    if (!shiftPolicyService.current().autoPrintZ()) throw new AutoPrintDisabled();
+                    var zData = shiftReportService.buildOwnZReport(closedShiftId, currentUserId);
                     printReports.printShiftZReport(zData);
+                } catch (AutoPrintDisabled ignored) {
+                    // Explicit policy: closing succeeds without printing.
                 } catch (Exception ex) {
                     log.error("Error auto-printing Z-Report", ex);
                 }
@@ -337,10 +361,15 @@ public class UserShiftController {
         }
     }
 
-    private String buildCloseConfirmMessage(ShiftSummary s, double closeBalance, double diff) {
+    private String buildCloseConfirmMessage(ShiftSummary s, BigDecimal closeBalance, BigDecimal diff) {
+        if (blindClose()) {
+            return String.format(LanguageManager.getInstance().getString("user.shift.close.confirm.blind"),
+                    s.getTotalSales(), s.getTotalSalesReturns(), s.getTotalExpenses(),
+                    s.getOtherIn(), s.getOtherOut(), closeBalance);
+        }
         String diffLabel;
-        if (Math.abs(diff) < 0.005) diffLabel = LanguageManager.getInstance().getString("user.shift.diff.matched");
-        else if (diff < 0) diffLabel = String.format(LanguageManager.getInstance().getString("user.shift.diff.shortage"), -diff);
+        if (diff.abs().compareTo(new BigDecimal("0.005")) < 0) diffLabel = LanguageManager.getInstance().getString("user.shift.diff.matched");
+        else if (diff.signum() < 0) diffLabel = String.format(LanguageManager.getInstance().getString("user.shift.diff.shortage"), diff.abs());
         else diffLabel = String.format(LanguageManager.getInstance().getString("user.shift.diff.surplus"), diff);
 
         return String.format(
@@ -358,16 +387,16 @@ public class UserShiftController {
                 diffLabel);
     }
 
-    private double parseBalance(String text) {
+    private BigDecimal parseBalance(String text) {
         if (text == null || text.isBlank()) {
-            return 0.0;
+            return BigDecimal.ZERO;
         }
         // دعم الفواصل العربية والمسافات
         String normalized = text.trim()
                 .replace('٫', '.')
                 .replace(',', '.')
                 .replaceAll("\\s+", "");
-        return Double.parseDouble(normalized);
+        return new BigDecimal(normalized);
     }
 
     private String safeTrim(String s) {
@@ -382,5 +411,36 @@ public class UserShiftController {
     private void clearCloseShiftFields() {
         txtCloseBalance.clear();
         txtCloseNotes.clear();
+    }
+
+    private String localizedStatus(UserShift shift) {
+        return LanguageManager.getInstance().getString("user.shift.status." + shift.getStatus().name().toLowerCase());
+    }
+
+    private boolean blindClose() {
+        try {
+            return shiftPolicyService.current().blindClose();
+        } catch (DaoException e) {
+            return false;
+        }
+    }
+
+    private boolean isReconcile(int treasuryId) {
+        try {
+            return shiftPolicyService.treasuries().stream()
+                    .filter(item -> item.treasuryId() == treasuryId)
+                    .map(item -> item.trackingMode() == ShiftTrackingMode.RECONCILE)
+                    .findFirst().orElse(false);
+        } catch (DaoException e) {
+            return true;
+        }
+    }
+
+    private static final class AutoPrintDisabled extends RuntimeException {
+    }
+
+    private static void setSemanticStyle(Label label, String styleClass) {
+        label.getStyleClass().removeAll("success-value", "danger-value", "info-value");
+        label.getStyleClass().add(styleClass);
     }
 }

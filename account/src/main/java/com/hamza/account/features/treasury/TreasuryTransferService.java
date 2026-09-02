@@ -13,6 +13,12 @@ import com.hamza.controlsfx.language.LanguageManager;
 
 import java.math.BigDecimal;
 import java.util.List;
+import com.hamza.account.features.shift.ShiftGate;
+import com.hamza.account.features.shift.JdbcShiftCashEffectReader;
+import com.hamza.account.features.shift.ShiftCashEffect;
+import com.hamza.account.features.shift.ShiftCashLedger;
+import com.hamza.account.features.shift.ShiftCashSource;
+import com.hamza.account.features.rbac.CurrentUser;
 
 /**
  * Moves money from one treasury to another.
@@ -31,9 +37,15 @@ import java.util.List;
 public final class TreasuryTransferService {
 
     private final DaoFactory daoFactory;
+    private final ShiftGate shiftGate;
 
     public TreasuryTransferService(DaoFactory daoFactory) {
+        this(daoFactory, daoFactory == null ? ShiftGate.disabled() : ShiftGate.jdbc(daoFactory.userShiftDao()));
+    }
+
+    TreasuryTransferService(DaoFactory daoFactory, ShiftGate shiftGate) {
         this.daoFactory = daoFactory;
+        this.shiftGate = shiftGate;
     }
 
     public int transfer(TreasuryTransferCommand command) throws DaoException {
@@ -48,6 +60,10 @@ public final class TreasuryTransferService {
         }
 
         return TransactionTemplate.execute(() -> {
+            var sourceShift = shiftGate.requireCashAction(
+                    command.userId(), command.fromTreasuryId(), command.amount());
+            var destinationShift = shiftGate.requireTreasuryAction(
+                    command.toTreasuryId(), command.amount());
             // Locked and re-read inside the transaction: the balance is derived, so a
             // check taken before it would be a number nothing was holding still.
             TreasuryBalanceSummary source =
@@ -63,7 +79,19 @@ public final class TreasuryTransferService {
                 throw new BusinessRuleException(message("treasury.error.not.found"));
             }
 
-            return daoFactory.treasuryTransferDao().insert(command);
+            int id = daoFactory.treasuryTransferDao().insertReturningId(command,
+                    sourceShift.isPresent() ? sourceShift.getAsInt() : null,
+                    destinationShift.isPresent() ? destinationShift.getAsInt() : null);
+            ShiftCashLedger ledger = ShiftCashLedger.jdbc();
+            ledger.created(sourceShift, command.userId(),
+                    ShiftCashEffect.outgoing(ShiftCashSource.TRANSFER_OUT, id,
+                            command.fromTreasuryId(), sourceShift.isPresent() ? sourceShift.getAsInt() : null,
+                            command.amount()));
+            ledger.created(destinationShift, command.userId(),
+                    ShiftCashEffect.incoming(ShiftCashSource.TRANSFER_IN, id,
+                            command.toTreasuryId(), destinationShift.isPresent() ? destinationShift.getAsInt() : null,
+                            command.amount()));
+            return 1;
         });
     }
 
@@ -73,9 +101,30 @@ public final class TreasuryTransferService {
      * one is: both change a balance already reported.
      */
     public int delete(int transferId) throws DaoException {
+        return delete(transferId, null);
+    }
+
+    public int delete(int transferId, String correctionReason) throws DaoException {
         AuthorizationGuard.require(AppPermissions.TREASURY_TRANSFER);
         PeriodLock.require(PeriodLockRegistry.TREASURY_TRANSFER, transferId);
-        return daoFactory.treasuryTransferDao().deleteById(transferId);
+        return TransactionTemplate.execute(() -> {
+            List<ShiftCashEffect> effects = new JdbcShiftCashEffectReader().transfer(transferId);
+            if (effects.isEmpty()) return 0;
+            int actor = CurrentUser.get().getId();
+            ShiftCashEffect outgoing = effects.get(0);
+            ShiftCashEffect incoming = effects.get(1);
+            var sourceShift = shiftGate.requireCashCorrection(actor, outgoing.treasuryId(),
+                    outgoing.output(), outgoing.originalShiftId());
+            var destinationShift = shiftGate.requireTreasuryCorrection(incoming.treasuryId(),
+                    incoming.income(), incoming.originalShiftId());
+            int rows = daoFactory.treasuryTransferDao().deleteById(transferId);
+            if (rows == 1) {
+                ShiftCashLedger ledger = ShiftCashLedger.jdbc();
+                ledger.deleted(sourceShift, actor, outgoing, correctionReason);
+                ledger.deleted(destinationShift, actor, incoming, correctionReason);
+            }
+            return rows;
+        });
     }
 
     /** Recent history, for the screen that lets a transfer be found and undone. */

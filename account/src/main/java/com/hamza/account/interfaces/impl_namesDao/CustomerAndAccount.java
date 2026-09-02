@@ -55,8 +55,18 @@ public class CustomerAndAccount implements NameAndAccountInterface<Customers, Cu
     }
 
     @Override
+    public int saveAccount(CustomerAccount account, java.math.BigDecimal walletFee, String correctionReason) throws DaoException {
+        return accountCustomerService.save(account, walletFee, correctionReason);
+    }
+
+    @Override
     public int deleteAccount(int id) throws DaoException {
         return accountCustomerService.delete(id);
+    }
+
+    @Override
+    public int deleteAccount(int id, String correctionReason) throws DaoException {
+        return accountCustomerService.delete(id, correctionReason);
     }
 
     @Override

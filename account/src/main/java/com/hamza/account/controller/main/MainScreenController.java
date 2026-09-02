@@ -16,6 +16,9 @@ import com.hamza.account.features.notification.NotificationBootstrap;
 import com.hamza.account.features.rbac.CurrentUser;
 import com.hamza.account.features.shortcuts.SidebarShortcut;
 import com.hamza.account.features.shortcuts.SidebarShortcutManager;
+import com.hamza.account.features.shift.ShiftMode;
+import com.hamza.account.features.shift.ShiftPolicyChanged;
+import com.hamza.account.features.shift.ShiftPolicyService;
 import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.model.dao.MonthlySalesViewDao;
 import com.hamza.account.model.domain.Company;
@@ -80,7 +83,7 @@ public class MainScreenController extends MainItems implements Initializable {
             btnReportSummary, btnReportItems, btnReportItemsDaily, btnReportSalesByYear, btnReportPurchaseByYear,
             btnReportCustomPaid, btnReportSuppliersPaid, btnReportDetails, btnReportYearly, btnReportProfitLoss,
             btnReportReturnReasons,
-            btnHome, btnSetting, btnShiftReports, btnBackup, btnDeleteData, btnAbout, btnClose;
+            btnHome, btnSetting, btnMyShift, btnShiftReports, btnBackup, btnDeleteData, btnAbout, btnClose;
     @FXML
     private TitledPane paneEmployees, paneSetting;
     @FXML
@@ -152,6 +155,7 @@ public class MainScreenController extends MainItems implements Initializable {
         setupBrand();
         setupUser();
         setupNotificationBell();
+        setupShiftPolicyVisibility();
         setupYouTube();
         configureAllButtons();
     }
@@ -265,6 +269,7 @@ public class MainScreenController extends MainItems implements Initializable {
         /*----------------------------------------------- Setting -----------------------------------------------*/
         menuButtonSetting.configureButton(btnHome, getSettingButtons().home());
         menuButtonSetting.configureButton(btnSetting, getSettingButtons().setting());
+        menuButtonSetting.configureButton(btnMyShift, getShiftButtons().openShiftScreen());
         menuButtonSetting.configureButton(btnShiftReports, getSettingButtons().adminShifts());
         menuButtonSetting.configureButton(btnBackup, getSettingButtons().backup());
         menuButtonSetting.configureButton(btnDeleteData, getSettingButtons().deleteData());
@@ -279,6 +284,22 @@ public class MainScreenController extends MainItems implements Initializable {
 
         dontShowData();
         configureSidebarShortcuts();
+    }
+
+    private void setupShiftPolicyVisibility() {
+        refreshShiftButtonVisibility();
+        subscriptions.add(eventBus.subscribe(ShiftPolicyChanged.class, event -> refreshShiftButtonVisibility()));
+    }
+
+    private void refreshShiftButtonVisibility() {
+        try {
+            boolean enabled = ServiceRegistry.get(ShiftPolicyService.class).current().mode() != ShiftMode.DISABLED;
+            btnMyShift.setVisible(enabled);
+            btnMyShift.setManaged(enabled);
+        } catch (DaoException e) {
+            btnMyShift.setVisible(false);
+            btnMyShift.setManaged(false);
+        }
     }
 
     private void configureSidebarShortcuts() {

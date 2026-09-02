@@ -2,6 +2,8 @@ package com.hamza.account.model.dao;
 
 import com.hamza.account.features.shift.ShiftCashMovement;
 import com.hamza.account.features.shift.ShiftCashSummary;
+import com.hamza.account.features.shift.ShiftStatus;
+import com.hamza.account.features.shift.ShiftCashSource;
 import com.hamza.account.model.domain.ShiftSummary;
 import com.hamza.account.treasury.MovementLabel;
 import com.hamza.account.model.domain.UserShift;
@@ -15,6 +17,8 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
+import java.math.BigDecimal;
+import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -30,6 +34,7 @@ public class UserShiftDao extends AbstractDao<UserShift> {
     private static final String OPEN_BALANCE = "open_balance";
     private static final String CLOSE_BALANCE = "close_balance";
     private static final String IS_OPEN = "is_open";
+    private static final String SHIFT_STATUS = "shift_status";
     private static final String NOTES = "notes";
 
     // أعمدة المرحلة 2
@@ -45,6 +50,7 @@ public class UserShiftDao extends AbstractDao<UserShift> {
     private static final String TOTAL_CASH_IN = "total_cash_in";
     private static final String TOTAL_CASH_OUT = "total_cash_out";
     private static final String TREASURY_NAME = "treasury_name";
+    private static final String USERNAME = "username";
 
     /**
      * Every read of a shift goes through this, so the till it was opened on is
@@ -53,8 +59,9 @@ public class UserShiftDao extends AbstractDao<UserShift> {
      * the till still existing.
      */
     private static final String SELECT_SHIFTS =
-            "SELECT us.*, t.t_name AS " + TREASURY_NAME +
-            " FROM " + TABLE_NAME + " us LEFT JOIN treasury t ON t.id = us." + TREASURY_ID;
+            "SELECT us.*, t.t_name AS " + TREASURY_NAME + ", u.user_name AS " + USERNAME +
+            " FROM " + TABLE_NAME + " us LEFT JOIN treasury t ON t.id = us." + TREASURY_ID +
+            " LEFT JOIN users u ON u.id = us." + USER_ID;
 
     UserShiftDao() {
         super();
@@ -80,17 +87,52 @@ public class UserShiftDao extends AbstractDao<UserShift> {
                 objects);
     }
 
+    /** Inserts and returns the real generated shift id, never the affected-row count. */
+    public int insertReturningId(UserShift shift) throws DaoException {
+        String sql = SqlStatements.insertStatement(TABLE_NAME, USER_ID, TREASURY_ID,
+                OPEN_TIME, OPEN_BALANCE, IS_OPEN, SHIFT_STATUS, NOTES);
+        return withConnection(connection -> {
+            try (PreparedStatement statement = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+                statement.setInt(1, shift.getUserId());
+                statement.setInt(2, shift.getTreasuryId());
+                statement.setTimestamp(3, Timestamp.valueOf(shift.getOpenTime()));
+                statement.setBigDecimal(4, shift.getOpenBalance());
+                statement.setBoolean(5, shift.isOpen());
+                statement.setString(6, shift.getStatus().name());
+                statement.setString(7, shift.getNotes());
+                if (statement.executeUpdate() != 1) throw new DaoException("Shift was not opened");
+                try (ResultSet keys = statement.getGeneratedKeys()) {
+                    if (keys.next()) return keys.getInt(1);
+                }
+                throw new DaoException("Shift id was not generated");
+            } catch (SQLException e) {
+                throw new DaoException("Could not open shift", e);
+            }
+        });
+    }
+
     /**
      * تحديث كامل للوردية بما فيها حقول الملخص (يُستخدم عند الغلق).
      */
     @Override
     public int update(UserShift shift) throws DaoException {
         String sql = SqlStatements.updateStatement(TABLE_NAME, ID,
-                CLOSE_TIME, CLOSE_BALANCE, IS_OPEN, NOTES,
+                CLOSE_TIME, CLOSE_BALANCE, IS_OPEN, SHIFT_STATUS, NOTES,
                 TOTAL_SALES, TOTAL_SALES_RETURNS, TOTAL_EXPENSES,
                 TOTAL_DEPOSITS, TOTAL_WITHDRAWALS,
                 TOTAL_CASH_IN, TOTAL_CASH_OUT,
                 EXPECTED_BALANCE, DIFFERENCE, INVOICES_COUNT);
+        return executeUpdate(sql, getData(shift));
+    }
+
+    /** Atomic close: a second concurrent closer affects zero rows. */
+    public int close(UserShift shift) throws DaoException {
+        String sql = "UPDATE " + TABLE_NAME + " SET "
+                + CLOSE_TIME + "=?, " + CLOSE_BALANCE + "=?, " + IS_OPEN + "=?, " + SHIFT_STATUS + "=?, "
+                + NOTES + "=?, " + TOTAL_SALES + "=?, " + TOTAL_SALES_RETURNS + "=?, "
+                + TOTAL_EXPENSES + "=?, " + TOTAL_DEPOSITS + "=?, " + TOTAL_WITHDRAWALS + "=?, "
+                + TOTAL_CASH_IN + "=?, " + TOTAL_CASH_OUT + "=?, " + EXPECTED_BALANCE + "=?, "
+                + DIFFERENCE + "=?, " + INVOICES_COUNT + "=? WHERE " + ID + "=? AND " + IS_OPEN + "=TRUE";
         return executeUpdate(sql, getData(shift));
     }
 
@@ -115,6 +157,7 @@ public class UserShiftDao extends AbstractDao<UserShift> {
                 shift.getCloseTime() != null ? Timestamp.valueOf(shift.getCloseTime()) : null,
                 shift.getCloseBalance(),
                 shift.isOpen(),
+                shift.getStatus().name(),
                 shift.getNotes(),
                 shift.getTotalSales(),
                 shift.getTotalSalesReturns(),
@@ -138,6 +181,7 @@ public class UserShiftDao extends AbstractDao<UserShift> {
             shift.setUserId(rs.getInt(USER_ID));
             shift.setTreasuryId(getIntSafe(rs, TREASURY_ID));
             shift.setTreasuryName(getStringSafe(rs, TREASURY_NAME));
+            shift.setUsername(getStringSafe(rs, USERNAME));
 
             Timestamp openTs = rs.getTimestamp(OPEN_TIME);
             if (openTs != null) shift.setOpenTime(openTs.toLocalDateTime());
@@ -145,22 +189,22 @@ public class UserShiftDao extends AbstractDao<UserShift> {
             Timestamp closeTs = rs.getTimestamp(CLOSE_TIME);
             if (closeTs != null) shift.setCloseTime(closeTs.toLocalDateTime());
 
-            shift.setOpenBalance(rs.getDouble(OPEN_BALANCE));
-            shift.setCloseBalance(rs.getDouble(CLOSE_BALANCE));
+            shift.setOpenBalance(rs.getBigDecimal(OPEN_BALANCE));
+            shift.setCloseBalance(rs.getBigDecimal(CLOSE_BALANCE));
             shift.setOpen(rs.getBoolean(IS_OPEN));
             shift.setNotes(rs.getString(NOTES));
-            shift.setStatus(shift.isOpen() ? "مفتوحة" : "مغلقة");
+            shift.setStatus(getStatusSafe(rs, shift.isOpen()));
 
             // حقول المرحلة 2 (قد لا تكون موجودة لو لم يُشغَّل الـ migration بعد)
-            shift.setTotalSales(getDoubleSafe(rs, TOTAL_SALES));
-            shift.setTotalSalesReturns(getDoubleSafe(rs, TOTAL_SALES_RETURNS));
-            shift.setTotalExpenses(getDoubleSafe(rs, TOTAL_EXPENSES));
-            shift.setTotalDeposits(getDoubleSafe(rs, TOTAL_DEPOSITS));
-            shift.setTotalWithdrawals(getDoubleSafe(rs, TOTAL_WITHDRAWALS));
-            shift.setTotalCashIn(getDoubleSafe(rs, TOTAL_CASH_IN));
-            shift.setTotalCashOut(getDoubleSafe(rs, TOTAL_CASH_OUT));
-            shift.setExpectedBalance(getDoubleSafe(rs, EXPECTED_BALANCE));
-            shift.setDifference(getDoubleSafe(rs, DIFFERENCE));
+            shift.setTotalSales(getBigDecimalSafe(rs, TOTAL_SALES));
+            shift.setTotalSalesReturns(getBigDecimalSafe(rs, TOTAL_SALES_RETURNS));
+            shift.setTotalExpenses(getBigDecimalSafe(rs, TOTAL_EXPENSES));
+            shift.setTotalDeposits(getBigDecimalSafe(rs, TOTAL_DEPOSITS));
+            shift.setTotalWithdrawals(getBigDecimalSafe(rs, TOTAL_WITHDRAWALS));
+            shift.setTotalCashIn(getBigDecimalSafe(rs, TOTAL_CASH_IN));
+            shift.setTotalCashOut(getBigDecimalSafe(rs, TOTAL_CASH_OUT));
+            shift.setExpectedBalance(getBigDecimalSafe(rs, EXPECTED_BALANCE));
+            shift.setDifference(getBigDecimalSafe(rs, DIFFERENCE));
             shift.setInvoicesCount(getIntSafe(rs, INVOICES_COUNT));
         } catch (SQLException e) {
             throw new DaoException(e);
@@ -168,11 +212,21 @@ public class UserShiftDao extends AbstractDao<UserShift> {
         return shift;
     }
 
-    private double getDoubleSafe(ResultSet rs, String col) {
+    private BigDecimal getBigDecimalSafe(ResultSet rs, String col) {
         try {
-            return rs.getDouble(col);
+            BigDecimal value = rs.getBigDecimal(col);
+            return value == null ? BigDecimal.ZERO : value;
         } catch (SQLException e) {
-            return 0.0;
+            return BigDecimal.ZERO;
+        }
+    }
+
+    private ShiftStatus getStatusSafe(ResultSet rs, boolean open) {
+        try {
+            String value = rs.getString(SHIFT_STATUS);
+            return value == null ? (open ? ShiftStatus.OPEN : ShiftStatus.CLOSED) : ShiftStatus.valueOf(value);
+        } catch (SQLException | IllegalArgumentException e) {
+            return open ? ShiftStatus.OPEN : ShiftStatus.CLOSED;
         }
     }
 
@@ -199,6 +253,23 @@ public class UserShiftDao extends AbstractDao<UserShift> {
         return queryForObject(sql, this::map, userId);
     }
 
+    public UserShift getOpenShiftByUserIdForUpdate(int userId) throws DaoException {
+        String sql = SELECT_SHIFTS + " WHERE us." + USER_ID + " = ? AND us." + IS_OPEN + " = TRUE"
+                + " ORDER BY us." + OPEN_TIME + " DESC LIMIT 1 FOR UPDATE";
+        return queryForObject(sql, this::map, userId);
+    }
+
+    public UserShift getOpenShiftByIdForUpdate(int shiftId) throws DaoException {
+        return queryForObject(SELECT_SHIFTS + " WHERE us." + ID + " = ? AND us." + IS_OPEN + " = TRUE FOR UPDATE",
+                this::map, shiftId);
+    }
+
+    public UserShift getOpenShiftByTreasuryIdForUpdate(int treasuryId) throws DaoException {
+        String sql = SELECT_SHIFTS + " WHERE us." + TREASURY_ID + " = ? AND us." + IS_OPEN + " = TRUE"
+                + " ORDER BY us." + OPEN_TIME + " DESC LIMIT 1 FOR UPDATE";
+        return queryForObject(sql, this::map, treasuryId);
+    }
+
     public List<UserShift> getShiftsByUserId(int userId) throws DaoException {
         String sql = SELECT_SHIFTS +
                 " WHERE us." + USER_ID + " = ? ORDER BY us." + OPEN_TIME + " DESC";
@@ -221,8 +292,54 @@ public class UserShiftDao extends AbstractDao<UserShift> {
         });
     }
 
+    public boolean hasOpenShiftForTreasury(int treasuryId) throws DaoException {
+        String sql = "SELECT COUNT(*) FROM " + TABLE_NAME
+                + " WHERE " + TREASURY_ID + " = ? AND " + IS_OPEN + " = TRUE";
+        return countInt(sql, treasuryId) > 0;
+    }
+
+    public boolean hasAttributedCashMovements(int shiftId) throws DaoException {
+        String sql = """
+                SELECT EXISTS(
+                    SELECT 1 FROM total_buy WHERE shift_id=?
+                    UNION ALL SELECT 1 FROM total_buy_re WHERE shift_id=?
+                    UNION ALL SELECT 1 FROM total_sales WHERE shift_id=?
+                    UNION ALL SELECT 1 FROM total_sales_re WHERE shift_id=?
+                    UNION ALL SELECT 1 FROM customers_accounts WHERE shift_id=?
+                    UNION ALL SELECT 1 FROM suppliers_accounts WHERE shift_id=?
+                    UNION ALL SELECT 1 FROM expenses_details WHERE shift_id=?
+                    UNION ALL SELECT 1 FROM treasury_deposit_expenses WHERE shift_id=?
+                    UNION ALL SELECT 1 FROM treasury_transfers WHERE source_shift_id=?
+                    UNION ALL SELECT 1 FROM treasury_transfers WHERE destination_shift_id=?
+                    UNION ALL SELECT 1 FROM shift_cash_ledger WHERE shift_id=?
+                )
+                """;
+        return countInt(sql, shiftId, shiftId, shiftId, shiftId, shiftId,
+                shiftId, shiftId, shiftId, shiftId, shiftId, shiftId) > 0;
+    }
+
+    /** Serializes competing opens for the same user and till inside the service transaction. */
+    public void lockUserAndTreasury(int userId, int treasuryId) throws DaoException {
+        lockRow("SELECT id FROM users WHERE id = ? FOR UPDATE", userId);
+        lockRow("SELECT id FROM treasury WHERE id = ? FOR UPDATE", treasuryId);
+    }
+
+    private void lockRow(String sql, int id) throws DaoException {
+        withConnection(connection -> {
+            try (PreparedStatement ps = connection.prepareStatement(sql)) {
+                ps.setInt(1, id);
+                try (ResultSet rs = ps.executeQuery()) {
+                    if (!rs.next()) throw new DaoException("Shift owner or treasury does not exist");
+                }
+                return null;
+            } catch (SQLException e) {
+                throw new DaoException(e);
+            }
+        });
+    }
+
     // =========================================================
-    // حساب ملخص الوردية من الجداول الأخرى (Time-Based)
+    // حساب ملخص الوردية بالربط المباشر، مع fallback زمني للبيانات السابقة لـ V25
     // =========================================================
 
     /**
@@ -247,31 +364,62 @@ public class UserShiftDao extends AbstractDao<UserShift> {
      */
     public ShiftSummary calculateShiftSummary(int userId, int treasuryId, LocalDateTime from, LocalDateTime to)
             throws DaoException {
+        return calculateShiftSummary(0, userId, treasuryId, from, to);
+    }
+
+    public ShiftSummary calculateShiftSummary(int shiftId, int userId, int treasuryId,
+                                              LocalDateTime from, LocalDateTime to)
+            throws DaoException {
 
         Timestamp tsFrom = Timestamp.valueOf(from);
         Timestamp tsTo = Timestamp.valueOf(to);
 
         String movementsSql = """
-                SELECT information,
-                       COALESCE(SUM(income), 0) AS income,
-                       COALESCE(SUM(output), 0) AS output
-                FROM treasury_balance
-                WHERE user_id = ? AND treasury_id = ?
-                  AND date_insert BETWEEN ? AND ?
-                  AND information <> ?
-                GROUP BY information
+                SELECT movement_label AS information,
+                       COALESCE(SUM(income_delta), 0) AS income,
+                       COALESCE(SUM(output_delta), 0) AS output
+                FROM shift_cash_ledger
+                WHERE shift_id = ?
+                GROUP BY movement_label
+                UNION ALL
+                SELECT tb.information,
+                       COALESCE(SUM(tb.income), 0) AS income,
+                       COALESCE(SUM(tb.output), 0) AS output
+                FROM treasury_balance tb
+                WHERE tb.treasury_id = ?
+                  AND (tb.shift_id = ? OR (tb.shift_id IS NULL AND tb.user_id = ?
+                       AND tb.date_insert >= ? AND tb.date_insert < ?))
+                  AND tb.information <> ?
+                  AND NOT EXISTS (
+                      SELECT 1 FROM shift_cash_ledger l
+                      WHERE l.source_type = tb.source_type
+                        AND l.source_id = tb.id_no
+                        AND l.treasury_id = tb.treasury_id
+                        AND l.action_type = 'CREATE'
+                  )
+                GROUP BY tb.information
                 """;
 
         List<ShiftCashMovement> movements = readMovements(movementsSql,
-                userId, treasuryId, tsFrom, tsTo, MovementLabel.OPENING.text());
+                shiftId, treasuryId, shiftId, userId, tsFrom, tsTo, MovementLabel.OPENING.text());
 
         int invoicesCount = countInt(
-                "SELECT COUNT(*) FROM total_sales " +
-                        " WHERE user_id = ? AND treasury_id = ? AND date_insert BETWEEN ? AND ?",
-                userId, treasuryId, tsFrom, tsTo);
+                """
+                SELECT
+                    (SELECT COUNT(*) FROM shift_cash_ledger
+                     WHERE shift_id=? AND source_type=%d AND action_type='CREATE')
+                  + (SELECT COUNT(*) FROM total_sales s
+                     WHERE s.treasury_id=?
+                       AND (s.shift_id=? OR (s.shift_id IS NULL AND s.user_id=?
+                            AND s.date_insert>=? AND s.date_insert<?))
+                       AND NOT EXISTS (SELECT 1 FROM shift_cash_ledger l
+                           WHERE l.source_type=%d AND l.source_id=s.invoice_number
+                             AND l.treasury_id=s.treasury_id AND l.action_type='CREATE'))
+                """.formatted(ShiftCashSource.SALES.code(), ShiftCashSource.SALES.code()),
+                shiftId, treasuryId, shiftId, userId, tsFrom, tsTo);
 
         // The opening balance is filled in by the service, which is what holds the shift.
-        return ShiftCashSummary.summarize(movements, 0, invoicesCount);
+        return ShiftCashSummary.summarize(movements, BigDecimal.ZERO, invoicesCount);
     }
 
     /**
@@ -293,14 +441,15 @@ public class UserShiftDao extends AbstractDao<UserShift> {
                     while (rs.next()) {
                         String information = rs.getString("information");
                         MovementLabel label = Arrays.stream(MovementLabel.values())
-                                .filter(value -> value.text().equals(information))
+                                .filter(value -> value.text().equals(information)
+                                        || value.name().equals(information))
                                 .findFirst()
                                 .orElse(null);
                         if (label == null) {
                             log.warn("Unknown treasury_balance heading in a shift summary, ignored: {}", information);
                             continue;
                         }
-                        movements.add(new ShiftCashMovement(label, rs.getDouble("income"), rs.getDouble("output")));
+                        movements.add(new ShiftCashMovement(label, rs.getBigDecimal("income"), rs.getBigDecimal("output")));
                     }
                 }
                 return movements;

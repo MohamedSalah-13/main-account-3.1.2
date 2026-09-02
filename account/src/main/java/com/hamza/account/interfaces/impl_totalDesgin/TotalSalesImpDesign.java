@@ -77,4 +77,9 @@ public class TotalSalesImpDesign implements TotalDesignInterface {
         return totalSalesService.deleteMultiData(ids);
     }
 
+    @Override
+    public int deleteMultiData(String correctionReason, @NotNull Integer... ids) throws Exception {
+        return totalSalesService.deleteMultiData(ids, correctionReason);
+    }
+
 }

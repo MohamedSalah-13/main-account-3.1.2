@@ -27,7 +27,7 @@ mvn -o -pl account -am test -Dtest=ScheduledBackupTest -Dsurefire.failIfNoSpecif
 
 **Coverage is real but uneven — know which half you are in.** JUnit 5 and Mockito are declared in the
 root pom and inherited by both modules; surefire needs no configuration. `mvn clean test` currently runs
-**1,014 tests across 111 classes** — 98 in `controlsfx`, 916 in `account` — with 56 skipped (below). What is
+**1,108 tests across 129 test source files** — 98 in `controlsfx`, 1,010 in `account` — with 59 skipped (below). What is
 genuinely covered:
 
 - **The declarative specs, pinned character for character** — `DocumentDaoStatementsTest`,
@@ -59,13 +59,14 @@ because *every new party payment had been silently discarded since `f2b4baf`* (s
 observe from inside an enclosing transaction. Fifteen cases pass now, twice in a row, and the class
 checks for its own residue rather than trusting the rollback.
 
-**Thirteen classes do not run by default.** `InvoiceStockDatabaseAcceptanceTest`,
+**Fourteen classes do not run by default.** `InvoiceStockDatabaseAcceptanceTest`,
 `DocumentLineDatabaseAcceptanceTest`, `StockLedgerReconciliationAcceptanceTest`,
 `StockMovementBackfillAcceptanceTest`, `StockTransferDatabaseAcceptanceTest`,
 `TotalDocumentDeleteReversesStockLedgerAcceptanceTest`,
 `PurchaseDeleteReversesNonDefaultWarehouseBalanceAcceptanceTest`, `PartyLedgerViewAcceptanceTest`,
 `ReturnSourceAcceptanceTest`, `ReturnableRepositoryAcceptanceTest`, `ItemMergeDatabaseAcceptanceTest`,
-`TreasuryBalanceViewAcceptanceTest` and `ProfitDefinitionDatabaseAcceptanceTest` are gated on
+`TreasuryBalanceViewAcceptanceTest`, `ProfitDefinitionDatabaseAcceptanceTest` and
+`ShiftAccountingDatabaseAcceptanceTest` are gated on
 `-Daccount.db.acceptance=true` and need a reachable MySQL. A green `mvn clean test` does not run them.
 
 **On 2026-08-31 all thirteen were run together for the first time, and after one fixture fix all

@@ -158,6 +158,8 @@ public final class WipeCatalog {
                     WipeTable.of("treasury_deposit_expenses"),
                     WipeTable.of("treasury_transfers"),
                     WipeTable.of("treasury_movements"),
+                    WipeTable.of("shift_close_snapshots"),
+                    WipeTable.of("shift_cash_ledger"),
                     // A shift is opened on a till since V22, and that key does not
                     // cascade - so the treasury below cannot be emptied while any
                     // shift still points at it. It belongs with this target rather

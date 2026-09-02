@@ -19,6 +19,14 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
+import com.hamza.account.features.shift.ShiftGate;
+import com.hamza.account.features.shift.ShiftAttributionWriter;
+import com.hamza.account.features.events.PartyKind;
+import com.hamza.account.features.shift.JdbcShiftCashEffectReader;
+import com.hamza.account.features.shift.ShiftCashEffect;
+import com.hamza.account.features.shift.ShiftCashLedger;
+import com.hamza.account.features.shift.ShiftCashSource;
+import com.hamza.account.features.rbac.CurrentUser;
 
 @Log4j2
 public record AccountSupplierService(DaoFactory daoFactory) {
@@ -43,9 +51,22 @@ public record AccountSupplierService(DaoFactory daoFactory) {
 
     /** Refused inside a closed period, for the same reason as a customer payment. */
     public int delete(int id) throws DaoException {
+        return delete(id, null);
+    }
+
+    public int delete(int id, String correctionReason) throws DaoException {
         AuthorizationGuard.require(AppPermissions.SUPPLIERS_ACCOUNT_DELETE);
         PeriodLock.require(PeriodLockRegistry.SUPPLIER_ACCOUNT, id);
-        return accountDao().deleteById(id);
+        return TransactionTemplate.execute(() -> {
+            ShiftCashEffect old = new JdbcShiftCashEffectReader().party(PartyKind.SUPPLIER, id);
+            if (old == null) return 0;
+            int actor = CurrentUser.get().getId();
+            var shift = ShiftGate.jdbc(daoFactory.userShiftDao()).requireCashCorrection(
+                    actor, old.treasuryId(), old.income().add(old.output()).abs(), old.originalShiftId());
+            int rows = accountDao().deleteById(id);
+            if (rows == 1) ShiftCashLedger.jdbc().deleted(shift, actor, old, correctionReason);
+            return rows;
+        });
     }
 
     public SupplierAccountDao accountDao() {
@@ -69,23 +90,50 @@ public record AccountSupplierService(DaoFactory daoFactory) {
      * it on every edit would double it or rewrite an expense already reported.
      */
     public int save(SupplierAccount account, BigDecimal walletFee) throws DaoException {
+        return save(account, walletFee, null);
+    }
+
+    public int save(SupplierAccount account, BigDecimal walletFee, String correctionReason) throws DaoException {
         boolean isNew = isNew(account);
         AuthorizationGuard.require(isNew
                 ? AppPermissions.SUPPLIERS_ACCOUNT_CREATE : AppPermissions.SUPPLIERS_ACCOUNT_UPDATE);
         if (!isNew) {
-            return accountDao().update(account);
-        }
-        if (walletFee == null || walletFee.signum() <= 0) {
-            return accountDao().insert(account);
+            return TransactionTemplate.execute(() -> {
+                ShiftCashEffect old = new JdbcShiftCashEffectReader().party(PartyKind.SUPPLIER, account.getId());
+                var gate = ShiftGate.jdbc(daoFactory.userShiftDao());
+                var oldShift = gate.requireCashCorrection(account.getUsers().getId(), old.treasuryId(),
+                        old.income().add(old.output()).abs(), old.originalShiftId());
+                var shiftId = gate.requireCashCorrection(
+                        account.getUsers().getId(), account.getTreasury().getId(),
+                        BigDecimal.valueOf(account.getPaid()), old.originalShiftId());
+                int rows = accountDao().update(account);
+                if (rows == 1) {
+                    ShiftCashEffect current = ShiftCashEffect.outgoing(ShiftCashSource.SUPPLIER_ACCOUNT,
+                            account.getId(), account.getTreasury().getId(), null,
+                            BigDecimal.valueOf(account.getPaid()));
+                    ShiftCashLedger.jdbc().updated(oldShift, shiftId, account.getUsers().getId(), old, current,
+                            correctionReason);
+                }
+                return rows;
+            });
         }
         return TransactionTemplate.execute(() -> {
+            var shiftId = ShiftGate.jdbc(daoFactory.userShiftDao()).requireCashAction(
+                    account.getUsers().getId(), account.getTreasury().getId(), BigDecimal.valueOf(account.getPaid()));
             int rows = accountDao().insert(account);
-            new WalletFeeService(daoFactory).post(
-                    account.getTreasury().getId(),
-                    LocalDate.parse(account.getDate()),
-                    BigDecimal.valueOf(account.getPaid()),
-                    walletFee,
-                    WalletFee.EXPENSE_NAME);
+            if (rows == 1) {
+                ShiftAttributionWriter.jdbc().assignParty(PartyKind.SUPPLIER, account.getId(), shiftId);
+                ShiftCashLedger.jdbc().created(shiftId, account.getUsers().getId(),
+                        ShiftCashEffect.outgoing(ShiftCashSource.SUPPLIER_ACCOUNT, account.getId(),
+                                account.getTreasury().getId(),
+                                shiftId.isPresent() ? shiftId.getAsInt() : null,
+                                BigDecimal.valueOf(account.getPaid())));
+            }
+            if (walletFee != null && walletFee.signum() > 0) {
+                new WalletFeeService(daoFactory).post(
+                        account.getTreasury().getId(), LocalDate.parse(account.getDate()),
+                        BigDecimal.valueOf(account.getPaid()), walletFee, WalletFee.EXPENSE_NAME, shiftId);
+            }
             return rows;
         });
     }

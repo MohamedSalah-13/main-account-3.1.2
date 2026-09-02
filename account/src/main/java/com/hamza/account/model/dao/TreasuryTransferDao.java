@@ -9,6 +9,7 @@ import com.hamza.controlsfx.database.DaoException;
 import java.sql.Date;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.List;
 
 /**
@@ -25,12 +26,34 @@ public class TreasuryTransferDao extends AbstractDao<TreasuryTransfer> {
 
     public int insert(TreasuryTransferCommand command) throws DaoException {
         return executeUpdate(TreasuryStatements.INSERT_TRANSFER,
-                command.fromTreasuryId(),
-                command.toTreasuryId(),
-                command.amount(),
-                Date.valueOf(command.transferDate()),
-                command.notes(),
-                command.userId());
+                command.fromTreasuryId(), command.toTreasuryId(), command.amount(),
+                Date.valueOf(command.transferDate()), command.notes(), command.userId());
+    }
+
+    public int insert(TreasuryTransferCommand command, Integer sourceShiftId,
+                      Integer destinationShiftId) throws DaoException {
+        insertReturningId(command, sourceShiftId, destinationShiftId);
+        return 1;
+    }
+
+    public int insertReturningId(TreasuryTransferCommand command, Integer sourceShiftId,
+                                 Integer destinationShiftId) throws DaoException {
+        return withConnection(connection -> {
+            try (var statement = connection.prepareStatement(
+                    TreasuryStatements.INSERT_TRANSFER_WITH_SHIFTS, Statement.RETURN_GENERATED_KEYS)) {
+                Object[] data = {command.fromTreasuryId(), command.toTreasuryId(), command.amount(),
+                        Date.valueOf(command.transferDate()), command.notes(), command.userId(),
+                        sourceShiftId, destinationShiftId};
+                for (int i = 0; i < data.length; i++) statement.setObject(i + 1, data[i]);
+                if (statement.executeUpdate() != 1) throw new DaoException("Transfer was not inserted");
+                try (ResultSet keys = statement.getGeneratedKeys()) {
+                    if (keys.next()) return keys.getInt(1);
+                }
+                throw new DaoException("Transfer id was not generated");
+            } catch (SQLException e) {
+                throw new DaoException("Could not insert transfer", e);
+            }
+        });
     }
 
     public List<TreasuryTransfer> recent(int limit) throws DaoException {

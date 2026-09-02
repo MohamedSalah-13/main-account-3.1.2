@@ -54,8 +54,18 @@ public class SupplierAndAccount implements NameAndAccountInterface<Suppliers, Su
     }
 
     @Override
+    public int saveAccount(SupplierAccount account, java.math.BigDecimal walletFee, String correctionReason) throws DaoException {
+        return accountSupplierService.save(account, walletFee, correctionReason);
+    }
+
+    @Override
     public int deleteAccount(int id) throws DaoException {
         return accountSupplierService.delete(id);
+    }
+
+    @Override
+    public int deleteAccount(int id, String correctionReason) throws DaoException {
+        return accountSupplierService.delete(id, correctionReason);
     }
 
     @Override

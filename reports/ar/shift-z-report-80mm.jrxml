@@ -8,6 +8,7 @@
     <parameter name="printTime"        class="java.lang.String"/>
     <parameter name="shiftId"          class="java.lang.Integer"/>
     <parameter name="username"         class="java.lang.String"/>
+    <parameter name="treasuryName"     class="java.lang.String"/>
     <parameter name="openTime"         class="java.lang.String"/>
     <parameter name="closeTime"        class="java.lang.String"/>
     <parameter name="openBalance"      class="java.lang.Double"/>
@@ -15,6 +16,10 @@
     <parameter name="totalSales"       class="java.lang.Double"/>
     <parameter name="totalSalesReturns" class="java.lang.Double"/>
     <parameter name="totalExpenses"    class="java.lang.Double"/>
+    <parameter name="totalDeposits"    class="java.lang.Double"/>
+    <parameter name="totalWithdrawals" class="java.lang.Double"/>
+    <parameter name="otherIn"          class="java.lang.Double"/>
+    <parameter name="otherOut"         class="java.lang.Double"/>
     <parameter name="invoicesCount"    class="java.lang.Integer"/>
     <parameter name="expectedBalance"  class="java.lang.Double"/>
     <parameter name="difference"       class="java.lang.Double"/>
@@ -33,71 +38,76 @@
             <line><reportElement x="0" y="22" width="206" height="1"/></line>
 
             <!-- بيانات الوردية -->
-            <staticText><reportElement x="0" y="28" width="70" height="15"/>
-                <text><![CDATA[المستخدم:]]></text></staticText>
+            <textField><reportElement x="0" y="28" width="70" height="15"/>
+                <textFieldExpression>$R{user.shift.column.username}</textFieldExpression></textField>
             <textField><reportElement x="70" y="28" width="136" height="15"/>
                 <textFieldExpression>$P{username}</textFieldExpression></textField>
 
-            <staticText><reportElement x="0" y="45" width="70" height="15"/>
-                <text><![CDATA[رقم الوردية:]]></text></staticText>
+            <textField><reportElement x="0" y="45" width="70" height="15"/>
+                <textFieldExpression>$R{user.shift.label.id}</textFieldExpression></textField>
             <textField><reportElement x="70" y="45" width="136" height="15"/>
                 <textFieldExpression>$P{shiftId}</textFieldExpression></textField>
 
-            <staticText><reportElement x="0" y="62" width="70" height="15"/>
-                <text><![CDATA[الفتح:]]></text></staticText>
+            <textField><reportElement x="0" y="62" width="70" height="15"/>
+                <textFieldExpression>$R{user.shift.column.open.time}</textFieldExpression></textField>
             <textField><reportElement x="70" y="62" width="136" height="15"/>
                 <textFieldExpression>$P{openTime}</textFieldExpression></textField>
 
-            <staticText><reportElement x="0" y="79" width="70" height="15"/>
-                <text><![CDATA[الغلق:]]></text></staticText>
+            <textField><reportElement x="0" y="79" width="70" height="15"/>
+                <textFieldExpression>$R{user.shift.column.close.time}</textFieldExpression></textField>
             <textField><reportElement x="70" y="79" width="136" height="15"/>
                 <textFieldExpression>$P{closeTime}</textFieldExpression></textField>
+
+            <textField><reportElement x="0" y="96" width="70" height="15"/>
+                <textFieldExpression>$R{invoice.treasury}</textFieldExpression></textField>
+            <textField><reportElement x="70" y="96" width="136" height="15"/>
+                <textFieldExpression>$P{treasuryName}</textFieldExpression></textField>
 
             <line><reportElement x="0" y="100" width="206" height="1"/></line>
 
             <!-- الإجماليات -->
-            <staticText><reportElement x="0" y="108" width="120" height="15"/>
-                <text><![CDATA[إجمالي المبيعات:]]></text></staticText>
+            <textField><reportElement x="0" y="108" width="120" height="15"/>
+                <textFieldExpression>$R{user.shift.label.total.sales}</textFieldExpression></textField>
             <textField pattern="#,##0.00"><reportElement x="120" y="108" width="86" height="15"/>
                 <textFieldExpression>$P{totalSales}</textFieldExpression></textField>
 
-            <staticText><reportElement x="0" y="125" width="120" height="15"/>
-                <text><![CDATA[المرتجعات:]]></text></staticText>
+            <textField><reportElement x="0" y="125" width="120" height="15"/>
+                <textFieldExpression>$R{user.shift.label.sales.returns}</textFieldExpression></textField>
             <textField pattern="#,##0.00"><reportElement x="120" y="125" width="86" height="15"/>
                 <textFieldExpression>$P{totalSalesReturns}</textFieldExpression></textField>
 
-            <staticText><reportElement x="0" y="142" width="120" height="15"/>
-                <text><![CDATA[المصروفات:]]></text></staticText>
+            <textField><reportElement x="0" y="142" width="120" height="15"/>
+                <textFieldExpression>$R{user.shift.label.expenses}</textFieldExpression></textField>
             <textField pattern="#,##0.00"><reportElement x="120" y="142" width="86" height="15"/>
                 <textFieldExpression>$P{totalExpenses}</textFieldExpression></textField>
 
-            <staticText><reportElement x="0" y="159" width="120" height="15"/>
-                <text><![CDATA[عدد الفواتير:]]></text></staticText>
+            <textField><reportElement x="0" y="159" width="120" height="15"/>
+                <textFieldExpression>$R{user.shift.label.invoice.count}</textFieldExpression></textField>
             <textField><reportElement x="120" y="159" width="86" height="15"/>
                 <textFieldExpression>$P{invoicesCount}</textFieldExpression></textField>
 
             <line><reportElement x="0" y="180" width="206" height="1"/></line>
 
             <!-- الرصيد -->
-            <staticText><reportElement x="0" y="188" width="120" height="15"/>
-                <text><![CDATA[الرصيد الافتتاحي:]]></text></staticText>
+            <textField><reportElement x="0" y="188" width="120" height="15"/>
+                <textFieldExpression>$R{user.shift.label.open.balance}</textFieldExpression></textField>
             <textField pattern="#,##0.00"><reportElement x="120" y="188" width="86" height="15"/>
                 <textFieldExpression>$P{openBalance}</textFieldExpression></textField>
 
-            <staticText><reportElement x="0" y="205" width="120" height="15"/>
-                <text><![CDATA[الرصيد المتوقع:]]></text></staticText>
+            <textField><reportElement x="0" y="205" width="120" height="15"/>
+                <textFieldExpression>$R{user.shift.label.expected.balance}</textFieldExpression></textField>
             <textField pattern="#,##0.00"><reportElement x="120" y="205" width="86" height="15"/>
                 <textFieldExpression>$P{expectedBalance}</textFieldExpression></textField>
 
-            <staticText><reportElement x="0" y="222" width="120" height="15"/>
-                <text><![CDATA[الرصيد الفعلي:]]></text></staticText>
+            <textField><reportElement x="0" y="222" width="120" height="15"/>
+                <textFieldExpression>$R{user.shift.label.actual.balance}</textFieldExpression></textField>
             <textField pattern="#,##0.00"><reportElement x="120" y="222" width="86" height="15"/>
                 <textFieldExpression>$P{closeBalance}</textFieldExpression></textField>
 
-            <staticText><reportElement x="0" y="239" width="120" height="15">
+            <textField><reportElement x="0" y="239" width="120" height="15">
 <!--                <textElement><font isBold="true"/></textElement>-->
             </reportElement>
-                <text><![CDATA[الفرق:]]></text></staticText>
+                <textFieldExpression>$R{user.shift.label.difference}</textFieldExpression></textField>
             <textField pattern="#,##0.00"><reportElement x="120" y="239" width="86" height="15">
 <!--                <textElement><font isBold="true"/></textElement>-->
             </reportElement>
@@ -105,12 +115,29 @@
 
             <line><reportElement x="0" y="260" width="206" height="1"/></line>
 
-            <staticText><reportElement x="0" y="270" width="60" height="15"/>
-                <text><![CDATA[ملاحظات:]]></text></staticText>
-            <textField isStretchWithOverflow="true"><reportElement x="0" y="287" width="206" height="40"/>
+            <textField><reportElement x="0" y="270" width="120" height="15"/>
+                <textFieldExpression>$R{user.shift.label.other.in}</textFieldExpression></textField>
+            <textField pattern="#,##0.00"><reportElement x="120" y="270" width="86" height="15"/>
+                <textFieldExpression>$P{otherIn}</textFieldExpression></textField>
+            <textField><reportElement x="0" y="287" width="120" height="15"/>
+                <textFieldExpression>$R{user.shift.label.other.out}</textFieldExpression></textField>
+            <textField pattern="#,##0.00"><reportElement x="120" y="287" width="86" height="15"/>
+                <textFieldExpression>$P{otherOut}</textFieldExpression></textField>
+            <textField><reportElement x="0" y="304" width="120" height="15"/>
+                <textFieldExpression>$R{user.shift.label.deposits}</textFieldExpression></textField>
+            <textField pattern="#,##0.00"><reportElement x="120" y="304" width="86" height="15"/>
+                <textFieldExpression>$P{totalDeposits}</textFieldExpression></textField>
+            <textField><reportElement x="0" y="321" width="120" height="15"/>
+                <textFieldExpression>$R{user.shift.label.withdrawals}</textFieldExpression></textField>
+            <textField pattern="#,##0.00"><reportElement x="120" y="321" width="86" height="15"/>
+                <textFieldExpression>$P{totalWithdrawals}</textFieldExpression></textField>
+
+            <textField><reportElement x="0" y="345" width="90" height="15"/>
+                <textFieldExpression>$R{user.shift.label.notes}</textFieldExpression></textField>
+            <textField isStretchWithOverflow="true"><reportElement x="0" y="362" width="206" height="40"/>
                 <textFieldExpression>$P{notes}</textFieldExpression></textField>
 
-            <textField><reportElement x="0" y="340" width="206" height="12">
+            <textField><reportElement x="0" y="420" width="206" height="12">
 <!--                <textElement textAlignment="Center">-->
 <!--                    <font size="8"/>-->
 <!--                </textElement>-->

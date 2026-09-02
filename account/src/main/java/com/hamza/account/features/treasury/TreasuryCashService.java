@@ -13,6 +13,12 @@ import com.hamza.controlsfx.language.LanguageManager;
 
 import java.time.LocalDate;
 import java.util.List;
+import com.hamza.account.features.shift.ShiftGate;
+import com.hamza.account.features.shift.JdbcShiftCashEffectReader;
+import com.hamza.account.features.shift.ShiftCashEffect;
+import com.hamza.account.features.shift.ShiftCashLedger;
+import com.hamza.account.features.shift.ShiftCashSource;
+import com.hamza.account.features.rbac.CurrentUser;
 
 /**
  * Puts cash into a treasury, and takes it out.
@@ -29,9 +35,15 @@ import java.util.List;
 public final class TreasuryCashService {
 
     private final DaoFactory daoFactory;
+    private final ShiftGate shiftGate;
 
     public TreasuryCashService(DaoFactory daoFactory) {
+        this(daoFactory, daoFactory == null ? ShiftGate.disabled() : ShiftGate.jdbc(daoFactory.userShiftDao()));
+    }
+
+    TreasuryCashService(DaoFactory daoFactory, ShiftGate shiftGate) {
         this.daoFactory = daoFactory;
+        this.shiftGate = shiftGate;
     }
 
     public int record(CashMovementCommand command) throws DaoException {
@@ -55,6 +67,7 @@ public final class TreasuryCashService {
         }
 
         return TransactionTemplate.execute(() -> {
+            var shiftId = shiftGate.requireCashAction(command.userId(), command.treasuryId(), command.amount());
             TreasuryBalanceSummary treasury = command.direction().leavesTheTreasury()
                     ? daoFactory.treasuryCurrentBalanceDao().lockAndRead(command.treasuryId())
                     : daoFactory.treasuryCurrentBalanceDao().getDataById(command.treasuryId());
@@ -64,7 +77,18 @@ public final class TreasuryCashService {
             if (command.direction().leavesTheTreasury()) {
                 TreasuryTransferService.requireEnough(treasury, command.amount());
             }
-            return daoFactory.cashMovementDao().insert(withCategory(command));
+            CashMovementCommand stored = withCategory(command);
+            int id = daoFactory.cashMovementDao().insertReturningId(stored,
+                    shiftId.isPresent() ? shiftId.getAsInt() : null);
+            ShiftCashSource sourceType = command.direction() == CashDirection.DEPOSIT
+                    ? ShiftCashSource.CASH_DEPOSIT : ShiftCashSource.CASH_WITHDRAWAL;
+            ShiftCashEffect effect = command.direction() == CashDirection.DEPOSIT
+                    ? ShiftCashEffect.incoming(sourceType, id, command.treasuryId(),
+                        shiftId.isPresent() ? shiftId.getAsInt() : null, command.amount())
+                    : ShiftCashEffect.outgoing(sourceType, id, command.treasuryId(),
+                        shiftId.isPresent() ? shiftId.getAsInt() : null, command.amount());
+            ShiftCashLedger.jdbc().created(shiftId, command.userId(), effect);
+            return 1;
         });
     }
 
@@ -93,9 +117,22 @@ public final class TreasuryCashService {
 
     /** Removes a movement entered by mistake; refused inside a closed period. */
     public int delete(int movementId) throws DaoException {
+        return delete(movementId, null);
+    }
+
+    public int delete(int movementId, String correctionReason) throws DaoException {
         AuthorizationGuard.require(AppPermissions.TREASURY_DEPOSIT);
         PeriodLock.require(PeriodLockRegistry.TREASURY_DEPOSIT, movementId);
-        return daoFactory.cashMovementDao().deleteById(movementId);
+        return TransactionTemplate.execute(() -> {
+            ShiftCashEffect old = new JdbcShiftCashEffectReader().cash(movementId);
+            if (old == null) return 0;
+            int actor = CurrentUser.get().getId();
+            var shift = shiftGate.requireCashCorrection(actor, old.treasuryId(),
+                    old.income().add(old.output()).abs(), old.originalShiftId());
+            int rows = daoFactory.cashMovementDao().deleteById(movementId);
+            if (rows == 1) ShiftCashLedger.jdbc().deleted(shift, actor, old, correctionReason);
+            return rows;
+        });
     }
 
     public List<CashMovement> recent(int limit) throws DaoException {

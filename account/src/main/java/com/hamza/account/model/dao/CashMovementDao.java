@@ -11,6 +11,7 @@ import com.hamza.controlsfx.database.DaoException;
 import java.sql.Date;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.time.LocalDate;
 import java.util.List;
 
@@ -25,15 +26,31 @@ import java.util.List;
 public class CashMovementDao extends AbstractDao<CashMovement> {
 
     public int insert(CashMovementCommand command) throws DaoException {
-        return executeUpdate(TreasuryStatements.INSERT_CASH_MOVEMENT,
-                command.statement(),
-                Date.valueOf(command.date()),
-                command.amount(),
-                command.description(),
-                command.direction().code(),
-                command.category().code(),
-                command.treasuryId(),
-                command.userId());
+        return insert(command, null);
+    }
+
+    public int insert(CashMovementCommand command, Integer shiftId) throws DaoException {
+        insertReturningId(command, shiftId);
+        return 1;
+    }
+
+    public int insertReturningId(CashMovementCommand command, Integer shiftId) throws DaoException {
+        return withConnection(connection -> {
+            try (var statement = connection.prepareStatement(
+                    TreasuryStatements.INSERT_CASH_MOVEMENT_WITH_SHIFT, Statement.RETURN_GENERATED_KEYS)) {
+                Object[] data = {command.statement(), Date.valueOf(command.date()), command.amount(),
+                        command.description(), command.direction().code(), command.category().code(),
+                        command.treasuryId(), command.userId(), shiftId};
+                for (int i = 0; i < data.length; i++) statement.setObject(i + 1, data[i]);
+                if (statement.executeUpdate() != 1) throw new DaoException("Cash movement was not inserted");
+                try (ResultSet keys = statement.getGeneratedKeys()) {
+                    if (keys.next()) return keys.getInt(1);
+                }
+                throw new DaoException("Cash movement id was not generated");
+            } catch (SQLException e) {
+                throw new DaoException("Could not insert cash movement", e);
+            }
+        });
     }
 
     public List<CashMovement> recent(int limit) throws DaoException {

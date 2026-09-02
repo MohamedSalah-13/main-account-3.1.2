@@ -16,4 +16,6 @@ public interface TotalDesignInterface extends DataTable<BaseTotals> {
 
     int deleteMultiData(@NotNull Integer... ids) throws Exception;
 
+    int deleteMultiData(String correctionReason, @NotNull Integer... ids) throws Exception;
+
 }

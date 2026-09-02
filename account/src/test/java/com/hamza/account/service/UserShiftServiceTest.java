@@ -9,6 +9,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
+import java.math.BigDecimal;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -70,17 +71,29 @@ class UserShiftServiceTest {
     }
 
     @Test
-    @DisplayName("Your own shifts are yours to read, with no permission at all")
-    void ownShiftsNeedNoPermission() {
+    @DisplayName("Your own shifts require the explicit self-view permission")
+    void ownShiftsNeedTheSelfViewPermission() {
         signInWith();
+        assertTrue(assertThrows(Exception.class,
+                () -> serviceWithoutDatabase().getUserShifts(2)) instanceof BusinessRuleException);
 
-        // Deliberately unguarded, and asserted so that adding a guard to it later is a
-        // decision someone takes on purpose: a cashier reading their own shift is the
-        // ordinary case, and it is the screen they close their day on.
-        assertThrows(NullPointerException.class,
-                () -> serviceWithoutDatabase().getUserShifts(2),
-                "getUserShifts has acquired a permission check. If that is intended, the "
-                        + "cashier's own shift screen needs the key granting to every cashier "
-                        + "first, or they cannot close their day.");
+        signInWith(AppPermissions.SHIFT_SELF_VIEW);
+        assertThrows(NullPointerException.class, () -> serviceWithoutDatabase().getUserShifts(2));
+    }
+
+    @Test
+    @DisplayName("Opening a shift is refused before any database access without self-open permission")
+    void openingNeedsExplicitPermission() {
+        signInWith(AppPermissions.SHIFT_SELF_VIEW);
+        assertTrue(assertThrows(Exception.class, () ->
+                serviceWithoutDatabase().openShift(2, 1, BigDecimal.ZERO, "")) instanceof BusinessRuleException);
+    }
+
+    @Test
+    @DisplayName("Closing a shift is refused before any database access without self-close permission")
+    void closingNeedsExplicitPermission() {
+        signInWith(AppPermissions.SHIFT_SELF_VIEW);
+        assertTrue(assertThrows(Exception.class, () ->
+                serviceWithoutDatabase().closeShift(2, BigDecimal.ZERO, "")) instanceof BusinessRuleException);
     }
 }

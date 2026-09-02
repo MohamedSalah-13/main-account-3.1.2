@@ -203,7 +203,9 @@ public class TreasuryCashController {
             return;
         }
         try {
-            cashService.delete(selected.id());
+            var reason = com.hamza.account.controller.users.ShiftCorrectionReasonPrompt.forDelete();
+            if (reason.isEmpty()) return;
+            cashService.delete(selected.id(), reason.get());
             publish(selected.treasuryId());
             reload();
             AllAlerts.alertDelete();

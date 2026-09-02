@@ -4,6 +4,7 @@ import com.hamza.account.model.domain.ShiftSummary;
 import com.hamza.account.treasury.MovementLabel;
 
 import java.util.List;
+import java.math.BigDecimal;
 
 /**
  * Turns a shift's cash movements into the summary a cashier is judged by.
@@ -35,27 +36,27 @@ public final class ShiftCashSummary {
     private ShiftCashSummary() {
     }
 
-    public static ShiftSummary summarize(List<ShiftCashMovement> movements, double openBalance, int invoicesCount) {
-        double totalIn = 0;
-        double totalOut = 0;
-        double sales = 0;
-        double salesReturns = 0;
-        double expenses = 0;
-        double deposits = 0;
-        double withdrawals = 0;
+    public static ShiftSummary summarize(List<ShiftCashMovement> movements, BigDecimal openBalance, int invoicesCount) {
+        BigDecimal totalIn = BigDecimal.ZERO;
+        BigDecimal totalOut = BigDecimal.ZERO;
+        BigDecimal sales = BigDecimal.ZERO;
+        BigDecimal salesReturns = BigDecimal.ZERO;
+        BigDecimal expenses = BigDecimal.ZERO;
+        BigDecimal deposits = BigDecimal.ZERO;
+        BigDecimal withdrawals = BigDecimal.ZERO;
 
         for (ShiftCashMovement movement : movements) {
             if (movement == null || movement.label() == MovementLabel.OPENING) continue;
 
-            totalIn += movement.income();
-            totalOut += movement.output();
+            totalIn = totalIn.add(movement.income());
+            totalOut = totalOut.add(movement.output());
 
             switch (movement.label()) {
-                case SALES -> sales += movement.income();
-                case SALES_RETURNS -> salesReturns += movement.output();
-                case EXPENSES -> expenses += movement.output();
-                case DEPOSIT -> deposits += movement.income();
-                case WITHDRAWAL -> withdrawals += movement.output();
+                case SALES -> sales = sales.add(movement.income());
+                case SALES_RETURNS -> salesReturns = salesReturns.add(movement.output());
+                case EXPENSES -> expenses = expenses.add(movement.output());
+                case DEPOSIT -> deposits = deposits.add(movement.income());
+                case WITHDRAWAL -> withdrawals = withdrawals.add(movement.output());
                 default -> {
                     // Purchases, purchase returns, customer collections, supplier
                     // payments and both sides of a transfer. They have no column of
@@ -71,8 +72,8 @@ public final class ShiftCashSummary {
                 .totalExpenses(expenses)
                 .totalDeposits(deposits)
                 .totalWithdrawals(withdrawals)
-                .otherIn(totalIn - sales - deposits)
-                .otherOut(totalOut - salesReturns - expenses - withdrawals)
+                .otherIn(totalIn.subtract(sales).subtract(deposits))
+                .otherOut(totalOut.subtract(salesReturns).subtract(expenses).subtract(withdrawals))
                 .totalIn(totalIn)
                 .totalOut(totalOut)
                 .invoicesCount(invoicesCount)

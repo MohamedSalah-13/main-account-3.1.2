@@ -253,7 +253,9 @@ public class AccountDetailsController<T3 extends BaseNames, T4 extends BaseAccou
             T4 selectedItem = tableView.getSelectionModel().getSelectedItem();
             if (selectedItem != null) {
                 if (AllAlerts.confirmDelete()) {
-                    int i = nameAndAccountInterface.deleteAccount(selectedItem.getId());
+                    var reason = com.hamza.account.controller.users.ShiftCorrectionReasonPrompt.forDelete();
+                    if (reason.isEmpty()) return;
+                    int i = nameAndAccountInterface.deleteAccount(selectedItem.getId(), reason.get());
                     if (i == 1) {
                         var eventBus = ServiceRegistry.get(EventBus.class);
                         if (eventBus != null)

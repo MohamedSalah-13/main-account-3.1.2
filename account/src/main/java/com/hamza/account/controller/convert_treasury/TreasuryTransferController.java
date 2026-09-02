@@ -155,7 +155,9 @@ public class TreasuryTransferController {
             return;
         }
         try {
-            transferService.delete(selected.id());
+            var reason = com.hamza.account.controller.users.ShiftCorrectionReasonPrompt.forDelete();
+            if (reason.isEmpty()) return;
+            transferService.delete(selected.id(), reason.get());
             publish(selected.fromTreasuryId());
             publish(selected.toTreasuryId());
             reload();

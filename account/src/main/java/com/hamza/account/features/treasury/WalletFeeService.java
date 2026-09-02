@@ -13,6 +13,10 @@ import com.hamza.controlsfx.language.LanguageManager;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.OptionalInt;
+import com.hamza.account.features.shift.ShiftCashEffect;
+import com.hamza.account.features.shift.ShiftCashLedger;
+import com.hamza.account.features.shift.ShiftCashSource;
 
 /**
  * Posts the e-wallet fee that goes with a collection, as an expense on the same
@@ -55,6 +59,11 @@ public final class WalletFeeService {
      */
     public int post(int treasuryId, LocalDate date, BigDecimal amount, BigDecimal fee, String note)
             throws DaoException {
+        return post(treasuryId, date, amount, fee, note, OptionalInt.empty());
+    }
+
+    public int post(int treasuryId, LocalDate date, BigDecimal amount, BigDecimal fee, String note,
+                    OptionalInt shiftId) throws DaoException {
         if (fee == null || fee.signum() <= 0) {
             return 0;
         }
@@ -73,7 +82,14 @@ public final class WalletFeeService {
         // Through the DAO rather than ExpensesDetailsService: the service guards on
         // expenses.create, and this is not the user entering an expense - see the class
         // comment. The DAO still applies the accounting period lock on its own.
-        return daoFactory.expensesDetailsDao().insert(expense);
+        int id = daoFactory.expensesDetailsDao().insertReturningId(expense,
+                shiftId != null && shiftId.isPresent() ? shiftId.getAsInt() : null);
+        var effectiveShift = shiftId == null ? OptionalInt.empty() : shiftId;
+        int actor = expense.getUsers().getId();
+        ShiftCashLedger.jdbc().created(effectiveShift, actor,
+                ShiftCashEffect.outgoing(ShiftCashSource.EXPENSE, id, treasuryId,
+                        effectiveShift.isPresent() ? effectiveShift.getAsInt() : null, fee));
+        return 1;
     }
 
     /**

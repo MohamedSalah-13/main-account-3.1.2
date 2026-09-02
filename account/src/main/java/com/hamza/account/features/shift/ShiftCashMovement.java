@@ -2,6 +2,8 @@ package com.hamza.account.features.shift;
 
 import com.hamza.account.treasury.MovementLabel;
 
+import java.math.BigDecimal;
+
 /**
  * One heading's worth of cash movement inside a shift: what came in under it and
  * what went out, as {@code treasury_balance} groups it.
@@ -14,5 +16,9 @@ import com.hamza.account.treasury.MovementLabel;
  * @param income what entered the till under that heading
  * @param output what left it
  */
-public record ShiftCashMovement(MovementLabel label, double income, double output) {
+public record ShiftCashMovement(MovementLabel label, BigDecimal income, BigDecimal output) {
+    public ShiftCashMovement {
+        income = income == null ? BigDecimal.ZERO : income;
+        output = output == null ? BigDecimal.ZERO : output;
+    }
 }

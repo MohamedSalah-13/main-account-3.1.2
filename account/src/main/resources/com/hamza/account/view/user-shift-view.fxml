@@ -134,6 +134,7 @@
                      </rowConstraints>
                     </GridPane>
                 </TitledPane>
+                <Button fx:id="btnPrintXReport" text="%user.shift.btn.print.x" />
             
                 <!-- Close Shift Section -->
                 <VBox fx:id="boxCloseShift" alignment="CENTER" spacing="10">

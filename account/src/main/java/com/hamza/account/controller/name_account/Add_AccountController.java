@@ -3,6 +3,7 @@ package com.hamza.account.controller.name_account;
 import com.hamza.account.controller.main.DataPublisher;
 import com.hamza.account.controller.main.LoadOtherData;
 import com.hamza.account.controller.others.ServiceRegistry;
+import com.hamza.account.controller.users.ShiftCorrectionReasonPrompt;
 import com.hamza.account.features.events.AccountChanged;
 import com.hamza.account.features.events.NameChanged;
 import com.hamza.account.interfaces.api.DataInterface;
@@ -255,7 +256,13 @@ public class Add_AccountController<T3 extends BaseNames, T4 extends BaseAccount>
 
         // The payment and the wallet's fee go together or not at all - the service opens
         // one transaction over both. A cash treasury sends zero and nothing extra is written.
-        return dataInterface.nameAndAccountInterface().saveAccount(t4, walletFee());
+        String correctionReason = "";
+        if (numInvoice > 0) {
+            Optional<String> reason = ShiftCorrectionReasonPrompt.forUpdate();
+            if (reason.isEmpty()) return 0;
+            correctionReason = reason.get();
+        }
+        return dataInterface.nameAndAccountInterface().saveAccount(t4, walletFee(), correctionReason);
     }
 
     @Override

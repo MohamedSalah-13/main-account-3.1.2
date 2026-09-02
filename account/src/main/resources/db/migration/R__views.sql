@@ -814,6 +814,8 @@ WITH cte_union_data AS (SELECT invoice_number AS id_no,
                                treasury_id,
                                date_insert,
                                user_id,
+                               shift_id,
+                               1               AS source_type,
                                'المشتريات'    AS information
                         FROM total_buy
                         UNION ALL
@@ -828,6 +830,8 @@ WITH cte_union_data AS (SELECT invoice_number AS id_no,
                                treasury_id,
                                date_insert,
                                user_id,
+                               shift_id,
+                               2,
                                'مرتجع المشتريات'
                         FROM total_buy_re
                         UNION ALL
@@ -838,6 +842,8 @@ WITH cte_union_data AS (SELECT invoice_number AS id_no,
                                treasury_id,
                                date_insert,
                                user_id,
+                               shift_id,
+                               3,
                                'المبيعات'
                         FROM total_sales
                         UNION ALL
@@ -850,6 +856,8 @@ WITH cte_union_data AS (SELECT invoice_number AS id_no,
                                treasury_id,
                                date_insert,
                                user_id,
+                               shift_id,
+                               4,
                                'مرتجع المبيعات'
                         FROM total_sales_re
                         UNION ALL
@@ -860,6 +868,8 @@ WITH cte_union_data AS (SELECT invoice_number AS id_no,
                                treasury_id,
                                created_at,
                                user_id,
+                               shift_id,
+                               5,
                                'حسابات العملاء'
                         FROM customers_accounts
                         UNION ALL
@@ -870,6 +880,8 @@ WITH cte_union_data AS (SELECT invoice_number AS id_no,
                                treasury_id,
                                created_at AS date_insert,
                                user_id,
+                               shift_id,
+                               6,
                                'حسابات الموردين'
                         FROM suppliers_accounts
                         UNION ALL
@@ -880,6 +892,8 @@ WITH cte_union_data AS (SELECT invoice_number AS id_no,
                                treasury_id,
                                date_insert,
                                user_id,
+                               shift_id,
+                               7,
                                'المصروفات'
                         FROM expenses_details
                         UNION ALL
@@ -890,6 +904,8 @@ WITH cte_union_data AS (SELECT invoice_number AS id_no,
                                treasury_id,
                                date_insert,
                                user_id,
+                               shift_id,
+                               IF(deposit_or_expenses = 1, 8, 9),
                                IF(deposit_or_expenses = 1, 'إيداع', 'صرف')
                         FROM treasury_deposit_expenses
                         UNION ALL
@@ -903,6 +919,8 @@ WITH cte_union_data AS (SELECT invoice_number AS id_no,
                                id                                        AS treasury_id,
                                date_insert,
                                user_id,
+                               NULL                                      AS shift_id,
+                               0,
                                'رصيد افتتاحي'
                         FROM treasury
                         WHERE amount <> 0
@@ -916,6 +934,8 @@ WITH cte_union_data AS (SELECT invoice_number AS id_no,
                                treasury_from,
                                date_insert,
                                user_id,
+                               source_shift_id,
+                               11,
                                'تحويل صادر'
                         FROM treasury_transfers
                         UNION ALL
@@ -926,6 +946,8 @@ WITH cte_union_data AS (SELECT invoice_number AS id_no,
                                treasury_to,
                                date_insert,
                                user_id,
+                               destination_shift_id,
+                               10,
                                'تحويل وارد'
                         FROM treasury_transfers)
 SELECT c.id_no,
@@ -935,6 +957,8 @@ SELECT c.id_no,
        c.treasury_id,
        c.date_insert,
        c.user_id,
+       c.shift_id,
+       c.source_type,
        c.information,
        t.t_name    AS treasury_name,
        u.user_name AS user_name

@@ -14,6 +14,7 @@ import com.hamza.account.model.dao.TotalsBuyDao;
 import com.hamza.account.model.domain.Total_buy;
 import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.database.TransactionTemplate;
+import com.hamza.account.features.shift.ShiftDocumentDeletionJournal;
 import org.jetbrains.annotations.NotNull;
 
 import java.time.LocalDate;
@@ -51,15 +52,22 @@ public record TotalBuyService(DaoFactory daoFactory) {
 
     /** Refused whole if any of them falls inside a closed period - see TotalSalesService. */
     public int deleteMultiData(Integer[] ids) throws DaoException {
+        return deleteMultiData(ids, null);
+    }
+
+    public int deleteMultiData(Integer[] ids, String correctionReason) throws DaoException {
         AuthorizationGuard.require(AppPermissions.PURCHASE_DELETE);
         PeriodLock.require(PeriodLockRegistry.PURCHASE_INVOICE, List.of(ids));
         // As on the sales side: a purchase that has been returned against cannot go, or
         // its return's stock-out is left with nothing to reverse.
         ReturnLinkGuard.requireNoReturns(DocumentType.PURCHASE, ids);
         return TransactionTemplate.execute(() -> {
+            var journal = new ShiftDocumentDeletionJournal(daoFactory).capture(DocumentType.PURCHASE, ids);
             daoFactory.stockMovementDao().deleteByReferences(
                     StockMovementAssembler.referenceTypeFor(DocumentType.PURCHASE), ids);
-            return getTotalsBuyDao().deleteInvoicesInRange(ids);
+            int rows = getTotalsBuyDao().deleteInvoicesInRange(ids);
+            journal.appendReversals(rows, correctionReason);
+            return rows;
         });
     }
 

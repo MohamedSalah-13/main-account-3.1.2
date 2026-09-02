@@ -71,6 +71,14 @@ public final class TreasuryStatements {
                 (?, ?, ?, ?, ?, ?)
             """;
 
+    public static final String INSERT_TRANSFER_WITH_SHIFTS = """
+            INSERT INTO treasury_transfers
+                (treasury_from, treasury_to, amount, transfer_date, notes, user_id,
+                 source_shift_id, destination_shift_id)
+            VALUES
+                (?, ?, ?, ?, ?, ?, ?, ?)
+            """;
+
     /**
      * Read through the view that already carries both names, rather than joining
      * {@code treasury} twice here - {@code treasury_transfers_and_names} exists for
@@ -97,6 +105,14 @@ public final class TreasuryStatements {
                  category, treasury_id, user_id)
             VALUES
                 (?, ?, ?, ?, ?, ?, ?, ?)
+            """;
+
+    public static final String INSERT_CASH_MOVEMENT_WITH_SHIFT = """
+            INSERT INTO treasury_deposit_expenses
+                (statement, date_inter, amount, description_data, deposit_or_expenses,
+                 category, treasury_id, user_id, shift_id)
+            VALUES
+                (?, ?, ?, ?, ?, ?, ?, ?, ?)
             """;
 
     public static final String SELECT_RECENT_CASH_MOVEMENTS = """

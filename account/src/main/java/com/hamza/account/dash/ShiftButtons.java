@@ -29,7 +29,7 @@ public class ShiftButtons extends LoadData {
         return new ButtonWithPerm() {
             @Override
             public PermissionKey getPermissionType() {
-                return AppPermissions.UNITS_SHOW;
+                return AppPermissions.SHIFT_SELF_VIEW;
             }
 
             @Override
@@ -37,7 +37,7 @@ public class ShiftButtons extends LoadData {
                 // Action for non-tabpane scenario
                 var controller = new UserShiftController();
                 Scene scene = new Scene(new OpenFxmlApplication(controller).getPane()
-                        , 300, 300);
+                        , 680, 720);
                 Stage stage = new Stage();
                 stage.setScene(scene);
                 stage.show();

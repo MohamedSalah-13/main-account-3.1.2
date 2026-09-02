@@ -80,7 +80,9 @@ public class ExpensesDetailsApplication extends Application implements TableInte
 
             @Override
             public int delete(ExpensesDetails expensesDetails) throws Exception {
-                return expensesDetailsService.deleteById(expensesDetails.getId());
+                var reason = com.hamza.account.controller.users.ShiftCorrectionReasonPrompt.forDelete();
+                if (reason.isEmpty()) return 0;
+                return expensesDetailsService.deleteById(expensesDetails.getId(), reason.get());
             }
 
             @Override

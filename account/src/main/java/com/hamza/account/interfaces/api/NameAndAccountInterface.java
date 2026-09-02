@@ -37,7 +37,11 @@ public interface NameAndAccountInterface<T1 extends BaseNames, T2 extends BaseAc
      */
     int saveAccount(T2 account, java.math.BigDecimal walletFee) throws Exception;
 
+    int saveAccount(T2 account, java.math.BigDecimal walletFee, String correctionReason) throws Exception;
+
     int deleteAccount(int id) throws Exception;
+
+    int deleteAccount(int id, String correctionReason) throws Exception;
 
     List<T2> accountList() throws Exception;
 

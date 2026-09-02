@@ -392,10 +392,19 @@ public class TotalsController<T3 extends BaseNames, T4 extends BaseAccount>
                         new UserValidationException(LanguageManager.getInstance().getString("msg.select.row")));
             } else {
                 if (AllAlerts.confirmDelete()) {
+                    final java.util.Optional<String> correctionReason;
+                    try {
+                        correctionReason = com.hamza.account.controller.users.ShiftCorrectionReasonPrompt.forDelete();
+                    } catch (DaoException e) {
+                        exceptionHandle(e);
+                        return;
+                    }
+                    if (correctionReason.isEmpty()) return;
                     maskerPaneSetting.showMaskerPane(LanguageManager.getInstance().getString("invoice.dialog.delete.title"), () -> {
                         // backup before delete
                         SaveDatabaseFile.saveBeforeClose(false);
-                        dataInterface.totalDesignInterface().deleteMultiData(list.stream().map(BaseTotals::getId).toArray(Integer[]::new));
+                        dataInterface.totalDesignInterface().deleteMultiData(correctionReason.get(),
+                                list.stream().map(BaseTotals::getId).toArray(Integer[]::new));
                     });
                     maskerPaneSetting.getVoidTask().setOnSucceeded(workerStateEvent -> {
 //                        log.info("delete multi data success , {}", sb.toString());

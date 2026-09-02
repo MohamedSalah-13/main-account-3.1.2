@@ -64,4 +64,9 @@ public class TotalsPurchaseImplDesign implements TotalDesignInterface {
         return totalBuyService.deleteMultiData(ids);
     }
 
+    @Override
+    public int deleteMultiData(String correctionReason, @NotNull Integer... ids) throws Exception {
+        return totalBuyService.deleteMultiData(ids, correctionReason);
+    }
+
 }
