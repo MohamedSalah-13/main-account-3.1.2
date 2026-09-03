@@ -33,7 +33,7 @@
                         <Label styleClass="form-label" text="%settings.barcode.nameFontSize" GridPane.columnIndex="2" GridPane.rowIndex="2"/><TextField fx:id="textNameFontSize" styleClass="modern-input" GridPane.columnIndex="3" GridPane.rowIndex="2"/>
                       </children>
                     </GridPane>
-                    <HBox spacing="12.0"><children><CheckBox fx:id="show2" styleClass="modern-check-box" text="Show Tow Label"/><CheckBox fx:id="showName" styleClass="modern-check-box" text="Show Name"/><CheckBox fx:id="showPrice" styleClass="modern-check-box" text="Show Price"/><CheckBox fx:id="showBarcode" styleClass="modern-check-box" text="Show Barcode"/></children></HBox>
+                    <HBox spacing="12.0"><children><CheckBox fx:id="show2" styleClass="modern-check-box" text="%settings.barcode.showDouble"/><CheckBox fx:id="showName" styleClass="modern-check-box" text="%settings.barcode.showName"/><CheckBox fx:id="showPrice" styleClass="modern-check-box" text="%settings.barcode.showPrice"/><CheckBox fx:id="showBarcode" styleClass="modern-check-box" text="%settings.barcode.showBarcodeNumber"/></children></HBox>
                     <VBox spacing="3.0" styleClass="app-card"><children><Label styleClass="form-label" text="%settings.barcode.preview"/><Label fx:id="previewSize" alignment="CENTER" maxWidth="1.7976931348623157E308"/><StackPane prefHeight="105.0"><children><Rectangle fx:id="previewFrame" arcWidth="6.0" arcHeight="6.0" fill="TRANSPARENT" stroke="BLACK" strokeWidth="1.5"/></children></StackPane><Label fx:id="previewName" alignment="CENTER" maxWidth="1.7976931348623157E308"/><Label fx:id="previewBarcode" alignment="CENTER" maxWidth="1.7976931348623157E308" style="-fx-font-family: monospace; -fx-font-size: 16px;"/><Label fx:id="previewDetails" alignment="CENTER" maxWidth="1.7976931348623157E308"/></children></VBox>
                   </children>
                 </VBox>
@@ -42,14 +42,32 @@
                     <GridPane hgap="8.0" vgap="6.0"><columnConstraints><ColumnConstraints/><ColumnConstraints hgrow="ALWAYS"/><ColumnConstraints/><ColumnConstraints hgrow="ALWAYS"/></columnConstraints><children>
                       <Label styleClass="form-label" text="%settings.barcode.price1"/><TextField fx:id="textPrice1" styleClass="modern-input" GridPane.columnIndex="1"/><Label styleClass="form-label" text="%settings.barcode.price2" GridPane.columnIndex="2"/><TextField fx:id="textPrice2" styleClass="modern-input" GridPane.columnIndex="3"/>
                       <Label styleClass="form-label" text="%settings.barcode.price3" GridPane.rowIndex="1"/><TextField fx:id="textPrice3" styleClass="modern-input" GridPane.columnIndex="1" GridPane.rowIndex="1"/>
-                      <Label fx:id="labelMain" visible="false" managed="false"/><ComboBox fx:id="comboMain" visible="false" managed="false"/><Label fx:id="labelSub" styleClass="form-label" GridPane.rowIndex="2"/><ComboBox fx:id="comboSub" maxWidth="1.7976931348623157E308" GridPane.columnIndex="1" GridPane.rowIndex="2"/><Label fx:id="labelType" styleClass="form-label" GridPane.columnIndex="2" GridPane.rowIndex="2"/><ComboBox fx:id="comboType" maxWidth="1.7976931348623157E308" GridPane.columnIndex="3" GridPane.rowIndex="2"/>
                       <CheckBox fx:id="checkActivateBarcodeScale" styleClass="modern-check-box" text="%settings.barcode.activateScale" GridPane.columnSpan="2" GridPane.rowIndex="3"/><Label styleClass="form-label" text="%settings.barcode.valueType" GridPane.columnIndex="2" GridPane.rowIndex="3"/><ComboBox fx:id="comboScaleValueType" maxWidth="1.7976931348623157E308" GridPane.columnIndex="3" GridPane.rowIndex="3"/>
                       <Label styleClass="form-label" text="%settings.barcode.startNumber" GridPane.rowIndex="4"/><TextField fx:id="textBarcodeStart" styleClass="modern-input" GridPane.columnIndex="1" GridPane.rowIndex="4"/><Label styleClass="form-label" text="%settings.barcode.digitsCount" GridPane.columnIndex="2" GridPane.rowIndex="4"/><TextField fx:id="textCountBarcode" styleClass="modern-input" GridPane.columnIndex="3" GridPane.rowIndex="4"/>
                       <Label styleClass="form-label" text="%settings.barcode.weightDigits" GridPane.rowIndex="5"/><TextField fx:id="textCountScale" styleClass="modern-input" GridPane.columnIndex="1" GridPane.rowIndex="5"/><Label styleClass="form-label" text="%settings.barcode.itemDigits" GridPane.columnIndex="2" GridPane.rowIndex="5"/><TextField fx:id="textCountItem" styleClass="modern-input" GridPane.columnIndex="3" GridPane.rowIndex="5"/>
                       <CheckBox fx:id="checkHasCheckDigit" styleClass="modern-check-box" text="%settings.barcode.hasCheckDigit" GridPane.columnSpan="4" GridPane.rowIndex="6"/>
                     </children></GridPane>
                     <VBox spacing="3.0" styleClass="app-card"><children><Label fx:id="labelComposition" maxWidth="1.7976931348623157E308" style="-fx-font-family: monospace;"/><Label fx:id="labelValueDigits" maxWidth="1.7976931348623157E308"/><Label fx:id="labelCompositionProblem" maxWidth="1.7976931348623157E308" wrapText="true" styleClass="form-error"/></children></VBox>
-                    <CheckBox fx:id="showCurrency" styleClass="modern-check-box" text="%settings.barcode.showCurrency"/>
+                    <GridPane hgap="8.0" vgap="6.0"><columnConstraints><ColumnConstraints/><ColumnConstraints hgrow="ALWAYS"/><ColumnConstraints/><ColumnConstraints hgrow="ALWAYS"/></columnConstraints><children>
+                      <Label styleClass="form-label" text="%settings.barcode.minWeight"/><TextField fx:id="textMinWeight" styleClass="modern-input" GridPane.columnIndex="1"/><Label styleClass="form-label" text="%settings.barcode.maxWeight" GridPane.columnIndex="2"/><TextField fx:id="textMaxWeight" styleClass="modern-input" GridPane.columnIndex="3"/>
+                      <CheckBox fx:id="checkValidateCheckDigit" styleClass="modern-check-box" text="%settings.barcode.validateCheckDigit" GridPane.columnSpan="4" GridPane.rowIndex="1"/>
+                    </children></GridPane>
+                    <VBox spacing="4.0" styleClass="app-card">
+                      <children>
+                        <Label styleClass="form-label" text="%settings.barcode.test"/>
+                        <TextField fx:id="textTestBarcode" styleClass="modern-input" promptText="%settings.barcode.test.prompt"/>
+                        <Label fx:id="labelTestResult" maxWidth="1.7976931348623157E308" wrapText="true"/>
+                      </children>
+                    </VBox>
+                    <VBox spacing="6.0" styleClass="app-card">
+                      <children>
+                        <Label styleClass="settings-title" text="%settings.barcode.defaults"/>
+                        <GridPane hgap="8.0" vgap="6.0"><columnConstraints><ColumnConstraints/><ColumnConstraints hgrow="ALWAYS"/><ColumnConstraints/><ColumnConstraints hgrow="ALWAYS"/></columnConstraints><children>
+                          <Label fx:id="labelMain" styleClass="form-label"/><ComboBox fx:id="comboMain" maxWidth="1.7976931348623157E308" GridPane.columnIndex="1"/><Label fx:id="labelSub" styleClass="form-label" GridPane.columnIndex="2"/><ComboBox fx:id="comboSub" maxWidth="1.7976931348623157E308" GridPane.columnIndex="3"/>
+                          <Label fx:id="labelType" styleClass="form-label" GridPane.rowIndex="1"/><ComboBox fx:id="comboType" maxWidth="1.7976931348623157E308" GridPane.columnIndex="1" GridPane.rowIndex="1"/>
+                        </children></GridPane>
+                      </children>
+                    </VBox>
                   </children>
                 </VBox>
               </children>

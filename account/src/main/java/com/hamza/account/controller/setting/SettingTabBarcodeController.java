@@ -3,6 +3,7 @@ package com.hamza.account.controller.setting;
 import com.hamza.account.config.PropertiesName;
 import com.hamza.account.controller.others.ServiceRegistry;
 import com.hamza.account.features.barcodeprint.BarcodeNameOverflow;
+import com.hamza.account.config.DefaultStock;
 import com.hamza.account.features.scalebarcode.ScaleBarcodeService;
 import com.hamza.account.features.scalebarcode.ScaleBarcodeValueType;
 import com.hamza.account.features.checkbox.api.CheckBox_Setting;
@@ -21,6 +22,8 @@ import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.language.LanguageManager;
 import com.hamza.account.features.events.SelPriceNamesChanged;
 import com.hamza.controlsfx.observer.EventBus;
+import com.hamza.account.service.ItemsService;
+import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
@@ -28,9 +31,7 @@ import javafx.scene.control.CheckBox;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
-import javafx.scene.layout.BorderPane;
 import javafx.scene.shape.Rectangle;
-import javafx.scene.layout.VBox;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.jetbrains.annotations.NotNull;
@@ -52,6 +53,13 @@ public class SettingTabBarcodeController implements Initializable {
     /** What a barcode label can measure, in millimetres. Below the first no printer feeds it. */
     private static final double LABEL_MIN_MM = 10;
     private static final double LABEL_MAX_MM = 300;
+    /** One daemon thread for the try box's item lookup; the tab may be reopened many times. */
+    private static final java.util.concurrent.ExecutorService TEST_READER =
+            java.util.concurrent.Executors.newSingleThreadExecutor(runnable -> {
+                Thread thread = new Thread(runnable, "scale-barcode-test");
+                thread.setDaemon(true);
+                return thread;
+            });
 
     private final BarcodePrintPrice barcodePrintPrice = new BarcodePrintPrice();
     private final CheckPrintBarcode checkPrintBarcode = new CheckPrintBarcode();
@@ -61,17 +69,16 @@ public class SettingTabBarcodeController implements Initializable {
     private final DaoFactory daoFactory;
     private final EventBus eventBus = ServiceRegistry.get(EventBus.class);
     @FXML
-    private CheckBox show2, showName, showPrice, showCurrency, showBarcode, checkActivateBarcodeScale, checkHasCheckDigit;
-    @FXML
-    private VBox box;
-    @FXML
-    private BorderPane borderPane;
+    private CheckBox show2, showName, showPrice, showBarcode, checkActivateBarcodeScale, checkHasCheckDigit,
+            checkValidateCheckDigit;
     @FXML
     private ComboBox<String> comboMain, comboSub, comboType, comboNameOverflow, comboScaleValueType;
     @FXML
     private Label labelMain, labelSub, labelType, previewName, previewBarcode, previewDetails, previewSize;
     @FXML
-    private Label labelComposition, labelValueDigits, labelCompositionProblem;
+    private Label labelComposition, labelValueDigits, labelCompositionProblem, labelTestResult;
+    @FXML
+    private TextField textMinWeight, textMaxWeight, textTestBarcode;
     @FXML
     private Rectangle previewFrame;
     @FXML
@@ -86,8 +93,6 @@ public class SettingTabBarcodeController implements Initializable {
         comboSetting(daoFactory);
         barcodeScaleSetting();
         barcodeLabelSetting();
-        showCurrency.setDisable(true);
-        showCurrency.setText(LanguageManager.getInstance().getString("settings.barcode.showCurrency"));
         configureLabelPreview();
     }
 
@@ -106,6 +111,10 @@ public class SettingTabBarcodeController implements Initializable {
         textCountBarcode.disableProperty().bind(checkActivateBarcodeScale.selectedProperty().not());
         textCountItem.disableProperty().bind(checkActivateBarcodeScale.selectedProperty().not());
         checkHasCheckDigit.disableProperty().bind(checkActivateBarcodeScale.selectedProperty().not());
+        checkValidateCheckDigit.disableProperty().bind(checkActivateBarcodeScale.selectedProperty().not());
+        textMinWeight.disableProperty().bind(checkActivateBarcodeScale.selectedProperty().not());
+        textMaxWeight.disableProperty().bind(checkActivateBarcodeScale.selectedProperty().not());
+        textTestBarcode.disableProperty().bind(checkActivateBarcodeScale.selectedProperty().not());
     }
 
     @NotNull
@@ -289,7 +298,72 @@ public class SettingTabBarcodeController implements Initializable {
             setSettingBarcodeHasCheckDigit(value);
             updateComposition();
         });
+
+        // Both of these were read by the reader and had nowhere to be set: an operator
+        // whose weight was refused as out of range could not see the range, let alone
+        // change it.
+        checkValidateCheckDigit.setSelected(getSettingBarcodeValidateCheckDigit());
+        checkValidateCheckDigit.selectedProperty().addListener((observable, oldValue, value) -> {
+            setSettingBarcodeValidateCheckDigit(value);
+            runTestBarcode();
+        });
+        setWeightLimit(textMinWeight, getSettingBarcodeMinWeight(), PropertiesName::setSettingBarcodeMinWeight);
+        setWeightLimit(textMaxWeight, getSettingBarcodeMaxWeight(), PropertiesName::setSettingBarcodeMaxWeight);
+
+        textTestBarcode.textProperty().addListener((observable, oldValue, value) -> runTestBarcode());
         updateComposition();
+    }
+
+    private void setWeightLimit(TextField field, double value, java.util.function.DoubleConsumer saver) {
+        field.setText(String.valueOf(value));
+        field.textProperty().addListener((observable, oldValue, text) -> {
+            try {
+                double parsed = Double.parseDouble(text);
+                if (parsed > 0) {
+                    saver.accept(parsed);
+                    runTestBarcode();
+                }
+            } catch (NumberFormatException ignored) {
+                // Half-typed. The stored limit stands until the field reads as a number.
+            }
+        });
+    }
+
+    /**
+     * Reads the barcode in the try box with the settings as they stand, and says what it
+     * came to - or why it could not.
+     * <p>
+     * The four numbers above describe a layout whose effect is otherwise invisible until
+     * someone scans something at a till, which is how a mislabelled field survived for as
+     * long as it did. This is the same reader the invoice screens use, so what it says
+     * here is what they will do.
+     * <p>
+     * The item lookup goes to the database, so it runs off the JavaFX thread; a result
+     * for a barcode that has since been edited is dropped rather than shown.
+     */
+    private void runTestBarcode() {
+        String barcode = textTestBarcode.getText() == null ? "" : textTestBarcode.getText().trim();
+        if (barcode.isEmpty()) {
+            labelTestResult.setText("");
+            return;
+        }
+        var valueType = ScaleBarcodeValueType.valueOf(getSettingBarcodeValueType());
+        var service = new ScaleBarcodeService(new ItemsService(daoFactory));
+        TEST_READER.execute(() -> {
+            String message;
+            try {
+                var reading = service.read(barcode, DefaultStock.ID, valueType);
+                message = LanguageManager.getInstance().getString("settings.barcode.test.result",
+                        reading.item().getNameItem(), reading.quantity(), reading.total());
+            } catch (DaoException e) {
+                message = e.getMessage();
+            }
+            String result = message;
+            Platform.runLater(() -> {
+                if (!barcode.equals(textTestBarcode.getText() == null ? "" : textTestBarcode.getText().trim())) return;
+                labelTestResult.setText(result);
+            });
+        });
     }
 
     /**
