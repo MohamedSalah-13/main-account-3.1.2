@@ -43,6 +43,12 @@ public record ShiftReportService(DaoFactory daoFactory, UserShiftService userShi
         return buildZReportInternal(shiftId, userId);
     }
 
+    /** The approving supervisor may print the Z report produced by that decision. */
+    public ShiftReportData buildApprovedZReport(int shiftId) throws DaoException {
+        AuthorizationGuard.require(AppPermissions.SHIFT_FORCE_CLOSE);
+        return buildZReportInternal(shiftId, null);
+    }
+
     private ShiftReportData buildZReportInternal(int shiftId, Integer expectedUserId) throws DaoException {
         UserShift shift = daoFactory.userShiftDao().getDataById(shiftId);
         if (shift == null) {

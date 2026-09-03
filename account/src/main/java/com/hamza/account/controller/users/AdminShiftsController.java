@@ -14,12 +14,21 @@ import com.hamza.account.features.shift.ShiftCashAuditService;
 import com.hamza.account.features.shift.ShiftCashLedgerEntry;
 import com.hamza.account.features.shift.ShiftCashLedgerFilter;
 import com.hamza.account.features.shift.ShiftCashSource;
+import com.hamza.account.features.shift.ShiftCloseRequest;
 import com.hamza.account.features.shift.ShiftLedgerAction;
 import com.hamza.account.features.shift.ShiftReconciliationResult;
 import com.hamza.account.features.shift.ShiftReconciliationService;
+import com.hamza.account.features.shift.CashierTreasuryAssignment;
+import com.hamza.account.features.shift.CashierTreasuryAssignmentService;
 import com.hamza.account.model.domain.UserShift;
+import com.hamza.account.model.domain.Treasury;
+import com.hamza.account.model.domain.Users;
 import com.hamza.account.openFxml.FxmlPath;
 import com.hamza.account.service.UserShiftService;
+import com.hamza.account.service.ShiftReportService;
+import com.hamza.account.service.TreasuryService;
+import com.hamza.account.service.UsersService;
+import com.hamza.account.reportData.Print_Reports;
 import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.error.BusinessRuleException;
@@ -41,6 +50,7 @@ import javafx.application.Platform;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import javafx.util.StringConverter;
+import lombok.extern.log4j.Log4j2;
 
 import java.math.BigDecimal;
 import java.time.format.DateTimeFormatter;
@@ -54,17 +64,25 @@ import static com.hamza.controlsfx.others.Utils.setTextFormatter;
 import static com.hamza.controlsfx.others.Utils.whenEnterPressed;
 
 @FxmlPath(pathFile = "admin-shifts-view.fxml")
+@Log4j2
 public class AdminShiftsController {
     private static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
     private final UserShiftService shifts = ServiceRegistry.get(UserShiftService.class);
     private final ShiftPolicyService policies = ServiceRegistry.get(ShiftPolicyService.class);
     private final ShiftCashAuditService audit = ServiceRegistry.get(ShiftCashAuditService.class);
     private final ShiftReconciliationService reconciliation = ServiceRegistry.get(ShiftReconciliationService.class);
+    private final ShiftReportService shiftReports = ServiceRegistry.get(ShiftReportService.class);
+    private final CashierTreasuryAssignmentService assignments =
+            ServiceRegistry.get(CashierTreasuryAssignmentService.class);
+    private final UsersService users = ServiceRegistry.get(UsersService.class);
+    private final TreasuryService treasuries = ServiceRegistry.get(TreasuryService.class);
+    private final Print_Reports printReports = new Print_Reports();
 
     @FXML private TableView<UserShift> tableView;
     @FXML private Button btnRefresh, btnForceClose, btnSavePolicy;
     @FXML private ComboBox<ShiftMode> comboShiftMode;
-    @FXML private CheckBox checkBlindClose, checkAutoPrintZ, checkVarianceReason, checkSupervisorApproval;
+    @FXML private CheckBox checkBlindClose, checkAutoPrintZ, checkVarianceReason,
+            checkSupervisorApproval, checkEnforceTreasuryAssignments, checkAssignmentDefault;
     @FXML private TextField txtVarianceTolerance;
     @FXML private VBox treasuryPolicyRows;
     @FXML private TitledPane ledgerPane;
@@ -75,14 +93,29 @@ public class AdminShiftsController {
     @FXML private Button btnLedgerRefresh, btnLedgerClear, btnLedgerReconcile;
     @FXML private Label labelLedgerState, labelLedgerReconciliation;
     @FXML private ProgressIndicator ledgerProgress;
+    @FXML private TitledPane approvalPane;
+    @FXML private TableView<ShiftCloseRequest> approvalTable;
+    @FXML private Button btnApprovalRefresh, btnApproveClose, btnRejectClose;
+    @FXML private ProgressIndicator mainProgress, approvalProgress;
+    @FXML private TitledPane assignmentPane;
+    @FXML private ComboBox<Users> comboAssignmentUser;
+    @FXML private ComboBox<Treasury> comboAssignmentTreasury;
+    @FXML private TableView<CashierTreasuryAssignment> assignmentTable;
+    @FXML private Button btnAssignTreasury, btnDeactivateAssignment, btnAssignmentRefresh;
+    @FXML private ProgressIndicator assignmentProgress;
     private long ledgerRequest;
     private long reconciliationRequest;
+    private long dataRequest;
+    private long approvalRequest;
+    private boolean mayDecideClose;
 
     @FXML
     public void initialize() {
         setupTable();
         setupActions();
         setupPolicyEditor();
+        setupAssignments();
+        setupApprovals();
         setupLedger();
         refreshData();
     }
@@ -111,6 +144,26 @@ public class AdminShiftsController {
         btnLedgerRefresh.setOnAction(event -> refreshLedger());
         btnLedgerClear.setOnAction(event -> clearLedgerFilters());
         btnLedgerReconcile.setOnAction(event -> reconcileSelected());
+    }
+
+    private void setupApprovals() {
+        approvalTable.getColumns().addAll(
+                Columns.number(NamesTables.CODE, ShiftCloseRequest::id),
+                Columns.number("user.shift.approval.column.shift", ShiftCloseRequest::shiftId),
+                Columns.text("user.shift.column.username", ShiftCloseRequest::shiftUsername),
+                Columns.text("invoice.treasury", ShiftCloseRequest::treasuryName),
+                Columns.text("user.shift.approval.column.requester", ShiftCloseRequest::requestedByUsername),
+                Columns.text("user.shift.approval.column.time", row -> formatTime(row.requestedAt())),
+                Columns.number("user.shift.approval.column.actual", ShiftCloseRequest::actualBalance),
+                Columns.number("user.shift.label.expected.balance", ShiftCloseRequest::expectedBalance),
+                Columns.number("user.shift.label.difference", ShiftCloseRequest::difference),
+                Columns.text("user.shift.approval.column.reason", ShiftCloseRequest::reason));
+        mayDecideClose = AuthorizationGuard.isGranted(AppPermissions.SHIFT_FORCE_CLOSE);
+        approvalPane.setDisable(!mayDecideClose);
+        setApprovalBusy(false);
+        btnApprovalRefresh.setOnAction(event -> refreshApprovals());
+        btnApproveClose.setOnAction(event -> approveSelected());
+        btnRejectClose.setOnAction(event -> rejectSelected());
     }
 
     private void setupLedger() {
@@ -264,6 +317,7 @@ public class AdminShiftsController {
         checkAutoPrintZ.setDisable(!mayManage);
         checkVarianceReason.setDisable(!mayManage);
         checkSupervisorApproval.setDisable(!mayManage);
+        checkEnforceTreasuryAssignments.setDisable(!mayManage);
         btnForceClose.setDisable(!AuthorizationGuard.isGranted(AppPermissions.SHIFT_FORCE_CLOSE));
         try {
             ShiftPolicy policy = policies.current();
@@ -272,6 +326,7 @@ public class AdminShiftsController {
             checkAutoPrintZ.setSelected(policy.autoPrintZ());
             checkVarianceReason.setSelected(policy.requireVarianceReason());
             checkSupervisorApproval.setSelected(policy.requireSupervisorApproval());
+            checkEnforceTreasuryAssignments.setSelected(policy.enforceTreasuryAssignments());
             txtVarianceTolerance.setText(policy.varianceTolerance().toPlainString());
             buildTreasuryRows(policies.treasuries());
         } catch (DaoException e) {
@@ -296,7 +351,8 @@ public class AdminShiftsController {
         try {
             ShiftPolicy policy = new ShiftPolicy(comboShiftMode.getValue(), checkBlindClose.isSelected(),
                     checkAutoPrintZ.isSelected(), parseMoney(txtVarianceTolerance.getText()),
-                    checkVarianceReason.isSelected(), checkSupervisorApproval.isSelected());
+                    checkVarianceReason.isSelected(), checkSupervisorApproval.isSelected(),
+                    checkEnforceTreasuryAssignments.isSelected());
             List<TreasuryShiftPolicy> treasuryPolicies = new ArrayList<>();
             for (var row : treasuryPolicyRows.getChildren()) {
                 HBox box = (HBox) row;
@@ -313,12 +369,243 @@ public class AdminShiftsController {
         }
     }
 
-    private void refreshData() {
-        try {
-            tableView.setItems(FXCollections.observableArrayList(shifts.getAllShifts()));
-        } catch (DaoException e) {
-            AllAlerts.handleError(message("user.shift.error.load.title"), e);
+    private void setupAssignments() {
+        assignmentTable.getColumns().addAll(
+                Columns.text("user.shift.assignment.column.user", CashierTreasuryAssignment::username),
+                Columns.text("user.shift.assignment.column.treasury", CashierTreasuryAssignment::treasuryName),
+                Columns.text("user.shift.assignment.column.default", row -> message(
+                        row.defaultTreasury() ? "yes" : "no")),
+                Columns.text("user.shift.assignment.column.active", row -> message(
+                        row.active() ? "user.shift.assignment.status.active"
+                                : "user.shift.assignment.status.inactive")),
+                Columns.text("user.shift.assignment.column.updated.by",
+                        CashierTreasuryAssignment::updatedByUsername),
+                Columns.text("user.shift.assignment.column.updated.at",
+                        row -> formatTime(row.updatedAt())));
+        comboAssignmentUser.setConverter(new StringConverter<>() {
+            @Override public String toString(Users value) {
+                return value == null ? "" : value.getUsername();
+            }
+            @Override public Users fromString(String text) { throw new UnsupportedOperationException(); }
+        });
+        comboAssignmentTreasury.setConverter(new StringConverter<>() {
+            @Override public String toString(Treasury value) {
+                return value == null ? "" : value.getName();
+            }
+            @Override public Treasury fromString(String text) { throw new UnsupportedOperationException(); }
+        });
+        boolean mayManage = AuthorizationGuard.isGranted(AppPermissions.SHIFT_POLICY_MANAGE);
+        assignmentPane.setDisable(!mayManage);
+        btnAssignTreasury.setOnAction(event -> assignTreasury());
+        btnDeactivateAssignment.setOnAction(event -> deactivateAssignment());
+        btnAssignmentRefresh.setOnAction(event -> refreshAssignments());
+        assignmentTable.getSelectionModel().selectedItemProperty().addListener((observable, old, selected) ->
+                btnDeactivateAssignment.setDisable(selected == null || !selected.active()));
+        setAssignmentBusy(false);
+        if (mayManage) refreshAssignments();
+    }
+
+    private void refreshAssignments() {
+        setAssignmentBusy(true);
+        CompletableFuture.supplyAsync(() -> {
+            try {
+                var trackedIds = policies.treasuries().stream()
+                        .filter(item -> item.trackingMode() != ShiftTrackingMode.NONE)
+                        .map(TreasuryShiftPolicy::treasuryId)
+                        .collect(java.util.stream.Collectors.toUnmodifiableSet());
+                return new AssignmentEditorData(
+                        assignments.listAll(),
+                        users.getUsersList().stream().filter(Users::isActive).toList(),
+                        treasuries.getActiveTreasuryModelList().stream()
+                                .filter(item -> trackedIds.contains(item.getId())).toList());
+            } catch (DaoException e) {
+                throw new CompletionException(e);
+            }
+        }).whenComplete((data, error) -> Platform.runLater(() -> {
+            setAssignmentBusy(false);
+            if (error != null) {
+                AllAlerts.handleError(message("user.shift.assignment.error.load"), rootCause(error));
+                return;
+            }
+            assignmentTable.setItems(FXCollections.observableArrayList(data.assignments()));
+            comboAssignmentUser.setItems(FXCollections.observableArrayList(data.users()));
+            comboAssignmentTreasury.setItems(FXCollections.observableArrayList(data.treasuries()));
+            comboAssignmentUser.getSelectionModel().selectFirst();
+            comboAssignmentTreasury.getSelectionModel().selectFirst();
+        }));
+    }
+
+    private void assignTreasury() {
+        Users user = comboAssignmentUser.getValue();
+        Treasury treasury = comboAssignmentTreasury.getValue();
+        if (user == null || treasury == null) {
+            AllAlerts.handleError(message("user.shift.assignment.title"),
+                    new UserValidationException(message("user.shift.assignment.error.select")));
+            return;
         }
+        runAssignmentMutation(() -> assignments.assign(
+                        user.getId(), treasury.getId(), checkAssignmentDefault.isSelected()),
+                "user.shift.assignment.saved");
+    }
+
+    private void deactivateAssignment() {
+        CashierTreasuryAssignment selected = assignmentTable.getSelectionModel().getSelectedItem();
+        if (selected == null || !selected.active()) {
+            AllAlerts.handleError(message("user.shift.assignment.title"),
+                    new UserValidationException(message("user.shift.assignment.error.select.assignment")));
+            return;
+        }
+        if (!AllAlerts.confirm_all(message("user.shift.assignment.deactivate.title"),
+                message("user.shift.assignment.deactivate.confirm",
+                        selected.username(), selected.treasuryName()))) return;
+        runAssignmentMutation(() -> assignments.deactivate(selected.id()),
+                "user.shift.assignment.deactivated");
+    }
+
+    private void runAssignmentMutation(AssignmentAction action, String successKey) {
+        setAssignmentBusy(true);
+        CompletableFuture.runAsync(() -> {
+            try {
+                action.execute();
+            } catch (DaoException e) {
+                throw new CompletionException(e);
+            }
+        }).whenComplete((ignored, error) -> Platform.runLater(() -> {
+            setAssignmentBusy(false);
+            if (error != null) {
+                AllAlerts.handleError(message("user.shift.assignment.title"), rootCause(error));
+                return;
+            }
+            AllAlerts.alertSaveWithMessage(message(successKey));
+            refreshAssignments();
+        }));
+    }
+
+    private void setAssignmentBusy(boolean busy) {
+        assignmentProgress.setVisible(busy);
+        btnAssignmentRefresh.setDisable(busy);
+        btnAssignTreasury.setDisable(busy);
+        CashierTreasuryAssignment selected = assignmentTable.getSelectionModel().getSelectedItem();
+        btnDeactivateAssignment.setDisable(busy || selected == null || !selected.active());
+    }
+
+    private void refreshData() {
+        long request = ++dataRequest;
+        mainProgress.setVisible(true);
+        CompletableFuture.supplyAsync(() -> {
+            try {
+                return shifts.getAllShifts();
+            } catch (DaoException e) {
+                throw new CompletionException(e);
+            }
+        }).whenComplete((rows, error) -> Platform.runLater(() -> {
+            if (request != dataRequest) return;
+            mainProgress.setVisible(false);
+            if (error != null) {
+                AllAlerts.handleError(message("user.shift.error.load.title"), rootCause(error));
+                return;
+            }
+            tableView.setItems(FXCollections.observableArrayList(rows));
+        }));
+        if (AuthorizationGuard.isGranted(AppPermissions.SHIFT_FORCE_CLOSE)) refreshApprovals();
+    }
+
+    private void refreshApprovals() {
+        long request = ++approvalRequest;
+        setApprovalBusy(true);
+        CompletableFuture.supplyAsync(() -> {
+            try {
+                return shifts.getPendingCloseRequests();
+            } catch (DaoException e) {
+                throw new CompletionException(e);
+            }
+        }).whenComplete((rows, error) -> Platform.runLater(() -> {
+            if (request != approvalRequest) return;
+            setApprovalBusy(false);
+            if (error != null) {
+                AllAlerts.handleError(message("user.shift.approval.error.load"), rootCause(error));
+                return;
+            }
+            approvalTable.setItems(FXCollections.observableArrayList(rows));
+        }));
+    }
+
+    private void approveSelected() {
+        ShiftCloseRequest selected = requireSelectedApproval();
+        if (selected == null) return;
+        Optional<String> note = promptWithTitle("user.shift.approval.approve.title",
+                "user.shift.approval.approve.note", "");
+        if (note.isEmpty()) return;
+        runDecision(() -> shifts.approveCloseRequest(selected.shiftId(), note.get()),
+                "user.shift.approval.approve.title", "user.shift.approval.approved", true);
+    }
+
+    private void autoPrintApprovedZ(int shiftId) {
+        try {
+            if (policies.current().autoPrintZ()) {
+                printReports.printShiftZReport(shiftReports.buildApprovedZReport(shiftId));
+            }
+        } catch (Exception e) {
+            log.error("Approved shift {} closed, but its automatic Z report failed", shiftId, e);
+        }
+    }
+
+    private void rejectSelected() {
+        ShiftCloseRequest selected = requireSelectedApproval();
+        if (selected == null) return;
+        Optional<String> note = promptWithTitle("user.shift.approval.reject.title",
+                "user.shift.approval.reject.note", "");
+        if (note.isEmpty() || note.get().isBlank()) {
+            AllAlerts.handleError(message("user.shift.approval.reject.title"),
+                    new UserValidationException(message("user.shift.approval.reject.reason.required")));
+            return;
+        }
+        runDecision(() -> shifts.rejectCloseRequest(selected.shiftId(), note.get()),
+                "user.shift.approval.reject.title", "user.shift.approval.rejected", false);
+    }
+
+    private void runDecision(DecisionAction action, String titleKey, String successKey, boolean printZ) {
+        setApprovalBusy(true);
+        CompletableFuture.supplyAsync(() -> {
+            try {
+                int shiftId = action.execute();
+                if (printZ) autoPrintApprovedZ(shiftId);
+                return shiftId;
+            } catch (DaoException e) {
+                throw new CompletionException(e);
+            }
+        }).whenComplete((shiftId, error) -> Platform.runLater(() -> {
+            setApprovalBusy(false);
+            if (error != null) {
+                AllAlerts.handleError(message(titleKey), rootCause(error));
+                return;
+            }
+            AllAlerts.alertSaveWithMessage(message(successKey));
+            refreshData();
+        }));
+    }
+
+    private void setApprovalBusy(boolean busy) {
+        approvalProgress.setVisible(busy);
+        btnApprovalRefresh.setDisable(busy || !mayDecideClose);
+        btnApproveClose.setDisable(busy || !mayDecideClose);
+        btnRejectClose.setDisable(busy || !mayDecideClose);
+    }
+
+    private ShiftCloseRequest requireSelectedApproval() {
+        ShiftCloseRequest selected = approvalTable.getSelectionModel().getSelectedItem();
+        if (selected == null) {
+            AllAlerts.handleError(message("user.shift.approval.title"),
+                    new UserValidationException(message("user.shift.approval.select")));
+        }
+        return selected;
+    }
+
+    private Optional<String> promptWithTitle(String titleKey, String headerKey, String initial) {
+        TextInputDialog dialog = new TextInputDialog(initial);
+        dialog.setTitle(message(titleKey));
+        dialog.setHeaderText(message(headerKey));
+        return dialog.showAndWait();
     }
 
     private void forceCloseSelected() {
@@ -378,5 +665,21 @@ public class AdminShiftsController {
             }
             @Override public E fromString(String text) { throw new UnsupportedOperationException(); }
         };
+    }
+
+    @FunctionalInterface
+    private interface DecisionAction {
+        int execute() throws DaoException;
+    }
+
+    @FunctionalInterface
+    private interface AssignmentAction {
+        void execute() throws DaoException;
+    }
+
+    private record AssignmentEditorData(
+            List<CashierTreasuryAssignment> assignments,
+            List<Users> users,
+            List<Treasury> treasuries) {
     }
 }

@@ -35,6 +35,8 @@
                             <CheckBox fx:id="checkAutoPrintZ" text="%user.shift.policy.auto.print" GridPane.columnIndex="3" GridPane.rowIndex="0" />
                             <CheckBox fx:id="checkVarianceReason" text="%user.shift.policy.reason.required" GridPane.columnIndex="2" GridPane.rowIndex="1" />
                             <CheckBox fx:id="checkSupervisorApproval" text="%user.shift.policy.supervisor.required" GridPane.columnIndex="3" GridPane.rowIndex="1" />
+                            <CheckBox fx:id="checkEnforceTreasuryAssignments" text="%user.shift.policy.enforce.assignments"
+                                      GridPane.columnIndex="2" GridPane.columnSpan="2" GridPane.rowIndex="2" />
                         </GridPane>
                         <Label text="%user.shift.policy.treasuries" />
                         <ScrollPane fitToWidth="true" prefHeight="120">
@@ -44,11 +46,46 @@
                     </VBox>
                 </content>
             </TitledPane>
+            <TitledPane fx:id="assignmentPane" text="%user.shift.assignment.title" expanded="false">
+                <content>
+                    <VBox spacing="8">
+                        <padding><Insets top="10" right="10" bottom="10" left="10" /></padding>
+                        <ToolBar>
+                            <Label text="%user.shift.assignment.user" />
+                            <ComboBox fx:id="comboAssignmentUser" prefWidth="180" />
+                            <Label text="%user.shift.assignment.treasury" />
+                            <ComboBox fx:id="comboAssignmentTreasury" prefWidth="180" />
+                            <CheckBox fx:id="checkAssignmentDefault" text="%user.shift.assignment.default" />
+                            <Button fx:id="btnAssignTreasury" text="%user.shift.assignment.assign" styleClass="btn-primary" />
+                            <Button fx:id="btnDeactivateAssignment" text="%user.shift.assignment.deactivate" styleClass="btn-danger" />
+                            <Button fx:id="btnAssignmentRefresh" text="%refresh" />
+                            <ProgressIndicator fx:id="assignmentProgress" visible="false" managed="true"
+                                               prefWidth="24" prefHeight="24" />
+                        </ToolBar>
+                        <TableView fx:id="assignmentTable" prefHeight="150" />
+                    </VBox>
+                </content>
+            </TitledPane>
             <ToolBar>
                 <Button fx:id="btnRefresh" text="%refresh" />
                 <Button fx:id="btnForceClose" text="%user.shift.btn.force.close" styleClass="btn-danger" />
+                <ProgressIndicator fx:id="mainProgress" visible="false" managed="true" prefWidth="24" prefHeight="24" />
             </ToolBar>
             <TableView fx:id="tableView" VBox.vgrow="ALWAYS" />
+            <TitledPane fx:id="approvalPane" text="%user.shift.approval.title" expanded="true">
+                <content>
+                    <VBox spacing="8">
+                        <padding><Insets top="10" right="10" bottom="10" left="10" /></padding>
+                        <ToolBar>
+                            <Button fx:id="btnApprovalRefresh" text="%refresh" />
+                            <Button fx:id="btnApproveClose" text="%user.shift.approval.approve" styleClass="btn-primary" />
+                            <Button fx:id="btnRejectClose" text="%user.shift.approval.reject" styleClass="btn-danger" />
+                            <ProgressIndicator fx:id="approvalProgress" visible="false" managed="true" prefWidth="24" prefHeight="24" />
+                        </ToolBar>
+                        <TableView fx:id="approvalTable" prefHeight="190" VBox.vgrow="ALWAYS" />
+                    </VBox>
+                </content>
+            </TitledPane>
             <TitledPane fx:id="ledgerPane" text="%user.shift.ledger.title" expanded="true">
                 <content>
                     <VBox spacing="8">

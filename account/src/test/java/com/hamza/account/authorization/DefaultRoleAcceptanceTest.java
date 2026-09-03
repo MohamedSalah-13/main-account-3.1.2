@@ -28,7 +28,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * Reviewed acceptance contract for the starter roles shipped by V13.
+ * Reviewed acceptance contract for the starter roles and their later grants.
  *
  * <p>The migration is intentionally editable by an administrator after installation, but the
  * defaults in a fresh install are product policy. Any code change that broadens one of them must
@@ -118,7 +118,8 @@ class DefaultRoleAcceptanceTest {
                 "total.sales.show", "total.sales.show.invoice",
                 "total.sales.re.show", "total.sales.re.show.invoice",
                 "customer.show", "customer.create", "customer.account.show", "customer.account.create",
-                "items.show", "inventory.show", "treasury.show"));
+                "items.show", "inventory.show", "treasury.show",
+                "shift.self.view", "shift.self.open", "shift.self.close", "shift.xreport.view"));
 
         roles.put(SALES_MANAGER, plus(roles.get(SALES),
                 "sales.update", "sales.delete", "sales.re.update", "sales.re.delete",
@@ -184,7 +185,10 @@ class DefaultRoleAcceptanceTest {
                 Pattern.CASE_INSENSITIVE | Pattern.DOTALL);
 
         static RoleGraph fromMigration() throws IOException {
-            String sql = Files.readString(Path.of("src/main/resources/db/migration/V13__default_rbac_roles.sql"));
+            String sql = Files.readString(Path.of("src/main/resources/db/migration/V13__default_rbac_roles.sql"))
+                    + System.lineSeparator()
+                    + Files.readString(Path.of(
+                    "src/main/resources/db/migration/V29__grant_cashier_self_shift_permissions.sql"));
             Map<String, Set<String>> direct = parsePermissionBlocks(sql);
             Map<String, Set<String>> parents = parseInheritance(sql);
             return new RoleGraph(Map.copyOf(direct), Map.copyOf(parents));
@@ -211,7 +215,8 @@ class DefaultRoleAcceptanceTest {
                 Set<String> permissions = new LinkedHashSet<>();
                 var values = QUOTED_VALUE.matcher(blocks.group(1));
                 while (values.find()) permissions.add(values.group(1));
-                result.put(blocks.group(2), Set.copyOf(permissions));
+                result.computeIfAbsent(blocks.group(2), ignored -> new LinkedHashSet<>())
+                        .addAll(permissions);
             }
             return result;
         }

@@ -6,13 +6,14 @@ import com.hamza.account.model.domain.UserShift;
 import com.hamza.account.openFxml.FxmlPath;
 import com.hamza.account.reportData.Print_Reports;
 import com.hamza.account.service.ShiftReportService;
-import com.hamza.account.service.TreasuryService;
 import com.hamza.account.service.UserShiftService;
 import com.hamza.account.session.ShiftContext;
-import com.hamza.account.treasury.DefaultTreasury;
-import com.hamza.account.model.domain.Treasury;
 import com.hamza.account.features.rbac.CurrentUser;
+import com.hamza.account.features.shift.CashierTreasuryAssignmentService;
+import com.hamza.account.features.shift.CashierTreasuryChoice;
 import com.hamza.account.features.shift.ShiftPolicyService;
+import com.hamza.account.features.shift.ShiftCloseAttempt;
+import com.hamza.account.features.shift.ShiftStatus;
 import com.hamza.account.features.shift.ShiftTrackingMode;
 import com.hamza.account.authorization.AppPermissions;
 import com.hamza.account.authorization.AuthorizationGuard;
@@ -45,8 +46,9 @@ public class UserShiftController {
     private final int currentUserId;
     private final ShiftReportService shiftReportService = ServiceRegistry.get(ShiftReportService.class);
     private final UserShiftService userShiftService = ServiceRegistry.get(UserShiftService.class);
-    private final TreasuryService treasuryService = ServiceRegistry.get(TreasuryService.class);
     private final ShiftPolicyService shiftPolicyService = ServiceRegistry.get(ShiftPolicyService.class);
+    private final CashierTreasuryAssignmentService treasuryAssignments =
+            ServiceRegistry.get(CashierTreasuryAssignmentService.class);
 
     private final Print_Reports printReports = new Print_Reports();
     @FXML
@@ -54,7 +56,7 @@ public class UserShiftController {
     @FXML
     private VBox boxOpenShift, boxCloseShift;
     @FXML
-    private ComboBox<String> comboOpenTreasury;
+    private ComboBox<CashierTreasuryChoice> comboOpenTreasury;
     @FXML
     private TextField txtOpenBalance, txtCloseBalance;
     @FXML
@@ -101,13 +103,19 @@ public class UserShiftController {
      */
     private void loadTreasuries() {
         try {
-            comboOpenTreasury.setItems(FXCollections.observableArrayList(treasuryService.listTreasuryModelNames()));
-            Treasury main = treasuryService.getTreasuryById(DefaultTreasury.ID);
-            if (main != null && comboOpenTreasury.getItems().contains(main.getName())) {
-                comboOpenTreasury.getSelectionModel().select(main.getName());
-            } else {
-                comboOpenTreasury.getSelectionModel().selectFirst();
-            }
+            var choices = treasuryAssignments.availableTreasuries(currentUserId);
+            comboOpenTreasury.setItems(FXCollections.observableArrayList(choices));
+            comboOpenTreasury.setConverter(new javafx.util.StringConverter<>() {
+                @Override public String toString(CashierTreasuryChoice value) {
+                    return value == null ? "" : value.treasuryName();
+                }
+                @Override public CashierTreasuryChoice fromString(String text) {
+                    throw new UnsupportedOperationException();
+                }
+            });
+            choices.stream().filter(CashierTreasuryChoice::defaultTreasury).findFirst()
+                    .ifPresentOrElse(comboOpenTreasury::setValue,
+                            () -> comboOpenTreasury.getSelectionModel().selectFirst());
         } catch (DaoException e) {
             AllAlerts.handleError(LanguageManager.getInstance().getString("treasury.error.load.title"), e);
         }
@@ -148,7 +156,8 @@ public class UserShiftController {
     }
 
     private void applyPermissionHints() {
-        btnOpenShift.setDisable(!AuthorizationGuard.isGranted(AppPermissions.SHIFT_SELF_OPEN));
+        btnOpenShift.setDisable(!AuthorizationGuard.isGranted(AppPermissions.SHIFT_SELF_OPEN)
+                || comboOpenTreasury.getItems().isEmpty());
         btnCloseShift.setDisable(!AuthorizationGuard.isGranted(AppPermissions.SHIFT_SELF_CLOSE));
         btnPrintXReport.setVisible(AuthorizationGuard.isGranted(AppPermissions.SHIFT_X_REPORT_VIEW));
         btnPrintXReport.setManaged(btnPrintXReport.isVisible());
@@ -164,16 +173,19 @@ public class UserShiftController {
         try {
             if (userShiftService.hasOpenShift(currentUserId)) {
                 UserShift openShift = userShiftService.getOpenShift(currentUserId);
-                ShiftContext.setCurrentShift(openShift);
+                if (openShift.getStatus() == ShiftStatus.OPEN) ShiftContext.setCurrentShift(openShift);
+                else ShiftContext.clear();
+                btnPrintXReport.setDisable(openShift.getStatus() != ShiftStatus.OPEN);
                 showOpenShiftInfo(openShift);
                 boxOpenShift.setDisable(true);
-                boxCloseShift.setDisable(false);
+                boxCloseShift.setDisable(openShift.getStatus() != ShiftStatus.OPEN);
                 txtCloseBalance.setDisable(!isReconcile(openShift.getTreasuryId()));
                 if (!isReconcile(openShift.getTreasuryId())) txtCloseBalance.setText(openShift.getOpenBalance().toPlainString());
                 else if (blindClose()) txtCloseBalance.clear();
                 else txtCloseBalance.setText(openShift.getOpenBalance().toPlainString());
             } else {
                 ShiftContext.clear();
+                btnPrintXReport.setDisable(true);
                 showNoOpenShift();
                 boxOpenShift.setDisable(false);
                 boxCloseShift.setDisable(true);
@@ -187,8 +199,10 @@ public class UserShiftController {
     }
 
     private void showOpenShiftInfo(UserShift shift) {
-        labelShiftStatus.setText(LanguageManager.getInstance().getString("user.shift.status.open"));
-        setSemanticStyle(labelShiftStatus, "success-value");
+        boolean pending = shift.getStatus() == ShiftStatus.PENDING_CLOSE;
+        labelShiftStatus.setText(LanguageManager.getInstance().getString(pending
+                ? "user.shift.status.pending_close" : "user.shift.status.open"));
+        setSemanticStyle(labelShiftStatus, pending ? "info-value" : "success-value");
         labelOpenTime.setText(shift.getOpenTime() != null
                 ? shift.getOpenTime().format(DATE_TIME_FORMATTER) : "-");
         labelOpenBalance.setText(String.valueOf(shift.getOpenBalance()));
@@ -221,6 +235,11 @@ public class UserShiftController {
         }
         try {
             if (!userShiftService.hasOpenShift(currentUserId)) {
+                clearSummaryLabels();
+                return;
+            }
+            UserShift current = userShiftService.getOpenShift(currentUserId);
+            if (current == null || current.getStatus() != ShiftStatus.OPEN) {
                 clearSummaryLabels();
                 return;
             }
@@ -297,10 +316,12 @@ public class UserShiftController {
      * written.
      */
     private int selectedTreasuryId() throws DaoException {
-        String name = comboOpenTreasury.getSelectionModel().getSelectedItem();
-        if (name == null || name.isBlank()) return 0;
-        Treasury treasury = treasuryService.getTreasuryByName(name);
-        return treasury == null ? 0 : treasury.getId();
+        CashierTreasuryChoice choice = comboOpenTreasury.getSelectionModel().getSelectedItem();
+        if (choice == null) {
+            throw new UserValidationException(LanguageManager.getInstance().getString(
+                    "user.shift.assignment.error.none"));
+        }
+        return choice.treasuryId();
     }
 
     private void printXReport() {
@@ -331,12 +352,21 @@ public class UserShiftController {
             ShiftSummary s = userShiftService.getCurrentShiftSummary(currentUserId);
             BigDecimal diff = s.calculateDifference(closeBalance);
             String msg = buildCloseConfirmMessage(s, closeBalance, diff);
-            if (!AllAlerts.confirm_all("Details", msg)) {
+            if (!AllAlerts.confirm_all(LanguageManager.getInstance().getString("user.shift.close.title"), msg)) {
                 return;
             }
 
             String notes = safeTrim(txtCloseNotes.getText());
-            int closedShiftId = userShiftService.closeShift(currentUserId, closeBalance, notes);
+            ShiftCloseAttempt attempt = userShiftService.requestCloseShift(currentUserId, closeBalance, notes);
+            if (attempt.pendingApproval()) {
+                ShiftContext.clear();
+                AllAlerts.alertSaveWithMessage(LanguageManager.getInstance().getString(
+                        "user.shift.msg.approval.requested"));
+                clearCloseShiftFields();
+                refreshView();
+                return;
+            }
+            int closedShiftId = attempt.shiftId();
             if (closedShiftId > 0) {
                 ShiftContext.clear();
                 // طباعة Z-Report تلقائياً

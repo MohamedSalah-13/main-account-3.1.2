@@ -20,8 +20,11 @@ import com.hamza.account.features.stockcount.StockCountService;
 import com.hamza.account.features.stocktransfer.StockTransferService;
 import com.hamza.account.features.shift.JdbcShiftPolicyRepository;
 import com.hamza.account.features.shift.ShiftPolicyService;
+import com.hamza.account.features.shift.ShiftCloseRequestDao;
 import com.hamza.account.features.shift.ShiftCashAuditService;
 import com.hamza.account.features.shift.ShiftReconciliationService;
+import com.hamza.account.features.shift.CashierTreasuryAssignmentService;
+import com.hamza.account.features.shift.JdbcCashierTreasuryAssignmentRepository;
 import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.period.PeriodLockService;
 import com.hamza.account.service.*;
@@ -176,10 +179,17 @@ public class DownLoadApplication extends Application {
         ServiceRegistry.register(ItemMiniQuantityService.class, new ItemMiniQuantityService(daoFactory));
         ServiceRegistry.register(AreaService.class, new AreaService(daoFactory));
         ServiceRegistry.register(SelPriceItemService.class, new SelPriceItemService(daoFactory));
-        ShiftPolicyService shiftPolicies = new ShiftPolicyService(new JdbcShiftPolicyRepository(), eventBus);
+        JdbcCashierTreasuryAssignmentRepository cashierTreasuryRepository =
+                new JdbcCashierTreasuryAssignmentRepository();
+        ShiftPolicyService shiftPolicies = new ShiftPolicyService(
+                new JdbcShiftPolicyRepository(), eventBus, cashierTreasuryRepository);
+        CashierTreasuryAssignmentService cashierTreasuries = new CashierTreasuryAssignmentService(
+                cashierTreasuryRepository, shiftPolicies, userSession);
         UserShiftService shiftService = new UserShiftService(
-                daoFactory, userSession, shiftPolicies, eventBus, java.time.Clock.systemDefaultZone());
+                daoFactory, userSession, shiftPolicies, eventBus, java.time.Clock.systemDefaultZone(),
+                new ShiftCloseRequestDao(), cashierTreasuries);
         ServiceRegistry.register(ShiftPolicyService.class, shiftPolicies);
+        ServiceRegistry.register(CashierTreasuryAssignmentService.class, cashierTreasuries);
         ServiceRegistry.register(ShiftCashAuditService.class, new ShiftCashAuditService());
         ServiceRegistry.register(ShiftReconciliationService.class, new ShiftReconciliationService());
         ServiceRegistry.register(UserShiftService.class, shiftService);

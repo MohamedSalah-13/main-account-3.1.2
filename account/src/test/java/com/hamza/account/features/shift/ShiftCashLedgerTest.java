@@ -72,6 +72,30 @@ class ShiftCashLedgerTest {
         assertTrue(sql.contains("@app_bulk_wipe"));
     }
 
+    @Test
+    void dualApprovalMigrationSeparatesImmutableRequestFromDecision() {
+        String sql = read("db/migration/V28__shift_close_dual_approval.sql");
+        assertTrue(sql.contains("CREATE TABLE shift_close_requests"));
+        assertTrue(sql.contains("CREATE TABLE shift_close_decisions"));
+        assertTrue(sql.contains("CONSTRAINT uq_shift_close_decision UNIQUE (request_id)"));
+        assertTrue(sql.contains("validate_shift_close_decision_actor"));
+        assertTrue(sql.contains("A second user must decide the close request"));
+        assertTrue(sql.contains("prevent_shift_close_request_update"));
+        assertTrue(sql.contains("prevent_shift_close_decision_update"));
+        assertTrue(sql.contains("@app_bulk_wipe"));
+        assertFalse(sql.contains("CHECK (decided_by_user_id <>"),
+                "MySQL CHECK constraints cannot query the request table");
+    }
+
+    @Test
+    void pendingCloseIsAFirstClassNonFinalState() {
+        ShiftCloseAttempt pending = ShiftCloseAttempt.pending(42);
+        assertEquals(42, pending.shiftId());
+        assertTrue(pending.pendingApproval());
+        assertFalse(ShiftCloseAttempt.closed(42).pendingApproval());
+        assertEquals(ShiftStatus.PENDING_CLOSE, ShiftStatus.valueOf("PENDING_CLOSE"));
+    }
+
     private static String read(String resource) {
         try (InputStream in = ShiftCashLedgerTest.class.getClassLoader().getResourceAsStream(resource)) {
             if (in == null) throw new IllegalStateException("Missing " + resource);

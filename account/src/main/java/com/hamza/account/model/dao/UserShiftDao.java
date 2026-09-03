@@ -255,6 +255,7 @@ public class UserShiftDao extends AbstractDao<UserShift> {
 
     public UserShift getOpenShiftByUserIdForUpdate(int userId) throws DaoException {
         String sql = SELECT_SHIFTS + " WHERE us." + USER_ID + " = ? AND us." + IS_OPEN + " = TRUE"
+                + " AND us." + SHIFT_STATUS + " = 'OPEN'"
                 + " ORDER BY us." + OPEN_TIME + " DESC LIMIT 1 FOR UPDATE";
         return queryForObject(sql, this::map, userId);
     }
@@ -266,6 +267,7 @@ public class UserShiftDao extends AbstractDao<UserShift> {
 
     public UserShift getOpenShiftByTreasuryIdForUpdate(int treasuryId) throws DaoException {
         String sql = SELECT_SHIFTS + " WHERE us." + TREASURY_ID + " = ? AND us." + IS_OPEN + " = TRUE"
+                + " AND us." + SHIFT_STATUS + " = 'OPEN'"
                 + " ORDER BY us." + OPEN_TIME + " DESC LIMIT 1 FOR UPDATE";
         return queryForObject(sql, this::map, treasuryId);
     }
@@ -296,6 +298,20 @@ public class UserShiftDao extends AbstractDao<UserShift> {
         String sql = "SELECT COUNT(*) FROM " + TABLE_NAME
                 + " WHERE " + TREASURY_ID + " = ? AND " + IS_OPEN + " = TRUE";
         return countInt(sql, treasuryId) > 0;
+    }
+
+    /** Freezes an open shift while a second user reviews its captured close totals. */
+    public int markPendingClose(int shiftId) throws DaoException {
+        return executeUpdate("UPDATE " + TABLE_NAME + " SET " + SHIFT_STATUS
+                + "='PENDING_CLOSE' WHERE " + ID + "=? AND " + IS_OPEN
+                + "=TRUE AND " + SHIFT_STATUS + "='OPEN'", shiftId);
+    }
+
+    /** Resumes cash activity after a supervisor rejects the immutable close request. */
+    public int resumeOpen(int shiftId) throws DaoException {
+        return executeUpdate("UPDATE " + TABLE_NAME + " SET " + SHIFT_STATUS
+                + "='OPEN' WHERE " + ID + "=? AND " + IS_OPEN
+                + "=TRUE AND " + SHIFT_STATUS + "='PENDING_CLOSE'", shiftId);
     }
 
     public boolean hasAttributedCashMovements(int shiftId) throws DaoException {

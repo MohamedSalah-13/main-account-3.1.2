@@ -11,10 +11,11 @@ public record ShiftPolicy(
         boolean autoPrintZ,
         BigDecimal varianceTolerance,
         boolean requireVarianceReason,
-        boolean requireSupervisorApproval) {
+        boolean requireSupervisorApproval,
+        boolean enforceTreasuryAssignments) {
 
     public static final ShiftPolicy DISABLED = new ShiftPolicy(
-            ShiftMode.DISABLED, false, true, BigDecimal.ZERO, true, false);
+            ShiftMode.DISABLED, false, true, BigDecimal.ZERO, true, false, false);
 
     public ShiftPolicy {
         mode = mode == null ? ShiftMode.DISABLED : mode;

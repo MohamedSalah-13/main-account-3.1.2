@@ -15,7 +15,8 @@ public final class JdbcShiftPolicyRepository implements ShiftPolicyRepository {
     @Override
     public ShiftPolicy load() throws DaoException {
         String sql = "SELECT mode, blind_close, auto_print_z, variance_tolerance, "
-                + "require_variance_reason, require_supervisor_approval FROM shift_policy WHERE id = 1";
+                + "require_variance_reason, require_supervisor_approval, enforce_treasury_assignments "
+                + "FROM shift_policy WHERE id = 1";
         return withConnection(connection -> {
             try (PreparedStatement statement = connection.prepareStatement(sql);
                  ResultSet rs = statement.executeQuery()) {
@@ -26,7 +27,8 @@ public final class JdbcShiftPolicyRepository implements ShiftPolicyRepository {
                         rs.getBoolean("auto_print_z"),
                         rs.getBigDecimal("variance_tolerance"),
                         rs.getBoolean("require_variance_reason"),
-                        rs.getBoolean("require_supervisor_approval"));
+                        rs.getBoolean("require_supervisor_approval"),
+                        rs.getBoolean("enforce_treasury_assignments"));
             } catch (SQLException | IllegalArgumentException e) {
                 throw new DaoException("Could not load the shift policy", e);
             }
@@ -84,7 +86,8 @@ public final class JdbcShiftPolicyRepository implements ShiftPolicyRepository {
     @Override
     public void save(ShiftPolicy policy) throws DaoException {
         String sql = "UPDATE shift_policy SET mode=?, blind_close=?, auto_print_z=?, variance_tolerance=?, "
-                + "require_variance_reason=?, require_supervisor_approval=?, updated_at=CURRENT_TIMESTAMP WHERE id=1";
+                + "require_variance_reason=?, require_supervisor_approval=?, "
+                + "enforce_treasury_assignments=?, updated_at=CURRENT_TIMESTAMP WHERE id=1";
         update(sql, statement -> {
             statement.setString(1, policy.mode().name());
             statement.setBoolean(2, policy.blindClose());
@@ -92,6 +95,7 @@ public final class JdbcShiftPolicyRepository implements ShiftPolicyRepository {
             statement.setBigDecimal(4, policy.varianceTolerance());
             statement.setBoolean(5, policy.requireVarianceReason());
             statement.setBoolean(6, policy.requireSupervisorApproval());
+            statement.setBoolean(7, policy.enforceTreasuryAssignments());
         });
     }
 

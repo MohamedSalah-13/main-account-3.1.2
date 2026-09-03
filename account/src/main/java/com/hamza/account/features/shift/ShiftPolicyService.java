@@ -14,14 +14,21 @@ import com.hamza.controlsfx.observer.EventBus;
 public final class ShiftPolicyService {
     private final ShiftPolicyRepository repository;
     private final EventBus events;
+    private final CashierTreasuryAssignmentRepository assignments;
 
     public ShiftPolicyService(ShiftPolicyRepository repository) {
-        this(repository, null);
+        this(repository, null, null);
     }
 
     public ShiftPolicyService(ShiftPolicyRepository repository, EventBus events) {
+        this(repository, events, null);
+    }
+
+    public ShiftPolicyService(ShiftPolicyRepository repository, EventBus events,
+                              CashierTreasuryAssignmentRepository assignments) {
         this.repository = repository;
         this.events = events;
+        this.assignments = assignments;
     }
 
     public ShiftPolicy current() throws DaoException {
@@ -63,6 +70,10 @@ public final class ShiftPolicyService {
         if (treasuries != null && policy.mode() != ShiftMode.DISABLED
                 && treasuries.stream().noneMatch(item -> item.trackingMode() != ShiftTrackingMode.NONE)) {
             throw new BusinessRuleException(message("user.shift.policy.error.no.treasury"));
+        }
+        if (policy.enforceTreasuryAssignments() && assignments != null
+                && !assignments.hasActiveAssignments()) {
+            throw new BusinessRuleException(message("user.shift.assignment.error.enable.empty"));
         }
     }
 

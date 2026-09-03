@@ -19,21 +19,29 @@ public final class ShiftGate {
     private final ShiftPolicyRepository policies;
     private final OpenShiftLookup openShifts;
     private final TreasuryShiftLookup treasuryShifts;
+    private final TreasuryAccessLookup treasuryAccess;
 
     public ShiftGate(ShiftPolicyRepository policies, OpenShiftLookup openShifts) {
-        this(policies, openShifts, treasuryId -> null);
+        this(policies, openShifts, treasuryId -> null, (userId, treasuryId) -> true);
     }
 
     public ShiftGate(ShiftPolicyRepository policies, OpenShiftLookup openShifts,
                      TreasuryShiftLookup treasuryShifts) {
+        this(policies, openShifts, treasuryShifts, (userId, treasuryId) -> true);
+    }
+
+    public ShiftGate(ShiftPolicyRepository policies, OpenShiftLookup openShifts,
+                     TreasuryShiftLookup treasuryShifts, TreasuryAccessLookup treasuryAccess) {
         this.policies = policies;
         this.openShifts = openShifts;
         this.treasuryShifts = treasuryShifts;
+        this.treasuryAccess = treasuryAccess;
     }
 
     public static ShiftGate jdbc(UserShiftDao dao) {
         return new ShiftGate(new JdbcShiftPolicyRepository(),
-                dao::getOpenShiftByUserIdForUpdate, dao::getOpenShiftByTreasuryIdForUpdate);
+                dao::getOpenShiftByUserIdForUpdate, dao::getOpenShiftByTreasuryIdForUpdate,
+                new JdbcCashierTreasuryAssignmentRepository()::canOpenShift);
     }
 
     public static ShiftGate jdbc() {
@@ -63,6 +71,10 @@ public final class ShiftGate {
                 || policies.trackingMode(treasuryId) == ShiftTrackingMode.NONE) {
             if (shiftedCorrection) throw correctionTrackingRequired();
             return OptionalInt.empty();
+        }
+        if (policy.enforceTreasuryAssignments() && !treasuryAccess.canOpen(userId, treasuryId)) {
+            throw new BusinessRuleException(LanguageManager.getInstance().getString(
+                    "user.shift.assignment.error.not.allowed"));
         }
         UserShift open = openShifts.find(userId);
         if (open != null && open.getTreasuryId() == treasuryId) {
@@ -107,6 +119,11 @@ public final class ShiftGate {
     @FunctionalInterface
     public interface TreasuryShiftLookup { UserShift find(int treasuryId) throws DaoException; }
 
+    @FunctionalInterface
+    public interface TreasuryAccessLookup {
+        boolean canOpen(int userId, int treasuryId) throws DaoException;
+    }
+
     private static BusinessRuleException correctionTrackingRequired() {
         return new BusinessRuleException(LanguageManager.getInstance().getString(
                 "user.shift.error.correction.tracking.required"));
@@ -118,6 +135,7 @@ public final class ShiftGate {
             connection = ConnectionManager.acquire();
             try (PreparedStatement statement = connection.prepareStatement(
                     "SELECT id, user_id, treasury_id FROM user_shifts WHERE user_id=? AND is_open=TRUE "
+                            + "AND shift_status='OPEN' "
                             + "ORDER BY open_time DESC LIMIT 1 FOR UPDATE")) {
                 statement.setInt(1, userId);
                 try (ResultSet rs = statement.executeQuery()) {

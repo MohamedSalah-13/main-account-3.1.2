@@ -44,6 +44,7 @@ public class DatabaseMigrationService {
      */
     private static final String BASELINE_VERSION = "1";
     private static final String RBAC_MIGRATION_VERSION = "11";
+    private static final String CASHIER_TREASURY_MIGRATION_VERSION = "30";
 
     /**
      * Tables every v4.1.3 install has. A non-empty database missing any of them is not the schema
@@ -81,7 +82,7 @@ public class DatabaseMigrationService {
         }
 
         Flyway flyway = buildFlyway();
-        recoverFailedRbacMigration(flyway);
+        recoverKnownFailedMigration(flyway);
 
         List<MigrationInfo> pending = Arrays.asList(flyway.info().pending());
 
@@ -170,40 +171,77 @@ public class DatabaseMigrationService {
     }
 
     /**
-     * V11 originally used MariaDB's {@code ADD COLUMN IF NOT EXISTS} syntax. MySQL records that
-     * first-statement syntax failure in its non-transactional Flyway history even though no schema
-     * object was changed. Remove only that known-safe failed row so the corrected migration can run.
-     * Any partial V11 schema, or any other failed migration, is refused for manual investigation.
+     * Removes a failed history row only for a migration whose exact retry-safe state is known.
+     * MySQL DDL is not transactional, so Flyway cannot repair a partially executed script itself.
+     * Unknown failures and unexpected partial schemas are always left for manual investigation.
      */
-    private void recoverFailedRbacMigration(Flyway flyway) {
+    private void recoverKnownFailedMigration(Flyway flyway) {
         List<MigrationInfo> failed = Arrays.stream(flyway.info().all())
                 .filter(info -> info.getState().isFailed())
                 .toList();
         if (failed.isEmpty()) return;
 
-        boolean onlyKnownFailure = failed.size() == 1
-                && failed.getFirst().getVersion() != null
-                && RBAC_MIGRATION_VERSION.equals(failed.getFirst().getVersion().getVersion());
-        if (!onlyKnownFailure || hasRbacArtifacts()) {
-            String versions = failed.stream()
-                    .map(info -> info.getVersion() == null ? info.getScript() : info.getVersion().getVersion())
-                    .collect(Collectors.joining(", "));
-            throw new IllegalStateException(
-                    "Database contains a failed migration that cannot be retried automatically: " + versions);
+        if (failed.size() == 1 && failed.getFirst().getVersion() != null) {
+            String version = failed.getFirst().getVersion().getVersion();
+            if (RBAC_MIGRATION_VERSION.equals(version) && !hasRbacArtifacts()) {
+                removeFailedHistoryRow(version, "no RBAC artifacts exist");
+                return;
+            }
+            if (CASHIER_TREASURY_MIGRATION_VERSION.equals(version) && isSafeCashierTreasuryRetryState()) {
+                removeFailedHistoryRow(version, "only the retry-safe policy column may exist");
+                return;
+            }
         }
 
+        String versions = failed.stream()
+                .map(info -> info.getVersion() == null ? info.getScript() : info.getVersion().getVersion())
+                .collect(Collectors.joining(", "));
+        throw new IllegalStateException(
+                "Database contains a failed migration that cannot be retried automatically: " + versions);
+    }
+
+    private void removeFailedHistoryRow(String version, String verifiedState) {
         String sql = "DELETE FROM flyway_schema_history WHERE version = ? AND success = 0";
         try (Connection connection = DriverManager.getConnection(
                 jdbcUrl(database.getDbName()), database.getUsername(), database.getPass());
              PreparedStatement statement = connection.prepareStatement(sql)) {
-            statement.setString(1, RBAC_MIGRATION_VERSION);
+            statement.setString(1, version);
             if (statement.executeUpdate() != 1) {
-                throw new IllegalStateException("Failed V11 history row was not found for safe retry");
+                throw new IllegalStateException("Failed V" + version + " history row was not found for safe retry");
             }
-            log.warn("Removed the failed V11 history row after confirming that no RBAC artifacts exist");
+            log.warn("Removed the failed V{} history row after confirming that {}", version, verifiedState);
         } catch (Exception e) {
-            log.error("Failed to prepare V11 for a safe retry", e);
-            throw new RuntimeException("Failed to prepare database migration V11 for retry", e);
+            log.error("Failed to prepare V{} for a safe retry", version, e);
+            throw new RuntimeException("Failed to prepare database migration V" + version + " for retry", e);
+        }
+    }
+
+    private boolean isSafeCashierTreasuryRetryState() {
+        if (countExistingTables(List.of("cashier_treasury_assignment")) != 0) {
+            return false;
+        }
+
+        String sql = """
+                SELECT column_type, is_nullable, column_default
+                FROM information_schema.columns
+                WHERE table_schema = DATABASE()
+                  AND table_name = 'shift_policy'
+                  AND column_name = 'enforce_treasury_assignments'
+                """;
+        try (Connection connection = DriverManager.getConnection(
+                jdbcUrl(database.getDbName()), database.getUsername(), database.getPass());
+             Statement statement = connection.createStatement();
+             ResultSet resultSet = statement.executeQuery(sql)) {
+            if (!resultSet.next()) {
+                return true;
+            }
+            boolean expectedDefinition = "tinyint(1)".equalsIgnoreCase(resultSet.getString("column_type"))
+                    && "NO".equalsIgnoreCase(resultSet.getString("is_nullable"))
+                    && "0".equals(resultSet.getString("column_default"));
+            return expectedDefinition && !resultSet.next();
+        } catch (Exception e) {
+            log.error("Failed to inspect V30 migration artifacts", e);
+            throw new RuntimeException("Failed to inspect V30 migration artifacts", e);
         }
     }
 

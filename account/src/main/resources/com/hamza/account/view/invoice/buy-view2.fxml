@@ -89,7 +89,7 @@
                                           <TextField fx:id="txtNum" editable="false" promptText="%invoice.number" GridPane.columnIndex="1" />
                                           <DatePicker fx:id="date" editable="false" GridPane.columnIndex="3" />
                                           <ComboBox fx:id="comboDelegate" maxWidth="1.7976931348623157E308" GridPane.columnIndex="3" GridPane.rowIndex="1" />
-                                          <ComboBox fx:id="comboTreasury" disable="true" maxWidth="1.7976931348623157E308" GridPane.columnIndex="5" />
+                                          <ComboBox fx:id="comboTreasury"  maxWidth="1.7976931348623157E308" GridPane.columnIndex="5" />
                                           <ComboBox fx:id="comboStock" maxWidth="1.7976931348623157E308" GridPane.columnIndex="5" GridPane.rowIndex="1" />
                                           <TextField fx:id="txtItemBalance" editable="false" promptText="balance" GridPane.columnIndex="5" GridPane.rowIndex="2" />
                                           <TextField fx:id="txtBarcode" promptText="باركود الصنف" GridPane.columnIndex="1" GridPane.rowIndex="2" />

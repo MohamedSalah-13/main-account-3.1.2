@@ -9,7 +9,7 @@ import static org.junit.jupiter.api.Assertions.*;
 class ShiftPolicyTest {
     @Test
     void nullValuesKeepTheBackwardsCompatibleDisabledDefault() {
-        ShiftPolicy policy = new ShiftPolicy(null, false, true, null, true, false);
+        ShiftPolicy policy = new ShiftPolicy(null, false, true, null, true, false, false);
         assertEquals(ShiftMode.DISABLED, policy.mode());
         assertEquals(0, policy.varianceTolerance().compareTo(BigDecimal.ZERO));
     }
@@ -18,6 +18,6 @@ class ShiftPolicyTest {
     void negativeToleranceIsRejected() {
         assertThrows(IllegalArgumentException.class, () ->
                 new ShiftPolicy(ShiftMode.REQUIRED, false, true,
-                        new BigDecimal("-0.01"), true, false));
+                        new BigDecimal("-0.01"), true, false, false));
     }
 }

@@ -80,6 +80,25 @@ class ShiftGateTest {
     }
 
     @Test
+    void enforcedAssignmentsRejectAnotherCashiersTreasuryEvenInOptionalMode() {
+        ShiftGate gate = new ShiftGate(
+                new FakePolicies(ShiftMode.OPTIONAL, ShiftTrackingMode.RECONCILE, true),
+                userId -> null, treasuryId -> null, (userId, treasuryId) -> false);
+
+        assertThrows(BusinessRuleException.class,
+                () -> gate.requireCashAction(7, 3, money("100")));
+    }
+
+    @Test
+    void enforcedAssignmentsAllowTheAssignedTreasury() throws Exception {
+        ShiftGate gate = new ShiftGate(
+                new FakePolicies(ShiftMode.OPTIONAL, ShiftTrackingMode.RECONCILE, true),
+                userId -> null, treasuryId -> null, (userId, treasuryId) -> true);
+
+        assertTrue(gate.requireCashAction(7, 3, money("100")).isEmpty());
+    }
+
+    @Test
     void zeroCashDoesNotRequireAShift() throws Exception {
         ShiftGate gate = gate(ShiftMode.REQUIRED, ShiftTrackingMode.RECONCILE, null);
         assertTrue(gate.requireCashAction(7, 3, BigDecimal.ZERO).isEmpty());
@@ -121,8 +140,15 @@ class ShiftGateTest {
 
     private static BigDecimal money(String value) { return new BigDecimal(value); }
 
-    private record FakePolicies(ShiftMode mode, ShiftTrackingMode tracking) implements ShiftPolicyRepository {
-        public ShiftPolicy load() { return new ShiftPolicy(mode, false, true, BigDecimal.ZERO, true, false); }
+    private record FakePolicies(ShiftMode mode, ShiftTrackingMode tracking, boolean enforceAssignments)
+            implements ShiftPolicyRepository {
+        private FakePolicies(ShiftMode mode, ShiftTrackingMode tracking) {
+            this(mode, tracking, false);
+        }
+
+        public ShiftPolicy load() {
+            return new ShiftPolicy(mode, false, true, BigDecimal.ZERO, true, false, enforceAssignments);
+        }
         public List<TreasuryShiftPolicy> loadTreasuries() { return List.of(); }
         public ShiftTrackingMode trackingMode(int treasuryId) { return tracking; }
         public boolean hasOpenShifts() { return false; }

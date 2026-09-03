@@ -57,4 +57,41 @@ class RbacMigrationCompatibilityTest {
             }
         }
     }
+
+    @Test
+    void cashierShiftGrantWorksForUpgradeAndFreshInstall() throws IOException {
+        try (var stream = getClass().getResourceAsStream(
+                "/db/migration/V29__grant_cashier_self_shift_permissions.sql")) {
+            assertTrue(stream != null, "V29 migration is missing");
+            String sql = new String(stream.readAllBytes(), StandardCharsets.UTF_8).toUpperCase();
+
+            assertTrue(sql.contains("INSERT INTO AUTH_PERMISSION"),
+                    "fresh installs need the permissions before catalogue synchronization");
+            assertTrue(sql.contains("DEFAULT_SALES_CASHIER"));
+            assertTrue(sql.contains("SHIFT.SELF.VIEW"));
+            assertTrue(sql.contains("SHIFT.SELF.OPEN"));
+            assertTrue(sql.contains("SHIFT.SELF.CLOSE"));
+            assertTrue(sql.contains("SHIFT.XREPORT.VIEW"));
+            assertFalse(sql.contains("AUTH_USER_ROLE"),
+                    "the migration must grant a role, not guess which users are cashiers");
+        }
+    }
+
+    @Test
+    void cashierTreasuryAssignmentMigrationStartsInSafeRolloutMode() throws IOException {
+        try (var stream = getClass().getResourceAsStream(
+                "/db/migration/V30__cashier_treasury_assignments.sql")) {
+            assertTrue(stream != null, "V30 migration is missing");
+            String sql = new String(stream.readAllBytes(), StandardCharsets.UTF_8).toUpperCase();
+
+            assertTrue(sql.contains("ENFORCE_TREASURY_ASSIGNMENTS BOOLEAN NOT NULL DEFAULT FALSE"));
+            assertTrue(sql.contains("CREATE TABLE CASHIER_TREASURY_ASSIGNMENT"));
+            assertTrue(sql.contains("UNIQUE (USER_ID, TREASURY_ID)"));
+            assertTrue(sql.contains("UNIQUE (DEFAULT_USER_ID)"));
+            assertTrue(sql.contains("INFORMATION_SCHEMA.COLUMNS"),
+                    "the policy column must be retryable after non-transactional MySQL DDL");
+            assertTrue(sql.contains("FOREIGN KEY (USER_ID) REFERENCES USERS(ID) ON DELETE RESTRICT"));
+            assertTrue(sql.contains("FOREIGN KEY (TREASURY_ID) REFERENCES TREASURY(ID) ON DELETE CASCADE"));
+        }
+    }
 }

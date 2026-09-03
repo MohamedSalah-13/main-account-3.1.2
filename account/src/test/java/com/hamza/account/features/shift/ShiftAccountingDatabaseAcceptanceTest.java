@@ -22,6 +22,7 @@ import java.util.OptionalInt;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -101,6 +102,120 @@ class ShiftAccountingDatabaseAcceptanceTest {
         } finally {
             transaction.rollback();
             ConnectionManager.endTransaction(transaction);
+        }
+    }
+
+    @Test
+    void closeRequestIsImmutableAndCannotBeDecidedByItsRequester() throws Exception {
+        Connection transaction = ConnectionManager.beginTransaction();
+        try {
+            int shiftId = insertShift(transaction, false);
+            long requestId;
+            try (PreparedStatement statement = transaction.prepareStatement("""
+                    INSERT INTO shift_close_requests
+                        (shift_id, requested_by_user_id, requested_at, actual_balance,
+                         expected_balance, difference_amount, total_sales, total_sales_returns,
+                         total_expenses, total_deposits, total_withdrawals, total_cash_in,
+                         total_cash_out, invoices_count, ledger_last_id, reason)
+                    VALUES (?, 1, NOW(), 9, 10, -1, 0, 0, 0, 10, 0, 10, 0, 0, 0, 'count mismatch')
+                    """, Statement.RETURN_GENERATED_KEYS)) {
+                statement.setInt(1, shiftId);
+                assertEquals(1, statement.executeUpdate());
+                try (ResultSet keys = statement.getGeneratedKeys()) {
+                    assertTrue(keys.next());
+                    requestId = keys.getLong(1);
+                }
+            }
+
+            assertThrows(SQLException.class, () -> execute(transaction,
+                    "UPDATE shift_close_requests SET reason='changed' WHERE id=?", requestId));
+            assertThrows(SQLException.class, () -> execute(transaction, """
+                    INSERT INTO shift_close_decisions
+                        (request_id, decided_by_user_id, decision_type, decided_at)
+                    VALUES (?, 1, 'APPROVED', NOW())
+                    """, requestId));
+
+            int supervisorId;
+            try (PreparedStatement statement = transaction.prepareStatement(
+                    "INSERT INTO users(user_name, user_pass) VALUES (?, 'test')",
+                    Statement.RETURN_GENERATED_KEYS)) {
+                statement.setString(1, "sa-supervisor-" + UUID.randomUUID().toString().substring(0, 8));
+                assertEquals(1, statement.executeUpdate());
+                try (ResultSet keys = statement.getGeneratedKeys()) {
+                    assertTrue(keys.next());
+                    supervisorId = keys.getInt(1);
+                }
+            }
+            execute(transaction, """
+                    INSERT INTO shift_close_decisions
+                        (request_id, decided_by_user_id, decision_type, decided_at)
+                    VALUES (?, ?, 'APPROVED', NOW())
+                    """, requestId, supervisorId);
+            assertThrows(SQLException.class, () -> execute(transaction,
+                    "UPDATE shift_close_decisions SET decision_note='changed' WHERE request_id=?", requestId));
+        } finally {
+            transaction.rollback();
+            ConnectionManager.endTransaction(transaction);
+        }
+    }
+
+    @Test
+    void cashierAssignmentsFilterTrackedTreasuriesAndKeepOneDefault() throws Exception {
+        Connection transaction = ConnectionManager.beginTransaction();
+        try {
+            int userId = insertUser(transaction, "sa-cashier-");
+            int firstTreasury = insertTreasury(transaction, "sa-till-a-");
+            int secondTreasury = insertTreasury(transaction, "sa-till-b-");
+            execute(transaction, "INSERT INTO shift_treasury_policy(treasury_id, tracking_mode) "
+                    + "VALUES (?, 'RECONCILE'), (?, 'TRACK_ONLY')", firstTreasury, secondTreasury);
+
+            JdbcCashierTreasuryAssignmentRepository repository =
+                    new JdbcCashierTreasuryAssignmentRepository();
+            repository.lockUser(userId);
+            repository.upsert(userId, firstTreasury, true, 1);
+            assertTrue(repository.canOpenShift(userId, firstTreasury));
+            assertEquals(firstTreasury,
+                    repository.availableTreasuries(userId, true).getFirst().treasuryId());
+
+            repository.clearDefault(userId, 1);
+            repository.upsert(userId, secondTreasury, true, 1);
+            var choices = repository.availableTreasuries(userId, true);
+            assertEquals(2, choices.size());
+            assertEquals(secondTreasury, choices.getFirst().treasuryId());
+            assertEquals(1, choices.stream().filter(CashierTreasuryChoice::defaultTreasury).count());
+
+            CashierTreasuryAssignment first = repository.loadAll().stream()
+                    .filter(item -> item.userId() == userId && item.treasuryId() == firstTreasury)
+                    .findFirst().orElseThrow();
+            assertEquals(1, repository.deactivate(first.id(), 1));
+            assertFalse(repository.canOpenShift(userId, firstTreasury));
+            assertEquals(1, repository.availableTreasuries(userId, true).size());
+        } finally {
+            transaction.rollback();
+            ConnectionManager.endTransaction(transaction);
+        }
+    }
+
+    private static int insertUser(Connection connection, String prefix) throws SQLException {
+        return insertReturningId(connection,
+                "INSERT INTO users(user_name, user_pass) VALUES (?, 'test')",
+                prefix + UUID.randomUUID().toString().substring(0, 8));
+    }
+
+    private static int insertTreasury(Connection connection, String prefix) throws SQLException {
+        return insertReturningId(connection,
+                "INSERT INTO treasury(t_name, user_id) VALUES (?, 1)",
+                prefix + UUID.randomUUID().toString().substring(0, 8));
+    }
+
+    private static int insertReturningId(Connection connection, String sql, Object value) throws SQLException {
+        try (PreparedStatement statement = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+            statement.setObject(1, value);
+            assertEquals(1, statement.executeUpdate());
+            try (ResultSet keys = statement.getGeneratedKeys()) {
+                assertTrue(keys.next());
+                return keys.getInt(1);
+            }
         }
     }
 
