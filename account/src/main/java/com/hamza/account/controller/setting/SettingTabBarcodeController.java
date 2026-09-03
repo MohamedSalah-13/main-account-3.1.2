@@ -12,15 +12,11 @@ import com.hamza.account.features.checkbox.impl.setting.BarcodePrintName;
 import com.hamza.account.features.checkbox.impl.setting.BarcodePrintPrice;
 import com.hamza.account.features.checkbox.impl.setting.CheckPrintBarcode;
 import com.hamza.account.model.dao.DaoFactory;
-import com.hamza.account.model.domain.SelPriceTypeModel;
 import com.hamza.account.openFxml.FxmlPath;
-import com.hamza.account.service.SelPriceItemService;
 import com.hamza.account.service.SupGroupService;
 import com.hamza.account.service.UnitsService;
-import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.language.LanguageManager;
-import com.hamza.account.features.events.SelPriceNamesChanged;
 import com.hamza.controlsfx.observer.EventBus;
 import com.hamza.account.service.ItemsService;
 import javafx.application.Platform;
@@ -34,7 +30,6 @@ import javafx.scene.control.TextField;
 import javafx.scene.shape.Rectangle;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
-import org.jetbrains.annotations.NotNull;
 
 import java.net.URL;
 import java.util.HashMap;
@@ -84,7 +79,7 @@ public class SettingTabBarcodeController implements Initializable {
     @FXML
     private TextField textBarcodeStart, textCountScale, textCountBarcode, textCountItem;
     @FXML
-    private TextField textPrice1, textPrice2, textPrice3, textNameMaxCharacters, textNameFontSize, textLabelWidthMm, textLabelHeightMm;
+    private TextField textNameMaxCharacters, textNameFontSize, textLabelWidthMm, textLabelHeightMm;
 
     @Override
     public void initialize(URL url, ResourceBundle resourceBundle) {
@@ -96,16 +91,17 @@ public class SettingTabBarcodeController implements Initializable {
         configureLabelPreview();
     }
 
+    /**
+     * The try box stays usable whether or not the scale reader is switched on: its whole
+     * purpose is working out the right layout, which is what someone does <em>before</em>
+     * turning the feature on. The fields that only mean something once it is on stay
+     * gated.
+     */
     private void otherSetting() {
         labelMain.setText(LanguageManager.getInstance().getString("mainGroup"));
         labelSub.setText(LanguageManager.getInstance().getString("subGroup"));
         labelType.setText(LanguageManager.getInstance().getString("settings.barcode.units"));
 
-        var priceSelService = loadPriceNames();
-
-        textPrice1.textProperty().addListener((observableValue, s, t1) -> updateSelPriceName(1, t1, priceSelService));
-        textPrice2.textProperty().addListener((observableValue, s, t1) -> updateSelPriceName(2, t1, priceSelService));
-        textPrice3.textProperty().addListener((observableValue, s, t1) -> updateSelPriceName(3, t1, priceSelService));
         textBarcodeStart.disableProperty().bind(checkActivateBarcodeScale.selectedProperty().not());
         textCountScale.disableProperty().bind(checkActivateBarcodeScale.selectedProperty().not());
         textCountBarcode.disableProperty().bind(checkActivateBarcodeScale.selectedProperty().not());
@@ -114,36 +110,6 @@ public class SettingTabBarcodeController implements Initializable {
         checkValidateCheckDigit.disableProperty().bind(checkActivateBarcodeScale.selectedProperty().not());
         textMinWeight.disableProperty().bind(checkActivateBarcodeScale.selectedProperty().not());
         textMaxWeight.disableProperty().bind(checkActivateBarcodeScale.selectedProperty().not());
-        textTestBarcode.disableProperty().bind(checkActivateBarcodeScale.selectedProperty().not());
-    }
-
-    @NotNull
-    private SelPriceItemService loadPriceNames() {
-
-        SelPriceItemService priceSelService = ServiceRegistry.get(SelPriceItemService.class);
-        try {
-            var priceList = priceSelService.getSelPriceTypeList();
-            textPrice1.setText(priceList.getFirst().getName());
-            textPrice2.setText(priceList.get(1).getName());
-            textPrice3.setText(priceList.get(2).getName());
-        } catch (DaoException e) {
-            AllAlerts.handleError(LanguageManager.getInstance().getString("settings.barcode.loadPriceNamesContext"), e);
-        }
-        return priceSelService;
-    }
-
-    private void updateSelPriceName(int id, String name, SelPriceItemService priceSelService) {
-        var selPriceTypeModel = new SelPriceTypeModel();
-        try {
-            selPriceTypeModel.setId(id);
-            selPriceTypeModel.setName(name);
-            var update = priceSelService.update(selPriceTypeModel);
-            if (update >= 1) {
-                if (eventBus != null) eventBus.publish(new SelPriceNamesChanged(priceSelService.getIntegerStringHashMap()));
-            }
-        } catch (DaoException e) {
-            AllAlerts.handleError(LanguageManager.getInstance().getString("settings.barcode.savePriceNamesContext"), e);
-        }
     }
 
     private void action() {
