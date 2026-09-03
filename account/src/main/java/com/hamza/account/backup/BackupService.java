@@ -39,21 +39,22 @@ public class BackupService {
                     LanguageManager.getInstance().getString("backup.error.no.encryption.password"));
         }
 
-        // إنشاء اسم فريد للملف المؤقت والمشفر
-        String timestamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
-        File tempSqlFile = File.createTempFile("backup_" + timestamp, ".sql");
-        File encryptedFile = new File(backupDir, "backup_" + timestamp + ".enc");
+        File encryptedFile = new File(backupDir, "backup_" + timestamp() + ".enc");
+        return dumpAndEncrypt(encryptedFile, encryptionPassword);
+    }
 
+    private static String timestamp() {
+        return new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
+    }
+
+    /** Dumps the database and writes it encrypted to {@code target}, leaving no plaintext behind. */
+    private File dumpAndEncrypt(File target, String password) throws Exception {
+        File tempSqlFile = File.createTempFile("backup_", ".sql");
         try {
-            // 1. تنفيذ mysqldump مع فصل stderr
             runMysqldump(tempSqlFile);
-
-            // 2. تشفير الملف الناتج (باستخدام المفتاح الثابت)
-            EncryptionUtil.encryptFile(tempSqlFile, encryptedFile,encryptionPassword);
-
-            return encryptedFile;
+            EncryptionUtil.encryptFile(tempSqlFile, target, password);
+            return target;
         } finally {
-            // حذف الملف المؤقت بعد التشفير
             Files.deleteIfExists(tempSqlFile.toPath());
         }
     }
@@ -62,19 +63,30 @@ public class BackupService {
      * تشغيل mysqldump وكتابة stdout في الملف المحدد،
      * بينما يتم استهلاك stderr في خيط منفصل لعدم تضخم المخزن المؤقت.
      */
+    /**
+     * Hands the database password to the child through {@code MYSQL_PWD} rather than
+     * {@code --password=} on the command line, where every other process on the machine
+     * can read it out of the process list. This repository has been here before: the same
+     * fix was made to {@code scripts/main/RunAllSqlScripts.bat} and never reached the
+     * code that runs the same tools.
+     */
+    private void passwordThroughEnvironment(ProcessBuilder pb) {
+        pb.environment().put("MYSQL_PWD", dbPassword == null ? "" : dbPassword);
+    }
+
     private void runMysqldump(File outputFile) throws Exception {
         ProcessBuilder pb = new ProcessBuilder(
                 mysqlDumpPath,
                 "-h", dbHost,
                 "-P", dbPort,
                 "-u", dbUser,
-                "--password=" + dbPassword,
                 "--single-transaction",
                 "--routines",
                 "--triggers",
                 "--set-gtid-purged=OFF",   // <-- منع تضمين GTID_PURGED
                 dbName
         );
+        passwordThroughEnvironment(pb);
         // لا تدمج stderr مع stdout – يبقى كل تيار مستقلاً
         pb.redirectError(ProcessBuilder.Redirect.PIPE);
 
@@ -108,7 +120,21 @@ public class BackupService {
         }
     }
 
-    // استعادة نسخة احتياطية من ملف مشفر
+    /**
+     * Replaces the live database with the contents of an encrypted backup.
+     * <p>
+     * A safety copy of what is about to be replaced is taken first, and a failure to take
+     * it stops the restore. The import runs {@code DROP TABLE} / {@code CREATE TABLE}
+     * over the live schema, so a run that fails halfway leaves a database with neither
+     * its old contents nor a complete new set - and until this copy existed there was
+     * nothing at all to go back to. {@code DatabaseMigrationService} has taken the same
+     * precaution before every migration since it was written; the more dangerous of the
+     * two operations was the one without it.
+     * <p>
+     * The copy is encrypted with the password that has just been proved to open this
+     * backup, so it is an ordinary backup file the same screen can restore - and no
+     * plaintext dump of the customer's data is left sitting in the folder.
+     */
     public void restoreFromFile(File encryptedBackup, String encryptionPassword) throws Exception {
         File tempSqlFile = File.createTempFile("restore_", ".sql");
         try {
@@ -121,15 +147,18 @@ public class BackupService {
                         LanguageManager.getInstance().getString("backup.error.invalid.file.or.password"));
             }
 
-            // 3. تنفيذ الاستيراد مع تمرير الملف النظيف
+            // 3. نسخة أمان لما سيُستبدل، قبل لمس قاعدة البيانات
+            File safetyCopy = takeSafetyCopy(encryptedBackup, encryptionPassword);
+
+            // 4. تنفيذ الاستيراد مع تمرير الملف النظيف
             ProcessBuilder pb = new ProcessBuilder(
                     mysqlPath,
                     "-h", dbHost,
                     "-P", dbPort,
                     "-u", dbUser,
-                    "--password=" + dbPassword,
                     dbName
             );
+            passwordThroughEnvironment(pb);
             pb.redirectErrorStream(true);         // ندمج stderr للاستيراد لنعرف الخطأ
             pb.redirectInput(tempSqlFile);        // الملف النظيف الآن
 
@@ -144,13 +173,33 @@ public class BackupService {
                         errorMsg.append(line).append("\n");
                     }
                 }
-                throw new RuntimeException(
-                        LanguageManager.getInstance().getString("backup.error.sql.import.failed", exitCode, errorMsg.toString()));
+                throw new UserValidationException(
+                        LanguageManager.getInstance().getString("backup.error.sql.import.failed.safety",
+                                exitCode, safetyCopy.getName(), errorMsg.toString()));
             }
 
             log.info("تمت الاستعادة بنجاح من: " + encryptedBackup.getName());
         } finally {
             Files.deleteIfExists(tempSqlFile.toPath());
+        }
+    }
+
+    /**
+     * The database as it stands, written beside the backup being restored. Refuses the
+     * restore if it cannot be taken: proceeding would mean overwriting data with no way
+     * back, which is the one outcome this whole method exists to prevent.
+     */
+    private File takeSafetyCopy(File encryptedBackup, String password) throws Exception {
+        File folder = encryptedBackup.getParentFile();
+        File target = new File(folder == null ? new File(".") : folder,
+                "before-restore_" + timestamp() + ".enc");
+        try {
+            File copy = dumpAndEncrypt(target, password);
+            log.info("Safety copy taken before restore: {}", copy.getName());
+            return copy;
+        } catch (Exception e) {
+            throw new UserValidationException(
+                    LanguageManager.getInstance().getString("backup.error.safety.copy.failed"), e);
         }
     }
 

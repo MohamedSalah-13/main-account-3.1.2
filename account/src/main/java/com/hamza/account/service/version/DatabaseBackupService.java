@@ -40,7 +40,6 @@ public class DatabaseBackupService {
                     "-h", database.getHost(),
                     "-P", database.getPort(),
                     "-u", database.getUsername(),
-                    "-p" + database.getPass(),
                     "--default-character-set=utf8mb4",
                     "--routines",
                     "--triggers",
@@ -48,6 +47,10 @@ public class DatabaseBackupService {
                     database.getDbName()
             );
 
+            // The password goes through the environment, not the command line, where the
+            // process list exposes it to anything else running on the machine.
+            processBuilder.environment().put("MYSQL_PWD",
+                    database.getPass() == null ? "" : database.getPass());
             processBuilder.redirectOutput(backupFile.toFile());
             processBuilder.redirectError(ProcessBuilder.Redirect.INHERIT);
 
