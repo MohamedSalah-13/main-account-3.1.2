@@ -157,26 +157,45 @@ public record ItemsService(DaoFactory daoFactory) {
         return daoFactory.getItemsDao().getFilterItems(newValue);
     }
 
-
-    public List<ItemsModel> getProducts(int rowsPerPage, int offset) throws DaoException {
-        return daoFactory.getItemsDao().getProducts(rowsPerPage, offset);
+    /**
+     * The three reads behind a screen that lists many items at once.
+     * <p>
+     * They answer the same rows as {@link #getFilterItems}, {@link #getProducts} and
+     * {@link #getAllProducts}, but mapped for display: no per-row lookup of the group,
+     * the unit, the unit list or the extra barcodes, so a page costs a fixed handful of
+     * queries instead of one per item times the number of associations it has.
+     * <p>
+     * The models they return are display rows. Edit one through {@link #quickUpdate} or
+     * {@link #updateItemImage}; a screen editing the whole item loads it again through
+     * {@link #findItemById}.
+     */
+    public List<ItemsModel> getCatalogProducts(String searchText, Integer mainGroupId, Integer subGroupId,
+                                               int rowsPerPage, int offset) throws DaoException {
+        return daoFactory.getItemsDao().getCatalogProducts(searchText, mainGroupId, subGroupId, rowsPerPage, offset);
     }
 
-    public List<ItemsModel> getAllProducts() throws DaoException {
-        return daoFactory.getItemsDao().getAllProducts();
+    /** How many rows the same search and group filter match in total. */
+    public int getCatalogCount(String searchText, Integer mainGroupId, Integer subGroupId) throws DaoException {
+        return daoFactory.getItemsDao().getCatalogCount(searchText, mainGroupId, subGroupId);
     }
 
-    public int getCountItems() {
-        return daoFactory.getItemsDao().getCountItems();
+    public List<ItemsModel> getAllCatalogProducts() throws DaoException {
+        return daoFactory.getItemsDao().getAllCatalogProducts();
     }
 
-    public int getCountItems(Integer mainGroupId, Integer subGroupId) throws DaoException {
-        return daoFactory.getItemsDao().getCountItems(mainGroupId, subGroupId);
+    public ItemsModel getCatalogItem(int id) throws DaoException {
+        return daoFactory.getItemsDao().getCatalogItem(id);
     }
 
-    public List<ItemsModel> getProducts(int rowsPerPage, int offset, Integer mainGroupId, Integer subGroupId) throws DaoException {
-        return daoFactory.getItemsDao().getProducts(rowsPerPage, offset, mainGroupId, subGroupId);
+    /**
+     * Saves only an item's picture. The items list edits pictures on rows that carry no
+     * units and no extra barcodes, and the full item update replaces both from the model.
+     */
+    public int updateItemImage(int itemId, byte[] image) throws DaoException {
+        AuthorizationGuard.require(AppPermissions.ITEMS_UPDATE);
+        return daoFactory.getItemsDao().updateImage(itemId, image);
     }
+
 
     public List<ItemsModel> getMainItemsListWithoutInactiveByMainGroupId(int mainGroupId) throws DaoException {
         return daoFactory.getItemsDao().getItemsByMainGroupId(mainGroupId).stream()
