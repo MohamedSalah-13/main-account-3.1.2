@@ -3,6 +3,7 @@ package com.hamza.account.controller.setting;
 import com.hamza.account.config.PropertiesName;
 import com.hamza.account.controller.others.ServiceRegistry;
 import com.hamza.account.features.barcodeprint.BarcodeNameOverflow;
+import com.hamza.account.features.scalebarcode.ScaleBarcodeService;
 import com.hamza.account.features.scalebarcode.ScaleBarcodeValueType;
 import com.hamza.account.features.checkbox.api.CheckBox_Setting;
 import com.hamza.account.features.checkbox.impl.setting.BarcodePrintDoubleLabel;
@@ -48,6 +49,10 @@ import static com.hamza.account.controller.setting.ComboSetting.comboTypeSetting
 @RequiredArgsConstructor
 public class SettingTabBarcodeController implements Initializable {
 
+    /** What a barcode label can measure, in millimetres. Below the first no printer feeds it. */
+    private static final double LABEL_MIN_MM = 10;
+    private static final double LABEL_MAX_MM = 300;
+
     private final BarcodePrintPrice barcodePrintPrice = new BarcodePrintPrice();
     private final CheckPrintBarcode checkPrintBarcode = new CheckPrintBarcode();
     private final BarcodePrintDoubleLabel barcodePrintDoubleLabel = new BarcodePrintDoubleLabel();
@@ -56,7 +61,7 @@ public class SettingTabBarcodeController implements Initializable {
     private final DaoFactory daoFactory;
     private final EventBus eventBus = ServiceRegistry.get(EventBus.class);
     @FXML
-    private CheckBox show2, showName, showPrice, showCurrency, showBarcode, checkActivateBarcodeScale;
+    private CheckBox show2, showName, showPrice, showCurrency, showBarcode, checkActivateBarcodeScale, checkHasCheckDigit;
     @FXML
     private VBox box;
     @FXML
@@ -65,6 +70,8 @@ public class SettingTabBarcodeController implements Initializable {
     private ComboBox<String> comboMain, comboSub, comboType, comboNameOverflow, comboScaleValueType;
     @FXML
     private Label labelMain, labelSub, labelType, previewName, previewBarcode, previewDetails, previewSize;
+    @FXML
+    private Label labelComposition, labelValueDigits, labelCompositionProblem;
     @FXML
     private Rectangle previewFrame;
     @FXML
@@ -98,6 +105,7 @@ public class SettingTabBarcodeController implements Initializable {
         textCountScale.disableProperty().bind(checkActivateBarcodeScale.selectedProperty().not());
         textCountBarcode.disableProperty().bind(checkActivateBarcodeScale.selectedProperty().not());
         textCountItem.disableProperty().bind(checkActivateBarcodeScale.selectedProperty().not());
+        checkHasCheckDigit.disableProperty().bind(checkActivateBarcodeScale.selectedProperty().not());
     }
 
     @NotNull
@@ -221,15 +229,29 @@ public class SettingTabBarcodeController implements Initializable {
                 PropertiesName::setBarcodeLabelNameMaxCharacters);
         setPositiveInteger(textNameFontSize, getBarcodeLabelNameFontSize(), 4, 30,
                 PropertiesName::setBarcodeLabelNameFontSize);
+        // The label's size on paper. Both fields were on screen and wired to nothing:
+        // setPositiveDecimal existed and was never called, so they opened empty, saved
+        // nothing, and the size stayed at whatever the defaults were - while
+        // Print_Reports hands it to BarcodeLabelLayout on every barcode printed.
+        setPositiveDecimal(textLabelWidthMm, getBarcodeLabelWidthMm(), LABEL_MIN_MM, LABEL_MAX_MM,
+                PropertiesName::setBarcodeLabelWidthMm);
+        setPositiveDecimal(textLabelHeightMm, getBarcodeLabelHeightMm(), LABEL_MIN_MM, LABEL_MAX_MM,
+                PropertiesName::setBarcodeLabelHeightMm);
     }
 
-    private void setPositiveDecimal(TextField field, double value, java.util.function.DoubleConsumer saver) {
+    private void setPositiveDecimal(TextField field, double value, double minimum, double maximum,
+                                    java.util.function.DoubleConsumer saver) {
         field.setText(String.valueOf(value));
         field.textProperty().addListener((observable, oldValue, text) -> {
             try {
                 double parsed = Double.parseDouble(text);
-                if (parsed >= 10 && parsed <= 300) { saver.accept(parsed); updateLabelPreview(); }
-            } catch (NumberFormatException ignored) { }
+                if (parsed >= minimum && parsed <= maximum) {
+                    saver.accept(parsed);
+                    updateLabelPreview();
+                }
+            } catch (NumberFormatException ignored) {
+                // Half-typed input. The saved value stands until the field reads as a number.
+            }
         });
     }
 
@@ -252,7 +274,7 @@ public class SettingTabBarcodeController implements Initializable {
         });
 
         setTextBarcodeData(textBarcodeStart, getSettingBarcodeStart());
-        setTextBarcodeData(textCountScale, getSettingBarcodeCountScale());
+        setTextBarcodeData(textCountScale, getSettingBarcodeScaleCodeDigits());
         setTextBarcodeData(textCountBarcode, getSettingBarcodeLength());
         setTextBarcodeData(textCountItem, getSettingBarcodeCountItem());
         comboScaleValueType.setItems(FXCollections.observableArrayList(
@@ -261,19 +283,57 @@ public class SettingTabBarcodeController implements Initializable {
         comboScaleValueType.getSelectionModel().select(ScaleBarcodeValueType.valueOf(getSettingBarcodeValueType()).ordinal());
         comboScaleValueType.valueProperty().addListener((observable, oldValue, value) ->
                 setSettingBarcodeValueType(ScaleBarcodeValueType.values()[comboScaleValueType.getSelectionModel().getSelectedIndex()].name()));
+
+        checkHasCheckDigit.setSelected(getSettingBarcodeHasCheckDigit());
+        checkHasCheckDigit.selectedProperty().addListener((observable, oldValue, value) -> {
+            setSettingBarcodeHasCheckDigit(value);
+            updateComposition();
+        });
+        updateComposition();
+    }
+
+    /**
+     * Draws the layout the four numbers add up to, and says when they do not.
+     * <p>
+     * The four fields are the whole reason this tab was easy to misconfigure: they are
+     * abstract counts whose effect only shows the next time a scale barcode is scanned,
+     * and one of them was labelled as the weight while the parser read it as the scale's
+     * prefix. Showing the composition turns each keystroke into something the operator
+     * can check against the barcode printed in front of them.
+     */
+    private void updateComposition() {
+        if (labelComposition == null) return;
+        var format = ScaleBarcodeService.storedFormat();
+        var language = LanguageManager.getInstance();
+
+        labelComposition.setText(language.getString("settings.barcode.composition",
+                format.prefixText(),
+                "0".repeat(Math.max(1, format.itemDigits())),
+                "0".repeat(Math.max(1, format.valueDigits())),
+                format.hasCheckDigit() ? " | 0" : "",
+                format.totalLength()));
+        labelValueDigits.setText(language.getString("settings.barcode.composition.valueDigits",
+                Math.max(0, format.valueDigits())));
+
+        String problem = format.problemKey();
+        labelCompositionProblem.setText(problem == null ? "" : language.getString(problem));
+        labelCompositionProblem.setVisible(problem != null);
+        labelCompositionProblem.setManaged(problem != null);
     }
 
     private void setTextBarcodeData(TextField textField, int property) {
         textField.setText(String.valueOf(property));
         textField.textProperty().addListener((observableValue, s, t1) -> {
             if (!t1.matches("\\d*")) {
-                textField.setText(t1.replaceAll("\\D", "0"));
-            } else {
+                // Drop what is not a digit. This used to replace it with "0", so typing
+                // "2a" left "20" behind - a number the operator never asked for.
+                textField.setText(t1.replaceAll("\\D", ""));
+            } else if (!t1.isEmpty()) {
                 if (textField.equals(textBarcodeStart)) {
                     setSettingBarcodeStart(Integer.parseInt(t1));
                 }
                 if (textField.equals(textCountScale)) {
-                    setSettingBarcodeCountScale(Integer.parseInt(t1));
+                    setSettingBarcodeScaleCodeDigits(Integer.parseInt(t1));
                 }
                 if (textField.equals(textCountBarcode)) {
                     setSettingBarcodeLength(Integer.parseInt(t1));
@@ -281,6 +341,7 @@ public class SettingTabBarcodeController implements Initializable {
                 if (textField.equals(textCountItem)) {
                     setSettingBarcodeCountItem(Integer.parseInt(t1));
                 }
+                updateComposition();
             }
         });
     }
