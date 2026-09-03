@@ -132,7 +132,11 @@ public class SettingController implements Initializable, AppSettingInterface {
     }
 
     private Parent backup() throws IOException {
-        FXMLLoader loader = new FXMLLoader(Main.class.getResource("view/BackupView.fxml"));
+        // With a bundle, like every other screen. Without one the loader throws on the
+        // first %key, which is why this tab's text was Arabic literals in the FXML and
+        // stayed Arabic in the English build.
+        FXMLLoader loader = new FXMLLoader(Main.class.getResource("view/BackupView.fxml"),
+                LanguageManager.getInstance().getResourceBundle());
         Parent root = loader.load();
         com.hamza.account.backup.BackupController controller = loader.getController();
         var connection = new ConnectionToDatabase();

@@ -1,5 +1,6 @@
 package com.hamza.account.backup;
 
+import com.hamza.account.config.MysqlTools;
 import com.hamza.controlsfx.error.UserValidationException;
 import com.hamza.controlsfx.language.LanguageManager;
 import lombok.extern.log4j.Log4j2;
@@ -12,8 +13,6 @@ import java.util.Date;
 
 @Log4j2
 public class BackupService {
-    private String mysqlDumpPath = "mysqldump"; // أو المسار الكامل
-    private String mysqlPath = "mysql";
     private String dbHost, dbPort, dbName, dbUser, dbPassword;
     private String encryptionPassword; // كلمة مرور التشفير (تختلف عن كلمة مرور MySQL)
 
@@ -76,7 +75,7 @@ public class BackupService {
 
     private void runMysqldump(File outputFile) throws Exception {
         ProcessBuilder pb = new ProcessBuilder(
-                mysqlDumpPath,
+                MysqlTools.mysqldump(),
                 "-h", dbHost,
                 "-P", dbPort,
                 "-u", dbUser,
@@ -152,7 +151,7 @@ public class BackupService {
 
             // 4. تنفيذ الاستيراد مع تمرير الملف النظيف
             ProcessBuilder pb = new ProcessBuilder(
-                    mysqlPath,
+                    MysqlTools.mysql(),
                     "-h", dbHost,
                     "-P", dbPort,
                     "-u", dbUser,
@@ -203,18 +202,27 @@ public class BackupService {
         }
     }
 
+    /**
+     * Whether the decrypted file looks like a dump of this database, checked before it is
+     * poured over the live one.
+     * <p>
+     * {@code "SET "} used to be one of the accepted markers, which almost any text
+     * contains - so the check passed on things that were not dumps at all. The header
+     * {@code mysqldump} writes is what identifies its own output; the DDL markers stay so
+     * a hand-written dump is still accepted, and the window is wide enough to reach the
+     * first {@code CREATE TABLE} past the block of session settings a dump opens with.
+     */
     private boolean isSqlFile(File file) throws IOException {
-        byte[] head = new byte[4096];
+        byte[] head = new byte[64 * 1024];
         try (FileInputStream fis = new FileInputStream(file)) {
             int read = fis.read(head);
             if (read <= 0) return false;
             String content = new String(head, 0, read, StandardCharsets.UTF_8);
-            // ابحث عن جمل SQL واضحة
-            return content.contains("CREATE TABLE") ||
+            return content.contains("-- MySQL dump") ||
+                    content.contains("CREATE TABLE") ||
                     content.contains("INSERT INTO") ||
                     content.contains("ALTER TABLE") ||
-                    content.contains("DROP TABLE") ||
-                    content.contains("SET ");
+                    content.contains("DROP TABLE");
         }
     }
 }

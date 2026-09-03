@@ -80,6 +80,9 @@ public class ScheduledBackup {
         }
         if (backupTaskHandle != null) backupTaskHandle.cancel(false);
 
+        long periodMinutes = getTime() * 60;
+        long initialDelay = initialDelayMinutes(new File(backupPath()), periodMinutes, System.currentTimeMillis());
+
         backupTaskHandle = scheduler.scheduleAtFixedRate(() -> {
             try {
                 File dir = new File(backupPath());
@@ -99,7 +102,47 @@ public class ScheduledBackup {
                 AppNotifications.error(FAILURE_KEY, NotificationCategories.BACKUP,
                         LanguageManager.getInstance().getString("backup.notify.failure.title"), report.message());
             }
-        }, 0, getTime(), TimeUnit.HOURS);
+        }, initialDelay, periodMinutes, TimeUnit.MINUTES);
+    }
+
+    /**
+     * How long to wait before the first scheduled backup, so the schedule is about how
+     * old the newest backup is rather than about when the application happened to start.
+     * <p>
+     * It used to be zero, and the scheduler starts at login - so every launch began with
+     * a full {@code mysqldump} of the whole database, whatever the chosen interval said.
+     * A shop opening the program three times a morning took three complete backups before
+     * serving anyone.
+     * <p>
+     * A folder with no backup in it still starts immediately: there is nothing to lose by
+     * waiting, and everything to lose by not having one at all.
+     *
+     * @param periodMinutes the chosen interval; a folder whose newest backup is already
+     *                      older than this is due now
+     */
+    public static long initialDelayMinutes(File backupDir, long periodMinutes, long nowMillis) {
+        long newest = newestBackupTime(backupDir);
+        if (newest <= 0) {
+            return 0;
+        }
+        long elapsedMinutes = (nowMillis - newest) / 60_000;
+        if (elapsedMinutes >= periodMinutes) {
+            return 0;
+        }
+        return periodMinutes - elapsedMinutes;
+    }
+
+    /** When the newest backup in the folder was written, or 0 when there is none. */
+    private static long newestBackupTime(File backupDir) {
+        if (backupDir == null || !backupDir.isDirectory()) {
+            return 0;
+        }
+        File[] backups = backupDir.listFiles(file ->
+                file.isFile() && file.getName().toLowerCase().endsWith(BACKUP_FILE_SUFFIX));
+        if (backups == null || backups.length == 0) {
+            return 0;
+        }
+        return Arrays.stream(backups).mapToLong(File::lastModified).max().orElse(0);
     }
 
     /**

@@ -1,6 +1,7 @@
 package com.hamza.account.service.version;
 
 import com.hamza.account.config.ConnectionToDatabase;
+import com.hamza.account.config.MysqlTools;
 import com.hamza.account.config.PropertiesName;
 import lombok.extern.log4j.Log4j2;
 
@@ -33,7 +34,7 @@ public class DatabaseBackupService {
 
             Path backupFile = backupDirectory.resolve(fileName);
 
-            String mysqlDumpCommand = getMysqlDumpCommand();
+            String mysqlDumpCommand = MysqlTools.mysqldump();
 
             ProcessBuilder processBuilder = new ProcessBuilder(
                     mysqlDumpCommand,
@@ -70,12 +71,4 @@ public class DatabaseBackupService {
         }
     }
 
-    private String getMysqlDumpCommand() {
-        if (PropertiesName.getDatabaseUsePathVariableSetting()) {
-            return "mysqldump";
-        }
-
-        File localMysqlDump = new File("mysql/bin/mysqldump");
-        return localMysqlDump.getPath();
-    }
 }
