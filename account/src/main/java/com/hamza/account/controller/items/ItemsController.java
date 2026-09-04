@@ -3,14 +3,18 @@ package com.hamza.account.controller.items;
 import com.hamza.account.authorization.AppPermissions;
 import com.hamza.account.authorization.AuthorizationGuard;
 import com.hamza.account.config.AppIcon;
-import com.hamza.account.config.Image_Setting;
 import com.hamza.account.config.NamesTables;
 import com.hamza.account.controller.main.DataPublisher;
 import com.hamza.account.controller.main.DisableButtons;
 import com.hamza.account.controller.main.LoadData;
 import com.hamza.account.controller.others.SelectedButton;
 import com.hamza.account.controller.others.ServiceRegistry;
-import com.hamza.account.features.events.*;
+import com.hamza.account.features.events.GroupsChanged;
+import com.hamza.account.features.events.ItemSaved;
+import com.hamza.account.features.events.ItemsChanged;
+import com.hamza.account.features.events.SelPriceNamesChanged;
+import com.hamza.account.features.items.ItemCatalogFilter;
+import com.hamza.account.features.items.ItemQuickEditField;
 import com.hamza.account.features.rbac.CurrentUser;
 import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.model.domain.ItemsModel;
@@ -26,6 +30,7 @@ import com.hamza.account.table.TableSetting;
 import com.hamza.account.view.AddItemApplication;
 import com.hamza.account.view.CardApplication;
 import com.hamza.account.view.ConvertItemsGroup;
+import com.hamza.account.view.ItemReportsApplication;
 import com.hamza.account.view.barcode.PrintBarcodeApp;
 import com.hamza.account.view.barcode.PrintBarcodeModel;
 import com.hamza.controlsfx.alert.AllAlerts;
@@ -42,26 +47,61 @@ import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.concurrent.Task;
 import javafx.fxml.FXML;
-import javafx.scene.control.*;
+import javafx.scene.control.Button;
+import javafx.scene.control.ComboBox;
+import javafx.scene.control.Label;
+import javafx.scene.control.MenuButton;
+import javafx.scene.control.MenuItem;
+import javafx.scene.control.Pagination;
+import javafx.scene.control.SelectionMode;
+import javafx.scene.control.TableColumn;
+import javafx.scene.control.TableView;
+import javafx.scene.control.TextField;
+import javafx.scene.control.ToggleButton;
+import javafx.scene.control.Tooltip;
+import javafx.scene.control.TreeItem;
+import javafx.scene.control.TreeTableColumn;
+import javafx.scene.control.TreeTableRow;
+import javafx.scene.control.TreeTableView;
+import javafx.scene.control.TreeView;
 import javafx.scene.input.KeyCode;
+import javafx.scene.input.KeyCodeCombination;
+import javafx.scene.layout.FlowPane;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
-import javafx.stage.FileChooser;
 import javafx.stage.Stage;
-import org.apache.poi.ss.usermodel.*;
-import org.apache.poi.xssf.usermodel.XSSFWorkbook;
-import org.kordamp.ikonli.javafx.FontIcon;
 
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 
-import static com.hamza.controlsfx.util.ImageChoose.createIcon;
+import static com.hamza.controlsfx.others.Utils.whenEnterPressed;
 
+/**
+ * The items list.
+ * <p>
+ * A coordinator rather than a screen full of logic. What used to live here has been moved
+ * to where it can be reasoned about and, in most cases, tested:
+ * <ul>
+ *   <li>what may narrow the list, and what that means in SQL - {@code ItemCatalogFilter} and
+ *       {@code ItemCatalogSql}, both covered by {@code ItemCatalogSqlTest};</li>
+ *   <li>what an in-table edit will accept - {@link ItemQuickEditField}, covered by its own
+ *       test, and stated to agree with {@code ItemsService} rather than to almost agree;</li>
+ *   <li>the four affordances that narrow the list - {@link ItemsFilterBar}, which holds one
+ *       filter so a chip and the panel cannot show different answers;</li>
+ *   <li>the group tree, which reads the database - {@link ItemsGroupTreePane}, off the
+ *       JavaFX thread, which it was not;</li>
+ *   <li>the spreadsheet export - {@link ItemsExcelExport}, which now writes each value under
+ *       its own heading.</li>
+ * </ul>
+ * <p>
+ * <b>Columns are held by reference, never by index.</b> Every index in the old version was
+ * counted by hand against a list that four different calls insert into, and one of them was
+ * wrong: the buy-price column's permission check hid the units column instead, so a user
+ * without {@code SHOW_COLUMN_BUY_PRICE} saw every cost in the catalogue.
+ */
 @FxmlPath(pathFile = "items/items-view.fxml")
 public class ItemsController extends LoadData {
 
@@ -73,376 +113,504 @@ public class ItemsController extends LoadData {
     private final SelPriceItemService selPriceService = ServiceRegistry.get(SelPriceItemService.class);
 
     @FXML
-    private Button btnNew, btnUpdate, btnDelete, btnRefresh;
+    private Button btnNew, btnUpdate, btnDelete, btnRefresh, btnReports;
+    @FXML
+    private Button btnApplyFilter, btnClearFilter, btnSaveFilter, btnDeleteFilter;
     @FXML
     private MenuItem menuPrint, menuPrintBarcode, menuPrintMenu, menuItemCard, menuItemConvertGroup, menuExportExcel;
     @FXML
-    private TextField txtSearch;
+    private TextField txtSearch, txtMinPrice, txtMaxPrice;
     @FXML
     private StackPane stackPane;
     @FXML
-    private ToggleButton btnSelected;
-    @FXML
-    private ToggleButton btnQuickEdit;
-    @FXML
-    private ToggleButton btnGroupTree;
-    @FXML
-    private ToggleButton btnGroupedView;
+    private ToggleButton btnSelected, btnQuickEdit, btnGroupTree, btnGroupedView, btnFilters;
     @FXML
     private MenuButton menuButtonOther, menuButtonPrint;
     @FXML
     private Pagination pagination;
     @FXML
-    private TreeView<GroupNode> groupTree;
+    private TreeView<ItemsGroupTreePane.GroupNode> groupTree;
     @FXML
     private TreeTableView<GroupedItemRow> groupedTreeTable;
     @FXML
-    private VBox groupTreePane;
+    private VBox groupTreePane, filterPane;
+    @FXML
+    private FlowPane chipBar;
+    @FXML
+    private Label labelCount, labelSelected, labelFiltered;
+    @FXML
+    private ComboBox<ItemCatalogFilter.SearchScope> comboSearchScope;
+    @FXML
+    private ComboBox<ItemCatalogFilter.MatchMode> comboMatchMode;
+    @FXML
+    private ComboBox<ItemsFilterBar.GroupChoice> comboFilterGroup;
+    @FXML
+    private ComboBox<ItemCatalogFilter.Tristate> comboFilterActive, comboFilterBarcode, comboFilterExpiry;
+    @FXML
+    private ComboBox<ItemCatalogFilter.BalanceRule> comboFilterBalance;
+    @FXML
+    private ComboBox<ItemCatalogFilter.UsageRule> comboFilterUsage;
+    @FXML
+    private ComboBox<String> comboSavedFilters;
+
     private PaginationTableSetting paginationTableSetting;
-    private boolean groupTreeListenerAdded;
+    private ItemsFilterBar filterBar;
+    private ItemsGroupTreePane groupTreeLoader;
+
+    /**
+     * The columns anything else refers to.
+     * <p>
+     * Held rather than looked up by position: the units column is inserted at 3, the picture
+     * column is appended, and the selection column is prepended - so the index of any given
+     * column depends on the order three unrelated calls happen to run in.
+     */
+    private TableColumn<ItemsModel, String> colBarcode;
+    private TableColumn<ItemsModel, String> colName;
+    /**
+     * {@code Number}, not {@code Double}: {@code Columns.number} builds the column over
+     * {@code Number} and the editor casts to {@code Double} where it is wired. Declaring
+     * these as {@code Double} would only move the same unchecked cast into this file.
+     */
+    private TableColumn<ItemsModel, Number> colBuyPrice;
+    private TableColumn<ItemsModel, Number> colSelPrice1;
+    private TableColumn<ItemsModel, Number> colSelPrice2;
+    private TableColumn<ItemsModel, Number> colSelPrice3;
 
     public ItemsController(DaoFactory daoFactory, DataPublisher dataPublisher) throws Exception {
         super(daoFactory, dataPublisher);
     }
 
     public void initialize() {
-        otherSetting();
-        table_data();
+        buildTable();
         configureGroupedView();
-        action();
-        buttonGraphic();
-        permissionButtons();
-        paginationTableSetting = new PaginationTableSetting(tableView, itemsService
-                , txtSearch, pagination);
+        // Constructed first, and started last. Everything below can hand it a filter the
+        // moment it is wired - a combo selecting its first entry is enough - and a callback
+        // reaching a field that is still null is a screen that does not open.
+        paginationTableSetting = new PaginationTableSetting(tableView, itemsService, txtSearch, pagination);
+
+        setUpFilterBar();
+        setUpGroupTree();
+        setUpButtons();
+        setUpEvents();
+        bindStatusLabels();
+
         paginationTableSetting.initializePagination();
-        loadGroupTree();
+        // The groups are read here rather than when the tree is first shown: the filter
+        // panel's group combo needs the same two lists, and the tree is hidden by default,
+        // so waiting for it would leave that combo empty for anyone who never opens it.
+        groupTreeLoader.loadOnce();
+
         // The tab can be opened again and again; the publishers live as long as the
         // main screen, so what this instance registered has to go with its tab.
         subscriptions.disposeWith(stackPane);
     }
 
-    private void otherSetting() {
+    // ---------------------------------------------------------------------------
+    // The table
+    // ---------------------------------------------------------------------------
 
-        menuItemConvertGroup.setText(LanguageManager.getInstance().getString("item.dialog.convert.title"));
-        if (eventBus != null) {
-            subscriptions.add(eventBus.subscribe(GroupsChanged.class, event -> {
-                loadGroupTree();
-                if (btnGroupedView.isSelected()) loadGroupedView();
-            }));
-        }
-        if (eventBus != null) {
-            subscriptions.add(eventBus.subscribe(ItemSaved.class, event -> itemSaved(event.item())));
-            subscriptions.add(eventBus.subscribe(ItemsChanged.class, event -> refreshCurrentView()));
-        }
-    }
+    private void buildTable() {
+        colBarcode = Columns.text(NamesTables.STRING, ItemsModel::getBarcode);
+        colName = Columns.text(NamesTables.NAME_ITEM, ItemsModel::getNameItem);
+        colBuyPrice = Columns.number(NamesTables.BUY_PRICE, ItemsModel::getBuyPrice);
+        colSelPrice1 = Columns.number(NamesTables.SEL_PRICE, ItemsModel::getSelPrice1);
+        colSelPrice2 = Columns.number(NamesTables.SEL_PRICE + "2", ItemsModel::getSelPrice2);
+        colSelPrice3 = Columns.number(NamesTables.SEL_PRICE + "3", ItemsModel::getSelPrice3);
 
-    private void permissionButtons() {
-        var permissionDisableService = new DisableButtons.PermissionDisableService();
-        permissionDisableService.applyPermissionBasedDisable(btnNew::setDisable, AppPermissions.ITEMS_CREATE);
-        permissionDisableService.applyPermissionBasedDisable(btnUpdate::setDisable, AppPermissions.ITEMS_UPDATE);
-        permissionDisableService.applyPermissionBasedDisable(btnDelete::setDisable, AppPermissions.ITEMS_DELETE);
-        permissionDisableService.applyPermissionBasedDisable(btnQuickEdit::setDisable, AppPermissions.ITEMS_UPDATE);
-    }
-
-    private List<String> getMainGroupsNames() {
-        try {
-            return mainGroupService.getMainGroupsNames();
-        } catch (DaoException e) {
-            logErrors(e);
-            return new ArrayList<>();
-        }
-    }
-
-    private void loadGroupTree() {
-        TreeItem<GroupNode> root = new TreeItem<>(new GroupNode(null, null,
-                LanguageManager.getInstance().getString("item.group.all"), GroupRowType.ROOT));
-        root.setGraphic(icon(AppIcon.MAIN_GROUP, "items-group-root-icon"));
-        root.setExpanded(true);
-        try {
-            Map<Integer, TreeItem<GroupNode>> mainNodes = new java.util.LinkedHashMap<>();
-            for (MainGroups mainGroup : mainGroupService.getMainGroupList()) {
-                TreeItem<GroupNode> mainNode = new TreeItem<>(new GroupNode(mainGroup.getId(), null,
-                        mainGroup.getName(), GroupRowType.MAIN));
-                mainNode.setGraphic(icon(AppIcon.MAIN_GROUP, "items-main-group-icon"));
-                mainNode.setExpanded(true);
-                root.getChildren().add(mainNode);
-                mainNodes.put(mainGroup.getId(), mainNode);
-            }
-            for (SubGroups subGroup : supGroupService.getSubGroupsList()) {
-                if (subGroup.getMainGroups() == null) continue;
-                TreeItem<GroupNode> parent = mainNodes.get(subGroup.getMainGroups().getId());
-                if (parent != null) {
-                    TreeItem<GroupNode> subNode = new TreeItem<>(new GroupNode(parent.getValue().mainGroupId(),
-                            subGroup.getId(), subGroup.getName(), GroupRowType.SUB));
-                    subNode.setGraphic(icon(AppIcon.SUB_GROUP, "items-sub-group-icon"));
-                    parent.getChildren().add(subNode);
-                }
-            }
-        } catch (Exception e) {
-            logErrors(e);
-        }
-        groupTree.setRoot(root);
-        groupTree.getSelectionModel().select(root);
-        if (!groupTreeListenerAdded) {
-            groupTreeListenerAdded = true;
-            groupTree.getSelectionModel().selectedItemProperty().addListener((observable, oldValue, selected) -> {
-                if (selected != null) {
-                    GroupNode node = selected.getValue();
-                    paginationTableSetting.setGroupFilter(node.mainGroupId(), node.subGroupId());
-                }
-            });
-        }
-    }
-
-    private FontIcon icon(AppIcon appIcon, String styleClass) {
-        FontIcon icon = appIcon.graphic(18);
-        icon.getStyleClass().add(styleClass);
-        return icon;
-    }
-
-    private enum GroupRowType { ROOT, MAIN, SUB, ITEM }
-
-    private record GroupNode(Integer mainGroupId, Integer subGroupId, String name, GroupRowType type) {
-        @Override
-        public String toString() {
-            return name;
-        }
-    }
-
-    private void configureGroupedView() {
-        groupedTreeTable.setShowRoot(false);
-        groupedTreeTable.setEditable(false);
-        groupedTreeTable.setRowFactory(view -> new TreeTableRow<>() {
-            @Override
-            protected void updateItem(GroupedItemRow item, boolean empty) {
-                super.updateItem(item, empty);
-                getStyleClass().removeAll("items-grouped-main-row", "items-grouped-sub-row", "items-grouped-item-row");
-                if (!empty && item != null) {
-                    getStyleClass().add(switch (item.type()) {
-                        case MAIN -> "items-grouped-main-row";
-                        case SUB -> "items-grouped-sub-row";
-                        default -> "items-grouped-item-row";
-                    });
-                }
-            }
-        });
-        groupedTreeTable.getColumns().setAll(
-                groupedColumn(NamesTables.CODE, GroupedItemRow::code),
-                groupedColumn(NamesTables.STRING, GroupedItemRow::barcode),
-                groupedColumn(NamesTables.NAME_ITEM, GroupedItemRow::name),
-                groupedColumn(NamesTables.BUY_PRICE, GroupedItemRow::buyPrice),
-                groupedColumn(NamesTables.SEL_PRICE, GroupedItemRow::sellPrice));
-    }
-
-    private TreeTableColumn<GroupedItemRow, String> groupedColumn(String title,
-                                                                     java.util.function.Function<GroupedItemRow, String> value) {
-        TreeTableColumn<GroupedItemRow, String> column = new TreeTableColumn<>(title);
-        column.setCellValueFactory(cell -> new SimpleStringProperty(value.apply(cell.getValue().getValue())));
-        return column;
-    }
-
-    private void loadGroupedView() {
-        Task<GroupedCatalog> task = new Task<>() {
-            @Override
-            protected GroupedCatalog call() throws Exception {
-                return new GroupedCatalog(mainGroupService.getMainGroupList(), supGroupService.getSubGroupsList(),
-                        itemsService.getAllCatalogProducts());
-            }
-        };
-        task.setOnSucceeded(event -> {
-            if (btnGroupedView.isSelected()) buildGroupedTree(task.getValue());
-        });
-        task.setOnFailed(event -> logErrors(new RuntimeException(task.getException())));
-        Thread thread = new Thread(task, "items-grouped-catalog");
-        thread.setDaemon(true);
-        thread.start();
-    }
-
-    private void buildGroupedTree(GroupedCatalog catalog) {
-        TreeItem<GroupedItemRow> root = new TreeItem<>(GroupedItemRow.group("", GroupRowType.ROOT));
-        Map<Integer, TreeItem<GroupedItemRow>> mainNodes = new LinkedHashMap<>();
-        Map<Integer, TreeItem<GroupedItemRow>> subNodes = new LinkedHashMap<>();
-        for (MainGroups main : catalog.mainGroups()) {
-            TreeItem<GroupedItemRow> node = new TreeItem<>(GroupedItemRow.group(main.getName(), GroupRowType.MAIN));
-            node.setGraphic(icon(AppIcon.MAIN_GROUP, "items-main-group-icon"));
-            node.setExpanded(true);
-            root.getChildren().add(node);
-            mainNodes.put(main.getId(), node);
-        }
-        for (SubGroups sub : catalog.subGroups()) {
-            if (sub.getMainGroups() == null) continue;
-            TreeItem<GroupedItemRow> mainNode = mainNodes.get(sub.getMainGroups().getId());
-            if (mainNode == null) continue;
-            TreeItem<GroupedItemRow> node = new TreeItem<>(GroupedItemRow.group(sub.getName(), GroupRowType.SUB));
-            node.setGraphic(icon(AppIcon.SUB_GROUP, "items-sub-group-icon"));
-            node.setExpanded(true);
-            mainNode.getChildren().add(node);
-            subNodes.put(sub.getId(), node);
-        }
-        for (ItemsModel item : catalog.items()) {
-            TreeItem<GroupedItemRow> parent = item.getSubGroups() == null ? null : subNodes.get(item.getSubGroups().getId());
-            if (parent == null && item.getSubGroups() != null && item.getSubGroups().getMainGroups() != null) {
-                parent = mainNodes.get(item.getSubGroups().getMainGroups().getId());
-            }
-            if (parent != null) {
-                TreeItem<GroupedItemRow> itemNode = new TreeItem<>(GroupedItemRow.item(item));
-                itemNode.setGraphic(icon(AppIcon.ITEM, "items-leaf-icon"));
-                parent.getChildren().add(itemNode);
-            }
-        }
-        groupedTreeTable.setRoot(root);
-    }
-
-    private record GroupedCatalog(List<MainGroups> mainGroups, List<SubGroups> subGroups, List<ItemsModel> items) {
-    }
-
-    private record GroupedItemRow(String code, String barcode, String name, String buyPrice, String sellPrice,
-                                  GroupRowType type) {
-        static GroupedItemRow group(String name, GroupRowType type) {
-            return new GroupedItemRow("", "", name, "", "", type);
-        }
-
-        static GroupedItemRow item(ItemsModel item) {
-            return new GroupedItemRow(String.valueOf(item.getId()), item.getBarcode(), item.getNameItem(),
-                    String.valueOf(item.getBuyPrice()), String.valueOf(item.getSelPrice1()), GroupRowType.ITEM);
-        }
-    }
-
-    private void table_data() {
         tableView.getColumns().addAll(
                 Columns.number(NamesTables.CODE, ItemsModel::getId),
-                Columns.text(NamesTables.STRING, ItemsModel::getBarcode),
-                Columns.text(NamesTables.NAME_ITEM, ItemsModel::getNameItem),
-                Columns.number(NamesTables.BUY_PRICE, ItemsModel::getBuyPrice),
-                Columns.number(NamesTables.SEL_PRICE, ItemsModel::getSelPrice1),
-                Columns.number(NamesTables.SEL_PRICE + "2", ItemsModel::getSelPrice2),
-                Columns.number(NamesTables.SEL_PRICE + "3", ItemsModel::getSelPrice3),
+                colBarcode,
+                colName,
+                colBuyPrice,
+                colSelPrice1,
+                colSelPrice2,
+                colSelPrice3,
                 Columns.number(NamesTables.MINI_QUANTITY, ItemsModel::getMini_quantity),
                 Columns.number(NamesTables.FIRST_BALANCE, ItemsModel::getFirstBalanceForStock),
                 Columns.number(NamesTables.SUM_ALL_BALANCE, ItemsModel::getSumAllBalance)
         );
         tableView.getSelectionModel().setSelectionMode(SelectionMode.SINGLE);
-        tableView.setEditable(true);
+        tableView.setPlaceholder(new Label(LanguageManager.getInstance().getString("item.table.empty")));
 
-        // Add image column
         new ColumnImage(tableView, itemsService).addColumnImage();
+        tableView.getColumns().add(3, unitColumn());
 
-        // add column type
-        tableView.getColumns().add(3, addColumnUnitsType());
+        // The cost of goods is a figure a business hides from most of its staff, so the
+        // column is REMOVED rather than made invisible. Invisible is not hidden here: the
+        // table's own menu button offers every column back, and TableSetting persists that
+        // choice - so a user without the permission could restore the column and keep it.
+        if (!AuthorizationGuard.isGranted(AppPermissions.SHOW_COLUMN_BUY_PRICE)) {
+            tableView.getColumns().remove(colBuyPrice);
+        }
 
-        // edite column
-        setUpEditableTableColumns();
+        setUpQuickEdit();
         tableView.setEditable(false);
 
         ColumnSetting.addSelectedColumn(tableView);
+        applyColumnWidths();
+        // An id per column, so the remembered widths and visibility survive a column being
+        // added, removed or moved - the preferences are keyed by index when there is no id,
+        // and removing the buy-price column would otherwise shift every remembered setting.
+        nameColumnsForPreferences();
         TableSetting.tableMenuSetting(getClass(), tableView);
 
-        // change column names
-        if (eventBus != null) {
-            subscriptions.add(eventBus.subscribe(SelPriceNamesChanged.class
-                    , event -> Platform.runLater(() -> updateColumnNames(event.names()))));
-        }
-        // load column names
-        try {
-            updateColumnNames(selPriceService.getIntegerStringHashMap());
-        } catch (DaoException e) {
-            logErrors(e);
-        }
-
-        // The units column is inserted at index 3, so the annotated buy-price
-        // column moves from index 3 to index 4.
-        tableView.getColumns().get(4).setVisible(
-                AuthorizationGuard.isGranted(AppPermissions.SHOW_COLUMN_BUY_PRICE));
-
+        subscribePriceNames();
     }
 
-    private void setUpEditableTableColumns() {
-        tableView.getSelectionModel().setCellSelectionEnabled(true);
-        getColumn(1, "barcode");
-        getColumn(2, "name");
-        enableEditingDouble(4, "buy_price");
-        enableEditingDouble(5, "sel_price");
-        enableEditingDouble(6, "sel_price2");
-        enableEditingDouble(7, "sel_price3");
+    /**
+     * How wide each column starts out, with the item name by far the widest.
+     * <p>
+     * A code is six digits, a price is eight characters and a unit is one word - but a name
+     * is however long the business made it, and it is the column the operator is actually
+     * reading. Left to itself the table divides its width equally, which truncates the one
+     * column that identifies the row while leaving whitespace beside the numbers.
+     * <p>
+     * <b>Set before {@code TableSetting.tableMenuSetting}, deliberately.</b> That method
+     * restores a saved width per column and falls back to {@code getPrefWidth()} when there
+     * is none - so these are the defaults a first run gets, and an operator who drags a
+     * column still keeps their own choice afterwards.
+     */
+    private void applyColumnWidths() {
+        for (TableColumn<ItemsModel, ?> column : tableView.getColumns()) {
+            column.setMinWidth(60);
+        }
+        colName.setPrefWidth(300);
+        colName.setMinWidth(180);
+        colBarcode.setPrefWidth(140);
+        colBuyPrice.setPrefWidth(95);
+        colSelPrice1.setPrefWidth(95);
+        colSelPrice2.setPrefWidth(95);
+        colSelPrice3.setPrefWidth(95);
+        // Unconstrained, deliberately. A constrained policy recomputes every column's width on
+        // each layout, which would both override the widths above and make TableSetting's saved
+        // widths meaningless - the operator drags a column, it is stored, and the policy
+        // overwrites it on the next layout. Thirteen columns are wider than most windows, so a
+        // horizontal scrollbar is the honest outcome rather than thirteen equal slivers.
+        tableView.setColumnResizePolicy(TableView.UNCONSTRAINED_RESIZE_POLICY);
     }
 
-    private TableColumn<ItemsModel, String> addColumnUnitsType() {
-        TableColumn<ItemsModel, String> column = new TableColumn<>(LanguageManager.getInstance().getString("item.column.unit"));
-        column.setCellValueFactory(itemsModelStringCellDataFeatures -> new SimpleStringProperty(itemsModelStringCellDataFeatures.getValue().getUnitsType().getUnit_name()));
+    private void nameColumnsForPreferences() {
+        for (TableColumn<ItemsModel, ?> column : tableView.getColumns()) {
+            if (column.getId() == null || column.getId().isBlank()) {
+                column.setId("items_" + (column.getText() == null ? "col" : column.getText()));
+            }
+        }
+    }
+
+    private TableColumn<ItemsModel, String> unitColumn() {
+        TableColumn<ItemsModel, String> column =
+                new TableColumn<>(LanguageManager.getInstance().getString("item.column.unit"));
+        column.setCellValueFactory(cell ->
+                new SimpleStringProperty(cell.getValue().getUnitsType().getUnit_name()));
         return column;
     }
 
-    private void updateColumnNames(Map<Integer, String> message) {
-        tableView.getColumns().get(6).setText(message.get(1));
-        tableView.getColumns().get(7).setText(message.get(2));
-        tableView.getColumns().get(8).setText(message.get(3));
+    /**
+     * The three sale-price columns are named by the business, and renamed from the settings
+     * screen while this one is open.
+     * <p>
+     * By reference, not by index. The old version wrote the three names into columns 6, 7
+     * and 8 - which happened to be right, and stayed right only for as long as nothing else
+     * inserted a column.
+     */
+    private void subscribePriceNames() {
+        if (eventBus != null) {
+            subscriptions.add(eventBus.subscribe(SelPriceNamesChanged.class,
+                    event -> Platform.runLater(() -> applyPriceNames(event.names()))));
+        }
+        try {
+            applyPriceNames(selPriceService.getIntegerStringHashMap());
+        } catch (DaoException e) {
+            reportError(e);
+        }
     }
 
-    private void buttonGraphic() {
-        var images = new Image_Setting();
-        btnNew.setGraphic(createIcon(images.add));
-        btnUpdate.setGraphic(createIcon(images.update));
-        btnDelete.setGraphic(createIcon(images.delete));
-        btnRefresh.setGraphic(createIcon(images.refresh));
-        btnSelected.setGraphic(createIcon(images.select));
-//        menuButtonPrint.setGraphic(createIcon(images.print));
-//        menuButtonOther.setGraphic(createIcon(images.reports));
+    private void applyPriceNames(Map<Integer, String> names) {
+        if (names == null) return;
+        if (names.get(1) != null) colSelPrice1.setText(names.get(1));
+        if (names.get(2) != null) colSelPrice2.setText(names.get(2));
+        if (names.get(3) != null) colSelPrice3.setText(names.get(3));
     }
 
-    private void action() {
-        menuExportExcel.setOnAction(actionEvent -> exportToExcel());
+    // ---------------------------------------------------------------------------
+    // Editing in the table
+    // ---------------------------------------------------------------------------
+
+    private void setUpQuickEdit() {
+        tableView.getSelectionModel().setCellSelectionEnabled(true);
+        editableText(colBarcode, ItemsModel::setBarcode, ItemsModel::getBarcode);
+        editableText(colName, ItemsModel::setNameItem, ItemsModel::getNameItem);
+        editableNumber(colBuyPrice, ItemQuickEditField.BUY_PRICE);
+        editableNumber(colSelPrice1, ItemQuickEditField.SELL_PRICE_1);
+        editableNumber(colSelPrice2, ItemQuickEditField.SELL_PRICE_2);
+        editableNumber(colSelPrice3, ItemQuickEditField.SELL_PRICE_3);
+    }
+
+    /**
+     * Wires one numeric column to one field of {@link ItemQuickEditField}.
+     * <p>
+     * This is what a sixty-line chain of {@code if ("buy_price".equals(fieldType))} became.
+     * The field knows how to read itself, write itself and refuse a value; all that is left
+     * here is putting the old value back and saying why, which is the same three lines for
+     * every column.
+     */
+    private void editableNumber(TableColumn<ItemsModel, Number> column, ItemQuickEditField field) {
+        int index = tableView.getColumns().indexOf(column);
+        if (index < 0) return;   // the column was removed by a permission
+        TableColumnEdite<ItemsModel, Double> handler = event -> {
+            ItemsModel item = event.getTableView().getItems().get(event.getTablePosition().getRow());
+            Double typed = event.getNewValue();
+            if (typed == null) return;
+
+            ItemQuickEditField.Rejection rejection = field.reject(item, typed);
+            if (rejection != null) {
+                refuse(rejection);
+                event.getTableView().refresh();
+                return;
+            }
+            double previous = field.read(item);
+            field.write(item, typed);
+            try {
+                saveAndAdvance(item);
+            } catch (DaoException e) {
+                field.write(item, previous);
+                event.getTableView().refresh();
+                throw e;
+            }
+        };
+        new ColumnSetting().enableDoubleEditing(index, handler, tableView);
+    }
+
+    private void refuse(ItemQuickEditField.Rejection rejection) {
+        LanguageManager language = LanguageManager.getInstance();
+        String message = switch (rejection) {
+            case OUT_OF_RANGE -> language.getString("item.error.value.out.of.range");
+            case SELL_NOT_ABOVE_BUY -> language.getString("item.error.sell.not.above.buy");
+        };
+        AllAlerts.handleError(language.getString("item.dialog.price.title"),
+                new UserValidationException(message));
+    }
+
+    private void editableText(TableColumn<ItemsModel, String> column,
+                              java.util.function.BiConsumer<ItemsModel, String> writer,
+                              Function<ItemsModel, String> reader) {
+        column.setCellFactory(ignored -> EditCell.createStringEditCell());
+        column.setOnEditCommit(event -> {
+            ItemsModel item = event.getTableView().getItems().get(event.getTablePosition().getRow());
+            String typed = event.getNewValue();
+            if (typed == null) return;
+            String previous = reader.apply(item);
+            writer.accept(item, typed);
+            try {
+                saveAndAdvance(item);
+            } catch (DaoException e) {
+                writer.accept(item, previous);
+                event.getTableView().refresh();
+                reportEditFailure(column, e);
+            }
+        });
+    }
+
+    private void reportEditFailure(TableColumn<ItemsModel, ?> column, DaoException e) {
+        String title = LanguageManager.getInstance().getString("item.dialog.update.column", column.getText());
+        String message = e.getMessage() == null ? "" : e.getMessage().toLowerCase();
+        if (message.contains("duplicate")) {
+            AllAlerts.handleError(title,
+                    new UserValidationException(LanguageManager.getInstance().getString("msg.duplicate")));
+        } else {
+            AllAlerts.handleError(title, e);
+        }
+    }
+
+    /**
+     * Saves one in-table edit and steps down to the next row.
+     * <p>
+     * Through {@code quickUpdate}, never through the full item update: a row in this list
+     * was mapped for display and carries neither the item's units nor its extra barcodes, and
+     * the full update replaces both from the model - so saving a catalog row through it
+     * deletes every unit the item had.
+     */
+    private void saveAndAdvance(ItemsModel item) throws DaoException {
+        item.setUsers(CurrentUser.get());
+        if (itemsService.quickUpdate(item) >= 0) {
+            if (eventBus != null) eventBus.publish(new ItemSaved(item));
+            tableView.refresh();
+            tableView.requestFocus();
+            tableView.getSelectionModel().selectNext();
+        }
+    }
+
+    // ---------------------------------------------------------------------------
+    // Filtering
+    // ---------------------------------------------------------------------------
+
+    private void setUpFilterBar() {
+        filterBar = new ItemsFilterBar(comboSearchScope, comboMatchMode, comboFilterGroup, comboFilterActive,
+                comboFilterBarcode, comboFilterExpiry, comboFilterBalance, comboFilterUsage,
+                txtMinPrice, txtMaxPrice, comboSavedFilters, chipBar, filterPane, btnFilters,
+                labelFiltered, filter -> paginationTableSetting.setFilter(filter));
+        filterBar.initialize();
+        filterBar.wireButtons(btnApplyFilter, btnClearFilter, btnSaveFilter, btnDeleteFilter);
+        // The filter bar owns every condition, and the debounced search box owns the text -
+        // so the bar is told what was typed without being asked to re-run anything.
+        txtSearch.textProperty().addListener((observable, old, typed) ->
+                filterBar.noteSearchText(typed == null ? "" : typed.trim()));
+        // One-touch rule 9. A barcode scanner ends its read with an Enter, and on this
+        // screen the read is a search: the Enter puts the operator on the row the scan
+        // found, ready for F2 or a double click, instead of leaving the caret in the box.
+        whenEnterPressed(txtSearch, tableView);
+    }
+
+    private void setUpGroupTree() {
+        groupTreeLoader = new ItemsGroupTreePane(groupTree, mainGroupService, supGroupService,
+                (mainId, subId) -> filterBar.selectGroup(mainId, subId),
+                this::onGroupsLoaded);
+        groupTreeLoader.initialize();
+    }
+
+    /**
+     * The groups, read once by the tree and handed to the filter panel's combo.
+     * <p>
+     * Once. Both need the same two lists, and reading them twice is the query the paging was
+     * written to avoid, run every time this screen opens.
+     */
+    private void onGroupsLoaded(List<MainGroups> mainGroups, List<SubGroups> subGroups) {
+        filterBar.setGroups(mainGroups, subGroups);
+    }
+
+    // ---------------------------------------------------------------------------
+    // The status line
+    // ---------------------------------------------------------------------------
+
+    /**
+     * How many items the current filter matches, and how many rows are ticked.
+     * <p>
+     * The count is the total in the database, not the fifty on this page - the screen used
+     * to say nothing at all, so an operator narrowing a list had no way to tell an empty
+     * result from a slow one.
+     */
+    private void bindStatusLabels() {
+        paginationTableSetting.totalRowsProperty().addListener((observable, old, total) ->
+                labelCount.setText(LanguageManager.getInstance().getString("item.status.total", total)));
+        labelCount.setText(LanguageManager.getInstance().getString("item.status.total", 0));
+        updateSelectedLabel();
+    }
+
+    private void updateSelectedLabel() {
+        long selected = tableView.getItems().stream().filter(ItemsModel::isSelectedRow).count();
+        labelSelected.setText(selected == 0 ? ""
+                : LanguageManager.getInstance().getString("item.status.selected", selected));
+    }
+
+    // ---------------------------------------------------------------------------
+    // Buttons, keys and events
+    // ---------------------------------------------------------------------------
+
+    private void setUpButtons() {
+        var permissions = new DisableButtons.PermissionDisableService();
+        permissions.applyPermissionBasedDisable(btnNew::setDisable, AppPermissions.ITEMS_CREATE);
+        permissions.applyPermissionBasedDisable(btnUpdate::setDisable, AppPermissions.ITEMS_UPDATE);
+        permissions.applyPermissionBasedDisable(btnDelete::setDisable, AppPermissions.ITEMS_DELETE);
+        permissions.applyPermissionBasedDisable(btnQuickEdit::setDisable, AppPermissions.ITEMS_UPDATE);
+
+        btnNew.setGraphic(AppIcon.ADD.graphic(16));
+        btnUpdate.setGraphic(AppIcon.EDIT.graphic(16));
+        btnDelete.setGraphic(AppIcon.DELETE.graphic(16));
+        btnRefresh.setGraphic(AppIcon.REFRESH.graphic(16));
+        btnReports.setGraphic(AppIcon.REPORT.graphic(16));
+        btnFilters.setGraphic(AppIcon.FILTER.graphic(16));
+        btnGroupTree.setGraphic(AppIcon.TREE.graphic(14));
+        btnGroupedView.setGraphic(AppIcon.MAIN_GROUP.graphic(14));
+        btnQuickEdit.setGraphic(AppIcon.EDIT.graphic(14));
+        btnSelected.setGraphic(AppIcon.SELECT_ALL.graphic(14));
+        menuButtonPrint.setGraphic(AppIcon.PRINT.graphic(16));
+        menuButtonOther.setGraphic(AppIcon.SETTINGS.graphic(16));
+
+        tip(btnNew, "item.tooltip.new");
+        tip(btnUpdate, "item.tooltip.update");
+        tip(btnDelete, "item.tooltip.delete");
+        tip(btnRefresh, "item.tooltip.refresh");
+        tip(btnGroupTree, "item.tooltip.group.tree");
+        tip(btnGroupedView, "item.tooltip.grouped.view");
+        tip(btnQuickEdit, "item.tooltip.quick.edit");
+        tip(btnSelected, "item.tooltip.select");
+        tip(btnFilters, "item.tooltip.filters");
+        tip(btnReports, "item.tooltip.reports");
+
+        menuItemConvertGroup.setText(LanguageManager.getInstance().getString("item.dialog.convert.title"));
+        menuExportExcel.setOnAction(event -> exportToExcel());
+        menuItemCard.setOnAction(event -> openCard());
+        menuItemConvertGroup.setOnAction(event -> convertGroups());
+        menuPrint.setOnAction(event -> printReports.printItems(selectedItems()));
+        menuPrintMenu.setOnAction(event -> printReports.printItemsBarcode(selectedItems()));
+        menuPrintBarcode.setOnAction(event -> printBarcodes());
+
+        btnNew.setOnAction(event -> openItemEditor(0));
+        btnUpdate.setOnAction(event -> editSelected());
+        btnDelete.setOnAction(event -> delete());
+        btnRefresh.setOnAction(event -> paginationTableSetting.reload());
+        btnReports.setOnAction(event -> openReports());
+        btnQuickEdit.setOnAction(event -> tableView.setEditable(btnQuickEdit.isSelected()
+                && AuthorizationGuard.isGranted(AppPermissions.ITEMS_UPDATE)));
+        btnGroupTree.setOnAction(event -> setGroupTreeVisible(btnGroupTree.isSelected()));
+        btnGroupedView.setOnAction(event -> setGroupedView(btnGroupedView.isSelected()));
 
         new SelectedButton(btnSelected) {
             @Override
-            public void clearSelection(boolean b) {
-                for (int i = 0; i < tableView.getItems().size(); i++) {
-                    tableView.getItems().get(i).setSelectedRow(b);
+            public void clearSelection(boolean selected) {
+                for (ItemsModel item : tableView.getItems()) {
+                    item.setSelectedRow(selected);
                 }
+                updateSelectedLabel();
             }
         };
 
-//        btnSearch.setOnAction(actionEvent -> searchAction());
-//        comboMain.valueProperty().addListener((observableValue, string, t1) -> getData(t1));
-
-        menuItemCard.setOnAction(actionEvent -> openDetails());
-
-        menuItemConvertGroup.setOnAction(actionEvent -> updateSomeItems());
-        menuPrint.setOnAction(actionEvent -> printReports.printItems(printItems()));
-        menuPrintMenu.setOnAction(actionEvent -> printReports.printItemsBarcode(printItems()));
-        menuPrintBarcode.setOnAction(actionEvent -> printBarcode());
-
-        btnNew.setOnAction(actionEvent -> addItem(0));
-        btnUpdate.setOnAction(actionEvent -> {
-            if (tableView.getSelectionModel().isEmpty()) {
-                AllAlerts.handleError(LanguageManager.getInstance().getString("item.dialog.action.title"), new UserValidationException(LanguageManager.getInstance().getString("msg.select.row")));
-                return;
-            }
-            int numItem = tableView.getSelectionModel().getSelectedItem().getId();
-            addItem(numItem);
+        tableView.setOnKeyPressed(event -> {
+            if (event.getCode() == KeyCode.DELETE) btnDelete.fire();
         });
-        btnDelete.setOnAction(actionEvent -> delete());
-        btnRefresh.setOnAction(actionEvent -> paginationTableSetting.reload());
-        btnQuickEdit.setOnAction(actionEvent -> tableView.setEditable(btnQuickEdit.isSelected()
-                && AuthorizationGuard.isGranted(AppPermissions.ITEMS_UPDATE)));
-        btnGroupTree.setOnAction(actionEvent -> setGroupTreeVisible(btnGroupTree.isSelected()));
-        btnGroupedView.setOnAction(actionEvent -> setGroupedView(btnGroupedView.isSelected()));
-
-        tableView.setOnKeyPressed(keyEvent -> {
-            if (keyEvent.getCode() == KeyCode.DELETE) {
-                btnDelete.fire();
-            }
+        tableView.setOnMouseClicked(event -> {
+            if (event.getClickCount() == 2) menuItemCard.fire();
+            updateSelectedLabel();
         });
-        tableView.setOnMouseClicked(mouseEvent -> {
-            if (mouseEvent.getClickCount() == 2) {
-                menuItemCard.fire();
-            }
-        });
+        installAccelerators();
+    }
 
+    /**
+     * The three commands that get used all day, on the keys every catalogue screen uses for
+     * them. Installed on the scene once it exists - a control has no scene while the FXML is
+     * still being loaded.
+     */
+    private void installAccelerators() {
+        stackPane.sceneProperty().addListener((observable, old, scene) -> {
+            if (scene == null) return;
+            scene.getAccelerators().put(new KeyCodeCombination(KeyCode.INSERT), () -> {
+                if (!btnNew.isDisabled()) btnNew.fire();
+            });
+            scene.getAccelerators().put(new KeyCodeCombination(KeyCode.F2), () -> {
+                if (!btnUpdate.isDisabled()) btnUpdate.fire();
+            });
+            scene.getAccelerators().put(new KeyCodeCombination(KeyCode.F5), btnRefresh::fire);
+        });
+    }
+
+    private static void tip(javafx.scene.control.Control control, String key) {
+        control.setTooltip(new Tooltip(LanguageManager.getInstance().getString(key)));
+    }
+
+    private void setUpEvents() {
+        if (eventBus == null) return;
+        subscriptions.add(eventBus.subscribe(GroupsChanged.class, event -> {
+            groupTreeLoader.reload();
+            if (btnGroupedView.isSelected()) loadGroupedView();
+        }));
+        subscriptions.add(eventBus.subscribe(ItemSaved.class, event -> itemSaved(event.item())));
+        subscriptions.add(eventBus.subscribe(ItemsChanged.class, event -> refreshCurrentView()));
     }
 
     private void setGroupTreeVisible(boolean visible) {
         groupTreePane.setVisible(visible);
         groupTreePane.setManaged(visible);
+        groupTreeLoader.loadOnce();
     }
 
     private void setGroupedView(boolean grouped) {
@@ -461,8 +629,8 @@ public class ItemsController extends LoadData {
     }
 
     /**
-     * One item was saved, so one row is re-read - the page, the search text, the scroll
-     * position and the selection all stay where the operator left them.
+     * One item was saved, so one row is re-read - the page, the filter, the scroll position
+     * and the selection all stay where the operator left them.
      * <p>
      * This used to reload the whole view, which sent the table back to the first page:
      * editing the fifth item meant finding the sixth again from the top, and doing it
@@ -474,318 +642,255 @@ public class ItemsController extends LoadData {
         else paginationTableSetting.reload();
     }
 
+    // ---------------------------------------------------------------------------
+    // The grouped view
+    // ---------------------------------------------------------------------------
+
+    private void configureGroupedView() {
+        groupedTreeTable.setShowRoot(false);
+        groupedTreeTable.setEditable(false);
+        groupedTreeTable.setPlaceholder(new Label(LanguageManager.getInstance().getString("item.table.empty")));
+        groupedTreeTable.setRowFactory(view -> new TreeTableRow<>() {
+            @Override
+            protected void updateItem(GroupedItemRow item, boolean empty) {
+                super.updateItem(item, empty);
+                getStyleClass().removeAll("items-grouped-main-row", "items-grouped-sub-row",
+                        "items-grouped-item-row");
+                if (empty || item == null) return;
+                getStyleClass().add(switch (item.depth()) {
+                    case 0 -> "items-grouped-main-row";
+                    case 1 -> "items-grouped-sub-row";
+                    default -> "items-grouped-item-row";
+                });
+            }
+        });
+        groupedTreeTable.getColumns().setAll(
+                groupedColumn(NamesTables.CODE, GroupedItemRow::code),
+                groupedColumn(NamesTables.STRING, GroupedItemRow::barcode),
+                groupedColumn(NamesTables.NAME_ITEM, GroupedItemRow::name),
+                groupedColumn(NamesTables.BUY_PRICE, GroupedItemRow::buyPrice),
+                groupedColumn(NamesTables.SEL_PRICE, GroupedItemRow::sellPrice));
+    }
+
+    private TreeTableColumn<GroupedItemRow, String> groupedColumn(String title,
+                                                                  Function<GroupedItemRow, String> value) {
+        TreeTableColumn<GroupedItemRow, String> column = new TreeTableColumn<>(title);
+        column.setCellValueFactory(cell -> new SimpleStringProperty(value.apply(cell.getValue().getValue())));
+        return column;
+    }
+
+    private void loadGroupedView() {
+        Task<GroupedCatalog> task = new Task<>() {
+            @Override
+            protected GroupedCatalog call() throws Exception {
+                return new GroupedCatalog(mainGroupService.getMainGroupList(),
+                        supGroupService.getSubGroupsList(), itemsService.getAllCatalogProducts());
+            }
+        };
+        task.setOnSucceeded(event -> {
+            if (btnGroupedView.isSelected()) buildGroupedTree(task.getValue());
+        });
+        task.setOnFailed(event -> reportError(new Exception(task.getException())));
+        Thread thread = new Thread(task, "items-grouped-catalog");
+        thread.setDaemon(true);
+        thread.start();
+    }
+
+    /**
+     * Builds the tree of groups and the items under them.
+     * <p>
+     * <b>An item whose group was deleted goes under a heading of its own rather than being
+     * dropped.</b> It used to be skipped in silence - the item was in the database, absent
+     * from this view, and nothing on the screen said why - which is the hardest kind of
+     * missing row to notice, because the screen looks complete.
+     */
+    private void buildGroupedTree(GroupedCatalog catalog) {
+        TreeItem<GroupedItemRow> root = new TreeItem<>(GroupedItemRow.group("", 0));
+        Map<Integer, TreeItem<GroupedItemRow>> mainNodes = new LinkedHashMap<>();
+        Map<Integer, TreeItem<GroupedItemRow>> subNodes = new LinkedHashMap<>();
+
+        for (MainGroups main : catalog.mainGroups()) {
+            TreeItem<GroupedItemRow> node = new TreeItem<>(GroupedItemRow.group(main.getName(), 0));
+            node.setGraphic(ItemsGroupTreePane.icon(AppIcon.MAIN_GROUP, "items-main-group-icon"));
+            node.setExpanded(true);
+            root.getChildren().add(node);
+            mainNodes.put(main.getId(), node);
+        }
+        for (SubGroups sub : catalog.subGroups()) {
+            if (sub.getMainGroups() == null) continue;
+            TreeItem<GroupedItemRow> mainNode = mainNodes.get(sub.getMainGroups().getId());
+            if (mainNode == null) continue;
+            TreeItem<GroupedItemRow> node = new TreeItem<>(GroupedItemRow.group(sub.getName(), 1));
+            node.setGraphic(ItemsGroupTreePane.icon(AppIcon.SUB_GROUP, "items-sub-group-icon"));
+            node.setExpanded(true);
+            mainNode.getChildren().add(node);
+            subNodes.put(sub.getId(), node);
+        }
+
+        TreeItem<GroupedItemRow> orphans = null;
+        for (ItemsModel item : catalog.items()) {
+            TreeItem<GroupedItemRow> parent = parentFor(item, mainNodes, subNodes);
+            if (parent == null) {
+                if (orphans == null) {
+                    orphans = new TreeItem<>(GroupedItemRow.group(
+                            LanguageManager.getInstance().getString("item.group.tree.none"), 0));
+                    orphans.setGraphic(ItemsGroupTreePane.icon(AppIcon.WARNING, "items-main-group-icon"));
+                    orphans.setExpanded(true);
+                }
+                parent = orphans;
+            }
+            TreeItem<GroupedItemRow> leaf = new TreeItem<>(GroupedItemRow.item(item));
+            leaf.setGraphic(ItemsGroupTreePane.icon(AppIcon.ITEM, "items-leaf-icon"));
+            parent.getChildren().add(leaf);
+        }
+        if (orphans != null) root.getChildren().add(orphans);
+
+        groupedTreeTable.setRoot(root);
+    }
+
+    private static TreeItem<GroupedItemRow> parentFor(ItemsModel item,
+                                                      Map<Integer, TreeItem<GroupedItemRow>> mainNodes,
+                                                      Map<Integer, TreeItem<GroupedItemRow>> subNodes) {
+        if (item.getSubGroups() == null) return null;
+        TreeItem<GroupedItemRow> node = subNodes.get(item.getSubGroups().getId());
+        if (node != null) return node;
+        return item.getSubGroups().getMainGroups() == null
+                ? null : mainNodes.get(item.getSubGroups().getMainGroups().getId());
+    }
+
+    private record GroupedCatalog(List<MainGroups> mainGroups, List<SubGroups> subGroups,
+                                  List<ItemsModel> items) {
+    }
+
+    /** A row of the grouped view. {@code depth} is what the row factory styles it by. */
+    private record GroupedItemRow(String code, String barcode, String name, String buyPrice,
+                                  String sellPrice, int depth) {
+        static GroupedItemRow group(String name, int depth) {
+            return new GroupedItemRow("", "", name, "", "", depth);
+        }
+
+        static GroupedItemRow item(ItemsModel item) {
+            return new GroupedItemRow(String.valueOf(item.getId()), item.getBarcode(), item.getNameItem(),
+                    String.valueOf(item.getBuyPrice()), String.valueOf(item.getSelPrice1()), 2);
+        }
+    }
+
+    // ---------------------------------------------------------------------------
+    // Commands
+    // ---------------------------------------------------------------------------
+
+    private void editSelected() {
+        ItemsModel selected = requireSelection();
+        if (selected != null) openItemEditor(selected.getId());
+    }
+
+    private void openItemEditor(int itemId) {
+        try {
+            new AddItemApplication(itemId).start(new Stage());
+        } catch (Exception e) {
+            reportError(e);
+        }
+    }
+
+    private void openCard() {
+        ItemsModel selected = requireSelection();
+        if (selected == null) return;
+        try {
+            new CardApplication(selected, daoFactory, dataPublisher).start(new Stage());
+        } catch (Exception e) {
+            reportError(e);
+        }
+    }
+
+    /**
+     * Opens the reports on the rows the operator is looking at, not on the whole catalogue.
+     * A report that quietly widened the question would be answering about items the screen
+     * behind it is not showing.
+     */
+    private void openReports() {
+        try {
+            new ItemReportsApplication(filterBar.filter()).start(new Stage());
+        } catch (Exception e) {
+            reportError(e);
+        }
+    }
 
     private void delete() {
+        ItemsModel selected = requireSelection();
+        if (selected == null) return;
+        if (!AllAlerts.confirmDelete()) return;
         try {
-            if (tableView.getSelectionModel().isEmpty()) {
-                AllAlerts.handleError(LanguageManager.getInstance().getString("item.dialog.action.title"), new UserValidationException(LanguageManager.getInstance().getString("msg.select.row")));
-                return;
-            }
-            if (!AllAlerts.confirmDelete()) return;
-            var selectedItem = tableView.getSelectionModel().getSelectedItem();
-            var i = itemsService.deleteItem(selectedItem.getId());
-            if (i >= 1) {
+            if (itemsService.deleteItem(selected.getId()) >= 1) {
                 AllAlerts.alertDelete();
-                btnRefresh.fire();
-                tableView.refresh();
+                paginationTableSetting.reload();
             }
         } catch (DaoException e) {
-            logErrors(e);
+            reportError(e);
         }
     }
 
-    private void updateSomeItems() {
+    private void convertGroups() {
+        List<ItemsModel> selected = selectedItems();
+        if (selected.isEmpty()) {
+            requireTickedRows("item.dialog.convert.title");
+            return;
+        }
         try {
-            var itemsModels = printItems();
-            if (!itemsModels.isEmpty()) {
-                new ConvertItemsGroup(itemsModels).start(new Stage());
-            } else
-                AllAlerts.handleError(LanguageManager.getInstance().getString("item.dialog.convert.title"), new UserValidationException(LanguageManager.getInstance().getString("msg.insert.all")));
+            new ConvertItemsGroup(selected).start(new Stage());
         } catch (Exception e) {
-            logErrors(e);
+            reportError(e);
         }
     }
 
-    private void printBarcode() {
+    private void printBarcodes() {
+        List<ItemsModel> selected = selectedItems();
+        if (selected.isEmpty()) {
+            requireTickedRows("item.dialog.barcode.title");
+            return;
+        }
         try {
-            ObservableList<PrintBarcodeModel> observableList = FXCollections.observableArrayList();
-            var list = tableView.getItems().stream().filter(itemsModel -> itemsModel.getSelectedRow().get()).toList();
-
-            // check if list is empty
-            if (list.isEmpty()) {
-                AllAlerts.handleError(LanguageManager.getInstance().getString("item.dialog.barcode.title"), new UserValidationException(LanguageManager.getInstance().getString("msg.insert.all")));
-                return;
+            ObservableList<PrintBarcodeModel> models = FXCollections.observableArrayList();
+            for (ItemsModel item : selected) {
+                models.add(new PrintBarcodeModel(item.getBarcode(), item.getNameItem(), item.getSelPrice1()));
             }
-
-            for (ItemsModel itemsModel : list) {
-                observableList.add(new PrintBarcodeModel(itemsModel.getBarcode(), itemsModel.getNameItem(), itemsModel.getSelPrice1()));
-            }
-
-            new PrintBarcodeApp(observableList);
+            new PrintBarcodeApp(models);
         } catch (Exception e) {
-            logErrors(e);
+            reportError(e);
         }
-    }
-
-    private void addItem(int num) {
-        try {
-            new AddItemApplication(num).start(new Stage());
-        } catch (Exception e) {
-            logErrors(e);
-        }
-    }
-
-    private void openDetails() {
-        try {
-            if (tableView.getSelectionModel().isEmpty()) {
-                AllAlerts.handleError(LanguageManager.getInstance().getString("item.dialog.action.title"), new UserValidationException(LanguageManager.getInstance().getString("msg.select.row")));
-                return;
-            }
-            ItemsModel selectedItem = tableView.getSelectionModel().getSelectedItem();
-            new CardApplication(selectedItem, daoFactory, dataPublisher).start(new Stage());
-        } catch (Exception e) {
-            logErrors(e);
-        }
-    }
-
-    private List<ItemsModel> printItems() {
-        List<ItemsModel> list = new ArrayList<>();
-        for (int i = 0; i < tableView.getItems().size(); i++) {
-            ItemsModel itemsModel = tableView.getItems().get(i);
-            if (itemsModel.isSelectedRow()) {
-//                itemsModel.setSelPrice(itemsModel.getItemsPriceModels().getFirst().getSelPrice());
-                list.add(itemsModel);
-            }
-        }
-        return list;
     }
 
     private void exportToExcel() {
-        try {
-            // Create a new workbook
-            Workbook workbook = new XSSFWorkbook();
-            Sheet sheet = workbook.createSheet("Items");
+        ItemsExcelExport.export(tableView, "Items", "Items.xlsx",
+                ItemsModel::getItem_image, LanguageManager.getInstance().getString("item.image"));
+    }
 
-            // Create header row
-            Row headerRow = sheet.createRow(0);
-            CellStyle headerStyle = workbook.createCellStyle();
-            Font headerFont = workbook.createFont();
-            headerFont.setBold(true);
-            headerStyle.setFont(headerFont);
-            headerStyle.setFillForegroundColor(IndexedColors.GREY_25_PERCENT.getIndex());
-            headerStyle.setFillPattern(FillPatternType.SOLID_FOREGROUND);
-
-
-            // Get column names from TableView
-            List<String> columnNames = new ArrayList<>();
-            for (TableColumn<ItemsModel, ?> column : tableView.getColumns()) {
-                if (column.getText() != null && !column.getText().isEmpty()) {
-                    columnNames.add(column.getText());
-                }
-            }
-
-            // Create header cells
-            for (int i = 0; i < columnNames.size(); i++) {
-                org.apache.poi.ss.usermodel.Cell cell = headerRow.createCell(i);
-                cell.setCellValue(columnNames.get(i));
-                cell.setCellStyle(headerStyle);
-            }
-
-            // Create data rows
-            int rowNum = 1;
-            for (ItemsModel item : tableView.getItems()) {
-                Row row = sheet.createRow(rowNum++);
-
-                // ID column
-                if (item.getId() > 0) {
-                    row.createCell(0).setCellValue(item.getId());
-                }
-
-                // Barcode column
-                if (item.getBarcode() != null) {
-                    row.createCell(1).setCellValue(item.getBarcode());
-                }
-
-                // Name column
-                if (item.getNameItem() != null) {
-                    row.createCell(2).setCellValue(item.getNameItem());
-                }
-
-                // Buy price column
-                row.createCell(3).setCellValue(item.getBuyPrice());
-
-                // Sell price column
-                row.createCell(4).setCellValue(item.getSelPrice1());
-
-                // Minimum quantity column
-                row.createCell(5).setCellValue(item.getMini_quantity());
-
-                // First balance column
-                row.createCell(6).setCellValue(item.getFirstBalanceForStock());
-
-                // Balance column
-                row.createCell(7).setCellValue(item.getSumAllBalance());
-                // Image column
-                if (item.getItem_image() != null) {
-                    insertImageToCell(workbook, sheet, item.getItem_image(), rowNum - 1);
-                }
-
-            }
-
-            // Resize columns to fit content
-            for (int i = 0; i < columnNames.size(); i++) {
-                sheet.autoSizeColumn(i);
-            }
-
-            // Save the workbook to a file
-            FileChooser fileChooser = new FileChooser();
-            fileChooser.setTitle("Save Excel File");
-            fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("Excel Files", "*.xlsx"));
-            fileChooser.setInitialFileName("Items.xlsx");
-
-            File file = fileChooser.showSaveDialog(tableView.getScene().getWindow());
-            if (file != null) {
-                try (FileOutputStream fileOut = new FileOutputStream(file)) {
-                    workbook.write(fileOut);
-                    AllAlerts.alertSaveWithMessage("Items exported to Excel successfully");
-                }
-            }
-
-            workbook.close();
-        } catch (IOException e) {
-            logErrors(e);
+    /** The rows the operator ticked. One definition, used by print, barcodes and grouping. */
+    private List<ItemsModel> selectedItems() {
+        List<ItemsModel> selected = new ArrayList<>();
+        for (ItemsModel item : tableView.getItems()) {
+            if (item.isSelectedRow()) selected.add(item);
         }
+        return selected;
     }
 
-    private void insertImageToCell(Workbook workbook, Sheet sheet, byte[] imageBytes, int rowIndex) {
-        try {
-            int pictureIndex = workbook.addPicture(imageBytes, Workbook.PICTURE_TYPE_PNG);
-
-            Drawing<?> drawing = sheet.createDrawingPatriarch();
-            CreationHelper helper = workbook.getCreationHelper();
-            ClientAnchor anchor = helper.createClientAnchor();
-
-            anchor.setCol1(12);
-            anchor.setRow1(rowIndex);
-            anchor.setCol2(12 + 1);
-            anchor.setRow2(rowIndex + 1);
-
-            Picture picture = drawing.createPicture(anchor, pictureIndex);
-            picture.resize(1.0);
-        } catch (Exception e) {
-            logErrors(e);
+    private ItemsModel requireSelection() {
+        ItemsModel selected = tableView.getSelectionModel().getSelectedItem();
+        if (selected == null) {
+            LanguageManager language = LanguageManager.getInstance();
+            AllAlerts.handleError(language.getString("item.dialog.action.title"),
+                    new UserValidationException(language.getString("msg.select.row")));
         }
+        return selected;
     }
 
-    private void enableEditingDouble(int columnIndex, String fieldType) {
-        TableColumnEdite<ItemsModel, Double> editHandler = t -> {
-            int row = t.getTablePosition().getRow();
-            ItemsModel item = t.getTableView().getItems().get(row);
-
-            Double newValue = t.getNewValue();
-            if (newValue != null) {
-                if ("buy_price".equals(fieldType)) {
-                    if (newValue > item.getSelPrice1() || newValue > 1000000000000.0) {
-                        AllAlerts.handleError(LanguageManager.getInstance().getString("item.dialog.price.title"), new UserValidationException(LanguageManager.getInstance().getString("item.error.sell.less.than.buy")));
-                        item.setBuyPrice(t.getOldValue());
-                        t.getTableView().refresh();
-                        return;
-                    }
-                    item.setBuyPrice(newValue);
-                } else if ("sel_price".equals(fieldType)) {
-                    if (newValue < item.getBuyPrice() || newValue > 1000000000000.0) {
-                        AllAlerts.handleError(LanguageManager.getInstance().getString("item.dialog.price.title"), new UserValidationException(LanguageManager.getInstance().getString("item.error.sell.less.than.buy")));
-                        item.setSelPrice1(t.getOldValue());
-                        t.getTableView().refresh();
-                        return;
-                    }
-                    item.setSelPrice1(newValue);
-                } else if ("sel_price2".equals(fieldType)) {
-                    if (newValue < item.getBuyPrice() || newValue > 1000000000000.0) {
-                        AllAlerts.handleError(LanguageManager.getInstance().getString("item.dialog.price.title"), new UserValidationException(LanguageManager.getInstance().getString("item.error.sell.less.than.buy")));
-                        item.setSelPrice2(t.getOldValue());
-                        t.getTableView().refresh();
-                        return;
-                    }
-                    item.setSelPrice2(newValue);
-                } else if ("sel_price3".equals(fieldType)) {
-                    if (newValue < item.getBuyPrice() || newValue > 1000000000000.0) {
-                        AllAlerts.handleError(LanguageManager.getInstance().getString("item.dialog.price.title"), new UserValidationException(LanguageManager.getInstance().getString("item.error.sell.less.than.buy")));
-                        item.setSelPrice3(t.getOldValue());
-                        t.getTableView().refresh();
-                        return;
-                    }
-                    item.setSelPrice3(newValue);
-                } else if ("first".equals(fieldType)) {
-                    item.setFirstBalanceForStock(newValue);
-                } else if ("mini".equals(fieldType)) {
-                    item.setMini_quantity(newValue);
-                }
-
-                try {
-                    updateItemAndRefresh(item, t.getTableView());
-                } catch (DaoException e) {
-                    if ("buy_price".equals(fieldType)) item.setBuyPrice(t.getOldValue());
-                    else if ("sel_price".equals(fieldType)) item.setSelPrice1(t.getOldValue());
-                    else if ("sel_price2".equals(fieldType)) item.setSelPrice2(t.getOldValue());
-                    else if ("sel_price3".equals(fieldType)) item.setSelPrice3(t.getOldValue());
-                    t.getTableView().refresh();
-                    throw e;
-                }
-            }
-        };
-
-        new ColumnSetting().enableDoubleEditing(columnIndex, editHandler, tableView);
+    private void requireTickedRows(String titleKey) {
+        LanguageManager language = LanguageManager.getInstance();
+        AllAlerts.handleError(language.getString(titleKey),
+                new UserValidationException(language.getString("msg.insert.all")));
     }
 
-    @SuppressWarnings("unchecked")
-    private void getColumn(int i, String type) {
-        TableColumn<ItemsModel, String> col = (TableColumn<ItemsModel, String>) tableView.getColumns().get(i);
-        col.setCellFactory(column -> EditCell.createStringEditCell());
-        col.setOnEditCommit(t -> {
-            try {
-                int row = t.getTablePosition().getRow();
-                ItemsModel item = t.getTableView().getItems().get(row);
-                String newValue = t.getNewValue();
-                if (newValue != null) {
-                    if ("name".equals(type)) {
-                        item.setNameItem(newValue);
-                    } else if ("barcode".equals(type)) {
-                        item.setBarcode(newValue);
-                    }
-                    try {
-                        updateItemAndRefresh(item, t.getTableView());
-                    } catch (DaoException e) {
-                        if ("name".equals(type)) item.setNameItem(t.getOldValue());
-                        else if ("barcode".equals(type)) item.setBarcode(t.getOldValue());
-                        t.getTableView().refresh();
-                        throw e;
-                    }
-
-                }
-            } catch (DaoException e) {
-                var title = LanguageManager.getInstance().getString("item.dialog.update.column", col.getText());
-                if (e.getMessage().contains("duplicate") || e.getMessage().contains("Duplicate")) {
-                    AllAlerts.handleError(title, new UserValidationException(LanguageManager.getInstance().getString("msg.duplicate")));
-                } else AllAlerts.handleError(title, e);
-            }
-        });
-    }
-
-    private void updateItemAndRefresh(ItemsModel item, TableView<ItemsModel> tableView) throws DaoException {
-        item.setUsers(CurrentUser.get());
-        var i = itemsService.quickUpdate(item);
-        if (i >= 0) {
-            if (eventBus != null) eventBus.publish(new ItemSaved(item));
-            tableView.refresh();
-            tableView.requestFocus();
-            tableView.getSelectionModel().selectNext();
-        }
-    }
-
-    private void logErrors(Exception e) {
+    /** Shows a failure to the operator. It does not log - {@code ErrorReporter} does that. */
+    private void reportError(Exception e) {
         AllAlerts.handleError(LanguageManager.getInstance().getString("item.dialog.manage.title"), e);
     }
-
-
 }
