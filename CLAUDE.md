@@ -27,7 +27,7 @@ mvn -o -pl account -am test -Dtest=ScheduledBackupTest -Dsurefire.failIfNoSpecif
 
 **Coverage is real but uneven — know which half you are in.** JUnit 5 and Mockito are declared in the
 root pom and inherited by both modules; surefire needs no configuration. `mvn clean test` currently runs
-**1,108 tests across 129 test source files** — 98 in `controlsfx`, 1,010 in `account` — with 59 skipped (below). What is
+**1,165 tests across 132 test source files** — 98 in `controlsfx`, 1,067 in `account` — with 59 skipped (below). What is
 genuinely covered:
 
 - **The declarative specs, pinned character for character** — `DocumentDaoStatementsTest`,
@@ -194,6 +194,22 @@ in controllers and DAOs. The newer work puts the logic in a `features/<area>/` p
 JavaFX at all and a test per class — `features/invoice`, `features/stockcount`, `features/inventory`,
 `features/rbac`. **New behaviour goes there, not into a controller.** The test for whether it is in the
 right place: can it be tested without starting a JavaFX toolkit?
+
+**A screen that lists many items must not build its rows with `ItemsDao.map`.** That mapper
+resolves an item's sub group (which resolves its main group), its base unit, its unit list (whose
+own mapper resolves a unit and a user per row), its extra barcodes and its warehouse — each with a
+query of its own, per row. A page of fifty items cost several hundred round trips, paid on whichever
+thread asked for the page. `getCatalogProducts`/`getCatalogItem`/`getCatalogCount` map through
+`ItemsCatalogLookups`, a snapshot of the three small lookup tables read once per query, and leave
+out what a list does not show. `map` stays for the finders, which load one item and need all of it.
+
+Two things follow from that split and both have bitten. **A catalog row must never be handed to
+`ItemsDao.update`**: it carries no units and no extra barcodes, and that method replaces both from
+the model, so saving one deletes them — which is what setting an item's picture from the list used
+to do. Edit a list row through `quickUpdate` or `updateImage`, or load the item again through
+`findItemById`. And **the page query and its `COUNT` are built from one `WHERE`**
+(`ItemsDao.catalogQuery`, pinned by `ItemsCatalogQueryTest`): filter them separately and the
+pagination control starts describing a different set of rows than the table shows.
 
 ### Authorization
 
@@ -614,6 +630,31 @@ the `DEFAULT` on every `type` column. The old rule — ids 1 and 2 can never be 
 nothing about whether anyone relied on them, and left a business that sells nothing by the carton stuck
 with the seeded "كرتونه".
 
+### Scale barcodes
+
+A shop scale prints its own barcode with the item and a weight inside it, and
+`features/scalebarcode` is where that is read: `ScaleBarcodeFormat` (the layout),
+`ScaleBarcodeParser`, `ScaleBarcodeCheckDigit`, `ScaleBarcodeAmounts`, and `ScaleBarcodeService` for
+the part needing the database. It has no JavaFX and a test per class, which is the point — the same
+logic used to sit in `otherSetting/BarcodeProcessor` holding the parsing, the arithmetic and the
+lookup at once, so none of it could be tested while it decides a line's quantity and price.
+
+Two settings are easy to misread, and the first was misread on screen for a long time:
+
+- **`setting.barcode.count.scale` is how many digits the scale's prefix occupies, not the digits of
+  the weight.** The settings tab labelled it as the weight and the parser read it as the prefix, so
+  a user who set it to what the label asked for pushed the prefix from `27` to `27000` and no scale
+  barcode was recognised again. Read it through `getSettingBarcodeScaleCodeDigits`, which is named
+  for what it is; the stored key keeps its old name so existing installs keep their value.
+- **Carrying a check digit and verifying it are different questions.**
+  `getSettingBarcodeHasCheckDigit` is a position in the layout and defaults to true, because the
+  parser used to subtract one unconditionally; `getSettingBarcodeValidateCheckDigit` is whether its
+  value is checked. Conflating them cost the last digit of every weight on a scale that prints none.
+
+The weight's width is derived, not stored: the parts must add up to the barcode's length, so
+`ScaleBarcodeFormat.deriveValueDigits` takes the total and works the rest out, and `problemKey()`
+reports a layout that cannot add up rather than throwing out of a `substring`.
+
 ### Cross-screen refresh
 
 `controlsfx.observer.Publisher` + `DataPublisher` (a bag of publishers). Saving fires
@@ -849,6 +890,18 @@ process list — but removing it from the file does not remove it from git. **Tr
 public and change it on any server where it was ever used.** This is the second credential of this
 kind, after the `config.xml` encrypted with the built-in key above; both are in history, and the
 lesson is the same one twice.
+
+The same fix reached the code on 2026-09-04: `BackupService` (both the dump and the restore) and
+`DatabaseBackupService` pass the password through `MYSQL_PWD` in the child's environment. Where the
+tools live is `MysqlTools`, which is the single answer — there used to be three, and on a machine
+without MySQL on the PATH the pre-migration dump worked while every backup the user asked for
+failed.
+
+**A restore takes its own copy first.** `BackupService.restoreFromFile` writes
+`before-restore_<timestamp>.enc` beside the backup being restored and refuses the restore if it
+cannot — the import runs `DROP TABLE` over the live schema, so a run that fails halfway leaves
+neither the old contents nor a complete new set. It is encrypted with the password that has just
+been proved to open the backup, so it is an ordinary backup file the same screen restores.
 
 **Also: `DatabaseMigrationService` runs `mysqldump` before applying anything, and those dumps land
 in `backups/` and `account/backups/` inside the repository.** They are full database contents —
