@@ -27,7 +27,7 @@ mvn -o -pl account -am test -Dtest=ScheduledBackupTest -Dsurefire.failIfNoSpecif
 
 **Coverage is real but uneven — know which half you are in.** JUnit 5 and Mockito are declared in the
 root pom and inherited by both modules; surefire needs no configuration. `mvn clean test` currently runs
-**1,258 tests across 141 test source files** — 98 in `controlsfx`, 1,160 in `account` — with 64 skipped (below). What is
+**1,260 tests across 142 test source files** — 98 in `controlsfx`, 1,162 in `account` — with 64 skipped (below). What is
 genuinely covered:
 
 - **The declarative specs, pinned character for character** — `DocumentDaoStatementsTest`,
@@ -36,11 +36,11 @@ genuinely covered:
   `ItemReferenceRegistryTest`. These fail the build on a wrong column, so they are the
   safety net for anything touching SQL. The last two read the foreign keys straight out of the
   migration files, so the schema itself is what they check against.
-- **Architecture rules** — eleven `*ArchitectureTest` classes now, plus `DefaultRoleAcceptanceTest`:
+- **Architecture rules** — twelve `*ArchitectureTest` classes now, plus `DefaultRoleAcceptanceTest`:
   `AuthorizationArchitectureTest`, `ErrorHandlingArchitectureTest`, `DocumentPackageArchitectureTest`,
   `DefaultStockUsageArchitectureTest`, `LocalizationArchitectureTest`, `FxmlArchitectureTest`,
   `ModelPurityArchitectureTest`, `TableColumnArchitectureTest`, `StocksChangedArchitectureTest`,
-  `FxmlWiringArchitectureTest`, `KeyboardNavigationArchitectureTest`. They
+  `FxmlWiringArchitectureTest`, `KeyboardNavigationArchitectureTest`, `ShiftGateArchitectureTest`. They
   fail when a new service skips the permission guard, a new exception escapes the error boundary,
   `account.document` starts importing one of the two packages that import it, or a new stock-aware
   operation reaches for `DefaultStock.ID` instead of taking a `stockId`. Two of them carry an explicit
