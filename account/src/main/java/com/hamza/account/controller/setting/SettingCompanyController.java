@@ -1,5 +1,7 @@
 package com.hamza.account.controller.setting;
 
+import com.hamza.account.authorization.AppPermissions;
+import com.hamza.account.authorization.AuthorizationGuard;
 import com.hamza.account.config.Image_Setting;
 import com.hamza.account.controller.others.ServiceRegistry;
 import com.hamza.account.features.company.CompanyLogo;
@@ -7,7 +9,6 @@ import com.hamza.account.features.company.CompanyService;
 import com.hamza.account.features.events.CompanyChanged;
 import com.hamza.account.model.domain.Company;
 import com.hamza.account.openFxml.FxmlPath;
-import com.hamza.account.service.TreasuryService;
 import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.error.UserValidationException;
@@ -22,7 +23,6 @@ import javafx.scene.image.ImageView;
 import javafx.scene.input.DragEvent;
 import javafx.scene.input.Dragboard;
 import javafx.scene.input.TransferMode;
-import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import javafx.stage.FileChooser;
 import javafx.stage.Window;
@@ -79,9 +79,17 @@ public class SettingCompanyController implements Initializable {
     private static final String DROP_ACTIVE = "logo-drop-active";
 
     private final CompanyService companyService = ServiceRegistry.get(CompanyService.class);
-    private final TreasuryService treasuryService = ServiceRegistry.get(TreasuryService.class);
     private final EventBus eventBus = ServiceRegistry.get(EventBus.class);
     private final Image placeholder = placeholder();
+
+    /**
+     * Whether this user may save at all.
+     * <p>
+     * {@code CompanyService.save} is what enforces it - hiding a button is a hint and
+     * never the rule - but without the hint the only way to find out was to fill the form
+     * and be refused at the end of it.
+     */
+    private final boolean mayEdit = AuthorizationGuard.isGranted(AppPermissions.COMPANY_UPDATE);
 
     /**
      * The row as last read or saved — the baseline every "is there anything to save" question is asked against.
@@ -108,8 +116,6 @@ public class SettingCompanyController implements Initializable {
     private Label labelName, labelAddress, labelTel, labelTax, labelCom, labelLogoInfo, labelStatus;
     @FXML
     private TextField textAddress, textCom, textNameCompany, textTax, textTel;
-    @FXML
-    private HBox hbox;
     @FXML
     private VBox logoDropZone;
     @FXML
@@ -232,7 +238,7 @@ public class SettingCompanyController implements Initializable {
         });
         task.setOnFailed(event -> {
             setBusy(false);
-            report("Failed to load the company row", task.getException());
+            report("settings.company.loadContext", task.getException());
         });
         run(task, "company-load");
     }
@@ -298,7 +304,7 @@ public class SettingCompanyController implements Initializable {
         });
         task.setOnFailed(event -> {
             setBusy(false);
-            report("Failed to save the company row", task.getException());
+            report("settings.company.saveContext", task.getException());
         });
         run(task, "company-save");
     }
@@ -336,7 +342,10 @@ public class SettingCompanyController implements Initializable {
         });
         task.setOnFailed(event -> {
             setBusy(false);
-            report("Failed to read the chosen logo: " + file, task.getException());
+            // The file is logged, not shown: the context string is printed into the
+            // message the user reads, and a full path has no business there.
+            log.warn("The chosen logo could not be read: {}", file);
+            report("settings.company.logoContext", task.getException());
         });
         run(task, "company-logo");
     }
@@ -384,13 +393,19 @@ public class SettingCompanyController implements Initializable {
                 || !trimmed(textCom).equals(orEmpty(company.getCommercial()))
                 || !CompanyLogo.sameBytes(logo, savedLogo);
 
-        btnSave.setDisable(!dirty);
+        btnSave.setDisable(!dirty || !mayEdit);
         btnReset.setDisable(!dirty);
-        labelStatus.setText(dirty
-                ? LanguageManager.getInstance().getString("settings.company.unsavedChanges")
-                : LanguageManager.getInstance().getString("settings.company.noChanges"));
+        labelStatus.setText(statusText(dirty));
         labelStatus.getStyleClass().removeAll("status-dirty", "status-clean");
-        labelStatus.getStyleClass().add(dirty ? "status-dirty" : "status-clean");
+        labelStatus.getStyleClass().add(dirty && mayEdit ? "status-dirty" : "status-clean");
+    }
+
+    private String statusText(boolean dirty) {
+        var lm = LanguageManager.getInstance();
+        if (!mayEdit) {
+            return lm.getString("settings.company.noPermission");
+        }
+        return lm.getString(dirty ? "settings.company.unsavedChanges" : "settings.company.noChanges");
     }
 
     private void setBusy(boolean busy) {
@@ -466,9 +481,15 @@ public class SettingCompanyController implements Initializable {
 
     /**
      * A failure the user has to see: logged in full, shown as whatever sentence it carries.
+     * <p>
+     * Takes a message <em>key</em>, not a sentence. {@code ErrorReporter} prints this
+     * operation into the text it shows - "an unexpected error occurred while %s" - so an
+     * English literal here reaches an Arabic screen, and one built with a file path in it
+     * puts that path in front of the user. That is the very thing ErrorReporter refuses to
+     * do with the exception's own message.
      */
-    private void report(String context, Throwable error) {
-        AllAlerts.handleError(context, error);
+    private void report(String contextKey, Throwable error) {
+        AllAlerts.handleError(LanguageManager.getInstance().getString(contextKey), error);
     }
 
     /**
