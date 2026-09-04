@@ -510,7 +510,7 @@ public class BuyController2<T3 extends BaseNames, T4 extends BaseAccount>
     private InvoiceItemSelectionService.ScaleBarcodeSettings scaleBarcodeSettings() {
         return new InvoiceItemSelectionService.ScaleBarcodeSettings(
                 getSettingBarcodeScaleActive(), getSettingBarcodeStart(),
-                getSettingBarcodeCountScale(), ScaleBarcodeValueType.valueOf(getSettingBarcodeValueType()));
+                getSettingBarcodeScaleCodeDigits(), ScaleBarcodeValueType.valueOf(getSettingBarcodeValueType()));
     }
 
     private void handleItemEntryError(Exception error, boolean scaleBarcode) {

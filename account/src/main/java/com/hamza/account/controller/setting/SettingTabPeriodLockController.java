@@ -6,13 +6,13 @@ import com.hamza.account.period.AccountingLock;
 import com.hamza.account.period.PeriodLockService;
 import com.hamza.account.authorization.AuthorizationGuard;
 import com.hamza.account.authorization.AppPermissions;
-import com.hamza.account.authorization.PermissionKey;
 import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.error.BusinessRuleException;
 import com.hamza.controlsfx.error.UserValidationException;
 import com.hamza.controlsfx.language.LanguageManager;
 import javafx.beans.property.ReadOnlyObjectWrapper;
+import javafx.concurrent.Task;
 import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
@@ -47,6 +47,17 @@ public class SettingTabPeriodLockController {
 
     private final PeriodLockService periodLockService = ServiceRegistry.get(PeriodLockService.class);
 
+    /**
+     * Whether this user may move the line, remembered rather than asked of a button.
+     * <p>
+     * {@code show()} used to work it out as {@code btnReopen.isDisabled()}, which is a
+     * latch: once the button was disabled - which it is whenever no period is closed -
+     * the expression could never produce false again. Closing a period therefore left
+     * re-open dead until the tab was closed and opened, which is exactly the moment
+     * someone who has just closed the wrong month needs it.
+     */
+    private boolean mayManage;
+
     @FXML
     private VBox root;
     @FXML
@@ -67,7 +78,7 @@ public class SettingTabPeriodLockController {
         buildTable();
         buildActions();
 
-        boolean mayManage = AuthorizationGuard.isGranted(AppPermissions.ACCOUNTING_LOCK_MANAGE);
+        mayManage = AuthorizationGuard.isGranted(AppPermissions.ACCOUNTING_LOCK_MANAGE);
         datePicker.setDisable(!mayManage);
         textNotes.setDisable(!mayManage);
         btnClose.setDisable(!mayManage);
@@ -119,7 +130,10 @@ public class SettingTabPeriodLockController {
 
     private void reopenPeriod() {
         var lm = LanguageManager.getInstance();
-        if (!periodLockService.current().isClosed()) {
+        // refresh, not current: this tab re-reads the line everywhere else precisely
+        // because another workstation may have moved it, and the guard on the more
+        // consequential of the two actions should not be the one trusting the cache.
+        if (!periodLockService.refresh().isClosed()) {
             AllAlerts.handleError(lm.getString("settings.periodLock.reopenContext"),
                     new BusinessRuleException(lm.getString("settings.periodLock.noClosedPeriod")));
             return;
@@ -139,9 +153,43 @@ public class SettingTabPeriodLockController {
         }
     }
 
-    /** Re-reads the line rather than trusting the cache - another machine may have moved it. */
+    /**
+     * Re-reads the line and its history off the JavaFX thread.
+     * <p>
+     * Both are database calls, and this tab is built by {@code SettingController} the
+     * moment the settings screen opens - so on the JavaFX thread they were two queries
+     * anyone opening settings for any reason waited on.
+     */
     private void show() {
-        AccountingLock lock = periodLockService.refresh();
+        labelState.setText(LanguageManager.getInstance().getString("settings.periodLock.loading"));
+        boolean canReadHistory = mayManage;
+        Task<Snapshot> task = new Task<>() {
+            @Override
+            protected Snapshot call() {
+                AccountingLock lock = periodLockService.refresh();
+                if (!canReadHistory) {
+                    return new Snapshot(lock, List.of(), false);
+                }
+                try {
+                    return new Snapshot(lock, periodLockService.history(50), false);
+                } catch (DaoException e) {
+                    log.error("Could not read the accounting lock history", e);
+                    return new Snapshot(lock, List.of(), true);
+                }
+            }
+        };
+        task.setOnSucceeded(event -> render(task.getValue()));
+        task.setOnFailed(event -> {
+            log.error("Could not read the accounting lock", task.getException());
+            labelState.setText(LanguageManager.getInstance().getString("settings.periodLock.historyUnavailable"));
+        });
+        Thread thread = new Thread(task, "period-lock-read");
+        thread.setDaemon(true);
+        thread.start();
+    }
+
+    private void render(Snapshot snapshot) {
+        AccountingLock lock = snapshot.lock();
         var lm = LanguageManager.getInstance();
 
         if (lock.isClosed()) {
@@ -152,20 +200,32 @@ public class SettingTabPeriodLockController {
             labelState.setText(lm.getString("settings.periodLock.periodOpen"));
             labelDetail.setText(lm.getString("settings.periodLock.openDetail"));
         }
-        btnReopen.setDisable(btnReopen.isDisabled() || !lock.isClosed());
+        btnReopen.setDisable(!mayManage || !lock.isClosed());
 
-        showHistory();
+        tableHistory.setItems(FXCollections.observableArrayList(snapshot.history()));
+        tableHistory.setPlaceholder(new Label(historyPlaceholder(snapshot)));
     }
 
-    private void showHistory() {
-        try {
-            List<AccountingLock> history = periodLockService.history(50);
-            tableHistory.setItems(FXCollections.observableArrayList(history));
-        } catch (DaoException e) {
-            // A user who may not manage the lock cannot read its history either, and
-            // that is not worth an alert on a tab they are only looking at.
-            log.debug("Could not read the accounting lock history", e);
-            tableHistory.setItems(FXCollections.observableArrayList());
+    /**
+     * What an empty history table says.
+     * <p>
+     * Not being allowed to read it and failing to read it used to land in the same catch,
+     * logged at debug and shown as "no period has been closed yet" either way - so a
+     * failing query looked exactly like a clean slate, on the tab whose whole point is
+     * that the record of a close is what makes the close mean anything.
+     */
+    private String historyPlaceholder(Snapshot snapshot) {
+        var lm = LanguageManager.getInstance();
+        if (!mayManage) {
+            return lm.getString("settings.periodLock.historyNoPermission");
         }
+        if (snapshot.historyFailed()) {
+            return lm.getString("settings.periodLock.historyUnavailable");
+        }
+        return lm.getString("settings.periodLock.noHistory");
+    }
+
+    /** The line and its history, read together off the JavaFX thread. */
+    private record Snapshot(AccountingLock lock, List<AccountingLock> history, boolean historyFailed) {
     }
 }

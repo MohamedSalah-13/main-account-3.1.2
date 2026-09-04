@@ -37,28 +37,27 @@
                             </columnConstraints>
 
                             <children>
-                                <Label styleClass="form-label" text="Choose theme for Desktop" />
+                                <Label styleClass="form-label" text="%settings.language.themeLabel" />
                                 <HBox alignment="CENTER_LEFT" spacing="24.0" GridPane.columnIndex="1">
                                     <children>
-                                        <RadioButton fx:id="radioLight" mnemonicParsing="false" styleClass="modern-radio" text="light">
+                                        <RadioButton fx:id="radioLight" mnemonicParsing="false" styleClass="modern-radio" text="%settings.language.themeLight">
                                             <toggleGroup>
                                                 <ToggleGroup fx:id="group" />
                                             </toggleGroup>
                                         </RadioButton>
-                                        <RadioButton fx:id="radioDark" mnemonicParsing="false" styleClass="modern-radio" text="Dark" toggleGroup="$group" />
-                                        <RadioButton fx:id="radioSystem" mnemonicParsing="false" selected="true" styleClass="modern-radio" text="Use system settings" toggleGroup="$group" />
+                                        <RadioButton fx:id="radioDark" mnemonicParsing="false" styleClass="modern-radio" text="%settings.language.themeDark" toggleGroup="$group" />
                                     </children>
                                 </HBox>
 
-                                <Label fx:id="labelLanguage" styleClass="form-label" text="Language" GridPane.rowIndex="1" />
+                                <Label fx:id="labelLanguage" styleClass="form-label" text="%settings.language" GridPane.rowIndex="1" />
                                 <ComboBox fx:id="comboLanguage" styleClass="modern-input" GridPane.columnIndex="1" GridPane.rowIndex="1" />
 
-                                <Label fx:id="labelPath" styleClass="form-label" text="Image Path" GridPane.rowIndex="2" />
+                                <Label fx:id="labelPath" styleClass="form-label" text="%settings.image.pathLabel" GridPane.rowIndex="2" />
                                 <Label fx:id="textPath" maxWidth="320.0" styleClass="settings-subtitle" text="%settings.image.none" wrapText="true" GridPane.columnIndex="1" GridPane.rowIndex="2" />
                                 <HBox alignment="CENTER_LEFT" spacing="6.0" GridPane.columnIndex="2" GridPane.rowIndex="2">
                                     <children>
                                         <Button fx:id="btnPath" mnemonicParsing="false" styleClass="icon-button" text="..." />
-                                        <Button fx:id="btnDeleteImage" mnemonicParsing="false" styleClass="danger-button" text="Button" />
+                                        <Button fx:id="btnDeleteImage" mnemonicParsing="false" styleClass="danger-button" />
                                     </children>
                                 </HBox>
 
@@ -73,13 +72,13 @@
                                 <TextField fx:id="txtNameDelegate" disable="true" editable="false" styleClass="modern-input" GridPane.columnIndex="1" GridPane.rowIndex="5" />
                                 <Button fx:id="btnSaveDelegate" mnemonicParsing="false" styleClass="icon-button" text="..." GridPane.columnIndex="2" GridPane.rowIndex="5" />
 
-                                <Label fx:id="labelRate" styleClass="form-label" text="Rate" GridPane.rowIndex="6" />
+                                <Label fx:id="labelRate" styleClass="form-label" text="%rate" GridPane.rowIndex="6" />
                                 <TextField fx:id="textRateSel" styleClass="modern-input" GridPane.columnIndex="1" GridPane.rowIndex="6" />
 
                                 <Label fx:id="labelMiniRate" styleClass="form-label" text="%settings.language.printerSerialResetLabel" GridPane.rowIndex="7" />
                                 <TextField fx:id="textSerial" styleClass="modern-input" GridPane.columnIndex="1" GridPane.rowIndex="7" />
 
-                                <Label fx:id="labelCurrency" styleClass="form-label" text="Currency" GridPane.rowIndex="8" />
+                                <Label fx:id="labelCurrency" styleClass="form-label" text="%settings.currency" GridPane.rowIndex="8" />
                                 <ComboBox fx:id="comboCurrency" maxWidth="1.7976931348623157E308" GridPane.columnIndex="1" GridPane.rowIndex="8" />
 
                                 <Label fx:id="labelUiScale" styleClass="form-label" text="%settings.language.uiScaleLabel" GridPane.rowIndex="9" />

@@ -29,8 +29,8 @@
         <children>
             <VBox alignment="CENTER" spacing="5.0">
                 <children>
-                    <Label text="إدارة النسخ الاحتياطي" styleClass="report-title"/>
-                    <Label text="إنشاء واستعادة النسخ الاحتياطية وجدولة النسخ التلقائي"
+                    <Label text="%backup.tab.title" styleClass="report-title"/>
+                    <Label text="%backup.tab.subtitle"
                            styleClass="report-subtitle"/>
                 </children>
             </VBox>
@@ -49,26 +49,26 @@
                 </rowConstraints>
 
                 <children>
-                    <Label text="مسار الحفظ:" styleClass="form-label"/>
+                    <Label text="%backup.field.path" styleClass="form-label"/>
                     <TextField fx:id="backupPathField"
                                editable="false"
                                styleClass="modern-input"
                                GridPane.columnIndex="1"/>
                     <Button onAction="#changeBackupPath"
-                            text="تغيير"
+                            text="%backup.button.change"
                             styleClass="neutral-button"
                             GridPane.columnIndex="2"/>
 
-                    <Label text="كلمة مرور التشفير:"
+                    <Label text="%backup.field.password"
                            styleClass="form-label"
                            GridPane.rowIndex="1"/>
                     <PasswordField fx:id="encryptionPasswordField"
-                                   promptText="كلمة مرور لحماية النسخة"
+                                   promptText="%backup.field.password.prompt"
                                    styleClass="modern-input"
                                    GridPane.columnIndex="1"
                                    GridPane.rowIndex="1"/>
 
-                    <Label text="التكرار التلقائي:"
+                    <Label text="%backup.field.interval"
                            styleClass="form-label"
                            GridPane.rowIndex="2"/>
                     <ComboBox fx:id="intervalCombo"
@@ -76,7 +76,7 @@
                               GridPane.columnIndex="1"
                               GridPane.rowIndex="2"/>
                     <Button onAction="#applySchedule"
-                            text="تطبيق"
+                            text="%backup.button.apply"
                             styleClass="primary-button"
                             GridPane.columnIndex="2"
                             GridPane.rowIndex="2"/>
@@ -88,12 +88,12 @@
                     <Button fx:id="backupBtn"
                             onAction="#backupNow"
                             styleClass="success-button"
-                            text="نسخ احتياطي الآن"/>
+                            text="%backup.button.now"/>
 
                     <Button fx:id="restoreBtn"
                             onAction="#restoreBackup"
                             styleClass="warning-button"
-                            text="استعادة نسخة"/>
+                            text="%backup.button.restore"/>
                 </children>
             </HBox>
 
@@ -104,11 +104,11 @@
                                        maxWidth="30.0"/>
                     <Label fx:id="progressLabel"
                            styleClass="status-label"
-                           text="جارٍ النسخ الاحتياطي..."/>
+                           text="%backup.status.backing.up"/>
                 </children>
             </HBox>
 
-            <Label fx:id="statusLabel" styleClass="status-label" text="جاهز"/>
+            <Label fx:id="statusLabel" styleClass="status-label" text="%backup.status.ready"/>
         </children>
     </VBox>
 </VBox>

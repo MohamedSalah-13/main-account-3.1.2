@@ -1,6 +1,8 @@
 package com.hamza.controlsfx.others;
 
 import javafx.scene.control.Control;
+import javafx.scene.control.Spinner;
+import javafx.scene.control.SpinnerValueFactory;
 import javafx.scene.control.TextField;
 import javafx.scene.control.TextFormatter;
 import javafx.scene.input.KeyCode;
@@ -12,6 +14,56 @@ public class Utils {
      * This can be used in conjunction with String methods like replaceAll to filter out non-digit characters from a string.
      */
     private static final String NON_DIGIT_REGEX = "\\D";
+
+    /**
+     * Lets the user type into an integer spinner instead of only clicking its arrows,
+     * and keeps what they typed.
+     * <p>
+     * Two things have to happen together, which is why this is a helper rather than a
+     * {@code setEditable(true)} at each call site. An editable JavaFX spinner does not
+     * commit its editor to its value until Enter is pressed, so a typed number is
+     * silently discarded the moment focus moves elsewhere - the classic way an editable
+     * spinner is worse than a read-only one. And a spinner whose step is small next to
+     * its range is unusable by arrows alone: a range of a week in five-minute steps is
+     * two thousand clicks.
+     * <p>
+     * Text that is not a number in range is not accepted and not silently coerced: the
+     * editor goes back to the value the spinner still holds, so what is shown is always
+     * what is stored.
+     *
+     * @param spinners the spinners to make typable; each must carry an
+     *                 {@link javafx.scene.control.SpinnerValueFactory.IntegerSpinnerValueFactory}
+     */
+    @SafeVarargs
+    public static void makeTypable(Spinner<Integer>... spinners) {
+        for (Spinner<Integer> spinner : spinners) {
+            spinner.setEditable(true);
+            spinner.focusedProperty().addListener((observable, wasFocused, isFocused) -> {
+                if (!isFocused) {
+                    commitEditor(spinner);
+                }
+            });
+            spinner.getEditor().setOnAction(event -> commitEditor(spinner));
+        }
+    }
+
+    private static void commitEditor(Spinner<Integer> spinner) {
+        var factory = spinner.getValueFactory();
+        if (factory == null) {
+            return;
+        }
+        try {
+            int typed = Integer.parseInt(spinner.getEditor().getText().trim());
+            if (factory instanceof SpinnerValueFactory.IntegerSpinnerValueFactory bounds
+                    && (typed < bounds.getMin() || typed > bounds.getMax())) {
+                throw new NumberFormatException("out of range");
+            }
+            factory.setValue(typed);
+        } catch (NumberFormatException ignored) {
+            // Not a number, or outside the range. Show what is actually held.
+            spinner.getEditor().setText(String.valueOf(factory.getValue()));
+        }
+    }
 
     /**
      * Sets a TextFormatter for each provided TextField in order to enforce a specific formatting.

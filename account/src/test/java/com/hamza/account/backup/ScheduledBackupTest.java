@@ -17,9 +17,11 @@ import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Retention deletes files, so a mistake here loses backups. These cover
- * {@link ScheduledBackup#pruneOldBackups} only - the scheduling and the
- * Preferences-backed settings are left alone deliberately, since exercising them
- * would read and write the real user preferences of whoever runs the tests.
+ * {@link ScheduledBackup#pruneOldBackups} and {@link ScheduledBackup#initialDelayMinutes}
+ * - the rest of the scheduling and the Preferences-backed settings are left alone
+ * deliberately, since exercising them would read and write the real user preferences of
+ * whoever runs the tests. Both methods under test take everything they need as arguments,
+ * which is what makes them reachable at all.
  */
 class ScheduledBackupTest {
 
@@ -139,5 +141,79 @@ class ScheduledBackupTest {
     @DisplayName("the shipped limit is the documented 30")
     void limitIsThirty() {
         assertEquals(30, ScheduledBackup.MAX_BACKUP_FILES);
+    }
+
+    @org.junit.jupiter.api.Nested
+    @DisplayName("when the first scheduled backup is due")
+    class InitialDelay {
+
+        private static final long HOURLY = 60;
+        private static final long NOW = 1_700_000_000_000L;
+
+        private File givenBackupAgedMinutes(Path dir, long minutes) throws Exception {
+            File file = dir.resolve("backup_aged.enc").toFile();
+            Files.writeString(file.toPath(), "backup");
+            assertTrue(file.setLastModified(NOW - minutes * 60_000),
+                    "could not set the modification time, the test cannot age the file");
+            return file;
+        }
+
+        @Test
+        @DisplayName("an empty folder backs up at once - there is nothing to lose by waiting")
+        void nothingToStartFrom(@TempDir Path dir) {
+            assertEquals(0, ScheduledBackup.initialDelayMinutes(dir.toFile(), HOURLY, NOW));
+        }
+
+        @Test
+        @DisplayName("a recent backup pushes the first run out to the end of the interval")
+        void aRecentBackupDelaysTheFirstRun(@TempDir Path dir) throws Exception {
+            givenBackupAgedMinutes(dir, 10);
+
+            // This is the whole point: the delay used to be zero, so launching the
+            // program dumped the entire database again ten minutes after the last one.
+            assertEquals(50, ScheduledBackup.initialDelayMinutes(dir.toFile(), HOURLY, NOW));
+        }
+
+        @Test
+        @DisplayName("a backup older than the interval is already overdue")
+        void anOldBackupIsDueNow(@TempDir Path dir) throws Exception {
+            givenBackupAgedMinutes(dir, 180);
+
+            assertEquals(0, ScheduledBackup.initialDelayMinutes(dir.toFile(), HOURLY, NOW));
+        }
+
+        @Test
+        @DisplayName("exactly one interval old is due, not one minute short of it")
+        void theBoundaryIsDue(@TempDir Path dir) throws Exception {
+            givenBackupAgedMinutes(dir, HOURLY);
+
+            assertEquals(0, ScheduledBackup.initialDelayMinutes(dir.toFile(), HOURLY, NOW));
+        }
+
+        @Test
+        @DisplayName("the newest backup is what counts, not the oldest")
+        void theNewestDecides(@TempDir Path dir) throws Exception {
+            givenBackupAgedMinutes(dir, 600);
+            File recent = dir.resolve("backup_recent.enc").toFile();
+            Files.writeString(recent.toPath(), "backup");
+            assertTrue(recent.setLastModified(NOW - 15 * 60_000));
+
+            assertEquals(45, ScheduledBackup.initialDelayMinutes(dir.toFile(), HOURLY, NOW));
+        }
+
+        @Test
+        @DisplayName("a folder that is not there backs up at once rather than never")
+        void aMissingFolderIsNotAnExcuseToWait(@TempDir Path dir) {
+            assertEquals(0, ScheduledBackup.initialDelayMinutes(
+                    dir.resolve("nowhere").toFile(), HOURLY, NOW));
+        }
+
+        @Test
+        @DisplayName("files that are not backups do not count as one")
+        void otherFilesAreIgnored(@TempDir Path dir) throws Exception {
+            Files.writeString(dir.resolve("notes.txt"), "not a backup");
+
+            assertEquals(0, ScheduledBackup.initialDelayMinutes(dir.toFile(), HOURLY, NOW));
+        }
     }
 }

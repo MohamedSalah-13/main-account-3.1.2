@@ -8,17 +8,28 @@ public class Currency_Setting {
 
     public static final String CURRENCY_DISPLAY_FORMAT = "Display name: %s, symbol: %s, code: %s, numericCode: %s";
 
+    /**
+     * The currencies the settings screen offers, and the only list
+     * {@link #getCurrency()} looks the saved choice up in.
+     * <p>
+     * The filter used to be written out in both places. Two copies of "which currencies
+     * exist" is one copy too many: widen one and the saved value stops being findable in
+     * the other, and the screen silently shows no currency at all.
+     * <p>
+     * {@code equals} rather than {@code contains}: a language tag is matched whole, not
+     * as a fragment of another one.
+     */
+    public static List<Map.Entry<Locale, Currency>> selectableCurrencies() {
+        return listOfCurrency2().stream()
+                .filter(entry -> entry.getKey().getLanguage().equals("ar"))
+                .toList();
+    }
+
     public static Optional<Map.Entry<Locale, Currency>> getCurrency() {
         String pro = getSettingCurrency();
-        List<Map.Entry<Locale, Currency>> entries = listOfCurrency2().stream()
-                .filter(localeCurrencyEntry -> localeCurrencyEntry.getKey().getLanguage().contains("ar"))
-                .toList();
-
-        return entries.stream()
+        return selectableCurrencies().stream()
                 .filter(localeCurrencyEntry -> localeCurrencyEntry.getKey().toString().equals(pro))
                 .findFirst();
-//        return first.map(localeCurrencyEntry -> localeCurrencyEntry.getValue().getDisplayName(localeCurrencyEntry.getKey())).orElse(null);
-
     }
 
     public static List<Map.Entry<Locale, Currency>> listOfCurrency2() {

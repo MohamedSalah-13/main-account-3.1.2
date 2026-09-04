@@ -95,7 +95,7 @@
                                             <children>
                                                 <VBox spacing="12.0">
                                                     <children>
-                                                        <CheckBox fx:id="checkPrintTitleInReports" disable="true" mnemonicParsing="false" styleClass="modern-check-box" text="Print Title In Report" />
+                                                        <CheckBox fx:id="checkPrintTitleInReports" mnemonicParsing="false" styleClass="modern-check-box" />
                                                         <CheckBox fx:id="checkShowBeforePrint" mnemonicParsing="false" styleClass="modern-check-box" text="Show Before Print" />
                                                     </children>
                                                 </VBox>

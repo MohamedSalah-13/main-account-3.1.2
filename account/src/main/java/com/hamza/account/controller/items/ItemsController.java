@@ -131,7 +131,7 @@ public class ItemsController extends LoadData {
             }));
         }
         if (eventBus != null) {
-            subscriptions.add(eventBus.subscribe(ItemSaved.class, event -> refreshCurrentView()));
+            subscriptions.add(eventBus.subscribe(ItemSaved.class, event -> itemSaved(event.item())));
             subscriptions.add(eventBus.subscribe(ItemsChanged.class, event -> refreshCurrentView()));
         }
     }
@@ -246,7 +246,7 @@ public class ItemsController extends LoadData {
             @Override
             protected GroupedCatalog call() throws Exception {
                 return new GroupedCatalog(mainGroupService.getMainGroupList(), supGroupService.getSubGroupsList(),
-                        itemsService.getAllProducts());
+                        itemsService.getAllCatalogProducts());
             }
         };
         task.setOnSucceeded(event -> {
@@ -421,7 +421,7 @@ public class ItemsController extends LoadData {
             addItem(numItem);
         });
         btnDelete.setOnAction(actionEvent -> delete());
-        btnRefresh.setOnAction(actionEvent -> paginationTableSetting.initializePagination());
+        btnRefresh.setOnAction(actionEvent -> paginationTableSetting.reload());
         btnQuickEdit.setOnAction(actionEvent -> tableView.setEditable(btnQuickEdit.isSelected()
                 && AuthorizationGuard.isGranted(AppPermissions.ITEMS_UPDATE)));
         btnGroupTree.setOnAction(actionEvent -> setGroupTreeVisible(btnGroupTree.isSelected()));
@@ -457,7 +457,21 @@ public class ItemsController extends LoadData {
 
     private void refreshCurrentView() {
         if (btnGroupedView.isSelected()) loadGroupedView();
-        else btnRefresh.fire();
+        else paginationTableSetting.reload();
+    }
+
+    /**
+     * One item was saved, so one row is re-read - the page, the search text, the scroll
+     * position and the selection all stay where the operator left them.
+     * <p>
+     * This used to reload the whole view, which sent the table back to the first page:
+     * editing the fifth item meant finding the sixth again from the top, and doing it
+     * once per item. The grouped view has no page to lose and is rebuilt as before.
+     */
+    private void itemSaved(ItemsModel saved) {
+        if (btnGroupedView.isSelected()) loadGroupedView();
+        else if (saved != null) paginationTableSetting.refreshRow(saved.getId());
+        else paginationTableSetting.reload();
     }
 
 

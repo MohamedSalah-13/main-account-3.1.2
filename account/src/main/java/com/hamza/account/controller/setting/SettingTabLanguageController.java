@@ -41,7 +41,7 @@ import java.util.stream.Collectors;
 
 import static com.hamza.account.config.PropertiesName.*;
 import static com.hamza.account.otherSetting.Currency_Setting.getCurrency;
-import static com.hamza.account.otherSetting.Currency_Setting.listOfCurrency2;
+import static com.hamza.account.otherSetting.Currency_Setting.selectableCurrencies;
 import static com.hamza.controlsfx.others.Utils.setTextFormatter;
 
 
@@ -66,7 +66,7 @@ public class SettingTabLanguageController implements Initializable {
     @FXML
     private Label textPath;
     @FXML
-    private RadioButton radioLight, radioDark, radioSystem;
+    private RadioButton radioLight, radioDark;
     @FXML
     private ComboBox<Locale> comboLanguage;
     @FXML
@@ -139,18 +139,11 @@ public class SettingTabLanguageController implements Initializable {
         setTextFormatter(textRateSel);
         textSerial.setTextFormatter(TextFormat.createNumericTextFormatter());
 
-        btnDeleteImage.setText("");
-
-        labelRate.setText(LanguageManager.getInstance().getString("rate"));
-        labelLanguage.setText(LanguageManager.getInstance().getString("settings.language"));
-        labelPath.setText(LanguageManager.getInstance().getString("settings.image.pathLabel"));
-        labelCurrency.setText(LanguageManager.getInstance().getString("settings.currency"));
         btnPath.setOnAction(actionEvent -> getFileChooser());
         // add imagePath
         var text = LanguageManager.getInstance().getString("settings.image.none");
         textPath.setText(getPathImageMainScreen().isEmpty() ? text : getPathImageMainScreen());
         chooseCurrency();
-        radioSystem.setDisable(true);
 
         // Theme selection: initialize and wire listeners
         try {
@@ -186,6 +179,9 @@ public class SettingTabLanguageController implements Initializable {
 
         textSerial.setText(String.valueOf(getSerialRecordModificationNumber()));
         textSerial.textProperty().addListener((observableValue, s, t1) -> {
+            // An emptied field is someone midway through typing, not a failure to log on
+            // every keystroke. The stored number stands until the field reads as one.
+            if (t1 == null || t1.isBlank()) return;
             try {
                 setSerialRecordModificationNumber(Integer.parseInt(t1));
             } catch (NumberFormatException e) {
@@ -265,9 +261,7 @@ public class SettingTabLanguageController implements Initializable {
 
 
     private void chooseCurrency() {
-        List<Map.Entry<Locale, Currency>> entries = listOfCurrency2().stream()
-                .filter(localeCurrencyEntry -> localeCurrencyEntry.getKey().getLanguage().contains("ar"))
-                .toList();
+        List<Map.Entry<Locale, Currency>> entries = selectableCurrencies();
 
         for (Map.Entry<Locale, Currency> entry : entries) {
             comboCurrency.getItems().add(entry.getValue().getDisplayName(entry.getKey()));
@@ -298,7 +292,10 @@ public class SettingTabLanguageController implements Initializable {
 
         log.info("path: {}", path);
         var file1 = path.toFile();
-        if (!file1.exists()) {
+        // Only a directory that exists is worth offering, and JavaFX ignores one that
+        // does not - so the test used to be inverted and the chooser never opened where
+        // the last image came from, however carefully the line above worked it out.
+        if (file1.isDirectory()) {
             fc.setInitialDirectory(file1);
         }
         File file = fc.showOpenDialog(null);
@@ -373,7 +370,7 @@ public class SettingTabLanguageController implements Initializable {
             if (newValue == null || newValue.equals(languageManager.getCurrentLocale())) return;
             languageManager.setLocale(newValue);
             reapplyToCurrentScene();
-            eventBus.publish(new LanguageChanged(newValue));
+            if (eventBus != null) eventBus.publish(new LanguageChanged(newValue));
             refreshOwnText();
         });
     }
@@ -393,7 +390,7 @@ public class SettingTabLanguageController implements Initializable {
             FontManager.setCurrentFamily(newValue);
             reapplyToCurrentScene();
             updateFontPreview(newValue);
-            eventBus.publish(new FontChanged(newValue));
+            if (eventBus != null) eventBus.publish(new FontChanged(newValue));
         });
 
         btnAddFont.setOnAction(actionEvent -> addFont());
@@ -442,16 +439,15 @@ public class SettingTabLanguageController implements Initializable {
         labelFontSupport.setText(LanguageManager.getInstance().getString(supportKey));
     }
     /**
-     * This tab's other labels are read from {@link LanguageManager} too, but only once,
-     * in {@code otherSetting()} at load time - so, unlike {@code labelLanguage}, they do
-     * not flip with the combo box until the tab is reopened. Screens built entirely from
-     * {@code %key} FXML bindings (login, and future migrated screens) need no equivalent
-     * method at all - they reload through {@link
-     * com.hamza.account.openFxml.OpenFxmlApplication}, which re-reads {@link
-     * LanguageManager#getResourceBundle()} on every load.
+     * The font preview is assembled in code from the chosen family, so it is the one
+     * piece of this tab's text a language change still has to be told about. The rest are
+     * {@code %key} bindings in the FXML now - including the theme label and its radio
+     * buttons, which were English literals no code ever replaced - and come back
+     * translated when the tab is reopened, which is what {@link
+     * com.hamza.account.openFxml.OpenFxmlApplication} re-reading {@link
+     * LanguageManager#getResourceBundle()} on every load is for.
      */
     private void refreshOwnText() {
-        labelLanguage.setText(LanguageManager.getInstance().getString("settings.language"));
         updateFontPreview(comboFont.getValue());
     }
 
