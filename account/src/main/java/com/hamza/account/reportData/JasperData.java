@@ -39,6 +39,22 @@ public class JasperData {
         }
     }
 
+    /**
+     * The same print, with the failure handed back to the caller instead of shown.
+     * <p>
+     * {@link #printJasperPrint} tells the user itself, which is right when printing <em>is</em>
+     * the operation - somebody pressed a print button and needs to know it failed. It is wrong
+     * when printing is an automatic consequence of an operation that has already succeeded and
+     * cannot be undone. Closing a shift prints a Z report after the drawer is closed and its
+     * immutable snapshot written; a failure there was being reported as "could not complete the
+     * operation" over a close that had completed, and the cashier read it as a failed close.
+     * Callers in that position take this method and decide what a failure means.
+     */
+    public void printJasperPrintOrThrow(String nameUrl, String title, HashMap<String, Object> parameters,
+                                        int copies, String printerName) throws JRException {
+        processJasperPrint(title, prepareJasperPrint(nameUrl, parameters), copies, printerName);
+    }
+
     public void printJasperPrint(String nameUrl, String title, HashMap<String, Object> parameters, int copies, String printerName, Consumer<JasperDesign> customizer) {
         try {
             JasperDesign design = JRXmlLoader.load(nameUrl);

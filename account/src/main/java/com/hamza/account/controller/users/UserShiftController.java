@@ -369,17 +369,29 @@ public class UserShiftController {
             int closedShiftId = attempt.shiftId();
             if (closedShiftId > 0) {
                 ShiftContext.clear();
-                // طباعة Z-Report تلقائياً
+                // طباعة Z-Report تلقائياً.
+                // The close is committed and its snapshot is immutable, so nothing here can
+                // undo it - which is why the print must not be able to report a failure of
+                // its own. It used to: printShiftZReport tells the user itself, so a missing
+                // template or an absent printer produced "could not complete the operation"
+                // over a close that had completed, immediately followed by "closed
+                // successfully". The cashier read the first one.
+                boolean zReportPrinted = true;
                 try {
                     if (!shiftPolicyService.current().autoPrintZ()) throw new AutoPrintDisabled();
                     var zData = shiftReportService.buildOwnZReport(closedShiftId, currentUserId);
-                    printReports.printShiftZReport(zData);
+                    printReports.printShiftZReportOrThrow(zData);
                 } catch (AutoPrintDisabled ignored) {
-                    // Explicit policy: closing succeeds without printing.
+                    // Explicit policy: closing succeeds without printing, and says nothing.
                 } catch (Exception ex) {
+                    // Silence would be the other mistake: the drawer is shut and the cashier
+                    // is owed the paper, so say the report did not print - and only that.
+                    zReportPrinted = false;
                     log.error("Error auto-printing Z-Report", ex);
                 }
-                AllAlerts.alertSaveWithMessage(LanguageManager.getInstance().getString("user.shift.msg.close.success"));
+                AllAlerts.alertSaveWithMessage(LanguageManager.getInstance().getString(zReportPrinted
+                        ? "user.shift.msg.close.success"
+                        : "user.shift.msg.close.success.no.print"));
                 clearCloseShiftFields();
                 refreshView();
             }

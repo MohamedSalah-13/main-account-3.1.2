@@ -22,6 +22,7 @@ import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.language.LanguageManager;
 import com.hamza.controlsfx.others.CssToColorHelper;
 import lombok.extern.log4j.Log4j2;
+import net.sf.jasperreports.engine.JRException;
 import net.sf.jasperreports.engine.data.JRBeanCollectionDataSource;
 import org.jetbrains.annotations.NotNull;
 
@@ -415,6 +416,20 @@ public class Print_Reports extends ReportCompany {
     public void printShiftZReport(ShiftReportService.ShiftReportData data) {
         HashMap<String, Object> map = buildShiftReportMap(data);
         jasperData.printJasperPrint(
+                JasperReportPaths.Shift.Z_REPORT_80,
+                "Z-Report", map, 1, printerNameThermal);
+    }
+
+    /**
+     * The Z report printed as a consequence of a close, not as the operation itself.
+     * <p>
+     * The close has already committed by the time this runs, so a failure here must not be
+     * announced as a failed operation - the caller says what it means. Use this on the close
+     * path and {@link #printShiftZReport} for a reprint the user actually asked for.
+     */
+    public void printShiftZReportOrThrow(ShiftReportService.ShiftReportData data) throws JRException {
+        HashMap<String, Object> map = buildShiftReportMap(data);
+        jasperData.printJasperPrintOrThrow(
                 JasperReportPaths.Shift.Z_REPORT_80,
                 "Z-Report", map, 1, printerNameThermal);
     }
