@@ -1,10 +1,14 @@
 package com.hamza.account.controller.setting;
 
+import com.hamza.account.features.notification.AppNotifications;
 import com.hamza.account.features.notification.NotificationBootstrap;
 import com.hamza.account.features.notification.NotificationCategories;
 import com.hamza.account.features.notification.StockLevelAlert;
 import com.hamza.account.openFxml.FxmlPath;
+import com.hamza.controlsfx.alert.AllAlerts;
+import com.hamza.controlsfx.error.UserValidationException;
 import com.hamza.controlsfx.language.LanguageManager;
+import com.hamza.controlsfx.others.Utils;
 import com.hamza.controlsfx.notifications.NotificationChannel;
 import com.hamza.controlsfx.notifications.NotificationPreferences;
 import com.hamza.controlsfx.notifications.NotificationScheduler;
@@ -13,6 +17,7 @@ import com.hamza.controlsfx.notifications.NotificationSource;
 import com.hamza.controlsfx.notifications.WindowsNotifier;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
+import javafx.scene.control.Button;
 import javafx.scene.control.CheckBox;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
@@ -70,6 +75,8 @@ public class SettingTabNotificationsController implements Initializable {
     @FXML
     private Spinner<Integer> spinnerCooldown;
     @FXML
+    private Button btnTest;
+    @FXML
     private CheckBox checkStockOnSale;
     @FXML
     private VBox boxCategories;
@@ -122,10 +129,10 @@ public class SettingTabNotificationsController implements Initializable {
         });
 
         checkSound.setSelected(NotificationPreferences.isSoundEnabled());
-        // The toaster reads the sound flag when it is built, so this one really does
-        // take effect on the next run rather than immediately.
-        checkSound.selectedProperty().addListener((observable, oldValue, newValue) ->
-                NotificationPreferences.setSoundEnabled(newValue));
+        checkSound.selectedProperty().addListener((observable, oldValue, newValue) -> {
+            NotificationPreferences.setSoundEnabled(newValue);
+            apply();
+        });
 
         comboThreshold.getItems().setAll(NotificationSeverity.values());
         comboThreshold.setConverter(new StringConverter<>() {
@@ -151,6 +158,7 @@ public class SettingTabNotificationsController implements Initializable {
         spinnerCooldown.setValueFactory(new SpinnerValueFactory.IntegerSpinnerValueFactory(
                 MIN_COOLDOWN_MINUTES, MAX_COOLDOWN_MINUTES,
                 Math.clamp(cooldown, MIN_COOLDOWN_MINUTES, MAX_COOLDOWN_MINUTES), MIN_COOLDOWN_MINUTES));
+        Utils.makeTypable(spinnerCooldown);
         spinnerCooldown.valueProperty().addListener((observable, oldValue, newValue) -> {
             if (newValue != null) {
                 NotificationPreferences.setCooldown(Duration.ofMinutes(newValue));
@@ -176,6 +184,40 @@ public class SettingTabNotificationsController implements Initializable {
                 : LanguageManager.getInstance().getString("settings.notifications.windowsUnavailable"));
         labelWindowsSupport.setVisible(!windowsAvailable);
         labelWindowsSupport.setManaged(!windowsAvailable);
+
+        btnTest.setOnAction(event -> sendTestNotification());
+    }
+
+    /**
+     * Publishes one notification so the settings above can be seen working.
+     * <p>
+     * Which channel a notification appears on, and whether the Windows tray is reachable
+     * at all, are invisible until something real happens to fire one - and by then the
+     * operator is not sitting on this screen to notice. {@code WindowsNotifier.isAvailable}
+     * says the tray exists, not that a notification arrives.
+     * <p>
+     * It is published at the threshold the user has just chosen, so their own setting
+     * cannot be the reason nothing appears, and under a key of its own each time, so the
+     * cooldown cannot fold a second test into the first. Muting the system category still
+     * suppresses it, which is the truth about how the next real one would behave too.
+     */
+    private void sendTestNotification() {
+        var language = LanguageManager.getInstance();
+        if (!NotificationPreferences.isEnabled()) {
+            AllAlerts.handleError(language.getString("settings.notifications.pageTitle"),
+                    new UserValidationException(language.getString("settings.notifications.testDisabled")));
+            return;
+        }
+        String key = "settings.notifications.test." + System.currentTimeMillis();
+        String title = language.getString("settings.notifications.testTitle");
+        String message = language.getString("settings.notifications.testMessage");
+        switch (NotificationPreferences.getToastThreshold()) {
+            case INFO -> AppNotifications.info(key, NotificationCategories.SYSTEM, title, message);
+            case SUCCESS -> AppNotifications.success(key, NotificationCategories.SYSTEM, title, message);
+            case WARNING -> AppNotifications.warn(key, NotificationCategories.SYSTEM, title, message);
+            case ERROR -> AppNotifications.error(key, NotificationCategories.SYSTEM, title, message);
+            case CRITICAL -> AppNotifications.critical(key, NotificationCategories.SYSTEM, title, message);
+        }
     }
 
     private void categorySettings() {
@@ -268,6 +310,7 @@ public class SettingTabNotificationsController implements Initializable {
         Spinner<Integer> spinner = new Spinner<>(MIN_RULE_MINUTES, MAX_RULE_MINUTES,
                 Math.clamp(current, MIN_RULE_MINUTES, MAX_RULE_MINUTES), 5);
         spinner.setPrefWidth(110);
+        Utils.makeTypable(spinner);
         spinner.valueProperty().addListener((observable, oldValue, newValue) -> {
             if (newValue != null) {
                 NotificationPreferences.setInterval(source.id(), Duration.ofMinutes(newValue));

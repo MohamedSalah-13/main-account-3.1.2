@@ -44,7 +44,14 @@ public class PropertiesName extends PreferencesSetting {
     private static final String SERIAL_RECORD_MODIFICATION_NUMBER = "serial.record.modification.number";
     private static final String INVOICE_INCREASE_ITEM_ONE_TABLE = "invoice.increase.item.one.table";
     /*-------------------------------------- Barcode Setting --------------------------------------*/
+    /**
+     * How many digits the scale's own prefix occupies - <b>not</b> the digits of the
+     * weight, which the settings screen labelled it as for a long time. The stored key
+     * keeps its old name so existing installs keep their value; the reader below is what
+     * says what it means.
+     */
     private static final String SETTING_BARCODE_COUNT_SCALE = "setting.barcode.count.scale";
+    private static final String SETTING_BARCODE_HAS_CHECK_DIGIT = "setting.barcode.has.check.digit";
     private static final String SETTING_BARCODE_COUNT_ITEM = "setting.barcode.count.item";
     private static final String SETTING_BARCODE_START = "setting.barcode.start";
     private static final String SETTING_BARCODE_LENGTH = "setting.barcode.length";
@@ -329,12 +336,30 @@ public class PropertiesName extends PreferencesSetting {
         putBoolean(INVOICE_INCREASE_ITEM_ONE_TABLE, value);
     }
 
-    public static int getSettingBarcodeCountScale() {
+    /** How many digits the scale's prefix occupies. See {@link #SETTING_BARCODE_COUNT_SCALE}. */
+    public static int getSettingBarcodeScaleCodeDigits() {
         return getInt(SETTING_BARCODE_COUNT_SCALE, 2);
     }
 
-    public static void setSettingBarcodeCountScale(int value) {
+    public static void setSettingBarcodeScaleCodeDigits(int value) {
         putInt(SETTING_BARCODE_COUNT_SCALE, value);
+    }
+
+    /**
+     * Whether the scale's barcode ends with a check digit at all - a position in the
+     * layout. Whether that digit is verified is
+     * {@link #getSettingBarcodeValidateCheckDigit()}, a different question with a
+     * different answer.
+     * <p>
+     * Defaults to true because the parser used to subtract one unconditionally, so this
+     * is what every install already behaves as.
+     */
+    public static boolean getSettingBarcodeHasCheckDigit() {
+        return getBoolean(SETTING_BARCODE_HAS_CHECK_DIGIT, true);
+    }
+
+    public static void setSettingBarcodeHasCheckDigit(boolean value) {
+        putBoolean(SETTING_BARCODE_HAS_CHECK_DIGIT, value);
     }
 
     public static int getSettingBarcodeCountItem() {

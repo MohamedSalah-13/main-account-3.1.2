@@ -8,7 +8,9 @@ import com.hamza.controlsfx.database.SqlStatements;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class SubGroupsDao extends AbstractDao<SubGroups> {
 
@@ -28,6 +30,33 @@ public class SubGroupsDao extends AbstractDao<SubGroups> {
     public List<SubGroups> loadAll() throws DaoException {
         String query = SqlStatements.selectStatement(TABLE_NAME);
         return queryForObjects(query, this::map);
+    }
+
+    /**
+     * Every sub group with its main group already attached, resolved from a single
+     * pass over {@code main_group} rather than a lookup per row.
+     * <p>
+     * {@link #map} asks {@code MainGroupsDao} for the parent of every row it maps,
+     * which is one query per sub group. That is affordable for a screen loading this
+     * list once; it is not affordable underneath a catalog mapper, where it multiplies
+     * by the number of items on the page. Two queries, whatever the size of the list.
+     */
+    public List<SubGroups> loadAllResolved() throws DaoException {
+        Map<Integer, MainGroups> mainGroups = new HashMap<>();
+        for (MainGroups group : daoFactory.getMainGroups().loadAll()) {
+            mainGroups.put(group.getId(), group);
+        }
+        return queryForObjects(SqlStatements.selectStatement(TABLE_NAME), resultSet -> {
+            try {
+                SubGroups subGroups = new SubGroups();
+                subGroups.setId(resultSet.getInt(ID));
+                subGroups.setName(resultSet.getString(NAME));
+                subGroups.setMainGroups(mainGroups.get(resultSet.getInt(MAIN_ID)));
+                return subGroups;
+            } catch (SQLException e) {
+                throw new DaoException(e);
+            }
+        });
     }
 
     @Override

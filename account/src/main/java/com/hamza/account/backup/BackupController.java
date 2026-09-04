@@ -15,7 +15,7 @@ import javafx.stage.FileChooser;
 import javafx.util.StringConverter;
 import lombok.extern.log4j.Log4j2;
 
-import java.awt.*;
+import java.awt.Toolkit;
 import java.io.File;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -42,11 +42,9 @@ public class BackupController {
 
     private BackupService backupService;
     private Preferences prefs;
-//    private ScheduledExecutorService scheduler;
 
     // بيانات الاتصال (يجب تهيئتها من التطبيق الرئيسي)
     private String dbHost, dbPort, dbName, dbUser, dbPassword;
-//    private ScheduledFuture<?> backupTaskHandle;
 
     private static final List<String> INTERVAL_CODES = List.of(
             ScheduledBackup.INTERVAL_DISABLED, ScheduledBackup.INTERVAL_HOURLY,
@@ -182,14 +180,8 @@ public class BackupController {
         File file = chooser.showOpenDialog(backupPathField.getScene().getWindow());
         if (file == null) return;
 
-        // طلب كلمة المرور للتأكيد (قد يكون أفضل من الحقل المخزن)
-        TextInputDialog dialog = new TextInputDialog();
-        dialog.setTitle(LanguageManager.getInstance().getString("backup.dialog.password.title"));
-        dialog.setHeaderText(LanguageManager.getInstance().getString("backup.dialog.password.header"));
-        dialog.setContentText(LanguageManager.getInstance().getString("backup.dialog.password.content"));
-        Optional<String> passwordResult = dialog.showAndWait();
-
-        if (!passwordResult.isPresent() || passwordResult.get().trim().isEmpty()) return;
+        Optional<String> passwordResult = askForPassword();
+        if (passwordResult.isEmpty() || passwordResult.get().trim().isEmpty()) return;
         final String password = passwordResult.get().trim();
 
         Alert confirm = new Alert(Alert.AlertType.CONFIRMATION,
@@ -233,6 +225,29 @@ public class BackupController {
         });
     }
 
+    /**
+     * Asks for the backup's password behind a masked field.
+     * <p>
+     * It was a {@code TextInputDialog}, which types in the clear - on the one screen whose
+     * own password field is masked, for the one secret that protects every backup file.
+     */
+    private Optional<String> askForPassword() {
+        var language = LanguageManager.getInstance();
+        Dialog<String> dialog = new Dialog<>();
+        dialog.setTitle(language.getString("backup.dialog.password.title"));
+        dialog.setHeaderText(language.getString("backup.dialog.password.header"));
+        dialog.getDialogPane().getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL);
+
+        PasswordField field = new PasswordField();
+        field.setPromptText(language.getString("backup.dialog.password.content"));
+        HBox content = new HBox(8, new Label(language.getString("backup.dialog.password.content")), field);
+        dialog.getDialogPane().setContent(content);
+        Platform.runLater(field::requestFocus);
+
+        dialog.setResultConverter(button -> button == ButtonType.OK ? field.getText() : null);
+        return dialog.showAndWait();
+    }
+
     // تفعيل / إخفاء واجهة التقدم
     private void setUIForTask(boolean running, String message) {
         progressBox.setVisible(running);
@@ -261,7 +276,6 @@ public class BackupController {
             setStatus(LanguageManager.getInstance().getString("backup.status.schedule.disabled"));
         }
     }
-    // ... إضافة startScheduler/stopScheduler التي رأيناها سابقاً
 
     private void setStatus(String msg) {
         Platform.runLater(() -> statusLabel.setText(msg + " | " +

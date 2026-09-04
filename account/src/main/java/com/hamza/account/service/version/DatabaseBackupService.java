@@ -1,6 +1,7 @@
 package com.hamza.account.service.version;
 
 import com.hamza.account.config.ConnectionToDatabase;
+import com.hamza.account.config.MysqlTools;
 import com.hamza.account.config.PropertiesName;
 import lombok.extern.log4j.Log4j2;
 
@@ -33,14 +34,13 @@ public class DatabaseBackupService {
 
             Path backupFile = backupDirectory.resolve(fileName);
 
-            String mysqlDumpCommand = getMysqlDumpCommand();
+            String mysqlDumpCommand = MysqlTools.mysqldump();
 
             ProcessBuilder processBuilder = new ProcessBuilder(
                     mysqlDumpCommand,
                     "-h", database.getHost(),
                     "-P", database.getPort(),
                     "-u", database.getUsername(),
-                    "-p" + database.getPass(),
                     "--default-character-set=utf8mb4",
                     "--routines",
                     "--triggers",
@@ -48,6 +48,10 @@ public class DatabaseBackupService {
                     database.getDbName()
             );
 
+            // The password goes through the environment, not the command line, where the
+            // process list exposes it to anything else running on the machine.
+            processBuilder.environment().put("MYSQL_PWD",
+                    database.getPass() == null ? "" : database.getPass());
             processBuilder.redirectOutput(backupFile.toFile());
             processBuilder.redirectError(ProcessBuilder.Redirect.INHERIT);
 
@@ -67,12 +71,4 @@ public class DatabaseBackupService {
         }
     }
 
-    private String getMysqlDumpCommand() {
-        if (PropertiesName.getDatabaseUsePathVariableSetting()) {
-            return "mysqldump";
-        }
-
-        File localMysqlDump = new File("mysql/bin/mysqldump");
-        return localMysqlDump.getPath();
-    }
 }

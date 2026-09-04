@@ -46,18 +46,25 @@
                                 <ColumnConstraints />
                                 <ColumnConstraints hgrow="ALWAYS" maxWidth="1.7976931348623157E308" />
                                 <ColumnConstraints />
+                                <ColumnConstraints />
                             </columnConstraints>
                             <children>
-                                <Label styleClass="section-title" text="%settings.printers.rolesSection" GridPane.columnSpan="3" />
+                                <Label styleClass="section-title" text="%settings.printers.rolesSection" GridPane.columnSpan="4" />
                                 <Label styleClass="form-label" text="%settings.printer.normal" GridPane.rowIndex="1" />
                                 <ComboBox fx:id="comboNormal" maxWidth="1.7976931348623157E308" styleClass="modern-input" GridPane.columnIndex="1" GridPane.rowIndex="1" />
                                 <Button fx:id="btnNormalSettings" mnemonicParsing="false" styleClass="neutral-button" text="%settings.printers.deviceSettings" GridPane.columnIndex="2" GridPane.rowIndex="1" />
-                                <Label styleClass="form-label" text="%settings.printer.barcode" GridPane.rowIndex="2" />
-                                <ComboBox fx:id="comboBarcode" maxWidth="1.7976931348623157E308" styleClass="modern-input" GridPane.columnIndex="1" GridPane.rowIndex="2" />
-                                <Button fx:id="btnBarcodeSettings" mnemonicParsing="false" styleClass="neutral-button" text="%settings.printers.deviceSettings" GridPane.columnIndex="2" GridPane.rowIndex="2" />
-                                <Label styleClass="form-label" text="%settings.printer.invoice" GridPane.rowIndex="3" />
-                                <ComboBox fx:id="comboThermal" maxWidth="1.7976931348623157E308" styleClass="modern-input" GridPane.columnIndex="1" GridPane.rowIndex="3" />
-                                <Button fx:id="btnThermalSettings" mnemonicParsing="false" styleClass="neutral-button" text="%settings.printers.deviceSettings" GridPane.columnIndex="2" GridPane.rowIndex="3" />
+                                <Button fx:id="btnNormalTest" mnemonicParsing="false" styleClass="neutral-button" text="%settings.printers.testPrint" GridPane.columnIndex="3" GridPane.rowIndex="1" />
+                                <Label fx:id="labelNormalMissing" styleClass="form-error" wrapText="true" visible="false" managed="false" GridPane.columnIndex="1" GridPane.columnSpan="3" GridPane.rowIndex="2" />
+                                <Label styleClass="form-label" text="%settings.printer.barcode" GridPane.rowIndex="3" />
+                                <ComboBox fx:id="comboBarcode" maxWidth="1.7976931348623157E308" styleClass="modern-input" GridPane.columnIndex="1" GridPane.rowIndex="3" />
+                                <Button fx:id="btnBarcodeSettings" mnemonicParsing="false" styleClass="neutral-button" text="%settings.printers.deviceSettings" GridPane.columnIndex="2" GridPane.rowIndex="3" />
+                                <Button fx:id="btnBarcodeTest" mnemonicParsing="false" styleClass="neutral-button" text="%settings.printers.testPrint" GridPane.columnIndex="3" GridPane.rowIndex="3" />
+                                <Label fx:id="labelBarcodeMissing" styleClass="form-error" wrapText="true" visible="false" managed="false" GridPane.columnIndex="1" GridPane.columnSpan="3" GridPane.rowIndex="4" />
+                                <Label styleClass="form-label" text="%settings.printer.invoice" GridPane.rowIndex="5" />
+                                <ComboBox fx:id="comboThermal" maxWidth="1.7976931348623157E308" styleClass="modern-input" GridPane.columnIndex="1" GridPane.rowIndex="5" />
+                                <Button fx:id="btnThermalSettings" mnemonicParsing="false" styleClass="neutral-button" text="%settings.printers.deviceSettings" GridPane.columnIndex="2" GridPane.rowIndex="5" />
+                                <Button fx:id="btnThermalTest" mnemonicParsing="false" styleClass="neutral-button" text="%settings.printers.testPrint" GridPane.columnIndex="3" GridPane.rowIndex="5" />
+                                <Label fx:id="labelThermalMissing" styleClass="form-error" wrapText="true" visible="false" managed="false" GridPane.columnIndex="1" GridPane.columnSpan="3" GridPane.rowIndex="6" />
                             </children>
                         </GridPane>
                         <VBox spacing="8.0" styleClass="app-card">

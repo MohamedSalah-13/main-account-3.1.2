@@ -88,14 +88,18 @@ public final class NotificationBootstrap {
         }
     }
 
+    /** Kept so {@link #applyPreferences()} can refresh the settings it reads live. */
+    private NotificationToaster toaster;
+
     private void initialise() {
         sources().forEach(scheduler::register);
         applyPreferences();
 
-        center.addListener(new NotificationToaster(center.policy())
+        toaster = new NotificationToaster(center.policy())
                 .position(Pos.BOTTOM_LEFT)
                 .sound(NotificationPreferences.isSoundEnabled())
-                .graphic(this::iconFor));
+                .graphic(this::iconFor);
+        center.addListener(toaster);
 
         windowsNotifier = new WindowsNotifier(center.policy(), this::trayImage,
                 () -> Platform.runLater(() -> windowsNotifier.runPendingAction()));
@@ -125,6 +129,13 @@ public final class NotificationBootstrap {
     public void applyPreferences() {
         NotificationPreferences.applyTo(center.policy(), NotificationCategories.all());
         NotificationPreferences.applyTo(center.policy(), scheduler);
+        // The toaster reads this flag as each toast is shown, so refreshing it here is
+        // all the sound switch needs to take effect now. It used to be captured once
+        // when the toaster was built, which made it the only control on the settings
+        // tab that waited for a restart - and nothing on screen said so.
+        if (toaster != null) {
+            toaster.sound(NotificationPreferences.isSoundEnabled());
+        }
     }
 
     /**

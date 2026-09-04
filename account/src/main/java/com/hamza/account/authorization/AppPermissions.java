@@ -107,6 +107,17 @@ public final class AppPermissions {
     public static final PermissionKey SETTING_OTHER_SHOW = key("setting.other.show");
     public static final PermissionKey SETTING_ITEMS_SHOW = key("setting.items.show");
     public static final PermissionKey SETTING_SHOWS_SHOW = key("setting.shows.show");
+    /**
+     * Who may decide whether the home screen shows the day's totals - which is to say,
+     * who may let the staff standing at that screen read the revenue.
+     * <p>
+     * The settings tab used to ask {@code CurrentUser.get().getId() != 1} instead: the
+     * numbered-administrator test this permission system replaced, and one that breaks on
+     * any install where the owner is not user number one. A newly declared key is granted
+     * to SYSTEM_ADMIN by the startup synchronisation, so the person who could set it
+     * before still can.
+     */
+    public static final PermissionKey MAIN_TOTALS_MANAGE = key("main.totals.manage");
     public static final PermissionKey INVOICE_PROFIT_SHOW = key("invoice.profit.show");
     public static final PermissionKey EMPLOYEES_SHOW_SALARY = key("employees.show.salary");
     public static final PermissionKey SHOW_COLUMN_BUY_PRICE = key("show.column.buy.price");

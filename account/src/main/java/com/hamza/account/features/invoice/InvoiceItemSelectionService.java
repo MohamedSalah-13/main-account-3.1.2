@@ -6,8 +6,8 @@ import com.hamza.account.features.scalebarcode.ScaleBarcodeValueType;
 import com.hamza.account.finance.MoneyMath;
 import com.hamza.account.model.domain.ItemsModel;
 import com.hamza.account.model.domain.UnitsModel;
-import com.hamza.account.otherSetting.BarcodeProcessor;
-import com.hamza.account.otherSetting.BarcodeResult;
+import com.hamza.account.features.scalebarcode.ScaleBarcodeService;
+import com.hamza.account.features.scalebarcode.ScaleBarcodeReading;
 import com.hamza.account.service.ItemUnits;
 import com.hamza.account.service.ItemsService;
 import com.hamza.controlsfx.database.DaoException;
@@ -70,7 +70,7 @@ public final class InvoiceItemSelectionService {
                 : scaleSettings;
 
         if (settings.matches(query)) {
-            BarcodeResult result = scaleBarcodeReader.read(query, stockId, settings.valueType());
+            ScaleBarcodeReading result = scaleBarcodeReader.read(query, stockId, settings.valueType());
             ItemsModel item = requireItem(result == null ? null : result.item(),
                     "لا يوجد صنف لباركود الميزان: " + query);
             return selection(item, ItemUnits.baseUnit(item), priceTier,
@@ -116,8 +116,8 @@ public final class InvoiceItemSelectionService {
     }
 
     private static ScaleBarcodeReader scaleReader(ItemsService itemsService) {
-        BarcodeProcessor processor = new BarcodeProcessor(itemsService);
-        return (barcode, stockId, valueType) -> processor.processBarcode(barcode, stockId, valueType);
+        ScaleBarcodeService service = new ScaleBarcodeService(itemsService);
+        return service::read;
     }
 
     private static ItemsModel requireItem(ItemsModel item, String message)
@@ -149,7 +149,7 @@ public final class InvoiceItemSelectionService {
 
     @FunctionalInterface
     interface ScaleBarcodeReader {
-        BarcodeResult read(String barcode, int stockId, ScaleBarcodeValueType valueType) throws DaoException;
+        ScaleBarcodeReading read(String barcode, int stockId, ScaleBarcodeValueType valueType) throws DaoException;
     }
 
     public record ScaleBarcodeSettings(boolean active, int prefix, int prefixLength, ScaleBarcodeValueType valueType) {

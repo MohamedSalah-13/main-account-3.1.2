@@ -9,6 +9,7 @@ import com.hamza.account.opening.OpeningBalanceRegistry;
 import com.hamza.account.trial.TrialManager;
 import com.hamza.controlsfx.database.AbstractDao;
 import com.hamza.controlsfx.database.DaoException;
+import com.hamza.controlsfx.database.GenericMapper;
 import com.hamza.controlsfx.database.SqlStatements;
 import lombok.extern.log4j.Log4j2;
 import org.jetbrains.annotations.NotNull;
@@ -141,6 +142,50 @@ public class ItemsDao extends AbstractDao<ItemsModel> {
             LIMIT %d
             """.formatted(ITEM_MOVEMENTS_ALL_STOCKS,
             ITEM_UNIT_BARCODE_EXACT, ITEM_UNIT_BARCODE_EXACT, FILTER_ITEMS_LIMIT);
+    /**
+     * What a catalog search matches, and in what order it ranks what it matched.
+     * <p>
+     * One predicate, not the two phases {@link #getFilterItems} runs: "contains" already
+     * covers everything "starts with" covers, and the phases only ever existed to get
+     * prefix matches to the top. Here that ranking is in the {@code ORDER BY} instead,
+     * which is what lets the result be counted and paged - two phases deduplicated in
+     * Java have no page boundary and no total.
+     * <p>
+     * The extra-barcode and unit-barcode tests are the reason a search cannot be a plain
+     * {@code LIKE} on {@code items}: an item answers to codes in three tables.
+     */
+    private static final String SEARCH_TEXT_WHERE = """
+            (items.nameItem LIKE ?
+              OR items.barcode LIKE ?
+              OR items.id IN (SELECT item_id FROM item_barcodes WHERE barcode LIKE ?)
+              OR items.id IN (SELECT items_id FROM items_units WHERE items_barcode LIKE ?))""";
+    private static final String SEARCH_TEXT_ORDER = """
+            CASE
+                WHEN items.barcode = ? THEN 0
+                WHEN items.id IN (SELECT item_id FROM item_barcodes WHERE barcode = ?) THEN 1
+                WHEN items.id IN (SELECT items_id FROM items_units WHERE items_barcode = ?) THEN 1
+                WHEN items.nameItem LIKE ? THEN 2
+                WHEN items.barcode LIKE ? THEN 3
+                WHEN items.id IN (SELECT item_id FROM item_barcodes WHERE barcode LIKE ?) THEN 3
+                WHEN items.id IN (SELECT items_id FROM items_units WHERE items_barcode LIKE ?) THEN 3
+                ELSE 4
+            END,
+            items.id DESC""";
+    /** Digits alone are an id or a barcode, and are matched exactly - never as a fragment of a name. */
+    private static final String SEARCH_NUMERIC_WHERE = """
+            (items.id = ?
+              OR items.barcode = ?
+              OR items.id IN (SELECT item_id FROM item_barcodes WHERE barcode = ?)
+              OR items.id IN (SELECT items_id FROM items_units WHERE items_barcode = ?))""";
+    private static final String SEARCH_NUMERIC_ORDER = """
+            CASE
+                WHEN items.id = ? THEN 0
+                WHEN items.barcode = ? THEN 1
+                WHEN items.id IN (SELECT item_id FROM item_barcodes WHERE barcode = ?) THEN 1
+                WHEN items.id IN (SELECT items_id FROM items_units WHERE items_barcode = ?) THEN 1
+                ELSE 2
+            END,
+            items.id DESC""";
     private final String ID = "id";
     private final String SUB_NUM = "sub_num";
     private final String BUY_PRICE = "buy_price";
@@ -349,35 +394,44 @@ public class ItemsDao extends AbstractDao<ItemsModel> {
     public ItemsModel map(ResultSet rs) throws DaoException {
         try {
             var itemsModel = getItemsModel(rs);
-            // others
-            double purchase = rs.getDouble(QUANTITY_PURCHASE);
-            double sales = rs.getDouble(QUANTITY_SALES);
-            double purRe = rs.getDouble(QUANTITY_PURCHASE_RE);
-            double saleRe = rs.getDouble(QUANTITY_SALES_RE);
-            double fromStock = rs.getDouble(FROM_STOCK);
-            double toStock = rs.getDouble(TO_STOCK);
-            // What posted stock counts corrected the balance by, signed. Added by V8;
-            // it belongs in the balance everywhere the balance is worked out, or a
-            // counted item would read one way on the inventory sheet and another on
-            // every invoice screen.
-            double adjustment = rs.getDouble(ADJUSTMENT);
-
             itemsModel.setItemStock(daoFactory.stockDao().getDataById(rs.getInt(STOCK_ID)));
-            itemsModel.setSumPurchase(purchase);
-            itemsModel.setSumSales(sales);
-            itemsModel.setSumPurchaseRe(purRe);
-            itemsModel.setSumSalesRe(saleRe);
-            itemsModel.setFromStock(fromStock);
-            itemsModel.setToStock(toStock);
-            double sumAllBalance = (itemsModel.getFirstBalanceForStock() + purchase + saleRe + toStock + adjustment) - (sales + purRe + fromStock);
-            itemsModel.setSumAllBalance(sumAllBalance);
-            itemsModel.setSumAllBalanceByBuyPrice(roundToTwoDecimalPlaces(itemsModel.getBuyPrice() * sumAllBalance));
-            itemsModel.setSumAllBalanceBySelPrice(roundToTwoDecimalPlaces(itemsModel.getSelPrice1() * sumAllBalance));
+            applyBalances(itemsModel, rs);
             return itemsModel;
         } catch (SQLException e) {
             throw new DaoException(e);
         }
 
+    }
+
+    /**
+     * The movement columns and the balance they add up to. Shared by {@link #map} and
+     * {@link #mapCatalogRow} so a list and a finder can never disagree about what an
+     * item's stock is - the two mappers differ in what they load, never in what they
+     * compute.
+     */
+    private void applyBalances(ItemsModel itemsModel, ResultSet rs) throws SQLException {
+        double purchase = rs.getDouble(QUANTITY_PURCHASE);
+        double sales = rs.getDouble(QUANTITY_SALES);
+        double purRe = rs.getDouble(QUANTITY_PURCHASE_RE);
+        double saleRe = rs.getDouble(QUANTITY_SALES_RE);
+        double fromStock = rs.getDouble(FROM_STOCK);
+        double toStock = rs.getDouble(TO_STOCK);
+        // What posted stock counts corrected the balance by, signed. Added by V8;
+        // it belongs in the balance everywhere the balance is worked out, or a
+        // counted item would read one way on the inventory sheet and another on
+        // every invoice screen.
+        double adjustment = rs.getDouble(ADJUSTMENT);
+
+        itemsModel.setSumPurchase(purchase);
+        itemsModel.setSumSales(sales);
+        itemsModel.setSumPurchaseRe(purRe);
+        itemsModel.setSumSalesRe(saleRe);
+        itemsModel.setFromStock(fromStock);
+        itemsModel.setToStock(toStock);
+        double sumAllBalance = (itemsModel.getFirstBalanceForStock() + purchase + saleRe + toStock + adjustment) - (sales + purRe + fromStock);
+        itemsModel.setSumAllBalance(sumAllBalance);
+        itemsModel.setSumAllBalanceByBuyPrice(roundToTwoDecimalPlaces(itemsModel.getBuyPrice() * sumAllBalance));
+        itemsModel.setSumAllBalanceBySelPrice(roundToTwoDecimalPlaces(itemsModel.getSelPrice1() * sumAllBalance));
     }
 
     @Override
@@ -613,13 +667,17 @@ public class ItemsDao extends AbstractDao<ItemsModel> {
     }
 
     public List<ItemsModel> getFilterItems(String searchText) throws DaoException {
+        return getFilterItems(searchText, this::map);
+    }
+
+    private List<ItemsModel> getFilterItems(String searchText, GenericMapper<ItemsModel> mapper) throws DaoException {
         if (searchText == null) {
-            return getLast50Items();
+            return getLast50Items(mapper);
         }
 
         String q = searchText.trim();
         if (q.isEmpty()) {
-            return getLast50Items();
+            return getLast50Items(mapper);
         }
 
         boolean numericOnly = q.matches("\\d+");
@@ -633,7 +691,7 @@ public class ItemsDao extends AbstractDao<ItemsModel> {
                 // باركود طويل جداً => اعتبره باركود فقط
                 id = -1;
             }
-            return queryForObjects(FILTER_ITEMS_SQL_NUMERIC, this::map, id, q, q, q, id, q, q, q);
+            return queryForObjects(FILTER_ITEMS_SQL_NUMERIC, mapper, id, q, q, q, id, q, q, q);
         }
 
         // 2) نص/مختلط: مرحلتين startsWith ثم contains
@@ -646,7 +704,7 @@ public class ItemsDao extends AbstractDao<ItemsModel> {
         // Phase A: startsWith (سريع + يستفيد من index)
         List<ItemsModel> starts = queryForObjects(
                 FILTER_ITEMS_SQL_TEXT_STARTS,
-                this::map,
+                mapper,
                 likeStarts, likeStarts, likeStarts, likeStarts, // WHERE
                 q, 0, q, q,                                      // ORDER BY (barcode exact, id exact disabled, extra barcode exact, unit barcode exact)
                 likeStarts, likeStarts, likeStarts, likeStarts   // ORDER BY (name, barcode, extra barcode, unit barcode - all starts)
@@ -657,7 +715,7 @@ public class ItemsDao extends AbstractDao<ItemsModel> {
         if (result.size() < FILTER_ITEMS_LIMIT) {
             List<ItemsModel> contains = queryForObjects(
                     FILTER_ITEMS_SQL_TEXT_CONTAINS,
-                    this::map,
+                    mapper,
                     likeContains, likeContains, likeContains, likeContains, // WHERE (contains)
                     q, 0, q, q                                               // ORDER BY (barcode exact, id exact disabled, extra barcode exact, unit barcode exact)
             );
@@ -676,44 +734,113 @@ public class ItemsDao extends AbstractDao<ItemsModel> {
     }
 
     public List<ItemsModel> getLast50Items() throws DaoException {
-        return queryForObjects(QUERY_ITEMS_ALL_STOCKS.concat(" ORDER BY id DESC LIMIT 50"), this::map);
+        return getLast50Items(this::map);
     }
 
-    public List<ItemsModel> getProducts(int rowsPerPage, int offset) throws DaoException {
-        return queryForObjects(QUERY_ITEMS_ALL_STOCKS.concat(" ORDER BY id DESC LIMIT ? OFFSET ?"), this::map, rowsPerPage, offset);
+    private List<ItemsModel> getLast50Items(GenericMapper<ItemsModel> mapper) throws DaoException {
+        return queryForObjects(QUERY_ITEMS_ALL_STOCKS.concat(" ORDER BY id DESC LIMIT 50"), mapper);
     }
 
-    /** The grouped read-only catalogue deliberately has no page boundary. */
-    public List<ItemsModel> getAllProducts() throws DaoException {
-        return queryForObjects(QUERY_ITEMS_ALL_STOCKS.concat(" ORDER BY items.id DESC"), this::map);
+    // ---------------------------------------------------------------------------
+    // The catalog reads: the same rows as the four methods above, mapped for a list.
+    //
+    // What separates them is {@link #mapCatalogRow} - see its javadoc for why a list
+    // must not be built out of {@link #map}. Every screen showing many items at once
+    // belongs on this side; {@link #map} stays for the finders, which load one item and
+    // need all of it.
+    // ---------------------------------------------------------------------------
+
+    /**
+     * One page of the catalog - searched or not, filtered by group or not - mapped
+     * without a query per row.
+     * <p>
+     * A search is paged exactly like a plain listing, which is the point: it used to be
+     * capped at {@link #FILTER_ITEMS_LIMIT} rows with nothing on screen to say so, and
+     * the group filter was applied in Java to whatever those rows happened to be - so a
+     * group's items beyond the first fifty matches could not be reached at all, and the
+     * table could look empty while matches existed.
+     */
+    public List<ItemsModel> getCatalogProducts(String searchText, Integer mainGroupId, Integer subGroupId,
+                                               int rowsPerPage, int offset) throws DaoException {
+        CatalogQuery query = catalogQuery(searchText, mainGroupId, subGroupId);
+        List<Object> parameters = new ArrayList<>(query.whereParameters());
+        parameters.addAll(query.orderParameters());
+        parameters.add(rowsPerPage);
+        parameters.add(offset);
+        return queryForObjects(QUERY_ITEMS_ALL_STOCKS + query.where() + " ORDER BY " + query.order() + " LIMIT ? OFFSET ?",
+                catalogMapper(), parameters.toArray());
     }
 
-    public List<ItemsModel> getProducts(int rowsPerPage, int offset, Integer mainGroupId, Integer subGroupId) throws DaoException {
+    /**
+     * How many rows {@link #getCatalogProducts} would return in total.
+     * <p>
+     * Deliberately over {@code items} alone: the movement aggregate the page query joins
+     * is a {@code GROUP BY} over every row of {@code quantity_items_table}, and counting
+     * matches does not need a single balance out of it.
+     */
+    public int getCatalogCount(String searchText, Integer mainGroupId, Integer subGroupId) throws DaoException {
+        CatalogQuery query = catalogQuery(searchText, mainGroupId, subGroupId);
+        return countCatalog("SELECT COUNT(*) FROM items" + query.where(), query.whereParameters());
+    }
+
+    /**
+     * The {@code WHERE} and {@code ORDER BY} shared by a catalog page and its count, so
+     * the two can never disagree about which rows there are.
+     *
+     * @param where            begins with {@code " WHERE "}, or is empty when nothing filters
+     * @param whereParameters  bound before {@link #orderParameters()}, which the statement order requires
+     */
+    record CatalogQuery(String where, List<Object> whereParameters,
+                        String order, List<Object> orderParameters) {
+    }
+
+    static CatalogQuery catalogQuery(String searchText, Integer mainGroupId, Integer subGroupId) {
+        List<String> conditions = new ArrayList<>();
+        List<Object> whereParameters = new ArrayList<>();
+        String order = "items.id DESC";
+        List<Object> orderParameters = List.of();
+
+        String q = searchText == null ? "" : searchText.trim();
+        if (!q.isEmpty()) {
+            if (q.matches("\\d+")) {
+                int id;
+                try {
+                    id = Integer.parseInt(q);
+                } catch (NumberFormatException ex) {
+                    // A barcode too long to be an id. It is still a barcode.
+                    id = -1;
+                }
+                conditions.add(SEARCH_NUMERIC_WHERE);
+                whereParameters.addAll(List.of(id, q, q, q));
+                order = SEARCH_NUMERIC_ORDER;
+                orderParameters = List.of(id, q, q, q);
+            } else {
+                String contains = "%" + q + "%";
+                String starts = q + "%";
+                conditions.add(SEARCH_TEXT_WHERE);
+                whereParameters.addAll(List.of(contains, contains, contains, contains));
+                order = SEARCH_TEXT_ORDER;
+                orderParameters = List.of(q, q, q, starts, starts, starts, starts);
+            }
+        }
         if (subGroupId != null) {
-            return queryForObjects(QUERY_ITEMS_ALL_STOCKS.concat(" WHERE items.sub_num = ? ORDER BY items.id DESC LIMIT ? OFFSET ?"),
-                    this::map, subGroupId, rowsPerPage, offset);
+            conditions.add("items.sub_num = ?");
+            whereParameters.add(subGroupId);
+        } else if (mainGroupId != null) {
+            conditions.add("items.sub_num IN (SELECT id FROM sub_group WHERE main_id = ?)");
+            whereParameters.add(mainGroupId);
         }
-        if (mainGroupId != null) {
-            return queryForObjects(QUERY_ITEMS_ALL_STOCKS.concat(" WHERE items.sub_num IN (SELECT id FROM sub_group WHERE main_id = ?) ORDER BY items.id DESC LIMIT ? OFFSET ?"),
-                    this::map, mainGroupId, rowsPerPage, offset);
-        }
-        return getProducts(rowsPerPage, offset);
+
+        String where = conditions.isEmpty() ? "" : " WHERE " + String.join(" AND ", conditions);
+        return new CatalogQuery(where, whereParameters, order, orderParameters);
     }
 
-    public int getCountItems() {
-        return queryForIntOrDefault("SELECT COUNT(*) FROM items", 0);
-    }
-
-    public int getCountItems(Integer mainGroupId, Integer subGroupId) throws DaoException {
-        if (subGroupId != null) return countItems("SELECT COUNT(*) FROM items WHERE sub_num = ?", subGroupId);
-        if (mainGroupId != null) return countItems("SELECT COUNT(*) FROM items WHERE sub_num IN (SELECT id FROM sub_group WHERE main_id = ?)", mainGroupId);
-        return getCountItems();
-    }
-
-    private int countItems(String sql, int groupId) throws DaoException {
+    private int countCatalog(String sql, List<Object> parameters) throws DaoException {
         return withConnection(connection -> {
             try (PreparedStatement statement = connection.prepareStatement(sql)) {
-                statement.setInt(1, groupId);
+                for (int index = 0; index < parameters.size(); index++) {
+                    statement.setObject(index + 1, parameters.get(index));
+                }
                 try (ResultSet resultSet = statement.executeQuery()) {
                     return resultSet.next() ? resultSet.getInt(1) : 0;
                 }
@@ -723,7 +850,95 @@ public class ItemsDao extends AbstractDao<ItemsModel> {
         });
     }
 
+    /** The grouped read-only catalogue deliberately has no page boundary. */
+    public List<ItemsModel> getAllCatalogProducts() throws DaoException {
+        return queryForObjects(QUERY_ITEMS_ALL_STOCKS.concat(" ORDER BY items.id DESC"), catalogMapper());
+    }
+
+    /**
+     * One item, mapped the way the rows around it in the list were mapped.
+     * <p>
+     * This is what a screen asks for after saving a single item: re-reading the one row
+     * that changed costs a handful of queries, where re-reading its page costs a page.
+     */
+    public ItemsModel getCatalogItem(int id) throws DaoException {
+        return queryForObject(QUERY_ITEMS_ALL_STOCKS.concat(" where items.id = ? "), catalogMapper(), id);
+    }
+
+    private GenericMapper<ItemsModel> catalogMapper() throws DaoException {
+        ItemsCatalogLookups lookups = ItemsCatalogLookups.load(daoFactory);
+        return resultSet -> mapCatalogRow(resultSet, lookups);
+    }
+
+    /**
+     * An item row for a screen that shows many of them: the columns of {@code items},
+     * the balance worked out exactly as {@link #map} works it out, and the three names a
+     * list displays - sub group, base unit, warehouse - taken from {@code lookups}
+     * rather than from a query of their own.
+     * <p>
+     * What it deliberately leaves empty is the item's extra units and its extra
+     * barcodes. Neither is shown in a list, and loading them is what made a page of
+     * fifty items cost several hundred queries: {@link #getItemsModel} asks for the sub
+     * group (which asks for its main group), the base unit, the unit list (whose own
+     * mapper asks for a unit and a user per row) and the extra barcodes, once per item.
+     * <p>
+     * <b>A model this produced is for display, and must not be handed to
+     * {@link #update}.</b> That method replaces an item's units and extra barcodes with
+     * whatever the model carries, so saving a catalog row through it would delete both.
+     * A list screen edits through {@link #quickUpdate} or {@link #updateImage}, which
+     * name their columns and touch nothing else; a screen that means to edit the whole
+     * item loads it again through {@link #findItemById}.
+     */
+    private ItemsModel mapCatalogRow(ResultSet rs, ItemsCatalogLookups lookups) throws DaoException {
+        try {
+            ItemsModel itemsModel = new ItemsModel();
+            itemsModel.setId(rs.getInt(ID));
+            itemsModel.setBarcode(rs.getString(BARCODE));
+            itemsModel.setNameItem(rs.getString(NAME_ITEM));
+            itemsModel.setMini_quantity(rs.getDouble(MINI_QUANTITY));
+            itemsModel.setFirstBalanceForStock(rs.getDouble(FIRST_BALANCE));
+            itemsModel.setBuyPrice(rs.getDouble(BUY_PRICE));
+            itemsModel.setSelPrice1(rs.getDouble(selPrice1));
+            itemsModel.setSelPrice2(rs.getDouble(selPrice2));
+            itemsModel.setSelPrice3(rs.getDouble(selPrice3));
+            itemsModel.setActiveItem(rs.getBoolean(itemActive));
+            itemsModel.setHasValidate(rs.getBoolean(itemHasValidity));
+            itemsModel.setNumberValidityDays(rs.getInt(numberValidityDays));
+            itemsModel.setAlertDaysBeforeExpiry(rs.getInt(alertDaysBeforeExpire));
+
+            Blob blob = rs.getBlob(ITEM_IMAGE);
+            if (blob != null) {
+                itemsModel.setItem_image(blob.getBytes(1, (int) blob.length()));
+            }
+
+            itemsModel.setSubGroups(lookups.subGroup(rs.getInt(SUB_NUM)));
+            itemsModel.setUnitsType(lookups.unit(rs.getInt(UNIT_ID)));
+            itemsModel.setItemStock(lookups.stock(rs.getInt(STOCK_ID)));
+            itemsModel.setItemsUnitsModelList(new ArrayList<>());
+            itemsModel.setExtraBarcodes(new ArrayList<>());
+
+            applyBalances(itemsModel, rs);
+            return itemsModel;
+        } catch (SQLException e) {
+            throw new DaoException(e);
+        }
+    }
+
     /** Updates only the fields exposed by the items-table quick-edit mode. */
+    /**
+     * Writes one item's picture and nothing else.
+     * <p>
+     * The picture is editable from the items list, where the row was mapped for display
+     * and carries neither the item's units nor its extra barcodes. Saving it through
+     * {@link #update} - which is what the list used to do - replaces both from the model,
+     * so setting a picture deleted every unit the item had. This is the same edit with
+     * the columns named.
+     */
+    public int updateImage(int itemId, byte[] image) throws DaoException {
+        return executeUpdate(SqlStatements.updateStatement(TABLE_NAME, ID, ITEM_IMAGE),
+                image == null ? new byte[0] : image, itemId);
+    }
+
     public int quickUpdate(ItemsModel item) throws DaoException {
         String sql = SqlStatements.updateStatement(TABLE_NAME, ID, BARCODE, NAME_ITEM, BUY_PRICE,
                 selPrice1, selPrice2, selPrice3, USER_ID);

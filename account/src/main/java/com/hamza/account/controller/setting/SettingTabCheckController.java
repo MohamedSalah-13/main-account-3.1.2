@@ -2,7 +2,8 @@ package com.hamza.account.controller.setting;
 
 import com.hamza.account.controller.main.DataPublisher;
 import com.hamza.account.openFxml.FxmlPath;
-import com.hamza.account.features.rbac.CurrentUser;
+import com.hamza.account.authorization.AppPermissions;
+import com.hamza.account.authorization.AuthorizationGuard;
 import com.hamza.controlsfx.language.LanguageManager;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
@@ -32,11 +33,9 @@ public class SettingTabCheckController implements Initializable {
     @FXML
     private javafx.scene.control.TextField txtReturnFreeLimit;
     @FXML
-    private CheckBox checkShowColumnSelectedInItems;
-    @FXML
-    private CheckBox checkValidity;
-    @FXML
     private CheckBox checkShowBeforePrint;
+    @FXML
+    private CheckBox checkPrintTitleInReports;
     @FXML
     private CheckBox updatePriceInInvoice, printReceiptInvoice;
     @FXML
@@ -66,8 +65,15 @@ public class SettingTabCheckController implements Initializable {
 
     private void forItems() {
         var lm = LanguageManager.getInstance();
-        checkShowTotals.setDisable(CurrentUser.get().getId() != 1);
+        checkShowTotals.setDisable(!AuthorizationGuard.isGranted(AppPermissions.MAIN_TOTALS_MANAGE));
         checkSetting(checkShowBeforePrint, lm.getString("settings.checks.showBeforePrint"), getPrintPaperDirect());
+        // ReportCompany passes this to every report as "print-title". The box was on the
+        // screen with disable="true" and no field behind it, and nothing in the project
+        // called the setter - so the value every report reads had been false since it was
+        // written, with no way to change it.
+        checkSetting(checkPrintTitleInReports, lm.getString("settings.checks.printTitleInReports"), getSettingPrintReportTitle());
+        checkPrintTitleInReports.selectedProperty().addListener(
+                (observable, oldValue, newValue) -> setSettingPrintReportTitle(newValue));
         checkSetting(checkPrintReceiptAccount, lm.getString("settings.checks.printAccountThermal"), getPrintPaperReceiptAccount());
 
         checkSetting(printReceiptInvoice, lm.getString("settings.checks.printReceiptInvoice"), getPrintPaperReceiptInvoice());

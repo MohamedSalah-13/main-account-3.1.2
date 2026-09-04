@@ -125,6 +125,22 @@
     /*-fx-fill: -app-text-label;*/
 }
 
+/*
+ * Text that reports a refusal, beside the field that caused it. There was no such
+ * rule: two screens already asked for "form-error" and got the platform default,
+ * which carries no colour of this theme's and can come out unreadable on a card.
+ */
+.form-error {
+    -fx-text-fill: -app-danger;
+    -fx-fill: -app-danger;
+}
+
+/* The line a long-running screen writes its progress and its result into. */
+.status-label {
+    -fx-text-fill: -app-text-muted;
+    -fx-fill: -app-text-muted;
+}
+
 .info-text,
 .text-explain {
     -fx-fill: -app-text-muted;

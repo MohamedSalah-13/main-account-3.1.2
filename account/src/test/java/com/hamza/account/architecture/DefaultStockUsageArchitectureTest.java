@@ -33,6 +33,10 @@ class DefaultStockUsageArchitectureTest {
             "com/hamza/account/controller/items/InventoryController.java",
             "com/hamza/account/controller/items/StockCountController.java",
             "com/hamza/account/controller/items/StockTransferController.java",
+            // The barcode tab's try box, which has no warehouse picker and needs none:
+            // every item holds a row in every warehouse, and what the box reports - the
+            // parse and the item's sel_price1 - is the same whichever one is asked.
+            "com/hamza/account/controller/setting/SettingTabBarcodeController.java",
             "com/hamza/account/delete/DeleteRegistry.java",
             "com/hamza/account/features/inventory/InventoryQuery.java",
             "com/hamza/account/features/invoice/InvoiceSaveCommand.java",

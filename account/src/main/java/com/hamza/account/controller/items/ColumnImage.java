@@ -16,7 +16,6 @@ import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
-import java.util.ArrayList;
 
 import static com.hamza.account.config.PropertiesName.getItemImageHint;
 
@@ -153,12 +152,18 @@ public record ColumnImage(TableView<ItemsModel> tableView, ItemsService itemsSer
                 return fileChooser;
             }
 
+            /**
+             * Writes the picture through the update that names only that column.
+             * <p>
+             * This used to save the whole item, on a row the list had mapped for display:
+             * the full update replaces an item's units and extra barcodes from the model,
+             * and the model here carries neither - so setting a picture deleted every unit
+             * the item had. Nothing about the picture needs the rest of the row.
+             */
             private void persistImageChange(ItemsModel item, byte[] imageData, String successMessage) throws DaoException {
-                item.setItem_image(imageData);
-                item.setItemsUnitsModelList(new ArrayList<>());
-
-                var i = itemsService.commitItemUpdate(item);
-                if (i > 1) {
+                var i = itemsService.updateItemImage(item.getId(), imageData);
+                if (i >= 1) {
+                    item.setItem_image(imageData);
                     AllAlerts.alertSaveWithMessage(successMessage);
                     updateItem(null, false);
                 }
