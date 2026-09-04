@@ -49,7 +49,21 @@ public enum AppIcon {
     ITEM(Feather.PACKAGE),
     TREASURY_CASH(Feather.DOLLAR_SIGN),
     TREASURY_WALLET(Feather.SMARTPHONE),
-    TREASURY_BANK(Feather.CREDIT_CARD);
+    TREASURY_BANK(Feather.CREDIT_CARD),
+    /** Narrowing a list. Not {@link #SEARCH} - a filter is a standing condition, not a lookup. */
+    FILTER(Feather.FILTER),
+    /** A report or a figure, as opposed to a list of rows. */
+    REPORT(Feather.BAR_CHART_2),
+    /** A group tree, and the panel that shows one. */
+    TREE(Feather.LIST),
+    /** A code to be scanned. */
+    BARCODE(Feather.HASH),
+    /** Selecting rows in bulk. */
+    SELECT_ALL(Feather.CHECK_SQUARE),
+    /** Something that needs the operator's attention rather than an error. */
+    WARNING(Feather.ALERT_TRIANGLE),
+    /** A spreadsheet, as distinct from {@link #EXPORT}, which is any download. */
+    SPREADSHEET(Feather.FILE_TEXT);
 
     private final Ikon glyph;
 

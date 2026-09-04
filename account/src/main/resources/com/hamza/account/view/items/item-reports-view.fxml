@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.ComboBox?>
+<?import javafx.scene.control.DatePicker?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.ListView?>
+<?import javafx.scene.control.ProgressIndicator?>
+<?import javafx.scene.control.TableView?>
+<?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.layout.FlowPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Region?>
+<?import javafx.scene.layout.StackPane?>
+<?import javafx.scene.layout.VBox?>
+
+<!--
+  Item reports.
+
+  One screen for every report there is, and that is the whole design: the list on the side
+  is whatever ItemReportCatalog holds, and the table is drawn from the columns the chosen
+  report declares. A new report adds a class and appears here with a table, totals, an
+  export and the filter row already working.
+-->
+<StackPane fx:id="stackPane" styleClass="app-root" xmlns="http://javafx.com/javafx/21"
+           xmlns:fx="http://javafx.com/fxml/1"
+           fx:controller="com.hamza.account.controller.items.ItemReportsController">
+    <children>
+        <BorderPane styleClass="app-container">
+            <left>
+                <VBox minWidth="240.0" prefWidth="260.0" spacing="8.0" styleClass="app-card">
+                    <children>
+                        <Label styleClass="section-title" text="%itemreport.list.title" />
+                        <ListView fx:id="reportList" VBox.vgrow="ALWAYS" />
+                    </children>
+                    <BorderPane.margin>
+                        <Insets left="10.0" right="10.0" />
+                    </BorderPane.margin>
+                </VBox>
+            </left>
+
+            <top>
+                <VBox spacing="10.0">
+                    <children>
+                        <HBox alignment="CENTER_LEFT" spacing="10.0">
+                            <children>
+                                <Label fx:id="labelTitle" styleClass="app-title" text="%itemreport.screen.title" />
+                                <Region HBox.hgrow="ALWAYS" />
+                                <ProgressIndicator fx:id="progress" maxHeight="20.0" maxWidth="20.0"
+                                                   managed="false" visible="false" />
+                            </children>
+                        </HBox>
+                        <Label fx:id="labelDescription" styleClass="app-subtitle" wrapText="true" />
+
+                        <HBox alignment="CENTER_LEFT" spacing="8.0" styleClass="app-card">
+                            <children>
+                                <Label styleClass="form-label" text="%item.filter.group" />
+                                <ComboBox fx:id="comboGroup" prefWidth="200.0" />
+                                <Label styleClass="form-label" text="%item.filter.active" />
+                                <ComboBox fx:id="comboActive" prefWidth="130.0" />
+                                <Label fx:id="labelFrom" styleClass="form-label" text="%itemreport.date.from" />
+                                <DatePicker fx:id="dateFrom" prefWidth="150.0" />
+                                <Region HBox.hgrow="ALWAYS" />
+                                <Button fx:id="btnRun" mnemonicParsing="false" styleClass="primary-button"
+                                        text="%itemreport.run" />
+                                <Button fx:id="btnPrint" mnemonicParsing="false" styleClass="neutral-button"
+                                        text="%itemreport.print" />
+                                <Button fx:id="btnExport" mnemonicParsing="false" styleClass="neutral-button"
+                                        text="%itemreport.export" />
+                            </children>
+                        </HBox>
+                    </children>
+                    <BorderPane.margin>
+                        <Insets bottom="10.0" />
+                    </BorderPane.margin>
+                </VBox>
+            </top>
+
+            <center>
+                <TableView fx:id="resultTable" styleClass="modern-table-view" />
+            </center>
+
+            <bottom>
+                <FlowPane fx:id="totalsBar" hgap="16.0" styleClass="app-card" vgap="6.0">
+                    <BorderPane.margin>
+                        <Insets top="10.0" />
+                    </BorderPane.margin>
+                </FlowPane>
+            </bottom>
+        </BorderPane>
+    </children>
+</StackPane>

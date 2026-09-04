@@ -1526,3 +1526,171 @@
     -fx-max-height: 0;
     -fx-opacity: 0;
 }
+
+
+/* =========================================================
+   Items screen and item reports.
+
+   Everything here is written against the -app-* variables, so it answers the light
+   theme and the dark one without a second copy. A colour written literally in this
+   file would be a colour that stops working the moment the theme is switched.
+   ========================================================= */
+
+/* ---------- The count and "filtered" badges beside the title ---------- */
+
+.items-count-badge {
+    -fx-background-color: -app-neutral-soft;
+    -fx-text-fill: -app-text-muted;
+    -fx-background-radius: 999;
+    -fx-padding: 0.18em 0.8em;
+    -fx-font-size: 0.95em;
+}
+
+/*
+   Deliberately loud. It is the one thing standing between a condition left on
+   yesterday and an operator concluding the items themselves are gone.
+*/
+.items-filtered-badge {
+    -fx-background-color: -app-warning-soft;
+    -fx-text-fill: -app-warning;
+    -fx-border-color: -app-warning-border;
+    -fx-border-width: 0.091em;
+    -fx-background-radius: 999;
+    -fx-border-radius: 999;
+    -fx-padding: 0.18em 0.8em;
+    -fx-font-size: 0.95em;
+    -fx-font-weight: bold;
+}
+
+/* ---------- The view switches, grouped as one control ---------- */
+
+/*
+   A segmented bar rather than four loose toggles. These change what is shown; the
+   buttons on the other side change the data, and when both were plain buttons in one
+   row there was nothing on screen that said so.
+*/
+.items-segmented {
+    -fx-background-color: -app-neutral-soft;
+    -fx-background-radius: 0.8em;
+    -fx-padding: 0.18em;
+}
+
+.items-segment {
+    -fx-background-color: transparent;
+    -fx-text-fill: -app-text;
+    -fx-background-radius: 0.65em;
+    -fx-padding: 0.35em 0.85em;
+    -fx-cursor: hand;
+    -fx-graphic-text-gap: 0.4em;
+}
+
+.items-segment:hover {
+    -fx-background-color: -app-neutral-hover;
+}
+
+.items-segment:selected {
+    -fx-background-color: -app-surface;
+    -fx-text-fill: -app-primary-dark;
+    -fx-font-weight: bold;
+    -fx-effect: dropshadow(gaussian, -app-shadow, 4, 0.10, 0, 1);
+}
+
+.items-segment .ikonli-font-icon {
+    -fx-icon-color: -app-text-muted;
+}
+
+.items-segment:selected .ikonli-font-icon {
+    -fx-icon-color: -app-primary-dark;
+}
+
+/* ---------- Quick filter chips ---------- */
+
+/*
+   One condition, one click. Unselected they read as suggestions rather than as
+   controls that are already doing something - which matters, because six chips all
+   looking active is the same problem the filtered badge exists to prevent.
+*/
+.filter-chip {
+    -fx-background-color: transparent;
+    -fx-border-color: -app-border;
+    -fx-border-width: 0.091em;
+    -fx-border-radius: 999;
+    -fx-background-radius: 999;
+    -fx-padding: 0.25em 0.9em;
+    -fx-text-fill: -app-text-muted;
+    -fx-font-size: 0.95em;
+    -fx-cursor: hand;
+}
+
+.filter-chip:hover {
+    -fx-background-color: -app-neutral-soft;
+    -fx-text-fill: -app-text;
+}
+
+.filter-chip:selected {
+    -fx-background-color: -app-primary;
+    -fx-border-color: -app-primary;
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+}
+
+.filter-chip:selected:hover {
+    -fx-background-color: -app-primary-dark;
+}
+
+/* ---------- The reports screen ---------- */
+
+.item-report-name {
+    -fx-font-weight: bold;
+    -fx-text-fill: -app-text-strong;
+}
+
+.item-report-hint {
+    -fx-font-size: 0.9em;
+    -fx-text-fill: -app-text-muted;
+}
+
+.item-report-total {
+    -fx-font-size: 1.05em;
+    -fx-text-fill: -app-text-strong;
+    -fx-font-weight: bold;
+}
+
+/*
+   A heading row and a total row have to be readable as not-a-product at a glance,
+   because the reports put all three kinds in one table.
+
+   The first attempt used -app-neutral-soft, which is a shade away from the alternating
+   row colour: the rule was applied and the heading was still indistinguishable on screen.
+   A heading earns a tinted band and a rule above it - the same weight a section break has
+   in a printed report, which is what this is.
+*/
+.table-row-cell.item-report-group-row {
+    -fx-background-color: -app-table-hover;
+    -fx-border-color: -app-primary transparent transparent transparent;
+    -fx-border-width: 0.18em 0 0 0;
+}
+
+.table-row-cell.item-report-group-row .table-cell {
+    -fx-font-weight: bold;
+    -fx-text-fill: -app-primary-darker;
+}
+
+/* A sub group sits under a main group, so it is the same idea stated more quietly. */
+.table-row-cell.item-report-sub-group-row {
+    -fx-background-color: -app-neutral-soft;
+}
+
+.table-row-cell.item-report-sub-group-row .table-cell {
+    -fx-font-weight: bold;
+    -fx-text-fill: -app-text-strong;
+}
+
+.table-row-cell.item-report-total-row {
+    -fx-background-color: -app-summary-bg;
+}
+
+.table-row-cell.item-report-total-row .table-cell {
+    -fx-font-weight: bold;
+    -fx-text-fill: -app-summary-value;
+}

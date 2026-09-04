@@ -1,10 +1,13 @@
 package com.hamza.account.controller.items;
 
+import com.hamza.account.features.items.ItemCatalogFilter;
 import com.hamza.account.model.domain.ItemsModel;
 import com.hamza.account.service.ItemsService;
 import com.hamza.controlsfx.database.DaoException;
 import javafx.animation.PauseTransition;
 import javafx.application.Platform;
+import javafx.beans.property.ReadOnlyIntegerProperty;
+import javafx.beans.property.ReadOnlyIntegerWrapper;
 import javafx.collections.FXCollections;
 import javafx.scene.control.Pagination;
 import javafx.scene.control.TableView;
@@ -14,14 +17,14 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 
 import java.util.List;
-import java.util.concurrent.Executors;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
- * The paging, searching and reloading behind the items table.
+ * The paging, filtering and reloading behind the items table.
  * <p>
- * Three rules shape it, and each one was a defect before it was a rule:
+ * Four rules shape it, and each one was a defect before it was a rule:
  * <ul>
  *   <li><b>Nothing touches the database on the JavaFX thread.</b> Every read runs on one
  *       background thread and only the assignment to the table comes back to the FX
@@ -30,10 +33,15 @@ import java.util.concurrent.atomic.AtomicLong;
  *       token; a result whose token is no longer the current one is discarded, so a slow
  *       search for "ا" cannot land on top of a fast one for "احمد". Same idea as
  *       {@code ItemSuggestionField}.</li>
- *   <li><b>Reloading keeps the operator's place.</b> Page index, search text and the
- *       selected row survive a reload - {@link #reload()} is what a save or a delete
- *       asks for. Only a change to <em>which rows there are</em> - a new search, a new
- *       group - goes back to the first page, through {@link #refresh()}.</li>
+ *   <li><b>Reloading keeps the operator's place.</b> Page index, filter and the selected
+ *       row survive a reload - {@link #reload()} is what a save or a delete asks for.
+ *       Only a change to <em>which rows there are</em> - a new search, a new filter -
+ *       goes back to the first page, through {@link #refresh()}.</li>
+ *   <li><b>One filter object drives the page and the count.</b> Every way of narrowing
+ *       the list - the search box, the group tree, a quick chip, the filter panel - is a
+ *       new {@link ItemCatalogFilter}, and both reads are built from it. A screen that
+ *       filtered the page one way and counted another would page over rows that are not
+ *       there.</li>
  * </ul>
  */
 @Log4j2
@@ -53,10 +61,16 @@ public class PaginationTableSetting {
     private final TextField txtSearch;
     private final Pagination pagination;
 
-    private Integer mainGroupId;
-    private Integer subGroupId;
-    private String searchText = "";
+    /** Everything narrowing the list right now. Replaced wholesale, never mutated. */
+    private ItemCatalogFilter filter = ItemCatalogFilter.EMPTY;
     private boolean initialized;
+
+    /**
+     * How many rows the current filter matches in the database - not how many are on this
+     * page. The status bar reads it, which is the difference between a screen that says
+     * "50" for every filter and one that tells the operator what they actually asked for.
+     */
+    private final ReadOnlyIntegerWrapper totalRows = new ReadOnlyIntegerWrapper(0);
 
     /**
      * Stamps every read. Incremented whenever what should be on screen changes, so any
@@ -80,6 +94,18 @@ public class PaginationTableSetting {
                 return thread;
             });
 
+    public ReadOnlyIntegerProperty totalRowsProperty() {
+        return totalRows.getReadOnlyProperty();
+    }
+
+    public int rowsPerPage() {
+        return ROWS_PER_PAGE;
+    }
+
+    public ItemCatalogFilter filter() {
+        return filter;
+    }
+
     public void initializePagination() {
         if (!initialized) {
             initialized = true;
@@ -90,23 +116,38 @@ public class PaginationTableSetting {
             PauseTransition pause = new PauseTransition(SEARCH_DEBOUNCE);
             pause.setOnFinished(event -> {
                 String typed = txtSearch.getText() == null ? "" : txtSearch.getText().trim();
-                if (typed.equals(searchText)) return;
-                searchText = typed;
-                refresh();
+                if (typed.equals(filter.searchText())) return;
+                setFilter(filter.withSearch(typed));
             });
             txtSearch.textProperty().addListener((observable, oldValue, newValue) -> pause.playFromStart());
         }
         reload();
     }
 
-    public void setGroupFilter(Integer mainGroupId, Integer subGroupId) {
-        this.mainGroupId = mainGroupId;
-        this.subGroupId = subGroupId;
+    /**
+     * Narrows the list, from the first page.
+     * <p>
+     * Every affordance on the screen comes through here - the search box, the group tree,
+     * a chip, the panel - because a filter that reached the query by any other route would
+     * be a filter the count does not know about.
+     */
+    public void setFilter(ItemCatalogFilter newFilter) {
+        ItemCatalogFilter next = newFilter == null ? ItemCatalogFilter.EMPTY : newFilter;
+        // An identical filter is not a change. The group tree selects its root as it
+        // finishes loading, which arrives here as "no group" - already true - and without
+        // this guard that would cost a query and send the operator back to the first page
+        // every time the tree was rebuilt.
+        if (next.equals(this.filter)) return;
+        this.filter = next;
         refresh();
     }
 
+    public void setGroupFilter(Integer mainGroupId, Integer subGroupId) {
+        setFilter(filter.withGroup(mainGroupId, subGroupId));
+    }
+
     /**
-     * Re-reads what is on screen now, keeping the page, the search and the selected row.
+     * Re-reads what is on screen now, keeping the page, the filter and the selected row.
      * <p>
      * This is what a delete or a wholesale change asks for. It is not what a single
      * saved item asks for - the screen replaces that row in place and never comes here,
@@ -127,7 +168,7 @@ public class PaginationTableSetting {
     }
 
     /**
-     * Re-reads one item and puts it back where it was, leaving the page, the search, the
+     * Re-reads one item and puts it back where it was, leaving the page, the filter, the
      * scroll position and the selection exactly as they were.
      * <p>
      * This is the whole answer to editing the fifth row and being sent back to the first
@@ -174,16 +215,15 @@ public class PaginationTableSetting {
 
     private void countThenPage(int preferredPageIndex) {
         long stamp = token.get();
-        String search = searchText;
-        Integer main = mainGroupId;
-        Integer sub = subGroupId;
+        ItemCatalogFilter asked = filter;
         READER.execute(() -> {
             try {
-                int totalItems = itemsService.getCatalogCount(search, main, sub);
+                int totalItems = itemsService.getCatalogCount(asked);
                 int pageCount = Math.max(1, (totalItems + ROWS_PER_PAGE - 1) / ROWS_PER_PAGE);
                 int pageIndex = Math.min(Math.max(preferredPageIndex, 0), pageCount - 1);
                 Platform.runLater(() -> {
-                    if (isStale(stamp, search, main, sub)) return;
+                    if (isStale(stamp, asked)) return;
+                    totalRows.set(totalItems);
                     pagination.setPageCount(pageCount);
                     pagination.setCurrentPageIndex(pageIndex);
                     load(pageIndex);
@@ -196,7 +236,7 @@ public class PaginationTableSetting {
 
     /**
      * Reads one page in the background and hands it to the table - a page of the whole
-     * catalog or a page of a search, which are now the same thing.
+     * catalog or a page of a filtered list, which are now the same thing.
      * <p>
      * Called both by the pagination control and directly after a count, which would read
      * the same page twice; the signature is what makes the second call a no-op. It is
@@ -205,10 +245,8 @@ public class PaginationTableSetting {
      */
     private void load(int pageIndex) {
         long stamp = token.get();
-        String search = searchText;
-        Integer main = mainGroupId;
-        Integer sub = subGroupId;
-        String signature = stamp + "|" + search + "|" + main + "|" + sub + "|" + pageIndex;
+        ItemCatalogFilter asked = filter;
+        String signature = stamp + "|" + asked + "|" + pageIndex;
         if (signature.equals(loadedSignature)) return;
         loadedSignature = signature;
 
@@ -216,9 +254,9 @@ public class PaginationTableSetting {
         READER.execute(() -> {
             try {
                 List<ItemsModel> rows = itemsService.getCatalogProducts(
-                        search, main, sub, ROWS_PER_PAGE, pageIndex * ROWS_PER_PAGE);
+                        asked, ROWS_PER_PAGE, pageIndex * ROWS_PER_PAGE);
                 Platform.runLater(() -> {
-                    if (isStale(stamp, search, main, sub)) return;
+                    if (isStale(stamp, asked)) return;
                     tableView.setItems(FXCollections.observableArrayList(rows));
                     restoreSelection(selectedId);
                 });
@@ -231,14 +269,10 @@ public class PaginationTableSetting {
 
     /**
      * True once the answer being carried is for a question nobody is asking any more -
-     * an older search, an older group, or anything at all if the screen has since been
-     * told to reload.
+     * an older filter, or anything at all if the screen has since been told to reload.
      */
-    private boolean isStale(long stamp, String search, Integer main, Integer sub) {
-        return stamp != token.get()
-                || !search.equals(searchText)
-                || !java.util.Objects.equals(main, mainGroupId)
-                || !java.util.Objects.equals(sub, subGroupId);
+    private boolean isStale(long stamp, ItemCatalogFilter asked) {
+        return stamp != token.get() || !asked.equals(filter);
     }
 
     private Integer selectedItemId() {

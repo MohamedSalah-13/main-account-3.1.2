@@ -4,6 +4,7 @@ import com.hamza.account.authorization.AppPermissions;
 import com.hamza.account.authorization.AuthorizationGuard;
 
 import com.hamza.account.delete.DeleteRegistry;
+import com.hamza.account.features.items.ItemCatalogFilter;
 import com.hamza.account.delete.DeletionService;
 import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.model.domain.ItemsModel;
@@ -169,14 +170,14 @@ public record ItemsService(DaoFactory daoFactory) {
      * {@link #updateItemImage}; a screen editing the whole item loads it again through
      * {@link #findItemById}.
      */
-    public List<ItemsModel> getCatalogProducts(String searchText, Integer mainGroupId, Integer subGroupId,
-                                               int rowsPerPage, int offset) throws DaoException {
-        return daoFactory.getItemsDao().getCatalogProducts(searchText, mainGroupId, subGroupId, rowsPerPage, offset);
+    public List<ItemsModel> getCatalogProducts(ItemCatalogFilter filter, int rowsPerPage, int offset)
+            throws DaoException {
+        return daoFactory.getItemsDao().getCatalogProducts(filter, rowsPerPage, offset);
     }
 
-    /** How many rows the same search and group filter match in total. */
-    public int getCatalogCount(String searchText, Integer mainGroupId, Integer subGroupId) throws DaoException {
-        return daoFactory.getItemsDao().getCatalogCount(searchText, mainGroupId, subGroupId);
+    /** How many rows the same filter matches in total. */
+    public int getCatalogCount(ItemCatalogFilter filter) throws DaoException {
+        return daoFactory.getItemsDao().getCatalogCount(filter);
     }
 
     public List<ItemsModel> getAllCatalogProducts() throws DaoException {

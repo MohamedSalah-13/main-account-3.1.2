@@ -1,6 +1,8 @@
 package com.hamza.account.model.dao;
 
 import com.hamza.account.config.DefaultStock;
+import com.hamza.account.features.items.ItemCatalogFilter;
+import com.hamza.account.features.items.ItemCatalogSql;
 import com.hamza.account.model.domain.ItemsModel;
 import com.hamza.account.model.domain.ItemsUnitsModel;
 import com.hamza.account.model.domain.Items_Stock_Model;
@@ -751,18 +753,23 @@ public class ItemsDao extends AbstractDao<ItemsModel> {
     // ---------------------------------------------------------------------------
 
     /**
-     * One page of the catalog - searched or not, filtered by group or not - mapped
-     * without a query per row.
+     * One page of the catalog - searched or not, filtered or not - mapped without a query
+     * per row.
      * <p>
      * A search is paged exactly like a plain listing, which is the point: it used to be
      * capped at {@link #FILTER_ITEMS_LIMIT} rows with nothing on screen to say so, and
      * the group filter was applied in Java to whatever those rows happened to be - so a
      * group's items beyond the first fifty matches could not be reached at all, and the
      * table could look empty while matches existed.
+     * <p>
+     * What may narrow the page is {@link ItemCatalogFilter}, and what turns it into SQL is
+     * {@link ItemCatalogSql} - neither of which this class knows the meaning of. That is
+     * the seam: a new filter is a field on the record and a case in the builder, tested
+     * without a database, and this method does not change.
      */
-    public List<ItemsModel> getCatalogProducts(String searchText, Integer mainGroupId, Integer subGroupId,
-                                               int rowsPerPage, int offset) throws DaoException {
-        CatalogQuery query = catalogQuery(searchText, mainGroupId, subGroupId);
+    public List<ItemsModel> getCatalogProducts(ItemCatalogFilter filter, int rowsPerPage, int offset)
+            throws DaoException {
+        ItemCatalogSql.Statement query = ItemCatalogSql.build(filter);
         List<Object> parameters = new ArrayList<>(query.whereParameters());
         parameters.addAll(query.orderParameters());
         parameters.add(rowsPerPage);
@@ -774,18 +781,27 @@ public class ItemsDao extends AbstractDao<ItemsModel> {
     /**
      * How many rows {@link #getCatalogProducts} would return in total.
      * <p>
-     * Deliberately over {@code items} alone: the movement aggregate the page query joins
-     * is a {@code GROUP BY} over every row of {@code quantity_items_table}, and counting
-     * matches does not need a single balance out of it.
+     * Over {@code items} alone wherever it can be: the movement aggregate the page query
+     * joins is a {@code GROUP BY} over every row of {@code quantity_items_table}, and
+     * counting matches does not need a single balance out of it. A balance condition is
+     * the one thing that changes that, and {@link ItemCatalogSql#requiresMovementJoin} is
+     * what says so - counting over a narrower {@code FROM} than the page reads is a
+     * pagination control that promises pages the query cannot fill.
      */
-    public int getCatalogCount(String searchText, Integer mainGroupId, Integer subGroupId) throws DaoException {
-        CatalogQuery query = catalogQuery(searchText, mainGroupId, subGroupId);
-        return countCatalog("SELECT COUNT(*) FROM items" + query.where(), query.whereParameters());
+    public int getCatalogCount(ItemCatalogFilter filter) throws DaoException {
+        ItemCatalogSql.Statement query = ItemCatalogSql.build(filter);
+        String from = ItemCatalogSql.requiresMovementJoin(filter)
+                ? "SELECT COUNT(*) FROM items JOIN " + ITEM_MOVEMENTS_ALL_STOCKS + " ip ON items.id = ip.item_id"
+                : "SELECT COUNT(*) FROM items";
+        return countCatalog(from + query.where(), query.whereParameters());
     }
 
     /**
      * The {@code WHERE} and {@code ORDER BY} shared by a catalog page and its count, so
      * the two can never disagree about which rows there are.
+     * <p>
+     * Retained as the shape {@code ItemsCatalogQueryTest} pins; the rules themselves moved
+     * to {@link ItemCatalogSql}, where they can be read without a DAO around them.
      *
      * @param where            begins with {@code " WHERE "}, or is empty when nothing filters
      * @param whereParameters  bound before {@link #orderParameters()}, which the statement order requires
@@ -795,44 +811,10 @@ public class ItemsDao extends AbstractDao<ItemsModel> {
     }
 
     static CatalogQuery catalogQuery(String searchText, Integer mainGroupId, Integer subGroupId) {
-        List<String> conditions = new ArrayList<>();
-        List<Object> whereParameters = new ArrayList<>();
-        String order = "items.id DESC";
-        List<Object> orderParameters = List.of();
-
-        String q = searchText == null ? "" : searchText.trim();
-        if (!q.isEmpty()) {
-            if (q.matches("\\d+")) {
-                int id;
-                try {
-                    id = Integer.parseInt(q);
-                } catch (NumberFormatException ex) {
-                    // A barcode too long to be an id. It is still a barcode.
-                    id = -1;
-                }
-                conditions.add(SEARCH_NUMERIC_WHERE);
-                whereParameters.addAll(List.of(id, q, q, q));
-                order = SEARCH_NUMERIC_ORDER;
-                orderParameters = List.of(id, q, q, q);
-            } else {
-                String contains = "%" + q + "%";
-                String starts = q + "%";
-                conditions.add(SEARCH_TEXT_WHERE);
-                whereParameters.addAll(List.of(contains, contains, contains, contains));
-                order = SEARCH_TEXT_ORDER;
-                orderParameters = List.of(q, q, q, starts, starts, starts, starts);
-            }
-        }
-        if (subGroupId != null) {
-            conditions.add("items.sub_num = ?");
-            whereParameters.add(subGroupId);
-        } else if (mainGroupId != null) {
-            conditions.add("items.sub_num IN (SELECT id FROM sub_group WHERE main_id = ?)");
-            whereParameters.add(mainGroupId);
-        }
-
-        String where = conditions.isEmpty() ? "" : " WHERE " + String.join(" AND ", conditions);
-        return new CatalogQuery(where, whereParameters, order, orderParameters);
+        ItemCatalogSql.Statement statement = ItemCatalogSql.build(
+                ItemCatalogFilter.EMPTY.withSearch(searchText).withGroup(mainGroupId, subGroupId));
+        return new CatalogQuery(statement.where(), statement.whereParameters(),
+                statement.order(), statement.orderParameters());
     }
 
     private int countCatalog(String sql, List<Object> parameters) throws DaoException {
