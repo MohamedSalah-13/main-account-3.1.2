@@ -40,5 +40,17 @@ public interface ItemReport {
         return false;
     }
 
+    /**
+     * What the date box is called on the report that uses one.
+     * <p>
+     * "From" and "until" are opposite questions and the answer changes completely between
+     * them: the unused report asks what has not moved <em>since</em> a date, the expiry
+     * report asks what runs out <em>by</em> one. A box labelled with the wrong preposition
+     * is worse than no box, because the operator sets it and believes the result.
+     */
+    default String dateLabelKey() {
+        return "itemreport.date.from";
+    }
+
     ItemReportResult run(ItemReportRequest request) throws DaoException;
 }

@@ -64,6 +64,8 @@
                                 <Region HBox.hgrow="ALWAYS" />
                                 <Button fx:id="btnRun" mnemonicParsing="false" styleClass="primary-button"
                                         text="%itemreport.run" />
+                                <Button fx:id="btnPrint" mnemonicParsing="false" styleClass="neutral-button"
+                                        text="%itemreport.print" />
                                 <Button fx:id="btnExport" mnemonicParsing="false" styleClass="neutral-button"
                                         text="%itemreport.export" />
                             </children>

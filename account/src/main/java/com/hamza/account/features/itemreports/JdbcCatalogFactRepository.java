@@ -156,6 +156,104 @@ public final class JdbcCatalogFactRepository implements CatalogFactRepository {
                 movedOn == null ? null : movedOn.toLocalDate());
     }
 
+
+    /**
+     * What is left of every expiry batch, by the same arithmetic the invoice screen uses.
+     * <p>
+     * A batch grows when stock comes in on it - a purchase, a sales return - and shrinks
+     * when stock goes out on it - a sale, a purchase return. That is
+     * {@code JdbcInvoiceStockRepository.expiryBalancesSql} said over the whole catalogue
+     * instead of over one document's items, and the two must not drift: a batch this report
+     * calls empty is a batch the invoice screen would refuse to sell from.
+     * <p>
+     * Warehouses are not separated. The same box has one expiry date wherever it is
+     * standing, and an owner reading this wants the whole exposure at once.
+     * <p>
+     * {@code HAVING} rather than a {@code WHERE} on the sum: a batch is only interesting
+     * once everything that ever moved on it has been added up, and a batch that has been
+     * sold out is not on a shelf.
+     */
+    @Override
+    public List<ExpiringBatch> expiringBatches(ItemCatalogFilter filter) throws DaoException {
+        ItemCatalogSql.Statement query = ItemCatalogSql.build(filter);
+        String sql = """
+                SELECT items.id                     AS item_id,
+                       items.barcode                AS barcode,
+                       items.nameItem               AS name_item,
+                       items.buy_price              AS buy_price,
+                       items.alert_days_before_expire AS alert_days,
+                       sg.name                      AS sub_group_name,
+                       mg.name_g                    AS main_group_name,
+                       u.unit_name                  AS unit_name,
+                       batches.expiration_date      AS expiration_date,
+                       batches.remaining            AS remaining
+                FROM items
+                         JOIN %s ip ON items.id = ip.item_id
+                         JOIN (SELECT item_id, expiration_date, SUM(base_quantity) AS remaining
+                               FROM (%s) movements
+                               GROUP BY item_id, expiration_date
+                               HAVING SUM(base_quantity) > 0) batches
+                              ON batches.item_id = items.id
+                         LEFT JOIN sub_group sg ON sg.id = items.sub_num
+                         LEFT JOIN main_group mg ON mg.id = sg.main_id
+                         LEFT JOIN units u ON u.unit_id = items.unit_id
+                %s
+                ORDER BY batches.expiration_date, items.nameItem
+                """.formatted(MOVEMENTS, BATCH_MOVEMENTS, query.where());
+
+        List<Object> parameters = new ArrayList<>(query.whereParameters());
+        return withConnection(connection -> {
+            List<ExpiringBatch> batches = new ArrayList<>();
+            try (PreparedStatement statement = connection.prepareStatement(sql)) {
+                for (int index = 0; index < parameters.size(); index++) {
+                    statement.setObject(index + 1, parameters.get(index));
+                }
+                try (ResultSet rows = statement.executeQuery()) {
+                    while (rows.next()) {
+                        Date expiry = rows.getDate("expiration_date");
+                        if (expiry == null) continue;
+                        String group = rows.getString("sub_group_name");
+                        if (group == null) group = rows.getString("main_group_name");
+                        batches.add(new ExpiringBatch(
+                                rows.getInt("item_id"),
+                                rows.getString("barcode"),
+                                rows.getString("name_item"),
+                                group == null ? "" : group,
+                                rows.getString("unit_name"),
+                                rows.getDouble("buy_price"),
+                                expiry.toLocalDate(),
+                                rows.getDouble("remaining"),
+                                rows.getInt("alert_days")));
+                    }
+                }
+            }
+            return batches;
+        });
+    }
+
+    /**
+     * Everything that has ever moved on a dated batch, signed.
+     * <p>
+     * The four document families again, with the two that bring stock in adding and the two
+     * that take it out subtracting - and the column called {@code num} on the invoices and
+     * {@code item_id} on the returns, which is the spread {@code ItemReferenceRegistry}
+     * exists to remember. A line with no expiry date is not part of a batch and is excluded
+     * here rather than grouped under a null.
+     */
+    private static final String BATCH_MOVEMENTS = """
+            SELECT p.num AS item_id, p.expiration_date, p.quantity * p.type_value AS base_quantity
+              FROM purchase p WHERE p.expiration_date IS NOT NULL
+            UNION ALL
+            SELECT sr.item_id, sr.expiration_date, sr.quantity * sr.type_value
+              FROM sales_re sr WHERE sr.expiration_date IS NOT NULL
+            UNION ALL
+            SELECT s.num, s.expiration_date, -(s.quantity * s.type_value)
+              FROM sales s WHERE s.expiration_date IS NOT NULL
+            UNION ALL
+            SELECT pr.item_id, pr.expiration_date, -(pr.quantity * pr.type_value)
+              FROM purchase_re pr WHERE pr.expiration_date IS NOT NULL
+            """;
+
     /**
      * Borrows a connection for the length of one read and gives it straight back, the way
      * every {@code AbstractDao} helper does. A report joins whatever transaction happens to

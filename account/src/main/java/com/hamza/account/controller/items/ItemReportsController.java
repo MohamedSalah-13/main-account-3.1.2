@@ -34,8 +34,10 @@ import javafx.scene.control.TableView;
 import javafx.scene.layout.FlowPane;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
+import javafx.stage.FileChooser;
 import javafx.util.StringConverter;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
@@ -78,7 +80,7 @@ public class ItemReportsController {
     @FXML
     private DatePicker dateFrom;
     @FXML
-    private Button btnRun, btnExport;
+    private Button btnRun, btnExport, btnPrint;
     @FXML
     private TableView<ItemReportRow> resultTable;
     @FXML
@@ -97,6 +99,13 @@ public class ItemReportsController {
      */
     private ItemCatalogFilter openingFilter = ItemCatalogFilter.EMPTY;
 
+    /**
+     * What is on screen right now. Kept because printing prints what the operator is
+     * looking at - running the report a second time to print it could hand them a different
+     * page, and a printed report that does not match the screen is worse than none.
+     */
+    private ItemReportResult current;
+
     public void setOpeningFilter(ItemCatalogFilter filter) {
         this.openingFilter = filter == null ? ItemCatalogFilter.EMPTY : filter;
     }
@@ -111,6 +120,7 @@ public class ItemReportsController {
         resultTable.setColumnResizePolicy(TableView.UNCONSTRAINED_RESIZE_POLICY);
         btnRun.setOnAction(event -> run());
         btnExport.setOnAction(event -> ItemsExcelExport.export(resultTable, "Report", "item-report.xlsx"));
+        btnPrint.setOnAction(event -> printToPdf());
         reportList.getSelectionModel().selectFirst();
         loadGroups();
     }
@@ -148,6 +158,8 @@ public class ItemReportsController {
             dateFrom.setManaged(dated);
             labelFrom.setVisible(dated);
             labelFrom.setManaged(dated);
+            // "From" and "until" are opposite questions; the report says which one it asks.
+            labelFrom.setText(LanguageManager.getInstance().getString(report.dateLabelKey()));
             run();
         });
     }
@@ -277,6 +289,7 @@ public class ItemReportsController {
      * the previous report's heading.
      */
     private void show(ItemReportResult result) {
+        current = result;
         resultTable.getColumns().clear();
         List<ItemReportColumn> columns = result.columns();
         // Each column gets a width in pixels, straight from the weight it declared.
@@ -331,6 +344,45 @@ public class ItemReportsController {
             Label label = new Label(language.getString(total.labelKey()) + ": " + total.value());
             label.getStyleClass().add("item-report-total");
             totalsBar.getChildren().add(label);
+        }
+    }
+
+    /**
+     * Writes what is on screen to a PDF the operator chooses the location of.
+     * <p>
+     * The subtitle records the question, not just the answer: which report, and the date it
+     * was run. A page of figures with no statement of what was asked is a page nobody can
+     * check a week later.
+     */
+    private void printToPdf() {
+        ItemReport report = reportList.getSelectionModel().getSelectedItem();
+        if (current == null || report == null) return;
+        LanguageManager language = LanguageManager.getInstance();
+
+        if (current.rows().isEmpty()) {
+            AllAlerts.handleError(language.getString("itemreport.print"),
+                    new com.hamza.controlsfx.error.UserValidationException(
+                            language.getString("itemreport.empty")));
+            return;
+        }
+
+        FileChooser chooser = new FileChooser();
+        chooser.setTitle(language.getString("itemreport.print"));
+        chooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("PDF", "*.pdf"));
+        chooser.setInitialFileName(report.id().replace('.', '-') + ".pdf");
+        File file = chooser.showSaveDialog(stackPane.getScene() == null
+                ? null : stackPane.getScene().getWindow());
+        if (file == null) return;
+
+        String subtitle = language.getString(report.descriptionKey())
+                + "  -  " + java.time.LocalDate.now();
+        boolean written = ItemReportPdf.write(current,
+                language.getString(report.titleKey()), subtitle, file.getAbsolutePath());
+        if (written) {
+            AllAlerts.alertSaveWithMessage(language.getString("itemreport.export.success"));
+        } else {
+            AllAlerts.handleError(language.getString("itemreport.print"),
+                    new Exception("PDF export failed"));
         }
     }
 

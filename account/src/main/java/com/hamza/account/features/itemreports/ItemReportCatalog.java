@@ -27,12 +27,14 @@ public final class ItemReportCatalog {
     }
 
     /**
-     * The reports, in the order an owner would work through them: what is running out
-     * today, then what the catalogue is worth, then what is priced wrongly, then what has
-     * been sitting still, then the whole catalogue by group.
+     * The reports, in the order an owner would work through them: what is going off first,
+     * because that one has a date attached and the others do not; then what is running out,
+     * what the catalogue is worth, what is priced wrongly, what has been sitting still, and
+     * finally the whole catalogue by group.
      */
     private static List<ItemReport> reports(CatalogFactRepository repository) {
         return List.of(
+                new ExpiringItemsReport(repository),
                 new StockLevelReport(repository),
                 new ValuationReport(repository),
                 new PriceAnomalyReport(repository),
