@@ -19,7 +19,11 @@ import com.hamza.account.features.shift.ShiftLedgerAction;
 import com.hamza.account.features.shift.ShiftReconciliationResult;
 import com.hamza.account.features.shift.ShiftReconciliationService;
 import com.hamza.account.features.shift.CashierTreasuryAssignment;
+import com.hamza.account.features.shift.CashierTreasuryAssignmentEvent;
 import com.hamza.account.features.shift.CashierTreasuryAssignmentService;
+import com.hamza.account.features.shift.ShiftCashHandover;
+import com.hamza.account.features.shift.ShiftCashHandoverPolicy;
+import com.hamza.account.features.shift.ShiftCashHandoverService;
 import com.hamza.account.model.domain.UserShift;
 import com.hamza.account.model.domain.Treasury;
 import com.hamza.account.model.domain.Users;
@@ -74,6 +78,7 @@ public class AdminShiftsController {
     private final ShiftReportService shiftReports = ServiceRegistry.get(ShiftReportService.class);
     private final CashierTreasuryAssignmentService assignments =
             ServiceRegistry.get(CashierTreasuryAssignmentService.class);
+    private final ShiftCashHandoverService handovers = ServiceRegistry.get(ShiftCashHandoverService.class);
     private final UsersService users = ServiceRegistry.get(UsersService.class);
     private final TreasuryService treasuries = ServiceRegistry.get(TreasuryService.class);
     private final Print_Reports printReports = new Print_Reports();
@@ -101,13 +106,25 @@ public class AdminShiftsController {
     @FXML private ComboBox<Users> comboAssignmentUser;
     @FXML private ComboBox<Treasury> comboAssignmentTreasury;
     @FXML private TableView<CashierTreasuryAssignment> assignmentTable;
+    @FXML private TableView<CashierTreasuryAssignmentEvent> assignmentHistoryTable;
     @FXML private Button btnAssignTreasury, btnDeactivateAssignment, btnAssignmentRefresh;
     @FXML private ProgressIndicator assignmentProgress;
+    @FXML private TitledPane handoverPane;
+    @FXML private ComboBox<Treasury> comboHandoverSource, comboHandoverTarget;
+    @FXML private TextField txtHandoverFloat;
+    @FXML private CheckBox checkHandoverEnabled;
+    @FXML private TableView<ShiftCashHandoverPolicy> handoverPolicyTable;
+    @FXML private TableView<ShiftCashHandover> handoverTable;
+    @FXML private Button btnSaveHandoverPolicy, btnReceiveHandover, btnHandoverRefresh;
+    @FXML private ProgressIndicator handoverProgress;
     private long ledgerRequest;
     private long reconciliationRequest;
     private long dataRequest;
     private long approvalRequest;
+    private long handoverRequest;
     private boolean mayDecideClose;
+    private boolean mayManageHandovers;
+    private boolean mayReceiveHandovers;
 
     @FXML
     public void initialize() {
@@ -115,6 +132,7 @@ public class AdminShiftsController {
         setupActions();
         setupPolicyEditor();
         setupAssignments();
+        setupHandovers();
         setupApprovals();
         setupLedger();
         refreshData();
@@ -382,6 +400,20 @@ public class AdminShiftsController {
                         CashierTreasuryAssignment::updatedByUsername),
                 Columns.text("user.shift.assignment.column.updated.at",
                         row -> formatTime(row.updatedAt())));
+        assignmentHistoryTable.getColumns().addAll(
+                Columns.text("user.shift.assignment.history.column.time",
+                        row -> formatTime(row.occurredAt())),
+                Columns.text("user.shift.assignment.column.user",
+                        CashierTreasuryAssignmentEvent::username),
+                Columns.text("user.shift.assignment.column.treasury",
+                        CashierTreasuryAssignmentEvent::treasuryName),
+                Columns.text("user.shift.assignment.history.column.action",
+                        row -> message("user.shift.assignment.history.action."
+                                + row.action().name().toLowerCase())),
+                Columns.text("user.shift.assignment.history.column.state",
+                        this::assignmentState),
+                Columns.text("user.shift.assignment.history.column.actor",
+                        CashierTreasuryAssignmentEvent::actorUsername));
         comboAssignmentUser.setConverter(new StringConverter<>() {
             @Override public String toString(Users value) {
                 return value == null ? "" : value.getUsername();
@@ -415,6 +447,7 @@ public class AdminShiftsController {
                         .collect(java.util.stream.Collectors.toUnmodifiableSet());
                 return new AssignmentEditorData(
                         assignments.listAll(),
+                        assignments.listHistory(),
                         users.getUsersList().stream().filter(Users::isActive).toList(),
                         treasuries.getActiveTreasuryModelList().stream()
                                 .filter(item -> trackedIds.contains(item.getId())).toList());
@@ -428,6 +461,7 @@ public class AdminShiftsController {
                 return;
             }
             assignmentTable.setItems(FXCollections.observableArrayList(data.assignments()));
+            assignmentHistoryTable.setItems(FXCollections.observableArrayList(data.history()));
             comboAssignmentUser.setItems(FXCollections.observableArrayList(data.users()));
             comboAssignmentTreasury.setItems(FXCollections.observableArrayList(data.treasuries()));
             comboAssignmentUser.getSelectionModel().selectFirst();
@@ -487,6 +521,159 @@ public class AdminShiftsController {
         btnAssignTreasury.setDisable(busy);
         CashierTreasuryAssignment selected = assignmentTable.getSelectionModel().getSelectedItem();
         btnDeactivateAssignment.setDisable(busy || selected == null || !selected.active());
+    }
+
+    private String assignmentState(CashierTreasuryAssignmentEvent event) {
+        return message("user.shift.assignment.history.state",
+                message(event.afterCanOpenShift() ? "yes" : "no"),
+                message(event.afterDefaultTreasury() ? "yes" : "no"),
+                message(event.afterActive()
+                        ? "user.shift.assignment.status.active"
+                        : "user.shift.assignment.status.inactive"));
+    }
+
+    private void setupHandovers() {
+        handoverPolicyTable.getColumns().addAll(
+                Columns.text("user.shift.handover.column.source", ShiftCashHandoverPolicy::sourceTreasuryName),
+                Columns.text("user.shift.handover.column.target", ShiftCashHandoverPolicy::targetTreasuryName),
+                Columns.text("user.shift.handover.column.enabled", row -> message(row.enabled() ? "yes" : "no")),
+                Columns.number("user.shift.handover.column.float", ShiftCashHandoverPolicy::retainedFloat),
+                Columns.text("user.shift.handover.column.updated.by", ShiftCashHandoverPolicy::updatedByUsername),
+                Columns.text("user.shift.handover.column.updated.at", row -> formatTime(row.updatedAt())));
+        handoverTable.getColumns().addAll(
+                Columns.number(NamesTables.CODE, ShiftCashHandover::id),
+                Columns.number("user.shift.handover.column.shift", ShiftCashHandover::shiftId),
+                Columns.text("user.shift.handover.column.cashier", ShiftCashHandover::handedByUsername),
+                Columns.text("user.shift.handover.column.source", ShiftCashHandover::sourceTreasuryName),
+                Columns.text("user.shift.handover.column.target", ShiftCashHandover::targetTreasuryName),
+                Columns.number("user.shift.handover.column.actual", ShiftCashHandover::actualBalance),
+                Columns.number("user.shift.handover.column.float", ShiftCashHandover::retainedFloat),
+                Columns.number("user.shift.handover.column.amount", ShiftCashHandover::handoverAmount),
+                Columns.text("user.shift.handover.column.requested.at", row -> formatTime(row.requestedAt())));
+        StringConverter<Treasury> converter = new StringConverter<>() {
+            @Override public String toString(Treasury value) {
+                return value == null ? "" : value.getName();
+            }
+            @Override public Treasury fromString(String text) { throw new UnsupportedOperationException(); }
+        };
+        comboHandoverSource.setConverter(converter);
+        comboHandoverTarget.setConverter(converter);
+        setTextFormatter(txtHandoverFloat);
+        mayManageHandovers = AuthorizationGuard.isGranted(AppPermissions.SHIFT_POLICY_MANAGE);
+        mayReceiveHandovers = AuthorizationGuard.isGranted(AppPermissions.SHIFT_FORCE_CLOSE);
+        handoverPane.setDisable(!mayManageHandovers && !mayReceiveHandovers);
+        comboHandoverSource.setDisable(!mayManageHandovers);
+        comboHandoverTarget.setDisable(!mayManageHandovers);
+        txtHandoverFloat.setDisable(!mayManageHandovers);
+        checkHandoverEnabled.setDisable(!mayManageHandovers);
+        btnSaveHandoverPolicy.setOnAction(event -> saveHandoverPolicy());
+        btnReceiveHandover.setOnAction(event -> receiveHandover());
+        btnHandoverRefresh.setOnAction(event -> refreshHandovers());
+        handoverPolicyTable.getSelectionModel().selectedItemProperty().addListener((observable, old, selected) -> {
+            if (selected == null) return;
+            selectTreasury(comboHandoverSource, selected.sourceTreasuryId());
+            selectTreasury(comboHandoverTarget, selected.targetTreasuryId());
+            txtHandoverFloat.setText(selected.retainedFloat().toPlainString());
+            checkHandoverEnabled.setSelected(selected.enabled());
+        });
+        handoverTable.getSelectionModel().selectedItemProperty().addListener((observable, old, selected) ->
+                btnReceiveHandover.setDisable(!mayReceiveHandovers || selected == null));
+        setHandoverBusy(false);
+        if (mayManageHandovers || mayReceiveHandovers) refreshHandovers();
+    }
+
+    private void refreshHandovers() {
+        long request = ++handoverRequest;
+        setHandoverBusy(true);
+        CompletableFuture.supplyAsync(() -> {
+            try {
+                List<ShiftCashHandoverPolicy> policyRows = mayManageHandovers
+                        ? handovers.policies() : List.of();
+                List<Treasury> treasuryRows = mayManageHandovers
+                        ? treasuries.getActiveTreasuryModelList() : List.of();
+                List<ShiftCashHandover> pendingRows = mayReceiveHandovers
+                        ? handovers.pending() : List.of();
+                return new HandoverEditorData(policyRows, treasuryRows, pendingRows);
+            } catch (DaoException e) {
+                throw new CompletionException(e);
+            }
+        }).whenComplete((data, error) -> Platform.runLater(() -> {
+            if (request != handoverRequest) return;
+            setHandoverBusy(false);
+            if (error != null) {
+                AllAlerts.handleError(message("user.shift.handover.error.load"), rootCause(error));
+                return;
+            }
+            handoverPolicyTable.setItems(FXCollections.observableArrayList(data.policies()));
+            handoverTable.setItems(FXCollections.observableArrayList(data.pending()));
+            comboHandoverSource.setItems(FXCollections.observableArrayList(data.treasuries()));
+            comboHandoverTarget.setItems(FXCollections.observableArrayList(data.treasuries()));
+            comboHandoverSource.getSelectionModel().selectFirst();
+            if (data.treasuries().size() > 1) comboHandoverTarget.getSelectionModel().select(1);
+        }));
+    }
+
+    private void saveHandoverPolicy() {
+        Treasury source = comboHandoverSource.getValue();
+        Treasury target = comboHandoverTarget.getValue();
+        if (source == null || target == null) {
+            AllAlerts.handleError(message("user.shift.handover.title"),
+                    new UserValidationException(message("user.shift.handover.error.treasury")));
+            return;
+        }
+        runHandoverMutation(() -> handovers.savePolicy(source.getId(), target.getId(),
+                        parseMoney(txtHandoverFloat.getText()), checkHandoverEnabled.isSelected()),
+                "user.shift.handover.saved");
+    }
+
+    private void receiveHandover() {
+        ShiftCashHandover selected = handoverTable.getSelectionModel().getSelectedItem();
+        if (selected == null) {
+            AllAlerts.handleError(message("user.shift.handover.title"),
+                    new UserValidationException(message("user.shift.handover.error.select")));
+            return;
+        }
+        if (!AllAlerts.confirm_all(message("user.shift.handover.receive.title"),
+                message("user.shift.handover.receive.confirm", selected.handoverAmount(),
+                        selected.sourceTreasuryName(), selected.targetTreasuryName()))) return;
+        Optional<String> note = promptWithTitle("user.shift.handover.receive.title",
+                "user.shift.handover.receive.note", "");
+        if (note.isEmpty()) return;
+        runHandoverMutation(() -> handovers.receive(selected.id(), note.get()),
+                "user.shift.handover.received");
+    }
+
+    private void runHandoverMutation(HandoverAction action, String successKey) {
+        setHandoverBusy(true);
+        CompletableFuture.runAsync(() -> {
+            try {
+                action.execute();
+            } catch (DaoException e) {
+                throw new CompletionException(e);
+            }
+        }).whenComplete((ignored, error) -> Platform.runLater(() -> {
+            setHandoverBusy(false);
+            if (error != null) {
+                AllAlerts.handleError(message("user.shift.handover.title"), rootCause(error));
+                return;
+            }
+            AllAlerts.alertSaveWithMessage(message(successKey));
+            refreshHandovers();
+            refreshData();
+        }));
+    }
+
+    private void setHandoverBusy(boolean busy) {
+        handoverProgress.setVisible(busy);
+        btnHandoverRefresh.setDisable(busy);
+        btnSaveHandoverPolicy.setDisable(busy || !mayManageHandovers);
+        btnReceiveHandover.setDisable(busy || !mayReceiveHandovers
+                || handoverTable.getSelectionModel().getSelectedItem() == null);
+    }
+
+    private static void selectTreasury(ComboBox<Treasury> combo, int treasuryId) {
+        combo.getItems().stream().filter(item -> item.getId() == treasuryId)
+                .findFirst().ifPresent(combo::setValue);
     }
 
     private void refreshData() {
@@ -677,9 +864,21 @@ public class AdminShiftsController {
         void execute() throws DaoException;
     }
 
+    @FunctionalInterface
+    private interface HandoverAction {
+        void execute() throws DaoException;
+    }
+
     private record AssignmentEditorData(
             List<CashierTreasuryAssignment> assignments,
+            List<CashierTreasuryAssignmentEvent> history,
             List<Users> users,
             List<Treasury> treasuries) {
+    }
+
+    private record HandoverEditorData(
+            List<ShiftCashHandoverPolicy> policies,
+            List<Treasury> treasuries,
+            List<ShiftCashHandover> pending) {
     }
 }

@@ -78,6 +78,7 @@ class CashierTreasuryAssignmentServiceTest {
         private boolean hasActiveAssignments = true;
 
         @Override public List<CashierTreasuryAssignment> loadAll() { return List.of(); }
+        @Override public List<CashierTreasuryAssignmentEvent> loadHistory(int limit) { return List.of(); }
         @Override public List<CashierTreasuryChoice> availableTreasuries(
                 int userId, boolean enforceAssignments) {
             requestedUser = userId;

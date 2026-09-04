@@ -863,7 +863,10 @@ Schema changes are **Flyway migrations**, in `account/src/main/resources/db/migr
 - `V1__baseline.sql` is the schema as shipped to clients in v4.1.3 — tables, indexes, procedures and the
   seed data (including the `admin` user, without which nobody can log in). It is the Flyway baseline: an
   existing client database is **stamped** with it, never executed, because it already is that schema. A
-  new database executes it and continues with `V2`, `V3`, … The current head is `V21`. The last four:
+  new database executes it and continues with `V2`, `V3`, … The current head is `V32`. Recent shift
+  migrations `V22`–`V32` add treasury-scoped shifts, optional policy, immutable cash journals and close
+  snapshots, dual approval, cashier permissions, per-cashier treasury assignments, append-only
+  assignment history, and optional two-person cash handover. The last four migrations before that work:
   `V18` backfills `items_stock` for warehouses that predate multi-warehouse returning, `V19` gives a
   transfer line its unit and factor, `V20` gives a treasury a type and declares `amount` to be the
   opening balance, and `V21` gives a hand-entered cash movement a category so the owner's capital is

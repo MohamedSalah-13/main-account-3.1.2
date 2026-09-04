@@ -7,6 +7,8 @@ import java.util.List;
 public interface CashierTreasuryAssignmentRepository {
     List<CashierTreasuryAssignment> loadAll() throws DaoException;
 
+    List<CashierTreasuryAssignmentEvent> loadHistory(int limit) throws DaoException;
+
     List<CashierTreasuryChoice> availableTreasuries(int userId, boolean enforceAssignments)
             throws DaoException;
 

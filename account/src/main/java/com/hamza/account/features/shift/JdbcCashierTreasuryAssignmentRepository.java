@@ -39,6 +39,31 @@ public final class JdbcCashierTreasuryAssignmentRepository
     }
 
     @Override
+    public List<CashierTreasuryAssignmentEvent> loadHistory(int limit) throws DaoException {
+        String sql = """
+                SELECT id, assignment_id, user_id, user_name_snapshot, treasury_id,
+                       treasury_name_snapshot, action_type, before_can_open_shift,
+                       after_can_open_shift, before_is_default, after_is_default,
+                       before_active, after_active, actor_user_id, actor_name_snapshot,
+                       occurred_at
+                FROM cashier_treasury_assignment_events
+                ORDER BY id DESC
+                LIMIT ?
+                """;
+        int safeLimit = Math.max(1, Math.min(limit, 1000));
+        return withConnection(connection -> {
+            List<CashierTreasuryAssignmentEvent> result = new ArrayList<>();
+            try (PreparedStatement statement = connection.prepareStatement(sql)) {
+                statement.setInt(1, safeLimit);
+                try (ResultSet rows = statement.executeQuery()) {
+                    while (rows.next()) result.add(mapEvent(rows));
+                }
+                return List.copyOf(result);
+            }
+        });
+    }
+
+    @Override
     public List<CashierTreasuryChoice> availableTreasuries(int userId, boolean enforceAssignments)
             throws DaoException {
         String sql = """
@@ -199,6 +224,24 @@ public final class JdbcCashierTreasuryAssignmentRepository
                 rows.getString("assigned_by_name"), rows.getTimestamp("assigned_at").toLocalDateTime(),
                 rows.getInt("updated_by"), rows.getString("updated_by_name"),
                 rows.getTimestamp("updated_at").toLocalDateTime());
+    }
+
+    private static CashierTreasuryAssignmentEvent mapEvent(ResultSet rows) throws SQLException {
+        return new CashierTreasuryAssignmentEvent(
+                rows.getLong("id"), rows.getInt("assignment_id"), rows.getInt("user_id"),
+                rows.getString("user_name_snapshot"), rows.getInt("treasury_id"),
+                rows.getString("treasury_name_snapshot"),
+                CashierTreasuryAssignmentEvent.Action.valueOf(rows.getString("action_type")),
+                nullableBoolean(rows, "before_can_open_shift"), rows.getBoolean("after_can_open_shift"),
+                nullableBoolean(rows, "before_is_default"), rows.getBoolean("after_is_default"),
+                nullableBoolean(rows, "before_active"), rows.getBoolean("after_active"),
+                rows.getInt("actor_user_id"), rows.getString("actor_name_snapshot"),
+                rows.getTimestamp("occurred_at").toLocalDateTime());
+    }
+
+    private static Boolean nullableBoolean(ResultSet rows, String column) throws SQLException {
+        boolean value = rows.getBoolean(column);
+        return rows.wasNull() ? null : value;
     }
 
     private <T> T withConnection(SqlWork<T> work) throws DaoException {

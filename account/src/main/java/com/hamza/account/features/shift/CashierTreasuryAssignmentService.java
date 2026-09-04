@@ -13,6 +13,7 @@ import java.util.List;
 
 /** Business boundary for assigning cashiers to the tills they may operate. */
 public final class CashierTreasuryAssignmentService {
+    private static final int HISTORY_LIMIT = 250;
     private final CashierTreasuryAssignmentRepository repository;
     private final ShiftPolicyService policies;
     private final UserSessionContext session;
@@ -28,6 +29,11 @@ public final class CashierTreasuryAssignmentService {
     public List<CashierTreasuryAssignment> listAll() throws DaoException {
         AuthorizationGuard.require(AppPermissions.SHIFT_POLICY_MANAGE);
         return repository.loadAll();
+    }
+
+    public List<CashierTreasuryAssignmentEvent> listHistory() throws DaoException {
+        AuthorizationGuard.require(AppPermissions.SHIFT_POLICY_MANAGE);
+        return repository.loadHistory(HISTORY_LIMIT);
     }
 
     public List<CashierTreasuryChoice> availableTreasuries(int userId) throws DaoException {

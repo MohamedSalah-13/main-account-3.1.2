@@ -10,6 +10,7 @@ import com.hamza.account.features.shift.ShiftCloseRequestDao;
 import com.hamza.account.features.shift.ShiftCloseDecisionPolicy;
 import com.hamza.account.features.shift.ShiftCloseSnapshotWriter;
 import com.hamza.account.features.shift.CashierTreasuryAssignmentService;
+import com.hamza.account.features.shift.ShiftCashHandoverService;
 import com.hamza.account.features.shift.ShiftMode;
 import com.hamza.account.features.shift.ShiftOpened;
 import com.hamza.account.features.shift.ShiftPolicyService;
@@ -39,6 +40,7 @@ public final class UserShiftService {
     private final Clock clock;
     private final ShiftCloseRequestDao closeRequests;
     private final CashierTreasuryAssignmentService treasuryAssignments;
+    private final ShiftCashHandoverService cashHandovers;
 
     /** Compatibility constructor used by tests that only exercise authorization. */
     public UserShiftService(DaoFactory daoFactory) {
@@ -60,6 +62,14 @@ public final class UserShiftService {
                             ShiftPolicyService policies, EventBus events, Clock clock,
                             ShiftCloseRequestDao closeRequests,
                             CashierTreasuryAssignmentService treasuryAssignments) {
+        this(daoFactory, session, policies, events, clock, closeRequests, treasuryAssignments, null);
+    }
+
+    public UserShiftService(DaoFactory daoFactory, UserSessionContext session,
+                            ShiftPolicyService policies, EventBus events, Clock clock,
+                            ShiftCloseRequestDao closeRequests,
+                            CashierTreasuryAssignmentService treasuryAssignments,
+                            ShiftCashHandoverService cashHandovers) {
         this.daoFactory = daoFactory;
         this.session = session;
         this.policies = policies;
@@ -67,6 +77,7 @@ public final class UserShiftService {
         this.clock = clock;
         this.closeRequests = closeRequests;
         this.treasuryAssignments = treasuryAssignments;
+        this.cashHandovers = cashHandovers;
     }
 
     public int openShift(int userId, int treasuryId, BigDecimal openBalance, String notes) throws DaoException {
@@ -161,6 +172,7 @@ public final class UserShiftService {
         if (rows != 1) throw new BusinessRuleException(message("user.shift.msg.already.closed"));
         int closedBy = currentActor(userId);
         new ShiftCloseSnapshotWriter().append(shift, closedBy);
+        appendCashHandover(shift, effectiveCloseBalance, closeTime);
         ShiftClosed event = new ShiftClosed(shift.getId(), shift.getUserId(), shift.getTreasuryId(), difference, forced);
         return new CloseResult(ShiftCloseAttempt.closed(shift.getId()), event);
     }
@@ -178,7 +190,8 @@ public final class UserShiftService {
             ShiftCloseRequest request = requirePendingRequest(shiftId);
             validateDecision(request, actor, closeRequests.currentLedgerLastId(shiftId));
             ShiftSummary captured = capturedSummary(shift, request);
-            applyClose(shift, LocalDateTime.now(clock), request.actualBalance(), request.difference(),
+            LocalDateTime closeTime = LocalDateTime.now(clock);
+            applyClose(shift, closeTime, request.actualBalance(), request.difference(),
                     captured, ShiftStatus.CLOSED);
             appendApprovalNotes(shift, request.reason(), note, actor);
             if (daoFactory.userShiftDao().close(shift) != 1) {
@@ -188,6 +201,7 @@ public final class UserShiftService {
                 throw new BusinessRuleException(message("user.shift.error.approval.already.decided"));
             }
             new ShiftCloseSnapshotWriter().append(shift, actor);
+            appendCashHandover(shift, request.actualBalance(), closeTime);
             return new ShiftClosed(shift.getId(), shift.getUserId(), shift.getTreasuryId(),
                     request.difference(), false);
         });
@@ -349,6 +363,14 @@ public final class UserShiftService {
 
     private int currentActor(int fallback) {
         return session == null || session.currentUserId() <= 0 ? fallback : session.currentUserId();
+    }
+
+    private void appendCashHandover(UserShift shift, BigDecimal actualBalance,
+                                    LocalDateTime requestedAt) throws DaoException {
+        if (cashHandovers != null) {
+            cashHandovers.requestForClosedShift(shift.getId(), shift.getTreasuryId(),
+                    actualBalance, shift.getUserId(), requestedAt);
+        }
     }
 
     private static ShiftSummary capturedSummary(UserShift shift, ShiftCloseRequest request) {

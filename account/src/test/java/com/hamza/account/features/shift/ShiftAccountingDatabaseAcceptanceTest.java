@@ -190,6 +190,73 @@ class ShiftAccountingDatabaseAcceptanceTest {
             assertEquals(1, repository.deactivate(first.id(), 1));
             assertFalse(repository.canOpenShift(userId, firstTreasury));
             assertEquals(1, repository.availableTreasuries(userId, true).size());
+
+            var history = repository.loadHistory(100).stream()
+                    .filter(event -> event.userId() == userId)
+                    .toList();
+            assertTrue(history.stream().anyMatch(event ->
+                    event.action() == CashierTreasuryAssignmentEvent.Action.ASSIGNED));
+            assertTrue(history.stream().anyMatch(event ->
+                    event.action() == CashierTreasuryAssignmentEvent.Action.DEFAULT_CHANGED));
+            assertTrue(history.stream().anyMatch(event ->
+                    event.action() == CashierTreasuryAssignmentEvent.Action.DEACTIVATED));
+            assertThrows(SQLException.class, () -> execute(transaction,
+                    "UPDATE cashier_treasury_assignment_events SET action_type='UPDATED' WHERE id=?",
+                    history.getFirst().id()));
+            assertThrows(SQLException.class, () -> execute(transaction,
+                    "DELETE FROM cashier_treasury_assignment_events WHERE id=?",
+                    history.getFirst().id()));
+        } finally {
+            transaction.rollback();
+            ConnectionManager.endTransaction(transaction);
+        }
+    }
+
+    @Test
+    void cashHandoverRequiresASecondUserAndKeepsRequestAndReceiptImmutable() throws Exception {
+        Connection transaction = ConnectionManager.beginTransaction();
+        try {
+            int shiftId = insertShift(transaction, true);
+            int targetTreasury = insertTreasury(transaction, "sa-handover-target-");
+            int receiver = insertUser(transaction, "sa-handover-receiver-");
+            JdbcShiftCashHandoverRepository repository = new JdbcShiftCashHandoverRepository();
+            repository.savePolicy(1, targetTreasury, money("20.00"), true, 1);
+
+            assertEquals(1, repository.appendForClosedShift(shiftId, 1, money("120.00"),
+                    1, LocalDateTime.now()));
+            ShiftCashHandover handover = repository.loadPending().stream()
+                    .filter(item -> item.shiftId() == shiftId).findFirst().orElseThrow();
+            assertEquals(money("100.0000"), handover.handoverAmount());
+
+            int transferId;
+            try (PreparedStatement statement = transaction.prepareStatement("""
+                    INSERT INTO treasury_transfers
+                        (treasury_from, treasury_to, amount, transfer_date, notes, user_id)
+                    VALUES (1, ?, 100, CURRENT_DATE, 'acceptance handover', 1)
+                    """, Statement.RETURN_GENERATED_KEYS)) {
+                statement.setInt(1, targetTreasury);
+                assertEquals(1, statement.executeUpdate());
+                try (ResultSet keys = statement.getGeneratedKeys()) {
+                    assertTrue(keys.next());
+                    transferId = keys.getInt(1);
+                }
+            }
+
+            assertThrows(com.hamza.controlsfx.database.DaoException.class, () ->
+                    repository.insertReceipt(handover.id(), 1, LocalDateTime.now(), transferId, null));
+            assertEquals(1, repository.insertReceipt(handover.id(), receiver,
+                    LocalDateTime.now(), transferId, "counted and received"));
+            assertFalse(repository.findForUpdate(handover.id()).pending());
+
+            assertThrows(SQLException.class, () -> execute(transaction,
+                    "UPDATE shift_cash_handovers SET actual_balance=121 WHERE id=?", handover.id()));
+            assertThrows(SQLException.class, () -> execute(transaction,
+                    "DELETE FROM shift_cash_handovers WHERE id=?", handover.id()));
+            assertThrows(SQLException.class, () -> execute(transaction,
+                    "UPDATE shift_cash_handover_receipts SET receipt_note='changed' WHERE handover_id=?",
+                    handover.id()));
+            assertThrows(SQLException.class, () -> execute(transaction,
+                    "DELETE FROM shift_cash_handover_receipts WHERE handover_id=?", handover.id()));
         } finally {
             transaction.rollback();
             ConnectionManager.endTransaction(transaction);

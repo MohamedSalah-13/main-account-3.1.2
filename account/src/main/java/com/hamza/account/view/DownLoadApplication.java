@@ -25,6 +25,8 @@ import com.hamza.account.features.shift.ShiftCashAuditService;
 import com.hamza.account.features.shift.ShiftReconciliationService;
 import com.hamza.account.features.shift.CashierTreasuryAssignmentService;
 import com.hamza.account.features.shift.JdbcCashierTreasuryAssignmentRepository;
+import com.hamza.account.features.shift.JdbcShiftCashHandoverRepository;
+import com.hamza.account.features.shift.ShiftCashHandoverService;
 import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.period.PeriodLockService;
 import com.hamza.account.service.*;
@@ -185,11 +187,15 @@ public class DownLoadApplication extends Application {
                 new JdbcShiftPolicyRepository(), eventBus, cashierTreasuryRepository);
         CashierTreasuryAssignmentService cashierTreasuries = new CashierTreasuryAssignmentService(
                 cashierTreasuryRepository, shiftPolicies, userSession);
+        ShiftCashHandoverService cashHandovers = new ShiftCashHandoverService(
+                new JdbcShiftCashHandoverRepository(), daoFactory, userSession,
+                java.time.Clock.systemDefaultZone());
         UserShiftService shiftService = new UserShiftService(
                 daoFactory, userSession, shiftPolicies, eventBus, java.time.Clock.systemDefaultZone(),
-                new ShiftCloseRequestDao(), cashierTreasuries);
+                new ShiftCloseRequestDao(), cashierTreasuries, cashHandovers);
         ServiceRegistry.register(ShiftPolicyService.class, shiftPolicies);
         ServiceRegistry.register(CashierTreasuryAssignmentService.class, cashierTreasuries);
+        ServiceRegistry.register(ShiftCashHandoverService.class, cashHandovers);
         ServiceRegistry.register(ShiftCashAuditService.class, new ShiftCashAuditService());
         ServiceRegistry.register(ShiftReconciliationService.class, new ShiftReconciliationService());
         ServiceRegistry.register(UserShiftService.class, shiftService);

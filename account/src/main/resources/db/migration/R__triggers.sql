@@ -151,3 +151,50 @@ DELIMITER ;
 -- which also covers UPDATE - the trigger never did. Dropping it here as well
 -- keeps a database that reruns this file from getting it back.
 DROP TRIGGER IF EXISTS before_items_units_insert;
+
+-- Shift cash handovers are two immutable facts: cashier declaration, then
+-- receipt by a different authenticated user.
+DROP TRIGGER IF EXISTS validate_shift_cash_handover_receiver;
+DROP TRIGGER IF EXISTS prevent_shift_cash_handover_update;
+DROP TRIGGER IF EXISTS prevent_shift_cash_handover_delete;
+DROP TRIGGER IF EXISTS prevent_shift_cash_handover_receipt_update;
+DROP TRIGGER IF EXISTS prevent_shift_cash_handover_receipt_delete;
+
+DELIMITER |
+CREATE TRIGGER validate_shift_cash_handover_receiver
+BEFORE INSERT ON shift_cash_handover_receipts FOR EACH ROW
+BEGIN
+    IF NEW.received_by_user_id =
+       (SELECT handed_by_user_id FROM shift_cash_handovers WHERE id=NEW.handover_id) THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'A second user must receive the cash handover';
+    END IF;
+END|
+
+CREATE TRIGGER prevent_shift_cash_handover_update
+BEFORE UPDATE ON shift_cash_handovers FOR EACH ROW
+BEGIN
+    SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Shift cash handover is immutable';
+END|
+
+CREATE TRIGGER prevent_shift_cash_handover_delete
+BEFORE DELETE ON shift_cash_handovers FOR EACH ROW
+BEGIN
+    IF COALESCE(@app_bulk_wipe, 0) <> 1 THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Shift cash handover is immutable';
+    END IF;
+END|
+
+CREATE TRIGGER prevent_shift_cash_handover_receipt_update
+BEFORE UPDATE ON shift_cash_handover_receipts FOR EACH ROW
+BEGIN
+    SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Shift cash handover receipt is immutable';
+END|
+
+CREATE TRIGGER prevent_shift_cash_handover_receipt_delete
+BEFORE DELETE ON shift_cash_handover_receipts FOR EACH ROW
+BEGIN
+    IF COALESCE(@app_bulk_wipe, 0) <> 1 THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Shift cash handover receipt is immutable';
+    END IF;
+END|
+DELIMITER ;

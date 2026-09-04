@@ -156,12 +156,16 @@ public final class WipeCatalog {
     public static final WipeTarget EMPLOYEES = WipeTarget.of("employees", "wipe.target.employees",
             List.of(WipeTable.of("targeted_sales"),
                     WipeTable.of("treasury_deposit_expenses"),
+                    WipeTable.of("shift_cash_handover_receipts"),
                     WipeTable.of("treasury_transfers"),
                     WipeTable.of("treasury_movements"),
                     WipeTable.of("shift_close_decisions"),
                     WipeTable.of("shift_close_requests"),
                     WipeTable.of("shift_close_snapshots"),
                     WipeTable.of("shift_cash_ledger"),
+                    WipeTable.of("shift_cash_handovers"),
+                    WipeTable.of("shift_cash_handover_policy"),
+                    WipeTable.of("cashier_treasury_assignment_events"),
                     WipeTable.of("cashier_treasury_assignment"),
                     // A shift is opened on a till since V22, and that key does not
                     // cascade - so the treasury below cannot be emptied while any

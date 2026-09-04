@@ -94,4 +94,44 @@ class RbacMigrationCompatibilityTest {
             assertTrue(sql.contains("FOREIGN KEY (TREASURY_ID) REFERENCES TREASURY(ID) ON DELETE CASCADE"));
         }
     }
+
+    @Test
+    void cashierTreasuryAssignmentHistoryIsAppendOnlyAndBackfilled() throws IOException {
+        try (var stream = getClass().getResourceAsStream(
+                "/db/migration/V31__cashier_treasury_assignment_history.sql")) {
+            assertTrue(stream != null, "V31 migration is missing");
+            String sql = new String(stream.readAllBytes(), StandardCharsets.UTF_8).toUpperCase();
+
+            assertTrue(sql.contains("CREATE TABLE CASHIER_TREASURY_ASSIGNMENT_EVENTS"));
+            assertTrue(sql.contains("'MIGRATED'"), "existing assignments need explicit history");
+            assertTrue(sql.contains("AFTER INSERT ON CASHIER_TREASURY_ASSIGNMENT"));
+            assertTrue(sql.contains("AFTER UPDATE ON CASHIER_TREASURY_ASSIGNMENT"));
+            assertTrue(sql.contains("PREVENT_CASHIER_ASSIGNMENT_EVENT_UPDATE"));
+            assertTrue(sql.contains("PREVENT_CASHIER_ASSIGNMENT_EVENT_DELETE"));
+        }
+    }
+
+    @Test
+    void cashHandoverMigrationIsOptionalAndReceiptsAreImmutable() throws IOException {
+        String migration;
+        try (var stream = getClass().getResourceAsStream(
+                "/db/migration/V32__shift_cash_handover.sql")) {
+            assertTrue(stream != null, "V32 migration is missing");
+            migration = new String(stream.readAllBytes(), StandardCharsets.UTF_8).toUpperCase();
+        }
+        assertTrue(migration.contains("CREATE TABLE SHIFT_CASH_HANDOVER_POLICY"));
+        assertTrue(migration.contains("ENABLED            BOOLEAN       NOT NULL DEFAULT FALSE"));
+        assertTrue(migration.contains("CREATE TABLE SHIFT_CASH_HANDOVERS"));
+        assertTrue(migration.contains("CREATE TABLE SHIFT_CASH_HANDOVER_RECEIPTS"));
+        assertTrue(migration.contains("UNIQUE (SHIFT_ID)"));
+        assertTrue(migration.contains("UNIQUE (HANDOVER_ID)"));
+
+        try (var stream = getClass().getResourceAsStream("/db/migration/R__triggers.sql")) {
+            assertTrue(stream != null, "repeatable triggers migration is missing");
+            String triggers = new String(stream.readAllBytes(), StandardCharsets.UTF_8).toUpperCase();
+            assertTrue(triggers.contains("VALIDATE_SHIFT_CASH_HANDOVER_RECEIVER"));
+            assertTrue(triggers.contains("PREVENT_SHIFT_CASH_HANDOVER_UPDATE"));
+            assertTrue(triggers.contains("PREVENT_SHIFT_CASH_HANDOVER_RECEIPT_UPDATE"));
+        }
+    }
 }
