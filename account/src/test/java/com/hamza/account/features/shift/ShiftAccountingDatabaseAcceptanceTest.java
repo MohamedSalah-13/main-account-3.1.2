@@ -21,6 +21,7 @@ import java.util.HashMap;
 import java.util.OptionalInt;
 import java.util.UUID;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -373,6 +374,33 @@ class ShiftAccountingDatabaseAcceptanceTest {
         shift.setTotalDeposits(money("10.00"));
         shift.setTotalCashIn(money("10.00"));
         return shift;
+    }
+
+    /**
+     * Saving a treasury policy that is already exactly what was asked for must succeed.
+     * <p>
+     * {@code ON DUPLICATE KEY UPDATE} answers 0 when it changed nothing, and the repository
+     * used to demand 1 - so pressing save twice on the shifts screen without touching a
+     * control reported that the policy had not been saved, when it had. Only a real database
+     * says this: the row count is the server's answer, not the code's.
+     */
+    @Test
+    void savingAnUnchangedTreasuryPolicyIsNotAFailure() throws Exception {
+        Connection transaction = ConnectionManager.beginTransaction();
+        try {
+            JdbcShiftPolicyRepository repository = new JdbcShiftPolicyRepository();
+            TreasuryShiftPolicy policy =
+                    new TreasuryShiftPolicy(1, "acceptance", ShiftTrackingMode.RECONCILE);
+
+            repository.saveTreasury(policy);
+            assertDoesNotThrow(() -> repository.saveTreasury(policy),
+                    "re-saving an unchanged treasury policy must not report a failure");
+
+            assertEquals(ShiftTrackingMode.RECONCILE, repository.trackingMode(1));
+        } finally {
+            transaction.rollback();
+            ConnectionManager.endTransaction(transaction);
+        }
     }
 
     private static void execute(Connection connection, String sql, Object... parameters) throws SQLException {

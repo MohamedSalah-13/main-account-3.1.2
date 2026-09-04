@@ -118,6 +118,7 @@ public class AdminShiftsController {
     @FXML private Button btnSaveHandoverPolicy, btnReceiveHandover,
             btnApproveHandoverOpen, btnHandoverRefresh;
     @FXML private ProgressIndicator handoverProgress;
+    private List<Treasury> handoverTreasuries = List.of();
     private long ledgerRequest;
     private long reconciliationRequest;
     private long dataRequest;
@@ -574,8 +575,12 @@ public class AdminShiftsController {
         btnReceiveHandover.setOnAction(event -> receiveHandover());
         btnApproveHandoverOpen.setOnAction(event -> approveHandoverOpen());
         btnHandoverRefresh.setOnAction(event -> refreshHandovers());
+        comboHandoverSource.getSelectionModel().selectedItemProperty()
+                .addListener((observable, old, selected) -> refreshHandoverTargets());
         handoverPolicyTable.getSelectionModel().selectedItemProperty().addListener((observable, old, selected) -> {
             if (selected == null) return;
+            // Source first: choosing it rebuilds the target list, and only then can the
+            // stored target - which is never the source - be selected in it.
             selectTreasury(comboHandoverSource, selected.sourceTreasuryId());
             selectTreasury(comboHandoverTarget, selected.targetTreasuryId());
             txtHandoverFloat.setText(selected.retainedFloat().toPlainString());
@@ -614,11 +619,37 @@ public class AdminShiftsController {
             }
             handoverPolicyTable.setItems(FXCollections.observableArrayList(data.policies()));
             handoverTable.setItems(FXCollections.observableArrayList(data.pending()));
-            comboHandoverSource.setItems(FXCollections.observableArrayList(data.treasuries()));
-            comboHandoverTarget.setItems(FXCollections.observableArrayList(data.treasuries()));
+            handoverTreasuries = List.copyOf(data.treasuries());
+            comboHandoverSource.setItems(FXCollections.observableArrayList(handoverTreasuries));
             comboHandoverSource.getSelectionModel().selectFirst();
-            if (data.treasuries().size() > 1) comboHandoverTarget.getSelectionModel().select(1);
+            refreshHandoverTargets();
         }));
+    }
+
+    /**
+     * A till never hands its cash to itself, so the source is not offered as a target.
+     * <p>
+     * Both combos used to hold every treasury, with the target selecting index 1 only when
+     * there was more than one. On the single-treasury install that is the common case, the
+     * target then showed blank while holding the source as its only option - so the operator
+     * either saw an empty box or picked the one entry and met "choose two different
+     * treasuries" at save time. The refusal was right and the screen never said why.
+     */
+    private void refreshHandoverTargets() {
+        Treasury source = comboHandoverSource.getValue();
+        Treasury previous = comboHandoverTarget.getValue();
+        List<Treasury> options = handoverTreasuries.stream()
+                .filter(item -> source == null || item.getId() != source.getId())
+                .toList();
+        comboHandoverTarget.setItems(FXCollections.observableArrayList(options));
+        if (previous != null && options.stream().anyMatch(item -> item.getId() == previous.getId())) {
+            selectTreasury(comboHandoverTarget, previous.getId());
+        } else {
+            comboHandoverTarget.getSelectionModel().selectFirst();
+        }
+        comboHandoverTarget.setPromptText(options.isEmpty()
+                ? message("user.shift.handover.target.none") : "");
+        setHandoverBusy(false);
     }
 
     private void saveHandoverPolicy() {
@@ -697,7 +728,9 @@ public class AdminShiftsController {
     private void setHandoverBusy(boolean busy) {
         handoverProgress.setVisible(busy);
         btnHandoverRefresh.setDisable(busy);
-        btnSaveHandoverPolicy.setDisable(busy || !mayManageHandovers);
+        // No second treasury means no handover is expressible at all - see refreshHandoverTargets.
+        btnSaveHandoverPolicy.setDisable(busy || !mayManageHandovers
+                || comboHandoverTarget.getItems().isEmpty());
         btnReceiveHandover.setDisable(busy || !mayReceiveHandovers
                 || handoverTable.getSelectionModel().getSelectedItem() == null);
         ShiftCashHandover selected = handoverTable.getSelectionModel().getSelectedItem();

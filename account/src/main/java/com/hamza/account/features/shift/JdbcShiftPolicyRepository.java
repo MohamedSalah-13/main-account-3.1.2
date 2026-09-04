@@ -103,7 +103,7 @@ public final class JdbcShiftPolicyRepository implements ShiftPolicyRepository {
     public void saveTreasury(TreasuryShiftPolicy policy) throws DaoException {
         String sql = "INSERT INTO shift_treasury_policy(treasury_id, tracking_mode) VALUES (?, ?) "
                 + "ON DUPLICATE KEY UPDATE tracking_mode=VALUES(tracking_mode), updated_at=CURRENT_TIMESTAMP";
-        update(sql, statement -> {
+        upsert(sql, statement -> {
             statement.setInt(1, policy.treasuryId());
             statement.setString(2, policy.trackingMode().name());
         });
@@ -121,11 +121,31 @@ public final class JdbcShiftPolicyRepository implements ShiftPolicyRepository {
         }
     }
 
+    /** For the single-row UPDATE, where nothing updated means the row is missing. */
     private void update(String sql, StatementBinder binder) throws DaoException {
         withConnection(connection -> {
             try (PreparedStatement statement = connection.prepareStatement(sql)) {
                 binder.bind(statement);
                 if (statement.executeUpdate() != 1) throw new DaoException("Shift policy was not saved");
+                return null;
+            } catch (SQLException e) {
+                throw new DaoException("Could not save the shift policy", e);
+            }
+        });
+    }
+
+    /**
+     * For {@code ON DUPLICATE KEY UPDATE}, which answers 1 when it inserted, 2 when it
+     * changed a row, and <strong>0 when the row was already exactly what was asked for</strong>.
+     * Demanding 1 here made re-saving an unchanged treasury policy fail: choose "جرد ومطابقة"
+     * on the shifts screen, press save, then press save again without touching anything, and
+     * the second press reported that the policy had not been saved - when it had, twice.
+     */
+    private void upsert(String sql, StatementBinder binder) throws DaoException {
+        withConnection(connection -> {
+            try (PreparedStatement statement = connection.prepareStatement(sql)) {
+                binder.bind(statement);
+                statement.executeUpdate();
                 return null;
             } catch (SQLException e) {
                 throw new DaoException("Could not save the shift policy", e);
