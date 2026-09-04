@@ -12,6 +12,8 @@ public record ShiftCashHandover(
         int targetTreasuryId,
         String targetTreasuryName,
         BigDecimal actualBalance,
+        BigDecimal expectedBalance,
+        BigDecimal differenceAmount,
         BigDecimal retainedFloat,
         BigDecimal handoverAmount,
         int handedByUserId,
@@ -21,9 +23,17 @@ public record ShiftCashHandover(
         String receivedByUsername,
         LocalDateTime receivedAt,
         Integer treasuryTransferId,
-        String receiptNote) {
+        String receiptNote,
+        Integer openingOverrideByUserId,
+        String openingOverrideByUsername,
+        LocalDateTime openingOverrideAt,
+        String openingOverrideReason) {
 
     public boolean pending() {
         return treasuryTransferId == null;
+    }
+
+    public boolean blocksOpening() {
+        return pending() && openingOverrideByUserId == null;
     }
 }

@@ -155,8 +155,10 @@ public final class WipeCatalog {
      */
     public static final WipeTarget EMPLOYEES = WipeTarget.of("employees", "wipe.target.employees",
             List.of(WipeTable.of("targeted_sales"),
+                    WipeTable.of("shift_cash_variance_adjustments"),
                     WipeTable.of("treasury_deposit_expenses"),
                     WipeTable.of("shift_cash_handover_receipts"),
+                    WipeTable.of("shift_cash_handover_open_overrides"),
                     WipeTable.of("treasury_transfers"),
                     WipeTable.of("treasury_movements"),
                     WipeTable.of("shift_close_decisions"),

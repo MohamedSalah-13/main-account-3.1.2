@@ -134,4 +134,20 @@ class RbacMigrationCompatibilityTest {
             assertTrue(triggers.contains("PREVENT_SHIFT_CASH_HANDOVER_RECEIPT_UPDATE"));
         }
     }
+
+    @Test
+    void shiftVarianceAndOpenOverrideAreAuditedFacts() throws IOException {
+        try (var stream = getClass().getResourceAsStream(
+                "/db/migration/V33__shift_variance_and_handover_open_guard.sql")) {
+            assertTrue(stream != null, "V33 migration is missing");
+            String sql = new String(stream.readAllBytes(), StandardCharsets.UTF_8).toUpperCase();
+            assertTrue(sql.contains("CREATE TABLE SHIFT_CASH_VARIANCE_ADJUSTMENTS"));
+            assertTrue(sql.contains("UNIQUE (SHIFT_ID)"));
+            assertTrue(sql.contains("UNIQUE (CASH_MOVEMENT_ID)"));
+            assertTrue(sql.contains("DIFFERENCE_AMOUNT = ACTUAL_BALANCE - EXPECTED_BALANCE"));
+            assertTrue(sql.contains("CREATE TABLE SHIFT_CASH_HANDOVER_OPEN_OVERRIDES"));
+            assertTrue(sql.contains("UNIQUE (HANDOVER_ID)"));
+            assertTrue(sql.contains("CHAR_LENGTH(TRIM(APPROVAL_REASON)) > 0"));
+        }
+    }
 }

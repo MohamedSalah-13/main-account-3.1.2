@@ -133,7 +133,7 @@ public final class TreasuryTransferService {
         return daoFactory.treasuryTransferDao().recent(limit);
     }
 
-    static void requireEnough(TreasuryBalanceSummary treasury, BigDecimal amount)
+    public static void requireEnough(TreasuryBalanceSummary treasury, BigDecimal amount)
             throws BusinessRuleException {
         if (treasury.balance().compareTo(amount) < 0) {
             throw new BusinessRuleException(LanguageManager.getInstance().getString(

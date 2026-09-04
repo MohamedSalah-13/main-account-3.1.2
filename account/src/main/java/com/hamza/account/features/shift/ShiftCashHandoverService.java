@@ -4,6 +4,10 @@ import com.hamza.account.authorization.AppPermissions;
 import com.hamza.account.authorization.AuthorizationGuard;
 import com.hamza.account.features.rbac.UserSessionContext;
 import com.hamza.account.features.treasury.TreasuryTransferCommand;
+import com.hamza.account.features.treasury.TreasuryTransferService;
+import com.hamza.account.features.treasury.CashCategory;
+import com.hamza.account.features.treasury.CashDirection;
+import com.hamza.account.features.treasury.CashMovementCommand;
 import com.hamza.account.finance.MoneyMath;
 import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.period.PeriodLock;
@@ -70,7 +74,49 @@ public final class ShiftCashHandoverService {
         return repository.loadPending();
     }
 
-    /** Called inside the same transaction that closes and snapshots the shift. */
+    /**
+     * The refusal {@link #settleCloseVariance} would make, asked before anything is written.
+     * <p>
+     * The settlement posts a dated cash movement, so a locked period refuses it - and that
+     * refusal used to arrive from the far side of the close: the shift row was already
+     * updated and its immutable snapshot already appended when the lock threw and rolled the
+     * lot back. The cashier read a message about a treasury period while trying to close a
+     * drawer. Asked here it is an ordinary refusal, before the first write.
+     */
+    public void requireSettlementAllowed(BigDecimal difference, LocalDate settlementDate)
+            throws DaoException {
+        if (difference == null || MoneyMath.money(difference).signum() == 0) return;
+        PeriodLock.require(settlementDate, PeriodLockRegistry.TREASURY_DEPOSIT.label());
+    }
+
+    /**
+     * Brings the till's book balance to what the cashier actually counted.
+     * <p>
+     * Called inside the close transaction, after the immutable snapshot was stored and
+     * <em>before</em> {@link #requestForClosedShift}. It is deliberately independent of the
+     * handover policy: reconciling a till is what {@code RECONCILE} tracking means, and a
+     * branch that never hands its cash on to a safe still has to answer for its own drawer.
+     * Gating it on a handover policy left such a treasury carrying its shortage for ever.
+     * <p>
+     * A treasury that is not on {@code RECONCILE} closes at its expected balance, so the
+     * difference is zero and this does nothing - the mode needs no second test here.
+     */
+    public void settleCloseVariance(int shiftId, int treasuryId, BigDecimal expectedBalance,
+                                    BigDecimal actualBalance, int actorUserId,
+                                    LocalDateTime settledAt) throws DaoException {
+        if (expectedBalance == null || actualBalance == null || settledAt == null) {
+            throw new IllegalArgumentException("Expected balance, close balance and settle time are required");
+        }
+        reconcileVariance(shiftId, treasuryId, MoneyMath.money(expectedBalance),
+                MoneyMath.money(actualBalance), actorUserId, settledAt);
+    }
+
+    /**
+     * Records the cashier's declaration that the drawer is ready to hand over.
+     * <p>
+     * A no-op unless the source treasury has an enabled handover policy and holds more than
+     * its retained float - the insert selects from the policy row, so no policy means no row.
+     */
     public boolean requestForClosedShift(int shiftId, int sourceTreasuryId,
                                          BigDecimal actualBalance, int cashierUserId,
                                          LocalDateTime requestedAt) throws DaoException {
@@ -79,6 +125,36 @@ public final class ShiftCashHandoverService {
         }
         return repository.appendForClosedShift(shiftId, sourceTreasuryId,
                 MoneyMath.money(actualBalance), cashierUserId, requestedAt) == 1;
+    }
+
+    public void requireTreasuryReadyForOpen(int treasuryId) throws DaoException {
+        if (repository.hasBlockingPendingHandover(treasuryId)) {
+            throw new BusinessRuleException(message("user.shift.handover.error.open.blocked"));
+        }
+    }
+
+    public void approveOpenOverride(long handoverId, String reason) throws DaoException {
+        AuthorizationGuard.require(AppPermissions.SHIFT_FORCE_CLOSE);
+        String normalizedReason = clean(reason);
+        if (normalizedReason == null) {
+            throw new UserValidationException(message("user.shift.handover.override.reason.required"));
+        }
+        int actor = requireActor();
+        TransactionTemplate.execute(() -> {
+            ShiftCashHandover handover = repository.findForUpdate(handoverId);
+            if (handover == null || !handover.pending()) {
+                throw new BusinessRuleException(message("user.shift.handover.error.not.pending"));
+            }
+            if (!handover.blocksOpening()) {
+                throw new BusinessRuleException(message("user.shift.handover.error.override.exists"));
+            }
+            if (handover.handedByUserId() == actor) {
+                throw new BusinessRuleException(message("user.shift.handover.error.second.user"));
+            }
+            repository.insertOpenOverride(handover.id(), actor, normalizedReason,
+                    LocalDateTime.now(clock));
+            return null;
+        });
     }
 
     public int receive(long handoverId, String note) throws DaoException {
@@ -95,6 +171,15 @@ public final class ShiftCashHandoverService {
                 throw new BusinessRuleException(message("user.shift.handover.error.second.user"));
             }
 
+            var source = daoFactory.treasuryCurrentBalanceDao()
+                    .lockAndRead(handover.sourceTreasuryId());
+            var target = daoFactory.treasuryCurrentBalanceDao()
+                    .getDataById(handover.targetTreasuryId());
+            if (source == null || target == null) {
+                throw new BusinessRuleException(message("treasury.error.not.found"));
+            }
+            TreasuryTransferService.requireEnough(source, handover.handoverAmount());
+
             // This transfer happens after the immutable close snapshot.  It is deliberately
             // not attributed to either shift: doing so would create a post-close ledger entry.
             int transferId = daoFactory.treasuryTransferDao().insertReturningId(
@@ -107,6 +192,33 @@ public final class ShiftCashHandoverService {
             }
             return transferId;
         });
+    }
+
+    private void reconcileVariance(int shiftId, int treasuryId, BigDecimal expected,
+                                   BigDecimal actual, int actorUserId,
+                                   LocalDateTime adjustedAt) throws DaoException {
+        BigDecimal difference = MoneyMath.subtract(actual, expected);
+        if (difference.signum() == 0) return;
+
+        LocalDate date = adjustedAt.toLocalDate();
+        PeriodLock.require(date, PeriodLockRegistry.TREASURY_DEPOSIT.label());
+        var treasury = daoFactory.treasuryCurrentBalanceDao().lockAndRead(treasuryId);
+        if (treasury == null) {
+            throw new BusinessRuleException(message("treasury.error.not.found"));
+        }
+        BigDecimal amount = difference.abs();
+        CashDirection direction = difference.signum() > 0
+                ? CashDirection.DEPOSIT : CashDirection.WITHDRAWAL;
+        if (direction.leavesTheTreasury()) {
+            TreasuryTransferService.requireEnough(treasury, amount);
+        }
+        int movementId = daoFactory.cashMovementDao().insertReturningId(
+                new CashMovementCommand(treasuryId, direction, CashCategory.NORMAL, amount, date,
+                        message("user.shift.variance.movement", shiftId),
+                        message("user.shift.variance.description", expected, actual), actorUserId),
+                null);
+        repository.appendVarianceAdjustment(shiftId, treasuryId, expected, actual,
+                difference, movementId, actorUserId, adjustedAt);
     }
 
     private int requireActor() throws DaoException {
@@ -122,5 +234,9 @@ public final class ShiftCashHandoverService {
 
     private static String message(String key) {
         return LanguageManager.getInstance().getString(key);
+    }
+
+    private static String message(String key, Object... arguments) {
+        return LanguageManager.getInstance().getString(key, arguments);
     }
 }

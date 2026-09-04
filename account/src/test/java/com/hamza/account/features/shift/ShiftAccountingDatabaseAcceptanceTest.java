@@ -227,6 +227,39 @@ class ShiftAccountingDatabaseAcceptanceTest {
             ShiftCashHandover handover = repository.loadPending().stream()
                     .filter(item -> item.shiftId() == shiftId).findFirst().orElseThrow();
             assertEquals(money("100.0000"), handover.handoverAmount());
+            assertTrue(repository.hasBlockingPendingHandover(1));
+
+            int varianceMovementId;
+            try (PreparedStatement statement = transaction.prepareStatement("""
+                    INSERT INTO treasury_deposit_expenses
+                        (statement, date_inter, amount, deposit_or_expenses,
+                         category, treasury_id, user_id)
+                    VALUES ('acceptance variance', CURRENT_DATE, 10, 1, 'NORMAL', 1, 1)
+                    """, Statement.RETURN_GENERATED_KEYS)) {
+                assertEquals(1, statement.executeUpdate());
+                try (ResultSet keys = statement.getGeneratedKeys()) {
+                    assertTrue(keys.next());
+                    varianceMovementId = keys.getInt(1);
+                }
+            }
+            assertEquals(1, repository.appendVarianceAdjustment(shiftId, 1,
+                    money("110.00"), money("120.00"), money("10.00"),
+                    varianceMovementId, 1, LocalDateTime.now()));
+            assertThrows(SQLException.class, () -> execute(transaction,
+                    "UPDATE shift_cash_variance_adjustments SET actual_balance=121 WHERE shift_id=?",
+                    shiftId));
+            assertThrows(SQLException.class, () -> execute(transaction,
+                    "DELETE FROM treasury_deposit_expenses WHERE id=?", varianceMovementId));
+
+            assertEquals(1, repository.insertOpenOverride(handover.id(), receiver,
+                    "Emergency opening", LocalDateTime.now()));
+            assertFalse(repository.hasBlockingPendingHandover(1));
+            ShiftCashHandover overridden = repository.findForUpdate(handover.id());
+            assertEquals(receiver, overridden.openingOverrideByUserId());
+            assertFalse(overridden.blocksOpening());
+            assertThrows(SQLException.class, () -> execute(transaction,
+                    "UPDATE shift_cash_handover_open_overrides SET approval_reason='changed' "
+                            + "WHERE handover_id=?", handover.id()));
 
             int transferId;
             try (PreparedStatement statement = transaction.prepareStatement("""

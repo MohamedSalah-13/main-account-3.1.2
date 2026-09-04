@@ -27,7 +27,7 @@ mvn -o -pl account -am test -Dtest=ScheduledBackupTest -Dsurefire.failIfNoSpecif
 
 **Coverage is real but uneven — know which half you are in.** JUnit 5 and Mockito are declared in the
 root pom and inherited by both modules; surefire needs no configuration. `mvn clean test` currently runs
-**1,114 tests across 130 test source files** — 98 in `controlsfx`, 1,016 in `account` — with 60 skipped (below). What is
+**1,190 tests across 137 test source files** — 98 in `controlsfx`, 1,092 in `account` — with 62 skipped (below). What is
 genuinely covered:
 
 - **The declarative specs, pinned character for character** — `DocumentDaoStatementsTest`,
@@ -69,9 +69,12 @@ checks for its own residue rather than trusting the rollback.
 `ShiftAccountingDatabaseAcceptanceTest` are gated on
 `-Daccount.db.acceptance=true` and need a reachable MySQL. A green `mvn clean test` does not run them.
 
-**On 2026-08-31 all thirteen were run together for the first time, and after one fixture fix all
-pass: 1022 tests, nothing skipped.** Before that day the honest statement was that most of them had
-never been run at all. What the run is worth knowing for:
+**On 2026-08-31 the first thirteen were run together for the first time, and after one fixture fix
+all pass: 1022 tests, nothing skipped.** Before that day the honest statement was that most of them
+had never been run at all. **`ShiftAccountingDatabaseAcceptanceTest` is the fourteenth, added after
+that run and first run on its own on 2026-09-04** — five cases, green twice, against a scratch schema
+built from nothing, with both databases queried afterwards rather than the rollback trusted. It is
+the shift system's only check against a real database. What the runs are worth knowing for:
 
 - **It was run against a schema built from nothing**, not against the developer's database - which is
   also how the fresh-install defect behind `V1_1__audit_log_procedure.sql` was found. Build a scratch
@@ -143,6 +146,11 @@ Two documents govern work here and are kept current — read them before large c
   balance is, why it is derived rather than written, and what phase D (wallet fees) still owes.
   Sections 14-16 record what was actually delivered. **Read it before touching anything under
   `account.treasury`, `features/treasury` or the treasury half of `R__views.sql`.**
+- **[`docs/shift-plan.md`](docs/shift-plan.md)** — the shift contract: why the default is
+  `DISABLED`, why a shift belongs to a till rather than to a person, what `ShiftGate` guards, and
+  which of the append-only journals may never be written twice. §8 lists what is deliberately still
+  undecided and §10 what the system has no test for. **Read it before touching anything under
+  `features/shift`, `UserShiftService` or the `V22`-`V33` tables.**
 - **[`docs/erp-roadmap.md`](docs/erp-roadmap.md)** — the governing roadmap (§0 carries a measured
   status update). `docs/spring-migration-plan.md` is superseded and kept for reference only.
 
@@ -219,10 +227,11 @@ guard when you add the method.
 
 **Only the first of those two existed until 2026-08-31, while this file described the second.** A
 service method with no `require` passed every check there was, and two of them did: `openShift` and
-`closeShift`, which any signed-in user could call for anyone. The four methods that write without a
-guard of their own are named in `WRITES_WITHOUT_A_GUARD` — two are legitimate (a read that seeds the
-company row; the wallet fee, whose only callers guard first) and two are that debt, recorded rather
-than quietly excused. The list fails the build in both directions, so it cannot become fiction.
+`closeShift`, which any signed-in user could call for anyone. **Both are guarded now**, and the debt
+they represented is paid: `WRITES_WITHOUT_A_GUARD` is down to the two entries that are legitimate —
+a read that seeds the company row, and the wallet fee whose only callers guard first. The list fails
+the build in both directions, so it cannot become fiction: a new unguarded write fails it, and so
+does an entry that has quietly been fixed.
 
 Roles live in `auth_role` / `auth_role_permission` / `auth_user_role`, resolved by `RbacService` over
 `JdbcRbacRepository`, with per-user overrides in `auth_user_permission_override`. The schema arrived in
@@ -512,6 +521,38 @@ including each one's parameter count: a delete with the wrong count is a delete 
 every wallet payment they make. The payment and the fee are written in **one transaction** by
 `AccountCustomerService.save(account, fee)` / `AccountSupplierService.save(account, fee)`, and only on
 insert - editing a payment leaves its fee row alone.
+
+### Shifts
+
+A cash drawer answered for by whoever is on it. `docs/shift-plan.md` is the contract; the four things
+to know before touching any of it:
+
+**It is off by default and that is load-bearing.** `ShiftPolicy.mode` is `DISABLED` / `OPTIONAL` /
+`REQUIRED`, seeded `DISABLED`, and `ShiftGate` returns `OptionalInt.empty()` immediately in that
+mode - so an existing install upgrades through twelve migrations and notices nothing. Per treasury
+there is a second switch, `TreasuryShiftPolicy.trackingMode` (`NONE` / `TRACK_ONLY` / `RECONCILE`),
+and `NONE` disables shifts on that till whatever the global mode says.
+
+**A shift belongs to a treasury, not to a user.** `user_shifts.treasury_id`; two tills open at once
+are two independent shifts, and one till may never carry two. The expected balance is *computed*
+from the movements, never stored - the same rule as `treasury_current_balance`, for the same reason.
+
+**`ShiftGate` is the single gate, and six services pass through it**: `InvoiceSaveService`,
+`TreasuryCashService`, `TreasuryTransferService`, `AccountCustomerService`,
+`AccountSupplierService`, `ExpensesDetailsService`. **A new service that moves treasury cash goes
+through it too** - nothing fails the build if you forget, which is the gap `shift-plan.md` §10
+names first. Its `requireCashCorrection`/`requireTreasuryCorrection` pair exists so a movement
+already attributed to a shift cannot be deleted unattributed once the mode relaxes to `OPTIONAL`.
+
+**Everything the system records is append-only**, enforced by triggers in `R__triggers.sql` that
+refuse `UPDATE` and `DELETE` outside `@app_bulk_wipe`: `shift_cash_ledger` (with a numeric
+`ShiftCashSource`, never a translated label - the `MovementLabel` lesson), the close snapshot, and
+the handover/override/variance tables. A new fact table here gets the same triggers and a
+`WipeCatalog` entry, and `WipeCatalogTest` reads the migrations to check you did.
+
+Two things that are separate and were once wrongly coupled: **settling the till's variance** depends
+only on there being a difference, while **declaring a handover** depends on an enabled handover
+policy. A treasury that reconciles but never hands its cash on still has to square its own drawer.
 
 ### Expiry batches
 
@@ -863,10 +904,11 @@ Schema changes are **Flyway migrations**, in `account/src/main/resources/db/migr
 - `V1__baseline.sql` is the schema as shipped to clients in v4.1.3 — tables, indexes, procedures and the
   seed data (including the `admin` user, without which nobody can log in). It is the Flyway baseline: an
   existing client database is **stamped** with it, never executed, because it already is that schema. A
-  new database executes it and continues with `V2`, `V3`, … The current head is `V32`. Recent shift
-  migrations `V22`–`V32` add treasury-scoped shifts, optional policy, immutable cash journals and close
+  new database executes it and continues with `V2`, `V3`, … The current head is `V33`. Recent shift
+  migrations `V22`–`V33` add treasury-scoped shifts, optional policy, immutable cash journals and close
   snapshots, dual approval, cashier permissions, per-cashier treasury assignments, append-only
-  assignment history, and optional two-person cash handover. The last four migrations before that work:
+  assignment history, optional two-person cash handover, close variance settlement, and audited opening
+  overrides. The last four migrations before that work:
   `V18` backfills `items_stock` for warehouses that predate multi-warehouse returning, `V19` gives a
   transfer line its unit and factor, `V20` gives a treasury a type and declares `amount` to be the
   opening balance, and `V21` gives a hand-entered cash movement a category so the owner's capital is

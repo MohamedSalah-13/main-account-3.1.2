@@ -115,7 +115,8 @@ public class AdminShiftsController {
     @FXML private CheckBox checkHandoverEnabled;
     @FXML private TableView<ShiftCashHandoverPolicy> handoverPolicyTable;
     @FXML private TableView<ShiftCashHandover> handoverTable;
-    @FXML private Button btnSaveHandoverPolicy, btnReceiveHandover, btnHandoverRefresh;
+    @FXML private Button btnSaveHandoverPolicy, btnReceiveHandover,
+            btnApproveHandoverOpen, btnHandoverRefresh;
     @FXML private ProgressIndicator handoverProgress;
     private long ledgerRequest;
     private long reconciliationRequest;
@@ -547,8 +548,11 @@ public class AdminShiftsController {
                 Columns.text("user.shift.handover.column.source", ShiftCashHandover::sourceTreasuryName),
                 Columns.text("user.shift.handover.column.target", ShiftCashHandover::targetTreasuryName),
                 Columns.number("user.shift.handover.column.actual", ShiftCashHandover::actualBalance),
+                Columns.number("user.shift.handover.column.expected", ShiftCashHandover::expectedBalance),
+                Columns.number("user.shift.handover.column.difference", ShiftCashHandover::differenceAmount),
                 Columns.number("user.shift.handover.column.float", ShiftCashHandover::retainedFloat),
                 Columns.number("user.shift.handover.column.amount", ShiftCashHandover::handoverAmount),
+                Columns.text("user.shift.handover.column.open.state", this::handoverOpenState),
                 Columns.text("user.shift.handover.column.requested.at", row -> formatTime(row.requestedAt())));
         StringConverter<Treasury> converter = new StringConverter<>() {
             @Override public String toString(Treasury value) {
@@ -568,6 +572,7 @@ public class AdminShiftsController {
         checkHandoverEnabled.setDisable(!mayManageHandovers);
         btnSaveHandoverPolicy.setOnAction(event -> saveHandoverPolicy());
         btnReceiveHandover.setOnAction(event -> receiveHandover());
+        btnApproveHandoverOpen.setOnAction(event -> approveHandoverOpen());
         btnHandoverRefresh.setOnAction(event -> refreshHandovers());
         handoverPolicyTable.getSelectionModel().selectedItemProperty().addListener((observable, old, selected) -> {
             if (selected == null) return;
@@ -576,8 +581,11 @@ public class AdminShiftsController {
             txtHandoverFloat.setText(selected.retainedFloat().toPlainString());
             checkHandoverEnabled.setSelected(selected.enabled());
         });
-        handoverTable.getSelectionModel().selectedItemProperty().addListener((observable, old, selected) ->
-                btnReceiveHandover.setDisable(!mayReceiveHandovers || selected == null));
+        handoverTable.getSelectionModel().selectedItemProperty().addListener((observable, old, selected) -> {
+            btnReceiveHandover.setDisable(!mayReceiveHandovers || selected == null);
+            btnApproveHandoverOpen.setDisable(!mayReceiveHandovers || selected == null
+                    || !selected.blocksOpening());
+        });
         setHandoverBusy(false);
         if (mayManageHandovers || mayReceiveHandovers) refreshHandovers();
     }
@@ -643,6 +651,29 @@ public class AdminShiftsController {
                 "user.shift.handover.received");
     }
 
+    private void approveHandoverOpen() {
+        ShiftCashHandover selected = handoverTable.getSelectionModel().getSelectedItem();
+        if (selected == null || !selected.blocksOpening()) {
+            AllAlerts.handleError(message("user.shift.handover.override.title"),
+                    new UserValidationException(message("user.shift.handover.error.select")));
+            return;
+        }
+        Optional<String> reason = promptWithTitle("user.shift.handover.override.title",
+                "user.shift.handover.override.reason", "");
+        if (reason.isEmpty()) return;
+        if (reason.get().isBlank()) {
+            AllAlerts.handleError(message("user.shift.handover.override.title"),
+                    new UserValidationException(message(
+                            "user.shift.handover.override.reason.required")));
+            return;
+        }
+        if (!AllAlerts.confirm_all(message("user.shift.handover.override.title"),
+                message("user.shift.handover.override.confirm",
+                        selected.sourceTreasuryName()))) return;
+        runHandoverMutation(() -> handovers.approveOpenOverride(selected.id(), reason.get()),
+                "user.shift.handover.override.saved");
+    }
+
     private void runHandoverMutation(HandoverAction action, String successKey) {
         setHandoverBusy(true);
         CompletableFuture.runAsync(() -> {
@@ -669,6 +700,22 @@ public class AdminShiftsController {
         btnSaveHandoverPolicy.setDisable(busy || !mayManageHandovers);
         btnReceiveHandover.setDisable(busy || !mayReceiveHandovers
                 || handoverTable.getSelectionModel().getSelectedItem() == null);
+        ShiftCashHandover selected = handoverTable.getSelectionModel().getSelectedItem();
+        btnApproveHandoverOpen.setDisable(busy || !mayReceiveHandovers
+                || selected == null || !selected.blocksOpening());
+    }
+
+    /**
+     * The table is fed by {@code loadPending()} today, so "does not block" always means a
+     * supervisor override. It will not always: the moment this table shows received rows,
+     * an override name of null would print as the word "null". Read the name, not the state.
+     */
+    private String handoverOpenState(ShiftCashHandover handover) {
+        if (handover.blocksOpening()) return message("user.shift.handover.open.state.blocked");
+        String approver = handover.openingOverrideByUsername();
+        return approver == null || approver.isBlank()
+                ? message("user.shift.handover.open.state.received")
+                : message("user.shift.handover.open.state.overridden", approver);
     }
 
     private static void selectTreasury(ComboBox<Treasury> combo, int treasuryId) {

@@ -93,6 +93,9 @@ public final class UserShiftService {
             if (daoFactory.userShiftDao().hasOpenShiftForTreasury(treasuryId)) {
                 throw new BusinessRuleException(message("user.shift.msg.treasury.busy"));
             }
+            if (cashHandovers != null) {
+                cashHandovers.requireTreasuryReadyForOpen(treasuryId);
+            }
             UserShift shift = new UserShift(userId, treasuryId);
             shift.setOpenTime(LocalDateTime.now(clock));
             shift.setOpenBalance(openBalance);
@@ -164,6 +167,10 @@ public final class UserShiftService {
             return new CloseResult(ShiftCloseAttempt.pending(shift.getId()), null);
         }
 
+        // Past the approval branch, this close settles the drawer. Ask the period lock now,
+        // while a refusal is still just a refusal - see requireSettlementAllowed.
+        requireSettlementAllowed(difference, closeTime);
+
         applyClose(shift, closeTime, effectiveCloseBalance, difference, summary,
                 forced ? ShiftStatus.FORCE_CLOSED : ShiftStatus.CLOSED);
         appendCloseNotes(shift, notes, forced);
@@ -172,7 +179,8 @@ public final class UserShiftService {
         if (rows != 1) throw new BusinessRuleException(message("user.shift.msg.already.closed"));
         int closedBy = currentActor(userId);
         new ShiftCloseSnapshotWriter().append(shift, closedBy);
-        appendCashHandover(shift, effectiveCloseBalance, closeTime);
+        settleAndDeclareCash(shift, summary.getExpectedBalance(), effectiveCloseBalance,
+                closedBy, closeTime);
         ShiftClosed event = new ShiftClosed(shift.getId(), shift.getUserId(), shift.getTreasuryId(), difference, forced);
         return new CloseResult(ShiftCloseAttempt.closed(shift.getId()), event);
     }
@@ -191,6 +199,7 @@ public final class UserShiftService {
             validateDecision(request, actor, closeRequests.currentLedgerLastId(shiftId));
             ShiftSummary captured = capturedSummary(shift, request);
             LocalDateTime closeTime = LocalDateTime.now(clock);
+            requireSettlementAllowed(request.difference(), closeTime);
             applyClose(shift, closeTime, request.actualBalance(), request.difference(),
                     captured, ShiftStatus.CLOSED);
             appendApprovalNotes(shift, request.reason(), note, actor);
@@ -201,7 +210,8 @@ public final class UserShiftService {
                 throw new BusinessRuleException(message("user.shift.error.approval.already.decided"));
             }
             new ShiftCloseSnapshotWriter().append(shift, actor);
-            appendCashHandover(shift, request.actualBalance(), closeTime);
+            settleAndDeclareCash(shift, request.expectedBalance(), request.actualBalance(),
+                    actor, closeTime);
             return new ShiftClosed(shift.getId(), shift.getUserId(), shift.getTreasuryId(),
                     request.difference(), false);
         });
@@ -365,12 +375,26 @@ public final class UserShiftService {
         return session == null || session.currentUserId() <= 0 ? fallback : session.currentUserId();
     }
 
-    private void appendCashHandover(UserShift shift, BigDecimal actualBalance,
-                                    LocalDateTime requestedAt) throws DaoException {
+    private void requireSettlementAllowed(BigDecimal difference, LocalDateTime closeTime)
+            throws DaoException {
         if (cashHandovers != null) {
-            cashHandovers.requestForClosedShift(shift.getId(), shift.getTreasuryId(),
-                    actualBalance, shift.getUserId(), requestedAt);
+            cashHandovers.requireSettlementAllowed(difference, closeTime.toLocalDate());
         }
+    }
+
+    /**
+     * The two things a closed drawer owes, in order and named separately: the till is first
+     * brought to what was counted, and only then is the surplus declared for handover. They
+     * are independent - a treasury reconciles whether or not anyone hands its cash on.
+     */
+    private void settleAndDeclareCash(UserShift shift, BigDecimal expectedBalance,
+                                      BigDecimal actualBalance, int actorUserId,
+                                      LocalDateTime closeTime) throws DaoException {
+        if (cashHandovers == null) return;
+        cashHandovers.settleCloseVariance(shift.getId(), shift.getTreasuryId(),
+                expectedBalance, actualBalance, actorUserId, closeTime);
+        cashHandovers.requestForClosedShift(shift.getId(), shift.getTreasuryId(),
+                actualBalance, shift.getUserId(), closeTime);
     }
 
     private static ShiftSummary capturedSummary(UserShift shift, ShiftCloseRequest request) {

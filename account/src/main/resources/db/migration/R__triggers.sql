@@ -159,6 +159,10 @@ DROP TRIGGER IF EXISTS prevent_shift_cash_handover_update;
 DROP TRIGGER IF EXISTS prevent_shift_cash_handover_delete;
 DROP TRIGGER IF EXISTS prevent_shift_cash_handover_receipt_update;
 DROP TRIGGER IF EXISTS prevent_shift_cash_handover_receipt_delete;
+DROP TRIGGER IF EXISTS prevent_shift_cash_variance_adjustment_update;
+DROP TRIGGER IF EXISTS prevent_shift_cash_variance_adjustment_delete;
+DROP TRIGGER IF EXISTS prevent_shift_handover_open_override_update;
+DROP TRIGGER IF EXISTS prevent_shift_handover_open_override_delete;
 
 DELIMITER |
 CREATE TRIGGER validate_shift_cash_handover_receiver
@@ -195,6 +199,34 @@ BEFORE DELETE ON shift_cash_handover_receipts FOR EACH ROW
 BEGIN
     IF COALESCE(@app_bulk_wipe, 0) <> 1 THEN
         SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Shift cash handover receipt is immutable';
+    END IF;
+END|
+
+CREATE TRIGGER prevent_shift_cash_variance_adjustment_update
+BEFORE UPDATE ON shift_cash_variance_adjustments FOR EACH ROW
+BEGIN
+    SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Shift cash variance adjustment is immutable';
+END|
+
+CREATE TRIGGER prevent_shift_cash_variance_adjustment_delete
+BEFORE DELETE ON shift_cash_variance_adjustments FOR EACH ROW
+BEGIN
+    IF COALESCE(@app_bulk_wipe, 0) <> 1 THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Shift cash variance adjustment is immutable';
+    END IF;
+END|
+
+CREATE TRIGGER prevent_shift_handover_open_override_update
+BEFORE UPDATE ON shift_cash_handover_open_overrides FOR EACH ROW
+BEGIN
+    SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Shift handover open override is immutable';
+END|
+
+CREATE TRIGGER prevent_shift_handover_open_override_delete
+BEFORE DELETE ON shift_cash_handover_open_overrides FOR EACH ROW
+BEGIN
+    IF COALESCE(@app_bulk_wipe, 0) <> 1 THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Shift handover open override is immutable';
     END IF;
 END|
 DELIMITER ;

@@ -91,6 +91,8 @@
                             <Label text="%user.shift.handover.pending" />
                             <Button fx:id="btnReceiveHandover" text="%user.shift.handover.receive"
                                     styleClass="btn-primary" />
+                            <Button fx:id="btnApproveHandoverOpen"
+                                    text="%user.shift.handover.override.action" styleClass="btn-danger" />
                         </ToolBar>
                         <TableView fx:id="handoverTable" prefHeight="180" />
                     </VBox>

@@ -16,4 +16,11 @@ public interface ShiftCashHandoverRepository {
     ShiftCashHandover findForUpdate(long handoverId) throws DaoException;
     int insertReceipt(long handoverId, int receivedByUserId, LocalDateTime receivedAt,
                       int treasuryTransferId, String note) throws DaoException;
+    int appendVarianceAdjustment(int shiftId, int treasuryId, BigDecimal expectedBalance,
+                                 BigDecimal actualBalance, BigDecimal differenceAmount,
+                                 int cashMovementId, int actorUserId,
+                                 LocalDateTime adjustedAt) throws DaoException;
+    boolean hasBlockingPendingHandover(int treasuryId) throws DaoException;
+    int insertOpenOverride(long handoverId, int approvedByUserId, String reason,
+                           LocalDateTime approvedAt) throws DaoException;
 }
