@@ -1,5 +1,13 @@
 package com.hamza.account.features.shift;
 
+import com.hamza.account.authorization.AppPermissions;
+import com.hamza.account.authorization.PermissionKey;
+import com.hamza.account.controller.others.ServiceRegistry;
+import com.hamza.account.features.rbac.UserSessionContext;
+import com.hamza.account.features.treasury.CashDirection;
+import com.hamza.account.model.dao.DaoFactory;
+import com.hamza.account.service.UserShiftService;
+import com.hamza.controlsfx.error.BusinessRuleException;
 import com.hamza.account.model.domain.UserShift;
 import com.hamza.controlsfx.database.ConnectionManager;
 import com.hamza.controlsfx.database.DataSourceProvider;
@@ -16,8 +24,10 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.time.Clock;
 import java.time.LocalDateTime;
 import java.util.HashMap;
+import java.util.List;
 import java.util.OptionalInt;
 import java.util.UUID;
 
@@ -377,6 +387,108 @@ class ShiftAccountingDatabaseAcceptanceTest {
     }
 
     /**
+     * The close path end to end, through the real services: a drawer opened, moved, and
+     * counted short. This is the only permanent cover for {@code settleCloseVariance} -
+     * a unit test cannot reach it, because {@code DaoFactory} is an enum singleton with
+     * nothing to inject.
+     * <p>
+     * It touches no row that was here before it. The till, the safe and the cashier are all
+     * created by the fixture, and the only policy it writes is the one for its own till - so
+     * it never changes the global shift mode, and never disturbs treasury 1. Everything is
+     * read back through the open transaction, not a pooled connection: uncommitted rows are
+     * invisible from anywhere else, which is how an earlier acceptance case came to assert a
+     * rollback it could not see.
+     */
+    @Test
+    void aDrawerCountedShortIsSettled_declared_andBlocksTheNextOpening() throws Exception {
+        UserSessionContext previous = ServiceRegistry.get(UserSessionContext.class);
+        Connection transaction = ConnectionManager.beginTransaction();
+        try {
+            int till = insertTreasuryRow(transaction, "sa-till-");
+            int safe = insertTreasuryRow(transaction, "sa-safe-");
+            int cashier = insertUserRow(transaction, "sa-cashier-");
+            int supervisor = insertUserRow(transaction, "sa-super-");
+
+            UserSessionContext session = signIn(cashier, "sa-cashier",
+                    AppPermissions.SHIFT_SELF_OPEN, AppPermissions.SHIFT_SELF_CLOSE,
+                    AppPermissions.SHIFT_SELF_VIEW, AppPermissions.SHIFT_POLICY_MANAGE,
+                    AppPermissions.SHIFT_FORCE_CLOSE);
+            // The one row here that is not the fixture's own: a shift cannot be opened at all
+            // while the global mode is DISABLED, which is the seeded default. OPTIONAL is the
+            // weakest setting that lets the drawer open, it is written inside this
+            // transaction, and it goes back with the rollback like everything else.
+            JdbcShiftPolicyRepository policyRepository = new JdbcShiftPolicyRepository();
+            policyRepository.save(new ShiftPolicy(ShiftMode.OPTIONAL, false, false,
+                    BigDecimal.ZERO, false, false, false));
+            policyRepository.saveTreasury(
+                    new TreasuryShiftPolicy(till, "sa-till", ShiftTrackingMode.RECONCILE));
+            ShiftCashHandoverService handovers = handoverService(session);
+            handovers.savePolicy(till, safe, money("50.00"), true);
+
+            UserShiftService shifts = shiftService(session, handovers);
+            int shiftId = shifts.openShift(cashier, till, money("100.00"), "acceptance");
+            insertDepositFor(transaction, shiftId, till, cashier, money("200.00"));
+
+            assertEquals(0, money("300.00").compareTo(
+                            shifts.getCurrentShiftSummary(cashier).getExpectedBalance()),
+                    "an opening of 100 plus a 200 deposit is an expected 300");
+
+            shifts.closeShift(cashier, money("280.00"), "counted short");
+
+            try (PreparedStatement statement = transaction.prepareStatement("""
+                    SELECT expected_balance, actual_balance, difference_amount, cash_movement_id
+                    FROM shift_cash_variance_adjustments WHERE shift_id=?
+                    """)) {
+                statement.setInt(1, shiftId);
+                try (ResultSet rows = statement.executeQuery()) {
+                    assertTrue(rows.next(), "closing short wrote no variance adjustment");
+                    assertEquals(0, money("300.00").compareTo(rows.getBigDecimal(1)));
+                    assertEquals(0, money("280.00").compareTo(rows.getBigDecimal(2)));
+                    assertEquals(0, money("-20.00").compareTo(rows.getBigDecimal(3)));
+                    assertMovementIsAWithdrawalOf(transaction, rows.getInt(4), till);
+                }
+            }
+
+            long handoverId;
+            try (PreparedStatement statement = transaction.prepareStatement(
+                    "SELECT id, actual_balance, handover_amount, target_treasury_id "
+                            + "FROM shift_cash_handovers WHERE shift_id=?")) {
+                statement.setInt(1, shiftId);
+                try (ResultSet rows = statement.executeQuery()) {
+                    assertTrue(rows.next(), "no handover was declared");
+                    handoverId = rows.getLong(1);
+                    assertEquals(0, money("280.00").compareTo(rows.getBigDecimal(2)));
+                    assertEquals(0, money("230.00").compareTo(rows.getBigDecimal(3)),
+                            "280 counted less a 50 float is 230 to hand over");
+                    assertEquals(safe, rows.getInt(4));
+                }
+            }
+
+            // The till stays shut until that cash is received.
+            assertThrows(BusinessRuleException.class,
+                    () -> shifts.openShift(cashier, till, money("50.00"), "next"));
+            // And the cashier may not wave their own handover through.
+            assertThrows(BusinessRuleException.class,
+                    () -> handovers.approveOpenOverride(handoverId, "same person"));
+
+            UserSessionContext second = signIn(supervisor, "sa-super",
+                    AppPermissions.SHIFT_FORCE_CLOSE, AppPermissions.SHIFT_SELF_OPEN,
+                    AppPermissions.SHIFT_SELF_VIEW);
+            ShiftCashHandoverService supervisorHandovers = handoverService(second);
+            supervisorHandovers.approveOpenOverride(handoverId, "night shift must start");
+
+            // A service carries the session it was built with and refuses to act for anyone else.
+            assertTrue(shiftService(second, supervisorHandovers)
+                            .openShift(supervisor, till, money("50.00"), "after override") > 0,
+                    "the supervisor override did not unblock the till");
+        } finally {
+            ServiceRegistry.register(UserSessionContext.class, previous);
+            transaction.rollback();
+            ConnectionManager.endTransaction(transaction);
+        }
+    }
+
+    /**
      * Saving a treasury policy that is already exactly what was asked for must succeed.
      * <p>
      * {@code ON DUPLICATE KEY UPDATE} answers 0 when it changed nothing, and the repository
@@ -400,6 +512,89 @@ class ShiftAccountingDatabaseAcceptanceTest {
         } finally {
             transaction.rollback();
             ConnectionManager.endTransaction(transaction);
+        }
+    }
+
+    private static UserSessionContext signIn(int userId, String name, PermissionKey... permissions) {
+        UserSessionContext session = new UserSessionContext();
+        session.signIn(userId, name, List.of(permissions));
+        ServiceRegistry.register(UserSessionContext.class, session);
+        return session;
+    }
+
+    private static ShiftCashHandoverService handoverService(UserSessionContext session) {
+        return new ShiftCashHandoverService(new JdbcShiftCashHandoverRepository(),
+                DaoFactory.INSTANCE, session, Clock.systemDefaultZone());
+    }
+
+    private static UserShiftService shiftService(UserSessionContext session,
+                                                 ShiftCashHandoverService handovers) {
+        var assignments = new JdbcCashierTreasuryAssignmentRepository();
+        ShiftPolicyService policies = new ShiftPolicyService(
+                new JdbcShiftPolicyRepository(), null, assignments);
+        return new UserShiftService(DaoFactory.INSTANCE, session, policies, null,
+                Clock.systemDefaultZone(), new ShiftCloseRequestDao(),
+                new CashierTreasuryAssignmentService(assignments, policies, session), handovers);
+    }
+
+    private static void assertMovementIsAWithdrawalOf(Connection connection, int movementId,
+                                                      int treasuryId) throws SQLException {
+        try (PreparedStatement statement = connection.prepareStatement(
+                "SELECT amount, treasury_id, deposit_or_expenses "
+                        + "FROM treasury_deposit_expenses WHERE id=?")) {
+            statement.setInt(1, movementId);
+            try (ResultSet rows = statement.executeQuery()) {
+                assertTrue(rows.next(), "the variance points at a movement that does not exist");
+                assertEquals(0, money("20.00").compareTo(rows.getBigDecimal(1)),
+                        "a 20 shortage settles as a movement of 20");
+                assertEquals(treasuryId, rows.getInt(2), "settled on the wrong treasury");
+                assertEquals(CashDirection.WITHDRAWAL, CashDirection.fromCode(rows.getInt(3)),
+                        "a shortage leaves the till, so it is a withdrawal");
+            }
+        }
+    }
+
+    private static int insertTreasuryRow(Connection connection, String prefix) throws SQLException {
+        try (PreparedStatement statement = connection.prepareStatement(
+                "INSERT INTO treasury(t_name, amount) VALUES (?, 0)",
+                Statement.RETURN_GENERATED_KEYS)) {
+            statement.setString(1, prefix + UUID.randomUUID().toString().substring(0, 8));
+            assertEquals(1, statement.executeUpdate());
+            try (ResultSet keys = statement.getGeneratedKeys()) {
+                assertTrue(keys.next());
+                return keys.getInt(1);
+            }
+        }
+    }
+
+    private static int insertUserRow(Connection connection, String prefix) throws SQLException {
+        try (PreparedStatement statement = connection.prepareStatement(
+                "INSERT INTO users(user_name, user_pass) VALUES (?, 'test')",
+                Statement.RETURN_GENERATED_KEYS)) {
+            statement.setString(1, prefix + UUID.randomUUID().toString().substring(0, 8));
+            assertEquals(1, statement.executeUpdate());
+            try (ResultSet keys = statement.getGeneratedKeys()) {
+                assertTrue(keys.next());
+                return keys.getInt(1);
+            }
+        }
+    }
+
+    private static void insertDepositFor(Connection connection, int shiftId, int treasuryId,
+                                         int userId, BigDecimal amount) throws SQLException {
+        String sql = """
+                INSERT INTO treasury_deposit_expenses
+                    (statement, date_inter, amount, deposit_or_expenses, treasury_id, user_id, shift_id)
+                VALUES (?, CURRENT_DATE, ?, ?, ?, ?, ?)
+                """;
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setString(1, "sa-" + UUID.randomUUID().toString().substring(0, 8));
+            statement.setBigDecimal(2, amount);
+            statement.setInt(3, CashDirection.DEPOSIT.code());
+            statement.setInt(4, treasuryId);
+            statement.setInt(5, userId);
+            statement.setInt(6, shiftId);
+            assertEquals(1, statement.executeUpdate());
         }
     }
 

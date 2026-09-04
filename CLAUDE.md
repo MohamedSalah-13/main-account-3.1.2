@@ -27,7 +27,7 @@ mvn -o -pl account -am test -Dtest=ScheduledBackupTest -Dsurefire.failIfNoSpecif
 
 **Coverage is real but uneven — know which half you are in.** JUnit 5 and Mockito are declared in the
 root pom and inherited by both modules; surefire needs no configuration. `mvn clean test` currently runs
-**1,257 tests across 141 test source files** — 98 in `controlsfx`, 1,159 in `account` — with 63 skipped (below). What is
+**1,258 tests across 141 test source files** — 98 in `controlsfx`, 1,160 in `account` — with 64 skipped (below). What is
 genuinely covered:
 
 - **The declarative specs, pinned character for character** — `DocumentDaoStatementsTest`,
@@ -72,7 +72,7 @@ checks for its own residue rather than trusting the rollback.
 **On 2026-08-31 the first thirteen were run together for the first time, and after one fixture fix
 all pass: 1022 tests, nothing skipped.** Before that day the honest statement was that most of them
 had never been run at all. **`ShiftAccountingDatabaseAcceptanceTest` is the fourteenth, added after
-that run and first run on its own on 2026-09-04** — five cases, green twice, against a scratch schema
+that run and first run on its own on 2026-09-04** — seven cases now, green three times running, against a scratch schema
 built from nothing, with both databases queried afterwards rather than the rollback trusted. It is
 the shift system's only check against a real database. What the runs are worth knowing for:
 
