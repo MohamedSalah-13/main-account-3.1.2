@@ -20,6 +20,7 @@ import javafx.scene.input.KeyCombination;
 import javafx.scene.input.KeyEvent;
 
 import java.net.URL;
+import java.util.Arrays;
 import java.util.ResourceBundle;
 
 @FxmlPath(pathFile = "include/settingTabShortcuts.fxml")
@@ -74,6 +75,13 @@ public final class SettingTabShortcutsController implements Initializable {
         ShortcutRow selected = table.getSelectionModel().getSelectedItem();
         if (selected == null) return;
         event.consume();
+        // Ctrl on its own is the first half of a chord, not a shortcut - and asking
+        // KeyCodeCombination for one throws: "Key code must not match modifier key!".
+        // Thrown from an event filter that reaches the global handler, so pressing Ctrl
+        // in this field put an error dialog with a reference code on the screen.
+        if (event.getCode().isModifierKey()) {
+            return;
+        }
         if (event.getCode() == KeyCode.BACK_SPACE || event.getCode() == KeyCode.DELETE) {
             save(selected.shortcut(), "");
             return;
@@ -119,7 +127,7 @@ public final class SettingTabShortcutsController implements Initializable {
     }
 
     private void refreshRows(SidebarShortcut selectedShortcut) {
-        rows.setAll(java.util.Arrays.stream(SidebarShortcut.values())
+        rows.setAll(Arrays.stream(SidebarShortcut.values())
                 .map(shortcut -> new ShortcutRow(shortcut, SidebarShortcutManager.displayName(shortcut), SidebarShortcutManager.combination(shortcut)))
                 .toList());
         if (selectedShortcut != null) {
