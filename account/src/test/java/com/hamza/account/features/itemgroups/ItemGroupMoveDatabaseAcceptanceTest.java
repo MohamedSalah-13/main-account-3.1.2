@@ -20,6 +20,7 @@ import java.sql.ResultSet;
 import java.sql.Statement;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
@@ -40,9 +41,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * the mock returns whatever the test told it to. The three things only a database decides are
  * whether {@code UPDATE items SET sub_num = ? WHERE id = ? AND sub_num = ?} counts the row it
  * claims to, whether {@code SELECT ... FOR UPDATE} parses and runs inside the service's
- * transaction, and whether the group tree query - a {@code LEFT JOIN} with the search in the
- * join condition and a {@code HAVING} that switches on an empty parameter - returns the counts
- * a person would count by hand.
+ * transaction, and whether the group tree query - which aggregates the catalogue by sub-group
+ * and joins the small result, rather than joining first and grouping after - returns the counts
+ * a person would count by hand, case and all.
  * <p>
  * Opt in with {@code -Daccount.db.acceptance=true}. Everything runs inside one transaction that
  * is always rolled back, in the manner of {@code ItemMergeDatabaseAcceptanceTest}: the service's
@@ -330,6 +331,41 @@ class ItemGroupMoveDatabaseAcceptanceTest {
             assertEquals(3, java.util.stream.Stream.concat(first.stream(), second.stream())
                     .map(ItemGroupItem::id).distinct().count(), "a row was repeated across pages");
             first.forEach(item -> assertEquals(fixture.from(), item.subGroupId()));
+        });
+    }
+
+    /**
+     * The search dropped its {@code LOWER(nameItem)} when the query was rewritten, on the
+     * grounds that the column's own collation is case-insensitive. That is a claim about the
+     * database, not about the code, so it is checked against one.
+     */
+    @Test
+    @DisplayName("a search ignores case, in the tree and in the list alike")
+    void theSearchIgnoresCase() throws Exception {
+        inTransaction(connection -> {
+            Fixture fixture = fixture(connection);
+            String lowercased = fixture.stamp().toLowerCase(Locale.ROOT);
+            assertFalse(lowercased.equals(fixture.stamp()), "the stamp has no case to ignore");
+
+            assertEquals(3, byId(SERVICE.groups(lowercased)).get(fixture.from()).itemCount());
+            assertEquals(3, SERVICE.items(fixture.from(), lowercased, 10, 0).size());
+        });
+    }
+
+    /**
+     * An operator reads a code off a label and types it. The id half of the search is an
+     * equality on the primary key now, not a {@code CAST} of every row in the catalogue.
+     */
+    @Test
+    @DisplayName("typing an item's own number finds it")
+    void searchingByIdFindsTheItem() throws Exception {
+        inTransaction(connection -> {
+            Fixture fixture = fixture(connection);
+
+            List<ItemGroupItem> found = SERVICE.items(fixture.from(), String.valueOf(fixture.first()), 10, 0);
+
+            assertTrue(found.stream().anyMatch(item -> item.id() == fixture.first()),
+                    "searching for an item's id did not find it");
         });
     }
 
