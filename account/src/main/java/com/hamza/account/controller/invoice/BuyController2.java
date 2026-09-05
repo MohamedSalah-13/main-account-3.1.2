@@ -4,11 +4,11 @@ import com.hamza.account.authorization.AppPermissions;
 import com.hamza.account.authorization.AuthorizationGuard;
 import com.hamza.account.authorization.PermissionKey;
 import com.hamza.account.config.DefaultStock;
-import com.hamza.account.config.Image_Setting;
+import com.hamza.account.config.AppIcon;
 import com.hamza.account.config.ThemeManager;
 import com.hamza.account.controller.others.ServiceRegistry;
-import com.hamza.account.controller.others.TextSearchController;
 import com.hamza.account.controller.search.ItemSuggestionField;
+import com.hamza.account.controller.search.PartySuggestionField;
 import com.hamza.account.controller.setting.SettingTabLanguageController;
 import com.hamza.account.controller.users.ShiftCorrectionReasonPrompt;
 import com.hamza.account.document.DocumentType;
@@ -37,7 +37,6 @@ import com.hamza.account.type.DiscountType;
 import com.hamza.account.type.InvoiceType;
 import com.hamza.account.view.AddItemApplication;
 import com.hamza.account.view.SearchItemsApplication;
-import com.hamza.account.view.TextSearchApplication;
 import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.error.UserValidationException;
@@ -77,7 +76,6 @@ import static com.hamza.account.controller.invoice.DialogCashPaid.showCashChange
 import static com.hamza.controlsfx.dateTime.DateUtils.DATE_TIME_FORMATTER;
 import static com.hamza.controlsfx.others.Utils.setTextFormatter;
 import static com.hamza.controlsfx.others.Utils.whenEnterPressed;
-import static com.hamza.controlsfx.util.ImageChoose.createIcon;
 
 @Log4j2
 @FxmlPath(pathFile = "invoice/buy-view2.fxml")
@@ -110,7 +108,7 @@ public class BuyController2<T3 extends BaseNames, T4 extends BaseAccount>
     private int codeAccount;
     private boolean updatingPaymentUi;
     private StringProperty textSearchName, textSearchItems;
-    private TextSearchController<T3> nameSearchController;
+    private PartySuggestionField<T3> nameSearchField;
     @FXML
     private Label labelNum, labelName, labelStock, labelBarcode, labelDate, labelCondition, labelDelegate, labelTreasury, labelSearchBy, labelPrice, labelQuantity, labelItemBalance, labelTotals, last1, last2, last3, last4, last5, labelNotes, labelInvoiceTotal, labelPaid, labelRemaining, labelNetAfterDiscount;
     @FXML
@@ -230,12 +228,11 @@ public class BuyController2<T3 extends BaseNames, T4 extends BaseAccount>
     }
 
     private void buttonGraphic() {
-        var images = new Image_Setting();
-        btnNew.setGraphic(createIcon(images.add));
-        btnUpdateItem.setGraphic(createIcon(images.update));
-        btnSearch.setGraphic(createIcon(images.search));
-        btnSave.setGraphic(createIcon(images.save));
-        btnPrintSave.setGraphic(createIcon(images.print));
+        btnNew.setGraphic(AppIcon.ADD.graphic());
+        btnUpdateItem.setGraphic(AppIcon.EDIT.graphic());
+        btnSearch.setGraphic(AppIcon.SEARCH.graphic());
+        btnSave.setGraphic(AppIcon.SAVE.graphic());
+        btnPrintSave.setGraphic(AppIcon.PRINT.graphic());
     }
 
     private void getSavedCustomerAndDelegate() {
@@ -328,29 +325,27 @@ public class BuyController2<T3 extends BaseNames, T4 extends BaseAccount>
 
     private void addTextSearchName() {
         try {
-            TextSearchApplication<T3> customersTextSearchApplication = new TextSearchApplication<>(dataInterface.nameAndAccountInterface().searchInterface());
-            nameSearchController = customersTextSearchApplication.getTextSearchController();
-            textSearchName = nameSearchController.textNameProperty();
-            gridPane.add(customersTextSearchApplication.getPane(), 1, 1);
-
-            textSearchName.addListener((observableValue, s, string) -> {
-                try {
-                    getCodeAccountAndBalance(string);
-                    txtBarcode.requestFocus();
-                    var object = nameService.getObject(nameAndAccountInterface.nameList(), string);
-                    priceTypeByNameId = t3NameData.priceId(object);
-                    if (itemEntry != null) {
-                        itemEntry.setPriceTier(priceTypeByNameId);
-                    }
-//                updateAllPrices();
-                } catch (Exception e) {
-                    logError(e);
-                }
-            });
-
+            nameSearchField = new PartySuggestionField<>(dataInterface.nameAndAccountInterface().searchInterface());
         } catch (Exception e) {
             logError(e);
+            return;
         }
+        textSearchName = nameSearchField.chosenNameProperty();
+        gridPane.add(nameSearchField, 1, 1);
+
+        textSearchName.addListener((observableValue, s, string) -> {
+            try {
+                getCodeAccountAndBalance(string);
+                txtBarcode.requestFocus();
+                var object = nameService.getObject(nameAndAccountInterface.nameList(), string);
+                priceTypeByNameId = t3NameData.priceId(object);
+                if (itemEntry != null) {
+                    itemEntry.setPriceTier(priceTypeByNameId);
+                }
+            } catch (Exception e) {
+                logError(e);
+            }
+        });
     }
 
     /**
@@ -786,7 +781,7 @@ public class BuyController2<T3 extends BaseNames, T4 extends BaseAccount>
             case DATE -> date::requestFocus;
             case DELEGATE -> comboDelegate::requestFocus;
             case TREASURY -> comboTreasury::requestFocus;
-            case ACCOUNT -> nameSearchController::requestFocus;
+            case ACCOUNT -> nameSearchField::requestFocus;
             case PAYMENT_TYPE -> radioCash::requestFocus;
             case DISCOUNT -> txtOtherDiscount::requestFocus;
             case PAID -> txtPaid::requestFocus;

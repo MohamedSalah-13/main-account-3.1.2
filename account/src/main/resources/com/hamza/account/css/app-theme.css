@@ -1568,7 +1568,21 @@
     -fx-effect: dropshadow(gaussian, -app-shadow, 12, 0, 0, 4);
 }
 
+.party-suggestion-list {
+    -fx-background-color: -app-surface;
+    -fx-border-color: -app-border;
+    -fx-border-width: 0.091em;
+    -fx-background-radius: 0.4em;
+    -fx-border-radius: 0.4em;
+    -fx-effect: dropshadow(gaussian, -app-shadow, 12, 0, 0, 4);
+}
+
 .item-suggestion-list .list-cell {
+    -fx-background-color: transparent;
+    -fx-padding: 0.25em 0.6em;
+}
+
+.party-suggestion-list .list-cell {
     -fx-background-color: transparent;
     -fx-padding: 0.25em 0.6em;
 }
@@ -1577,11 +1591,24 @@
     -fx-background-color: -app-primary;
 }
 
+.party-suggestion-list .list-cell:filled:selected {
+    -fx-background-color: -app-primary;
+}
+
 .item-suggestion-list .list-cell:filled:selected .label {
     -fx-text-fill: white;
 }
 
+.party-suggestion-list .list-cell:filled:selected .label {
+    -fx-text-fill: white;
+}
+
 .item-suggestion-name {
+    -fx-text-fill: -app-text-strong;
+    -fx-font-weight: bold;
+}
+
+.party-suggestion-name {
     -fx-text-fill: -app-text-strong;
     -fx-font-weight: bold;
 }
@@ -1592,10 +1619,21 @@
     -fx-font-size: 0.9em;
 }
 
+.party-suggestion-contact {
+    -fx-text-fill: -app-text-muted;
+    -fx-font-size: 0.9em;
+}
+
 /* The list gives way by truncating the item name, never by scrolling sideways -
    a horizontal scrollbar cannot be reached from the keyboard, which is the only
    way this control is meant to be used. */
 .item-suggestion-list .scroll-bar:horizontal {
+    -fx-pref-height: 0;
+    -fx-max-height: 0;
+    -fx-opacity: 0;
+}
+
+.party-suggestion-list .scroll-bar:horizontal {
     -fx-pref-height: 0;
     -fx-max-height: 0;
     -fx-opacity: 0;
