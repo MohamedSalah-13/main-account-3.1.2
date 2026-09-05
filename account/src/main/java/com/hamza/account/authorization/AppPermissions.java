@@ -44,6 +44,8 @@ public final class AppPermissions {
     public static final PermissionKey ITEMS_UPDATE = key("items.update");
     public static final PermissionKey ITEMS_DELETE = key("items.delete");
     public static final PermissionKey ITEMS_ADD_EXCEL = key("items.add.excel");
+    /** Reclassifying items between subgroups without granting every other item edit. */
+    public static final PermissionKey ITEMS_GROUP_MOVE = key("items.group.move");
     /** Folding one item into another and deleting it. Held with {@link #ITEMS_DELETE}, never instead of it. */
     public static final PermissionKey ITEMS_MERGE = key("items.merge");
     public static final PermissionKey MAIN_GROUP_SHOW = key("main.group.show");
@@ -214,7 +216,7 @@ public final class AppPermissions {
     private static PermissionRisk risk(String action) {
         return switch (action) {
             case "DELETE", "BYPASS", "MANAGE", "POST" -> PermissionRisk.CRITICAL;
-            case "UPDATE", "ADD", "CREATE" -> PermissionRisk.HIGH;
+            case "UPDATE", "ADD", "CREATE", "MOVE" -> PermissionRisk.HIGH;
             case "INVOICE", "PRICE", "SALARY", "PROFIT" -> PermissionRisk.MEDIUM;
             default -> PermissionRisk.LOW;
         };

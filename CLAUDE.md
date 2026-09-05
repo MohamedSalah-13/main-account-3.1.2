@@ -36,16 +36,26 @@ genuinely covered:
   `ItemReferenceRegistryTest`. These fail the build on a wrong column, so they are the
   safety net for anything touching SQL. The last two read the foreign keys straight out of the
   migration files, so the schema itself is what they check against.
-- **Architecture rules** — twelve `*ArchitectureTest` classes now, plus `DefaultRoleAcceptanceTest`:
+- **Architecture rules** — thirteen `*ArchitectureTest` classes now, plus `DefaultRoleAcceptanceTest`:
   `AuthorizationArchitectureTest`, `ErrorHandlingArchitectureTest`, `DocumentPackageArchitectureTest`,
   `DefaultStockUsageArchitectureTest`, `LocalizationArchitectureTest`, `FxmlArchitectureTest`,
   `ModelPurityArchitectureTest`, `TableColumnArchitectureTest`, `StocksChangedArchitectureTest`,
-  `FxmlWiringArchitectureTest`, `KeyboardNavigationArchitectureTest`, `ShiftGateArchitectureTest`. They
+  `FxmlWiringArchitectureTest`, `KeyboardNavigationArchitectureTest`, `ShiftGateArchitectureTest`,
+  `MessageKeyArchitectureTest`. They
   fail when a new service skips the permission guard, a new exception escapes the error boundary,
   `account.document` starts importing one of the two packages that import it, or a new stock-aware
   operation reaches for `DefaultStock.ID` instead of taking a `stockId`. Two of them carry an explicit
   allow-list of files, reviewed once at the point the rule was written: adding a file to it is a
   decision made in the same review that adds the reference.
+
+  **A translation key named in Java is checked the same way an FXML `%key` is.**
+  `MessageKeyArchitectureTest` scans the argument list of every `getString`/`text`/`tip`/`Columns.*`
+  call in both modules — 985 distinct keys — and fails when one is absent from any of the three
+  bundles. It was written because ten keys shipped in the master-data work with no translation
+  anywhere, two of them table column headings: `LanguageManager.getString` answers a missing key
+  with the key itself and a log warning, so the screen reads `masterdata.count.items` and nothing
+  in the build notices. The one rule it imposes on new code: **write a key as one whole literal** —
+  a ternary between two keys is fine, `"prefix." + suffix` is invisible to any static check.
 - **The invoice logic** — the `features/invoice` package has a test per class, all without a JavaFX
   toolkit.
 
@@ -735,12 +745,15 @@ A table declares `refreshOn()` (its event) or `publisherTable()` (the old way), 
 subscribes to whichever is set; a table seeing only one side of an event narrows it with
 `refreshFor(event)`.
 
-The generic toolbar takes the same idea one step further. `ToolbarAccountInt` answers `changeEvent()`
-and `eventBus()`, and `ToolbarAccountController` publishes the event after a save or a delete while
-`ApplicationDataWithToolbarIndexApp` subscribes to `changeEvent().getClass()`. It is the event
-*instance* rather than its type because the bus publishes instances and a generic component cannot
-build one; the events are records, so a fresh one per call costs nothing. `eventBus()` is asked of the
-screen because `controlsfx` cannot reach `ServiceRegistry`, which lives in `account`.
+**The generic toolbar is gone.** `ToolbarAccountInt` / `ToolbarAccountController` /
+`ApplicationDataWithToolbarIndexApp` (with `Disable`, `toolbar-account.fxml` and its stylesheet) were a
+dialog that wrapped a screen in a record-navigation toolbar and published the screen's `changeEvent()`
+after a save or a delete. Its last two implementors were `AddAreaController` and
+`AddSubGroupController`, and both went with the old group/area screens when the master-data editor
+replaced them — leaving four classes in `controlsfx` that referenced only each other, so they were
+deleted too. **A screen that owns its own buttons and publishes its own event is the pattern now**;
+`MasterDataPane` is the worked example, and nothing needs a generic toolbar to say that its data
+changed.
 
 `InvoiceSaved` carries an `InvoiceSide` (PURCHASE or SALES) and replaced
 `DataInterface.publisherPurchaseOrSales()`, which routed to one of two publishers to say the same

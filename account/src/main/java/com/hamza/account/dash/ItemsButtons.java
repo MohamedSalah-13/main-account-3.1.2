@@ -1,23 +1,23 @@
 package com.hamza.account.dash;
 
 import com.hamza.account.authorization.AppPermissions;
+import com.hamza.account.config.AppIcon;
+import com.hamza.account.controller.dataByName.MasterDataController;
+import com.hamza.account.features.masterdata.MasterDataKind;
+import javafx.scene.Parent;
+import javafx.scene.control.Tab;
 import com.hamza.account.authorization.PermissionKey;
-import com.hamza.account.config.Image_Setting;
-import com.hamza.account.controller.dataByName.OpenAddAreaApplication;
-import com.hamza.account.controller.dataByName.impl.AreaImpl;
-import com.hamza.account.controller.dataByName.impl.MainGroupImpl2;
 import com.hamza.account.controller.items.InventoryController;
+import com.hamza.account.controller.items.ItemGroupManagerController;
 import com.hamza.account.controller.items.MergeItemsController;
 import com.hamza.account.controller.items.ItemsController;
 import com.hamza.account.controller.items.StockCountController;
 import com.hamza.account.controller.items.StockTransferController;
 import com.hamza.account.controller.items.StocksController;
-import com.hamza.account.controller.items.UnitsController;
 import com.hamza.account.controller.main.ButtonWithPerm;
 import com.hamza.account.controller.main.DataPublisher;
 import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.openFxml.OpenFxmlApplication;
-import com.hamza.account.view.AddGroupApp;
 import com.hamza.account.view.AddItemApplication;
 import com.hamza.controlsfx.language.LanguageManager;
 import javafx.scene.control.TabPane;
@@ -74,7 +74,7 @@ public class ItemsButtons {
             @Override
             public void actionAddPaneToTabPane(TabPane tabPane) throws Exception {
                 ItemsController itemsController = new ItemsController(daoFactory, dataPublisher);
-                addTape(tabPane, new OpenFxmlApplication(itemsController).getPane(), textName(), new Image_Setting().itemWhite);
+                addItemTab(tabPane, new OpenFxmlApplication(itemsController).getPane(), textName());
             }
 
             @Override
@@ -85,34 +85,25 @@ public class ItemsButtons {
     }
 
     public ButtonWithPerm units() {
+        return masterDataButton(MasterDataKind.UNIT);
+    }
+
+    public ButtonWithPerm itemGroupManager() {
         return new ButtonWithPerm() {
-
-            @Override
-            public PermissionKey getPermissionType() {
-                return AppPermissions.UNITS_SHOW;
+            @Override public PermissionKey getPermissionType() { return AppPermissions.ITEMS_SHOW; }
+            @Override public void action() { }
+            @NotNull @Override public String textName() {
+                return LanguageManager.getInstance().getString("item.group.manager.title");
             }
-
-            @Override
-            public void action() throws Exception {
-//                new OpenApplication<>(new UnitsController(textName()));
+            @Override public void actionAddPaneToTabPane(TabPane tabPane) throws Exception {
+                addItemTab(tabPane, new OpenFxmlApplication(new ItemGroupManagerController()).getPane(), textName());
             }
-
-            @NotNull
-            @Override
-            public String textName() {
-                return LanguageManager.getInstance().getString("tab.units");
-            }
-
-            @Override
-            public void actionAddPaneToTabPane(TabPane tabPane) throws Exception {
-                addTape(tabPane, new OpenFxmlApplication(new UnitsController(textName())).getPane(), textName(), new Image_Setting().itemWhite);
-            }
-
-            @Override
-            public boolean showOnTapPane() {
-                return true;
-            }
+            @Override public boolean showOnTapPane() { return true; }
         };
+    }
+
+    public ButtonWithPerm masterData() {
+        return new MasterDataButton();
     }
 
     public ButtonWithPerm inventory() throws Exception {
@@ -137,7 +128,7 @@ public class ItemsButtons {
 
             @Override
             public void actionAddPaneToTabPane(TabPane tabPane) throws Exception {
-                addTape(tabPane, new OpenFxmlApplication(inventory).getPane(), textName(), new Image_Setting().itemWhite);
+                addItemTab(tabPane, new OpenFxmlApplication(inventory).getPane(), textName());
             }
 
             @Override
@@ -173,7 +164,7 @@ public class ItemsButtons {
 
             @Override
             public void actionAddPaneToTabPane(TabPane tabPane) throws Exception {
-                addTape(tabPane, new OpenFxmlApplication(stockCount).getPane(), textName(), new Image_Setting().itemWhite);
+                addItemTab(tabPane, new OpenFxmlApplication(stockCount).getPane(), textName());
             }
 
             @Override
@@ -189,7 +180,7 @@ public class ItemsButtons {
             @Override public PermissionKey getPermissionType() { return AppPermissions.STOCK_SHOW; }
             @Override public void action() { }
             @NotNull @Override public String textName() { return LanguageManager.getInstance().getString("stocks.title"); }
-            @Override public void actionAddPaneToTabPane(TabPane tabPane) throws Exception { addTape(tabPane, new OpenFxmlApplication(controller).getPane(), textName(), new Image_Setting().itemWhite); }
+            @Override public void actionAddPaneToTabPane(TabPane tabPane) throws Exception { addItemTab(tabPane, new OpenFxmlApplication(controller).getPane(), textName()); }
             @Override public boolean showOnTapPane() { return true; }
         };
     }
@@ -199,7 +190,7 @@ public class ItemsButtons {
             @Override public PermissionKey getPermissionType() { return AppPermissions.STOCK_TRANSFER_POST; }
             @Override public void action() { }
             @NotNull @Override public String textName() { return LanguageManager.getInstance().getString("setting.store.transfers"); }
-            @Override public void actionAddPaneToTabPane(TabPane tabPane) throws Exception { addTape(tabPane, new OpenFxmlApplication(controller).getPane(), textName(), new Image_Setting().itemWhite); }
+            @Override public void actionAddPaneToTabPane(TabPane tabPane) throws Exception { addItemTab(tabPane, new OpenFxmlApplication(controller).getPane(), textName()); }
             @Override public boolean showOnTapPane() { return true; }
         };
     }
@@ -227,8 +218,8 @@ public class ItemsButtons {
 
             @Override
             public void actionAddPaneToTabPane(TabPane tabPane) throws Exception {
-                addTape(tabPane, new OpenFxmlApplication(new MergeItemsController()).getPane(),
-                        textName(), new Image_Setting().itemWhite);
+                addItemTab(tabPane, new OpenFxmlApplication(new MergeItemsController()).getPane(),
+                        textName());
             }
 
             @Override
@@ -238,65 +229,27 @@ public class ItemsButtons {
         };
     }
 
-    public ButtonWithPerm areasList() {
+    public ButtonWithPerm areasList() { return masterDataButton(MasterDataKind.AREA); }
+    public ButtonWithPerm addSubGroup() { return masterDataButton(MasterDataKind.SUB); }
+    public ButtonWithPerm addMainGroup() { return masterDataButton(MasterDataKind.MAIN); }
 
+    private ButtonWithPerm masterDataButton(MasterDataKind kind) {
         return new ButtonWithPerm() {
-            @Override
-            public PermissionKey getPermissionType() {
-                return AppPermissions.ITEMS_SHOW;
-            }
-
-            @Override
-            public void action() throws Exception {
-                var area = new AreaImpl();
-                new OpenAddAreaApplication<>(area, textName());
-            }
-
-            @NotNull
-            @Override
-            public String textName() {
-                return LanguageManager.getInstance().getString("party.area");
-            }
+            @Override public PermissionKey getPermissionType() { return kind.show; }
+            @Override public void action() throws Exception { MasterDataController.showWindow(kind); }
+            @NotNull @Override public String textName() { return LanguageManager.getInstance().getString(kind.titleKey); }
+            @Override public boolean showOnTapPane() { return true; }
+            @Override public void actionAddPaneToTabPane(TabPane host) throws Exception { MasterDataController.open(host, kind); }
         };
     }
 
-    public ButtonWithPerm addSubGroup() {
-        return new ButtonWithPerm() {
-            @Override
-            public PermissionKey getPermissionType() {
-                return AppPermissions.SUB_GROUP_SHOW;
-            }
-
-            @NotNull
-            @Override
-            public String textName() {
-                return LanguageManager.getInstance().getString("subGroup");
-            }
-
-            @Override
-            public void action() throws Exception {
-                new AddGroupApp();
-            }
-        };
-    }
-
-    public ButtonWithPerm addMainGroup() {
-        return new ButtonWithPerm() {
-            @Override
-            public PermissionKey getPermissionType() {
-                return AppPermissions.MAIN_GROUP_SHOW;
-            }
-
-            @NotNull
-            @Override
-            public String textName() {
-                return LanguageManager.getInstance().getString("mainGroup");
-            }
-
-            @Override
-            public void action() throws Exception {
-                new OpenAddAreaApplication<>(new MainGroupImpl2(), LanguageManager.getInstance().getString("mainGroup"));
-            }
-        };
+    private void addItemTab(TabPane host, Parent content, String title) {
+        for (Tab existing : host.getTabs()) {
+            if (title.equals(existing.getText())) { host.getSelectionModel().select(existing); return; }
+        }
+        Tab tab = new Tab(title, content);
+        tab.setGraphic(AppIcon.ITEM.graphic());
+        host.getTabs().add(tab);
+        host.getSelectionModel().select(tab);
     }
 }

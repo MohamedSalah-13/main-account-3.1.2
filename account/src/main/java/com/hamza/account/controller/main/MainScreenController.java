@@ -3,7 +3,7 @@ package com.hamza.account.controller.main;
 import com.hamza.account.authorization.AppPermissions;
 import com.hamza.account.authorization.AuthorizationGuard;
 import com.hamza.account.authorization.PermissionKey;
-import com.hamza.account.config.Image_Setting;
+import com.hamza.account.config.AppIcon;
 import com.hamza.account.controller.others.ServiceRegistry;
 import com.hamza.account.controller.reports.ModernDashboardApp;
 import com.hamza.account.controller.reports.MonthlySalesInterface;
@@ -25,7 +25,6 @@ import com.hamza.account.model.domain.Company;
 import com.hamza.account.model.domain.Users;
 import com.hamza.account.view.MonthlyView;
 import com.hamza.controlsfx.alert.AllAlerts;
-import com.hamza.controlsfx.button.ImageDesign;
 import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.language.LanguageManager;
 import com.hamza.controlsfx.observer.EventBus;
@@ -43,7 +42,6 @@ import javafx.stage.Stage;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.FileInputStream;
-import java.io.InputStream;
 import java.net.URI;
 import java.net.URL;
 import java.util.ArrayList;
@@ -75,8 +73,8 @@ public class MainScreenController extends MainItems implements Initializable {
     @FXML
     private AnchorPane rightPaneRoot;
     @FXML
-    private Button btnSales, btnSalesReturn, btnTotalSale, btnTotalSalesReturn, btnPurchase, btnTotalPurchase, btnPurchaseRe, btnTotalPurchaseRe, btnItems,
-            btnAddItem, btnUnits, btnMainGroup, btnSubGroup, btnArea, btnInventory, btnStockCount, btnStocks, btnStockTransfers, btnMergeItems,
+    private Button btnSales, btnSalesReturn, btnTotalSale, btnTotalSalesReturn, btnPurchase, btnTotalPurchase, btnPurchaseRe, btnTotalPurchaseRe, btnItems, btnItemGroups,
+            btnAddItem, btnMasterData, btnInventory, btnStockCount, btnStocks, btnStockTransfers, btnMergeItems,
             btnAddCustomerName, btnCustomer, btnAccountCustom, btnAddSupplierName, btnSuppliers,
             btnAccountSuppliers, btnAddEmployee, btnEmployees, btnAddUser, btnUsers,
             btnTreasuries, btnTreasuryCash, btnTreasuryTransfer, btnTreasuryCapital, btnTreasuryDetails, btnProcess, btnExpenses,
@@ -223,11 +221,13 @@ public class MainScreenController extends MainItems implements Initializable {
         menuButtonSetting.configureButton(btnTotalPurchaseRe, getTotalPurchaseReturn().totals());
         /*----------------------------------------------- Items -----------------------------------------------*/
         menuButtonSetting.configureButton(btnItems, getItemsButtons().allItems());
+        menuButtonSetting.configureButton(btnItemGroups, getItemsButtons().itemGroupManager());
         menuButtonSetting.configureButton(btnAddItem, getItemsButtons().addItem());
-        menuButtonSetting.configureButton(btnUnits, getItemsButtons().units());
-        menuButtonSetting.configureButton(btnMainGroup, getItemsButtons().addMainGroup());
-        menuButtonSetting.configureButton(btnSubGroup, getItemsButtons().addSubGroup());
-        menuButtonSetting.configureButton(btnArea, getItemsButtons().areasList());
+        var masterDataAction = getItemsButtons().masterData();
+        menuButtonSetting.configureButton(btnMasterData, masterDataAction);
+        boolean masterDataVisible = AuthorizationGuard.isGranted(masterDataAction.getPermissionType());
+        btnMasterData.setVisible(masterDataVisible);
+        btnMasterData.setManaged(masterDataVisible);
         menuButtonSetting.configureButton(btnInventory, getItemsButtons().inventory());
         menuButtonSetting.configureButton(btnStockCount, getItemsButtons().stockCount());
         menuButtonSetting.configureButton(btnStocks, getItemsButtons().stocks());
@@ -306,7 +306,8 @@ public class MainScreenController extends MainItems implements Initializable {
         Map<SidebarShortcut, Button> shortcuts = Map.ofEntries(
                 Map.entry(SidebarShortcut.SALES, btnSales), Map.entry(SidebarShortcut.SALES_RETURN, btnSalesReturn), Map.entry(SidebarShortcut.TOTAL_SALES, btnTotalSale), Map.entry(SidebarShortcut.TOTAL_SALES_RETURN, btnTotalSalesReturn),
                 Map.entry(SidebarShortcut.PURCHASE, btnPurchase), Map.entry(SidebarShortcut.PURCHASE_RETURN, btnPurchaseRe), Map.entry(SidebarShortcut.TOTAL_PURCHASE, btnTotalPurchase), Map.entry(SidebarShortcut.TOTAL_PURCHASE_RETURN, btnTotalPurchaseRe),
-                Map.entry(SidebarShortcut.ITEMS, btnItems), Map.entry(SidebarShortcut.ADD_ITEM, btnAddItem), Map.entry(SidebarShortcut.UNITS, btnUnits), Map.entry(SidebarShortcut.MAIN_GROUP, btnMainGroup), Map.entry(SidebarShortcut.SUB_GROUP, btnSubGroup), Map.entry(SidebarShortcut.AREA, btnArea), Map.entry(SidebarShortcut.INVENTORY, btnInventory), Map.entry(SidebarShortcut.STOCK_COUNT, btnStockCount), Map.entry(SidebarShortcut.STOCKS, btnStocks), Map.entry(SidebarShortcut.STOCK_TRANSFERS, btnStockTransfers), Map.entry(SidebarShortcut.MERGE_ITEMS, btnMergeItems),
+                // Retain existing user-assigned shortcuts as aliases of the unified command.
+                Map.entry(SidebarShortcut.ITEMS, btnItems), Map.entry(SidebarShortcut.ADD_ITEM, btnAddItem), Map.entry(SidebarShortcut.UNITS, btnMasterData), Map.entry(SidebarShortcut.MAIN_GROUP, btnMasterData), Map.entry(SidebarShortcut.SUB_GROUP, btnMasterData), Map.entry(SidebarShortcut.AREA, btnMasterData), Map.entry(SidebarShortcut.INVENTORY, btnInventory), Map.entry(SidebarShortcut.STOCK_COUNT, btnStockCount), Map.entry(SidebarShortcut.STOCKS, btnStocks), Map.entry(SidebarShortcut.STOCK_TRANSFERS, btnStockTransfers), Map.entry(SidebarShortcut.MERGE_ITEMS, btnMergeItems),
                 Map.entry(SidebarShortcut.ADD_CUSTOMER, btnAddCustomerName), Map.entry(SidebarShortcut.CUSTOMERS, btnCustomer), Map.entry(SidebarShortcut.CUSTOMER_ACCOUNT, btnAccountCustom),
                 Map.entry(SidebarShortcut.ADD_SUPPLIER, btnAddSupplierName), Map.entry(SidebarShortcut.SUPPLIERS, btnSuppliers), Map.entry(SidebarShortcut.SUPPLIER_ACCOUNT, btnAccountSuppliers),
                 Map.entry(SidebarShortcut.ADD_EMPLOYEE, btnAddEmployee), Map.entry(SidebarShortcut.EMPLOYEES, btnEmployees), Map.entry(SidebarShortcut.ADD_USER, btnAddUser), Map.entry(SidebarShortcut.USERS, btnUsers),
@@ -322,17 +323,16 @@ public class MainScreenController extends MainItems implements Initializable {
         }
     }
     private void rightPaneSetting() {
-        var imageSetting = new Image_Setting();
         var lm = LanguageManager.getInstance();
-        titlePaneSetting(paneSales, lm.getString("sales"), imageSetting.shoppingSales);
-        titlePaneSetting(panePurchase, lm.getString("pur"), imageSetting.shoppingPurchase);
-        titlePaneSetting(paneItems, lm.getString("items"), imageSetting.itemWhite);
-        titlePaneSetting(paneCustom, lm.getString("customers"), imageSetting.personCustomer);
-        titlePaneSetting(paneSuppliers, lm.getString("suppliers"), imageSetting.personSup);
-        titlePaneSetting(paneEmployees, lm.getString("employees"), imageSetting.account);
-        titlePaneSetting(paneTreasury, lm.getString("treasury.label.treasury"), imageSetting.treasuryWhite);
-        titlePaneSetting(paneReports, lm.getString("report"), imageSetting.reports);
-        titlePaneSetting(paneSetting, lm.getString("menu.settings"), imageSetting.setting);
+        titlePaneSetting(paneSales, lm.getString("sales"), AppIcon.SALES);
+        titlePaneSetting(panePurchase, lm.getString("pur"), AppIcon.PURCHASE);
+        titlePaneSetting(paneItems, lm.getString("items"), AppIcon.ITEM);
+        titlePaneSetting(paneCustom, lm.getString("customers"), AppIcon.CUSTOMERS);
+        titlePaneSetting(paneSuppliers, lm.getString("suppliers"), AppIcon.SUPPLIERS);
+        titlePaneSetting(paneEmployees, lm.getString("employees"), AppIcon.EMPLOYEES);
+        titlePaneSetting(paneTreasury, lm.getString("treasury.label.treasury"), AppIcon.TREASURY_CASH);
+        titlePaneSetting(paneReports, lm.getString("report"), AppIcon.REPORT);
+        titlePaneSetting(paneSetting, lm.getString("menu.settings"), AppIcon.SETTINGS);
 
         // Fixed bilingual brand identity, not translatable UI text - same choice
         // made for SettingApplication's stage title.
@@ -341,11 +341,11 @@ public class MainScreenController extends MainItems implements Initializable {
         txtTel.setText(PROGRAM_TEL);
     }
 
-    private void titlePaneSetting(TitledPane titledPane, String text, InputStream stream) {
+    private void titlePaneSetting(TitledPane titledPane, String text, AppIcon icon) {
         titledPane.setText(text);
         titledPane.setContentDisplay(LanguageManager.getInstance().isRtl()
                 ? ContentDisplay.RIGHT : ContentDisplay.LEFT);
-        titledPane.setGraphic(new ImageDesign(stream, 20));
+        titledPane.setGraphic(icon.graphic(20));
     }
 
     /** Keeps sidebar text and category icons aligned to the active reading direction. */
@@ -389,7 +389,8 @@ public class MainScreenController extends MainItems implements Initializable {
         lblCompanyName.setText(name == null || name.isBlank() ? PROGRAM_TITLE : name);
 
         CompanyLogo logo = CompanyLogo.fromStored(company.getImage());
-        Image image = logo == null ? new Image(new Image_Setting().defaultBlog) : logo.toFxImage();
+        Image image = logo == null ? new Image(java.util.Objects.requireNonNull(
+                com.hamza.account.Main.class.getResource("image/default-blog.png")).toExternalForm()) : logo.toFxImage();
         imgCompanyLogo.setImage(image);
     }
 
@@ -420,8 +421,7 @@ public class MainScreenController extends MainItems implements Initializable {
     }
 
     private void setupYouTube() {
-        var imageSetting = new Image_Setting();
-        btnYouTube.setGraphic(new ImageDesign(imageSetting.youtube, 20));
+        btnYouTube.setGraphic(AppIcon.VIDEO_HELP.graphic(20));
         btnYouTube.setText(LanguageManager.getInstance().getString("nav.youtube.explain"));
         btnYouTube.setTooltip(new Tooltip(LanguageManager.getInstance().getString("nav.youtube.tooltip")));
         btnYouTube.setOnAction(e -> {

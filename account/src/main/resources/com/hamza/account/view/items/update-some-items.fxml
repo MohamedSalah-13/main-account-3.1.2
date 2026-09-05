@@ -16,7 +16,7 @@
                 <HBox alignment="CENTER_LEFT" spacing="12.0" styleClass="app-card">
                     <children>
                         <FontIcon fx:id="headerIcon" styleClass="page-header-icon"/>
-                        <Label styleClass="app-title" text="%item.dialog.convert.title"/>
+                        <Label styleClass="app-title" text="%item.menu.bulk.edit"/>
                     </children>
                 </HBox>
                 <VBox spacing="14.0" styleClass="app-card">

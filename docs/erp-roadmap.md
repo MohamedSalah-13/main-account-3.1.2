@@ -735,6 +735,10 @@ main (pom)
 > (seam منفصل تمامًا، لا علاقة له بـ`DataTable`)، و`TableViewShowDataInt<T>` (في `controlsfx`)
 > يخدم شاشتين أخريين (`TableViewShowDataController`، `ApplicationDataWithToolbarIndexApp`).
 > المجموع الحقيقي: 19 موضعًا عبر الثلاثة، لا 17.
+>
+> **لاحقًا (2026-09-05):** حُذف `ApplicationDataWithToolbarIndexApp` ومعه شريط الأدوات العام
+> بعدما فقد آخر تنفيذَيه مع شاشات المجموعات/المناطق القديمة. `TableViewShowDataInt` باقٍ
+> ويخدم `TableViewShowDataController` وحده.
 
 - [x] **12.1 — بُني (2026-08-20).** [`Columns`](../controlsfx/src/main/java/com/hamza/controlsfx/table/Columns.java)
       في `controlsfx`: `text(key, Function<S,String>)`، `number(key, Function<S,? extends Number>)`

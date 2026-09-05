@@ -2,14 +2,14 @@ package com.hamza.account.controller.items;
 
 import com.codejava.commons.fx.validation.InputValidator;
 import com.hamza.account.config.Image_Setting;
-import com.hamza.account.controller.dataByName.OpenAddAreaApplication;
-import com.hamza.account.controller.dataByName.impl.MainGroupImpl2;
+import com.hamza.account.controller.dataByName.MasterDataController;
 import com.hamza.account.controller.main.DisableButtons;
 import com.hamza.account.controller.others.ServiceRegistry;
 import com.hamza.account.features.events.GroupLevel;
 import com.hamza.account.features.events.GroupsChanged;
 import com.hamza.account.features.events.ItemSaved;
 import com.hamza.account.features.events.UnitsChanged;
+import com.hamza.account.features.masterdata.MasterDataKind;
 import com.hamza.account.model.domain.ItemsModel;
 import com.hamza.account.model.domain.ItemsUnitsModel;
 import com.hamza.account.model.domain.SelPriceTypeModel;
@@ -20,7 +20,6 @@ import com.hamza.account.openFxml.OpenFxmlApplication;
 import com.hamza.account.service.*;
 import com.hamza.account.authorization.AppPermissions;
 import com.hamza.account.authorization.PermissionKey;
-import com.hamza.account.view.AddGroupApp;
 import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.error.BusinessRuleException;
@@ -393,14 +392,14 @@ public class AddItemController implements AppSettingInterface {
 
         btnAddMainGroup.setOnAction(actionEvent -> {
             try {
-                new OpenAddAreaApplication<>(new MainGroupImpl2(), LanguageManager.getInstance().getString("mainGroup"));
+                MasterDataController.showWindow(MasterDataKind.MAIN);
             } catch (Exception e) {
                 logError(e);
             }
         });
         btnAddSubGroup.setOnAction(actionEvent -> {
             try {
-                new AddGroupApp();
+                MasterDataController.showWindow(MasterDataKind.SUB);
             } catch (Exception e) {
                 logError(e);
             }
