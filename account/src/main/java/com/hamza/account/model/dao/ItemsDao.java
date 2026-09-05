@@ -19,9 +19,11 @@ import org.jetbrains.annotations.NotNull;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import static com.hamza.controlsfx.util.NumberUtils.roundToTwoDecimalPlaces;
 
@@ -621,6 +623,52 @@ public class ItemsDao extends AbstractDao<ItemsModel> {
     public String firstBarcodeTakenByAnotherItem(List<String> codes, int exceptItemId) throws DaoException {
         if (codes.isEmpty()) return null;
 
+        return withConnection(connection -> {
+            try (PreparedStatement statement = takenBarcodesStatement(connection, codes, exceptItemId, true);
+                 ResultSet rs = statement.executeQuery()) {
+                return rs.next() ? rs.getString(1) : null;
+            } catch (SQLException e) {
+                throw new DaoException(e.getMessage(), e);
+            }
+        });
+    }
+
+    /**
+     * Which of {@code codes} already belong to a different item - the same question
+     * {@link #firstBarcodeTakenByAnotherItem} asks, answered for all of them at once.
+     * <p>
+     * It exists for the code generator on the item screen, which offers a new item a
+     * free number and has to find one: asking per candidate meant a query per number
+     * tried, and the numbers it starts from are exactly the ones a shop that types its
+     * own short codes has already used. Answering the whole batch turns a walk of a
+     * thousand round trips into one.
+     */
+    public Set<String> takenBarcodesAmong(List<String> codes, int exceptItemId) throws DaoException {
+        if (codes.isEmpty()) return Set.of();
+
+        return withConnection(connection -> {
+            try (PreparedStatement statement = takenBarcodesStatement(connection, codes, exceptItemId, false);
+                 ResultSet rs = statement.executeQuery()) {
+                Set<String> taken = new HashSet<>();
+                while (rs.next()) {
+                    taken.add(rs.getString(1));
+                }
+                return taken;
+            } catch (SQLException e) {
+                throw new DaoException(e.getMessage(), e);
+            }
+        });
+    }
+
+    /**
+     * The one statement behind both questions above. The three tables each have their
+     * own unique index and none of them can see the others, so nothing stops the same
+     * code being an item's barcode here and a carton's there - and then a scan is a
+     * coin toss. Written once so the two callers cannot come to disagree about which
+     * tables a barcode can hide in.
+     */
+    private PreparedStatement takenBarcodesStatement(Connection connection, List<String> codes,
+                                                     int exceptItemId, boolean firstOnly) throws SQLException {
         String placeholders = String.join(",", Collections.nCopies(codes.size(), "?"));
         String query = """
                 SELECT code FROM (
@@ -630,25 +678,17 @@ public class ItemsDao extends AbstractDao<ItemsModel> {
                     UNION ALL
                     SELECT items_barcode AS code FROM items_units WHERE items_id <> ? AND items_barcode IN (%1$s)
                 ) AS matches
-                LIMIT 1
-                """.formatted(placeholders);
+                """.formatted(placeholders) + (firstOnly ? "LIMIT 1" : "");
 
-        return withConnection(connection -> {
-            try (PreparedStatement statement = connection.prepareStatement(query)) {
-                int index = 1;
-                for (int i = 0; i < 3; i++) {
-                    statement.setInt(index++, exceptItemId);
-                    for (String code : codes) {
-                        statement.setString(index++, code);
-                    }
-                }
-                try (ResultSet rs = statement.executeQuery()) {
-                    return rs.next() ? rs.getString(1) : null;
-                }
-            } catch (SQLException e) {
-                throw new DaoException(e.getMessage(), e);
+        PreparedStatement statement = connection.prepareStatement(query);
+        int index = 1;
+        for (int i = 0; i < 3; i++) {
+            statement.setInt(index++, exceptItemId);
+            for (String code : codes) {
+                statement.setString(index++, code);
             }
-        });
+        }
+        return statement;
     }
 
     /**

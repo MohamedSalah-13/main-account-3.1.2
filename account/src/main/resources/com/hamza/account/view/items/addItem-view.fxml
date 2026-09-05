@@ -27,13 +27,13 @@
          <top>
                 <ToolBar prefHeight="40.0" styleClass="items-toolbar" BorderPane.alignment="CENTER">
                     <items>
-                        <Button fx:id="btnSave" mnemonicParsing="false" styleClass="primary-button" text="Save" />
-                        <Button fx:id="btnSaveDuplicate" mnemonicParsing="false" styleClass="success-button" text="Save &amp;" />
-                        <Button fx:id="btnBarcode" mnemonicParsing="false" styleClass="neutral-button" text="barcode" />
+                        <Button fx:id="btnSave" mnemonicParsing="false" styleClass="primary-button" text="%common.save" />
+                        <Button fx:id="btnSaveDuplicate" mnemonicParsing="false" styleClass="success-button" text="%item.btn.save.duplicate" />
+                        <Button fx:id="btnBarcode" mnemonicParsing="false" styleClass="neutral-button" text="%barcode" />
                         <Button fx:id="btnAddMainGroup" mnemonicParsing="false" styleClass="neutral-button" text="%mainGroup" />
                         <Button fx:id="btnAddSubGroup" mnemonicParsing="false" styleClass="neutral-button" text="%subGroup" />
                         <Separator orientation="VERTICAL" />
-                        <Button fx:id="btnClose" cancelButton="true" mnemonicParsing="false" styleClass="danger-button" text="Close" />
+                        <Button fx:id="btnClose" cancelButton="true" mnemonicParsing="false" styleClass="danger-button" text="%common.close" />
                     </items>
                 </ToolBar>
          </top>
@@ -56,41 +56,41 @@
                                                     </columnConstraints>
 
                                                     <children>
-                                                        <Label fx:id="labelCode" styleClass="form-label" text="Code" />
-                                                        <TextField fx:id="txtCode" disable="true" promptText="code" GridPane.columnIndex="1" />
+                                                        <Label fx:id="labelCode" styleClass="form-label" text="%code" />
+                                                        <TextField fx:id="txtCode" disable="true" promptText="%code" GridPane.columnIndex="1" />
 
-                                                        <Label fx:id="labelBarcode" styleClass="form-label" text="Barcode" GridPane.columnIndex="2" />
-                                                        <TextField fx:id="txtBarcode" promptText="barcode" GridPane.columnIndex="3" />
+                                                        <Label fx:id="labelBarcode" styleClass="form-label" text="%barcode" GridPane.columnIndex="2" />
+                                                        <TextField fx:id="txtBarcode" promptText="%barcode" GridPane.columnIndex="3" />
 
-                                                        <Label fx:id="labelName" styleClass="form-label" text="Name" GridPane.rowIndex="1" />
-                                                        <TextField fx:id="txtItemName" promptText="name" GridPane.columnIndex="1" GridPane.rowIndex="1" />
+                                                        <Label fx:id="labelName" styleClass="form-label" text="%name" GridPane.rowIndex="1" />
+                                                        <TextField fx:id="txtItemName" promptText="%column.name_item" GridPane.columnIndex="1" GridPane.rowIndex="1" />
 
-                                                        <Label fx:id="labelBuyPrice" styleClass="form-label" text="Buy Price" GridPane.columnIndex="2" GridPane.rowIndex="1" />
-                                                        <TextField fx:id="txtBuyPrice" promptText="buy price" GridPane.columnIndex="3" GridPane.rowIndex="1" />
+                                                        <Label fx:id="labelBuyPrice" styleClass="form-label" text="%BuyPrice" GridPane.columnIndex="2" GridPane.rowIndex="1" />
+                                                        <TextField fx:id="txtBuyPrice" promptText="%BuyPrice" GridPane.columnIndex="3" GridPane.rowIndex="1" />
 
-                                                        <Label fx:id="labelSelPrice" styleClass="form-label" text="Sel Price" GridPane.rowIndex="2" />
-                                                        <TextField fx:id="txtSelPrice" promptText="sel price" GridPane.columnIndex="1" GridPane.rowIndex="2" />
+                                                        <Label fx:id="labelSelPrice" styleClass="form-label" text="%selPrice" GridPane.rowIndex="2" />
+                                                        <TextField fx:id="txtSelPrice" promptText="%selPrice" GridPane.columnIndex="1" GridPane.rowIndex="2" />
 
-                                                        <Label fx:id="labelSelPrice2" styleClass="form-label" text="Sel Price2" GridPane.columnIndex="2" GridPane.rowIndex="2" />
+                                                        <Label fx:id="labelSelPrice2" styleClass="form-label" text="%selPrice" GridPane.columnIndex="2" GridPane.rowIndex="2" />
                                                         <TextField fx:id="txtSelPrice2" promptText="price2" GridPane.columnIndex="3" GridPane.rowIndex="2" />
 
-                                                        <Label fx:id="labelSelPrice3" styleClass="form-label" text="Sel Price3" GridPane.rowIndex="3" />
+                                                        <Label fx:id="labelSelPrice3" styleClass="form-label" text="%selPrice" GridPane.rowIndex="3" />
                                                         <TextField fx:id="txtSelPrice3" promptText="price3" GridPane.columnIndex="1" GridPane.rowIndex="3" />
 
-                                                        <Label fx:id="labelType" styleClass="form-label" text="Type" GridPane.columnIndex="2" GridPane.rowIndex="3" />
-                                                        <ComboBox fx:id="comboType" maxWidth="1.7976931348623157E308" GridPane.columnIndex="3" GridPane.rowIndex="3" />
+                                                        <Label fx:id="labelType" styleClass="form-label" text="%item.small.unit" GridPane.columnIndex="2" GridPane.rowIndex="3" />
+                                                        <ComboBox fx:id="comboType" maxWidth="1.7976931348623157E308" promptText="%type" GridPane.columnIndex="3" GridPane.rowIndex="3" />
 
-                                                        <Label fx:id="labelFirstBalance" styleClass="form-label" text="First Balance" GridPane.rowIndex="4" />
-                                                        <TextField fx:id="txtBalance" promptText="balance" GridPane.columnIndex="1" GridPane.rowIndex="4" />
+                                                        <Label fx:id="labelFirstBalance" styleClass="form-label" text="%firstBalance" GridPane.rowIndex="4" />
+                                                        <TextField fx:id="txtBalance" promptText="%firstBalance" GridPane.columnIndex="1" GridPane.rowIndex="4" />
 
-                                                        <Label fx:id="labelMiniQuantity" styleClass="form-label" text="Mini Quantity" GridPane.columnIndex="2" GridPane.rowIndex="4" />
-                                                        <TextField fx:id="txtMiniQuantity" promptText="mini" GridPane.columnIndex="3" GridPane.rowIndex="4" />
+                                                        <Label fx:id="labelMiniQuantity" styleClass="form-label" text="%item.mini.quantity" GridPane.columnIndex="2" GridPane.rowIndex="4" />
+                                                        <TextField fx:id="txtMiniQuantity" promptText="%item.mini.quantity" GridPane.columnIndex="3" GridPane.rowIndex="4" />
 
-                                                        <Label fx:id="labelMainGroup" styleClass="form-label" text="Main Group" GridPane.rowIndex="5" />
-                                                        <ComboBox fx:id="comboMainGroup" maxWidth="1.7976931348623157E308" GridPane.columnIndex="1" GridPane.rowIndex="5" />
+                                                        <Label fx:id="labelMainGroup" styleClass="form-label" text="%mainGroup" GridPane.rowIndex="5" />
+                                                        <ComboBox fx:id="comboMainGroup" maxWidth="1.7976931348623157E308" promptText="%mainGroup" GridPane.columnIndex="1" GridPane.rowIndex="5" />
 
-                                                        <Label fx:id="labelSupGroup" styleClass="form-label" text="Sup Group" GridPane.columnIndex="2" GridPane.rowIndex="5" />
-                                                        <ComboBox fx:id="comboSupGroup" maxWidth="1.7976931348623157E308" GridPane.columnIndex="3" GridPane.rowIndex="5" />
+                                                        <Label fx:id="labelSupGroup" styleClass="form-label" text="%subGroup" GridPane.columnIndex="2" GridPane.rowIndex="5" />
+                                                        <ComboBox fx:id="comboSupGroup" maxWidth="1.7976931348623157E308" promptText="%subGroup" GridPane.columnIndex="3" GridPane.rowIndex="5" />
                                                     </children>
                                        <rowConstraints>
                                           <RowConstraints />

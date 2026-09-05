@@ -29,6 +29,13 @@ class DefaultStockUsageArchitectureTest {
 
     private static final Set<String> FILES_USING_DEFAULT_STOCK = Set.of(
             "com/hamza/account/controller/invoice/BuyController2.java",
+            // The item screen's opening-balance field, which has no warehouse picker and
+            // never had one: ItemsDao.insert and .update both write that figure to
+            // DefaultStock.ID, so the screen has to read the same warehouse back. The
+            // per-warehouse balances an item does have are read and written elsewhere -
+            // the inventory, transfer and stock-count screens, all of which take a real
+            // stockId. Adding a picker here is the way this entry leaves the list.
+            "com/hamza/account/controller/items/AddItemController.java",
             "com/hamza/account/controller/items/CardController.java",
             "com/hamza/account/controller/items/InventoryController.java",
             "com/hamza/account/controller/items/StockCountController.java",
