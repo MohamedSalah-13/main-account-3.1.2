@@ -74,6 +74,12 @@ public class WindowsNotifier implements NotificationListener {
         if (!policy.shouldToast(notification) || !policy.channelFor(notification).includesWindows()) {
             return;
         }
+        // Same rule as the in-app toast: a screen that faces customers suppresses both
+        // channels, or the balloon simply says over the taskbar what the toast was stopped
+        // from saying over the window. See NotificationToaster.SUPPRESS_TOASTS.
+        if (NotificationToaster.toastsSuppressedByAnyWindow()) {
+            return;
+        }
         EventQueue.invokeLater(() -> display(notification));
     }
 

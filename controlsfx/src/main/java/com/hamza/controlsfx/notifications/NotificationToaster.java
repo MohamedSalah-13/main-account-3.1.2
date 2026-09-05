@@ -62,6 +62,23 @@ import java.util.function.Function;
 @Log4j2
 public class NotificationToaster implements NotificationListener {
 
+    /**
+     * Marks a window that must never have a toast appear over it. Set it on the window
+     * ({@code stage.getProperties().put(SUPPRESS_TOASTS, true)}) and while that window is
+     * showing, no toast is shown at all - not over it, and not over anything behind it,
+     * since a popup owned by a window underneath a full-screen one still draws on top.
+     * <p>
+     * It exists because the price-check screen hangs on a shop wall facing customers, and
+     * the first time it was run a toast announced "709 items are running low" to whoever
+     * was standing in front of it. Which business facts a screen may show is the
+     * application's judgement, not this module's, so the window declares it rather than
+     * this class knowing any screen by name.
+     * <p>
+     * Nothing is lost: the notification is already in the inbox behind the bell, which is
+     * where the operator reads it.
+     */
+    public static final String SUPPRESS_TOASTS = "app.notifications.suppressToasts";
+
     private static final String STYLESHEET = "/com/hamza/controlsfx/css/notification-toast.css";
     private static final double WIDTH = 380;
     private static final double SCREEN_MARGIN = 16;
@@ -107,6 +124,11 @@ public class NotificationToaster implements NotificationListener {
             return;
         }
 
+        if (toastsSuppressedByAnyWindow()) {
+            log.debug("A window is suppressing toasts; '{}' stays in the inbox only", notification.key());
+            return;
+        }
+
         Window owner = ownerWindow();
         if (owner == null) {
             // Nothing to hang a popup on - the inbox behind the bell still has the entry.
@@ -118,6 +140,20 @@ public class NotificationToaster implements NotificationListener {
             beep();
         }
         show(owner, notification);
+    }
+
+    /**
+     * Whether any window on screen has declared {@link #SUPPRESS_TOASTS}. Static and public
+     * because {@code WindowsNotifier} asks the same question - a tray balloon saying over
+     * the taskbar what the toast was stopped from saying is the same leak.
+     */
+    public static boolean toastsSuppressedByAnyWindow() {
+        for (Window window : Window.getWindows()) {
+            if (window.isShowing() && Boolean.TRUE.equals(window.getProperties().get(SUPPRESS_TOASTS))) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /**

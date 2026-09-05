@@ -32,8 +32,13 @@
         <ImageView fx:id="imgItem" fitWidth="260" fitHeight="260"
                    preserveRatio="true" smooth="true"/>
         <VBox alignment="CENTER" spacing="14" maxWidth="Infinity" HBox.hgrow="ALWAYS">
-            <Label fx:id="lblItemName" styleClass="pricecheck-name"
-                   wrapText="true" textAlignment="CENTER" maxWidth="Infinity"/>
+            <!-- alignment, not textAlignment: the label is stretched to the full width so a
+                 long name can wrap, and textAlignment only lines wrapped lines up against each
+                 other. Where the text sits inside the label is alignment, whose default
+                 CENTER_LEFT mirrors to the right-hand edge under RTL - which is exactly where
+                 the name was found sitting the first time this screen was run. -->
+            <Label fx:id="lblItemName" styleClass="pricecheck-name" wrapText="true"
+                   alignment="CENTER" textAlignment="CENTER" maxWidth="Infinity"/>
             <Label fx:id="lblPrice" styleClass="pricecheck-price"/>
             <Label fx:id="lblUnit" styleClass="pricecheck-unit"/>
             <Label fx:id="lblWeight" styleClass="pricecheck-weight" wrapText="true"/>

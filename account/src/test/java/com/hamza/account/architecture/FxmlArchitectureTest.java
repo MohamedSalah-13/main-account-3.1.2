@@ -162,6 +162,43 @@ class FxmlArchitectureTest {
                         + "OpenFxmlApplication: " + offenders);
     }
 
+    /**
+     * A package holding a controller with {@code @FXML} fields must be opened to
+     * {@code javafx.fxml} in {@code module-info.java}.
+     * <p>
+     * Written after the price-check screen was opened for the first time and died on
+     * {@code InaccessibleObjectException: module com.hamza.account does not "opens
+     * com.hamza.account.controller.pricecheck" to module javafx.fxml}. The loader
+     * reaches an {@code @FXML} field by reflection, and on the module path a package
+     * that is not opened refuses it - so the screen throws a {@code LoadException} at
+     * the first field and <b>never opens at all</b>.
+     * <p>
+     * Nothing else in the build sees it: the code compiles, every other guard here
+     * passes, and the failure arrives the first time a person clicks the button. Every
+     * existing controller package is already opened, which is why this rule carries no
+     * baseline - the omission only happens on a <i>new</i> package, which is exactly
+     * when nobody thinks of {@code module-info}.
+     */
+    @Test
+    void everyControllerPackageIsOpenedToTheFxmlLoader() {
+        String moduleInfo = SourceTree.readJava("module-info.java");
+        var offenders = new TreeSet<String>();
+        for (String file : SourceTree.javaFiles(SourceTree.javaPackage("controller"))) {
+            if (!SourceTree.readJava(file).contains("@FXML")) {
+                continue;
+            }
+            String packageName = file.substring(0, file.lastIndexOf('/')).replace('/', '.');
+            if (!moduleInfo.contains("opens " + packageName + " to javafx.fxml")) {
+                offenders.add(packageName);
+            }
+        }
+        assertTrue(offenders.isEmpty(),
+                "A package whose controller declares @FXML fields must be opened to javafx.fxml in "
+                        + "module-info.java, or the loader cannot inject them and the screen dies "
+                        + "with an InaccessibleObjectException the first time it is opened. Add "
+                        + "\"opens <package> to javafx.fxml;\" for: " + offenders);
+    }
+
     @Test
     void noNewFxmlOmitsItsController() {
         var unexpected = new TreeSet<String>();

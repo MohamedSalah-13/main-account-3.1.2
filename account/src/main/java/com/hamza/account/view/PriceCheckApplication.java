@@ -13,6 +13,7 @@ import com.hamza.account.security.PasswordHasher;
 import com.hamza.account.service.CardItemService;
 import com.hamza.account.service.ItemsService;
 import com.hamza.controlsfx.language.LanguageManager;
+import com.hamza.controlsfx.notifications.NotificationToaster;
 import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.scene.Scene;
@@ -72,6 +73,10 @@ public class PriceCheckApplication extends Application {
 
         stage.setScene(scene);
         stage.setTitle(LanguageManager.getInstance().getString("pricecheck.title"));
+        // No toast over a screen a customer is reading. The first run of this screen had
+        // "709 items are running low" announced in its corner - the shop's stock position,
+        // in front of whoever was standing there. The inbox behind the bell still has it.
+        stage.getProperties().put(NotificationToaster.SUPPRESS_TOASTS, true);
         stage.setFullScreenExitKeyCombination(KeyCombination.NO_MATCH);
         stage.setFullScreenExitHint("");
         stage.setFullScreen(true);
