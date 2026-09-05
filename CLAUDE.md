@@ -27,7 +27,7 @@ mvn -o -pl account -am test -Dtest=ScheduledBackupTest -Dsurefire.failIfNoSpecif
 
 **Coverage is real but uneven — know which half you are in.** JUnit 5 and Mockito are declared in the
 root pom and inherited by both modules; surefire needs no configuration. `mvn clean test` currently runs
-**1,260 tests across 142 test source files** — 98 in `controlsfx`, 1,162 in `account` — with 64 skipped (below). What is
+**1,308 tests across 146 test source files** — 98 in `controlsfx`, 1,210 in `account` — with 74 skipped (below). What is
 genuinely covered:
 
 - **The declarative specs, pinned character for character** — `DocumentDaoStatementsTest`,
@@ -69,14 +69,14 @@ because *every new party payment had been silently discarded since `f2b4baf`* (s
 observe from inside an enclosing transaction. Fifteen cases pass now, twice in a row, and the class
 checks for its own residue rather than trusting the rollback.
 
-**Fourteen classes do not run by default.** `InvoiceStockDatabaseAcceptanceTest`,
+**Fifteen classes do not run by default.** `InvoiceStockDatabaseAcceptanceTest`,
 `DocumentLineDatabaseAcceptanceTest`, `StockLedgerReconciliationAcceptanceTest`,
 `StockMovementBackfillAcceptanceTest`, `StockTransferDatabaseAcceptanceTest`,
 `TotalDocumentDeleteReversesStockLedgerAcceptanceTest`,
 `PurchaseDeleteReversesNonDefaultWarehouseBalanceAcceptanceTest`, `PartyLedgerViewAcceptanceTest`,
 `ReturnSourceAcceptanceTest`, `ReturnableRepositoryAcceptanceTest`, `ItemMergeDatabaseAcceptanceTest`,
-`TreasuryBalanceViewAcceptanceTest`, `ProfitDefinitionDatabaseAcceptanceTest` and
-`ShiftAccountingDatabaseAcceptanceTest` are gated on
+`TreasuryBalanceViewAcceptanceTest`, `ProfitDefinitionDatabaseAcceptanceTest`,
+`ShiftAccountingDatabaseAcceptanceTest` and `ItemGroupMoveDatabaseAcceptanceTest` are gated on
 `-Daccount.db.acceptance=true` and need a reachable MySQL. A green `mvn clean test` does not run them.
 
 **On 2026-08-31 the first thirteen were run together for the first time, and after one fixture fix
@@ -107,7 +107,15 @@ number — the text-matching `ProfitDefinitionTest` says they all read `document
 figure is right. `ItemMergeDatabaseAcceptanceTest` is the only check that a merge leaves the surviving
 item holding both histories.
 
-**The merge one is safe to run on a working database; do not assume that of the other twelve.** It opens
+`ItemGroupMoveDatabaseAcceptanceTest` is the newest of the family and the only thing that says a group
+move lands and that a refused batch moves nothing: the rest of `features/itemgroups` is tested against a
+mock repository, where the optimistic check passes by construction. **It has never been run** — it was
+written on 2026-09-05 with no database to hand, so treat it as an untested test until someone runs it.
+It follows the merge's shape (one transaction, rolled back, every fixture row stamped `GRP-%`), and two
+things it deliberately does not claim are written into its javadoc: the `moved != effective.size()`
+guard is unreachable from one connection, and the `FOR UPDATE` is not proven to block a second writer.
+
+**The merge one is safe to run on a working database; do not assume that of the other thirteen.** It opens
 one transaction and rolls it back in a `finally`, so even the audit triggers' rows go with it - and that
 was checked rather than trusted: querying afterwards, `item_merge`, `item_merge_lines` and every `MRG-%`
 barcode its fixtures create all counted zero. `ProfitDefinitionDatabaseAcceptanceTest` was checked the
