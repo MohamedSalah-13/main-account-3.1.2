@@ -96,6 +96,15 @@ class ItemCatalogSqlTest {
     class CountAndPageAgree {
 
         @Test
+        @DisplayName("balance filters use the same all-stock opening shown in the row")
+        void balanceUsesTheAggregatedOpening() {
+            String where = build(ItemCatalogFilter.EMPTY.withBalance(BalanceRule.IN_STOCK)).where();
+
+            assertTrue(where.contains("ip.stock_first_balance"));
+            assertFalse(where.contains("items.first_balance"));
+        }
+
+        @Test
         @DisplayName("a balance condition names the joined movement row, so the count must join it")
         void balanceRequiresTheJoin() {
             for (BalanceRule rule : BalanceRule.values()) {

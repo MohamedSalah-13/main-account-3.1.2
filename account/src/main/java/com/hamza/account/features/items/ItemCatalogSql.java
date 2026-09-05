@@ -28,13 +28,13 @@ public final class ItemCatalogSql {
      * What an item has on hand, in SQL, aliased exactly as {@code ItemsDao.applyBalances}
      * computes it in Java: the opening balance plus everything in, less everything out.
      * <p>
-     * {@code items.first_balance} rather than the joined view's copy, deliberately - that
-     * is the column {@code mapCatalogRow} reads into the model, so a row filtered out by
-     * this expression and a row displaying a balance are talking about the same number.
-     * {@code ItemsDaoStockQueryTest} pins the aggregate's exclusion of the view's copy.
+     * {@code ip.stock_first_balance} is the sum of the opening balances stored per
+     * warehouse in {@code items_stock}. The legacy {@code items.first_balance} mirrors
+     * warehouse 1 only; mixing it with movements aggregated across every warehouse would
+     * make both the displayed balance and these filters answer two different scopes.
      */
     public static final String BALANCE = """
-            (items.first_balance + ip.quantityPurchase + ip.quantitySalesRe + ip.toStock + ip.adjustment
+            (ip.stock_first_balance + ip.quantityPurchase + ip.quantitySalesRe + ip.toStock + ip.adjustment
               - ip.quantitySales - ip.quantityPurchaseRe - ip.fromStock)""";
 
     /**

@@ -195,9 +195,10 @@ public final class ItemMergeStatements {
      * the target is not. There is one warehouse today, so this normally moves nothing -
      * it is here because the unique key says the plain move would fail if there were two.
      * <p>
-     * The balances are seeded at zero on purpose: nothing reads
-     * {@code items_stock.first_balance} - {@code quantity_items_table} reads
-     * {@code items.first_balance} - and the opening balance is added there instead.
+     * The missing row is seeded at zero because the source opening is added to the
+     * matching target row by {@link #ADD_ITEMS_STOCK_BALANCES}. Since V18,
+     * {@code quantity_items_table} reads these per-warehouse openings directly from
+     * {@code items_stock}; copying the source value here would add it twice.
      */
     public static final String INSERT_MISSING_ITEMS_STOCK = """
             INSERT INTO items_stock (item_id, stock_id, first_balance, current_quantity)

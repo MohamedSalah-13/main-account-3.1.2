@@ -5,6 +5,7 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -18,6 +19,25 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * the wrong placeholder is a search that silently answers a different question.
  */
 class ItemsCatalogQueryTest {
+
+    @Test
+    @DisplayName("catalog rows omit the picture blob")
+    void catalogProjectionDoesNotLoadPictures() {
+        String sql = ItemsDao.catalogSelectQuery().toLowerCase();
+
+        assertFalse(sql.contains("select *"));
+        assertFalse(sql.contains("item_image"));
+    }
+
+    @Test
+    @DisplayName("catalog rows read the opening balance aggregated across stocks")
+    void catalogProjectionUsesAllStockOpeningBalance() {
+        String sql = ItemsDao.catalogSelectQuery();
+
+        assertTrue(sql.contains("SUM(first_balance)"));
+        assertTrue(sql.contains("ip.stock_first_balance"));
+        assertFalse(sql.contains("items.first_balance"));
+    }
 
     private static int placeholders(String sql) {
         return (int) sql.chars().filter(character -> character == '?').count();

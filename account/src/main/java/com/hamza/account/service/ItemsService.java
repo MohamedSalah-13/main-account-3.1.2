@@ -5,6 +5,7 @@ import com.hamza.account.authorization.AuthorizationGuard;
 
 import com.hamza.account.delete.DeleteRegistry;
 import com.hamza.account.features.items.ItemCatalogFilter;
+import com.hamza.account.features.items.ItemImageContent;
 import com.hamza.account.delete.DeletionService;
 import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.model.domain.ItemsModel;
@@ -186,6 +187,11 @@ public record ItemsService(DaoFactory daoFactory) {
 
     public ItemsModel getCatalogItem(int id) throws DaoException {
         return daoFactory.getItemsDao().getCatalogItem(id);
+    }
+
+    /** The picture is deliberately absent from catalog rows and read only on demand. */
+    public ItemImageContent getItemImage(int itemId) throws DaoException {
+        return ItemImageContent.of(daoFactory.getItemsDao().getItemImage(itemId));
     }
 
     /**

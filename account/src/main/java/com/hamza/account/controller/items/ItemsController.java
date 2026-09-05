@@ -31,6 +31,7 @@ import com.hamza.account.table.TableSetting;
 import com.hamza.account.view.AddItemApplication;
 import com.hamza.account.view.CardApplication;
 import com.hamza.account.view.ItemReportsApplication;
+import com.hamza.account.view.ItemImageApplication;
 import com.hamza.account.view.SceneAll;
 import com.hamza.account.view.barcode.PrintBarcodeApp;
 import com.hamza.account.view.barcode.PrintBarcodeModel;
@@ -164,7 +165,7 @@ public class ItemsController extends LoadData {
      * The columns anything else refers to.
      * <p>
      * Held rather than looked up by position: the units column is inserted at 3, the picture
-     * column is appended, and the selection column is prepended - so the index of any given
+     * action is appended, and the selection column is prepended - so the index of any given
      * column depends on the order three unrelated calls happen to run in.
      */
     private TableColumn<ItemsModel, String> colBarcode;
@@ -229,13 +230,19 @@ public class ItemsController extends LoadData {
                 colSelPrice2,
                 colSelPrice3,
                 Columns.number(NamesTables.MINI_QUANTITY, ItemsModel::getMini_quantity),
-                Columns.number(NamesTables.FIRST_BALANCE, ItemsModel::getFirstBalanceForStock),
-                Columns.number(NamesTables.SUM_ALL_BALANCE, ItemsModel::getSumAllBalance)
+                Columns.number(NamesTables.ALL_STOCKS_FIRST_BALANCE, ItemsModel::getFirstBalanceForStock),
+                Columns.number(NamesTables.ALL_STOCKS_BALANCE, ItemsModel::getSumAllBalance)
         );
         tableView.getSelectionModel().setSelectionMode(SelectionMode.SINGLE);
         tableView.setPlaceholder(new Label(LanguageManager.getInstance().getString("item.table.empty")));
 
-        new ColumnImage(tableView, itemsService).addColumnImage();
+        ItemImageActionColumn.addTo(
+                tableView,
+                this::openItemImage,
+                this::editItem,
+                this::deleteItem,
+                AuthorizationGuard.isGranted(AppPermissions.ITEMS_UPDATE),
+                AuthorizationGuard.isGranted(AppPermissions.ITEMS_DELETE));
         tableView.getColumns().add(3, unitColumn());
 
         // The cost of goods is a figure a business hides from most of its staff, so the
@@ -784,12 +791,25 @@ public class ItemsController extends LoadData {
 
     private void editSelected() {
         ItemsModel selected = requireSelection();
-        if (selected != null) openItemEditor(selected.getId());
+        if (selected != null) editItem(selected);
+    }
+
+    private void editItem(ItemsModel item) {
+        openItemEditor(item.getId());
     }
 
     private void openItemEditor(int itemId) {
         try {
             new AddItemApplication(itemId).start(new Stage());
+        } catch (Exception e) {
+            reportError(e);
+        }
+    }
+
+    private void openItemImage(ItemsModel item) {
+        try {
+            ItemImageApplication.show(tableView.getScene() == null ? null : tableView.getScene().getWindow(),
+                    item.getId(), item.getNameItem(), itemsService);
         } catch (Exception e) {
             reportError(e);
         }
@@ -821,9 +841,13 @@ public class ItemsController extends LoadData {
     private void delete() {
         ItemsModel selected = requireSelection();
         if (selected == null) return;
+        deleteItem(selected);
+    }
+
+    private void deleteItem(ItemsModel item) {
         if (!AllAlerts.confirmDelete()) return;
         try {
-            if (itemsService.deleteItem(selected.getId()) >= 1) {
+            if (itemsService.deleteItem(item.getId()) >= 1) {
                 AllAlerts.alertDelete();
                 paginationTableSetting.reload();
             }
@@ -894,8 +918,7 @@ public class ItemsController extends LoadData {
     }
 
     private void exportToExcel() {
-        ItemsExcelExport.export(tableView, "Items", "Items.xlsx",
-                ItemsModel::getItem_image, LanguageManager.getInstance().getString("item.image"));
+        ItemsExcelExport.export(tableView, "Items", "Items.xlsx");
     }
 
     /** The rows the operator ticked. One definition, used by print, barcodes and grouping. */

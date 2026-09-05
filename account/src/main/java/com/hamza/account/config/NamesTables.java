@@ -47,6 +47,7 @@ public class NamesTables {
     public static final String BUY_PRICE = "column.buy_price";
     public static final String BARCODE = "column.barcode";
     public static final String FIRST_BALANCE = "column.first_balance";
+    public static final String ALL_STOCKS_FIRST_BALANCE = "item.catalog.column.opening.all.stocks";
     public static final String BALANCE = "column.balance";
     public static final String IN_BALANCE = "column.in_balance";
     public static final String OUT_BALANCE = "column.out_balance";
@@ -67,6 +68,7 @@ public class NamesTables {
     public static final String TOTAL_BUY_PRICE = "column.total_buy_price";
 
     public static final String SUM_ALL_BALANCE = "column.sum_all_balance";
+    public static final String ALL_STOCKS_BALANCE = "item.catalog.column.balance.all.stocks";
     public static final String DATE_INSERT = "column.date_insert";
     public static final String ITEM_NAME = "column.item_name";
 }

@@ -47,12 +47,15 @@ class ItemsDaoStockQueryTest {
         }
 
         @Test
-        @DisplayName("the opening balance is not summed inside the aggregate")
-        void openingBalanceIsNotDoubleCounted() throws Exception {
+        @DisplayName("the per-warehouse opening balances are summed once")
+        void openingBalancesAreSummedAcrossStocks() throws Exception {
             String movements = field("ITEM_MOVEMENTS_ALL_STOCKS");
-            assertFalse(movements.contains("first_balance"),
-                    "first_balance must come from the outer items join, once - summing the view's "
-                            + "copy of it here is exactly the mini_quantity_view bug this mirrors");
+            assertTrue(movements.contains("SUM(first_balance)"),
+                    "V18 made quantity_items_table.first_balance a distinct value per warehouse; "
+                            + "a catalogue-wide row must add every warehouse's opening stock");
+            assertTrue(movements.contains("AS stock_first_balance"),
+                    "the aggregate needs an unambiguous name distinct from items.first_balance, "
+                            + "which is only the warehouse-1 compatibility mirror");
         }
 
         @Test
@@ -78,6 +81,8 @@ class ItemsDaoStockQueryTest {
                     "findItemByIdAndStockId and its siblings filter on ip.stock_id = ?, which only "
                             + "makes sense against the real per-stock rows - aggregating first would "
                             + "make the filter pick an arbitrary warehouse instead of the one asked for");
+            assertTrue(sql.contains("ip.first_balance AS stock_first_balance"),
+                    "the per-stock and all-stock result sets must expose the opening under the same name");
         }
     }
 }

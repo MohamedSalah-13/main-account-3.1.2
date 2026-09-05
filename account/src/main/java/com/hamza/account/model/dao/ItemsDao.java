@@ -54,11 +54,11 @@ public class ItemsDao extends AbstractDao<ItemsModel> {
      * <p>
      * This mirrors what {@code InventoryDao}'s {@code MOVEMENTS} subquery already does:
      * pre-aggregate by {@code item_id} so there is exactly one row per item regardless
-     * of how many stocks it has moved through. {@code first_balance} is deliberately
-     * left out of the aggregate - {@code items.first_balance} is already read
-     * unambiguously from the outer join, and summing the view's copy of it here would
-     * reintroduce the same one-row-per-stock double count on the opening balance that
-     * {@code mini_quantity_view} had.
+     * of how many stocks it has moved through. Since V18, {@code first_balance} in
+     * {@code quantity_items_table} comes from the distinct (item, stock) row in
+     * {@code items_stock}, so it must be summed alongside the movements. The legacy
+     * {@code items.first_balance} is only a compatibility mirror of warehouse 1 and is
+     * not the catalogue-wide opening balance.
      * <p>
      * {@code ANY_VALUE(stock_id)} keeps {@link #STOCK_ID} resolvable for {@link #map}
      * without pinning the aggregate to one stock: with a single warehouse it is that
@@ -70,6 +70,7 @@ public class ItemsDao extends AbstractDao<ItemsModel> {
     private static final String ITEM_MOVEMENTS_ALL_STOCKS = """
             (SELECT item_id,
                     ANY_VALUE(stock_id)     AS stock_id,
+                    SUM(first_balance)       AS stock_first_balance,
                     SUM(quantityPurchase)   AS quantityPurchase,
                     SUM(quantitySales)      AS quantitySales,
                     SUM(quantityPurchaseRe) AS quantityPurchaseRe,
@@ -203,6 +204,7 @@ public class ItemsDao extends AbstractDao<ItemsModel> {
     private final String FROM_STOCK = "fromStock";
     private final String TO_STOCK = "toStock";
     private final String ADJUSTMENT = "adjustment";
+    private static final String STOCK_FIRST_BALANCE = "stock_first_balance";
 
     /** Where the opening balance sits in the array {@link #getData} builds. */
     private static final int OPENING_BALANCE_INDEX = 13;
@@ -217,9 +219,47 @@ public class ItemsDao extends AbstractDao<ItemsModel> {
 
     private final String USER_ID = "user_id";
     /** One row per (item, stock). For the finder methods that already scope to one warehouse via {@code ip.stock_id = ?}; see {@link #ITEM_MOVEMENTS_ALL_STOCKS}. */
-    private final String QUERY_ITEMS = "SELECT * from items join quantity_items_table ip on items.id = ip.item_id ";
+    private final String QUERY_ITEMS = "SELECT items.*, ip.*, ip.first_balance AS stock_first_balance "
+            + "from items join quantity_items_table ip on items.id = ip.item_id ";
     /** One row per item, aggregated across every warehouse. For every catalog query that names no stock. */
     private final String QUERY_ITEMS_ALL_STOCKS = "SELECT * from items join " + ITEM_MOVEMENTS_ALL_STOCKS + " ip on items.id = ip.item_id ";
+    /**
+     * The projection used only by the items-list screen.
+     * <p>
+     * It is intentionally explicit and intentionally omits {@code items.item_image}. A
+     * picture is a {@code LONGBLOB}; selecting it for every row moved and allocated all
+     * those bytes before the table could show the first page, even though the table only
+     * needs the ordinary item fields and stock totals below. The separate picture window
+     * reads one blob by id, on demand.
+     */
+    private static final String CATALOG_COLUMNS = """
+            items.id,
+            items.barcode,
+            items.nameItem,
+            items.sub_num,
+            items.buy_price,
+            items.sel_price1,
+            items.sel_price2,
+            items.sel_price3,
+            items.unit_id,
+            items.mini_quantity,
+            ip.stock_first_balance,
+            items.item_active,
+            items.item_has_validity,
+            items.number_validity_days,
+            items.alert_days_before_expire,
+            ip.stock_id,
+            ip.quantityPurchase,
+            ip.quantitySales,
+            ip.quantityPurchaseRe,
+            ip.quantitySalesRe,
+            ip.fromStock,
+            ip.toStock,
+            ip.adjustment
+            """;
+    private static final String QUERY_CATALOG_ITEMS =
+            "SELECT " + CATALOG_COLUMNS + " FROM items JOIN " + ITEM_MOVEMENTS_ALL_STOCKS
+                    + " ip ON items.id = ip.item_id ";
     private final DaoFactory daoFactory;
 
     ItemsDao(DaoFactory daoFactory) {
@@ -499,7 +539,7 @@ public class ItemsDao extends AbstractDao<ItemsModel> {
     @NotNull
     private ItemsModel getItemsModel(ResultSet rs) throws SQLException, DaoException {
         ItemsModel itemsModel = new ItemsModel();
-        double firstBalanceForStock = rs.getDouble(FIRST_BALANCE);
+        double firstBalanceForStock = rs.getDouble(STOCK_FIRST_BALANCE);
         int unitId = rs.getInt(UNIT_ID);
         Blob blob = rs.getBlob(ITEM_IMAGE);
         int id = rs.getInt(ID);
@@ -774,7 +814,7 @@ public class ItemsDao extends AbstractDao<ItemsModel> {
         parameters.addAll(query.orderParameters());
         parameters.add(rowsPerPage);
         parameters.add(offset);
-        return queryForObjects(QUERY_ITEMS_ALL_STOCKS + query.where() + " ORDER BY " + query.order() + " LIMIT ? OFFSET ?",
+        return queryForObjects(QUERY_CATALOG_ITEMS + query.where() + " ORDER BY " + query.order() + " LIMIT ? OFFSET ?",
                 catalogMapper(), parameters.toArray());
     }
 
@@ -817,6 +857,11 @@ public class ItemsDao extends AbstractDao<ItemsModel> {
                 statement.order(), statement.orderParameters());
     }
 
+    /** Visible to the SQL contract test without exposing it as part of the DAO API. */
+    static String catalogSelectQuery() {
+        return QUERY_CATALOG_ITEMS;
+    }
+
     private int countCatalog(String sql, List<Object> parameters) throws DaoException {
         return withConnection(connection -> {
             try (PreparedStatement statement = connection.prepareStatement(sql)) {
@@ -834,7 +879,7 @@ public class ItemsDao extends AbstractDao<ItemsModel> {
 
     /** The grouped read-only catalogue deliberately has no page boundary. */
     public List<ItemsModel> getAllCatalogProducts() throws DaoException {
-        return queryForObjects(QUERY_ITEMS_ALL_STOCKS.concat(" ORDER BY items.id DESC"), catalogMapper());
+        return queryForObjects(QUERY_CATALOG_ITEMS.concat(" ORDER BY items.id DESC"), catalogMapper());
     }
 
     /**
@@ -844,7 +889,7 @@ public class ItemsDao extends AbstractDao<ItemsModel> {
      * that changed costs a handful of queries, where re-reading its page costs a page.
      */
     public ItemsModel getCatalogItem(int id) throws DaoException {
-        return queryForObject(QUERY_ITEMS_ALL_STOCKS.concat(" where items.id = ? "), catalogMapper(), id);
+        return queryForObject(QUERY_CATALOG_ITEMS.concat(" where items.id = ? "), catalogMapper(), id);
     }
 
     private GenericMapper<ItemsModel> catalogMapper() throws DaoException {
@@ -858,11 +903,10 @@ public class ItemsDao extends AbstractDao<ItemsModel> {
      * list displays - sub group, base unit, warehouse - taken from {@code lookups}
      * rather than from a query of their own.
      * <p>
-     * What it deliberately leaves empty is the item's extra units and its extra
-     * barcodes. Neither is shown in a list, and loading them is what made a page of
-     * fifty items cost several hundred queries: {@link #getItemsModel} asks for the sub
-     * group (which asks for its main group), the base unit, the unit list (whose own
-     * mapper asks for a unit and a user per row) and the extra barcodes, once per item.
+     * What it deliberately leaves empty is the item's picture, extra units and extra
+     * barcodes. None is shown directly in the list. The blob is read by
+     * {@link #getItemImage(int)} only after the operator presses the row's Show button;
+     * omitting the other two is what keeps a page from costing several hundred queries.
      * <p>
      * <b>A model this produced is for display, and must not be handed to
      * {@link #update}.</b> That method replaces an item's units and extra barcodes with
@@ -878,7 +922,7 @@ public class ItemsDao extends AbstractDao<ItemsModel> {
             itemsModel.setBarcode(rs.getString(BARCODE));
             itemsModel.setNameItem(rs.getString(NAME_ITEM));
             itemsModel.setMini_quantity(rs.getDouble(MINI_QUANTITY));
-            itemsModel.setFirstBalanceForStock(rs.getDouble(FIRST_BALANCE));
+            itemsModel.setFirstBalanceForStock(rs.getDouble(STOCK_FIRST_BALANCE));
             itemsModel.setBuyPrice(rs.getDouble(BUY_PRICE));
             itemsModel.setSelPrice1(rs.getDouble(selPrice1));
             itemsModel.setSelPrice2(rs.getDouble(selPrice2));
@@ -887,11 +931,6 @@ public class ItemsDao extends AbstractDao<ItemsModel> {
             itemsModel.setHasValidate(rs.getBoolean(itemHasValidity));
             itemsModel.setNumberValidityDays(rs.getInt(numberValidityDays));
             itemsModel.setAlertDaysBeforeExpiry(rs.getInt(alertDaysBeforeExpire));
-
-            Blob blob = rs.getBlob(ITEM_IMAGE);
-            if (blob != null) {
-                itemsModel.setItem_image(blob.getBytes(1, (int) blob.length()));
-            }
 
             itemsModel.setSubGroups(lookups.subGroup(rs.getInt(SUB_NUM)));
             itemsModel.setUnitsType(lookups.unit(rs.getInt(UNIT_ID)));
@@ -919,6 +958,21 @@ public class ItemsDao extends AbstractDao<ItemsModel> {
     public int updateImage(int itemId, byte[] image) throws DaoException {
         return executeUpdate(SqlStatements.updateStatement(TABLE_NAME, ID, ITEM_IMAGE),
                 image == null ? new byte[0] : image, itemId);
+    }
+
+    /** Reads one picture only when the separate picture window asks for it. */
+    public byte[] getItemImage(int itemId) throws DaoException {
+        return withConnection(connection -> {
+            String sql = "SELECT item_image FROM items WHERE id = ?";
+            try (PreparedStatement statement = connection.prepareStatement(sql)) {
+                statement.setInt(1, itemId);
+                try (ResultSet resultSet = statement.executeQuery()) {
+                    if (!resultSet.next()) return new byte[0];
+                    byte[] image = resultSet.getBytes(1);
+                    return image == null ? new byte[0] : image;
+                }
+            }
+        });
     }
 
     public int quickUpdate(ItemsModel item) throws DaoException {
