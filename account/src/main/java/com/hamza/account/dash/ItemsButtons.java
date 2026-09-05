@@ -1,12 +1,8 @@
 package com.hamza.account.dash;
 
 import com.hamza.account.authorization.AppPermissions;
-import com.hamza.account.config.AppIcon;
-import com.hamza.account.controller.dataByName.MasterDataController;
-import com.hamza.account.features.masterdata.MasterDataKind;
-import javafx.scene.Parent;
-import javafx.scene.control.Tab;
 import com.hamza.account.authorization.PermissionKey;
+import com.hamza.account.config.AppIcon;
 import com.hamza.account.controller.items.InventoryController;
 import com.hamza.account.controller.items.ItemGroupManagerController;
 import com.hamza.account.controller.items.MergeItemsController;
@@ -20,6 +16,8 @@ import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.openFxml.OpenFxmlApplication;
 import com.hamza.account.view.AddItemApplication;
 import com.hamza.controlsfx.language.LanguageManager;
+import javafx.scene.Parent;
+import javafx.scene.control.Tab;
 import javafx.scene.control.TabPane;
 import javafx.stage.Stage;
 import org.jetbrains.annotations.NotNull;
@@ -82,10 +80,6 @@ public class ItemsButtons {
                 return true;
             }
         };
-    }
-
-    public ButtonWithPerm units() {
-        return masterDataButton(MasterDataKind.UNIT);
     }
 
     public ButtonWithPerm itemGroupManager() {
@@ -226,20 +220,6 @@ public class ItemsButtons {
             public boolean showOnTapPane() {
                 return true;
             }
-        };
-    }
-
-    public ButtonWithPerm areasList() { return masterDataButton(MasterDataKind.AREA); }
-    public ButtonWithPerm addSubGroup() { return masterDataButton(MasterDataKind.SUB); }
-    public ButtonWithPerm addMainGroup() { return masterDataButton(MasterDataKind.MAIN); }
-
-    private ButtonWithPerm masterDataButton(MasterDataKind kind) {
-        return new ButtonWithPerm() {
-            @Override public PermissionKey getPermissionType() { return kind.show; }
-            @Override public void action() throws Exception { MasterDataController.showWindow(kind); }
-            @NotNull @Override public String textName() { return LanguageManager.getInstance().getString(kind.titleKey); }
-            @Override public boolean showOnTapPane() { return true; }
-            @Override public void actionAddPaneToTabPane(TabPane host) throws Exception { MasterDataController.open(host, kind); }
         };
     }
 
