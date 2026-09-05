@@ -223,11 +223,12 @@ public class MainScreenController extends MainItems implements Initializable {
         menuButtonSetting.configureButton(btnItems, getItemsButtons().allItems());
         menuButtonSetting.configureButton(btnItemGroups, getItemsButtons().itemGroupManager());
         menuButtonSetting.configureButton(btnAddItem, getItemsButtons().addItem());
-        var masterDataAction = getItemsButtons().masterData();
-        menuButtonSetting.configureButton(btnMasterData, masterDataAction);
-        boolean masterDataVisible = AuthorizationGuard.isGranted(masterDataAction.getPermissionType());
-        btnMasterData.setVisible(masterDataVisible);
-        btnMasterData.setManaged(masterDataVisible);
+        // Disabled, not hidden: every other command in this sidebar greys out when its
+        // permission is missing, and one button that vanishes instead makes the list a
+        // different length for different users - which is what a shop owner describing a
+        // screen over the phone has to reason about. configureButton already does it, and
+        // MasterDataButton answers PermissionKey.deny() when no section is visible.
+        menuButtonSetting.configureButton(btnMasterData, getItemsButtons().masterData());
         menuButtonSetting.configureButton(btnInventory, getItemsButtons().inventory());
         menuButtonSetting.configureButton(btnStockCount, getItemsButtons().stockCount());
         menuButtonSetting.configureButton(btnStocks, getItemsButtons().stocks());
@@ -306,8 +307,7 @@ public class MainScreenController extends MainItems implements Initializable {
         Map<SidebarShortcut, Button> shortcuts = Map.ofEntries(
                 Map.entry(SidebarShortcut.SALES, btnSales), Map.entry(SidebarShortcut.SALES_RETURN, btnSalesReturn), Map.entry(SidebarShortcut.TOTAL_SALES, btnTotalSale), Map.entry(SidebarShortcut.TOTAL_SALES_RETURN, btnTotalSalesReturn),
                 Map.entry(SidebarShortcut.PURCHASE, btnPurchase), Map.entry(SidebarShortcut.PURCHASE_RETURN, btnPurchaseRe), Map.entry(SidebarShortcut.TOTAL_PURCHASE, btnTotalPurchase), Map.entry(SidebarShortcut.TOTAL_PURCHASE_RETURN, btnTotalPurchaseRe),
-                // Retain existing user-assigned shortcuts as aliases of the unified command.
-                Map.entry(SidebarShortcut.ITEMS, btnItems), Map.entry(SidebarShortcut.ADD_ITEM, btnAddItem), Map.entry(SidebarShortcut.UNITS, btnMasterData), Map.entry(SidebarShortcut.MAIN_GROUP, btnMasterData), Map.entry(SidebarShortcut.SUB_GROUP, btnMasterData), Map.entry(SidebarShortcut.AREA, btnMasterData), Map.entry(SidebarShortcut.INVENTORY, btnInventory), Map.entry(SidebarShortcut.STOCK_COUNT, btnStockCount), Map.entry(SidebarShortcut.STOCKS, btnStocks), Map.entry(SidebarShortcut.STOCK_TRANSFERS, btnStockTransfers), Map.entry(SidebarShortcut.MERGE_ITEMS, btnMergeItems),
+                Map.entry(SidebarShortcut.ITEMS, btnItems), Map.entry(SidebarShortcut.ITEM_GROUPS, btnItemGroups), Map.entry(SidebarShortcut.ADD_ITEM, btnAddItem), Map.entry(SidebarShortcut.MASTER_DATA, btnMasterData), Map.entry(SidebarShortcut.INVENTORY, btnInventory), Map.entry(SidebarShortcut.STOCK_COUNT, btnStockCount), Map.entry(SidebarShortcut.STOCKS, btnStocks), Map.entry(SidebarShortcut.STOCK_TRANSFERS, btnStockTransfers), Map.entry(SidebarShortcut.MERGE_ITEMS, btnMergeItems),
                 Map.entry(SidebarShortcut.ADD_CUSTOMER, btnAddCustomerName), Map.entry(SidebarShortcut.CUSTOMERS, btnCustomer), Map.entry(SidebarShortcut.CUSTOMER_ACCOUNT, btnAccountCustom),
                 Map.entry(SidebarShortcut.ADD_SUPPLIER, btnAddSupplierName), Map.entry(SidebarShortcut.SUPPLIERS, btnSuppliers), Map.entry(SidebarShortcut.SUPPLIER_ACCOUNT, btnAccountSuppliers),
                 Map.entry(SidebarShortcut.ADD_EMPLOYEE, btnAddEmployee), Map.entry(SidebarShortcut.EMPLOYEES, btnEmployees), Map.entry(SidebarShortcut.ADD_USER, btnAddUser), Map.entry(SidebarShortcut.USERS, btnUsers),
