@@ -57,6 +57,7 @@ BEGIN
                     'id', OLD.id,
                     'barcode', OLD.barcode,
                     'nameItem', OLD.nameItem,
+                    'sub_num', OLD.sub_num,
                     'buy_price', OLD.buy_price,
                     'first_balance', OLD.first_balance
             ),
@@ -64,6 +65,7 @@ BEGIN
                     'id', NEW.id,
                     'barcode', NEW.barcode,
                     'nameItem', NEW.nameItem,
+                    'sub_num', NEW.sub_num,
                     'buy_price', NEW.buy_price,
                     'first_balance', NEW.first_balance
             ),

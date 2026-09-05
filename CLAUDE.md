@@ -27,7 +27,7 @@ mvn -o -pl account -am test -Dtest=ScheduledBackupTest -Dsurefire.failIfNoSpecif
 
 **Coverage is real but uneven — know which half you are in.** JUnit 5 and Mockito are declared in the
 root pom and inherited by both modules; surefire needs no configuration. `mvn clean test` currently runs
-**1,260 tests across 142 test source files** — 98 in `controlsfx`, 1,162 in `account` — with 64 skipped (below). What is
+**1,320 tests across 148 test source files** — 98 in `controlsfx`, 1,222 in `account` — with 78 skipped (below). What is
 genuinely covered:
 
 - **The declarative specs, pinned character for character** — `DocumentDaoStatementsTest`,
@@ -36,16 +36,26 @@ genuinely covered:
   `ItemReferenceRegistryTest`. These fail the build on a wrong column, so they are the
   safety net for anything touching SQL. The last two read the foreign keys straight out of the
   migration files, so the schema itself is what they check against.
-- **Architecture rules** — twelve `*ArchitectureTest` classes now, plus `DefaultRoleAcceptanceTest`:
+- **Architecture rules** — thirteen `*ArchitectureTest` classes now, plus `DefaultRoleAcceptanceTest`:
   `AuthorizationArchitectureTest`, `ErrorHandlingArchitectureTest`, `DocumentPackageArchitectureTest`,
   `DefaultStockUsageArchitectureTest`, `LocalizationArchitectureTest`, `FxmlArchitectureTest`,
   `ModelPurityArchitectureTest`, `TableColumnArchitectureTest`, `StocksChangedArchitectureTest`,
-  `FxmlWiringArchitectureTest`, `KeyboardNavigationArchitectureTest`, `ShiftGateArchitectureTest`. They
+  `FxmlWiringArchitectureTest`, `KeyboardNavigationArchitectureTest`, `ShiftGateArchitectureTest`,
+  `MessageKeyArchitectureTest`. They
   fail when a new service skips the permission guard, a new exception escapes the error boundary,
   `account.document` starts importing one of the two packages that import it, or a new stock-aware
   operation reaches for `DefaultStock.ID` instead of taking a `stockId`. Two of them carry an explicit
   allow-list of files, reviewed once at the point the rule was written: adding a file to it is a
   decision made in the same review that adds the reference.
+
+  **A translation key named in Java is checked the same way an FXML `%key` is.**
+  `MessageKeyArchitectureTest` scans the argument list of every `getString`/`text`/`tip`/`Columns.*`
+  call in both modules — 985 distinct keys — and fails when one is absent from any of the three
+  bundles. It was written because ten keys shipped in the master-data work with no translation
+  anywhere, two of them table column headings: `LanguageManager.getString` answers a missing key
+  with the key itself and a log warning, so the screen reads `masterdata.count.items` and nothing
+  in the build notices. The one rule it imposes on new code: **write a key as one whole literal** —
+  a ternary between two keys is fine, `"prefix." + suffix` is invisible to any static check.
 - **The invoice logic** — the `features/invoice` package has a test per class, all without a JavaFX
   toolkit.
 
@@ -59,14 +69,15 @@ because *every new party payment had been silently discarded since `f2b4baf`* (s
 observe from inside an enclosing transaction. Fifteen cases pass now, twice in a row, and the class
 checks for its own residue rather than trusting the rollback.
 
-**Fourteen classes do not run by default.** `InvoiceStockDatabaseAcceptanceTest`,
+**Sixteen classes do not run by default.** `InvoiceStockDatabaseAcceptanceTest`,
 `DocumentLineDatabaseAcceptanceTest`, `StockLedgerReconciliationAcceptanceTest`,
 `StockMovementBackfillAcceptanceTest`, `StockTransferDatabaseAcceptanceTest`,
 `TotalDocumentDeleteReversesStockLedgerAcceptanceTest`,
 `PurchaseDeleteReversesNonDefaultWarehouseBalanceAcceptanceTest`, `PartyLedgerViewAcceptanceTest`,
 `ReturnSourceAcceptanceTest`, `ReturnableRepositoryAcceptanceTest`, `ItemMergeDatabaseAcceptanceTest`,
-`TreasuryBalanceViewAcceptanceTest`, `ProfitDefinitionDatabaseAcceptanceTest` and
-`ShiftAccountingDatabaseAcceptanceTest` are gated on
+`TreasuryBalanceViewAcceptanceTest`, `ProfitDefinitionDatabaseAcceptanceTest`,
+`ShiftAccountingDatabaseAcceptanceTest`, `ItemGroupMoveDatabaseAcceptanceTest` and
+`MasterDataDuplicateAcceptanceTest` are gated on
 `-Daccount.db.acceptance=true` and need a reachable MySQL. A green `mvn clean test` does not run them.
 
 **On 2026-08-31 the first thirteen were run together for the first time, and after one fixture fix
@@ -97,10 +108,25 @@ number — the text-matching `ProfitDefinitionTest` says they all read `document
 figure is right. `ItemMergeDatabaseAcceptanceTest` is the only check that a merge leaves the surviving
 item holding both histories.
 
-**The merge one is safe to run on a working database; do not assume that of the other twelve.** It opens
-one transaction and rolls it back in a `finally`, so even the audit triggers' rows go with it - and that
-was checked rather than trusted: querying afterwards, `item_merge`, `item_merge_lines` and every `MRG-%`
-barcode its fixtures create all counted zero. `ProfitDefinitionDatabaseAcceptanceTest` was checked the
+`ItemGroupMoveDatabaseAcceptanceTest` is the newest of the family and the only thing that says a group
+move lands and that a refused batch moves nothing: the rest of `features/itemgroups` is tested against a
+mock repository, where the optimistic check passes by construction. **Run for the first time on
+2026-09-05, where it caught a defect in itself** — it signed in as user 1, and
+`UserSessionContext.isSystemAdministrator()` is `currentUserId() == 1` and bypasses every permission,
+so its permission case could not fail and its other nine were being allowed by the bypass rather than by
+the keys they name. **A test that signs in as user 1 is not testing authorization** — that is the trap
+to remember, and it is not specific to this class. Ten cases green three times running since, and it
+queries the four tables afterwards for its own `GRP-%` marks rather than trusting the rollback, which is
+what makes it safe on a database with data in it. Two things it deliberately does not claim are in its
+javadoc: the `moved != effective.size()` guard is unreachable from one connection, and the `FOR UPDATE`
+is not proven to block a second writer.
+
+**The merge one and the group-move one are safe to run on a working database; do not assume that of the
+other twelve.** Each opens one transaction and rolls it back in a `finally`, so even the audit triggers'
+rows go with it - and that was checked rather than trusted: querying afterwards, `item_merge`,
+`item_merge_lines` and every `MRG-%` barcode the merge fixtures create all counted zero, and the
+group-move one now makes the same check on itself in an `@AfterAll`, over `items`, `sub_group`,
+`main_group` and `audit_log`. `ProfitDefinitionDatabaseAcceptanceTest` was checked the
 same way and is the same shape, and it also refuses to run in a year that already holds documents,
 since the views it reads group the whole database by date. The others have not been checked, and at
 least one acceptance run has left rows behind in a development database before, so read the fixture
@@ -200,8 +226,9 @@ Layering is `Controller → Service → DAO → AbstractDao`, and it is in the m
 The older services under `service/` are thin `record X(DaoFactory)` wrappers with the real logic sitting
 in controllers and DAOs. The newer work puts the logic in a `features/<area>/` package that has no
 JavaFX at all and a test per class — `features/invoice`, `features/stockcount`, `features/inventory`,
-`features/rbac`. **New behaviour goes there, not into a controller.** The test for whether it is in the
-right place: can it be tested without starting a JavaFX toolkit?
+`features/rbac`, `features/masterdata`, `features/itemgroups`. **New behaviour goes there, not into a
+controller.** The test for whether it is in the right place: can it be tested without starting a
+JavaFX toolkit?
 
 **A screen that lists many items must not build its rows with `ItemsDao.map`.** That mapper
 resolves an item's sub group (which resolves its main group), its base unit, its unit list (whose
@@ -265,8 +292,18 @@ before anything is served over a network — see `docs/new-code-rules.md`.
 `BusinessRuleException` (a rule refused it, including every permission denial) carry messages meant for
 the user and are shown as-is. Anything else is technical: `ErrorReporter` logs it behind a reference code
 and shows a generic sentence, so a stack trace or a SQL fragment never reaches a screen.
-`GlobalExceptionHandler` is the last boundary. `ErrorHandlingArchitectureTest` enforces the split, so
-throwing a raw `RuntimeException` at a user-facing path fails the build.
+`GlobalExceptionHandler` is the last boundary.
+
+**No test enforces the split, and this file said one did.** `ErrorHandlingArchitectureTest` lives in
+`controlsfx`, scans only `controlsfx/src/main/java`, and checks two other rules entirely — the legacy
+dialog and double-logging. Nothing has ever failed a build for throwing a raw `RuntimeException` at a
+user-facing path, and `MainGroupService.insert` did exactly that: it caught the `DaoException` it
+already declared and rethrew it wrapped, so a duplicate group name, a permission refusal and a lost
+connection all reached the screen as the same technical sentence and a reference code. It was found by
+a test written for something else, which is the only way it could have been found. Twelve more raw
+throws remain under `service/` and `features/`, most of them in the migration and backup services
+where the process is being aborted rather than a user answered — a guard here needs that distinction,
+which is why one has not simply been bolted on.
 
 ### The generic invoice seam
 
@@ -735,12 +772,15 @@ A table declares `refreshOn()` (its event) or `publisherTable()` (the old way), 
 subscribes to whichever is set; a table seeing only one side of an event narrows it with
 `refreshFor(event)`.
 
-The generic toolbar takes the same idea one step further. `ToolbarAccountInt` answers `changeEvent()`
-and `eventBus()`, and `ToolbarAccountController` publishes the event after a save or a delete while
-`ApplicationDataWithToolbarIndexApp` subscribes to `changeEvent().getClass()`. It is the event
-*instance* rather than its type because the bus publishes instances and a generic component cannot
-build one; the events are records, so a fresh one per call costs nothing. `eventBus()` is asked of the
-screen because `controlsfx` cannot reach `ServiceRegistry`, which lives in `account`.
+**The generic toolbar is gone.** `ToolbarAccountInt` / `ToolbarAccountController` /
+`ApplicationDataWithToolbarIndexApp` (with `Disable`, `toolbar-account.fxml` and its stylesheet) were a
+dialog that wrapped a screen in a record-navigation toolbar and published the screen's `changeEvent()`
+after a save or a delete. Its last two implementors were `AddAreaController` and
+`AddSubGroupController`, and both went with the old group/area screens when the master-data editor
+replaced them — leaving four classes in `controlsfx` that referenced only each other, so they were
+deleted too. **A screen that owns its own buttons and publishes its own event is the pattern now**;
+`MasterDataPane` is the worked example, and nothing needs a generic toolbar to say that its data
+changed.
 
 `InvoiceSaved` carries an `InvoiceSide` (PURCHASE or SALES) and replaced
 `DataInterface.publisherPurchaseOrSales()`, which routed to one of two publishers to say the same
@@ -808,6 +848,61 @@ Deletes are audited by triggers, not by the application: `V2` and `V7` write the
 `audit_log.old_data`. `write_audit_log` skips its insert while `@app_bulk_wipe` is set, which is how a
 wipe avoids copying the database into the log on its way out — `WipeService` sets it and clears it
 before the connection goes back to the pool.
+
+### Master data: groups, areas and units
+
+Four screens said the same thing four ways. `features/masterdata` says it once, and
+`MasterDataKind` is the whole idea: each of the four sections (MAIN, SUB, AREA, UNIT) declares its
+table, its id and name columns, and its four permissions, and everything else is derived from that.
+`MasterDataPane` is one reusable editor built four times over; a section whose `show` permission is
+missing loses its tab rather than its buttons.
+
+**Only identifiers the enum owns ever enter SQL.** `MasterDataQuery` concatenates table and column
+names from `MasterDataKind` and binds every user value as a parameter, including the search, whose
+wildcards are escaped (`pattern()` escapes `!`, `%` and `_` with `ESCAPE '!'`). That property is what
+makes string-built SQL safe here, and it is the one thing to preserve when adding a section.
+
+**The form's limits are the schema's**, and they were read off it rather than guessed: 50 characters
+for a group or unit name, 100 for an area, and a unit factor within `DECIMAL(14,3)` — `0.001` to
+`99999999999.999`. `MasterDataForm` throws message *keys*, never sentences.
+
+**Uniqueness is the index's decision, not the check's.** `nameExists` is a courtesy that produces a
+good message in the ordinary case; two people saving the same name both pass it, and
+`main_group_pk` / `sub_group_pk` / `table_area_pk_2` / `units_pk` refuses the second. `MasterDataService`
+translates that refusal into the same message rather than letting it surface as a reference code —
+which needs the cause `AbstractDao` now keeps. A sub-group's name is unique **globally**, not per
+parent, which is why the check does not filter on the parent.
+
+**Deletes still go through `DeletionService`**, so the reference protection in `DeleteRegistry` is
+unchanged: this package added an editor, not a second way to delete a group.
+
+`EmptyGroupsSource` polls the same repository for groups holding nothing and is the one place that
+notification comes from. Its keys are written out as whole literals on purpose — see
+`MessageKeyArchitectureTest`.
+
+### Item groups: moving items between them
+
+`features/itemgroups` is the drag-and-drop tree that reclassifies items, guarded by its own
+`items.group.move` (V34) — narrower than `items.update`, because moving an item between groups is not
+editing its prices.
+
+**The move is optimistic and all-or-nothing.** Every item in the batch is locked
+(`SELECT … FOR UPDATE`), its current `sub_num` compared with the group the screen claims to have read
+it from, and a single mismatch refuses the whole batch — not just the stale row. That is the case the
+lock exists for: someone else files an item elsewhere while the screen is open.
+`ItemGroupMoveDatabaseAcceptanceTest` is the only thing that says any of this works against MySQL;
+the rest of the package is tested against a mock repository, where the check passes by construction.
+
+**The tree query aggregates before it joins.** `items` is grouped by `sub_num` — served by the
+foreign key's index — and the small result joined to the groups; joining first and grouping after
+walked the whole catalogue once per debounced keystroke. `ITEM_MATCHES` is the one string saying what
+an item has to match, shared by the tree and the list so the two halves of the screen cannot start
+describing different sets.
+
+**Icons belong to the cells, not to the `TreeItem`s.** A `Node` lives in the scene graph once, and a
+`TreeTableView` moves an item's graphic between the cells it reuses — which made folder icons vanish
+from unrelated rows on expand, and the disclosure arrow land on top of the ones that remained. The
+name column's cell owns three icons and swaps them.
 
 ### Merging items
 
@@ -957,7 +1052,10 @@ Schema changes are **Flyway migrations**, in `account/src/main/resources/db/migr
 - `V1__baseline.sql` is the schema as shipped to clients in v4.1.3 — tables, indexes, procedures and the
   seed data (including the `admin` user, without which nobody can log in). It is the Flyway baseline: an
   existing client database is **stamped** with it, never executed, because it already is that schema. A
-  new database executes it and continues with `V2`, `V3`, … The current head is `V33`. Recent shift
+  new database executes it and continues with `V2`, `V3`, … The current head is `V35`: `V34` adds
+  `items.group.move` and grants it to every role that could already edit an item, and `V35` gives the
+  areas list its own `area.show` instead of the `items.show` it had been borrowing — each granting the
+  new key to whoever already held the old one, so nobody loses an ability on upgrade. Before them, shift
   migrations `V22`–`V33` add treasury-scoped shifts, optional policy, immutable cash journals and close
   snapshots, dual approval, cashier permissions, per-cashier treasury assignments, append-only
   assignment history, optional two-person cash handover, close variance settlement, and audited opening

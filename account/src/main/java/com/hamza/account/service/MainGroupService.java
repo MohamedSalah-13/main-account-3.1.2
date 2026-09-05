@@ -42,11 +42,11 @@ public record MainGroupService(DaoFactory daoFactory) {
 
     public int insert(MainGroups groups) throws DaoException {
         AuthorizationGuard.require(AppPermissions.MAIN_GROUP_CREATE);
-        try {
-            return daoFactory.getMainGroups().insert(groups);
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
+        // No try/catch: this already declares DaoException, which is what the DAO throws. Wrapping
+        // it in a RuntimeException threw the classification away - a duplicate name, a permission
+        // refusal and a lost connection all arrived at the screen as the same technical sentence
+        // and a reference code, on the one path where the user could have fixed it themselves.
+        return daoFactory.getMainGroups().insert(groups);
     }
 
     public int update(MainGroups groups) throws DaoException {

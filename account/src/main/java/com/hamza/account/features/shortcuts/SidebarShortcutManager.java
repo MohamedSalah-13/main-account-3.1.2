@@ -16,14 +16,46 @@ public final class SidebarShortcutManager {
     public enum ChangeResult { SAVED, DUPLICATE, RESERVED, INVALID }
 
     private static final Preferences PREFS = Preferences.userNodeForPackage(SidebarShortcutManager.class);
-    private static final String PREFIX = "sidebar-shortcut.";
+    static final String PREFIX = "sidebar-shortcut.";
     private static final Set<String> RESERVED = Set.of(
             "Ctrl+C", "Ctrl+V", "Ctrl+X", "Ctrl+A", "Ctrl+Z", "Ctrl+Y", "Ctrl+N", "Ctrl+O", "Ctrl+P", "Alt+F4", "F10", "Ctrl+F10", "Ctrl+F12");
     private static WeakReference<Scene> sceneReference = new WeakReference<>(null);
     private static final EnumMap<SidebarShortcut, Button> buttons = new EnumMap<>(SidebarShortcut.class);
     private static final Set<KeyCombination> installed = new HashSet<>();
 
+    /**
+     * Constants that no longer exist, in the order their saved keys are considered, and the
+     * command that took their place. The four group/area/unit screens became one editor.
+     */
+    private static final String[] RETIRED = {"UNITS", "MAIN_GROUP", "SUB_GROUP", "AREA"};
+
+    static {
+        adoptRetiredShortcuts(PREFS, RETIRED, SidebarShortcut.MASTER_DATA);
+    }
+
     private SidebarShortcutManager() { }
+
+    /**
+     * Carries a key saved under a retired constant onto the command that replaced it.
+     * <p>
+     * A preference stored under a name the enum no longer has is never read again, so without
+     * this a user who had put Ctrl+U on the units screen would find the key dead and nothing
+     * anywhere saying why. The first retired name still holding a combination wins, the rest
+     * are dropped - four keys cannot all become one - and a successor the user has already set
+     * is never overwritten, <b>including one they deliberately cleared</b>: an empty string is
+     * a stored choice, which is why this asks for a {@code null} default rather than {@code ""}.
+     */
+    static void adoptRetiredShortcuts(Preferences preferences, String[] retired, SidebarShortcut successor) {
+        String existing = preferences.get(PREFIX + successor.name(), null);
+        for (String name : retired) {
+            String saved = preferences.get(PREFIX + name, null);
+            preferences.remove(PREFIX + name);
+            if (existing == null && saved != null && !saved.isBlank()) {
+                preferences.put(PREFIX + successor.name(), saved);
+                existing = saved;
+            }
+        }
+    }
 
     public static void install(Scene scene, Map<SidebarShortcut, Button> sidebarButtons) {
         if (scene == null) return;

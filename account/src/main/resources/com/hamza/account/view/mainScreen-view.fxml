@@ -107,11 +107,9 @@
                                                         <VBox styleClass="side-button-box">
                                                             <children>
                                                                 <Button fx:id="btnItems" mnemonicParsing="false" text="Items" />
+                                                                <Button fx:id="btnItemGroups" mnemonicParsing="false" text="%item.group.manager.title" />
                                                                 <Button fx:id="btnAddItem" mnemonicParsing="false" text="Add Item" />
-                                                                <Button fx:id="btnUnits" mnemonicParsing="false" text="Units" />
-                                                                <Button fx:id="btnMainGroup" mnemonicParsing="false" text="Main Group" />
-                                                                <Button fx:id="btnSubGroup" mnemonicParsing="false" text="Sub Group" />
-                                                                <Button fx:id="btnArea" mnemonicParsing="false" text="Area" />
+                                                                <Button fx:id="btnMasterData" mnemonicParsing="false" text="%masterdata.title" />
                                                                 <Button fx:id="btnInventory" mnemonicParsing="false" text="Inventory" />
                                                                 <Button fx:id="btnStockCount" mnemonicParsing="false" text="Stock Count" />
                                                                 <Button fx:id="btnStocks" mnemonicParsing="false" text="%stocks.title" />

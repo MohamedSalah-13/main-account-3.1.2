@@ -58,7 +58,6 @@ class KeyboardNavigationArchitectureTest {
             "com/hamza/account/controller/convert_treasury/TreasuryCashController.java",
             "com/hamza/account/controller/convert_treasury/TreasuryController.java",
             "com/hamza/account/controller/convert_treasury/TreasuryTransferController.java",
-            "com/hamza/account/controller/dataByName/AddAreaController.java",
             "com/hamza/account/controller/invoice/TotalsController.java",
             "com/hamza/account/controller/items/StockCountController.java",
             "com/hamza/account/controller/items/StocksController.java",
@@ -66,7 +65,6 @@ class KeyboardNavigationArchitectureTest {
             "com/hamza/account/controller/name_account/AccountDetailsWithItemsController.java",
             "com/hamza/account/controller/name_account/AddNameController.java",
             "com/hamza/account/controller/others/AddEmployeeController.java",
-            "com/hamza/account/controller/others/AddSubGroupController.java",
             "com/hamza/account/controller/setting/SettingTabBarcodeController.java",
             "com/hamza/account/controller/setting/SettingTabLanguageController.java",
             "com/hamza/account/controller/users/AddUserController.java",
@@ -120,8 +118,9 @@ class KeyboardNavigationArchitectureTest {
     /**
      * The static import of the helper carries its name too, so a plain text
      * search passes on a screen that imports it and never calls it - which is
-     * how {@code UnitsController} slipped through the first run of this guard
-     * against a deliberately seeded breach.
+     * how {@code UnitsController} (since removed with the old units screen)
+     * slipped through the first run of this guard against a deliberately
+     * seeded breach.
      */
     private static boolean callsNavigationHelper(String source) {
         return source.lines()

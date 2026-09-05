@@ -1,8 +1,11 @@
 package com.hamza.account.features.notification;
 
-import com.hamza.account.config.Image_Setting;
+import com.hamza.account.config.AppIcon;
 import com.hamza.account.config.ThemeManager;
-import com.hamza.controlsfx.button.ImageDesign;
+import com.hamza.account.authorization.AuthorizationGuard;
+import com.hamza.account.controller.dataByName.MasterDataController;
+import com.hamza.account.features.masterdata.JdbcMasterDataRepository;
+import com.hamza.controlsfx.language.LanguageManager;
 import com.hamza.controlsfx.notifications.AppNotification;
 import com.hamza.controlsfx.notifications.NotificationBell;
 import com.hamza.controlsfx.notifications.NotificationCenter;
@@ -117,6 +120,16 @@ public final class NotificationBootstrap {
                 new LowStockSource(),
                 new CreditLimitSource(),
                 new TreasuryBalanceSource(),
+                new EmptyGroupsSource(new JdbcMasterDataRepository(), AuthorizationGuard::isGranted,
+                        (key, args) -> LanguageManager.getInstance().getString(key, args),
+                        key -> Platform.runLater(() -> {
+                            AppNotification previous = center.find(key);
+                            if (previous != null) center.dismiss(previous);
+                        }),
+                        kind -> () -> {
+                            AuthorizationGuard.require(kind.show);
+                            MasterDataController.showWindow(kind);
+                        }),
                 new BackupHealthSource());
     }
 
@@ -143,7 +156,7 @@ public final class NotificationBootstrap {
      */
     public Node createBell() {
         return new NotificationBell(center)
-                .panelTitle("الإشعارات")
+                .panelTitle(LanguageManager.getInstance().getString("notification.panel.title"))
                 .scheduler(scheduler)
                 .stylesheets(ThemeManager.getBaseStylesheet(), ThemeManager.getStylesheet());
     }
@@ -154,11 +167,8 @@ public final class NotificationBootstrap {
      * is why this is a callback rather than something the toaster does itself.
      */
     private Node iconFor(AppNotification notification) {
-        Image_Setting images = new Image_Setting();
-        var stream = notification.severity().atLeast(NotificationSeverity.ERROR)
-                ? images.cancel
-                : images.about;
-        return stream == null ? null : new ImageDesign(stream, 32);
+        return (notification.severity().atLeast(NotificationSeverity.ERROR)
+                ? AppIcon.WARNING : AppIcon.INFO).graphic(32);
     }
 
     /**
@@ -166,7 +176,7 @@ public final class NotificationBootstrap {
      * because {@code SystemTray} predates JavaFX and takes {@code java.awt.Image}.
      */
     private java.awt.Image trayImage() {
-        try (InputStream stream = new Image_Setting().tools) {
+        try (InputStream stream = com.hamza.account.Main.class.getResourceAsStream("image/tools.png")) {
             return stream == null ? null : ImageIO.read(stream);
         } catch (IOException e) {
             log.error("Could not load the tray icon image", e);

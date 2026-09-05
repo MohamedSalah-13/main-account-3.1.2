@@ -3,6 +3,7 @@ package com.hamza.account.controller.items;
 import com.hamza.account.authorization.AppPermissions;
 import com.hamza.account.authorization.AuthorizationGuard;
 import com.hamza.account.config.AppIcon;
+import com.hamza.account.config.ThemeManager;
 import com.hamza.account.config.NamesTables;
 import com.hamza.account.controller.main.DataPublisher;
 import com.hamza.account.controller.main.DisableButtons;
@@ -29,8 +30,8 @@ import com.hamza.account.table.EditCell;
 import com.hamza.account.table.TableSetting;
 import com.hamza.account.view.AddItemApplication;
 import com.hamza.account.view.CardApplication;
-import com.hamza.account.view.ConvertItemsGroup;
 import com.hamza.account.view.ItemReportsApplication;
+import com.hamza.account.view.SceneAll;
 import com.hamza.account.view.barcode.PrintBarcodeApp;
 import com.hamza.account.view.barcode.PrintBarcodeModel;
 import com.hamza.controlsfx.alert.AllAlerts;
@@ -64,11 +65,13 @@ import javafx.scene.control.TreeTableColumn;
 import javafx.scene.control.TreeTableRow;
 import javafx.scene.control.TreeTableView;
 import javafx.scene.control.TreeView;
+import javafx.scene.Scene;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyCodeCombination;
 import javafx.scene.layout.FlowPane;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
+import javafx.stage.Modality;
 import javafx.stage.Stage;
 
 import java.util.ArrayList;
@@ -117,7 +120,7 @@ public class ItemsController extends LoadData {
     @FXML
     private Button btnApplyFilter, btnClearFilter, btnSaveFilter, btnDeleteFilter;
     @FXML
-    private MenuItem menuPrint, menuPrintBarcode, menuPrintMenu, menuItemCard, menuItemConvertGroup, menuExportExcel;
+    private MenuItem menuPrint, menuPrintBarcode, menuPrintMenu, menuItemCard, menuItemConvertGroup, menuItemBulkEdit, menuExportExcel;
     @FXML
     private TextField txtSearch, txtMinPrice, txtMaxPrice;
     @FXML
@@ -537,10 +540,10 @@ public class ItemsController extends LoadData {
         tip(btnFilters, "item.tooltip.filters");
         tip(btnReports, "item.tooltip.reports");
 
-        menuItemConvertGroup.setText(LanguageManager.getInstance().getString("item.dialog.convert.title"));
         menuExportExcel.setOnAction(event -> exportToExcel());
         menuItemCard.setOnAction(event -> openCard());
         menuItemConvertGroup.setOnAction(event -> convertGroups());
+        menuItemBulkEdit.setOnAction(event -> bulkEdit());
         menuPrint.setOnAction(event -> printReports.printItems(selectedItems()));
         menuPrintMenu.setOnAction(event -> printReports.printItemsBarcode(selectedItems()));
         menuPrintBarcode.setOnAction(event -> printBarcodes());
@@ -831,12 +834,43 @@ public class ItemsController extends LoadData {
 
     private void convertGroups() {
         List<ItemsModel> selected = selectedItems();
+        try {
+            var controller = new ItemGroupManagerController(
+                    selected.stream().map(ItemsModel::getId).toList());
+            Scene scene = new Scene(new com.hamza.account.openFxml.OpenFxmlApplication(controller).getPane(),
+                    1050, 720);
+            ThemeManager.apply(scene);
+            Stage stage = new Stage();
+            stage.setTitle(LanguageManager.getInstance().getString("item.group.manager.title"));
+            stage.setScene(scene);
+            stage.setMinWidth(820);
+            stage.setMinHeight(600);
+            stage.show();
+        } catch (Exception e) {
+            reportError(e);
+        }
+    }
+
+    /**
+     * The bulk editor is a menu entry of its own, not the group screen. It changes prices,
+     * the active flag, the picture, the minimum and the opening balance as well as the group,
+     * and it lost its only way in when "تحويل المجموعات" was repointed at
+     * {@link ItemGroupManagerController} - which moves items between groups and nothing else.
+     */
+    private void bulkEdit() {
+        List<ItemsModel> selected = selectedItems();
         if (selected.isEmpty()) {
-            requireTickedRows("item.dialog.convert.title");
+            requireTickedRows("item.menu.bulk.edit");
             return;
         }
         try {
-            new ConvertItemsGroup(selected).start(new Stage());
+            Stage stage = new Stage();
+            stage.setScene(new SceneAll(new com.hamza.account.openFxml.OpenFxmlApplication(
+                    new UpdateSomeItems(selected)).getPane()));
+            stage.setTitle(LanguageManager.getInstance().getString("item.menu.bulk.edit"));
+            stage.setResizable(false);
+            stage.initModality(Modality.APPLICATION_MODAL);
+            stage.show();
         } catch (Exception e) {
             reportError(e);
         }

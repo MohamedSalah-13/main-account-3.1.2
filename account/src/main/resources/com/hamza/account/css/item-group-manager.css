@@ -1,0 +1,74 @@
+.item-group-manager-root {
+    -fx-padding: 8;
+}
+
+.item-group-manager-summary {
+    -fx-border-color: -app-border;
+    -fx-border-width: 0 0 1 0;
+}
+
+.item-group-manager-tree .tree-table-row-cell {
+    -fx-cell-size: 38px;
+}
+
+.item-group-manager-tree .tree-table-row-cell.item-group-main-row {
+    -fx-background-color: -app-neutral-soft;
+    -fx-border-color: transparent transparent -app-border transparent;
+}
+
+.item-group-manager-tree .tree-table-row-cell.item-group-main-row .tree-table-cell {
+    -fx-text-fill: -app-primary-dark;
+    -fx-font-weight: bold;
+}
+
+.item-group-manager-tree .tree-table-row-cell.item-group-sub-row {
+    -fx-background-color: -app-surface-2;
+}
+
+.item-group-manager-tree .tree-table-row-cell.item-group-sub-row .tree-table-cell {
+    -fx-text-fill: -app-text-strong;
+    -fx-font-weight: bold;
+}
+
+.item-group-manager-tree .tree-table-row-cell.item-group-item-row .tree-table-cell {
+    -fx-text-fill: -app-text-strong;
+}
+
+.item-group-manager-tree .tree-table-row-cell.item-group-more-row .tree-table-cell {
+    -fx-text-fill: -app-primary;
+    -fx-font-style: italic;
+}
+
+.item-group-manager-tree .tree-table-row-cell.drop-valid {
+    -fx-background-color: -app-success-soft;
+    -fx-border-color: -app-success;
+    -fx-border-width: 2;
+}
+
+.item-group-manager-tree .tree-table-row-cell:hover {
+    -fx-background-color: -app-table-hover;
+}
+
+.item-group-manager-tree .tree-table-row-cell:selected {
+    -fx-background-color: -app-table-selected;
+}
+
+.item-group-manager-tree .tree-table-row-cell:selected .tree-table-cell {
+    -fx-text-fill: -app-text-strong;
+}
+
+.item-group-manager-tree .item-group-name-column {
+    -fx-alignment: CENTER-LEFT;
+}
+
+.item-group-manager-tree .item-group-main-icon {
+    -fx-icon-color: -app-primary;
+}
+
+.item-group-manager-tree .item-group-sub-icon {
+    -fx-icon-color: -app-warning;
+}
+
+.item-group-manager-tree .item-group-item-icon {
+    -fx-icon-color: -app-success;
+}

@@ -86,7 +86,9 @@
                                                     styleClass="modern-menu-button" text="%item.menu.other">
                                             <items>
                                                 <MenuItem fx:id="menuItemConvertGroup" mnemonicParsing="false"
-                                                          text="%item.menu.convert.group" />
+                                                          text="%item.group.manager.title" />
+                                                <MenuItem fx:id="menuItemBulkEdit" mnemonicParsing="false"
+                                                          text="%item.menu.bulk.edit" />
                                                 <MenuItem fx:id="menuItemCard" mnemonicParsing="false"
                                                           text="%item.menu.card" />
                                                 <MenuItem fx:id="menuExportExcel" mnemonicParsing="false"

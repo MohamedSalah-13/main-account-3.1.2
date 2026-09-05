@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<VBox xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="com.hamza.account.controller.dataByName.MasterDataController"
+      styleClass="app-root,masterdata-root" spacing="16" stylesheets="@../css/master-data.css">
+    <VBox spacing="6" styleClass="masterdata-header">
+        <Label text="%masterdata.title" styleClass="app-title"/>
+        <Label text="%masterdata.subtitle" styleClass="app-subtitle" wrapText="true"/>
+    </VBox>
+    <TabPane fx:id="sections" tabClosingPolicy="UNAVAILABLE" styleClass="masterdata-tabs" VBox.vgrow="ALWAYS">
+        <tabs>
+            <Tab fx:id="groupsTab" text="%masterdata.groups"/>
+            <Tab fx:id="areasTab" text="%masterdata.areas"/>
+            <Tab fx:id="unitsTab" text="%tab.units"/>
+        </tabs>
+    </TabPane>
+</VBox>

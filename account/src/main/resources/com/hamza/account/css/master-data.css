@@ -1,0 +1,48 @@
+/* Uses the application's light/dark tokens and the user's font and scale. */
+.masterdata-root { -fx-padding: 20; }
+.masterdata-header { -fx-padding: 0 4 0 4; }
+.masterdata-tabs > .tab-header-area { -fx-padding: 0 0 14 0; }
+.masterdata-tabs > .tab-header-area > .tab-header-background { -fx-background-color: transparent; }
+.masterdata-tabs > .tab-header-area > .headers-region > .tab {
+    -fx-background-color: -app-neutral-soft;
+    -fx-background-radius: 10;
+    -fx-padding: 10 24;
+    -fx-background-insets: 0 4 0 4;
+    -fx-border-width: 0;
+}
+.masterdata-tabs > .tab-header-area > .headers-region > .tab:selected {
+    -fx-background-color: -app-primary;
+}
+.masterdata-tabs > .tab-header-area .tab:selected .tab-label { -fx-text-fill: white; }
+.masterdata-tabs > .tab-header-area .tab:selected .ikonli-font-icon { -fx-icon-color: white; }
+.masterdata-tabs > .tab-header-area .tab .tab-label { -fx-font-weight: bold; }
+.masterdata-card {
+    -fx-background-color: -app-surface;
+    -fx-background-radius: 14;
+    -fx-border-color: -app-border;
+    -fx-border-radius: 14;
+    -fx-padding: 16;
+}
+.masterdata-editor {
+    -fx-padding: 12;
+    -fx-background-color: -app-surface-2;
+    -fx-background-radius: 10;
+}
+.masterdata-card .button { -fx-cursor: hand; }
+.masterdata-editor .label, .masterdata-caption, .masterdata-card > .label { -fx-text-fill: -app-text; }
+.masterdata-card > .app-section-title { -fx-text-fill: -app-text-strong; -fx-font-weight: bold; }
+.masterdata-card .label.masterdata-error { -fx-text-fill: -app-danger; }
+
+/* An empty business group is different from an unused, virtualized table row. */
+.masterdata-card .table-row-cell:group-without-contents:filled {
+    -fx-background-color: -app-warning-soft;
+}
+.masterdata-card .table-row-cell:group-without-contents:filled .table-cell {
+    -fx-text-fill: -app-warning;
+}
+.masterdata-card .table-row-cell:group-without-contents:filled:selected {
+    -fx-background-color: -app-table-selected;
+}
+.masterdata-card .table-row-cell:group-without-contents:filled:selected .table-cell {
+    -fx-text-fill: -app-text-strong;
+}
