@@ -142,6 +142,15 @@ class MasterDataTest {
         assertThrows(Exception.class, () -> service.search(MasterDataKind.UNIT, "", 0, 0));
     }
 
+    /** A carton of twelve reads 12 on screen, not 12.0 - and a half still reads 1.5. */
+    @Test void theFactorIsWrittenTheWayAPersonWritesIt() {
+        assertEquals("12", MasterDataEntry.factorText(12));
+        assertEquals("1", MasterDataEntry.factorText(1));
+        assertEquals("1.5", MasterDataEntry.factorText(1.5));
+        assertEquals("0.001", MasterDataEntry.factorText(0.001));
+        assertEquals("12", new MasterDataEntry(1, "كرتونة", 0, 12).factorText());
+    }
+
     @Test void draftsRemainAttachedToTheirOriginalParent() {
         var drafts = new MasterDataDrafts();
         var first = new MasterDataDrafts.Draft(0, "juice", "1", true);

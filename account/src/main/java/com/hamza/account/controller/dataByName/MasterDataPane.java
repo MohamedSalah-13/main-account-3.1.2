@@ -75,7 +75,7 @@ final class MasterDataPane extends VBox {
                 Columns.text("name", MasterDataEntry::name)));
         table.getColumns().get(0).setMaxWidth(85);
         if (kind == MasterDataKind.UNIT)
-            table.getColumns().add(Columns.number("unit.default.factor", MasterDataEntry::factor));
+            table.getColumns().add(Columns.text("unit.default.factor", MasterDataEntry::factorText));
         if (kind == MasterDataKind.MAIN || kind == MasterDataKind.SUB) {
             table.getColumns().add(Columns.number(kind == MasterDataKind.MAIN
                     ? "masterdata.count.subgroups" : "masterdata.count.items", MasterDataEntry::contentCount));
@@ -203,7 +203,7 @@ final class MasterDataPane extends VBox {
     private void editSelected() {
         MasterDataEntry row = table.getSelectionModel().getSelectedItem();
         if (row == null || (dirty && !confirmDiscard())) return;
-        restore(new MasterDataDrafts.Draft(row.id(), row.name(), Double.toString(row.factor()), false));
+        restore(new MasterDataDrafts.Draft(row.id(), row.name(), row.factorText(), false));
         remember(); name.requestFocus(); name.selectAll();
     }
 

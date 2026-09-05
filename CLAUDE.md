@@ -226,8 +226,9 @@ Layering is `Controller → Service → DAO → AbstractDao`, and it is in the m
 The older services under `service/` are thin `record X(DaoFactory)` wrappers with the real logic sitting
 in controllers and DAOs. The newer work puts the logic in a `features/<area>/` package that has no
 JavaFX at all and a test per class — `features/invoice`, `features/stockcount`, `features/inventory`,
-`features/rbac`. **New behaviour goes there, not into a controller.** The test for whether it is in the
-right place: can it be tested without starting a JavaFX toolkit?
+`features/rbac`, `features/masterdata`, `features/itemgroups`. **New behaviour goes there, not into a
+controller.** The test for whether it is in the right place: can it be tested without starting a
+JavaFX toolkit?
 
 **A screen that lists many items must not build its rows with `ItemsDao.map`.** That mapper
 resolves an item's sub group (which resolves its main group), its base unit, its unit list (whose
@@ -847,6 +848,61 @@ Deletes are audited by triggers, not by the application: `V2` and `V7` write the
 `audit_log.old_data`. `write_audit_log` skips its insert while `@app_bulk_wipe` is set, which is how a
 wipe avoids copying the database into the log on its way out — `WipeService` sets it and clears it
 before the connection goes back to the pool.
+
+### Master data: groups, areas and units
+
+Four screens said the same thing four ways. `features/masterdata` says it once, and
+`MasterDataKind` is the whole idea: each of the four sections (MAIN, SUB, AREA, UNIT) declares its
+table, its id and name columns, and its four permissions, and everything else is derived from that.
+`MasterDataPane` is one reusable editor built four times over; a section whose `show` permission is
+missing loses its tab rather than its buttons.
+
+**Only identifiers the enum owns ever enter SQL.** `MasterDataQuery` concatenates table and column
+names from `MasterDataKind` and binds every user value as a parameter, including the search, whose
+wildcards are escaped (`pattern()` escapes `!`, `%` and `_` with `ESCAPE '!'`). That property is what
+makes string-built SQL safe here, and it is the one thing to preserve when adding a section.
+
+**The form's limits are the schema's**, and they were read off it rather than guessed: 50 characters
+for a group or unit name, 100 for an area, and a unit factor within `DECIMAL(14,3)` — `0.001` to
+`99999999999.999`. `MasterDataForm` throws message *keys*, never sentences.
+
+**Uniqueness is the index's decision, not the check's.** `nameExists` is a courtesy that produces a
+good message in the ordinary case; two people saving the same name both pass it, and
+`main_group_pk` / `sub_group_pk` / `table_area_pk_2` / `units_pk` refuses the second. `MasterDataService`
+translates that refusal into the same message rather than letting it surface as a reference code —
+which needs the cause `AbstractDao` now keeps. A sub-group's name is unique **globally**, not per
+parent, which is why the check does not filter on the parent.
+
+**Deletes still go through `DeletionService`**, so the reference protection in `DeleteRegistry` is
+unchanged: this package added an editor, not a second way to delete a group.
+
+`EmptyGroupsSource` polls the same repository for groups holding nothing and is the one place that
+notification comes from. Its keys are written out as whole literals on purpose — see
+`MessageKeyArchitectureTest`.
+
+### Item groups: moving items between them
+
+`features/itemgroups` is the drag-and-drop tree that reclassifies items, guarded by its own
+`items.group.move` (V34) — narrower than `items.update`, because moving an item between groups is not
+editing its prices.
+
+**The move is optimistic and all-or-nothing.** Every item in the batch is locked
+(`SELECT … FOR UPDATE`), its current `sub_num` compared with the group the screen claims to have read
+it from, and a single mismatch refuses the whole batch — not just the stale row. That is the case the
+lock exists for: someone else files an item elsewhere while the screen is open.
+`ItemGroupMoveDatabaseAcceptanceTest` is the only thing that says any of this works against MySQL;
+the rest of the package is tested against a mock repository, where the check passes by construction.
+
+**The tree query aggregates before it joins.** `items` is grouped by `sub_num` — served by the
+foreign key's index — and the small result joined to the groups; joining first and grouping after
+walked the whole catalogue once per debounced keystroke. `ITEM_MATCHES` is the one string saying what
+an item has to match, shared by the tree and the list so the two halves of the screen cannot start
+describing different sets.
+
+**Icons belong to the cells, not to the `TreeItem`s.** A `Node` lives in the scene graph once, and a
+`TreeTableView` moves an item's graphic between the cells it reuses — which made folder icons vanish
+from unrelated rows on expand, and the disclosure arrow land on top of the ones that remained. The
+name column's cell owns three icons and swaps them.
 
 ### Merging items
 

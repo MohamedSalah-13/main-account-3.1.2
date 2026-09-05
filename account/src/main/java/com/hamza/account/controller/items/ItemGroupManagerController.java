@@ -168,6 +168,7 @@ public final class ItemGroupManagerController {
 
         TreeTableColumn<NodeModel, String> name = textColumn(
                 "item.group.manager.column.name", node -> node.displayName());
+        name.setCellFactory(column -> new NameCell());
         name.setId("item_group_name");
         name.setPrefWidth(430);
         name.getStyleClass().add("item-group-name-column");
@@ -349,7 +350,6 @@ public final class ItemGroupManagerController {
             TreeItem<NodeModel> main = mainItems.computeIfAbsent(summary.mainGroupId(), id -> {
                 TreeItem<NodeModel> created = new TreeItem<>(NodeModel.main(
                         id, summary.mainGroupName(), mainCounts.getOrDefault(id, 0)));
-                created.setGraphic(styledIcon(AppIcon.MAIN_GROUP, 17, "item-group-main-icon"));
                 created.expandedProperty().addListener((observable, was, expanded) -> {
                     if (was && !expanded) refreshAfterCollapse();
                 });
@@ -357,7 +357,6 @@ public final class ItemGroupManagerController {
                 return created;
             });
             TreeItem<NodeModel> sub = new TreeItem<>(NodeModel.sub(summary));
-            sub.setGraphic(styledIcon(AppIcon.SUB_GROUP, 16, "item-group-sub-icon"));
             if (summary.itemCount() > 0) sub.getChildren().add(new TreeItem<>(NodeModel.loadingPlaceholder()));
             sub.expandedProperty().addListener((observable, was, expanded) -> {
                 if (expanded) loadFirstPage(sub, search, keepSelected);
@@ -376,7 +375,6 @@ public final class ItemGroupManagerController {
             NodeModel node = NodeModel.item(item);
             node.selectedProperty().set(true);
             TreeItem<NodeModel> child = new TreeItem<>(node);
-            child.setGraphic(styledIcon(AppIcon.ITEM, 15, "item-group-item-icon"));
             sub.getChildren().add(0, child);
             sub.getParent().setExpanded(true);
             sub.setExpanded(true);
@@ -432,7 +430,6 @@ public final class ItemGroupManagerController {
                 NodeModel node = NodeModel.item(item);
                 node.selectedProperty().set(keepSelected.contains(item.id()));
                 TreeItem<NodeModel> child = new TreeItem<>(node);
-                child.setGraphic(styledIcon(AppIcon.ITEM, 15, "item-group-item-icon"));
                 sub.getChildren().add(child);
             }
             int loaded = offset + task.getValue().size();
@@ -663,6 +660,35 @@ public final class ItemGroupManagerController {
             tree.refresh();
             tree.requestLayout();
         });
+    }
+
+    /**
+     * The name cell, which owns its own icon.
+     * <p>
+     * The icons used to be set on the {@code TreeItem}s. A {@code Node} can only be in the scene
+     * graph once, and a {@code TreeTableView} moves an item's graphic between the cells it reuses
+     * as rows scroll and shift - so expanding a group made the folder icon disappear from two
+     * unrelated rows further down, which is what running the screen showed. Rendering the icon
+     * here instead means a cell's icon belongs to the cell: nothing is moved, and the disclosure
+     * arrow the skin draws no longer lands on top of it.
+     * <p>
+     * Three nodes per cell, made once and swapped, because {@code updateItem} runs on every
+     * scroll and a new {@code FontIcon} per call is a new node per row per frame.
+     */
+    private static final class NameCell extends TreeTableCell<NodeModel, String> {
+        private final Map<Kind, javafx.scene.Node> icons = new java.util.EnumMap<>(Kind.class);
+
+        @Override protected void updateItem(String value, boolean empty) {
+            super.updateItem(value, empty);
+            NodeModel row = empty || getTreeTableRow() == null ? null : getTreeTableRow().getItem();
+            setText(row == null ? null : value);
+            setGraphic(row == null ? null : icons.computeIfAbsent(row.kind(), kind -> switch (kind) {
+                case MAIN -> styledIcon(AppIcon.MAIN_GROUP, 17, "item-group-main-icon");
+                case SUB -> styledIcon(AppIcon.SUB_GROUP, 16, "item-group-sub-icon");
+                case ITEM -> styledIcon(AppIcon.ITEM, 15, "item-group-item-icon");
+                case ROOT, MORE, LOADING -> null;
+            }));
+        }
     }
 
     private static javafx.scene.Node styledIcon(AppIcon icon, int size, String styleClass) {
