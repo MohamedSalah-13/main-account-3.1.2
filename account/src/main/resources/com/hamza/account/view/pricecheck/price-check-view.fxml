@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.image.*?>
+<?import javafx.scene.layout.*?>
+<StackPane xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
+           fx:controller="com.hamza.account.controller.pricecheck.PriceCheckController"
+           fx:id="root" styleClass="pricecheck-root"
+           stylesheets="@../../css/price-check.css">
+
+    <!-- Where the scanner types. It has no place in the design and is never read by a
+         person, so it is invisible - but it must stay in the scene and focusable, since
+         the scanner is a keyboard and a keyboard types into whatever holds the caret. -->
+    <TextField fx:id="scanField" onAction="#onScan" styleClass="pricecheck-scan"
+               maxWidth="1" maxHeight="1" opacity="0" StackPane.alignment="BOTTOM_LEFT"/>
+
+    <VBox fx:id="waitingBox" alignment="CENTER" spacing="24" styleClass="pricecheck-panel">
+        <Label text="%pricecheck.waiting.title" styleClass="pricecheck-waiting-title"
+               wrapText="true" textAlignment="CENTER"/>
+        <Label text="%pricecheck.waiting.hint" styleClass="pricecheck-waiting-hint"
+               wrapText="true" textAlignment="CENTER"/>
+    </VBox>
+
+    <VBox fx:id="notFoundBox" alignment="CENTER" spacing="20" styleClass="pricecheck-panel">
+        <Label text="%pricecheck.notfound.title" styleClass="pricecheck-notfound-title"
+               wrapText="true" textAlignment="CENTER"/>
+        <Label fx:id="lblNotFoundCode" styleClass="pricecheck-notfound-code"/>
+        <Label text="%pricecheck.notfound.hint" styleClass="pricecheck-waiting-hint"
+               wrapText="true" textAlignment="CENTER"/>
+    </VBox>
+
+    <HBox fx:id="resultBox" alignment="CENTER" spacing="40" styleClass="pricecheck-panel">
+        <ImageView fx:id="imgItem" fitWidth="260" fitHeight="260"
+                   preserveRatio="true" smooth="true"/>
+        <VBox alignment="CENTER" spacing="14" maxWidth="Infinity" HBox.hgrow="ALWAYS">
+            <Label fx:id="lblItemName" styleClass="pricecheck-name"
+                   wrapText="true" textAlignment="CENTER" maxWidth="Infinity"/>
+            <Label fx:id="lblPrice" styleClass="pricecheck-price"/>
+            <Label fx:id="lblUnit" styleClass="pricecheck-unit"/>
+            <Label fx:id="lblWeight" styleClass="pricecheck-weight" wrapText="true"/>
+            <HBox alignment="CENTER" spacing="30">
+                <Label fx:id="lblBalance" styleClass="pricecheck-detail"/>
+                <Label fx:id="lblExpiry" styleClass="pricecheck-detail"/>
+            </HBox>
+        </VBox>
+    </HBox>
+</StackPane>

@@ -48,6 +48,17 @@ public final class AppPermissions {
     public static final PermissionKey ITEMS_GROUP_MOVE = key("items.group.move");
     /** Folding one item into another and deleting it. Held with {@link #ITEMS_DELETE}, never instead of it. */
     public static final PermissionKey ITEMS_MERGE = key("items.merge");
+    /**
+     * Opening the price-check screen - the one that hangs on the shop wall and answers a
+     * customer's barcode with a price.
+     * <p>
+     * Deliberately not {@link #ITEMS_SHOW}: that key opens the item list, which carries the
+     * buying price and the value of the stock. A screen standing unattended in front of
+     * customers is exactly where those must not be, so the two are different abilities and
+     * a shop can grant one without the other. V36 grants it to every role that could
+     * already read an item.
+     */
+    public static final PermissionKey ITEMS_PRICE_CHECK = key("items.price.check");
     public static final PermissionKey MAIN_GROUP_SHOW = key("main.group.show");
     public static final PermissionKey MAIN_GROUP_CREATE = key("main.group.create");
     public static final PermissionKey MAIN_GROUP_UPDATE = key("main.group.update");

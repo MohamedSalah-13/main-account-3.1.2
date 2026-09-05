@@ -13,7 +13,7 @@ package com.hamza.account.features.shortcuts;
 public enum SidebarShortcut {
     SALES("Ctrl+1"), SALES_RETURN(""), TOTAL_SALES(""), TOTAL_SALES_RETURN(""),
     PURCHASE("Ctrl+2"), PURCHASE_RETURN(""), TOTAL_PURCHASE(""), TOTAL_PURCHASE_RETURN(""),
-    ITEMS("Ctrl+3"), ITEM_GROUPS(""), ADD_ITEM(""), MASTER_DATA(""), INVENTORY(""), STOCK_COUNT(""), STOCKS(""), STOCK_TRANSFERS(""), MERGE_ITEMS(""),
+    ITEMS("Ctrl+3"), ITEM_GROUPS(""), ADD_ITEM(""), MASTER_DATA(""), INVENTORY(""), STOCK_COUNT(""), STOCKS(""), STOCK_TRANSFERS(""), MERGE_ITEMS(""), PRICE_CHECK(""),
     ADD_CUSTOMER(""), CUSTOMERS("Ctrl+4"), CUSTOMER_ACCOUNT(""),
     ADD_SUPPLIER(""), SUPPLIERS("Ctrl+5"), SUPPLIER_ACCOUNT(""),
     ADD_EMPLOYEE(""), EMPLOYEES("Ctrl+6"), ADD_USER(""), USERS(""),

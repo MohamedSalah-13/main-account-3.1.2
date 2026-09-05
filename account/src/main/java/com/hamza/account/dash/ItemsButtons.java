@@ -15,6 +15,7 @@ import com.hamza.account.controller.main.DataPublisher;
 import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.openFxml.OpenFxmlApplication;
 import com.hamza.account.view.AddItemApplication;
+import com.hamza.account.view.PriceCheckApplication;
 import com.hamza.controlsfx.language.LanguageManager;
 import javafx.scene.Parent;
 import javafx.scene.control.Tab;
@@ -219,6 +220,31 @@ public class ItemsButtons {
             @Override
             public boolean showOnTapPane() {
                 return true;
+            }
+        };
+    }
+
+    /**
+     * The wall-mounted price screen. A window of its own rather than a tab: it opens full
+     * screen and locked, which a tab inside the main window cannot be - and the whole point
+     * is that the application behind it is out of reach.
+     */
+    public ButtonWithPerm priceCheck() {
+        return new ButtonWithPerm() {
+            @Override
+            public PermissionKey getPermissionType() {
+                return AppPermissions.ITEMS_PRICE_CHECK;
+            }
+
+            @Override
+            public void action() throws Exception {
+                new PriceCheckApplication().start(new Stage());
+            }
+
+            @NotNull
+            @Override
+            public String textName() {
+                return LanguageManager.getInstance().getString("pricecheck.title");
             }
         };
     }
