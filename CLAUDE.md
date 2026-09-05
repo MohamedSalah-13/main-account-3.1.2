@@ -109,16 +109,23 @@ item holding both histories.
 
 `ItemGroupMoveDatabaseAcceptanceTest` is the newest of the family and the only thing that says a group
 move lands and that a refused batch moves nothing: the rest of `features/itemgroups` is tested against a
-mock repository, where the optimistic check passes by construction. **It has never been run** — it was
-written on 2026-09-05 with no database to hand, so treat it as an untested test until someone runs it.
-It follows the merge's shape (one transaction, rolled back, every fixture row stamped `GRP-%`), and two
-things it deliberately does not claim are written into its javadoc: the `moved != effective.size()`
-guard is unreachable from one connection, and the `FOR UPDATE` is not proven to block a second writer.
+mock repository, where the optimistic check passes by construction. **Run for the first time on
+2026-09-05, where it caught a defect in itself** — it signed in as user 1, and
+`UserSessionContext.isSystemAdministrator()` is `currentUserId() == 1` and bypasses every permission,
+so its permission case could not fail and its other nine were being allowed by the bypass rather than by
+the keys they name. **A test that signs in as user 1 is not testing authorization** — that is the trap
+to remember, and it is not specific to this class. Ten cases green three times running since, and it
+queries the four tables afterwards for its own `GRP-%` marks rather than trusting the rollback, which is
+what makes it safe on a database with data in it. Two things it deliberately does not claim are in its
+javadoc: the `moved != effective.size()` guard is unreachable from one connection, and the `FOR UPDATE`
+is not proven to block a second writer.
 
-**The merge one is safe to run on a working database; do not assume that of the other thirteen.** It opens
-one transaction and rolls it back in a `finally`, so even the audit triggers' rows go with it - and that
-was checked rather than trusted: querying afterwards, `item_merge`, `item_merge_lines` and every `MRG-%`
-barcode its fixtures create all counted zero. `ProfitDefinitionDatabaseAcceptanceTest` was checked the
+**The merge one and the group-move one are safe to run on a working database; do not assume that of the
+other twelve.** Each opens one transaction and rolls it back in a `finally`, so even the audit triggers'
+rows go with it - and that was checked rather than trusted: querying afterwards, `item_merge`,
+`item_merge_lines` and every `MRG-%` barcode the merge fixtures create all counted zero, and the
+group-move one now makes the same check on itself in an `@AfterAll`, over `items`, `sub_group`,
+`main_group` and `audit_log`. `ProfitDefinitionDatabaseAcceptanceTest` was checked the
 same way and is the same shape, and it also refuses to run in a year that already holds documents,
 since the views it reads group the whole database by date. The others have not been checked, and at
 least one acceptance run has left rows behind in a development database before, so read the fixture

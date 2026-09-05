@@ -60,13 +60,35 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * What is proven is that the statement runs and that the check it exists to protect refuses the
  * stale batch.
  * <p>
- * <b>Not yet run.</b> Written on 2026-09-05 against no database. Run it - against a scratch
- * schema, not a database with data in it - before trusting anything it says.
+ * <b>First run on 2026-09-05</b>, against a developer's own MySQL, and it found something on that
+ * run - not in the feature, but in itself. Nine cases passed and {@code theGuardHoldsAtTheService}
+ * failed: it signed in as user 1, and {@code UserSessionContext.isSystemAdministrator()} is
+ * {@code currentUserId() == 1} and bypasses every permission there is. The guard case could not
+ * have failed for the right reason, and the other nine were being allowed by the bypass rather
+ * than by the permissions they name. The class signs in as {@link #OPERATOR} now. Green three
+ * times running since, with {@link #leaveNothingBehind()} querying the four tables afterwards
+ * rather than trusting the rollback - which is the check that says it is safe to run on a
+ * database with data in it.
  */
 @EnabledIfSystemProperty(named = "account.db.acceptance", matches = "true")
 class ItemGroupMoveDatabaseAcceptanceTest {
 
+    /**
+     * Who the rows say moved them. User 1 is the {@code admin} seeded by {@code V1}, and the only
+     * id certain to exist - {@code items.user_id} carries a foreign key, so an invented one would
+     * fail the update rather than test it.
+     */
     private static final int USER = 1;
+
+    /**
+     * Who is signed in while all of this runs, and <b>not</b> user 1 on purpose:
+     * {@code UserSessionContext.isSystemAdministrator()} is {@code currentUserId() == 1} and
+     * bypasses every permission there is. Signed in as the owner, a guard test proves nothing and
+     * passes whatever the service does - which is exactly what this class did on its first run.
+     * Signed in as an ordinary user, the moves below prove the permission list is what allows them.
+     */
+    private static final int OPERATOR = 4242;
+
     private static final int UNIT = 1;
 
     private static final ItemGroupMoveService SERVICE =
@@ -90,14 +112,40 @@ class ItemGroupMoveDatabaseAcceptanceTest {
         signIn(AppPermissions.ITEMS_SHOW, AppPermissions.ITEMS_GROUP_MOVE);
     }
 
+    /**
+     * The rollback is checked, not trusted. Every fixture row carries the {@code GRP-} stamp, so
+     * one query per table says whether this class left anything in a database someone works in -
+     * including the rows the audit triggers write on its behalf, which are the ones a test is
+     * least likely to remember it created.
+     */
     @AfterAll
-    static void disconnect() {
-        DataSourceProvider.shutdown();
+    static void leaveNothingBehind() throws Exception {
+        Connection connection = ConnectionManager.acquire();
+        try {
+            assertNoResidue(connection, "items", "barcode LIKE 'GRP-%' OR nameItem LIKE '%GRP-%'");
+            assertNoResidue(connection, "sub_group", "name LIKE '%GRP-%'");
+            assertNoResidue(connection, "main_group", "name_g LIKE '%GRP-%'");
+            assertNoResidue(connection, "audit_log",
+                    "new_data LIKE '%GRP-%' OR old_data LIKE '%GRP-%'");
+        } finally {
+            ConnectionManager.release(connection);
+            DataSourceProvider.shutdown();
+        }
+    }
+
+    private static void assertNoResidue(Connection connection, String table, String where) throws Exception {
+        try (Statement statement = connection.createStatement();
+             ResultSet rows = statement.executeQuery(
+                     "SELECT COUNT(*) FROM " + table + " WHERE " + where)) {
+            assertTrue(rows.next());
+            assertEquals(0, rows.getInt(1),
+                    "this class left rows behind in " + table + " - the rollback did not hold");
+        }
     }
 
     private static void signIn(com.hamza.account.authorization.PermissionKey... permissions) {
         UserSessionContext session = new UserSessionContext();
-        session.signIn(USER, "admin", List.of(permissions));
+        session.signIn(OPERATOR, "operator", List.of(permissions));
         ServiceRegistry.register(UserSessionContext.class, session);
     }
 
