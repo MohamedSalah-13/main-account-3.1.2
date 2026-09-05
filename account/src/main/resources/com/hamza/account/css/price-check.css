@@ -1,0 +1,69 @@
+/*
+ * The wall screen. Deliberately outside the light/dark theme: it is read from several
+ * metres away by someone who is not using the application, so it commits to one
+ * high-contrast look rather than following whatever theme the till happens to be on.
+ */
+.pricecheck-root {
+    -fx-background-color: #0f1721;
+    -fx-padding: 40;
+}
+
+.pricecheck-panel {
+    -fx-padding: 30;
+}
+
+.pricecheck-waiting-title {
+    -fx-font-size: 54px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #e8eef6;
+}
+
+.pricecheck-waiting-hint {
+    -fx-font-size: 26px;
+    -fx-text-fill: #8fa3ba;
+}
+
+.pricecheck-name {
+    -fx-font-size: 52px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #ffffff;
+}
+
+/* The one number the customer came to read. */
+.pricecheck-price {
+    -fx-font-size: 132px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #4ade80;
+}
+
+.pricecheck-unit {
+    -fx-font-size: 34px;
+    -fx-text-fill: #b7c6d8;
+}
+
+.pricecheck-weight {
+    -fx-font-size: 30px;
+    -fx-text-fill: #facc15;
+}
+
+.pricecheck-detail {
+    -fx-font-size: 26px;
+    -fx-text-fill: #8fa3ba;
+}
+
+.pricecheck-notfound-title {
+    -fx-font-size: 56px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #f87171;
+}
+
+.pricecheck-notfound-code {
+    -fx-font-size: 40px;
+    -fx-text-fill: #e8eef6;
+}
+
+/* Invisible, but still the control the scanner types into. */
+.pricecheck-scan {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+}

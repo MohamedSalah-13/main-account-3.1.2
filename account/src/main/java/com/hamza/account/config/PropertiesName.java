@@ -43,6 +43,18 @@ public class PropertiesName extends PreferencesSetting {
     private static final String PRINT_PAPER_DIRECT = "print.paper.direct";
     private static final String SERIAL_RECORD_MODIFICATION_NUMBER = "serial.record.modification.number";
     private static final String INVOICE_INCREASE_ITEM_ONE_TABLE = "invoice.increase.item.one.table";
+    /*-------------------------------------- Price check screen --------------------------------------*/
+    /**
+     * The warehouse the wall-mounted price screen answers for. Zero means "never set up",
+     * which is why the screen asks before it opens rather than guessing: a balance is per
+     * warehouse, and the wrong one reports another branch's stock to a customer.
+     */
+    private static final String PRICE_CHECK_STOCK = "price.check.stock";
+    private static final String PRICE_CHECK_PRICE_TIER = "price.check.price.tier";
+    private static final String PRICE_CHECK_SHOW_BALANCE = "price.check.show.balance";
+    private static final String PRICE_CHECK_SHOW_IMAGE = "price.check.show.image";
+    private static final String PRICE_CHECK_SHOW_EXPIRY = "price.check.show.expiry";
+    private static final String PRICE_CHECK_RESET_SECONDS = "price.check.reset.seconds";
     /*-------------------------------------- Barcode Setting --------------------------------------*/
     /**
      * How many digits the scale's own prefix occupies - <b>not</b> the digits of the
@@ -334,6 +346,55 @@ public class PropertiesName extends PreferencesSetting {
 
     public static void setInvoiceIncreaseItemOneTable(boolean value) {
         putBoolean(INVOICE_INCREASE_ITEM_ONE_TABLE, value);
+    }
+
+    public static int getPriceCheckStock() {
+        return getInt(PRICE_CHECK_STOCK, 0);
+    }
+
+    public static void setPriceCheckStock(int value) {
+        putInt(PRICE_CHECK_STOCK, value);
+    }
+
+    public static int getPriceCheckPriceTier() {
+        return getInt(PRICE_CHECK_PRICE_TIER, 1);
+    }
+
+    public static void setPriceCheckPriceTier(int value) {
+        putInt(PRICE_CHECK_PRICE_TIER, value);
+    }
+
+    public static boolean getPriceCheckShowBalance() {
+        return getBoolean(PRICE_CHECK_SHOW_BALANCE, true);
+    }
+
+    public static void setPriceCheckShowBalance(boolean value) {
+        putBoolean(PRICE_CHECK_SHOW_BALANCE, value);
+    }
+
+    public static boolean getPriceCheckShowImage() {
+        return getBoolean(PRICE_CHECK_SHOW_IMAGE, true);
+    }
+
+    public static void setPriceCheckShowImage(boolean value) {
+        putBoolean(PRICE_CHECK_SHOW_IMAGE, value);
+    }
+
+    public static boolean getPriceCheckShowExpiry() {
+        return getBoolean(PRICE_CHECK_SHOW_EXPIRY, true);
+    }
+
+    public static void setPriceCheckShowExpiry(boolean value) {
+        putBoolean(PRICE_CHECK_SHOW_EXPIRY, value);
+    }
+
+    /** How long an answer stays on screen before the next customer sees a clean one. */
+    public static int getPriceCheckResetSeconds() {
+        return getInt(PRICE_CHECK_RESET_SECONDS, 12);
+    }
+
+    public static void setPriceCheckResetSeconds(int value) {
+        putInt(PRICE_CHECK_RESET_SECONDS, value);
     }
 
     /** How many digits the scale's prefix occupies. See {@link #SETTING_BARCODE_COUNT_SCALE}. */
