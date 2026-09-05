@@ -7,6 +7,7 @@ import com.hamza.account.model.domain.SubGroups;
 import com.hamza.account.service.*;
 import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.error.UserValidationException;
+import java.sql.SQLIntegrityConstraintViolationException;
 import java.util.List;
 
 public record MasterDataService(MasterDataRepository repository, MainGroupService mainGroups,
@@ -26,6 +27,33 @@ public record MasterDataService(MasterDataRepository repository, MainGroupServic
         MasterDataForm form = MasterDataForm.parse(kind, id, name, parentId, factorText);
         if (repository.nameExists(kind, form.name(), parentId, id))
             throw new UserValidationException("masterdata.error.duplicate");
+        try {
+            return persist(kind, id, form, parentId);
+        } catch (DaoException failure) {
+            // The check above is a courtesy, not the guarantee: two people saving the same name
+            // both pass it, and the unique index - main_group_pk, sub_group_pk, table_area_pk_2,
+            // units_pk - refuses the second. Widening the check into a transaction would not
+            // close that, since the row it must see does not exist yet; the index is the only
+            // thing that can arbitrate, so its refusal is what gets translated. Without this the
+            // loser of the race read "the operation failed" and a reference code, for something
+            // they could have fixed by typing a different name.
+            if (isDuplicateKey(failure)) throw new UserValidationException("masterdata.error.duplicate", failure);
+            throw failure;
+        }
+    }
+
+    /** True when this failure is a unique-index refusal, whatever language it was worded in. */
+    private static boolean isDuplicateKey(Throwable failure) {
+        for (Throwable link = failure; link != null && link != link.getCause(); link = link.getCause()) {
+            if (link instanceof SQLIntegrityConstraintViolationException
+                    && link.getMessage() != null && link.getMessage().contains("Duplicate entry")) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private int persist(MasterDataKind kind, int id, MasterDataForm form, int parentId) throws DaoException {
         int result = switch (kind) {
             case MAIN -> {
                 MainGroups row = new MainGroups();

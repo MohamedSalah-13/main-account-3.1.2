@@ -194,28 +194,37 @@ public abstract class AbstractDao<T> implements DaoList<T> {
         }
     }
 
+    /**
+     * Turns a driver failure into a {@link DaoException}, <b>keeping the original as its
+     * cause</b>. The cause used to be dropped on every translated branch, which left a caller
+     * with a sentence and no way to ask what happened: a service that wants to answer a unique-key
+     * collision with its own message has to recognise the collision, and matching on a translated
+     * sentence is matching on the current language. The chain carries
+     * {@code SQLIntegrityConstraintViolationException} now, which is a fact about the failure
+     * rather than about how it was worded.
+     */
     private DaoException mapSqlExceptionToDaoException(SQLException e) {
         log.error(Error_Text_Show.UNABLE_TO_LOAD_DATA, e.getMessage(), e);
         if (e.getMessage() == null) {
             return new DaoException(e);
         }
         if (e.getMessage().contains("Duplicate entry")) {
-            return new DaoException(Error_Text_Show.DUPLICATE_ENTRY);
+            return new DaoException(Error_Text_Show.DUPLICATE_ENTRY, e);
         }
         if (e.getMessage().contains("Cannot delete or update a parent row")) {
-            return new DaoException(Error_Text_Show.CANT_DELETE);
+            return new DaoException(Error_Text_Show.CANT_DELETE, e);
         }
         if (e.getMessage().contains("Data truncation: Data too long for column")) {
-            return new DaoException("Long Data");
+            return new DaoException("Long Data", e);
         }
         if (e.getMessage().contains("Data truncation: Incorrect datetime value")) {
-            return new DaoException("Date Data");
+            return new DaoException("Date Data", e);
         }
         if (e.getMessage().contains("Data truncation: Out of range value for column")) {
-            return new DaoException("Out of Range Data");
+            return new DaoException("Out of Range Data", e);
         }
         if (e.getMessage().contains("Data truncation: Value too long for column")) {
-            return new DaoException("Value too long for column");
+            return new DaoException("Value too long for column", e);
         } else
             return new DaoException(e);
     }

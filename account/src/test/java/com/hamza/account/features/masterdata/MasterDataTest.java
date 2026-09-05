@@ -7,11 +7,13 @@ import com.hamza.account.features.rbac.UserSessionContext;
 import com.hamza.account.model.domain.MainGroups;
 import com.hamza.account.model.domain.SubGroups;
 import com.hamza.account.service.*;
+import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.error.UserValidationException;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.ArgumentCaptor;
+import java.sql.SQLIntegrityConstraintViolationException;
 import java.util.List;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
@@ -101,6 +103,31 @@ class MasterDataTest {
         when(units.delete(8)).thenThrow(new UserValidationException("in use"));
         assertThrows(UserValidationException.class, () -> service.delete(MasterDataKind.UNIT, 8));
         verify(units).delete(8); verifyNoInteractions(repository);
+    }
+
+    /**
+     * The duplicate check is a read, and the insert is a write, so two people saving the same
+     * name both pass it and the unique index refuses the second. That refusal used to arrive as
+     * a plain {@code DaoException} - technical, so the screen showed "the operation failed" and
+     * a reference code for something the user could have fixed by typing another name.
+     */
+    @Test void aRaceLostToTheUniqueIndexReadsAsADuplicate() throws Exception {
+        allow(AppPermissions.UNITS_CREATE);
+        when(units.insert("box", 12)).thenThrow(new DaoException("هذه البيانات موجودة بالفعل",
+                new SQLIntegrityConstraintViolationException("Duplicate entry 'box' for key 'units.units_pk'")));
+        var refused = assertThrows(UserValidationException.class,
+                () -> service.save(MasterDataKind.UNIT, 0, "box", 0, "12"));
+        assertEquals("masterdata.error.duplicate", refused.getMessage());
+    }
+
+    /** Everything else stays technical - a lost connection is not something to blame on the name. */
+    @Test void anyOtherFailureIsNotRewrittenAsADuplicate() throws Exception {
+        allow(AppPermissions.UNITS_CREATE);
+        when(units.insert("box", 12)).thenThrow(new DaoException("connection reset"));
+        var failure = assertThrows(DaoException.class,
+                () -> service.save(MasterDataKind.UNIT, 0, "box", 0, "12"));
+        assertFalse(failure instanceof UserValidationException, "a technical failure was shown as advice");
+        assertEquals("connection reset", failure.getMessage());
     }
 
     @Test void zeroRowsIsNotReportedAsSaved() throws Exception {

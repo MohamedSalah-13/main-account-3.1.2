@@ -27,7 +27,7 @@ mvn -o -pl account -am test -Dtest=ScheduledBackupTest -Dsurefire.failIfNoSpecif
 
 **Coverage is real but uneven — know which half you are in.** JUnit 5 and Mockito are declared in the
 root pom and inherited by both modules; surefire needs no configuration. `mvn clean test` currently runs
-**1,308 tests across 146 test source files** — 98 in `controlsfx`, 1,210 in `account` — with 74 skipped (below). What is
+**1,320 tests across 148 test source files** — 98 in `controlsfx`, 1,222 in `account` — with 78 skipped (below). What is
 genuinely covered:
 
 - **The declarative specs, pinned character for character** — `DocumentDaoStatementsTest`,
@@ -69,14 +69,15 @@ because *every new party payment had been silently discarded since `f2b4baf`* (s
 observe from inside an enclosing transaction. Fifteen cases pass now, twice in a row, and the class
 checks for its own residue rather than trusting the rollback.
 
-**Fifteen classes do not run by default.** `InvoiceStockDatabaseAcceptanceTest`,
+**Sixteen classes do not run by default.** `InvoiceStockDatabaseAcceptanceTest`,
 `DocumentLineDatabaseAcceptanceTest`, `StockLedgerReconciliationAcceptanceTest`,
 `StockMovementBackfillAcceptanceTest`, `StockTransferDatabaseAcceptanceTest`,
 `TotalDocumentDeleteReversesStockLedgerAcceptanceTest`,
 `PurchaseDeleteReversesNonDefaultWarehouseBalanceAcceptanceTest`, `PartyLedgerViewAcceptanceTest`,
 `ReturnSourceAcceptanceTest`, `ReturnableRepositoryAcceptanceTest`, `ItemMergeDatabaseAcceptanceTest`,
 `TreasuryBalanceViewAcceptanceTest`, `ProfitDefinitionDatabaseAcceptanceTest`,
-`ShiftAccountingDatabaseAcceptanceTest` and `ItemGroupMoveDatabaseAcceptanceTest` are gated on
+`ShiftAccountingDatabaseAcceptanceTest`, `ItemGroupMoveDatabaseAcceptanceTest` and
+`MasterDataDuplicateAcceptanceTest` are gated on
 `-Daccount.db.acceptance=true` and need a reachable MySQL. A green `mvn clean test` does not run them.
 
 **On 2026-08-31 the first thirteen were run together for the first time, and after one fixture fix
@@ -290,8 +291,18 @@ before anything is served over a network — see `docs/new-code-rules.md`.
 `BusinessRuleException` (a rule refused it, including every permission denial) carry messages meant for
 the user and are shown as-is. Anything else is technical: `ErrorReporter` logs it behind a reference code
 and shows a generic sentence, so a stack trace or a SQL fragment never reaches a screen.
-`GlobalExceptionHandler` is the last boundary. `ErrorHandlingArchitectureTest` enforces the split, so
-throwing a raw `RuntimeException` at a user-facing path fails the build.
+`GlobalExceptionHandler` is the last boundary.
+
+**No test enforces the split, and this file said one did.** `ErrorHandlingArchitectureTest` lives in
+`controlsfx`, scans only `controlsfx/src/main/java`, and checks two other rules entirely — the legacy
+dialog and double-logging. Nothing has ever failed a build for throwing a raw `RuntimeException` at a
+user-facing path, and `MainGroupService.insert` did exactly that: it caught the `DaoException` it
+already declared and rethrew it wrapped, so a duplicate group name, a permission refusal and a lost
+connection all reached the screen as the same technical sentence and a reference code. It was found by
+a test written for something else, which is the only way it could have been found. Twelve more raw
+throws remain under `service/` and `features/`, most of them in the migration and backup services
+where the process is being aborted rather than a user answered — a guard here needs that distinction,
+which is why one has not simply been bolted on.
 
 ### The generic invoice seam
 
