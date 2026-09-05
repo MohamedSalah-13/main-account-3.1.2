@@ -826,6 +826,80 @@
     -fx-background-color: transparent;
 }
 
+/* ---------- Main workspace tabs ----------
+   The workspace holds every open screen, so its tabs need stronger hierarchy than
+   the compact tabs used inside forms. Keep these rules scoped to main-tab-pane. */
+
+.main-tab-pane {
+    -fx-background-color: -app-surface;
+    -fx-border-color: -app-border;
+    -fx-border-width: 0.091em;
+    -fx-tab-min-height: 2.727em;
+    -fx-tab-max-height: 2.727em;
+}
+
+.main-tab-pane > .tab-header-area {
+    -fx-background-color: -app-tab-strip;
+    -fx-border-color: transparent transparent -app-border transparent;
+    -fx-border-width: 0 0 0.091em 0;
+    -fx-padding: 0.545em 0.727em 0.455em 0.727em;
+}
+
+.main-tab-pane > .tab-header-area > .tab-header-background,
+.main-tab-pane > .tab-header-area > .headers-region {
+    -fx-background-color: transparent;
+    -fx-background-radius: 0;
+    -fx-padding: 0;
+}
+
+.main-tab-pane > .tab-header-area .tab {
+    -fx-background-color: -app-surface-2;
+    -fx-background-radius: 0.727em;
+    -fx-border-color: -app-border;
+    -fx-border-radius: 0.727em;
+    -fx-border-width: 0.091em;
+    -fx-padding: 0.455em 1.091em;
+}
+
+.main-tab-pane > .tab-header-area .tab:hover {
+    -fx-background-color: -app-tab-hover;
+    -fx-border-color: -app-primary;
+}
+
+.main-tab-pane > .tab-header-area .tab:selected {
+    -fx-background-color: linear-gradient(to right, -app-primary, -app-primary-dark);
+    -fx-border-color: -app-primary-darker;
+    -fx-effect: dropshadow(gaussian, -app-focus-shadow, 9, 0.22, 0, 2);
+}
+
+.main-tab-pane > .tab-header-area .tab .tab-label {
+    -fx-text-fill: -app-text-strong;
+    -fx-font-size: 1.091em;
+}
+
+.main-tab-pane > .tab-header-area .tab:selected .tab-label {
+    -fx-text-fill: white;
+}
+
+.main-tab-pane > .tab-header-area .tab .tab-close-button {
+    -fx-background-color: -app-text-muted;
+    -fx-opacity: 0.85;
+}
+
+.main-tab-pane > .tab-header-area .tab:selected .tab-close-button {
+    -fx-background-color: white;
+    -fx-opacity: 1;
+}
+
+.main-tab-pane > .tab-header-area .tab .tab-close-button:hover {
+    -fx-background-color: -app-danger;
+    -fx-opacity: 1;
+}
+
+.main-tab-pane > .tab-content-area {
+    -fx-background-color: -app-surface;
+}
+
 /* ---------- CheckBox / Radio ---------- */
 
 .check-box,
