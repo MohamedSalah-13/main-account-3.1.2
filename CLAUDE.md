@@ -970,7 +970,10 @@ Schema changes are **Flyway migrations**, in `account/src/main/resources/db/migr
 - `V1__baseline.sql` is the schema as shipped to clients in v4.1.3 — tables, indexes, procedures and the
   seed data (including the `admin` user, without which nobody can log in). It is the Flyway baseline: an
   existing client database is **stamped** with it, never executed, because it already is that schema. A
-  new database executes it and continues with `V2`, `V3`, … The current head is `V33`. Recent shift
+  new database executes it and continues with `V2`, `V3`, … The current head is `V35`: `V34` adds
+  `items.group.move` and grants it to every role that could already edit an item, and `V35` gives the
+  areas list its own `area.show` instead of the `items.show` it had been borrowing — each granting the
+  new key to whoever already held the old one, so nobody loses an ability on upgrade. Before them, shift
   migrations `V22`–`V33` add treasury-scoped shifts, optional policy, immutable cash journals and close
   snapshots, dual approval, cashier permissions, per-cashier treasury assignments, append-only
   assignment history, optional two-person cash handover, close variance settlement, and audited opening

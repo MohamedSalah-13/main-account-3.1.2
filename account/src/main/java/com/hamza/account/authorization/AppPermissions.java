@@ -151,6 +151,12 @@ public final class AppPermissions {
     public static final PermissionKey USERS_SHOW = key("users.show");
     public static final PermissionKey USERS_MANAGE = key("users.manage");
     public static final PermissionKey ROLES_MANAGE = key("roles.manage");
+    /**
+     * Reading the areas list. An area belongs to a customer or a supplier, not to an item,
+     * and until this key existed the section borrowed {@link #ITEMS_SHOW} - the permission
+     * of the button that used to open it. V35 grants it to every role that held either.
+     */
+    public static final PermissionKey AREA_SHOW = key("area.show");
     public static final PermissionKey AREA_CREATE = key("area.create");
     public static final PermissionKey AREA_UPDATE = key("area.update");
     public static final PermissionKey AREA_DELETE = key("area.delete");

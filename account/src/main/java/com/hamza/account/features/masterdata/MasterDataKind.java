@@ -8,7 +8,7 @@ public enum MasterDataKind {
             AppPermissions.MAIN_GROUP_CREATE, AppPermissions.MAIN_GROUP_UPDATE, AppPermissions.MAIN_GROUP_DELETE),
     SUB("subGroup", "sub_group", "id", "name", AppPermissions.SUB_GROUP_SHOW,
             AppPermissions.SUB_GROUP_CREATE, AppPermissions.SUB_GROUP_UPDATE, AppPermissions.SUB_GROUP_DELETE),
-    AREA("party.area", "table_area", "id", "area_name", AppPermissions.ITEMS_SHOW,
+    AREA("party.area", "table_area", "id", "area_name", AppPermissions.AREA_SHOW,
             AppPermissions.AREA_CREATE, AppPermissions.AREA_UPDATE, AppPermissions.AREA_DELETE),
     UNIT("tab.units", "units", "unit_id", "unit_name", AppPermissions.UNITS_SHOW,
             AppPermissions.UNITS_CREATE, AppPermissions.UNITS_UPDATE, AppPermissions.UNITS_DELETE);

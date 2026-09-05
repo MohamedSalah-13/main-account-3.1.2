@@ -38,6 +38,19 @@ class MasterDataAccessTest {
         assertThrows(Exception.class, () -> action.actionAddPaneToTabPane(null));
     }
 
+    /**
+     * The areas section used to be guarded by {@code items.show} - the permission of the button
+     * that opened it - so anyone who could read the catalogue could read the customer areas, and
+     * every section of the editor with them. Each section answers for itself now.
+     */
+    @Test void readingItemsDoesNotOpenTheAreasSection() {
+        assertEquals(AppPermissions.AREA_SHOW, MasterDataKind.AREA.show);
+        assertTrue(MasterDataAccess.firstVisible(AppPermissions.ITEMS_SHOW::equals).isEmpty());
+        ServiceRegistry.register(UserSessionContext.class, session);
+        session.signIn(27, "operator", List.of(AppPermissions.ITEMS_SHOW));
+        assertTrue(new MasterDataButton().getPermissionType().isDenyMarker());
+    }
+
     @Test void writePermissionAloneDoesNotExposeASection() {
         assertTrue(MasterDataAccess.firstVisible(AppPermissions.UNITS_CREATE::equals).isEmpty());
     }
