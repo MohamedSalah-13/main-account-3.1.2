@@ -59,7 +59,7 @@ public class ExtraBarcodesTabController {
             if (barcode.isEmpty()) {
                 return;
             }
-            if (barcode.length() > 14) {
+            if (barcode.length() > BarcodeAvailability.MAX_LENGTH) {
                 throw new UserValidationException(LanguageManager.getInstance().getString("item.error.barcode.too.long"));
             }
             if (barcode.equals(itemBarcode.get()) || listExtraBarcodes.getItems().contains(barcode)) {

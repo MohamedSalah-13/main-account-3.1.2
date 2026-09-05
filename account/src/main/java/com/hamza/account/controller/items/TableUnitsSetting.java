@@ -4,38 +4,39 @@ import com.hamza.account.model.domain.ItemsModel;
 import com.hamza.account.config.NamesTables;
 import com.hamza.account.model.domain.ItemsUnitsModel;
 import com.hamza.account.model.domain.UnitsModel;
+import com.hamza.account.features.items.UnitEntryRules;
 import com.hamza.account.otherSetting.ButtonDeleteRow;
-import com.hamza.account.service.UnitsService;
 import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.button.button_column.ButtonColumn;
+import com.hamza.controlsfx.error.UserValidationException;
 import com.hamza.controlsfx.language.LanguageManager;
 import com.hamza.controlsfx.table.Columns;
 import com.hamza.controlsfx.table.columnEdit.ColumnSetting;
+import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import lombok.Setter;
 
+import java.util.function.Function;
 import java.util.function.ObjDoubleConsumer;
 
 @Setter
 public class TableUnitsSetting extends TableUnitsSettingProperty {
 
-    // The unit-name column is inserted at 2, after the annotated columns of
-    // ItemsUnitsModel have been added in field order.
-    private static final int QUANTITY_COLUMN = 3;
-    private static final int BUY_PRICE_COLUMN = 4;
-    private static final int SEL_PRICE_COLUMN = 5;
-    private static final int SEL_PRICE_2_COLUMN = 6;
-    private static final int SEL_PRICE_3_COLUMN = 7;
-
     private final TableView<ItemsUnitsModel> tableUnits;
-    private UnitsService unitsService;
+    /**
+     * Name to unit. It was {@code UnitsService.getUnitsByName} - a query to the database
+     * on every press of the add button, for a row the screen's own units cache already
+     * held. The cache is what {@code AddItemController.getUnitsModelByName} reads, and
+     * {@link UnitsTabController} passes it straight through.
+     */
+    private final Function<String, UnitsModel> unitByName;
     private int itemId;
     private String itemBarcode;
 
-    public TableUnitsSetting(UnitsService unitsService, TableView<ItemsUnitsModel> tableUnits) {
-        this.unitsService = unitsService;
+    public TableUnitsSetting(Function<String, UnitsModel> unitByName, TableView<ItemsUnitsModel> tableUnits) {
+        this.unitByName = unitByName;
         this.tableUnits = tableUnits;
         unitsSetting();
         getTable();
@@ -52,20 +53,38 @@ public class TableUnitsSetting extends TableUnitsSettingProperty {
 
     }
 
+    /**
+     * Adds the unit named in the entry fields to the item.
+     * <p>
+     * <b>Every refusal here is a {@link UserValidationException}, never a plain
+     * {@code RuntimeException}.</b> {@code AllAlerts.handleError} classifies what it is
+     * given: anything that is not a {@code UserFacingException} takes the technical path,
+     * so the Arabic sentence built here would be logged and the user shown the generic
+     * "unexpected error" and a reference code instead. All five refusals in this class
+     * were written that way and read as crashes to the operator - someone who typed a
+     * factor of zero was told a reference number rather than that a factor has to be
+     * above zero.
+     */
     public void addUnit() {
         try {
             var lm = LanguageManager.getInstance();
 
             if (isUnitTypeExists(getSelectedType())) {
-                throw new RuntimeException(lm.getString("item.error.unit.already.added"));
+                throw new UserValidationException(lm.getString("item.error.unit.already.added"));
             }
 
             // Two units of an item may well hold the same number of base units -
             // a roll and a carton of twelve are different things to sell. The
             // unit itself must not repeat; its factor may.
-            double quantityForUnit = parseQuantity();
+            double quantityForUnit = UnitEntryRules.factor(getTextUnitQuantity());
 
-            UnitsModel unitsModelByName = unitsService.getUnitsByName(getSelectedType());
+            UnitsModel unitsModelByName = unitByName.apply(getSelectedType());
+            // Nothing selected, or a unit deleted from the units screen since this combo
+            // was filled. A row carrying no unit is not a unit of anything: it renders
+            // blank and reaches ItemsDao.saveUnits, which reads the unit's id off it.
+            if (unitsModelByName == null) {
+                throw new UserValidationException(lm.getString("item.error.units.required"));
+            }
 
             var e = new ItemsUnitsModel();
             e.setUnitsModel(unitsModelByName);
@@ -74,10 +93,10 @@ public class TableUnitsSetting extends TableUnitsSettingProperty {
             e.setItemsBarcode(getTextUnitBarcode());
             e.setQuantityForUnit(quantityForUnit);
             // Left blank, these stay zero and the unit is priced from the item.
-            e.setBuyPrice(parsePrice(getTextUnitBuyPrice(), lm.getString("item.buy.price")));
-            e.setSelPrice(parsePrice(getTextUnitSelPrice(), lm.getString("item.sel.price")));
-            e.setSelPrice2(parsePrice(getTextUnitSelPrice2(), lm.getString("item.sel.price2")));
-            e.setSelPrice3(parsePrice(getTextUnitSelPrice3(), lm.getString("item.sel.price3")));
+            e.setBuyPrice(UnitEntryRules.price(getTextUnitBuyPrice(), lm.getString("item.buy.price")));
+            e.setSelPrice(UnitEntryRules.price(getTextUnitSelPrice(), lm.getString("item.sel.price")));
+            e.setSelPrice2(UnitEntryRules.price(getTextUnitSelPrice2(), lm.getString("item.sel.price2")));
+            e.setSelPrice3(UnitEntryRules.price(getTextUnitSelPrice3(), lm.getString("item.sel.price3")));
             tableUnits.getItems().add(e);
 
         } catch (Exception e) {
@@ -85,78 +104,53 @@ public class TableUnitsSetting extends TableUnitsSettingProperty {
         }
     }
 
-    /**
-     * How many of the item's base unit this one holds - the number the invoice
-     * multiplies by, and the reason a carton is not the same size for every item.
-     */
-    private double parseQuantity() {
-        String text = getTextUnitQuantity();
-        double quantity;
-        try {
-            quantity = text == null ? 0 : Double.parseDouble(text.trim());
-        } catch (NumberFormatException e) {
-            throw new RuntimeException(LanguageManager.getInstance().getString("item.error.units.quantity.invalid"));
-        }
-        if (quantity <= 0) {
-            throw new RuntimeException(LanguageManager.getInstance().getString("item.error.units.quantity.positive"));
-        }
-        return quantity;
-    }
-
-    /**
-     * A price the user left blank, which is zero - "this unit has no price of
-     * its own". Anything typed has to be a number, and a negative one would read
-     * as a price and be charged.
-     */
-    private double parsePrice(String text, String fieldName) {
-        if (text == null || text.isBlank()) {
-            return 0;
-        }
-        double price;
-        try {
-            price = Double.parseDouble(text.trim());
-        } catch (NumberFormatException e) {
-            throw new RuntimeException(LanguageManager.getInstance().getString("item.error.price.invalid", fieldName));
-        }
-        if (price < 0) {
-            throw new RuntimeException(LanguageManager.getInstance().getString("item.error.price.negative", fieldName));
-        }
-        return price;
-    }
-
     private void getTable() {
+        var quantity = Columns.number(NamesTables.QUANTITY, ItemsUnitsModel::getQuantityForUnit);
+        var buyPrice = Columns.number(NamesTables.BUY_PRICE, ItemsUnitsModel::getBuyPrice);
+        var selPrice = Columns.number(NamesTables.SEL_PRICE, ItemsUnitsModel::getSelPrice);
+        var selPrice2 = Columns.number(NamesTables.SEL_PRICE + "2", ItemsUnitsModel::getSelPrice2);
+        var selPrice3 = Columns.number(NamesTables.SEL_PRICE + "3", ItemsUnitsModel::getSelPrice3);
+
         tableUnits.getColumns().addAll(
                 Columns.number(NamesTables.CODE, ItemsUnitsModel::getId),
                 Columns.text(NamesTables.BARCODE, ItemsUnitsModel::getItemsBarcode),
-                Columns.number(NamesTables.QUANTITY, ItemsUnitsModel::getQuantityForUnit),
-                Columns.number(NamesTables.BUY_PRICE, ItemsUnitsModel::getBuyPrice),
-                Columns.number(NamesTables.SEL_PRICE, ItemsUnitsModel::getSelPrice),
-                Columns.number(NamesTables.SEL_PRICE + "2", ItemsUnitsModel::getSelPrice2),
-                Columns.number(NamesTables.SEL_PRICE + "3", ItemsUnitsModel::getSelPrice3)
+                quantity, buyPrice, selPrice, selPrice2, selPrice3
         );
         TableColumn<ItemsUnitsModel, String> columnActiveName = new TableColumn<>(LanguageManager.getInstance().getString("item.column.unit"));
-        columnActiveName.setCellValueFactory(f -> f.getValue().unitsModelProperty().get().unit_nameProperty());
+        // A row whose unit could not be resolved - the units table failed to load, so
+        // AddItemController.getUnitsModelByName answered null - still has to render. This
+        // used to dereference the null and throw out of the cell factory, which takes the
+        // whole table down rather than showing one blank cell.
+        columnActiveName.setCellValueFactory(f -> {
+            UnitsModel unit = f.getValue().unitsModelProperty().get();
+            return unit == null ? new SimpleStringProperty("") : unit.unit_nameProperty();
+        });
         tableUnits.getColumns().add(2, columnActiveName);
 
         // The quantity and the prices are edited in place: a saved unit whose
         // carton price changed should not have to be deleted and re-added.
         tableUnits.setEditable(true);
         var columnSetting = new ColumnSetting();
-        columnSetting.enableDoubleEditing(QUANTITY_COLUMN, event ->
+        // Asked of the table rather than written as 3..7. The five numbers were a
+        // restatement of the order the columns happen to be added in, plus the fact that
+        // the unit-name column is inserted at 2 - so adding a column, or moving the
+        // insert, silently pointed each editor at its neighbour, which reads as "editing
+        // the buy price changes the factor".
+        columnSetting.enableDoubleEditing(indexOf(quantity), event ->
                 editRow(event, (row, value) -> row.setQuantityForUnit(value > 0 ? value : row.getQuantityForUnit())), tableUnits);
-        columnSetting.enableDoubleEditing(BUY_PRICE_COLUMN, event ->
+        columnSetting.enableDoubleEditing(indexOf(buyPrice), event ->
                 editRow(event, ItemsUnitsModel::setBuyPrice), tableUnits);
-        columnSetting.enableDoubleEditing(SEL_PRICE_COLUMN, event ->
+        columnSetting.enableDoubleEditing(indexOf(selPrice), event ->
                 editRow(event, ItemsUnitsModel::setSelPrice), tableUnits);
-        columnSetting.enableDoubleEditing(SEL_PRICE_2_COLUMN, event ->
+        columnSetting.enableDoubleEditing(indexOf(selPrice2), event ->
                 editRow(event, ItemsUnitsModel::setSelPrice2), tableUnits);
-        columnSetting.enableDoubleEditing(SEL_PRICE_3_COLUMN, event ->
+        columnSetting.enableDoubleEditing(indexOf(selPrice3), event ->
                 editRow(event, ItemsUnitsModel::setSelPrice3), tableUnits);
 
         tableUnits.getColumns().add(new ButtonColumn<>(new ButtonDeleteRow() {
             @Override
             public void action(int i) {
-                if (i <= 0) {
+                if (!UnitEntryRules.mayDeleteRow(i)) {
                     return;
                 }
                 tableUnits.getItems().remove(i);
@@ -166,11 +160,16 @@ public class TableUnitsSetting extends TableUnitsSettingProperty {
             @Override
             public boolean isButtonDisabled(int index) {
                 // Row 0 is the base unit, which is not stored here.
-                return index == 0;
+                return UnitEntryRules.isBaseRow(index);
             }
         }));
     }
 
+
+    /** Where a column ended up, so no caller has to know the order they were added in. */
+    private int indexOf(TableColumn<ItemsUnitsModel, ?> column) {
+        return tableUnits.getColumns().indexOf(column);
+    }
 
     /**
      * Applies an edited cell to its row. The first row is the item's base unit -
@@ -180,7 +179,7 @@ public class TableUnitsSetting extends TableUnitsSettingProperty {
     private void editRow(TableColumn.CellEditEvent<ItemsUnitsModel, Double> event,
                          ObjDoubleConsumer<ItemsUnitsModel> apply) {
         Double value = event.getNewValue();
-        if (event.getTablePosition().getRow() == 0 || value == null || value < 0) {
+        if (!UnitEntryRules.mayEditRow(event.getTablePosition().getRow()) || value == null || value < 0) {
             tableUnits.refresh();
             return;
         }
@@ -189,8 +188,7 @@ public class TableUnitsSetting extends TableUnitsSettingProperty {
     }
 
     private boolean isUnitTypeExists(String unitType) {
-        return tableUnits.getItems().stream()
-                .anyMatch(item -> item.getUnitsModel().getUnit_name().equals(unitType));
+        return UnitEntryRules.holdsUnit(tableUnits.getItems(), unitType);
     }
 
     /**
@@ -200,7 +198,7 @@ public class TableUnitsSetting extends TableUnitsSettingProperty {
      */
     public void removeSelectedUnit() {
         int index = tableUnits.getSelectionModel().getSelectedIndex();
-        if (index <= 0) {
+        if (!UnitEntryRules.mayDeleteRow(index)) {
             return;
         }
         tableUnits.getItems().remove(index);

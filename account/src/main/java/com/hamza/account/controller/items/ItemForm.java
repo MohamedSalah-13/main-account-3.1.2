@@ -119,9 +119,10 @@ public final class ItemForm {
         return value == null || value.trim().isEmpty() || value.trim().equals("0");
     }
 
+    /** Longer than the one length the screen accepts - see {@link BarcodeAvailability#MAX_LENGTH}. */
     public boolean isBarcodeTooLong() {
         String value = getBarcode();
-        return value != null && value.trim().length() > 14;
+        return value != null && value.trim().length() > BarcodeAvailability.MAX_LENGTH;
     }
 
     /**

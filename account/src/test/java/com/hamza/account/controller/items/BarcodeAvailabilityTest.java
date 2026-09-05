@@ -97,6 +97,78 @@ class BarcodeAvailabilityTest {
         assertEquals("1", holding(java.util.Set.of()).firstFreeFrom(0));
     }
 
+    // ---------------------------------------------------------------------------
+    // The generator over the batch lookup - what the application actually uses.
+    // The tests above cover the one-at-a-time fallback, which is the same walk.
+    // ---------------------------------------------------------------------------
+
+    /** Records each batch it was asked about, so the number of queries can be asserted. */
+    private final List<List<String>> batches = new ArrayList<>();
+
+    private BarcodeAvailability batched(java.util.Set<String> taken, int editedItemId) {
+        return new BarcodeAvailability(
+                (code, itemId) -> {
+                    throw new AssertionError("the batch lookup should have answered this");
+                },
+                (codes, itemId) -> {
+                    batches.add(List.copyOf(codes));
+                    asked.add("batch/" + itemId);
+                    var found = new java.util.HashSet<>(codes);
+                    found.retainAll(taken);
+                    return found;
+                },
+                () -> editedItemId);
+    }
+
+    @Test
+    void aFreeStartingNumberCostsOneQuery() throws Exception {
+        assertEquals("10", batched(java.util.Set.of(), 0).firstFreeFrom(10));
+        assertEquals(1, batches.size());
+    }
+
+    @Test
+    void takenNumbersAreWalkedPastWithinTheSameQuery() throws Exception {
+        assertEquals("13", batched(java.util.Set.of("10", "11", "12"), 0).firstFreeFrom(10));
+        assertEquals(1, batches.size(), "one batch answers the whole walk");
+    }
+
+    @Test
+    void aFullBatchIsFollowedByTheNextOne() throws Exception {
+        // The first 250 candidates are all taken, so the answer is in the second batch.
+        var taken = new java.util.HashSet<String>();
+        for (int i = 1; i <= 250; i++) taken.add(String.valueOf(i));
+
+        assertEquals("251", batched(taken, 0).firstFreeFrom(1));
+        assertEquals(2, batches.size());
+        assertEquals(250, batches.getFirst().size());
+        assertEquals("1", batches.getFirst().getFirst());
+        assertEquals("251", batches.get(1).getFirst());
+    }
+
+    @Test
+    void theBatchedWalkGivesUpAfterTheSameThousandCandidates() throws Exception {
+        var taken = new java.util.HashSet<String>();
+        for (int i = 1; i <= 5000; i++) taken.add(String.valueOf(i));
+
+        assertNull(batched(taken, 0).firstFreeFrom(1));
+        assertEquals(4, batches.size(), "1000 candidates in batches of 250");
+        assertEquals(1000, batches.stream().mapToInt(List::size).sum());
+    }
+
+    @Test
+    void theBatchStopsAtFourteenDigitsRatherThanAskingAboutLongerCodes() throws Exception {
+        // Two candidates are left below the limit; the batch must not run past it.
+        assertNull(batched(java.util.Set.of("99999999999998", "99999999999999"), 0)
+                .firstFreeFrom(99999999999998L));
+        assertEquals(List.of(List.of("99999999999998", "99999999999999")), batches);
+    }
+
+    @Test
+    void theBatchLookupIsToldWhichItemIsBeingEdited() throws Exception {
+        batched(java.util.Set.of(), 42).firstFreeFrom(1);
+        assertEquals(List.of("batch/42"), asked);
+    }
+
     @Test
     void theEditedItemIdIsReadOnEachCall() throws Exception {
         int[] id = {0};

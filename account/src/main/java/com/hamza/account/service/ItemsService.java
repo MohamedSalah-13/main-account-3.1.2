@@ -14,6 +14,7 @@ import com.hamza.controlsfx.error.BusinessRuleException;
 import com.hamza.controlsfx.language.LanguageManager;
 
 import java.util.List;
+import java.util.Set;
 
 public record ItemsService(DaoFactory daoFactory) {
 
@@ -48,6 +49,24 @@ public record ItemsService(DaoFactory daoFactory) {
             return null;
         }
         return daoFactory.getItemsDao().firstBarcodeTakenByAnotherItem(candidates, itemId);
+    }
+
+    /**
+     * Which of {@code codes} already belong to some other item. Same question as
+     * {@link #firstBarcodeTakenByAnotherItem}, answered for the whole list instead of
+     * stopping at the first - which is what a generator looking for a free number needs,
+     * since "one of these is taken" does not tell it which one to skip.
+     */
+    public Set<String> takenBarcodesAmong(List<String> codes, int itemId) throws DaoException {
+        var candidates = codes.stream()
+                .filter(code -> code != null && !code.isBlank())
+                .map(String::trim)
+                .distinct()
+                .toList();
+        if (candidates.isEmpty()) {
+            return Set.of();
+        }
+        return daoFactory.getItemsDao().takenBarcodesAmong(candidates, itemId);
     }
 
     /**

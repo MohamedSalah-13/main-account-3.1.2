@@ -78,7 +78,13 @@ public class ComboSetting {
         }
     }
 
-    private static SubGroups savedSubGroup(SupGroupService supGroupService) {
+    /**
+     * The stored default sub group, read without touching a control - so a screen that
+     * loads on a background thread can ask for it there and select it afterwards. The
+     * {@code comboSubSetting} above is this plus the selection, for the callers that do
+     * both on the JavaFX thread.
+     */
+    public static SubGroups savedSubGroup(SupGroupService supGroupService) {
         Integer id = savedId(getItemsSubGroup(), ComboSetting::clearSubGroup);
         if (id == null) return null;
         try {
@@ -89,7 +95,8 @@ public class ComboSetting {
         }
     }
 
-    private static UnitsModel savedUnit(UnitsService unitsService) {
+    /** The stored default unit. See {@link #savedSubGroup} for why it is public. */
+    public static UnitsModel savedUnit(UnitsService unitsService) {
         Integer id = savedId(getItemsTypeGroup(), ComboSetting::clearUnit);
         if (id == null) return null;
         try {
