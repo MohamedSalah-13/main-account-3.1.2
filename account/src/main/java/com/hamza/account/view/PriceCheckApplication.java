@@ -53,12 +53,31 @@ public class PriceCheckApplication extends Application {
     private static final KeyCombination EXIT_KEY =
             new KeyCodeCombination(KeyCode.Q, KeyCombination.CONTROL_DOWN, KeyCombination.SHIFT_DOWN);
 
+    /**
+     * What leaving the screen means. Null for the window opened from the sidebar, which is
+     * a second window and simply closes. A kiosk account signs in <i>onto</i> this screen
+     * instead, so leaving it there is the end of a session and hands back to the login
+     * screen - not an exit, since a device on a wall has nobody to start it again.
+     */
+    private final Runnable onExit;
+
+    public PriceCheckApplication() {
+        this(null);
+    }
+
+    public PriceCheckApplication(Runnable onExit) {
+        this.onExit = onExit;
+    }
+
     @Override
     public void start(Stage stage) throws Exception {
         PriceCheckService.requireAccess();
 
-        Optional<PriceCheckSettings> chosen = new PriceCheckSetupDialog().ask();
+        Optional<PriceCheckSettings> chosen = settings();
         if (chosen.isEmpty()) {
+            // Cancelled setup. From the sidebar that is simply "never mind"; on a kiosk
+            // account there is nothing else this session could show, so it ends.
+            leave(stage);
             return;
         }
 
@@ -89,9 +108,31 @@ public class PriceCheckApplication extends Application {
         stage.show();
     }
 
+    /**
+     * The setup to open with: what this device already carries when a kiosk account signed
+     * in, and the dialog otherwise. The sidebar always asks - someone is standing there.
+     */
+    private Optional<PriceCheckSettings> settings() throws Exception {
+        if (onExit != null) {
+            Optional<PriceCheckSettings> remembered = PriceCheckSetupDialog.remembered();
+            if (remembered.isPresent()) {
+                return remembered;
+            }
+        }
+        return new PriceCheckSetupDialog().ask();
+    }
+
     private void closeIfAllowed(Stage stage) {
         if (confirmWithCurrentUserPassword(stage)) {
-            stage.setFullScreen(false);
+            leave(stage);
+        }
+    }
+
+    private void leave(Stage stage) {
+        stage.setFullScreen(false);
+        if (onExit != null) {
+            onExit.run();
+        } else {
             stage.close();
         }
     }

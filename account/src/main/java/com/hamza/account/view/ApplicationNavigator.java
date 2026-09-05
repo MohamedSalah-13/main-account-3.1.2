@@ -6,6 +6,7 @@ import com.hamza.account.config.ThemeManager;
 import com.hamza.account.config.UiScale;
 import com.hamza.account.controller.others.ServiceRegistry;
 import com.hamza.account.features.notification.NotificationBootstrap;
+import com.hamza.account.features.pricecheck.KioskRouting;
 import com.hamza.account.features.rbac.CurrentUser;
 import com.hamza.account.features.rbac.RbacService;
 import com.hamza.account.model.dao.DaoFactory;
@@ -52,10 +53,35 @@ public final class ApplicationNavigator {
     }
 
     public void showMain(Users user) {
+        if (KioskRouting.destinationFor(user) == KioskRouting.LoginDestination.PRICE_CHECK_KIOSK) {
+            showPriceCheckKiosk();
+            return;
+        }
         try {
             new MainScreenApplication(daoFactory, this).show(stage);
         } catch (Exception e) {
             AllAlerts.handleError(LanguageManager.getInstance().getString("main.screen.load.failed"), e);
+            logout(false);
+        }
+    }
+
+    /**
+     * A kiosk account gets the price-check screen <b>on the primary stage</b> and nothing
+     * else: the main window is never constructed, so there is no sidebar to disable and no
+     * home screen carrying the day's totals in front of customers.
+     * <p>
+     * Leaving it - {@code Ctrl+Shift+Q} and the user's own password - hands back to the
+     * login screen rather than exiting, so the manager can sign in on the same device and
+     * the screen can be resumed without anyone starting the application again.
+     */
+    private void showPriceCheckKiosk() {
+        try {
+            new PriceCheckApplication(this::logout).start(stage);
+        } catch (Exception e) {
+            // Including the refusal from a kiosk account that does not hold
+            // items.price.check: the account is unusable until an administrator fixes it,
+            // which is safer than falling back to the whole main window.
+            AllAlerts.handleError(LanguageManager.getInstance().getString("pricecheck.title"), e);
             logout(false);
         }
     }

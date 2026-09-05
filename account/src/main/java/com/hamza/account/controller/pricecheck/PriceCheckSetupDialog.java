@@ -131,6 +131,27 @@ public class PriceCheckSetupDialog {
                 showImage.isSelected(), showExpiry.isSelected(), scaleBarcodeSettings()));
     }
 
+    /**
+     * The setup this device already carries, or empty the first time.
+     * <p>
+     * It exists for the device that signs in with a kiosk account: after a power cut nobody
+     * should have to answer a dialog on a screen hanging on a wall, so a device that has
+     * been set up once comes straight back. The dialog is still shown when nothing is
+     * remembered - a warehouse cannot be guessed.
+     */
+    public static Optional<PriceCheckSettings> remembered() {
+        int stockId = PropertiesName.getPriceCheckStock();
+        if (stockId <= 0) {
+            return Optional.empty();
+        }
+        return Optional.of(new PriceCheckSettings(stockId,
+                PropertiesName.getPriceCheckPriceTier(),
+                PropertiesName.getPriceCheckShowBalance(),
+                PropertiesName.getPriceCheckShowImage(),
+                PropertiesName.getPriceCheckShowExpiry(),
+                scaleBarcodeSettings()));
+    }
+
     /** Rereads the warehouses, keeping whatever was already picked if it still exists. */
     private void reloadStocks(ComboBox<Stock> comboStock, StockService stockService) {
         try {
@@ -167,7 +188,7 @@ public class PriceCheckSetupDialog {
     }
 
     /** The scale layout exactly as the barcode settings tab has it - one source, not two. */
-    private ScaleBarcodeSettings scaleBarcodeSettings() {
+    private static ScaleBarcodeSettings scaleBarcodeSettings() {
         return new ScaleBarcodeSettings(
                 PropertiesName.getSettingBarcodeScaleActive(),
                 PropertiesName.getSettingBarcodeStart(),

@@ -42,6 +42,13 @@ public class AddUserController implements AddInterface {
     private ComboBox<String> comboActive;
     @FXML
     private CheckBox checkShowPass;
+    /**
+     * The account exists to run the price-check screen on a device in the shop. Signing in
+     * with it opens that screen alone - see {@code KioskRouting}, which is also why user 1
+     * is never routed there whatever this box says.
+     */
+    @FXML
+    private CheckBox checkKioskOnly;
     @FXML
     private PasswordField txtPass;
 
@@ -65,6 +72,10 @@ public class AddUserController implements AddInterface {
         labelActive.setText(LanguageManager.getInstance().getString("activated"));
         txtName.setPromptText(LanguageManager.getInstance().getString("name"));
         checkShowPass.setText(LanguageManager.getInstance().getString("user.show.password"));
+        checkKioskOnly.setText(LanguageManager.getInstance().getString("user.kiosk.only"));
+        // The administrator is the way back onto a device flagged by mistake, so it can
+        // never become a kiosk account - the routing refuses it, and so does this screen.
+        checkKioskOnly.setDisable(codeId == 1);
 
         Platform.runLater(() -> txtName.requestFocus());
 
@@ -83,6 +94,7 @@ public class AddUserController implements AddInterface {
         users.setUsername(txtName.getText());
 //        var byType = ActivityType.getByType(comboActive.getSelectionModel().getSelectedItem());
         users.setActive(true);
+        users.setKioskOnly(checkKioskOnly.isSelected());
         // The hashing and the rules live in the service now: a blank password while
         // editing still means "keep the current one", and a blank one on a new user is
         // refused there rather than merely being unreachable through this screen.
@@ -110,6 +122,7 @@ public class AddUserController implements AddInterface {
                     txtPass.clear();
                     txtPass.setPromptText(LanguageManager.getInstance().getString("user.password.keep.current.hint"));
                     comboActive.getSelectionModel().selectFirst();
+                    checkKioskOnly.setSelected(dataById.isKioskOnly());
                 }
             } catch (Exception e) {
                 log.error(this.getClass().getCanonicalName(), e);

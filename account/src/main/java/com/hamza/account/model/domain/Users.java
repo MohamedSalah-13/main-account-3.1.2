@@ -21,6 +21,11 @@ public class Users extends DForColumnTable {
     //    private ActivityType activity;
     private int user_available;
     private boolean active;
+    /**
+     * This account exists to run the price-check screen and nothing else: signing in with it
+     * opens that screen alone and never builds the main window. See {@code KioskRouting}.
+     */
+    private boolean kioskOnly;
 
     public Users(int id) {
         this.id = id;

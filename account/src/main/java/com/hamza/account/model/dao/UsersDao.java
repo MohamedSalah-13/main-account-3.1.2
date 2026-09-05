@@ -39,6 +39,7 @@ public class UsersDao extends AbstractDao<Users> {
     private final String USER_PASS = "user_pass";
     private final String USER_ACTIVITY = "user_activity";
     private final String USER_AVAILABLE = "user_available";
+    private final String KIOSK_ONLY = "kiosk_only";
 
     UsersDao() {
         super();
@@ -51,13 +52,13 @@ public class UsersDao extends AbstractDao<Users> {
 
     @Override
     public int insert(Users users) throws DaoException {
-        Object[] objects = {users.getUsername(), users.getPasswordHash()};
-        return executeUpdate(SqlStatements.insertStatement(TABLE_NAME, USER_NAME, USER_PASS), objects);
+        Object[] objects = {users.getUsername(), users.getPasswordHash(), users.isKioskOnly()};
+        return executeUpdate(SqlStatements.insertStatement(TABLE_NAME, USER_NAME, USER_PASS, KIOSK_ONLY), objects);
     }
 
     @Override
     public int update(Users users) throws DaoException {
-        return executeUpdate(SqlStatements.updateStatement(TABLE_NAME, ID, USER_NAME, USER_PASS, USER_ACTIVITY), getData(users));
+        return executeUpdate(SqlStatements.updateStatement(TABLE_NAME, ID, USER_NAME, USER_PASS, USER_ACTIVITY, KIOSK_ONLY), getData(users));
     }
 
     @Override
@@ -81,7 +82,7 @@ public class UsersDao extends AbstractDao<Users> {
 
     @Override
     public Object[] getData(Users users) {
-        return new Object[]{users.getUsername(), users.getPasswordHash(), users.isActive(), users.getId()};
+        return new Object[]{users.getUsername(), users.getPasswordHash(), users.isActive(), users.isKioskOnly(), users.getId()};
     }
 
     @Override
@@ -93,6 +94,7 @@ public class UsersDao extends AbstractDao<Users> {
             users.setPasswordHash(resultSet.getString(USER_PASS));
             var aBoolean = resultSet.getBoolean(USER_ACTIVITY);
             users.setActive(aBoolean);
+            users.setKioskOnly(resultSet.getBoolean(KIOSK_ONLY));
         } catch (SQLException e) {
             throw new DaoException(e);
         }
