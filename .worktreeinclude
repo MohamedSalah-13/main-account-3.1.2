@@ -1,0 +1,5 @@
+# Intentionally empty: unit and architecture tests need no secrets.
+#
+# List exact, ignored, non-sensitive support files only when a worktree needs them.
+# The local runner rejects known configs, keys, licences, and .env files. Supply a
+# scratch database explicitly through Invoke-MultiAgent -DatabaseConfigPath.

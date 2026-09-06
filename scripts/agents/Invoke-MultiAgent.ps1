@@ -1,0 +1,604 @@
+[CmdletBinding()]
+param(
+    [Parameter(Mandatory)]
+    [ValidateNotNullOrEmpty()]
+    [string] $Task,
+
+    [ValidatePattern("^(?!-)[A-Za-z0-9][A-Za-z0-9._/-]*$")]
+    [string] $BaseBranch = "main",
+
+    [ValidateRange(1, 12)]
+    [int] $MaxAgents = 4,
+
+    [ValidateRange(0, 3)]
+    [int] $MaxFixPasses = 1,
+
+    [switch] $DatabaseAcceptance,
+    [switch] $ConfirmDisposableDatabase,
+
+    [ValidateScript({ Test-Path -LiteralPath $_ -PathType Leaf })]
+    [string] $DatabaseConfigPath,
+
+    [ValidateScript({ Test-Path -LiteralPath $_ -PathType Leaf })]
+    [string] $DatabaseConfigKeyPath,
+
+    [switch] $AllowOnlineMaven,
+    [switch] $SkipReview,
+    [switch] $DryRun
+)
+
+Set-StrictMode -Version Latest
+$ErrorActionPreference = "Stop"
+
+function Invoke-Native {
+    param(
+        [Parameter(Mandatory)] [string] $Command,
+        [Parameter(Mandatory)] [string[]] $Arguments,
+        [string] $WorkingDirectory,
+        [string] $LogPath
+    )
+
+    if ($WorkingDirectory) {
+        Push-Location -LiteralPath $WorkingDirectory
+    }
+    try {
+        if ($LogPath) {
+            & $Command @Arguments 2>&1 | Tee-Object -FilePath $LogPath | Out-Host
+        } else {
+            & $Command @Arguments | Out-Host
+        }
+        return $LASTEXITCODE
+    } finally {
+        if ($WorkingDirectory) {
+            Pop-Location
+        }
+    }
+}
+
+function Get-RepositoryRoot {
+    $candidate = & git -C $PSScriptRoot rev-parse --show-toplevel 2>$null
+    if ($LASTEXITCODE -ne 0 -or -not $candidate) {
+        throw "scripts/agents must be run from inside a Git repository."
+    }
+    return [IO.Path]::GetFullPath(($candidate | Select-Object -First 1).Trim())
+}
+
+function Assert-ChildPath {
+    param(
+        [Parameter(Mandatory)] [string] $Parent,
+        [Parameter(Mandatory)] [string] $Child,
+        [Parameter(Mandatory)] [string] $Label
+    )
+
+    $parentPath = [IO.Path]::GetFullPath($Parent).TrimEnd([IO.Path]::DirectorySeparatorChar) +
+        [IO.Path]::DirectorySeparatorChar
+    $childPath = [IO.Path]::GetFullPath($Child)
+    if (-not $childPath.StartsWith($parentPath, [StringComparison]::OrdinalIgnoreCase)) {
+        throw "$Label resolved outside its allowed root: $childPath"
+    }
+}
+
+function Assert-NoReparsePointInPath {
+    param(
+        [Parameter(Mandatory)] [string] $Root,
+        [Parameter(Mandatory)] [string] $Path,
+        [Parameter(Mandatory)] [string] $Label
+    )
+
+    $rootPath = [IO.Path]::GetFullPath($Root).TrimEnd([IO.Path]::DirectorySeparatorChar)
+    $current = [IO.Path]::GetFullPath($Path)
+    while (-not $current.Equals($rootPath, [StringComparison]::OrdinalIgnoreCase)) {
+        Assert-ChildPath -Parent $rootPath -Child $current -Label $Label
+        if (Test-Path -LiteralPath $current) {
+            $item = Get-Item -LiteralPath $current -Force
+            if (($item.Attributes -band [IO.FileAttributes]::ReparsePoint) -ne 0) {
+                throw "$Label contains a reparse point: $current"
+            }
+        }
+        $parent = Split-Path -Parent $current
+        if (-not $parent -or $parent.Equals($current, [StringComparison]::OrdinalIgnoreCase)) {
+            throw "$Label could not be traced back to its allowed root: $Path"
+        }
+        $current = $parent
+    }
+}
+
+function Copy-WorktreeIncludes {
+    param(
+        [Parameter(Mandatory)] [string] $RepositoryRoot,
+        [Parameter(Mandatory)] [string] $WorktreePath
+    )
+
+    $includeFile = Join-Path $RepositoryRoot ".worktreeinclude"
+    if (-not (Test-Path -LiteralPath $includeFile -PathType Leaf)) {
+        return
+    }
+
+    foreach ($line in Get-Content -LiteralPath $includeFile) {
+        $entry = $line.Trim()
+        if (-not $entry -or $entry.StartsWith("#")) {
+            continue
+        }
+        if ($entry.IndexOfAny([char[]] "*?[") -ge 0) {
+            throw "The local runner accepts exact .worktreeinclude paths only: $entry"
+        }
+        $leafName = [IO.Path]::GetFileName($entry).ToLowerInvariant()
+        if ($leafName -match '^(?:\.env(?:\..*)?|config\.(?:xml|key)|license(?:\..*)?|private[-_]?key(?:\..*)?|secret(?:[-_]?key)?(?:\..*)?|credentials?(?:\..*)?)$') {
+            throw ".worktreeinclude may not copy sensitive configuration or key files: $entry"
+        }
+
+        $source = [IO.Path]::GetFullPath((Join-Path $RepositoryRoot $entry))
+        $destination = [IO.Path]::GetFullPath((Join-Path $WorktreePath $entry))
+        Assert-ChildPath -Parent $RepositoryRoot -Child $source -Label ".worktreeinclude source"
+        Assert-ChildPath -Parent $WorktreePath -Child $destination -Label ".worktreeinclude destination"
+        Assert-NoReparsePointInPath -Root $RepositoryRoot -Path $source -Label ".worktreeinclude source"
+        Assert-NoReparsePointInPath -Root $WorktreePath -Path $destination -Label ".worktreeinclude destination"
+
+        if (-not (Test-Path -LiteralPath $source -PathType Leaf)) {
+            continue
+        }
+        $sourceItem = Get-Item -LiteralPath $source -Force
+        if (($sourceItem.Attributes -band [IO.FileAttributes]::ReparsePoint) -ne 0) {
+            throw "Refusing to copy a reparse point into the worktree: $entry"
+        }
+
+        & git -C $RepositoryRoot check-ignore --quiet -- $entry
+        if ($LASTEXITCODE -ne 0) {
+            throw ".worktreeinclude may copy ignored files only: $entry"
+        }
+
+        $destinationDirectory = Split-Path -Parent $destination
+        New-Item -ItemType Directory -Path $destinationDirectory -Force | Out-Null
+        Copy-Item -LiteralPath $source -Destination $destination -Force
+        Write-Host "Copied ignored worktree dependency: $entry"
+    }
+}
+
+function Get-TaskSlug {
+    param([Parameter(Mandatory)] [string] $Value)
+
+    # Letters and digits of any script, so an Arabic task keeps a readable branch name.
+    # An ASCII-only class erased every Arabic description and named every branch "task".
+    # Git ref names accept UTF-8; everything it forbids is punctuation this class drops.
+    $slug = ($Value.ToLowerInvariant() -replace "[^\p{L}\p{N}]+", "-").Trim("-")
+    if (-not $slug) {
+        $slug = "task"
+    }
+    if ($slug.Length -gt 32) {
+        $slug = $slug.Substring(0, 32).TrimEnd("-")
+    }
+    return $slug
+}
+
+function Invoke-CodexAgent {
+    param(
+        [Parameter(Mandatory)] [string] $Prompt,
+        [Parameter(Mandatory)] [string] $WorktreePath,
+        [Parameter(Mandatory)] [string] $LogDirectory,
+        [Parameter(Mandatory)] [string] $Name,
+        [Parameter(Mandatory)] [int] $AgentLimit,
+        [ValidateSet("read-only", "workspace-write")]
+        [string] $Sandbox = "read-only"
+    )
+
+    $logPath = Join-Path $LogDirectory "$Name.log"
+    $lastMessagePath = Join-Path $LogDirectory "$Name-final.md"
+    $arguments = @(
+        "--ask-for-approval", "never",
+        "--ignore-user-config",
+        "exec",
+        "--cd", $WorktreePath,
+        "--sandbox", $Sandbox,
+        "--config", "agents.max_concurrent_threads_per_session=$AgentLimit",
+        "--output-last-message", $lastMessagePath,
+        $Prompt
+    )
+    return Invoke-Native -Command "codex" -Arguments $arguments -WorkingDirectory $WorktreePath -LogPath $logPath
+}
+
+function Invoke-MavenGate {
+    param(
+        [Parameter(Mandatory)] [string] $WorktreePath,
+        [Parameter(Mandatory)] [string] $LogDirectory,
+        [Parameter(Mandatory)] [bool] $RunDatabaseAcceptance,
+        [Parameter(Mandatory)] [bool] $AllowOnline,
+        [string] $DatabaseConfigSource,
+        [string] $DatabaseConfigKeySource,
+        [Parameter(Mandatory)] [string] $Name
+    )
+
+    $arguments = if ($RunDatabaseAcceptance) {
+        @("-pl", "account", "-am", "clean", "test", "-Daccount.db.acceptance=true")
+    } else {
+        @("clean", "test")
+    }
+    if (-not $AllowOnline) {
+        $arguments = @("-o") + $arguments
+    }
+    if (-not $RunDatabaseAcceptance) {
+        return Invoke-Native -Command "mvn" -Arguments $arguments -WorkingDirectory $WorktreePath `
+            -LogPath (Join-Path $LogDirectory "$Name.log")
+    }
+
+    $configDestination = Join-Path $WorktreePath "account/config.xml"
+    $keyDestination = Join-Path $WorktreePath "account/config.key"
+    $configFingerprint = (Get-FileHash -Algorithm SHA256 -LiteralPath $DatabaseConfigSource).Hash.Substring(0, 32)
+    $createdNew = $false
+    $databaseMutex = [Threading.Mutex]::new($false, "AccountMultiAgentDb-$configFingerprint", [ref] $createdNew)
+    $hasMutex = $false
+    try {
+        try {
+            $hasMutex = $databaseMutex.WaitOne(0)
+        } catch [Threading.AbandonedMutexException] {
+            $hasMutex = $true
+        }
+        if (-not $hasMutex) {
+            throw "Another acceptance gate is using the same database configuration. Use a unique disposable schema or retry later."
+        }
+
+        Copy-Item -LiteralPath $DatabaseConfigSource -Destination $configDestination -Force
+        if ($DatabaseConfigKeySource) {
+            Copy-Item -LiteralPath $DatabaseConfigKeySource -Destination $keyDestination -Force
+        }
+        return Invoke-Native -Command "mvn" -Arguments $arguments -WorkingDirectory $WorktreePath `
+            -LogPath (Join-Path $LogDirectory "$Name.log")
+    } finally {
+        if (Test-Path -LiteralPath $configDestination -PathType Leaf) {
+            Remove-Item -LiteralPath $configDestination -Force
+        }
+        if (Test-Path -LiteralPath $keyDestination -PathType Leaf) {
+            Remove-Item -LiteralPath $keyDestination -Force
+        }
+        if ($hasMutex) {
+            $databaseMutex.ReleaseMutex()
+        }
+        $databaseMutex.Dispose()
+    }
+}
+
+function Assert-HeadUnchanged {
+    param(
+        [Parameter(Mandatory)] [string] $WorktreePath,
+        [Parameter(Mandatory)] [string] $ExpectedCommit
+    )
+
+    $currentCommitOutput = & git -C $WorktreePath rev-parse HEAD 2>$null | Select-Object -First 1
+    $currentCommit = if ($currentCommitOutput) { $currentCommitOutput.Trim() } else { $null }
+    if ($LASTEXITCODE -ne 0 -or $currentCommit -ne $ExpectedCommit) {
+        throw "An agent changed HEAD. Commits are forbidden during an automated run; inspect the worktree manually."
+    }
+}
+
+function Invoke-ReviewGate {
+    param(
+        [Parameter(Mandatory)] [string] $WorktreePath,
+        [Parameter(Mandatory)] [string] $LogDirectory,
+        [Parameter(Mandatory)] [string] $SchemaPath,
+        [Parameter(Mandatory)] [string] $Name
+    )
+
+    $reviewPath = Join-Path $LogDirectory "$Name.json"
+    $logPath = Join-Path $LogDirectory "$Name.log"
+    $prompt = @"
+Review every uncommitted change in this worktree as an independent project owner. Read AGENTS.md,
+CLAUDE.md, and all applicable plans. Focus on correctness, regressions, authorization, transactions,
+SQL/migrations, JavaFX behavior, Arabic/English localization, and missing meaningful tests. Return
+verdict=fail when any actionable P0-P2 finding remains; P3-only findings may pass. Use repository-relative
+paths. Do not edit files. Your final response must match the supplied JSON schema.
+"@
+    $arguments = @(
+        "--ask-for-approval", "never",
+        "--ignore-user-config",
+        "exec",
+        "--cd", $WorktreePath,
+        "--sandbox", "read-only",
+        "review",
+        "--uncommitted",
+        "--output-schema", $SchemaPath,
+        "--output-last-message", $reviewPath,
+        $prompt
+    )
+    $exitCode = Invoke-Native -Command "codex" -Arguments $arguments -WorkingDirectory $WorktreePath -LogPath $logPath
+    if ($exitCode -ne 0 -or -not (Test-Path -LiteralPath $reviewPath -PathType Leaf)) {
+        return [pscustomobject]@{ ExitCode = $exitCode; Verdict = "error"; Path = $reviewPath; Summary = "Review did not produce a result." }
+    }
+
+    try {
+        $review = Get-Content -Raw -LiteralPath $reviewPath | ConvertFrom-Json
+        $blockingFindings = @($review.findings | Where-Object { $_.priority -in @("P0", "P1", "P2") })
+        $verdict = if ($blockingFindings.Count -gt 0) { "fail" } else { $review.verdict }
+        $summary = if ($blockingFindings.Count -gt 0 -and $review.verdict -eq "pass") {
+            "Reviewer returned pass but reported $($blockingFindings.Count) blocking finding(s); the gate forced failure. $($review.summary)"
+        } else {
+            $review.summary
+        }
+        return [pscustomobject]@{ ExitCode = $exitCode; Verdict = $verdict; Path = $reviewPath; Summary = $summary }
+    } catch {
+        return [pscustomobject]@{ ExitCode = 1; Verdict = "error"; Path = $reviewPath; Summary = "Review output was not valid JSON." }
+    }
+}
+
+if ($DatabaseAcceptance -and (-not $ConfirmDisposableDatabase -or -not $DatabaseConfigPath)) {
+    throw "Database acceptance requires -ConfirmDisposableDatabase and -DatabaseConfigPath for an isolated disposable MySQL schema."
+}
+if (-not $DatabaseAcceptance -and ($DatabaseConfigPath -or $DatabaseConfigKeyPath)) {
+    throw "Database config paths are accepted only with -DatabaseAcceptance."
+}
+
+$repositoryRoot = Get-RepositoryRoot
+$codexCommand = Get-Command codex -ErrorAction SilentlyContinue
+$mavenCommand = Get-Command mvn -ErrorAction SilentlyContinue
+if (-not $codexCommand) {
+    throw "Codex CLI is not available on PATH."
+}
+if (-not $mavenCommand) {
+    throw "Maven is not available on PATH."
+}
+
+$baseCommitOutput = & git -C $repositoryRoot rev-parse --verify "$BaseBranch^{commit}" 2>$null | Select-Object -First 1
+$baseCommit = if ($baseCommitOutput) { $baseCommitOutput.Trim() } else { $null }
+if ($LASTEXITCODE -ne 0 -or -not $baseCommit) {
+    throw "Base branch or revision does not exist: $BaseBranch"
+}
+
+$timestamp = Get-Date -Format "yyyyMMdd-HHmmss"
+$nonce = [guid]::NewGuid().ToString("N").Substring(0, 6)
+$slug = Get-TaskSlug -Value $Task
+$runId = "$timestamp-$nonce-$slug"
+$branchName = "codex/agent-$slug-$timestamp-$nonce"
+$repositoryParent = Split-Path -Parent $repositoryRoot
+$repositoryName = Split-Path -Leaf $repositoryRoot
+$worktreeHostRoot = Join-Path $repositoryParent ".codex-worktrees"
+$worktreeRoot = Join-Path $worktreeHostRoot $repositoryName
+$worktreePath = Join-Path $worktreeRoot $runId
+$runRoot = Join-Path $repositoryRoot ".agent-runs"
+$logDirectory = Join-Path $runRoot $runId
+$reviewSchema = Join-Path $repositoryRoot "scripts/agents/review-schema.json"
+$requiredAgentFiles = @(
+    "project-architect.toml",
+    "implementer.toml",
+    "test-engineer.toml",
+    "code-reviewer.toml",
+    "database-reviewer.toml",
+    "localization-reviewer.toml"
+)
+
+Assert-ChildPath -Parent $worktreeRoot -Child $worktreePath -Label "Worktree"
+Assert-ChildPath -Parent $repositoryRoot -Child $logDirectory -Label "Run log"
+
+if ($DryRun) {
+    [pscustomobject]@{
+        RunId = $runId
+        BaseBranch = $BaseBranch
+        Branch = $branchName
+        Worktree = $worktreePath
+        Logs = $logDirectory
+        MaxAgents = $MaxAgents
+        DatabaseAcceptance = [bool] $DatabaseAcceptance
+        AllowOnlineMaven = [bool] $AllowOnlineMaven
+    }
+    return
+}
+
+foreach ($agentFile in $requiredAgentFiles) {
+    & git -C $repositoryRoot cat-file -e "${baseCommit}:.codex/agents/$agentFile" 2>$null
+    if ($LASTEXITCODE -ne 0) {
+        throw "Base revision $BaseBranch does not contain the required agent definition: $agentFile. Commit the Multi-Agent system before using this runner."
+    }
+}
+
+New-Item -ItemType Directory -Path $worktreeRoot -Force | Out-Null
+New-Item -ItemType Directory -Path $logDirectory -Force | Out-Null
+Assert-NoReparsePointInPath -Root $repositoryParent -Path $worktreeRoot -Label "Worktree root"
+Assert-NoReparsePointInPath -Root $repositoryRoot -Path $logDirectory -Label "Run log"
+
+$resultPath = Join-Path $logDirectory "result.json"
+$runState = [ordered]@{
+    runId = $runId
+    status = "starting"
+    task = $Task
+    baseBranch = $BaseBranch
+    branch = $branchName
+    worktree = $worktreePath
+    logs = $logDirectory
+    passed = $false
+    discoveryExitCode = $null
+    deliveryExitCode = $null
+    testExitCode = $null
+    reviewVerdict = "not-run"
+    reviewSummary = "The run has not reached the independent review gate."
+    completedPass = $null
+    databaseAcceptance = [bool] $DatabaseAcceptance
+    allowOnlineMaven = [bool] $AllowOnlineMaven
+    changes = @()
+    error = $null
+    startedAt = (Get-Date).ToString("o")
+    finishedAt = $null
+}
+$runState | ConvertTo-Json -Depth 6 | Set-Content -LiteralPath $resultPath -Encoding utf8
+
+trap {
+    $runState["status"] = "failed"
+    $runState["passed"] = $false
+    $runState["error"] = $_.Exception.Message
+    $runState["finishedAt"] = (Get-Date).ToString("o")
+    $runState | ConvertTo-Json -Depth 6 | Set-Content -LiteralPath $resultPath -Encoding utf8
+    [Console]::Error.WriteLine("Multi-Agent run failed: $($_.Exception.Message)")
+    exit 1
+}
+
+$worktreeExit = Invoke-Native -Command "git" -Arguments @(
+    "-C", $repositoryRoot, "worktree", "add", "-b", $branchName, $worktreePath, $BaseBranch
+) -LogPath (Join-Path $logDirectory "worktree.log")
+if ($worktreeExit -ne 0) {
+    throw "Git could not create the worktree. See $logDirectory/worktree.log"
+}
+$runState["status"] = "running"
+$runState | ConvertTo-Json -Depth 6 | Set-Content -LiteralPath $resultPath -Encoding utf8
+
+Copy-WorktreeIncludes -RepositoryRoot $repositoryRoot -WorktreePath $worktreePath
+
+foreach ($agentFile in $requiredAgentFiles) {
+    $agentPath = Join-Path $worktreePath ".codex/agents/$agentFile"
+    if (-not (Test-Path -LiteralPath $agentPath -PathType Leaf)) {
+        throw "Base revision $BaseBranch does not contain the required agent definition: $agentFile. Commit the Multi-Agent system before using this runner."
+    }
+}
+
+$databaseInstruction = if ($DatabaseAcceptance) {
+    "A disposable isolated MySQL schema has been explicitly confirmed. Do not run database acceptance inside an agent; the independent outer gate will install its configuration temporarily and run it serially."
+} else {
+    "Do not run database acceptance tests; the independent gate will run the default non-database suite."
+}
+$mavenInstruction = if ($AllowOnlineMaven) {
+    "Maven may use the network when resolving dependencies for this run."
+} else {
+    "Run Maven offline. If the local dependency cache is incomplete, report that limitation instead of changing project dependencies."
+}
+
+$discoveryPrompt = @"
+You are the read-only discovery coordinator for this task:
+
+$Task
+
+Read AGENTS.md and CLAUDE.md completely. Delegate repository mapping to project_architect and test
+selection to test_engineer so they can work in parallel. If database artifacts may be affected,
+also delegate risk analysis to database_reviewer. If JavaFX user-visible text or layout may change,
+delegate localization analysis to localization_reviewer. Wait for every delegated role. Do not edit
+files, run Maven, or execute commands that write generated output. Produce one concrete implementation
+brief containing affected symbols, invariants, ordered implementation steps, targeted clean tests,
+database acceptance needs, and localization obligations.
+"@
+$discoveryPrompt | Set-Content -LiteralPath (Join-Path $logDirectory "discovery-prompt.md") -Encoding utf8
+$discoveryExit = Invoke-CodexAgent -Prompt $discoveryPrompt -WorktreePath $worktreePath `
+    -LogDirectory $logDirectory -Name "discovery" -AgentLimit $MaxAgents -Sandbox "read-only"
+$runState["discoveryExitCode"] = $discoveryExit
+if ($discoveryExit -ne 0) {
+    throw "The read-only discovery phase failed. See $logDirectory/discovery.log"
+}
+$discoveryBriefPath = Join-Path $logDirectory "discovery-final.md"
+if (-not (Test-Path -LiteralPath $discoveryBriefPath -PathType Leaf)) {
+    throw "The read-only discovery phase produced no implementation brief."
+}
+$discoveryBrief = Get-Content -Raw -LiteralPath $discoveryBriefPath
+
+$deliveryPrompt = @"
+You are the implementation coordinator inside a dedicated Git worktree and task branch.
+
+Task:
+$Task
+
+Read-only discovery brief:
+$discoveryBrief
+
+Required sequential workflow:
+1. Read AGENTS.md and CLAUDE.md completely and follow every applicable linked plan.
+2. Delegate the bounded source and test edits to implementer and wait until it exits completely.
+3. Only after implementer finishes, delegate verification to test_engineer. Never overlap implementation and test execution.
+4. If JavaFX user-visible text or layout changes, implementer must use the javafx-localization-review skill.
+5. Fix failures caused by the change and rerun the targeted clean tests.
+6. Finish with changed files, commands and results, and real limitations. The outer runner owns the full
+   Maven gate and final independent code review.
+
+Stay inside this worktree. Do not commit, merge, rebase, push, tag, publish, or modify another worktree.
+$databaseInstruction
+$mavenInstruction
+"@
+$deliveryPrompt | Set-Content -LiteralPath (Join-Path $logDirectory "delivery-prompt.md") -Encoding utf8
+
+$agentExit = Invoke-CodexAgent -Prompt $deliveryPrompt -WorktreePath $worktreePath `
+    -LogDirectory $logDirectory -Name "delivery-0" -AgentLimit $MaxAgents -Sandbox "workspace-write"
+
+$testExit = 1
+$reviewResult = [pscustomobject]@{ ExitCode = 0; Verdict = "skipped"; Path = $null; Summary = "Review was skipped." }
+$completedPass = 0
+
+for ($pass = 0; $pass -le $MaxFixPasses; $pass++) {
+    Assert-HeadUnchanged -WorktreePath $worktreePath -ExpectedCommit $baseCommit
+    $testExit = Invoke-MavenGate -WorktreePath $worktreePath -LogDirectory $logDirectory `
+        -RunDatabaseAcceptance ([bool] $DatabaseAcceptance) -AllowOnline ([bool] $AllowOnlineMaven) `
+        -DatabaseConfigSource $DatabaseConfigPath -DatabaseConfigKeySource $DatabaseConfigKeyPath `
+        -Name "tests-$pass"
+
+    $changes = & git -C $worktreePath status --porcelain
+    if ($LASTEXITCODE -ne 0) {
+        throw "Could not inspect worktree changes."
+    }
+
+    if (-not $SkipReview -and $changes) {
+        $reviewResult = Invoke-ReviewGate -WorktreePath $worktreePath -LogDirectory $logDirectory `
+            -SchemaPath $reviewSchema -Name "review-$pass"
+    } elseif (-not $changes) {
+        $reviewResult = [pscustomobject]@{ ExitCode = 1; Verdict = "error"; Path = $null; Summary = "The delivery produced no changes." }
+    }
+
+    $reviewPassed = $SkipReview -or $reviewResult.Verdict -eq "pass"
+    if ($changes -and $agentExit -eq 0 -and $testExit -eq 0 -and $reviewPassed) {
+        $completedPass = $pass
+        break
+    }
+
+    if ($pass -ge $MaxFixPasses) {
+        $completedPass = $pass
+        break
+    }
+
+    $testTailPath = Join-Path $logDirectory "tests-$pass.log"
+    $testTail = if (Test-Path -LiteralPath $testTailPath) {
+        (Get-Content -LiteralPath $testTailPath -Tail 120) -join [Environment]::NewLine
+    } else {
+        "No Maven log was produced."
+    }
+    $reviewFeedback = if ($reviewResult.Path -and (Test-Path -LiteralPath $reviewResult.Path)) {
+        Get-Content -Raw -LiteralPath $reviewResult.Path
+    } else {
+        $reviewResult.Summary
+    }
+
+    $repairPrompt = @"
+Continue the assigned task in this same worktree. The independent gates did not pass.
+Use implementer for the smallest correct fixes, wait for it to exit, and only then use test_engineer
+for verification. Never overlap writing and test execution. Do not commit,
+merge, rebase, push, or touch another worktree.
+
+Maven exit code: $testExit
+Maven tail:
+$testTail
+
+Independent review:
+$reviewFeedback
+
+Resolve failures caused by this branch and all actionable P0-P2 findings, then run targeted clean tests.
+"@
+    $repairPrompt | Set-Content -LiteralPath (Join-Path $logDirectory "repair-prompt-$($pass + 1).md") -Encoding utf8
+    $agentExit = Invoke-CodexAgent -Prompt $repairPrompt -WorktreePath $worktreePath `
+        -LogDirectory $logDirectory -Name "delivery-$($pass + 1)" -AgentLimit $MaxAgents `
+        -Sandbox "workspace-write"
+}
+
+Assert-HeadUnchanged -WorktreePath $worktreePath -ExpectedCommit $baseCommit
+$finalChanges = & git -C $worktreePath status --short
+$passed = [bool] $finalChanges -and $agentExit -eq 0 -and $testExit -eq 0 -and `
+    ($SkipReview -or $reviewResult.Verdict -eq "pass")
+$runState["status"] = if ($passed) { "passed" } else { "failed" }
+$runState["passed"] = $passed
+$runState["discoveryExitCode"] = $discoveryExit
+$runState["deliveryExitCode"] = $agentExit
+$runState["testExitCode"] = $testExit
+$runState["reviewVerdict"] = $reviewResult.Verdict
+$runState["reviewSummary"] = $reviewResult.Summary
+$runState["completedPass"] = $completedPass
+$runState["changes"] = @($finalChanges)
+$runState["finishedAt"] = (Get-Date).ToString("o")
+$runState | ConvertTo-Json -Depth 6 | Set-Content -LiteralPath $resultPath -Encoding utf8
+
+Write-Host ""
+Write-Host "Run:      $runId"
+Write-Host "Branch:   $branchName"
+Write-Host "Worktree: $worktreePath"
+Write-Host "Result:   $resultPath"
+Write-Host "Passed:   $passed"
+
+if (-not $passed) {
+    exit 1
+}

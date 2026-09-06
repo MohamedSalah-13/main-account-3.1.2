@@ -78,3 +78,7 @@ account/image.png
 
 # Written by maven-shade-plugin on every package, and carries the version with it
 account/dependency-reduced-pom.xml
+
+# Local Multi-Agent orchestration state. Worktrees live beside the repository;
+# only logs/results need ignoring inside this checkout.
+.agent-runs/
