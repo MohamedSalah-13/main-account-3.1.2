@@ -407,7 +407,9 @@ public class DatabaseMigrationService {
      * @param databaseName the schema to connect to, or an empty string to reach the server itself
      */
     private String jdbcUrl(String databaseName) {
-        return "jdbc:mysql://%s:%s/%s?useUnicode=true&characterEncoding=UTF-8&serverTimezone=UTC"
+        // connectionTimeZone=LOCAL for the same reason as DataSourceProvider:
+        // this server keeps local time, so the driver must convert nothing.
+        return "jdbc:mysql://%s:%s/%s?useUnicode=true&characterEncoding=UTF-8&connectionTimeZone=LOCAL"
                 .formatted(database.getHost(), database.getPort(), databaseName);
     }
 }

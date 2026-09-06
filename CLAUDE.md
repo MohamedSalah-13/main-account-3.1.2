@@ -230,6 +230,29 @@ transaction and then calls into other DAOs. That works, but the boundary belongs
 to a table — so do not add an eighteenth `insertMultiData` site; wrap the service method instead. Both
 routes share `ConnectionManager`, so they nest safely with each other.
 
+**The JDBC URL says `connectionTimeZone=LOCAL`, and it has to.** This MySQL runs on the machine's
+own local time, so `NOW()` and every `DEFAULT CURRENT_TIMESTAMP` store local wall clock. The URL used
+to claim `serverTimezone=UTC`, and a driver told that converts in both directions — which produced
+three different bugs from one word, only the first of them visible:
+
+- a column MySQL wrote read back **late** by the whole offset (a shift opened at 08:00 displayed as
+  11:00) — the ~20 `getTimestamp(...).toLocalDateTime()` sites;
+- a column written with `setTimestamp(Timestamp.valueOf(...))` was stored **early** by the offset and
+  read back late, so the two errors cancelled *on screen* while the value on disk — the one every
+  report, view and `BETWEEN` reads — was wrong. Fixing only the read would have broken these;
+- the bounds of a range query were converted while the column they filter was not, so
+  `UserShiftDao.calculateShiftSummary` counted a window three hours out of line with its own rows.
+  Measured against real data, a Z-report missed **24% of the day's takings** and showed the till short
+  by that much. That is the one that mattered, and it looked like a date-formatting bug.
+
+`ConnectionTimeZoneArchitectureTest` pins every JDBC URL in both modules, and
+`V43__timestamp_timezone_correction.sql` repairs the rows the second case left behind — the seven
+columns ever written with `setTimestamp`. So putting `serverTimezone=UTC` back would not merely
+reintroduce the bug; it would make already-corrected rows wrong the other way. The migration converts
+with `FROM_UNIXTIME(TO_SECONDS(v) - 62167219200)` rather than `CONVERT_TZ`: **`CONVERT_TZ` with named
+zones answers `NULL` when the `mysql.time_zone` tables are not loaded**, which is the default on
+Windows, and it would have emptied the columns instead of failing.
+
 Layering is `Controller → Service → DAO → AbstractDao`, and it is in the middle of a deliberate shift.
 The older services under `service/` are thin `record X(DaoFactory)` wrappers with the real logic sitting
 in controllers and DAOs. The newer work puts the logic in a `features/<area>/` package that has no
@@ -605,11 +628,22 @@ through it too** - nothing fails the build if you forget, which is the gap `shif
 names first. Its `requireCashCorrection`/`requireTreasuryCorrection` pair exists so a movement
 already attributed to a shift cannot be deleted unattributed once the mode relaxes to `OPTIONAL`.
 
-**Everything the system records is append-only**, enforced by triggers in `R__triggers.sql` that
-refuse `UPDATE` and `DELETE` outside `@app_bulk_wipe`: `shift_cash_ledger` (with a numeric
-`ShiftCashSource`, never a translated label - the `MovementLabel` lesson), the close snapshot, and
-the handover/override/variance tables. A new fact table here gets the same triggers and a
-`WipeCatalog` entry, and `WipeCatalogTest` reads the migrations to check you did.
+**Everything the system records is append-only**, enforced by triggers that refuse `UPDATE` and
+`DELETE`: `shift_cash_ledger` (with a numeric `ShiftCashSource`, never a translated label - the
+`MovementLabel` lesson), the close snapshot, the close request and its decision, and the
+handover/override/variance tables. They live in `V26`, `V27`, `V28` and `R__triggers.sql`, so hunting
+one means checking all four.
+
+**The two halves of that are not guarded the same way, and the difference matters.** The `DELETE`
+trigger checks `@app_bulk_wipe`, so a wipe can take these rows; the `UPDATE` trigger is
+**unconditional** and takes no escape hatch at all - nothing in the running system, and nothing
+holding that flag, can ever change one of these rows. A migration that has to correct a stored value
+must therefore drop the `UPDATE` trigger, write, and recreate it; `V43` is the worked example, and
+this paragraph used to claim `@app_bulk_wipe` covered both, which is how `V43` came to fail on its
+first run against a database that had a closed shift in it.
+
+A new fact table here gets the same triggers and a `WipeCatalog` entry, and `WipeCatalogTest` reads
+the migrations to check you did.
 
 Two things that are separate and were once wrongly coupled: **settling the till's variance** depends
 only on there being a difference, while **declaring a handover** depends on an enabled handover
@@ -1098,7 +1132,9 @@ Schema changes are **Flyway migrations**, in `account/src/main/resources/db/migr
 - `V1__baseline.sql` is the schema as shipped to clients in v4.1.3 — tables, indexes, procedures and the
   seed data (including the `admin` user, without which nobody can log in). It is the Flyway baseline: an
   existing client database is **stamped** with it, never executed, because it already is that schema. A
-  new database executes it and continues with `V2`, `V3`, … The current head is `V42`: `V38`–`V42` are
+  new database executes it and continues with `V2`, `V3`, … The current head is `V43`: `V43`
+  repairs the timestamps stored shifted by the machine's UTC offset (see **Database access**
+  above). `V38`–`V42` are
   the multi-device work — a trial row per machine, the two backup permissions, the shared `app_setting`
   table, the machine registry and the cross-machine change feed (see `docs/multi-device-plan.md`).
   Before them, `V36` and `V37` are the price-check kiosk, `V34` adds
