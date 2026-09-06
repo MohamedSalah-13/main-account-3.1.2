@@ -68,6 +68,39 @@ public final class SharedSettingKeys {
     public static final String CURRENCY = "setting.currency";
     public static final String PRINT_REPORT_TITLE = "setting.print.report.title";
 
+    /**
+     * Whether the same item scanned twice becomes one line of two or two lines of one.
+     * <p>
+     * Not a display preference: it is the shape of the rows that get stored. Two tills
+     * answering differently means the same sale is recorded two ways depending on which
+     * one the customer walked up to, and every later reading of those lines - a report, a
+     * return against the invoice - meets both shapes.
+     */
+    public static final String INVOICE_MERGE_REPEATED_ITEM = "invoice.increase.item.one.table";
+
+    /**
+     * The customer a new invoice opens on - the walk-in account a cash sale is filed
+     * under.
+     * <p>
+     * Shared because the alternative is cash sales landing in different accounts
+     * depending on which till served them, which is a hole in the books rather than a
+     * difference of habit. Its neighbour {@link #DEFAULT_DELEGATE_NOT_SHARED} deliberately
+     * is not.
+     */
+    public static final String DEFAULT_CUSTOMER = "setting.save.name.customer";
+
+    /**
+     * The default <em>delegate</em>, and the reason it stays on the machine.
+     * <p>
+     * A delegate is a salesperson, and salespeople are paid on what they sell. A shop
+     * where each till is manned by a different one wants each till to default to its own;
+     * sharing the key would credit every sale in the building to whoever was set last.
+     * The two failure modes are not equal - setting it once per machine is a chore,
+     * paying the wrong person is not - so this constant exists only to be named here and
+     * is never put in the set below.
+     */
+    public static final String DEFAULT_DELEGATE_NOT_SHARED = "setting.save.name.delegate";
+
     private static final Set<String> SHARED = Set.of(
             BARCODE_SCALE_ACTIVE,
             BARCODE_START,
@@ -87,6 +120,9 @@ public final class SharedSettingKeys {
 
             CURRENCY,
             PRINT_REPORT_TITLE,
+
+            INVOICE_MERGE_REPEATED_ITEM,
+            DEFAULT_CUSTOMER,
 
             BACKUP_OWNER_MACHINE);
 

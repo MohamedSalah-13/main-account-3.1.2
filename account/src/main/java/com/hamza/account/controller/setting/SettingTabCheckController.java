@@ -138,12 +138,15 @@ public class SettingTabCheckController implements Initializable {
         checkSelWithoutBalance.selectedProperty().addListener((observable, oldValue, newValue) -> setSelWithoutBalance(newValue));
         checkAddItemDirect.selectedProperty().addListener((observableValue, aBoolean, t1) -> setInvoiceAddItemsDirect(t1));
 
-        // The five settings on this tab that are the shop's, not this computer's.
+        // The settings on this tab that are the shop's, not this computer's. The low-stock
+        // alert beside them is not one: it is a notification rule, and every notification
+        // setting in this program is per machine by design.
         SettingScope.shared(checkPrintTitleInReports, SharedSettingKeys.PRINT_REPORT_TITLE);
         SettingScope.shared(updatePriceInInvoice, SharedSettingKeys.INVOICE_UPDATE_PRICE);
         SettingScope.shared(checkSelWithoutBalance, SharedSettingKeys.SEL_WITHOUT_BALANCE);
         SettingScope.shared(checkReturnRequireSource, SharedSettingKeys.RETURN_REQUIRE_SOURCE_INVOICE);
         SettingScope.shared(txtReturnFreeLimit, SharedSettingKeys.RETURN_FREE_LIMIT);
+        SettingScope.shared(checkIncreaseItemOnTable, SharedSettingKeys.INVOICE_MERGE_REPEATED_ITEM);
     }
 
     private void checkSetting(CheckBox checkBox, String nameText, boolean b) {

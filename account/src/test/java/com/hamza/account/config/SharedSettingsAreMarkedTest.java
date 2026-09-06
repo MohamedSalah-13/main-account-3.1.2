@@ -9,7 +9,6 @@ import java.lang.reflect.Modifier;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
@@ -102,14 +101,33 @@ class SharedSettingsAreMarkedTest {
                 "no SettingScope.shared call found in the settings controllers");
     }
 
-    /** The public String constants of {@link SharedSettingKeys}, by name. */
+    /**
+     * The constants that name a key {@link SharedSettingKeys#all()} actually holds.
+     *
+     * <p>The filter is on the <b>value</b>, not on the field being public, and that
+     * distinction is not hypothetical: this test failed the day it was written because
+     * {@code DEFAULT_DELEGATE_NOT_SHARED} is a public constant on the same class that
+     * exists precisely to be left out of the set. Reflecting over the fields alone would
+     * demand a mark for a setting whose whole point is that it is per machine.
+     */
     private static Set<String> sharedConstantNames() {
-        return Arrays.stream(SharedSettingKeys.class.getDeclaredFields())
-                .filter(field -> Modifier.isPublic(field.getModifiers())
-                        && Modifier.isStatic(field.getModifiers())
-                        && field.getType() == String.class)
-                .map(java.lang.reflect.Field::getName)
-                .collect(java.util.stream.Collectors.toCollection(TreeSet::new));
+        Set<String> shared = SharedSettingKeys.all();
+        var names = new TreeSet<String>();
+        for (java.lang.reflect.Field field : SharedSettingKeys.class.getDeclaredFields()) {
+            if (!Modifier.isPublic(field.getModifiers())
+                    || !Modifier.isStatic(field.getModifiers())
+                    || field.getType() != String.class) {
+                continue;
+            }
+            try {
+                if (shared.contains((String) field.get(null))) {
+                    names.add(field.getName());
+                }
+            } catch (IllegalAccessException e) {
+                throw new IllegalStateException(e);
+            }
+        }
+        return names;
     }
 
     private static Set<String> namesReferencedByScreens() {

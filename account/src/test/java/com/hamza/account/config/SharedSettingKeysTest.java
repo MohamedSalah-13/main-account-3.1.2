@@ -58,6 +58,59 @@ class SharedSettingKeysTest {
     }
 
     @Test
+    @DisplayName("the shape of a stored invoice is the shop's, not the till's")
+    void invoiceShapeIsShared() {
+        // One line of two or two lines of one: the same sale must not be recorded two
+        // ways depending on which till served it, because every later reading of those
+        // rows - a report, a return against the invoice - then meets both shapes.
+        assertTrue(SharedSettingKeys.isShared("invoice.increase.item.one.table"));
+    }
+
+    /**
+     * The pair that looks symmetrical and is not, which is the whole reason this test
+     * names them together. Both are "the default on a new invoice"; only one of them is
+     * a fact about the business.
+     */
+    @Test
+    @DisplayName("the default customer is shared, the default delegate is not")
+    void theDefaultCustomerIsSharedAndTheDelegateIsNot() {
+        // A cash sale filed under a different walk-in account depending on which till
+        // served it is a hole in the books.
+        assertTrue(SharedSettingKeys.isShared("setting.save.name.customer"));
+
+        // A delegate is a salesperson, and salespeople are paid on what they sell. A till
+        // manned by its own salesman must default to that one; sharing this would credit
+        // every sale in the building to whoever was set last. Setting it per machine is a
+        // chore, paying the wrong person is not.
+        assertFalse(SharedSettingKeys.isShared("setting.save.name.delegate"));
+    }
+
+    /**
+     * Read the call sites before moving a key, because these three read as obvious
+     * candidates and each turns out not to be.
+     */
+    @Test
+    @DisplayName("what looks shareable and is not")
+    void thingsThatLookSharedButAreNot() {
+        // The label group is calibrated to the sticker roll loaded in one machine's label
+        // printer - and setting.printer.barcode, its neighbour, is per machine. Sharing
+        // the content while the size stays local would split a calibrated group across
+        // two stores, which is worse than either whole.
+        assertFalse(SharedSettingKeys.isShared("barcode.label.width.mm"));
+        assertFalse(SharedSettingKeys.isShared("barcode.label.name.font.size"));
+        assertFalse(SharedSettingKeys.isShared("barcode.label.print.price"));
+
+        // A notification rule. Every notification setting in this program is per machine
+        // by design - NotificationPreferences persists nothing to the database - and
+        // sharing one of them alone would make that family inconsistent.
+        assertFalse(SharedSettingKeys.isShared("item.show.alert"));
+
+        // How this operator's till behaves while entering a sale, not what the sale is.
+        assertFalse(SharedSettingKeys.isShared("invoice.show.screen.paid"));
+        assertFalse(SharedSettingKeys.isShared("invoice.add.items.direct"));
+    }
+
+    @Test
     @DisplayName("an unknown key is nobody's")
     void unknownKeysAreLocal() {
         assertFalse(SharedSettingKeys.isShared("something.that.does.not.exist"));

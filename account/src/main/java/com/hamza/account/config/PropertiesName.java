@@ -20,8 +20,8 @@ public class PropertiesName extends PreferencesSetting {
     private static final String SETTING_EXPANDED = "setting.expanded";
     private static final String ITEMS_SUB_GROUP = "items.sub.group";
     private static final String ITEMS_TYPE_GROUP = "items.type.group";
-    private static final String SETTING_SAVE_NAME_CUSTOMER = "setting.save.name.customer";
-    private static final String SETTING_SAVE_NAME_DELEGATE = "setting.save.name.delegate";
+    private static final String SETTING_SAVE_NAME_CUSTOMER = SharedSettingKeys.DEFAULT_CUSTOMER;
+    private static final String SETTING_SAVE_NAME_DELEGATE = SharedSettingKeys.DEFAULT_DELEGATE_NOT_SHARED;
     private static final String PATH_IMAGE_MAIN_SCREEN = "setting.path.image.main.screen";
     private static final String SETTING_PRINTER_THERMAL = "setting.printer.thermal";
     private static final String SETTING_PRINTER_BARCODE = "setting.printer.barcode";
@@ -47,7 +47,7 @@ public class PropertiesName extends PreferencesSetting {
     private static final String PRINT_PAPER_RECEIPT_ACCOUNT = "print.paper.receipt.account";
     private static final String PRINT_PAPER_DIRECT = "print.paper.direct";
     private static final String SERIAL_RECORD_MODIFICATION_NUMBER = "serial.record.modification.number";
-    private static final String INVOICE_INCREASE_ITEM_ONE_TABLE = "invoice.increase.item.one.table";
+    private static final String INVOICE_INCREASE_ITEM_ONE_TABLE = SharedSettingKeys.INVOICE_MERGE_REPEATED_ITEM;
     /*-------------------------------------- Price check screen --------------------------------------*/
     /**
      * The warehouse the wall-mounted price screen answers for. Zero means "never set up",

@@ -195,6 +195,10 @@ public class SettingTabLanguageController implements Initializable {
         try {
             txtNameCustomer.setText(publishCustomer(customerService));
             txtNameDelegate.setText(publishDelegate(employeeService));
+            // The default customer is the shop's - a cash sale must not land in a
+            // different account depending on which till served it. The delegate beside it
+            // is deliberately not: sharing it would credit every sale to one salesperson.
+            SettingScope.shared(txtNameCustomer, com.hamza.account.config.SharedSettingKeys.DEFAULT_CUSTOMER);
         } catch (Exception e) {
             log.error("Failed to publish customer and delegate: {}", e.getMessage());
         }
