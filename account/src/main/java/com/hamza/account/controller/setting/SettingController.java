@@ -1,6 +1,8 @@
 package com.hamza.account.controller.setting;
 
 import com.hamza.account.Main;
+import com.hamza.account.authorization.AppPermissions;
+import com.hamza.account.authorization.AuthorizationGuard;
 import com.hamza.account.config.ConnectionToDatabase;
 import com.hamza.account.controller.main.DataPublisher;
 import com.hamza.account.model.dao.DaoFactory;
@@ -89,9 +91,16 @@ public class SettingController implements Initializable, AppSettingInterface {
         pane.getTabs().add(new Tab(lm.getString("settings.notifications.tabTitle"), getTabNotifications()));
         // add tab accounting period
         pane.getTabs().add(new Tab(lm.getString("settings.periodLock.tabTitle"), getTabPeriodLock()));
-        // add tab backup
-//        Pane backupAppPane = backupSetting();
-        pane.getTabs().add(new Tab(lm.getString("backup"), backup()));
+        // The backup tab is its own ability, like every other screen that can take the
+        // database out of the building. A user without it loses the tab, not its buttons.
+        if (AuthorizationGuard.isGranted(AppPermissions.SETTING_BACKUP_SHOW)) {
+            pane.getTabs().add(new Tab(lm.getString("backup"), backup()));
+            pane.getTabs().add(new Tab(lm.getString("workstations.tabTitle"), getTabWorkstations()));
+        }
+    }
+
+    private Pane getTabWorkstations() throws Exception {
+        return new OpenFxmlApplication(new WorkstationsController()).getPane();
     }
 
     private Pane getTabShortcuts() throws Exception {

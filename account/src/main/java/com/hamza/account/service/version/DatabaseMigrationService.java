@@ -1,9 +1,11 @@
 package com.hamza.account.service.version;
 
 import com.hamza.account.config.ConnectionToDatabase;
+import com.hamza.controlsfx.language.LanguageManager;
 import lombok.extern.log4j.Log4j2;
 import org.flywaydb.core.Flyway;
 import org.flywaydb.core.api.MigrationInfo;
+import org.flywaydb.core.api.MigrationVersion;
 import org.flywaydb.core.api.output.MigrateResult;
 
 import java.sql.Connection;
@@ -12,7 +14,9 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.Statement;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.List;
+import java.util.function.Predicate;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
@@ -82,6 +86,7 @@ public class DatabaseMigrationService {
         }
 
         Flyway flyway = buildFlyway();
+        refuseADatabaseNewerThanThisBuild(flyway);
         recoverKnownFailedMigration(flyway);
 
         List<MigrationInfo> pending = Arrays.asList(flyway.info().pending());
@@ -149,6 +154,57 @@ public class DatabaseMigrationService {
             log.warn("Could not read the available schema version", e);
             return "unknown";
         }
+    }
+
+    /**
+     * Refuses to start against a database a newer build has already migrated.
+     *
+     * <p>This is the check a shared database needs and a single machine never did. Two
+     * tills against one MySQL are two copies of this program, and they are not updated at
+     * the same moment - so the older one meets a schema it does not know. Left to itself it
+     * does not politely do nothing:
+     *
+     * <ul>
+     *   <li>{@link #buildFlyway()} sets {@code validateOnMigrate(false)}, so nothing objects
+     *       to history rows for migrations this build has never heard of;</li>
+     *   <li>the versioned migrations it is missing are "future", not "pending", so the early
+     *       return above does not fire - but the <b>repeatable</b> ones are pending the
+     *       moment their checksum differs, <b>in either direction</b>;</li>
+     *   <li>so an old build cheerfully applies its own {@code R__views.sql},
+     *       {@code R__triggers.sql} and {@code R__procedures.sql} over the shop's database,
+     *       replacing all 33 views with older definitions - on every launch, silently, while
+     *       the up-to-date tills keep querying columns that are no longer there.</li>
+     * </ul>
+     *
+     * <p>The comparison is against Flyway's own history, which only ever grows, rather than
+     * {@code system_info.app_version}, which the older build would overwrite downwards on
+     * its way past. Applied versions this build does not carry are exactly the ones whose
+     * state is not {@code isResolved()}.
+     *
+     * <p>What it cannot see: two builds at the same versioned head with different repeatable
+     * contents, which is a state only a developer's machine reaches - a released build is
+     * pinned to its migrations.
+     */
+    private void refuseADatabaseNewerThanThisBuild(Flyway flyway) {
+        MigrationVersion applied = highestVersion(flyway.info().applied(), info -> true);
+        MigrationVersion available = highestVersion(flyway.info().all(), info -> info.getState().isResolved());
+
+        if (applied == null || available == null || applied.compareTo(available) <= 0) {
+            return;
+        }
+
+        log.error("Database schema is V{} but this build only carries migrations up to V{}", applied, available);
+        throw new OutdatedApplicationException(LanguageManager.getInstance()
+                .getString("startup.database.newer.than.application", applied.toString(), available.toString()));
+    }
+
+    private MigrationVersion highestVersion(MigrationInfo[] infos, Predicate<MigrationInfo> included) {
+        return Arrays.stream(infos)
+                .filter(info -> info.getVersion() != null)
+                .filter(included)
+                .map(MigrationInfo::getVersion)
+                .max(Comparator.naturalOrder())
+                .orElse(null);
     }
 
     private Flyway buildFlyway() {

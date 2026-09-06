@@ -1,5 +1,6 @@
 package com.hamza.account.backup;
 
+import com.hamza.account.features.backup.BackupPolicy;
 import com.hamza.account.features.notification.AppNotifications;
 import com.hamza.account.features.notification.NotificationCategories;
 import com.hamza.controlsfx.language.LanguageManager;
@@ -70,7 +71,21 @@ public class ScheduledBackup {
         return prefsBackup.get("interval", INTERVAL_DISABLED);
     }
 
+    /**
+     * Starts the timer, unless another machine owns the schedule.
+     * <p>
+     * Every open copy of the program used to start one of these, so a shop with four tills
+     * took four full dumps an hour into four different folders, each pruning its own to
+     * thirty files. One machine owns it now - see {@link BackupPolicy} - and the others
+     * schedule nothing at all.
+     */
     public static void startScheduler(BackupService backupService) {
+        if (!BackupPolicy.isBackupOwner()) {
+            log.info("Automatic backups are owned by another machine ({}); nothing scheduled here",
+                    BackupPolicy.ownerMachine().orElse("?"));
+            stopScheduler();
+            return;
+        }
         if (scheduler == null || scheduler.isShutdown()) {
             scheduler = Executors.newSingleThreadScheduledExecutor(runnable -> {
                 Thread thread = new Thread(runnable, "scheduled-backup");

@@ -1,5 +1,6 @@
 package com.hamza.account.trial;
 
+import com.hamza.account.config.MachineId;
 import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.language.LanguageManager;
 import javafx.application.Platform;
@@ -70,18 +71,21 @@ public class TrialManager {
                 return;
             }
 
-            ensureInstallationDateColumnExists();
+            ensureTrialTableExists();
 
             String machineId = getMachineId();
             if (machineId == null || machineId.isBlank()) {
-                failAndExit("Machine ID cannot be empty or null");
+                // Nothing is recorded: the row a failure would be charged to is chosen by
+                // the very value that is missing, and the shared row it used to land on is
+                // what let one machine end another machine's install.
+                failAndExit(null, "Machine ID cannot be empty or null");
                 return;
             }
 
-            TrialDbData dbData = getTrialDataFromDb();
+            TrialDbData dbData = getTrialDataFromDb(machineId);
             boolean dbExists = dbData != null && dbData.date != null;
             if (dbExists && dbData.failCount >= MAX_FAILS) {
-                failAndExit("Trial has failed too many times. Please contact support.");
+                failAndExit(machineId, "Trial has failed too many times. Please contact support.");
                 return;
             }
 
@@ -90,15 +94,22 @@ public class TrialManager {
             if (trialFileExists) {
                 fileData = getTrialDataFromFile();
                 if (fileData == null) {
-                    failAndExit("Unable to read trial data from file. Please try again.");
+                    failAndExit(machineId, "Unable to read trial data from file. Please try again.");
                     return;
                 }
             }
 
             if (!trialFileExists && !dbExists) {
-                LocalDate now = LocalDate.now();
-                saveInstallationData(now, machineId);
-                dbData = getTrialDataFromDb();
+                /*
+                 * A machine this database has not seen before. It inherits the earliest
+                 * installation date already recorded rather than starting a trial of its
+                 * own: a shop with three tills would otherwise hold three seven-day
+                 * trials, each restarting the clock, which is not what a trial is. With
+                 * no rows at all this is genuinely a first install, and the date is today.
+                 */
+                LocalDate start = earliestInstallationDate();
+                saveInstallationData(start, machineId);
+                dbData = getTrialDataFromDb(machineId);
                 fileData = getTrialDataFromFile();
             } else if (trialFileExists != dbExists) {
                 /*
@@ -118,51 +129,51 @@ public class TrialManager {
                 log.warn("Trial data found on only one side ({}); restoring it from the installation date {}",
                         dbExists ? "database" : "file", knownDate);
                 saveInstallationData(knownDate, machineId);
-                dbData = getTrialDataFromDb();
+                dbData = getTrialDataFromDb(machineId);
                 fileData = getTrialDataFromFile();
             } else {
                 if (fileData == null || fileData.date == null) {
-                    failAndExit("Trial data exists in file but not in database. Please contact support.");
+                    failAndExit(machineId, "Trial data exists in file but not in database. Please contact support.");
                     return;
                 }
 
                 if (fileData.legacy || dbData.machineId == null || dbData.hmac == null || fileData.machineId == null
                         || dbData.lastCheck == null || fileData.lastCheck == null) {
                     if (!dbData.date.equals(fileData.date)) {
-                        failAndExit("Trial data mismatch between file and database. Please contact support.");
+                        failAndExit(machineId, "Trial data mismatch between file and database. Please contact support.");
                         return;
                     }
                     saveInstallationData(dbData.date, machineId);
-                    dbData = getTrialDataFromDb();
+                    dbData = getTrialDataFromDb(machineId);
                     fileData = getTrialDataFromFile();
                 }
 
                 if (!dbData.date.equals(fileData.date)) {
-                    failAndExit("Trial data mismatch between file and database. Please contact support.");
+                    failAndExit(machineId, "Trial data mismatch between file and database. Please contact support.");
                     return;
                 }
                 if (!dbData.machineId.equals(fileData.machineId)) {
-                    failAndExit("Trial data mismatch between file and database. Please contact support.");
+                    failAndExit(machineId, "Trial data mismatch between file and database. Please contact support.");
                     return;
                 }
                 if (!dbData.machineId.equals(machineId)) {
-                    failAndExit("Trial data mismatch between file and database. Please contact support.");
+                    failAndExit(machineId, "Trial data mismatch between file and database. Please contact support.");
                     return;
                 }
                 if (dbData.lastCheck != null && fileData.lastCheck != null
                         && !dbData.lastCheck.equals(fileData.lastCheck)) {
-                    failAndExit("Trial data mismatch between file and database. Please contact support.");
+                    failAndExit(machineId, "Trial data mismatch between file and database. Please contact support.");
                     return;
                 }
                 if (dbData.lastCheck != null && LocalDate.now().isBefore(dbData.lastCheck)) {
-                    failAndExit("Trial expired. Please contact support.");
+                    failAndExit(machineId, "Trial expired. Please contact support.");
                     return;
                 }
 
                 String payload = buildPayload(dbData.date, dbData.machineId, dbData.lastCheck);
                 String expectedHmac = computeHmac(payload);
                 if (expectedHmac == null || !expectedHmac.equals(dbData.hmac)) {
-                    failAndExit("Trial data mismatch between file and database. Please contact support.");
+                    failAndExit(machineId, "Trial data mismatch between file and database. Please contact support.");
                     return;
                 }
             }
@@ -173,7 +184,7 @@ public class TrialManager {
             long daysRemaining = TRIAL_DAYS - daysPassed;
 
             if (daysRemaining <= 0) {
-                failAndExit("Trial expired. Please contact support.");
+                failAndExit(machineId, "Trial expired. Please contact support.");
             } else if (daysRemaining <= 5) {
                 AllAlerts.alertError("Warning: Your trial will expire in " + daysRemaining + " days. Please renew your subscription.");
             }
@@ -185,51 +196,62 @@ public class TrialManager {
         }
     }
 
-    private void ensureInstallationDateColumnExists() {
+    /**
+     * The trial table, created here as well as by {@code V38__trial_per_machine.sql}.
+     * <p>
+     * The migration is what really creates it, and runs before this class is reached. The
+     * statement is kept because this class has always been able to stand up its own storage
+     * - it used to add six columns to {@code company} by hand - and a trial check that dies
+     * because a table is missing is a customer who cannot open the program at all.
+     */
+    private void ensureTrialTableExists() {
         try (Statement stmt = connection.createStatement()) {
-            try {
-                stmt.executeQuery("SELECT installation_date FROM company LIMIT 1");
-            } catch (Exception e) {
-                stmt.execute("ALTER TABLE company ADD COLUMN installation_date DATE NULL");
-            }
-
-            try {
-                stmt.executeQuery("SELECT trial_machine FROM company LIMIT 1");
-            } catch (Exception e) {
-                stmt.execute("ALTER TABLE company ADD COLUMN trial_machine VARCHAR(128) NULL");
-            }
-
-            try {
-                stmt.executeQuery("SELECT trial_hash FROM company LIMIT 1");
-            } catch (Exception e) {
-                stmt.execute("ALTER TABLE company ADD COLUMN trial_hash VARCHAR(256) NULL");
-            }
-
-            try {
-                stmt.executeQuery("SELECT trial_last_check FROM company LIMIT 1");
-            } catch (Exception e) {
-                stmt.execute("ALTER TABLE company ADD COLUMN trial_last_check DATE NULL");
-            }
-
-            try {
-                stmt.executeQuery("SELECT trial_fail_count FROM company LIMIT 1");
-            } catch (Exception e) {
-                stmt.execute("ALTER TABLE company ADD COLUMN trial_fail_count INT NULL");
-            }
-
-            try {
-                stmt.executeQuery("SELECT trial_fail_last FROM company LIMIT 1");
-            } catch (Exception e) {
-                stmt.execute("ALTER TABLE company ADD COLUMN trial_fail_last DATE NULL");
-            }
+            stmt.execute("""
+                    CREATE TABLE IF NOT EXISTS trial_machine_state (
+                        machine_id        VARCHAR(128) NOT NULL PRIMARY KEY,
+                        installation_date DATE         NOT NULL,
+                        trial_hash        VARCHAR(256) NULL,
+                        trial_last_check  DATE         NULL,
+                        trial_fail_count  INT          NOT NULL DEFAULT 0,
+                        trial_fail_last   DATE         NULL,
+                        created_at        TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                        updated_at        TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+                    ) ENGINE = InnoDB""");
         } catch (Exception e) {
-            log.error("Error ensuring installation_date column exists", e);
+            log.error("Error ensuring the trial table exists", e);
         }
     }
 
-    private TrialDbData getTrialDataFromDb() {
+    /**
+     * When the trial started for this install, taken from the machine that started it
+     * first.
+     * <p>
+     * A second till joining an existing database is a new machine, not a new customer, so
+     * it takes the clock that is already running instead of starting one.
+     */
+    private LocalDate earliestInstallationDate() {
+        try (Statement stmt = connection.createStatement();
+             ResultSet rs = stmt.executeQuery("SELECT MIN(installation_date) FROM trial_machine_state")) {
+            if (rs.next()) {
+                java.sql.Date earliest = rs.getDate(1);
+                if (earliest != null) {
+                    return earliest.toLocalDate();
+                }
+            }
+        } catch (Exception e) {
+            log.error("Error reading the earliest installation date", e);
+        }
+        return LocalDate.now();
+    }
+
+    private TrialDbData getTrialDataFromDb(String machineId) {
+        if (machineId == null || machineId.isBlank()) {
+            return null;
+        }
         try (PreparedStatement stmt = connection.prepareStatement(
-                "SELECT installation_date, trial_machine, trial_hash, trial_last_check, trial_fail_count, trial_fail_last FROM company WHERE comp_id = 1")) {
+                "SELECT installation_date, machine_id, trial_hash, trial_last_check, trial_fail_count, trial_fail_last"
+                        + " FROM trial_machine_state WHERE machine_id = ?")) {
+            stmt.setString(1, machineId);
             ResultSet rs = stmt.executeQuery();
             if (rs.next()) {
                 java.sql.Date date = rs.getDate("installation_date");
@@ -237,7 +259,7 @@ public class TrialManager {
                 java.sql.Date failLastDate = rs.getDate("trial_fail_last");
                 TrialDbData data = new TrialDbData();
                 data.date = date != null ? date.toLocalDate() : null;
-                data.machineId = rs.getString("trial_machine");
+                data.machineId = rs.getString("machine_id");
                 data.hmac = rs.getString("trial_hash");
                 data.lastCheck = lastCheckDate != null ? lastCheckDate.toLocalDate() : null;
                 data.failCount = rs.getInt("trial_fail_count");
@@ -282,32 +304,32 @@ public class TrialManager {
         saveInstallationDataToFile(date, machineId, now);
     }
 
+    /**
+     * This machine's row, written whole.
+     * <p>
+     * It used to write the {@code company} row, and to create it - name and all - when the
+     * table was empty, so a fresh install got a company called "شركة تجريبية" from the
+     * licence check. {@code CompanyService.load} is what creates that row now, at the point
+     * somebody opens the settings screen and types a real name into it.
+     * <p>
+     * The upsert leaves {@code trial_fail_count} alone: it belongs to this machine and
+     * nothing here is entitled to clear it.
+     */
     private void saveInstallationDataToDb(LocalDate date, String machineId, LocalDate lastCheck) {
         String payload = buildPayload(date, machineId, lastCheck);
         String hmac = computeHmac(payload);
 
-        try (PreparedStatement checkStmt = connection.prepareStatement(
-                "SELECT comp_id FROM company WHERE comp_id = 1");
-             PreparedStatement updateStmt = connection.prepareStatement(
-                     "UPDATE company SET installation_date = ?, trial_machine = ?, trial_hash = ?, trial_last_check = ? WHERE comp_id = 1");
-             PreparedStatement insertStmt = connection.prepareStatement(
-                     "INSERT INTO company (comp_id, comp_name, installation_date, trial_machine, trial_hash, trial_last_check, trial_fail_count, trial_fail_last) VALUES (1, ?, ?, ?, ?, ?, 0, NULL)")) {
-
-            ResultSet rs = checkStmt.executeQuery();
-            if (rs.next()) {
-                updateStmt.setDate(1, java.sql.Date.valueOf(date));
-                updateStmt.setString(2, machineId);
-                updateStmt.setString(3, hmac);
-                updateStmt.setDate(4, java.sql.Date.valueOf(lastCheck));
-                updateStmt.executeUpdate();
-            } else {
-                insertStmt.setString(1, "شركة تجريبية");
-                insertStmt.setDate(2, java.sql.Date.valueOf(date));
-                insertStmt.setString(3, machineId);
-                insertStmt.setString(4, hmac);
-                insertStmt.setDate(5, java.sql.Date.valueOf(lastCheck));
-                insertStmt.executeUpdate();
-            }
+        try (PreparedStatement stmt = connection.prepareStatement(
+                "INSERT INTO trial_machine_state"
+                        + " (machine_id, installation_date, trial_hash, trial_last_check, trial_fail_count)"
+                        + " VALUES (?, ?, ?, ?, 0)"
+                        + " ON DUPLICATE KEY UPDATE installation_date = VALUES(installation_date),"
+                        + " trial_hash = VALUES(trial_hash), trial_last_check = VALUES(trial_last_check)")) {
+            stmt.setString(1, machineId);
+            stmt.setDate(2, java.sql.Date.valueOf(date));
+            stmt.setString(3, hmac);
+            stmt.setDate(4, java.sql.Date.valueOf(lastCheck));
+            stmt.executeUpdate();
         } catch (Exception e) {
             log.error("Error saving installation date to database", e);
         }
@@ -404,30 +426,13 @@ public class TrialManager {
         return data;
     }
 
+    /**
+     * The MachineGuid, read by {@link MachineId} - which is this method, moved out
+     * unchanged so the backup owner and the connected-machines list answer to the same
+     * identity the licence is bound to.
+     */
     private String getMachineId() {
-        try {
-            Process process = new ProcessBuilder("reg", "query",
-                    "HKLM\\SOFTWARE\\Microsoft\\Cryptography", "/v", "MachineGuid")
-                    .redirectErrorStream(true)
-                    .start();
-            byte[] outBytes = process.getInputStream().readAllBytes();
-            int exit = process.waitFor();
-            String output = new String(outBytes, StandardCharsets.UTF_8);
-            if (exit != 0) {
-                log.warn("Unable to read MachineGuid. Output: {}", output);
-                return null;
-            }
-            for (String line : output.split("\\R")) {
-                line = line.trim();
-                if (line.startsWith("MachineGuid")) {
-                    String[] tokens = line.split("\\s+");
-                    return tokens[tokens.length - 1];
-                }
-            }
-        } catch (Exception e) {
-            log.error("Error reading MachineGuid", e);
-        }
-        return null;
+        return MachineId.current().orElse(null);
     }
 
     private boolean isLicenseValid() {
@@ -457,8 +462,8 @@ public class TrialManager {
                 return info;
             }
 
-            ensureInstallationDateColumnExists();
-            TrialDbData dbData = getTrialDataFromDb();
+            ensureTrialTableExists();
+            TrialDbData dbData = getTrialDataFromDb(getMachineId());
             TrialFileData fileData = getTrialDataFromFile();
 
             LocalDate installationDate = null;
@@ -542,7 +547,20 @@ public class TrialManager {
             }
 
             if (!targetMachine.equals(currentMachine)) {
-                return licenseFail(result, strict, "Target machine does not match current machine.");
+                /*
+                 * A licence for a different computer. This is NOT tampering, and treating
+                 * it as tampering is how a shop bricked its second till: setting one up by
+                 * copying the program folder brings license.dat with it, and under `strict`
+                 * that counted a failure and exited - permanently, since MAX_FAILS is 1.
+                 *
+                 * The honest reading is "this machine is not licensed yet", which is what
+                 * the trial path already says, so it falls through to it. A signature that
+                 * does not verify is still tampering and still fails.
+                 */
+                result.valid = false;
+                result.error = "Target machine does not match current machine.";
+                log.warn("The licence file names another machine; this one runs on the trial until it has its own");
+                return result;
             }
 
             result.valid = true;
@@ -636,7 +654,7 @@ public class TrialManager {
         result.valid = false;
         result.error = message;
         if (strict) {
-            failAndExit(message);
+            failAndExit(getMachineId(), message);
         }
         return result;
     }
@@ -678,22 +696,46 @@ public class TrialManager {
     }
 
     private void updateLastCheck(LocalDate now, String machineId) {
-        TrialDbData dbData = getTrialDataFromDb();
+        TrialDbData dbData = getTrialDataFromDb(machineId);
         if (dbData == null || dbData.date == null) return;
         saveInstallationData(dbData.date, machineId);
     }
 
-    private void failAndExit(String message) {
-        recordTrialFailure();
+    /**
+     * @param machineId the machine to charge the failure to, or {@code null} to charge it
+     *                  to nobody - which is right when the failure is that we could not
+     *                  work out which machine this is
+     */
+    private void failAndExit(String machineId, String message) {
+        recordTrialFailure(machineId);
         AllAlerts.alertError(message);
         Platform.exit();
         System.exit(0);
     }
 
-    private void recordTrialFailure() {
+    /**
+     * Counts one failure against <b>this</b> machine.
+     * <p>
+     * It used to increment {@code company.trial_fail_count}, one row for the whole shop,
+     * with {@link #MAX_FAILS} at 1 - so a second computer starting once left the first one
+     * refusing to open for good. The counter is per machine now, which is the only thing
+     * that makes a machine-bound licence usable on a shared database.
+     */
+    private void recordTrialFailure(String machineId) {
+        if (machineId == null || machineId.isBlank()) {
+            log.warn("Trial failure not recorded: this machine could not be identified");
+            return;
+        }
         try (PreparedStatement stmt = connection.prepareStatement(
-                "UPDATE company SET trial_fail_count = COALESCE(trial_fail_count, 0) + 1, trial_fail_last = ? WHERE comp_id = 1")) {
-            stmt.setDate(1, java.sql.Date.valueOf(LocalDate.now()));
+                "INSERT INTO trial_machine_state"
+                        + " (machine_id, installation_date, trial_fail_count, trial_fail_last)"
+                        + " VALUES (?, ?, 1, ?)"
+                        + " ON DUPLICATE KEY UPDATE trial_fail_count = trial_fail_count + 1,"
+                        + " trial_fail_last = VALUES(trial_fail_last)")) {
+            java.sql.Date today = java.sql.Date.valueOf(LocalDate.now());
+            stmt.setString(1, machineId);
+            stmt.setDate(2, today);
+            stmt.setDate(3, today);
             stmt.executeUpdate();
         } catch (Exception e) {
             log.error("Error recording trial failure", e);

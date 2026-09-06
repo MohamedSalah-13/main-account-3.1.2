@@ -32,6 +32,9 @@ import com.hamza.account.features.shift.ShiftCashHandoverService;
 import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.period.PeriodLockService;
 import com.hamza.account.service.*;
+import com.hamza.account.config.SharedSettings;
+import com.hamza.account.config.SharedSettingsStore;
+import com.hamza.account.features.backup.BackupPolicy;
 import com.hamza.account.service.version.DatabaseMigrationService;
 import com.hamza.account.service.version.MigrationResult;
 import com.hamza.account.trial.TrialManager;
@@ -132,6 +135,11 @@ public class DownLoadApplication extends Application {
         connectionToDatabase = new ConnectionToDatabase();
         MigrationResult migration = new DatabaseMigrationService(connectionToDatabase).updateDatabaseIfNeeded();
         DaoFactory daoFactory = getDaoFactory();
+        // After the pool and before anything reads a setting: until this call every key
+        // answers from this machine's own Preferences, which is what the theme and the
+        // fonts above have already done.
+        SharedSettings.install(new SharedSettingsStore());
+        BackupPolicy.claimIfUnowned();
         checkTrialStatus();
         registerServices(daoFactory);
         return new BootstrapResult(daoFactory, migration);

@@ -116,7 +116,24 @@ public final class AppPermissions {
     public static final PermissionKey SETTING_SHOW = key("setting.show");
     public static final PermissionKey SETTING_COMPANY_SHOW = key("setting.company.show");
     public static final PermissionKey COMPANY_UPDATE = key("company.update");
+    /**
+     * Opening the backup screen and taking a copy.
+     * <p>
+     * It was declared here and used by nothing: the sidebar button and the settings tab
+     * both hung off {@link #SETTING_SHOW}, so anybody who could open the settings could
+     * dump the whole database to a file and walk away with it. V39 grants it to every role
+     * that already held {@code setting.show}, so nobody loses the ability they had.
+     */
     public static final PermissionKey SETTING_BACKUP_SHOW = key("setting.backup.show");
+    /**
+     * Replacing the live database with a backup file.
+     * <p>
+     * Deliberately not the same key as taking one. A restore runs {@code DROP TABLE} over
+     * the shop's data and is the single most destructive thing the program can do; a
+     * backup is a read. V39 grants this one only to the roles that could already reach the
+     * screen, and it can be taken away without taking backups away with it.
+     */
+    public static final PermissionKey BACKUP_RESTORE = key("backup.restore");
     public static final PermissionKey SETTING_OTHER_SHOW = key("setting.other.show");
     public static final PermissionKey SETTING_ITEMS_SHOW = key("setting.items.show");
     public static final PermissionKey SETTING_SHOWS_SHOW = key("setting.shows.show");
@@ -232,7 +249,9 @@ public final class AppPermissions {
 
     private static PermissionRisk risk(String action) {
         return switch (action) {
-            case "DELETE", "BYPASS", "MANAGE", "POST" -> PermissionRisk.CRITICAL;
+            // RESTORE replaces every table in the database from a file. There is no
+            // action here that undoes more, so it cannot be the LOW the default gives it.
+            case "DELETE", "BYPASS", "MANAGE", "POST", "RESTORE" -> PermissionRisk.CRITICAL;
             case "UPDATE", "ADD", "CREATE", "MOVE" -> PermissionRisk.HIGH;
             case "INVOICE", "PRICE", "SALARY", "PROFIT" -> PermissionRisk.MEDIUM;
             default -> PermissionRisk.LOW;

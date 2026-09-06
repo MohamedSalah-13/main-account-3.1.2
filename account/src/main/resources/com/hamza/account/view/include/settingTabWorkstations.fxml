@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<VBox xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="com.hamza.account.controller.setting.WorkstationsController"
+      spacing="12">
+    <padding>
+        <Insets bottom="12.0" left="12.0" right="12.0" top="12.0"/>
+    </padding>
+    <Label text="%workstations.title" styleClass="app-title"/>
+    <Label text="%workstations.subtitle" wrapText="true"/>
+    <Label fx:id="lblOwner" wrapText="true"/>
+    <TableView fx:id="table" VBox.vgrow="ALWAYS"/>
+    <HBox spacing="8">
+        <Button fx:id="btnRefresh" text="%common.refresh" onAction="#refresh"/>
+        <Button fx:id="btnMakeOwner" text="%workstations.make.owner" onAction="#makeOwner"/>
+        <Button fx:id="btnForget" text="%workstations.forget" onAction="#forget"/>
+    </HBox>
+</VBox>
