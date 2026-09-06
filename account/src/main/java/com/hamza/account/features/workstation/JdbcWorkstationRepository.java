@@ -5,7 +5,6 @@ import com.hamza.controlsfx.database.DaoException;
 
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
-import java.sql.Timestamp;
 import java.sql.Types;
 import java.util.ArrayList;
 import java.util.List;
@@ -69,8 +68,8 @@ public final class JdbcWorkstationRepository extends AbstractDao<Object> {
                             resultSet.getString("app_version"),
                             resultSet.getString("database_version"),
                             resultSet.getString("user_name"),
-                            toLocalDateTime(resultSet.getTimestamp("first_seen")),
-                            toLocalDateTime(resultSet.getTimestamp("last_seen")),
+                            wallClock(resultSet, "first_seen"),
+                            wallClock(resultSet, "last_seen"),
                             false,
                             false));
                 }
@@ -88,7 +87,22 @@ public final class JdbcWorkstationRepository extends AbstractDao<Object> {
         });
     }
 
-    private static java.time.LocalDateTime toLocalDateTime(Timestamp timestamp) {
-        return timestamp == null ? null : timestamp.toLocalDateTime();
+    /**
+     * Reads a {@code DATETIME} as the wall clock it holds, with no time-zone conversion.
+     *
+     * <p>{@code getTimestamp} is what this used to call, and on this connection it is
+     * wrong in a way that showed on the screen: the JDBC URL carries
+     * {@code serverTimezone=UTC}, so the driver reads the stored value as a UTC instant
+     * and {@code toLocalDateTime()} then renders it in the JVM's zone. The value was
+     * written by MySQL's own {@code NOW()}, which is the server's local time - so a
+     * machine that reported in at 06:25 was listed as last seen at 09:25, three hours in
+     * the future, on the one column a person reads to decide whether a till is still
+     * alive.
+     *
+     * <p>{@code getObject(LocalDateTime.class)} hands back the literal value in the
+     * column, which is what a {@code DATETIME} is: a wall clock, not an instant.
+     */
+    private static java.time.LocalDateTime wallClock(ResultSet resultSet, String column) throws java.sql.SQLException {
+        return resultSet.getObject(column, java.time.LocalDateTime.class);
     }
 }
