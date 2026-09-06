@@ -5,6 +5,7 @@ import com.hamza.account.config.NamesTables;
 import com.hamza.account.model.domain.ItemsUnitsModel;
 import com.hamza.account.model.domain.UnitsModel;
 import com.hamza.account.features.items.UnitEntryRules;
+import com.hamza.account.features.items.UnitPriceRescale;
 import com.hamza.account.otherSetting.ButtonDeleteRow;
 import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.button.button_column.ButtonColumn;
@@ -137,7 +138,7 @@ public class TableUnitsSetting extends TableUnitsSettingProperty {
         // insert, silently pointed each editor at its neighbour, which reads as "editing
         // the buy price changes the factor".
         columnSetting.enableDoubleEditing(indexOf(quantity), event ->
-                editRow(event, (row, value) -> row.setQuantityForUnit(value > 0 ? value : row.getQuantityForUnit())), tableUnits);
+                editRow(event, this::changeFactor), tableUnits);
         columnSetting.enableDoubleEditing(indexOf(buyPrice), event ->
                 editRow(event, ItemsUnitsModel::setBuyPrice), tableUnits);
         columnSetting.enableDoubleEditing(indexOf(selPrice), event ->
@@ -185,6 +186,53 @@ public class TableUnitsSetting extends TableUnitsSettingProperty {
         }
         apply.accept(event.getRowValue(), value);
         tableUnits.refresh();
+    }
+
+    /**
+     * Applies a new factor to a row, offering to move the unit's own prices with it.
+     * <p>
+     * The prices are the point. A unit priced from the item follows the new factor by
+     * itself, but one priced by hand does not: "the carton sells for 100" is an absolute
+     * figure, so doubling what a carton holds and leaving the 100 alone sells twice the
+     * goods for the same money. The balance stays right the whole time - the line records
+     * the factor it used - which is what makes the loss quiet.
+     * <p>
+     * It is a question rather than an automatic correction, because both answers are
+     * real: a supplier who repacked a carton smaller has the same price for less, while a
+     * factor that was simply typed wrong wants its price moved. See
+     * {@link UnitPriceRescale}.
+     */
+    private void changeFactor(ItemsUnitsModel row, double newFactor) {
+        if (newFactor <= 0) {
+            return;
+        }
+        var rescale = UnitPriceRescale.of(row, newFactor);
+        row.setQuantityForUnit(newFactor);
+
+        if (!rescale.isNeeded()) {
+            return;
+        }
+        var lm = LanguageManager.getInstance();
+        boolean rescalePrices = AllAlerts.confirm_all(
+                lm.getString("item.units.factor.rescale.title"),
+                // The selling price only. The alert shows one line - a longer message is
+                // cut off after the first sentence, which is a limitation of the shared
+                // alert component rather than of this prompt - and the sell price is the
+                // figure the operator is actually deciding about. The buy price moves by
+                // the same ratio, which the table shows the moment they answer.
+                lm.getString("item.units.factor.rescale.confirm",
+                        format(rescale.oldFactor()), format(rescale.newFactor()),
+                        format(rescale.selPrice()), format(rescale.newSelPrice())));
+        if (rescalePrices) {
+            rescale.applyTo(row);
+        }
+    }
+
+    /** A figure as the operator wrote it - 12 rather than 12.0, 12.5 kept. */
+    private static String format(double value) {
+        return value == Math.floor(value) && !Double.isInfinite(value)
+                ? String.valueOf((long) value)
+                : String.valueOf(value);
     }
 
     private boolean isUnitTypeExists(String unitType) {

@@ -2,9 +2,12 @@ package com.hamza.account.controller.items;
 
 import com.codejava.commons.fx.validation.InputValidator;
 import com.hamza.account.features.items.UnitEntryRules;
+import com.hamza.account.features.items.UnitPriceSuggestion;
 import com.hamza.account.model.domain.ItemsModel;
 import com.hamza.account.model.domain.ItemsUnitsModel;
 import com.hamza.account.model.domain.UnitsModel;
+import com.hamza.controlsfx.language.LanguageManager;
+import com.hamza.controlsfx.others.DoubleSetting;
 import javafx.collections.ObservableList;
 import javafx.scene.control.Button;
 import javafx.scene.control.ComboBox;
@@ -15,6 +18,7 @@ import javafx.scene.input.KeyCode;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
+import java.util.stream.Stream;
 
 import static com.hamza.controlsfx.others.Utils.setTextFormatter;
 import static com.hamza.controlsfx.others.Utils.whenEnterPressed;
@@ -50,12 +54,15 @@ public class UnitsTabController {
     private final Function<String, UnitsModel> unitByName;
     /** Whether the code in a field is free, marking and reporting it if not. */
     private final Predicate<TextField> barcodeIsFree;
+    /** The item's own prices - what a unit's price is a multiple of when it has none. */
+    private final ItemForm itemForm;
 
     public UnitsTabController(TableView<ItemsUnitsModel> tableUnits, ComboBox<String> comboUnit,
                               TextField textQuantity, TextField textBarcode, TextField textBuyPrice,
                               TextField textSelPrice, TextField textSelPrice2, TextField textSelPrice3,
                               Button btnAdd, ObservableList<String> unitNames,
-                              Function<String, UnitsModel> unitByName, Predicate<TextField> barcodeIsFree) {
+                              Function<String, UnitsModel> unitByName, Predicate<TextField> barcodeIsFree,
+                              ItemForm itemForm) {
         this.tableUnits = tableUnits;
         this.comboUnit = comboUnit;
         this.textQuantity = textQuantity;
@@ -66,6 +73,7 @@ public class UnitsTabController {
         this.textSelPrice3 = textSelPrice3;
         this.unitByName = unitByName;
         this.barcodeIsFree = barcodeIsFree;
+        this.itemForm = itemForm;
 
         this.tableUnitsSetting = new TableUnitsSetting(unitByName, tableUnits);
         bindEntryFields(btnAdd);
@@ -73,6 +81,7 @@ public class UnitsTabController {
         // screen while this dialog is open reaches this combo too.
         comboUnit.setItems(unitNames);
         addListeners(btnAdd);
+        bindPriceHints();
     }
 
     private void bindEntryFields(Button btnAdd) {
@@ -95,6 +104,11 @@ public class UnitsTabController {
         tableUnitsSetting.textUnitSelPrice3Property().bindBidirectional(textSelPrice3.textProperty());
 
         setTextFormatter(textQuantity, textBuyPrice, textSelPrice, textSelPrice2, textSelPrice3);
+        // setTextFormatter seeds each field with 0.0, and a field holding text shows no
+        // prompt - so the four price fields opened reading "0.0" and the hint in them was
+        // invisible until the first unit was added and cleared them. Empty is also what
+        // they mean: no price of this unit's own.
+        clearEntryFields();
 
         // The order the tab is actually filled, ending on the button that adds the row -
         // rule ق-ل9. This tab had no Enter order at all while it lived in
@@ -104,6 +118,48 @@ public class UnitsTabController {
         // extra-barcodes tab, because a unit is not finished until it has a factor.
         whenEnterPressed(comboUnit, textQuantity, textBarcode, textBuyPrice, textSelPrice,
                 textSelPrice2, textSelPrice3, btnAdd);
+    }
+
+    /**
+     * Keeps the four price fields showing what this unit would cost and sell for at the
+     * factor currently typed - {@code itemPrice * factor}, as prompt text.
+     * <p>
+     * The operator asked the question this answers: they type "12" into the factor and
+     * want to know what a carton of twelve comes to, without doing it in their head or
+     * finding out at the till. It updates on the factor, on picking a unit (which fills
+     * the factor in), and on the item's own prices, since all three change the answer.
+     * <p>
+     * <b>Prompt text, never the value.</b> An empty field is what marks a unit as priced
+     * from the item, so it follows the item's price for ever after; writing the number in
+     * would freeze it at today's price and hand the operator a unit they have to maintain
+     * by hand. See {@link UnitPriceSuggestion}.
+     */
+    private void bindPriceHints() {
+        Stream.of(textQuantity.textProperty(), itemForm.buyPriceProperty(), itemForm.selPrice1Property(),
+                        itemForm.selPrice2Property(), itemForm.selPrice3Property())
+                .forEach(property -> property.addListener((observable, old, value) -> updatePriceHints()));
+        updatePriceHints();
+    }
+
+    private void updatePriceHints() {
+        double factor = DoubleSetting.parseDoubleOrDefault(textQuantity.getText());
+        showHint(textBuyPrice, itemForm.getBuyPrice(), factor);
+        showHint(textSelPrice, itemForm.getSelPrice1(), factor);
+        showHint(textSelPrice2, itemForm.getSelPrice2(), factor);
+        showHint(textSelPrice3, itemForm.getSelPrice3(), factor);
+    }
+
+    /**
+     * One field's prompt: the figure when there is one to give, and otherwise the standing
+     * "leave it blank" reminder - a field that had shown a number and then went silent
+     * would read as the price having become zero.
+     */
+    private void showHint(TextField field, String itemPrice, double factor) {
+        double suggestion = UnitPriceSuggestion.forFactor(DoubleSetting.parseDoubleOrDefault(itemPrice), factor);
+        var lm = LanguageManager.getInstance();
+        field.setPromptText(suggestion > 0
+                ? lm.getString("item.hint.unit.price.auto", UnitPriceSuggestion.plain(suggestion))
+                : lm.getString("item.hint.unit.price.blank"));
     }
 
     private void addListeners(Button btnAdd) {

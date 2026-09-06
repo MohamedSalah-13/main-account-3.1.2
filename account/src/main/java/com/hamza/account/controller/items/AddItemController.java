@@ -458,7 +458,7 @@ public class AddItemController implements AppSettingInterface {
     private void unitSetting() {
         unitsTab = new UnitsTabController(tableUnits, comboOtherTypes, textUnitQuantity, textUnitBarcode,
                 textUnitBuyPrice, textUnitSelPrice, textUnitSelPrice2, textUnitSelPrice3, btnAdd,
-                unitNames, this::getUnitsModelByName, this::verifyBarcodeIsFree);
+                unitNames, this::getUnitsModelByName, this::verifyBarcodeIsFree, itemForm);
     }
 
     /**
