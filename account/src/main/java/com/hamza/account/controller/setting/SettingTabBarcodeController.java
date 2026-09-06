@@ -1,6 +1,7 @@
 package com.hamza.account.controller.setting;
 
 import com.hamza.account.config.PropertiesName;
+import com.hamza.account.config.SharedSettingKeys;
 import com.hamza.account.controller.others.ServiceRegistry;
 import com.hamza.account.features.barcodeprint.BarcodeNameOverflow;
 import com.hamza.account.config.DefaultStock;
@@ -89,6 +90,26 @@ public class SettingTabBarcodeController implements Initializable {
         barcodeScaleSetting();
         barcodeLabelSetting();
         configureLabelPreview();
+        markSharedSettings();
+    }
+
+    /**
+     * The scale layout is the shop's, all ten of it: a label printed by the shop's scale is
+     * read at whichever till the customer walks up to, and what its digits mean is a
+     * property of the scale. The label-printing settings above are deliberately not marked -
+     * they describe the sticker roll and the printer on this desk.
+     */
+    private void markSharedSettings() {
+        SettingScope.shared(checkActivateBarcodeScale, SharedSettingKeys.BARCODE_SCALE_ACTIVE);
+        SettingScope.shared(checkHasCheckDigit, SharedSettingKeys.BARCODE_HAS_CHECK_DIGIT);
+        SettingScope.shared(checkValidateCheckDigit, SharedSettingKeys.BARCODE_VALIDATE_CHECK_DIGIT);
+        SettingScope.shared(textBarcodeStart, SharedSettingKeys.BARCODE_START);
+        SettingScope.shared(textCountScale, SharedSettingKeys.BARCODE_COUNT_SCALE);
+        SettingScope.shared(textCountBarcode, SharedSettingKeys.BARCODE_LENGTH);
+        SettingScope.shared(textCountItem, SharedSettingKeys.BARCODE_COUNT_ITEM);
+        SettingScope.shared(comboScaleValueType, SharedSettingKeys.BARCODE_VALUE_TYPE);
+        SettingScope.shared(textMinWeight, SharedSettingKeys.BARCODE_MIN_WEIGHT);
+        SettingScope.shared(textMaxWeight, SharedSettingKeys.BARCODE_MAX_WEIGHT);
     }
 
     /**

@@ -12,6 +12,7 @@ import com.hamza.account.controller.search.PartySuggestionField;
 import com.hamza.account.controller.setting.SettingTabLanguageController;
 import com.hamza.account.controller.users.ShiftCorrectionReasonPrompt;
 import com.hamza.account.document.DocumentType;
+import com.hamza.account.features.backup.BackupPolicy;
 import com.hamza.account.features.events.EmployeesChanged;
 import com.hamza.account.features.events.StocksChanged;
 import com.hamza.account.features.invoice.*;
@@ -790,7 +791,11 @@ public class BuyController2<T3 extends BaseNames, T4 extends BaseAccount>
     }
 
     private void handlePostSave() {
-        invoicePostSaveService.afterSave(getInvoiceBackupAfterSave())
+        // Both halves: what the shop asked for, and whether this machine is the one that
+        // should do it. A till whose database lives on another computer takes no backup
+        // after a sale - see BackupPolicy for what three cashiers doing it at once costs.
+        boolean backup = getInvoiceBackupAfterSave() && BackupPolicy.mayBackupAfterEachInvoice();
+        invoicePostSaveService.afterSave(backup)
                 .whenComplete((ignored, failure) -> {
                     if (failure != null) {
                         Platform.runLater(() -> logError(asException(failure)));

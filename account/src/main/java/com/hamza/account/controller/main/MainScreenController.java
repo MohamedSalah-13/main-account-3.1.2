@@ -11,8 +11,11 @@ import com.hamza.account.features.company.CompanyLogo;
 import com.hamza.account.features.company.CompanyService;
 import com.hamza.account.features.events.CompanyChanged;
 import com.hamza.account.features.events.LanguageChanged;
+import com.hamza.account.features.events.RemoteChangeRelay;
 import com.hamza.account.features.events.UserRenamed;
 import com.hamza.account.features.notification.NotificationBootstrap;
+import com.hamza.account.features.workstation.WorkstationHeartbeat;
+import com.hamza.account.service.version.SystemInfoService;
 import com.hamza.account.features.rbac.CurrentUser;
 import com.hamza.account.features.shortcuts.SidebarShortcut;
 import com.hamza.account.features.shortcuts.SidebarShortcutManager;
@@ -419,6 +422,12 @@ public class MainScreenController extends MainItems implements Initializable {
 
     private void setupNotificationBell() {
         notificationBellSlot.getChildren().setAll(NotificationBootstrap.start().createBell());
+        // Started here for the same reason the bell is: the row it writes names the user
+        // at this machine, and at bootstrap there is not one yet.
+        WorkstationHeartbeat.start(new SystemInfoService().getCurrentDatabaseVersion());
+        // The other half of the same idea: this machine's refresh events reach the other
+        // tills, and theirs reach this one.
+        RemoteChangeRelay.start(eventBus);
     }
 
     private void setupYouTube() {

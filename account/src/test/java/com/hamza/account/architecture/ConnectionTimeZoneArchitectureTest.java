@@ -35,7 +35,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * </ul>
  * The last of those is why this is pinned rather than left to review: the first two look like
  * cosmetic date bugs, and the third is money, and they all have the same one-word cause.
- * {@code V38__timestamp_timezone_correction.sql} repairs the rows the second one left behind,
+ * {@code V43__timestamp_timezone_correction.sql} repairs the rows the second one left behind,
  * so putting {@code serverTimezone=UTC} back would not merely reintroduce the bug - it would
  * make already-corrected rows wrong in the opposite direction.
  */

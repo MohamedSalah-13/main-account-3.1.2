@@ -174,7 +174,10 @@ public class SettingButtons {
         return new ButtonWithPerm() {
             @Override
             public PermissionKey getPermissionType() {
-                return AppPermissions.SETTING_SHOW;
+                // Not SETTING_SHOW: a backup is the whole database in one file, and
+                // setting.backup.show has existed for exactly this since the permission
+                // catalogue was written. Nothing had ever used it.
+                return AppPermissions.SETTING_BACKUP_SHOW;
             }
 
             @Override

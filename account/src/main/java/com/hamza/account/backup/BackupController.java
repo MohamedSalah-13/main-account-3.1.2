@@ -1,6 +1,7 @@
 package com.hamza.account.backup;
 
 import com.hamza.account.controller.main.LoadDataAndList;
+import com.hamza.account.features.backup.BackupRestoreService;
 import com.hamza.controlsfx.language.LanguageManager;
 import javafx.application.Platform;
 import javafx.concurrent.Task;
@@ -197,7 +198,10 @@ public class BackupController {
             Task<Void> task = new Task<>() {
                 @Override
                 protected Void call() throws Exception {
-                    restoreService.restoreFromFile(file, password);
+                    // Through the service, never straight at BackupService: the permission
+                    // and the "is another till connected" refusal live there, and a dialog
+                    // the user already clicked through is not either of them.
+                    new BackupRestoreService().restore(restoreService, file, password);
                     return null;
                 }
             };

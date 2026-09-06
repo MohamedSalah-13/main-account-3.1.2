@@ -1806,3 +1806,27 @@
     -fx-font-weight: bold;
     -fx-text-fill: -app-summary-value;
 }
+
+/* ---------- Settings that belong to the shop, not to this computer ---------- */
+
+/*
+ * A CheckBox also carries the globe icon SettingScope gives it; a TextField or a
+ * ComboBox has nowhere to put one, so the accent border is what marks those. Both
+ * carry the same tooltip, which is where the explanation actually lives.
+ */
+.shared-setting {
+    -fx-border-color: -app-primary;
+    -fx-border-width: 0 0 0 2;
+    -fx-border-radius: 2;
+}
+
+.check-box.shared-setting {
+    -fx-border-width: 0;
+    -fx-padding: 0 0 0 2;
+}
+
+.shared-setting > .icon-graphic,
+.shared-setting .icon-graphic {
+    -fx-icon-color: -app-primary;
+    -fx-opacity: 0.75;
+}

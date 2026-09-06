@@ -27,7 +27,8 @@ mvn -o -pl account -am test -Dtest=ScheduledBackupTest -Dsurefire.failIfNoSpecif
 
 **Coverage is real but uneven — know which half you are in.** JUnit 5 and Mockito are declared in the
 root pom and inherited by both modules; surefire needs no configuration. `mvn clean test` currently runs
-**1,320 tests across 148 test source files** — 98 in `controlsfx`, 1,222 in `account` — with 78 skipped (below). What is
+**1,296 tests across 159 test source files** with 79 skipped (below) — the figure `mvn clean test`
+reports, measured on 2026-09-06. What is
 genuinely covered:
 
 - **The declarative specs, pinned character for character** — `DocumentDaoStatementsTest`,
@@ -177,6 +178,13 @@ Two documents govern work here and are kept current — read them before large c
   which of the append-only journals may never be written twice. §8 lists what is deliberately still
   undecided and §10 what the system has no test for. **Read it before touching anything under
   `features/shift`, `UserShiftService` or the `V22`-`V33` tables.**
+- **[`docs/multi-device-plan.md`](docs/multi-device-plan.md)** — what changes when a second computer
+  points at the same MySQL: why the trial is now a row per machine, why an out-of-date build is
+  refused before Flyway is called at all, which settings became the shop's rather than the
+  computer's, and which machine takes the backups. §8 lists what has not been run on two machines
+  yet — which is all of it. **Read it before touching `TrialManager`, `DatabaseMigrationService`,
+  `PreferencesSetting`, anything under `features/backup` or `features/workstation`, or the
+  `V38`-`V42` tables.**
 - **[`docs/erp-roadmap.md`](docs/erp-roadmap.md)** — the governing roadmap (§0 carries a measured
   status update). `docs/spring-migration-plan.md` is superseded and kept for reference only.
 
@@ -238,7 +246,7 @@ three different bugs from one word, only the first of them visible:
   by that much. That is the one that mattered, and it looked like a date-formatting bug.
 
 `ConnectionTimeZoneArchitectureTest` pins every JDBC URL in both modules, and
-`V38__timestamp_timezone_correction.sql` repairs the rows the second case left behind — the seven
+`V43__timestamp_timezone_correction.sql` repairs the rows the second case left behind — the seven
 columns ever written with `setTimestamp`. So putting `serverTimezone=UTC` back would not merely
 reintroduce the bug; it would make already-corrected rows wrong the other way. The migration converts
 with `FROM_UNIXTIME(TO_SECONDS(v) - 62167219200)` rather than `CONVERT_TZ`: **`CONVERT_TZ` with named
@@ -1027,6 +1035,44 @@ Settings live in Java `Preferences` via `NotificationPreferences`; nothing is pe
 `NotificationCenterTest` covers the policy, routing and interval resolution without a JavaFX toolkit — the
 centre takes its UI executor and clock as constructor arguments for exactly that.
 
+### More than one computer
+
+Several tills against one MySQL. `docs/multi-device-plan.md` is the contract; the five things to know
+before touching any of it:
+
+**The trial is a row per machine, and used to be one row for the shop.** `trial_machine_state` (`V38`).
+A second computer reading another machine's id in `company.trial_machine` called `failAndExit`, which
+incremented the **shared** `trial_fail_count` — and `MAX_FAILS` is 1, so one launch of a second machine
+locked the first one out permanently, with no screen that could clear it. A new machine inherits the
+earliest installation date rather than starting a trial of its own, and a `license.dat` that names
+another machine is no longer treated as tampering: copying the program folder is how a second till gets
+installed. A bad signature still is.
+
+**An out-of-date build is refused before Flyway is called.**
+`DatabaseMigrationService.refuseADatabaseNewerThanThisBuild` compares the highest applied version
+against the highest this build carries. Without it, `validateOnMigrate(false)` plus a repeatable whose
+checksum differs **in either direction** means an old machine rewrites all 33 views and the triggers
+on every launch, silently, while the updated tills query columns that are no longer there.
+
+**`SharedSettingKeys` is the list of settings that are the shop's**, held in `app_setting` (`V40`);
+everything else stays in that computer's `Preferences`. `PreferencesSetting` is where the routing
+happens, so no call site in `PropertiesName` changed. The test for membership is not "would sharing be
+convenient" but "would two machines disagreeing be a *defect*" — the scale barcode's layout is one
+sticker read at every till; `price.check.stock` is the warehouse *one* wall display answers for.
+
+**One machine takes the backups** (`BackupPolicy`): the scheduled one belongs to the recorded owner,
+and "back up after every invoice" only runs where the database is. Four tills each running a full
+`mysqldump` after every sale is what that used to mean. **"Is anyone else connected?" is asked of
+`information_schema.processlist`**, never of a table we write — a till switched off mid-sale has no
+thread a second later, while a heartbeat row would keep saying otherwise. `workstation_session` (`V41`)
+answers the different question of which machines are *ours* and what each is running.
+
+**A refresh event crosses to the other machines through `data_change`** (`V42`) and
+`RemoteChangeRelay`. Only events another machine can rebuild exactly are relayed: `ItemsChanged` yes,
+`ItemSaved` no — it carries the item, and a listener handed a fabricated model is worse than one
+hearing nothing. `NameChanged` is two topics, one per `PartyKind`, for the reason the kind was added
+to the event in the first place.
+
 ## Configuration and secrets
 
 `config.xml` (database credentials, AES-encrypted) and `config.key` are **git-ignored** and resolved
@@ -1075,9 +1121,12 @@ Schema changes are **Flyway migrations**, in `account/src/main/resources/db/migr
 - `V1__baseline.sql` is the schema as shipped to clients in v4.1.3 — tables, indexes, procedures and the
   seed data (including the `admin` user, without which nobody can log in). It is the Flyway baseline: an
   existing client database is **stamped** with it, never executed, because it already is that schema. A
-  new database executes it and continues with `V2`, `V3`, … The current head is `V38`: `V38` repairs the timestamps stored shifted by the machine's UTC
-  offset (see **Database access** above), `V37` gives a user a kiosk-only flag and `V36` the
-  price-check permission. Before them, `V34` adds
+  new database executes it and continues with `V2`, `V3`, … The current head is `V43`: `V43`
+  repairs the timestamps stored shifted by the machine's UTC offset (see **Database access**
+  above). `V38`–`V42` are
+  the multi-device work — a trial row per machine, the two backup permissions, the shared `app_setting`
+  table, the machine registry and the cross-machine change feed (see `docs/multi-device-plan.md`).
+  Before them, `V36` and `V37` are the price-check kiosk, `V34` adds
   `items.group.move` and grants it to every role that could already edit an item, and `V35` gives the
   areas list its own `area.show` instead of the `items.show` it had been borrowing — each granting the
   new key to whoever already held the old one, so nobody loses an ability on upgrade. Before them, shift
@@ -1153,13 +1202,20 @@ longer the install path.
 ## Licensing
 
 `TrialManager` (in `account/trial`) enforces a 7-day trial bound to the Windows `MachineGuid`, with trial
-state mirrored between `%APPDATA%\HamzaAccount\trial.dat` and the `company` table, HMAC-signed, plus
+state mirrored between `%APPDATA%\HamzaAccount\trial.dat` and **`trial_machine_state`, a row per
+machine** (`V38`), HMAC-signed, plus
 per-record caps (10 items, 5 customers, 10 sales, 10 purchases) enforced inside the DAOs. A valid
 `license.dat` short-circuits all of it at the first line of the check. `README.md` documents the licence
 file format and the generation scripts in `scripts/`.
 
 Tampering calls `failAndExit`, and `MAX_FAILS` is 1 — a false positive permanently blocks the install, so
-be careful about adding failure paths here.
+be careful about adding failure paths here. **A failure is charged to the machine that caused it**; it
+used to be charged to the one `company` row, which is how a second computer starting once could end the
+first one's install for good. The `company.trial_*` columns are still there and nothing reads them for
+a decision: they were never created by a migration — `TrialManager` added them itself — and dropping
+them would take an install's own history with them. The identity comes from `config.MachineId`, which
+is the reader lifted out of this class unchanged so the backup owner and the machine registry answer to
+the same value the licence is bound to.
 
 ## Localization
 
