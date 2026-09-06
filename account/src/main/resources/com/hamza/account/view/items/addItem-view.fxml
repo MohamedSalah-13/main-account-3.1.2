@@ -153,13 +153,13 @@
                                                                 <TextField fx:id="textUnitBuyPrice" promptText="%item.hint.unit.price.blank" GridPane.columnIndex="1" GridPane.rowIndex="2" />
 
                                                                 <Label styleClass="form-label" text="%item.sel.price" GridPane.columnIndex="2" GridPane.rowIndex="2" />
-                                                                <TextField fx:id="textUnitSelPrice" prefWidth="80.0" GridPane.columnIndex="3" GridPane.rowIndex="2" />
+                                                                <TextField fx:id="textUnitSelPrice" GridPane.columnIndex="3" GridPane.rowIndex="2" />
 
                                                                 <Label styleClass="form-label" text="%item.sel.price2" GridPane.rowIndex="3" />
                                                                 <TextField fx:id="textUnitSelPrice2" GridPane.columnIndex="1" GridPane.rowIndex="3" />
 
                                                                 <Label styleClass="form-label" text="%item.sel.price3" GridPane.columnIndex="2" GridPane.rowIndex="3" />
-                                                                <TextField fx:id="textUnitSelPrice3" prefWidth="80.0" GridPane.columnIndex="3" GridPane.rowIndex="3" />
+                                                                <TextField fx:id="textUnitSelPrice3" GridPane.columnIndex="3" GridPane.rowIndex="3" />
                                                             </children>
                                              <rowConstraints>
                                                 <RowConstraints />
