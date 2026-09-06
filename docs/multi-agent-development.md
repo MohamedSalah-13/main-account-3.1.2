@@ -22,18 +22,26 @@
   فقط، ويرفض ملفات الإعداد والمفاتيح المعروفة صراحةً.
 - `scripts/agents/Invoke-MultiAgent.ps1`: ينشئ الفرع والـworktree، يشغّل دورة التطوير،
   يبني المشروع، يراجع التغييرات، ويمنح المنفّذ محاولة إصلاح إضافية افتراضيًا.
+- `scripts/agents/CodexCommand.ps1`: يحدّد أين هو `codex`. يُقرأ من PATH، وإلا من نسخة تطبيق
+  Codex المكتبي تحت `%LOCALAPPDATA%\OpenAI\Codexin\<بصمة البناء>\codex.exe` — وهي ليست على
+  PATH وتتغيّر بصمتها مع كل تحديث، لذلك يُبحث عن الأحدث ولا يُثبَّت مسار. تجاوزه بـ`-CodexPath`.
 - `scripts/agents/Get-MultiAgentRun.ps1`: يعرض نتائج التشغيل السابقة.
 - `scripts/agents/Remove-MultiAgentWorktree.ps1`: يزيل worktree نظيفًا فقط ويبقي الفرع.
 - `.agent-runs/`: سجل محلي متجاهل يحفظ prompt والـlogs والنتيجة والمراجعة.
 
 ## التشغيل
 
-نفّذ فحص الإعداد مرة واحدة. هذا يفحص صياغة PowerShell وJSON، ثم يجعل Codex يحمّل إعداد
-المشروع وتعريفات الوكلاء دون استدعاء نموذج. بناء Maven الكامل يتم داخل دورة التشغيل نفسها:
+نفّذ فحص الإعداد مرة واحدة. هذا يفحص صياغة PowerShell وJSON، ويعثر على `codex` ويشغّله على
+سياق المستودع دون استدعاء نموذج. **لا يثبت أن الوكلاء الستة سُجّلوا فعلًا** — السياق المعروض لا
+يذكرهم، ولا يظهر ذلك إلا في تشغيل حقيقي. بناء Maven الكامل يتم داخل دورة التشغيل نفسها:
 
 ```powershell
-pwsh ./scripts/agents/Test-MultiAgentSetup.ps1
+powershell -ExecutionPolicy Bypass -File ./scripts/agents/Test-MultiAgentSetup.ps1
 ```
+
+`pwsh` (PowerShell 7) يعمل أيضًا. السكربتات مكتوبة لتعمل على Windows PowerShell 5.1 الموجود مع
+النظام: `Invoke-Native` يخفض `$ErrorActionPreference` أثناء استدعاء برنامج خارجي، لأن 5.1 يحوّل
+كل سطر يكتبه Maven أو Codex على stderr إلى خطأ منهٍ حتى لو كان رمز الخروج صفرًا.
 
 اعرض ما سيفعله التشغيل دون إنشاء شيء:
 

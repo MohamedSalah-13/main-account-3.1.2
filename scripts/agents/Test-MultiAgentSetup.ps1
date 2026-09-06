@@ -1,8 +1,13 @@
 [CmdletBinding()]
-param()
+param(
+    [string] $CodexPath
+)
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
+
+. (Join-Path $PSScriptRoot "CodexCommand.ps1")
+$codex = Resolve-CodexCommand -Explicit $CodexPath
 
 $repositoryRoot = (& git -C $PSScriptRoot rev-parse --show-toplevel 2>$null | Select-Object -First 1).Trim()
 if (-not $repositoryRoot) {
@@ -63,21 +68,23 @@ foreach ($requiredSetting in @("[agents]", "enabled = true", "max_concurrent_thr
     }
 }
 
-& codex --version *> $null
+& $codex --version *> $null
 if ($LASTEXITCODE -ne 0) {
-    throw "Codex CLI is not runnable from this shell."
+    throw "Codex CLI is not runnable from this shell: $codex"
 }
 
-# This renders local session context without calling a model. It forces Codex to load the
-# project configuration and agent definitions, which catches errors that text checks cannot.
-& codex -C $repositoryRoot debug prompt-input "Multi-Agent configuration preflight" *> $null
+# This renders local session context without calling a model, so it proves the CLI runs and can
+# read this repository. It does NOT prove the custom agents were registered: the rendered prompt
+# never names them, so only a real run can show that.
+& $codex -C $repositoryRoot debug prompt-input "Multi-Agent configuration preflight" *> $null
 if ($LASTEXITCODE -ne 0) {
-    throw "Codex could not load the project configuration and custom agents."
+    throw "Codex could not load the repository context."
 }
 
-& (Join-Path $PSScriptRoot "Invoke-MultiAgent.ps1") -Task "setup smoke test" -DryRun | Out-Null
+& (Join-Path $PSScriptRoot "Invoke-MultiAgent.ps1") -Task "setup smoke test" -DryRun -CodexPath $codex | Out-Null
 if ($LASTEXITCODE -ne 0) {
     throw "The Multi-Agent runner dry-run failed."
 }
 
-Write-Host "Multi-Agent configuration preflight passed. Maven is exercised by the full runner."
+Write-Host "Multi-Agent configuration preflight passed using $codex."
+Write-Host "Maven, the custom agents and the review gate are exercised only by a full run."

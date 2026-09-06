@@ -24,11 +24,20 @@ param(
 
     [switch] $AllowOnlineMaven,
     [switch] $SkipReview,
-    [switch] $DryRun
+    [switch] $DryRun,
+
+    [string] $CodexPath
 )
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
+
+. (Join-Path $PSScriptRoot "CodexCommand.ps1")
+
+# The trap below is scope-wide, so it also runs for failures raised before the run log exists.
+# Without these it died on its own strict-mode error and swallowed the real message.
+$runState = $null
+$resultPath = $null
 
 function Invoke-Native {
     param(
@@ -41,6 +50,10 @@ function Invoke-Native {
     if ($WorkingDirectory) {
         Push-Location -LiteralPath $WorkingDirectory
     }
+    # Windows PowerShell 5.1 wraps a native command's stderr in ErrorRecords, so under a Stop
+    # preference the first Maven warning or Codex progress line aborts a run that exited zero.
+    # The assignment is function-scoped; callers keep their Stop preference.
+    $ErrorActionPreference = "Continue"
     try {
         if ($LogPath) {
             & $Command @Arguments 2>&1 | Tee-Object -FilePath $LogPath | Out-Host
@@ -185,15 +198,15 @@ function Invoke-CodexAgent {
     $lastMessagePath = Join-Path $LogDirectory "$Name-final.md"
     $arguments = @(
         "--ask-for-approval", "never",
-        "--ignore-user-config",
         "exec",
+        "--ignore-user-config",
         "--cd", $WorktreePath,
         "--sandbox", $Sandbox,
         "--config", "agents.max_concurrent_threads_per_session=$AgentLimit",
         "--output-last-message", $lastMessagePath,
         $Prompt
     )
-    return Invoke-Native -Command "codex" -Arguments $arguments -WorkingDirectory $WorktreePath -LogPath $logPath
+    return Invoke-Native -Command $script:CodexCommand -Arguments $arguments -WorkingDirectory $WorktreePath -LogPath $logPath
 }
 
 function Invoke-MavenGate {
@@ -262,8 +275,9 @@ function Assert-HeadUnchanged {
         [Parameter(Mandatory)] [string] $ExpectedCommit
     )
 
-    $currentCommitOutput = & git -C $WorktreePath rev-parse HEAD 2>$null | Select-Object -First 1
-    $currentCommit = if ($currentCommitOutput) { $currentCommitOutput.Trim() } else { $null }
+    # Read the exit code before narrowing the stream; see the base-branch note below.
+    $currentCommitOutput = @(& git -C $WorktreePath rev-parse HEAD 2>$null)
+    $currentCommit = if ($currentCommitOutput.Count -gt 0) { $currentCommitOutput[0].Trim() } else { $null }
     if ($LASTEXITCODE -ne 0 -or $currentCommit -ne $ExpectedCommit) {
         throw "An agent changed HEAD. Commits are forbidden during an automated run; inspect the worktree manually."
     }
@@ -288,8 +302,8 @@ paths. Do not edit files. Your final response must match the supplied JSON schem
 "@
     $arguments = @(
         "--ask-for-approval", "never",
-        "--ignore-user-config",
         "exec",
+        "--ignore-user-config",
         "--cd", $WorktreePath,
         "--sandbox", "read-only",
         "review",
@@ -298,7 +312,7 @@ paths. Do not edit files. Your final response must match the supplied JSON schem
         "--output-last-message", $reviewPath,
         $prompt
     )
-    $exitCode = Invoke-Native -Command "codex" -Arguments $arguments -WorkingDirectory $WorktreePath -LogPath $logPath
+    $exitCode = Invoke-Native -Command $script:CodexCommand -Arguments $arguments -WorkingDirectory $WorktreePath -LogPath $logPath
     if ($exitCode -ne 0 -or -not (Test-Path -LiteralPath $reviewPath -PathType Leaf)) {
         return [pscustomobject]@{ ExitCode = $exitCode; Verdict = "error"; Path = $reviewPath; Summary = "Review did not produce a result." }
     }
@@ -326,17 +340,17 @@ if (-not $DatabaseAcceptance -and ($DatabaseConfigPath -or $DatabaseConfigKeyPat
 }
 
 $repositoryRoot = Get-RepositoryRoot
-$codexCommand = Get-Command codex -ErrorAction SilentlyContinue
+$script:CodexCommand = Resolve-CodexCommand -Explicit $CodexPath
 $mavenCommand = Get-Command mvn -ErrorAction SilentlyContinue
-if (-not $codexCommand) {
-    throw "Codex CLI is not available on PATH."
-}
 if (-not $mavenCommand) {
     throw "Maven is not available on PATH."
 }
 
-$baseCommitOutput = & git -C $repositoryRoot rev-parse --verify "$BaseBranch^{commit}" 2>$null | Select-Object -First 1
-$baseCommit = if ($baseCommitOutput) { $baseCommitOutput.Trim() } else { $null }
+# Capture the whole stream before reading $LASTEXITCODE. `Select-Object -First` stops the
+# pipeline, which kills git and leaves the exit code at -1 on a perfectly successful command -
+# this rejected every existing branch, so no run could start at all.
+$baseCommitOutput = @(& git -C $repositoryRoot rev-parse --verify "$BaseBranch^{commit}" 2>$null)
+$baseCommit = if ($baseCommitOutput.Count -gt 0) { $baseCommitOutput[0].Trim() } else { $null }
 if ($LASTEXITCODE -ne 0 -or -not $baseCommit) {
     throw "Base branch or revision does not exist: $BaseBranch"
 }
@@ -374,6 +388,7 @@ if ($DryRun) {
         Worktree = $worktreePath
         Logs = $logDirectory
         MaxAgents = $MaxAgents
+        Codex = $script:CodexCommand
         DatabaseAcceptance = [bool] $DatabaseAcceptance
         AllowOnlineMaven = [bool] $AllowOnlineMaven
     }
@@ -418,11 +433,13 @@ $runState = [ordered]@{
 $runState | ConvertTo-Json -Depth 6 | Set-Content -LiteralPath $resultPath -Encoding utf8
 
 trap {
-    $runState["status"] = "failed"
-    $runState["passed"] = $false
-    $runState["error"] = $_.Exception.Message
-    $runState["finishedAt"] = (Get-Date).ToString("o")
-    $runState | ConvertTo-Json -Depth 6 | Set-Content -LiteralPath $resultPath -Encoding utf8
+    if ($runState -and $resultPath) {
+        $runState["status"] = "failed"
+        $runState["passed"] = $false
+        $runState["error"] = $_.Exception.Message
+        $runState["finishedAt"] = (Get-Date).ToString("o")
+        $runState | ConvertTo-Json -Depth 6 | Set-Content -LiteralPath $resultPath -Encoding utf8
+    }
     [Console]::Error.WriteLine("Multi-Agent run failed: $($_.Exception.Message)")
     exit 1
 }
