@@ -72,7 +72,12 @@ class ConnectionTimeZoneArchitectureTest {
         var offenders = new TreeSet<String>();
         for (Path file : javaFiles()) {
             if (file.endsWith("ConnectionTimeZoneArchitectureTest.java")) continue;
-            if (read(file).contains("serverTimezone")) offenders.add(file.toString());
+            // Comments are stripped on purpose: JdbcWorkstationRepository explains this
+            // very bug in its javadoc, and a rule that bans naming the mistake would
+            // delete the record of why the rule exists.
+            if (SourceTree.withoutComments(read(file)).contains("serverTimezone")) {
+                offenders.add(file.toString());
+            }
         }
         assertTrue(offenders.isEmpty(),
                 "serverTimezone=UTC is a false claim about a server that keeps local time, and it "
@@ -85,7 +90,7 @@ class ConnectionTimeZoneArchitectureTest {
         var missing = new TreeSet<String>();
         for (Path file : javaFiles()) {
             if (file.endsWith("ConnectionTimeZoneArchitectureTest.java")) continue;
-            String source = read(file);
+            String source = SourceTree.withoutComments(read(file));
             if (source.contains("jdbc:mysql://") && !source.contains("connectionTimeZone=LOCAL")) {
                 missing.add(file.toString());
             }

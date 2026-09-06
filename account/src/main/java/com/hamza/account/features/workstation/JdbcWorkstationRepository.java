@@ -90,17 +90,20 @@ public final class JdbcWorkstationRepository extends AbstractDao<Object> {
     /**
      * Reads a {@code DATETIME} as the wall clock it holds, with no time-zone conversion.
      *
-     * <p>{@code getTimestamp} is what this used to call, and on this connection it is
-     * wrong in a way that showed on the screen: the JDBC URL carries
-     * {@code serverTimezone=UTC}, so the driver reads the stored value as a UTC instant
-     * and {@code toLocalDateTime()} then renders it in the JVM's zone. The value was
-     * written by MySQL's own {@code NOW()}, which is the server's local time - so a
-     * machine that reported in at 06:25 was listed as last seen at 09:25, three hours in
-     * the future, on the one column a person reads to decide whether a till is still
-     * alive.
+     * <p>{@code getTimestamp} is what this used to call, and it was wrong in a way that
+     * showed on the screen: the JDBC URL claimed {@code serverTimezone=UTC}, so the driver
+     * read the stored value as a UTC instant and {@code toLocalDateTime()} rendered it in
+     * the JVM's zone. The value is written by MySQL's own {@code NOW()}, which is the
+     * server's local time - so a machine that reported in at 06:25 was listed as last seen
+     * at 09:25, three hours in the future, on the one column a person reads to decide
+     * whether a till is still alive.
      *
-     * <p>{@code getObject(LocalDateTime.class)} hands back the literal value in the
-     * column, which is what a {@code DATETIME} is: a wall clock, not an instant.
+     * <p>That URL now says {@code connectionTimeZone=LOCAL} and the driver converts
+     * nothing, so {@code getTimestamp} would answer correctly here too - this column was
+     * the first of about twenty found to have the same fault, and the URL is where it was
+     * finally fixed. {@code getObject(LocalDateTime.class)} stays because it is the idiom
+     * that does not depend on the URL being right: it hands back the literal value in the
+     * column, which is what a {@code DATETIME} is - a wall clock, not an instant.
      */
     private static java.time.LocalDateTime wallClock(ResultSet resultSet, String column) throws java.sql.SQLException {
         return resultSet.getObject(column, java.time.LocalDateTime.class);
