@@ -26,7 +26,13 @@ param(
     [switch] $SkipReview,
     [switch] $DryRun,
 
-    [string] $CodexPath,
+    [ValidateSet("codex", "claude")]
+    [string] $Agent = "codex",
+
+    [string] $AgentPath,
+
+    [ValidateSet("plan", "acceptEdits", "bypassPermissions")]
+    [string] $ClaudePermissionMode = "acceptEdits",
 
     [string] $Model,
 
@@ -37,7 +43,7 @@ param(
 Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
 
-. (Join-Path $PSScriptRoot "CodexCommand.ps1")
+. (Join-Path $PSScriptRoot "AgentCommand.ps1")
 
 # The trap below is scope-wide, so it also runs for failures raised before the run log exists.
 # Without these it died on its own strict-mode error and swallowed the real message.
@@ -211,20 +217,19 @@ function Get-TaskSlug {
     return $slug
 }
 
-function Invoke-CodexAgent {
+function Invoke-CodexSession {
     param(
         [Parameter(Mandatory)] [string] $Prompt,
         [Parameter(Mandatory)] [string] $WorktreePath,
-        [Parameter(Mandatory)] [string] $LogDirectory,
-        [Parameter(Mandatory)] [string] $Name,
+        [Parameter(Mandatory)] [string] $LogPath,
+        [Parameter(Mandatory)] [string] $LastMessagePath,
         [Parameter(Mandatory)] [int] $AgentLimit,
         [string[]] $ConfigOverrides = @(),
+        [string] $OutputSchemaPath,
         [ValidateSet("read-only", "workspace-write")]
         [string] $Sandbox = "read-only"
     )
 
-    $logPath = Join-Path $LogDirectory "$Name.log"
-    $lastMessagePath = Join-Path $LogDirectory "$Name-final.md"
     $arguments = @(
         "--ask-for-approval", "never",
         "exec",
@@ -232,11 +237,91 @@ function Invoke-CodexAgent {
         "--cd", $WorktreePath,
         "--sandbox", $Sandbox,
         "--config", "agents.max_concurrent_threads_per_session=$AgentLimit"
-    ) + $ConfigOverrides + @(
-        "--output-last-message", $lastMessagePath,
-        $Prompt
+    ) + $ConfigOverrides
+    if ($OutputSchemaPath) {
+        $arguments += @("--output-schema", $OutputSchemaPath)
+    }
+    $arguments += @("--output-last-message", $LastMessagePath, $Prompt)
+
+    return Invoke-Native -Command $script:AgentCommand -Arguments $arguments -WorkingDirectory $WorktreePath -LogPath $LogPath
+}
+
+function Invoke-ClaudeSession {
+    param(
+        [Parameter(Mandatory)] [string] $Prompt,
+        [Parameter(Mandatory)] [string] $WorktreePath,
+        [Parameter(Mandatory)] [string] $LogPath,
+        [Parameter(Mandatory)] [string] $LastMessagePath,
+        [ValidateSet("read-only", "workspace-write")]
+        [string] $Sandbox = "read-only"
     )
-    return Invoke-Native -Command $script:CodexCommand -Arguments $arguments -WorkingDirectory $WorktreePath -LogPath $logPath
+
+    # Claude Code has no sandbox flag; the equivalent of read-only is plan mode, which cannot
+    # edit files. Write sessions use the mode the operator chose - see -ClaudePermissionMode.
+    $permissionMode = if ($Sandbox -eq "read-only") { "plan" } else { $script:ClaudeWriteMode }
+    $arguments = @("-p", "--output-format", "text", "--permission-mode", $permissionMode)
+    if ($script:AgentModel) {
+        $arguments += @("--model", $script:AgentModel)
+    }
+    if ($script:ClaudeEffort) {
+        $arguments += @("--effort", $script:ClaudeEffort)
+    }
+    $arguments += $Prompt
+
+    Push-Location -LiteralPath $WorktreePath
+    # See Invoke-Native: 5.1 turns a native command's stderr into terminating errors.
+    $ErrorActionPreference = "Continue"
+    try {
+        $output = & $script:AgentCommand @arguments 2>&1
+        $exitCode = $LASTEXITCODE
+    } finally {
+        Pop-Location
+    }
+
+    $text = (@($output) | ForEach-Object { [string] $_ }) -join [Environment]::NewLine
+    $text | Set-Content -LiteralPath $LogPath -Encoding utf8
+    # Claude prints its answer instead of writing it to a file, so the transcript is the answer.
+    # Downstream code reads the same two files whichever agent produced them.
+    $text | Set-Content -LiteralPath $LastMessagePath -Encoding utf8
+    Write-Host $text
+    return $exitCode
+}
+
+function Invoke-AgentSession {
+    param(
+        [Parameter(Mandatory)] [string] $Prompt,
+        [Parameter(Mandatory)] [string] $WorktreePath,
+        [Parameter(Mandatory)] [string] $LogDirectory,
+        [Parameter(Mandatory)] [string] $Name,
+        [Parameter(Mandatory)] [int] $AgentLimit,
+        [string[]] $ConfigOverrides = @(),
+        [string] $OutputSchemaPath,
+        [ValidateSet("read-only", "workspace-write")]
+        [string] $Sandbox = "read-only"
+    )
+
+    $logPath = Join-Path $LogDirectory "$Name.log"
+    $lastMessagePath = Join-Path $LogDirectory "$Name-final.md"
+
+    if ($script:AgentKind -eq "claude") {
+        return Invoke-ClaudeSession -Prompt $Prompt -WorktreePath $WorktreePath -LogPath $logPath `
+            -LastMessagePath $lastMessagePath -Sandbox $Sandbox
+    }
+    return Invoke-CodexSession -Prompt $Prompt -WorktreePath $WorktreePath -LogPath $logPath `
+        -LastMessagePath $lastMessagePath -AgentLimit $AgentLimit -ConfigOverrides $ConfigOverrides `
+        -OutputSchemaPath $OutputSchemaPath -Sandbox $Sandbox
+}
+
+function Get-EmbeddedJson {
+    param([Parameter(Mandatory)] [AllowEmptyString()] [string] $Text)
+
+    # An agent that cannot be held to a schema answers in prose around its JSON, or fences it.
+    $start = $Text.IndexOf("{")
+    $end = $Text.LastIndexOf("}")
+    if ($start -lt 0 -or $end -le $start) {
+        return $null
+    }
+    return $Text.Substring($start, $end - $start + 1)
 }
 
 function Invoke-MavenGate {
@@ -325,26 +410,45 @@ function Invoke-ReviewGate {
     $reviewPath = Join-Path $LogDirectory "$Name.json"
     $logPath = Join-Path $LogDirectory "$Name.log"
     $prompt = @"
-Review every uncommitted change in this worktree as an independent project owner. Read AGENTS.md,
-CLAUDE.md, and all applicable plans. Focus on correctness, regressions, authorization, transactions,
-SQL/migrations, JavaFX behavior, Arabic/English localization, and missing meaningful tests. Return
-verdict=fail when any actionable P0-P2 finding remains; P3-only findings may pass. Use repository-relative
-paths. Do not edit files. Your final response must match the supplied JSON schema.
+Review every uncommitted change in this worktree as an independent project owner. Read
+docs/agent-worktree-rules.md, AGENTS.md, CLAUDE.md, and all applicable plans. Focus on correctness,
+regressions, authorization, transactions, SQL/migrations, JavaFX behavior, Arabic/English
+localization, and missing meaningful tests. Return verdict=fail when any actionable P0-P2 finding
+remains; P3-only findings may pass. Use repository-relative paths. Do not edit files.
+
+Answer with one JSON object and nothing else, matching this schema exactly:
+$(Get-Content -Raw -LiteralPath $SchemaPath)
 "@
-    $arguments = @(
-        "--ask-for-approval", "never",
-        "exec",
-        "--ignore-user-config",
-        "--cd", $WorktreePath,
-        "--sandbox", "read-only",
-        "review",
-        "--uncommitted"
-    ) + $ConfigOverrides + @(
-        "--output-schema", $SchemaPath,
-        "--output-last-message", $reviewPath,
-        $prompt
-    )
-    $exitCode = Invoke-Native -Command $script:CodexCommand -Arguments $arguments -WorkingDirectory $WorktreePath -LogPath $logPath
+
+    if ($script:AgentKind -eq "claude") {
+        # Claude cannot be held to a schema by the CLI, so the schema goes in the prompt and the
+        # JSON is extracted from the answer. The verdict contract below is the same either way.
+        $exitCode = Invoke-ClaudeSession -Prompt $prompt -WorktreePath $WorktreePath -LogPath $logPath `
+            -LastMessagePath (Join-Path $LogDirectory "$Name-final.md") -Sandbox "read-only"
+        $answer = if (Test-Path -LiteralPath $logPath -PathType Leaf) { Get-Content -Raw -LiteralPath $logPath } else { "" }
+        $json = Get-EmbeddedJson -Text $answer
+        if ($json) {
+            $json | Set-Content -LiteralPath $reviewPath -Encoding utf8
+        }
+    } else {
+        # Codex enforces the schema itself, which is stronger than asking for it, so it keeps
+        # `exec review --uncommitted --output-schema`.
+        $arguments = @(
+            "--ask-for-approval", "never",
+            "exec",
+            "--ignore-user-config",
+            "--cd", $WorktreePath,
+            "--sandbox", "read-only",
+            "review",
+            "--uncommitted"
+        ) + $ConfigOverrides + @(
+            "--output-schema", $SchemaPath,
+            "--output-last-message", $reviewPath,
+            $prompt
+        )
+        $exitCode = Invoke-Native -Command $script:AgentCommand -Arguments $arguments -WorkingDirectory $WorktreePath -LogPath $logPath
+    }
+
     if ($exitCode -ne 0 -or -not (Test-Path -LiteralPath $reviewPath -PathType Leaf)) {
         return [pscustomobject]@{ ExitCode = $exitCode; Verdict = "error"; Path = $reviewPath; Summary = "Review did not produce a result." }
     }
@@ -372,24 +476,39 @@ if (-not $DatabaseAcceptance -and ($DatabaseConfigPath -or $DatabaseConfigKeyPat
 }
 
 $repositoryRoot = Get-RepositoryRoot
-$script:CodexCommand = Resolve-CodexCommand -Explicit $CodexPath
+$script:AgentKind = $Agent
+$script:AgentCommand = Resolve-AgentCommand -Agent $Agent -Explicit $AgentPath
+$script:ClaudeWriteMode = $ClaudePermissionMode
 
-# `--ignore-user-config` keeps a run reproducible, but it also discards the model and the
-# reasoning effort chosen in ~/.codex/config.toml - the first real run silently fell back to a
-# default with reasoning effort "none". So read that choice here and pass it back explicitly:
-# the run stays independent of the rest of the user config, and what it used is recorded.
-$effectiveModel = if ($Model) { $Model } else { Get-CodexUserSetting -Key "model" }
-$effectiveEffort = if ($ReasoningEffort) { $ReasoningEffort } else { Get-CodexUserSetting -Key "model_reasoning_effort" }
 $configOverrides = @()
-if ($effectiveModel) {
-    $configOverrides += @("--config", "model=$effectiveModel")
+if ($Agent -eq "codex") {
+    # `--ignore-user-config` keeps a run reproducible, but it also discards the model and the
+    # reasoning effort chosen in ~/.codex/config.toml - the first real run silently fell back to a
+    # default with reasoning effort "none". So read that choice here and pass it back explicitly:
+    # the run stays independent of the rest of the user config, and what it used is recorded.
+    $effectiveModel = if ($Model) { $Model } else { Get-CodexUserSetting -Key "model" }
+    $effectiveEffort = if ($ReasoningEffort) { $ReasoningEffort } else { Get-CodexUserSetting -Key "model_reasoning_effort" }
+    if ($effectiveModel) {
+        $configOverrides += @("--config", "model=$effectiveModel")
+    }
+    if ($effectiveEffort) {
+        $configOverrides += @("--config", "model_reasoning_effort=$effectiveEffort")
+    }
+    if (-not $effectiveModel) {
+        Write-Warning "No model resolved from -Model or ~/.codex/config.toml; Codex will pick its own default."
+    }
+} else {
+    # A model id is agent-specific, so nothing is inherited across agents: unless the operator
+    # names one, Claude runs on whatever it is configured to use.
+    $effectiveModel = $Model
+    $effectiveEffort = $ReasoningEffort
+    if ($effectiveEffort -and $effectiveEffort -notin @("low", "medium", "high", "xhigh", "max")) {
+        Write-Warning "Claude does not accept effort '$effectiveEffort'; running without an effort override."
+        $effectiveEffort = $null
+    }
 }
-if ($effectiveEffort) {
-    $configOverrides += @("--config", "model_reasoning_effort=$effectiveEffort")
-}
-if (-not $effectiveModel) {
-    Write-Warning "No model resolved from -Model or ~/.codex/config.toml; Codex will pick its own default."
-}
+$script:AgentModel = $effectiveModel
+$script:ClaudeEffort = if ($Agent -eq "claude") { $effectiveEffort } else { $null }
 
 $mavenCommand = Get-Command mvn -ErrorAction SilentlyContinue
 if (-not $mavenCommand) {
@@ -409,10 +528,11 @@ $timestamp = Get-Date -Format "yyyyMMdd-HHmmss"
 $nonce = [guid]::NewGuid().ToString("N").Substring(0, 6)
 $slug = Get-TaskSlug -Value $Task
 $runId = "$timestamp-$nonce-$slug"
-$branchName = "codex/agent-$slug-$timestamp-$nonce"
+# Neither the branch nor the worktree names a tool: which agent ran is recorded in result.json.
+$branchName = "agents/$slug-$timestamp-$nonce"
 $repositoryParent = Split-Path -Parent $repositoryRoot
 $repositoryName = Split-Path -Leaf $repositoryRoot
-$worktreeHostRoot = Join-Path $repositoryParent ".codex-worktrees"
+$worktreeHostRoot = Join-Path $repositoryParent ".agent-worktrees"
 $worktreeRoot = Join-Path $worktreeHostRoot $repositoryName
 $worktreePath = Join-Path $worktreeRoot $runId
 $runRoot = Join-Path $repositoryRoot ".agent-runs"
@@ -438,7 +558,8 @@ if ($DryRun) {
         Worktree = $worktreePath
         Logs = $logDirectory
         MaxAgents = $MaxAgents
-        Codex = $script:CodexCommand
+        Agent = $Agent
+        AgentCommand = $script:AgentCommand
         Model = $effectiveModel
         ReasoningEffort = $effectiveEffort
         DatabaseAcceptance = [bool] $DatabaseAcceptance
@@ -475,6 +596,8 @@ $runState = [ordered]@{
     reviewVerdict = "not-run"
     reviewSummary = "The run has not reached the independent review gate."
     completedPass = $null
+    agent = $Agent
+    agentCommand = $script:AgentCommand
     model = $effectiveModel
     reasoningEffort = $effectiveEffort
     databaseAcceptance = [bool] $DatabaseAcceptance
@@ -527,21 +650,52 @@ $mavenInstruction = if ($AllowOnlineMaven) {
     "Run Maven offline. If the local dependency cache is incomplete, report that limitation instead of changing project dependencies."
 }
 
+# The six roles in .codex/agents are a Codex feature. Every other agent gets the same division of
+# labour described in prose, so the workflow does not depend on one tool's delegation mechanism.
+$discoveryDelegation = if ($Agent -eq "codex") {
+    @"
+Delegate repository mapping to project_architect and test selection to test_engineer so they can
+work in parallel. If database artifacts may be affected, also delegate risk analysis to
+database_reviewer. If JavaFX user-visible text or layout may change, delegate localization analysis
+to localization_reviewer. Wait for every delegated role.
+"@
+} else {
+    @"
+Cover four angles before you answer: how the affected code is structured and what its invariants
+are, which existing tests are the relevant ones, what risk the change carries for the database
+(migrations, views, transactions), and what it obliges in Arabic/English localization. Use
+subagents for these if you have them.
+"@
+}
+$deliveryDelegation = if ($Agent -eq "codex") {
+    @"
+2. Delegate the bounded source and test edits to implementer and wait until it exits completely.
+3. Only after implementer finishes, delegate verification to test_engineer. Never overlap
+   implementation and test execution.
+"@
+} else {
+    @"
+2. Make the bounded source and test edits first, and finish them.
+3. Only then run the targeted verification. Never interleave editing and test execution.
+"@
+}
+
 $discoveryPrompt = @"
 You are the read-only discovery coordinator for this task:
 
 $Task
 
-Read AGENTS.md and CLAUDE.md completely. Delegate repository mapping to project_architect and test
-selection to test_engineer so they can work in parallel. If database artifacts may be affected,
-also delegate risk analysis to database_reviewer. If JavaFX user-visible text or layout may change,
-delegate localization analysis to localization_reviewer. Wait for every delegated role. Do not edit
-files, run Maven, or execute commands that write generated output. Produce one concrete implementation
-brief containing affected symbols, invariants, ordered implementation steps, targeted clean tests,
-database acceptance needs, and localization obligations.
+Read docs/agent-worktree-rules.md first and obey it; it outranks this prompt. Then read AGENTS.md
+and CLAUDE.md completely.
+
+$discoveryDelegation
+
+Do not edit files, run Maven, or execute commands that write generated output. Produce one concrete
+implementation brief containing affected symbols, invariants, ordered implementation steps,
+targeted clean tests, database acceptance needs, and localization obligations.
 "@
 $discoveryPrompt | Set-Content -LiteralPath (Join-Path $logDirectory "discovery-prompt.md") -Encoding utf8
-$discoveryExit = Invoke-CodexAgent -Prompt $discoveryPrompt -WorktreePath $worktreePath `
+$discoveryExit = Invoke-AgentSession -Prompt $discoveryPrompt -WorktreePath $worktreePath `
     -LogDirectory $logDirectory -Name "discovery" -AgentLimit $MaxAgents -Sandbox "read-only" `
     -ConfigOverrides $configOverrides
 $runState["discoveryExitCode"] = $discoveryExit
@@ -564,10 +718,11 @@ Read-only discovery brief:
 $discoveryBrief
 
 Required sequential workflow:
-1. Read AGENTS.md and CLAUDE.md completely and follow every applicable linked plan.
-2. Delegate the bounded source and test edits to implementer and wait until it exits completely.
-3. Only after implementer finishes, delegate verification to test_engineer. Never overlap implementation and test execution.
-4. If JavaFX user-visible text or layout changes, implementer must use the javafx-localization-review skill.
+1. Read docs/agent-worktree-rules.md and obey it; it outranks this prompt. Then read AGENTS.md and
+   CLAUDE.md completely and follow every applicable linked plan.
+$deliveryDelegation
+4. If JavaFX user-visible text or layout changes, use the repository skill at
+   .agents/skills/javafx-localization-review/ in the same change.
 5. Fix failures caused by the change and rerun the targeted clean tests.
 6. Finish with changed files, commands and results, and real limitations. The outer runner owns the full
    Maven gate and final independent code review.
@@ -578,7 +733,7 @@ $mavenInstruction
 "@
 $deliveryPrompt | Set-Content -LiteralPath (Join-Path $logDirectory "delivery-prompt.md") -Encoding utf8
 
-$agentExit = Invoke-CodexAgent -Prompt $deliveryPrompt -WorktreePath $worktreePath `
+$agentExit = Invoke-AgentSession -Prompt $deliveryPrompt -WorktreePath $worktreePath `
     -LogDirectory $logDirectory -Name "delivery-0" -AgentLimit $MaxAgents -Sandbox "workspace-write" `
     -ConfigOverrides $configOverrides
 
@@ -630,9 +785,9 @@ for ($pass = 0; $pass -le $MaxFixPasses; $pass++) {
 
     $repairPrompt = @"
 Continue the assigned task in this same worktree. The independent gates did not pass.
-Use implementer for the smallest correct fixes, wait for it to exit, and only then use test_engineer
-for verification. Never overlap writing and test execution. Do not commit,
-merge, rebase, push, or touch another worktree.
+Make the smallest correct fixes, finish them, and only then run verification. Never overlap writing
+and test execution. Do not commit, merge, rebase, push, or touch another worktree;
+docs/agent-worktree-rules.md still outranks this prompt.
 
 Maven exit code: $testExit
 Maven tail:
@@ -644,7 +799,7 @@ $reviewFeedback
 Resolve failures caused by this branch and all actionable P0-P2 findings, then run targeted clean tests.
 "@
     $repairPrompt | Set-Content -LiteralPath (Join-Path $logDirectory "repair-prompt-$($pass + 1).md") -Encoding utf8
-    $agentExit = Invoke-CodexAgent -Prompt $repairPrompt -WorktreePath $worktreePath `
+    $agentExit = Invoke-AgentSession -Prompt $repairPrompt -WorktreePath $worktreePath `
         -LogDirectory $logDirectory -Name "delivery-$($pass + 1)" -AgentLimit $MaxAgents `
         -Sandbox "workspace-write" -ConfigOverrides $configOverrides
 }

@@ -185,6 +185,11 @@ Two documents govern work here and are kept current — read them before large c
   yet — which is all of it. **Read it before touching `TrialManager`, `DatabaseMigrationService`,
   `PreferencesSetting`, anything under `features/backup` or `features/workstation`, or the
   `V38`-`V42` tables.**
+- **[`docs/agent-worktree-rules.md`](docs/agent-worktree-rules.md)** - the contract for an AI agent
+  working in a worktree, whatever tool it is: never commit, merge or push; always `clean`; never
+  run the database acceptance classes without a disposable schema; never create a `config.xml`.
+  It is tool-neutral on purpose - `docs/multi-agent-development.md` is the runner that enforces
+  it, but a person opening any agent by hand is bound by the same rules.
 - **[`docs/erp-roadmap.md`](docs/erp-roadmap.md)** — the governing roadmap (§0 carries a measured
   status update). `docs/spring-migration-plan.md` is superseded and kept for reference only.
 

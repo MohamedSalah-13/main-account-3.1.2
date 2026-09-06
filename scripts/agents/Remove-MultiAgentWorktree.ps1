@@ -19,7 +19,7 @@ if (Test-Path -LiteralPath $resultPath -PathType Leaf) {
 
 $repositoryParent = Split-Path -Parent $repositoryRoot
 $repositoryName = Split-Path -Leaf $repositoryRoot
-$worktreeRoot = [IO.Path]::GetFullPath((Join-Path (Join-Path $repositoryParent ".codex-worktrees") $repositoryName)).TrimEnd([IO.Path]::DirectorySeparatorChar) +
+$worktreeRoot = [IO.Path]::GetFullPath((Join-Path (Join-Path $repositoryParent ".agent-worktrees") $repositoryName)).TrimEnd([IO.Path]::DirectorySeparatorChar) +
     [IO.Path]::DirectorySeparatorChar
 if (-not (Test-Path -LiteralPath $worktreeRoot.TrimEnd([IO.Path]::DirectorySeparatorChar) -PathType Container)) {
     throw "Worktree root does not exist: $worktreeRoot"
@@ -35,7 +35,7 @@ if ($result) {
     }
     $recordedWorktreePath = [IO.Path]::GetFullPath([string] $result.worktree)
     if (-not $recordedWorktreePath.Equals($expectedWorktreePath, [StringComparison]::OrdinalIgnoreCase)) {
-        throw "Run result points to a different worktree than .codex-worktrees/$repositoryName/$RunId."
+        throw "Run result points to a different worktree than .agent-worktrees/$repositoryName/$RunId."
     }
 }
 $worktreePath = $expectedWorktreePath
@@ -85,7 +85,7 @@ if ($PSCmdlet.ShouldProcess($worktreePath, "Remove the clean Git worktree (the b
         Write-Host "Removed worktree. Branch preserved: $($result.branch)"
     } else {
         $runMatch = [regex]::Match($RunId, '^(?<timestamp>[0-9]{8}-[0-9]{6})-(?<nonce>[a-f0-9]{6})-(?<slug>[\p{L}\p{N}-]+)$')
-        $branch = "codex/agent-$($runMatch.Groups['slug'].Value)-$($runMatch.Groups['timestamp'].Value)-$($runMatch.Groups['nonce'].Value)"
+        $branch = "agents/$($runMatch.Groups['slug'].Value)-$($runMatch.Groups['timestamp'].Value)-$($runMatch.Groups['nonce'].Value)"
         Write-Host "Removed unrecorded worktree. Expected branch preserved: $branch"
     }
 }

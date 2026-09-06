@@ -1,19 +1,23 @@
 [CmdletBinding()]
 param(
-    [string] $CodexPath
+    [ValidateSet("codex", "claude")]
+    [string] $Agent = "codex",
+
+    [string] $AgentPath
 )
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
 
-. (Join-Path $PSScriptRoot "CodexCommand.ps1")
-$codex = Resolve-CodexCommand -Explicit $CodexPath
+. (Join-Path $PSScriptRoot "AgentCommand.ps1")
+$agentCommand = Resolve-AgentCommand -Agent $Agent -Explicit $AgentPath
 
 $repositoryRoot = (& git -C $PSScriptRoot rev-parse --show-toplevel 2>$null | Select-Object -First 1).Trim()
 if (-not $repositoryRoot) {
     throw "scripts/agents must be run from inside a Git repository."
 }
 
+# The six role files are a Codex feature; the rest of the system is agent-neutral.
 $requiredAgents = @(
     "project-architect.toml",
     "implementer.toml",
@@ -23,19 +27,21 @@ $requiredAgents = @(
     "localization-reviewer.toml"
 )
 $agentRoot = Join-Path $repositoryRoot ".codex/agents"
-foreach ($agent in $requiredAgents) {
-    $path = Join-Path $agentRoot $agent
+# $agentFile, not $agent: PowerShell variable names are case-insensitive and would collide
+# with the -Agent parameter, which fails its ValidateSet on the first file name.
+foreach ($agentFile in $(if ($Agent -eq "codex") { $requiredAgents } else { @() })) {
+    $path = Join-Path $agentRoot $agentFile
     if (-not (Test-Path -LiteralPath $path -PathType Leaf)) {
         throw "Missing custom agent: $path"
     }
     $content = Get-Content -Raw -LiteralPath $path
     foreach ($requiredKey in @("name", "description", "developer_instructions")) {
         if ($content -notmatch "(?m)^$requiredKey\s*=") {
-            throw "$agent is missing required key: $requiredKey"
+            throw "$agentFile is missing required key: $requiredKey"
         }
     }
     if ($content -notmatch '(?s)developer_instructions\s*=\s*"""\s*\S.*?"""\s*$') {
-        throw "$agent has an invalid or empty developer_instructions multiline value."
+        throw "$agentFile has an invalid or empty developer_instructions multiline value."
     }
 }
 
@@ -68,23 +74,30 @@ foreach ($requiredSetting in @("[agents]", "enabled = true", "max_concurrent_thr
     }
 }
 
-& $codex --version *> $null
-if ($LASTEXITCODE -ne 0) {
-    throw "Codex CLI is not runnable from this shell: $codex"
+$rulesPath = Join-Path $repositoryRoot "docs/agent-worktree-rules.md"
+if (-not (Test-Path -LiteralPath $rulesPath -PathType Leaf)) {
+    throw "The tool-neutral agent contract is missing: $rulesPath"
 }
 
-# This renders local session context without calling a model, so it proves the CLI runs and can
-# read this repository. It does NOT prove the custom agents were registered: the rendered prompt
-# never names them, so only a real run can show that.
-& $codex -C $repositoryRoot debug prompt-input "Multi-Agent configuration preflight" *> $null
+& $agentCommand --version *> $null
 if ($LASTEXITCODE -ne 0) {
-    throw "Codex could not load the repository context."
+    throw "The $Agent CLI is not runnable from this shell: $agentCommand"
 }
 
-& (Join-Path $PSScriptRoot "Invoke-MultiAgent.ps1") -Task "setup smoke test" -DryRun -CodexPath $codex | Out-Null
+if ($Agent -eq "codex") {
+    # This renders local session context without calling a model, so it proves the CLI runs and can
+    # read this repository. It does NOT prove the custom agents were registered: the rendered prompt
+    # never names them, so only a real run can show that.
+    & $agentCommand -C $repositoryRoot debug prompt-input "Multi-Agent configuration preflight" *> $null
+    if ($LASTEXITCODE -ne 0) {
+        throw "Codex could not load the repository context."
+    }
+}
+
+& (Join-Path $PSScriptRoot "Invoke-MultiAgent.ps1") -Task "setup smoke test" -DryRun -Agent $Agent -AgentPath $agentCommand | Out-Null
 if ($LASTEXITCODE -ne 0) {
     throw "The Multi-Agent runner dry-run failed."
 }
 
-Write-Host "Multi-Agent configuration preflight passed using $codex."
+Write-Host "Multi-Agent configuration preflight passed for $Agent using $agentCommand."
 Write-Host "Maven, the custom agents and the review gate are exercised only by a full run."
