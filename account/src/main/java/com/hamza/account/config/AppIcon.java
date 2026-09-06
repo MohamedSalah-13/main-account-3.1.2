@@ -70,7 +70,13 @@ public enum AppIcon {
     /** Something that needs the operator's attention rather than an error. */
     WARNING(Feather.ALERT_TRIANGLE),
     /** A spreadsheet, as distinct from {@link #EXPORT}, which is any download. */
-    SPREADSHEET(Feather.FILE_TEXT);
+    SPREADSHEET(Feather.FILE_TEXT),
+    /**
+     * A setting that belongs to the shop rather than to this computer - see
+     * {@code SettingScope}. A globe rather than a group of people: it is about where the
+     * value lives, not about who may change it.
+     */
+    SHARED_SETTING(Feather.GLOBE);
 
     private final Ikon glyph;
 

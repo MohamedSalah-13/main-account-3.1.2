@@ -39,28 +39,54 @@ public final class SharedSettingKeys {
      */
     public static final String BACKUP_OWNER_MACHINE = "backup.owner.machine";
 
+    /*
+     * Named, because the key has two readers that must not drift apart: PropertiesName,
+     * which stores under it, and the settings screen, which marks the control as the
+     * shop's. Written as a literal in both places, a rename in one of them would leave a
+     * shared setting quietly presented as a local one.
+     */
+
+    /** The scale's barcode layout. One sticker, read at every till. */
+    public static final String BARCODE_SCALE_ACTIVE = "setting.barcode.scale.active";
+    public static final String BARCODE_START = "setting.barcode.start";
+    public static final String BARCODE_LENGTH = "setting.barcode.length";
+    public static final String BARCODE_COUNT_SCALE = "setting.barcode.count.scale";
+    public static final String BARCODE_COUNT_ITEM = "setting.barcode.count.item";
+    public static final String BARCODE_HAS_CHECK_DIGIT = "setting.barcode.has.check.digit";
+    public static final String BARCODE_VALIDATE_CHECK_DIGIT = "setting.barcode.validate.check.digit";
+    public static final String BARCODE_VALUE_TYPE = "setting.barcode.value.type";
+    public static final String BARCODE_MAX_WEIGHT = "setting.barcode.max.weight";
+    public static final String BARCODE_MIN_WEIGHT = "setting.barcode.min.weight";
+
+    /** Rules about what a sale or a return is allowed to be. */
+    public static final String RETURN_REQUIRE_SOURCE_INVOICE = "return.require.source.invoice";
+    public static final String RETURN_FREE_LIMIT = "return.free.limit";
+    public static final String SEL_WITHOUT_BALANCE = "item.sel.without.balance";
+    public static final String INVOICE_UPDATE_PRICE = "invoice.update.price";
+
+    /** What the customer's paper says, which is the company's and not the till's. */
+    public static final String CURRENCY = "setting.currency";
+    public static final String PRINT_REPORT_TITLE = "setting.print.report.title";
+
     private static final Set<String> SHARED = Set.of(
-            // The scale's barcode layout. One sticker, read at every till.
-            "setting.barcode.scale.active",
-            "setting.barcode.start",
-            "setting.barcode.length",
-            "setting.barcode.count.scale",
-            "setting.barcode.count.item",
-            "setting.barcode.has.check.digit",
-            "setting.barcode.validate.check.digit",
-            "setting.barcode.value.type",
-            "setting.barcode.max.weight",
-            "setting.barcode.min.weight",
+            BARCODE_SCALE_ACTIVE,
+            BARCODE_START,
+            BARCODE_LENGTH,
+            BARCODE_COUNT_SCALE,
+            BARCODE_COUNT_ITEM,
+            BARCODE_HAS_CHECK_DIGIT,
+            BARCODE_VALIDATE_CHECK_DIGIT,
+            BARCODE_VALUE_TYPE,
+            BARCODE_MAX_WEIGHT,
+            BARCODE_MIN_WEIGHT,
 
-            // Rules about what a sale or a return is allowed to be.
-            "return.require.source.invoice",
-            "return.free.limit",
-            "item.sel.without.balance",
-            "invoice.update.price",
+            RETURN_REQUIRE_SOURCE_INVOICE,
+            RETURN_FREE_LIMIT,
+            SEL_WITHOUT_BALANCE,
+            INVOICE_UPDATE_PRICE,
 
-            // What the customer's paper says, which is the company's and not the till's.
-            "setting.currency",
-            "setting.print.report.title",
+            CURRENCY,
+            PRINT_REPORT_TITLE,
 
             BACKUP_OWNER_MACHINE);
 

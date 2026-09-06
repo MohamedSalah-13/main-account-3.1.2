@@ -1,6 +1,7 @@
 package com.hamza.account.controller.setting;
 
 import com.hamza.account.controller.main.DataPublisher;
+import com.hamza.account.config.SharedSettingKeys;
 import com.hamza.account.features.backup.BackupPolicy;
 import com.hamza.account.openFxml.FxmlPath;
 import com.hamza.account.authorization.AppPermissions;
@@ -136,6 +137,13 @@ public class SettingTabCheckController implements Initializable {
         checkIncreaseItemOnTable.selectedProperty().addListener((observable, oldValue, newValue) -> setInvoiceIncreaseItemOneTable(newValue));
         checkSelWithoutBalance.selectedProperty().addListener((observable, oldValue, newValue) -> setSelWithoutBalance(newValue));
         checkAddItemDirect.selectedProperty().addListener((observableValue, aBoolean, t1) -> setInvoiceAddItemsDirect(t1));
+
+        // The five settings on this tab that are the shop's, not this computer's.
+        SettingScope.shared(checkPrintTitleInReports, SharedSettingKeys.PRINT_REPORT_TITLE);
+        SettingScope.shared(updatePriceInInvoice, SharedSettingKeys.INVOICE_UPDATE_PRICE);
+        SettingScope.shared(checkSelWithoutBalance, SharedSettingKeys.SEL_WITHOUT_BALANCE);
+        SettingScope.shared(checkReturnRequireSource, SharedSettingKeys.RETURN_REQUIRE_SOURCE_INVOICE);
+        SettingScope.shared(txtReturnFreeLimit, SharedSettingKeys.RETURN_FREE_LIMIT);
     }
 
     private void checkSetting(CheckBox checkBox, String nameText, boolean b) {

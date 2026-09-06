@@ -1,5 +1,10 @@
 package com.hamza.account.config;
 
+/**
+ * Every stored setting, named. Which store each one goes to is decided by
+ * {@link SharedSettingKeys} and applied in {@link PreferencesSetting} - a shared key is
+ * spelled there and referenced here, so the two cannot drift apart.
+ */
 public class PropertiesName extends PreferencesSetting {
 
     public static final String BARCODE_LABEL_SHOW_DOUBLE = "barcode.label.show.double";
@@ -23,16 +28,16 @@ public class PropertiesName extends PreferencesSetting {
     private static final String SETTING_PRINTER_NORMAL = "setting.printer.normal";
     private static final String DEFAULT_PRINTER_NAME = "Microsoft Print to PDF";
     private static final String INVOICE_BACKUP_AFTER_SAVE = "invoice.backup.after.save";
-    private static final String INVOICE_UPDATE_PRICE = "invoice.update.price";
+    private static final String INVOICE_UPDATE_PRICE = SharedSettingKeys.INVOICE_UPDATE_PRICE;
     private static final String INVOICE_SHOW_SCREEN_PAID = "invoice.show.screen.paid";
     private static final String INVOICE_SCREEN_MODE = "invoice.screen.mode";
-    private static final String RETURN_REQUIRE_SOURCE_INVOICE = "return.require.source.invoice";
-    private static final String RETURN_FREE_LIMIT = "return.free.limit";
+    private static final String RETURN_REQUIRE_SOURCE_INVOICE = SharedSettingKeys.RETURN_REQUIRE_SOURCE_INVOICE;
+    private static final String RETURN_FREE_LIMIT = SharedSettingKeys.RETURN_FREE_LIMIT;
     // -------------------
 
-    private static final String SETTING_CURRENCY = "setting.currency";
-    private static final String SETTING_PRINT_REPORT_TITLE = "setting.print.report.title";
-    private static final String SEL_WITHOUT_BALANCE = "item.sel.without.balance";
+    private static final String SETTING_CURRENCY = SharedSettingKeys.CURRENCY;
+    private static final String SETTING_PRINT_REPORT_TITLE = SharedSettingKeys.PRINT_REPORT_TITLE;
+    private static final String SEL_WITHOUT_BALANCE = SharedSettingKeys.SEL_WITHOUT_BALANCE;
     private static final String ITEM_SHOW_ALERT = "item.show.alert";
     private static final String ITEM_SHOW_IMAGE_HINT = "item.show.image.hint";
     private static final String ITEM_EDIT_FROM_TABLE = "item.edit.from.table";
@@ -62,16 +67,16 @@ public class PropertiesName extends PreferencesSetting {
      * keeps its old name so existing installs keep their value; the reader below is what
      * says what it means.
      */
-    private static final String SETTING_BARCODE_COUNT_SCALE = "setting.barcode.count.scale";
-    private static final String SETTING_BARCODE_HAS_CHECK_DIGIT = "setting.barcode.has.check.digit";
-    private static final String SETTING_BARCODE_COUNT_ITEM = "setting.barcode.count.item";
-    private static final String SETTING_BARCODE_START = "setting.barcode.start";
-    private static final String SETTING_BARCODE_LENGTH = "setting.barcode.length";
-    private static final String SETTING_BARCODE_SCALE_ACTIVE = "setting.barcode.scale.active";
-    private static final String SETTING_BARCODE_VALUE_TYPE = "setting.barcode.value.type";
-    private static final String SETTING_BARCODE_VALIDATE_CHECK_DIGIT = "setting.barcode.validate.check.digit";
-    private static final String SETTING_BARCODE_MAX_WEIGHT = "setting.barcode.max.weight";
-    private static final String SETTING_BARCODE_MIN_WEIGHT = "setting.barcode.min.weight";
+    private static final String SETTING_BARCODE_COUNT_SCALE = SharedSettingKeys.BARCODE_COUNT_SCALE;
+    private static final String SETTING_BARCODE_HAS_CHECK_DIGIT = SharedSettingKeys.BARCODE_HAS_CHECK_DIGIT;
+    private static final String SETTING_BARCODE_COUNT_ITEM = SharedSettingKeys.BARCODE_COUNT_ITEM;
+    private static final String SETTING_BARCODE_START = SharedSettingKeys.BARCODE_START;
+    private static final String SETTING_BARCODE_LENGTH = SharedSettingKeys.BARCODE_LENGTH;
+    private static final String SETTING_BARCODE_SCALE_ACTIVE = SharedSettingKeys.BARCODE_SCALE_ACTIVE;
+    private static final String SETTING_BARCODE_VALUE_TYPE = SharedSettingKeys.BARCODE_VALUE_TYPE;
+    private static final String SETTING_BARCODE_VALIDATE_CHECK_DIGIT = SharedSettingKeys.BARCODE_VALIDATE_CHECK_DIGIT;
+    private static final String SETTING_BARCODE_MAX_WEIGHT = SharedSettingKeys.BARCODE_MAX_WEIGHT;
+    private static final String SETTING_BARCODE_MIN_WEIGHT = SharedSettingKeys.BARCODE_MIN_WEIGHT;
     private static final String BACKUP_DATABASE_SAVE_FOLDER = "backup.database.save.folder";
 
     /*-------------------------------------- Other Setting --------------------------------------*/

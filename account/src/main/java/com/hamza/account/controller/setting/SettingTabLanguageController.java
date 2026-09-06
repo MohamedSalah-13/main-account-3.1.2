@@ -261,6 +261,9 @@ public class SettingTabLanguageController implements Initializable {
 
 
     private void chooseCurrency() {
+        // The currency is printed on what the customer takes away, so it is the company's
+        // and not the till's - and this is the only control on this tab that is.
+        SettingScope.shared(comboCurrency, com.hamza.account.config.SharedSettingKeys.CURRENCY);
         List<Map.Entry<Locale, Currency>> entries = selectableCurrencies();
 
         for (Map.Entry<Locale, Currency> entry : entries) {
