@@ -31,7 +31,7 @@
 -- On a fresh install, and on any install that never switched shifts on, every statement here
 -- matches no rows and the migration is a no-op.
 
--- user_shifts and stock_count are ordinary tables.
+-- user_shifts and stock_count carry no triggers and take a plain UPDATE.
 UPDATE user_shifts
 SET open_time = COALESCE(FROM_UNIXTIME(TO_SECONDS(open_time) - 62167219200), open_time)
 WHERE open_time IS NOT NULL;
@@ -44,12 +44,20 @@ UPDATE stock_count
 SET posted_at = COALESCE(FROM_UNIXTIME(TO_SECONDS(posted_at) - 62167219200), posted_at)
 WHERE posted_at IS NOT NULL;
 
--- The next three tables are append-only: V27 and V28 put BEFORE UPDATE triggers on them that
--- SIGNAL unless @app_bulk_wipe is set. That flag is the schema's own documented escape hatch
--- (WipeService uses it the same way) and this is the case it is for - correcting a value the
--- rows were never meant to hold, not editing the history they record. It is cleared again
--- below so the connection cannot go back to the pool still carrying it.
-SET @app_bulk_wipe = 1;
+-- The next three tables are append-only, and their UPDATE triggers are UNCONDITIONAL: unlike
+-- the matching DELETE triggers, they carry no @app_bulk_wipe escape, so nothing in the running
+-- system can ever change one of these rows - which is the point of them. A schema migration is
+-- the one place that may, and it does it the only way MySQL allows: drop the trigger, correct
+-- the value, put the trigger back exactly as V27 and V28 declared it.
+--
+-- What is being corrected is the encoding of a timestamp, not the fact it records. The snapshot
+-- still says the shift closed at the moment it closed; it just finally stores the hour it always
+-- meant. Leaving these three alone was the alternative, and it is worse: user_shifts would be
+-- corrected while the immutable copy of the same two columns kept the old shifted value, so the
+-- close snapshot and the shift it snapshots would disagree by three hours for ever.
+DROP TRIGGER IF EXISTS prevent_shift_close_request_update;
+DROP TRIGGER IF EXISTS prevent_shift_close_decision_update;
+DROP TRIGGER IF EXISTS prevent_shift_close_snapshot_update;
 
 UPDATE shift_close_requests
 SET requested_at = COALESCE(FROM_UNIXTIME(TO_SECONDS(requested_at) - 62167219200), requested_at)
@@ -64,4 +72,22 @@ SET open_time = COALESCE(FROM_UNIXTIME(TO_SECONDS(open_time) - 62167219200), ope
     close_time = COALESCE(FROM_UNIXTIME(TO_SECONDS(close_time) - 62167219200), close_time)
 WHERE open_time IS NOT NULL;
 
-SET @app_bulk_wipe = NULL;
+DELIMITER |
+CREATE TRIGGER prevent_shift_close_request_update
+BEFORE UPDATE ON shift_close_requests FOR EACH ROW
+BEGIN
+    SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Shift close request is immutable';
+END|
+
+CREATE TRIGGER prevent_shift_close_decision_update
+BEFORE UPDATE ON shift_close_decisions FOR EACH ROW
+BEGIN
+    SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Shift close decision is immutable';
+END|
+
+CREATE TRIGGER prevent_shift_close_snapshot_update
+BEFORE UPDATE ON shift_close_snapshots FOR EACH ROW
+BEGIN
+    SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Shift close snapshot is immutable';
+END|
+DELIMITER ;

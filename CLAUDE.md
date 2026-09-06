@@ -628,11 +628,22 @@ through it too** - nothing fails the build if you forget, which is the gap `shif
 names first. Its `requireCashCorrection`/`requireTreasuryCorrection` pair exists so a movement
 already attributed to a shift cannot be deleted unattributed once the mode relaxes to `OPTIONAL`.
 
-**Everything the system records is append-only**, enforced by triggers in `R__triggers.sql` that
-refuse `UPDATE` and `DELETE` outside `@app_bulk_wipe`: `shift_cash_ledger` (with a numeric
-`ShiftCashSource`, never a translated label - the `MovementLabel` lesson), the close snapshot, and
-the handover/override/variance tables. A new fact table here gets the same triggers and a
-`WipeCatalog` entry, and `WipeCatalogTest` reads the migrations to check you did.
+**Everything the system records is append-only**, enforced by triggers that refuse `UPDATE` and
+`DELETE`: `shift_cash_ledger` (with a numeric `ShiftCashSource`, never a translated label - the
+`MovementLabel` lesson), the close snapshot, the close request and its decision, and the
+handover/override/variance tables. They live in `V26`, `V27`, `V28` and `R__triggers.sql`, so hunting
+one means checking all four.
+
+**The two halves of that are not guarded the same way, and the difference matters.** The `DELETE`
+trigger checks `@app_bulk_wipe`, so a wipe can take these rows; the `UPDATE` trigger is
+**unconditional** and takes no escape hatch at all - nothing in the running system, and nothing
+holding that flag, can ever change one of these rows. A migration that has to correct a stored value
+must therefore drop the `UPDATE` trigger, write, and recreate it; `V43` is the worked example, and
+this paragraph used to claim `@app_bulk_wipe` covered both, which is how `V43` came to fail on its
+first run against a database that had a closed shift in it.
+
+A new fact table here gets the same triggers and a `WipeCatalog` entry, and `WipeCatalogTest` reads
+the migrations to check you did.
 
 Two things that are separate and were once wrongly coupled: **settling the till's variance** depends
 only on there being a difference, while **declaring a handover** depends on an enabled handover
