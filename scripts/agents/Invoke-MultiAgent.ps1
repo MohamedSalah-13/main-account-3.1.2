@@ -26,7 +26,12 @@ param(
     [switch] $SkipReview,
     [switch] $DryRun,
 
-    [string] $CodexPath
+    [string] $CodexPath,
+
+    [string] $Model,
+
+    [ValidateSet("none", "minimal", "low", "medium", "high", "xhigh", "max", "ultra")]
+    [string] $ReasoningEffort
 )
 
 Set-StrictMode -Version Latest
@@ -167,6 +172,29 @@ function Copy-WorktreeIncludes {
     }
 }
 
+function Get-CodexUserSetting {
+    param([Parameter(Mandatory)] [string] $Key)
+
+    $codexHome = if ($env:CODEX_HOME) { $env:CODEX_HOME } else { Join-Path $env:USERPROFILE ".codex" }
+    $configPath = Join-Path $codexHome "config.toml"
+    if (-not (Test-Path -LiteralPath $configPath -PathType Leaf)) {
+        return $null
+    }
+
+    $pattern = "^\s*" + [regex]::Escape($Key) + "\s*=\s*`"([^`"]+)`"\s*$"
+    foreach ($line in Get-Content -LiteralPath $configPath) {
+        # Top-level keys only. Stop at the first table header so a [profiles.x] or [projects.y]
+        # value is never mistaken for the session default.
+        if ($line -match "^\s*\[") {
+            break
+        }
+        if ($line -match $pattern) {
+            return $Matches[1]
+        }
+    }
+    return $null
+}
+
 function Get-TaskSlug {
     param([Parameter(Mandatory)] [string] $Value)
 
@@ -190,6 +218,7 @@ function Invoke-CodexAgent {
         [Parameter(Mandatory)] [string] $LogDirectory,
         [Parameter(Mandatory)] [string] $Name,
         [Parameter(Mandatory)] [int] $AgentLimit,
+        [string[]] $ConfigOverrides = @(),
         [ValidateSet("read-only", "workspace-write")]
         [string] $Sandbox = "read-only"
     )
@@ -202,7 +231,8 @@ function Invoke-CodexAgent {
         "--ignore-user-config",
         "--cd", $WorktreePath,
         "--sandbox", $Sandbox,
-        "--config", "agents.max_concurrent_threads_per_session=$AgentLimit",
+        "--config", "agents.max_concurrent_threads_per_session=$AgentLimit"
+    ) + $ConfigOverrides + @(
         "--output-last-message", $lastMessagePath,
         $Prompt
     )
@@ -288,6 +318,7 @@ function Invoke-ReviewGate {
         [Parameter(Mandatory)] [string] $WorktreePath,
         [Parameter(Mandatory)] [string] $LogDirectory,
         [Parameter(Mandatory)] [string] $SchemaPath,
+        [string[]] $ConfigOverrides = @(),
         [Parameter(Mandatory)] [string] $Name
     )
 
@@ -307,7 +338,8 @@ paths. Do not edit files. Your final response must match the supplied JSON schem
         "--cd", $WorktreePath,
         "--sandbox", "read-only",
         "review",
-        "--uncommitted",
+        "--uncommitted"
+    ) + $ConfigOverrides + @(
         "--output-schema", $SchemaPath,
         "--output-last-message", $reviewPath,
         $prompt
@@ -341,6 +373,24 @@ if (-not $DatabaseAcceptance -and ($DatabaseConfigPath -or $DatabaseConfigKeyPat
 
 $repositoryRoot = Get-RepositoryRoot
 $script:CodexCommand = Resolve-CodexCommand -Explicit $CodexPath
+
+# `--ignore-user-config` keeps a run reproducible, but it also discards the model and the
+# reasoning effort chosen in ~/.codex/config.toml - the first real run silently fell back to a
+# default with reasoning effort "none". So read that choice here and pass it back explicitly:
+# the run stays independent of the rest of the user config, and what it used is recorded.
+$effectiveModel = if ($Model) { $Model } else { Get-CodexUserSetting -Key "model" }
+$effectiveEffort = if ($ReasoningEffort) { $ReasoningEffort } else { Get-CodexUserSetting -Key "model_reasoning_effort" }
+$configOverrides = @()
+if ($effectiveModel) {
+    $configOverrides += @("--config", "model=$effectiveModel")
+}
+if ($effectiveEffort) {
+    $configOverrides += @("--config", "model_reasoning_effort=$effectiveEffort")
+}
+if (-not $effectiveModel) {
+    Write-Warning "No model resolved from -Model or ~/.codex/config.toml; Codex will pick its own default."
+}
+
 $mavenCommand = Get-Command mvn -ErrorAction SilentlyContinue
 if (-not $mavenCommand) {
     throw "Maven is not available on PATH."
@@ -389,6 +439,8 @@ if ($DryRun) {
         Logs = $logDirectory
         MaxAgents = $MaxAgents
         Codex = $script:CodexCommand
+        Model = $effectiveModel
+        ReasoningEffort = $effectiveEffort
         DatabaseAcceptance = [bool] $DatabaseAcceptance
         AllowOnlineMaven = [bool] $AllowOnlineMaven
     }
@@ -423,6 +475,8 @@ $runState = [ordered]@{
     reviewVerdict = "not-run"
     reviewSummary = "The run has not reached the independent review gate."
     completedPass = $null
+    model = $effectiveModel
+    reasoningEffort = $effectiveEffort
     databaseAcceptance = [bool] $DatabaseAcceptance
     allowOnlineMaven = [bool] $AllowOnlineMaven
     changes = @()
@@ -488,7 +542,8 @@ database acceptance needs, and localization obligations.
 "@
 $discoveryPrompt | Set-Content -LiteralPath (Join-Path $logDirectory "discovery-prompt.md") -Encoding utf8
 $discoveryExit = Invoke-CodexAgent -Prompt $discoveryPrompt -WorktreePath $worktreePath `
-    -LogDirectory $logDirectory -Name "discovery" -AgentLimit $MaxAgents -Sandbox "read-only"
+    -LogDirectory $logDirectory -Name "discovery" -AgentLimit $MaxAgents -Sandbox "read-only" `
+    -ConfigOverrides $configOverrides
 $runState["discoveryExitCode"] = $discoveryExit
 if ($discoveryExit -ne 0) {
     throw "The read-only discovery phase failed. See $logDirectory/discovery.log"
@@ -524,7 +579,8 @@ $mavenInstruction
 $deliveryPrompt | Set-Content -LiteralPath (Join-Path $logDirectory "delivery-prompt.md") -Encoding utf8
 
 $agentExit = Invoke-CodexAgent -Prompt $deliveryPrompt -WorktreePath $worktreePath `
-    -LogDirectory $logDirectory -Name "delivery-0" -AgentLimit $MaxAgents -Sandbox "workspace-write"
+    -LogDirectory $logDirectory -Name "delivery-0" -AgentLimit $MaxAgents -Sandbox "workspace-write" `
+    -ConfigOverrides $configOverrides
 
 $testExit = 1
 $reviewResult = [pscustomobject]@{ ExitCode = 0; Verdict = "skipped"; Path = $null; Summary = "Review was skipped." }
@@ -544,7 +600,7 @@ for ($pass = 0; $pass -le $MaxFixPasses; $pass++) {
 
     if (-not $SkipReview -and $changes) {
         $reviewResult = Invoke-ReviewGate -WorktreePath $worktreePath -LogDirectory $logDirectory `
-            -SchemaPath $reviewSchema -Name "review-$pass"
+            -SchemaPath $reviewSchema -ConfigOverrides $configOverrides -Name "review-$pass"
     } elseif (-not $changes) {
         $reviewResult = [pscustomobject]@{ ExitCode = 1; Verdict = "error"; Path = $null; Summary = "The delivery produced no changes." }
     }
@@ -590,7 +646,7 @@ Resolve failures caused by this branch and all actionable P0-P2 findings, then r
     $repairPrompt | Set-Content -LiteralPath (Join-Path $logDirectory "repair-prompt-$($pass + 1).md") -Encoding utf8
     $agentExit = Invoke-CodexAgent -Prompt $repairPrompt -WorktreePath $worktreePath `
         -LogDirectory $logDirectory -Name "delivery-$($pass + 1)" -AgentLimit $MaxAgents `
-        -Sandbox "workspace-write"
+        -Sandbox "workspace-write" -ConfigOverrides $configOverrides
 }
 
 Assert-HeadUnchanged -WorktreePath $worktreePath -ExpectedCommit $baseCommit

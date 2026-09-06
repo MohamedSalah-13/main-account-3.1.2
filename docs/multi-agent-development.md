@@ -77,6 +77,20 @@ pwsh ./scripts/agents/Invoke-MultiAgent.ps1 `
 أو أعادت المراجعة finding من P0 إلى P2، تُرسل الملاحظات إلى دورة إصلاح واحدة ثم يعاد
 الاختبار والمراجعة. غيّر العدد بـ`-MaxFixPasses 0..3`.
 
+يمرّر المنسّق `--ignore-user-config` ليبقى التشغيل مستقلًا عن إعدادك المحلي، وهذه الراية تُسقط
+**اختيار النموذج** أيضًا — أول تشغيل حقيقي سقط بصمت إلى نموذج افتراضي بـ`reasoning effort: none`.
+لذلك يقرأ المنسّق `model` و`model_reasoning_effort` من `~/.codex/config.toml` (المفاتيح العليا
+فقط، فلا يلتقط قيمة من `[profiles.…]`) ويعيد تمريرهما صراحةً بـ`--config`، ويسجّلهما في
+`result.json`. تجاوزهما بـ`-Model` و`-ReasoningEffort`:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File ./scripts/agents/Invoke-MultiAgent.ps1 `
+  -Task "إضافة تحقق جديد عند حفظ فاتورة البيع" `
+  -Model gpt-5.6-sol -ReasoningEffort high
+```
+
+جهد التفكير المعلن داخل `.codex/agents/*.toml` يخصّ الوكيل نفسه ويبقى فوق هذا الافتراضي.
+
 اعرض النتائج:
 
 ```powershell
