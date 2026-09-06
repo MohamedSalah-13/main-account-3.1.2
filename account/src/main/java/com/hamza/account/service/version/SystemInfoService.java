@@ -203,7 +203,9 @@ public class SystemInfoService {
     }
 
     private Connection getConnection() throws Exception {
-        String url = "jdbc:mysql://%s:%s/%s?useUnicode=true&characterEncoding=UTF-8&serverTimezone=UTC"
+        // connectionTimeZone=LOCAL for the same reason as DataSourceProvider:
+        // this server keeps local time, so the driver must convert nothing.
+        String url = "jdbc:mysql://%s:%s/%s?useUnicode=true&characterEncoding=UTF-8&connectionTimeZone=LOCAL"
                 .formatted(database.getHost(), database.getPort(), database.getDbName());
 
         return DriverManager.getConnection(url, database.getUsername(), database.getPass());

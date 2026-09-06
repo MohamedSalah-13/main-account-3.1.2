@@ -222,6 +222,29 @@ transaction and then calls into other DAOs. That works, but the boundary belongs
 to a table — so do not add an eighteenth `insertMultiData` site; wrap the service method instead. Both
 routes share `ConnectionManager`, so they nest safely with each other.
 
+**The JDBC URL says `connectionTimeZone=LOCAL`, and it has to.** This MySQL runs on the machine's
+own local time, so `NOW()` and every `DEFAULT CURRENT_TIMESTAMP` store local wall clock. The URL used
+to claim `serverTimezone=UTC`, and a driver told that converts in both directions — which produced
+three different bugs from one word, only the first of them visible:
+
+- a column MySQL wrote read back **late** by the whole offset (a shift opened at 08:00 displayed as
+  11:00) — the ~20 `getTimestamp(...).toLocalDateTime()` sites;
+- a column written with `setTimestamp(Timestamp.valueOf(...))` was stored **early** by the offset and
+  read back late, so the two errors cancelled *on screen* while the value on disk — the one every
+  report, view and `BETWEEN` reads — was wrong. Fixing only the read would have broken these;
+- the bounds of a range query were converted while the column they filter was not, so
+  `UserShiftDao.calculateShiftSummary` counted a window three hours out of line with its own rows.
+  Measured against real data, a Z-report missed **24% of the day's takings** and showed the till short
+  by that much. That is the one that mattered, and it looked like a date-formatting bug.
+
+`ConnectionTimeZoneArchitectureTest` pins every JDBC URL in both modules, and
+`V38__timestamp_timezone_correction.sql` repairs the rows the second case left behind — the seven
+columns ever written with `setTimestamp`. So putting `serverTimezone=UTC` back would not merely
+reintroduce the bug; it would make already-corrected rows wrong the other way. The migration converts
+with `FROM_UNIXTIME(TO_SECONDS(v) - 62167219200)` rather than `CONVERT_TZ`: **`CONVERT_TZ` with named
+zones answers `NULL` when the `mysql.time_zone` tables are not loaded**, which is the default on
+Windows, and it would have emptied the columns instead of failing.
+
 Layering is `Controller → Service → DAO → AbstractDao`, and it is in the middle of a deliberate shift.
 The older services under `service/` are thin `record X(DaoFactory)` wrappers with the real logic sitting
 in controllers and DAOs. The newer work puts the logic in a `features/<area>/` package that has no
@@ -1052,7 +1075,9 @@ Schema changes are **Flyway migrations**, in `account/src/main/resources/db/migr
 - `V1__baseline.sql` is the schema as shipped to clients in v4.1.3 — tables, indexes, procedures and the
   seed data (including the `admin` user, without which nobody can log in). It is the Flyway baseline: an
   existing client database is **stamped** with it, never executed, because it already is that schema. A
-  new database executes it and continues with `V2`, `V3`, … The current head is `V35`: `V34` adds
+  new database executes it and continues with `V2`, `V3`, … The current head is `V38`: `V38` repairs the timestamps stored shifted by the machine's UTC
+  offset (see **Database access** above), `V37` gives a user a kiosk-only flag and `V36` the
+  price-check permission. Before them, `V34` adds
   `items.group.move` and grants it to every role that could already edit an item, and `V35` gives the
   areas list its own `area.show` instead of the `items.show` it had been borrowing — each granting the
   new key to whoever already held the old one, so nobody loses an ability on upgrade. Before them, shift

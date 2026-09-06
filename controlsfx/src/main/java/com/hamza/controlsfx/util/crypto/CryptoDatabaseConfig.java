@@ -250,7 +250,13 @@ public class CryptoDatabaseConfig {
                     String fileName = args[6];
                     encryptor.saveEncryptedConfigToXML(
                             fileName,
-                            "jdbc:mysql://" + host + ":" + port + "/" + dbName,
+                            // Recorded for reference only - every connection is built from the
+                            // host/port/dbname fields below, not from this string. It carries
+                            // connectionTimeZone=LOCAL anyway so that it stays the same URL the
+                            // application would build, should anything ever read it: this server
+                            // keeps local time, and a driver told otherwise shifts timestamps.
+                            "jdbc:mysql://" + host + ":" + port + "/" + dbName
+                                    + "?useUnicode=true&characterEncoding=UTF-8&connectionTimeZone=LOCAL",
                             dbName, host, username, password, port,
                             "com.mysql.cj.jdbc.Driver"
                     );

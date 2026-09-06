@@ -27,8 +27,17 @@ public final class DataSourceProvider {
 
             try {
                 HikariConfig config = new HikariConfig();
+                // connectionTimeZone=LOCAL, not UTC: MySQL here runs on the machine's own
+                // local time, so NOW() and every DEFAULT CURRENT_TIMESTAMP store local wall
+                // clock. Claiming UTC made the driver read those back shifted by the whole
+                // offset - a shift opened at 08:00 read as 11:00 - and shifted every
+                // Timestamp the application wrote in the opposite direction, so the value
+                // stored on disk was wrong while the screen happened to look right. It also
+                // pushed the bounds of a BETWEEN out of line with the rows they filter,
+                // which is what made a shift's Z-report miss the last hours of its own day.
+                // With LOCAL the driver converts nothing and all three agree.
                 String jdbcUrl = String.format(
-                    "jdbc:mysql://%s:%s/%s?useUnicode=true&characterEncoding=UTF-8&serverTimezone=UTC&connectTimeout=10000&socketTimeout=15000&tcpKeepAlive=true",
+                    "jdbc:mysql://%s:%s/%s?useUnicode=true&characterEncoding=UTF-8&connectionTimeZone=LOCAL&connectTimeout=10000&socketTimeout=15000&tcpKeepAlive=true",
                     host, port, dbName
                 );
 
