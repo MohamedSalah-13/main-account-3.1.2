@@ -12,10 +12,9 @@ import com.hamza.account.period.PeriodLockDao;
  * borrows one from the pool for the length of that call, so there is nothing
  * here to hand out or to keep alive.
  * <p>
- * The {@code setAuditUserId}/{@code clearAuditUserId} pair that used to live here
- * was removed with it. Both set a MySQL session variable, which belongs to one
- * connection and so cannot survive pooling - and nothing called them: no code
- * referenced either method and no trigger in the schema read {@code @app_user_id}.
+ * Audit context is installed by {@code AuditSessionInitializer} through
+ * {@code ConnectionManager}: session variables belong to one physical connection,
+ * so they are refreshed on every pool borrow rather than stored on this factory.
  */
 public enum DaoFactory {
 
@@ -155,10 +154,6 @@ public enum DaoFactory {
 
     public TotalsSalesReturnDao totalsSalesReturnDao() {
         return new TotalsSalesReturnDao(this);
-    }
-
-    public AuditLogDao processesDao() {
-        return new AuditLogDao();
     }
 
     public ExpensesDetailsDao expensesDetailsDao() {

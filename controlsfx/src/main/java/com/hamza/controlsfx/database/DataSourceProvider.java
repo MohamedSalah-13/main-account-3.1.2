@@ -86,6 +86,7 @@ public final class DataSourceProvider {
         if (ds != null) {
             ds.close();
             dataSource = null;
+            ConnectionManager.clearSessionInitializer();
             log.info("Hikari datasource closed");
         }
     }

@@ -14,6 +14,159 @@
 --
 -- =====================================================================
 
+DROP TRIGGER IF EXISTS prevent_audit_admin_event_update;
+DROP TRIGGER IF EXISTS prevent_audit_admin_event_delete;
+
+DELIMITER |
+CREATE TRIGGER prevent_audit_admin_event_update
+BEFORE UPDATE ON audit_admin_event FOR EACH ROW
+BEGIN
+    SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Audit administration events are immutable';
+END|
+
+CREATE TRIGGER prevent_audit_admin_event_delete
+BEFORE DELETE ON audit_admin_event FOR EACH ROW
+BEGIN
+    SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Audit administration events are immutable';
+END|
+DELIMITER ;
+
+-- Authorization assignments are security-sensitive data. Application mutations
+-- also write auth_audit_log, but these database triggers close the gap for direct
+-- SQL and cascading changes, while preserving the same actor/workstation snapshots
+-- as the rest of audit_log.
+DROP TRIGGER IF EXISTS audit_auth_role_insert;
+DROP TRIGGER IF EXISTS audit_auth_role_update;
+DROP TRIGGER IF EXISTS audit_auth_role_delete;
+DROP TRIGGER IF EXISTS audit_auth_role_permission_insert;
+DROP TRIGGER IF EXISTS audit_auth_role_permission_delete;
+DROP TRIGGER IF EXISTS audit_auth_user_role_insert;
+DROP TRIGGER IF EXISTS audit_auth_user_role_delete;
+DROP TRIGGER IF EXISTS audit_auth_role_inheritance_insert;
+DROP TRIGGER IF EXISTS audit_auth_role_inheritance_delete;
+DROP TRIGGER IF EXISTS audit_auth_override_insert;
+DROP TRIGGER IF EXISTS audit_auth_override_update;
+DROP TRIGGER IF EXISTS audit_auth_override_delete;
+
+DELIMITER |
+CREATE TRIGGER audit_auth_role_insert AFTER INSERT ON auth_role FOR EACH ROW
+BEGIN
+    CALL write_audit_log('auth_role', NEW.id, 'INSERT', @app_user_id, NULL,
+        JSON_OBJECT('id', NEW.id, 'role_code', NEW.role_code, 'role_name', NEW.role_name,
+                    'description', NEW.description, 'system_role', NEW.system_role,
+                    'active', NEW.active, 'created_by', NEW.created_by),
+        'Authorization role created');
+END|
+
+CREATE TRIGGER audit_auth_role_update AFTER UPDATE ON auth_role FOR EACH ROW
+BEGIN
+    CALL write_audit_log('auth_role', NEW.id, 'UPDATE', @app_user_id,
+        JSON_OBJECT('id', OLD.id, 'role_code', OLD.role_code, 'role_name', OLD.role_name,
+                    'description', OLD.description, 'system_role', OLD.system_role,
+                    'active', OLD.active, 'created_by', OLD.created_by),
+        JSON_OBJECT('id', NEW.id, 'role_code', NEW.role_code, 'role_name', NEW.role_name,
+                    'description', NEW.description, 'system_role', NEW.system_role,
+                    'active', NEW.active, 'created_by', NEW.created_by),
+        'Authorization role updated');
+END|
+
+CREATE TRIGGER audit_auth_role_delete AFTER DELETE ON auth_role FOR EACH ROW
+BEGIN
+    CALL write_audit_log('auth_role', OLD.id, 'DELETE', @app_user_id,
+        JSON_OBJECT('id', OLD.id, 'role_code', OLD.role_code, 'role_name', OLD.role_name,
+                    'description', OLD.description, 'system_role', OLD.system_role,
+                    'active', OLD.active, 'created_by', OLD.created_by), NULL,
+        'Authorization role deleted');
+END|
+
+CREATE TRIGGER audit_auth_role_permission_insert AFTER INSERT ON auth_role_permission FOR EACH ROW
+BEGIN
+    CALL write_audit_log('auth_role_permission', CONCAT(NEW.role_id, ':', NEW.permission_id),
+        'INSERT', @app_user_id, NULL,
+        JSON_OBJECT('role_id', NEW.role_id, 'permission_id', NEW.permission_id,
+                    'granted_by', NEW.granted_by, 'granted_at', NEW.granted_at),
+        'Permission granted to role');
+END|
+
+CREATE TRIGGER audit_auth_role_permission_delete AFTER DELETE ON auth_role_permission FOR EACH ROW
+BEGIN
+    CALL write_audit_log('auth_role_permission', CONCAT(OLD.role_id, ':', OLD.permission_id),
+        'DELETE', @app_user_id,
+        JSON_OBJECT('role_id', OLD.role_id, 'permission_id', OLD.permission_id,
+                    'granted_by', OLD.granted_by, 'granted_at', OLD.granted_at), NULL,
+        'Permission removed from role');
+END|
+
+CREATE TRIGGER audit_auth_user_role_insert AFTER INSERT ON auth_user_role FOR EACH ROW
+BEGIN
+    CALL write_audit_log('auth_user_role', CONCAT(NEW.user_id, ':', NEW.role_id),
+        'INSERT', @app_user_id, NULL,
+        JSON_OBJECT('user_id', NEW.user_id, 'role_id', NEW.role_id,
+                    'assigned_by', NEW.assigned_by, 'assigned_at', NEW.assigned_at),
+        'Role assigned to user');
+END|
+
+CREATE TRIGGER audit_auth_user_role_delete AFTER DELETE ON auth_user_role FOR EACH ROW
+BEGIN
+    CALL write_audit_log('auth_user_role', CONCAT(OLD.user_id, ':', OLD.role_id),
+        'DELETE', @app_user_id,
+        JSON_OBJECT('user_id', OLD.user_id, 'role_id', OLD.role_id,
+                    'assigned_by', OLD.assigned_by, 'assigned_at', OLD.assigned_at), NULL,
+        'Role removed from user');
+END|
+
+CREATE TRIGGER audit_auth_role_inheritance_insert AFTER INSERT ON auth_role_inheritance FOR EACH ROW
+BEGIN
+    CALL write_audit_log('auth_role_inheritance', CONCAT(NEW.child_role_id, ':', NEW.parent_role_id),
+        'INSERT', @app_user_id, NULL,
+        JSON_OBJECT('child_role_id', NEW.child_role_id, 'parent_role_id', NEW.parent_role_id,
+                    'assigned_by', NEW.assigned_by, 'assigned_at', NEW.assigned_at),
+        'Role inheritance assigned');
+END|
+
+CREATE TRIGGER audit_auth_role_inheritance_delete AFTER DELETE ON auth_role_inheritance FOR EACH ROW
+BEGIN
+    CALL write_audit_log('auth_role_inheritance', CONCAT(OLD.child_role_id, ':', OLD.parent_role_id),
+        'DELETE', @app_user_id,
+        JSON_OBJECT('child_role_id', OLD.child_role_id, 'parent_role_id', OLD.parent_role_id,
+                    'assigned_by', OLD.assigned_by, 'assigned_at', OLD.assigned_at), NULL,
+        'Role inheritance removed');
+END|
+
+CREATE TRIGGER audit_auth_override_insert AFTER INSERT ON auth_user_permission_override FOR EACH ROW
+BEGIN
+    CALL write_audit_log('auth_user_permission_override', CONCAT(NEW.user_id, ':', NEW.permission_id),
+        'INSERT', @app_user_id, NULL,
+        JSON_OBJECT('user_id', NEW.user_id, 'permission_id', NEW.permission_id,
+                    'effect', NEW.effect, 'reason', NEW.reason, 'expires_at', NEW.expires_at,
+                    'granted_by', NEW.granted_by, 'granted_at', NEW.granted_at),
+        'User permission override created');
+END|
+
+CREATE TRIGGER audit_auth_override_update AFTER UPDATE ON auth_user_permission_override FOR EACH ROW
+BEGIN
+    CALL write_audit_log('auth_user_permission_override', CONCAT(NEW.user_id, ':', NEW.permission_id),
+        'UPDATE', @app_user_id,
+        JSON_OBJECT('user_id', OLD.user_id, 'permission_id', OLD.permission_id,
+                    'effect', OLD.effect, 'reason', OLD.reason, 'expires_at', OLD.expires_at,
+                    'granted_by', OLD.granted_by, 'granted_at', OLD.granted_at),
+        JSON_OBJECT('user_id', NEW.user_id, 'permission_id', NEW.permission_id,
+                    'effect', NEW.effect, 'reason', NEW.reason, 'expires_at', NEW.expires_at,
+                    'granted_by', NEW.granted_by, 'granted_at', NEW.granted_at),
+        'User permission override updated');
+END|
+
+CREATE TRIGGER audit_auth_override_delete AFTER DELETE ON auth_user_permission_override FOR EACH ROW
+BEGIN
+    CALL write_audit_log('auth_user_permission_override', CONCAT(OLD.user_id, ':', OLD.permission_id),
+        'DELETE', @app_user_id,
+        JSON_OBJECT('user_id', OLD.user_id, 'permission_id', OLD.permission_id,
+                    'effect', OLD.effect, 'reason', OLD.reason, 'expires_at', OLD.expires_at,
+                    'granted_by', OLD.granted_by, 'granted_at', OLD.granted_at), NULL,
+        'User permission override removed');
+END|
+DELIMITER ;
+
 DROP TRIGGER IF EXISTS audit_items_insert;
 DROP TRIGGER IF EXISTS audit_items_update;
 DROP TRIGGER IF EXISTS audit_items_delete;

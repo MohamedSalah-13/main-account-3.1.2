@@ -1,6 +1,8 @@
 package com.hamza.account.view;
 
 import com.hamza.account.backup.ScheduledBackup;
+import com.hamza.account.features.audit.AuditRetentionScheduler;
+import com.hamza.account.features.audit.AuditRetentionService;
 import com.hamza.account.config.Image_Setting;
 import com.hamza.account.config.ThemeManager;
 import com.hamza.account.controller.login.LoginController;
@@ -71,6 +73,9 @@ public final class LogApplication {
             rbacService.signIn(user);
             new UserPresenceService(daoFactory).mark(user, true);
             PeriodLockService.forget();
+
+            AuditRetentionService retention = ServiceRegistry.get(AuditRetentionService.class);
+            if (retention != null) AuditRetentionScheduler.start(retention);
 
             if (ScheduledBackup.getTime() > 0) {
                 try {

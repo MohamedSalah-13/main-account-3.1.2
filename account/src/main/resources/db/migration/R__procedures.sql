@@ -20,6 +20,10 @@ CREATE PROCEDURE write_audit_log(
     IN p_notes TEXT
 )
 BEGIN
+    DECLARE v_source VARCHAR(50);
+    DECLARE v_user_id INT;
+    DECLARE v_actor_name VARCHAR(100);
+
     -- A wipe empties whole tables, and the DELETE triggers would copy every row it
     -- removes into audit_log - the database written into itself, inside the wipe's
     -- own transaction, only to be erased again if the log is one of the things
@@ -27,14 +31,34 @@ BEGIN
     -- clears it before the connection goes back to the pool. Nothing else sets it,
     -- so ordinary deletes are audited exactly as before.
     IF @app_bulk_wipe IS NULL THEN
+        -- The application refreshes these variables whenever it borrows a pooled
+        -- connection. A statement from a SQL client has no context and is deliberately
+        -- identified as DATABASE instead of being attributed to user 1 or to the user
+        -- stored on the changed business row.
+        SET v_source = COALESCE(NULLIF(@app_audit_source, ''), 'DATABASE');
+        IF v_source = 'APP' THEN
+            SET v_user_id = @app_user_id;
+            SET v_actor_name = NULLIF(@app_actor_name, '');
+        ELSEIF v_source = 'SYSTEM' THEN
+            SET v_user_id = NULL;
+            SET v_actor_name = NULL;
+        ELSE
+            SET v_user_id = NULL;
+            SET v_actor_name = CURRENT_USER();
+        END IF;
+
         INSERT INTO audit_log
         (
             table_name,
             record_id,
             action_type,
             user_id,
+            actor_name,
             old_data,
             new_data,
+            source,
+            workstation_id,
+            workstation_name,
             notes
         )
         VALUES
@@ -42,12 +66,53 @@ BEGIN
                 UPPER(p_table_name),
                 p_record_id,
                 UPPER(p_action_type),
-                p_user_id,
+                v_user_id,
+                v_actor_name,
                 p_old_data,
                 p_new_data,
+                v_source,
+                NULLIF(@app_machine_id, ''),
+                NULLIF(@app_machine_name, ''),
                 p_notes
             );
     END IF;
+END;
+|
+DELIMITER ;
+
+DROP PROCEDURE IF EXISTS write_audit_admin_event;
+
+DELIMITER |
+CREATE PROCEDURE write_audit_admin_event(
+    IN p_event_type VARCHAR(40),
+    IN p_reason VARCHAR(500),
+    IN p_affected_rows BIGINT,
+    IN p_details JSON
+)
+BEGIN
+    DECLARE v_source VARCHAR(50);
+    DECLARE v_user_id INT;
+    DECLARE v_actor_name VARCHAR(100);
+
+    SET v_source = COALESCE(NULLIF(@app_audit_source, ''), 'DATABASE');
+    IF v_source = 'APP' THEN
+        SET v_user_id = @app_user_id;
+        SET v_actor_name = NULLIF(@app_actor_name, '');
+    ELSEIF v_source = 'SYSTEM' THEN
+        SET v_user_id = NULL;
+        SET v_actor_name = NULL;
+    ELSE
+        SET v_user_id = NULL;
+        SET v_actor_name = CURRENT_USER();
+    END IF;
+
+    INSERT INTO audit_admin_event
+        (event_type, actor_user_id, actor_name, source, workstation_id,
+         workstation_name, reason, affected_rows, details)
+    VALUES
+        (UPPER(p_event_type), v_user_id, v_actor_name, v_source,
+         NULLIF(@app_machine_id, ''), NULLIF(@app_machine_name, ''),
+         NULLIF(TRIM(p_reason), ''), GREATEST(COALESCE(p_affected_rows, 0), 0), p_details);
 END;
 |
 DELIMITER ;

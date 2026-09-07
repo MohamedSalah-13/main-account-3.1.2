@@ -5,9 +5,18 @@ import com.hamza.account.backup.BackupService;
 import com.hamza.account.backup.ScheduledBackup;
 import com.hamza.account.config.ConnectionToDatabase;
 import com.hamza.account.config.FontManager;
+import com.hamza.account.config.MachineId;
 import com.hamza.account.config.ThemeManager;
 import com.hamza.account.config.UiScale;
 import com.hamza.account.controller.others.ServiceRegistry;
+import com.hamza.account.features.audit.AuditLogService;
+import com.hamza.account.features.audit.AuditAdminEventService;
+import com.hamza.account.features.audit.AuditLogExportService;
+import com.hamza.account.features.audit.AuditRetentionScheduler;
+import com.hamza.account.features.audit.AuditRetentionService;
+import com.hamza.account.features.audit.AuditSessionInitializer;
+import com.hamza.account.features.audit.JdbcAuditLogRepository;
+import com.hamza.account.features.audit.JdbcAuditAdminEventRepository;
 import com.hamza.account.features.company.CompanyService;
 import com.hamza.account.features.events.UsersChanged;
 import com.hamza.account.features.inventory.InventoryService;
@@ -158,6 +167,9 @@ public class DownLoadApplication extends Application {
         ServiceRegistry.register(EventBus.class, eventBus);
 
         UserSessionContext userSession = new UserSessionContext();
+        AuditSessionInitializer auditSession = new AuditSessionInitializer(userSession,
+                MachineId.current().orElse(null), MachineId.displayName());
+        ConnectionManager.installSessionInitializer(auditSession::initialize);
         JdbcRbacRepository authorizationRepository = new JdbcRbacRepository();
         try {
             authorizationRepository.synchronizeCatalog(AppPermissions.definitions());
@@ -207,7 +219,12 @@ public class DownLoadApplication extends Application {
         ServiceRegistry.register(SuppliersService.class, new SuppliersService(daoFactory));
         ServiceRegistry.register(AccountCustomerService.class, new AccountCustomerService(daoFactory));
         ServiceRegistry.register(AccountSupplierService.class, new AccountSupplierService(daoFactory));
-        ServiceRegistry.register(AuditLogService.class, new AuditLogService(daoFactory));
+        JdbcAuditLogRepository auditRepository = new JdbcAuditLogRepository();
+        ServiceRegistry.register(AuditLogService.class, new AuditLogService(auditRepository));
+        ServiceRegistry.register(AuditLogExportService.class, new AuditLogExportService(auditRepository));
+        ServiceRegistry.register(AuditRetentionService.class, new AuditRetentionService(auditRepository));
+        ServiceRegistry.register(AuditAdminEventService.class,
+                new AuditAdminEventService(new JdbcAuditAdminEventRepository()));
         ServiceRegistry.register(TreasuryBalanceService.class, new TreasuryBalanceService(daoFactory));
         ServiceRegistry.register(ItemMiniQuantityService.class, new ItemMiniQuantityService(daoFactory));
         ServiceRegistry.register(AreaService.class, new AreaService(daoFactory));
@@ -283,6 +300,7 @@ public class DownLoadApplication extends Application {
     @Override
     public void stop() {
         NotificationBootstrap.stop();
+        AuditRetentionScheduler.stop();
         ScheduledBackup.stopScheduler();
         DataSourceProvider.shutdown();
     }

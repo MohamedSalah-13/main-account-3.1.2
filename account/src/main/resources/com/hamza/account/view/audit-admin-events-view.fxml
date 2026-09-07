@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.ComboBox?>
+<?import javafx.scene.control.DatePicker?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.Pagination?>
+<?import javafx.scene.control.ProgressIndicator?>
+<?import javafx.scene.control.TextArea?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.layout.FlowPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Region?>
+<?import javafx.scene.layout.StackPane?>
+<?import javafx.scene.layout.VBox?>
+
+<StackPane fx:id="root" minHeight="680.0" minWidth="1060.0"
+           styleClass="app-root,audit-log-root,audit-admin-root" stylesheets="@../css/audit-log.css"
+           xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
+           fx:controller="com.hamza.account.controller.others.AuditAdminEventsController">
+    <children>
+        <VBox spacing="12.0" styleClass="page-container">
+            <padding><Insets top="14" right="14" bottom="14" left="14"/></padding>
+            <children>
+                <HBox alignment="CENTER_RIGHT" spacing="10.0">
+                    <children>
+                        <VBox spacing="3.0">
+                            <children>
+                                <Label fx:id="labelTitle" text="%audit.admin.title" styleClass="page-title"/>
+                                <Label text="%audit.admin.subtitle" styleClass="page-subtitle" wrapText="true"/>
+                            </children>
+                        </VBox>
+                        <Region HBox.hgrow="ALWAYS"/>
+                        <ProgressIndicator fx:id="progress" maxHeight="24.0" maxWidth="24.0" visible="false"/>
+                        <Button fx:id="btnRefresh" text="%refresh" styleClass="neutral-button"/>
+                        <Button fx:id="btnClose" text="%close" styleClass="neutral-button"/>
+                    </children>
+                </HBox>
+
+                <FlowPane alignment="CENTER_RIGHT" hgap="9.0" vgap="9.0">
+                    <children>
+                        <VBox spacing="3.0" styleClass="kpi-tile,audit-kpi-total">
+                            <children><Label text="%audit.admin.summary.total" styleClass="kpi-title"/><Label fx:id="labelTotal" text="0" styleClass="kpi-value"/></children>
+                        </VBox>
+                        <VBox spacing="3.0" styleClass="kpi-tile,audit-kpi-export">
+                            <children><Label text="%audit.admin.summary.exports" styleClass="kpi-title"/><Label fx:id="labelExports" text="0" styleClass="kpi-value"/></children>
+                        </VBox>
+                        <VBox spacing="3.0" styleClass="kpi-tile,audit-kpi-delete">
+                            <children><Label text="%audit.admin.summary.deletions" styleClass="kpi-title"/><Label fx:id="labelDeletes" text="0" styleClass="kpi-value"/></children>
+                        </VBox>
+                        <VBox spacing="3.0" styleClass="kpi-tile,audit-kpi-policy">
+                            <children><Label text="%audit.admin.summary.policies" styleClass="kpi-title"/><Label fx:id="labelPolicies" text="0" styleClass="kpi-value"/></children>
+                        </VBox>
+                        <VBox spacing="3.0" styleClass="kpi-tile,audit-kpi-cleanup">
+                            <children><Label text="%audit.admin.summary.cleanups" styleClass="kpi-title"/><Label fx:id="labelCleanups" text="0" styleClass="kpi-value"/></children>
+                        </VBox>
+                    </children>
+                </FlowPane>
+
+                <VBox spacing="9.0" styleClass="app-card,audit-filter-card">
+                    <children>
+                        <Label text="%audit.admin.filter.title" styleClass="section-title"/>
+                        <FlowPane alignment="CENTER_RIGHT" hgap="8.0" vgap="8.0">
+                            <children>
+                                <TextField fx:id="txtSearch" prefWidth="260.0" promptText="%audit.admin.filter.search"/>
+                                <ComboBox fx:id="comboUser" prefWidth="160.0"/>
+                                <ComboBox fx:id="comboEvent" prefWidth="180.0"/>
+                                <ComboBox fx:id="comboSource" prefWidth="145.0"/>
+                                <DatePicker fx:id="dateFrom" prefWidth="145.0" promptText="%audit.log.filter.from"/>
+                                <DatePicker fx:id="dateTo" prefWidth="145.0" promptText="%audit.log.filter.to"/>
+                                <ComboBox fx:id="comboSort" prefWidth="165.0"/>
+                                <Button fx:id="btnApply" text="%audit.log.filter.apply" styleClass="primary-button"/>
+                                <Button fx:id="btnClear" text="%audit.log.filter.clear" styleClass="neutral-button"/>
+                            </children>
+                        </FlowPane>
+                    </children>
+                </VBox>
+
+                <Pagination fx:id="pagination" maxPageIndicatorCount="7" styleClass="modern-pagination"
+                            VBox.vgrow="ALWAYS"/>
+
+                <VBox spacing="8.0" styleClass="app-card,audit-details-card">
+                    <children>
+                        <Label text="%audit.admin.details.title" styleClass="section-title"/>
+                        <Label fx:id="labelSelection" text="%audit.admin.details.none" styleClass="info-text"/>
+                        <HBox spacing="10.0">
+                            <children>
+                                <VBox spacing="4.0" HBox.hgrow="ALWAYS">
+                                    <children>
+                                        <Label text="%audit.admin.column.reason" styleClass="form-label"/>
+                                        <TextArea fx:id="txtReason" editable="false" prefRowCount="4" wrapText="true" VBox.vgrow="ALWAYS"/>
+                                    </children>
+                                </VBox>
+                                <VBox spacing="4.0" HBox.hgrow="ALWAYS">
+                                    <children>
+                                        <Label text="%audit.admin.details.data" styleClass="form-label"/>
+                                        <TextArea fx:id="txtDetails" editable="false" prefRowCount="4" wrapText="true" styleClass="audit-json-area" VBox.vgrow="ALWAYS"/>
+                                    </children>
+                                </VBox>
+                            </children>
+                        </HBox>
+                    </children>
+                </VBox>
+
+                <Label fx:id="labelStatus" text="%audit.log.status.ready" styleClass="status-label"/>
+            </children>
+        </VBox>
+    </children>
+</StackPane>

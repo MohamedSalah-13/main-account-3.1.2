@@ -150,7 +150,7 @@ public class TreasuryButtons {
         return new ButtonWithPerm() {
             @Override
             public PermissionKey getPermissionType() {
-                return AppPermissions.SETTING_SHOW;
+                return AppPermissions.AUDIT_VIEW;
             }
 
             @Override

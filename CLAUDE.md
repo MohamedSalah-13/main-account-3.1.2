@@ -27,7 +27,7 @@ mvn -o -pl account -am test -Dtest=ScheduledBackupTest -Dsurefire.failIfNoSpecif
 
 **Coverage is real but uneven — know which half you are in.** JUnit 5 and Mockito are declared in the
 root pom and inherited by both modules; surefire needs no configuration. `mvn clean test` currently runs
-**1,340 tests across 169 test source files** with 79 skipped (below) — the figure `mvn clean test`
+**1,472 tests across 184 test source files** with 84 skipped (below) — the figure `mvn clean test`
 reports, measured on 2026-09-07. What is
 genuinely covered:
 
@@ -70,15 +70,16 @@ because *every new party payment had been silently discarded since `f2b4baf`* (s
 observe from inside an enclosing transaction. Fifteen cases pass now, twice in a row, and the class
 checks for its own residue rather than trusting the rollback.
 
-**Sixteen classes do not run by default.** `InvoiceStockDatabaseAcceptanceTest`,
+**Eighteen classes do not run by default.** `InvoiceStockDatabaseAcceptanceTest`,
 `DocumentLineDatabaseAcceptanceTest`, `StockLedgerReconciliationAcceptanceTest`,
 `StockMovementBackfillAcceptanceTest`, `StockTransferDatabaseAcceptanceTest`,
 `TotalDocumentDeleteReversesStockLedgerAcceptanceTest`,
 `PurchaseDeleteReversesNonDefaultWarehouseBalanceAcceptanceTest`, `PartyLedgerViewAcceptanceTest`,
 `ReturnSourceAcceptanceTest`, `ReturnableRepositoryAcceptanceTest`, `ItemMergeDatabaseAcceptanceTest`,
 `TreasuryBalanceViewAcceptanceTest`, `ProfitDefinitionDatabaseAcceptanceTest`,
-`ShiftAccountingDatabaseAcceptanceTest`, `ItemGroupMoveDatabaseAcceptanceTest` and
-`MasterDataDuplicateAcceptanceTest` are gated on
+`ShiftAccountingDatabaseAcceptanceTest`, `ItemGroupMoveDatabaseAcceptanceTest`,
+`MasterDataDuplicateAcceptanceTest`, `ItemsCatalogBalanceAcceptanceTest` and
+`AuditLogDatabaseAcceptanceTest` are gated on
 `-Daccount.db.acceptance=true` and need a reachable MySQL. A green `mvn clean test` does not run them.
 
 **On 2026-08-31 the first thirteen were run together for the first time, and after one fixture fix
@@ -1082,6 +1083,51 @@ tables, so the rows that change hands leave no trace at all. Neither table has a
 the source is deleted by definition, and a key on the target would refuse to let that item be deleted
 later on the strength of a log entry.
 
+### Audit log
+
+`audit_log` is written by database triggers through `write_audit_log`; the screen never fabricates
+entries. Since V46 an entry snapshots the actor name and workstation as well as the user id, so a later
+rename and a second till do not rewrite what the history means. `AuditSessionInitializer` installs those
+values through `ConnectionManager.installSessionInitializer`, which refreshes MySQL session variables
+on **every pool borrow**. Setting them once at login is wrong: it stamps one physical connection while
+Hikari may execute the write on any of ten. Work before login is `SYSTEM`; a statement from a SQL client
+has no initializer and is `DATABASE`, with `CURRENT_USER()` as its actor instead of a false user 1.
+
+The browser is `features/audit`: plain `AuditLogEntry` rows, one `AuditLogQuery` shared by the rows,
+summary and export, SQL-side filters and paging, and a `LEFT JOIN` to users. Do not bring back
+`TableType.valueOf(table_name)`: historical trigger names (`CUSTOMERS_ACCOUNTS`, `TOTAL_SALES_RE`, etc.)
+never matched that enum and one such row failed the whole page. Unknown table names remain readable
+verbatim. Reading before/after values requires `audit.view`; exporting the active filtered result to
+Excel or PDF requires `audit.export` and refuses more than 10,000 rows. Deleting selected rows remains
+the separate critical `audit.delete` permission and requires a 5–500 character reason.
+
+V47 separates administration evidence from the business audit rows. Every export, manual deletion,
+retention-policy change and retention cleanup appends an `audit_admin_event` through
+`write_audit_admin_event`; update and delete triggers make that journal immutable, and it is deliberately
+outside `WipeCatalog` so a database reset does not erase the evidence. Retention is disabled by default.
+`audit.retention.manage` may enable a 30–3,650 day policy only after showing the affected-row count and
+cutoff; the scheduler starts after login, runs as `SYSTEM`, and records every automatic cleanup. Keep
+policy reads and writes inside `features/audit` rather than treating these keys as generic shared settings.
+
+V48 adds the read-only administration browser behind the separate high-risk `audit.admin.view`
+permission. `AuditAdminEventQuery` is time-bounded, filtered and paged in SQL; do not load the journal
+eagerly into JavaFX. The ordinary browser now presents `AuditJsonDiff` field rows instead of two raw JSON
+boxes, with unchanged fields optional. The diff utility deliberately has no JavaFX dependency. Repeatable
+database triggers also cover roles, role grants, user-role assignments, inheritance and user overrides:
+`auth_audit_log` records application management intent, while these triggers close the direct-SQL and
+cascade gap and retain the standard `APP` / `SYSTEM` / `DATABASE` attribution.
+
+`AuditLogDatabaseAcceptanceTest` is the real-MySQL proof for this seam. It creates a uniquely named
+scratch schema, migrates it from empty through V48 plus all repeatables, verifies the snapshot columns,
+indexes, permissions, safe retention defaults and administration procedure, then proves both sides of
+attribution: pooled application writes retain the signed-in actor/workstation and a direct SQL connection
+is labelled `DATABASE` with no fabricated app user. It also proves the administration journal snapshots
+its actor/workstation and rejects update and delete, and that a direct authorization grant is captured by
+the database trigger as `DATABASE`. It drops only that generated schema in `@AfterAll`.
+When the application account cannot create
+schemas, supply `ACCOUNT_DB_ACCEPTANCE_ADMIN_USER` and `ACCOUNT_DB_ACCEPTANCE_ADMIN_PASSWORD` for the
+test run; never point this fresh-install test at the business database.
+
 ### FXML
 
 Controllers carry `@FxmlPath(pathFile = "...")`; `OpenFxmlApplication` loads the FXML for a controller
@@ -1225,7 +1271,11 @@ Schema changes are **Flyway migrations**, in `account/src/main/resources/db/migr
 - `V1__baseline.sql` is the schema as shipped to clients in v4.1.3 — tables, indexes, procedures and the
   seed data (including the `admin` user, without which nobody can log in). It is the Flyway baseline: an
   existing client database is **stamped** with it, never executed, because it already is that schema. A
-  new database executes it and continues with `V2`, `V3`, … The current head is `V45`: `V44` hashes the
+  new database executes it and continues with `V2`, `V3`, … The current head is `V48`: V48 adds the
+  administration-browser permission and its secondary query indexes. V47 adds the immutable
+  audit-administration journal, safe-disabled retention settings, and the dedicated export and retention
+  permissions. V46 preserves audit actor/workstation snapshots, adds the time-range indexes
+  used by the audit browser and splits `audit.view` from the broad settings permission. Before it, `V44` hashes the
   `admin/admin` credential `V1` seeds and demands a change at the next sign-in, and `V45` adds
   support recovery — the signed challenge, its audit, and the row that makes a challenge
   answerable once. See **Users, sign-in and support recovery**. Before them, `V43`

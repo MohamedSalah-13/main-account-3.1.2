@@ -1,0 +1,92 @@
+.audit-log-root .audit-kpi-total .kpi-value {
+    -fx-text-fill: -app-primary;
+}
+
+.audit-log-root .audit-kpi-insert {
+    -fx-border-color: -app-success-border;
+}
+
+.audit-log-root .audit-kpi-insert .kpi-value {
+    -fx-text-fill: -app-success;
+}
+
+.audit-log-root .audit-kpi-update {
+    -fx-border-color: -app-warning-border;
+}
+
+.audit-log-root .audit-kpi-update .kpi-value {
+    -fx-text-fill: -app-warning;
+}
+
+.audit-log-root .audit-kpi-delete {
+    -fx-border-color: -app-danger-border;
+}
+
+.audit-log-root .audit-kpi-delete .kpi-value {
+    -fx-text-fill: -app-danger;
+}
+
+.audit-log-root .audit-filter-card {
+    -fx-padding: 0.818em 1.091em;
+}
+
+.audit-log-root .audit-details-card {
+    -fx-min-height: 13.636em;
+}
+
+.audit-log-root .audit-json-area {
+    -fx-font-family: "Consolas", "Courier New", monospace;
+    -fx-font-size: 0.955em;
+}
+
+.audit-log-root .table-row-cell.audit-row-insert {
+    -fx-border-color: transparent transparent transparent -app-success;
+    -fx-border-width: 0 0 0 0.273em;
+}
+
+.audit-log-root .table-row-cell.audit-row-update {
+    -fx-border-color: transparent transparent transparent -app-warning;
+    -fx-border-width: 0 0 0 0.273em;
+}
+
+.audit-log-root .table-row-cell.audit-row-delete {
+    -fx-border-color: transparent transparent transparent -app-danger;
+    -fx-border-width: 0 0 0 0.273em;
+}
+
+.audit-log-root .audit-kpi-export,
+.audit-log-root .audit-kpi-policy {
+    -fx-border-color: -app-primary;
+}
+
+.audit-log-root .audit-kpi-export .kpi-value,
+.audit-log-root .audit-kpi-policy .kpi-value {
+    -fx-text-fill: -app-primary;
+}
+
+.audit-log-root .audit-kpi-cleanup {
+    -fx-border-color: -app-warning-border;
+}
+
+.audit-log-root .audit-kpi-cleanup .kpi-value {
+    -fx-text-fill: -app-warning;
+}
+
+.audit-log-root .audit-diff-table .table-row-cell.audit-diff-added {
+    -fx-border-color: transparent transparent transparent -app-success;
+    -fx-border-width: 0 0 0 0.273em;
+}
+
+.audit-log-root .audit-diff-table .table-row-cell.audit-diff-removed {
+    -fx-border-color: transparent transparent transparent -app-danger;
+    -fx-border-width: 0 0 0 0.273em;
+}
+
+.audit-log-root .audit-diff-table .table-row-cell.audit-diff-changed {
+    -fx-border-color: transparent transparent transparent -app-warning;
+    -fx-border-width: 0 0 0 0.273em;
+}
+
+.audit-log-root .audit-diff-table .table-row-cell.audit-diff-unchanged {
+    -fx-opacity: 0.72;
+}

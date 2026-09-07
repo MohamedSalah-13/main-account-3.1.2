@@ -6,6 +6,7 @@ import com.hamza.account.config.ThemeManager;
 import com.hamza.account.config.UiScale;
 import com.hamza.account.controller.others.ServiceRegistry;
 import com.hamza.account.features.notification.NotificationBootstrap;
+import com.hamza.account.features.audit.AuditRetentionScheduler;
 import com.hamza.account.features.pricecheck.KioskRouting;
 import com.hamza.account.features.rbac.CurrentUser;
 import com.hamza.account.features.rbac.RbacService;
@@ -156,6 +157,7 @@ public final class ApplicationNavigator {
 
     private void stopSessionServices() {
         NotificationBootstrap.stop();
+        AuditRetentionScheduler.stop();
         ScheduledBackup.stopScheduler();
         RbacService rbac = ServiceRegistry.get(RbacService.class);
         if (rbac != null) rbac.signOut();

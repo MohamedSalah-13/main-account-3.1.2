@@ -24,6 +24,7 @@ import java.sql.SQLException;
 public final class ConnectionManager {
 
     private static final ThreadLocal<Connection> TRANSACTIONAL = new ThreadLocal<>();
+    private static volatile SessionInitializer sessionInitializer = connection -> { };
 
     private ConnectionManager() {
     }
@@ -38,7 +39,22 @@ public final class ConnectionManager {
         if (transactional != null) {
             return transactional;
         }
-        return DataSourceProvider.getDataSource().getConnection();
+        return initialize(DataSourceProvider.getDataSource().getConnection());
+    }
+
+    /**
+     * Installs application-owned state that must be refreshed on every pooled
+     * connection borrow. Audit actor variables are the first consumer: setting them
+     * only at sign-in stamps one physical connection while the pool may hand the
+     * statement any of the others.
+     */
+    public static void installSessionInitializer(SessionInitializer initializer) {
+        sessionInitializer = initializer == null ? connection -> { } : initializer;
+    }
+
+    /** Restores the no-op initializer when the datasource is shut down or a test resets it. */
+    public static void clearSessionInitializer() {
+        sessionInitializer = connection -> { };
     }
 
     /**
@@ -74,7 +90,7 @@ public final class ConnectionManager {
         if (inTransaction()) {
             return null;
         }
-        Connection connection = DataSourceProvider.getDataSource().getConnection();
+        Connection connection = initialize(DataSourceProvider.getDataSource().getConnection());
         try {
             connection.setAutoCommit(false);
         } catch (SQLException e) {
@@ -104,10 +120,26 @@ public final class ConnectionManager {
     }
 
     private static void closeQuietly(Connection connection) {
+        if (connection == null) return;
         try {
             connection.close();
         } catch (SQLException e) {
             log.error("Failed to return a connection to the pool", e);
         }
+    }
+
+    private static Connection initialize(Connection connection) throws SQLException {
+        try {
+            sessionInitializer.initialize(connection);
+            return connection;
+        } catch (SQLException | RuntimeException error) {
+            closeQuietly(connection);
+            throw error;
+        }
+    }
+
+    @FunctionalInterface
+    public interface SessionInitializer {
+        void initialize(Connection connection) throws SQLException;
     }
 }

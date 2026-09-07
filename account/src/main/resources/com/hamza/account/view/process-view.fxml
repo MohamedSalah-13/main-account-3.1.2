@@ -3,93 +3,106 @@
 <?import javafx.geometry.Insets?>
 <?import javafx.scene.control.Button?>
 <?import javafx.scene.control.ComboBox?>
+<?import javafx.scene.control.CheckBox?>
 <?import javafx.scene.control.DatePicker?>
 <?import javafx.scene.control.Label?>
-<?import javafx.scene.control.RadioButton?>
-<?import javafx.scene.control.ScrollPane?>
-<?import javafx.scene.control.TableView?>
+<?import javafx.scene.control.Pagination?>
+<?import javafx.scene.control.ProgressIndicator?>
 <?import javafx.scene.control.TextField?>
-<?import javafx.scene.control.ToggleGroup?>
-<?import javafx.scene.control.ToolBar?>
-<?import javafx.scene.layout.BorderPane?>
-<?import javafx.scene.layout.ColumnConstraints?>
-<?import javafx.scene.layout.GridPane?>
+<?import javafx.scene.layout.FlowPane?>
 <?import javafx.scene.layout.HBox?>
-<?import javafx.scene.layout.RowConstraints?>
+<?import javafx.scene.layout.Region?>
 <?import javafx.scene.layout.StackPane?>
 <?import javafx.scene.layout.VBox?>
 
-<StackPane fx:id="stackPane" styleClass="app-root" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.hamza.account.controller.others.ProcessesController">
+<StackPane fx:id="root" minHeight="720.0" minWidth="1100.0"
+           styleClass="app-root,audit-log-root" stylesheets="@../css/audit-log.css"
+           xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
+           fx:controller="com.hamza.account.controller.others.ProcessesController">
     <children>
-      <BorderPane styleClass="app-container">
-         <top>
-                  <ToolBar prefHeight="40.0" prefWidth="200.0" BorderPane.alignment="CENTER">
-                      <items>
-                          <Button fx:id="btnDelete" layoutX="10.0" layoutY="10.0" mnemonicParsing="false" styleClass="app-danger-button" text="Delete" />
-                          <Button fx:id="btnClose" cancelButton="true" mnemonicParsing="false" styleClass="app-danger-button" text="Close" />
-                      </items>
-                  </ToolBar>
-         </top>
-         <center>
-            <ScrollPane fitToHeight="true" fitToWidth="true" BorderPane.alignment="CENTER">
-               <content>
-                        <VBox spacing="2.0">
+        <VBox spacing="12.0" styleClass="page-container">
+            <padding><Insets top="14" right="14" bottom="14" left="14"/></padding>
+            <children>
+                <HBox alignment="CENTER_RIGHT" spacing="10.0">
+                    <children>
+                        <VBox spacing="3.0">
                             <children>
-                                <VBox styleClass="app-card">
+                                <Label fx:id="labelTitle" text="%audit.log.title" styleClass="page-title"/>
+                                <Label text="%audit.log.subtitle" styleClass="page-subtitle" wrapText="true"/>
+                            </children>
+                        </VBox>
+                        <Region HBox.hgrow="ALWAYS"/>
+                        <ProgressIndicator fx:id="progress" maxHeight="24.0" maxWidth="24.0" visible="false"/>
+                        <Button fx:id="btnExportExcel" text="%audit.log.export.excel" styleClass="success-button"/>
+                        <Button fx:id="btnExportPdf" text="%audit.log.export.pdf" styleClass="primary-button"/>
+                        <Button fx:id="btnRetention" text="%audit.log.retention.button" styleClass="warning-button"/>
+                        <Button fx:id="btnAdminEvents" text="%audit.admin.button" styleClass="neutral-button"/>
+                        <Button fx:id="btnRefresh" text="%refresh" styleClass="neutral-button"/>
+                        <Button fx:id="btnClose" text="%close" styleClass="neutral-button"/>
+                    </children>
+                </HBox>
+
+                <FlowPane alignment="CENTER_RIGHT" hgap="10.0" vgap="10.0">
+                    <children>
+                        <VBox spacing="3.0" styleClass="kpi-tile,audit-kpi-total">
+                            <children><Label text="%audit.log.summary.total" styleClass="kpi-title"/><Label fx:id="labelTotal" text="0" styleClass="kpi-value"/></children>
+                        </VBox>
+                        <VBox spacing="3.0" styleClass="kpi-tile,audit-kpi-insert">
+                            <children><Label text="%audit.log.summary.inserts" styleClass="kpi-title"/><Label fx:id="labelInserts" text="0" styleClass="kpi-value"/></children>
+                        </VBox>
+                        <VBox spacing="3.0" styleClass="kpi-tile,audit-kpi-update">
+                            <children><Label text="%audit.log.summary.updates" styleClass="kpi-title"/><Label fx:id="labelUpdates" text="0" styleClass="kpi-value"/></children>
+                        </VBox>
+                        <VBox spacing="3.0" styleClass="kpi-tile,audit-kpi-delete">
+                            <children><Label text="%audit.log.summary.deletes" styleClass="kpi-title"/><Label fx:id="labelDeletes" text="0" styleClass="kpi-value"/></children>
+                        </VBox>
+                    </children>
+                </FlowPane>
+
+                <VBox spacing="9.0" styleClass="app-card,audit-filter-card">
+                    <children>
+                        <Label text="%audit.log.filter.title" styleClass="section-title"/>
+                        <FlowPane alignment="CENTER_RIGHT" hgap="8.0" vgap="8.0">
+                            <children>
+                                <TextField fx:id="txtSearch" prefWidth="250.0" promptText="%audit.log.filter.search"/>
+                                <ComboBox fx:id="comboUser" prefWidth="155.0"/>
+                                <ComboBox fx:id="comboAction" prefWidth="135.0"/>
+                                <ComboBox fx:id="comboTable" prefWidth="165.0"/>
+                                <ComboBox fx:id="comboSource" prefWidth="145.0"/>
+                                <DatePicker fx:id="dateFrom" prefWidth="145.0" promptText="%audit.log.filter.from"/>
+                                <DatePicker fx:id="dateTo" prefWidth="145.0" promptText="%audit.log.filter.to"/>
+                                <ComboBox fx:id="comboSort" prefWidth="165.0"/>
+                                <Button fx:id="btnApply" text="%audit.log.filter.apply" styleClass="primary-button"/>
+                                <Button fx:id="btnClear" text="%audit.log.filter.clear" styleClass="neutral-button"/>
+                            </children>
+                        </FlowPane>
+                    </children>
+                </VBox>
+
+                <Pagination fx:id="pagination" maxPageIndicatorCount="7" styleClass="modern-pagination"
+                            VBox.vgrow="ALWAYS"/>
+
+                <VBox spacing="8.0" styleClass="app-card,audit-details-card">
+                    <children>
+                        <HBox alignment="CENTER_RIGHT" spacing="8.0">
+                            <children>
+                                <VBox spacing="2.0">
                                     <children>
-                                        <GridPane hgap="10.0" minHeight="-Infinity" minWidth="-Infinity" vgap="15.0">
-                                            <columnConstraints>
-                                                <ColumnConstraints hgrow="SOMETIMES" maxWidth="-Infinity" minWidth="10.0" />
-                                                <ColumnConstraints hgrow="SOMETIMES" maxWidth="-Infinity" minWidth="10.0" prefWidth="300.0" />
-                                                <ColumnConstraints hgrow="SOMETIMES" maxWidth="-Infinity" minWidth="10.0" />
-                                                <ColumnConstraints hgrow="SOMETIMES" maxWidth="-Infinity" minWidth="10.0" prefWidth="300.0" />
-                                            </columnConstraints>
-                                            <rowConstraints>
-                                                <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
-                                                <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
-                                                <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
-                                                <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
-                                                <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
-                                            </rowConstraints>
-                                            <children>
-                                                <Label fx:id="labelAdmin" styleClass="form-label" text="Admin" />
-                                                <ComboBox fx:id="boxAdmin" maxWidth="1.7976931348623157E308" GridPane.columnIndex="1" />
-                                                <Label fx:id="labelProcess" styleClass="form-label" text="Process" GridPane.columnIndex="2" />
-                                                <ComboBox fx:id="boxProcess" maxWidth="1.7976931348623157E308" GridPane.columnIndex="3" />
-                                                <ComboBox fx:id="boxTable" maxWidth="1.7976931348623157E308" GridPane.columnIndex="1" GridPane.rowIndex="1" />
-                                                <Label fx:id="labelTable" styleClass="form-label" text="Table" GridPane.rowIndex="1" />
-                                                <Label fx:id="labelSearch" styleClass="form-label" text="Search" GridPane.rowIndex="4" />
-                                                <TextField fx:id="txtSearch" minWidth="-Infinity" prefWidth="300.0" GridPane.columnIndex="1" GridPane.rowIndex="4" />
-                                                <Label fx:id="labelFrom" styleClass="form-label" text="From" GridPane.rowIndex="2" />
-                                                <Label fx:id="labelTo" styleClass="form-label" text="To" GridPane.columnIndex="2" GridPane.rowIndex="2" />
-                                                <Label fx:id="labelSortBy" styleClass="form-label" text="Sorted By" GridPane.rowIndex="3" />
-                                                <ComboBox fx:id="comboSortedBy" disable="true" maxWidth="1.7976931348623157E308" GridPane.columnIndex="1" GridPane.rowIndex="3" />
-                                                <HBox alignment="CENTER_LEFT" minWidth="-Infinity" spacing="20.0" GridPane.columnIndex="3" GridPane.rowIndex="3">
-                                                    <children>
-                                                        <RadioButton fx:id="sortAscending" disable="true" mnemonicParsing="false" selected="true" text="تصاعديا">
-                                                            <toggleGroup>
-                                                                <ToggleGroup fx:id="group" />
-                                                            </toggleGroup>
-                                                        </RadioButton>
-                                                        <RadioButton fx:id="sortDescending" disable="true" mnemonicParsing="false" text="تنازلبا" toggleGroup="$group" />
-                                                        <Button fx:id="btnSearch" mnemonicParsing="false" styleClass="app-primary-button" text="Search" />
-                                                    </children>
-                                                </HBox>
-                                                <DatePicker fx:id="dateFrom" maxWidth="1.7976931348623157E308" GridPane.columnIndex="1" GridPane.rowIndex="2" />
-                                                <DatePicker fx:id="dateTo" maxWidth="1.7976931348623157E308" GridPane.columnIndex="3" GridPane.rowIndex="2" />
-                                            </children>
-                                        </GridPane>
+                                        <Label text="%audit.log.details.title" styleClass="section-title"/>
+                                        <Label fx:id="labelSelection" text="%audit.log.details.none" styleClass="info-text"/>
                                     </children>
                                 </VBox>
-                                <TableView fx:id="tableView" minHeight="-Infinity" minWidth="-Infinity" prefHeight="250.0" VBox.vgrow="SOMETIMES" />
+                                <Region HBox.hgrow="ALWAYS"/>
+                                <CheckBox fx:id="chkChangedOnly" text="%audit.diff.changed.only"/>
+                                <Button fx:id="btnDelete" text="%audit.log.delete.selected" styleClass="danger-button"/>
                             </children>
-                            <padding>
-                                <Insets bottom="5.0" left="5.0" right="5.0" />
-                            </padding>
-                        </VBox>
-               </content>
-            </ScrollPane>
-         </center>
-      </BorderPane>
+                        </HBox>
+                        <StackPane fx:id="diffHost" minHeight="190.0" VBox.vgrow="ALWAYS"/>
+                    </children>
+                </VBox>
+
+                <Label fx:id="labelStatus" text="%audit.log.status.ready" styleClass="status-label"/>
+            </children>
+        </VBox>
     </children>
 </StackPane>
