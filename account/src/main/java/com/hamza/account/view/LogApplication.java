@@ -7,6 +7,7 @@ import com.hamza.account.controller.login.LoginController;
 import com.hamza.account.controller.login.LoginResult;
 import com.hamza.account.controller.others.ServiceRegistry;
 import com.hamza.account.features.rbac.RbacService;
+import com.hamza.account.features.users.UserPresenceService;
 import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.model.domain.Users;
 import com.hamza.account.period.PeriodLockService;
@@ -37,7 +38,7 @@ public final class LogApplication {
     public void show(Stage stage) throws Exception {
         FXMLLoader loader = new FXMLLoader(getClass().getResource("login.fxml"),
                 LanguageManager.getInstance().getResourceBundle());
-        LoginController controller = new LoginController(this::authenticate, onLoginSuccess);
+        LoginController controller = new LoginController(this::authenticate, this::continueAfterAuthentication);
         loader.setControllerFactory(type -> controller);
 
         Scene scene = new Scene(loader.load());
@@ -68,10 +69,7 @@ public final class LogApplication {
 
         try {
             rbacService.signIn(user);
-            user.setUser_available(1);
-            if (daoFactory.usersDao().updateAvailable(user) != 1) {
-                throw new IllegalStateException("Signed-in user could not be marked available");
-            }
+            new UserPresenceService(daoFactory).mark(user, true);
             PeriodLockService.forget();
 
             if (ScheduledBackup.getTime() > 0) {
@@ -86,5 +84,28 @@ public final class LogApplication {
             rbacService.signOut();
             throw e;
         }
+    }
+
+    private void continueAfterAuthentication(Users user) {
+        try {
+            if (!daoFactory.usersDao().requiresPasswordChange(user.getId())) {
+                onLoginSuccess.accept(user);
+                return;
+            }
+            new ChangePassView(daoFactory, () -> onLoginSuccess.accept(user), () -> cancelForcedPasswordChange(user));
+        } catch (Exception error) {
+            cancelForcedPasswordChange(user);
+            log.error("Could not complete the required password change", error);
+        }
+    }
+
+    private void cancelForcedPasswordChange(Users user) {
+        try {
+            new UserPresenceService(daoFactory).mark(user, false);
+        } catch (Exception error) {
+            log.warn("Could not clear availability after a cancelled password change", error);
+        }
+        RbacService rbacService = ServiceRegistry.get(RbacService.class);
+        if (rbacService != null) rbacService.signOut();
     }
 }

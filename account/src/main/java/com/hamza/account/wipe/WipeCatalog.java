@@ -196,7 +196,9 @@ public final class WipeCatalog {
      */
     public static final WipeTarget USERS = WipeTarget.of("users", "wipe.target.users",
             List.of(WipeTable.keeping("users", "id <> 1",
-                            "UPDATE users SET user_name = 'admin', user_pass = 'admin', user_available = 1 WHERE id = 1")),
+                            "UPDATE users SET user_name = 'admin', "
+                            + "user_pass = '$2a$12$02U/.egUJ.xfI0zTvdYTROBwVFqZMLstAfs/O4tBOJyl/n2xGwvqi', "
+                            + "must_change_password = 1, user_available = 1 WHERE id = 1")),
             "sales", "salesReturns", "purchases", "purchaseReturns",
             "customerAccounts", "supplierAccounts", "customers", "suppliers",
             "items", "subGroups", "mainGroups", "expenses", "employees");

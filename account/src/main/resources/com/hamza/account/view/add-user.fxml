@@ -1,48 +1,47 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
+<?import javafx.geometry.Insets?>
 <?import javafx.scene.control.CheckBox?>
-<?import javafx.scene.control.ComboBox?>
 <?import javafx.scene.control.Label?>
+<?import javafx.scene.control.ComboBox?>
 <?import javafx.scene.control.PasswordField?>
 <?import javafx.scene.control.TextField?>
-<?import javafx.scene.layout.AnchorPane?>
 <?import javafx.scene.layout.ColumnConstraints?>
 <?import javafx.scene.layout.GridPane?>
-<?import javafx.scene.layout.RowConstraints?>
 <?import javafx.scene.layout.VBox?>
 
-<AnchorPane styleClass="app-root" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.hamza.account.controller.users.AddUserController">
+<VBox minWidth="440.0" prefWidth="440.0" spacing="8.0" styleClass="app-root"
+      xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="com.hamza.account.controller.users.AddUserController">
+    <padding><Insets top="12" right="14" bottom="12" left="14"/></padding>
     <children>
-        <VBox layoutX="5.0" layoutY="5.0" styleClass="app-card" AnchorPane.bottomAnchor="5.0" AnchorPane.leftAnchor="5.0" AnchorPane.rightAnchor="5.0" AnchorPane.topAnchor="5.0">
+        <Label text="%user.add.title" styleClass="page-title"/>
+        <GridPane hgap="8.0" vgap="7.0" styleClass="app-card">
+            <columnConstraints>
+                <ColumnConstraints minWidth="95.0" prefWidth="105.0"/>
+                <ColumnConstraints hgrow="ALWAYS"/>
+            </columnConstraints>
             <children>
-                <GridPane hgap="10.0" minHeight="-Infinity" minWidth="-Infinity" vgap="10.0">
-                    <columnConstraints>
-                        <ColumnConstraints hgrow="SOMETIMES" maxWidth="-Infinity" minWidth="10.0" />
-                        <ColumnConstraints hgrow="SOMETIMES" maxWidth="-Infinity" minWidth="10.0" prefWidth="300.0" />
-                    </columnConstraints>
-                    <rowConstraints>
-                        <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
-                        <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
-                        <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
-                        <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
-                        <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
-                        <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
-                    </rowConstraints>
-                    <children>
-                        <Label fx:id="labelCode" text="%code" />
-                        <Label fx:id="labelName" text="%name" GridPane.rowIndex="1" />
-                        <Label fx:id="labelActive" text="%activated" GridPane.rowIndex="4" />
-                        <Label fx:id="labelPass" text="%password" GridPane.rowIndex="2" />
-                        <TextField fx:id="txtCode" editable="false" promptText="%code" GridPane.columnIndex="1" />
-                        <TextField fx:id="txtName" promptText="%name" GridPane.columnIndex="1" GridPane.rowIndex="1" />
-                        <PasswordField fx:id="txtPass" promptText="%password" GridPane.columnIndex="1" GridPane.rowIndex="2" />
-                        <CheckBox fx:id="checkShowPass" mnemonicParsing="false" text="%user.show.password" GridPane.columnIndex="1" GridPane.rowIndex="3" />
-                        <ComboBox fx:id="comboActive" maxWidth="1.7976931348623157E308" GridPane.columnIndex="1" GridPane.rowIndex="4" />
-                        <CheckBox fx:id="checkKioskOnly" mnemonicParsing="false" text="%user.kiosk.only" wrapText="true"
-                                  GridPane.columnIndex="1" GridPane.rowIndex="5" />
-                    </children>
-                </GridPane>
+                <Label fx:id="labelCode" text="%code"/>
+                <TextField fx:id="txtCode" editable="false" promptText="%code" styleClass="modern-input" GridPane.columnIndex="1"/>
+                <Label fx:id="labelName" text="%name" GridPane.rowIndex="1"/>
+                <TextField fx:id="txtName" promptText="%name" styleClass="modern-input" GridPane.columnIndex="1" GridPane.rowIndex="1"/>
+                <Label fx:id="labelPass" text="%password" GridPane.rowIndex="2"/>
+                <PasswordField fx:id="txtPass" promptText="%password" styleClass="modern-input" GridPane.columnIndex="1" GridPane.rowIndex="2"/>
+                <Label fx:id="labelPassConfirm" text="%user.password.confirm" GridPane.rowIndex="3"/>
+                <PasswordField fx:id="txtPassConfirm" promptText="%user.password.confirm" styleClass="modern-input" GridPane.columnIndex="1" GridPane.rowIndex="3"/>
+                <Label fx:id="labelPasswordHint" styleClass="info-text" wrapText="true" GridPane.columnIndex="1" GridPane.rowIndex="4"/>
+                <CheckBox fx:id="checkShowPass" mnemonicParsing="false" text="%user.show.password" GridPane.columnIndex="1" GridPane.rowIndex="5"/>
+                <CheckBox fx:id="checkKioskOnly" mnemonicParsing="false" text="%user.kiosk.only" wrapText="true" GridPane.columnIndex="1" GridPane.rowIndex="6"/>
+            </children>
+        </GridPane>
+        <VBox fx:id="paneRoles" spacing="5.0" styleClass="app-card">
+            <children>
+                <Label fx:id="labelRoles"/>
+                <Label fx:id="labelRolesHint" text="%user.add.roles.hint" styleClass="info-text" wrapText="true"/>
+                <TextField fx:id="txtRoleSearch" promptText="%user.add.roles.search" styleClass="modern-input"/>
+                <ComboBox fx:id="comboRole" maxWidth="1.7976931348623157E308"/>
             </children>
         </VBox>
     </children>
-</AnchorPane>
+</VBox>

@@ -17,6 +17,8 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.*;
 import java.security.spec.X509EncodedKeySpec;
+
+import com.hamza.account.security.ReleaseSigningKey;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -42,18 +44,8 @@ public class TrialManager {
     private static final String FILE_VERSION = "v1";
     private static final int MAX_FAILS = 1;
     private static final String LICENSE_FILE_PATH = System.getProperty("user.dir") + "\\license.dat";
-    private static final String LICENSE_PUBLIC_KEY_PEM =
-            "-----BEGIN PUBLIC KEY-----\n" +
-                    "MIIBojANBgkqhkiG9w0BAQEFAAOCAY8AMIIBigKCAYEA0hpbyW7GN3reweG/Pp/7\n" +
-                    "O/hlaHOeOnoGEahcF5bgxO009mEubbxRZd/dtrveGrQT1p2sYVZP1nBenlijrto0\n" +
-                    "sxrSUOlBQxfLvSnGE3k5951CQQAoDLuOQexg+AVwzA9LuCDS5eX70DpJMu+hZWtd\n" +
-                    "pcJMyIgbCYbjGQWWgHZ7adcDMwreELuyD/kR/j8BkmPe+2LzhzMckZI+tAHmHWlz\n" +
-                    "qU37N3kOD6oe6yokm1ygpWeIh2BwOXtbyEglOIKCKzycAY2qUBzr5Fee5Nd0dKhI\n" +
-                    "uqWPEfBC9SJ2cRJzP1z9v/JGQEGMGrO5xOGvQ1+D15Y2iSI+tkWk+oLc4UzrR3GU\n" +
-                    "vjajBVD2mBUiLaP0T4fiuco85itmfschYQmEqcQLF2+kjjU2WKl18pPcAhglrA/P\n" +
-                    "uuYqdA7LigV8ejdF1j2wRxTcXwg4fT87Fg0WYUw5UijH7Jx4rTWGO5xhOzMuZbca\n" +
-                    "Vimf4BnOTtLm8RmI3Nmy383r8ijdEVTBnamRIx4u1SSVAgMBAAE=\n" +
-                    "-----END PUBLIC KEY-----\n";
+    /** One copy, shared with support recovery - see {@link ReleaseSigningKey}. */
+    private static final String LICENSE_PUBLIC_KEY_PEM = ReleaseSigningKey.PEM;
 
     private final Connection connection;
 

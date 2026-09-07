@@ -18,6 +18,11 @@ import lombok.extern.log4j.Log4j2;
 public class ChangePassView {
 
     public ChangePassView(DaoFactory daoFactory) throws Exception {
+        this(daoFactory, () -> { }, () -> { });
+    }
+
+    /** Used after a bootstrap login: cancelling leaves the user at the login screen. */
+    public ChangePassView(DaoFactory daoFactory, Runnable onPasswordChanged, Runnable onCancelled) throws Exception {
         var changePassInt = new ChangePassInt() {
             @Override
             public boolean verifyCurrentPassword(String candidatePassword) {
@@ -46,6 +51,9 @@ public class ChangePassView {
         if (b.isPresent() && b.get()) {
             Thread thread = new Thread(() -> Platform.runLater(AllAlerts::alertSave));
             thread.start();
+            onPasswordChanged.run();
+        } else {
+            onCancelled.run();
         }
     }
 

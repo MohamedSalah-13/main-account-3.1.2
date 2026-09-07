@@ -27,8 +27,8 @@ mvn -o -pl account -am test -Dtest=ScheduledBackupTest -Dsurefire.failIfNoSpecif
 
 **Coverage is real but uneven — know which half you are in.** JUnit 5 and Mockito are declared in the
 root pom and inherited by both modules; surefire needs no configuration. `mvn clean test` currently runs
-**1,296 tests across 159 test source files** with 79 skipped (below) — the figure `mvn clean test`
-reports, measured on 2026-09-06. What is
+**1,340 tests across 169 test source files** with 79 skipped (below) — the figure `mvn clean test`
+reports, measured on 2026-09-07. What is
 genuinely covered:
 
 - **The declarative specs, pinned character for character** — `DocumentDaoStatementsTest`,
@@ -185,6 +185,11 @@ Two documents govern work here and are kept current — read them before large c
   yet — which is all of it. **Read it before touching `TrialManager`, `DatabaseMigrationService`,
   `PreferencesSetting`, anything under `features/backup` or `features/workstation`, or the
   `V38`-`V42` tables.**
+- **[`docs/users-and-recovery-plan.md`](docs/users-and-recovery-plan.md)** — accounts,
+  the forced first password change, and emergency recovery: why `V44` hashes the credential
+  `V1` seeds rather than replacing it, why there is no `delete`, and §6 the one decision still
+  open — where the support key comes from. **Read it before touching `UsersService`,
+  `features/users`, the login path or the `V44`-`V45` tables.**
 - **[`docs/agent-worktree-rules.md`](docs/agent-worktree-rules.md)** - the contract for an AI agent
   working in a worktree, whatever tool it is: never commit, merge or push; always `clean`; never
   run the database acceptance classes without a disposable schema; never create a `config.xml`.
@@ -307,10 +312,21 @@ guard when you add the method.
 **Only the first of those two existed until 2026-08-31, while this file described the second.** A
 service method with no `require` passed every check there was, and two of them did: `openShift` and
 `closeShift`, which any signed-in user could call for anyone. **Both are guarded now**, and the debt
-they represented is paid: `WRITES_WITHOUT_A_GUARD` is down to the two entries that are legitimate —
-a read that seeds the company row, and the wallet fee whose only callers guard first. The list fails
-the build in both directions, so it cannot become fiction: a new unguarded write fails it, and so
-does an entry that has quietly been fixed.
+they represented is paid: `WRITES_WITHOUT_A_GUARD` holds only entries that are legitimate — a read
+that seeds the company row, the wallet fee whose only callers guard first, emergency recovery which
+runs when there is no session to ask, and the presence column written on sign-in and sign-out. The
+list fails the build in both directions, so it cannot become fiction: a new unguarded write fails
+it, and so does an entry that has quietly been fixed.
+
+**Both rules used to look for a write called exactly `update` or `deleteById`.** So every write
+named anything else was invisible to them — `updateCase`, `updateImage`, `updateList`,
+`updateAvailable`, `deleteByReference`, `deleteRangeIds` — while the insert half already matched
+`insert` followed by anything. That was not a narrower rule, it was the same rule with holes in
+it, and one of the holes was real: `LogApplication` and `ApplicationNavigator` wrote
+`users.user_available` straight through `UsersDao` from `view/`, which is exactly what the first
+rule forbids, for as long as the rule could not see it. The detector now matches
+`(?:insert|update|delete)` followed by anything, the two view writes go through
+`UserPresenceService`, and a write is a write whatever it is called.
 
 Roles live in `auth_role` / `auth_role_permission` / `auth_user_role`, resolved by `RbacService` over
 `JdbcRbacRepository`, with per-user overrides in `auth_user_permission_override`. The schema arrived in
@@ -321,6 +337,78 @@ read-only legacy evidence — nothing reads it for decisions.
 `CurrentUser.get()/getOrNull()` reads the signed-in user from `UserSessionContext` in `ServiceRegistry`.
 It is **process-wide**, which is correct for a desktop app and is one of the things that has to change
 before anything is served over a network — see `docs/new-code-rules.md`.
+
+### Users, sign-in and support recovery
+
+`features/users` holds the management screen's queries; `service/UsersService` holds the rules.
+Four things to know before touching any of it:
+
+**`V1` seeds `admin/admin` in plain text, and `V44` is what ends that.** It replaces the value
+in place with a bcrypt hash of the same password and sets `must_change_password`, so an existing
+install is not locked out — it is asked to change at the next sign-in, before the main window
+opens. `BootstrapPasswordMigrationTest` reads both values out of the two migrations and checks the
+hash really is a hash of what `V1` seeded: asserting only that the file contains `$2a$12$` passes
+just as happily on a hash of something else, which would lock every install out of the one account
+that can sign in. `WipeCatalog.USERS` restores the same hash and the same flag, never the literal.
+
+**A change the system demands does not go through the permission that governs changing by
+choice.** `UsersService.updateOwnPassword` asks `requireCurrentUser` first — the check that
+actually matters, since nothing lets anyone touch a password but their own — and requires
+`SETTING_UPDATE_PASS` only when `must_change_password` is not set. A user carrying the flag
+without that permission could otherwise satisfy neither the demand nor the login screen, with no
+screen anywhere able to clear it.
+
+**There is no `UsersService.delete`.** An account is retired with `updateActive(id, false)`;
+`users.user_name` is UNIQUE, so a deleted name could never be issued again, and a method called
+`delete` that deactivated instead was a trap for the next caller. For the same reason `update`
+carries the **stored** `user_activity` over rather than taking one from its caller: `UsersDao.update`
+writes that column, and the edit screen has no control for it, so it was sending `true` and quietly
+reactivating every deactivated account it touched.
+
+**Emergency recovery is the one write path with no permission guard, deliberately.**
+`--support-recovery` opens `SupportRecoveryView` before any login, because it exists for the case
+where nobody can sign in and there is no session to ask a permission of. What stands in for the
+guard is a **signed challenge**: the machine issues `HAMZA_RECOVERY|<machine>|<nonce>|<issued>`
+(`support_recovery_challenge`, `V45`) and accepts only a `BASE64(payload).BASE64(signature)`
+response — the same shape as `license.dat` — signed by the private key that issues licences,
+which this repository has never held. Around it: five refused responses per fifteen minutes, and
+a row in `support_recovery_audit` for **every** attempt including the refused ones. The window is
+asked of those rows, not held in memory, because an attempt costs one relaunch of the program.
+Both methods are listed in `WRITES_WITHOUT_A_GUARD` with that reason.
+
+**It replaced a shared support key, and why is the lesson.** The first draft of `V45` seeded
+that key's bcrypt hash into `app_setting`, which would have shipped it in every copy of this
+repository — and the attempt limit never touches the attack that matters: the hash is worked on
+offline, unlimited and unlogged, and the right key then arrives on the first try. One key for
+every installation, so breaking it once opens the administrator account everywhere. It was
+folded out before the migration ever shipped, and `V45` now deletes such a row on the way past.
+
+Three things are bound into the signed text and each earns its place: the **machine**, so a
+response for one customer is inert at another; the **nonce**, so it answers once (`UPDATE …
+WHERE redeemed_at IS NULL` is the whole race); and the **issue time**, so an unused one expires.
+**The `HAMZA_RECOVERY` tag is load-bearing** — `license.dat` is signed by the same key over
+`HAMZA_ACCOUNT|<machine>`, so without a tag of our own every customer's own licence file would
+verify here. `SupportRecoveryChallengeTest` pins it. The public key lives once, in
+`ReleaseSigningKey`; `TrialManager` reads it from there. Full contract, including what support
+runs to sign: `docs/users-and-recovery-plan.md` §6.
+
+**Three contracts in `DialogApplication`/`OpenApplication` break a new screen silently**, and the
+user-management screen broke on all three before it was ever opened:
+
+- **`save()` must return exactly `1`.** Anything else is a failed save: the dialog stays open and
+  `afterSaved()` never runs. `AddUserController.insertData` returned the generated user id, so
+  every created user was reported as a failure — and saving again collided with `users_pk`.
+- **`addLastPane()` defaults to `false`**, which adds no `ButtonType` at all, and a `Dialog`
+  without a `CANCEL_CLOSE` button ignores the window's close control. A screen that does not
+  override it needs a close button of its own; `DeleteDataController` is the worked example.
+- **`pagination.setPageFactory` owns the node it returns.** Declaring a `TableView` in the FXML
+  *and* returning it gives it two parents, so the Pagination tears it out of its own slot.
+  `InventoryController` and `UserController` build the table in code and give the Pagination the
+  `VBox.vgrow`; nothing else is safe.
+
+`UserPresenceService` writes `users.user_available` — the "online" column — for the login screen
+and the navigator's sign-out. It has no guard either, and that is not debt: presence is a
+consequence of authenticating rather than an operation anyone is authorized to perform.
 
 ### Errors
 
@@ -1137,7 +1225,10 @@ Schema changes are **Flyway migrations**, in `account/src/main/resources/db/migr
 - `V1__baseline.sql` is the schema as shipped to clients in v4.1.3 — tables, indexes, procedures and the
   seed data (including the `admin` user, without which nobody can log in). It is the Flyway baseline: an
   existing client database is **stamped** with it, never executed, because it already is that schema. A
-  new database executes it and continues with `V2`, `V3`, … The current head is `V43`: `V43`
+  new database executes it and continues with `V2`, `V3`, … The current head is `V45`: `V44` hashes the
+  `admin/admin` credential `V1` seeds and demands a change at the next sign-in, and `V45` adds
+  support recovery — the signed challenge, its audit, and the row that makes a challenge
+  answerable once. See **Users, sign-in and support recovery**. Before them, `V43`
   repairs the timestamps stored shifted by the machine's UTC offset (see **Database access**
   above). `V38`–`V42` are
   the multi-device work — a trial row per machine, the two backup permissions, the shared `app_setting`
