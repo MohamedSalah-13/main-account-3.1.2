@@ -35,8 +35,9 @@ class UsersServiceValidationTest {
     }
 
     @Test
-    void aRealPasswordIsAccepted() {
-        assertDoesNotThrow(() -> UsersService.requirePassword("s"));
+    void aPasswordMustHaveAtLeastEightCharacters() {
+        assertThrows(DaoException.class, () -> UsersService.requirePassword("short"));
+        assertDoesNotThrow(() -> UsersService.requirePassword("safe-pass"));
         assertDoesNotThrow(() -> UsersService.requirePassword(" leading and trailing "));
     }
 

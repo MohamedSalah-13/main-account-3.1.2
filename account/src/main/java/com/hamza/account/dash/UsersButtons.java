@@ -1,6 +1,5 @@
 package com.hamza.account.dash;
 
-import com.hamza.account.config.Image_Setting;
 import com.hamza.account.controller.main.ButtonWithPerm;
 import com.hamza.account.controller.main.DataPublisher;
 import com.hamza.account.controller.main.LoadData;
@@ -9,14 +8,11 @@ import com.hamza.account.controller.users.UserController;
 import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.openFxml.AddForAllApplication;
 import com.hamza.account.otherSetting.KeyCodeCombinationSetting;
-import com.hamza.account.table.TableOpen;
 import com.hamza.account.authorization.AppPermissions;
 import com.hamza.account.authorization.PermissionKey;
-import com.hamza.controlsfx.button.ImageDesign;
 import com.hamza.controlsfx.language.LanguageManager;
-import javafx.scene.Node;
+import com.hamza.account.view.OpenApplication;
 import javafx.scene.input.KeyCodeCombination;
-import javafx.stage.Stage;
 import lombok.extern.log4j.Log4j2;
 import org.jetbrains.annotations.NotNull;
 
@@ -37,7 +33,7 @@ public class UsersButtons extends LoadData {
 
             @Override
             public void action() throws Exception {
-                new TableOpen<>(new UserController(daoFactory, dataPublisher, textName())).start(new Stage());
+                new OpenApplication<>(new UserController());
             }
 
             @NotNull
@@ -65,11 +61,6 @@ public class UsersButtons extends LoadData {
             @Override
             public String textName() {
                 return LanguageManager.getInstance().getString("addUser");
-            }
-
-            @Override
-            public Node imageNode() {
-                return new ImageDesign(new Image_Setting().setting);
             }
 
             @Override

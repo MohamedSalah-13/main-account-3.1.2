@@ -9,12 +9,14 @@ import com.hamza.account.config.ThemeManager;
 import com.hamza.account.config.UiScale;
 import com.hamza.account.controller.others.ServiceRegistry;
 import com.hamza.account.features.company.CompanyService;
+import com.hamza.account.features.events.UsersChanged;
 import com.hamza.account.features.inventory.InventoryService;
 import com.hamza.account.features.itemgroups.ItemGroupMoveService;
 import com.hamza.account.features.itemgroups.JdbcItemGroupRepository;
 import com.hamza.account.features.notification.NotificationBootstrap;
 import com.hamza.account.features.rbac.JdbcRbacRepository;
 import com.hamza.account.features.rbac.RbacService;
+import com.hamza.account.features.users.UsersManagementService;
 import com.hamza.account.features.rbac.UserSessionContext;
 import com.hamza.account.features.itemmerge.ItemMergeService;
 import com.hamza.account.features.profitloss.ProfitLossService;
@@ -112,6 +114,12 @@ public class DownLoadApplication extends Application {
             BootstrapResult result = bootstrapTask.getValue();
             showMigrationResult(result.migrationResult());
 
+            if (getParameters().getRaw().contains("--support-recovery")) {
+                SupportRecoveryView.show(primaryStage, result.daoFactory());
+                Platform.exit();
+                return;
+            }
+
             ApplicationNavigator navigator = new ApplicationNavigator(primaryStage, result.daoFactory());
             ServiceRegistry.register(ApplicationNavigator.class, navigator);
             navigator.showLogin();
@@ -157,7 +165,17 @@ public class DownLoadApplication extends Application {
             throw new IllegalStateException("Could not synchronize the permission catalog", e);
         }
         ServiceRegistry.register(UserSessionContext.class, userSession);
-        ServiceRegistry.register(RbacService.class, new RbacService(authorizationRepository, userSession));
+        RbacService rbacService = new RbacService(authorizationRepository, userSession);
+        ServiceRegistry.register(RbacService.class, rbacService);
+        // UsersChanged is relayed to other workstations. Refreshing the immutable session
+        // snapshot here makes a role or override change effective on every signed-in device.
+        eventBus.subscribe(UsersChanged.class, ignored -> Thread.ofVirtual().start(() -> {
+            try {
+                rbacService.refreshCurrentSession();
+            } catch (DaoException error) {
+                log.warn("Could not refresh the current user's authorization snapshot", error);
+            }
+        }));
 
         ServiceRegistry.register(CompanyService.class, new CompanyService(daoFactory));
         ServiceRegistry.register(ItemsService.class, new ItemsService(daoFactory));
@@ -172,7 +190,8 @@ public class DownLoadApplication extends Application {
         ServiceRegistry.register(EmployeeService.class, new EmployeeService(daoFactory));
         ServiceRegistry.register(TreasuryService.class, new TreasuryService(daoFactory));
         ServiceRegistry.register(UnitsService.class, new UnitsService(daoFactory));
-        ServiceRegistry.register(UsersService.class, new UsersService(daoFactory));
+        ServiceRegistry.register(UsersService.class, new UsersService(daoFactory, rbacService));
+        ServiceRegistry.register(UsersManagementService.class, new UsersManagementService(daoFactory));
         ServiceRegistry.register(MainGroupService.class, new MainGroupService(daoFactory));
         ServiceRegistry.register(SupGroupService.class, new SupGroupService(daoFactory));
         ServiceRegistry.register(CardItemService.class, new CardItemService(daoFactory));

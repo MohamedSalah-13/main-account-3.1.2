@@ -241,9 +241,9 @@ class AuthorizationArchitectureTest {
             Path.of("src", "main", "java", "com", "hamza", "account", "features"));
 
     /**
-     * The four methods that write without a guard of their own. Two are fine and two are
-     * debt, and they are listed together because the test cannot tell them apart - only a
-     * reader can, which is what these comments are for.
+     * The methods that write without a guard of their own. The test cannot tell a
+     * deliberate one from a forgotten one - only a reader can, which is what these
+     * comments are for, and why an entry without one should not be added.
      */
     private static final java.util.Set<String> WRITES_WITHOUT_A_GUARD = java.util.Set.of(
             // Fine: a read that seeds the single company row when the table is empty, so
@@ -254,7 +254,24 @@ class AuthorizationArchitectureTest {
             // and AccountSupplierService.save - require the account permission before
             // they get here, and the fee is written in their transaction. Guarding it
             // again would ask permission twice for one operation.
-            "WalletFeeService#post");
+            "WalletFeeService#post",
+
+            // Fine, and the only entries here unguarded on purpose rather than because a
+            // caller guarded first: emergency recovery runs when nobody can sign in, so
+            // there is no session to ask a permission of. Reachable only from the
+            // --support-recovery flag. What stands in for the guard is a challenge
+            // answerable only by the private key that issues licences - which this
+            // repository does not hold - plus a limit of MAX_FAILURES refused responses
+            // per window and a row in support_recovery_audit for every attempt.
+            // issueChallenge writes the challenge row; redeem spends it and resets.
+            "SupportRecoveryService#issueChallenge",
+            "SupportRecoveryService#redeem",
+
+            // Fine: presence is a consequence of authenticating, not something anyone is
+            // authorized to do. A guard would refuse to record that a user had signed in
+            // because of a permission nobody asked them for, and on sign-out there may be
+            // no session left to ask. Which user it is comes from the authenticated Users.
+            "UserPresenceService#mark");
 
     /** The methods in one service file that write a row and never call the guard. */
     private static java.util.List<String> unguardedWrites(Path path) {
@@ -293,11 +310,19 @@ class AuthorizationArchitectureTest {
         return words[words.length - 1];
     }
 
+    /**
+     * The update and delete halves used to be the exact names {@code update},
+     * {@code deleteById} and {@code deleteInvoicesInRange}, so a write called anything
+     * else went unseen - {@code updateCase}, {@code updateImage}, {@code updateList},
+     * {@code updateAvailable}, {@code deleteByReference}, {@code deleteRangeIds}. That
+     * was not a narrower rule but the same rule with holes in it: a method writing a row
+     * is a write whatever it is called, which is already how the insert half reads.
+     */
     private static boolean containsDirectDaoWrite(String source) {
         // Covers fields such as treasuryDao.insert(...), accessors such as
         // accountDao().deleteById(...), and longer generic seams ending in totalDao().
         return source.matches("(?s).*(?:[A-Za-z0-9_]+Dao)(?:\\(\\))?\\s*\\.\\s*"
-                + "(?:insert[A-Za-z0-9_]*|update|deleteById|deleteInvoicesInRange)\\s*\\(.*");
+                + "(?:insert|update|delete)[A-Za-z0-9_]*\\s*\\(.*");
     }
 
     private static boolean contains(Path path, String text) {

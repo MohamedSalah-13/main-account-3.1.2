@@ -44,6 +44,18 @@ public class SharedSettingsStore extends AbstractDao<Object> {
         });
     }
 
+    public String read(String key) throws DaoException {
+        return withConnection(connection -> {
+            try (PreparedStatement statement = connection.prepareStatement(
+                    "SELECT setting_value FROM app_setting WHERE setting_key = ?")) {
+                statement.setString(1, key);
+                try (ResultSet row = statement.executeQuery()) {
+                    return row.next() ? row.getString(1) : null;
+                }
+            }
+        });
+    }
+
     public void write(String key, String value, Integer userId) throws DaoException {
         upsert(WRITE, key, value, userId);
     }

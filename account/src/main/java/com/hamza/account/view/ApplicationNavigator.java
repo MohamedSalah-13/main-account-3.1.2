@@ -9,6 +9,7 @@ import com.hamza.account.features.notification.NotificationBootstrap;
 import com.hamza.account.features.pricecheck.KioskRouting;
 import com.hamza.account.features.rbac.CurrentUser;
 import com.hamza.account.features.rbac.RbacService;
+import com.hamza.account.features.users.UserPresenceService;
 import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.model.domain.Users;
 import com.hamza.controlsfx.alert.AllAlerts;
@@ -140,10 +141,7 @@ public final class ApplicationNavigator {
 
                 if (user != null) {
                     try {
-                        user.setUser_available(0);
-                        if (daoFactory.usersDao().updateAvailable(user) != 1) {
-                            throw new IllegalStateException("Signed-out user could not be marked unavailable");
-                        }
+                        new UserPresenceService(daoFactory).mark(user, false);
                     } catch (Exception e) {
                         if (failure == null) failure = e;
                         else failure.addSuppressed(e);

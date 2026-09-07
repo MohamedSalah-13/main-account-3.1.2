@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.ComboBox?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.Pagination?>
+<?import javafx.scene.control.ProgressIndicator?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Region?>
+<?import javafx.scene.layout.StackPane?>
+<?import javafx.scene.layout.VBox?>
+
+<StackPane fx:id="root" minHeight="650.0" minWidth="980.0" styleClass="app-root,users-management-root"
+           xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
+           fx:controller="com.hamza.account.controller.users.UserController">
+    <children>
+        <VBox spacing="12.0" styleClass="page-container">
+            <padding><Insets top="14" right="14" bottom="14" left="14"/></padding>
+            <children>
+                <HBox alignment="CENTER_RIGHT" spacing="10.0">
+                    <children>
+                        <VBox spacing="3.0">
+                            <children>
+                                <Label text="%user.management.title" styleClass="page-title"/>
+                                <Label text="%user.management.subtitle" styleClass="page-subtitle" wrapText="true"/>
+                            </children>
+                        </VBox>
+                        <Region HBox.hgrow="ALWAYS"/>
+                        <Button fx:id="btnNew" text="%user.management.action.new" styleClass="primary-button"/>
+                    </children>
+                </HBox>
+                <HBox spacing="10.0">
+                    <children>
+                        <VBox spacing="3.0" styleClass="summary-card" HBox.hgrow="ALWAYS">
+                            <children><Label text="%user.management.summary.total"/><Label fx:id="labelTotal" styleClass="summary-value" text="0"/></children>
+                        </VBox>
+                        <VBox spacing="3.0" styleClass="summary-card" HBox.hgrow="ALWAYS">
+                            <children><Label text="%user.management.summary.active"/><Label fx:id="labelActive" styleClass="summary-value" text="0"/></children>
+                        </VBox>
+                        <VBox spacing="3.0" styleClass="summary-card" HBox.hgrow="ALWAYS">
+                            <children><Label text="%user.management.summary.inactive"/><Label fx:id="labelInactive" styleClass="summary-value" text="0"/></children>
+                        </VBox>
+                        <VBox spacing="3.0" styleClass="summary-card" HBox.hgrow="ALWAYS">
+                            <children><Label text="%user.management.summary.kiosk"/><Label fx:id="labelKiosk" styleClass="summary-value" text="0"/></children>
+                        </VBox>
+                    </children>
+                </HBox>
+                <HBox alignment="CENTER_RIGHT" spacing="8.0" styleClass="app-card">
+                    <children>
+                        <TextField fx:id="textSearch" promptText="%user.management.prompt.search" styleClass="modern-input" HBox.hgrow="ALWAYS"/>
+                        <ComboBox fx:id="comboStatus" prefWidth="170.0"/>
+                        <Button fx:id="btnRefresh" text="%refresh" styleClass="neutral-button"/>
+                        <Button fx:id="btnEdit" text="%user.management.action.edit" styleClass="neutral-button"/>
+                        <Button fx:id="btnToggle" text="%user.management.action.activate" styleClass="warning-action-button"/>
+                        <Button fx:id="btnPermissions" text="%user.management.action.permissions" styleClass="primary-button"/>
+                        <Button fx:id="btnClose" text="%close" styleClass="neutral-button"/>
+                    </children>
+                </HBox>
+                <!-- The table is created in the controller and returned by the page
+                     factory, so the Pagination is what owns it and what takes the height.
+                     Declaring it here as well gave it two parents: the Pagination pulled
+                     it out of this VBox and squashed it into the page strip. -->
+                <Pagination fx:id="pagination" maxPageIndicatorCount="5" styleClass="modern-pagination"
+                            VBox.vgrow="ALWAYS"/>
+                <HBox alignment="CENTER_RIGHT" spacing="10.0">
+                    <children>
+                        <Label fx:id="labelStatus" styleClass="info-text"/>
+                        <Region HBox.hgrow="ALWAYS"/>
+                        <ProgressIndicator fx:id="progress" maxHeight="24.0" maxWidth="24.0" visible="false"/>
+                    </children>
+                </HBox>
+            </children>
+        </VBox>
+    </children>
+</StackPane>
