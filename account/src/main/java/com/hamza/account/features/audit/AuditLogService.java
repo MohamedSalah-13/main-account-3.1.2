@@ -3,13 +3,25 @@ package com.hamza.account.features.audit;
 import com.hamza.account.authorization.AppPermissions;
 import com.hamza.account.authorization.AuthorizationGuard;
 import com.hamza.controlsfx.database.DaoException;
-
-import java.util.List;
 import com.hamza.controlsfx.database.TransactionTemplate;
 import com.hamza.controlsfx.error.UserValidationException;
 
+import java.util.List;
+
 /** Authorization boundary for browsing and deleting audit records. */
-public record AuditLogService(AuditLogRepository repository) {
+public final class AuditLogService {
+
+    private final AuditLogRepository repository;
+    private final AuditOperationListener listener;
+
+    public AuditLogService(AuditLogRepository repository) {
+        this(repository, AuditOperationListener.NONE);
+    }
+
+    public AuditLogService(AuditLogRepository repository, AuditOperationListener listener) {
+        this.repository = repository;
+        this.listener = listener == null ? AuditOperationListener.NONE : listener;
+    }
 
     public AuditLogPage load(AuditLogQuery query) throws DaoException {
         AuthorizationGuard.require(AppPermissions.AUDIT_VIEW);
@@ -24,7 +36,9 @@ public record AuditLogService(AuditLogRepository repository) {
     public int delete(List<Long> ids, String reason) throws DaoException, UserValidationException {
         AuthorizationGuard.require(AppPermissions.AUDIT_DELETE);
         String safeReason = requireReason(reason);
-        return TransactionTemplate.execute(() -> repository.delete(ids, safeReason));
+        int deleted = TransactionTemplate.execute(() -> repository.delete(ids, safeReason));
+        listener.notifySafely(new AuditOperationEvent.Deleted(deleted));
+        return deleted;
     }
 
     static String requireReason(String reason) throws UserValidationException {

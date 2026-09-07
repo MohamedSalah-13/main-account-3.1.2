@@ -8,6 +8,8 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -26,7 +28,7 @@ public final class JdbcAuditAdminEventRepository extends AbstractDao<AuditAdminE
 
     private static final String SELECT_SUMMARY = """
             SELECT COUNT(*) AS total_rows,
-                   COALESCE(SUM(e.event_type = 'EXPORT'), 0) AS export_rows,
+                   COALESCE(SUM(e.event_type IN ('EXPORT', 'ADMIN_EXPORT')), 0) AS export_rows,
                    COALESCE(SUM(e.event_type = 'DELETE_SELECTED'), 0) AS delete_rows,
                    COALESCE(SUM(e.event_type = 'RETENTION_POLICY'), 0) AS policy_rows,
                    COALESCE(SUM(e.event_type = 'RETENTION_CLEANUP'), 0) AS cleanup_rows
@@ -44,6 +46,86 @@ public final class JdbcAuditAdminEventRepository extends AbstractDao<AuditAdminE
     @Override
     public AuditAdminOptions options() throws DaoException {
         return withConnection(connection -> new AuditAdminOptions(users(connection), eventTypes(connection)));
+    }
+
+    @Override
+    public AuditActivitySnapshot activity(LocalDate today) throws DaoException {
+        LocalDate safeToday = today == null ? LocalDate.now() : today;
+        LocalDateTime todayStart = safeToday.atStartOfDay();
+        LocalDateTime tomorrowStart = safeToday.plusDays(1).atStartOfDay();
+        LocalDateTime sevenDaysStart = safeToday.minusDays(6).atStartOfDay();
+        return withConnection(connection -> {
+            try (PreparedStatement statement = connection.prepareStatement("""
+                    SELECT
+                      (SELECT COUNT(*) FROM audit_log
+                       WHERE action_time >= ? AND action_time < ?) AS changes_today,
+                      (SELECT COUNT(*) FROM audit_admin_event
+                       WHERE occurred_at >= ? AND occurred_at < ?) AS admin_last_seven,
+                      ((SELECT COUNT(*) FROM audit_log
+                        WHERE source = 'DATABASE' AND action_time >= ? AND action_time < ?)
+                       +
+                       (SELECT COUNT(*) FROM audit_admin_event
+                        WHERE source = 'DATABASE' AND occurred_at >= ? AND occurred_at < ?)) AS direct_last_seven,
+                      (SELECT COUNT(*) FROM audit_log
+                       WHERE table_name IN ('AUTH_ROLE', 'AUTH_ROLE_PERMISSION', 'AUTH_USER_ROLE',
+                                            'AUTH_ROLE_INHERITANCE', 'AUTH_USER_PERMISSION_OVERRIDE')
+                         AND action_time >= ? AND action_time < ?) AS authorization_last_seven
+                    """)) {
+                statement.setTimestamp(1, Timestamp.valueOf(todayStart));
+                statement.setTimestamp(2, Timestamp.valueOf(tomorrowStart));
+                statement.setTimestamp(3, Timestamp.valueOf(sevenDaysStart));
+                statement.setTimestamp(4, Timestamp.valueOf(tomorrowStart));
+                statement.setTimestamp(5, Timestamp.valueOf(sevenDaysStart));
+                statement.setTimestamp(6, Timestamp.valueOf(tomorrowStart));
+                statement.setTimestamp(7, Timestamp.valueOf(sevenDaysStart));
+                statement.setTimestamp(8, Timestamp.valueOf(tomorrowStart));
+                statement.setTimestamp(9, Timestamp.valueOf(sevenDaysStart));
+                statement.setTimestamp(10, Timestamp.valueOf(tomorrowStart));
+                try (ResultSet result = statement.executeQuery()) {
+                    if (!result.next()) return AuditActivitySnapshot.EMPTY;
+                    return new AuditActivitySnapshot(result.getLong("changes_today"),
+                            result.getLong("admin_last_seven"), result.getLong("direct_last_seven"),
+                            result.getLong("authorization_last_seven"));
+                }
+            }
+        });
+    }
+
+    @Override
+    public List<AuditAdminEvent> exportRows(AuditAdminEventQuery query, int limit) throws DaoException {
+        Filter filter = filter(query);
+        return withConnection(connection -> {
+            String sql = SELECT_ROWS + filter.sql() + " ORDER BY " + query.sort().orderBy() + " LIMIT ?";
+            try (PreparedStatement statement = connection.prepareStatement(sql)) {
+                List<Object> parameters = new ArrayList<>(filter.parameters());
+                parameters.add(Math.max(1, limit));
+                bind(statement, parameters);
+                try (ResultSet result = statement.executeQuery()) {
+                    List<AuditAdminEvent> rows = new ArrayList<>();
+                    while (result.next()) rows.add(map(result));
+                    return rows;
+                }
+            }
+        });
+    }
+
+    @Override
+    public void recordExport(AuditExportFormat format, AuditAdminEventQuery query, int rows, String fileName)
+            throws DaoException {
+        withConnection(connection -> {
+            try (PreparedStatement statement = connection.prepareStatement("""
+                    CALL write_audit_admin_event('ADMIN_EXPORT', NULL, ?,
+                        JSON_OBJECT('format', ?, 'file_name', ?, 'from_date', ?, 'to_date', ?))
+                    """)) {
+                statement.setInt(1, rows);
+                statement.setString(2, format.name());
+                statement.setString(3, fileName);
+                statement.setString(4, query.from().toString());
+                statement.setString(5, query.to().toString());
+                statement.execute();
+            }
+            return null;
+        });
     }
 
     private List<AuditAdminEvent> rows(Connection connection, AuditAdminEventQuery query, Filter filter)

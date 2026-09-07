@@ -21,14 +21,26 @@ public final class AuditLogExportService {
     private final AuditLogRepository repository;
     private final Map<AuditExportFormat, AuditLogExporter> exporters;
     private final Clock clock;
+    private final AuditOperationListener listener;
 
     public AuditLogExportService(AuditLogRepository repository) {
-        this(repository, List.of(new AuditExcelExporter(), new AuditPdfExporter()), Clock.systemDefaultZone());
+        this(repository, AuditOperationListener.NONE);
+    }
+
+    public AuditLogExportService(AuditLogRepository repository, AuditOperationListener listener) {
+        this(repository, List.of(new AuditExcelExporter(), new AuditPdfExporter()),
+                Clock.systemDefaultZone(), listener);
     }
 
     AuditLogExportService(AuditLogRepository repository, List<AuditLogExporter> exporters, Clock clock) {
+        this(repository, exporters, clock, AuditOperationListener.NONE);
+    }
+
+    AuditLogExportService(AuditLogRepository repository, List<AuditLogExporter> exporters, Clock clock,
+                          AuditOperationListener listener) {
         this.repository = repository;
         this.clock = clock;
+        this.listener = listener == null ? AuditOperationListener.NONE : listener;
         EnumMap<AuditExportFormat, AuditLogExporter> byFormat = new EnumMap<>(AuditExportFormat.class);
         exporters.forEach(exporter -> byFormat.put(exporter.format(), exporter));
         this.exporters = Map.copyOf(byFormat);
@@ -47,6 +59,7 @@ public final class AuditLogExportService {
         List<AuditLogEntry> rows = repository.exportRows(query, MAX_EXPORT_ROWS);
         exporter.export(target, new AuditExportDocument(query, rows, LocalDateTime.now(clock)));
         repository.recordExport(format, query, rows.size(), target.getFileName().toString());
+        listener.notifySafely(new AuditOperationEvent.Exported(format, target, rows.size(), false));
         return new AuditExportResult(target, rows.size());
     }
 }

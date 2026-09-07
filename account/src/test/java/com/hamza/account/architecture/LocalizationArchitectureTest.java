@@ -53,7 +53,6 @@ class LocalizationArchitectureTest {
             "notification/BackupHealthSource.java",
             "notification/CreditLimitSource.java",
             "notification/LowStockSource.java",
-            "notification/NotificationCategories.java",
             "notification/StockLevelAlert.java",
             "notification/TreasuryBalanceSource.java",
             "rbac/JdbcRbacRepository.java",

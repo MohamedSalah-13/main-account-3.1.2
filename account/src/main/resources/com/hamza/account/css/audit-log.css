@@ -72,6 +72,36 @@
     -fx-text-fill: -app-warning;
 }
 
+.audit-log-root .audit-activity-card {
+    -fx-padding: 0.727em 1.091em;
+}
+
+.audit-log-root .audit-activity-today,
+.audit-log-root .audit-activity-admin {
+    -fx-border-color: -app-primary;
+}
+
+.audit-log-root .audit-activity-today .kpi-value,
+.audit-log-root .audit-activity-admin .kpi-value {
+    -fx-text-fill: -app-primary;
+}
+
+.audit-log-root .audit-activity-database {
+    -fx-border-color: -app-danger-border;
+}
+
+.audit-log-root .audit-activity-database .kpi-value {
+    -fx-text-fill: -app-danger;
+}
+
+.audit-log-root .audit-activity-authorization {
+    -fx-border-color: -app-warning-border;
+}
+
+.audit-log-root .audit-activity-authorization .kpi-value {
+    -fx-text-fill: -app-warning;
+}
+
 .audit-log-root .audit-diff-table .table-row-cell.audit-diff-added {
     -fx-border-color: transparent transparent transparent -app-success;
     -fx-border-width: 0 0 0 0.273em;

@@ -1,12 +1,19 @@
 package com.hamza.account.controller.others;
 
+import com.hamza.account.authorization.AppPermissions;
+import com.hamza.account.authorization.AuthorizationGuard;
 import com.hamza.account.config.AppIcon;
+import com.hamza.account.features.audit.AuditActivitySnapshot;
 import com.hamza.account.features.audit.AuditAdminEvent;
+import com.hamza.account.features.audit.AuditAdminEventLabels;
 import com.hamza.account.features.audit.AuditAdminEventPage;
 import com.hamza.account.features.audit.AuditAdminEventQuery;
 import com.hamza.account.features.audit.AuditAdminEventService;
+import com.hamza.account.features.audit.AuditAdminExportService;
 import com.hamza.account.features.audit.AuditAdminOptions;
 import com.hamza.account.features.audit.AuditAdminSort;
+import com.hamza.account.features.audit.AuditExportFormat;
+import com.hamza.account.features.audit.AuditExportResult;
 import com.hamza.account.features.audit.AuditJsonFormatter;
 import com.hamza.account.features.audit.AuditSourceFilter;
 import com.hamza.account.features.audit.AuditUserOption;
@@ -31,14 +38,17 @@ import javafx.scene.control.TableView;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
 import javafx.scene.layout.StackPane;
+import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 import javafx.util.Duration;
 import javafx.util.StringConverter;
 
+import java.io.File;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Objects;
 import java.util.function.Function;
 
@@ -47,17 +57,20 @@ import java.util.function.Function;
 public final class AuditAdminEventsController {
 
     private static final DateTimeFormatter DATE_TIME = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss");
+    private static final DateTimeFormatter FILE_TIME = DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss");
 
     private final AuditAdminEventService service = ServiceRegistry.get(AuditAdminEventService.class);
+    private final AuditAdminExportService exportService = ServiceRegistry.get(AuditAdminExportService.class);
     private final PauseTransition searchDelay = new PauseTransition(Duration.millis(350));
     private final TableView<AuditAdminEvent> table = new TableView<>();
     private AuditAdminEventQuery query = AuditAdminEventQuery.recent(LocalDate.now());
     private long loadToken;
     private boolean syncing;
-    private boolean optionsLoaded;
+    private boolean metadataLoaded;
 
     @FXML private StackPane root;
     @FXML private Label labelTitle, labelTotal, labelExports, labelDeletes, labelPolicies, labelCleanups;
+    @FXML private Label labelActivityToday, labelActivityAdmin, labelActivityDatabase, labelActivityAuthorization;
     @FXML private Label labelStatus, labelSelection;
     @FXML private TextField txtSearch;
     @FXML private DatePicker dateFrom, dateTo;
@@ -68,7 +81,7 @@ public final class AuditAdminEventsController {
     @FXML private Pagination pagination;
     @FXML private ProgressIndicator progress;
     @FXML private TextArea txtReason, txtDetails;
-    @FXML private Button btnApply, btnClear, btnRefresh, btnClose;
+    @FXML private Button btnApply, btnClear, btnRefresh, btnExportExcel, btnExportPdf, btnClose;
 
     @FXML
     public void initialize() {
@@ -146,11 +159,17 @@ public final class AuditAdminEventsController {
         btnApply.setGraphic(AppIcon.FILTER.graphic());
         btnClear.setGraphic(AppIcon.CLEAR.graphic());
         btnRefresh.setGraphic(AppIcon.REFRESH.graphic());
+        btnExportExcel.setGraphic(AppIcon.SPREADSHEET.graphic());
+        btnExportPdf.setGraphic(AppIcon.EXPORT.graphic());
         btnClose.setGraphic(AppIcon.CLOSE.graphic());
         btnApply.setOnAction(event -> applyFilters());
         btnClear.setOnAction(event -> clearFilters());
-        btnRefresh.setOnAction(event -> load(query));
+        btnRefresh.setOnAction(event -> refresh());
+        btnExportExcel.setOnAction(event -> export(AuditExportFormat.EXCEL));
+        btnExportPdf.setOnAction(event -> export(AuditExportFormat.PDF));
         btnClose.setOnAction(event -> ((Stage) btnClose.getScene().getWindow()).close());
+        permissionVisibility(btnExportExcel, AppPermissions.AUDIT_ADMIN_EXPORT);
+        permissionVisibility(btnExportPdf, AppPermissions.AUDIT_ADMIN_EXPORT);
     }
 
     private void applyFilters() {
@@ -188,12 +207,13 @@ public final class AuditAdminEventsController {
         if (service == null) return;
         query = next;
         long token = ++loadToken;
-        boolean loadOptions = !optionsLoaded;
+        boolean loadMetadata = !metadataLoaded;
         setBusy(true);
         Task<LoadResult> task = new Task<>() {
             @Override protected LoadResult call() throws Exception {
-                AuditAdminOptions options = loadOptions ? service.options() : null;
-                return new LoadResult(service.load(next), options);
+                AuditAdminOptions options = loadMetadata ? service.options() : null;
+                AuditActivitySnapshot activity = loadMetadata ? service.activity(LocalDate.now()) : null;
+                return new LoadResult(service.load(next), options, activity);
             }
         };
         task.setOnSucceeded(event -> {
@@ -201,6 +221,8 @@ public final class AuditAdminEventsController {
             setBusy(false);
             LoadResult result = task.getValue();
             if (result.options() != null) showOptions(result.options());
+            if (result.activity() != null) showActivity(result.activity());
+            if (loadMetadata) metadataLoaded = true;
             showPage(result.page());
         });
         task.setOnFailed(event -> {
@@ -226,10 +248,16 @@ public final class AuditAdminEventsController {
             types.addAll(options.eventTypes());
             comboEvent.setItems(FXCollections.observableArrayList(types));
             comboEvent.setValue(types.contains(query.eventType()) ? query.eventType() : "");
-            optionsLoaded = true;
         } finally {
             syncing = false;
         }
+    }
+
+    private void showActivity(AuditActivitySnapshot activity) {
+        labelActivityToday.setText(String.valueOf(activity.changesToday()));
+        labelActivityAdmin.setText(String.valueOf(activity.administrationEventsLastSevenDays()));
+        labelActivityDatabase.setText(String.valueOf(activity.directDatabaseEventsLastSevenDays()));
+        labelActivityAuthorization.setText(String.valueOf(activity.authorizationChangesLastSevenDays()));
     }
 
     private void showPage(AuditAdminEventPage page) {
@@ -275,6 +303,68 @@ public final class AuditAdminEventsController {
         btnApply.setDisable(busy);
         btnClear.setDisable(busy);
         btnRefresh.setDisable(busy);
+        btnExportExcel.setDisable(busy || !AuthorizationGuard.isGranted(AppPermissions.AUDIT_ADMIN_EXPORT));
+        btnExportPdf.setDisable(busy || !AuthorizationGuard.isGranted(AppPermissions.AUDIT_ADMIN_EXPORT));
+    }
+
+    private void refresh() {
+        metadataLoaded = false;
+        load(query);
+    }
+
+    private void export(AuditExportFormat format) {
+        if (exportService == null || !AuthorizationGuard.isGranted(AppPermissions.AUDIT_ADMIN_EXPORT)) return;
+        FileChooser chooser = new FileChooser();
+        chooser.setTitle(text("audit.admin.export.choose"));
+        chooser.setInitialFileName("audit_admin_" + java.time.LocalDateTime.now().format(FILE_TIME)
+                + "." + format.extension());
+        chooser.getExtensionFilters().add(new FileChooser.ExtensionFilter(
+                text(format == AuditExportFormat.EXCEL
+                        ? "audit.log.export.filter.excel" : "audit.log.export.filter.pdf"),
+                "*." + format.extension()));
+        File selected = chooser.showSaveDialog(root.getScene().getWindow());
+        if (selected == null) return;
+        File target = ensureExtension(selected, format);
+
+        setBusy(true);
+        Task<AuditExportResult> task = new Task<>() {
+            @Override protected AuditExportResult call() throws Exception {
+                return exportService.export(query, format, target.toPath());
+            }
+        };
+        task.setOnSucceeded(event -> {
+            setBusy(false);
+            metadataLoaded = false;
+            labelStatus.setText(text("audit.admin.export.done", task.getValue().rowCount(),
+                    task.getValue().file().getFileName()));
+        });
+        task.setOnFailed(event -> {
+            setBusy(false);
+            showOperationError(task.getException());
+        });
+        start(task, "audit-admin-export-" + format.name().toLowerCase(Locale.ROOT));
+    }
+
+    private void showOperationError(Throwable failure) {
+        String message = failure == null ? "" : failure.getMessage();
+        if (message != null && (message.startsWith("audit.admin.") || message.startsWith("audit.log."))) {
+            AllAlerts.handleError(text("audit.admin.title"), new UserValidationException(text(message)));
+            return;
+        }
+        AllAlerts.handleError(text("audit.admin.export.error"), failure);
+    }
+
+    private static File ensureExtension(File selected, AuditExportFormat format) {
+        String extension = "." + format.extension().toLowerCase(Locale.ROOT);
+        if (selected.getName().toLowerCase(Locale.ROOT).endsWith(extension)) return selected;
+        return new File(selected.getParentFile(), selected.getName() + extension);
+    }
+
+    private static void permissionVisibility(Button button,
+                                             com.hamza.account.authorization.PermissionKey permission) {
+        boolean visible = AuthorizationGuard.isGranted(permission);
+        button.setVisible(visible);
+        button.setManaged(visible);
     }
 
     private String actorLabel(AuditAdminEvent row) {
@@ -289,7 +379,7 @@ public final class AuditAdminEventsController {
     }
 
     private String sourceLabel(AuditAdminEvent row) {
-        return switch (Objects.toString(row.source(), "").toUpperCase()) {
+        return switch (Objects.toString(row.source(), "").toUpperCase(Locale.ROOT)) {
             case "APP" -> text("audit.log.source.app");
             case "SYSTEM" -> text("audit.log.source.system");
             case "DATABASE" -> text("audit.log.source.database");
@@ -298,13 +388,8 @@ public final class AuditAdminEventsController {
     }
 
     private static String eventLabel(String eventType) {
-        return switch (Objects.toString(eventType, "").toUpperCase()) {
-            case "EXPORT" -> text("audit.admin.event.export");
-            case "DELETE_SELECTED" -> text("audit.admin.event.delete.selected");
-            case "RETENTION_POLICY" -> text("audit.admin.event.retention.policy");
-            case "RETENTION_CLEANUP" -> text("audit.admin.event.retention.cleanup");
-            default -> Objects.toString(eventType, "");
-        };
+        String key = AuditAdminEventLabels.keyFor(eventType);
+        return key == null ? Objects.toString(eventType, "") : text(key);
     }
 
     private static <T> StringConverter<T> converter(Function<T, String> display, T emptyValue) {
@@ -325,6 +410,7 @@ public final class AuditAdminEventsController {
                 : LanguageManager.getInstance().getString(key, arguments);
     }
 
-    private record LoadResult(AuditAdminEventPage page, AuditAdminOptions options) {
+    private record LoadResult(AuditAdminEventPage page, AuditAdminOptions options,
+                              AuditActivitySnapshot activity) {
     }
 }

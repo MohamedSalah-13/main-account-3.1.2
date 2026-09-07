@@ -11,7 +11,9 @@ import com.hamza.account.config.UiScale;
 import com.hamza.account.controller.others.ServiceRegistry;
 import com.hamza.account.features.audit.AuditLogService;
 import com.hamza.account.features.audit.AuditAdminEventService;
+import com.hamza.account.features.audit.AuditAdminExportService;
 import com.hamza.account.features.audit.AuditLogExportService;
+import com.hamza.account.features.audit.AuditOperationListener;
 import com.hamza.account.features.audit.AuditRetentionScheduler;
 import com.hamza.account.features.audit.AuditRetentionService;
 import com.hamza.account.features.audit.AuditSessionInitializer;
@@ -23,6 +25,7 @@ import com.hamza.account.features.inventory.InventoryService;
 import com.hamza.account.features.itemgroups.ItemGroupMoveService;
 import com.hamza.account.features.itemgroups.JdbcItemGroupRepository;
 import com.hamza.account.features.notification.NotificationBootstrap;
+import com.hamza.account.features.notification.AuditOperationNotifier;
 import com.hamza.account.features.rbac.JdbcRbacRepository;
 import com.hamza.account.features.rbac.RbacService;
 import com.hamza.account.features.users.UsersManagementService;
@@ -220,11 +223,18 @@ public class DownLoadApplication extends Application {
         ServiceRegistry.register(AccountCustomerService.class, new AccountCustomerService(daoFactory));
         ServiceRegistry.register(AccountSupplierService.class, new AccountSupplierService(daoFactory));
         JdbcAuditLogRepository auditRepository = new JdbcAuditLogRepository();
-        ServiceRegistry.register(AuditLogService.class, new AuditLogService(auditRepository));
-        ServiceRegistry.register(AuditLogExportService.class, new AuditLogExportService(auditRepository));
-        ServiceRegistry.register(AuditRetentionService.class, new AuditRetentionService(auditRepository));
+        JdbcAuditAdminEventRepository auditAdminRepository = new JdbcAuditAdminEventRepository();
+        AuditOperationListener auditNotifications = new AuditOperationNotifier();
+        ServiceRegistry.register(AuditLogService.class,
+                new AuditLogService(auditRepository, auditNotifications));
+        ServiceRegistry.register(AuditLogExportService.class,
+                new AuditLogExportService(auditRepository, auditNotifications));
+        ServiceRegistry.register(AuditRetentionService.class,
+                new AuditRetentionService(auditRepository, auditNotifications));
         ServiceRegistry.register(AuditAdminEventService.class,
-                new AuditAdminEventService(new JdbcAuditAdminEventRepository()));
+                new AuditAdminEventService(auditAdminRepository));
+        ServiceRegistry.register(AuditAdminExportService.class,
+                new AuditAdminExportService(auditAdminRepository, auditNotifications));
         ServiceRegistry.register(TreasuryBalanceService.class, new TreasuryBalanceService(daoFactory));
         ServiceRegistry.register(ItemMiniQuantityService.class, new ItemMiniQuantityService(daoFactory));
         ServiceRegistry.register(AreaService.class, new AreaService(daoFactory));

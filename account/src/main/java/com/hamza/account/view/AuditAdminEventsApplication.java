@@ -20,7 +20,7 @@ public final class AuditAdminEventsApplication {
         stage.setScene(scene);
         stage.setTitle(LanguageManager.getInstance().getString("audit.admin.title"));
         stage.setMinWidth(1080);
-        stage.setMinHeight(700);
+        stage.setMinHeight(780);
         stage.setResizable(true);
         if (owner != null) {
             stage.initOwner(owner);

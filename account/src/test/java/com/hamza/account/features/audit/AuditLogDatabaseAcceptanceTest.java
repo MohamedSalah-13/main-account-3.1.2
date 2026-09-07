@@ -140,6 +140,17 @@ class AuditLogDatabaseAcceptanceTest {
                 SELECT COUNT(*) FROM auth_permission
                 WHERE permission_key = 'audit.admin.view' AND risk_level = 'HIGH'
                 """));
+        assertEquals(1, scalarInt("""
+                SELECT COUNT(*) FROM auth_permission
+                WHERE permission_key = 'audit.admin.export' AND risk_level = 'HIGH'
+                """));
+        assertEquals(1, scalarInt("""
+                SELECT COUNT(DISTINCT index_name)
+                FROM information_schema.statistics
+                WHERE table_schema = DATABASE()
+                  AND table_name = 'audit_log'
+                  AND index_name = 'idx_audit_source_time'
+                """));
         assertEquals(2, scalarInt("""
                 SELECT COUNT(DISTINCT index_name)
                 FROM information_schema.statistics
@@ -151,6 +162,26 @@ class AuditLogDatabaseAcceptanceTest {
                 SELECT COUNT(*) FROM information_schema.triggers
                 WHERE trigger_schema = DATABASE() AND trigger_name LIKE 'audit_auth_%'
                 """));
+    }
+
+    @Test
+    void administrationExportAndActivityOverviewUseTheImmutableJournal() throws Exception {
+        UserSessionContext session = new UserSessionContext();
+        session.signIn(1, "audit-admin-export", Set.of());
+        ConnectionManager.installSessionInitializer(
+                new AuditSessionInitializer(session, "acceptance-machine", "AUDIT-TEST")::initialize);
+        JdbcAuditAdminEventRepository repository = new JdbcAuditAdminEventRepository();
+        LocalDate today = LocalDate.now();
+        AuditAdminEventQuery query = new AuditAdminEventQuery("", today.minusDays(1), today.plusDays(1),
+                null, "ADMIN_EXPORT", AuditSourceFilter.ALL, AuditAdminSort.NEWEST, 0, 50);
+
+        repository.recordExport(AuditExportFormat.PDF, query, 4, "administration.pdf");
+
+        List<AuditAdminEvent> rows = repository.exportRows(query, 50);
+        assertTrue(rows.stream().anyMatch(row -> row.eventType().equals("ADMIN_EXPORT")
+                && row.affectedRows() == 4 && row.details().contains("administration.pdf")));
+        AuditActivitySnapshot activity = repository.activity(today);
+        assertTrue(activity.administrationEventsLastSevenDays() >= 1);
     }
 
     @Test

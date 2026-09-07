@@ -1,5 +1,7 @@
 package com.hamza.account.features.notification;
 
+import com.hamza.controlsfx.language.LanguageManager;
+
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -20,19 +22,22 @@ public final class NotificationCategories {
     public static final String CUSTOMERS = "customers";
     public static final String TREASURY = "treasury";
     public static final String BACKUP = "backup";
+    public static final String AUDIT = "audit";
     public static final String SYSTEM = "system";
 
     private NotificationCategories() {
     }
 
-    /** Category to the Arabic label the settings screen shows, in display order. */
+    /** Category to the localized label the settings screen shows, in display order. */
     public static Map<String, String> displayNames() {
+        LanguageManager language = LanguageManager.getInstance();
         Map<String, String> names = new LinkedHashMap<>();
-        names.put(ITEMS, "الأصناف والمخزون");
-        names.put(CUSTOMERS, "العملاء والمديونيات");
-        names.put(TREASURY, "الخزينة");
-        names.put(BACKUP, "النسخ الاحتياطي");
-        names.put(SYSTEM, "النظام");
+        names.put(ITEMS, language.getString("notification.category.items"));
+        names.put(CUSTOMERS, language.getString("notification.category.customers"));
+        names.put(TREASURY, language.getString("notification.category.treasury"));
+        names.put(BACKUP, language.getString("notification.category.backup"));
+        names.put(AUDIT, language.getString("notification.category.audit"));
+        names.put(SYSTEM, language.getString("notification.category.system"));
         return names;
     }
 

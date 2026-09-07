@@ -197,6 +197,8 @@ public final class AppPermissions {
     public static final PermissionKey AUDIT_RETENTION_MANAGE = key("audit.retention.manage");
     /** Reading immutable evidence about export, deletion and retention administration. */
     public static final PermissionKey AUDIT_ADMIN_VIEW = key("audit.admin.view");
+    /** Exporting the immutable administration journal outside the application. */
+    public static final PermissionKey AUDIT_ADMIN_EXPORT = key("audit.admin.export");
     public static final PermissionKey USER_SHIFT_MANAGE = key("user.shift.manage");
     public static final PermissionKey SHIFT_SELF_VIEW = key("shift.self.view");
     public static final PermissionKey SHIFT_SELF_OPEN = key("shift.self.open");
@@ -253,7 +255,7 @@ public final class AppPermissions {
         String action = parts[parts.length - 1].toUpperCase(Locale.ROOT);
         String resource = String.join(".", Arrays.copyOf(parts, parts.length - 1));
         PermissionRisk permissionRisk = "audit.view".equals(key.value()) || "audit.export".equals(key.value())
-                || "audit.admin.view".equals(key.value())
+                || "audit.admin.view".equals(key.value()) || "audit.admin.export".equals(key.value())
                 ? PermissionRisk.HIGH : risk(action);
         return new PermissionDefinition(key, module, resource, action, permissionRisk, sortOrder);
     }

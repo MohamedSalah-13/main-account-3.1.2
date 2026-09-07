@@ -27,7 +27,7 @@ mvn -o -pl account -am test -Dtest=ScheduledBackupTest -Dsurefire.failIfNoSpecif
 
 **Coverage is real but uneven — know which half you are in.** JUnit 5 and Mockito are declared in the
 root pom and inherited by both modules; surefire needs no configuration. `mvn clean test` currently runs
-**1,472 tests across 184 test source files** with 84 skipped (below) — the figure `mvn clean test`
+**1,482 tests across 189 test source files** with 85 skipped (below) — the figure `mvn clean test`
 reports, measured on 2026-09-07. What is
 genuinely covered:
 
@@ -1117,13 +1117,23 @@ database triggers also cover roles, role grants, user-role assignments, inherita
 `auth_audit_log` records application management intent, while these triggers close the direct-SQL and
 cascade gap and retain the standard `APP` / `SYSTEM` / `DATABASE` attribution.
 
+V49 adds the separate high-risk `audit.admin.export` permission and grants it conservatively only to
+existing roles that already hold both administration view and ordinary audit export. The administration
+browser can export its complete active filter to Excel or PDF, with the same 10,000-row boundary, and
+records the completed file as `ADMIN_EXPORT` in the immutable journal. Its unfiltered activity strip
+shows today's changes, seven-day administration events, direct-database changes and authorization
+changes using bounded SQL counts. Completed export, deletion and retention operations publish localized
+in-app notifications in the `audit` category; zero-row automatic cleanup stays silent and automatic
+cleanup is only announced to a user who may view audit administration.
+
 `AuditLogDatabaseAcceptanceTest` is the real-MySQL proof for this seam. It creates a uniquely named
-scratch schema, migrates it from empty through V48 plus all repeatables, verifies the snapshot columns,
+scratch schema, migrates it from empty through V49 plus all repeatables, verifies the snapshot columns,
 indexes, permissions, safe retention defaults and administration procedure, then proves both sides of
 attribution: pooled application writes retain the signed-in actor/workstation and a direct SQL connection
 is labelled `DATABASE` with no fabricated app user. It also proves the administration journal snapshots
-its actor/workstation and rejects update and delete, and that a direct authorization grant is captured by
-the database trigger as `DATABASE`. It drops only that generated schema in `@AfterAll`.
+its actor/workstation and rejects update and delete, that `ADMIN_EXPORT` remains queryable through the
+same repository and activity overview, and that a direct authorization grant is captured by the database
+trigger as `DATABASE`. It drops only that generated schema in `@AfterAll`.
 When the application account cannot create
 schemas, supply `ACCOUNT_DB_ACCEPTANCE_ADMIN_USER` and `ACCOUNT_DB_ACCEPTANCE_ADMIN_PASSWORD` for the
 test run; never point this fresh-install test at the business database.
@@ -1271,7 +1281,8 @@ Schema changes are **Flyway migrations**, in `account/src/main/resources/db/migr
 - `V1__baseline.sql` is the schema as shipped to clients in v4.1.3 — tables, indexes, procedures and the
   seed data (including the `admin` user, without which nobody can log in). It is the Flyway baseline: an
   existing client database is **stamped** with it, never executed, because it already is that schema. A
-  new database executes it and continues with `V2`, `V3`, … The current head is `V48`: V48 adds the
+  new database executes it and continues with `V2`, `V3`, … The current head is `V49`: V49 adds the
+  audit-administration export permission and the direct-source activity index. V48 adds the
   administration-browser permission and its secondary query indexes. V47 adds the immutable
   audit-administration journal, safe-disabled retention settings, and the dedicated export and retention
   permissions. V46 preserves audit actor/workstation snapshots, adds the time-range indexes

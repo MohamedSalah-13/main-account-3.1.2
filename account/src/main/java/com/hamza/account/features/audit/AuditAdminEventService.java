@@ -4,6 +4,8 @@ import com.hamza.account.authorization.AppPermissions;
 import com.hamza.account.authorization.AuthorizationGuard;
 import com.hamza.controlsfx.database.DaoException;
 
+import java.time.LocalDate;
+
 /** Authorization boundary for the immutable administration journal. */
 public record AuditAdminEventService(AuditAdminEventRepository repository) {
 
@@ -15,5 +17,10 @@ public record AuditAdminEventService(AuditAdminEventRepository repository) {
     public AuditAdminOptions options() throws DaoException {
         AuthorizationGuard.require(AppPermissions.AUDIT_ADMIN_VIEW);
         return repository.options();
+    }
+
+    public AuditActivitySnapshot activity(LocalDate today) throws DaoException {
+        AuthorizationGuard.require(AppPermissions.AUDIT_ADMIN_VIEW);
+        return repository.activity(today);
     }
 }

@@ -64,9 +64,13 @@ class AuditLogQueryTest {
         PermissionRisk adminView = AppPermissions.definitions().stream()
                 .filter(definition -> definition.key().equals(AppPermissions.AUDIT_ADMIN_VIEW))
                 .findFirst().orElseThrow().risk();
+        PermissionRisk adminExport = AppPermissions.definitions().stream()
+                .filter(definition -> definition.key().equals(AppPermissions.AUDIT_ADMIN_EXPORT))
+                .findFirst().orElseThrow().risk();
 
         assertEquals(PermissionRisk.HIGH, export);
         assertEquals(PermissionRisk.CRITICAL, retention);
         assertEquals(PermissionRisk.HIGH, adminView);
+        assertEquals(PermissionRisk.HIGH, adminExport);
     }
 }
