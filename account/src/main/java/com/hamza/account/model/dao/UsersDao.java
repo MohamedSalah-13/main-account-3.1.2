@@ -25,7 +25,12 @@ public class UsersDao extends AbstractDao<Users> {
 
     public static final String USER_NAME = "user_name";
     private static final int FILTER_LIMIT = 50;
-    private static final int PASSWORD_CHANGE_TIMEOUT_SECONDS = 15;
+    /**
+     * Keep statement cancellation below the datasource's 15-second socket timeout. If both
+     * expire together, Connector/J can close the physical socket while Hikari is returning it
+     * to the pool, making the request after a password timeout fail on a stale connection.
+     */
+    private static final int PASSWORD_CHANGE_TIMEOUT_SECONDS = 10;
     private static final String FILTER_USERS_SQL_NUMERIC = """
             SELECT * FROM users
             WHERE id = ?
