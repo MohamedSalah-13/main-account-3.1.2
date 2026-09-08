@@ -98,6 +98,7 @@ public class BuyController2<T3 extends BaseNames, T4 extends BaseAccount>
     private final InvoiceLineService<BasePurchasesAndSales> invoiceLineService;
     private final InvoiceExpiryService invoiceExpiryService;
     private final InvoiceItemSelectionService invoiceItemSelectionService;
+    private final InvoiceItemPickerService invoiceItemPickerService;
     private final InvoiceScreenMode screenMode;
     private InvoiceItemEntryCoordinator itemEntry;
     private InvoiceLineEditService lineEditService;
@@ -168,6 +169,9 @@ public class BuyController2<T3 extends BaseNames, T4 extends BaseAccount>
                 dataInterface.designInterface().documentType(), numInvoiceUpdate,
                 itemId -> cardItemService.expiryBalancesByItem(invoiceStockId, itemId));
         this.invoiceItemSelectionService = new InvoiceItemSelectionService(
+                dataInterface.designInterface().documentType(), itemsService,
+                dataInterface.invoiceBuy()::getItemsPrice);
+        this.invoiceItemPickerService = new InvoiceItemPickerService(
                 dataInterface.designInterface().documentType(), itemsService,
                 dataInterface.invoiceBuy()::getItemsPrice);
     }
@@ -481,16 +485,35 @@ public class BuyController2<T3 extends BaseNames, T4 extends BaseAccount>
 
     private void openSearchItems() {
         try {
-            SearchItemsApplication itemsApplication = new SearchItemsApplication(dataInterface);
-
-            itemsApplication.start(new Stage());
-            itemsApplication.getSearchItems().selectedItemProperty().addListener((observableValue, t1s, t1) -> {
-                if (t1 != null) {
-                    table.getItems().addAll(t1);
-                }
-            });
+            SearchItemsApplication itemsApplication =
+                    new SearchItemsApplication(dataInterface, priceTypeByNameId);
+            itemsApplication.showAndWait(btnSearch.getScene().getWindow())
+                    .ifPresent(this::addPickedItems);
         } catch (Exception e) {
             logError(e);
+        }
+    }
+
+    /**
+     * Resolves every catalog choice again in the invoice's warehouse, then sends it
+     * through the same validation, expiry and merge path as barcode/name entry.
+     */
+    private void addPickedItems(List<ItemPickRequest> requests) {
+        for (ItemPickRequest request : requests) {
+            try {
+                InvoiceLineDraft draft = invoiceItemPickerService.resolve(
+                        request, invoiceStockId, priceTypeByNameId).orElse(null);
+                if (draft == null) {
+                    throw new UserValidationException(LanguageManager.getInstance().getString(
+                            "search.items.error.unavailable", request.itemName()));
+                }
+                if (addLine(draft) == null) {
+                    return;
+                }
+            } catch (Exception error) {
+                logError(error);
+                return;
+            }
         }
     }
 

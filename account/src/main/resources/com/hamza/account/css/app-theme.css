@@ -426,24 +426,73 @@
     -fx-progress-color: -app-primary;
 }
 
-/* ---------- Split pane (item search / pick screen) ----------
-   The two panes are already app-card panels, so the split pane itself must stay
-   transparent - a background here would show as a mismatched strip around them. */
+/* ---------- Invoice item picker ---------- */
 
-.search-split-pane {
-    -fx-background-color: transparent;
-    -fx-padding: 0;
+.item-picker-header,
+.item-picker-search,
+.item-picker-content {
+    -fx-effect: dropshadow(gaussian, -app-shadow, 8, 0.08, 0, 2);
 }
 
-.search-split-pane > .split-pane-divider {
-    -fx-background-color: transparent;
-    -fx-padding: 0.364em 0;
+.item-picker-search .text-field {
+    -fx-pref-height: 3.091em;
+    -fx-font-size: 1.091em;
 }
 
-.search-split-pane > .split-pane-divider > .vertical-grabber,
-.search-split-pane > .split-pane-divider > .horizontal-grabber {
-    -fx-background-color: -app-border;
+.item-picker-count {
+    -fx-background-color: -app-table-selected;
     -fx-background-radius: 1em;
+    -fx-border-color: -app-primary;
+    -fx-border-radius: 1em;
+    -fx-padding: 0.455em 0.818em;
+    -fx-font-weight: bold;
+    -fx-text-fill: -app-text-strong;
+}
+
+.item-picker-selected-pane {
+    -fx-background-color: transparent;
+}
+
+.item-picker-selected-pane > .title {
+    -fx-background-color: -app-neutral-soft;
+    -fx-background-radius: 0.727em;
+    -fx-border-color: -app-border;
+    -fx-border-radius: 0.727em;
+    -fx-padding: 0.727em 0.909em;
+}
+
+.item-picker-selected-pane:expanded > .title {
+    -fx-background-color: -app-table-hover;
+    -fx-border-color: -app-primary;
+}
+
+.item-picker-selected-pane > *.content {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+    -fx-padding: 0.545em 0 0 0;
+}
+
+.item-picker .table-row-cell:picked {
+    -fx-background-color: -app-table-selected;
+    -fx-border-color: transparent transparent -app-primary transparent;
+}
+
+.item-picker .table-row-cell:picked:selected {
+    -fx-background-color: -app-primary;
+}
+
+.item-picker-check,
+.item-picker-remove {
+    -fx-cursor: hand;
+}
+
+.item-picker-remove {
+    -fx-padding: 0.364em 0.545em;
+}
+
+.item-picker-footer .keyboard-hint {
+    -fx-text-fill: -app-text-muted;
+    -fx-font-size: 0.909em;
 }
 
 /* ---------- Toolbars ---------- */
