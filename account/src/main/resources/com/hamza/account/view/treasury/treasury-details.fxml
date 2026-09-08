@@ -1,93 +1,91 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<?import javafx.geometry.Insets?>
 <?import javafx.scene.control.Button?>
-<?import javafx.scene.control.CheckBox?>
 <?import javafx.scene.control.ComboBox?>
 <?import javafx.scene.control.DatePicker?>
 <?import javafx.scene.control.Label?>
-<?import javafx.scene.control.ScrollPane?>
 <?import javafx.scene.control.TableView?>
-<?import javafx.scene.control.ToolBar?>
 <?import javafx.scene.layout.BorderPane?>
 <?import javafx.scene.layout.ColumnConstraints?>
 <?import javafx.scene.layout.GridPane?>
 <?import javafx.scene.layout.HBox?>
-<?import javafx.scene.layout.RowConstraints?>
 <?import javafx.scene.layout.StackPane?>
 <?import javafx.scene.layout.VBox?>
-<?import javafx.scene.text.Text?>
 
-<StackPane fx:id="stackPane" prefHeight="702.0" prefWidth="712.0" styleClass="app-root" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.hamza.account.controller.convert_treasury.TreasureDetailsController">
-    <children>
-      <BorderPane styleClass="app-container">
-         <top>
-                  <ToolBar styleClass="app-toolbar" BorderPane.alignment="CENTER">
-                      <items>
-                          <Button fx:id="btnRefresh" mnemonicParsing="false" styleClass="app-neutral-button" text="%refresh" />
-                          <Button fx:id="btnPrint" mnemonicParsing="false" styleClass="app-neutral-button" text="%print" />
-                          <Button fx:id="btnPrintSummary" mnemonicParsing="false" styleClass="app-neutral-button" text="%treasury.btn.print.summary" />
-                      </items>
-                  </ToolBar>
-         </top>
-         <bottom>
-                    <HBox alignment="CENTER_LEFT" spacing="20.0" styleClass="summary-card" BorderPane.alignment="CENTER">
-                        <children>
-                            <Label text="%treasury.summary.total.income" />
-                            <Text fx:id="sumIncome" strokeType="OUTSIDE" strokeWidth="0.0" styleClass="text-sum" text="0.0" />
-                            <Label text="%treasury.summary.total.output" />
-                            <Text fx:id="sumOutput" strokeType="OUTSIDE" strokeWidth="0.0" styleClass="text-sum" text="0.0" />
-                            <Label text="%column.balance" />
-                            <Text fx:id="sumBalance" strokeType="OUTSIDE" strokeWidth="0.0" styleClass="text-sum" text="0.0" />
-                        </children>
-                    </HBox>
-         </bottom>
-         <center>
-            <ScrollPane fitToHeight="true" fitToWidth="true" styleClass="app-scroll-pane" BorderPane.alignment="CENTER">
-               <content>
-                        <VBox spacing="5.0">
-                            <children>
-                                <VBox minHeight="-Infinity" spacing="5.0" styleClass="app-card">
-                                    <children>
-                                        <GridPane fx:id="gridPane" hgap="10.0" vgap="10.0">
-                                            <columnConstraints>
-                                                <ColumnConstraints hgrow="SOMETIMES" maxWidth="-Infinity" minWidth="10.0" />
-                                                <ColumnConstraints hgrow="SOMETIMES" maxWidth="-Infinity" minWidth="10.0" />
-                                                <ColumnConstraints hgrow="SOMETIMES" maxWidth="-Infinity" minWidth="10.0" />
-                                                <ColumnConstraints hgrow="SOMETIMES" maxWidth="-Infinity" minWidth="10.0" />
-                                            </columnConstraints>
-                                            <rowConstraints>
-                                                <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
-                                                <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
-                                                <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
-                                                <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
-                                            </rowConstraints>
-                                            <children>
-                                                <Label styleClass="form-label" text="%treasury.label.treasury" />
-                                                <Label styleClass="form-label" text="%treasury.label.from.date" GridPane.rowIndex="2" />
-                                                <Label styleClass="form-label" text="%treasury.label.to.date" GridPane.columnIndex="2" GridPane.rowIndex="2" />
-                                                <ComboBox fx:id="comboTreasury" maxWidth="1.7976931348623157E308" GridPane.columnIndex="1" />
-                                                <DatePicker fx:id="dateFrom" maxWidth="1.7976931348623157E308" GridPane.columnIndex="1" GridPane.rowIndex="2" />
-                                                <DatePicker fx:id="dateTo" maxWidth="1.7976931348623157E308" GridPane.columnIndex="3" GridPane.rowIndex="2" />
-                                                <Label styleClass="form-label" text="%treasury.label.account.type" GridPane.columnIndex="2" />
-                                                <ComboBox fx:id="comboDetails" maxWidth="1.7976931348623157E308" GridPane.columnIndex="3" />
-                                                <ComboBox fx:id="comboUsers" maxWidth="1.7976931348623157E308" GridPane.columnIndex="1" GridPane.rowIndex="1" />
-                                                <Label styleClass="form-label" text="%treasury.label.user" GridPane.rowIndex="1" />
-                                                <Button fx:id="btnSearch" mnemonicParsing="false" styleClass="app-neutral-button" text="%search" GridPane.columnIndex="2" GridPane.rowIndex="3" />
-                                                <CheckBox fx:id="checkTime" mnemonicParsing="false" text="%treasury.check.add.time" GridPane.rowIndex="3" />
-                                            </children>
-                                        </GridPane>
-                                    </children>
-                                </VBox>
-                                <TableView fx:id="tableView" minHeight="-Infinity" styleClass="app-table" VBox.vgrow="SOMETIMES" />
-                            </children>
-                            <padding>
-                                <Insets bottom="5.0" left="5.0" right="5.0" top="5.0" />
-                            </padding>
-                        </VBox>
-               </content>
-            </ScrollPane>
-         </center>
-      </BorderPane>
-    </children>
+<StackPane fx:id="stackPane" minHeight="620.0" minWidth="980.0"
+           styleClass="app-root,treasury-statement"
+           xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
+           fx:controller="com.hamza.account.controller.convert_treasury.TreasureDetailsController">
+    <BorderPane styleClass="app-container">
+        <top>
+            <VBox spacing="14.0" styleClass="page-container">
+                <VBox spacing="3.0">
+                    <Label styleClass="page-title" text="%treasury.statement.title" />
+                    <Label styleClass="page-subtitle" text="%treasury.statement.subtitle" wrapText="true" />
+                </VBox>
+                <VBox spacing="10.0" styleClass="app-card">
+                    <Label styleClass="section-title" text="%treasury.statement.filter.title" />
+                    <GridPane hgap="12.0" vgap="9.0">
+                        <columnConstraints>
+                            <ColumnConstraints percentWidth="16.0" />
+                            <ColumnConstraints percentWidth="34.0" />
+                            <ColumnConstraints percentWidth="16.0" />
+                            <ColumnConstraints percentWidth="34.0" />
+                        </columnConstraints>
+                        <Label styleClass="form-label" text="%treasury.label.treasury" />
+                        <ComboBox fx:id="comboTreasury" maxWidth="Infinity" styleClass="modern-input" GridPane.columnIndex="1" />
+                        <Label styleClass="form-label" text="%treasury.label.account.type" GridPane.columnIndex="2" />
+                        <ComboBox fx:id="comboDetails" maxWidth="Infinity" styleClass="modern-input" GridPane.columnIndex="3" />
+                        <Label styleClass="form-label" text="%treasury.label.user" GridPane.rowIndex="1" />
+                        <ComboBox fx:id="comboUsers" maxWidth="Infinity" styleClass="modern-input" GridPane.columnIndex="1" GridPane.rowIndex="1" />
+                        <Label styleClass="form-label" text="%treasury.label.from.date" GridPane.columnIndex="2" GridPane.rowIndex="1" />
+                        <DatePicker fx:id="dateFrom" maxWidth="Infinity" styleClass="modern-input" GridPane.columnIndex="3" GridPane.rowIndex="1" />
+                        <Label styleClass="form-label" text="%treasury.label.to.date" GridPane.rowIndex="2" />
+                        <DatePicker fx:id="dateTo" maxWidth="Infinity" styleClass="modern-input" GridPane.columnIndex="1" GridPane.rowIndex="2" />
+                        <HBox alignment="CENTER_RIGHT" spacing="8.0" GridPane.columnIndex="2" GridPane.columnSpan="2" GridPane.rowIndex="2">
+                            <Button fx:id="btnSearch" onAction="#search" styleClass="app-primary-button" text="%search" />
+                            <Button fx:id="btnRefresh" onAction="#refresh" styleClass="app-neutral-button" text="%refresh" />
+                            <Button fx:id="btnReset" onAction="#resetFilters" styleClass="app-neutral-button" text="%treasury.statement.reset" />
+                            <Button fx:id="btnPrint" onAction="#printStatement" styleClass="app-neutral-button" text="%print" />
+                        </HBox>
+                    </GridPane>
+                    <Label fx:id="statusLabel" styleClass="page-subtitle" text="%treasury.statement.status.loading" />
+                </VBox>
+            </VBox>
+        </top>
+        <center>
+            <VBox spacing="8.0" styleClass="page-container" BorderPane.alignment="CENTER">
+                <TableView fx:id="tableView" styleClass="app-table,table-section" VBox.vgrow="ALWAYS" />
+                <HBox alignment="CENTER" spacing="10.0">
+                    <Button fx:id="btnPrevious" onAction="#previousPage" styleClass="app-neutral-button" text="%treasury.statement.previous" />
+                    <Label fx:id="pageLabel" styleClass="form-label" text="" />
+                    <Button fx:id="btnNext" onAction="#nextPage" styleClass="app-neutral-button" text="%treasury.statement.next" />
+                </HBox>
+            </VBox>
+        </center>
+        <bottom>
+            <HBox alignment="CENTER" spacing="10.0" styleClass="page-container" BorderPane.alignment="CENTER">
+                <VBox alignment="CENTER" spacing="4.0" styleClass="treasury-statement-summary-card">
+                    <Label styleClass="treasury-statement-summary-label" text="%treasury.statement.summary.opening" />
+                    <Label fx:id="openingBalance" styleClass="treasury-statement-summary-value" text="0.00" />
+                </VBox>
+                <VBox alignment="CENTER" spacing="4.0" styleClass="treasury-statement-summary-card,statement-income">
+                    <Label styleClass="treasury-statement-summary-label" text="%treasury.statement.summary.income" />
+                    <Label fx:id="sumIncome" styleClass="treasury-statement-summary-value" text="0.00" />
+                </VBox>
+                <VBox alignment="CENTER" spacing="4.0" styleClass="treasury-statement-summary-card,statement-output">
+                    <Label styleClass="treasury-statement-summary-label" text="%treasury.statement.summary.output" />
+                    <Label fx:id="sumOutput" styleClass="treasury-statement-summary-value" text="0.00" />
+                </VBox>
+                <VBox alignment="CENTER" spacing="4.0" styleClass="treasury-statement-summary-card">
+                    <Label styleClass="treasury-statement-summary-label" text="%treasury.statement.summary.net" />
+                    <Label fx:id="netMovement" styleClass="treasury-statement-summary-value" text="0.00" />
+                </VBox>
+                <VBox alignment="CENTER" spacing="4.0" styleClass="treasury-statement-summary-card,statement-closing">
+                    <Label styleClass="treasury-statement-summary-label" text="%treasury.statement.summary.closing" />
+                    <Label fx:id="closingBalance" styleClass="treasury-statement-summary-value" text="0.00" />
+                </VBox>
+            </HBox>
+        </bottom>
+    </BorderPane>
 </StackPane>

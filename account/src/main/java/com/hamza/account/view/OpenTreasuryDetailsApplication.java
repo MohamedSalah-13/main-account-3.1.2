@@ -1,6 +1,5 @@
 package com.hamza.account.view;
 
-import com.hamza.account.config.Image_Setting;
 import com.hamza.account.controller.convert_treasury.TreasureDetailsController;
 import com.hamza.account.controller.main.DataPublisher;
 import com.hamza.account.model.dao.DaoFactory;
@@ -18,7 +17,7 @@ public class OpenTreasuryDetailsApplication extends Application {
     private final DataPublisher dataPublisher;
 
     public static String accountStatementTitle() {
-        return LanguageManager.getInstance().getString("treasury.account.statement.title");
+        return LanguageManager.getInstance().getString("treasury.statement.title");
     }
 
     @Override
@@ -26,7 +25,6 @@ public class OpenTreasuryDetailsApplication extends Application {
         Scene scene = new SceneAll(new OpenFxmlApplication(new TreasureDetailsController(daoFactory, dataPublisher)).getPane());
         stage.setScene(scene);
         stage.setTitle(accountStatementTitle());
-        stage.getIcons().add(new javafx.scene.image.Image(new Image_Setting().tools));
         stage.setResizable(true);
         stage.show();
 //        StageDimensions.stageDimensions(getClass(), stage);

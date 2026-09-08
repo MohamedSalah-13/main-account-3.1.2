@@ -145,6 +145,73 @@ public final class TreasuryStatements {
             WHERE id = ?
             """;
 
+    // ---- unified statement ----------------------------------------------------
+
+    /**
+     * One deterministic page from the unified movement view. The window is calculated
+     * before the optional movement/user filters, so the displayed running balance is
+     * the real treasury balance rather than the balance of only the visible kind.
+     */
+    public static final String SELECT_STATEMENT_PAGE = """
+            WITH period_rows AS (
+                SELECT b.id_no, b.date_val, b.income, b.output, b.treasury_id,
+                       b.date_insert, b.user_id, b.source_type, b.information,
+                       b.treasury_name, b.user_name,
+                       COALESCE((SELECT SUM(prior.income - prior.output)
+                                 FROM treasury_balance prior
+                                 WHERE prior.treasury_id = b.treasury_id
+                                   AND prior.date_val < ?), 0)
+                       + SUM(b.income - b.output) OVER (
+                           PARTITION BY b.treasury_id
+                           ORDER BY b.date_val, b.date_insert, b.source_type, b.id_no
+                           ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW
+                       ) AS running_balance
+                FROM treasury_balance b
+                WHERE b.date_val BETWEEN ? AND ?
+                  AND (? IS NULL OR b.treasury_id = ?)
+            )
+            SELECT id_no, date_val, income, output, treasury_id, date_insert,
+                   user_id, source_type, information, treasury_name, user_name,
+                   running_balance
+            FROM period_rows
+            WHERE (? IS NULL OR source_type = ?)
+              AND (? IS NULL OR user_id = ?)
+            ORDER BY date_val DESC, date_insert DESC, source_type DESC, id_no DESC
+            LIMIT ? OFFSET ?
+            """;
+
+    /** Opening/closing are actual balances; period totals respect every visible filter. */
+    public static final String SELECT_STATEMENT_SUMMARY = """
+            SELECT
+                COALESCE(SUM(CASE WHEN date_val < ? THEN income - output ELSE 0 END), 0)
+                    AS opening_balance,
+                COALESCE(SUM(CASE WHEN date_val BETWEEN ? AND ?
+                                       AND (? IS NULL OR source_type = ?)
+                                       AND (? IS NULL OR user_id = ?)
+                                  THEN income ELSE 0 END), 0) AS total_income,
+                COALESCE(SUM(CASE WHEN date_val BETWEEN ? AND ?
+                                       AND (? IS NULL OR source_type = ?)
+                                       AND (? IS NULL OR user_id = ?)
+                                  THEN output ELSE 0 END), 0) AS total_output,
+                COALESCE(SUM(CASE WHEN date_val <= ? THEN income - output ELSE 0 END), 0)
+                    AS closing_balance
+            FROM treasury_balance
+            WHERE date_val <= ?
+              AND (? IS NULL OR treasury_id = ?)
+            """;
+
+    public static final String SELECT_STATEMENT_TREASURIES = """
+            SELECT id, t_name, is_active
+            FROM treasury
+            ORDER BY sort_order, id
+            """;
+
+    public static final String SELECT_STATEMENT_USERS = """
+            SELECT id, user_name
+            FROM users
+            ORDER BY user_name, id
+            """;
+
     private TreasuryStatements() {
     }
 }

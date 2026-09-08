@@ -179,6 +179,30 @@ class TreasuryStatementsTest {
     }
 
     @Test
+    @DisplayName("the unified statement is filtered and paged by stable database fields")
+    void unifiedStatementIsStableAndBounded() {
+        String sql = TreasuryStatements.SELECT_STATEMENT_PAGE;
+        assertTrue(sql.contains("source_type = ?"));
+        assertTrue(sql.contains("treasury_id = ?"));
+        assertTrue(sql.contains("user_id = ?"));
+        assertTrue(sql.contains("SUM(b.income - b.output) OVER"));
+        assertTrue(sql.contains("LIMIT ? OFFSET ?"));
+        assertTrue(sql.contains("ORDER BY date_val DESC, date_insert DESC, source_type DESC, id_no DESC"));
+        assertEquals(11, parameters(sql));
+    }
+
+    @Test
+    @DisplayName("statement summary keeps actual boundary balances and filtered period totals")
+    void statementSummaryHasPinnedInputs() {
+        String sql = TreasuryStatements.SELECT_STATEMENT_SUMMARY;
+        assertTrue(sql.contains("AS opening_balance"));
+        assertTrue(sql.contains("AS closing_balance"));
+        assertTrue(sql.contains("source_type = ?"));
+        assertTrue(sql.contains("user_id = ?"));
+        assertEquals(17, parameters(sql));
+    }
+
+    @Test
     @DisplayName("the balance is locked with FOR UPDATE before money is taken out")
     void theSourceIsLocked() {
         assertEquals("""
