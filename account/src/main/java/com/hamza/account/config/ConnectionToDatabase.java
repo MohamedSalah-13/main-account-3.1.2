@@ -27,8 +27,8 @@ public class ConnectionToDatabase {
     public ConnectionToDatabase() {
         try {
             this.properties = DatabaseProperties.getInstance();
-            File FILE_DATABASE_XML = new File("config.xml");
-            var configMap = loadConfig(FILE_DATABASE_XML);
+            DatabaseConfigFiles.Location configFiles = DatabaseConfigFiles.locateForRead();
+            var configMap = loadConfig(configFiles);
 
             host = configMap.get(CryptoDatabaseConfig.HOST);
             username = configMap.get(CryptoDatabaseConfig.USERNAME);
@@ -52,13 +52,15 @@ public class ConnectionToDatabase {
      * Reads the encrypted database settings, keeping a config.xml problem
      * distinguishable from a failure to reach the database itself.
      */
-    private static HashMap<String, String> loadConfig(File configFile) throws Exception {
+    private static HashMap<String, String> loadConfig(DatabaseConfigFiles.Location files) throws Exception {
+        File configFile = files.configFile().toFile();
+        File keyFile = files.keyFile().toFile();
         if (!configFile.isFile()) {
             throw new IllegalStateException("config.xml not found at " + configFile.getAbsolutePath()
-                    + ". Copy config.xml.example and fill it in with CryptoDatabaseConfig encrypt.");
+                    + ". Run AccountK-Database-Setup to create it.");
         }
 
-        if (CryptoDatabaseConfig.usingBuiltInKey()) {
+        if (CryptoDatabaseConfig.usingBuiltInKey(keyFile)) {
             // The built-in key is in the source, and a config.xml was committed to
             // this repository once, so anything it protects should be assumed known.
             log.warn("config.xml is being read with the built-in encryption key, which is published in the"
@@ -66,12 +68,12 @@ public class ConnectionToDatabase {
                     + " database password: run CryptoDatabaseConfig genkey, then migrate.");
         }
 
-        CryptoDatabaseConfig encryptor = new CryptoDatabaseConfig(CryptoDatabaseConfig.resolveConfigKey());
+        CryptoDatabaseConfig encryptor = new CryptoDatabaseConfig(CryptoDatabaseConfig.resolveConfigKey(keyFile));
         try {
             return encryptor.loadAndDecryptConfig(configFile.getAbsolutePath());
         } catch (GeneralSecurityException | IllegalArgumentException e) {
             throw new IllegalStateException("Could not decrypt " + configFile.getAbsolutePath()
-                    + " with the key from " + CryptoDatabaseConfig.describeConfigKeySource()
+                    + " with the key from " + CryptoDatabaseConfig.describeConfigKeySource(keyFile)
                     + ". The file was encrypted with a different key, or its values are not"
                     + " the Base64 ciphertext the loader expects.", e);
         }

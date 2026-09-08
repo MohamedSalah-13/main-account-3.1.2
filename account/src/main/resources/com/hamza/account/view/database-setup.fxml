@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<ScrollPane xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
+            fx:controller="com.hamza.account.controller.dbsetup.DatabaseSetupController"
+            fitToWidth="true" hbarPolicy="NEVER" styleClass="app-scroll-pane"
+            stylesheets="@../css/database-setup.css">
+    <content>
+        <VBox spacing="18" styleClass="app-root,dbsetup-root">
+            <VBox spacing="6">
+                <Label text="%dbsetup.heading" styleClass="app-title"/>
+                <Label text="%dbsetup.description" wrapText="true" styleClass="app-subtitle"/>
+            </VBox>
+
+            <VBox spacing="14" styleClass="app-card">
+                <Label text="%dbsetup.device.section" styleClass="app-section-title"/>
+                <fx:define>
+                    <ToggleGroup fx:id="deviceType"/>
+                </fx:define>
+                <HBox spacing="22">
+                    <RadioButton fx:id="mainDevice" text="%dbsetup.device.main"
+                                 toggleGroup="$deviceType" selected="true"/>
+                    <RadioButton fx:id="clientDevice" text="%dbsetup.device.client"
+                                 toggleGroup="$deviceType"/>
+                </HBox>
+                <Label text="%dbsetup.device.help" wrapText="true" styleClass="text-explain"/>
+            </VBox>
+
+            <GridPane hgap="14" vgap="13" styleClass="app-card">
+                <columnConstraints>
+                    <ColumnConstraints minWidth="150" halignment="RIGHT"/>
+                    <ColumnConstraints hgrow="ALWAYS" minWidth="280"/>
+                </columnConstraints>
+                <Label text="%dbsetup.host" styleClass="form-label" GridPane.rowIndex="0"/>
+                <TextField fx:id="hostField" promptText="%dbsetup.host.prompt"
+                           GridPane.columnIndex="1" GridPane.rowIndex="0"/>
+                <Label text="%dbsetup.port" styleClass="form-label" GridPane.rowIndex="1"/>
+                <TextField fx:id="portField" promptText="%dbsetup.port.prompt"
+                           GridPane.columnIndex="1" GridPane.rowIndex="1"/>
+                <Label text="%dbsetup.database" styleClass="form-label" GridPane.rowIndex="2"/>
+                <TextField fx:id="databaseField" promptText="%dbsetup.database.prompt"
+                           GridPane.columnIndex="1" GridPane.rowIndex="2"/>
+                <Label text="%dbsetup.username" styleClass="form-label" GridPane.rowIndex="3"/>
+                <TextField fx:id="usernameField" promptText="%dbsetup.username.prompt"
+                           GridPane.columnIndex="1" GridPane.rowIndex="3"/>
+                <Label text="%dbsetup.password" styleClass="form-label" GridPane.rowIndex="4"/>
+                <PasswordField fx:id="passwordField" promptText="%dbsetup.password.prompt"
+                               GridPane.columnIndex="1" GridPane.rowIndex="4"/>
+            </GridPane>
+
+            <VBox fx:id="serverProvisioningPane" spacing="12"
+                  styleClass="app-card,server-provisioning-card">
+                <Label text="%dbsetup.provision.heading" styleClass="app-section-title"/>
+                <Label text="%dbsetup.provision.description" wrapText="true" styleClass="text-explain"/>
+                <GridPane hgap="14" vgap="11">
+                    <columnConstraints>
+                        <ColumnConstraints minWidth="170" halignment="RIGHT"/>
+                        <ColumnConstraints hgrow="ALWAYS" minWidth="260"/>
+                    </columnConstraints>
+                    <Label text="%dbsetup.provision.admin.username" styleClass="form-label"
+                           GridPane.rowIndex="0"/>
+                    <TextField fx:id="administratorUsernameField"
+                               promptText="%dbsetup.provision.admin.username.prompt"
+                               GridPane.columnIndex="1" GridPane.rowIndex="0"/>
+                    <Label text="%dbsetup.provision.admin.password" styleClass="form-label"
+                           GridPane.rowIndex="1"/>
+                    <PasswordField fx:id="administratorPasswordField"
+                                   promptText="%dbsetup.provision.admin.password.prompt"
+                                   GridPane.columnIndex="1" GridPane.rowIndex="1"/>
+                    <Label text="%dbsetup.provision.application.username" styleClass="form-label"
+                           GridPane.rowIndex="2"/>
+                    <TextField fx:id="provisionUsernameField"
+                               promptText="%dbsetup.provision.application.username.prompt"
+                               GridPane.columnIndex="1" GridPane.rowIndex="2"/>
+                    <Label text="%dbsetup.provision.application.password" styleClass="form-label"
+                           GridPane.rowIndex="3"/>
+                    <PasswordField fx:id="provisionPasswordField"
+                                   promptText="%dbsetup.provision.application.password.prompt"
+                                   GridPane.columnIndex="1" GridPane.rowIndex="3"/>
+                    <Label text="%dbsetup.provision.allowed.host" styleClass="form-label"
+                           GridPane.rowIndex="4"/>
+                    <TextField fx:id="allowedHostField"
+                               promptText="%dbsetup.provision.allowed.host.prompt"
+                               GridPane.columnIndex="1" GridPane.rowIndex="4"/>
+                </GridPane>
+                <Label text="%dbsetup.provision.allowed.host.help" wrapText="true"
+                       styleClass="text-explain"/>
+                <Button fx:id="provisionButton" text="%dbsetup.provision.action"
+                        onAction="#provisionServer" alignment="CENTER"
+                        styleClass="secondary-button"/>
+            </VBox>
+
+            <VBox spacing="8" styleClass="app-card">
+                <Label text="%dbsetup.location" styleClass="app-section-title"/>
+                <Label fx:id="locationLabel" wrapText="true" styleClass="dbsetup-path"/>
+                <Label text="%dbsetup.location.help" wrapText="true" styleClass="text-explain"/>
+            </VBox>
+
+            <HBox spacing="12" alignment="CENTER_RIGHT">
+                <ProgressIndicator fx:id="progress" visible="false"
+                                   prefWidth="28" prefHeight="28"/>
+                <Button fx:id="testButton" text="%dbsetup.test" onAction="#testConnection"
+                        styleClass="secondary-button"/>
+                <Button fx:id="saveButton" text="%dbsetup.save" onAction="#saveConfiguration"
+                        disable="true" defaultButton="true" styleClass="primary-button"/>
+            </HBox>
+            <Label fx:id="statusLabel" wrapText="true" minHeight="42" styleClass="status-label"/>
+        </VBox>
+    </content>
+</ScrollPane>

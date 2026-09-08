@@ -95,7 +95,15 @@ public class CryptoDatabaseConfig {
      * that existing installs keep working.
      */
     public static String resolveConfigKey() {
-        String explicit = explicitConfigKey();
+        return resolveConfigKey(new File(KEY_FILE));
+    }
+
+    /**
+     * Resolves the key beside a config file stored outside the JVM working
+     * directory. The environment variable deliberately keeps first priority.
+     */
+    public static String resolveConfigKey(File keyFile) {
+        String explicit = explicitConfigKey(keyFile);
         return explicit != null ? explicit : FALLBACK_KEY;
     }
 
@@ -125,12 +133,15 @@ public class CryptoDatabaseConfig {
 
     /** The key set for this install, or null when only the built-in default is available. */
     private static String explicitConfigKey() {
+        return explicitConfigKey(new File(KEY_FILE));
+    }
+
+    private static String explicitConfigKey(File keyFile) {
         String fromEnv = System.getenv(KEY_ENV_VAR);
         if (fromEnv != null && !fromEnv.isBlank()) {
             return validateKey(fromEnv.trim(), "environment variable " + KEY_ENV_VAR);
         }
 
-        File keyFile = new File(KEY_FILE);
         if (keyFile.isFile()) {
             String fromFile = readKeyFile(keyFile);
             if (!fromFile.isEmpty()) {
@@ -187,16 +198,23 @@ public class CryptoDatabaseConfig {
 
     /** Whether config.xml is being read with the key that ships in the source. */
     public static boolean usingBuiltInKey() {
-        return explicitConfigKey() == null;
+        return usingBuiltInKey(new File(KEY_FILE));
+    }
+
+    public static boolean usingBuiltInKey(File keyFile) {
+        return explicitConfigKey(keyFile) == null;
     }
 
     /** Where {@link #resolveConfigKey()} is about to read the key from, for logging. */
     public static String describeConfigKeySource() {
+        return describeConfigKeySource(new File(KEY_FILE));
+    }
+
+    public static String describeConfigKeySource(File keyFile) {
         String fromEnv = System.getenv(KEY_ENV_VAR);
         if (fromEnv != null && !fromEnv.isBlank()) {
             return "environment variable " + KEY_ENV_VAR;
         }
-        File keyFile = new File(KEY_FILE);
         if (keyFile.isFile()) {
             return "key file " + keyFile.getAbsolutePath();
         }

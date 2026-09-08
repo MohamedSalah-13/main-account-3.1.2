@@ -1,0 +1,38 @@
+.dbsetup-root {
+    -fx-padding: 24;
+    -fx-background-color: -app-bg;
+}
+
+.dbsetup-root .radio-button {
+    -fx-font-size: 1.091em;
+    -fx-text-fill: -app-text-strong;
+}
+
+.dbsetup-path {
+    -fx-font-family: "Consolas", "Courier New", monospace;
+    -fx-text-fill: -app-primary-dark;
+    -fx-background-color: -app-neutral-soft;
+    -fx-background-radius: 8;
+    -fx-padding: 10;
+}
+
+.dbsetup-root .status-success {
+    -fx-text-fill: -app-success;
+    -fx-font-weight: bold;
+}
+
+.dbsetup-root .status-warning {
+    -fx-text-fill: -app-warning;
+    -fx-font-weight: bold;
+}
+
+.dbsetup-root .status-error {
+    -fx-text-fill: -app-danger;
+    -fx-font-weight: bold;
+}
+
+.server-provisioning-card {
+    -fx-border-color: -app-primary-soft;
+    -fx-border-radius: 10;
+    -fx-border-width: 1;
+}

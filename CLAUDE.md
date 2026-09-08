@@ -1235,9 +1235,14 @@ to the event in the first place.
 
 ## Configuration and secrets
 
-`config.xml` (database credentials, AES-encrypted) and `config.key` are **git-ignored** and resolved
-against the **JVM working directory** — so they belong next to wherever the app is launched from, not
-necessarily the repo root. `config.xml.example` documents the format.
+`config.xml` (database credentials, AES-encrypted) and `config.key` are **git-ignored**. New installs
+store them in `%ProgramData%\AccountK`; `ACCOUNT_CONFIG_DIR` overrides that location. A file in the JVM
+working directory remains a read-only compatibility fallback for field installs and development checkouts.
+`AccountK-Database-Setup.exe`, packaged as a second jpackage launcher from the same shaded jar/runtime,
+tests MySQL and writes a device-specific pair without requiring source, Maven or a separate JDK.
+On the main workstation it can also create the schema and an IP/CIDR-restricted MySQL account with
+database-scoped privileges; administrator credentials are used only for that operation and are never saved.
+`config.xml.example` documents the format.
 
 Key resolution (`CryptoDatabaseConfig`): `ACCOUNT_CONFIG_KEY` env var → `config.key` file → a built-in
 fallback key. **The fallback key is in the source**, and a `config.xml` encrypted with it was committed to

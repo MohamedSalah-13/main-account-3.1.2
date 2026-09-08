@@ -45,6 +45,7 @@ public class DatabaseBackupService {
                     "--routines",
                     "--triggers",
                     "--single-transaction",
+                    "--no-tablespaces",
                     database.getDbName()
             );
 

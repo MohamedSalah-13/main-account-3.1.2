@@ -80,6 +80,7 @@ public class BackupService {
                 "-P", dbPort,
                 "-u", dbUser,
                 "--single-transaction",
+                "--no-tablespaces",
                 "--routines",
                 "--triggers",
                 "--set-gtid-purged=OFF",   // <-- منع تضمين GTID_PURGED

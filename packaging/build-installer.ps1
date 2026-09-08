@@ -28,6 +28,7 @@ $ErrorActionPreference = 'Stop'
 
 $AppName = 'AccountK'
 $MainClass = 'com.hamza.account.Main'
+$DatabaseSetupLauncher = Join-Path $PSScriptRoot 'database-setup.properties'
 
 $root = Split-Path -Parent $PSScriptRoot
 $accountDir = Join-Path $root 'account'
@@ -94,6 +95,7 @@ $jpackageArgs = @(
     '--description', 'AccountK - نظام المحاسبة',
     # الواجهة والبيانات بالعربية: بدون هذا تظهر الحروف مشوّهة على بعض الأنظمة
     '--java-options', '-Dfile.encoding=UTF-8'
+    '--add-launcher', "AccountK-Database-Setup=$DatabaseSetupLauncher"
 )
 
 $icon = Join-Path $accountDir 'src\main\resources\tools.ico'
@@ -126,5 +128,5 @@ if ($LASTEXITCODE -ne 0) {
 Write-Host ""
 Write-Host "تم. الناتج في: $dest" -ForegroundColor Green
 Write-Host ""
-Write-Host "config.xml و config.key يُحلّان بالنسبة لمجلد العمل الذي يُشغَّل منه التطبيق -" -ForegroundColor Yellow
-Write-Host "تأكد من وضعهما بجوار الملف التنفيذي الناتج قبل أول تشغيل عند العميل." -ForegroundColor Yellow
+Write-Host "شغّل AccountK-Database-Setup.exe على كل جهاز قبل أول تشغيل للبرنامج." -ForegroundColor Yellow
+Write-Host "ستُحفظ إعدادات الاتصال في ProgramData\AccountK (أو ACCOUNT_CONFIG_DIR إن كان مضبوطاً)." -ForegroundColor Yellow
