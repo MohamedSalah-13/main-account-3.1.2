@@ -1,6 +1,7 @@
 package com.hamza.account.document;
 
 import com.hamza.controlsfx.database.DaoException;
+import com.hamza.controlsfx.error.BusinessRuleException;
 import com.hamza.controlsfx.language.LanguageManager;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -45,5 +46,21 @@ class DocumentWriteGuardTest {
                 () -> DocumentWriteGuard.requireSingleHeaderRow(
                         affectedRows, DocumentType.SALES));
         assertTrue(error.getMessage().contains("رأس فاتورة واحد"));
+    }
+
+    @ParameterizedTest
+    @EnumSource(DocumentType.class)
+    void aMissingOptimisticVersionIsReportedAsAConcurrentEdit(DocumentType type) {
+        BusinessRuleException error = assertThrows(BusinessRuleException.class,
+                () -> DocumentWriteGuard.requireEditVersion(null, type));
+        assertTrue(error.getMessage().contains("جهاز آخر"));
+    }
+
+    @ParameterizedTest
+    @EnumSource(DocumentType.class)
+    void zeroUpdatedRowsIsReportedAsAConcurrentEdit(DocumentType type) {
+        BusinessRuleException error = assertThrows(BusinessRuleException.class,
+                () -> DocumentWriteGuard.requireOptimisticUpdate(0, type));
+        assertTrue(error.getMessage().contains("جهاز آخر"));
     }
 }

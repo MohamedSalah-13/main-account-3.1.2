@@ -14,6 +14,8 @@ import com.hamza.account.controller.users.ShiftCorrectionReasonPrompt;
 import com.hamza.account.document.DocumentType;
 import com.hamza.account.features.backup.BackupPolicy;
 import com.hamza.account.features.events.EmployeesChanged;
+import com.hamza.account.features.events.ItemSaved;
+import com.hamza.account.features.events.ItemsChanged;
 import com.hamza.account.features.events.StocksChanged;
 import com.hamza.account.features.invoice.*;
 import com.hamza.account.features.notification.StockLevelAlert;
@@ -106,6 +108,10 @@ public class BuyController2<T3 extends BaseNames, T4 extends BaseAccount>
      * The invoice stock context; kept at the legacy default until warehouse selection is exposed.
      */
     private int invoiceStockId = DefaultStock.ID;
+    /** Version of the existing document loaded by this editor, for compare-and-swap saving. */
+    private LocalDateTime loadedUpdatedAt;
+    /** An item changed after this invoice started; entered line prices are never overwritten silently. */
+    private boolean itemCatalogChangedWhileOpen;
     private int codeAccount;
     private boolean updatingPaymentUi;
     private StringProperty textSearchName, textSearchItems;
@@ -624,6 +630,7 @@ public class BuyController2<T3 extends BaseNames, T4 extends BaseAccount>
             if (comboStock != null) comboStock.getSelectionModel().select(
                     comboStock.getItems().stream().filter(stock -> stock.getId() == invoiceStockId).findFirst().orElse(null));
             BaseTotals dataById = header.totals();
+            loadedUpdatedAt = dataById.getUpdated_at();
             int id = dataById.getId();
             InvoiceType invoiceType = dataById.getInvoiceType();
             String invoiceDate = dataById.getDate();
@@ -663,6 +670,16 @@ public class BuyController2<T3 extends BaseNames, T4 extends BaseAccount>
 
             if (!returnEntry.confirmIfUnlinked()) {
                 return;
+            }
+
+            if (itemCatalogChangedWhileOpen && hasInvoiceLines()) {
+                boolean continueWithEnteredValues = AllAlerts.confirm_all(
+                        LanguageManager.getInstance().getString("invoice.catalog.changed.title"),
+                        LanguageManager.getInstance().getString("invoice.catalog.changed.confirm"));
+                if (!continueWithEnteredValues) {
+                    return;
+                }
+                itemCatalogChangedWhileOpen = false;
             }
 
             String correctionReason = "";
@@ -708,7 +725,7 @@ public class BuyController2<T3 extends BaseNames, T4 extends BaseAccount>
                 comboDelegate.getSelectionModel().getSelectedItem(),
                 getSelWithoutBalance(), returnEntry.sourceInvoiceNumber(),
                 returnEntry.selectedReturnReason(),
-                List.copyOf(linesForSave()), invoiceStockId, correctionReason);
+                List.copyOf(linesForSave()), invoiceStockId, correctionReason, loadedUpdatedAt);
     }
 
     private void saveInBackground(boolean print, InvoiceSaveCommand command) {
@@ -929,6 +946,8 @@ public class BuyController2<T3 extends BaseNames, T4 extends BaseAccount>
     }
 
     private void reset_all() {
+        loadedUpdatedAt = null;
+        itemCatalogChangedWhileOpen = false;
         table.getItems().clear();
         txtNum.setText(LanguageManager.getInstance().getString("invoice.number.generate"));
         txtPrice.setText(String.valueOf(0));
@@ -954,6 +973,10 @@ public class BuyController2<T3 extends BaseNames, T4 extends BaseAccount>
             // A warehouse created after this controller was built is otherwise never
             // offered in comboStock - see reloadStockItems.
             subscriptions.add(eventBus.subscribe(StocksChanged.class, event -> reloadStockItems()));
+            subscriptions.add(eventBus.subscribe(ItemsChanged.class,
+                    event -> itemCatalogChangedWhileOpen = true));
+            subscriptions.add(eventBus.subscribe(ItemSaved.class,
+                    event -> itemCatalogChangedWhileOpen = true));
         }
         // An invoice window is opened per invoice and closed again; the bus behind
         // it lives for the whole process.

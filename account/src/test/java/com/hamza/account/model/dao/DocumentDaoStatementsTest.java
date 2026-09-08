@@ -24,7 +24,9 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
+import java.sql.Timestamp;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -56,6 +58,7 @@ class DocumentDaoStatementsTest {
     private static final int USER_ID = 8;
     private static final int INVOICE_ID = 55;
     private static final String NOTES = "ملاحظة";
+    private static final LocalDateTime VERSION = LocalDateTime.of(2026, 8, 11, 12, 34, 56, 123_456_000);
 
     // ---- helpers ------------------------------------------------------------------
 
@@ -83,6 +86,7 @@ class DocumentDaoStatementsTest {
         invoice.setTreasuryModel(new Treasury(TREASURY_ID, "خزينة", BigDecimal.ZERO));
         invoice.setNotes(NOTES);
         invoice.setUsers(new Users(USER_ID, "admin"));
+        invoice.setUpdated_at(VERSION);
         return invoice;
     }
 
@@ -99,6 +103,7 @@ class DocumentDaoStatementsTest {
         invoice.setTreasuryModel(new Treasury(TREASURY_ID, "خزينة", BigDecimal.ZERO));
         invoice.setNotes(NOTES);
         invoice.setUsers(new Users(USER_ID, "admin"));
+        invoice.setUpdated_at(VERSION);
         return invoice;
     }
 
@@ -116,6 +121,7 @@ class DocumentDaoStatementsTest {
         invoice.setTreasuryModel(new Treasury(TREASURY_ID, "خزينة", BigDecimal.ZERO));
         invoice.setNotes(NOTES);
         invoice.setUsers(new Users(USER_ID, "admin"));
+        invoice.setUpdated_at(VERSION);
         return invoice;
     }
 
@@ -132,6 +138,7 @@ class DocumentDaoStatementsTest {
         invoice.setTreasuryModel(new Treasury(TREASURY_ID, "خزينة", BigDecimal.ZERO));
         invoice.setNotes(NOTES);
         invoice.setUsers(new Users(USER_ID, "admin"));
+        invoice.setUpdated_at(VERSION);
         return invoice;
     }
 
@@ -158,8 +165,8 @@ class DocumentDaoStatementsTest {
             assertEquals("INSERT INTO total_sales (sup_code,invoice_type,invoice_date,total,discount,paid_up,"
                     + "stock_id,delegate_id,treasury_id,notes,invoice_number,user_id) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)",
                     dao.insertSql());
-            assertEquals("UPDATE total_sales SET sup_code=?,invoice_type=?,invoice_date=?,total=?,discount=?,"
-                    + "paid_up=?,stock_id=?,delegate_id=?,treasury_id=?,notes=? WHERE invoice_number=?",
+            assertEquals("UPDATE total_sales SET updated_at=CURRENT_TIMESTAMP(6), sup_code=?,invoice_type=?,invoice_date=?,total=?,discount=?,"
+                    + "paid_up=?,stock_id=?,delegate_id=?,treasury_id=?,notes=? WHERE invoice_number=? AND updated_at=?",
                     dao.updateSql());
             assertEquals("DELETE FROM total_sales WHERE invoice_number=?", dao.deleteSql());
             assertEquals("SELECT * FROM total_sales_names_table WHERE invoice_number=?", dao.selectByIdSql());
@@ -207,7 +214,7 @@ class DocumentDaoStatementsTest {
             assertBindsExactly(dao.updateSql(), data);
             assertArrayEquals(new Object[]{
                     PARTY_ID, 1, DATE, 100.0, 5.0, 60.0, STOCK_ID, DELEGATE_ID, TREASURY_ID, NOTES,
-                    INVOICE_ID}, data);
+                    INVOICE_ID, Timestamp.valueOf(VERSION)}, data);
         }
 
         @Test
@@ -265,8 +272,8 @@ class DocumentDaoStatementsTest {
             assertEquals("INSERT INTO total_buy (sup_code,invoice_type,invoice_date,total,discount,paid_up,"
                     + "stock_id,treasury_id,notes,user_id,invoice_number) VALUES (?,?,?,?,?,?,?,?,?,?,?)",
                     dao.insertSql());
-            assertEquals("UPDATE total_buy SET sup_code=?,invoice_type=?,invoice_date=?,total=?,discount=?,"
-                    + "paid_up=?,stock_id=?,treasury_id=?,notes=? WHERE invoice_number=?", dao.updateSql());
+            assertEquals("UPDATE total_buy SET updated_at=CURRENT_TIMESTAMP(6), sup_code=?,invoice_type=?,invoice_date=?,total=?,discount=?,"
+                    + "paid_up=?,stock_id=?,treasury_id=?,notes=? WHERE invoice_number=? AND updated_at=?", dao.updateSql());
             assertEquals("DELETE FROM total_buy WHERE invoice_number=?", dao.deleteSql());
             assertEquals("SELECT * FROM total_purchase_names_table WHERE invoice_number=?", dao.selectByIdSql());
             assertEquals("SELECT COALESCE(MAX(invoice_number), 0) + 1 FROM total_buy", dao.maxIdSql());
@@ -327,7 +334,8 @@ class DocumentDaoStatementsTest {
             Object[] data = dao.getUpdateData(purchaseInvoice());
             assertBindsExactly(dao.updateSql(), data);
             assertArrayEquals(new Object[]{
-                    PARTY_ID, 1, DATE, 100.0, 5.0, 60.0, STOCK_ID, TREASURY_ID, NOTES, INVOICE_ID}, data);
+                    PARTY_ID, 1, DATE, 100.0, 5.0, 60.0, STOCK_ID, TREASURY_ID, NOTES,
+                    INVOICE_ID, Timestamp.valueOf(VERSION)}, data);
         }
 
         @Test
@@ -368,8 +376,8 @@ class DocumentDaoStatementsTest {
             assertEquals("INSERT INTO total_sales_re (sup_id,invoice_date,invoice_type,total,discount,"
                     + "paid_from_treasury,stock_id,delegate_id,treasury_id,id,notes,user_id) "
                     + "VALUES (?,?,?,?,?,?,?,?,?,?,?,?)", dao.insertSql());
-            assertEquals("UPDATE total_sales_re SET sup_id=?,invoice_date=?,invoice_type=?,total=?,discount=?,"
-                    + "paid_from_treasury=?,stock_id=?,delegate_id=?,treasury_id=?,notes=? WHERE id=?",
+            assertEquals("UPDATE total_sales_re SET updated_at=CURRENT_TIMESTAMP(6), sup_id=?,invoice_date=?,invoice_type=?,total=?,discount=?,"
+                    + "paid_from_treasury=?,stock_id=?,delegate_id=?,treasury_id=?,notes=? WHERE id=? AND updated_at=?",
                     dao.updateSql());
             assertEquals("DELETE FROM total_sales_re WHERE id=?", dao.deleteSql());
             assertEquals("SELECT * FROM total_sales_return_names_table WHERE id=?", dao.selectByIdSql());
@@ -421,7 +429,7 @@ class DocumentDaoStatementsTest {
             assertBindsExactly(dao.updateSql(), data);
             assertArrayEquals(new Object[]{
                     PARTY_ID, DATE, 1, 100.0, 5.0, 60.0, STOCK_ID, DELEGATE_ID, TREASURY_ID, NOTES,
-                    INVOICE_ID}, data);
+                    INVOICE_ID, Timestamp.valueOf(VERSION)}, data);
         }
 
         @Test
@@ -471,8 +479,8 @@ class DocumentDaoStatementsTest {
             assertEquals("INSERT INTO total_buy_re (sup_id,invoice_date,invoice_type,total,discount,"
                     + "paid_to_treasury,stock_id,treasury_id,id,notes,user_id) VALUES (?,?,?,?,?,?,?,?,?,?,?)",
                     dao.insertSql());
-            assertEquals("UPDATE total_buy_re SET sup_id=?,invoice_date=?,invoice_type=?,total=?,discount=?,"
-                    + "paid_to_treasury=?,stock_id=?,treasury_id=?,notes=? WHERE id=?", dao.updateSql());
+            assertEquals("UPDATE total_buy_re SET updated_at=CURRENT_TIMESTAMP(6), sup_id=?,invoice_date=?,invoice_type=?,total=?,discount=?,"
+                    + "paid_to_treasury=?,stock_id=?,treasury_id=?,notes=? WHERE id=? AND updated_at=?", dao.updateSql());
             assertEquals("DELETE FROM total_buy_re WHERE id=?", dao.deleteSql());
             assertEquals("SELECT * FROM total_purchase_return_names_table WHERE id=?", dao.selectByIdSql());
             assertEquals("SELECT COALESCE(MAX(id), 0) + 1 FROM total_buy_re", dao.maxIdSql());
@@ -516,7 +524,8 @@ class DocumentDaoStatementsTest {
             Object[] data = dao.getUpdateData(purchaseReturn());
             assertBindsExactly(dao.updateSql(), data);
             assertArrayEquals(new Object[]{
-                    PARTY_ID, DATE, 1, 100.0, 5.0, 60.0, STOCK_ID, TREASURY_ID, NOTES, INVOICE_ID}, data);
+                    PARTY_ID, DATE, 1, 100.0, 5.0, 60.0, STOCK_ID, TREASURY_ID, NOTES,
+                    INVOICE_ID, Timestamp.valueOf(VERSION)}, data);
         }
 
         @Test

@@ -37,6 +37,7 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
 import java.util.Optional;
+import java.time.LocalDateTime;
 
 import static com.hamza.controlsfx.others.TextFormat.createNumericTextFormatter;
 import static com.hamza.controlsfx.others.Utils.setTextFormatter;
@@ -56,6 +57,7 @@ public class AddNameController<T3 extends BaseNames, T4 extends BaseAccount>
     private final EventBus eventBus = ServiceRegistry.get(EventBus.class);
     private final AreaService areaService = ServiceRegistry.get(AreaService.class);
     private final SelPriceItemService selPriceItemService = ServiceRegistry.get(SelPriceItemService.class);
+    private LocalDateTime loadedUpdatedAt;
 
     @FXML
     private Label labelCode, labelName, labelTel, labelAddress, labelBalance, labelLimit, labelOthers, labelSelPrice, labelArea;
@@ -152,6 +154,7 @@ public class AddNameController<T3 extends BaseNames, T4 extends BaseAccount>
 
         if (id > 0) {
             t3.setId(id);
+            t3.setUpdated_at(loadedUpdatedAt);
             return dataInterface.nameAndAccountInterface().saveName(t3);
         } else {
             t3.setId(0);
@@ -191,6 +194,7 @@ public class AddNameController<T3 extends BaseNames, T4 extends BaseAccount>
 
             if (dataALlList.isPresent()) {
                 T3 t3 = dataALlList.get();
+                loadedUpdatedAt = t3.getUpdated_at();
                 int id1 = t3.getId();
                 txtCode.setText(String.valueOf(id1));
                 txtName.setText(t3.getName());
@@ -245,6 +249,7 @@ public class AddNameController<T3 extends BaseNames, T4 extends BaseAccount>
 
     @Override
     public void resetData() {
+        loadedUpdatedAt = null;
         txtCode.setText(LanguageManager.getInstance().getString("item.code.generate"));
         txtLimit.setText("0");
         txtBalance.setText("0");

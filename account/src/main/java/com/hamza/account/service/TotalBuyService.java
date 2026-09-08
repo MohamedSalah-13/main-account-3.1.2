@@ -3,6 +3,8 @@ package com.hamza.account.service;
 import com.hamza.account.document.DocumentType;
 import com.hamza.account.features.returns.ReturnLinkGuard;
 import com.hamza.account.features.stockledger.StockMovementAssembler;
+import com.hamza.account.features.events.ChangeAnnouncer;
+import com.hamza.account.features.events.InvoiceSaved;
 import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.period.PeriodLock;
 import com.hamza.account.period.PeriodLockRegistry;
@@ -67,6 +69,9 @@ public record TotalBuyService(DaoFactory daoFactory) {
                     StockMovementAssembler.referenceTypeFor(DocumentType.PURCHASE), ids);
             int rows = getTotalsBuyDao().deleteInvoicesInRange(ids);
             journal.appendReversals(rows, correctionReason);
+            if (rows > 0) {
+                ChangeAnnouncer.jdbc().announce(new InvoiceSaved(DocumentType.PURCHASE.side()));
+            }
             return rows;
         });
     }

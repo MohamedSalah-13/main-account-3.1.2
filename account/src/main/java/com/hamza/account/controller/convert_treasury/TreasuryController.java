@@ -3,6 +3,8 @@ package com.hamza.account.controller.convert_treasury;
 import com.hamza.account.controller.others.ServiceRegistry;
 import com.hamza.account.features.events.TreasuriesChanged;
 import com.hamza.account.features.events.TreasuryMovementRecorded;
+import com.hamza.account.features.events.TreasuryBalancesChanged;
+import com.hamza.account.features.events.InvoiceSaved;
 import com.hamza.account.features.rbac.CurrentUser;
 import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.model.domain.Treasury;
@@ -114,6 +116,10 @@ public class TreasuryController {
         // registered on a process-wide bus - see the events section of CLAUDE.md.
         if (eventBus != null) {
             subscriptions.add(eventBus.subscribe(TreasuryMovementRecorded.class,
+                    event -> loadTreasuries()));
+            subscriptions.add(eventBus.subscribe(TreasuryBalancesChanged.class,
+                    event -> loadTreasuries()));
+            subscriptions.add(eventBus.subscribe(InvoiceSaved.class,
                     event -> loadTreasuries()));
         }
         subscriptions.disposeWith(root);

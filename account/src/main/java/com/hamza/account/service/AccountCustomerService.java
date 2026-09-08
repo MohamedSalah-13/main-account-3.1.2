@@ -22,6 +22,9 @@ import java.util.List;
 import com.hamza.account.features.shift.ShiftGate;
 import com.hamza.account.features.shift.ShiftAttributionWriter;
 import com.hamza.account.features.events.PartyKind;
+import com.hamza.account.features.events.AccountChanged;
+import com.hamza.account.features.events.ChangeAnnouncer;
+import com.hamza.account.features.events.TreasuryBalancesChanged;
 import com.hamza.account.features.shift.JdbcShiftCashEffectReader;
 import com.hamza.account.features.shift.ShiftCashEffect;
 import com.hamza.account.features.shift.ShiftCashLedger;
@@ -63,7 +66,10 @@ public record AccountCustomerService(DaoFactory daoFactory) {
             var shift = ShiftGate.jdbc(daoFactory.userShiftDao()).requireCashCorrection(
                     actor, old.treasuryId(), old.income().add(old.output()).abs(), old.originalShiftId());
             int rows = daoFactory.customerAccountDao().deleteById(id);
-            if (rows == 1) ShiftCashLedger.jdbc().deleted(shift, actor, old, correctionReason);
+            if (rows == 1) {
+                ShiftCashLedger.jdbc().deleted(shift, actor, old, correctionReason);
+                announceBalancesChanged();
+            }
             return rows;
         });
     }
@@ -113,6 +119,7 @@ public record AccountCustomerService(DaoFactory daoFactory) {
                             BigDecimal.valueOf(account.getPaid()));
                     ShiftCashLedger.jdbc().updated(oldShift, shiftId, account.getUsers().getId(), old, current,
                             correctionReason);
+                    announceBalancesChanged();
                 }
                 return rows;
             });
@@ -133,6 +140,9 @@ public record AccountCustomerService(DaoFactory daoFactory) {
                 new WalletFeeService(daoFactory).post(
                         account.getTreasury().getId(), LocalDate.parse(account.getDate()),
                         BigDecimal.valueOf(account.getPaid()), walletFee, WalletFee.EXPENSE_NAME, shiftId);
+            }
+            if (rows == 1) {
+                announceBalancesChanged();
             }
             return rows;
         });
@@ -156,6 +166,12 @@ public record AccountCustomerService(DaoFactory daoFactory) {
      */
     private boolean isNew(CustomerAccount account) throws DaoException {
         return account.getId() <= 0 || accountDao().getAccountByNumForUpdate(account.getId()) == null;
+    }
+
+    private static void announceBalancesChanged() throws DaoException {
+        ChangeAnnouncer announcer = ChangeAnnouncer.jdbc();
+        announcer.announce(new AccountChanged(PartyKind.CUSTOMER));
+        announcer.announce(new TreasuryBalancesChanged());
     }
 
     public double sumTotal() {

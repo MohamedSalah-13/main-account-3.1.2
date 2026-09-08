@@ -3,6 +3,7 @@ package com.hamza.account.controller.items;
 import com.hamza.account.config.AppIcon;
 import com.hamza.account.config.IconFactory;
 import com.hamza.account.controller.others.ServiceRegistry;
+import com.hamza.account.features.events.ItemsChanged;
 import com.hamza.account.model.domain.ItemsModel;
 import com.hamza.account.model.domain.MainGroups;
 import com.hamza.account.openFxml.FxmlPath;
@@ -14,6 +15,7 @@ import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.error.UserValidationException;
 import com.hamza.controlsfx.language.LanguageManager;
+import com.hamza.controlsfx.observer.EventBus;
 import com.hamza.controlsfx.util.ImageChoose;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -43,6 +45,7 @@ public class UpdateSomeItems {
     private final ImageChoose imageChoose = new ImageChoose();
     private final ImageView imageView = new ImageView();
     private final ItemsService itemsService = ServiceRegistry.get(ItemsService.class);
+    private final EventBus eventBus = ServiceRegistry.get(EventBus.class);
     private final MainGroupService mainGroupService = ServiceRegistry.get(MainGroupService.class);
     private final SupGroupService supGroupService = ServiceRegistry.get(SupGroupService.class);
     private boolean isActiveProperty = false;
@@ -235,6 +238,7 @@ public class UpdateSomeItems {
                     () -> itemsService.updateGroup(itemsModelList));
 
             maskerPaneSetting.getVoidTask().setOnSucceeded(workerStateEvent -> {
+                if (eventBus != null) eventBus.publish(new ItemsChanged());
                 AllAlerts.alertSave();
                 checkUpdateGroup.setSelected(false);
                 checkUpdateActive.setSelected(false);

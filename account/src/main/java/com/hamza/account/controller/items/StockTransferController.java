@@ -4,6 +4,7 @@ import com.hamza.account.config.DefaultStock;
 import com.hamza.account.controller.others.ServiceRegistry;
 import com.hamza.account.controller.search.ItemsSearch;
 import com.hamza.account.features.events.StocksChanged;
+import com.hamza.account.features.events.StockBalancesChanged;
 import com.hamza.account.features.rbac.CurrentUser;
 import com.hamza.account.features.stocktransfer.StockTransferCommand;
 import com.hamza.account.features.stocktransfer.StockTransferLine;
@@ -267,6 +268,7 @@ public class StockTransferController {
             AllAlerts.alertSaveWithMessage(message("stocks.transfer.msg.posted"));
             lines.clear();
             loadHistory();
+            eventBus.publish(new StockBalancesChanged());
         } catch (Exception e) {
             reportFailure(e);
         }
@@ -318,6 +320,7 @@ public class StockTransferController {
             transferService.delete(selected.id());
             AllAlerts.alertDeleteWithMessage(message("stocks.transfer.msg.reversed"));
             loadHistory();
+            eventBus.publish(new StockBalancesChanged());
         } catch (Exception e) {
             reportFailure(e);
         }

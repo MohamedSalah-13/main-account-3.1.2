@@ -88,4 +88,33 @@ class MultiDeviceMigrationTest {
     void backupOwnerIsShared() {
         assertTrue(SharedSettingKeys.isShared(SharedSettingKeys.BACKUP_OWNER_MACHINE));
     }
+
+    @Test
+    @DisplayName("V50 gives item and document edits a sub-second version for optimistic locking")
+    void editVersionsHaveFractionalPrecision() throws IOException {
+        String sql = read("V50__optimistic_lock_versions.sql");
+        for (String table : new String[]{
+                "items", "total_sales", "total_buy", "total_sales_re", "total_buy_re"}) {
+            assertTrue(sql.contains("ALTER TABLE " + table), table + " is missing its edit version migration");
+        }
+        assertTrue(sql.contains("TIMESTAMP(6)"));
+        assertTrue(sql.contains("ON UPDATE CURRENT_TIMESTAMP(6)"));
+    }
+
+    @Test
+    @DisplayName("V51 gives every change topic a monotonic revision")
+    void dataChangesUseARevisionRatherThanClockOrdering() throws IOException {
+        String sql = read("V51__data_change_revisions.sql");
+        assertTrue(sql.contains("ADD COLUMN revision BIGINT NOT NULL DEFAULT 1"));
+        assertTrue(sql.contains("TIMESTAMP(6)"));
+    }
+
+    @Test
+    @DisplayName("V52 gives customer and supplier edits precise versions")
+    void partyEditVersionsHaveFractionalPrecision() throws IOException {
+        String sql = read("V52__party_optimistic_lock_versions.sql");
+        assertTrue(sql.contains("ALTER TABLE custom"));
+        assertTrue(sql.contains("ALTER TABLE suppliers"));
+        assertTrue(sql.contains("TIMESTAMP(6)"));
+    }
 }

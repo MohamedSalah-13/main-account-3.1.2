@@ -2,6 +2,8 @@ package com.hamza.account.features.stockcount;
 
 import com.hamza.account.config.DefaultStock;
 import com.hamza.account.features.stockledger.StockMovementAssembler;
+import com.hamza.account.features.events.ChangeAnnouncer;
+import com.hamza.account.features.events.StockBalancesChanged;
 import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.model.domain.ItemsModel;
 import com.hamza.account.model.domain.UnitsModel;
@@ -138,6 +140,7 @@ public record StockCountService(DaoFactory daoFactory) {
             }
             count.setStatus(StockCountStatus.POSTED);
             daoFactory.stockMovementDao().insertBatch(StockMovementAssembler.forStockCount(count));
+            ChangeAnnouncer.jdbc().announce(new StockBalancesChanged());
             return moved;
         });
     }

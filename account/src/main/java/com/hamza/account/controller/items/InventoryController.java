@@ -6,6 +6,7 @@ import com.hamza.account.features.events.ItemSaved;
 import com.hamza.account.features.events.ItemsChanged;
 import com.hamza.account.features.events.InvoiceSaved;
 import com.hamza.account.features.events.StockCountPosted;
+import com.hamza.account.features.events.StockBalancesChanged;
 import com.hamza.account.features.events.StocksChanged;
 import com.hamza.account.features.inventory.ColumnKind;
 import com.hamza.account.features.inventory.InventoryColumn;
@@ -412,6 +413,7 @@ public class InventoryController {
         // A posted count corrects balances without anything being bought or sold, and
         // the sheet shows the correction in its own column.
         subscriptions.add(eventBus.subscribe(StockCountPosted.class, event -> reload()));
+        subscriptions.add(eventBus.subscribe(StockBalancesChanged.class, event -> reload()));
         // A warehouse created after this screen was built is otherwise never offered
         // in comboStock - see reloadStockItems.
         subscriptions.add(eventBus.subscribe(StocksChanged.class, event -> reloadStockItems()));

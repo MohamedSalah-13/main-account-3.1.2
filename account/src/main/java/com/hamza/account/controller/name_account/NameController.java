@@ -19,9 +19,11 @@ import com.hamza.account.authorization.AppPermissions;
 import com.hamza.account.authorization.PermissionKey;
 import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.database.DaoList;
+import com.hamza.controlsfx.database.TransactionTemplate;
 import com.hamza.controlsfx.language.LanguageManager;
 import com.hamza.account.controller.others.ServiceRegistry;
 import com.hamza.account.features.events.AccountChanged;
+import com.hamza.account.features.events.ChangeAnnouncer;
 import com.hamza.account.features.events.NameChanged;
 import com.hamza.controlsfx.observer.AppEvent;
 import com.hamza.controlsfx.observer.EventBus;
@@ -96,10 +98,19 @@ public class NameController<T3 extends BaseNames, T4 extends BaseAccount>
                 // spot, and adds the invoices and account movements that make a name
                 // undeletable, counted, in place of the one general sentence a foreign
                 // key failure was turned into.
-                return DeletionService.shared()
-                        .delete(DeleteRegistry.forParty(nameAndAccountInterface.partyKind()),
-                                t3.getId(), nameInterface::deleteById)
-                        .rowsOrThrow();
+                var kind = nameAndAccountInterface.partyKind();
+                return TransactionTemplate.execute(() -> {
+                    int rows = DeletionService.shared()
+                            .delete(DeleteRegistry.forParty(kind),
+                                    t3.getId(), nameInterface::deleteById)
+                            .rowsOrThrow();
+                    if (rows > 0) {
+                        ChangeAnnouncer announcer = ChangeAnnouncer.jdbc();
+                        announcer.announce(new NameChanged(kind));
+                        announcer.announce(new AccountChanged(kind));
+                    }
+                    return rows;
+                });
             }
 
             @Override

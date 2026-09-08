@@ -98,10 +98,11 @@ public class TotalsSalesReturnDao extends AbstractDao<Total_Sales_Re> {
     @Override
     public int update(Total_Sales_Re totalSalesRe) throws DaoException {
         PeriodLock.requireMove(DOCUMENT_TYPE.periodLock(), totalSalesRe.getId(), totalSalesRe.getDate());
+        DocumentWriteGuard.requireEditVersion(totalSalesRe.getUpdated_at(), DOCUMENT_TYPE);
         String query = updateSql();
         return insertMultiData(() -> {
             Object[] objects = getUpdateData(totalSalesRe);
-            DocumentWriteGuard.requireSingleHeaderRow(
+            DocumentWriteGuard.requireOptimisticUpdate(
                     executeUpdateWithException(query, objects), DOCUMENT_TYPE);
             daoFactory.salesReturnsDao().synchronizeLines(
                     totalSalesRe.getId(), totalSalesRe.getSalesReturnList());
@@ -177,7 +178,8 @@ public class TotalsSalesReturnDao extends AbstractDao<Total_Sales_Re> {
                 , totalSalesRe.getTreasuryModel().getId()
                 , totalSalesRe.getNotes()
 //                    , totalSalesRe.getTotalSalesId()
-                , totalSalesRe.getId()};
+                , totalSalesRe.getId()
+                , java.sql.Timestamp.valueOf(totalSalesRe.getUpdated_at())};
     }
 
     @Override
@@ -231,6 +233,7 @@ public class TotalsSalesReturnDao extends AbstractDao<Total_Sales_Re> {
             totalSalesRe.setTreasuryModel(treasury);
             totalSalesRe.setInvoiceType(InvoiceType.getInvoiceTypeById(type_id));
             totalSalesRe.setCreated_at(LocalDateTime.parse(rs.getString(DATE_INSERT), DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
+            totalSalesRe.setUpdated_at(rs.getObject("updated_at", LocalDateTime.class));
             totalSalesRe.setUsers(daoFactory.usersDao().getDataById(rs.getInt(USER_ID)));
             totalSalesRe.setSourceInvoiceNumber(rs.getInt(SOURCE_INVOICE_NUMBER));
             totalSalesRe.setReturnReason(rs.getString(RETURN_REASON));

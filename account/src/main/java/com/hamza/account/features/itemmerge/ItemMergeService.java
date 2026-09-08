@@ -5,6 +5,8 @@ import com.hamza.account.authorization.AuthorizationGuard;
 import com.hamza.account.delete.DeleteRegistry;
 import com.hamza.account.delete.DeletionService;
 import com.hamza.account.features.rbac.CurrentUser;
+import com.hamza.account.features.events.ChangeAnnouncer;
+import com.hamza.account.features.events.ItemsChanged;
 import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.model.domain.Users;
 import com.hamza.account.period.PeriodLock;
@@ -111,6 +113,7 @@ public record ItemMergeService(DaoFactory daoFactory) {
             for (Integer sourceId : sourceIds) {
                 results.add(mergeOne(sourceId == null ? 0 : sourceId, targetId, userId, userName));
             }
+            ChangeAnnouncer.jdbc().announce(new ItemsChanged());
             return results;
         });
     }

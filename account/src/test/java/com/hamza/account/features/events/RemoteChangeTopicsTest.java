@@ -5,6 +5,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import java.util.Map;
+import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -49,15 +50,29 @@ class RemoteChangeTopicsTest {
      * bulk event covers the same screens.
      */
     @Test
-    @DisplayName("an event carrying data another machine does not have stays at home")
-    void payloadCarryingEventsAreNotRelayed() {
-        assertNull(RemoteChangeTopics.topicOf(new ItemSaved(null)));
+    @DisplayName("payload events are normalized when a safe broad event exists")
+    void payloadCarryingEventsAreNormalized() {
+        assertEquals("items", RemoteChangeTopics.topicOf(new ItemSaved(null)));
+        assertEquals("stock.balances", RemoteChangeTopics.topicOf(new StockCountPosted(1, 1)));
+        assertEquals("treasury.balances", RemoteChangeTopics.topicOf(new TreasuryMovementRecorded(7)));
+        assertEquals(new ItemsChanged(), RemoteChangeTopics.eventOf("items"));
+        assertEquals(new StockBalancesChanged(), RemoteChangeTopics.eventOf("stock.balances"));
+        assertEquals(new TreasuryBalancesChanged(), RemoteChangeTopics.eventOf("treasury.balances"));
+
         assertNull(RemoteChangeTopics.topicOf(new UserRenamed("admin")));
         assertNull(RemoteChangeTopics.topicOf(new SelPriceNamesChanged(Map.of())));
-        assertNull(RemoteChangeTopics.topicOf(new StockCountPosted(1, 1)));
 
         assertNotNull(RemoteChangeTopics.topicOf(new ItemsChanged()),
                 "the bulk event is what a remote catalogue change travels as");
+    }
+
+    @Test
+    @DisplayName("the relay subscribes to normalized source event types")
+    void sourceTypesAreSubscribed() {
+        Set<Class<? extends AppEvent>> types = RemoteChangeTopics.announcementTypes();
+        assertEquals(true, types.contains(ItemSaved.class));
+        assertEquals(true, types.contains(StockCountPosted.class));
+        assertEquals(true, types.contains(TreasuryMovementRecorded.class));
     }
 
     /**

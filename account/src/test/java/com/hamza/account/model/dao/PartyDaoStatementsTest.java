@@ -46,8 +46,9 @@ class PartyDaoStatementsTest {
         void statements() {
             assertEquals("INSERT INTO custom (name,tel,address,notes,limit_num,first_balance,price_id,user_id,"
                     + "area_id) VALUES (?,?,?,?,?,?,?,?,?)", dao.insertSql());
-            assertEquals("UPDATE custom SET name=?,tel=?,address=?,notes=?,limit_num=?,first_balance=?,price_id=?,"
-                    + "area_id=? WHERE id=?", dao.updateSql());
+            assertEquals("UPDATE custom SET updated_at=CURRENT_TIMESTAMP(6),name=?,tel=?,address=?,notes=?,"
+                    + "limit_num=?,first_balance=?,price_id=?,area_id=? WHERE id=? AND updated_at=?",
+                    dao.updateSql());
             assertEquals("DELETE FROM custom WHERE id=?", dao.deleteSql());
             assertEquals("SELECT COUNT(*) FROM custom", dao.countSql());
         }
@@ -58,8 +59,9 @@ class PartyDaoStatementsTest {
          */
         @Test
         void theUpdateWithoutTheOpeningBalanceDropsExactlyThatColumn() {
-            assertEquals("UPDATE custom SET name=?,tel=?,address=?,notes=?,limit_num=?,price_id=?,area_id=? "
-                    + "WHERE id=?", dao.updateWithoutOpeningSql());
+            assertEquals("UPDATE custom SET updated_at=CURRENT_TIMESTAMP(6),name=?,tel=?,address=?,notes=?,"
+                    + "limit_num=?,price_id=?,area_id=? WHERE id=? AND updated_at=?",
+                    dao.updateWithoutOpeningSql());
             assertEquals(dao.updateSql().replace("first_balance=?,", ""), dao.updateWithoutOpeningSql());
         }
 
@@ -133,7 +135,7 @@ class PartyDaoStatementsTest {
         @Test
         void updateParameters() {
             Object[] data = dao.getData(customer());
-            assertEquals(dao.updateSql().chars().filter(c -> c == '?').count(), data.length);
+            assertEquals(dao.updateSql().chars().filter(c -> c == '?').count(), data.length + 1);
             assertArrayEquals(new Object[]{NAME, TEL, ADDRESS, NOTES, 5000.0, OPENING, 2, AREA_ID, PARTY_ID}, data);
         }
 
@@ -163,15 +165,16 @@ class PartyDaoStatementsTest {
         void statements() {
             assertEquals("INSERT INTO suppliers (name,tel,address,notes,first_balance,user_id,area_id) "
                     + "VALUES (?,?,?,?,?,?,?)", dao.insertSql());
-            assertEquals("UPDATE suppliers SET name=?,tel=?,address=?,notes=?,first_balance=?,area_id=? WHERE id=?",
-                    dao.updateSql());
+            assertEquals("UPDATE suppliers SET updated_at=CURRENT_TIMESTAMP(6),name=?,tel=?,address=?,notes=?,"
+                    + "first_balance=?,area_id=? WHERE id=? AND updated_at=?", dao.updateSql());
             assertEquals("DELETE FROM suppliers WHERE id=?", dao.deleteSql());
             assertEquals("SELECT COUNT(*) FROM suppliers", dao.countSql());
         }
 
         @Test
         void theUpdateWithoutTheOpeningBalanceDropsExactlyThatColumn() {
-            assertEquals("UPDATE suppliers SET name=?,tel=?,address=?,notes=?,area_id=? WHERE id=?",
+            assertEquals("UPDATE suppliers SET updated_at=CURRENT_TIMESTAMP(6),name=?,tel=?,address=?,notes=?,"
+                            + "area_id=? WHERE id=? AND updated_at=?",
                     dao.updateWithoutOpeningSql());
             assertEquals(dao.updateSql().replace("first_balance=?,", ""), dao.updateWithoutOpeningSql());
         }
@@ -235,7 +238,7 @@ class PartyDaoStatementsTest {
         @Test
         void updateParameters() {
             Object[] data = dao.getData(supplier());
-            assertEquals(dao.updateSql().chars().filter(c -> c == '?').count(), data.length);
+            assertEquals(dao.updateSql().chars().filter(c -> c == '?').count(), data.length + 1);
             assertArrayEquals(new Object[]{NAME, TEL, ADDRESS, NOTES, OPENING, AREA_ID, PARTY_ID}, data);
         }
 

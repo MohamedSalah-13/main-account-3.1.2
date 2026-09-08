@@ -4,6 +4,8 @@ import com.hamza.account.authorization.AppPermissions;
 import com.hamza.account.controller.others.ServiceRegistry;
 import com.hamza.account.document.DocumentType;
 import com.hamza.account.features.rbac.UserSessionContext;
+import com.hamza.account.features.events.ChangeAnnouncer;
+import com.hamza.account.features.events.InvoiceSaved;
 import com.hamza.account.features.returns.ReturnCostResolver;
 import com.hamza.account.features.returns.ReturnGuard;
 import com.hamza.account.features.returns.ReturnSourceWriter;
@@ -23,6 +25,7 @@ import java.math.BigDecimal;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Set;
@@ -32,6 +35,9 @@ import static org.mockito.Mockito.*;
 
 class InvoiceSaveServiceTest {
 
+    private static final LocalDateTime VERSION =
+            LocalDateTime.of(2026, 8, 13, 8, 30, 0, 123_456_000);
+
     private TotalsAndPurchaseList<Sales, Total_Sales> repository;
     private DaoList<Total_Sales> dao;
     private InvoiceNumberAllocator numberAllocator;
@@ -40,6 +46,7 @@ class InvoiceSaveServiceTest {
     private ReturnSourceWriter returnSourceWriter;
     private ReturnCostResolver returnCostResolver;
     private StockMovementDao stockMovementDao;
+    private ChangeAnnouncer changeAnnouncer;
     private InvoiceSaveService<Sales, Total_Sales, Customers, CustomerAccount> service;
     private UserSessionContext session;
 
@@ -54,6 +61,7 @@ class InvoiceSaveServiceTest {
         returnSourceWriter = mock(ReturnSourceWriter.class);
         returnCostResolver = mock(ReturnCostResolver.class);
         stockMovementDao = mock(StockMovementDao.class);
+        changeAnnouncer = mock(ChangeAnnouncer.class);
         when(repository.totalDao()).thenReturn(dao);
         service = new InvoiceSaveService<>(new SalesInvoice(), repository,
                 DocumentType.SALES, Clock.fixed(
@@ -61,7 +69,7 @@ class InvoiceSaveServiceTest {
                 numberAllocator, InvoiceTransactionExecutor.direct(),
                 stockGuard, returnGuard, returnSourceWriter, returnCostResolver,
                 name -> new Treasury(1, name, BigDecimal.ZERO),
-                name -> new Employees(2, name), stockMovementDao);
+                name -> new Employees(2, name), stockMovementDao, changeAnnouncer);
         session = new UserSessionContext();
         ServiceRegistry.register(UserSessionContext.class, session);
         clearInvocations(repository, dao, numberAllocator);
@@ -90,6 +98,7 @@ class InvoiceSaveServiceTest {
         verify(dao, never()).update(any());
         verify(stockMovementDao).deleteByReference("SALE", 44);
         verify(stockMovementDao).insertBatch(argThat(movements -> movements.size() == 1));
+        verify(changeAnnouncer).announce(new InvoiceSaved(DocumentType.SALES.side()));
         // SALES is not a return - nothing here has a source invoice to link.
         verifyNoInteractions(returnSourceWriter);
     }
@@ -107,6 +116,7 @@ class InvoiceSaveServiceTest {
         assertEquals(37, result.persistedLines().getFirst().getId(),
                 "an edited line must reach the DAO with its stored identity");
         assertEquals(37, invoice.getSalesList().getFirst().getId());
+        assertEquals(VERSION, invoice.getUpdated_at());
         verifyNoInteractions(numberAllocator);
         verify(stockGuard).validate(any());
         // Updating id 91: excludingReturnId is not this DAO's concern for a sale, but
@@ -116,6 +126,7 @@ class InvoiceSaveServiceTest {
         verify(dao, never()).insert(any());
         verify(stockMovementDao).deleteByReference("SALE", 91);
         verify(stockMovementDao).insertBatch(argThat(movements -> movements.size() == 1));
+        verify(changeAnnouncer).announce(new InvoiceSaved(DocumentType.SALES.side()));
     }
 
     @Test
@@ -185,8 +196,10 @@ class InvoiceSaveServiceTest {
 
     private InvoiceSaveCommand command(int existingId, double paid, int lineId) {
         return new InvoiceSaveCommand(existingId, LocalDate.of(2026, 8, 13),
-                InvoiceType.DEFER, 3, DiscountType.AMOUNT, paid, " test ",
-                8, "عميل", "الرئيسية", "مندوب", List.of(line(lineId)));
+                InvoiceType.DEFER, BigDecimal.valueOf(3), DiscountType.AMOUNT,
+                BigDecimal.valueOf(paid), " test ", 8, "عميل", "الرئيسية", "مندوب",
+                false, 0, null, List.of(line(lineId)), 1, null,
+                existingId > 0 ? VERSION : null);
     }
 
     private Sales line(int id) {

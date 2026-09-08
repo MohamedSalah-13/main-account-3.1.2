@@ -68,6 +68,7 @@ import lombok.extern.log4j.Log4j2;
 
 import java.io.ByteArrayInputStream;
 import java.io.FileNotFoundException;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -137,6 +138,8 @@ public class AddItemController implements AppSettingInterface {
      */
     private boolean applying;
     private int mainId, subId;
+    /** Version loaded for an existing item, used to reject a stale save. */
+    private LocalDateTime loadedUpdatedAt;
     @FXML
     private ComboBox<String> comboMainGroup, comboSupGroup, comboType;
     @FXML
@@ -415,6 +418,7 @@ public class AddItemController implements AppSettingInterface {
 
     /** A saved item, shown. */
     private void applyItem(ItemsModel item) {
+        loadedUpdatedAt = item.getUpdated_at();
         txtCode.setText(String.valueOf(item.getId()));
         itemForm.load(item);
         unitsTab.load(item);
@@ -834,6 +838,7 @@ public class AddItemController implements AppSettingInterface {
 
         var itemsModel = new ItemsModel();
         itemsModel.setId(codeItem);
+        itemsModel.setUpdated_at(loadedUpdatedAt);
         itemForm.applyTo(itemsModel);
         itemsModel.setSubGroups(new SubGroups(subId));
 

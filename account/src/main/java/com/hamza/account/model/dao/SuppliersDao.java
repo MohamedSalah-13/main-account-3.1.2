@@ -2,6 +2,7 @@ package com.hamza.account.model.dao;
 
 import com.hamza.account.model.domain.Suppliers;
 import com.hamza.account.party.PartyTableSpec;
+import com.hamza.account.party.PartyWriteGuard;
 import com.hamza.controlsfx.database.AbstractDao;
 import com.hamza.account.opening.OpeningBalanceGuard;
 import com.hamza.account.opening.OpeningBalanceRegistry;
@@ -9,8 +10,8 @@ import com.hamza.controlsfx.database.DaoException;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.PreparedStatement;
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Map;
 
@@ -126,11 +127,14 @@ public class SuppliersDao extends AbstractDao<Suppliers> {
         boolean mayWriteOpening = OpeningBalanceGuard.shared()
                 .mayWrite(OpeningBalanceRegistry.SUPPLIERS, model.getId(), model.getFirst_balance());
 
-        if (mayWriteOpening) {
-            return executeUpdate(updateSql(), getData(model));
-        }
-
-        return executeUpdate(updateWithoutOpeningSql(), OpeningBalanceGuard.without(getData(model), OPENING_BALANCE_INDEX));
+        Object[] values = mayWriteOpening
+                ? getData(model)
+                : OpeningBalanceGuard.without(getData(model), OPENING_BALANCE_INDEX);
+        int affected = executeUpdate(mayWriteOpening ? updateSql() : updateWithoutOpeningSql(),
+                PartyWriteGuard.withVersion(values, model.getUpdated_at()));
+        PartyWriteGuard.requireUpdated(affected);
+        model.setUpdated_at(readUpdatedAt(model.getId()));
+        return affected;
     }
 
     @Override
@@ -172,7 +176,8 @@ public class SuppliersDao extends AbstractDao<Suppliers> {
             suppliers.setFirst_balance(resultSet.getDouble(FIRST_BALANCE));
 //            suppliers.setArea(new Area(resultSet.getInt(AREA_ID), resultSet.getString(AREA_NAME)));
             suppliers.setArea(daoFactory.areaDao().getDataById(resultSet.getInt(AREA_ID)));
-            suppliers.setCreated_at(LocalDateTime.parse(resultSet.getString(DATE_INSERT), DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
+            suppliers.setCreated_at(resultSet.getTimestamp(DATE_INSERT).toLocalDateTime());
+            suppliers.setUpdated_at(resultSet.getTimestamp("updated_at").toLocalDateTime());
         } catch (SQLException e) {
             throw new DaoException(e);
         }
@@ -238,6 +243,22 @@ public class SuppliersDao extends AbstractDao<Suppliers> {
 
     public int getCountItems() {
         return queryForIntOrDefault(countSql(), 0);
+    }
+
+    private LocalDateTime readUpdatedAt(int id) throws DaoException {
+        return withConnection(connection -> {
+            try (PreparedStatement statement = connection.prepareStatement(SPEC.updatedAtSql())) {
+                statement.setInt(1, id);
+                try (ResultSet resultSet = statement.executeQuery()) {
+                    if (!resultSet.next()) {
+                        throw new DaoException("Supplier disappeared after update: " + id);
+                    }
+                    return resultSet.getTimestamp("updated_at").toLocalDateTime();
+                }
+            } catch (SQLException e) {
+                throw new DaoException(e.getMessage(), e);
+            }
+        });
     }
 
 }

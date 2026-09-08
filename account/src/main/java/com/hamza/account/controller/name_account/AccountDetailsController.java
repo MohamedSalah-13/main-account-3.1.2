@@ -7,6 +7,7 @@ import com.hamza.account.controller.main.DisableButtons;
 import com.hamza.account.controller.main.LoadOtherData;
 import com.hamza.account.controller.others.ServiceRegistry;
 import com.hamza.account.features.events.AccountChanged;
+import com.hamza.account.features.events.TreasuryBalancesChanged;
 import com.hamza.account.interfaces.api.DataInterface;
 import com.hamza.account.model.base.BaseAccount;
 import com.hamza.account.model.base.BaseNames;
@@ -258,8 +259,10 @@ public class AccountDetailsController<T3 extends BaseNames, T4 extends BaseAccou
                     int i = nameAndAccountInterface.deleteAccount(selectedItem.getId(), reason.get());
                     if (i == 1) {
                         var eventBus = ServiceRegistry.get(EventBus.class);
-                        if (eventBus != null)
+                        if (eventBus != null) {
                             eventBus.publish(new AccountChanged(nameAndAccountInterface.partyKind()));
+                            eventBus.publish(new TreasuryBalancesChanged());
+                        }
                     }
                 }
             }

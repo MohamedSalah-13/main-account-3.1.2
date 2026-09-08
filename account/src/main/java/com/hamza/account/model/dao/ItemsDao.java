@@ -13,10 +13,13 @@ import com.hamza.controlsfx.database.AbstractDao;
 import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.database.GenericMapper;
 import com.hamza.controlsfx.database.SqlStatements;
+import com.hamza.controlsfx.error.BusinessRuleException;
+import com.hamza.controlsfx.language.LanguageManager;
 import lombok.extern.log4j.Log4j2;
 import org.jetbrains.annotations.NotNull;
 
 import java.sql.*;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
@@ -220,6 +223,7 @@ public class ItemsDao extends AbstractDao<ItemsModel> {
     private final String alertDaysBeforeExpire = "alert_days_before_expire";
 
     private final String USER_ID = "user_id";
+    private static final String UPDATED_AT = "updated_at";
     /** One row per (item, stock). For the finder methods that already scope to one warehouse via {@code ip.stock_id = ?}; see {@link #ITEM_MOVEMENTS_ALL_STOCKS}. */
     private final String QUERY_ITEMS = "SELECT items.*, ip.*, ip.first_balance AS stock_first_balance "
             + "from items join quantity_items_table ip on items.id = ip.item_id ";
@@ -250,6 +254,7 @@ public class ItemsDao extends AbstractDao<ItemsModel> {
             items.item_has_validity,
             items.number_validity_days,
             items.alert_days_before_expire,
+            items.updated_at,
             ip.stock_id,
             ip.quantityPurchase,
             ip.quantitySales,
@@ -324,9 +329,12 @@ public class ItemsDao extends AbstractDao<ItemsModel> {
     @Override
     public int update(ItemsModel itemsModel) throws DaoException {
         UpdateStatement statement = updateStatementFor(itemsModel);
+        Object[] versionedValues = optimisticValues(
+                statement.values(), itemsModel.getUpdated_at());
 
         return insertMultiData(() -> {
-            executeUpdateWithException(statement.sql(), statement.values());
+            requireOptimisticUpdate(executeUpdateWithException(
+                    optimisticUpdateSql(statement.sql()), versionedValues));
             if (statement.writesOpening()) {
                 daoFactory.getItemsStockDao().updateOpeningBalance(
                         itemsModel.getId(), DefaultStock.ID, itemsModel.getFirstBalanceForStock());
@@ -339,6 +347,7 @@ public class ItemsDao extends AbstractDao<ItemsModel> {
             if (!itemsModel.getExtraBarcodes().isEmpty()) {
                 daoFactory.getItemBarcodesDao().insertBarcodesForItem(itemsModel.getId(), itemsModel.getExtraBarcodes());
             }
+            itemsModel.setUpdated_at(readUpdatedAt(itemsModel.getId()));
         });
     }
 
@@ -480,21 +489,33 @@ public class ItemsDao extends AbstractDao<ItemsModel> {
 
     @Override
     public int updateList(List<ItemsModel> list) throws DaoException {
-        try {
-            // No FIRST_BALANCE, ever. This is the bulk update behind the "edit several
-            // items" screen, which changes prices and groups; it has no field for an
-            // opening balance and no business rewriting one. Leaving the column in meant
-            // every item in the batch had its opening balance written back from whatever
-            // the loaded model happened to hold - and it was the one path around the
-            // rule in update(), unlogged and a hundred rows at a time.
-            String string = SqlStatements.updateStatement(TABLE_NAME, ID, BARCODE, NAME_ITEM, SUB_NUM, BUY_PRICE
-                    , selPrice1, selPrice2, selPrice3, itemActive, itemHasValidity, numberValidityDays, alertDaysBeforeExpire
-                    , UNIT_ID, MINI_QUANTITY, ITEM_IMAGE, USER_ID);
-            return executeUpdateListWithException(list, string
-                    , (statement, model) -> this.setData(statement, dataWithoutOpeningBalance(model)));
-        } catch (SQLException e) {
-            throw new DaoException(e);
-        }
+        if (list.isEmpty()) return 0;
+
+        // No FIRST_BALANCE, ever. This is the bulk update behind the "edit several
+        // items" screen, which changes prices and groups; it has no field for an
+        // opening balance and no business rewriting one. Leaving the column in meant
+        // every item in the batch had its opening balance written back from whatever
+        // the loaded model happened to hold - and it was the one path around the
+        // rule in update(), unlogged and a hundred rows at a time.
+        String sql = optimisticUpdateSql(SqlStatements.updateStatement(
+                TABLE_NAME, ID, BARCODE, NAME_ITEM, SUB_NUM, BUY_PRICE,
+                selPrice1, selPrice2, selPrice3, itemActive, itemHasValidity,
+                numberValidityDays, alertDaysBeforeExpire, UNIT_ID, MINI_QUANTITY,
+                ITEM_IMAGE, USER_ID));
+
+        // Execute one compare-and-swap at a time inside a single transaction. A JDBC
+        // batch can legally return SUCCESS_NO_INFO, which cannot distinguish a real
+        // update from a stale zero-row update. Here any stale item aborts and rolls back
+        // the whole selection instead of partially applying a bulk edit.
+        insertMultiData(() -> {
+            for (ItemsModel model : list) {
+                Object[] values = optimisticValues(
+                        dataWithoutOpeningBalance(model), model.getUpdated_at());
+                requireOptimisticUpdate(executeUpdateWithException(sql, values));
+                model.setUpdated_at(readUpdatedAt(model.getId()));
+            }
+        });
+        return list.size();
     }
 
     private int insertItem(ItemsModel itemsModel) throws DaoException {
@@ -558,6 +579,7 @@ public class ItemsDao extends AbstractDao<ItemsModel> {
         itemsModel.setHasValidate(rs.getBoolean(itemHasValidity));
         itemsModel.setNumberValidityDays(rs.getInt(numberValidityDays));
         itemsModel.setAlertDaysBeforeExpiry(rs.getInt(alertDaysBeforeExpire));
+        itemsModel.setUpdated_at(rs.getObject(UPDATED_AT, LocalDateTime.class));
 
         if (blob != null) {
             itemsModel.setItem_image(blob.getBytes(1, (int) blob.length()));
@@ -971,6 +993,7 @@ public class ItemsDao extends AbstractDao<ItemsModel> {
             itemsModel.setHasValidate(rs.getBoolean(itemHasValidity));
             itemsModel.setNumberValidityDays(rs.getInt(numberValidityDays));
             itemsModel.setAlertDaysBeforeExpiry(rs.getInt(alertDaysBeforeExpire));
+            itemsModel.setUpdated_at(rs.getObject(UPDATED_AT, LocalDateTime.class));
 
             itemsModel.setSubGroups(lookups.subGroup(rs.getInt(SUB_NUM)));
             itemsModel.setUnitsType(lookups.unit(rs.getInt(UNIT_ID)));
@@ -1016,10 +1039,63 @@ public class ItemsDao extends AbstractDao<ItemsModel> {
     }
 
     public int quickUpdate(ItemsModel item) throws DaoException {
-        String sql = SqlStatements.updateStatement(TABLE_NAME, ID, BARCODE, NAME_ITEM, BUY_PRICE,
-                selPrice1, selPrice2, selPrice3, USER_ID);
-        return executeUpdate(sql, item.getBarcode(), item.getNameItem(), item.getBuyPrice(),
-                item.getSelPrice1(), item.getSelPrice2(), item.getSelPrice3(), item.getUsers().getId(), item.getId());
+        String sql = optimisticUpdateSql(SqlStatements.updateStatement(
+                TABLE_NAME, ID, BARCODE, NAME_ITEM, BUY_PRICE,
+                selPrice1, selPrice2, selPrice3, USER_ID));
+        Object[] values = optimisticValues(new Object[]{
+                item.getBarcode(), item.getNameItem(), item.getBuyPrice(),
+                item.getSelPrice1(), item.getSelPrice2(), item.getSelPrice3(),
+                item.getUsers().getId(), item.getId()
+        }, item.getUpdated_at());
+        int affected = executeUpdate(sql, values);
+        requireOptimisticUpdate(affected);
+        item.setUpdated_at(readUpdatedAt(item.getId()));
+        return affected;
+    }
+
+    /** Adds the version bump and compare-and-swap predicate to a normal update statement. */
+    static String optimisticUpdateSql(String updateSql) {
+        return updateSql.replaceFirst(" SET ",
+                " SET updated_at=CURRENT_TIMESTAMP(6), ") + " AND updated_at = ?";
+    }
+
+    /** Appends the version read with the model to the update's existing parameters. */
+    static Object[] optimisticValues(Object[] values, LocalDateTime expectedVersion)
+            throws DaoException {
+        if (expectedVersion == null) {
+            throw concurrentItemChange();
+        }
+        Object[] result = java.util.Arrays.copyOf(values, values.length + 1);
+        result[values.length] = Timestamp.valueOf(expectedVersion);
+        return result;
+    }
+
+    private static void requireOptimisticUpdate(int affected) throws DaoException {
+        if (affected != 1) {
+            throw concurrentItemChange();
+        }
+    }
+
+    private LocalDateTime readUpdatedAt(int itemId) throws DaoException {
+        return withConnection(connection -> {
+            try (PreparedStatement statement = connection.prepareStatement(
+                    "SELECT updated_at FROM items WHERE id = ?")) {
+                statement.setInt(1, itemId);
+                try (ResultSet result = statement.executeQuery()) {
+                    if (!result.next()) {
+                        throw concurrentItemChange();
+                    }
+                    return result.getObject(1, LocalDateTime.class);
+                }
+            } catch (SQLException e) {
+                throw new DaoException(e.getMessage(), e);
+            }
+        });
+    }
+
+    private static BusinessRuleException concurrentItemChange() {
+        return new BusinessRuleException(LanguageManager.getInstance()
+                .getString("item.error.concurrent.update"));
     }
 
 }

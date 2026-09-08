@@ -19,6 +19,8 @@ import com.hamza.account.features.shift.ShiftCashEffect;
 import com.hamza.account.features.shift.ShiftCashLedger;
 import com.hamza.account.features.shift.ShiftCashSource;
 import com.hamza.account.features.rbac.CurrentUser;
+import com.hamza.account.features.events.ChangeAnnouncer;
+import com.hamza.account.features.events.TreasuryBalancesChanged;
 
 /**
  * Puts cash into a treasury, and takes it out.
@@ -88,6 +90,7 @@ public final class TreasuryCashService {
                     : ShiftCashEffect.outgoing(sourceType, id, command.treasuryId(),
                         shiftId.isPresent() ? shiftId.getAsInt() : null, command.amount());
             ShiftCashLedger.jdbc().created(shiftId, command.userId(), effect);
+            ChangeAnnouncer.jdbc().announce(new TreasuryBalancesChanged());
             return 1;
         });
     }
@@ -130,7 +133,10 @@ public final class TreasuryCashService {
             var shift = shiftGate.requireCashCorrection(actor, old.treasuryId(),
                     old.income().add(old.output()).abs(), old.originalShiftId());
             int rows = daoFactory.cashMovementDao().deleteById(movementId);
-            if (rows == 1) ShiftCashLedger.jdbc().deleted(shift, actor, old, correctionReason);
+            if (rows == 1) {
+                ShiftCashLedger.jdbc().deleted(shift, actor, old, correctionReason);
+                ChangeAnnouncer.jdbc().announce(new TreasuryBalancesChanged());
+            }
             return rows;
         });
     }

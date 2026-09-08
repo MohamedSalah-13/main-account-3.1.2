@@ -89,10 +89,11 @@ public class TotalsPurchaseReturnDao extends AbstractDao<Total_Buy_Re> {
     @Override
     public int update(Total_Buy_Re totalBuyRe) throws DaoException {
         PeriodLock.requireMove(DOCUMENT_TYPE.periodLock(), totalBuyRe.getId(), totalBuyRe.getDate());
+        DocumentWriteGuard.requireEditVersion(totalBuyRe.getUpdated_at(), DOCUMENT_TYPE);
         String query = updateSql();
         return insertMultiData(() -> {
             Object[] objects = getUpdateData(totalBuyRe);
-            DocumentWriteGuard.requireSingleHeaderRow(
+            DocumentWriteGuard.requireOptimisticUpdate(
                     executeUpdateWithException(query, objects), DOCUMENT_TYPE);
             returnPurchaseDao.synchronizeLines(
                     totalBuyRe.getId(), totalBuyRe.getPurchaseReturnList());
@@ -165,7 +166,8 @@ public class TotalsPurchaseReturnDao extends AbstractDao<Total_Buy_Re> {
                 , totalBuyRe.getTreasuryModel().getId()
                 , totalBuyRe.getNotes()
 //                    , totalBuyRe.getTotalBuyId()
-                , totalBuyRe.getId()};
+                , totalBuyRe.getId()
+                , java.sql.Timestamp.valueOf(totalBuyRe.getUpdated_at())};
     }
 
     @Override
@@ -210,6 +212,7 @@ public class TotalsPurchaseReturnDao extends AbstractDao<Total_Buy_Re> {
             var invoiceTypeById = InvoiceType.getInvoiceTypeById(type_id);
             totalBuyRe = new Total_Buy_Re(id, date, total, discount, paidToTreasuryAmount, notes, suppliers, stock, treasury, invoiceTypeById, null);
             totalBuyRe.setCreated_at(LocalDateTime.parse(rs.getString(DATE_INSERT), DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
+            totalBuyRe.setUpdated_at(rs.getObject("updated_at", LocalDateTime.class));
             totalBuyRe.setSourceInvoiceNumber(rs.getInt(SOURCE_INVOICE_NUMBER));
             totalBuyRe.setReturnReason(rs.getString(RETURN_REASON));
             totalBuyRe.setUsers(daoFactory.usersDao().getDataById(rs.getInt(USER_ID)));

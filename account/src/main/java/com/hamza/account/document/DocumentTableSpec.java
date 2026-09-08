@@ -236,7 +236,10 @@ public record DocumentTableSpec(
     }
 
     public String updateSql() {
-        return SqlStatements.updateStatement(table, key, updateColumns.toArray(String[]::new));
+        String ordinary = SqlStatements.updateStatement(
+                table, key, updateColumns.toArray(String[]::new));
+        return ordinary.replaceFirst(" SET ",
+                " SET updated_at=CURRENT_TIMESTAMP(6), ") + " AND updated_at=?";
     }
 
     public String deleteSql() {

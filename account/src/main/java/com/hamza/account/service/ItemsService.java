@@ -6,10 +6,13 @@ import com.hamza.account.authorization.AuthorizationGuard;
 import com.hamza.account.delete.DeleteRegistry;
 import com.hamza.account.features.items.ItemCatalogFilter;
 import com.hamza.account.features.items.ItemImageContent;
+import com.hamza.account.features.events.ChangeAnnouncer;
+import com.hamza.account.features.events.ItemsChanged;
 import com.hamza.account.delete.DeletionService;
 import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.model.domain.ItemsModel;
 import com.hamza.controlsfx.database.DaoException;
+import com.hamza.controlsfx.database.TransactionTemplate;
 import com.hamza.controlsfx.error.BusinessRuleException;
 import com.hamza.controlsfx.language.LanguageManager;
 
@@ -89,16 +92,16 @@ public record ItemsService(DaoFactory daoFactory) {
     public int updateItem(ItemsModel itemsModel) throws DaoException {
         AuthorizationGuard.require(itemsModel.getId() == 0 ? AppPermissions.ITEMS_CREATE : AppPermissions.ITEMS_UPDATE);
         requireSellAboveBuy(itemsModel);
-        if (itemsModel.getId() == 0)
-            return daoFactory.getItemsDao().insert(itemsModel);
-        else
-            return daoFactory.getItemsDao().update(itemsModel);
+        return TransactionTemplate.execute(() -> announceItemsChanged(itemsModel.getId() == 0
+                ? daoFactory.getItemsDao().insert(itemsModel)
+                : daoFactory.getItemsDao().update(itemsModel)));
     }
 
     public int commitItemUpdate(ItemsModel itemsModel) throws DaoException {
         AuthorizationGuard.require(AppPermissions.ITEMS_UPDATE);
         requireSellAboveBuy(itemsModel);
-        return daoFactory.getItemsDao().update(itemsModel);
+        return TransactionTemplate.execute(() ->
+                announceItemsChanged(daoFactory.getItemsDao().update(itemsModel)));
     }
 
     /**
@@ -117,7 +120,8 @@ public record ItemsService(DaoFactory daoFactory) {
                     .getString("item.error.barcode.used.by.other", duplicateBarcode));
         }
         requireSellAboveBuy(itemsModel);
-        return daoFactory.getItemsDao().quickUpdate(itemsModel);
+        return TransactionTemplate.execute(() ->
+                announceItemsChanged(daoFactory.getItemsDao().quickUpdate(itemsModel)));
     }
 
     /**
@@ -135,7 +139,8 @@ public record ItemsService(DaoFactory daoFactory) {
 
     public int updateGroup(List<ItemsModel> itemsModel) throws DaoException {
         AuthorizationGuard.require(AppPermissions.ITEMS_UPDATE);
-        return daoFactory.getItemsDao().updateList(itemsModel);
+        return TransactionTemplate.execute(() ->
+                announceItemsChanged(daoFactory.getItemsDao().updateList(itemsModel)));
     }
 
     /**
@@ -160,9 +165,9 @@ public record ItemsService(DaoFactory daoFactory) {
     }
 
     public int deleteItem(int id) throws DaoException {
-        return DeletionService.shared()
+        return TransactionTemplate.execute(() -> announceItemsChanged(DeletionService.shared()
                 .delete(DeleteRegistry.ITEMS, id, daoFactory.getItemsDao()::deleteById)
-                .rowsOrThrow();
+                .rowsOrThrow()));
     }
 
     public int getMaxItemId() {
@@ -219,7 +224,16 @@ public record ItemsService(DaoFactory daoFactory) {
      */
     public int updateItemImage(int itemId, byte[] image) throws DaoException {
         AuthorizationGuard.require(AppPermissions.ITEMS_UPDATE);
-        return daoFactory.getItemsDao().updateImage(itemId, image);
+        return TransactionTemplate.execute(() ->
+                announceItemsChanged(daoFactory.getItemsDao().updateImage(itemId, image)));
+    }
+
+    /** Called inside the same transaction as the item write. */
+    private static int announceItemsChanged(int affectedRows) throws DaoException {
+        if (affectedRows > 0) {
+            ChangeAnnouncer.jdbc().announce(new ItemsChanged());
+        }
+        return affectedRows;
     }
 
 

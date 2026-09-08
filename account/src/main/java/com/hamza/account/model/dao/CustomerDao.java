@@ -2,6 +2,7 @@ package com.hamza.account.model.dao;
 
 import com.hamza.account.model.domain.Area;
 import com.hamza.account.party.PartyTableSpec;
+import com.hamza.account.party.PartyWriteGuard;
 import com.hamza.account.model.domain.Customers;
 import com.hamza.account.trial.TrialManager;
 import com.hamza.controlsfx.database.AbstractDao;
@@ -11,8 +12,8 @@ import com.hamza.controlsfx.database.DaoException;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.PreparedStatement;
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Map;
 
@@ -138,11 +139,14 @@ public class CustomerDao extends AbstractDao<Customers> {
         boolean mayWriteOpening = OpeningBalanceGuard.shared()
                 .mayWrite(OpeningBalanceRegistry.CUSTOMERS, model.getId(), model.getFirst_balance());
 
-        if (mayWriteOpening) {
-            return executeUpdate(updateSql(), getData(model));
-        }
-
-        return executeUpdate(updateWithoutOpeningSql(), OpeningBalanceGuard.without(getData(model), OPENING_BALANCE_INDEX));
+        Object[] values = mayWriteOpening
+                ? getData(model)
+                : OpeningBalanceGuard.without(getData(model), OPENING_BALANCE_INDEX);
+        int affected = executeUpdate(mayWriteOpening ? updateSql() : updateWithoutOpeningSql(),
+                PartyWriteGuard.withVersion(values, model.getUpdated_at()));
+        PartyWriteGuard.requireUpdated(affected);
+        model.setUpdated_at(readUpdatedAt(model.getId()));
+        return affected;
     }
 
     @Override
@@ -193,7 +197,8 @@ public class CustomerDao extends AbstractDao<Customers> {
             // needs; an empty name reads as "no area" rather than throwing.
             String areaName = rs.getString(AREA_NAME);
             customers.setArea(new Area(rs.getInt(AREA_ID), areaName == null ? "" : areaName));
-            customers.setCreated_at(LocalDateTime.parse(rs.getString(DATE_INSERT), DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
+            customers.setCreated_at(rs.getTimestamp(DATE_INSERT).toLocalDateTime());
+            customers.setUpdated_at(rs.getTimestamp("updated_at").toLocalDateTime());
         } catch (SQLException e) {
             throw new DaoException(e);
         }
@@ -259,5 +264,21 @@ public class CustomerDao extends AbstractDao<Customers> {
 
     public int getCountItems() {
         return queryForIntOrDefault(countSql(), 0);
+    }
+
+    private LocalDateTime readUpdatedAt(int id) throws DaoException {
+        return withConnection(connection -> {
+            try (PreparedStatement statement = connection.prepareStatement(SPEC.updatedAtSql())) {
+                statement.setInt(1, id);
+                try (ResultSet resultSet = statement.executeQuery()) {
+                    if (!resultSet.next()) {
+                        throw new DaoException("Customer disappeared after update: " + id);
+                    }
+                    return resultSet.getTimestamp("updated_at").toLocalDateTime();
+                }
+            } catch (SQLException e) {
+                throw new DaoException(e.getMessage(), e);
+            }
+        });
     }
 }

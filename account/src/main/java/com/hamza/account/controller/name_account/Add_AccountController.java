@@ -6,6 +6,7 @@ import com.hamza.account.controller.others.ServiceRegistry;
 import com.hamza.account.controller.users.ShiftCorrectionReasonPrompt;
 import com.hamza.account.features.events.AccountChanged;
 import com.hamza.account.features.events.NameChanged;
+import com.hamza.account.features.events.TreasuryBalancesChanged;
 import com.hamza.account.interfaces.api.DataInterface;
 import com.hamza.account.model.base.BaseAccount;
 import com.hamza.account.model.base.BaseNames;
@@ -267,7 +268,10 @@ public class Add_AccountController<T3 extends BaseNames, T4 extends BaseAccount>
 
     @Override
     public void afterSaved() {
-        if (eventBus != null) eventBus.publish(new AccountChanged(nameAndAccountInterface.partyKind()));
+        if (eventBus != null) {
+            eventBus.publish(new AccountChanged(nameAndAccountInterface.partyKind()));
+            eventBus.publish(new TreasuryBalancesChanged());
+        }
         txtCode.setText(String.valueOf(generateNextAccountCode()));
         txtPaid.setText("0.0");
         txtNotes.clear();

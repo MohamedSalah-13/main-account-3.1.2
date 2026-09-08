@@ -2,6 +2,8 @@ package com.hamza.account.features.itemgroups;
 
 import com.hamza.account.authorization.AppPermissions;
 import com.hamza.account.authorization.AuthorizationGuard;
+import com.hamza.account.features.events.ChangeAnnouncer;
+import com.hamza.account.features.events.ItemsChanged;
 import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.error.BusinessRuleException;
 
@@ -15,14 +17,21 @@ public final class ItemGroupMoveService {
 
     private final ItemGroupRepository repository;
     private final ItemGroupTransactionExecutor transactions;
+    private final ChangeAnnouncer changeAnnouncer;
 
     public ItemGroupMoveService(ItemGroupRepository repository) {
-        this(repository, ItemGroupTransactionExecutor.jdbc());
+        this(repository, ItemGroupTransactionExecutor.jdbc(), ChangeAnnouncer.jdbc());
     }
 
     public ItemGroupMoveService(ItemGroupRepository repository, ItemGroupTransactionExecutor transactions) {
+        this(repository, transactions, ChangeAnnouncer.disabled());
+    }
+
+    ItemGroupMoveService(ItemGroupRepository repository, ItemGroupTransactionExecutor transactions,
+                         ChangeAnnouncer changeAnnouncer) {
         this.repository = repository;
         this.transactions = transactions;
+        this.changeAnnouncer = changeAnnouncer;
     }
 
     public List<ItemGroupSummary> groups(String search) throws DaoException {
@@ -77,6 +86,7 @@ public final class ItemGroupMoveService {
             if (moved != effective.size()) {
                 throw new BusinessRuleException("item.group.manager.error.concurrent");
             }
+            changeAnnouncer.announce(new ItemsChanged());
             return new ItemGroupMoveResult(effective);
         });
     }

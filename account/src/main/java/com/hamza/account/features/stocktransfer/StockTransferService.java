@@ -4,6 +4,8 @@ import com.hamza.account.authorization.AppPermissions;
 import com.hamza.account.authorization.AuthorizationGuard;
 import com.hamza.account.delete.DeleteRegistry;
 import com.hamza.account.delete.DeletionService;
+import com.hamza.account.features.events.ChangeAnnouncer;
+import com.hamza.account.features.events.StockBalancesChanged;
 import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.period.PeriodLock;
 import com.hamza.account.period.PeriodLockRegistry;
@@ -44,6 +46,7 @@ public final class StockTransferService {
             dao.ensureDestination(command.toStockId(), ids);
             long id = dao.insert(command);
             dao.insertLines(id, command.lines());
+            ChangeAnnouncer.jdbc().announce(new StockBalancesChanged());
             return id;
         });
     }
@@ -55,9 +58,15 @@ public final class StockTransferService {
      */
     public void delete(int transferId) throws DaoException {
         PeriodLock.require(PeriodLockRegistry.STOCK_TRANSFER, transferId);
-        DeletionService.shared()
-                .delete(DeleteRegistry.STOCK_TRANSFERS, transferId, dao::deleteById)
-                .rowsOrThrow();
+        TransactionTemplate.execute(() -> {
+            int rows = DeletionService.shared()
+                    .delete(DeleteRegistry.STOCK_TRANSFERS, transferId, dao::deleteById)
+                    .rowsOrThrow();
+            if (rows > 0) {
+                ChangeAnnouncer.jdbc().announce(new StockBalancesChanged());
+            }
+            return rows;
+        });
     }
 
     /** Recent history, for the screen that lets a transfer be found and reversed. */

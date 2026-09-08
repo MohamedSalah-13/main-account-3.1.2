@@ -95,10 +95,11 @@ public class TotalsSalesDao extends AbstractDao<Total_Sales> {
     public int update(Total_Sales totalSales) throws DaoException {
         // Both ends: where the invoice is now, and where it is being moved to.
         PeriodLock.requireMove(DOCUMENT_TYPE.periodLock(), totalSales.getId(), totalSales.getDate());
+        DocumentWriteGuard.requireEditVersion(totalSales.getUpdated_at(), DOCUMENT_TYPE);
         String query = updateSql();
         return insertMultiData(() -> {
             Object[] data = getUpdateData(totalSales);
-            DocumentWriteGuard.requireSingleHeaderRow(
+            DocumentWriteGuard.requireOptimisticUpdate(
                     executeUpdateWithException(query, data), DOCUMENT_TYPE);
             salesDao.synchronizeLines(totalSales.getId(), totalSales.getSalesList());
         });
@@ -173,7 +174,8 @@ public class TotalsSalesDao extends AbstractDao<Total_Sales> {
                 , totalSales.getEmployeeObject().getId()
                 , totalSales.getTreasuryModel().getId()
                 , totalSales.getNotes()
-                , totalSales.getId()};
+                , totalSales.getId()
+                , java.sql.Timestamp.valueOf(totalSales.getUpdated_at())};
     }
 
     @Override
@@ -237,6 +239,7 @@ public class TotalsSalesDao extends AbstractDao<Total_Sales> {
                     MoneyMath.decimal(totalSales.getPaid()))));
             totalSales.setInvoice_status(totalSales.getAmountAfterOtherPaid() == 0 ? InvoiceStatus.CLOSE : InvoiceStatus.OPEN);
             totalSales.setCreated_at(LocalDateTime.parse(rs.getString(DATE_INSERT), DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
+            totalSales.setUpdated_at(rs.getObject("updated_at", LocalDateTime.class));
             totalSales.setUsers(daoFactory.usersDao().getDataById(rs.getInt(USER_ID)));
             totalSales.setTotal_profit(rs.getDouble(TOTAL_PROFIT));
             totalSales.setProfit_percent(rs.getDouble(PROFIT_PERCENT));

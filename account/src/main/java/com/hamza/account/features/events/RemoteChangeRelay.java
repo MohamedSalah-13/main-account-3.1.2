@@ -7,7 +7,6 @@ import com.hamza.controlsfx.observer.Subscriptions;
 import javafx.application.Platform;
 import lombok.extern.log4j.Log4j2;
 
-import java.sql.Timestamp;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.Executors;
@@ -57,7 +56,7 @@ public final class RemoteChangeRelay {
     private final EventBus eventBus;
     private final JdbcDataChangeRepository repository;
     private final String machineId;
-    private final Map<String, Timestamp> lastSeen = new HashMap<>();
+    private final Map<String, Long> lastSeen = new HashMap<>();
 
     private RemoteChangeRelay(EventBus eventBus, JdbcDataChangeRepository repository, String machineId) {
         this.eventBus = eventBus;
@@ -81,8 +80,8 @@ public final class RemoteChangeRelay {
 
         RemoteChangeRelay relay = new RemoteChangeRelay(eventBus, new JdbcDataChangeRepository(), machineId);
         subscriptions = new Subscriptions();
-        for (AppEvent event : RemoteChangeTopics.all().values()) {
-            subscribe(relay, event);
+        for (Class<? extends AppEvent> eventType : RemoteChangeTopics.announcementTypes()) {
+            subscribe(relay, eventType);
         }
         relay.readBaseline();
 
@@ -106,15 +105,16 @@ public final class RemoteChangeRelay {
     }
 
     @SuppressWarnings("unchecked")
-    private static <E extends AppEvent> void subscribe(RemoteChangeRelay relay, AppEvent event) {
-        Class<E> type = (Class<E>) event.getClass();
+    private static <E extends AppEvent> void subscribe(
+            RemoteChangeRelay relay, Class<? extends AppEvent> eventType) {
+        Class<E> type = (Class<E>) eventType;
         subscriptions.add(relay.eventBus.subscribe(type, relay::announce));
     }
 
     /** What every topic looked like when this machine joined, recorded and not acted on. */
     private void readBaseline() {
         try {
-            repository.readAll().forEach((topic, change) -> lastSeen.put(topic, change.changedAt()));
+            repository.readAll().forEach((topic, change) -> lastSeen.put(topic, change.revision()));
         } catch (Exception e) {
             log.warn("Could not read the change log; this machine starts from nothing", e);
         }
@@ -150,11 +150,11 @@ public final class RemoteChangeRelay {
             if (machineId.equals(change.changedBy())) {
                 return;
             }
-            Timestamp seen = lastSeen.get(topic);
-            if (seen != null && !change.changedAt().after(seen)) {
+            Long seen = lastSeen.get(topic);
+            if (seen != null && change.revision() <= seen) {
                 return;
             }
-            lastSeen.put(topic, change.changedAt());
+            lastSeen.put(topic, change.revision());
             AppEvent event = RemoteChangeTopics.eventOf(topic);
             if (event != null) {
                 inject(event);

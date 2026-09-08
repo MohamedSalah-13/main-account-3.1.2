@@ -19,6 +19,8 @@ import com.hamza.account.features.shift.ShiftCashEffect;
 import com.hamza.account.features.shift.ShiftCashLedger;
 import com.hamza.account.features.shift.ShiftCashSource;
 import com.hamza.account.features.rbac.CurrentUser;
+import com.hamza.account.features.events.ChangeAnnouncer;
+import com.hamza.account.features.events.TreasuryBalancesChanged;
 
 /**
  * Moves money from one treasury to another.
@@ -91,6 +93,7 @@ public final class TreasuryTransferService {
                     ShiftCashEffect.incoming(ShiftCashSource.TRANSFER_IN, id,
                             command.toTreasuryId(), destinationShift.isPresent() ? destinationShift.getAsInt() : null,
                             command.amount()));
+            ChangeAnnouncer.jdbc().announce(new TreasuryBalancesChanged());
             return 1;
         });
     }
@@ -122,6 +125,7 @@ public final class TreasuryTransferService {
                 ShiftCashLedger ledger = ShiftCashLedger.jdbc();
                 ledger.deleted(sourceShift, actor, outgoing, correctionReason);
                 ledger.deleted(destinationShift, actor, incoming, correctionReason);
+                ChangeAnnouncer.jdbc().announce(new TreasuryBalancesChanged());
             }
             return rows;
         });

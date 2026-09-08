@@ -7,14 +7,18 @@ import com.hamza.account.config.UiScale;
 import com.hamza.account.controller.others.ServiceRegistry;
 import com.hamza.account.features.notification.NotificationBootstrap;
 import com.hamza.account.features.audit.AuditRetentionScheduler;
+import com.hamza.account.features.events.RemoteChangeRelay;
 import com.hamza.account.features.pricecheck.KioskRouting;
 import com.hamza.account.features.rbac.CurrentUser;
 import com.hamza.account.features.rbac.RbacService;
 import com.hamza.account.features.users.UserPresenceService;
+import com.hamza.account.features.workstation.WorkstationHeartbeat;
 import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.model.domain.Users;
+import com.hamza.account.service.version.SystemInfoService;
 import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.language.LanguageManager;
+import com.hamza.controlsfx.observer.EventBus;
 import javafx.animation.FadeTransition;
 import javafx.application.Platform;
 import javafx.concurrent.Task;
@@ -55,6 +59,7 @@ public final class ApplicationNavigator {
     }
 
     public void showMain(Users user) {
+        startSessionServices();
         if (KioskRouting.destinationFor(user) == KioskRouting.LoginDestination.PRICE_CHECK_KIOSK) {
             showPriceCheckKiosk();
             return;
@@ -159,8 +164,16 @@ public final class ApplicationNavigator {
         NotificationBootstrap.stop();
         AuditRetentionScheduler.stop();
         ScheduledBackup.stopScheduler();
+        RemoteChangeRelay.stop();
+        WorkstationHeartbeat.stop();
         RbacService rbac = ServiceRegistry.get(RbacService.class);
         if (rbac != null) rbac.signOut();
+    }
+
+    /** Starts the services every signed-in workstation needs, including kiosk-only tills. */
+    private void startSessionServices() {
+        WorkstationHeartbeat.start(new SystemInfoService().getCurrentDatabaseVersion());
+        RemoteChangeRelay.start(ServiceRegistry.get(EventBus.class));
     }
 
     /**

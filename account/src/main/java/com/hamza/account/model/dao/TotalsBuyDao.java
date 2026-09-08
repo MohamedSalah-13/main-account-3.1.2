@@ -84,10 +84,11 @@ public class TotalsBuyDao extends AbstractDao<Total_buy> {
     @Override
     public int update(Total_buy total_buy) throws DaoException {
         PeriodLock.requireMove(DOCUMENT_TYPE.periodLock(), total_buy.getId(), total_buy.getDate());
+        DocumentWriteGuard.requireEditVersion(total_buy.getUpdated_at(), DOCUMENT_TYPE);
         String query = updateSql();
         return insertMultiData(() -> {
             Object[] data = getUpdateData(total_buy);
-            DocumentWriteGuard.requireSingleHeaderRow(
+            DocumentWriteGuard.requireOptimisticUpdate(
                     executeUpdateWithException(query, data), DOCUMENT_TYPE);
             purchaseDao.synchronizeLines(total_buy.getId(), total_buy.getPurchaseList());
         });
@@ -159,6 +160,7 @@ public class TotalsBuyDao extends AbstractDao<Total_buy> {
                 , total_buy.getTreasuryModel().getId()
                 , total_buy.getNotes()
                 , total_buy.getId()
+                , java.sql.Timestamp.valueOf(total_buy.getUpdated_at())
         };
     }
 
@@ -218,6 +220,7 @@ public class TotalsBuyDao extends AbstractDao<Total_buy> {
                     MoneyMath.decimal(total_buy.getPaid()))));
             total_buy.setInvoice_status(total_buy.getAmountAfterOtherPaid() == 0 ? InvoiceStatus.CLOSE : InvoiceStatus.OPEN);
             total_buy.setCreated_at(LocalDateTime.parse(rs.getString(DATE_INSERT), DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
+            total_buy.setUpdated_at(rs.getObject("updated_at", LocalDateTime.class));
             total_buy.setUsers(daoFactory.usersDao().getDataById(rs.getInt(USER_ID)));
         } catch (SQLException e) {
             throw new DaoException(e);

@@ -9,6 +9,7 @@ import com.hamza.account.type.InvoiceType;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 
 /** Immutable input captured from the invoice screen before persistence starts. */
@@ -39,7 +40,9 @@ public record InvoiceSaveCommand(
         List<? extends BasePurchasesAndSales> lines,
         int stockId,
         /** Required audit explanation when an existing shift-owned invoice is changed. */
-        String correctionReason) {
+        String correctionReason,
+        /** Database version read when an existing invoice was opened for editing. */
+        LocalDateTime expectedUpdatedAt) {
 
     public InvoiceSaveCommand {
         invoiceDiscount = MoneyMath.money(invoiceDiscount);
@@ -62,7 +65,8 @@ public record InvoiceSaveCommand(
                               boolean allowInsufficientStock, List<? extends BasePurchasesAndSales> lines) {
         this(existingInvoiceId, invoiceDate, invoiceType, invoiceDiscount,
                 discountType, enteredPaid, notes, partyId, partyName,
-                treasuryName, delegateName, allowInsufficientStock, 0, null, lines, DefaultStock.ID, null);
+                treasuryName, delegateName, allowInsufficientStock, 0, null, lines,
+                DefaultStock.ID, null, null);
     }
 
     /** Compatibility constructor for tests and callers using legacy double models. */
@@ -73,7 +77,8 @@ public record InvoiceSaveCommand(
                               String treasuryName, String delegateName, List<? extends BasePurchasesAndSales> lines) {
         this(existingInvoiceId, invoiceDate, invoiceType, invoiceDiscount,
                 discountType, enteredPaid, notes, partyId, partyName,
-                treasuryName, delegateName, false, 0, null, lines, DefaultStock.ID, null);
+                treasuryName, delegateName, false, 0, null, lines,
+                DefaultStock.ID, null, null);
     }
 
     /** Compatibility constructor for tests and callers using legacy double models. */
@@ -85,7 +90,8 @@ public record InvoiceSaveCommand(
         this(existingInvoiceId, invoiceDate, invoiceType,
                 MoneyMath.decimal(invoiceDiscount), discountType,
                 MoneyMath.decimal(enteredPaid), notes, partyId, partyName,
-                treasuryName, delegateName, false, 0, null, lines, DefaultStock.ID, null);
+                treasuryName, delegateName, false, 0, null, lines,
+                DefaultStock.ID, null, null);
     }
 
     public InvoiceSaveCommand(int existingInvoiceId, LocalDate invoiceDate,
@@ -97,7 +103,8 @@ public record InvoiceSaveCommand(
         this(existingInvoiceId, invoiceDate, invoiceType,
                 MoneyMath.decimal(invoiceDiscount), discountType,
                 MoneyMath.decimal(enteredPaid), notes, partyId, partyName,
-                treasuryName, delegateName, allowInsufficientStock, 0, null, lines, DefaultStock.ID, null);
+                treasuryName, delegateName, allowInsufficientStock, 0, null, lines,
+                DefaultStock.ID, null, null);
     }
 
     /** Full constructor for a return entered against a known source invoice. */
@@ -107,7 +114,8 @@ public record InvoiceSaveCommand(
                               boolean allowInsufficientStock, int sourceInvoiceNumber, ReturnReason returnReason,
                               List<? extends BasePurchasesAndSales> lines) {
         this(existingInvoiceId, invoiceDate, invoiceType, invoiceDiscount, discountType, enteredPaid, notes, partyId,
-                partyName, treasuryName, delegateName, allowInsufficientStock, sourceInvoiceNumber, returnReason, lines, DefaultStock.ID, null);
+                partyName, treasuryName, delegateName, allowInsufficientStock, sourceInvoiceNumber, returnReason,
+                lines, DefaultStock.ID, null, null);
     }
 
     /** Full constructor with an explicit warehouse. */
@@ -122,7 +130,7 @@ public record InvoiceSaveCommand(
                 MoneyMath.decimal(invoiceDiscount), discountType,
                 MoneyMath.decimal(enteredPaid), notes, partyId, partyName,
                 treasuryName, delegateName, allowInsufficientStock,
-                sourceInvoiceNumber, returnReason, lines, DefaultStock.ID, null);
+                sourceInvoiceNumber, returnReason, lines, DefaultStock.ID, null, null);
 
     }
 
@@ -137,7 +145,22 @@ public record InvoiceSaveCommand(
                               int stockId) {
         this(existingInvoiceId, invoiceDate, invoiceType, invoiceDiscount, discountType,
                 enteredPaid, notes, partyId, partyName, treasuryName, delegateName,
-                allowInsufficientStock, sourceInvoiceNumber, returnReason, lines, stockId, null);
+                allowInsufficientStock, sourceInvoiceNumber, returnReason, lines, stockId, null, null);
+    }
+
+    /** Compatibility constructor for callers that do not yet carry an edit version. */
+    public InvoiceSaveCommand(int existingInvoiceId, LocalDate invoiceDate,
+                              InvoiceType invoiceType, BigDecimal invoiceDiscount,
+                              DiscountType discountType, BigDecimal enteredPaid,
+                              String notes, int partyId, String partyName,
+                              String treasuryName, String delegateName,
+                              boolean allowInsufficientStock, int sourceInvoiceNumber,
+                              ReturnReason returnReason, List<? extends BasePurchasesAndSales> lines,
+                              int stockId, String correctionReason) {
+        this(existingInvoiceId, invoiceDate, invoiceType, invoiceDiscount, discountType,
+                enteredPaid, notes, partyId, partyName, treasuryName, delegateName,
+                allowInsufficientStock, sourceInvoiceNumber, returnReason, lines,
+                stockId, correctionReason, null);
     }
 
     public boolean updating() {

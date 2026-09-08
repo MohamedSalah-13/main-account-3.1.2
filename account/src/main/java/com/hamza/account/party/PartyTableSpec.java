@@ -135,7 +135,7 @@ public record PartyTableSpec(
     }
 
     public String updateSql() {
-        return SqlStatements.updateStatement(table, KEY, updateColumns.toArray(String[]::new));
+        return optimisticUpdate(updateColumns);
     }
 
     /**
@@ -147,9 +147,20 @@ public record PartyTableSpec(
      * what they owed at every earlier date.
      */
     public String updateWithoutOpeningSql() {
-        return SqlStatements.updateStatement(table, KEY, updateColumns.stream()
-                .filter(column -> !column.equals(openingBalance))
-                .toArray(String[]::new));
+        return optimisticUpdate(updateColumns.stream()
+                .filter(column -> !column.equals(openingBalance)).toList());
+    }
+
+    private String optimisticUpdate(List<String> columns) {
+        String assignments = columns.stream()
+                .map(column -> column + "=?")
+                .collect(java.util.stream.Collectors.joining(","));
+        return "UPDATE " + table + " SET updated_at=CURRENT_TIMESTAMP(6)," + assignments
+                + " WHERE " + KEY + "=? AND updated_at=?";
+    }
+
+    public String updatedAtSql() {
+        return "SELECT updated_at FROM " + table + " WHERE " + KEY + "=?";
     }
 
     /** Where the opening balance sits in the array the update binds. */
