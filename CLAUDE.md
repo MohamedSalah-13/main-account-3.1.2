@@ -722,6 +722,20 @@ through it too** - nothing fails the build if you forget, which is the gap `shif
 names first. Its `requireCashCorrection`/`requireTreasuryCorrection` pair exists so a movement
 already attributed to a shift cannot be deleted unattributed once the mode relaxes to `OPTIONAL`.
 
+**A `shift_cash_ledger` row can belong to no shift, and `NULL` there means one specific thing.**
+`ensureBaseline` writes a `CREATE` row for a document the journal has not seen, so the deltas after
+it add up to the document's live value — the per-document invariant
+`ShiftReconciliationDao.countSourceMismatches` enforces. A document created inside a shift carries
+`origin_shift_id` and its baseline goes there. A document created **before shifts were switched on**
+has no such shift, and the baseline used to be filed under whichever shift happened to be open when
+somebody edited it: editing an August invoice inside today's shift wrote `CREATE +505` then
+`UPDATE -50`, so the drawer was expected to hold 455 collected a month earlier and would have
+counted short by all of it. Since `V53` that baseline is written with `shift_id NULL` — recorded,
+reconciled, owned by no drawer — and every per-shift read filters `shift_id = ?` and passes over it.
+`V53` is forward-only on purpose: rewriting old rows would move the expected balance of shifts
+already closed and settled against a counted drawer, and `docs/shift-plan.md` §11 carries the query
+that finds them.
+
 **Everything the system records is append-only**, enforced by triggers that refuse `UPDATE` and
 `DELETE`: `shift_cash_ledger` (with a numeric `ShiftCashSource`, never a translated label - the
 `MovementLabel` lesson), the close snapshot, the close request and its decision, and the

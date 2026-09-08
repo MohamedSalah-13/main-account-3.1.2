@@ -46,6 +46,22 @@ class ShiftCashLedgerTest {
         assertEquals(new BigDecimal("7.25"), outgoing.output());
     }
 
+    /**
+     * The baseline for cash that predates every shift has to be storable, and the only way
+     * to say "no drawer owns this" is a NULL. Before V53 the column was NOT NULL and the
+     * baseline was filed under whichever shift happened to be open when somebody edited the
+     * document - money in the till's expectation that was never in the till.
+     */
+    @Test
+    void migrationLetsABaselineBelongToNoShift() {
+        String sql = read("db/migration/V53__shift_ledger_pre_shift_baseline.sql");
+        assertTrue(sql.contains("MODIFY COLUMN shift_id INT NULL"),
+                "the journal must be able to record cash that belongs to no shift");
+        assertTrue(sql.contains("COMMENT"), "and the column must say what NULL means");
+        assertFalse(sql.toUpperCase().contains("UPDATE SHIFT_CASH_LEDGER SET"),
+                "forward-only: rewriting rows would move the expected balance of closed shifts");
+    }
+
     @Test
     void migrationEnforcesAppendOnlyAndIndexesSourceIdentity() {
         String sql = read("db/migration/V26__shift_cash_ledger.sql");

@@ -206,3 +206,30 @@ snapshot الإقفال ولا يُنسب عمدًا).
 - **بعد تبديل فرع أعد تثبيت `controlsfx`** قبل التشغيل — ملفات الترجمة تتغيّر:
   `mvn -o -pl controlsfx install -DskipTests`.
 - **`ShiftCashSource` أرقام ثابتة.** إعادة ترتيب الثوابت تعيد تفسير كل صفّ مكتوب.
+- **نقدية قديمة كانت تُنسب لدرج اليوم — مكتشَفة بتشغيل التطبيق في 2026-09-08 ومُصلَحة في `V53`.**
+  `ShiftCashLedger.ensureBaseline` يكتب صف `CREATE` لمستند لم يره الدفتر من قبل، حتى تُجمع
+  الفروق التي تليه فتساوي قيمته الحيّة — وهو التطابق الذي يفحصه
+  `ShiftReconciliationDao.countSourceMismatches`. مستند أُنشئ داخل وردية يحمل `origin_shift_id`
+  فيُنسب أساسه إليها بحق. أمّا مستند أُنشئ **قبل تشغيل الورديات** فلا وردية له، وكان الأساس
+  يُودَع في الوردية المفتوحة صدفةً وقت التعديل: تعديل فاتورة من أغسطس داخل وردية اليوم كتب
+  `CREATE +505` ثم `UPDATE -50`، فصار الدرج يُنتظَر منه 455 جنيهًا حُصِّلت قبل شهر، ولَعُدَّ
+  ناقصًا بها كلها عند الجرد — وتبدو الخزينة كأنها سُرقت.
+  **الإصلاح:** `shift_cash_ledger.shift_id` صار يقبل `NULL`، و`NULL` تعني بالضبط: نقدية مسجّلة
+  ومتطابقة ولا يملكها درج. كل قراءة لكل وردية تُرشّح `shift_id = ?` فتتجاوزها، بينما المطابقة
+  لكل مستند تجمع عبر الورديات فتظل متوازنة.
+  **الترحيل للأمام فقط.** الصفوف المكتوبة بالقاعدة القديمة تُترك مكانها: إعادة كتابتها تُحرّك
+  الرصيد المتوقَّع لورديات أُقفلت وطوبقت، وبعضها سُوّي فرقها أمام درج معدود. لتمييزها في تنصيب
+  تأثر:
+  ```sql
+  SELECT l.id, l.shift_id, l.source_type, l.source_id, l.income_delta, l.output_delta
+  FROM shift_cash_ledger l
+  JOIN user_shifts s ON s.id = l.shift_id
+  WHERE l.action_type = 'CREATE' AND l.origin_shift_id IS NULL
+    AND EXISTS (SELECT 1 FROM shift_cash_ledger c
+                WHERE c.source_type = l.source_type AND c.source_id = l.source_id
+                  AND c.treasury_id = l.treasury_id AND c.action_type <> 'CREATE'
+                  AND c.occurred_at <= s.open_time);
+  ```
+  والحالة مغطّاة بـ`cashFromBeforeAnyShiftIsRecordedButBelongsToNoDrawer` في
+  `ShiftAccountingDatabaseAcceptanceTest` — بالسلوك القديم يتوقّع الدرج 80 بدل ‎-20.
+

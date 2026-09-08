@@ -374,6 +374,95 @@ class ShiftAccountingDatabaseAcceptanceTest {
         }
     }
 
+    /**
+     * Cash collected before shifts existed must not be counted into the drawer of whoever
+     * happens to edit the document afterwards.
+     *
+     * <p>Found by running the app: editing an August invoice inside today's shift wrote a
+     * baseline of its whole value under today, so the till was expected to hold money
+     * collected a month earlier and would have counted short by all of it. The baseline has
+     * to exist - the per-document journal total is reconciled against the live row - so what
+     * changed is where it is filed: nowhere, which is the truth.
+     */
+    @Test
+    void cashFromBeforeAnyShiftIsRecordedButBelongsToNoDrawer() throws Exception {
+        Connection transaction = ConnectionManager.beginTransaction();
+        try {
+            int shiftId = insertShift(transaction, false);
+            int sourceId = insertUnattributedDeposit(transaction, money("100.00"));
+
+            // The edit an operator makes inside today's shift: 100 collected long ago, now 80.
+            ShiftCashEffect before = ShiftCashEffect.incoming(
+                    ShiftCashSource.CASH_DEPOSIT, sourceId, 1, null, money("100.00"));
+            ShiftCashEffect after = ShiftCashEffect.incoming(
+                    ShiftCashSource.CASH_DEPOSIT, sourceId, 1, shiftId, money("80.00"));
+            execute(transaction, "UPDATE treasury_deposit_expenses SET amount=80 WHERE id=?", sourceId);
+            ShiftCashLedger.jdbc().updated(OptionalInt.of(shiftId), OptionalInt.of(shiftId), 1,
+                    before, after, "corrected an old deposit");
+
+            assertEquals(money("-20.00"), ledgerSumForShift(transaction, shiftId),
+                    "the drawer moved by the correction only, not by the original 100");
+            assertEquals(money("100.00"), unattributedBaseline(transaction, sourceId),
+                    "the original cash is recorded, owned by no shift");
+            assertEquals(money("80.00"), ledgerSumForSource(transaction, sourceId),
+                    "and the document still reconciles against its live value");
+            assertEquals(0, new ShiftReconciliationDao().reconcile(shiftId).sourceMismatchCount());
+        } finally {
+            transaction.rollback();
+            ConnectionManager.endTransaction(transaction);
+        }
+    }
+
+    /** A deposit from before shifts were switched on: no {@code shift_id}. */
+    private static int insertUnattributedDeposit(Connection connection, BigDecimal amount)
+            throws SQLException {
+        String sql = """
+                INSERT INTO treasury_deposit_expenses
+                    (statement, date_inter, amount, deposit_or_expenses, treasury_id, user_id, shift_id)
+                VALUES (?, CURRENT_DATE, ?, 1, 1, 1, NULL)
+                """;
+        try (PreparedStatement statement = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+            statement.setString(1, "sa-" + UUID.randomUUID().toString().substring(0, 8));
+            statement.setBigDecimal(2, amount);
+            assertEquals(1, statement.executeUpdate());
+            try (ResultSet keys = statement.getGeneratedKeys()) {
+                assertTrue(keys.next());
+                return keys.getInt(1);
+            }
+        }
+    }
+
+    private static BigDecimal ledgerSumForShift(Connection connection, int shiftId) throws SQLException {
+        return sum(connection, "SELECT COALESCE(SUM(income_delta - output_delta),0)"
+                + " FROM shift_cash_ledger WHERE shift_id=?", shiftId);
+    }
+
+    private static BigDecimal ledgerSumForSource(Connection connection, int sourceId) throws SQLException {
+        return sum(connection, "SELECT COALESCE(SUM(income_delta - output_delta),0)"
+                + " FROM shift_cash_ledger WHERE source_id=? AND source_type=?",
+                sourceId, ShiftCashSource.CASH_DEPOSIT.code());
+    }
+
+    private static BigDecimal unattributedBaseline(Connection connection, int sourceId) throws SQLException {
+        return sum(connection, "SELECT COALESCE(SUM(income_delta - output_delta),0)"
+                + " FROM shift_cash_ledger WHERE source_id=? AND source_type=?"
+                + " AND shift_id IS NULL AND action_type='CREATE'",
+                sourceId, ShiftCashSource.CASH_DEPOSIT.code());
+    }
+
+    private static BigDecimal sum(Connection connection, String sql, Object... parameters)
+            throws SQLException {
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            for (int i = 0; i < parameters.length; i++) {
+                statement.setObject(i + 1, parameters[i]);
+            }
+            try (ResultSet result = statement.executeQuery()) {
+                assertTrue(result.next());
+                return result.getBigDecimal(1).setScale(2);
+            }
+        }
+    }
+
     private static UserShift closedShift(int shiftId) {
         UserShift shift = new UserShift(1, 1);
         shift.setId(shiftId);
