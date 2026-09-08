@@ -45,6 +45,8 @@ public enum AppIcon {
     EXIT(Feather.LOG_OUT),
     DUPLICATE(Feather.COPY),
     SHOW(Feather.EYE),
+    HIDE(Feather.EYE_OFF),
+    SECURITY(Feather.SHIELD),
     MAIN_GROUP(Feather.FOLDER),
     SUB_GROUP(Feather.FOLDER_PLUS),
     ITEM(Feather.PACKAGE),

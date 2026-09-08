@@ -12,7 +12,6 @@ import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.database.TransactionTemplate;
 import com.hamza.controlsfx.error.BusinessRuleException;
 import com.hamza.controlsfx.error.UserValidationException;
-import com.hamza.controlsfx.language.Error_Text_Show;
 import com.hamza.controlsfx.language.LanguageManager;
 
 import java.util.List;
@@ -89,10 +88,10 @@ public record UsersService(DaoFactory daoFactory, RbacService rbacService) {
      */
     public int update(Users users, String plainPassword) throws DaoException {
         AuthorizationGuard.require(AppPermissions.USERS_MANAGE);
-        if (users.getId() == 1) throw new BusinessRuleException(Error_Text_Show.CAN_NOT_UPDATE);
+        if (users.getId() == 1) throw new BusinessRuleException(message("msg.cant.update"));
         requireUsername(users.getUsername());
         Users stored = daoFactory.usersDao().getDataById(users.getId());
-        if (stored == null) throw new BusinessRuleException("المستخدم غير موجود");
+        if (stored == null) throw new BusinessRuleException(message("user.error.not.found"));
         users.setActive(stored.isActive());
         if (plainPassword == null || plainPassword.isBlank()) {
             users.setPasswordHash(stored.getPasswordHash());
@@ -106,7 +105,7 @@ public record UsersService(DaoFactory daoFactory, RbacService rbacService) {
     /** Blank, not empty: a name of spaces is not a name. */
     static void requireUsername(String username) throws DaoException {
         if (username == null || username.isBlank()) {
-            throw new UserValidationException(Error_Text_Show.USER_NAME_REQUIRED);
+            throw new UserValidationException(message("msg.user.name.required"));
         }
     }
 
@@ -116,10 +115,10 @@ public record UsersService(DaoFactory daoFactory, RbacService rbacService) {
      */
     static void requirePassword(String plainPassword) throws DaoException {
         if (plainPassword == null || plainPassword.isBlank()) {
-            throw new UserValidationException(Error_Text_Show.USER_PASSWORD_REQUIRED);
+            throw new UserValidationException(message("msg.user.password.required"));
         }
         if (plainPassword.length() < 8) {
-            throw new UserValidationException(LanguageManager.getInstance().getString("user.password.minimum"));
+            throw new UserValidationException(message("user.password.minimum"));
         }
     }
 
@@ -131,50 +130,19 @@ public record UsersService(DaoFactory daoFactory, RbacService rbacService) {
 
     public int updateActive(int id, boolean active) throws DaoException {
         AuthorizationGuard.require(AppPermissions.USERS_MANAGE);
-        if (id == 1) throw new BusinessRuleException(Error_Text_Show.CAN_NOT_UPDATE);
+        if (id == 1) throw new BusinessRuleException(message("msg.cant.update"));
         Users users = new Users(id);
         users.setActive(active);
         return daoFactory.usersDao().updateCase(users);
-    }
-
-    /**
-     * Changes the signed-in user's own password. Takes the plain password and hashes it
-     * here for the same reason {@link #insert} does - a hash cannot be checked, so the
-     * caller could set a blank one and did: nothing on the way in asked.
-     */
-    public int updateOwnPassword(int userId, String plainPassword) throws DaoException {
-        // Whose account it is comes first, and it is the check that matters here: nothing
-        // below lets anyone touch a password but their own.
-        requireCurrentUser(userId);
-        // SETTING_UPDATE_PASS governs changing a password by choice. A change the system
-        // is demanding is not a choice - it is the condition for using the program at
-        // all - so a user carrying must_change_password without that permission would
-        // have been unable to satisfy the demand and unable to get past the login screen,
-        // with no screen anywhere that could clear it for them.
-        if (!daoFactory.usersDao().requiresPasswordChange(userId)) {
-            AuthorizationGuard.require(AppPermissions.SETTING_UPDATE_PASS);
-        }
-        requirePassword(plainPassword);
-        Users user = daoFactory.usersDao().getDataById(userId);
-        if (user == null) throw new BusinessRuleException("المستخدم غير موجود");
-        user.setPasswordHash(PasswordHasher.hash(plainPassword));
-        if (daoFactory.usersDao().update(user) != 1) return 0;
-        // The caller is asking whether the password changed, so the clear is a side
-        // effect and its own row count is not an answer to that. It is legitimately zero
-        // for a user who was not being forced - and would be zero for one who was, under
-        // a driver configured with useAffectedRows=true. Returning it meant a successful
-        // change reported as a failure, which in the forced flow signs the user back out.
-        daoFactory.usersDao().clearPasswordChangeRequirement(userId);
-        return 1;
     }
 
     public int updateOwnUsername(int userId, String username) throws DaoException {
         AuthorizationGuard.require(AppPermissions.SETTING_UPDATE_NAME);
         requireCurrentUser(userId);
         String normalized = username == null ? "" : username.trim();
-        if (normalized.isBlank()) throw new UserValidationException("اسم المستخدم مطلوب");
+        if (normalized.isBlank()) throw new UserValidationException(message("msg.user.name.required"));
         Users user = daoFactory.usersDao().getDataById(userId);
-        if (user == null) throw new BusinessRuleException("المستخدم غير موجود");
+        if (user == null) throw new BusinessRuleException(message("user.error.not.found"));
         user.setUsername(normalized);
         return daoFactory.usersDao().update(user);
     }
@@ -182,7 +150,7 @@ public record UsersService(DaoFactory daoFactory, RbacService rbacService) {
     private void requireCurrentUser(int userId) throws DaoException {
         UserSessionContext session = ServiceRegistry.get(UserSessionContext.class);
         if (session == null || !session.isSignedIn() || session.currentUserId() != userId) {
-            throw new BusinessRuleException("لا يمكن تعديل بيانات حساب مستخدم آخر");
+            throw new BusinessRuleException(message("user.error.other.account"));
         }
     }
 
@@ -196,6 +164,10 @@ public record UsersService(DaoFactory daoFactory, RbacService rbacService) {
 
     public int getCountItems() {
         return daoFactory.usersDao().getCountItems();
+    }
+
+    private static String message(String key) {
+        return LanguageManager.getInstance().getString(key);
     }
 
 }

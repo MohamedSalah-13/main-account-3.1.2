@@ -25,6 +25,7 @@ public class UsersDao extends AbstractDao<Users> {
 
     public static final String USER_NAME = "user_name";
     private static final int FILTER_LIMIT = 50;
+    private static final int PASSWORD_CHANGE_TIMEOUT_SECONDS = 15;
     private static final String FILTER_USERS_SQL_NUMERIC = """
             SELECT * FROM users
             WHERE id = ?
@@ -145,6 +146,7 @@ public class UsersDao extends AbstractDao<Users> {
         return withConnection(connection -> {
             try (var statement = connection.prepareStatement(
                     "SELECT must_change_password FROM users WHERE id = ?")) {
+                statement.setQueryTimeout(PASSWORD_CHANGE_TIMEOUT_SECONDS);
                 statement.setInt(1, userId);
                 try (ResultSet row = statement.executeQuery()) {
                     return row.next() && row.getBoolean(1);
@@ -155,8 +157,37 @@ public class UsersDao extends AbstractDao<Users> {
         });
     }
 
-    public int clearPasswordChangeRequirement(int userId) throws DaoException {
-        return executeUpdate("UPDATE users SET must_change_password = 0 WHERE id = ?", userId);
+    /** The current credential read is bounded so a locked or unreachable database cannot hang its dialog. */
+    public Users getUserForPasswordChange(int userId) throws DaoException {
+        return withConnection(connection -> {
+            try (var statement = connection.prepareStatement(
+                    "SELECT * FROM users WHERE id = ?")) {
+                statement.setQueryTimeout(PASSWORD_CHANGE_TIMEOUT_SECONDS);
+                statement.setInt(1, userId);
+                try (ResultSet row = statement.executeQuery()) {
+                    return row.next() ? map(row) : null;
+                }
+            }
+        });
+    }
+
+    /**
+     * Changes the credential and clears the first-login requirement in one statement.
+     * A successful password write can therefore never leave the user trapped behind the
+     * forced-change screen merely because a second update failed.
+     */
+    public int updateOwnPassword(int userId, String passwordHash) throws DaoException {
+        return withConnection(connection -> {
+            try (var statement = connection.prepareStatement("""
+                    UPDATE users SET user_pass = ?, must_change_password = 0
+                    WHERE id = ?
+                    """)) {
+                statement.setQueryTimeout(PASSWORD_CHANGE_TIMEOUT_SECONDS);
+                statement.setString(1, passwordHash);
+                statement.setInt(2, userId);
+                return statement.executeUpdate();
+            }
+        });
     }
 
     /**
