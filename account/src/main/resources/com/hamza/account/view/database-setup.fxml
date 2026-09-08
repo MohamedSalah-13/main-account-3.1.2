@@ -85,6 +85,10 @@
                 </GridPane>
                 <Label text="%dbsetup.provision.allowed.host.help" wrapText="true"
                        styleClass="text-explain"/>
+                <CheckBox fx:id="resetExistingPasswordBox"
+                          text="%dbsetup.provision.reset.password"/>
+                <Label text="%dbsetup.provision.reset.password.help" wrapText="true"
+                       styleClass="text-explain"/>
                 <Button fx:id="provisionButton" text="%dbsetup.provision.action"
                         onAction="#provisionServer" alignment="CENTER"
                         styleClass="secondary-button"/>

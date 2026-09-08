@@ -6,6 +6,7 @@ import com.hamza.account.features.dbsetup.DatabaseProbeResult;
 import com.hamza.account.features.dbsetup.DatabaseSetupException;
 import com.hamza.account.features.dbsetup.DatabaseSetupService;
 import com.hamza.account.features.dbsetup.DatabaseServerProvisioningRequest;
+import com.hamza.account.features.dbsetup.DatabaseServerProvisioningResult;
 import com.hamza.account.features.dbsetup.DatabaseServerSetupService;
 import com.hamza.account.features.dbsetup.JdbcDatabaseConnectionProbe;
 import com.hamza.account.features.dbsetup.JdbcDatabaseServerProvisioner;
@@ -13,6 +14,7 @@ import com.hamza.controlsfx.language.LanguageManager;
 import javafx.concurrent.Task;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
+import javafx.scene.control.CheckBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.PasswordField;
 import javafx.scene.control.ProgressIndicator;
@@ -42,6 +44,7 @@ public final class DatabaseSetupController {
     @FXML private TextField provisionUsernameField;
     @FXML private PasswordField provisionPasswordField;
     @FXML private TextField allowedHostField;
+    @FXML private CheckBox resetExistingPasswordBox;
     @FXML private Button testButton;
     @FXML private Button saveButton;
     @FXML private Button provisionButton;
@@ -130,21 +133,37 @@ public final class DatabaseSetupController {
             request = serverSetupService.validate(hostField.getText(), portField.getText(),
                     databaseField.getText(), administratorUsernameField.getText(),
                     administratorPasswordField.getText(), provisionUsernameField.getText(),
-                    provisionPasswordField.getText(), allowedHostField.getText());
+                    provisionPasswordField.getText(), allowedHostField.getText(),
+                    resetExistingPasswordBox.isSelected());
         } catch (DatabaseSetupException invalid) {
             showStatus(invalid.messageKey(), "status-error");
             return;
         }
 
-        run(() -> serverSetupService.provision(request), result -> {
-                    if ("localhost".equalsIgnoreCase(request.allowedHost())) {
-                        usernameField.setText(request.applicationUsername());
-                        passwordField.setText(request.applicationPassword());
-                    }
-                    showStatus("dbsetup.provision.success", "status-success",
-                            result.database(), result.account());
-                },
+        run(() -> serverSetupService.provision(request), result -> provisioned(request, result),
                 administratorPasswordField::clear);
+    }
+
+    /**
+     * The typed password is only carried into the connection fields when it is the
+     * password that account now has. An account that already existed keeps its own, and
+     * copying this one over would hand the technician a config that cannot connect.
+     */
+    private void provisioned(DatabaseServerProvisioningRequest request,
+                             DatabaseServerProvisioningResult result) {
+        boolean passwordIsKnown =
+                result.password() != DatabaseServerProvisioningResult.PasswordOutcome.UNCHANGED;
+        if (passwordIsKnown && "localhost".equalsIgnoreCase(request.allowedHost())) {
+            usernameField.setText(request.applicationUsername());
+            passwordField.setText(request.applicationPassword());
+        }
+        String key = switch (result.password()) {
+            case CREATED -> "dbsetup.provision.success";
+            case RESET -> "dbsetup.provision.success.password.reset";
+            case UNCHANGED -> "dbsetup.provision.success.password.unchanged";
+        };
+        showStatus(key, passwordIsKnown ? "status-success" : "status-warning",
+                result.database(), result.account());
     }
 
     private void connectionSucceeded(DatabaseConnectionSettings settings, DatabaseProbeResult result) {

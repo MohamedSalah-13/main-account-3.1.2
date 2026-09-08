@@ -1242,6 +1242,16 @@ working directory remains a read-only compatibility fallback for field installs 
 tests MySQL and writes a device-specific pair without requiring source, Maven or a separate JDK.
 On the main workstation it can also create the schema and an IP/CIDR-restricted MySQL account with
 database-scoped privileges; administrator credentials are used only for that operation and are never saved.
+Two things there are load-bearing and both were bugs first. **MySQL reads an account host as a literal or
+as `address/netmask`, never as a prefix length** — `CREATE USER 'x'@'192.168.1.0/24'` succeeds and then
+matches no client at all, which reaches the till as an authentication failure that reads like a wrong
+password; `DatabaseServerSetupService.mysqlHostPattern` takes the prefix people know and returns the
+netmask MySQL needs, refusing `/0` and an address that does not match its own prefix. And **the account is
+shared by every till**, so an existing one keeps its password: the run used to end with an unconditional
+`ALTER USER`, which silently signed out every machine already holding the old password in its own
+`config.xml`. Replacing it is now an explicit tick, and the result says which of created/reset/unchanged
+happened rather than leaving the technician to guess whether the password they typed is the one that
+account has.
 `config.xml.example` documents the format.
 
 Key resolution (`CryptoDatabaseConfig`): `ACCOUNT_CONFIG_KEY` env var → `config.key` file → a built-in

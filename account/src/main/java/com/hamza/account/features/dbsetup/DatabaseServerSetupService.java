@@ -1,6 +1,7 @@
 package com.hamza.account.features.dbsetup;
 
 import java.sql.SQLException;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /** Validates the privileged server operation before handing it to JDBC. */
@@ -28,11 +29,25 @@ public final class DatabaseServerSetupService {
             String applicationPassword,
             String allowedHost
     ) throws DatabaseSetupException {
+        return validate(serverHost, port, database, administratorUsername, administratorPassword,
+                applicationUsername, applicationPassword, allowedHost, false);
+    }
+
+    public DatabaseServerProvisioningRequest validate(
+            String serverHost,
+            String port,
+            String database,
+            String administratorUsername,
+            String administratorPassword,
+            String applicationUsername,
+            String applicationPassword,
+            String allowedHost,
+            boolean resetExistingPassword
+    ) throws DatabaseSetupException {
         String cleanServerHost = clean(serverHost);
         String cleanDatabase = clean(database);
         String cleanAdministrator = clean(administratorUsername);
         String cleanApplicationUser = clean(applicationUsername);
-        String cleanAllowedHost = clean(allowedHost);
 
         if (!HOST.matcher(cleanServerHost).matches()) {
             throw new DatabaseSetupException("dbsetup.validation.host");
@@ -57,13 +72,10 @@ public final class DatabaseServerSetupService {
         if (applicationPassword == null || applicationPassword.length() < 12) {
             throw new DatabaseSetupException("dbsetup.provision.validation.application.password");
         }
-        if (!validAllowedHost(cleanAllowedHost)) {
-            throw new DatabaseSetupException("dbsetup.provision.validation.allowed.host");
-        }
 
         return new DatabaseServerProvisioningRequest(cleanServerHost, parsedPort, cleanDatabase,
                 cleanAdministrator, administratorPassword, cleanApplicationUser, applicationPassword,
-                cleanAllowedHost);
+                mysqlHostPattern(clean(allowedHost)), resetExistingPassword);
     }
 
     public DatabaseServerProvisioningResult provision(DatabaseServerProvisioningRequest request)
@@ -99,15 +111,48 @@ public final class DatabaseServerSetupService {
         throw new DatabaseSetupException("dbsetup.validation.port");
     }
 
-    private static boolean validAllowedHost(String value) {
+    /**
+     * The host pattern MySQL will actually match a client against.
+     *
+     * <p><b>MySQL does not understand a prefix length.</b> An account host is a literal
+     * name, a literal address, or {@code address/netmask} with the mask written out in
+     * full. {@code CREATE USER} takes anything else as a literal string, without an error,
+     * and then no client ever matches it. A till authorized as {@code 192.168.1.0/24} was
+     * created successfully and refused at every connection afterwards, with an
+     * authentication failure that reads exactly like a wrong password. So the prefix
+     * length people know is what this accepts, and the netmask MySQL needs is what it
+     * returns.
+     *
+     * <p>Two prefixes are refused rather than translated. {@code /0} matches every address
+     * there is, which is the percent wildcard by another spelling. And an address carrying
+     * bits outside its own mask ({@code 192.168.1.25/24}) matches nothing at all, because
+     * MySQL compares {@code client_ip & netmask} against it - the same silent failure in a
+     * second disguise, so it is named rather than quietly widened to the whole subnet.
+     */
+    static String mysqlHostPattern(String value) throws DatabaseSetupException {
         if ("localhost".equalsIgnoreCase(value)) {
-            return true;
+            return "localhost";
         }
         if (IPV4.matcher(value).matches()) {
-            return validIpv4(value);
+            return dotted(requireAddress(value));
         }
-        var cidr = IPV4_CIDR.matcher(value);
-        return cidr.matches() && validIpv4(cidr.group(1));
+        Matcher cidr = IPV4_CIDR.matcher(value);
+        if (!cidr.matches()) {
+            throw new DatabaseSetupException("dbsetup.provision.validation.allowed.host");
+        }
+        long address = requireAddress(cidr.group(1));
+        int prefix = Integer.parseInt(cidr.group(2));
+        if (prefix == 0) {
+            throw new DatabaseSetupException("dbsetup.provision.validation.allowed.host");
+        }
+        if (prefix == 32) {
+            return dotted(address);
+        }
+        long netmask = (0xFFFFFFFFL << (32 - prefix)) & 0xFFFFFFFFL;
+        if ((address & ~netmask & 0xFFFFFFFFL) != 0) {
+            throw new DatabaseSetupException("dbsetup.provision.validation.allowed.host.network");
+        }
+        return dotted(address) + "/" + dotted(netmask);
     }
 
     private static boolean isReservedAccount(String username) {
@@ -117,13 +162,23 @@ public final class DatabaseServerSetupService {
                 || username.equalsIgnoreCase("mysql.infoschema");
     }
 
-    private static boolean validIpv4(String value) {
+    /** The address as one number, refusing an octet above 255. */
+    private static long requireAddress(String value) throws DatabaseSetupException {
+        long address = 0;
         for (String octet : value.split("\\.")) {
-            if (Integer.parseInt(octet) > 255) {
-                return false;
+            int parsed = Integer.parseInt(octet);
+            if (parsed > 255) {
+                throw new DatabaseSetupException("dbsetup.provision.validation.allowed.host");
             }
+            address = (address << 8) | parsed;
         }
-        return true;
+        return address;
+    }
+
+    /** Back to dotted quads, which also drops the leading zeros MySQL would take literally. */
+    private static String dotted(long address) {
+        return (address >>> 24) + "." + ((address >>> 16) & 0xFF)
+                + "." + ((address >>> 8) & 0xFF) + "." + (address & 0xFF);
     }
 
     private static String clean(String value) {
