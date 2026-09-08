@@ -66,13 +66,37 @@ class RemoteChangeTopicsTest {
                 "the bulk event is what a remote catalogue change travels as");
     }
 
+    /**
+     * The relay listens for a topic only when nothing else announces it.
+     *
+     * <p>These three normalize onto topics their services announce inside the transaction
+     * that made the change, so the relay stays out of it: an item save publishes
+     * {@link ItemSaved} on the bus <em>after</em> {@code ItemsService} has already written
+     * the row, and a relay listening here would write it a second time. What the
+     * normalization is for is still tested above - {@code topicOf} answers "items" for an
+     * {@link ItemSaved} - because {@code ChangeAnnouncer} is the caller that needs it.
+     */
     @Test
-    @DisplayName("the relay subscribes to normalized source event types")
-    void sourceTypesAreSubscribed() {
+    @DisplayName("the relay stays out of topics a service announces")
+    void serviceAnnouncedSourceTypesAreNotSubscribed() {
         Set<Class<? extends AppEvent>> types = RemoteChangeTopics.announcementTypes();
-        assertEquals(true, types.contains(ItemSaved.class));
-        assertEquals(true, types.contains(StockCountPosted.class));
-        assertEquals(true, types.contains(TreasuryMovementRecorded.class));
+        assertEquals(false, types.contains(ItemSaved.class));
+        assertEquals(false, types.contains(StockCountPosted.class));
+        assertEquals(false, types.contains(TreasuryMovementRecorded.class));
+        assertEquals(false, types.contains(ItemsChanged.class));
+        assertEquals(false, types.contains(InvoiceSaved.class));
+    }
+
+    /** And it does listen for the topics nothing else writes. */
+    @Test
+    @DisplayName("the relay is the only announcer of the rest")
+    void relayAnnouncedTypesAreSubscribed() {
+        Set<Class<? extends AppEvent>> types = RemoteChangeTopics.announcementTypes();
+        assertEquals(true, types.contains(UsersChanged.class));
+        assertEquals(true, types.contains(GroupsChanged.class));
+        assertEquals(true, types.contains(AreasChanged.class));
+        assertEquals(true, types.contains(UnitsChanged.class));
+        assertEquals(true, types.contains(CompanyChanged.class));
     }
 
     /**

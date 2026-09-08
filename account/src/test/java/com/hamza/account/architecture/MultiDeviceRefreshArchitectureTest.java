@@ -1,7 +1,14 @@
 package com.hamza.account.architecture;
 
+import com.hamza.account.features.events.RemoteChangeTopics;
+import com.hamza.controlsfx.observer.AppEvent;
 import org.junit.jupiter.api.Test;
 
+import java.util.Set;
+import java.util.stream.Collectors;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /** Pins the controller wiring that keeps derived balances current across machines. */
@@ -98,6 +105,72 @@ class MultiDeviceRefreshArchitectureTest {
                 "com/hamza/account/features/events/RemoteChangeRelay.java"));
         assertTrue(relay.contains("change.revision()"));
         assertTrue(!relay.contains("change.changedAt().after"));
+    }
+
+    /**
+     * A topic is announced once, by one half of the system.
+     *
+     * <p>The relay listens for a topic only when no service announces it. Measured against a
+     * real database before this rule existed, one invoice save moved {@code revision} by two:
+     * the service wrote the row inside its transaction and the relay's bus listener wrote it
+     * again when the screen published the same event afterwards.
+     */
+    @Test
+    void theRelayDoesNotRepeatAnAnnouncementAServiceAlreadyWrote() {
+        Set<String> serviceTopics = RemoteChangeTopics.serviceAnnouncedTopics();
+        assertFalse(serviceTopics.isEmpty(), "the split is the point; an empty half means it is gone");
+
+        for (Class<? extends AppEvent> listened : RemoteChangeTopics.announcementTypes()) {
+            String topic = RemoteChangeTopics.topicOfType(listened);
+            assertFalse(serviceTopics.contains(topic),
+                    "the relay listens for " + listened.getSimpleName() + ", whose topic \"" + topic
+                            + "\" is already announced inside the writing service's transaction;"
+                            + " every such change would be announced twice");
+        }
+    }
+
+    /**
+     * The declaration and the code must agree, and both directions are a real defect.
+     *
+     * <p>A topic that some service announces but is declared {@code RELAY} is announced
+     * twice - the bug this rule was written for. A topic declared {@code SERVICE} that no
+     * service announces is worse and quieter: the relay deliberately does not listen for it,
+     * so that change never reaches another machine at all.
+     */
+    @Test
+    void everyTopicIsAnnouncedByExactlyTheHalfItDeclares() {
+        String sources = SourceTree.javaFiles(SourceTree.javaPackage()).stream()
+                .filter(file -> !file.contains("/features/events/"))
+                .map(file -> SourceTree.withoutComments(SourceTree.readJava(file)))
+                .collect(Collectors.joining("\n"));
+
+        RemoteChangeTopics.all().forEach((topic, event) -> {
+            String call = "announce(new " + event.getClass().getSimpleName();
+            boolean announcedByAService = sources.contains(call);
+            boolean declaredService =
+                    RemoteChangeTopics.announcerOf(topic) == RemoteChangeTopics.Announcer.SERVICE;
+            assertEquals(declaredService, announcedByAService, declaredService
+                    ? "topic \"" + topic + "\" is declared SERVICE but nothing calls " + call
+                            + "...); the relay does not listen for it, so the change would never"
+                            + " reach another machine"
+                    : "topic \"" + topic + "\" is declared RELAY, yet " + call + "...) is called"
+                            + " inside a transaction; the relay would then announce the same"
+                            + " change a second time when the screen publishes the event");
+        });
+    }
+
+    /**
+     * A restore replaces the whole database and has no service behind it, so it is the one
+     * place that announces the service topics itself.
+     */
+    @Test
+    void aRestoreTellsTheOtherMachinesTheDatabaseWasReplaced() {
+        String source = SourceTree.withoutComments(SourceTree.readJava(
+                "com/hamza/account/controller/main/LoadDataAndList.java"));
+        assertTrue(source.contains("RemoteChangeTopics.serviceAnnouncedTopics()"),
+                "a restore must announce the topics no service announced for it");
+        assertTrue(source.contains("ChangeAnnouncer"),
+                "and must write those announcements through ChangeAnnouncer");
     }
 
     private static int occurrences(String text, String pattern) {

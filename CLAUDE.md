@@ -1233,6 +1233,24 @@ answers the different question of which machines are *ours* and what each is run
 hearing nothing. `NameChanged` is two topics, one per `PartyKind`, for the reason the kind was added
 to the event in the first place.
 
+**Each topic declares which half of the system writes its row, and there are exactly two halves.**
+`RemoteChangeTopics.Announcer.SERVICE` means the service that performs the write announces it
+through `ChangeAnnouncer`, on the write's own connection and inside its transaction — so a save
+that is rolled back takes its announcement with it, and no other till is told to reload for a
+change that did not happen. `RELAY` means nothing announces it transactionally and
+`RemoteChangeRelay`'s bus listener is the only writer; that is the right answer for the
+master-data screens, the company row and the users list, whose services do not announce.
+
+**Both were doing it for nine topics, and one invoice save moved `revision` by two** — the service
+wrote the row, then the relay wrote it again when the screen published the same event after the
+save returned. Measured on a real database, not reasoned about. The relay now subscribes only to
+`RELAY` topics, and `MultiDeviceRefreshArchitectureTest` fails the build in **both** directions: a
+topic some service announces but declares `RELAY` is the double write, and a topic declaring
+`SERVICE` that nothing announces is the quieter defect — the relay will not cover for it, so that
+change never leaves the machine. The one place allowed to announce a `SERVICE` topic without a
+service is `LoadDataAndList`: a restore replaces the whole database and has no single write to hang
+an announcement on.
+
 ## Configuration and secrets
 
 `config.xml` (database credentials, AES-encrypted) and `config.key` are **git-ignored**. New installs
