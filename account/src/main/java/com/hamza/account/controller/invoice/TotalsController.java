@@ -52,6 +52,7 @@ import javafx.collections.transformation.SortedList;
 import javafx.concurrent.Task;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
+import javafx.geometry.Pos;
 import javafx.scene.control.*;
 import javafx.scene.input.Clipboard;
 import javafx.scene.input.ClipboardContent;
@@ -67,6 +68,8 @@ import lombok.extern.log4j.Log4j2;
 import java.net.URL;
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.IdentityHashMap;
+import java.util.Map;
 import java.util.List;
 import java.util.Optional;
 import java.util.ResourceBundle;
@@ -96,6 +99,7 @@ public class TotalsController<T3 extends BaseNames, T4 extends BaseAccount>
     private boolean update_data = true;
     private boolean syncingFilters;
     private long searchRequest;
+    private final Map<ComboBox<String>, FilterableCombo> filterableCombos = new IdentityHashMap<>();
     private int currentPage;
     private MaskerPaneSetting maskerPaneSetting;
     @FXML
@@ -307,6 +311,7 @@ public class TotalsController<T3 extends BaseNames, T4 extends BaseAccount>
         tableView.setPlaceholder(new Label(LanguageManager.getInstance().getString("invoice.search.empty")));
         TableSetting.tableMenuSetting(getClass(), tableView);
 
+        tableView.getColumns().addFirst(rowActionsColumn());
         tableView.getColumns().add(Columns.text("users",
                 row -> row.getUsers() == null ? "" : row.getUsers().getUsername()));
         tableView.getColumns().add(Columns.text("column.entry.time",
@@ -372,10 +377,20 @@ public class TotalsController<T3 extends BaseNames, T4 extends BaseAccount>
         }
     }
 
+    /**
+     * Fills a picker with "all" plus the names, through the typable wrapper so the whole
+     * set it filters against is replaced with what it shows.
+     */
     private void comboDelegateSetting(ComboBox<String> comboBox, List<String> items) {
-        comboBox.setItems(FXCollections.observableArrayList(items));
-        comboBox.getItems().addFirst(LanguageManager.getInstance().getString("all"));
-        comboBox.getSelectionModel().selectFirst();
+        List<String> withAll = new ArrayList<>();
+        withAll.add(LanguageManager.getInstance().getString("all"));
+        withAll.addAll(items);
+        filterableFor(comboBox).setEntries(withAll);
+    }
+
+    /** One wrapper per picker, created the first time that picker is filled. */
+    private FilterableCombo filterableFor(ComboBox<String> comboBox) {
+        return filterableCombos.computeIfAbsent(comboBox, FilterableCombo::install);
     }
 
     private void action() {
@@ -410,31 +425,9 @@ public class TotalsController<T3 extends BaseNames, T4 extends BaseAccount>
             if (list.isEmpty()) {
                 AllAlerts.handleError(LanguageManager.getInstance().getString("invoice.dialog.delete.title"),
                         new UserValidationException(LanguageManager.getInstance().getString("msg.select.row")));
-            } else {
-                if (AllAlerts.confirmDelete()) {
-                    final java.util.Optional<String> correctionReason;
-                    try {
-                        correctionReason = com.hamza.account.controller.users.ShiftCorrectionReasonPrompt.forDelete();
-                    } catch (DaoException e) {
-                        exceptionHandle(e);
-                        return;
-                    }
-                    if (correctionReason.isEmpty()) return;
-                    maskerPaneSetting.showMaskerPane(LanguageManager.getInstance().getString("invoice.dialog.delete.title"), () -> {
-                        // backup before delete
-                        SaveDatabaseFile.saveBeforeClose(false);
-                        dataInterface.totalDesignInterface().deleteMultiData(correctionReason.get(),
-                                list.stream().map(BaseTotals::getId).toArray(Integer[]::new));
-                    });
-                    maskerPaneSetting.getVoidTask().setOnSucceeded(workerStateEvent -> {
-//                        log.info("delete multi data success , {}", sb.toString());
-                        btnRefresh.fire();
-                        if (eventBus != null) eventBus.publish(new InvoiceSaved(dataInterface.invoiceSide()));
-                        AllAlerts.alertDelete();
-                    });
-                }
+                return;
             }
-
+            deleteDocuments(list);
         });
         btnShowInvoice.setOnAction(actionEvent -> {
             try {
@@ -466,6 +459,123 @@ public class TotalsController<T3 extends BaseNames, T4 extends BaseAccount>
             if (t1) btnSelected.setText(LanguageManager.getInstance().getString("common.cancel.select.all"));
             else btnSelected.setText(LanguageManager.getInstance().getString("common.select.all"));
         });
+    }
+
+    /**
+     * Deletes one document or many, on the one path.
+     * <p>
+     * It was written inline in the toolbar's handler, which is where it had to stay while
+     * the toolbar was the only way to delete. A row's own delete button is the same
+     * operation on a list of one, and it must ask the same confirmation, take the same
+     * backup and record the same shift-correction reason - so it is a method now rather
+     * than a second copy free to drift from this one.
+     */
+    private void deleteDocuments(List<? extends BaseTotals> documents) {
+        if (documents.isEmpty() || !AllAlerts.confirmDelete()) return;
+        final Optional<String> correctionReason;
+        try {
+            correctionReason = com.hamza.account.controller.users.ShiftCorrectionReasonPrompt.forDelete();
+        } catch (DaoException e) {
+            exceptionHandle(e);
+            return;
+        }
+        if (correctionReason.isEmpty()) return;
+        maskerPaneSetting.showMaskerPane(
+                LanguageManager.getInstance().getString("invoice.dialog.delete.title"), () -> {
+                    SaveDatabaseFile.saveBeforeClose(false);
+                    dataInterface.totalDesignInterface().deleteMultiData(correctionReason.get(),
+                            documents.stream().map(BaseTotals::getId).toArray(Integer[]::new));
+                });
+        maskerPaneSetting.getVoidTask().setOnSucceeded(workerStateEvent -> {
+            btnRefresh.fire();
+            if (eventBus != null) eventBus.publish(new InvoiceSaved(dataInterface.invoiceSide()));
+            AllAlerts.alertDelete();
+        });
+    }
+
+    /**
+     * Open, edit and delete, on the row they act on.
+     * <p>
+     * The toolbar above keeps all three, and deliberately: delete there works on every
+     * ticked row at once, which is a different operation from deleting the one in front of
+     * you. What the toolbar cannot do is say <em>which</em> row it means without the
+     * operator first selecting it and then travelling to the top of the screen - so the
+     * single-row half of each action is here as well, where the row is.
+     * <p>
+     * The permissions are the toolbar's own, checked per button rather than for the column,
+     * so a user who may look but not edit gets a row he can open and nothing else.
+     */
+    private TableColumn<BaseTotals, Void> rowActionsColumn() {
+        TableColumn<BaseTotals, Void> column = new TableColumn<>(
+                LanguageManager.getInstance().getString("invoice.column.actions"));
+        column.setSortable(false);
+        column.setReorderable(false);
+        column.setMinWidth(112);
+        column.setPrefWidth(112);
+        column.setCellFactory(ignored -> new RowActionsCell());
+        return column;
+    }
+
+    /** The three buttons one row carries. One instance per cell, reused as rows scroll. */
+    private final class RowActionsCell extends TableCell<BaseTotals, Void> {
+        private final HBox buttons = new HBox(4);
+
+        private RowActionsCell() {
+            Button show = rowButton(AppIcon.SHOW, "invoice.tooltip.show", "primary-button",
+                    row -> showInvoiceData(row));
+            Button edit = rowButton(AppIcon.EDIT, "invoice.tooltip.update", "warning-button",
+                    row -> update(row));
+            Button delete = rowButton(AppIcon.DELETE, "invoice.tooltip.delete", "danger-button",
+                    this::deleteRow);
+            // The same service the toolbar's buttons go through, so a row button and the
+            // button above it can never disagree about what this user may do.
+            var permissions = new DisableButtons.PermissionDisableService();
+            permissions.applyPermissionBasedDisable(edit::setDisable,
+                    dataInterface.designInterface().update());
+            permissions.applyPermissionBasedDisable(delete::setDisable,
+                    dataInterface.designInterface().delete());
+            buttons.setAlignment(Pos.CENTER);
+            buttons.getChildren().addAll(show, edit, delete);
+            buttons.getStyleClass().add("totals-row-actions");
+        }
+
+        private Button rowButton(AppIcon icon, String tooltipKey, String styleClass,
+                                 RowAction action) {
+            Button button = new Button();
+            button.setGraphic(icon.graphic(14));
+            button.getStyleClass().addAll("icon-button", styleClass);
+            tip(button, tooltipKey);
+            button.setOnAction(event -> {
+                BaseTotals row = getTableRow() == null ? null : getTableRow().getItem();
+                if (row == null) return;
+                // The row the button is on is the row it acts on; selecting it as well keeps
+                // the toolbar and the keyboard pointing at the same document.
+                tableView.getSelectionModel().select(row);
+                try {
+                    action.run(row);
+                } catch (Exception e) {
+                    exceptionHandle(e);
+                }
+            });
+            return button;
+        }
+
+        /** Deleting one row goes through the same confirmation the toolbar's delete uses. */
+        private void deleteRow(BaseTotals row) {
+            deleteDocuments(List.of(row));
+        }
+
+        @Override
+        protected void updateItem(Void item, boolean empty) {
+            super.updateItem(item, empty);
+            setGraphic(empty || getTableRow() == null || getTableRow().getItem() == null
+                    ? null : buttons);
+        }
+    }
+
+    @FunctionalInterface
+    private interface RowAction {
+        void run(BaseTotals row) throws Exception;
     }
 
     private BaseTotals requireSelectedRow() throws UserValidationException {
@@ -838,9 +948,7 @@ public class TotalsController<T3 extends BaseNames, T4 extends BaseAccount>
         } catch (Exception e) {
             log.error("Failed to load the party names for the totals filter", e);
         }
-        comboName.setItems(FXCollections.observableArrayList(list));
-        comboName.getItems().addFirst(LanguageManager.getInstance().getString("all"));
-        comboName.getSelectionModel().selectFirst();
+        comboDelegateSetting(comboName, list);
     }
 
     private void update(BaseTotals t2) throws Exception {

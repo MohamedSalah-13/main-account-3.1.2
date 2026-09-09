@@ -1642,6 +1642,25 @@
     -fx-font-size: 1.2em;
 }
 
+.totals-row-actions {
+    -fx-padding: 0 0.2em;
+}
+
+.totals-row-actions .icon-button {
+    -fx-padding: 0.2em 0.4em;
+    -fx-background-radius: 0.4em;
+    -fx-cursor: hand;
+}
+
+.totals-pager {
+    -fx-padding: 0.2em 0;
+}
+
+.totals-page-label {
+    -fx-text-fill: -app-text-muted;
+    -fx-padding: 0 0.6em;
+}
+
 .totals-sales .app-card { -fx-border-color: -app-primary; }
 .totals-sales .summary-bar { -fx-background-color: linear-gradient(to right, -app-primary-darker, -app-primary); }
 .totals-sales .totals-screen-title { -fx-text-fill: -app-primary-dark; }
