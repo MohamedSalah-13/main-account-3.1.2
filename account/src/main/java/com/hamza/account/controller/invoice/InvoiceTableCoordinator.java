@@ -19,6 +19,7 @@ import javafx.beans.value.ObservableValue;
 import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
 import javafx.event.EventHandler;
+import javafx.scene.control.Label;
 import javafx.scene.control.SelectionMode;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
@@ -81,6 +82,9 @@ public final class InvoiceTableCoordinator<T extends BasePurchasesAndSales> {
         );
         addIdentityColumns();
         addDeleteColumn();
+        // Only the standard screen ever shows this: the quick screen keeps a trailing
+        // entry row, so its table is never empty. See QuickInvoiceTable.
+        table.setPlaceholder(new Label(LanguageManager.getInstance().getString("invoice.lines.empty")));
         table.setItems(lines);
         configureEdits();
         configureSelectionAndKeys();
