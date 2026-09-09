@@ -21,7 +21,7 @@ public class TotalsApplication {
             , DataPublisher dataPublisher, EmployeeService employeeService) throws Exception {
 
         CssToColorHelper helper = new CssToColorHelper();
-        controller = new TotalsController<>(dataInterface, daoFactory, dataPublisher, employeeService, helper);
+        controller = new TotalsController<>(dataInterface, daoFactory, dataPublisher, employeeService);
         pane = new OpenFxmlApplication(controller).getPane();
         pane.getStylesheets().add(ThemeManager.getStylesheet());
         pane.getChildren().add(helper);

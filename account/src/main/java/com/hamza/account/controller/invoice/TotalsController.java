@@ -7,7 +7,6 @@ import com.hamza.account.config.SaveDatabaseFile;
 import com.hamza.account.controller.main.DataPublisher;
 import com.hamza.account.controller.main.DisableButtons;
 import com.hamza.account.controller.model.PrintPurchaseWithName;
-import com.hamza.account.controller.model.PrintTotalsData;
 import com.hamza.account.controller.others.ServiceRegistry;
 import com.hamza.account.document.DocumentTableSpec;
 import com.hamza.account.document.TotalsPage;
@@ -18,7 +17,9 @@ import com.hamza.account.features.events.InvoiceSaved;
 import com.hamza.account.features.events.NameChanged;
 import com.hamza.account.features.totals.TotalsFilterInput;
 import com.hamza.account.features.export.PdfExportService;
+import com.hamza.account.features.totals.PageJump;
 import com.hamza.account.features.totals.SavedTotalsFilters;
+import com.hamza.account.features.totals.TotalsDocumentRow;
 import com.hamza.account.features.totals.TotalsFilterDescription;
 import com.hamza.account.features.totals.TotalsReportLayout;
 import com.hamza.account.features.totals.TotalsReportService;
@@ -92,7 +93,6 @@ import static com.hamza.controlsfx.others.Utils.whenEnterPressed;
 public class TotalsController<T3 extends BaseNames, T4 extends BaseAccount>
         extends TotalsService<T3, T4> implements Initializable {
 
-    private final CssToColorHelper helper;
     private final EventBus eventBus = ServiceRegistry.get(EventBus.class);
     private final PeriodLockService periodLockService = ServiceRegistry.get(PeriodLockService.class);
     private final EmployeeService employeeService;
@@ -110,6 +110,7 @@ public class TotalsController<T3 extends BaseNames, T4 extends BaseAccount>
     private final Map<ComboBox<String>, FilterableCombo> filterableCombos = new IdentityHashMap<>();
     private final TotalsReportService reportService = new TotalsReportService();
     private int currentPage;
+    private int pageCount = 1;
     private MaskerPaneSetting maskerPaneSetting;
     @FXML
     private TableView<BaseTotals> tableView;
@@ -121,6 +122,8 @@ public class TotalsController<T3 extends BaseNames, T4 extends BaseAccount>
     private TextField textMinTotal;
     @FXML
     private TextField textMaxTotal;
+    @FXML
+    private TextField textPage;
     @FXML
     private ComboBox<String> comboName, comboDelegate, comboEnteredBy, comboSavedFilters;
     @FXML
@@ -151,10 +154,9 @@ public class TotalsController<T3 extends BaseNames, T4 extends BaseAccount>
 
     public TotalsController(DataInterface<?, ?, T3, T4> dataInterface, DaoFactory daoFactory
             , DataPublisher dataPublisher, EmployeeService employeeService
-            , CssToColorHelper helper) throws Exception {
+            ) throws Exception {
         super(dataInterface, daoFactory, dataPublisher);
         this.employeeService = employeeService;
-        this.helper = helper;
         this.observableList = FXCollections.observableArrayList();
         // Each of the four document types keeps its own remembered range - one screen's
         // date does not leak into another's.
@@ -425,6 +427,12 @@ public class TotalsController<T3 extends BaseNames, T4 extends BaseAccount>
         btnNextPage.setOnAction(actionEvent -> {
             currentPage++;
             loadPage(false);
+        });
+        // Enter jumps; leaving the field puts back the page actually shown, so a number
+        // typed and abandoned never sits there claiming to be where the table is.
+        textPage.setOnAction(actionEvent -> jumpToTypedPage());
+        textPage.focusedProperty().addListener((observable, was, focused) -> {
+            if (!focused) textPage.setText(String.valueOf(currentPage + 1));
         });
         btnDeleteSelected.setOnAction(actionEvent -> {
             var list = tableView.getItems().stream().filter(BaseTotals::isSelectedRow).toList();
@@ -782,6 +790,21 @@ public class TotalsController<T3 extends BaseNames, T4 extends BaseAccount>
         thread.start();
     }
 
+    /**
+     * Goes where the operator typed. Out of range lands on the nearest real page rather
+     * than refusing - see {@link PageJump}, which owns the arithmetic.
+     */
+    private void jumpToTypedPage() {
+        PageJump.targetPage(textPage.getText(), pageCount).ifPresentOrElse(page -> {
+            if (page != currentPage) {
+                currentPage = page;
+                loadPage(false);
+            } else {
+                textPage.setText(String.valueOf(currentPage + 1));
+            }
+        }, () -> textPage.setText(String.valueOf(currentPage + 1)));
+    }
+
     /** A date that is now absent must not be remembered, or clearing it would not stick. */
     private void rememberDate(String key, LocalDate value) {
         if (value == null) preferences.remove(key);
@@ -790,8 +813,9 @@ public class TotalsController<T3 extends BaseNames, T4 extends BaseAccount>
 
     private void updatePager(TotalsPage<? extends BaseTotals> loaded) {
         LanguageManager language = LanguageManager.getInstance();
-        labelPage.setText(language.getString("invoice.search.page.of",
-                loaded.page() + 1, loaded.pageCount()));
+        pageCount = loaded.pageCount();
+        textPage.setText(String.valueOf(loaded.page() + 1));
+        labelPage.setText(language.getString("invoice.search.page.of.total", loaded.pageCount()));
         btnPreviousPage.setDisable(!loaded.hasPrevious());
         btnNextPage.setDisable(!loaded.hasNext());
         boolean paged = loaded.pageCount() > 1;
@@ -995,6 +1019,11 @@ public class TotalsController<T3 extends BaseNames, T4 extends BaseAccount>
         search(false);
     }
 
+    /** One end of the period as a report header shows it, or blank when it is open. */
+    private static String boundText(LocalDate value) {
+        return value == null ? "" : value.toString();
+    }
+
     /** Says what period is being shown, including when one or both ends are open. */
     private static String dateRangeText(TotalsSearchCriteria criteria) {
         LanguageManager language = LanguageManager.getInstance();
@@ -1074,26 +1103,93 @@ public class TotalsController<T3 extends BaseNames, T4 extends BaseAccount>
         buyApp.start(new Stage());
     }
 
+    /**
+     * Prints the list itself: one line per invoice, as a PDF that says what it covers.
+     *
+     * <p>It was a Jasper report, and moving it is not a change of library for its own
+     * sake - the report it produced could not say which filter it was run under, which is
+     * exactly the thing that makes a filed page arguable. Everything it lists is a table
+     * of figures rather than a document handed to a customer, so it belongs with the four
+     * summaries beside it in the menu; the detailed print, which puts real invoices on
+     * paper and has a receipt-printer layout, stays where it is.</p>
+     *
+     * <p>Two things it does that the Jasper one did not, and both were defects rather
+     * than choices. It prints the <b>whole</b> result when nothing is ticked, instead of
+     * an empty page - and it has to, because with a paged list "the ticked rows" are only
+     * ever the ticked rows of the page in front of you. And it no longer reads
+     * {@code dateFrom.getValue().toString()}, which is a NullPointerException now that a
+     * search may legitimately carry no dates at all.</p>
+     */
     private void print() {
-        String name;
-        name = comboName.getSelectionModel().getSelectedItem();
-        if (comboName.getSelectionModel().isEmpty()) name = LanguageManager.getInstance().getString("all");
-        String date1 = dateFrom.getValue().toString();
-        String date2 = dateTo.getValue().toString();
+        TotalsSearchCriteria criteria;
+        try {
+            criteria = buildCriteria();
+        } catch (TotalsFilterInput.InvalidFilterException e) {
+            setFilterPanelVisible(true);
+            exceptionHandle(new UserValidationException(filterErrorText(e.problem())));
+            return;
+        }
+        LanguageManager language = LanguageManager.getInstance();
+        File target = reportTarget(language.getString("invoice.btn.print.totals"));
+        if (target == null) return;
 
-        List<PrintTotalsData> printTotalsDataList = new ArrayList<>();
-        List<BaseTotals> list = tableView.getItems().stream()
-                .filter(t2 -> t2.isSelectedRow())
+        List<BaseTotals> ticked = tableView.getItems().stream()
+                .filter(BaseTotals::isSelectedRow).toList();
+        AtomicReference<List<? extends BaseTotals>> documents = new AtomicReference<>(ticked);
+        if (ticked.isEmpty()) {
+            maskerPaneSetting.showMaskerPane(language.getString("invoice.masker.loading"), () ->
+                    documents.set(totalsAndPurchaseList
+                            .searchTotals(criteria, 0, DocumentTableSpec.REPORT_ROW_LIMIT).rows()));
+            maskerPaneSetting.getVoidTask().setOnSucceeded(event ->
+                    writeDocumentListing(documents.get(), criteria, target));
+        } else {
+            writeDocumentListing(ticked, criteria, target);
+        }
+    }
+
+    private void writeDocumentListing(List<? extends BaseTotals> documents,
+                                      TotalsSearchCriteria criteria, File target) {
+        LanguageManager language = LanguageManager.getInstance();
+        if (documents.isEmpty()) {
+            AllAlerts.handleError(language.getString("invoice.btn.print.totals"),
+                    new UserValidationException(language.getString("invoice.report.empty")));
+            return;
+        }
+        DocumentTableSpec spec = DocumentTableSpec.of(dataInterface.designInterface().documentType());
+        var profit = totalsDataInterface.getTotalProfit();
+        List<TotalsDocumentRow> rows = documents.stream()
+                .map(document -> new TotalsDocumentRow(
+                        document.getId(),
+                        document.getDate(),
+                        totalsDataInterface.getNameData(document),
+                        document.getInvoiceType() == null ? "" : document.getInvoiceType().getType(),
+                        MoneyMath.decimal(document.getTotal()),
+                        MoneyMath.decimal(document.getDiscount()),
+                        MoneyMath.decimal(document.getPaid()),
+                        spec.hasProfit() ? MoneyMath.decimal(profit.applyAsDouble(document))
+                                : java.math.BigDecimal.ZERO))
                 .toList();
-        list.forEach(t2 -> {
-            TotalsDataInterface anInterface = totalDesignInterface.totalsDataInterface();
-            printTotalsDataList.add(new PrintTotalsData(t2.getId(), anInterface.getNameData(t2)
-                    , t2.getDate(), t2.getInvoiceType().getType()
-                    , t2.getTotal(), t2.getDiscount(), t2.getTotal_after_discount()
-                    , t2.getPaid()));
-        });
 
-        printReports.printTotalsInvoice(printTotalsDataList, name, date1, date2, helper);
+        String subtitle = TotalsFilterDescription.describe(criteria, language::getString);
+        if (documents.size() >= DocumentTableSpec.REPORT_ROW_LIMIT) {
+            subtitle = subtitle + language.getString("invoice.report.filter.separator")
+                    + language.getString("invoice.report.truncated", DocumentTableSpec.REPORT_ROW_LIMIT);
+        }
+        TotalsReportLayout layout = TotalsReportLayout.ofDocuments(
+                rows, spec.hasProfit(), language::getString);
+        String separator = language.getString("invoice.report.filter.separator");
+        boolean written = new PdfExportService().exportGroupedReport(
+                target.getAbsolutePath(),
+                language.getString("invoice.btn.print.totals") + separator + labelScreenTitle.getText(),
+                subtitle, layout.headers(), layout.columnWidths(), layout.rows(),
+                layout.totals(), PageSize.A4.rotate());
+        if (written) {
+            AllAlerts.alertSaveWithMessage(language.getString("invoice.report.saved")
+                    + System.lineSeparator() + target.getAbsolutePath());
+        } else {
+            AllAlerts.handleError(language.getString("invoice.btn.print.totals"),
+                    new UserValidationException(language.getString("invoice.report.failed")));
+        }
     }
 
     private void printDetailed() {
@@ -1104,11 +1200,19 @@ public class TotalsController<T3 extends BaseNames, T4 extends BaseAccount>
                     items.add(tableView.getItems().get(i));
                 }
             }
+            if (items.isEmpty()) {
+                AllAlerts.handleError(LanguageManager.getInstance().getString("print"),
+                        new UserValidationException(
+                                LanguageManager.getInstance().getString("msg.select.row")));
+                return;
+            }
             List<PrintPurchaseWithName> printPurchaseWithNames = new ArrayList<>();
             dataInterface.addList(items, printPurchaseWithNames);
-            String date1 = dateFrom.getValue().toString();
-            String date2 = dateTo.getValue().toString();
-            printReports.printMultiInvoice(printPurchaseWithNames, dataInterface.designInterface().nameTextOfTotal(), date1, date2, null);
+            // A bound that is not set is a blank on the header, not a NullPointerException:
+            // a search may now legitimately carry no dates at all.
+            printReports.printMultiInvoice(printPurchaseWithNames,
+                    dataInterface.designInterface().nameTextOfTotal(),
+                    boundText(dateFrom.getValue()), boundText(dateTo.getValue()), null);
         } catch (DaoException e) {
             exceptionHandle(e);
         }

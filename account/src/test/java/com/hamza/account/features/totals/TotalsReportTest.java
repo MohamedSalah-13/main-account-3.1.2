@@ -149,6 +149,50 @@ class TotalsReportTest {
         }
     }
 
+    // ---- the invoice-by-invoice listing ---------------------------------------------
+
+    @Test
+    void theDocumentListingCarriesOneLinePerInvoiceAndATotalPerColumn() {
+        var layout = documentLayout(true);
+
+        assertEquals(10, layout.headers().length);
+        assertEquals(2, layout.rows().size());
+        assertEquals(layout.headers().length, layout.rows().getFirst().length);
+        assertEquals(layout.headers().length, layout.totals().length);
+        assertEquals(layout.headers().length, layout.columnWidths().length);
+    }
+
+    /** The line under a listing has to be the listing summed, or it is worse than absent. */
+    @Test
+    void theListingTotalIsTheSumOfItsOwnLines() {
+        var layout = documentLayout(true);
+        String[] totals = layout.totals();
+
+        assertEquals("2", totals[3], "how many documents were listed");
+        assertEquals("300.00", totals[4]);   // 100 + 200
+        assertEquals("30.00", totals[5]);    // 10 + 20
+        assertEquals("270.00", totals[6]);   // net
+        assertEquals("120.00", totals[7]);   // paid
+        assertEquals("150.00", totals[8]);   // still owed
+        assertEquals("75.00", totals[9]);    // profit
+    }
+
+    @Test
+    void aPurchaseListingHasNoProfitColumnEither() {
+        assertEquals(9, documentLayout(false).headers().length);
+        assertEquals(9, documentLayout(false).totals().length);
+    }
+
+    private static TotalsReportLayout documentLayout(boolean hasProfit) {
+        var first = new TotalsDocumentRow(1, "2026-01-01", "عميل", "نقدي",
+                new BigDecimal("100"), new BigDecimal("10"), new BigDecimal("40"),
+                hasProfit ? new BigDecimal("25") : BigDecimal.ZERO);
+        var second = new TotalsDocumentRow(2, "2026-01-02", "عميل آخر", "آجل",
+                new BigDecimal("200"), new BigDecimal("20"), new BigDecimal("80"),
+                hasProfit ? new BigDecimal("50") : BigDecimal.ZERO);
+        return TotalsReportLayout.ofDocuments(List.of(first, second), hasProfit, key -> key);
+    }
+
     private static TotalsReportLayout layout(boolean hasProfit, boolean perItem,
                                              DocumentTableSpec.Report kind) {
         TotalsReportRow row = new TotalsReportRow("صنف", 3, new BigDecimal("2.500"),

@@ -35,6 +35,68 @@ public record TotalsReportLayout(String[] headers, float[] columnWidths, List<St
                 : perDocument(report, kind, translate);
     }
 
+    /**
+     * The invoice-by-invoice listing - what "طباعة الإجماليات" prints.
+     * <p>
+     * It is a listing, not a summary: one line per document rather than one per group, so
+     * it does not go through {@link DocumentTableSpec.Report} at all. It shares this class
+     * because it shares everything else - the same money columns in the same order, the
+     * same profit rule, and the same banded totals line that carries every column.
+     */
+    public static TotalsReportLayout ofDocuments(List<TotalsDocumentRow> documents,
+                                                 boolean hasProfit,
+                                                 Function<String, String> translate) {
+        List<String> headers = new ArrayList<>(List.of(
+                translate.apply("code"),
+                translate.apply("date"),
+                translate.apply("name"),
+                translate.apply("type"),
+                translate.apply("total"),
+                translate.apply("discount"),
+                translate.apply("invoice.total.after.discount"),
+                translate.apply("paid"),
+                translate.apply("invoice.summary.remaining")));
+        if (hasProfit) headers.add(translate.apply("common.profit"));
+
+        BigDecimal total = BigDecimal.ZERO;
+        BigDecimal discount = BigDecimal.ZERO;
+        BigDecimal paid = BigDecimal.ZERO;
+        BigDecimal profit = BigDecimal.ZERO;
+        List<String[]> rows = new ArrayList<>();
+        for (TotalsDocumentRow document : documents) {
+            total = total.add(document.total());
+            discount = discount.add(document.discount());
+            paid = paid.add(document.paid());
+            profit = profit.add(document.profit());
+            List<String> cells = new ArrayList<>(List.of(
+                    String.valueOf(document.number()), text(document.date()),
+                    text(document.partyName()), text(document.paymentType()),
+                    money(document.total()), money(document.discount()),
+                    money(document.afterDiscount()), money(document.paid()),
+                    money(document.remaining())));
+            if (hasProfit) cells.add(money(document.profit()));
+            rows.add(cells.toArray(String[]::new));
+        }
+
+        List<String> totals = new ArrayList<>(List.of(
+                translate.apply("total"), "", "", String.valueOf(documents.size()),
+                money(total), money(discount), money(total.subtract(discount)), money(paid),
+                money(total.subtract(discount).subtract(paid))));
+        if (hasProfit) totals.add(money(profit));
+        return new TotalsReportLayout(headers.toArray(String[]::new),
+                documentWidths(headers.size()), rows, totals.toArray(String[]::new));
+    }
+
+    /** The name is the wide one here; the number and the date need less than a figure. */
+    private static float[] documentWidths(int columns) {
+        float[] widths = new float[columns];
+        widths[0] = 1f;
+        widths[1] = 1.6f;
+        widths[2] = 3f;
+        for (int i = 3; i < columns; i++) widths[i] = 1.4f;
+        return widths;
+    }
+
     /** Money columns: what was billed, discounted, collected, still owed, and earned. */
     private static TotalsReportLayout perDocument(TotalsReportService.TotalsReport report,
                                                   DocumentTableSpec.Report kind,

@@ -1656,6 +1656,11 @@
     -fx-padding: 0.2em 0;
 }
 
+.totals-page-field {
+    -fx-alignment: center;
+    -fx-padding: 0.2em 0.3em;
+}
+
 .totals-page-label {
     -fx-text-fill: -app-text-muted;
     -fx-padding: 0 0.6em;

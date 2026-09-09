@@ -110,21 +110,6 @@ public class Print_Reports extends ReportCompany {
         jasperData.printJasperPrint(JasperReportPaths.Report.MONTHLY, LanguageManager.getInstance().getString("setting.months"), map, 1, "");
     }
 
-    public void printTotalsInvoice(@NotNull List<?> list, @NotNull String name, @NotNull String date1, @NotNull String date2, CssToColorHelper helper) {
-        HashMap<String, Object> map = getStringObjectHashMap(list, helper);
-        if (!name.isEmpty()) {
-            map.put("p1", name);
-            map.put("p2", date1);
-            map.put("p3", date2);
-        } else {
-            map.put("p1", LanguageManager.getInstance().getString("all"));
-            map.put("p2", " ");
-            map.put("p3", " ");
-        }
-        String reportName = LanguageManager.getInstance().getString("total");
-        addHeaderToReports(map, reportName);
-        jasperData.printJasperPrint(JasperReportPaths.Invoice.DETAILS, reportName, map, 1, "");
-    }
 
     public void printMultiInvoice(@NotNull List<PrintPurchaseWithName> list, @NotNull String reportName, @NotNull String from, @NotNull String to, CssToColorHelper helper) {
         HashMap<String, Object> company = getStringObjectHashMap(list, helper);

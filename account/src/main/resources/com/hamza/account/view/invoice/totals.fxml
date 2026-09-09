@@ -223,6 +223,10 @@
                             <children>
                                 <Button fx:id="btnPreviousPage" mnemonicParsing="false"
                                         styleClass="neutral-button" text="%invoice.search.previous" />
+                                <Label styleClass="totals-page-label" text="%invoice.search.page.label" />
+                                <!-- Twenty-three clicks to reach page 24 is not navigation. -->
+                                <TextField fx:id="textPage" prefWidth="64.0"
+                                           styleClass="totals-page-field" />
                                 <Label fx:id="labelPage" styleClass="totals-page-label" />
                                 <Button fx:id="btnNextPage" mnemonicParsing="false"
                                         styleClass="neutral-button" text="%invoice.search.next" />
