@@ -1541,10 +1541,105 @@
 
 /* ---------- Totals screen identities ---------- */
 
+.totals-header {
+    -fx-padding: 0.18em 0.35em;
+}
+
 .totals-screen-title {
-    -fx-font-size: 1.273em;
+    -fx-font-size: 1.727em;
     -fx-font-weight: bold;
-    -fx-padding: 0 0.455em;
+    -fx-padding: 0;
+}
+
+.totals-count-badge {
+    -fx-background-color: -app-neutral-soft;
+    -fx-text-fill: -app-text-muted;
+    -fx-background-radius: 999;
+    -fx-padding: 0.18em 0.8em;
+    -fx-font-size: 0.95em;
+}
+
+.totals-filtered-badge {
+    -fx-background-color: -app-warning-soft;
+    -fx-text-fill: -app-warning;
+    -fx-border-color: -app-warning-border;
+    -fx-border-width: 0.091em;
+    -fx-background-radius: 999;
+    -fx-border-radius: 999;
+    -fx-padding: 0.18em 0.8em;
+    -fx-font-size: 0.95em;
+    -fx-font-weight: bold;
+}
+
+.totals-date-range {
+    -fx-background-color: -app-neutral-soft;
+    -fx-background-radius: 999;
+    -fx-padding: 0.25em 0.9em;
+}
+
+.totals-command-bar,
+.totals-search-card {
+    -fx-padding: 0.8em 1em;
+}
+
+.totals-search-icon .ikonli-font-icon {
+    -fx-icon-color: -app-text-muted;
+}
+
+.totals-payment-segmented {
+    -fx-background-color: -app-neutral-soft;
+    -fx-background-radius: 0.8em;
+    -fx-padding: 0.18em;
+}
+
+.totals-payment-segment {
+    -fx-background-color: transparent;
+    -fx-text-fill: -app-text;
+    -fx-background-radius: 0.65em;
+    -fx-padding: 0.35em 1em;
+    -fx-cursor: hand;
+}
+
+.totals-payment-segment:hover {
+    -fx-background-color: -app-neutral-hover;
+}
+
+.totals-payment-segment:selected {
+    -fx-background-color: -app-surface;
+    -fx-text-fill: -app-primary-dark;
+    -fx-font-weight: bold;
+    -fx-effect: dropshadow(gaussian, -app-shadow, 4, 0.10, 0, 1);
+}
+
+.totals-table {
+    -fx-min-height: 16em;
+}
+
+.table-row-cell.totals-negative-row {
+    -fx-background-color: -app-warning-soft;
+}
+
+.table-row-cell.totals-negative-row:selected {
+    -fx-background-color: -app-primary;
+}
+
+.totals-summary-bar {
+    -fx-padding: 0.65em;
+}
+
+.totals-summary-item {
+    -fx-min-width: 8.5em;
+    -fx-padding: 0.45em 0.8em;
+    -fx-background-color: rgba(255, 255, 255, 0.12);
+    -fx-background-radius: 0.75em;
+}
+
+.totals-summary-item .label {
+    -fx-font-size: 0.9em;
+}
+
+.totals-summary-item .text-sum {
+    -fx-font-size: 1.2em;
 }
 
 .totals-sales .app-card { -fx-border-color: -app-primary; }

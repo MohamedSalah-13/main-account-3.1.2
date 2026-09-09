@@ -1,7 +1,8 @@
 package com.hamza.account.controller.invoice;
 
 import com.hamza.account.authorization.AppPermissions;
-import com.hamza.account.config.Image_Setting;
+import com.hamza.account.config.AppIcon;
+import com.hamza.account.config.NamesTables;
 import com.hamza.account.config.SaveDatabaseFile;
 import com.hamza.account.controller.main.DataPublisher;
 import com.hamza.account.controller.main.DisableButtons;
@@ -12,14 +13,15 @@ import com.hamza.account.document.TotalsSearchCriteria;
 import com.hamza.account.features.events.EmployeesChanged;
 import com.hamza.account.features.events.InvoiceSaved;
 import com.hamza.account.features.events.NameChanged;
+import com.hamza.account.features.totals.TotalsFilterInput;
+import com.hamza.account.features.totals.SavedTotalsFilters;
+import com.hamza.account.features.totals.TotalsSummary;
 import com.hamza.account.finance.MoneyMath;
 import com.hamza.account.interfaces.api.DataInterface;
 import com.hamza.account.interfaces.api.TotalsDataInterface;
 import com.hamza.account.model.base.BaseAccount;
 import com.hamza.account.model.base.BaseNames;
-import com.hamza.account.config.NamesTables;
 import com.hamza.account.model.base.BaseTotals;
-import com.hamza.account.model.base.DForColumnTable;
 import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.openFxml.FxmlPath;
 import com.hamza.account.otherSetting.MaskerPaneSetting;
@@ -42,37 +44,35 @@ import com.hamza.controlsfx.others.DateSetting;
 import com.hamza.controlsfx.others.TextFormat;
 import com.hamza.controlsfx.table.Columns;
 import com.hamza.controlsfx.table.columnEdit.ColumnSetting;
-import javafx.application.Platform;
-import javafx.beans.property.SimpleStringProperty;
-import javafx.beans.value.ObservableValue;
+import javafx.animation.PauseTransition;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.collections.transformation.SortedList;
+import javafx.concurrent.Task;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.control.*;
 import javafx.scene.input.Clipboard;
 import javafx.scene.input.ClipboardContent;
 import javafx.scene.input.KeyCode;
-import javafx.scene.layout.GridPane;
 import javafx.scene.layout.StackPane;
+import javafx.scene.layout.VBox;
 import javafx.scene.text.Text;
 import javafx.stage.Stage;
-import javafx.util.Callback;
+import javafx.util.Duration;
 import lombok.extern.log4j.Log4j2;
 
-import java.math.BigDecimal;
 import java.net.URL;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Optional;
 import java.util.ResourceBundle;
-import java.util.function.ToDoubleFunction;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.prefs.Preferences;
 
-import static com.hamza.controlsfx.table.columnEdit.ColumnSetting.addColumn;
-import static com.hamza.controlsfx.util.ImageChoose.createIcon;
+import static com.hamza.controlsfx.others.Utils.whenEnterPressed;
 
 
 @Log4j2
@@ -86,10 +86,14 @@ public class TotalsController<T3 extends BaseNames, T4 extends BaseAccount>
     private final EmployeeService employeeService;
     private final UsersService usersService = ServiceRegistry.get(UsersService.class);
     private final Preferences preferences = Preferences.userNodeForPackage(TotalsController.class);
+    private final SavedTotalsFilters savedFilters;
     private final ObservableList<BaseTotals> observableList;
     private final String dateFromKey;
     private final String dateToKey;
+    private final PauseTransition searchDelay = new PauseTransition(Duration.millis(300));
     private boolean update_data = true;
+    private boolean syncingFilters;
+    private long searchRequest;
     private MaskerPaneSetting maskerPaneSetting;
     @FXML
     private TableView<BaseTotals> tableView;
@@ -102,25 +106,22 @@ public class TotalsController<T3 extends BaseNames, T4 extends BaseAccount>
     @FXML
     private TextField textMaxTotal;
     @FXML
-    private ComboBox<String> comboName, comboDelegate, comboEnteredBy;
+    private ComboBox<String> comboName, comboDelegate, comboEnteredBy, comboSavedFilters;
     @FXML
-    private Label labelScreenTitle, labelName, labelSumTableSize, labelSumTotals, labelSumDiscount, labelSumAfterDiscount, labelTextSearch, labelDelegate, labelFrom, labelTo, labelInvoiceNumber, labelMinTotal, labelMaxTotal, labelEnteredBy;
+    private Label labelScreenTitle, labelResults, labelFiltered, labelDateRange, labelDelegate, searchIcon;
     @FXML
     private Text textSumTableSize, textSumTotals, textSumDiscount, textSumAfterDiscount, textCash, textDeffer, textProfit;
     @FXML
-    private Button btnUpdate, btnDelete, btnSearch, btnShowInvoice, btnRefresh;
+    private Button btnUpdate, btnDelete, btnSearch, btnShowInvoice, btnRefresh, btnClearFilters,
+            btnSaveFilter, btnDeleteSavedFilter;
     @FXML
-    private ToolBar toolBar;
-    @FXML
-    private ToggleButton btnSelected;
+    private ToggleButton btnSelected, btnFilters, radioCash, radioDeffer, radioAll;
     @FXML
     private DatePicker dateFrom, dateTo;
     @FXML
     private StackPane stackPane;
     @FXML
-    private RadioButton radioCash, radioDeffer, radioAll;
-    @FXML
-    private GridPane gridPane;
+    private VBox filterPane;
     @FXML
     private MenuButton menuButton;
     @FXML
@@ -138,18 +139,20 @@ public class TotalsController<T3 extends BaseNames, T4 extends BaseAccount>
         String prefix = dataInterface.getClass().getSimpleName();
         this.dateFromKey = prefix + ".search.dateFrom";
         this.dateToKey = prefix + ".search.dateTo";
+        this.savedFilters = new SavedTotalsFilters(preferences.node(prefix).node("savedFilters"));
     }
 
     @Override
     public void initialize(URL url, ResourceBundle resourceBundle) {
         maskerPaneSetting = new MaskerPaneSetting(stackPane);
         applyTotalsIdentity();
-        nameSetting();
         getTable();
         otherSetting();
+        configureSearchExperience();
         action();
         sumTable();
         addDataToComboName();
+        configureSavedFilters();
         // publisher data
         // Both sides arrive here; this screen shows one of them.
         if (eventBus != null) {
@@ -167,11 +170,10 @@ public class TotalsController<T3 extends BaseNames, T4 extends BaseAccount>
             }));
         }
         subscriptions.disposeWith(stackPane);
-        wireEnterKeySearch();
         restrictToNumbers();
         permissionButtons();
-        search();
         buttonGraphic();
+        search(false);
     }
 
     /** Gives each of the four totals lists a persistent, immediately recognizable identity. */
@@ -189,13 +191,30 @@ public class TotalsController<T3 extends BaseNames, T4 extends BaseAccount>
         labelScreenTitle.setText(type.totalText());
     }
     private void buttonGraphic() {
-        var images = new Image_Setting();
-        btnShowInvoice.setGraphic(createIcon(images.show));
-        btnUpdate.setGraphic(createIcon(images.update));
-        btnDelete.setGraphic(createIcon(images.delete));
-        btnSearch.setGraphic(createIcon(images.search));
-        btnRefresh.setGraphic(createIcon(images.refresh));
-        btnSelected.setGraphic(createIcon(images.select));
+        searchIcon.setGraphic(AppIcon.SEARCH.graphic(18));
+        btnShowInvoice.setGraphic(AppIcon.SHOW.graphic(16));
+        btnUpdate.setGraphic(AppIcon.EDIT.graphic(16));
+        btnDelete.setGraphic(AppIcon.DELETE.graphic(16));
+        btnSearch.setGraphic(AppIcon.SEARCH.graphic(16));
+        btnRefresh.setGraphic(AppIcon.REFRESH.graphic(16));
+        btnClearFilters.setGraphic(AppIcon.CLEAR.graphic(16));
+        btnSaveFilter.setGraphic(AppIcon.SAVE.graphic(16));
+        btnDeleteSavedFilter.setGraphic(AppIcon.DELETE.graphic(16));
+        btnFilters.setGraphic(AppIcon.FILTER.graphic(16));
+        btnSelected.setGraphic(AppIcon.SELECT_ALL.graphic(16));
+        menuButton.setGraphic(AppIcon.PRINT.graphic(16));
+
+        tip(btnShowInvoice, "invoice.tooltip.show");
+        tip(btnUpdate, "invoice.tooltip.update");
+        tip(btnDelete, "invoice.tooltip.delete");
+        tip(btnSearch, "invoice.tooltip.search");
+        tip(btnRefresh, "invoice.tooltip.refresh");
+        tip(btnClearFilters, "invoice.tooltip.clear.filters");
+        tip(btnSaveFilter, "invoice.search.saved.save.tooltip");
+        tip(btnDeleteSavedFilter, "invoice.search.saved.delete.tooltip");
+        tip(btnFilters, "invoice.tooltip.filters");
+        tip(btnSelected, "invoice.tooltip.select");
+        tip(menuButton, "invoice.tooltip.print");
     }
 
     private void permissionButtons() {
@@ -209,14 +228,37 @@ public class TotalsController<T3 extends BaseNames, T4 extends BaseAccount>
             update_data = aBoolean;
     }
 
+    /** The items-screen search rhythm: debounced typing and an advanced panel on demand. */
+    private void configureSearchExperience() {
+        searchDelay.setOnFinished(event -> search(false));
+        textSearch.textProperty().addListener((observable, oldValue, newValue) -> {
+            if (!syncingFilters) searchDelay.playFromStart();
+        });
+        textSearch.setOnAction(event -> search(true));
+
+        boolean showDelegate = dataInterface.designInterface().showDataForCustomer();
+        if (showDelegate) {
+            whenEnterPressed(dateFrom, dateTo, comboName, comboDelegate, comboEnteredBy,
+                    textInvoiceNumber, textMinTotal, textMaxTotal, btnSearch);
+        } else {
+            whenEnterPressed(dateFrom, dateTo, comboName, comboEnteredBy,
+                    textInvoiceNumber, textMinTotal, textMaxTotal, btnSearch);
+        }
+        setFilterPanelVisible(false);
+        keepOnePaymentSegmentSelected();
+    }
+
     /**
-     * Pressing Enter in any of the search fields runs the same search as the button.
+     * The payment type is a segmented control, not three independent switches.
+     * A {@code ToggleButton} in a group toggles itself off when clicked while
+     * selected - which a {@code RadioButton} refuses - so clicking the active
+     * segment would leave all three unselected and the control showing no answer.
      */
-    private void wireEnterKeySearch() {
-        textSearch.setOnAction(actionEvent -> btnSearch.fire());
-        textInvoiceNumber.setOnAction(actionEvent -> btnSearch.fire());
-        textMinTotal.setOnAction(actionEvent -> btnSearch.fire());
-        textMaxTotal.setOnAction(actionEvent -> btnSearch.fire());
+    private void keepOnePaymentSegmentSelected() {
+        ToggleGroup paymentGroup = radioAll.getToggleGroup();
+        paymentGroup.selectedToggleProperty().addListener((observable, previous, selected) -> {
+            if (selected == null && previous != null) paymentGroup.selectToggle(previous);
+        });
     }
 
     /**
@@ -226,36 +268,6 @@ public class TotalsController<T3 extends BaseNames, T4 extends BaseAccount>
         textInvoiceNumber.setTextFormatter(TextFormat.createNumericTextFormatter());
         textMinTotal.setTextFormatter(new TextFormatter<>(TextFormat.TEXT_FORMATTER_FILTER));
         textMaxTotal.setTextFormatter(new TextFormatter<>(TextFormat.TEXT_FORMATTER_FILTER));
-    }
-
-    private void nameSetting() {
-        var lang = LanguageManager.getInstance();
-        //label last name
-        labelSumTableSize.setText(lang.getString("count"));
-        labelSumTotals.setText(lang.getString("total"));
-        labelSumDiscount.setText(lang.getString("discount"));
-        labelSumAfterDiscount.setText(lang.getString("rest"));
-        // label setting
-        labelName.setText(lang.getString("name"));
-        labelTextSearch.setText(lang.getString("search"));
-        labelDelegate.setText(lang.getString("NAME_DELEGATE"));
-        btnSearch.setText(lang.getString("search"));
-        menuButton.setText(lang.getString("print"));
-        btnRefresh.setText(lang.getString("refresh"));
-        btnUpdate.setText(lang.getString("update"));
-        btnDelete.setText(lang.getString("delete"));
-        btnShowInvoice.setText(lang.getString("show"));
-        textSearch.setPromptText(lang.getString("search"));
-        comboName.setPromptText(lang.getString("name"));
-        comboDelegate.setPromptText(lang.getString("NAME_DELEGATE"));
-        btnSelected.setText(lang.getString("common.select.all"));
-        labelFrom.setText(lang.getString("from"));
-        labelTo.setText(lang.getString("to"));
-        labelInvoiceNumber.setText(lang.getString("invoice.number"));
-        labelMinTotal.setText(lang.getString("invoice.search.min.total"));
-        labelMaxTotal.setText(lang.getString("invoice.search.max.total"));
-        labelEnteredBy.setText(lang.getString("invoice.search.entered.by"));
-        comboEnteredBy.setPromptText(lang.getString("invoice.search.entered.by"));
     }
 
     /**
@@ -286,31 +298,23 @@ public class TotalsController<T3 extends BaseNames, T4 extends BaseAccount>
         SortedList<BaseTotals> sortedList = new SortedList<>(observableList);
         sortedList.comparatorProperty().bind(tableView.comparatorProperty());
         tableView.setItems(sortedList);
-        tableView.refresh();
+        tableView.setPlaceholder(new Label(LanguageManager.getInstance().getString("invoice.search.empty")));
         TableSetting.tableMenuSetting(getClass(), tableView);
 
-        Callback<TableColumn.CellDataFeatures<BaseTotals, String>, ObservableValue<String>> colUser = f -> f.getValue().getUsers().usernameProperty();
-        addColumn(tableView, LanguageManager.getInstance().getString("users"), tableView.getColumns().size(), colUser);
+        tableView.getColumns().add(Columns.text("users",
+                row -> row.getUsers() == null ? "" : row.getUsers().getUsername()));
+        tableView.getColumns().add(Columns.text("column.entry.time",
+                row -> row.getCreated_at() == null ? "" : row.getCreated_at().toString()));
 
-        Callback<TableColumn.CellDataFeatures<BaseTotals, String>, ObservableValue<String>> totalTime =
-                cellData -> new SimpleStringProperty(cellData.getValue().getCreated_at().toString());
-        addColumn(tableView, LanguageManager.getInstance().getString("column.entry.time"), tableView.getColumns().size(), totalTime);
-
-
-        tableView.setRowFactory(t2TableView -> {
-            TableRow<BaseTotals> row = new TableRow<>();
-            row.itemProperty().addListener((observable, oldValue, newValue) -> {
-                if (newValue != null) {
-                    if (newValue.getTotal() <= 0.0) {
-                        row.setStyle("-fx-background-color: rgba(243,253,163,0.62)");
-                    } else {
-                        row.setStyle("");
-                    }
-                } else {
-                    row.setStyle("");
+        tableView.setRowFactory(view -> new TableRow<>() {
+            @Override
+            protected void updateItem(BaseTotals item, boolean empty) {
+                super.updateItem(item, empty);
+                getStyleClass().remove("totals-negative-row");
+                if (!empty && item != null && item.getTotal() <= 0.0) {
+                    getStyleClass().add("totals-negative-row");
                 }
-            });
-            return row;
+            }
         });
     }
 
@@ -322,8 +326,11 @@ public class TotalsController<T3 extends BaseNames, T4 extends BaseAccount>
         dateTo.setValue(loadDate(dateToKey, LocalDate.now()));
 
         comboDelegateSetting(comboDelegate, getDelegateNames());
-        comboDelegate.setVisible(dataInterface.designInterface().showDataForCustomer());
-        labelDelegate.setVisible(dataInterface.designInterface().showDataForCustomer());
+        boolean showDelegate = dataInterface.designInterface().showDataForCustomer();
+        comboDelegate.setVisible(showDelegate);
+        comboDelegate.setManaged(showDelegate);
+        labelDelegate.setVisible(showDelegate);
+        labelDelegate.setManaged(showDelegate);
 
         comboDelegateSetting(comboEnteredBy, getUsernames());
     }
@@ -368,25 +375,22 @@ public class TotalsController<T3 extends BaseNames, T4 extends BaseAccount>
     private void action() {
         menuItemPrintTotals.setOnAction(actionEvent -> print());
         menuItemPrintDetailed.setOnAction(actionEvent -> printDetailed());
-        btnRefresh.setOnAction(actionEvent -> search());
-
-        btnSearch.setOnAction(actionEvent -> search());
+        btnRefresh.setOnAction(actionEvent -> search(false));
+        btnSearch.setOnAction(actionEvent -> search(true));
+        btnClearFilters.setOnAction(actionEvent -> clearFilters());
+        btnSaveFilter.setOnAction(actionEvent -> saveCurrentFilter());
+        btnDeleteSavedFilter.setOnAction(actionEvent -> deleteSelectedFilter());
+        btnFilters.setOnAction(actionEvent -> setFilterPanelVisible(btnFilters.isSelected()));
         btnUpdate.setOnAction(actionEvent -> {
-            OpenMethod<BaseTotals> openMethod = new OpenMethod<>() {
-                @Override
-                public void action(BaseTotals t2) throws Exception {
-                    update(t2);
-                }
-            };
             try {
-                openMethod.methodData(tableView);
+                update(requireSelectedRow());
             } catch (Exception e) {
                 exceptionHandle(e);
             }
         });
 
         btnDelete.setOnAction(actionEvent -> {
-            var list = tableView.getItems().stream().filter(DForColumnTable::isSelectedRow).toList();
+            var list = tableView.getItems().stream().filter(BaseTotals::isSelectedRow).toList();
             if (list.isEmpty()) {
                 AllAlerts.handleError(LanguageManager.getInstance().getString("invoice.dialog.delete.title"),
                         new UserValidationException(LanguageManager.getInstance().getString("msg.select.row")));
@@ -417,14 +421,8 @@ public class TotalsController<T3 extends BaseNames, T4 extends BaseAccount>
 
         });
         btnShowInvoice.setOnAction(actionEvent -> {
-            OpenMethod<BaseTotals> openMethod = new OpenMethod<>() {
-                @Override
-                public void action(BaseTotals t2) throws Exception {
-                    showInvoiceData(t2);
-                }
-            };
             try {
-                openMethod.methodData(tableView);
+                showInvoiceData(requireSelectedRow());
             } catch (Exception e) {
                 exceptionHandle(e);
             }
@@ -454,6 +452,14 @@ public class TotalsController<T3 extends BaseNames, T4 extends BaseAccount>
         });
     }
 
+    private BaseTotals requireSelectedRow() throws UserValidationException {
+        BaseTotals selected = tableView.getSelectionModel().getSelectedItem();
+        if (selected == null) {
+            throw new UserValidationException(LanguageManager.getInstance().getString("msg.select.row"));
+        }
+        return selected;
+    }
+
     private void copyInvoiceDetailsToClipboard() {
         BaseTotals selectedItem = tableView.getSelectionModel().getSelectedItem();
         if (selectedItem != null) {
@@ -477,49 +483,60 @@ public class TotalsController<T3 extends BaseNames, T4 extends BaseAccount>
      * on: what the table shows is exactly what the database returned for the current
      * criteria.
      */
-    private void search() {
+    private void search(boolean focusResults) {
+        searchDelay.stop();
+        long request = ++searchRequest;
         TotalsSearchCriteria criteria;
         try {
             criteria = buildCriteria();
-        } catch (UserValidationException e) {
-            exceptionHandle(e);
+        } catch (TotalsFilterInput.InvalidFilterException e) {
+            setFilterPanelVisible(true);
+            exceptionHandle(new UserValidationException(filterErrorText(e.problem())));
             return;
         }
         preferences.put(dateFromKey, criteria.dateFrom().toString());
         preferences.put(dateToKey, criteria.dateTo().toString());
-        TotalsSearchCriteria finalCriteria = criteria;
+        Task<Void> previous = maskerPaneSetting.getVoidTask();
+        if (previous != null && previous.isRunning()) previous.cancel();
+
+        AtomicReference<List<? extends BaseTotals>> result = new AtomicReference<>(List.of());
         maskerPaneSetting.showMaskerPane(LanguageManager.getInstance().getString("invoice.masker.loading"), () -> {
-            List<? extends BaseTotals> result;
-            try {
-                result = totalsAndPurchaseList.searchTotals(finalCriteria);
-            } catch (Exception e) {
-                Platform.runLater(() -> exceptionHandle(e));
-                return;
+            result.set(totalsAndPurchaseList.searchTotals(criteria));
+        });
+        maskerPaneSetting.getVoidTask().setOnSucceeded(event -> {
+            if (request != searchRequest) return;
+            var sorted = result.get().stream()
+                    .sorted(Comparator.comparing(BaseTotals::getDate))
+                    .toList();
+            observableList.setAll(sorted);
+            sumTable();
+            updateFilterPresentation(criteria, sorted.size());
+            if (focusResults && !sorted.isEmpty()) {
+                tableView.getSelectionModel().selectFirst();
+                tableView.requestFocus();
             }
-            var sorted = result.stream().sorted(Comparator.comparing(BaseTotals::getDate)).toList();
-            Platform.runLater(() -> {
-                observableList.setAll(sorted);
-                tableView.refresh();
-                sumTable();
-            });
         });
     }
 
-    private TotalsSearchCriteria buildCriteria() throws UserValidationException {
-        LocalDate from = dateFrom.getValue();
-        LocalDate to = dateTo.getValue();
-
-        Integer invoiceNumber = parseOptionalInt(textInvoiceNumber.getText(), LanguageManager.getInstance().getString("invoice.number"));
-        BigDecimal minTotal = parseOptionalDecimal(textMinTotal.getText(), LanguageManager.getInstance().getString("invoice.search.min.total"));
-        BigDecimal maxTotal = parseOptionalDecimal(textMaxTotal.getText(), LanguageManager.getInstance().getString("invoice.search.max.total"));
-
+    private TotalsSearchCriteria buildCriteria() throws TotalsFilterInput.InvalidFilterException {
         String partyName = selectedOrNull(comboName);
         String delegateName = dataInterface.designInterface().showDataForCustomer() ? selectedOrNull(comboDelegate) : null;
         String enteredBy = selectedOrNull(comboEnteredBy);
-        InvoiceType invoiceType = radioAll.isSelected() ? null : (radioCash.isSelected() ? InvoiceType.CASH : InvoiceType.DEFER);
-        String freeText = textSearch.getText() == null || textSearch.getText().isBlank() ? null : textSearch.getText().trim();
+        InvoiceType invoiceType = radioCash.isSelected()
+                ? InvoiceType.CASH
+                : (radioDeffer.isSelected() ? InvoiceType.DEFER : null);
 
-        return new TotalsSearchCriteria(from, to, invoiceNumber, partyName, delegateName, invoiceType, enteredBy, minTotal, maxTotal, freeText);
+        return new TotalsFilterInput(
+                dateFrom.getValue(),
+                dateTo.getValue(),
+                textInvoiceNumber.getText(),
+                partyName,
+                delegateName,
+                invoiceType,
+                enteredBy,
+                textMinTotal.getText(),
+                textMaxTotal.getText(),
+                textSearch.getText()).toCriteria();
     }
 
     /**
@@ -531,26 +548,168 @@ public class TotalsController<T3 extends BaseNames, T4 extends BaseAccount>
         return comboBox.getSelectionModel().getSelectedItem();
     }
 
-    private Integer parseOptionalInt(String text, String fieldName) throws UserValidationException {
-        if (text == null || text.isBlank()) return null;
+    private String filterErrorText(TotalsFilterInput.Problem problem) {
+        LanguageManager language = LanguageManager.getInstance();
+        return switch (problem) {
+            case DATE_REQUIRED -> language.getString("invoice.search.error.date.required");
+            case DATE_RANGE -> language.getString("invoice.search.error.date.range");
+            case INVOICE_NUMBER -> language.getString("invoice.search.error.invoice.number");
+            case MIN_TOTAL -> language.getString("invoice.search.error.min.total");
+            case MAX_TOTAL -> language.getString("invoice.search.error.max.total");
+            case TOTAL_RANGE -> language.getString("invoice.search.error.total.range");
+        };
+    }
+
+    private void setFilterPanelVisible(boolean visible) {
+        filterPane.setVisible(visible);
+        filterPane.setManaged(visible);
+        btnFilters.setSelected(visible);
+    }
+
+    private void clearFilters() {
+        syncingFilters = true;
         try {
-            return Integer.parseInt(text.trim());
-        } catch (NumberFormatException e) {
-            throw new UserValidationException(fieldName + ": " + LanguageManager.getInstance().getString("msg.invalid.number"));
+            textSearch.clear();
+            textInvoiceNumber.clear();
+            textMinTotal.clear();
+            textMaxTotal.clear();
+            dateFrom.setValue(DateSetting.firstDateInMonth);
+            dateTo.setValue(LocalDate.now());
+            comboName.getSelectionModel().selectFirst();
+            comboDelegate.getSelectionModel().selectFirst();
+            comboEnteredBy.getSelectionModel().selectFirst();
+            comboSavedFilters.getSelectionModel().clearSelection();
+            radioAll.setSelected(true);
+        } finally {
+            syncingFilters = false;
+        }
+        searchDelay.stop();
+        search(false);
+    }
+
+    // -------------------------------------------------------------------------
+    // Saved filters
+    // -------------------------------------------------------------------------
+
+    private void configureSavedFilters() {
+        reloadSavedFilters(null);
+        comboSavedFilters.valueProperty().addListener((observable, oldName, name) -> {
+            btnDeleteSavedFilter.setDisable(name == null);
+            if (syncingFilters || name == null) return;
+            TotalsSearchCriteria saved = savedFilters.get(name);
+            if (saved != null) applySavedFilter(saved);
+        });
+        btnDeleteSavedFilter.setDisable(comboSavedFilters.getValue() == null);
+    }
+
+    private void reloadSavedFilters(String selectedName) {
+        syncingFilters = true;
+        try {
+            comboSavedFilters.setItems(FXCollections.observableArrayList(savedFilters.names()));
+            if (selectedName != null && comboSavedFilters.getItems().contains(selectedName)) {
+                comboSavedFilters.setValue(selectedName);
+            } else {
+                comboSavedFilters.getSelectionModel().clearSelection();
+            }
+        } finally {
+            syncingFilters = false;
         }
     }
 
-    private BigDecimal parseOptionalDecimal(String text, String fieldName) throws UserValidationException {
-        if (text == null || text.isBlank()) return null;
+    private void saveCurrentFilter() {
+        TotalsSearchCriteria criteria;
         try {
-            return new BigDecimal(text.trim());
-        } catch (NumberFormatException e) {
-            throw new UserValidationException(fieldName + ": " + LanguageManager.getInstance().getString("msg.invalid.number"));
+            criteria = buildCriteria();
+        } catch (TotalsFilterInput.InvalidFilterException e) {
+            setFilterPanelVisible(true);
+            exceptionHandle(new UserValidationException(filterErrorText(e.problem())));
+            return;
         }
+
+        LanguageManager language = LanguageManager.getInstance();
+        TextInputDialog dialog = new TextInputDialog(comboSavedFilters.getValue());
+        dialog.setTitle(language.getString("invoice.search.saved.save.title"));
+        dialog.setHeaderText(null);
+        dialog.setContentText(language.getString("invoice.search.saved.save.prompt"));
+        Optional<String> answer = dialog.showAndWait();
+        if (answer.isEmpty() || answer.get().isBlank()) return;
+
+        String name = answer.get().trim();
+        if (name.length() > Preferences.MAX_KEY_LENGTH) {
+            exceptionHandle(new UserValidationException(
+                    language.getString("invoice.search.saved.name.too.long", Preferences.MAX_KEY_LENGTH)));
+            return;
+        }
+        savedFilters.save(name, criteria);
+        reloadSavedFilters(name);
+        btnDeleteSavedFilter.setDisable(false);
+    }
+
+    private void deleteSelectedFilter() {
+        String name = comboSavedFilters.getValue();
+        if (name == null) return;
+        savedFilters.delete(name);
+        reloadSavedFilters(null);
+        btnDeleteSavedFilter.setDisable(true);
+    }
+
+    private void applySavedFilter(TotalsSearchCriteria saved) {
+        // Keep the visible free-text lookup, just as the items screen does. A named
+        // filter is a standing question; the text is what the operator seeks inside it.
+        syncingFilters = true;
+        try {
+            dateFrom.setValue(saved.dateFrom());
+            dateTo.setValue(saved.dateTo());
+            textInvoiceNumber.setText(saved.invoiceNumber() == null ? "" : saved.invoiceNumber().toString());
+            textMinTotal.setText(decimalText(saved.minTotal()));
+            textMaxTotal.setText(decimalText(saved.maxTotal()));
+            selectExistingOrAll(comboName, saved.partyName());
+            selectExistingOrAll(comboDelegate, saved.delegateName());
+            selectExistingOrAll(comboEnteredBy, saved.enteredByUsername());
+            if (saved.invoiceType() == InvoiceType.CASH) {
+                radioCash.setSelected(true);
+            } else if (saved.invoiceType() == InvoiceType.DEFER) {
+                radioDeffer.setSelected(true);
+            } else {
+                radioAll.setSelected(true);
+            }
+        } finally {
+            syncingFilters = false;
+        }
+        setFilterPanelVisible(true);
+        search(false);
+    }
+
+    private static String decimalText(java.math.BigDecimal value) {
+        return value == null ? "" : value.toPlainString();
+    }
+
+    private static void selectExistingOrAll(ComboBox<String> combo, String value) {
+        if (value != null && combo.getItems().contains(value)) {
+            combo.getSelectionModel().select(value);
+        } else {
+            combo.getSelectionModel().selectFirst();
+        }
+    }
+
+    private void updateFilterPresentation(TotalsSearchCriteria criteria, int resultCount) {
+        LanguageManager language = LanguageManager.getInstance();
+        labelResults.setText(language.getString("invoice.search.results.count", resultCount));
+        labelDateRange.setText(language.getString("invoice.search.date.range",
+                criteria.dateFrom(), criteria.dateTo()));
+
+        int hiddenFilters = TotalsFilterInput.hiddenConditionCount(criteria);
+        boolean filtered = hiddenFilters > 0;
+        labelFiltered.setManaged(filtered);
+        labelFiltered.setVisible(filtered);
+        labelFiltered.setText(language.getString("invoice.search.filtered", hiddenFilters));
+        btnFilters.setText(filtered
+                ? language.getString("invoice.search.filters.count", hiddenFilters)
+                : language.getString("invoice.search.filters"));
     }
 
     private void addDataToComboName() {
-        List<String> list;
+        List<String> list = List.of();
         try {
             list = nameAndAccountInterface.nameList()
                     .stream()
@@ -558,7 +717,7 @@ public class TotalsController<T3 extends BaseNames, T4 extends BaseAccount>
                     .sorted()
                     .toList();
         } catch (Exception e) {
-            throw new RuntimeException(e);
+            log.error("Failed to load the party names for the totals filter", e);
         }
         comboName.setItems(FXCollections.observableArrayList(list));
         comboName.getItems().addFirst(LanguageManager.getInstance().getString("all"));
@@ -639,47 +798,30 @@ public class TotalsController<T3 extends BaseNames, T4 extends BaseAccount>
     }
 
     private void sumTable() {
-        BigDecimal total = getMoneySum(BaseTotals::getTotal);
-        BigDecimal discount = getMoneySum(BaseTotals::getDiscount);
-        BigDecimal afterDiscount = getMoneySum(BaseTotals::getTotal_after_discount);
-        BigDecimal paid = getMoneySum(BaseTotals::getPaid);
-        BigDecimal profit = getMoneySum(totalsDataInterface.getTotalProfit());
+        var profit = totalsDataInterface.getTotalProfit();
+        TotalsSummary summary = TotalsSummary.calculate(tableView.getItems(), row ->
+                new TotalsSummary.Amounts(
+                        row.getTotal(),
+                        row.getDiscount(),
+                        row.getTotal_after_discount(),
+                        row.getPaid(),
+                        profit.applyAsDouble(row)));
 
-        textSumTableSize.setText(String.valueOf(tableView.getItems().size()));
-        textSumTotals.setText(MoneyMath.text(total));
-        textSumDiscount.setText(MoneyMath.text(discount));
-        textSumAfterDiscount.setText(MoneyMath.text(afterDiscount));
-
-        textCash.setText(MoneyMath.text(paid));
-        textDeffer.setText(MoneyMath.text(MoneyMath.subtract(afterDiscount, paid)));
-        textProfit.setText(MoneyMath.text(profit));
+        textSumTableSize.setText(String.valueOf(summary.count()));
+        textSumTotals.setText(MoneyMath.text(summary.total()));
+        textSumDiscount.setText(MoneyMath.text(summary.discount()));
+        textSumAfterDiscount.setText(MoneyMath.text(summary.afterDiscount()));
+        textCash.setText(MoneyMath.text(summary.paid()));
+        textDeffer.setText(MoneyMath.text(summary.remaining()));
+        textProfit.setText(MoneyMath.text(summary.profit()));
     }
 
-    private BigDecimal getMoneySum(ToDoubleFunction<BaseTotals> valueFunction) {
-        return MoneyMath.sum(tableView.getItems().stream().mapToDouble(valueFunction));
+    private static void tip(Control control, String key) {
+        control.setTooltip(new Tooltip(LanguageManager.getInstance().getString(key)));
     }
 
     private void exceptionHandle(Exception e) {
         AllAlerts.handleError(LanguageManager.getInstance().getString("invoice.error.action.title"), e);
     }
 
-}
-
-@Log4j2
-class OpenMethod<T> {
-
-    public void methodData(TableView<T> tableView) throws Exception {
-        if (tableView.getSelectionModel().isEmpty()) {
-            throw new UserValidationException(LanguageManager.getInstance().getString("msg.select.row"));
-        }
-        try {
-            action(tableView.getSelectionModel().getSelectedItem());
-        } catch (Exception e) {
-            AllAlerts.handleError(LanguageManager.getInstance().getString("invoice.error.selected.action.title"), e);
-        }
-    }
-
-    public void action(T t) throws Exception {
-
-    }
 }

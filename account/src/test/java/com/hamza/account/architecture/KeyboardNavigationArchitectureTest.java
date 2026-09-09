@@ -58,7 +58,6 @@ class KeyboardNavigationArchitectureTest {
             "com/hamza/account/controller/convert_treasury/TreasuryCashController.java",
             "com/hamza/account/controller/convert_treasury/TreasuryController.java",
             "com/hamza/account/controller/convert_treasury/TreasuryTransferController.java",
-            "com/hamza/account/controller/invoice/TotalsController.java",
             "com/hamza/account/controller/items/StockCountController.java",
             "com/hamza/account/controller/items/StocksController.java",
             "com/hamza/account/controller/items/UpdateSomeItems.java",

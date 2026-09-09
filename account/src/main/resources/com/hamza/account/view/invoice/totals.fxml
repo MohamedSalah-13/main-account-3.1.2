@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<?import java.lang.String?>
 <?import javafx.geometry.Insets?>
 <?import javafx.scene.control.Button?>
 <?import javafx.scene.control.ComboBox?>
@@ -8,8 +7,6 @@
 <?import javafx.scene.control.Label?>
 <?import javafx.scene.control.MenuButton?>
 <?import javafx.scene.control.MenuItem?>
-<?import javafx.scene.control.RadioButton?>
-<?import javafx.scene.control.ScrollPane?>
 <?import javafx.scene.control.Separator?>
 <?import javafx.scene.control.TableView?>
 <?import javafx.scene.control.TextField?>
@@ -17,135 +14,251 @@
 <?import javafx.scene.control.ToggleGroup?>
 <?import javafx.scene.layout.BorderPane?>
 <?import javafx.scene.layout.ColumnConstraints?>
+<?import javafx.scene.layout.FlowPane?>
 <?import javafx.scene.layout.GridPane?>
 <?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Region?>
 <?import javafx.scene.layout.RowConstraints?>
 <?import javafx.scene.layout.StackPane?>
 <?import javafx.scene.layout.VBox?>
 <?import javafx.scene.text.Text?>
 
-<StackPane fx:id="stackPane" styleClass="app-root" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.hamza.account.controller.invoice.TotalsController">
+<!--
+  One screen serves sales, sales returns, purchases and purchase returns. The
+  controller gives the root a document identity class; this layout keeps the
+  structure common while CSS supplies the relevant accent.
+
+  The table owns scrolling. Search stays visible, while the less frequently used
+  conditions live in a managed/visible filter panel like the items catalogue.
+-->
+<StackPane fx:id="stackPane" styleClass="app-root" xmlns="http://javafx.com/javafx/21"
+           xmlns:fx="http://javafx.com/fxml/1"
+           fx:controller="com.hamza.account.controller.invoice.TotalsController">
     <children>
-        <ScrollPane fitToHeight="true" fitToWidth="true">
-            <content>
-                <BorderPane styleClass="app-container">
-                    <top>
-                        <HBox alignment="CENTER_LEFT" minHeight="-Infinity" minWidth="-Infinity" spacing="5.0" styleClass="app-card">
+        <BorderPane styleClass="app-container">
+            <top>
+                <VBox spacing="10.0">
+                    <children>
+                        <HBox alignment="CENTER_LEFT" spacing="10.0" styleClass="totals-header">
                             <children>
-                                <Label fx:id="labelScreenTitle" styleClass="totals-screen-title" />
-                                <Button fx:id="btnUpdate" mnemonicParsing="false" styleClass="app-neutral-button" text="Update" />
-                                <Button fx:id="btnDelete" mnemonicParsing="false" styleClass="app-neutral-button" text="Delete" />
-                                <Button fx:id="btnRefresh" mnemonicParsing="false" styleClass="app-neutral-button" text="Refresh" />
+                                <Label fx:id="labelScreenTitle" styleClass="app-title,totals-screen-title" />
+                                <Label fx:id="labelResults" styleClass="totals-count-badge" />
+                                <Label fx:id="labelFiltered" managed="false" styleClass="totals-filtered-badge"
+                                       visible="false" />
+                                <Region HBox.hgrow="ALWAYS" />
+                                <Label fx:id="labelDateRange" styleClass="app-subtitle,totals-date-range" />
+                            </children>
+                        </HBox>
+
+                        <HBox alignment="CENTER_LEFT" spacing="8.0" styleClass="app-card,totals-command-bar">
+                            <children>
+                                <Button fx:id="btnUpdate" mnemonicParsing="false" styleClass="warning-button"
+                                        text="%update" />
+                                <Button fx:id="btnDelete" mnemonicParsing="false" styleClass="danger-button"
+                                        text="%delete" />
+                                <Button fx:id="btnRefresh" mnemonicParsing="false" styleClass="icon-button" />
                                 <Separator orientation="VERTICAL" />
-                                <Button fx:id="btnShowInvoice" mnemonicParsing="false" styleClass="app-neutral-button" text="Show" />
-                                <ToggleButton fx:id="btnSelected" mnemonicParsing="false" styleClass="app-neutral-button" text="Select All" />
-                                <MenuButton fx:id="menuButton" mnemonicParsing="false" text="طباعة">
+                                <Button fx:id="btnShowInvoice" mnemonicParsing="false" styleClass="primary-button"
+                                        text="%show" />
+                                <ToggleButton fx:id="btnSelected" mnemonicParsing="false" styleClass="neutral-button"
+                                              text="%common.select.all" />
+                                <MenuButton fx:id="menuButton" mnemonicParsing="false" styleClass="modern-menu-button"
+                                            text="%print">
                                     <items>
-                                        <MenuItem fx:id="menuItemPrintTotals" mnemonicParsing="false" text="%invoice.btn.print.totals" />
-                                        <MenuItem fx:id="menuItemPrintDetailed" mnemonicParsing="false" text="%invoice.btn.print.detailed" />
+                                        <MenuItem fx:id="menuItemPrintTotals" mnemonicParsing="false"
+                                                  text="%invoice.btn.print.totals" />
+                                        <MenuItem fx:id="menuItemPrintDetailed" mnemonicParsing="false"
+                                                  text="%invoice.btn.print.detailed" />
                                     </items>
-                                    <styleClass>
-                                        <String fx:value="app-neutral-button" />
-                                        <String fx:value="menu-button" />
-                                    </styleClass>
                                 </MenuButton>
                             </children>
                         </HBox>
-                    </top>
-                    <bottom>
-                        <HBox alignment="CENTER_LEFT" spacing="10.0" styleClass="summary-bar" BorderPane.alignment="CENTER">
+
+                        <VBox spacing="10.0" styleClass="app-card,totals-search-card">
                             <children>
-                                <Label fx:id="labelSumTableSize" text="Sum Table" />
-                                <Text fx:id="textSumTableSize" strokeType="OUTSIDE" strokeWidth="0.0" styleClass="text-sum" text="0" />
-                                <Label fx:id="labelSumTotals" text="Totals" />
-                                <Text fx:id="textSumTotals" strokeType="OUTSIDE" strokeWidth="0.0" styleClass="text-sum" text="0" />
-                                <Label fx:id="labelSumDiscount" text="Discount" />
-                                <Text fx:id="textSumDiscount" strokeType="OUTSIDE" strokeWidth="0.0" styleClass="text-sum" text="0" />
-                                <Label fx:id="labelSumAfterDiscount" text="After Discount" />
-                                <Text fx:id="textSumAfterDiscount" strokeType="OUTSIDE" strokeWidth="0.0" styleClass="text-sum" text="0" />
-                                <Label fx:id="labelSumAfterDiscount1" text="%paid" />
-                                <Text fx:id="textCash" strokeType="OUTSIDE" strokeWidth="0.0" styleClass="text-sum" text="0" />
-                                <Label fx:id="labelSumAfterDiscount11" text="%invoice.summary.remaining" />
-                                <Text fx:id="textDeffer" strokeType="OUTSIDE" strokeWidth="0.0" styleClass="text-sum" text="0" />
-                                <Label fx:id="labelSumAfterDiscount111" layoutX="389.0" layoutY="10.0" text="%common.profit" />
-                                <Text fx:id="textProfit" layoutX="423.0" layoutY="24.0" strokeType="OUTSIDE" strokeWidth="0.0" styleClass="text-sum" text="0" />
-                            </children>
-                        </HBox>
-                    </bottom>
-                    <center>
-                        <VBox spacing="5.0">
-                            <children>
-                                <VBox spacing="10.0" styleClass="app-card">
+                                <HBox alignment="CENTER_LEFT" spacing="8.0" styleClass="totals-search-bar">
                                     <children>
-                                        <GridPane fx:id="gridPane" hgap="10.0" minHeight="-Infinity" minWidth="-Infinity" vgap="10.0">
+                                        <Label fx:id="searchIcon" styleClass="totals-search-icon" />
+                                        <TextField fx:id="textSearch" promptText="%invoice.search.free.text.prompt"
+                                                   HBox.hgrow="ALWAYS" />
+                                        <ToggleButton fx:id="btnFilters" mnemonicParsing="false"
+                                                      styleClass="neutral-button" text="%invoice.search.filters" />
+                                        <Button fx:id="btnClearFilters" mnemonicParsing="false"
+                                                styleClass="neutral-button" text="%invoice.search.clear" />
+                                        <Button fx:id="btnSearch" mnemonicParsing="false" styleClass="primary-button"
+                                                text="%search" />
+                                    </children>
+                                </HBox>
+
+                                <VBox fx:id="filterPane" managed="false" spacing="10.0" visible="false">
+                                    <children>
+                                        <Separator />
+                                        <Label styleClass="section-title" text="%invoice.search.section.filters" />
+                                        <GridPane hgap="10.0" vgap="8.0">
                                             <columnConstraints>
-                                                <ColumnConstraints hgrow="SOMETIMES" maxWidth="-Infinity" minWidth="10.0" />
-                                                <ColumnConstraints hgrow="SOMETIMES" maxWidth="-Infinity" minWidth="10.0" />
-                                                <ColumnConstraints hgrow="SOMETIMES" maxWidth="-Infinity" minWidth="10.0" />
-                                                <ColumnConstraints hgrow="SOMETIMES" maxWidth="-Infinity" minWidth="10.0" />
+                                                <ColumnConstraints minWidth="90.0" />
+                                                <ColumnConstraints hgrow="ALWAYS" minWidth="150.0" />
+                                                <ColumnConstraints minWidth="90.0" />
+                                                <ColumnConstraints hgrow="ALWAYS" minWidth="150.0" />
                                             </columnConstraints>
                                             <rowConstraints>
-                                                <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
-                                                <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
-                                                <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
-                                                <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
+                                                <RowConstraints />
+                                                <RowConstraints />
+                                                <RowConstraints />
+                                                <RowConstraints />
                                             </rowConstraints>
                                             <children>
-                                                <Label fx:id="labelName" styleClass="form-label" text="Name" />
-                                                <ComboBox fx:id="comboName" maxWidth="1.7976931348623157E308" GridPane.columnIndex="1" />
-                                                <Label fx:id="labelDelegate" styleClass="form-label" text="Delegate" GridPane.columnIndex="2" />
-                                                <ComboBox fx:id="comboDelegate" maxWidth="1.7976931348623157E308" GridPane.columnIndex="3" />
+                                                <Label styleClass="form-label" text="%from"
+                                                       GridPane.columnIndex="0" GridPane.rowIndex="0" />
+                                                <DatePicker fx:id="dateFrom" editable="false" maxWidth="1.7976931348623157E308"
+                                                            GridPane.columnIndex="1" GridPane.rowIndex="0" />
+                                                <Label styleClass="form-label" text="%to"
+                                                       GridPane.columnIndex="2" GridPane.rowIndex="0" />
+                                                <DatePicker fx:id="dateTo" editable="false" maxWidth="1.7976931348623157E308"
+                                                            GridPane.columnIndex="3" GridPane.rowIndex="0" />
 
-                                                <Label fx:id="labelFrom" styleClass="form-label" text="From" GridPane.rowIndex="1" />
-                                                <DatePicker fx:id="dateFrom" editable="false" maxWidth="1.7976931348623157E308" GridPane.columnIndex="1" GridPane.rowIndex="1" />
-                                                <Label fx:id="labelTo" styleClass="form-label" text="To" GridPane.columnIndex="2" GridPane.rowIndex="1" />
-                                                <DatePicker fx:id="dateTo" editable="false" maxWidth="1.7976931348623157E308" GridPane.columnIndex="3" GridPane.rowIndex="1" />
+                                                <Label styleClass="form-label" text="%name"
+                                                       GridPane.columnIndex="0" GridPane.rowIndex="1" />
+                                                <ComboBox fx:id="comboName" maxWidth="1.7976931348623157E308"
+                                                          promptText="%name" GridPane.columnIndex="1" GridPane.rowIndex="1" />
+                                                <Label fx:id="labelDelegate" styleClass="form-label" text="%NAME_DELEGATE"
+                                                       GridPane.columnIndex="2" GridPane.rowIndex="1" />
+                                                <ComboBox fx:id="comboDelegate" maxWidth="1.7976931348623157E308"
+                                                          promptText="%NAME_DELEGATE" GridPane.columnIndex="3"
+                                                          GridPane.rowIndex="1" />
 
-                                                <Label fx:id="labelEnteredBy" styleClass="form-label" text="Entered By" GridPane.rowIndex="2" />
-                                                <ComboBox fx:id="comboEnteredBy" maxWidth="1.7976931348623157E308" GridPane.columnIndex="1" GridPane.rowIndex="2" />
-                                                <Label fx:id="labelInvoiceNumber" styleClass="form-label" text="Invoice Number" GridPane.columnIndex="2" GridPane.rowIndex="2" />
-                                                <TextField fx:id="textInvoiceNumber" maxWidth="1.7976931348623157E308" GridPane.columnIndex="3" GridPane.rowIndex="2" />
+                                                <Label styleClass="form-label" text="%invoice.search.entered.by"
+                                                       GridPane.columnIndex="0" GridPane.rowIndex="2" />
+                                                <ComboBox fx:id="comboEnteredBy" maxWidth="1.7976931348623157E308"
+                                                          promptText="%invoice.search.entered.by" GridPane.columnIndex="1"
+                                                          GridPane.rowIndex="2" />
+                                                <Label styleClass="form-label" text="%invoice.number"
+                                                       GridPane.columnIndex="2" GridPane.rowIndex="2" />
+                                                <TextField fx:id="textInvoiceNumber" maxWidth="1.7976931348623157E308"
+                                                           promptText="%invoice.number" GridPane.columnIndex="3"
+                                                           GridPane.rowIndex="2" />
 
-                                                <Label fx:id="labelMinTotal" styleClass="form-label" text="Min Total" GridPane.rowIndex="3" />
-                                                <TextField fx:id="textMinTotal" maxWidth="1.7976931348623157E308" GridPane.columnIndex="1" GridPane.rowIndex="3" />
-                                                <Label fx:id="labelMaxTotal" styleClass="form-label" text="Max Total" GridPane.columnIndex="2" GridPane.rowIndex="3" />
-                                                <TextField fx:id="textMaxTotal" maxWidth="1.7976931348623157E308" GridPane.columnIndex="3" GridPane.rowIndex="3" />
+                                                <Label styleClass="form-label" text="%invoice.search.min.total"
+                                                       GridPane.columnIndex="0" GridPane.rowIndex="3" />
+                                                <TextField fx:id="textMinTotal" maxWidth="1.7976931348623157E308"
+                                                           promptText="%invoice.search.min.total" GridPane.columnIndex="1"
+                                                           GridPane.rowIndex="3" />
+                                                <Label styleClass="form-label" text="%invoice.search.max.total"
+                                                       GridPane.columnIndex="2" GridPane.rowIndex="3" />
+                                                <TextField fx:id="textMaxTotal" maxWidth="1.7976931348623157E308"
+                                                           promptText="%invoice.search.max.total" GridPane.columnIndex="3"
+                                                           GridPane.rowIndex="3" />
                                             </children>
                                         </GridPane>
-                                        <HBox alignment="CENTER_LEFT" spacing="10.0">
+
+                                        <HBox alignment="CENTER_LEFT" spacing="8.0">
                                             <children>
-                                                <HBox alignment="CENTER_LEFT" spacing="5.0">
+                                                <Label styleClass="form-label" text="%invoice.search.payment.type" />
+                                                <HBox alignment="CENTER_LEFT" spacing="0.0"
+                                                      styleClass="totals-payment-segmented">
                                                     <children>
-                                                        <RadioButton fx:id="radioAll" mnemonicParsing="false" selected="true" text="%all">
+                                                        <ToggleButton fx:id="radioAll" mnemonicParsing="false" selected="true"
+                                                                      styleClass="totals-payment-segment" text="%all">
                                                             <toggleGroup>
-                                                                <ToggleGroup fx:id="group" />
+                                                                <ToggleGroup fx:id="paymentGroup" />
                                                             </toggleGroup>
-                                                        </RadioButton>
-                                                        <RadioButton fx:id="radioCash" mnemonicParsing="false" text="%invoice.totals.radio.cash" toggleGroup="$group" />
-                                                        <RadioButton fx:id="radioDeffer" mnemonicParsing="false" text="%defer" toggleGroup="$group" />
+                                                        </ToggleButton>
+                                                        <ToggleButton fx:id="radioCash" mnemonicParsing="false"
+                                                                      styleClass="totals-payment-segment"
+                                                                      text="%invoice.totals.radio.cash"
+                                                                      toggleGroup="$paymentGroup" />
+                                                        <ToggleButton fx:id="radioDeffer" mnemonicParsing="false"
+                                                                      styleClass="totals-payment-segment" text="%defer"
+                                                                      toggleGroup="$paymentGroup" />
                                                     </children>
                                                 </HBox>
-                                                <Separator orientation="VERTICAL" />
-                                                <Label fx:id="labelTextSearch" styleClass="form-label" text="Search" />
-                                                <TextField fx:id="textSearch" promptText="Search" HBox.hgrow="ALWAYS" />
-                                                <Button fx:id="btnSearch" minWidth="-Infinity" mnemonicParsing="false" styleClass="app-neutral-button" text="Search" />
                                             </children>
-                                            <padding>
-                                                <Insets bottom="5.0" />
-                                            </padding>
+                                        </HBox>
+
+                                        <HBox alignment="CENTER_LEFT" spacing="8.0"
+                                              styleClass="totals-saved-filters-row">
+                                            <children>
+                                                <Label styleClass="form-label"
+                                                       text="%invoice.search.saved.label" />
+                                                <ComboBox fx:id="comboSavedFilters"
+                                                          maxWidth="1.7976931348623157E308"
+                                                          promptText="%invoice.search.saved.none"
+                                                          HBox.hgrow="ALWAYS" />
+                                                <Button fx:id="btnSaveFilter" mnemonicParsing="false"
+                                                        styleClass="neutral-button"
+                                                        text="%invoice.search.saved.save" />
+                                                <Button fx:id="btnDeleteSavedFilter" mnemonicParsing="false"
+                                                        styleClass="danger-button"
+                                                        text="%invoice.search.saved.delete" />
+                                            </children>
                                         </HBox>
                                     </children>
-                                    <padding>
-                                        <Insets bottom="10.0" left="10.0" right="10.0" top="10.0" />
-                                    </padding>
                                 </VBox>
-                                <TableView fx:id="tableView" minHeight="-Infinity" minWidth="-Infinity" prefHeight="350.0" styleClass="app-table" VBox.vgrow="SOMETIMES">
-                                </TableView>
                             </children>
                         </VBox>
-                    </center>
-                </BorderPane>
-            </content>
-        </ScrollPane>
+                    </children>
+                    <BorderPane.margin>
+                        <Insets bottom="10.0" />
+                    </BorderPane.margin>
+                </VBox>
+            </top>
+
+            <center>
+                <TableView fx:id="tableView" styleClass="app-table,totals-table" />
+            </center>
+
+            <bottom>
+                <FlowPane alignment="CENTER" hgap="8.0" prefWrapLength="900.0" vgap="8.0"
+                          styleClass="summary-bar,totals-summary-bar">
+                    <children>
+                        <VBox alignment="CENTER" styleClass="totals-summary-item">
+                            <children>
+                                <Label text="%count" />
+                                <Text fx:id="textSumTableSize" styleClass="text-sum" text="0" />
+                            </children>
+                        </VBox>
+                        <VBox alignment="CENTER" styleClass="totals-summary-item">
+                            <children>
+                                <Label text="%total" />
+                                <Text fx:id="textSumTotals" styleClass="text-sum" text="0" />
+                            </children>
+                        </VBox>
+                        <VBox alignment="CENTER" styleClass="totals-summary-item">
+                            <children>
+                                <Label text="%discount" />
+                                <Text fx:id="textSumDiscount" styleClass="text-sum" text="0" />
+                            </children>
+                        </VBox>
+                        <VBox alignment="CENTER" styleClass="totals-summary-item">
+                            <children>
+                                <Label text="%invoice.total.after.discount" />
+                                <Text fx:id="textSumAfterDiscount" styleClass="text-sum" text="0" />
+                            </children>
+                        </VBox>
+                        <VBox alignment="CENTER" styleClass="totals-summary-item">
+                            <children>
+                                <Label text="%paid" />
+                                <Text fx:id="textCash" styleClass="text-sum" text="0" />
+                            </children>
+                        </VBox>
+                        <VBox alignment="CENTER" styleClass="totals-summary-item">
+                            <children>
+                                <Label text="%invoice.summary.remaining" />
+                                <Text fx:id="textDeffer" styleClass="text-sum" text="0" />
+                            </children>
+                        </VBox>
+                        <VBox alignment="CENTER" styleClass="totals-summary-item">
+                            <children>
+                                <Label text="%common.profit" />
+                                <Text fx:id="textProfit" styleClass="text-sum" text="0" />
+                            </children>
+                        </VBox>
+                    </children>
+                    <BorderPane.margin>
+                        <Insets top="10.0" />
+                    </BorderPane.margin>
+                </FlowPane>
+            </bottom>
+        </BorderPane>
     </children>
 </StackPane>
