@@ -287,6 +287,12 @@ public class TotalsController<T3 extends BaseNames, T4 extends BaseAccount>
         textInvoiceNumber.setTextFormatter(TextFormat.createNumericTextFormatter());
         textMinTotal.setTextFormatter(new TextFormatter<>(TextFormat.TEXT_FORMATTER_FILTER));
         textMaxTotal.setTextFormatter(new TextFormatter<>(TextFormat.TEXT_FORMATTER_FILTER));
+        // Digits only, and the same digits PageJump reads - not the general numeric filter,
+        // which allows a leading '+' the parser refuses and rejects the Arabic-Indic digits
+        // it accepts. A box you can type into that quietly does nothing is worse than one
+        // that will not take the character.
+        textPage.setTextFormatter(new TextFormatter<>(change ->
+                PageJump.isTypablePageText(change.getControlNewText()) ? change : null));
     }
 
     /**

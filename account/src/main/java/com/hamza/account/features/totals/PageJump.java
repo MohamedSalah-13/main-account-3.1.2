@@ -17,6 +17,9 @@ import java.util.OptionalInt;
  */
 public final class PageJump {
 
+    /** More than a page number can ever need, and short of overflowing a parse. */
+    private static final int MAX_DIGITS = 9;
+
     private PageJump() {
     }
 
@@ -42,22 +45,46 @@ public final class PageJump {
     }
 
     /**
+     * Whether a page field may hold this text <em>while it is being typed</em>.
+     *
+     * <p>Deliberately here, beside the parser, and not in the general text filters: what a
+     * page box accepts and what {@link #targetPage} understands have to be the same
+     * alphabet. A filter that let through something the parser refuses gives a field you
+     * can type into that quietly does nothing; one that blocked something the parser
+     * accepts would refuse the Arabic-Indic digits an Arabic keyboard actually produces.
+     * One definition, used by both.</p>
+     *
+     * <p>Empty is allowed: a field has to be clearable on the way to a different number.</p>
+     */
+    public static boolean isTypablePageText(String candidate) {
+        if (candidate == null || candidate.isEmpty()) return true;
+        if (candidate.length() > MAX_DIGITS) return false;
+        for (char character : candidate.toCharArray()) {
+            if (digitValue(character) < 0) return false;
+        }
+        return true;
+    }
+
+    /**
      * Arabic-Indic digits are what an Arabic keyboard produces, and they are the same
      * numbers - typing ٥ into a page box has to mean page five.
      */
     private static String normalize(String typed) {
         StringBuilder digits = new StringBuilder(typed.length());
         for (char character : typed.trim().toCharArray()) {
-            if (character >= '٠' && character <= '٩') {          // ٠-٩
-                digits.append((char) ('0' + character - '٠'));
-            } else if (character >= '۰' && character <= '۹') {   // ۰-۹ (extended)
-                digits.append((char) ('0' + character - '۰'));
-            } else if (Character.isDigit(character)) {
-                digits.append(character);
-            } else if (!Character.isWhitespace(character)) {
-                return "";                                                 // not a number
-            }
+            if (Character.isWhitespace(character)) continue;
+            int value = digitValue(character);
+            if (value < 0) return "";                                      // not a number
+            digits.append((char) ('0' + value));
         }
         return digits.toString();
+    }
+
+    /** The value of a digit in any of the three scripts a keyboard here produces, else -1. */
+    private static int digitValue(char character) {
+        if (character >= '0' && character <= '9') return character - '0';
+        if (character >= '٠' && character <= '٩') return character - '٠';   // ٠-٩
+        if (character >= '۰' && character <= '۹') return character - '۰';   // ۰-۹ extended
+        return -1;
     }
 }
