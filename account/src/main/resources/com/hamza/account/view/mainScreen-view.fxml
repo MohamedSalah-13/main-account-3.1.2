@@ -114,7 +114,7 @@
                                                                 <Button fx:id="btnStockCount" mnemonicParsing="false" text="Stock Count" />
                                                                 <Button fx:id="btnStocks" mnemonicParsing="false" text="%stocks.title" />
                                                                 <Button fx:id="btnStockTransfers" mnemonicParsing="false" text="%setting.store.transfers" />
-                                                                <Button fx:id="btnMergeItems" mnemonicParsing="false" text="Merge Items" />
+                                                                <Button fx:id="btnMergeItems" mnemonicParsing="false" text="%item.merge.title" />
                                                                 <Button fx:id="btnPriceCheck" mnemonicParsing="false" text="%pricecheck.title" />
                                                             </children>
                                                         </VBox>

@@ -215,8 +215,9 @@ Two documents govern work here and are kept current — read them before large c
 `Main` → `DownLoadApplication`. Its **`start(Stage)`** does the wiring in order, on a background
 `Task` named `application-bootstrap` behind a loading screen — not in a constructor, and not on the
 JavaFX thread: read and decrypt `config.xml`,
-initialise the Hikari pool, verify the database is reachable, run the trial/licence check, then register
-every service in `ServiceRegistry`. `LogApplication` (login) opens from `start()`.
+initialise the Hikari pool, verify the database is reachable, run Flyway, run the trial/licence check,
+load and verify the signed product profile, then register every service in `ServiceRegistry`.
+`LogApplication` (login) opens from `start()`.
 
 `ServiceRegistry` is a static `Map<Class<?>, Object>` service locator — there is no DI framework.
 Controllers pull collaborators with `ServiceRegistry.get(SomeService.class)`, which returns null if
@@ -338,6 +339,21 @@ read-only legacy evidence — nothing reads it for decisions.
 `CurrentUser.get()/getOrNull()` reads the signed-in user from `UserSessionContext` in `ServiceRegistry`.
 It is **process-wide**, which is correct for a desktop app and is one of the things that has to change
 before anything is served over a network — see `docs/new-code-rules.md`.
+
+### Product profiles
+
+The product profile is independent of authorization. RBAC answers who may use a capability;
+`ProductFeatureAccess` answers whether that capability exists in this customer's edition at all.
+An absent product feature is hidden/unmanaged (so it owns no shortcut) and is also guarded at the
+service or screen-opening boundary. A present feature can still be disabled by ordinary permissions.
+
+`ProductFeatureCatalog` is the one declarative inventory used by both runtime and the standalone
+`AccountK-Product-Setup` launcher. Profiles use the release RSA public key, are stored as the original
+signed envelope in the singleton `product_profile` row, and are copied into
+`product_profile_history` on every apply. A database with no row is deliberately `LEGACY_FULL`, so
+installing the migration cannot remove screens from an existing customer. The private key is selected
+by the technician for one signing operation and must never be stored or shipped. See
+`docs/product-profile.md` for the operating workflow and extension rule.
 
 ### Users, sign-in and support recovery
 
@@ -1323,13 +1339,16 @@ that before adding a path, and never relax it.
 ## Database schema
 
 Schema changes are **Flyway migrations**, in `account/src/main/resources/db/migration/`, applied by
-`DatabaseMigrationService` from the `DownLoadApplication` constructor before anything touches the DAOs.
+`DatabaseMigrationService` from the background startup task before anything touches the DAOs.
 
 - `V1__baseline.sql` is the schema as shipped to clients in v4.1.3 — tables, indexes, procedures and the
   seed data (including the `admin` user, without which nobody can log in). It is the Flyway baseline: an
   existing client database is **stamped** with it, never executed, because it already is that schema. A
-  new database executes it and continues with `V2`, `V3`, … The current head is `V49`: V49 adds the
-  audit-administration export permission and the direct-source activity index. V48 adds the
+  new database executes it and continues with `V2`, `V3`, … The current head is `V54`: V54 adds the
+  signed singleton product profile and its append-only application history. V53 corrects opening
+  shift baselines, V52 adds stock-count variance settlement, V51 adds stock counts, and V50 adds
+  treasury statement support. V49 adds the audit-administration export permission and the
+  direct-source activity index. V48 adds the
   administration-browser permission and its secondary query indexes. V47 adds the immutable
   audit-administration journal, safe-disabled retention settings, and the dedicated export and retention
   permissions. V46 preserves audit actor/workstation snapshots, adds the time-range indexes

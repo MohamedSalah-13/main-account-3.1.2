@@ -7,6 +7,8 @@ import com.hamza.account.delete.DeletionService;
 import com.hamza.account.features.rbac.CurrentUser;
 import com.hamza.account.features.events.ChangeAnnouncer;
 import com.hamza.account.features.events.ItemsChanged;
+import com.hamza.account.features.productprofile.ProductFeatureAccess;
+import com.hamza.account.features.productprofile.ProductFeatures;
 import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.model.domain.Users;
 import com.hamza.account.period.PeriodLock;
@@ -49,7 +51,7 @@ import java.util.Map;
  * correct as, and the reason the source is deleted through {@link DeletionService}
  * rather than by a {@code DELETE} of its own.
  */
-public record ItemMergeService(DaoFactory daoFactory) {
+public record ItemMergeService(DaoFactory daoFactory, ProductFeatureAccess productFeatures) {
 
     private ItemMergeDao dao() {
         return daoFactory.itemMergeDao();
@@ -62,6 +64,7 @@ public record ItemMergeService(DaoFactory daoFactory) {
      * user's judgement, and the screen exists to put the likely pairs in front of them.
      */
     public List<ItemMergeCandidate> candidates(MergeGroupBy groupBy, int limit) throws DaoException {
+        productFeatures.require(ProductFeatures.ITEMS_MERGE);
         AuthorizationGuard.require(AppPermissions.ITEMS_MERGE);
         return dao().candidates(groupBy, limit);
     }
@@ -73,6 +76,7 @@ public record ItemMergeService(DaoFactory daoFactory) {
      * it is still showing a preview rather than when the user presses the button.
      */
     public ItemMergePreview preview(int sourceId, int targetId) throws DaoException {
+        productFeatures.require(ProductFeatures.ITEMS_MERGE);
         AuthorizationGuard.require(AppPermissions.ITEMS_MERGE);
         MergeItem source = require(sourceId);
         MergeItem target = require(targetId);
@@ -97,6 +101,7 @@ public record ItemMergeService(DaoFactory daoFactory) {
         // so holding only 'items.merge' must not become a way to delete items without
         // 'items.delete' - and finding that out from DeletionService at the very end
         // would throw away every move it had already made.
+        productFeatures.require(ProductFeatures.ITEMS_MERGE);
         AuthorizationGuard.require(AppPermissions.ITEMS_MERGE);
         AuthorizationGuard.require(AppPermissions.ITEMS_DELETE);
 

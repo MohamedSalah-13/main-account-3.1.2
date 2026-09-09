@@ -13,6 +13,9 @@ import com.hamza.account.features.events.CompanyChanged;
 import com.hamza.account.features.events.LanguageChanged;
 import com.hamza.account.features.events.UserRenamed;
 import com.hamza.account.features.notification.NotificationBootstrap;
+import com.hamza.account.features.productprofile.FeatureKey;
+import com.hamza.account.features.productprofile.ProductFeatureAccess;
+import com.hamza.account.features.productprofile.ProductFeatures;
 import com.hamza.account.features.rbac.CurrentUser;
 import com.hamza.account.features.shortcuts.SidebarShortcut;
 import com.hamza.account.features.shortcuts.SidebarShortcutManager;
@@ -33,6 +36,7 @@ import javafx.application.Platform;
 import javafx.collections.ListChangeListener;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
+import javafx.scene.Node;
 import javafx.scene.control.*;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
@@ -45,6 +49,7 @@ import java.io.FileInputStream;
 import java.net.URI;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.EnumMap;
 import java.util.Map;
 import java.util.ResourceBundle;
 
@@ -55,6 +60,7 @@ import static com.hamza.controlsfx.language.Setting_Language.*;
 public class MainScreenController extends MainItems implements Initializable {
 
     private final EventBus eventBus = ServiceRegistry.get(EventBus.class);
+    private final ProductFeatureAccess productFeatures = ServiceRegistry.get(ProductFeatureAccess.class);
     private final Subscriptions subscriptions = new Subscriptions();
     public Pane mainPane;
     @FXML
@@ -284,8 +290,21 @@ public class MainScreenController extends MainItems implements Initializable {
         // Every signed-in user may log out, regardless of what other permissions they hold.
         menuItemLogout.setDisable(false);
 
+        applyProductProfileVisibility();
         dontShowData();
         configureSidebarShortcuts();
+    }
+
+    /** Product-absent commands disappear; permission-denied commands remain visible and disabled. */
+    private void applyProductProfileVisibility() {
+        showFeature(btnMergeItems, ProductFeatures.ITEMS_MERGE);
+        showFeature(btnPriceCheck, ProductFeatures.ITEMS_PRICE_CHECK);
+    }
+
+    private void showFeature(Node node, FeatureKey feature) {
+        boolean available = productFeatures != null && productFeatures.isEnabled(feature);
+        node.setVisible(available);
+        node.setManaged(available);
     }
 
     private void setupShiftPolicyVisibility() {
@@ -305,7 +324,7 @@ public class MainScreenController extends MainItems implements Initializable {
     }
 
     private void configureSidebarShortcuts() {
-        Map<SidebarShortcut, Button> shortcuts = Map.ofEntries(
+        Map<SidebarShortcut, Button> allShortcuts = Map.ofEntries(
                 Map.entry(SidebarShortcut.SALES, btnSales), Map.entry(SidebarShortcut.SALES_RETURN, btnSalesReturn), Map.entry(SidebarShortcut.TOTAL_SALES, btnTotalSale), Map.entry(SidebarShortcut.TOTAL_SALES_RETURN, btnTotalSalesReturn),
                 Map.entry(SidebarShortcut.PURCHASE, btnPurchase), Map.entry(SidebarShortcut.PURCHASE_RETURN, btnPurchaseRe), Map.entry(SidebarShortcut.TOTAL_PURCHASE, btnTotalPurchase), Map.entry(SidebarShortcut.TOTAL_PURCHASE_RETURN, btnTotalPurchaseRe),
                 Map.entry(SidebarShortcut.ITEMS, btnItems), Map.entry(SidebarShortcut.ITEM_GROUPS, btnItemGroups), Map.entry(SidebarShortcut.ADD_ITEM, btnAddItem), Map.entry(SidebarShortcut.MASTER_DATA, btnMasterData), Map.entry(SidebarShortcut.INVENTORY, btnInventory), Map.entry(SidebarShortcut.STOCK_COUNT, btnStockCount), Map.entry(SidebarShortcut.STOCKS, btnStocks), Map.entry(SidebarShortcut.STOCK_TRANSFERS, btnStockTransfers), Map.entry(SidebarShortcut.MERGE_ITEMS, btnMergeItems), Map.entry(SidebarShortcut.PRICE_CHECK, btnPriceCheck),
@@ -315,6 +334,10 @@ public class MainScreenController extends MainItems implements Initializable {
                 Map.entry(SidebarShortcut.TREASURIES, btnTreasuries), Map.entry(SidebarShortcut.TREASURY_CASH, btnTreasuryCash), Map.entry(SidebarShortcut.TREASURY_TRANSFER, btnTreasuryTransfer), Map.entry(SidebarShortcut.TREASURY_CAPITAL, btnTreasuryCapital), Map.entry(SidebarShortcut.TREASURY_DETAILS, btnTreasuryDetails), Map.entry(SidebarShortcut.TREASURY_PROCESS, btnProcess), Map.entry(SidebarShortcut.EXPENSES, btnExpenses),
                 Map.entry(SidebarShortcut.REPORT_SUMMARY, btnReportSummary), Map.entry(SidebarShortcut.REPORT_ITEMS, btnReportItems), Map.entry(SidebarShortcut.REPORT_ITEMS_DAILY, btnReportItemsDaily), Map.entry(SidebarShortcut.REPORT_SALES_YEAR, btnReportSalesByYear), Map.entry(SidebarShortcut.REPORT_PURCHASE_YEAR, btnReportPurchaseByYear), Map.entry(SidebarShortcut.REPORT_CUSTOMER_PAID, btnReportCustomPaid), Map.entry(SidebarShortcut.REPORT_SUPPLIER_PAID, btnReportSuppliersPaid), Map.entry(SidebarShortcut.REPORT_DETAILS, btnReportDetails), Map.entry(SidebarShortcut.REPORT_YEARLY, btnReportYearly), Map.entry(SidebarShortcut.REPORT_PROFIT_LOSS, btnReportProfitLoss), Map.entry(SidebarShortcut.REPORT_RETURN_REASONS, btnReportReturnReasons),
                 Map.entry(SidebarShortcut.HOME, btnHome), Map.entry(SidebarShortcut.SETTINGS, btnSetting), Map.entry(SidebarShortcut.SHIFT_REPORTS, btnShiftReports), Map.entry(SidebarShortcut.BACKUP, btnBackup), Map.entry(SidebarShortcut.DELETE_DATA, btnDeleteData), Map.entry(SidebarShortcut.ABOUT, btnAbout), Map.entry(SidebarShortcut.CLOSE, btnClose), Map.entry(SidebarShortcut.YOUTUBE, btnYouTube));
+        Map<SidebarShortcut, Button> shortcuts = new EnumMap<>(SidebarShortcut.class);
+        allShortcuts.forEach((shortcut, button) -> {
+            if (button.isVisible() && button.isManaged()) shortcuts.put(shortcut, button);
+        });
         if (mainContentBox.getScene() != null) {
             SidebarShortcutManager.install(mainContentBox.getScene(), shortcuts);
         } else {

@@ -131,6 +131,7 @@ module com.hamza.account {
     exports com.hamza.account.controller.pricecheck;
     opens com.hamza.account.controller.pricecheck to javafx.fxml;
     opens com.hamza.account.controller.dbsetup to javafx.fxml;
+    opens com.hamza.account.controller.productprofile to javafx.fxml;
     opens com.hamza.account.table;
     exports com.hamza.account.view.barcode;
     opens com.hamza.account.view.barcode to javafx.fxml;

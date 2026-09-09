@@ -10,9 +10,9 @@ import java.util.Base64;
 /**
  * The one public key this build trusts, and the one way it checks a signature.
  *
- * <p>It was {@code TrialManager.LICENSE_PUBLIC_KEY_PEM}, and it is here because a second
- * feature now needs it - support recovery. A key copied into two files is a key that gets
- * rotated in one of them.
+ * <p>It was {@code TrialManager.LICENSE_PUBLIC_KEY_PEM}, and it is here because support
+ * recovery and signed product profiles also need it. A key copied into several files is a
+ * key that gets rotated in only one of them.
  *
  * <p>The private half is not in this repository and must never be: it lives with whoever
  * issues licences. That is the whole property support recovery is built on - a machine can
@@ -21,7 +21,7 @@ import java.util.Base64;
  */
 public final class ReleaseSigningKey {
 
-    /** RSA public key; the licence and the recovery response are both SHA256withRSA over it. */
+    /** RSA public key shared by licences, recovery responses and product profiles. */
     public static final String PEM =
             "-----BEGIN PUBLIC KEY-----\n"
                     + "MIIBojANBgkqhkiG9w0BAQEFAAOCAY8AMIIBigKCAYEA0hpbyW7GN3reweG/Pp/7\n"

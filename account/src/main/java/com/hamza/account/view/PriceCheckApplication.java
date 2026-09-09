@@ -6,6 +6,8 @@ import com.hamza.account.controller.pricecheck.PriceCheckController;
 import com.hamza.account.controller.pricecheck.PriceCheckSetupDialog;
 import com.hamza.account.features.pricecheck.PriceCheckService;
 import com.hamza.account.features.pricecheck.PriceCheckSettings;
+import com.hamza.account.features.productprofile.ProductFeatureAccess;
+import com.hamza.account.features.productprofile.ProductFeatures;
 import com.hamza.account.features.rbac.CurrentUser;
 import com.hamza.account.model.domain.Users;
 import com.hamza.account.openFxml.OpenFxmlApplication;
@@ -71,6 +73,7 @@ public class PriceCheckApplication extends Application {
 
     @Override
     public void start(Stage stage) throws Exception {
+        ServiceRegistry.get(ProductFeatureAccess.class).require(ProductFeatures.ITEMS_PRICE_CHECK);
         PriceCheckService.requireAccess();
 
         Optional<PriceCheckSettings> chosen = settings();

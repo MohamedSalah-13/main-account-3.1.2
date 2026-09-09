@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<ScrollPane fx:id="root" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
+            fx:controller="com.hamza.account.controller.productprofile.ProductProfileSetupController"
+            fitToWidth="true" hbarPolicy="NEVER" styleClass="app-scroll-pane"
+            stylesheets="@../css/product-profile-setup.css">
+    <content>
+        <VBox spacing="18" styleClass="app-root,product-profile-root">
+            <VBox spacing="6">
+                <Label text="%product.profile.setup.heading" styleClass="app-title"/>
+                <Label text="%product.profile.setup.description" wrapText="true" styleClass="app-subtitle"/>
+            </VBox>
+
+            <GridPane hgap="14" vgap="13" styleClass="app-card">
+                <columnConstraints>
+                    <ColumnConstraints minWidth="150" halignment="RIGHT"/>
+                    <ColumnConstraints hgrow="ALWAYS" minWidth="320"/>
+                </columnConstraints>
+                <Label text="%product.profile.setup.customer" styleClass="form-label" GridPane.rowIndex="0"/>
+                <TextField fx:id="customerField" promptText="%product.profile.setup.customer.prompt"
+                           GridPane.columnIndex="1" GridPane.rowIndex="0"/>
+                <Label text="%product.profile.setup.profile.name" styleClass="form-label" GridPane.rowIndex="1"/>
+                <TextField fx:id="profileNameField" promptText="%product.profile.setup.profile.name.prompt"
+                           GridPane.columnIndex="1" GridPane.rowIndex="1"/>
+            </GridPane>
+
+            <VBox spacing="12" styleClass="app-card">
+                <Label text="%product.profile.setup.features" styleClass="app-section-title"/>
+                <VBox fx:id="featureList" spacing="12"/>
+            </VBox>
+
+            <VBox spacing="10" styleClass="app-card">
+                <Label text="%product.profile.setup.signing" styleClass="app-section-title"/>
+                <Label text="%product.profile.setup.signing.help" wrapText="true" styleClass="text-explain"/>
+                <HBox spacing="10" alignment="CENTER_LEFT">
+                    <Button fx:id="choosePrivateKeyButton" text="%product.profile.setup.choose.key"
+                            onAction="#choosePrivateKey" styleClass="secondary-button"/>
+                    <Label fx:id="privateKeyPathLabel" text="%product.profile.setup.no.key"
+                           wrapText="true" styleClass="profile-path" HBox.hgrow="ALWAYS"/>
+                </HBox>
+                <Button fx:id="exportButton" text="%product.profile.setup.export"
+                        onAction="#exportProfile" styleClass="primary-button"/>
+            </VBox>
+
+            <VBox spacing="10" styleClass="app-card">
+                <Label text="%product.profile.setup.apply" styleClass="app-section-title"/>
+                <Label text="%product.profile.setup.apply.help" wrapText="true" styleClass="text-explain"/>
+                <HBox spacing="10" alignment="CENTER_LEFT">
+                    <Button fx:id="chooseProfileButton" text="%product.profile.setup.choose.profile"
+                            onAction="#chooseProfile" styleClass="secondary-button"/>
+                    <Label fx:id="profilePathLabel" text="%product.profile.setup.no.profile"
+                           wrapText="true" styleClass="profile-path" HBox.hgrow="ALWAYS"/>
+                </HBox>
+                <Label fx:id="profileSummaryLabel" wrapText="true" styleClass="profile-summary"/>
+                <HBox spacing="12" alignment="CENTER_RIGHT">
+                    <ProgressIndicator fx:id="progress" visible="false" managed="false"
+                                       prefWidth="28" prefHeight="28"/>
+                    <Button fx:id="applyButton" text="%product.profile.setup.apply.action"
+                            onAction="#applyProfile" disable="true" defaultButton="true"
+                            styleClass="primary-button"/>
+                </HBox>
+            </VBox>
+
+            <Label fx:id="statusLabel" wrapText="true" minHeight="42" styleClass="status-label"/>
+        </VBox>
+    </content>
+</ScrollPane>

@@ -67,7 +67,8 @@ class ItemMergeDatabaseAcceptanceTest {
     private static final double PURCHASED = 12;
     private static final double SOLD = 3;
 
-    private static final ItemMergeService SERVICE = new ItemMergeService(DaoFactory.INSTANCE);
+    private static final ItemMergeService SERVICE = new ItemMergeService(
+            DaoFactory.INSTANCE, com.hamza.account.features.productprofile.ProductFeatureAccess.allEnabled());
 
     @BeforeAll
     static void connect() throws Exception {

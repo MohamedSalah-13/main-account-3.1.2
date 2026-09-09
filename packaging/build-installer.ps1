@@ -29,6 +29,7 @@ $ErrorActionPreference = 'Stop'
 $AppName = 'AccountK'
 $MainClass = 'com.hamza.account.Main'
 $DatabaseSetupLauncher = Join-Path $PSScriptRoot 'database-setup.properties'
+$ProductProfileSetupLauncher = Join-Path $PSScriptRoot 'product-profile-setup.properties'
 
 $root = Split-Path -Parent $PSScriptRoot
 $accountDir = Join-Path $root 'account'
@@ -96,6 +97,7 @@ $jpackageArgs = @(
     # الواجهة والبيانات بالعربية: بدون هذا تظهر الحروف مشوّهة على بعض الأنظمة
     '--java-options', '-Dfile.encoding=UTF-8'
     '--add-launcher', "AccountK-Database-Setup=$DatabaseSetupLauncher"
+    '--add-launcher', "AccountK-Product-Setup=$ProductProfileSetupLauncher"
 )
 
 $icon = Join-Path $accountDir 'src\main\resources\tools.ico'
@@ -130,3 +132,5 @@ Write-Host "تم. الناتج في: $dest" -ForegroundColor Green
 Write-Host ""
 Write-Host "شغّل AccountK-Database-Setup.exe على كل جهاز قبل أول تشغيل للبرنامج." -ForegroundColor Yellow
 Write-Host "ستُحفظ إعدادات الاتصال في ProgramData\AccountK (أو ACCOUNT_CONFIG_DIR إن كان مضبوطاً)." -ForegroundColor Yellow
+Write-Host "استخدم AccountK-Product-Setup.exe لتوقيع ملف خصائص العميل وتطبيقه على قاعدة البيانات." -ForegroundColor Yellow
+Write-Host "لا تنقل المفتاح الخاص إلى جهاز العميل؛ الأداة لا تحفظه." -ForegroundColor Yellow

@@ -1,0 +1,42 @@
+.product-profile-root {
+    -fx-padding: 24;
+    -fx-background-color: -app-bg;
+}
+
+.product-profile-root .feature-category {
+    -fx-font-weight: bold;
+    -fx-text-fill: -app-primary-dark;
+}
+
+.product-profile-root .feature-row {
+    -fx-padding: 8 12;
+    -fx-background-color: -app-neutral-soft;
+    -fx-background-radius: 8;
+}
+
+.product-profile-root .profile-path {
+    -fx-font-family: "Consolas", "Courier New", monospace;
+    -fx-text-fill: -app-text-muted;
+}
+
+.product-profile-root .profile-summary {
+    -fx-padding: 10;
+    -fx-background-color: -app-primary-soft;
+    -fx-background-radius: 8;
+    -fx-text-fill: -app-text-strong;
+}
+
+.product-profile-root .status-success {
+    -fx-text-fill: -app-success;
+    -fx-font-weight: bold;
+}
+
+.product-profile-root .status-warning {
+    -fx-text-fill: -app-warning;
+    -fx-font-weight: bold;
+}
+
+.product-profile-root .status-error {
+    -fx-text-fill: -app-danger;
+    -fx-font-weight: bold;
+}

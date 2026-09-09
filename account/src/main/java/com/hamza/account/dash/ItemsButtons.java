@@ -12,6 +12,9 @@ import com.hamza.account.controller.items.StockTransferController;
 import com.hamza.account.controller.items.StocksController;
 import com.hamza.account.controller.main.ButtonWithPerm;
 import com.hamza.account.controller.main.DataPublisher;
+import com.hamza.account.controller.others.ServiceRegistry;
+import com.hamza.account.features.productprofile.ProductFeatureAccess;
+import com.hamza.account.features.productprofile.ProductFeatures;
 import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.openFxml.OpenFxmlApplication;
 import com.hamza.account.view.AddItemApplication;
@@ -213,6 +216,7 @@ public class ItemsButtons {
 
             @Override
             public void actionAddPaneToTabPane(TabPane tabPane) throws Exception {
+                ServiceRegistry.get(ProductFeatureAccess.class).require(ProductFeatures.ITEMS_MERGE);
                 addItemTab(tabPane, new OpenFxmlApplication(new MergeItemsController()).getPane(),
                         textName());
             }

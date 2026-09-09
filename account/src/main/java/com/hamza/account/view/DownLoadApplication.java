@@ -31,6 +31,13 @@ import com.hamza.account.features.rbac.RbacService;
 import com.hamza.account.features.users.UsersManagementService;
 import com.hamza.account.features.rbac.UserSessionContext;
 import com.hamza.account.features.itemmerge.ItemMergeService;
+import com.hamza.account.features.productprofile.JdbcProductProfileRepository;
+import com.hamza.account.features.productprofile.ProductFeatureAccess;
+import com.hamza.account.features.productprofile.ProductFeatureCatalog;
+import com.hamza.account.features.productprofile.ProductProfile;
+import com.hamza.account.features.productprofile.ProductProfileCodec;
+import com.hamza.account.features.productprofile.ProductProfileException;
+import com.hamza.account.features.productprofile.ProductProfileService;
 import com.hamza.account.features.profitloss.ProfitLossService;
 import com.hamza.account.features.stockcount.StockCountService;
 import com.hamza.account.features.stocktransfer.StockTransferService;
@@ -161,11 +168,26 @@ public class DownLoadApplication extends Application {
         SharedSettings.install(new SharedSettingsStore());
         BackupPolicy.claimIfUnowned();
         checkTrialStatus();
-        registerServices(daoFactory);
+        ProductProfile productProfile = loadProductProfile();
+        registerServices(daoFactory, productProfile);
         return new BootstrapResult(daoFactory, migration);
     }
 
-    private static void registerServices(DaoFactory daoFactory) {
+    private static ProductProfile loadProductProfile() {
+        ProductFeatureCatalog catalog = ProductFeatureCatalog.standard();
+        ProductProfileService service = new ProductProfileService(
+                new JdbcProductProfileRepository(), ProductProfileCodec.trustedReleaseKey(catalog), catalog);
+        try {
+            ProductProfile profile = service.loadCurrent();
+            ServiceRegistry.register(ProductProfileService.class, service);
+            ServiceRegistry.register(ProductFeatureAccess.class, profile);
+            return profile;
+        } catch (DaoException | ProductProfileException failure) {
+            throw new IllegalStateException("Could not load the signed product profile", failure);
+        }
+    }
+
+    private static void registerServices(DaoFactory daoFactory, ProductFeatureAccess productFeatures) {
         EventBus eventBus = new EventBus();
         ServiceRegistry.register(EventBus.class, eventBus);
 
@@ -200,7 +222,7 @@ public class DownLoadApplication extends Application {
         ServiceRegistry.register(InventoryService.class, new InventoryService(daoFactory));
         ServiceRegistry.register(StockCountService.class, new StockCountService(daoFactory));
         ServiceRegistry.register(StockTransferService.class, new StockTransferService(daoFactory));
-        ServiceRegistry.register(ItemMergeService.class, new ItemMergeService(daoFactory));
+        ServiceRegistry.register(ItemMergeService.class, new ItemMergeService(daoFactory, productFeatures));
         ServiceRegistry.register(PeriodLockService.class, new PeriodLockService(daoFactory));
         ServiceRegistry.register(EmployeeService.class, new EmployeeService(daoFactory));
         ServiceRegistry.register(TreasuryService.class, new TreasuryService(daoFactory));
