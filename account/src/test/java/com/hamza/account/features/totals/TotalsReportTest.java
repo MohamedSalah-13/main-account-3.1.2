@@ -123,6 +123,9 @@ class TotalsReportTest {
         assertEquals(7, purchase.headers().length);
         assertEquals(sales.headers().length, sales.columnWidths().length);
         assertEquals(purchase.headers().length, purchase.rows().getFirst().length);
+        // every column carries its own total, not just the last one
+        assertEquals(sales.headers().length, sales.totals().length);
+        assertEquals(purchase.headers().length, purchase.totals().length);
     }
 
     @Test
@@ -142,6 +145,7 @@ class TotalsReportTest {
             for (String[] row : layout.rows()) {
                 assertEquals(layout.headers().length, row.length, report.name());
             }
+            assertEquals(layout.headers().length, layout.totals().length, report.name());
         }
     }
 

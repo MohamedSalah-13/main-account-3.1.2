@@ -221,6 +221,53 @@ public class PdfExportService {
      * إضافة صف إجمالي للجدول
      * في RTL: خلية المجموع (الصغيرة) تكون في اليمين، والعنوان يمتد على باقي الأعمدة لليسار.
      */
+    /**
+     * A grouped report: the same page as {@link #exportGenericReport}, but its last line
+     * carries a figure in <b>every</b> column rather than one in the last.
+     * <p>
+     * A summary by customer whose total line says only the profit leaves the reader adding
+     * up the amount column by hand, which is the work the report was supposed to do.
+     *
+     * @param totals one cell per header, the first being what the line is called
+     */
+    public boolean exportGroupedReport(String filePath, String title, String subtitle,
+                                       String[] headers, float[] columnWidths,
+                                       List<String[]> data, String[] totals, PageSize pageSize) {
+        try (Document document = createDocument(filePath, pageSize)) {
+            addHeader(document, title, subtitle);
+            Table table = createTable(headers, columnWidths);
+            int rowIndex = 0;
+            for (String[] row : data) {
+                addTableRow(table, row, rowIndex % 2 == 1);
+                rowIndex++;
+            }
+            if (totals != null && totals.length == headers.length) {
+                addTotalsRow(table, totals);
+            }
+            document.add(table);
+            addFooter(document);
+            log.info("PDF exported successfully: {}", filePath);
+            return true;
+        } catch (IOException e) {
+            log.error("Error exporting PDF", e);
+            return false;
+        }
+    }
+
+    /** The banded last line, one cell per column, in the same order the headers are added. */
+    private void addTotalsRow(Table table, String[] cells) {
+        for (String cell : cells) {
+            table.addCell(new Cell()
+                    .add(arabicParagraphBold(cell == null ? "" : cell)
+                            .setTextAlignment(TextAlignment.CENTER))
+                    .setBackgroundColor(new DeviceRgb(52, 152, 219))
+                    .setFontColor(ColorConstants.WHITE)
+                    .setTextAlignment(TextAlignment.CENTER)
+                    .setFontSize(10)
+                    .setPadding(2));
+        }
+    }
+
     private void addTotalRow(Table table, String label, String total, int colspan) {
         // خلية المجموع أولاً لتظهر في أقصى اليمين
         Cell totalCell = new Cell()

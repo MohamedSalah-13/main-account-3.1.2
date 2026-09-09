@@ -51,54 +51,51 @@
                             </children>
                         </HBox>
 
-                        <HBox alignment="CENTER_LEFT" spacing="8.0" styleClass="app-card,totals-command-bar">
-                            <children>
-                                <Button fx:id="btnUpdate" mnemonicParsing="false" styleClass="warning-button"
-                                        text="%update" />
-                                <Button fx:id="btnDelete" mnemonicParsing="false" styleClass="danger-button"
-                                        text="%delete" />
-                                <Button fx:id="btnRefresh" mnemonicParsing="false" styleClass="icon-button" />
-                                <Separator orientation="VERTICAL" />
-                                <Button fx:id="btnShowInvoice" mnemonicParsing="false" styleClass="primary-button"
-                                        text="%show" />
-                                <ToggleButton fx:id="btnSelected" mnemonicParsing="false" styleClass="neutral-button"
-                                              text="%common.select.all" />
-                                <MenuButton fx:id="menuButton" mnemonicParsing="false" styleClass="modern-menu-button"
-                                            text="%print">
-                                    <items>
-                                        <MenuItem fx:id="menuItemPrintTotals" mnemonicParsing="false"
-                                                  text="%invoice.btn.print.totals" />
-                                        <MenuItem fx:id="menuItemPrintDetailed" mnemonicParsing="false"
-                                                  text="%invoice.btn.print.detailed" />
-                                        <SeparatorMenuItem />
-                                        <MenuItem fx:id="menuItemReportByParty" mnemonicParsing="false"
-                                                  text="%invoice.report.by.party" />
-                                        <MenuItem fx:id="menuItemReportByDay" mnemonicParsing="false"
-                                                  text="%invoice.report.by.day" />
-                                        <MenuItem fx:id="menuItemReportByMonth" mnemonicParsing="false"
-                                                  text="%invoice.report.by.month" />
-                                        <MenuItem fx:id="menuItemReportByDelegate" mnemonicParsing="false"
-                                                  text="%invoice.report.by.delegate" />
-                                        <MenuItem fx:id="menuItemReportByItem" mnemonicParsing="false"
-                                                  text="%invoice.report.by.item" />
-                                    </items>
-                                </MenuButton>
-                            </children>
-                        </HBox>
-
                         <VBox spacing="10.0" styleClass="app-card,totals-search-card">
                             <children>
+                                <!--
+                                  One row, not two. Opening, editing and deleting a document
+                                  moved onto the row that document is on, which left a whole
+                                  card holding three buttons that act on the list as a whole -
+                                  and cost the table the height of a card to say so.
+                                -->
                                 <HBox alignment="CENTER_LEFT" spacing="8.0" styleClass="totals-search-bar">
                                     <children>
                                         <Label fx:id="searchIcon" styleClass="totals-search-icon" />
                                         <TextField fx:id="textSearch" promptText="%invoice.search.free.text.prompt"
                                                    HBox.hgrow="ALWAYS" />
+                                        <Button fx:id="btnSearch" mnemonicParsing="false" styleClass="primary-button"
+                                                text="%search" />
                                         <ToggleButton fx:id="btnFilters" mnemonicParsing="false"
                                                       styleClass="neutral-button" text="%invoice.search.filters" />
                                         <Button fx:id="btnClearFilters" mnemonicParsing="false"
                                                 styleClass="neutral-button" text="%invoice.search.clear" />
-                                        <Button fx:id="btnSearch" mnemonicParsing="false" styleClass="primary-button"
-                                                text="%search" />
+                                        <Separator orientation="VERTICAL" />
+                                        <Button fx:id="btnRefresh" mnemonicParsing="false" styleClass="icon-button" />
+                                        <ToggleButton fx:id="btnSelected" mnemonicParsing="false"
+                                                      styleClass="neutral-button" text="%common.select.all" />
+                                        <Button fx:id="btnDeleteSelected" mnemonicParsing="false"
+                                                styleClass="danger-button" text="%delete" />
+                                        <MenuButton fx:id="menuButton" mnemonicParsing="false"
+                                                    styleClass="modern-menu-button" text="%print">
+                                            <items>
+                                                <MenuItem fx:id="menuItemPrintTotals" mnemonicParsing="false"
+                                                          text="%invoice.btn.print.totals" />
+                                                <MenuItem fx:id="menuItemPrintDetailed" mnemonicParsing="false"
+                                                          text="%invoice.btn.print.detailed" />
+                                                <SeparatorMenuItem />
+                                                <MenuItem fx:id="menuItemReportByParty" mnemonicParsing="false"
+                                                          text="%invoice.report.by.party" />
+                                                <MenuItem fx:id="menuItemReportByDay" mnemonicParsing="false"
+                                                          text="%invoice.report.by.day" />
+                                                <MenuItem fx:id="menuItemReportByMonth" mnemonicParsing="false"
+                                                          text="%invoice.report.by.month" />
+                                                <MenuItem fx:id="menuItemReportByDelegate" mnemonicParsing="false"
+                                                          text="%invoice.report.by.delegate" />
+                                                <MenuItem fx:id="menuItemReportByItem" mnemonicParsing="false"
+                                                          text="%invoice.report.by.item" />
+                                            </items>
+                                        </MenuButton>
                                     </children>
                                 </HBox>
 

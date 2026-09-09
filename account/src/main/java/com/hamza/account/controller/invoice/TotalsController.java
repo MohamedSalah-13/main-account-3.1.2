@@ -129,7 +129,7 @@ public class TotalsController<T3 extends BaseNames, T4 extends BaseAccount>
     @FXML
     private Text textSumTableSize, textSumTotals, textSumDiscount, textSumAfterDiscount, textCash, textDeffer, textProfit;
     @FXML
-    private Button btnUpdate, btnDelete, btnSearch, btnShowInvoice, btnRefresh, btnClearFilters,
+    private Button btnSearch, btnRefresh, btnClearFilters, btnDeleteSelected,
             btnSaveFilter, btnDeleteSavedFilter, btnPreviousPage, btnNextPage;
     @FXML
     private ToggleButton btnSelected, btnFilters, radioCash, radioDeffer, radioAll;
@@ -214,21 +214,16 @@ public class TotalsController<T3 extends BaseNames, T4 extends BaseAccount>
     }
     private void buttonGraphic() {
         searchIcon.setGraphic(AppIcon.SEARCH.graphic(18));
-        btnShowInvoice.setGraphic(AppIcon.SHOW.graphic(16));
-        btnUpdate.setGraphic(AppIcon.EDIT.graphic(16));
-        btnDelete.setGraphic(AppIcon.DELETE.graphic(16));
         btnSearch.setGraphic(AppIcon.SEARCH.graphic(16));
         btnRefresh.setGraphic(AppIcon.REFRESH.graphic(16));
         btnClearFilters.setGraphic(AppIcon.CLEAR.graphic(16));
         btnSaveFilter.setGraphic(AppIcon.SAVE.graphic(16));
         btnDeleteSavedFilter.setGraphic(AppIcon.DELETE.graphic(16));
+        btnDeleteSelected.setGraphic(AppIcon.DELETE.graphic(16));
         btnFilters.setGraphic(AppIcon.FILTER.graphic(16));
         btnSelected.setGraphic(AppIcon.SELECT_ALL.graphic(16));
         menuButton.setGraphic(AppIcon.PRINT.graphic(16));
 
-        tip(btnShowInvoice, "invoice.tooltip.show");
-        tip(btnUpdate, "invoice.tooltip.update");
-        tip(btnDelete, "invoice.tooltip.delete");
         tip(btnSearch, "invoice.tooltip.search");
         tip(btnRefresh, "invoice.tooltip.refresh");
         tip(btnClearFilters, "invoice.tooltip.clear.filters");
@@ -236,14 +231,14 @@ public class TotalsController<T3 extends BaseNames, T4 extends BaseAccount>
         tip(btnDeleteSavedFilter, "invoice.search.saved.delete.tooltip");
         tip(btnFilters, "invoice.tooltip.filters");
         tip(btnSelected, "invoice.tooltip.select");
+        tip(btnDeleteSelected, "invoice.tooltip.delete.selected");
         tip(menuButton, "invoice.tooltip.print");
     }
 
     private void permissionButtons() {
         var permissionDisableService = new DisableButtons.PermissionDisableService();
-        permissionDisableService.applyPermissionBasedDisable(btnUpdate::setDisable, dataInterface.designInterface().update());
-        permissionDisableService.applyPermissionBasedDisable(btnDelete::setDisable, dataInterface.designInterface().delete());
-        permissionDisableService.applyPermissionBasedDisable(btnShowInvoice::setDisable, dataInterface.designInterface().show_totals_invoice());
+        permissionDisableService.applyPermissionBasedDisable(btnDeleteSelected::setDisable,
+                dataInterface.designInterface().delete());
 
         var aBoolean = permissionDisableService.getABoolean(AppPermissions.UPDATE_DATA_BEFORE_MONTH);
         if (aBoolean != null)
@@ -431,15 +426,7 @@ public class TotalsController<T3 extends BaseNames, T4 extends BaseAccount>
             currentPage++;
             loadPage(false);
         });
-        btnUpdate.setOnAction(actionEvent -> {
-            try {
-                update(requireSelectedRow());
-            } catch (Exception e) {
-                exceptionHandle(e);
-            }
-        });
-
-        btnDelete.setOnAction(actionEvent -> {
+        btnDeleteSelected.setOnAction(actionEvent -> {
             var list = tableView.getItems().stream().filter(BaseTotals::isSelectedRow).toList();
             if (list.isEmpty()) {
                 AllAlerts.handleError(LanguageManager.getInstance().getString("invoice.dialog.delete.title"),
@@ -448,21 +435,21 @@ public class TotalsController<T3 extends BaseNames, T4 extends BaseAccount>
             }
             deleteDocuments(list);
         });
-        btnShowInvoice.setOnAction(actionEvent -> {
-            try {
-                showInvoiceData(requireSelectedRow());
-            } catch (Exception e) {
-                exceptionHandle(e);
-            }
-        });
+        // The keyboard and the mouse act on the focused row, the way the row's own buttons
+        // do - there is no toolbar left holding "the selected one" for them to defer to.
         tableView.setOnMouseClicked(mouseEvent -> {
             if (mouseEvent.getClickCount() == 2) {
-                btnShowInvoice.fire();
+                try {
+                    showInvoiceData(requireSelectedRow());
+                } catch (Exception e) {
+                    exceptionHandle(e);
+                }
             }
         });
         tableView.setOnKeyPressed(event -> {
             if (event.getCode().equals(KeyCode.DELETE)) {
-                btnDelete.fire();
+                BaseTotals focused = tableView.getSelectionModel().getSelectedItem();
+                if (focused != null) deleteDocuments(List.of(focused));
             }
 
             if (event.getCode().equals(KeyCode.C) && event.isControlDown()) {
@@ -654,16 +641,18 @@ public class TotalsController<T3 extends BaseNames, T4 extends BaseAccount>
                     + language.getString("invoice.report.truncated", DocumentTableSpec.REPORT_ROW_LIMIT);
         }
         TotalsReportLayout layout = TotalsReportLayout.of(report, kind, language::getString);
-        boolean written = new PdfExportService().exportGenericReport(
+        // The same separator the subtitle uses. A plain hyphen between two Arabic phrases
+        // is a bidi-neutral character the report font has no glyph for, and it printed as
+        // an empty box in the title - the em dash renders.
+        String separator = language.getString("invoice.report.filter.separator");
+        boolean written = new PdfExportService().exportGroupedReport(
                 target.getAbsolutePath(),
-                language.getString(reportTitleKey(kind)) + " - " + labelScreenTitle.getText(),
+                language.getString(reportTitleKey(kind)) + separator + labelScreenTitle.getText(),
                 subtitle,
                 layout.headers(),
                 layout.columnWidths(),
                 layout.rows(),
-                layout.totalLabel(),
-                layout.totalValue(),
-                null,
+                layout.totals(),
                 PageSize.A4.rotate());
         if (written) {
             AllAlerts.alertSaveWithMessage(language.getString("invoice.report.saved")

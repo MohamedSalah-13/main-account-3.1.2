@@ -20,11 +20,12 @@ import java.util.function.Function;
  * @param headers      the column titles, right to left as the reader reads them
  * @param columnWidths their relative widths, one per header
  * @param rows         the body, already formatted
- * @param totalLabel   what the last line is called
- * @param totalValue   the figure that line carries in its last column
+ * @param totals       the last line, one cell per header - a summary whose total line
+ *                     carries a single figure leaves the reader adding up a column by
+ *                     hand, which is the work the report was supposed to have done
  */
 public record TotalsReportLayout(String[] headers, float[] columnWidths, List<String[]> rows,
-                                 String totalLabel, String totalValue) {
+                                 String[] totals) {
 
     public static TotalsReportLayout of(TotalsReportService.TotalsReport report,
                                         DocumentTableSpec.Report kind,
@@ -58,9 +59,13 @@ public record TotalsReportLayout(String[] headers, float[] columnWidths, List<St
             rows.add(cells.toArray(String[]::new));
         }
         TotalsReportRow total = report.total();
+        List<String> totals = new ArrayList<>(List.of(
+                translate.apply("total"), String.valueOf(total.count()), money(total.total()),
+                money(total.discount()), money(total.afterDiscount()), money(total.paid()),
+                money(total.remaining())));
+        if (report.hasProfit()) totals.add(money(total.profit()));
         return new TotalsReportLayout(headers.toArray(String[]::new), widths(headers.size()), rows,
-                translate.apply("total"),
-                report.hasProfit() ? money(total.profit()) : money(total.remaining()));
+                totals.toArray(String[]::new));
     }
 
     /**
@@ -81,8 +86,9 @@ public record TotalsReportLayout(String[] headers, float[] columnWidths, List<St
             rows.add(new String[]{text(row.label()), String.valueOf(row.count()),
                     quantity(row.quantity()), money(row.total())});
         }
-        return new TotalsReportLayout(headers, widths(headers.length), rows,
-                translate.apply("total"), money(report.total().total()));
+        return new TotalsReportLayout(headers, widths(headers.length), rows, new String[]{
+                translate.apply("total"), String.valueOf(report.total().count()),
+                quantity(report.total().quantity()), money(report.total().total())});
     }
 
     private static String groupHeaderKey(DocumentTableSpec.Report kind) {
@@ -91,7 +97,7 @@ public record TotalsReportLayout(String[] headers, float[] columnWidths, List<St
             case BY_DAY -> "invoice.report.column.day";
             case BY_MONTH -> "invoice.report.column.month";
             case BY_DELEGATE -> "NAME_DELEGATE";
-            case BY_ITEM -> "item";
+            case BY_ITEM -> "invoice.report.column.item";
         };
     }
 
