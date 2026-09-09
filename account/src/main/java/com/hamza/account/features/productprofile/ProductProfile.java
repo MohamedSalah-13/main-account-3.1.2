@@ -17,7 +17,8 @@ public record ProductProfile(
     }
 
     public static ProductProfile legacyFull(ProductFeatureCatalog catalog) {
-        return new ProductProfile(1, "", "LEGACY_FULL", Instant.EPOCH, catalog.keys(), true);
+        return new ProductProfile(ProductProfileCodec.SCHEMA_VERSION, "", "LEGACY_FULL",
+                Instant.EPOCH, catalog.keys(), true);
     }
 
     @Override

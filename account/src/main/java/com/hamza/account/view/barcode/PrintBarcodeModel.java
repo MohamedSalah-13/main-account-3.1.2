@@ -1,50 +1,45 @@
 package com.hamza.account.view.barcode;
 
-import javafx.beans.property.DoubleProperty;
-import javafx.beans.property.IntegerProperty;
-import javafx.beans.property.SimpleDoubleProperty;
-import javafx.beans.property.SimpleIntegerProperty;
+import com.hamza.account.finance.MoneyMath;
 
-@lombok.Data
-@lombok.AllArgsConstructor
-@lombok.NoArgsConstructor
-public class PrintBarcodeModel {
+import java.math.BigDecimal;
+import java.util.Objects;
 
-    private String barcode;
-    private String name;
-    private DoubleProperty price = new SimpleDoubleProperty();
-    private IntegerProperty quantity = new SimpleIntegerProperty();
-    private String buttonColumnName;
+/** Mutable row state for the JavaFX print table; deliberately contains no JavaFX properties. */
+public final class PrintBarcodeModel {
+    private final String barcode;
+    private final String name;
+    private final BigDecimal price;
+    private int quantity;
 
     public PrintBarcodeModel(String barcode, String name, double price) {
-        this.barcode = barcode;
-        this.name = name;
-        this.price = new SimpleDoubleProperty(price);
-        this.quantity = new SimpleIntegerProperty(1);
+        this(barcode, name, MoneyMath.money(price), 1);
     }
 
-    public double getPrice() {
-        return price.get();
+    public PrintBarcodeModel(String barcode, String name, BigDecimal price, int quantity) {
+        this.barcode = Objects.requireNonNullElse(barcode, "").trim();
+        this.name = Objects.requireNonNullElse(name, "").trim();
+        this.price = MoneyMath.money(price == null ? BigDecimal.ZERO : price);
+        this.quantity = quantity;
     }
 
-    public void setPrice(double price) {
-        this.price.set(price);
+    public String getBarcode() {
+        return barcode;
     }
 
-    public DoubleProperty priceProperty() {
+    public String getName() {
+        return name;
+    }
+
+    public BigDecimal getPrice() {
         return price;
     }
 
     public int getQuantity() {
-        return quantity.get();
-    }
-
-    public void setQuantity(int quantity) {
-        this.quantity.set(quantity);
-    }
-
-    public IntegerProperty quantityProperty() {
         return quantity;
     }
 
+    public void setQuantity(int quantity) {
+        this.quantity = quantity;
+    }
 }

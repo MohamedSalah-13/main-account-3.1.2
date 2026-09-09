@@ -13,7 +13,6 @@ import com.hamza.account.features.events.CompanyChanged;
 import com.hamza.account.features.events.LanguageChanged;
 import com.hamza.account.features.events.UserRenamed;
 import com.hamza.account.features.notification.NotificationBootstrap;
-import com.hamza.account.features.productprofile.FeatureKey;
 import com.hamza.account.features.productprofile.ProductFeatureAccess;
 import com.hamza.account.features.productprofile.ProductFeatures;
 import com.hamza.account.features.rbac.CurrentUser;
@@ -115,7 +114,7 @@ public class MainScreenController extends MainItems implements Initializable {
 
     @Override
     public void initialize(URL url, ResourceBundle resourceBundle) {
-        menuButtonSetting = new MenuButtonSetting(tabPane);
+        menuButtonSetting = new MenuButtonSetting(tabPane, productFeatures);
         otherSetting();
         addTabContextMenu();
 
@@ -216,71 +215,71 @@ public class MainScreenController extends MainItems implements Initializable {
         };
 
         /*----------------------------------------------- Sales -----------------------------------------------*/
-        menuButtonSetting.configureButton(btnSales, getTotalSales().addInvoice());
-        menuButtonSetting.configureButton(btnSalesReturn, getTotalSalesReturn().addInvoice());
-        menuButtonSetting.configureButton(btnTotalSale, getTotalSales().totals());
-        menuButtonSetting.configureButton(btnTotalSalesReturn, getTotalSalesReturn().totals());
+        menuButtonSetting.configureButton(btnSales, getTotalSales().addInvoice(), ProductFeatures.SALES_CREATE);
+        menuButtonSetting.configureButton(btnSalesReturn, getTotalSalesReturn().addInvoice(), ProductFeatures.SALES_RETURN_CREATE);
+        menuButtonSetting.configureButton(btnTotalSale, getTotalSales().totals(), ProductFeatures.SALES_LIST);
+        menuButtonSetting.configureButton(btnTotalSalesReturn, getTotalSalesReturn().totals(), ProductFeatures.SALES_RETURN_LIST);
         /*----------------------------------------------- Purchase -----------------------------------------------*/
-        menuButtonSetting.configureButton(btnPurchase, getTotalPurchase().addInvoice());
-        menuButtonSetting.configureButton(btnTotalPurchase, getTotalPurchase().totals());
-        menuButtonSetting.configureButton(btnPurchaseRe, getTotalPurchaseReturn().addInvoice());
-        menuButtonSetting.configureButton(btnTotalPurchaseRe, getTotalPurchaseReturn().totals());
+        menuButtonSetting.configureButton(btnPurchase, getTotalPurchase().addInvoice(), ProductFeatures.PURCHASES_CREATE);
+        menuButtonSetting.configureButton(btnTotalPurchase, getTotalPurchase().totals(), ProductFeatures.PURCHASES_LIST);
+        menuButtonSetting.configureButton(btnPurchaseRe, getTotalPurchaseReturn().addInvoice(), ProductFeatures.PURCHASES_RETURN_CREATE);
+        menuButtonSetting.configureButton(btnTotalPurchaseRe, getTotalPurchaseReturn().totals(), ProductFeatures.PURCHASES_RETURN_LIST);
         /*----------------------------------------------- Items -----------------------------------------------*/
-        menuButtonSetting.configureButton(btnItems, getItemsButtons().allItems());
-        menuButtonSetting.configureButton(btnItemGroups, getItemsButtons().itemGroupManager());
-        menuButtonSetting.configureButton(btnAddItem, getItemsButtons().addItem());
+        menuButtonSetting.configureButton(btnItems, getItemsButtons().allItems(), ProductFeatures.ITEMS_LIST);
+        menuButtonSetting.configureButton(btnItemGroups, getItemsButtons().itemGroupManager(), ProductFeatures.ITEMS_GROUPS);
+        menuButtonSetting.configureButton(btnAddItem, getItemsButtons().addItem(), ProductFeatures.ITEMS_ADD);
         // Disabled, not hidden: every other command in this sidebar greys out when its
         // permission is missing, and one button that vanishes instead makes the list a
         // different length for different users - which is what a shop owner describing a
         // screen over the phone has to reason about. configureButton already does it, and
         // MasterDataButton answers PermissionKey.deny() when no section is visible.
-        menuButtonSetting.configureButton(btnMasterData, getItemsButtons().masterData());
-        menuButtonSetting.configureButton(btnInventory, getItemsButtons().inventory());
-        menuButtonSetting.configureButton(btnStockCount, getItemsButtons().stockCount());
-        menuButtonSetting.configureButton(btnStocks, getItemsButtons().stocks());
-        menuButtonSetting.configureButton(btnStockTransfers, getItemsButtons().stockTransfers());
-        menuButtonSetting.configureButton(btnMergeItems, getItemsButtons().mergeItems());
-        menuButtonSetting.configureButton(btnPriceCheck, getItemsButtons().priceCheck());
+        menuButtonSetting.configureButton(btnMasterData, getItemsButtons().masterData(), ProductFeatures.ITEMS_MASTER_DATA);
+        menuButtonSetting.configureButton(btnInventory, getItemsButtons().inventory(), ProductFeatures.ITEMS_INVENTORY);
+        menuButtonSetting.configureButton(btnStockCount, getItemsButtons().stockCount(), ProductFeatures.ITEMS_STOCK_COUNT);
+        menuButtonSetting.configureButton(btnStocks, getItemsButtons().stocks(), ProductFeatures.ITEMS_STOCKS);
+        menuButtonSetting.configureButton(btnStockTransfers, getItemsButtons().stockTransfers(), ProductFeatures.ITEMS_STOCK_TRANSFERS);
+        menuButtonSetting.configureButton(btnMergeItems, getItemsButtons().mergeItems(), ProductFeatures.ITEMS_MERGE);
+        menuButtonSetting.configureButton(btnPriceCheck, getItemsButtons().priceCheck(), ProductFeatures.ITEMS_PRICE_CHECK);
         /*----------------------------------------------- Custom -----------------------------------------------*/
-        menuButtonSetting.configureButton(btnAddCustomerName, getNameCustomer().addName());
-        menuButtonSetting.configureButton(btnCustomer, getNameCustomer().namesData());
-        menuButtonSetting.configureButton(btnAccountCustom, getAccountButtonsCustom());
+        menuButtonSetting.configureButton(btnAddCustomerName, getNameCustomer().addName(), ProductFeatures.CUSTOMERS_ADD);
+        menuButtonSetting.configureButton(btnCustomer, getNameCustomer().namesData(), ProductFeatures.CUSTOMERS_LIST);
+        menuButtonSetting.configureButton(btnAccountCustom, getAccountButtonsCustom(), ProductFeatures.CUSTOMERS_ACCOUNT);
         /*----------------------------------------------- Suppliers -----------------------------------------------*/
-        menuButtonSetting.configureButton(btnAddSupplierName, getNameSup().addName());
-        menuButtonSetting.configureButton(btnSuppliers, getNameSup().namesData());
-        menuButtonSetting.configureButton(btnAccountSuppliers, getAccountButtonsSup());
+        menuButtonSetting.configureButton(btnAddSupplierName, getNameSup().addName(), ProductFeatures.SUPPLIERS_ADD);
+        menuButtonSetting.configureButton(btnSuppliers, getNameSup().namesData(), ProductFeatures.SUPPLIERS_LIST);
+        menuButtonSetting.configureButton(btnAccountSuppliers, getAccountButtonsSup(), ProductFeatures.SUPPLIERS_ACCOUNT);
         /*----------------------------------------------- Employees -----------------------------------------------*/
-        menuButtonSetting.configureButton(btnAddEmployee, getAddEmployee().addEmployee());
-        menuButtonSetting.configureButton(btnEmployees, getAddEmployee().employees());
-        menuButtonSetting.configureButton(btnAddUser, getUsersAll().getUsers_add());
-        menuButtonSetting.configureButton(btnUsers, getUsersAll().getUsers_all());
+        menuButtonSetting.configureButton(btnAddEmployee, getAddEmployee().addEmployee(), ProductFeatures.EMPLOYEES_ADD);
+        menuButtonSetting.configureButton(btnEmployees, getAddEmployee().employees(), ProductFeatures.EMPLOYEES_LIST);
+        menuButtonSetting.configureButton(btnAddUser, getUsersAll().getUsers_add(), ProductFeatures.USERS_ADD);
+        menuButtonSetting.configureButton(btnUsers, getUsersAll().getUsers_all(), ProductFeatures.USERS_LIST);
         /*----------------------------------------------- Treasury -----------------------------------------------*/
-        menuButtonSetting.configureButton(btnTreasuries, getTreasuryButtons().treasuries());
-        menuButtonSetting.configureButton(btnTreasuryCash, getTreasuryButtons().treasuryCash());
-        menuButtonSetting.configureButton(btnTreasuryTransfer, getTreasuryButtons().treasuryTransfer());
-        menuButtonSetting.configureButton(btnTreasuryCapital, getTreasuryButtons().treasuryCapital());
-        menuButtonSetting.configureButton(btnTreasuryDetails, getTreasuryButtons().treasuryDetails());
-        menuButtonSetting.configureButton(btnProcess, getTreasuryButtons().openProcess());
-        menuButtonSetting.configureButton(btnExpenses, getTreasuryButtons().openExpenses());
+        menuButtonSetting.configureButton(btnTreasuries, getTreasuryButtons().treasuries(), ProductFeatures.TREASURY_LIST);
+        menuButtonSetting.configureButton(btnTreasuryCash, getTreasuryButtons().treasuryCash(), ProductFeatures.TREASURY_CASH);
+        menuButtonSetting.configureButton(btnTreasuryTransfer, getTreasuryButtons().treasuryTransfer(), ProductFeatures.TREASURY_TRANSFER);
+        menuButtonSetting.configureButton(btnTreasuryCapital, getTreasuryButtons().treasuryCapital(), ProductFeatures.TREASURY_CAPITAL);
+        menuButtonSetting.configureButton(btnTreasuryDetails, getTreasuryButtons().treasuryDetails(), ProductFeatures.TREASURY_DETAILS);
+        menuButtonSetting.configureButton(btnProcess, getTreasuryButtons().openProcess(), ProductFeatures.TREASURY_AUDIT);
+        menuButtonSetting.configureButton(btnExpenses, getTreasuryButtons().openExpenses(), ProductFeatures.TREASURY_EXPENSES);
         /*----------------------------------------------- Reports -----------------------------------------------*/
-        menuButtonSetting.configureButton(btnReportSummary, getReportsButtons().summaryReport());
-        menuButtonSetting.configureButton(btnReportItems, getReportsButtons().itemsReport());
-        menuButtonSetting.configureButton(btnReportItemsDaily, getReportsButtons().itemsReportDaily());
-        menuButtonSetting.configureButton(btnReportSalesByYear, getAction(monthlySalesInterface.reportTitle(), monthlySalesInterface));
-        menuButtonSetting.configureButton(btnReportPurchaseByYear, getAction(monthlyPurchaseInterface.reportTitle(), monthlyPurchaseInterface));
-        menuButtonSetting.configureButton(btnReportCustomPaid, getReportsButtons().reportCustomPaid());
-        menuButtonSetting.configureButton(btnReportSuppliersPaid, getReportsButtons().reportSupplierPaid());
-        menuButtonSetting.configureButton(btnReportDetails, getReportsButtons().detailsReport());
-        menuButtonSetting.configureButton(btnReportYearly, getReportsButtons().reportYearly());
-        menuButtonSetting.configureButton(btnReportProfitLoss, getReportsButtons().profitLossReport());
-        menuButtonSetting.configureButton(btnReportReturnReasons, getReportsButtons().returnReasonsReport());
+        menuButtonSetting.configureButton(btnReportSummary, getReportsButtons().summaryReport(), ProductFeatures.REPORT_SUMMARY);
+        menuButtonSetting.configureButton(btnReportItems, getReportsButtons().itemsReport(), ProductFeatures.REPORT_ITEMS);
+        menuButtonSetting.configureButton(btnReportItemsDaily, getReportsButtons().itemsReportDaily(), ProductFeatures.REPORT_ITEMS_DAILY);
+        menuButtonSetting.configureButton(btnReportSalesByYear, getAction(monthlySalesInterface.reportTitle(), monthlySalesInterface), ProductFeatures.REPORT_SALES_YEAR);
+        menuButtonSetting.configureButton(btnReportPurchaseByYear, getAction(monthlyPurchaseInterface.reportTitle(), monthlyPurchaseInterface), ProductFeatures.REPORT_PURCHASES_YEAR);
+        menuButtonSetting.configureButton(btnReportCustomPaid, getReportsButtons().reportCustomPaid(), ProductFeatures.REPORT_CUSTOMER_PAYMENTS);
+        menuButtonSetting.configureButton(btnReportSuppliersPaid, getReportsButtons().reportSupplierPaid(), ProductFeatures.REPORT_SUPPLIER_PAYMENTS);
+        menuButtonSetting.configureButton(btnReportDetails, getReportsButtons().detailsReport(), ProductFeatures.REPORT_DETAILS);
+        menuButtonSetting.configureButton(btnReportYearly, getReportsButtons().reportYearly(), ProductFeatures.REPORT_YEARLY);
+        menuButtonSetting.configureButton(btnReportProfitLoss, getReportsButtons().profitLossReport(), ProductFeatures.REPORT_PROFIT_LOSS);
+        menuButtonSetting.configureButton(btnReportReturnReasons, getReportsButtons().returnReasonsReport(), ProductFeatures.REPORT_RETURN_REASONS);
         /*----------------------------------------------- Setting -----------------------------------------------*/
         menuButtonSetting.configureButton(btnHome, getSettingButtons().home());
-        menuButtonSetting.configureButton(btnSetting, getSettingButtons().setting());
-        menuButtonSetting.configureButton(btnMyShift, getShiftButtons().openShiftScreen());
-        menuButtonSetting.configureButton(btnShiftReports, getSettingButtons().adminShifts());
-        menuButtonSetting.configureButton(btnBackup, getSettingButtons().backup());
-        menuButtonSetting.configureButton(btnDeleteData, getSettingButtons().deleteData());
+        menuButtonSetting.configureButton(btnSetting, getSettingButtons().setting(), ProductFeatures.SYSTEM_SETTINGS);
+        menuButtonSetting.configureButton(btnMyShift, getShiftButtons().openShiftScreen(), ProductFeatures.SYSTEM_MY_SHIFT);
+        menuButtonSetting.configureButton(btnShiftReports, getSettingButtons().adminShifts(), ProductFeatures.SYSTEM_SHIFT_REPORTS);
+        menuButtonSetting.configureButton(btnBackup, getSettingButtons().backup(), ProductFeatures.SYSTEM_BACKUP);
+        menuButtonSetting.configureButton(btnDeleteData, getSettingButtons().deleteData(), ProductFeatures.SYSTEM_DELETE_DATA);
         menuButtonSetting.configureButton(btnAbout, getSettingButtons().about());
         menuButtonSetting.configureButton(btnClose, getSettingButtons().close());
         /*----------------------------------------------- User menu (moved from the removed top toolbar) -----------------------------------------------*/
@@ -295,14 +294,23 @@ public class MainScreenController extends MainItems implements Initializable {
         configureSidebarShortcuts();
     }
 
-    /** Product-absent commands disappear; permission-denied commands remain visible and disabled. */
+    /** Empty product sections disappear; permission-denied commands remain visible and disabled. */
     private void applyProductProfileVisibility() {
-        showFeature(btnMergeItems, ProductFeatures.ITEMS_MERGE);
-        showFeature(btnPriceCheck, ProductFeatures.ITEMS_PRICE_CHECK);
+        showCategory(paneSales, ProductFeatures.CATEGORY_SALES);
+        showCategory(panePurchase, ProductFeatures.CATEGORY_PURCHASES);
+        showCategory(paneItems, ProductFeatures.CATEGORY_ITEMS);
+        showCategory(paneCustom, ProductFeatures.CATEGORY_CUSTOMERS);
+        showCategory(paneSuppliers, ProductFeatures.CATEGORY_SUPPLIERS);
+        showCategory(paneEmployees, ProductFeatures.CATEGORY_TEAM);
+        showCategory(paneTreasury, ProductFeatures.CATEGORY_TREASURY);
+        showCategory(paneReports, ProductFeatures.CATEGORY_REPORTS);
+        // The section also holds shell commands (Home, About and Close), which are
+        // deliberately always available even when every configurable system screen is absent.
     }
 
-    private void showFeature(Node node, FeatureKey feature) {
-        boolean available = productFeatures != null && productFeatures.isEnabled(feature);
+    private void showCategory(Node node, String categoryKey) {
+        boolean available = productFeatures != null && ProductFeatures.keysInCategory(categoryKey).stream()
+                .anyMatch(productFeatures::isEnabled);
         node.setVisible(available);
         node.setManaged(available);
     }
@@ -314,7 +322,9 @@ public class MainScreenController extends MainItems implements Initializable {
 
     private void refreshShiftButtonVisibility() {
         try {
-            boolean enabled = ServiceRegistry.get(ShiftPolicyService.class).current().mode() != ShiftMode.DISABLED;
+            boolean enabled = productFeatures != null
+                    && productFeatures.isEnabled(ProductFeatures.SYSTEM_MY_SHIFT)
+                    && ServiceRegistry.get(ShiftPolicyService.class).current().mode() != ShiftMode.DISABLED;
             btnMyShift.setVisible(enabled);
             btnMyShift.setManaged(enabled);
         } catch (DaoException e) {

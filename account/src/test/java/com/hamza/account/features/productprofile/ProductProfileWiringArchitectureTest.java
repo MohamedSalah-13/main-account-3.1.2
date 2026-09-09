@@ -5,16 +5,28 @@ import org.junit.jupiter.api.Test;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class ProductProfileWiringArchitectureTest {
 
     @Test
-    void optionalScreensAreHiddenAndTheirShortcutsAreNotRegistered() throws Exception {
+    void everyFunctionalSidebarSectionUsesTheProductCatalogueAndShortcutsFollowVisibility() throws Exception {
         String source = read("controller/main/MainScreenController.java");
+        String menuButton = read("controller/main/MenuButtonSetting.java");
 
-        assertTrue(source.contains("showFeature(btnMergeItems, ProductFeatures.ITEMS_MERGE)"));
-        assertTrue(source.contains("showFeature(btnPriceCheck, ProductFeatures.ITEMS_PRICE_CHECK)"));
+        long gatedScreens = source.lines()
+                .filter(line -> line.contains("menuButtonSetting.configureButton("))
+                .filter(line -> line.contains("ProductFeatures."))
+                .count();
+        assertEquals(51, gatedScreens);
+        assertTrue(source.contains("ProductFeatures.SALES_CREATE"));
+        assertTrue(source.contains("ProductFeatures.REPORT_PROFIT_LOSS"));
+        assertTrue(source.contains("ProductFeatures.SYSTEM_DELETE_DATA"));
+        assertTrue(source.contains("showCategory(paneSales, ProductFeatures.CATEGORY_SALES)"));
+        assertTrue(source.contains("showCategory(paneReports, ProductFeatures.CATEGORY_REPORTS)"));
+        assertTrue(menuButton.contains("productFeatures.require(feature)"));
+        assertTrue(menuButton.contains("button.setManaged(available)"));
         assertTrue(source.contains("button.isVisible() && button.isManaged()"));
     }
 
@@ -37,6 +49,8 @@ class ProductProfileWiringArchitectureTest {
                 "src/main/resources/com/hamza/account/view/product-profile-setup.fxml"));
 
         assertTrue(controller.contains("catalog.definitions()"));
+        assertTrue(controller.contains("ProductEditionPresets.standard(catalog)"));
+        assertTrue(fxml.contains("fx:id=\"presetBox\""));
         assertTrue(fxml.contains("fx:id=\"featureList\""));
     }
 

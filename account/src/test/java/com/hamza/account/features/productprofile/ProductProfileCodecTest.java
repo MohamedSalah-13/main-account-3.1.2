@@ -89,6 +89,25 @@ class ProductProfileCodecTest {
     }
 
     @Test
+    void versionOneProfilesKeepScreensIntroducedByVersionTwoEnabled() throws Exception {
+        String payload = new JSONObject()
+                .put("type", ProductProfileCodec.PAYLOAD_TYPE)
+                .put("version", 1)
+                .put("customer", "عميل قديم")
+                .put("profile", "نسخة سابقة")
+                .put("issuedAt", "2026-09-09T12:00:00Z")
+                .put("features", new JSONArray().put(ProductFeatures.ITEMS_PRICE_CHECK.value()))
+                .toString();
+
+        ProductProfile profile = codec.decode(signPayload(payload));
+
+        assertTrue(profile.isEnabled(ProductFeatures.SALES_CREATE));
+        assertTrue(profile.isEnabled(ProductFeatures.SYSTEM_SETTINGS));
+        assertTrue(profile.isEnabled(ProductFeatures.ITEMS_PRICE_CHECK));
+        assertFalse(profile.isEnabled(ProductFeatures.ITEMS_MERGE));
+    }
+
+    @Test
     void readsThePkcs8PemWithoutKeepingItAnywhere() throws Exception {
         String base64 = Base64.getMimeEncoder(64, new byte[]{'\n'})
                 .encodeToString(keys.getPrivate().getEncoded());

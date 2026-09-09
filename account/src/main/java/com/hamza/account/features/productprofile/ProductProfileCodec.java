@@ -14,7 +14,8 @@ import java.util.Set;
 public final class ProductProfileCodec {
 
     public static final String PAYLOAD_TYPE = "ACCOUNTK_PRODUCT_PROFILE";
-    public static final int SCHEMA_VERSION = 1;
+    public static final int SCHEMA_VERSION = 2;
+    private static final int MINIMUM_SCHEMA_VERSION = 1;
 
     private final ProductFeatureCatalog catalog;
     private final SignatureVerifier verifier;
@@ -82,7 +83,7 @@ public final class ProductProfileCodec {
                 throw new ProductProfileException("product.profile.error.type");
             }
             int version = json.getInt("version");
-            if (version != SCHEMA_VERSION) {
+            if (version < MINIMUM_SCHEMA_VERSION || version > SCHEMA_VERSION) {
                 throw new ProductProfileException("product.profile.error.version", version);
             }
 
@@ -95,6 +96,14 @@ public final class ProductProfileCodec {
                 if (catalog.contains(key)) {
                     enabled.add(key);
                 }
+            }
+            // Version 1 knew only the merge and price-check switches. Newly added
+            // screens must remain enabled when an already-issued v1 profile is read,
+            // otherwise an application update would silently remove client screens.
+            if (version == 1) {
+                catalog.keys().stream()
+                        .filter(key -> !ProductFeatures.VERSION_1_KEYS.contains(key))
+                        .forEach(enabled::add);
             }
             catalog.validateSelection(enabled);
             String customer = json.getString("customer").strip();

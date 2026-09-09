@@ -12,6 +12,8 @@ import com.hamza.account.features.productprofile.ProductProfileDraft;
 import com.hamza.account.features.productprofile.ProductProfileException;
 import com.hamza.account.features.productprofile.ProductProfileService;
 import com.hamza.account.features.productprofile.ProductProfileSigner;
+import com.hamza.account.features.productprofile.ProductEditionPreset;
+import com.hamza.account.features.productprofile.ProductEditionPresets;
 import com.hamza.account.service.version.DatabaseMigrationService;
 import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.database.DataSourceProvider;
@@ -20,12 +22,14 @@ import javafx.concurrent.Task;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
 import javafx.scene.control.CheckBox;
+import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.ProgressIndicator;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.control.TextField;
 import javafx.scene.layout.VBox;
 import javafx.stage.FileChooser;
+import javafx.util.StringConverter;
 
 import java.io.File;
 import java.nio.charset.StandardCharsets;
@@ -49,6 +53,8 @@ public final class ProductProfileSetupController {
     @FXML private ScrollPane root;
     @FXML private TextField customerField;
     @FXML private TextField profileNameField;
+    @FXML private ComboBox<ProductEditionPreset> presetBox;
+    @FXML private Label presetDescriptionLabel;
     @FXML private VBox featureList;
     @FXML private Label privateKeyPathLabel;
     @FXML private Label profilePathLabel;
@@ -64,6 +70,7 @@ public final class ProductProfileSetupController {
     private final ProductProfileCodec codec = ProductProfileCodec.trustedReleaseKey(catalog);
     private final ProductProfileSigner signer = new ProductProfileSigner(codec);
     private final Map<FeatureKey, CheckBox> featureBoxes = new LinkedHashMap<>();
+    private boolean applyingPreset;
 
     private Path privateKeyFile;
     private Path selectedProfileFile;
@@ -71,13 +78,13 @@ public final class ProductProfileSetupController {
 
     @FXML
     private void initialize() {
-        profileNameField.setText(LanguageManager.getInstance().getString("product.profile.setup.profile.default"));
         renderFeatureCatalog();
+        configurePresets();
         choosePrivateKeyButton.setGraphic(AppIcon.SECURITY.graphic());
         exportButton.setGraphic(AppIcon.EXPORT.graphic());
         chooseProfileButton.setGraphic(AppIcon.SEARCH.graphic());
         applyButton.setGraphic(AppIcon.CONFIRM.graphic());
-        whenEnterPressed(customerField, profileNameField, exportButton);
+        whenEnterPressed(presetBox, customerField, profileNameField, exportButton);
     }
 
     @FXML
@@ -174,6 +181,7 @@ public final class ProductProfileSetupController {
             CheckBox feature = new CheckBox(
                     LanguageManager.getInstance().getString(definition.titleKey()));
             feature.setSelected(true);
+            feature.selectedProperty().addListener((observable, oldValue, newValue) -> markCustomPreset());
             Label explanation = new Label(
                     LanguageManager.getInstance().getString(definition.descriptionKey()));
             explanation.setWrapText(true);
@@ -183,6 +191,46 @@ public final class ProductProfileSetupController {
             featureList.getChildren().add(row);
             featureBoxes.put(definition.key(), feature);
         }
+    }
+
+    private void configurePresets() {
+        StringConverter<ProductEditionPreset> converter = new StringConverter<>() {
+            @Override
+            public String toString(ProductEditionPreset preset) {
+                return preset == null ? "" : LanguageManager.getInstance().getString(preset.nameKey());
+            }
+
+            @Override
+            public ProductEditionPreset fromString(String value) {
+                return null;
+            }
+        };
+        presetBox.setConverter(converter);
+        presetBox.getItems().setAll(ProductEditionPresets.standard(catalog));
+        presetBox.valueProperty().addListener((observable, oldPreset, preset) -> applyPreset(preset));
+        presetBox.getSelectionModel().selectFirst();
+    }
+
+    private void applyPreset(ProductEditionPreset preset) {
+        if (preset == null) return;
+        presetDescriptionLabel.setText(LanguageManager.getInstance().getString(preset.descriptionKey()));
+        if ("custom".equals(preset.id())) return;
+
+        applyingPreset = true;
+        try {
+            featureBoxes.forEach((key, box) -> box.setSelected(preset.enabledFeatures().contains(key)));
+            profileNameField.setText(LanguageManager.getInstance().getString(preset.nameKey()));
+        } finally {
+            applyingPreset = false;
+        }
+    }
+
+    private void markCustomPreset() {
+        if (applyingPreset || presetBox.getItems().isEmpty()) return;
+        presetBox.getItems().stream()
+                .filter(preset -> "custom".equals(preset.id()))
+                .findFirst()
+                .ifPresent(preset -> presetBox.getSelectionModel().select(preset));
     }
 
     private void select(SelectedProfile selected) {

@@ -3,6 +3,8 @@ package com.hamza.account.controller.main;
 import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.button.ImageDesign;
 import com.hamza.controlsfx.language.LanguageManager;
+import com.hamza.account.features.productprofile.FeatureKey;
+import com.hamza.account.features.productprofile.ProductFeatureAccess;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
 import javafx.scene.control.Button;
@@ -20,12 +22,14 @@ public final class MenuButtonSetting {
     private static final String ACTIVE_STYLE_CLASS = "sidebar-nav-active";
 
     private final TabPane tabPane;
+    private final ProductFeatureAccess productFeatures;
     // Every nav button configured through this instance, so clicking one can
     // clear the highlight off whichever other one currently carries it.
     private final List<Button> navButtons = new ArrayList<>();
 
-    public MenuButtonSetting(TabPane tabPane) {
+    public MenuButtonSetting(TabPane tabPane, ProductFeatureAccess productFeatures) {
         this.tabPane = tabPane;
+        this.productFeatures = productFeatures;
     }
 
     public TabPane tabPane() {
@@ -44,10 +48,17 @@ public final class MenuButtonSetting {
      *               and the event handler.
      */
     public void configureButton(Button button, ButtonWithPerm action) {
+        configureButton(button, action, null);
+    }
+
+    public void configureButton(Button button, ButtonWithPerm action, FeatureKey feature) {
         setGraphicAndText(button, action);
         disableButton(button::setDisable, action);
         button.focusTraversableProperty().setValue(FOCUS_TRAVERSABLE);
-        setActionEvent(button, action);
+        setActionEvent(button, action, feature);
+        boolean available = feature == null || (productFeatures != null && productFeatures.isEnabled(feature));
+        button.setVisible(available);
+        button.setManaged(available);
         trackNavButton(button);
     }
 
@@ -75,7 +86,7 @@ public final class MenuButtonSetting {
 
 
     public void initializeMenuItem(MenuItem menuItem, ButtonWithPerm action) {
-        setActionEvent(menuItem, action);
+        setActionEvent(menuItem, action, null);
         menuItem.setText(action.textName());
         disableButton(menuItem::setDisable, action);
 
@@ -94,9 +105,10 @@ public final class MenuButtonSetting {
      * @param action  The action to be executed when the event is triggered. Includes logic for showing on a tap pane
      *                or performing a custom action.
      */
-    private void setActionEvent(Object control, ButtonWithPerm action) {
+    private void setActionEvent(Object control, ButtonWithPerm action, FeatureKey feature) {
         EventHandler<ActionEvent> eventHandler = (actionEvent) -> {
             try {
+                if (feature != null) productFeatures.require(feature);
                 if (action.showOnTapPane()) {
                     action.actionAddPaneToTabPane(tabPane);
                 } else {

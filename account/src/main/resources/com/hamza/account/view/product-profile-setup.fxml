@@ -17,12 +17,17 @@
                     <ColumnConstraints minWidth="150" halignment="RIGHT"/>
                     <ColumnConstraints hgrow="ALWAYS" minWidth="320"/>
                 </columnConstraints>
-                <Label text="%product.profile.setup.customer" styleClass="form-label" GridPane.rowIndex="0"/>
+                <Label text="%product.profile.setup.preset" styleClass="form-label" GridPane.rowIndex="0"/>
+                <VBox spacing="5" GridPane.columnIndex="1" GridPane.rowIndex="0">
+                    <ComboBox fx:id="presetBox" maxWidth="Infinity"/>
+                    <Label fx:id="presetDescriptionLabel" wrapText="true" styleClass="text-explain"/>
+                </VBox>
+                <Label text="%product.profile.setup.customer" styleClass="form-label" GridPane.rowIndex="1"/>
                 <TextField fx:id="customerField" promptText="%product.profile.setup.customer.prompt"
-                           GridPane.columnIndex="1" GridPane.rowIndex="0"/>
-                <Label text="%product.profile.setup.profile.name" styleClass="form-label" GridPane.rowIndex="1"/>
-                <TextField fx:id="profileNameField" promptText="%product.profile.setup.profile.name.prompt"
                            GridPane.columnIndex="1" GridPane.rowIndex="1"/>
+                <Label text="%product.profile.setup.profile.name" styleClass="form-label" GridPane.rowIndex="2"/>
+                <TextField fx:id="profileNameField" promptText="%product.profile.setup.profile.name.prompt"
+                           GridPane.columnIndex="1" GridPane.rowIndex="2"/>
             </GridPane>
 
             <VBox spacing="12" styleClass="app-card">

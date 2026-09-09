@@ -2015,3 +2015,31 @@
     -fx-icon-color: -app-primary;
     -fx-opacity: 0.75;
 }
+
+/* ---------- Barcode batch printing ---------- */
+
+.barcode-preview-surface {
+    -fx-background-color: white;
+    -fx-background-radius: 10;
+    -fx-border-color: -app-border;
+    -fx-border-radius: 10;
+    -fx-padding: 14;
+}
+
+.barcode-summary-pill {
+    -fx-background-color: -app-neutral-soft;
+    -fx-background-radius: 14;
+    -fx-border-color: -app-primary;
+    -fx-border-radius: 14;
+    -fx-font-weight: bold;
+    -fx-padding: 5 10;
+    -fx-text-fill: -app-text-strong;
+}
+
+.printer-ready {
+    -fx-text-fill: -app-success;
+}
+
+.printer-missing {
+    -fx-text-fill: -app-danger;
+}

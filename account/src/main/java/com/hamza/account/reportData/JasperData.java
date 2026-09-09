@@ -10,6 +10,7 @@ import net.sf.jasperreports.engine.export.JRPrintServiceExporterParameter;
 import net.sf.jasperreports.engine.xml.JRXmlLoader;
 import net.sf.jasperreports.view.JasperViewer;
 
+import javax.print.PrintServiceLookup;
 import javax.print.attribute.HashPrintRequestAttributeSet;
 import javax.print.attribute.HashPrintServiceAttributeSet;
 import javax.print.attribute.PrintRequestAttributeSet;
@@ -17,8 +18,8 @@ import javax.print.attribute.PrintServiceAttributeSet;
 import javax.print.attribute.standard.Copies;
 import javax.print.attribute.standard.PrinterName;
 import java.sql.Connection;
+import java.util.Arrays;
 import java.util.HashMap;
-import java.util.function.Consumer;
 import java.util.function.Consumer;
 
 public class JasperData {
@@ -53,6 +54,21 @@ public class JasperData {
     public void printJasperPrintOrThrow(String nameUrl, String title, HashMap<String, Object> parameters,
                                         int copies, String printerName) throws JRException {
         processJasperPrint(title, prepareJasperPrint(nameUrl, parameters), copies, printerName);
+    }
+
+    /**
+     * Sends an already prepared report to exactly the named printer.
+     * Unlike the legacy route, this never substitutes the PDF printer when a label
+     * printer is unavailable; callers can report that operational problem explicitly.
+     */
+    public void printPreparedToNamedPrinterOrThrow(JasperPrint jasperPrint, String printerName) throws JRException {
+        boolean available = printerName != null && !printerName.isBlank()
+                && Arrays.stream(PrintServiceLookup.lookupPrintServices(null, null))
+                .anyMatch(service -> service.getName().equals(printerName));
+        if (!available) {
+            throw new JRException("Configured printer is unavailable: " + printerName);
+        }
+        printReportToPrinter(jasperPrint, 1, printerName);
     }
 
     public void printJasperPrint(String nameUrl, String title, HashMap<String, Object> parameters, int copies, String printerName, Consumer<JasperDesign> customizer) {
