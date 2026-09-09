@@ -16,6 +16,7 @@ import com.hamza.account.features.events.ItemsChanged;
 import com.hamza.account.features.events.SelPriceNamesChanged;
 import com.hamza.account.features.items.ItemCatalogFilter;
 import com.hamza.account.features.items.ItemQuickEditField;
+import com.hamza.account.features.items.ItemTableEditMode;
 import com.hamza.account.features.rbac.CurrentUser;
 import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.model.domain.ItemsModel;
@@ -254,7 +255,7 @@ public class ItemsController extends LoadData {
         }
 
         setUpQuickEdit();
-        tableView.setEditable(false);
+        applyTableEditMode(false);
 
         ColumnSetting.addSelectedColumn(tableView);
         applyColumnWidths();
@@ -560,8 +561,7 @@ public class ItemsController extends LoadData {
         btnDelete.setOnAction(event -> delete());
         btnRefresh.setOnAction(event -> paginationTableSetting.reload());
         btnReports.setOnAction(event -> openReports());
-        btnQuickEdit.setOnAction(event -> tableView.setEditable(btnQuickEdit.isSelected()
-                && AuthorizationGuard.isGranted(AppPermissions.ITEMS_UPDATE)));
+        btnQuickEdit.setOnAction(event -> applyTableEditMode(btnGroupedView.isSelected()));
         btnGroupTree.setOnAction(event -> setGroupTreeVisible(btnGroupTree.isSelected()));
         btnGroupedView.setOnAction(event -> setGroupedView(btnGroupedView.isSelected()));
 
@@ -629,8 +629,27 @@ public class ItemsController extends LoadData {
         groupedTreeTable.setVisible(grouped);
         groupedTreeTable.setManaged(grouped);
         btnQuickEdit.setDisable(grouped || !AuthorizationGuard.isGranted(AppPermissions.ITEMS_UPDATE));
-        tableView.setEditable(!grouped && btnQuickEdit.isSelected());
+        applyTableEditMode(grouped);
         if (grouped) loadGroupedView();
+    }
+
+    /**
+     * Keeps JavaFX's table-level editing gate open for the row-selection checkboxes,
+     * while the columns that change item data remain behind quick edit and its permission.
+     */
+    private void applyTableEditMode(boolean grouped) {
+        ItemTableEditMode mode = new ItemTableEditMode(
+                grouped,
+                btnQuickEdit.isSelected(),
+                AuthorizationGuard.isGranted(AppPermissions.ITEMS_UPDATE));
+        tableView.setEditable(mode.tableEditingGateOpen());
+        boolean valuesEditable = mode.valueColumnsEditable();
+        colBarcode.setEditable(valuesEditable);
+        colName.setEditable(valuesEditable);
+        colBuyPrice.setEditable(valuesEditable);
+        colSelPrice1.setEditable(valuesEditable);
+        colSelPrice2.setEditable(valuesEditable);
+        colSelPrice3.setEditable(valuesEditable);
     }
 
     private void refreshCurrentView() {
