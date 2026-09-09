@@ -11,6 +11,8 @@ import com.hamza.account.period.PeriodLockRegistry;
 import com.hamza.account.authorization.AuthorizationGuard;
 import com.hamza.account.authorization.AppPermissions;
 import com.hamza.account.authorization.PermissionKey;
+import com.hamza.account.document.TotalsPage;
+import com.hamza.account.document.TotalsSummaryRow;
 import com.hamza.account.document.TotalsSearchCriteria;
 import com.hamza.account.model.dao.TotalsBuyDao;
 import com.hamza.account.model.domain.Total_buy;
@@ -100,7 +102,12 @@ public record TotalBuyService(DaoFactory daoFactory) {
         return daoFactory.totalsPurchaseDao();
     }
 
-    public List<Total_buy> searchTotals(TotalsSearchCriteria criteria) throws DaoException {
-        return getTotalsBuyDao().searchTotals(criteria);
+    public TotalsPage<Total_buy> searchTotals(TotalsSearchCriteria criteria, int page, int pageSize)
+            throws DaoException {
+        return getTotalsBuyDao().searchTotals(criteria, page, pageSize);
+    }
+
+    public TotalsSummaryRow summarizeTotals(TotalsSearchCriteria criteria) throws DaoException {
+        return getTotalsBuyDao().summarizeTotals(criteria);
     }
 }

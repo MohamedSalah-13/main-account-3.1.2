@@ -25,11 +25,15 @@ public record TotalsFilterInput(
         String maxTotal,
         String freeText) {
 
+    /**
+     * Neither date is required. An operator looking for a customer's first invoice does
+     * not know when they started, and stepping a date picker backwards a month at a time
+     * until something appears is not a search - so an empty date is "no bound on that
+     * side" rather than a refusal. Only an inverted range is still refused, because it
+     * can match nothing and is always a mistake.
+     */
     public TotalsSearchCriteria toCriteria() throws InvalidFilterException {
-        if (dateFrom == null || dateTo == null) {
-            throw new InvalidFilterException(Problem.DATE_REQUIRED);
-        }
-        if (dateFrom.isAfter(dateTo)) {
+        if (dateFrom != null && dateTo != null && dateFrom.isAfter(dateTo)) {
             throw new InvalidFilterException(Problem.DATE_RANGE);
         }
 
@@ -57,6 +61,7 @@ public record TotalsFilterInput(
     /** Conditions hidden inside the collapsible panel; the always-visible text is excluded. */
     public static int hiddenConditionCount(TotalsSearchCriteria criteria) {
         int count = 0;
+        if (criteria.dateFrom() != null || criteria.dateTo() != null) count++;
         if (criteria.invoiceNumber() != null) count++;
         if (criteria.partyName() != null) count++;
         if (criteria.delegateName() != null) count++;
@@ -94,7 +99,6 @@ public record TotalsFilterInput(
     }
 
     public enum Problem {
-        DATE_REQUIRED,
         DATE_RANGE,
         INVOICE_NUMBER,
         MIN_TOTAL,

@@ -303,6 +303,11 @@ SELECT ts.invoice_number,
        e.column_name,
        t.t_name,
        ts.user_id,
+       -- من اتخذ الإجراء، باسمه، لا برقمه وحده.
+       -- The mappers used to answer this with usersDao().getDataById(user_id) once per
+       -- row, so a list of five hundred documents ran five hundred extra queries for a
+       -- single column. LEFT, not INNER: a name is worth less than the document it names.
+       uu.user_name                                                 AS user_name,
        -- الربح والتكلفة من document_profit وحده. لا يُحسبان هنا.
        -- Both come from document_profit, which already sums the lines' cost to reach
        -- the profit. Grouping `sales` a second time here to reproduce that same SUM
@@ -322,7 +327,8 @@ FROM total_sales ts
          JOIN treasury  t  ON ts.treasury_id = t.id
          LEFT JOIN document_profit      dp  ON dp.document_kind = 'sales'
                                            AND dp.document_id = ts.invoice_number
-         LEFT JOIN TotalPaidAmounts     tpa ON ts.invoice_number = tpa.InvoiceNumber;
+         LEFT JOIN TotalPaidAmounts     tpa ON ts.invoice_number = tpa.InvoiceNumber
+         LEFT JOIN users                uu  ON uu.id = ts.user_id;
 
 -- --------------------------------------total_purchase_names_table---------------------------------
 
@@ -348,12 +354,18 @@ SELECT tb.invoice_number,
        s.stock_name,
        t.t_name,
        tb.user_id,
+       -- من اتخذ الإجراء، باسمه، لا برقمه وحده.
+       -- The mappers used to answer this with usersDao().getDataById(user_id) once per
+       -- row, so a list of five hundred documents ran five hundred extra queries for a
+       -- single column. LEFT, not INNER: a name is worth less than the document it names.
+       uu.user_name                                                 AS user_name,
        COALESCE(pa.total_paid, 0) AS OtherPaid
 FROM total_buy tb
          JOIN suppliers c ON c.id = tb.sup_code
          JOIN stocks    s ON s.stock_id = tb.stock_id
          JOIN treasury  t ON tb.treasury_id = t.id
-         LEFT JOIN PaidAmounts pa ON tb.invoice_number = pa.InvoiceNumber;
+         LEFT JOIN PaidAmounts pa ON tb.invoice_number = pa.InvoiceNumber
+         LEFT JOIN users       uu ON uu.id = tb.user_id;
 
 -- --------------------------------------total_purchase_return_names_table--------------------------
 
@@ -376,11 +388,17 @@ SELECT tbr.id,
        c.name,
        s.stock_name,
        t.t_name,
-       tbr.user_id
+       tbr.user_id,
+       -- من اتخذ الإجراء، باسمه، لا برقمه وحده.
+       -- The mappers used to answer this with usersDao().getDataById(user_id) once per
+       -- row, so a list of five hundred documents ran five hundred extra queries for a
+       -- single column. LEFT, not INNER: a name is worth less than the document it names.
+       uu.user_name                                                 AS user_name
 FROM total_buy_re tbr
          JOIN suppliers c ON c.id = tbr.sup_id
          JOIN stocks    s ON s.stock_id = tbr.stock_id
-         JOIN treasury  t ON tbr.treasury_id = t.id;
+         JOIN treasury  t ON tbr.treasury_id = t.id
+         LEFT JOIN users uu ON uu.id = tbr.user_id;
 
 -- --------------------------------------total_sales_return_names_table-----------------------------
 
@@ -406,6 +424,11 @@ SELECT tsr.id,
        t.t_name,
        e.column_name,
        tsr.user_id,
+       -- من اتخذ الإجراء، باسمه، لا برقمه وحده.
+       -- The mappers used to answer this with usersDao().getDataById(user_id) once per
+       -- row, so a list of five hundred documents ran five hundred extra queries for a
+       -- single column. LEFT, not INNER: a name is worth less than the document it names.
+       uu.user_name                                                 AS user_name,
        -- بالسالب في document_profit لأنه عكس بيع؛ هذه الشاشة تسرد المرتجعات وحدها
        -- فتعرض المقدار موجباً كما كانت دائماً.
        -- document_profit carries a return negative, because it reverses a sale and has
@@ -424,7 +447,8 @@ FROM total_sales_re tsr
          JOIN treasury  t ON tsr.treasury_id = t.id
          JOIN employees e ON e.id = tsr.delegate_id
          LEFT JOIN document_profit    dp  ON dp.document_kind = 'sales_return'
-                                         AND dp.document_id = tsr.id;
+                                         AND dp.document_id = tsr.id
+         LEFT JOIN users              uu  ON uu.id = tsr.user_id;
 
 -- --------------------------------------account_customer_table-------------------------------------
 

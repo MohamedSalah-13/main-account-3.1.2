@@ -17,6 +17,13 @@ public interface TotalsAndPurchaseList<T1 extends BasePurchasesAndSales, T2 exte
 
     int getMaxId() throws Exception;
 
-    List<T2> searchTotals(TotalsSearchCriteria criteria) throws Exception;
+    /**
+     * One page of a search, newest first, with the totals of everything it matched.
+     * Both dates in {@code criteria} may be absent, which searches the whole history.
+     */
+    TotalsPage<T2> searchTotals(TotalsSearchCriteria criteria, int page, int pageSize) throws Exception;
+
+    /** The money the same criteria add up to, asked for separately - it is the slow half. */
+    TotalsSummaryRow summarizeTotals(TotalsSearchCriteria criteria) throws Exception;
 
 }

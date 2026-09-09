@@ -5,6 +5,8 @@ import com.hamza.account.controller.main.DataPublisher;
 import com.hamza.account.controller.main.LoadData;
 import com.hamza.account.controller.model.PrintPurchaseWithName;
 import com.hamza.account.controller.others.ServiceRegistry;
+import com.hamza.account.document.TotalsPage;
+import com.hamza.account.document.TotalsSummaryRow;
 import com.hamza.account.document.TotalsSearchCriteria;
 import com.hamza.account.features.events.InvoiceSide;
 import com.hamza.account.features.invoice.InvoiceSaveCommand;
@@ -75,8 +77,14 @@ public class SuppliersData
         }
 
         @Override
-        public List<Total_buy> searchTotals(TotalsSearchCriteria criteria) throws DaoException {
-            return totalBuyService.searchTotals(criteria);
+        public TotalsPage<Total_buy> searchTotals(TotalsSearchCriteria criteria, int page, int pageSize)
+                throws DaoException {
+            return totalBuyService.searchTotals(criteria, page, pageSize);
+        }
+
+        @Override
+        public TotalsSummaryRow summarizeTotals(TotalsSearchCriteria criteria) throws DaoException {
+            return totalBuyService.summarizeTotals(criteria);
         }
     };
 

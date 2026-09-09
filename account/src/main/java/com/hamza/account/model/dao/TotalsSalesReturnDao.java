@@ -4,6 +4,8 @@ import com.hamza.account.document.DocumentTableSpec;
 import com.hamza.account.document.DocumentType;
 import com.hamza.account.document.DocumentWriteGuard;
 import com.hamza.account.document.TotalsSearchCriteria;
+import com.hamza.account.document.TotalsSummaryRow;
+import com.hamza.account.document.TotalsPage;
 import com.hamza.account.model.domain.*;
 import com.hamza.account.type.InvoiceType;
 import com.hamza.controlsfx.database.AbstractDao;
@@ -234,7 +236,9 @@ public class TotalsSalesReturnDao extends AbstractDao<Total_Sales_Re> {
             totalSalesRe.setInvoiceType(InvoiceType.getInvoiceTypeById(type_id));
             totalSalesRe.setCreated_at(LocalDateTime.parse(rs.getString(DATE_INSERT), DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
             totalSalesRe.setUpdated_at(rs.getObject("updated_at", LocalDateTime.class));
-            totalSalesRe.setUsers(daoFactory.usersDao().getDataById(rs.getInt(USER_ID)));
+            // The name comes with the row. This was one getDataById per document,
+            // so a list of five hundred ran five hundred queries for one column.
+            totalSalesRe.setUsers(new Users(rs.getInt(USER_ID), rs.getString("user_name")));
             totalSalesRe.setSourceInvoiceNumber(rs.getInt(SOURCE_INVOICE_NUMBER));
             totalSalesRe.setReturnReason(rs.getString(RETURN_REASON));
             totalSalesRe.setTotal_profit(rs.getDouble(TOTAL_PROFIT));
@@ -262,9 +266,46 @@ public class TotalsSalesReturnDao extends AbstractDao<Total_Sales_Re> {
         return queryForInt(maxIdSql());
     }
 
-    public List<Total_Sales_Re> searchTotals(TotalsSearchCriteria criteria) throws DaoException {
+    /**
+     * One page of a search and how many documents it matched, from one shared
+     * {@code WHERE} - see {@link DocumentTableSpec#searchPageSql} for why the page is not
+     * read from the view, and what that used to cost.
+     */
+    public TotalsPage<Total_Sales_Re> searchTotals(TotalsSearchCriteria criteria, int page, int pageSize)
+            throws DaoException {
+        List<Object> pageParams = new ArrayList<>();
+        String pageSql = SPEC.searchPageSql(criteria, pageParams);
+        pageParams.add(pageSize);
+        pageParams.add(page * pageSize);
+        List<Total_Sales_Re> rows = queryForObjects(pageSql, this::map, pageParams.toArray());
+
+        List<Object> countParams = new ArrayList<>();
+        String countSql = SPEC.searchCountSql(criteria, countParams);
+        int matched = withConnection(connection -> {
+            try (var statement = connection.prepareStatement(countSql)) {
+                setData(statement, countParams.toArray());
+                try (ResultSet rs = statement.executeQuery()) {
+                    return rs.next() ? rs.getInt(1) : 0;
+                }
+            }
+        });
+        return new TotalsPage<>(rows, matched, page, pageSize);
+    }
+
+    /** The figures for the whole result. Separate because it is the slow half. */
+    public TotalsSummaryRow summarizeTotals(TotalsSearchCriteria criteria) throws DaoException {
         List<Object> params = new ArrayList<>();
-        String sql = SPEC.searchSql(criteria, params);
-        return queryForObjects(sql, this::map, params.toArray());
+        String sql = SPEC.searchSummarySql(criteria, params);
+        return withConnection(connection -> {
+            try (var statement = connection.prepareStatement(sql)) {
+                setData(statement, params.toArray());
+                try (ResultSet rs = statement.executeQuery()) {
+                    if (!rs.next()) return TotalsSummaryRow.EMPTY;
+                    return new TotalsSummaryRow(rs.getInt("row_count"),
+                            rs.getBigDecimal("sum_total"), rs.getBigDecimal("sum_discount"),
+                            rs.getBigDecimal("sum_paid"), rs.getBigDecimal("sum_profit"));
+                }
+            }
+        });
     }
 }

@@ -38,7 +38,34 @@ class TotalsFilterInputTest {
         assertNull(criteria.partyName());
         assertNull(criteria.minTotal());
         assertNull(criteria.freeText());
-        assertEquals(0, TotalsFilterInput.hiddenConditionCount(criteria));
+        // The date range is one of them: it is optional now, so having one is a filter.
+        assertEquals(1, TotalsFilterInput.hiddenConditionCount(criteria));
+    }
+
+    @Test
+    void aSearchWithNoDatesAtAllIsAllowedAndBoundsNothing() throws Exception {
+        var criteria = new TotalsFilterInput(null, null, null, "احمد حامد", null,
+                null, null, null, null, null).toCriteria();
+
+        assertNull(criteria.dateFrom());
+        assertNull(criteria.dateTo());
+        assertEquals("احمد حامد", criteria.partyName());
+        assertEquals(1, TotalsFilterInput.hiddenConditionCount(criteria));
+    }
+
+    @Test
+    void oneOpenEndIsStillARangeAndIsStillCounted() throws Exception {
+        var since = new TotalsFilterInput(FROM, null, null, null, null,
+                null, null, null, null, null).toCriteria();
+        var until = new TotalsFilterInput(null, TO, null, null, null,
+                null, null, null, null, null).toCriteria();
+
+        assertEquals(FROM, since.dateFrom());
+        assertNull(since.dateTo());
+        assertNull(until.dateFrom());
+        assertEquals(TO, until.dateTo());
+        assertEquals(1, TotalsFilterInput.hiddenConditionCount(since));
+        assertEquals(1, TotalsFilterInput.hiddenConditionCount(until));
     }
 
     @Test
@@ -65,7 +92,7 @@ class TotalsFilterInputTest {
     void countsOnlyConditionsHiddenInsideTheAdvancedPanel() throws Exception {
         var criteria = input("7", "A", "D", InvoiceType.DEFER, "U", "10", "20", "visible").toCriteria();
 
-        assertEquals(6, TotalsFilterInput.hiddenConditionCount(criteria));
+        assertEquals(7, TotalsFilterInput.hiddenConditionCount(criteria));
     }
 
     private static TotalsFilterInput input(String invoiceNumber, String party, String delegate,

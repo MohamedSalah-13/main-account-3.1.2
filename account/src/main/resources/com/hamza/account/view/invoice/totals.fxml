@@ -204,7 +204,23 @@
             </top>
 
             <center>
-                <TableView fx:id="tableView" styleClass="app-table,totals-table" />
+                <VBox spacing="6.0">
+                    <children>
+                        <TableView fx:id="tableView" styleClass="app-table,totals-table"
+                                   VBox.vgrow="ALWAYS" />
+                        <!-- Hidden while one page holds the whole result. -->
+                        <HBox fx:id="pagerBar" alignment="CENTER" managed="false" spacing="8.0"
+                              styleClass="totals-pager" visible="false">
+                            <children>
+                                <Button fx:id="btnPreviousPage" mnemonicParsing="false"
+                                        styleClass="neutral-button" text="%invoice.search.previous" />
+                                <Label fx:id="labelPage" styleClass="totals-page-label" />
+                                <Button fx:id="btnNextPage" mnemonicParsing="false"
+                                        styleClass="neutral-button" text="%invoice.search.next" />
+                            </children>
+                        </HBox>
+                    </children>
+                </VBox>
             </center>
 
             <bottom>

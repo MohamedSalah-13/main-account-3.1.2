@@ -91,11 +91,12 @@ public final class SavedTotalsFilters {
             if (split > 0) values.put(pair.substring(0, split), pair.substring(split + 1));
         }
         try {
-            LocalDate from = LocalDate.parse(values.get("from"));
-            LocalDate to = LocalDate.parse(values.get("to"));
+            // Both dates are optional, so a preset may legitimately carry neither - that is
+            // what "every invoice this customer ever had" is saved as. Parsing them
+            // unconditionally threw, and the catch below turned the whole preset into null.
             return new TotalsSearchCriteria(
-                    from,
-                    to,
+                    date(values.get("from")),
+                    date(values.get("to")),
                     integer(values.get("invoice")),
                     decodedText(values.get("party")),
                     decodedText(values.get("delegate")),
@@ -124,6 +125,10 @@ public final class SavedTotalsFilters {
     private static String decodedText(String stored) {
         if (stored == null) return null;
         return new String(Base64.getUrlDecoder().decode(stored), StandardCharsets.UTF_8);
+    }
+
+    private static LocalDate date(String stored) {
+        return stored == null ? null : LocalDate.parse(stored);
     }
 
     private static Integer integer(String stored) {

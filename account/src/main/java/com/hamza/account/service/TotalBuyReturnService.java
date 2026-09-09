@@ -10,6 +10,8 @@ import com.hamza.account.period.PeriodLockRegistry;
 import com.hamza.account.authorization.AuthorizationGuard;
 import com.hamza.account.authorization.AppPermissions;
 import com.hamza.account.authorization.PermissionKey;
+import com.hamza.account.document.TotalsPage;
+import com.hamza.account.document.TotalsSummaryRow;
 import com.hamza.account.document.TotalsSearchCriteria;
 import com.hamza.account.model.dao.TotalsPurchaseReturnDao;
 import com.hamza.account.model.domain.Total_Buy_Re;
@@ -86,7 +88,12 @@ public record TotalBuyReturnService(DaoFactory daoFactory) {
         return deleteMultiData(new Integer[]{intExact});
     }
 
-    public List<Total_Buy_Re> searchTotals(TotalsSearchCriteria criteria) throws DaoException {
-        return getTotalsPurchaseReturnDao().searchTotals(criteria);
+    public TotalsPage<Total_Buy_Re> searchTotals(TotalsSearchCriteria criteria, int page, int pageSize)
+            throws DaoException {
+        return getTotalsPurchaseReturnDao().searchTotals(criteria, page, pageSize);
+    }
+
+    public TotalsSummaryRow summarizeTotals(TotalsSearchCriteria criteria) throws DaoException {
+        return getTotalsPurchaseReturnDao().summarizeTotals(criteria);
     }
 }
