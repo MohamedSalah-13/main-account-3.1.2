@@ -631,6 +631,7 @@ public class TotalsController<T3 extends BaseNames, T4 extends BaseAccount>
         dialog.setTitle(language.getString("invoice.search.saved.save.title"));
         dialog.setHeaderText(null);
         dialog.setContentText(language.getString("invoice.search.saved.save.prompt"));
+        localizeDialog(dialog);
         Optional<String> answer = dialog.showAndWait();
         if (answer.isEmpty() || answer.get().isBlank()) return;
 
@@ -643,6 +644,27 @@ public class TotalsController<T3 extends BaseNames, T4 extends BaseAccount>
         savedFilters.save(name, criteria);
         reloadSavedFilters(name);
         btnDeleteSavedFilter.setDisable(false);
+    }
+
+    /**
+     * A dialog built in code, rather than from an FXML loaded with a bundle, carries
+     * JavaFX's own English button labels and the platform's left-to-right orientation -
+     * while every other window on this screen is Arabic and right-to-left.
+     */
+    private static void localizeDialog(Dialog<?> dialog) {
+        LanguageManager language = LanguageManager.getInstance();
+        DialogPane pane = dialog.getDialogPane();
+        pane.setNodeOrientation(language.getNodeOrientation());
+        for (ButtonType type : pane.getButtonTypes()) {
+            String key = switch (type.getButtonData()) {
+                case OK_DONE -> "ok";
+                case CANCEL_CLOSE -> "cancel";
+                default -> null;
+            };
+            if (key != null && pane.lookupButton(type) instanceof Button button) {
+                button.setText(language.getString(key));
+            }
+        }
     }
 
     private void deleteSelectedFilter() {

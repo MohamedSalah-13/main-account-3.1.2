@@ -162,6 +162,7 @@ public class TreasureDetailsController {
                 Columns.number("treasury.statement.column.output", TreasuryStatementRow::output),
                 Columns.number("treasury.statement.column.balance", TreasuryStatementRow::runningBalance),
                 Columns.text("treasury.statement.column.user", TreasuryStatementRow::username), action);
+        tableView.setPlaceholder(new Label(text("treasury.statement.empty")));
         TableSetting.tableMenuSetting(getClass(), tableView);
     }
 
