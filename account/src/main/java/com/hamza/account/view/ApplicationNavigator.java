@@ -11,6 +11,7 @@ import com.hamza.account.features.events.RemoteChangeRelay;
 import com.hamza.account.features.pricecheck.KioskRouting;
 import com.hamza.account.features.rbac.CurrentUser;
 import com.hamza.account.features.rbac.RbacService;
+import com.hamza.account.features.session.SessionWindowCleanup;
 import com.hamza.account.features.users.UserPresenceService;
 import com.hamza.account.features.workstation.WorkstationHeartbeat;
 import com.hamza.account.model.dao.DaoFactory;
@@ -29,6 +30,7 @@ import javafx.scene.control.ProgressIndicator;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
+import javafx.stage.Window;
 import javafx.util.Duration;
 import lombok.extern.log4j.Log4j2;
 import org.kordamp.ikonli.feather.Feather;
@@ -50,6 +52,7 @@ public final class ApplicationNavigator {
 
     public void showLogin() {
         try {
+            closeSessionWindows();
             stage.setFullScreen(false);
             stage.setMaximized(false);
             new LogApplication(daoFactory, this::showMain).show(stage);
@@ -99,6 +102,7 @@ public final class ApplicationNavigator {
 
     private void logout(boolean createBackup) {
         Users user = CurrentUser.getOrNull();
+        closeSessionWindows();
         stopSessionServices();
         showBusy("session.signing.out");
 
@@ -120,6 +124,7 @@ public final class ApplicationNavigator {
         }
 
         Users user = CurrentUser.getOrNull();
+        closeSessionWindows();
         stopSessionServices();
         showBusy("session.closing");
 
@@ -168,6 +173,17 @@ public final class ApplicationNavigator {
         WorkstationHeartbeat.stop();
         RbacService rbac = ServiceRegistry.get(RbacService.class);
         if (rbac != null) rbac.signOut();
+    }
+
+    /**
+     * A login scene must never coexist with windows created by the previous user.
+     * JavaFX keeps independently created stages alive when the primary stage changes
+     * scene, so close every secondary window while retaining the stage that will show
+     * the sign-out progress and the next login screen.
+     */
+    private void closeSessionWindows() {
+        SessionWindowCleanup.closeSecondaryWindows(stage, Window.getWindows(), Window::hide)
+                .forEach(failure -> log.warn("Could not hide a window from the ending session", failure));
     }
 
     /** Starts the services every signed-in workstation needs, including kiosk-only tills. */
