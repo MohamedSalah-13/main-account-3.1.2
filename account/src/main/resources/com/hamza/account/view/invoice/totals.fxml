@@ -8,6 +8,7 @@
 <?import javafx.scene.control.MenuButton?>
 <?import javafx.scene.control.MenuItem?>
 <?import javafx.scene.control.Separator?>
+<?import javafx.scene.control.SeparatorMenuItem?>
 <?import javafx.scene.control.TableView?>
 <?import javafx.scene.control.TextField?>
 <?import javafx.scene.control.ToggleButton?>
@@ -69,6 +70,17 @@
                                                   text="%invoice.btn.print.totals" />
                                         <MenuItem fx:id="menuItemPrintDetailed" mnemonicParsing="false"
                                                   text="%invoice.btn.print.detailed" />
+                                        <SeparatorMenuItem />
+                                        <MenuItem fx:id="menuItemReportByParty" mnemonicParsing="false"
+                                                  text="%invoice.report.by.party" />
+                                        <MenuItem fx:id="menuItemReportByDay" mnemonicParsing="false"
+                                                  text="%invoice.report.by.day" />
+                                        <MenuItem fx:id="menuItemReportByMonth" mnemonicParsing="false"
+                                                  text="%invoice.report.by.month" />
+                                        <MenuItem fx:id="menuItemReportByDelegate" mnemonicParsing="false"
+                                                  text="%invoice.report.by.delegate" />
+                                        <MenuItem fx:id="menuItemReportByItem" mnemonicParsing="false"
+                                                  text="%invoice.report.by.item" />
                                     </items>
                                 </MenuButton>
                             </children>

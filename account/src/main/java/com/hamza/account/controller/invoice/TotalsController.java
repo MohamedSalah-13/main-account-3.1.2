@@ -9,6 +9,7 @@ import com.hamza.account.controller.main.DisableButtons;
 import com.hamza.account.controller.model.PrintPurchaseWithName;
 import com.hamza.account.controller.model.PrintTotalsData;
 import com.hamza.account.controller.others.ServiceRegistry;
+import com.hamza.account.document.DocumentTableSpec;
 import com.hamza.account.document.TotalsPage;
 import com.hamza.account.document.TotalsSearchCriteria;
 import com.hamza.account.document.TotalsSummaryRow;
@@ -16,7 +17,11 @@ import com.hamza.account.features.events.EmployeesChanged;
 import com.hamza.account.features.events.InvoiceSaved;
 import com.hamza.account.features.events.NameChanged;
 import com.hamza.account.features.totals.TotalsFilterInput;
+import com.hamza.account.features.export.PdfExportService;
 import com.hamza.account.features.totals.SavedTotalsFilters;
+import com.hamza.account.features.totals.TotalsFilterDescription;
+import com.hamza.account.features.totals.TotalsReportLayout;
+import com.hamza.account.features.totals.TotalsReportService;
 import com.hamza.account.finance.MoneyMath;
 import com.hamza.account.interfaces.api.DataInterface;
 import com.hamza.account.interfaces.api.TotalsDataInterface;
@@ -61,10 +66,13 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.scene.text.Text;
+import com.itextpdf.kernel.geom.PageSize;
+import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 import javafx.util.Duration;
 import lombok.extern.log4j.Log4j2;
 
+import java.io.File;
 import java.net.URL;
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -100,6 +108,7 @@ public class TotalsController<T3 extends BaseNames, T4 extends BaseAccount>
     private boolean syncingFilters;
     private long searchRequest;
     private final Map<ComboBox<String>, FilterableCombo> filterableCombos = new IdentityHashMap<>();
+    private final TotalsReportService reportService = new TotalsReportService();
     private int currentPage;
     private MaskerPaneSetting maskerPaneSetting;
     @FXML
@@ -134,6 +143,9 @@ public class TotalsController<T3 extends BaseNames, T4 extends BaseAccount>
     private HBox pagerBar;
     @FXML
     private MenuButton menuButton;
+    @FXML
+    private MenuItem menuItemReportByParty, menuItemReportByDay, menuItemReportByMonth,
+            menuItemReportByDelegate, menuItemReportByItem;
     @FXML
     private MenuItem menuItemPrintTotals, menuItemPrintDetailed;
 
@@ -396,6 +408,13 @@ public class TotalsController<T3 extends BaseNames, T4 extends BaseAccount>
     private void action() {
         menuItemPrintTotals.setOnAction(actionEvent -> print());
         menuItemPrintDetailed.setOnAction(actionEvent -> printDetailed());
+        menuItemReportByParty.setOnAction(actionEvent -> exportReport(DocumentTableSpec.Report.BY_PARTY));
+        menuItemReportByDay.setOnAction(actionEvent -> exportReport(DocumentTableSpec.Report.BY_DAY));
+        menuItemReportByMonth.setOnAction(actionEvent -> exportReport(DocumentTableSpec.Report.BY_MONTH));
+        menuItemReportByDelegate.setOnAction(actionEvent -> exportReport(DocumentTableSpec.Report.BY_DELEGATE));
+        menuItemReportByItem.setOnAction(actionEvent -> exportReport(DocumentTableSpec.Report.BY_ITEM));
+        boolean hasDelegate = dataInterface.designInterface().showDataForCustomer();
+        menuItemReportByDelegate.setVisible(hasDelegate);
         btnRefresh.setOnAction(actionEvent -> search(false));
         btnSearch.setOnAction(actionEvent -> search(true));
         btnClearFilters.setOnAction(actionEvent -> clearFilters());
@@ -584,6 +603,94 @@ public class TotalsController<T3 extends BaseNames, T4 extends BaseAccount>
             throw new UserValidationException(LanguageManager.getInstance().getString("msg.select.row"));
         }
         return selected;
+    }
+
+    /**
+     * Runs one of the grouped summaries over the criteria now on screen and writes it to a
+     * PDF, with the filter it ran under printed under the title.
+     * <p>
+     * That subtitle is the point of the exercise. The same report over one month, over one
+     * customer, or over the whole history prints identically, so a page filed away or
+     * handed to an accountant otherwise carries no way of knowing what it counted - and two
+     * of them that disagree cannot be told apart. It is built from the criteria the query
+     * ran with, not from the controls, which may have been edited since.
+     */
+    private void exportReport(DocumentTableSpec.Report report) {
+        TotalsSearchCriteria criteria;
+        try {
+            criteria = buildCriteria();
+        } catch (TotalsFilterInput.InvalidFilterException e) {
+            setFilterPanelVisible(true);
+            exceptionHandle(new UserValidationException(filterErrorText(e.problem())));
+            return;
+        }
+        LanguageManager language = LanguageManager.getInstance();
+        DocumentTableSpec spec = DocumentTableSpec.of(dataInterface.designInterface().documentType());
+
+        File target = reportTarget(language.getString(reportTitleKey(report)));
+        if (target == null) return;
+
+        AtomicReference<TotalsReportService.TotalsReport> result = new AtomicReference<>();
+        maskerPaneSetting.showMaskerPane(language.getString("invoice.masker.loading"), () ->
+                result.set(reportService.run(spec, report, criteria,
+                        dataInterface.designInterface().show_totals(),
+                        language.getString("invoice.report.unsupported"))));
+        maskerPaneSetting.getVoidTask().setOnSucceeded(event ->
+                writeReport(result.get(), report, criteria, target));
+    }
+
+    private void writeReport(TotalsReportService.TotalsReport report,
+                             DocumentTableSpec.Report kind,
+                             TotalsSearchCriteria criteria, File target) {
+        LanguageManager language = LanguageManager.getInstance();
+        if (report == null || report.isEmpty()) {
+            AllAlerts.handleError(language.getString(reportTitleKey(kind)),
+                    new UserValidationException(language.getString("invoice.report.empty")));
+            return;
+        }
+        String subtitle = TotalsFilterDescription.describe(criteria, language::getString);
+        if (report.truncated()) {
+            subtitle = subtitle + language.getString("invoice.report.filter.separator")
+                    + language.getString("invoice.report.truncated", DocumentTableSpec.REPORT_ROW_LIMIT);
+        }
+        TotalsReportLayout layout = TotalsReportLayout.of(report, kind, language::getString);
+        boolean written = new PdfExportService().exportGenericReport(
+                target.getAbsolutePath(),
+                language.getString(reportTitleKey(kind)) + " - " + labelScreenTitle.getText(),
+                subtitle,
+                layout.headers(),
+                layout.columnWidths(),
+                layout.rows(),
+                layout.totalLabel(),
+                layout.totalValue(),
+                null,
+                PageSize.A4.rotate());
+        if (written) {
+            AllAlerts.alertSaveWithMessage(language.getString("invoice.report.saved")
+                    + System.lineSeparator() + target.getAbsolutePath());
+        } else {
+            AllAlerts.handleError(language.getString(reportTitleKey(kind)),
+                    new UserValidationException(language.getString("invoice.report.failed")));
+        }
+    }
+
+    private static String reportTitleKey(DocumentTableSpec.Report report) {
+        return switch (report) {
+            case BY_PARTY -> "invoice.report.by.party";
+            case BY_DAY -> "invoice.report.by.day";
+            case BY_MONTH -> "invoice.report.by.month";
+            case BY_DELEGATE -> "invoice.report.by.delegate";
+            case BY_ITEM -> "invoice.report.by.item";
+        };
+    }
+
+    /** Where the operator wants it. A report they cannot find again is not a report. */
+    private File reportTarget(String suggestedName) {
+        FileChooser chooser = new FileChooser();
+        chooser.setTitle(LanguageManager.getInstance().getString("invoice.report.save.title"));
+        chooser.setInitialFileName(suggestedName.replaceAll("[\\\\/:*?\"<>|]", " ").trim() + ".pdf");
+        chooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("PDF", "*.pdf"));
+        return chooser.showSaveDialog(stackPane.getScene().getWindow());
     }
 
     private void copyInvoiceDetailsToClipboard() {

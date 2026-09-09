@@ -53,6 +53,9 @@ public record DocumentTableSpec(
         List<String> updateColumns,
         List<String> lineColumns) {
 
+    /** A printed page nobody reads past is not a report; a runaway group-by is a hang. */
+    public static final int REPORT_ROW_LIMIT = 2000;
+
     /** As in {@code LockedDocument}: these are concatenated into SQL, so they are checked. */
     private static final Pattern IDENTIFIER = Pattern.compile("[A-Za-z_][A-Za-z0-9_]*");
 
@@ -276,6 +279,101 @@ public record DocumentTableSpec(
         return sql.append(fromAndWhere(criteria, params)).toString();
     }
 
+    // ---- reports ---------------------------------------------------------------------
+
+    /**
+     * The four summaries the totals screen prints, each over exactly the documents the
+     * search matched - they take the same {@code criteria} and share {@link #fromAndWhere},
+     * so a report can never quietly describe a wider set than the list it was printed from.
+     * <p>
+     * The profit column is present only for the two sales families, for the reason
+     * {@link #hasProfit()} gives, and the caller is told which by asking that.
+     */
+    public enum Report {
+        /** One row per customer or supplier, heaviest first. */
+        BY_PARTY,
+        /** One row per day. */
+        BY_DAY,
+        /** One row per month. */
+        BY_MONTH,
+        /** One row per delegate - sales families only, a purchase has none. */
+        BY_DELEGATE,
+        /** One row per item, by quantity sold. Reads the lines, so it has no cash columns. */
+        BY_ITEM
+    }
+
+    /** Whether this family can answer that report at all. */
+    public boolean supports(Report report) {
+        return switch (report) {
+            case BY_DELEGATE -> hasDelegate();
+            case BY_PARTY, BY_DAY, BY_MONTH, BY_ITEM -> true;
+        };
+    }
+
+    /**
+     * A grouped summary over the search's own conditions.
+     *
+     * <p>{@link Report#BY_ITEM} is the one that reads the line table, and it deliberately
+     * carries no profit: an invoice-level discount has no owner among the lines, and
+     * splitting it needs an allocation rule nobody has agreed - the same reason
+     * {@code card_item_view_details} stays gross of it. It reports quantity and revenue,
+     * which are the questions the lines can actually answer.</p>
+     */
+    public String reportSql(Report report, TotalsSearchCriteria criteria, List<Object> params) {
+        if (!supports(report)) {
+            throw new IllegalArgumentException(type + " has no " + report + " report");
+        }
+        return switch (report) {
+            case BY_PARTY -> grouped("pa.name", "label", criteria, params, "sum_total DESC");
+            case BY_DAY -> grouped("d." + dateColumn(), "label", criteria, params, "label DESC");
+            case BY_MONTH -> grouped("DATE_FORMAT(d." + dateColumn() + ", '%Y-%m')", "label",
+                    criteria, params, "label DESC");
+            case BY_DELEGATE -> grouped("em.column_name", "label", criteria, params, "sum_total DESC");
+            case BY_ITEM -> itemReport(criteria, params);
+        };
+    }
+
+    private String grouped(String expression, String alias, TotalsSearchCriteria criteria,
+                           List<Object> params, String order) {
+        StringBuilder sql = new StringBuilder("SELECT ").append(expression).append(" AS ").append(alias)
+                .append(", COUNT(*) AS row_count")
+                .append(", COALESCE(SUM(d.total), 0) AS sum_total")
+                .append(", COALESCE(SUM(d.discount), 0) AS sum_discount")
+                .append(", COALESCE(SUM(d.").append(paid).append("), 0) AS sum_paid");
+        if (hasProfit()) {
+            sql.append(", COALESCE(SUM(ROUND((d.total - d.discount) - ")
+                    .append(lineCostSubquery("d")).append(", 2)), 0) AS sum_profit");
+        } else {
+            sql.append(", 0 AS sum_profit");
+        }
+        return sql.append(fromAndWhere(criteria, params, ""))
+                .append(" GROUP BY ").append(expression)
+                .append(" ORDER BY ").append(order)
+                .append(" LIMIT ").append(REPORT_ROW_LIMIT).toString();
+    }
+
+    /**
+     * Sold quantity and revenue per item. The lines are joined to the documents the search
+     * matched, so every condition still applies - a report of "what this customer buys" is
+     * the same filter, read one level down.
+     */
+    private String itemReport(TotalsSearchCriteria criteria, List<Object> params) {
+        String joins = " JOIN " + lineTable + " ln ON ln." + LINE_DOCUMENT + " = d." + key
+                + " JOIN items it ON it.id = ln." + lineItem;
+        return "SELECT it.nameItem AS label"
+                + ", COUNT(DISTINCT d." + key + ") AS row_count"
+                + ", COALESCE(SUM(ln.quantity * ln.type_value), 0) AS sum_quantity"
+                // quantity * price, not total_sel_price: only the two sales line tables
+                // carry that column, and on all 6,348 real sales lines the two are equal
+                // to the cent. Gross of the line's own discount, which has its own column.
+                + ", COALESCE(SUM(ln.quantity * ln.price), 0) AS sum_total"
+                + ", COALESCE(SUM(ln.discount), 0) AS sum_discount"
+                + fromAndWhere(criteria, params, joins)
+                + " GROUP BY it.id, it.nameItem"
+                + " ORDER BY sum_quantity DESC"
+                + " LIMIT " + REPORT_ROW_LIMIT;
+    }
+
     /** The recorded cost of one document's lines, as {@code document_profit} sums it. */
     private String lineCostSubquery(String documentAlias) {
         return "COALESCE((SELECT SUM(ln.total_buy_price) FROM " + lineTable
@@ -292,9 +390,20 @@ public record DocumentTableSpec(
      * without already knowing when they started.
      */
     private String fromAndWhere(TotalsSearchCriteria criteria, List<Object> params) {
+        return fromAndWhere(criteria, params, "");
+    }
+
+    /**
+     * @param extraJoins joins a particular statement needs, spliced in <b>before</b> the
+     *                   {@code WHERE} - a report over the lines adds its own, and appending
+     *                   them afterwards would not be SQL at all
+     */
+    private String fromAndWhere(TotalsSearchCriteria criteria, List<Object> params,
+                                String extraJoins) {
         StringBuilder sql = new StringBuilder(" FROM ").append(table).append(" d")
                 .append(" JOIN ").append(partyTable()).append(" pa ON pa.id = d.").append(party);
         if (hasDelegate()) sql.append(" JOIN employees em ON em.id = d.delegate_id");
+        sql.append(extraJoins);
         sql.append(" WHERE 1 = 1");
 
         if (criteria.dateFrom() != null) {
