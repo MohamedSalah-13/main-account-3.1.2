@@ -4,8 +4,10 @@ import org.junit.jupiter.api.Test;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Arrays;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class ProductProfileWiringArchitectureTest {
@@ -73,6 +75,11 @@ class ProductProfileWiringArchitectureTest {
 
         assertTrue(packageScript.contains("AccountK-Product-Setup="));
         assertTrue(launcher.contains("main-class=com.hamza.account.ProductProfileSetupMain"));
+        assertTrue(launcher.contains("icon=account/src/main/resources/product-profile-setup.ico"));
+
+        byte[] mainIcon = Files.readAllBytes(Path.of("src/main/resources/tools.ico"));
+        byte[] setupIcon = Files.readAllBytes(Path.of("src/main/resources/product-profile-setup.ico"));
+        assertFalse(Arrays.equals(mainIcon, setupIcon));
     }
 
     private static String read(String relative) throws Exception {
