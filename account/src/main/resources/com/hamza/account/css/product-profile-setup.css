@@ -8,6 +8,21 @@
     -fx-text-fill: -app-primary-dark;
 }
 
+.product-profile-root .feature-category-panel {
+    -fx-padding: 10;
+    -fx-background-color: -app-surface;
+    -fx-background-radius: 10;
+}
+
+.product-profile-root .feature-category-header {
+    -fx-alignment: center-left;
+}
+
+.product-profile-root .feature-count {
+    -fx-text-fill: -app-text-muted;
+    -fx-font-weight: bold;
+}
+
 .product-profile-root .feature-row {
     -fx-padding: 8 12;
     -fx-background-color: -app-neutral-soft;

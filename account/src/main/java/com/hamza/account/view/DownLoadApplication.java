@@ -180,6 +180,7 @@ public class DownLoadApplication extends Application {
         try {
             ProductProfile profile = service.loadCurrent();
             ServiceRegistry.register(ProductProfileService.class, service);
+            ServiceRegistry.register(ProductProfile.class, profile);
             ServiceRegistry.register(ProductFeatureAccess.class, profile);
             return profile;
         } catch (DaoException | ProductProfileException failure) {

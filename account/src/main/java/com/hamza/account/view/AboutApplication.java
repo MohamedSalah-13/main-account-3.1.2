@@ -1,23 +1,23 @@
 package com.hamza.account.view;
 
-import java.sql.Connection;
-import com.hamza.controlsfx.database.ConnectionManager;
-import com.hamza.account.config.Image_Setting;
+import com.hamza.account.config.AppIcon;
 import com.hamza.account.config.PropertiesName;
 import com.hamza.account.config.ThemeManager;
+import com.hamza.account.controller.others.ServiceRegistry;
+import com.hamza.account.features.productprofile.ProductFeatureCatalog;
+import com.hamza.account.features.productprofile.ProductProfile;
 import com.hamza.account.service.version.SystemInfoDialog;
 import com.hamza.account.trial.TrialManager;
 import com.hamza.controlsfx.alert.AllAlerts;
-import com.hamza.controlsfx.button.ImageDesign;
-import com.hamza.controlsfx.language.Setting_Language;
+import com.hamza.controlsfx.database.ConnectionManager;
+import com.hamza.controlsfx.language.LanguageManager;
 import com.hamza.controlsfx.others.ChangeOrientation;
-import com.hamza.controlsfx.util.ImageChoose;
 import javafx.application.Application;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
-import javafx.scene.image.ImageView;
+import javafx.scene.control.Label;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import javafx.scene.text.Text;
@@ -29,6 +29,10 @@ import lombok.extern.log4j.Log4j2;
 
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
+import java.sql.Connection;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
+import java.time.format.FormatStyle;
 import java.util.Properties;
 
 @Log4j2
@@ -36,22 +40,21 @@ public class AboutApplication extends Application {
     private static final String GAFATA = "Gafata";
     private static final String GRAND_HOTEL = "Grand Hotel";
     private static final String NEW_ROCKER = "New Rocker";
-    private static final String BUILD_DATE = "${buildDate}";
     private final VBox box;
     private Text statusText;
     private Text remainingText;
     private Text licenseText;
 
     public AboutApplication() {
-        var imageSetting = new Image_Setting();
-        ImageView imageView = new ImageDesign(imageSetting.tools, 120);
-        Button button = new Button(Setting_Language.WORD_SHOW);
+        LanguageManager language = LanguageManager.getInstance();
+        Button button = new Button(language.getString("about.system.info"));
         button.getStyleClass().add("app-neutral-button");
         button.setOnAction(event -> new SystemInfoDialog().show());
-        button.setGraphic(ImageChoose.createIcon(imageSetting.cancel));
+        button.setGraphic(AppIcon.INFO.graphic());
 
         box = new VBox(20);
-        box.getChildren().addAll(imageView, getLabel(), buildLicenseActions(), button);
+        box.getChildren().addAll(AppIcon.INFO.graphic(80), getLabel(),
+                buildProductProfileCard(), buildLicenseActions(), button);
         box.setPadding(new Insets(30));
         box.setAlignment(Pos.TOP_CENTER);
     }
@@ -73,15 +76,14 @@ public class AboutApplication extends Application {
         } catch (Exception ignored) {
         }
 
-        return "dev";
+        return LanguageManager.getInstance().getString("about.build.development");
     }
 
     @Override
     public void start(Stage stage) throws Exception {
         Scene scene = new SceneAll(box);
         stage.setScene(scene);
-        stage.setTitle(Setting_Language.ABOUT);
-        stage.getIcons().add(new javafx.scene.image.Image(new Image_Setting().tools));
+        stage.setTitle(LanguageManager.getInstance().getString("nav.about"));
         stage.setResizable(false);
         stage.initModality(javafx.stage.Modality.APPLICATION_MODAL);
         stage.show();
@@ -97,18 +99,22 @@ public class AboutApplication extends Application {
         double size = 20;
         String color = "green";
 
-        extracted("version_" + PropertiesName.getAppLastRunVersion() + "\n", GRAND_HOTEL, size, color, flow);
-        extracted("Build on " + getBuildDate() + "\n", GAFATA, size, color, flow);
+        LanguageManager language = LanguageManager.getInstance();
+        extracted(language.getString("about.version", PropertiesName.getAppLastRunVersion()) + "\n",
+                GRAND_HOTEL, size, color, flow);
+        extracted(language.getString("about.build.date", getBuildDate()) + "\n", GAFATA, size, color, flow);
 
         statusText = createText("", GAFATA, size, color);
         remainingText = createText("", GAFATA, size, color);
         licenseText = createText("", GAFATA, size, color);
         flow.getChildren().addAll(statusText, remainingText, licenseText);
 
-        extracted("Power by Hamza Software" + "\n", GAFATA, size, color, flow);
-        extracted("Copyright(c) 2020-2025" + "\n", GAFATA, size, color, flow);
-        extracted(Setting_Language.PROGRAM_NAME_EN + "\n", GAFATA, size + 5, "red", flow);
-        extracted(Setting_Language.PROGRAM_TEL, GAFATA, size + 5, "red", flow);
+        extracted(language.getString("about.powered.by") + "\n", GAFATA, size, color, flow);
+        extracted(language.getString("about.copyright") + "\n", GAFATA, size, color, flow);
+        extracted(com.hamza.controlsfx.language.Setting_Language.PROGRAM_NAME_EN + "\n",
+                GAFATA, size + 5, "red", flow);
+        extracted(com.hamza.controlsfx.language.Setting_Language.PROGRAM_TEL,
+                GAFATA, size + 5, "red", flow);
 
         refreshStatus();
         return flow;
@@ -131,22 +137,25 @@ public class AboutApplication extends Application {
     }
 
     private HBox buildLicenseActions() {
-        Button activate = new Button("تفعيل الترخيص");
+        LanguageManager language = LanguageManager.getInstance();
+        Button activate = new Button(language.getString("about.license.activate"));
         activate.getStyleClass().add("app-neutral-button");
+        activate.setGraphic(AppIcon.SECURITY.graphic());
         activate.setOnAction(event -> {
             FileChooser chooser = new FileChooser();
-            chooser.setTitle("اختر ملف الترخيص");
-            chooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("License File (*.dat)", "*.dat"));
+            chooser.setTitle(language.getString("about.license.choose"));
+            chooser.getExtensionFilters().add(new FileChooser.ExtensionFilter(
+                    language.getString("about.license.file.type"), "*.dat"));
             var file = chooser.showOpenDialog(activate.getScene().getWindow());
             if (file == null) {
                 return;
             }
             try {
                 Files.copy(file.toPath(), TrialManager.getLicensePath(), StandardCopyOption.REPLACE_EXISTING);
-                AllAlerts.alertSaveWithMessage("تم تفعيل الترخيص بنجاح.");
+                AllAlerts.alertSaveWithMessage(language.getString("about.license.activated"));
                 refreshStatus();
             } catch (Exception e) {
-                AllAlerts.handleError("تفعيل الترخيص", e);
+                AllAlerts.handleError(language.getString("about.license.activate"), e);
             }
         });
 
@@ -154,6 +163,39 @@ public class AboutApplication extends Application {
         box.setAlignment(Pos.CENTER);
         box.getChildren().addAll(activate);
         return box;
+    }
+
+    private VBox buildProductProfileCard() {
+        LanguageManager language = LanguageManager.getInstance();
+        VBox card = new VBox(6);
+        card.getStyleClass().add("app-card");
+        card.setMaxWidth(520);
+        Label heading = new Label(language.getString("product.profile.about.heading"));
+        heading.getStyleClass().add("app-section-title");
+        card.getChildren().add(heading);
+
+        ProductProfile profile = ServiceRegistry.get(ProductProfile.class);
+        if (profile == null) {
+            card.getChildren().add(new Label(language.getString("product.profile.about.unavailable")));
+            return card;
+        }
+        String customer = profile.legacyFallback()
+                ? language.getString("product.profile.about.legacy.customer") : profile.customerName();
+        String edition = profile.legacyFallback()
+                ? language.getString("product.profile.about.legacy.edition") : profile.profileName();
+        card.getChildren().addAll(
+                new Label(language.getString("product.profile.about.customer", customer)),
+                new Label(language.getString("product.profile.about.edition", edition)),
+                new Label(language.getString("product.profile.about.features",
+                        profile.enabledFeatures().size(), ProductFeatureCatalog.standard().keys().size())));
+        if (!profile.legacyFallback()) {
+            DateTimeFormatter formatter = DateTimeFormatter.ofLocalizedDateTime(FormatStyle.MEDIUM)
+                    .withLocale(language.getCurrentLocale())
+                    .withZone(ZoneId.systemDefault());
+            card.getChildren().add(new Label(language.getString(
+                    "product.profile.about.issued", formatter.format(profile.issuedAt()))));
+        }
+        return card;
     }
 
     /**
@@ -177,6 +219,7 @@ public class AboutApplication extends Application {
     }
 
     private void refreshStatus() {
+        LanguageManager language = LanguageManager.getInstance();
         double size = 20;
         String ok = "green";
         String warn = "orange";
@@ -184,9 +227,9 @@ public class AboutApplication extends Application {
 
         TrialManager.TrialDisplayInfo info = loadDisplayInfo();
         if (info == null) {
-            statusText.setText("الحالة: غير متاح\n");
-            remainingText.setText("الوقت المتبقي: غير متاح\n");
-            licenseText.setText("الترخيص: غير متاح\n");
+            statusText.setText(language.getString("about.status.unavailable") + "\n");
+            remainingText.setText(language.getString("about.remaining.unavailable") + "\n");
+            licenseText.setText(language.getString("about.license.unavailable") + "\n");
             applyStyle(statusText, GAFATA, size, bad);
             applyStyle(remainingText, GAFATA, size, bad);
             applyStyle(licenseText, GAFATA, size, bad);
@@ -194,27 +237,27 @@ public class AboutApplication extends Application {
         }
 
         if (info.licenseValid) {
-            statusText.setText("الحالة: مفعلة\n");
-            remainingText.setText("الوقت المتبقي: غير محدود\n");
-            licenseText.setText("الترخيص: صالح\n");
+            statusText.setText(language.getString("about.status.activated") + "\n");
+            remainingText.setText(language.getString("about.remaining.unlimited") + "\n");
+            licenseText.setText(language.getString("about.license.valid") + "\n");
             applyStyle(statusText, GAFATA, size, ok);
             applyStyle(remainingText, GAFATA, size, ok);
             applyStyle(licenseText, GAFATA, size, ok);
             return;
         }
 
-        statusText.setText("الحالة: تجريبية\n");
+        statusText.setText(language.getString("about.status.trial") + "\n");
         if (info.daysRemaining != null) {
             long days = Math.max(0, info.daysRemaining);
-            remainingText.setText("الوقت المتبقي: " + days + " يوم\n");
+            remainingText.setText(language.getString("about.remaining.days", days) + "\n");
         } else {
-            remainingText.setText("الوقت المتبقي: غير متاح\n");
+            remainingText.setText(language.getString("about.remaining.unavailable") + "\n");
         }
 
         if (info.licensePresent) {
-            licenseText.setText("الترخيص: غير صالح\n");
+            licenseText.setText(language.getString("about.license.invalid") + "\n");
         } else {
-            licenseText.setText("الترخيص: غير موجود\n");
+            licenseText.setText(language.getString("about.license.missing") + "\n");
         }
 
         String statusColor = info.trialExpired ? bad : warn;

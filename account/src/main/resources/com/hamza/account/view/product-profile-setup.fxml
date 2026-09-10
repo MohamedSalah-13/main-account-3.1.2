@@ -31,7 +31,13 @@
             </GridPane>
 
             <VBox spacing="12" styleClass="app-card">
-                <Label text="%product.profile.setup.features" styleClass="app-section-title"/>
+                <HBox spacing="10" alignment="CENTER_LEFT">
+                    <Label text="%product.profile.setup.features" styleClass="app-section-title"/>
+                    <Region HBox.hgrow="ALWAYS"/>
+                    <Button fx:id="exportSummaryButton" text="%product.profile.summary.export"
+                            onAction="#exportSummary" styleClass="secondary-button"/>
+                </HBox>
+                <TextField fx:id="featureSearchField" promptText="%product.profile.feature.search.prompt"/>
                 <VBox fx:id="featureList" spacing="12"/>
             </VBox>
 

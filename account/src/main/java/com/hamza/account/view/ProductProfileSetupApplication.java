@@ -17,11 +17,11 @@ public final class ProductProfileSetupApplication extends Application {
         LanguageManager language = LanguageManager.getInstance();
         FXMLLoader loader = new FXMLLoader(
                 Main.class.getResource("view/product-profile-setup.fxml"), language.getResourceBundle());
-        Scene scene = new Scene(loader.load(), 780, 720);
+        Scene scene = new Scene(loader.load(), 940, 760);
         ThemeManager.apply(scene);
         ChangeOrientation.sceneOrientation(scene);
         stage.setTitle(language.getString("product.profile.setup.title"));
-        stage.setMinWidth(700);
+        stage.setMinWidth(820);
         stage.setMinHeight(620);
         stage.setScene(scene);
         stage.show();

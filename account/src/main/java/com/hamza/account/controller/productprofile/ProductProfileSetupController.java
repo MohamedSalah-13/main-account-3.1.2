@@ -14,6 +14,7 @@ import com.hamza.account.features.productprofile.ProductProfileService;
 import com.hamza.account.features.productprofile.ProductProfileSigner;
 import com.hamza.account.features.productprofile.ProductEditionPreset;
 import com.hamza.account.features.productprofile.ProductEditionPresets;
+import com.hamza.account.features.productprofile.ProductProfileSummaryFormatter;
 import com.hamza.account.service.version.DatabaseMigrationService;
 import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.database.DataSourceProvider;
@@ -27,6 +28,9 @@ import javafx.scene.control.Label;
 import javafx.scene.control.ProgressIndicator;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.control.TextField;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.Priority;
+import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 import javafx.stage.FileChooser;
 import javafx.util.StringConverter;
@@ -36,9 +40,11 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
+import java.time.ZoneId;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.Map;
+import java.util.Locale;
 import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.function.Consumer;
@@ -55,6 +61,7 @@ public final class ProductProfileSetupController {
     @FXML private TextField profileNameField;
     @FXML private ComboBox<ProductEditionPreset> presetBox;
     @FXML private Label presetDescriptionLabel;
+    @FXML private TextField featureSearchField;
     @FXML private VBox featureList;
     @FXML private Label privateKeyPathLabel;
     @FXML private Label profilePathLabel;
@@ -63,6 +70,7 @@ public final class ProductProfileSetupController {
     @FXML private ProgressIndicator progress;
     @FXML private Button choosePrivateKeyButton;
     @FXML private Button exportButton;
+    @FXML private Button exportSummaryButton;
     @FXML private Button chooseProfileButton;
     @FXML private Button applyButton;
 
@@ -70,6 +78,9 @@ public final class ProductProfileSetupController {
     private final ProductProfileCodec codec = ProductProfileCodec.trustedReleaseKey(catalog);
     private final ProductProfileSigner signer = new ProductProfileSigner(codec);
     private final Map<FeatureKey, CheckBox> featureBoxes = new LinkedHashMap<>();
+    private final Map<FeatureKey, FeatureRow> featureRows = new LinkedHashMap<>();
+    private final Map<String, VBox> categoryPanels = new LinkedHashMap<>();
+    private final Map<String, Label> categoryCountLabels = new LinkedHashMap<>();
     private boolean applyingPreset;
 
     private Path privateKeyFile;
@@ -82,8 +93,10 @@ public final class ProductProfileSetupController {
         configurePresets();
         choosePrivateKeyButton.setGraphic(AppIcon.SECURITY.graphic());
         exportButton.setGraphic(AppIcon.EXPORT.graphic());
+        exportSummaryButton.setGraphic(AppIcon.SPREADSHEET.graphic());
         chooseProfileButton.setGraphic(AppIcon.SEARCH.graphic());
         applyButton.setGraphic(AppIcon.CONFIRM.graphic());
+        featureSearchField.textProperty().addListener((observable, oldValue, query) -> filterFeatures(query));
         whenEnterPressed(presetBox, customerField, profileNameField, exportButton);
     }
 
@@ -160,6 +173,37 @@ public final class ProductProfileSetupController {
                 profile.customerName(), profile.profileName()));
     }
 
+    @FXML
+    private void exportSummary() {
+        Instant generatedAt = Instant.now();
+        Set<FeatureKey> enabled = selectedFeatures();
+        try {
+            // Reuse the signed-profile validation rules so the delivery record can
+            // never describe a profile that the signing path would reject.
+            codec.payload(new ProductProfileDraft(customerField.getText(), profileNameField.getText(),
+                    enabled, generatedAt));
+        } catch (ProductProfileException failure) {
+            showStatus(failure.messageKey(), "status-error", failure.arguments());
+            return;
+        }
+
+        FileChooser chooser = chooser("product.profile.summary.chooser",
+                "product.profile.summary.file.type", "*.txt");
+        chooser.setInitialFileName(safeFileName(customerField.getText()) + "-profile-summary.txt");
+        File chosen = chooser.showSaveDialog(root.getScene().getWindow());
+        if (chosen == null) return;
+
+        LanguageManager language = LanguageManager.getInstance();
+        String summary = ProductProfileSummaryFormatter.format(
+                customerField.getText(), profileNameField.getText(), generatedAt, enabled, catalog,
+                language::getString, language.getCurrentLocale(), ZoneId.systemDefault());
+        run(() -> {
+            Files.writeString(chosen.toPath(), summary, StandardCharsets.UTF_8);
+            return chosen.toPath();
+        }, path -> showStatus("product.profile.summary.export.success", "status-success",
+                path.toAbsolutePath()));
+    }
+
     private Set<FeatureKey> selectedFeatures() {
         Set<FeatureKey> selected = new LinkedHashSet<>();
         featureBoxes.forEach((key, checkBox) -> {
@@ -169,28 +213,100 @@ public final class ProductProfileSetupController {
     }
 
     private void renderFeatureCatalog() {
-        String currentCategory = null;
         for (ProductFeatureDefinition definition : catalog.definitions()) {
-            if (!definition.categoryKey().equals(currentCategory)) {
-                Label category = new Label(LanguageManager.getInstance().getString(definition.categoryKey()));
-                category.getStyleClass().add("feature-category");
-                featureList.getChildren().add(category);
-                currentCategory = definition.categoryKey();
-            }
+            VBox categoryPanel = categoryPanels.computeIfAbsent(
+                    definition.categoryKey(), this::createCategoryPanel);
 
             CheckBox feature = new CheckBox(
                     LanguageManager.getInstance().getString(definition.titleKey()));
             feature.setSelected(true);
-            feature.selectedProperty().addListener((observable, oldValue, newValue) -> markCustomPreset());
+            feature.selectedProperty().addListener((observable, oldValue, newValue) -> {
+                markCustomPreset();
+                refreshCategoryCount(definition.categoryKey());
+            });
             Label explanation = new Label(
                     LanguageManager.getInstance().getString(definition.descriptionKey()));
             explanation.setWrapText(true);
             explanation.getStyleClass().add("text-explain");
             VBox row = new VBox(4, feature, explanation);
             row.getStyleClass().add("feature-row");
-            featureList.getChildren().add(row);
+            categoryPanel.getChildren().add(row);
             featureBoxes.put(definition.key(), feature);
+            featureRows.put(definition.key(), new FeatureRow(definition, row));
         }
+        categoryPanels.keySet().forEach(this::refreshCategoryCount);
+    }
+
+    private VBox createCategoryPanel(String categoryKey) {
+        Label title = new Label(LanguageManager.getInstance().getString(categoryKey));
+        title.getStyleClass().add("feature-category");
+        Label count = new Label();
+        count.getStyleClass().add("feature-count");
+        categoryCountLabels.put(categoryKey, count);
+
+        Button selectAll = new Button(LanguageManager.getInstance().getString("product.profile.category.select.all"));
+        selectAll.setGraphic(AppIcon.SELECT_ALL.graphic());
+        selectAll.getStyleClass().add("secondary-button");
+        selectAll.setOnAction(event -> setCategorySelected(categoryKey, true));
+        Button clearAll = new Button(LanguageManager.getInstance().getString("product.profile.category.clear.all"));
+        clearAll.setGraphic(AppIcon.CLEAR.graphic());
+        clearAll.getStyleClass().add("secondary-button");
+        clearAll.setOnAction(event -> setCategorySelected(categoryKey, false));
+
+        Region spacer = new Region();
+        HBox.setHgrow(spacer, Priority.ALWAYS);
+        HBox header = new HBox(8, title, count, spacer, selectAll, clearAll);
+        header.getStyleClass().add("feature-category-header");
+        VBox panel = new VBox(8, header);
+        panel.getStyleClass().add("feature-category-panel");
+        featureList.getChildren().add(panel);
+        return panel;
+    }
+
+    private void setCategorySelected(String categoryKey, boolean selected) {
+        applyingPreset = true;
+        try {
+            featureRows.values().stream()
+                    .filter(row -> row.definition().categoryKey().equals(categoryKey))
+                    .forEach(row -> featureBoxes.get(row.definition().key()).setSelected(selected));
+        } finally {
+            applyingPreset = false;
+        }
+        markCustomPreset();
+        refreshCategoryCount(categoryKey);
+    }
+
+    private void refreshCategoryCount(String categoryKey) {
+        Label count = categoryCountLabels.get(categoryKey);
+        if (count == null) return;
+        long selected = featureRows.values().stream()
+                .filter(row -> row.definition().categoryKey().equals(categoryKey))
+                .filter(row -> featureBoxes.get(row.definition().key()).isSelected())
+                .count();
+        long total = featureRows.values().stream()
+                .filter(row -> row.definition().categoryKey().equals(categoryKey))
+                .count();
+        count.setText(LanguageManager.getInstance().getString(
+                "product.profile.category.count", selected, total));
+    }
+
+    private void filterFeatures(String query) {
+        String needle = query == null ? "" : query.strip().toLowerCase(Locale.ROOT);
+        LanguageManager language = LanguageManager.getInstance();
+        featureRows.values().forEach(row -> {
+            String searchable = (language.getString(row.definition().titleKey()) + " "
+                    + language.getString(row.definition().categoryKey())).toLowerCase(Locale.ROOT);
+            boolean matches = needle.isEmpty() || searchable.contains(needle);
+            row.node().setVisible(matches);
+            row.node().setManaged(matches);
+        });
+        categoryPanels.forEach((category, panel) -> {
+            boolean hasMatch = featureRows.values().stream()
+                    .filter(row -> row.definition().categoryKey().equals(category))
+                    .anyMatch(row -> row.node().isManaged());
+            panel.setVisible(hasMatch);
+            panel.setManaged(hasMatch);
+        });
     }
 
     private void configurePresets() {
@@ -277,6 +393,7 @@ public final class ProductProfileSetupController {
         progress.setManaged(busy);
         choosePrivateKeyButton.setDisable(busy);
         exportButton.setDisable(busy);
+        exportSummaryButton.setDisable(busy);
         chooseProfileButton.setDisable(busy);
         applyButton.setDisable(busy || selectedEnvelope == null);
     }
@@ -306,5 +423,8 @@ public final class ProductProfileSetupController {
     }
 
     private record SelectedProfile(Path path, String envelope, ProductProfile profile) {
+    }
+
+    private record FeatureRow(ProductFeatureDefinition definition, VBox node) {
     }
 }

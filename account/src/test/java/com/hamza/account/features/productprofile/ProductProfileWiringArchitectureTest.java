@@ -52,6 +52,18 @@ class ProductProfileWiringArchitectureTest {
         assertTrue(controller.contains("ProductEditionPresets.standard(catalog)"));
         assertTrue(fxml.contains("fx:id=\"presetBox\""));
         assertTrue(fxml.contains("fx:id=\"featureList\""));
+        assertTrue(fxml.contains("fx:id=\"featureSearchField\""));
+        assertTrue(fxml.contains("onAction=\"#exportSummary\""));
+    }
+
+    @Test
+    void aboutScreenReadsTheVerifiedProfileLoadedAtStartup() throws Exception {
+        String bootstrap = read("view/DownLoadApplication.java");
+        String about = read("view/AboutApplication.java");
+
+        assertTrue(bootstrap.contains("ServiceRegistry.register(ProductProfile.class, profile)"));
+        assertTrue(about.contains("ServiceRegistry.get(ProductProfile.class)"));
+        assertTrue(about.contains("product.profile.about.issued"));
     }
 
     @Test
