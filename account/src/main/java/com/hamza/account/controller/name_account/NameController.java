@@ -17,8 +17,6 @@ import com.hamza.account.table.ActionButtonToolBar;
 import com.hamza.account.table.TableInterface;
 import com.hamza.account.table.TableScreenProfile;
 import com.hamza.account.authorization.PermissionKey;
-import com.hamza.account.features.export.PdfExportService;
-import com.itextpdf.kernel.geom.PageSize;
 import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.database.DaoList;
 import com.hamza.controlsfx.database.TransactionTemplate;
@@ -32,7 +30,6 @@ import com.hamza.controlsfx.observer.EventBus;
 import javafx.beans.property.*;
 import javafx.concurrent.Task;
 import javafx.scene.control.*;
-import javafx.stage.FileChooser;
 import lombok.extern.log4j.Log4j2;
 
 import java.io.File;
@@ -276,53 +273,19 @@ public class NameController<T3 extends BaseNames, T4 extends BaseAccount>
             exportPartyPdf(target, rows, query);
         });
         AllAlerts.handleTaskFailure(text("party.error.export.generic"), load);
-        start(load, "party-list-pdf-load");
+        PartyPdfReport.start(load, "party-list-pdf-load");
     }
 
     /** Captures the table on the FX thread, then writes the potentially large PDF in the background. */
     private void exportPartyPdf(File target, List<T3> rows, String query) {
-        PartyListPdfLayout layout = PartyListPdfLayout.from(table, rows);
-        if (layout.headers().length == 0) {
-            AllAlerts.alertError(text("party.error.no.data.print"));
-            return;
-        }
-        String title = dataInterface.designInterface().nameTextOfReport();
         String subtitle = query.isBlank() ? "" : text("search") + ": " + query;
-        PageSize pageSize = layout.headers().length > 5 ? PageSize.A4.rotate() : PageSize.A4;
-        Task<Boolean> write = new Task<>() {
-            @Override
-            protected Boolean call() {
-                return new PdfExportService().exportGroupedReport(target.getAbsolutePath(), title, subtitle,
-                        layout.headers(), layout.columnWidths(), layout.rows(), null, pageSize);
-            }
-        };
-        write.setOnSucceeded(event -> {
-            if (Boolean.TRUE.equals(write.getValue())) {
-                AllAlerts.alertSaveWithMessage(text("party.export.success.saved.at", target.getAbsolutePath()));
-            } else {
-                AllAlerts.alertError(text("party.error.export.generic"));
-            }
-        });
-        AllAlerts.handleTaskFailure(text("party.error.export.generic"), write);
-        start(write, "party-list-pdf-write");
+        PartyPdfReport.write(target, dataInterface.designInterface().nameTextOfReport(), subtitle,
+                PartyListPdfLayout.from(table, rows), () -> { });
     }
 
     private File reportTarget() {
-        FileChooser chooser = new FileChooser();
-        chooser.setTitle(text("party.dialog.save.report"));
-        chooser.setInitialFileName(safeFileName(dataInterface.designInterface().nameTextOfReport()) + ".pdf");
-        chooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("PDF", "*.pdf"));
-        return chooser.showSaveDialog(table.getScene().getWindow());
-    }
-
-    private String safeFileName(String title) {
-        return title.replaceAll("[\\\\/:*?\"<>|]", " ").trim();
-    }
-
-    private void start(Task<?> task, String name) {
-        Thread thread = new Thread(task, name);
-        thread.setDaemon(true);
-        thread.start();
+        return PartyPdfReport.chooseTarget(table.getScene().getWindow(),
+                dataInterface.designInterface().nameTextOfReport());
     }
 
     private String text(String key, Object... arguments) {

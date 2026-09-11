@@ -1154,6 +1154,14 @@ A screen hosted by `TableController` answers `supportsColumnViews`/`configureCol
 `usesContentSizedColumns`/`layoutColumns` on its `DataTable` - `PartyNamesTable` is the example. A
 screen built in code puts `TableColumnViews.menuButton()` in its own bar - `AccountController2`.
 
+**Printing and exporting follow the same columns.** `VisibleColumns` is the one reading of a table
+for a report: its visible columns in display order, minus the controls, and a row's value through
+the column's own value factory. **Not through `getCellObservableValue`**, which answers null for
+every row of a column not placed in a table - a silent empty report, found by the first test of
+it. `PartyListPdfLayout` builds the PDF from it and `VisibleColumnsExcelWriter` the spreadsheet,
+so what is hidden on screen is off the paper and out of the file too. The accounts screen uses
+both; its old writer, with a fixed list of nine columns, is gone.
+
 ### Debt ageing
 
 `features/party/ageing` is phase D's first report and the first thing built on the payment

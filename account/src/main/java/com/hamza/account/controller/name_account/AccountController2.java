@@ -3,7 +3,6 @@ package com.hamza.account.controller.name_account;
 import com.hamza.account.config.AppIcon;
 import com.hamza.account.controller.main.DataPublisher;
 import com.hamza.account.controller.main.LoadOtherData;
-import com.hamza.account.controller.model.TreeAccountModelForPrint;
 import com.hamza.account.controller.name_account.impl.AccountTotalsPurchase;
 import com.hamza.account.controller.name_account.impl.AccountTotalsSales;
 import com.hamza.account.controller.others.ServiceRegistry;
@@ -26,6 +25,7 @@ import com.hamza.account.openFxml.FxmlPath;
 import com.hamza.account.table.ContentSizedColumns;
 import com.hamza.account.table.TableColumnViews;
 import com.hamza.account.table.TableSetting;
+import com.hamza.account.table.VisibleColumnsExcelWriter;
 import javafx.scene.control.TableColumn;
 import com.hamza.account.table.RowActionsColumn;
 import com.hamza.account.table.RowAction;
@@ -33,7 +33,6 @@ import com.hamza.account.table.PageJumpBox;
 import com.hamza.account.view.AddAccountApplication;
 import com.hamza.account.view.OpenApplication;
 import com.hamza.controlsfx.alert.AllAlerts;
-import com.hamza.controlsfx.error.BusinessRuleException;
 import com.hamza.controlsfx.error.UserValidationException;
 import com.hamza.controlsfx.excel.ExportData;
 import com.hamza.controlsfx.language.LanguageManager;
@@ -69,6 +68,7 @@ import javafx.scene.layout.VBox;
 import javafx.util.StringConverter;
 import lombok.extern.log4j.Log4j2;
 
+import java.io.File;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -112,8 +112,15 @@ public class AccountController2<T3 extends BaseNames, T4 extends BaseAccount>
     /** What "idle" means on the card. A quarter with no movement is the usual question. */
     private static final int IDLE_DAYS = 90;
 
-    /** The row buttons: fixed width, and never offered in the view menu. */
+    /** The row buttons: fixed width, never offered in the view menu, never printed. */
     private static final String ACTIONS_COLUMN = "balance-actions";
+
+    /**
+     * The amounts the printed totals line sums. Not the credit limit: a sum of limits is a
+     * number that answers no question anybody asks.
+     */
+    private static final Set<String> TOTALLED_COLUMNS =
+            Set.of("balance-period-debit", "balance-period-credit", "balance-balance");
 
     private final EventBus eventBus = ServiceRegistry.get(EventBus.class);
     private final PartyBalanceService balanceService = new PartyBalanceService();
@@ -170,7 +177,7 @@ public class AccountController2<T3 extends BaseNames, T4 extends BaseAccount>
     public void initialize() {
         // The customers' or suppliers' colours, the same class the parties list and the
         // add-party form carry - the table header, the rows and the cards all follow it.
-        PartyScreenIdentity identity = PartyScreenIdentity.forKind(partyKind());
+        PartyScreenIdentity identity = identity();
         stackPane.getStyleClass().add(identity.styleClass());
 
         buildTable();
@@ -220,8 +227,10 @@ public class AccountController2<T3 extends BaseNames, T4 extends BaseAccount>
         Button ageing = button("party.ageing.open", AppIcon.REPORT, this::openAgeing);
         Button refresh = button("refresh", AppIcon.REFRESH, this::reload);
         Button print = button("print", AppIcon.PRINT, this::print);
+        // The same neutral button as its three neighbours. It used to replace its classes with
+        // "excel-button" alone, which dropped the base "button" class with them - a small green
+        // label among buttons, without their padding, border or rounded corners.
         Button excel = button("party.statement.export.excel", AppIcon.SPREADSHEET, this::exportExcel);
-        excel.getStyleClass().setAll("excel-button");
 
         Separator divider = new Separator(Orientation.VERTICAL);
         divider.getStyleClass().add("modern-separator");
@@ -588,30 +597,60 @@ public class AccountController2<T3 extends BaseNames, T4 extends BaseAccount>
     }
 
     /**
-     * Prints every party the filter matched.
+     * Prints every party the filter matched, as a PDF of the columns on screen.
      * <p>
      * Not the ticked ones and not the page: {@code forPrint} reads the whole filtered set with the
-     * same filter the table used.
+     * same filter the table used. It used to fill a Jasper template with seven fixed columns, so a
+     * column hidden from the view menu stayed on the paper and one the template did not know
+     * (the telephone, the credit limit) could never reach it. It now prints the way the parties
+     * list prints - {@link PartyListPdfLayout} over the visible columns, in their order - with a
+     * totals line under the three amounts that add up to something.
      */
     private void print() {
-        try {
-            PartyBalancePage extract = balanceService.forPrint(filter);
-            requireRows(extract);
-            List<TreeAccountModelForPrint> rows = new ArrayList<>();
-            for (PartyBalanceRow row : extract.rows()) {
-                TreeAccountModelForPrint printed = new TreeAccountModelForPrint();
-                printed.setId(row.partyId());
-                printed.setName(row.name());
-                printed.setDate(row.lastMovement() == null ? "" : row.lastMovement().toString());
-                printed.setPurchase(row.periodDebit().doubleValue());
-                printed.setPaid(row.periodCredit().doubleValue());
-                printed.setAmount(row.balance().doubleValue());
-                printed.setNotes(row.areaName());
-                rows.add(printed);
+        String title = identity().balancesProfile().title();
+        File target = PartyPdfReport.chooseTarget(table.getScene().getWindow(), title);
+        if (target == null) {
+            return;
+        }
+        PartyBalanceFilter printed = filter;
+        Task<PartyBalancePage> load = new Task<>() {
+            @Override
+            protected PartyBalancePage call() throws Exception {
+                return balanceService.forPrint(printed);
             }
-            printReports.printTotalsAccounts(rows, null);
-        } catch (Exception e) {
-            report(e);
+        };
+        load.setOnSucceeded(event -> {
+            PartyBalancePage extract = load.getValue();
+            if (extract.rows().isEmpty()) {
+                AllAlerts.alertError(text("party.error.no.data.print"));
+                return;
+            }
+            PartyListPdfLayout layout = PartyListPdfLayout.from(table, extract.rows(),
+                    Set.of(ACTIONS_COLUMN), TOTALLED_COLUMNS, text("total"));
+            PartyPdfReport.write(target, title, printSubtitle(printed), layout,
+                    () -> warnIfTruncated(extract));
+        });
+        AllAlerts.handleTaskFailure(text("party.error.export.generic"), load);
+        PartyPdfReport.start(load, "party-balances-pdf-load");
+    }
+
+    /** What the printed figures are as at, and what narrowed them - a balance without its date is not a balance. */
+    private static String printSubtitle(PartyBalanceFilter printed) {
+        String subtitle = text("party.balances.filter.as.of") + ": " + printed.asOf();
+        if (printed.text() != null && !printed.text().isBlank()) {
+            subtitle += "  -  " + text("search") + ": " + printed.text().trim();
+        }
+        return subtitle;
+    }
+
+    /**
+     * Says so when the extract stopped at {@code PRINT_LIMIT}: the file then holds - and its totals
+     * add up - only the first rows, and it must not pass for the whole list.
+     */
+    private void warnIfTruncated(PartyBalancePage extract) {
+        if (extract.hasNext()) {
+            report(new UserValidationException(LanguageManager.getInstance()
+                    .getString("party.balances.truncated", PartyBalanceService.PRINT_LIMIT)));
         }
     }
 
@@ -619,16 +658,18 @@ public class AccountController2<T3 extends BaseNames, T4 extends BaseAccount>
         try {
             PartyBalancePage extract = balanceService.forPrint(filter);
             requireRows(extract);
+            // The columns on screen, in their order - the same set the print carries - rather than
+            // a writer's own fixed list of nine that ignored the view menu.
             int written = ExportData.exportDataToExcel(extract.rows(),
-                    new PartyBalanceExcelWriter(extract.rows()));
+                    VisibleColumnsExcelWriter.of(text("party.balances.export.sheet"), table,
+                            Set.of(ACTIONS_COLUMN), extract.rows()));
             if (written < 1) {
-                throw new BusinessRuleException(text("party.error.cannot.save"));
+                // Zero is the save dialog cancelled - SaveExcelFile throws for every real
+                // failure. It used to be reported as "cannot save", an error for pressing Cancel.
+                return;
             }
             AllAlerts.alertSaveWithMessage(text("party.export.excel.success"));
-            if (extract.hasNext()) {
-                report(new UserValidationException(LanguageManager.getInstance()
-                        .getString("party.balances.truncated", PartyBalanceService.PRINT_LIMIT)));
-            }
+            warnIfTruncated(extract);
         } catch (Exception e) {
             report(e);
         }
@@ -650,6 +691,10 @@ public class AccountController2<T3 extends BaseNames, T4 extends BaseAccount>
 
     private PartyKind partyKind() {
         return nameAndAccountInterface.partyKind();
+    }
+
+    private PartyScreenIdentity identity() {
+        return PartyScreenIdentity.forKind(partyKind());
     }
 
     /** A toolbar button, laid out the way the parties list lays out its own. */
