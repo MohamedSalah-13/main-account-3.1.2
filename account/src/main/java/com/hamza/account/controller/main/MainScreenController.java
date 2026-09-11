@@ -61,6 +61,8 @@ public class MainScreenController extends MainItems implements Initializable {
     private final EventBus eventBus = ServiceRegistry.get(EventBus.class);
     private final ProductFeatureAccess productFeatures = ServiceRegistry.get(ProductFeatureAccess.class);
     private final Subscriptions subscriptions = new Subscriptions();
+    /** True once configureAllButtons has run, so the shortcut map reflects the edition. */
+    private boolean sidebarReady;
     public Pane mainPane;
     @FXML
     private BorderPane borderPane;
@@ -291,6 +293,7 @@ public class MainScreenController extends MainItems implements Initializable {
 
         applyProductProfileVisibility();
         dontShowData();
+        sidebarReady = true;
         configureSidebarShortcuts();
     }
 
@@ -320,7 +323,19 @@ public class MainScreenController extends MainItems implements Initializable {
         subscriptions.add(eventBus.subscribe(ShiftPolicyChanged.class, event -> refreshShiftButtonVisibility()));
     }
 
+    /**
+     * The shift button answers to two rules - the edition carries the feature, and the shop
+     * has shifts switched on - and the second one changes while the program is running.
+     * <p>
+     * Re-installing the shortcuts on a change is what keeps the two halves of that agreeing.
+     * {@link #configureSidebarShortcuts()} only offers a key to a button that is visible, and
+     * it runs once, during setup, when shifts are still {@code DISABLED} on most installs. So
+     * a shop that switched shifts on had the button appear with its key dead until the next
+     * restart. {@code SidebarShortcutManager.install} clears and rebinds, so calling it again
+     * is safe.
+     */
     private void refreshShiftButtonVisibility() {
+        boolean wasVisible = btnMyShift.isVisible();
         try {
             boolean enabled = productFeatures != null
                     && productFeatures.isEnabled(ProductFeatures.SYSTEM_MY_SHIFT)
@@ -330,6 +345,13 @@ public class MainScreenController extends MainItems implements Initializable {
         } catch (DaoException e) {
             btnMyShift.setVisible(false);
             btnMyShift.setManaged(false);
+        }
+        // Not before the sidebar has been built: the first call to this method comes from
+        // setupRightPane, ahead of configureAllButtons, and a shortcut map taken then would
+        // describe the FXML defaults rather than the edition. That call needs nothing -
+        // configureAllButtons installs the real map moments later.
+        if (sidebarReady && btnMyShift.isVisible() != wasVisible) {
+            configureSidebarShortcuts();
         }
     }
 

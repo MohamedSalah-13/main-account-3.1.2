@@ -452,20 +452,27 @@ FROM total_sales_re tsr
 
 -- --------------------------------------account_customer_table-------------------------------------
 
+-- account_date is DATE on every branch of this union, including this one. It used to be
+-- DATE_FORMAT(...) here, a VARCHAR, which made MySQL resolve the whole union's column to
+-- text: every BETWEEN over it was then a string comparison that happened to work because
+-- the format sorts, and a reader could not tell that it was not a date.
+-- user_id is who entered the row, and exists on all four sources. Nothing could filter a
+-- statement by the person who entered a movement before it was selected here.
 DROP VIEW IF EXISTS account_customer_table;
 CREATE VIEW account_customer_table AS
-SELECT 0                                     AS account_num,
-       c.id                                  AS account_code,
-       DATE_FORMAT(c.created_at, '%Y-%m-%d') AS account_date,
-       c.first_balance                       AS purchase,
-       0                                     AS discount,
-       0                                     AS paid,
-       'رصيد اول'                            AS notes,
-       1                                     AS information,
-       0                                     AS type,
-       c.created_at                          AS created_at,
-       0                                     AS treasury_id,
-       0                                     AS numberInv
+SELECT 0                 AS account_num,
+       c.id              AS account_code,
+       DATE(c.created_at) AS account_date,
+       c.first_balance   AS purchase,
+       0                 AS discount,
+       0                 AS paid,
+       'رصيد اول'        AS notes,
+       1                 AS information,
+       0                 AS type,
+       c.created_at      AS created_at,
+       0                 AS treasury_id,
+       0                 AS numberInv,
+       c.user_id         AS user_id
 FROM custom c
 UNION ALL
 SELECT account_num,
@@ -479,7 +486,8 @@ SELECT account_num,
        0        AS type,
        created_at,
        treasury_id,
-       numberInv
+       numberInv,
+       user_id
 FROM customers_accounts
 UNION ALL
 SELECT invoice_number,
@@ -493,7 +501,8 @@ SELECT invoice_number,
        invoice_type AS type,
        date_insert,
        treasury_id,
-       0           AS numberInv
+       0           AS numberInv,
+       user_id
 FROM total_sales
 UNION ALL
 -- مرتجع المبيعات: عكس فاتورة البيع بالضبط، بإشارة سالبة على الأعمدة الثلاثة.
@@ -517,26 +526,29 @@ SELECT tsr.id,
        tsr.invoice_type     AS type,
        tsr.date_insert,
        tsr.treasury_id,
-       0                    AS numberInv
+       0                    AS numberInv,
+       tsr.user_id
 FROM total_sales_re tsr
 ORDER BY created_at;
 
 -- --------------------------------------account_suppliers_table------------------------------------
 
+-- Same two changes as on the customer side: a real DATE, and the user who entered the row.
 DROP VIEW IF EXISTS account_suppliers_table;
 CREATE VIEW account_suppliers_table AS
-SELECT 0                                     AS account_num,
-       c.id                                  AS account_code,
-       DATE_FORMAT(c.created_at, '%Y-%m-%d') AS account_date,
-       c.first_balance                       AS purchase,
-       0                                     AS discount,
-       0                                     AS paid,
-       'رصيد اول'                            AS notes,
-       1                                     AS information,
-       0                                     AS type,
-       c.created_at                          AS created_at,
-       0                                     AS treasury_id,
-       0                                     AS numberInv
+SELECT 0                 AS account_num,
+       c.id              AS account_code,
+       DATE(c.created_at) AS account_date,
+       c.first_balance   AS purchase,
+       0                 AS discount,
+       0                 AS paid,
+       'رصيد اول'        AS notes,
+       1                 AS information,
+       0                 AS type,
+       c.created_at      AS created_at,
+       0                 AS treasury_id,
+       0                 AS numberInv,
+       c.user_id         AS user_id
 FROM suppliers c
 UNION ALL
 SELECT account_num,
@@ -550,7 +562,8 @@ SELECT account_num,
        0        AS type,
        created_at,
        treasury_id,
-       numberInv
+       numberInv,
+       user_id
 FROM suppliers_accounts
 UNION ALL
 SELECT invoice_number,
@@ -564,7 +577,8 @@ SELECT invoice_number,
        invoice_type AS type,
        date_insert,
        treasury_id,
-       0            AS numberInv
+       0            AS numberInv,
+       user_id
 FROM total_buy
 UNION ALL
 -- مرتجع المشتريات: نفس قاعدة مرتجع المبيعات معكوسة الطرف - ما قبضته الخزينة هو
@@ -581,7 +595,8 @@ SELECT tbr.id,
        tbr.invoice_type AS type,
        tbr.date_insert,
        tbr.treasury_id,
-       0                AS numberInv
+       0                AS numberInv,
+       tbr.user_id
 FROM total_buy_re tbr
 ORDER BY created_at;
 
@@ -1534,34 +1549,40 @@ FROM sales_names_table
 GROUP BY num, nameItem, YEAR(invoice_date), MONTH(invoice_date);
 
 
+-- تقرير مديونية العملاء.
+--
+-- يُبنى على account_customer_totals، وهو الإجابة الواحدة على «كم يَدين هذا العميل»، ولم
+-- يكن كذلك: كان هذا الـ view يحسب الرقم بنفسه من استعلامين فرعيين على total_sales و
+-- customers_accounts، فكان يتجاهل **مرتجعات المبيعات كلها** ويتجاهل عمود
+-- customers_accounts.purchase. فصار في النظام رقمان متناقضان لنفس العميل: هذا التقرير،
+-- و account_customer_totals الذي تقرؤه شاشة الإجماليات - وكان CreditLimitSource يقرأ من
+-- هذا، أي أن تنبيه تجاوز حد الائتمان كان يُحسب على مديونية بلا مرتجعات.
+--
+-- الأعمدة محفوظة بأسمائها لأن CustomerReceivableDao.map يقرؤها بالاسم، ومعناها الآن:
+--   opening_balance      رصيد أول المدة كما هو على صف العميل
+--   total_invoices_debt  كل ما حُمِّل على العميل بعد الرصيد الافتتاحي: الفواتير بعد
+--                        خصمها، ناقصا المرتجعات، وأي حركة مدينة يدوية. (كان معناها
+--                        «غير المسدَّد من الفواتير» وكان يتجاهل المرتجعات.)
+--   total_payments       كل ما أُضيف لحساب العميل: التحصيلات، ونقدية الفواتير، ناقصا ما
+--                        رُدّ له نقدا في مرتجع
+--   final_balance        amount من account_customer_totals، بلا إعادة حساب
+--
+-- فتتحقق المعادلة بالضبط: opening + invoices_debt - payments = final_balance. ولم تكن
+-- تتحقق قبل ذلك، لأن الأعمدة الثلاثة الأولى كانت تُحسب من مصادر مختلفة عن الرابع.
+--
+-- وشرط الظهور كما كان - من له رصيد افتتاحي أو أي حركة - إلا أن «أي حركة» تشمل المرتجع
+-- الآن. الفلترة على final_balance > 0 تبقى في CustomerReceivableDao كما كانت.
 DROP VIEW IF EXISTS view_customer_receivables;
 CREATE VIEW view_customer_receivables AS
-SELECT
-    c.id AS customer_id,
-    c.name AS customer_name,
-    c.tel AS customer_phone,
-
-    -- رصيد أول المدة (المديونية عند تسجيل العميل)
-    ROUND(c.first_balance, 2) AS opening_balance,
-
-    -- إجمالي المبالغ الآجلة (المتبقية) من فواتير المبيعات
-    ROUND((SELECT IFNULL(SUM((ts.total - ts.discount) - ts.paid_up), 0)
-           FROM total_sales ts
-           WHERE ts.sup_code = c.id), 2) AS total_invoices_debt,
-
-    -- إجمالي التحصيلات والمدفوعات من جدول حسابات العملاء
-    ROUND((SELECT IFNULL(SUM(paid), 0)
-           FROM customers_accounts ca
-           WHERE ca.account_code = c.id), 2) AS total_payments,
-
-    -- صافي المديونية النهائية
-    ROUND((c.first_balance +
-           (SELECT IFNULL(SUM((ts.total - ts.discount) - ts.paid_up), 0) FROM total_sales ts WHERE ts.sup_code = c.id) -
-           (SELECT IFNULL(SUM(paid), 0) FROM customers_accounts ca WHERE ca.account_code = c.id)
-              ), 2) AS final_balance
-
-FROM custom c
--- إظهار العملاء الذين لديهم تعاملات مادية فقط (اختياري)
-WHERE (c.first_balance <> 0 OR
-       EXISTS (SELECT 1 FROM total_sales WHERE sup_code = c.id) OR
-       EXISTS (SELECT 1 FROM customers_accounts WHERE account_code = c.id));
+SELECT act.account_code                                       AS customer_id,
+       act.name                                               AS customer_name,
+       c.tel                                                  AS customer_phone,
+       ROUND(c.first_balance, 2)                              AS opening_balance,
+       ROUND(act.purchase - act.discount - c.first_balance, 2) AS total_invoices_debt,
+       ROUND(act.paid, 2)                                     AS total_payments,
+       ROUND(act.amount, 2)                                   AS final_balance
+FROM account_customer_totals act
+         JOIN custom c ON c.id = act.account_code
+WHERE act.purchase <> 0
+   OR act.paid <> 0
+   OR act.discount <> 0;

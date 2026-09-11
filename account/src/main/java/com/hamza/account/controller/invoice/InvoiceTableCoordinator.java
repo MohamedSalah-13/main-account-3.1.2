@@ -54,14 +54,23 @@ public final class InvoiceTableCoordinator<T extends BasePurchasesAndSales> {
     private final Runnable totalsChanged;
     private final Class<?> menuOwner;
     private final boolean showAdminMenu;
+    private final boolean mayEditCatalog;
 
+    /**
+     * @param mayEditCatalog whether this user may write the item behind a line - the name
+     *                       cell and the "update the item's price as you type" option both
+     *                       hang off it. {@code InvoiceItemCatalogService} refuses either
+     *                       way; this is so the screen does not offer what it will refuse.
+     *                       A permission, so it does not change while the screen is open.
+     */
     public InvoiceTableCoordinator(TableView<T> table, ObservableList<T> lines,
                                    InvoiceLineEditService editService,
                                    IntSupplier priceTier,
                                    BooleanSupplier updateCatalogPrice,
                                    Runnable totalsChanged,
                                    Class<?> menuOwner,
-                                   boolean showAdminMenu) {
+                                   boolean showAdminMenu,
+                                   boolean mayEditCatalog) {
         this.table = Objects.requireNonNull(table, "table");
         this.lines = Objects.requireNonNull(lines, "lines");
         this.editService = Objects.requireNonNull(editService, "editService");
@@ -70,6 +79,7 @@ public final class InvoiceTableCoordinator<T extends BasePurchasesAndSales> {
         this.totalsChanged = Objects.requireNonNull(totalsChanged, "totalsChanged");
         this.menuOwner = Objects.requireNonNull(menuOwner, "menuOwner");
         this.showAdminMenu = showAdminMenu;
+        this.mayEditCatalog = mayEditCatalog;
     }
 
     public void configure() {
@@ -119,15 +129,23 @@ public final class InvoiceTableCoordinator<T extends BasePurchasesAndSales> {
 
     private void configureEdits() {
         ColumnSetting columns = new ColumnSetting();
-        columns.enableStringEditing(NAME_COLUMN, event -> withRefreshOnFailure(() ->
-                editService.editName(rowAt(event.getTablePosition().getRow()),
-                        event.getNewValue())), table);
+        // Renaming an item from a line writes the item, so without items.update the cell
+        // simply does not open. The quick screen replaces this column's cell factory with
+        // its own item search and never commits an edit through it, so it is unaffected.
+        if (mayEditCatalog) {
+            columns.enableStringEditing(NAME_COLUMN, event -> withRefreshOnFailure(() ->
+                    editService.editName(rowAt(event.getTablePosition().getRow()),
+                            event.getNewValue())), table);
+        }
         columns.enableDoubleEditing(QUANTITY_COLUMN, event -> withRefreshOnFailure(() ->
                 editService.editQuantity(rowAt(event.getTablePosition().getRow()),
                         event.getNewValue())), table);
+        // The price of this line is always editable; carrying it back to the item is what
+        // needs the permission. Dropping the flag here rather than refusing the whole edit
+        // keeps the ordinary "sell this one cheaper" working for a cashier.
         columns.enableDoubleEditing(PRICE_COLUMN, event -> withRefreshOnFailure(() ->
                 editService.editPrice(rowAt(event.getTablePosition().getRow()),
-                        event.getNewValue(), updateCatalogPrice.getAsBoolean(),
+                        event.getNewValue(), mayEditCatalog && updateCatalogPrice.getAsBoolean(),
                         priceTier.getAsInt())), table);
         columns.enableDoubleEditing(DISCOUNT_COLUMN, event -> withRefreshOnFailure(() ->
                 editService.editDiscount(rowAt(event.getTablePosition().getRow()),

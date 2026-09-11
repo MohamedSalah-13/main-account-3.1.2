@@ -78,6 +78,52 @@ public abstract class AbstractDao<T> implements DaoList<T> {
     }
 
     /**
+     * Inserts one row and answers the key the database generated for it.
+     * <p>
+     * The same shape as {@link #executeUpdate}, with {@code RETURN_GENERATED_KEYS} and a check
+     * that exactly one row was written. It exists because a caller that lets the database
+     * assign a key usually needs that key straight away - a journal row to file under it, an
+     * event to announce it - and the alternative a DAO reaches for otherwise is to compute the
+     * key itself from {@code MAX(id) + 1}, which is two tills away from a primary-key
+     * collision and reads a whole table to get there.
+     * <p>
+     * Several DAOs already opened the connection by hand to do this; it is written once here so
+     * the next one does not have to, and so that the "exactly one row, and a key was returned"
+     * checks are not each written slightly differently.
+     *
+     * @param query      an INSERT with an {@code AUTO_INCREMENT} key
+     * @param parameters the values to bind, in the statement's order
+     * @return the generated key
+     * @throws DaoException if the insert wrote anything other than one row, or generated no key
+     */
+    protected int insertReturningId(@NotNull String query, @NotNull Object... parameters)
+            throws DaoException {
+        Connection connection = null;
+        try {
+            connection = ConnectionManager.acquire();
+            try (PreparedStatement statement =
+                         connection.prepareStatement(query, Statement.RETURN_GENERATED_KEYS)) {
+                fillStatement(statement, parameters);
+                int written = statement.executeUpdate();
+                if (written != 1) {
+                    throw new DaoException("Expected one inserted row, got " + written);
+                }
+                try (ResultSet keys = statement.getGeneratedKeys()) {
+                    if (keys.next()) {
+                        return keys.getInt(1);
+                    }
+                }
+                throw new DaoException("The insert generated no key: " + query);
+            }
+        } catch (SQLException e) {
+            log.error("{}{} !", Error_Text_Show.UNABLE_TO_LOAD_DATA, e.getMessage(), e);
+            throw mapSqlExceptionToDaoException(e);
+        } finally {
+            ConnectionManager.release(connection);
+        }
+    }
+
+    /**
      * Executes a SQL update statement with the given query and parameters, and throws an SQLException if an error occurs.
      *
      * @param query      the SQL query to be executed

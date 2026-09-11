@@ -151,6 +151,29 @@ public final class OpeningBalanceGuard {
         return kept;
     }
 
+    /**
+     * {@code values} without the ones at {@code indexes}, which must be given highest
+     * first.
+     * <p>
+     * The opening balance and the date it is as at are dropped together - see
+     * {@code PartyTableSpec.openingColumns()} - and removing the lower index first would
+     * shift the higher one off its own value, which is the exact mistake {@link #without}
+     * was written to prevent. Refusing an out-of-order list is cheaper than a test that
+     * has to notice the area id arriving in the notes column.
+     */
+    public static Object[] withoutAll(Object[] values, List<Integer> indexes) {
+        Object[] kept = values;
+        int previous = Integer.MAX_VALUE;
+        for (int index : indexes) {
+            if (index >= previous) {
+                throw new IllegalArgumentException("Indexes must be highest first: " + indexes);
+            }
+            previous = index;
+            kept = without(kept, index);
+        }
+        return kept;
+    }
+
     /** Reads one number. A DAO because that is what borrows a pooled connection. */
     private static final class SingleNumberDao extends AbstractDao<Double> {
 

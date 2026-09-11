@@ -1,6 +1,7 @@
 package com.hamza.account.controller.search;
 
 import com.hamza.account.config.NamesTables;
+import com.hamza.account.party.PartyTableSpec.PartySearchScope;
 import com.hamza.account.model.base.BaseNames;
 import com.hamza.account.model.domain.Customers;
 import com.hamza.account.service.CustomerService;
@@ -10,7 +11,15 @@ import javafx.scene.control.TableColumn;
 import java.util.List;
 
 
-public record CustomerSearchController(CustomerService customerService) implements SearchInterface<Customers> {
+/**
+ * The party picker behind {@code PartySuggestionField}.
+ *
+ * @param scope whether a party who is no longer dealt with may be offered. It is a
+ *              constructor argument rather than a constant because the same picker
+ *              serves an invoice, which must not offer one, and a collection, which
+ *              must - see {@link PartySearchScope}.
+ */
+public record CustomerSearchController(CustomerService customerService, PartySearchScope scope) implements SearchInterface<Customers> {
 
     @Override
     public List<TableColumn<Customers, ?>> columns() {
@@ -31,6 +40,6 @@ public record CustomerSearchController(CustomerService customerService) implemen
 
     @Override
     public List<Customers> getFilterItems(String filter) throws Exception {
-        return customerService.getFilterCustomers(filter);
+        return customerService.getFilterCustomers(filter, scope);
     }
 }

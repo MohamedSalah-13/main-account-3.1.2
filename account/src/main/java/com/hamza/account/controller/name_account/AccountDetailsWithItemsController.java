@@ -1,505 +1,538 @@
 package com.hamza.account.controller.name_account;
 
+import com.hamza.account.config.AppIcon;
 import com.hamza.account.config.ThemeManager;
-import com.hamza.account.config.Image_Setting;
 import com.hamza.account.controller.main.DataPublisher;
 import com.hamza.account.controller.main.LoadOtherData;
 import com.hamza.account.controller.model.AccountCard;
-import com.hamza.account.features.export.CustomerAccountData;
-import com.hamza.account.features.export.ReportExportService;
+import com.hamza.account.controller.others.ServiceRegistry;
+import com.hamza.account.features.events.AccountChanged;
+import com.hamza.account.features.events.PartyKind;
+import com.hamza.account.features.party.statement.PartyMovementKind;
+import com.hamza.account.features.party.statement.PartyStatementFilter;
+import com.hamza.account.features.party.statement.PartyStatementPrintData;
+import com.hamza.account.features.party.statement.PartyStatementRow;
+import com.hamza.account.features.party.statement.PartyStatementService;
+import com.hamza.account.features.party.statement.PartyStatementSummary;
 import com.hamza.account.interfaces.api.DataInterface;
 import com.hamza.account.model.base.BaseAccount;
 import com.hamza.account.model.base.BaseNames;
 import com.hamza.account.model.dao.DaoFactory;
-import com.hamza.account.openFxml.FxmlPath;
-import com.hamza.account.openFxml.OpenFxmlApplication;
-import com.hamza.account.table.EditCellTree;
 import com.hamza.account.table.TableSetting;
 import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.error.BusinessRuleException;
 import com.hamza.controlsfx.error.UserValidationException;
+import com.hamza.controlsfx.excel.ExportData;
 import com.hamza.controlsfx.interfaceData.AppSettingInterface;
 import com.hamza.controlsfx.language.LanguageManager;
-import com.hamza.controlsfx.others.DateSetting;
-import com.hamza.controlsfx.table.Column;
-import com.hamza.controlsfx.table.TreeTable;
-import com.hamza.controlsfx.util.ImageChoose;
-import javafx.collections.FXCollections;
-import javafx.collections.ObservableList;
-import javafx.fxml.FXML;
-import javafx.fxml.Initializable;
-import javafx.scene.control.*;
-import javafx.scene.layout.AnchorPane;
+import com.hamza.controlsfx.observer.EventBus;
+import com.hamza.controlsfx.table.Columns;
+import javafx.application.Platform;
+import javafx.concurrent.Task;
+import javafx.css.PseudoClass;
+import javafx.geometry.Insets;
+import javafx.geometry.Pos;
+import javafx.scene.control.Button;
+import javafx.scene.control.CheckBox;
+import javafx.scene.control.Label;
+import javafx.scene.control.ProgressIndicator;
+import javafx.scene.control.TreeItem;
+import javafx.scene.control.TreeTableColumn;
+import javafx.scene.control.TreeTableRow;
+import javafx.scene.control.TreeTableView;
+import javafx.scene.layout.BorderPane;
+import javafx.scene.layout.FlowPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Pane;
+import javafx.scene.layout.Priority;
 import javafx.scene.layout.StackPane;
-import javafx.scene.text.Text;
+import javafx.scene.layout.VBox;
 import javafx.stage.FileChooser;
 import lombok.extern.log4j.Log4j2;
 
 import java.io.File;
-import java.io.IOException;
-import java.net.URL;
+import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.util.*;
-import java.util.prefs.Preferences;
+import java.util.Collections;
+import java.util.IdentityHashMap;
+import java.util.List;
+import java.util.Set;
 
-import static com.hamza.account.controller.name_account.impl.AccountTotalsPurchase.purchaseLabel;
-import static com.hamza.account.controller.name_account.impl.AccountTotalsPurchase.purchaseReturnLabel;
-import static com.hamza.account.controller.name_account.impl.AccountTotalsSales.salesReTitle;
-import static com.hamza.account.controller.name_account.impl.AccountTotalsSales.salesTitle;
-import static com.hamza.account.table.TreeTableSetting.initializeColumnCellFactory;
-import static com.hamza.account.table.TreeTableSetting.initializeColumnCellFactoryInteger;
-import static com.hamza.account.view.OpenTreasuryDetailsApplication.accountStatementTitle;
-import static com.hamza.controlsfx.util.NumberUtils.roundToTwoDecimalPlaces;
-
+/**
+ * A party's account statement.
+ * <p>
+ * <b>Built in code, not from FXML, and every reason is a defect the old screen had.</b>
+ * {@code accountDetailsTreeTableView.fxml} carried English captions the controller overwrote at
+ * runtime - so three {@code CheckMenuItem}s shipped reading {@code "Unspecified Action"} and every
+ * open flashed English first; its columns were bound by field-name strings through
+ * {@code PropertyValueFactory}, which answers a renamed field with a silently empty column; its
+ * {@code TreeTableView} sat inside a {@code ScrollPane} with a fixed preferred height, so the table
+ * never grew and the page had two scrollbars; and its header showed two figures, one labelled as
+ * something else and one that nothing ever wrote. A screen assembled here cannot have a caption
+ * nobody set or a field nobody fills: there is no second file to fall out of step with.
+ * <p>
+ * <b>Where the numbers come from.</b> {@link PartyStatementService}, and nowhere else. This screen
+ * used to assemble the statement itself from four queries and got the deferred return wrong - see
+ * that service for what that cost. It reads through {@code forPrint} rather than {@code search}
+ * because it shows the whole filtered statement rather than a page of it, which is also what makes
+ * the table, the print and the export one set of rows by construction.
+ * <p>
+ * What is kept from the old screen is the part that was good: expanding a document row to show its
+ * lines, loaded only when the row is opened. A party with two thousand invoices must not read two
+ * thousand line tables to render.
+ */
 @Log4j2
-@FxmlPath(pathFile = "accountDetailsTreeTableView.fxml")
 public class AccountDetailsWithItemsController<T3 extends BaseNames, T4 extends BaseAccount>
-        extends LoadOtherData<T3, T4> implements Initializable, AppSettingInterface {
+        extends LoadOtherData<T3, T4> implements AppSettingInterface {
 
-    public static final String ACCOUNT_DETAILS_TREE_COLOR_ROW = "account.details.tree.color.row";
-    private final ObservableList<AccountCard> observableList = FXCollections.observableArrayList();
-    private final Set<TreeItem<AccountCard>> lazyLoadedItems = Collections.newSetFromMap(new IdentityHashMap<>());
-    private final String name_account;
-    private final int num_id;
-    private final AccountDetailsInterface accountDetailsInterface;
-    private final Preferences preferences = Preferences.userNodeForPackage(AccountDetailsWithItemsController.class);
-    private TreeItem<AccountCard> treeItem;
-    @FXML
-    private TreeTableView<AccountCard> treeView;
-    @FXML
-    private Label labelName, labelFirstBalance, labelLastBalance, labelFrom, labelTo;
-    @FXML
-    private Button btnPrint, btnExport, btnRefresh, btnSearch;
-    @FXML
-    private TextField txtLimit, txtLast, txtName;
-    @FXML
-    private AnchorPane pane;
-    @FXML
-    private HBox boxSearch;
-    @FXML
-    private DatePicker dateFrom;
-    @FXML
-    private DatePicker dateTo;
-    @FXML
-    private Text textSumPurchase, textSumPaid, textSumTotals;
-    @FXML
-    private CheckMenuItem checkPrintDetails, checkShowColor, checkShowAll;
-    @FXML
-    private StackPane stackPane;
-    private List<AccountCard> list_items = new ArrayList<>();
+    /** Set on a document row, which is the one kind that can be expanded. Styled in the theme. */
+    private static final PseudoClass DOCUMENT_ROW = PseudoClass.getPseudoClass("document-row");
 
+    private final String partyName;
+    private final int partyId;
+    private final AccountDetailsInterface documentLines;
+    private final PartyStatementService statementService = new PartyStatementService();
+    private final EventBus eventBus = ServiceRegistry.get(EventBus.class);
 
-    // Add this helper method:
-    public AccountDetailsWithItemsController(DaoFactory daoFactory, DataPublisher dataPublisher
-            , DataInterface<?, ?, T3, T4> dataInterface
-            , T4 t4, AccountDetailsInterface accountDetailsInterface) throws Exception {
+    /** Rows already expanded, by identity: a second expand must not read the lines again. */
+    private final Set<TreeItem<AccountCard>> expanded =
+            Collections.newSetFromMap(new IdentityHashMap<>());
+
+    private final TreeTableView<AccountCard> treeView = new TreeTableView<>();
+    private final TreeItem<AccountCard> root = new TreeItem<>(new AccountCard());
+    private final PartyStatementHeader header = new PartyStatementHeader();
+    private final PartyStatementFilterBar filters;
+    private final Label status = new Label();
+    private final Label narrowed = new Label(text("party.statement.narrowed"));
+    private final CheckBox expandAll = new CheckBox(text("party.check.show.all"));
+    private final CheckBox printDetails = new CheckBox(text("party.check.show.print.details"));
+    private final ProgressIndicator progress = new ProgressIndicator();
+    private final StackPane content = new StackPane();
+
+    /** The statement on screen, so the print and both exports describe exactly what is shown. */
+    private PartyStatementPrintData statement =
+            new PartyStatementPrintData(List.of(), PartyStatementSummary.EMPTY, false);
+
+    /** Discards the answer to a search the user has already replaced. */
+    private int generation;
+
+    /**
+     * Opens the statement of one party.
+     * <p>
+     * It takes the party's id and name rather than a {@code T4} movement to read them out of.
+     * The caller had to fabricate a movement to satisfy the old signature - one carrying an id
+     * and nothing else - so {@code accountData.getName(...)} answered null and the window opened
+     * titled "كشف حساب - null". A screen that needs a party should ask for a party.
+     */
+    public AccountDetailsWithItemsController(DaoFactory daoFactory, DataPublisher dataPublisher,
+                                             DataInterface<?, ?, T3, T4> dataInterface,
+                                             int partyId, String partyName,
+                                             AccountDetailsInterface documentLines)
+            throws Exception {
         super(dataInterface, daoFactory, dataPublisher);
-        this.name_account = accountData.getName(t4);
-        this.num_id = accountData.getIdName(t4);
-        this.accountDetailsInterface = accountDetailsInterface;
+        this.partyId = partyId;
+        this.partyName = partyName == null ? "" : partyName;
+        this.documentLines = documentLines;
+        this.filters = new PartyStatementFilterBar(partyKind(), partyId);
     }
+
+    // ---- the screen ------------------------------------------------------------------
 
     @Override
-    public void initialize(URL url, ResourceBundle resourceBundle) {
-        otherSetting();
-        createTree();
-        buttonGraphic();
-        actionSetting();
-    }
+    public Pane pane() {
+        buildTree();
+        filters.setOnSearch(this::load);
 
-    private void actionSetting() {
-        btnExport.setOnAction(event -> exportToPdf());
-        btnPrint.setOnAction(e -> printAccount());
-        btnSearch.setOnAction(e -> filterByDate());
-        btnRefresh.setOnAction(e -> resetDateFilter());
+        BorderPane layout = new BorderPane();
+        layout.getStyleClass().add("app-container");
+        layout.setTop(new VBox(8, toolbar(), header, filters));
+        layout.setCenter(content);
+        layout.setBottom(footer());
+        BorderPane.setMargin(content, new Insets(8, 0, 8, 0));
 
-        checkShowColor.selectedProperty().addListener((observable, oldValue, newValue) -> {
-            applyRowColoringIfNeeded(newValue);
-            preferences.putBoolean(ACCOUNT_DETAILS_TREE_COLOR_ROW, newValue);
-        });
+        progress.setMaxSize(48, 48);
+        progress.setVisible(false);
+        content.getChildren().addAll(treeView, progress);
 
-        var aBoolean = preferences.getBoolean(ACCOUNT_DETAILS_TREE_COLOR_ROW, false);
-        checkShowColor.setSelected(aBoolean);
-        applyRowColoringIfNeeded(aBoolean);
+        StackPane screen = new StackPane(layout);
+        screen.getStyleClass().add("app-root");
+        screen.getStylesheets().add(ThemeManager.getStylesheet());
+        screen.setId("party-statement");
 
-        colorColumn(3, "green");
-        colorColumn(4, "red");
-    }
-
-    private void applyRowColoringIfNeeded(boolean aBoolean) {
-        if (aBoolean) {
-            colorRows();
-        } else {
-            treeView.setRowFactory(null);
-            treeView.refresh();
+        // Subscribed here, where the node exists: a movement saved or deleted anywhere must reach
+        // an open statement. The old screen published AccountChanged on delete and subscribed to
+        // nothing, so a deleted row stayed on the page until it was closed and reopened.
+        if (eventBus != null) {
+            subscriptions.add(eventBus.subscribe(AccountChanged.class, event -> {
+                if (event.kind() == partyKind()) {
+                    reload();
+                }
+            }));
+            subscriptions.disposeWith(screen);
         }
+        Platform.runLater(this::openOnTheWholeHistory);
+        return screen;
     }
 
-    private void colorColumn(int index, String color) {
-        TreeTableColumn<AccountCard, ?> accountCardTreeTableColumn = treeView.getColumns().get(index);
-        accountCardTreeTableColumn.setStyle(accountCardTreeTableColumn.getStyle() + "; -fx-text-fill: " + color + "; -fx-font-weight: bold;");
-    }
+    private FlowPane toolbar() {
+        Button refresh = button("refresh", AppIcon.REFRESH, this::reload);
+        Button print = button("print", AppIcon.PRINT, this::print);
+        Button pdf = button("party.btn.export.pdf", AppIcon.EXPORT, this::exportPdf);
+        pdf.getStyleClass().setAll("pdf-button");
+        Button excel = button("party.statement.export.excel", AppIcon.SPREADSHEET, this::exportExcel);
+        excel.getStyleClass().setAll("excel-button");
 
-    private void buttonGraphic() {
-//        btnPrint, btnRefresh, btnSearch, btnUpdate, btnDelete;
-        var imageSetting = new Image_Setting();
-        btnPrint.setGraphic(ImageChoose.createIcon(imageSetting.print));
-        btnExport.setGraphic(ImageChoose.createIcon(imageSetting.export));
-        btnRefresh.setGraphic(ImageChoose.createIcon(imageSetting.refresh));
-        btnSearch.setGraphic(ImageChoose.createIcon(imageSetting.search));
-    }
+        Label name = new Label(partyName);
+        name.getStyleClass().add("app-section-title");
+        name.setId("statement-party-name");
 
-    private void createTree() {
-        treeView.getColumns().clear();
-        TreeTable.createTable(treeView, initializeAccountColumnDefinitions());
-        TableSetting.tableMenuSetting(getClass(), treeView);
-        treeView.setEditable(true);
-
-        var accountCard1 = new AccountCard();
-        accountCard1.setInformation(LanguageManager.getInstance().getString("total"));
-        treeItem = new TreeItem<>(accountCard1);
-        treeView.setRoot(treeItem);
-
-        treeItem.expandedProperty().addListener((observable, oldValue, newValue) -> {
-            if (newValue) {
-                if (checkShowAll.isSelected()) expandAllChildren(treeItem);
-            } else {
-                collapseAllChildren(treeItem);
+        expandAll.setOnAction(event -> {
+            if (expandAll.isSelected()) {
+                root.getChildren().forEach(child -> child.setExpanded(true));
             }
         });
 
-
-        initializeColumnCellFactoryInteger(0, treeView);
-        initializeColumnCellFactory(3, treeView);
-        initializeColumnCellFactory(4, treeView);
-        initializeColumnCellFactory(5, treeView);
-
-        TreeTableColumn<AccountCard, String> column = (TreeTableColumn<AccountCard, String>) treeView.getColumns().get(6);
-        column.setCellFactory(column2 -> EditCellTree.createStringEditCell());
-        column.setOnEditCommit(t -> {
-            t.getRowValue().getValue().setNotes(t.getNewValue());
-        });
-
-        // load list data
-        list_items = generateAccountItemList(accountDetailsInterface);
-        updateRunningBalance(list_items);
-        observableList.setAll(list_items);
-
-        // initialize
-        initializeAccountTreeItems();
-        // Then in your createTree() method, after processing list_items:
-        calculateSumAccount();
-
+        // A FlowPane for the same reason as the filter row: in a dialog narrower than the main
+        // window an HBox squeezed the two checkboxes into each other, so they overlapped and read
+        // as one unintelligible caption. Wrapping keeps every control whole at any width.
+        FlowPane bar = new FlowPane(8, 8, name, expandAll, printDetails, refresh, print, pdf, excel);
+        bar.setAlignment(Pos.CENTER_LEFT);
+        bar.getStyleClass().add("app-card");
+        return bar;
     }
 
-    private void filterByDate() {
-        LocalDate fromDate = dateFrom.getValue();
-        LocalDate toDate = dateTo.getValue();
-
-        if (fromDate != null && toDate != null) {
-            if (fromDate.isAfter(toDate)) {
-                AllAlerts.handleError(LanguageManager.getInstance().getString("party.action.filter.by.date"),
-                        new UserValidationException(LanguageManager.getInstance().getString("msg.cannot.insert.date.less")));
-                return;
-            }
-            List<AccountCard> filteredList = list_items.stream()
-                    .filter(item -> {
-                        var date = LocalDate.parse(item.getDate());
-                        return !date.isBefore(fromDate) && !date.isAfter(toDate);
-                    })
-                    .toList();
-            updateRunningBalance(filteredList);
-            observableList.setAll(filteredList);
-            initializeAccountTreeItems();
-            calculateSumAccount();
-        }
-    }
-
-    private void resetDateFilter() {
-        updateRunningBalance(list_items);
-        observableList.setAll(list_items);
-        initializeAccountTreeItems();
-        calculateSumAccount();
+    private HBox footer() {
+        status.setId("statement-status");
+        status.getStyleClass().add("status-label");
+        narrowed.getStyleClass().add("form-label");
+        narrowed.setVisible(false);
+        narrowed.setManaged(false);
+        HBox bar = new HBox(14, status, narrowed);
+        bar.setAlignment(Pos.CENTER_LEFT);
+        bar.getStyleClass().add("summary-card");
+        return bar;
     }
 
     /**
-     * Runs on the JavaFX thread, and has to: every line of it is the tree the screen
-     * is showing. It was wrapped in the masker pane, which used to mean the same
-     * thing - the masker ran its action on the JavaFX thread - but no longer does.
-     * There is nothing here to wait for either; the rows are built from a list
-     * already in memory.
+     * The columns, built in code.
+     * <p>
+     * Each one names a method rather than a field, so the compiler checks it - rule ق-ل1 of
+     * {@code docs/new-code-rules.md}. The amounts are {@code Columns.money}, which is the one
+     * definition of how a figure is written here: two decimals, thousands separated, right-aligned,
+     * negatives red. The old columns printed whatever {@code Double.toString} produced.
      */
-    private void initializeAccountTreeItems() {
-        treeItem.getChildren().clear();
-        observableList.forEach(t4 -> {
-            TreeItem<AccountCard> accountTreeItem = new TreeItem<>(t4);
-            treeItem.getChildren().add(accountTreeItem);
-            treeItem.setExpanded(true);
+    private void buildTree() {
+        treeView.setId("statement-table");
+        treeView.setShowRoot(false);
+        treeView.setRoot(root);
+        treeView.setColumnResizePolicy(TreeTableView.CONSTRAINED_RESIZE_POLICY_FLEX_LAST_COLUMN);
+        treeView.setPlaceholder(new Label(text("party.statement.empty")));
+        root.setExpanded(true);
+        VBox.setVgrow(treeView, Priority.ALWAYS);
 
-            // lazy load details only when expanded
-            if (shouldLazyLoad(t4)) {
-                accountTreeItem.getChildren().add(new TreeItem<>(new AccountCard()));
-                accountTreeItem.expandedProperty().addListener((observable, oldValue, newValue) -> {
-                    if (newValue && !lazyLoadedItems.contains(accountTreeItem)) {
-                        accountTreeItem.getChildren().clear();
-                        try {
-                            accountDetailsInterface.addTreeItemTotals(t4, accountTreeItem);
-                        } catch (Exception e) {
-                            errorLog(e);
-                        }
-                        lazyLoadedItems.add(accountTreeItem);
-                        if (checkShowAll.isSelected()) {
-                            expandAllChildren(accountTreeItem);
-                        }
+        treeView.getColumns().setAll(List.of(
+                tree("date", AccountCard::getDate),
+                kindColumn(),
+                tree("party.statement.column.reference", card -> card.getId() == 0
+                        ? "" : String.valueOf(card.getId())),
+                money("common.debtor", AccountCard::getPurchase),
+                money("common.creditor", AccountCard::getPaid),
+                money("party.statement.column.running", AccountCard::getDetails),
+                tree("party.statement.column.treasury", AccountCard::getName),
+                tree("column.notes", AccountCard::getNotes)));
+
+        treeView.setRowFactory(view -> new TreeTableRow<>() {
+            @Override
+            protected void updateItem(AccountCard card, boolean empty) {
+                super.updateItem(card, empty);
+                pseudoClassStateChanged(DOCUMENT_ROW,
+                        !empty && card != null && card.hasDocumentLines());
+            }
+        });
+        TableSetting.tableMenuSetting(getClass(), treeView);
+    }
+
+    /**
+     * The movement's kind, as a translated label from the enum.
+     * <p>
+     * The old screen decided what to colour and what could be expanded by comparing this column's
+     * text against the Arabic literals {@code "المبيعات"} and {@code "مرتجع المبيعات"} - so a user
+     * on the English bundle got neither. The text is for reading; {@link AccountCard#getKind()} is
+     * what anything decides on.
+     */
+    private TreeTableColumn<AccountCard, String> kindColumn() {
+        return tree("party.statement.column.kind", card -> card.getKind() == null
+                ? "" : text(card.getKind().messageKey()));
+    }
+
+    // ---- loading ---------------------------------------------------------------------
+
+    private void openOnTheWholeHistory() {
+        try {
+            filters.initialise(statementService.options(partyKind()),
+                    statementService.earliestMovement(partyKind(), partyId));
+        } catch (Exception e) {
+            report(e);
+        }
+    }
+
+    private void reload() {
+        load(filters.filter(0, PartyStatementFilter.DEFAULT_PAGE_SIZE));
+    }
+
+    /**
+     * Reads the statement for a filter, off the JavaFX thread.
+     * <p>
+     * The old screen read it inline, so a party with a long history froze the window while the four
+     * queries ran. A {@code generation} token discards the answer to a search the user has already
+     * replaced - the same guard {@code MasterDataPane} and {@code ItemSuggestionField} use, and
+     * without it a slow query can overwrite the result of a faster, later one.
+     */
+    private void load(PartyStatementFilter filter) {
+        int token = ++generation;
+        progress.setVisible(true);
+        Task<PartyStatementPrintData> task = new Task<>() {
+            @Override
+            protected PartyStatementPrintData call() throws Exception {
+                return statementService.forPrint(filter);
+            }
+        };
+        task.setOnSucceeded(event -> {
+            if (token == generation) {
+                progress.setVisible(false);
+                show(task.getValue(), filter);
+            }
+        });
+        task.setOnFailed(event -> {
+            if (token == generation) {
+                progress.setVisible(false);
+                report(task.getException());
+            }
+        });
+        Thread thread = new Thread(task, "party-statement-load");
+        thread.setDaemon(true);
+        thread.start();
+    }
+
+    private void show(PartyStatementPrintData loaded, PartyStatementFilter filter) {
+        statement = loaded;
+        header.show(loaded.summary());
+        showCreditLimit(loaded.summary());
+        buildRows(loaded.rowsOldestFirst());
+
+        status.setText(LanguageManager.getInstance()
+                .getString("party.statement.rows", loaded.rows().size()));
+        boolean hidden = filter.narrowsRows() && !loaded.summary().rowsExplainTheBalance();
+        narrowed.setVisible(hidden);
+        narrowed.setManaged(hidden);
+
+        if (loaded.truncated()) {
+            AllAlerts.handleError(text("party.statement.title"), new UserValidationException(
+                    LanguageManager.getInstance().getString("party.statement.truncated",
+                            PartyStatementService.PRINT_LIMIT)));
+        }
+    }
+
+    private void showCreditLimit(PartyStatementSummary summary) {
+        if (partyKind() != PartyKind.CUSTOMER) {
+            header.showCreditLimit(null, null);
+            return;
+        }
+        try {
+            T3 party = nameAndAccountInterface.getNameById(partyId);
+            header.showCreditLimit(
+                    BigDecimal.valueOf(nameService.getCredit(List.of(party), partyId)),
+                    summary.closingBalance());
+        } catch (Exception e) {
+            report(e);
+        }
+    }
+
+    /**
+     * One tree row per statement row, oldest first.
+     * <p>
+     * Oldest first because that is the order the running balance was accumulated in, so each row's
+     * balance follows from the one above rather than contradicting it.
+     */
+    private void buildRows(List<PartyStatementRow> rows) {
+        expanded.clear();
+        root.getChildren().clear();
+        for (PartyStatementRow row : rows) {
+            TreeItem<AccountCard> item = new TreeItem<>(toCard(row));
+            root.getChildren().add(item);
+            if (row.hasDocumentLines()) {
+                // A placeholder gives the row its disclosure arrow; the lines are read when it opens.
+                item.getChildren().add(new TreeItem<>(new AccountCard()));
+                item.expandedProperty().addListener((observable, was, open) -> {
+                    if (open) {
+                        loadDocumentLines(item);
                     }
                 });
             }
-        });
-    }
-
-    private boolean shouldLazyLoad(AccountCard item) {
-        var info = item.getInformation();
-        if (info == null) return false;
-        return info.equals(purchaseLabel) || info.equals(purchaseReturnLabel)
-                || info.equals(salesTitle) || info.equals(salesReTitle);
-    }
-
-
-    private void colorRows() {
-        treeView.setRowFactory(sTableView -> {
-            TreeTableRow<AccountCard> row = new TreeTableRow<>();
-            row.itemProperty().addListener((observableValue, s, t1) -> {
-                if (t1 != null) {
-                    var information = t1.getInformation();
-                    if (information != null) {
-                        switch (information) {
-                            case purchaseLabel, purchaseReturnLabel, salesTitle, salesReTitle ->
-                                    row.setStyle("-fx-background-color: rgba(246, 244, 244, 0.84); -fx-text-fill: red;");
-
-                        }
-                    }
-                }
-                treeView.refresh();
-            });
-
-            return row;
-        });
-    }
-
-
-    private void calculateSumAccount() {
-        double totalPurchase = observableList.stream()
-                .mapToDouble(AccountCard::getPurchase)
-                .sum();
-        double totalPaid = observableList.stream()
-                .mapToDouble(AccountCard::getPaid)
-                .sum();
-
-        textSumPurchase.setText(String.valueOf(totalPurchase));
-        textSumPaid.setText(String.valueOf(totalPaid));
-        double total = roundToTwoDecimalPlaces(totalPurchase - totalPaid);
-
-        textSumTotals.setText(String.valueOf(total));
-
-        textSumPurchase.setStyle("-fx-font-weight: bold; -fx-fill: green;");
-        textSumPaid.setStyle("-fx-font-weight: bold; -fx-fill: red;");
-        textSumTotals.setStyle("-fx-font-weight: bold; -fx-fill: " + (total >= 0 ? "green" : "red") + ";");
-
-    }
-
-    private void expandAllChildren(TreeItem<?> item) {
-        if (item != null && !item.isLeaf()) {
-            item.setExpanded(true);
-            item.getChildren().forEach(this::expandAllChildren);
+        }
+        if (expandAll.isSelected()) {
+            root.getChildren().forEach(child -> child.setExpanded(true));
         }
     }
 
-    private void collapseAllChildren(TreeItem<?> item) {
-        if (item != null && !item.isLeaf()) {
-            item.setExpanded(false);
-            item.getChildren().forEach(this::collapseAllChildren);
+    private void loadDocumentLines(TreeItem<AccountCard> item) {
+        if (!expanded.add(item)) {
+            return;
         }
-    }
-
-    private void otherSetting() {
-        List<T3> customersList = getDataAllList();
-        var lm = LanguageManager.getInstance();
-        labelName.setText(lm.getString("name"));
-        labelFirstBalance.setText(lm.getString("firstBalance"));
-        labelLastBalance.setText(lm.getString("party.final.balance"));
-        btnPrint.setText(lm.getString("print"));
-        btnExport.setText(lm.getString("party.btn.export.pdf"));
-        btnSearch.setText(lm.getString("search"));
-        btnRefresh.setText(lm.getString("refresh"));
-        txtLimit.setText(String.valueOf(nameService.getCredit(customersList, num_id)));
-        txtName.setText(name_account);
-        checkPrintDetails.setText(lm.getString("party.check.show.print.details"));
-        checkShowColor.setText(lm.getString("party.check.show.color"));
-        checkShowAll.setText(lm.getString("party.check.show.all"));
-
-        // init date
-        DateSetting.dateAction(dateFrom);
-        DateSetting.dateAction(dateTo);
-        labelFrom.setText(lm.getString("from"));
-        labelTo.setText(lm.getString("to"));
-    }
-
-    private List<T3> getDataAllList() {
+        item.getChildren().clear();
         try {
-            return nameAndAccountInterface.nameList();
+            documentLines.addTreeItemTotals(item.getValue(), item);
         } catch (Exception e) {
-            throw new RuntimeException(e);
+            expanded.remove(item);
+            report(e);
         }
     }
 
-    private List<AccountCard> generateAccountItemList(AccountDetailsInterface accountDetailsInterface) {
-        // add first Balance
+    /** A statement row as a tree row: the label for the eye, the kind for every decision. */
+    private AccountCard toCard(PartyStatementRow row) {
+        AccountCard card = new AccountCard();
+        card.setId((int) row.reference());
+        card.setDate(row.date().toString());
+        card.setKind(row.kind());
+        card.setInformation(text(row.kind().messageKey()));
+        card.setPurchase(row.debit().doubleValue());
+        card.setPaid(row.credit().doubleValue());
+        card.setDetails(row.runningBalance().doubleValue());
+        card.setName(row.treasuryName());
+        card.setNotes(row.notes());
+        return card;
+    }
+
+    // ---- printing and exporting -------------------------------------------------------
+
+    /**
+     * Prints the statement on screen.
+     * <p>
+     * Every row of it: {@link #statement} is the whole filtered extract rather than a page, so the
+     * printed page and the screen cannot differ. Ticking "show details" includes the expanded
+     * document lines, which are the rows with no movement kind of their own.
+     */
+    private void print() {
+        List<AccountCard> rows = printDetails.isSelected()
+                ? allRows(root)
+                : root.getChildren().stream().map(TreeItem::getValue).toList();
+        if (rows.isEmpty()) {
+            report(new UserValidationException(text("party.error.no.data.export")));
+            return;
+        }
+        printReports.printAccountStatement(rows, true, text("party.statement.title"), partyName, null);
+    }
+
+    private void exportExcel() {
         try {
-            list_items = new ArrayList<>();
-            var customerById = dataInterface.nameAndAccountInterface().getNameById(num_id);
-            var firstBalance = customerById.getFirst_balance();
-            String balanceTitle = LanguageManager.getInstance().getString("balance");
-            AccountCard accountName = new AccountCard(0, balanceTitle
-                    , customerById.getCreated_at().toLocalDate().toString()
-                    , firstBalance > 0 ? firstBalance : 0, firstBalance < 0 ? firstBalance : 0
-                    , 0, customerById.getNotes(), balanceTitle);
-            list_items.add(accountName);
-
-            // add totals
-            accountDetailsInterface.getTotalList(list_items, num_id);
-
-            // add returns
-            accountDetailsInterface.getTotalReturnList(list_items, num_id);
-
-            // add account
-            var accountList = dataInterface.nameAndAccountInterface().accountListById(num_id);
-            var listAccount = accountList.stream().toList();
-            String paymentTitle = LanguageManager.getInstance().getString("party.transaction.payment");
-            listAccount.forEach(account -> {
-                AccountCard accountCard = new AccountCard(account.getId(), paymentTitle, account.getDate(), account.getPurchase(), account.getPaid()
-                        , 0, account.getNotes(), paymentTitle);
-                list_items.add(accountCard);
-            });
-
-            list_items.sort(Comparator.comparing(AccountCard::getDate));
+            requireRows();
+            int written = ExportData.exportDataToExcel(statement.rows(),
+                    new PartyStatementExcelWriter(statement.rows(), statement.summary()));
+            if (written < 1) {
+                throw new BusinessRuleException(text("party.error.cannot.save"));
+            }
+            AllAlerts.alertSaveWithMessage(text("party.export.excel.success"));
         } catch (Exception e) {
-            errorLog(e);
-        }
-        return list_items;
-    }
-
-    private void updateRunningBalance(List<AccountCard> items) {
-        double running = 0;
-        for (AccountCard item : items) {
-            running += item.getPurchase() - item.getPaid();
-            item.setDetails(roundToTwoDecimalPlaces(running));
+            report(e);
         }
     }
 
-    private void printAccount() {
-        boolean showDetails = checkPrintDetails.isSelected();
-        List<AccountCard> allItems = getAllTreeItems(treeView.getRoot());
-        if (!showDetails) {
-            allItems = allItems.stream()
-                    .filter(item -> item.getInformation() != null && !item.getInformation().isEmpty())
-                    .toList();
-        }
-
-
-        printReports.printAccountStatement(allItems, true, accountStatementTitle(), name_account, null);
-    }
-
-    private List<AccountCard> getAllTreeItems(TreeItem<AccountCard> item) {
-        List<AccountCard> items = new ArrayList<>();
-        if (item != null) {
-            if (item.getValue() != null) {
-                items.add(item.getValue());
+    private void exportPdf() {
+        try {
+            requireRows();
+            FileChooser chooser = new FileChooser();
+            chooser.setTitle(text("party.dialog.save.report"));
+            chooser.setInitialFileName(partyName + "_" + LocalDate.now() + ".pdf");
+            chooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("PDF Files", "*.pdf"));
+            File file = chooser.showSaveDialog(null);
+            if (file == null) {
+                return;
             }
-            if (!item.isLeaf()) {
-                for (TreeItem<AccountCard> child : item.getChildren()) {
-                    items.addAll(getAllTreeItems(child));
-                }
+            if (!new PartyStatementPdfExporter().export(statement, partyName, file.getAbsolutePath())) {
+                throw new BusinessRuleException(text("party.error.export.generic"));
             }
-        }
-        return items;
-    }
-
-    private void exportToPdf() {
-        String textStart = "report";
-        String year = "2025";
-        FileChooser fileChooser = new FileChooser();
-        fileChooser.setTitle(LanguageManager.getInstance().getString("party.dialog.save.report"));
-        fileChooser.setInitialFileName(textStart + "_" + year + ".pdf");
-        fileChooser.getExtensionFilters().add(
-                new FileChooser.ExtensionFilter("PDF Files", "*.pdf")
-        );
-
-        File file = fileChooser.showSaveDialog(null);
-
-        if (file != null) {
-            List<CustomerAccountData> tableTotals = new ArrayList<>();
-            treeItem.getChildren().forEach(t4 -> {
-                tableTotals.add(CustomerAccountData.builder()
-                        .customerName(t4.getValue().getDate())
-                        .debit(t4.getValue().getPurchase())
-                        .credit(t4.getValue().getPaid()).balance(t4.getValue().getDetails())
-                        .build());
-            });
-
-            var reportExportService = new ReportExportService();
-            boolean success = reportExportService.exportCustomerAccountsReport(
-                    tableTotals, file.getAbsolutePath()
-            );
-
-            javafx.application.Platform.runLater(() -> {
-                if (success) {
-                    AllAlerts.alertSaveWithMessage(LanguageManager.getInstance()
-                            .getString("party.export.success.saved.at", file.getAbsolutePath()));
-                } else {
-                    AllAlerts.handleError(LanguageManager.getInstance().getString("party.error.export.account.statement"),
-                            new BusinessRuleException(LanguageManager.getInstance().getString("party.error.export.generic")));
-                }
-            });
+            AllAlerts.alertSaveWithMessage(LanguageManager.getInstance()
+                    .getString("party.export.success.saved.at", file.getAbsolutePath()));
+        } catch (Exception e) {
+            report(e);
         }
     }
 
-    private void errorLog(Exception e) {
-        AllAlerts.handleError(LanguageManager.getInstance().getString("party.error.load.account.details.items"), e);
+    /** Refuses an export of nothing out loud, rather than writing an empty file and saying it saved. */
+    private void requireRows() throws UserValidationException {
+        if (statement.rows().isEmpty()) {
+            throw new UserValidationException(text("party.error.no.data.export"));
+        }
     }
 
-    @Override
-    public Pane pane() throws IOException {
-        var pane1 = new OpenFxmlApplication(this).getPane();
-        pane1.getStyleClass().add(ThemeManager.getStylesheet());
-        return pane1;
+    /** Every row under the root, the root itself excluded - it stands for the tree, not a movement. */
+    private List<AccountCard> allRows(TreeItem<AccountCard> item) {
+        List<AccountCard> rows = new java.util.ArrayList<>();
+        if (item != root && item.getValue() != null) {
+            rows.add(item.getValue());
+        }
+        item.getChildren().forEach(child -> rows.addAll(allRows(child)));
+        return rows;
+    }
+
+    // ---- plumbing --------------------------------------------------------------------
+
+    private PartyKind partyKind() {
+        return nameAndAccountInterface.partyKind();
+    }
+
+    private Button button(String key, AppIcon icon, Runnable action) {
+        Button button = new Button(text(key), icon.graphic());
+        button.getStyleClass().add("app-neutral-button");
+        button.setId("statement-" + key.replace('.', '-'));
+        button.setOnAction(event -> action.run());
+        return button;
+    }
+
+    private <T> TreeTableColumn<AccountCard, String> tree(
+            String titleKey, java.util.function.Function<AccountCard, String> value) {
+        TreeTableColumn<AccountCard, String> column = new TreeTableColumn<>(text(titleKey));
+        column.setCellValueFactory(features -> new javafx.beans.property.ReadOnlyObjectWrapper<>(
+                value.apply(features.getValue().getValue())));
+        return column;
+    }
+
+    private TreeTableColumn<AccountCard, BigDecimal> money(
+            String titleKey, java.util.function.Function<AccountCard, Double> value) {
+        TreeTableColumn<AccountCard, BigDecimal> column = new TreeTableColumn<>(text(titleKey));
+        column.setStyle("-fx-alignment: CENTER-RIGHT;");
+        column.setCellValueFactory(features -> {
+            Double amount = value.apply(features.getValue().getValue());
+            return new javafx.beans.property.ReadOnlyObjectWrapper<>(
+                    amount == null || amount == 0 ? null : BigDecimal.valueOf(amount));
+        });
+        column.setCellFactory(ignored -> new javafx.scene.control.TreeTableCell<>() {
+            @Override
+            protected void updateItem(BigDecimal amount, boolean empty) {
+                super.updateItem(amount, empty);
+                setText(empty || amount == null ? null : Columns.money(amount));
+                pseudoClassStateChanged(Columns.NEGATIVE, amount != null && amount.signum() < 0);
+            }
+        });
+        return column;
+    }
+
+    private void report(Throwable e) {
+        AllAlerts.handleError(text("party.error.load.account.details.items"),
+                e instanceof Exception exception ? exception : new RuntimeException(e));
+    }
+
+    private static String text(String key) {
+        return LanguageManager.getInstance().getString(key);
     }
 
     @Override
     public String title() {
-        return LanguageManager.getInstance().getString("party.account.card.title", name_account);
+        return LanguageManager.getInstance().getString("party.account.card.title", partyName);
     }
 
     @Override
     public boolean resize() {
         return true;
     }
-
-    private List<Column<?>> initializeAccountColumnDefinitions() {
-        var lm = LanguageManager.getInstance();
-        return new ArrayList<>(Arrays.asList(
-                new Column<>(Integer.class, "id", lm.getString("num")),
-                new Column<>(Date.class, "date", lm.getString("date")),
-                new Column<>(String.class, "information", lm.getString("party.column.operation.type")),
-                new Column<>(Double.class, "purchase", lm.getString("common.debtor")),
-                new Column<>(Double.class, "paid", lm.getString("common.creditor")),
-                new Column<>(Double.class, "details", lm.getString("balance")),
-                new Column<>(String.class, "notes", lm.getString("column.notes"))
-
-        ));
-    }
-
-
 }
-

@@ -13,6 +13,17 @@ public class Customers extends BaseNames {
     private double credit_limit;
     private SelPriceTypeModel selPriceObject;
 
+    /**
+     * The delegate this customer's invoices default to, or 0 for none (V56).
+     * <p>
+     * On the customer only: {@code total_sales.delegate_id} has existed since V1 and is
+     * picked afresh on every invoice with nothing remembering it, while a purchase has
+     * no delegate at all. There is deliberately no foreign key - the delegates are rows
+     * in {@code users}, and a key here would refuse to retire a user for as long as one
+     * customer still named them.
+     */
+    private int default_delegate_id;
+
     public Customers(int id) {
         setId(id);
     }

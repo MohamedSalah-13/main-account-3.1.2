@@ -70,17 +70,24 @@ because *every new party payment had been silently discarded since `f2b4baf`* (s
 observe from inside an enclosing transaction. Fifteen cases pass now, twice in a row, and the class
 checks for its own residue rather than trusting the rollback.
 
-**Eighteen classes do not run by default.** `InvoiceStockDatabaseAcceptanceTest`,
+**Twenty classes do not run by default.** `InvoiceStockDatabaseAcceptanceTest`,
 `DocumentLineDatabaseAcceptanceTest`, `StockLedgerReconciliationAcceptanceTest`,
 `StockMovementBackfillAcceptanceTest`, `StockTransferDatabaseAcceptanceTest`,
 `TotalDocumentDeleteReversesStockLedgerAcceptanceTest`,
 `PurchaseDeleteReversesNonDefaultWarehouseBalanceAcceptanceTest`, `PartyLedgerViewAcceptanceTest`,
+`PartyStatementViewAcceptanceTest`, `PartyMovementDatabaseAcceptanceTest`,
 `ReturnSourceAcceptanceTest`, `ReturnableRepositoryAcceptanceTest`, `ItemMergeDatabaseAcceptanceTest`,
 `TreasuryBalanceViewAcceptanceTest`, `ProfitDefinitionDatabaseAcceptanceTest`,
 `ShiftAccountingDatabaseAcceptanceTest`, `ItemGroupMoveDatabaseAcceptanceTest`,
 `MasterDataDuplicateAcceptanceTest`, `ItemsCatalogBalanceAcceptanceTest` and
 `AuditLogDatabaseAcceptanceTest` are gated on
 `-Daccount.db.acceptance=true` and need a reachable MySQL. A green `mvn clean test` does not run them.
+**`PartyStatementViewAcceptanceTest` and `PartyMovementDatabaseAcceptanceTest` are the newest**,
+written 2026-09-10 with the party statement and payment work and **first run the same day against a
+scratch schema built from nothing** - 23 cases with `PartyLedgerViewAcceptanceTest`, green twice
+running, no residue in either database. That run found three real defects a green build could not
+see, one of which would have failed every install; see `docs/party-plan.md` §12 and the migration
+paragraph below.
 
 **On 2026-08-31 the first thirteen were run together for the first time, and after one fixture fix
 all pass: 1022 tests, nothing skipped.** Before that day the honest statement was that most of them
@@ -787,6 +794,386 @@ on a line comes from — the answer differs by direction, which is the part that
 Editing a saved document restores its own original quantities first (`captureOriginalLines`), otherwise
 a line would be judged against a balance it is itself responsible for.
 
+### A party's statement
+
+`features/party/statement` is where a customer's or a supplier's account statement comes from -
+one place, reading `account_customer_table` / `account_suppliers_table` through
+`PartyLedgerSpec`. It has no JavaFX and a test per class, and it is built on
+`features/treasury/statement` class for class: a `Filter` record with its checks in the
+constructor, a `Repository`, a `Service`, a `Page`, a `Summary`, a `PrintData`, an `Options`.
+
+**It replaced a second definition of what a party owes, and that is the whole point.**
+`AccountDetailsWithItemsController` used to assemble the statement itself from four queries -
+the opening balance off the party's row, the invoice totals, the return totals, the payments -
+and that assembly carried `if (invoiceType == CASH) total = totalAfterDiscount;`, which is the
+`IF(invoice_type = 1, total, 0)` that `V15__return_cash_split.sql` had already removed from the
+views. So a **deferred** sales return reached the statement as a debit of zero and a credit of
+zero: an empty row, and a customer who had returned 1000 of goods on account still appeared to
+owe the 1000 - while the totals screen, reading the view, knew they did not. Two screens, two
+balances, and the one a customer signs was the wrong one. `PartyStatementAgreesWithLedgerEffectTest`
+asserts every row against `DocumentLedgerEffect.balanceChange()` rather than against a number,
+so the two cannot drift again.
+
+Four things to know before changing anything there:
+
+- **A filter narrows the rows; the two balances answer the dates alone.** `openingBalance` and
+  `closingBalance` ignore every other filter, exactly as
+  `TreasuryStatements.SELECT_STATEMENT_SUMMARY` does. A "balance before the period" measured
+  over payments only is not anybody's balance, and it is the figure a customer is asked to agree
+  with. It is pinned in `PartyStatementQueryTest` and in the acceptance test; a new filter goes
+  in `narrowsRows()`, never near the opening query.
+- **The running balance is accumulated in SQL, over every movement of the period.** A window
+  function seeded with one scalar read of what came before `from`. The screen used to filter a
+  loaded list and restart the total at zero, so a statement for one month was printed as though
+  the party began it owing nothing. The other filters therefore sit in an outer query over the
+  CTE: a balance that skips the rows a filter hid is not a balance.
+- **The page, the summary and the print extract share one `WHERE`** (`rowFilterSql`), so the
+  totals and the exported file cannot describe a different set from the table. Same rule as
+  `ItemsDao.catalogQuery`. Printing reads `forPrint(filter)` rather than the rows on screen.
+- **It is proven against MySQL, not only reasoned about.** `PartyStatementViewAcceptanceTest`
+  seeds a balance before a period and asserts the carried-in figure, the per-row running balance
+  and the closing balance; asserts a deferred return is on the statement with its whole value;
+  and sums the fetched rows in Java to check the SQL summary agrees - because the summary restates
+  `PartyStatementRow.debit()`/`credit()` in SQL, and two statements of one rule is the shape of
+  defect this package exists to remove.
+- **A movement's kind is a number, never a label.** `PartyMovementKind` carries the
+  `information` codes 1-4; `hasDocumentLines()` is what decides whether a row expands into its
+  invoice lines. That decision used to be `information.equals("المبيعات")` - the `MovementLabel`
+  mistake again, and this application ships an English bundle. The kind's `messageKey()` is for
+  display only, and because the screen resolves it through a *variable*,
+  `MessageKeyArchitectureTest` cannot see those four keys - `PartyStatementTest` checks them
+  against the three bundles instead.
+
+**`view_customer_receivables` is derived from `account_customer_totals` and must stay that
+way.** It used to compute a customer's debt from its own subqueries over `total_sales` and
+`customers_accounts`, ignoring every sales return and the ledger's `purchase` column - a third
+answer to "how much does this customer owe", and the one `CreditLimitSource` raised its
+credit-limit warning from. Its three component columns now add up to its fourth, which they did
+not before.
+
+**What is still not done here** is in `docs/party-plan.md`: the credit limit is polled hourly by
+a notification rather than checked when an invoice is saved, `CustomerDao.map` and
+`SuppliersDao.map` still resolve a lookup row per party with a query of their own, the parties
+list shows no balance, and the ageing report that the payment allocation exists to feed has not
+been written.
+
+### A movement on a party's account
+
+`features/party/payment` and the two `Account*Service` classes. A hand-entered movement is a
+collection, a debit note or a credit note (`PartyEntryKind`), and the difference between the
+first and the other two is not cosmetic.
+
+**`paid` is cash and `purchase` is not, and that is a fact about the schema.** `treasury_balance`
+unions `customers_accounts.paid` as money into the till and `suppliers_accounts.paid` as money
+out of it; neither view reads `purchase` at all. So a note written through `purchase` moves the
+party's account and leaves every treasury balance exactly where it was - which is what a note
+means - while a note written through `paid` would claim cash had changed hands. **A credit note
+is therefore a negative `purchase`, never a positive `paid`.** Both would reduce the balance by
+the same amount and exactly one of them leaves the drawer alone; getting it backwards turns
+every correction entered at a desk into a till surplus somebody has to explain at the close of a
+shift. It follows that a cashless movement does **not** pass through `ShiftGate` and writes no
+row in the shift's cash journal: requiring an open shift for a correction would stop one being
+made outside trading hours, which is when corrections are made. A later edit is still accounted
+for, because `ShiftCashLedger.ensureBaseline` writes the `CREATE` row for a movement the journal
+has not seen.
+
+**`customers_accounts.purchase` had no writer until `V55`, and that was the gap behind a promise
+the system could not keep.** `OpeningBalanceGuard` refuses to rewrite `first_balance` once a
+party has moved - correctly, since it is the one figure with no date on it - and tells the user
+to record a movement on the account instead (`opening.correction.customers`). The only movement
+anyone could record was a collection, so an opening balance entered *too low* could never be
+corrected by anybody, and the message pointed at a road that did not exist. `*.account.adjust`
+(V55) is what opens it, and it is deliberately a separate permission from `account.create`:
+collecting money is matched by cash in the drawer, and deciding that a customer owes another
+thousand pounds is not. `V55` grants it to whoever already held create, the way `V34` did, so
+nobody loses an ability on upgrade.
+
+**`account_num` is the database's to assign.** It is `BIGINT AUTO_INCREMENT PRIMARY KEY` and
+always was, but the insert used to write it from a number the collection screen computed as
+`max + 1` over the whole ledger - so two tills collecting at the same moment chose the same
+number and the second failed on the primary key, which is the defect `InvoiceNumberAllocator`
+exists to prevent on the invoice side. It is out of `PartyLedgerSpec.insertColumns`, and
+`PartyLedgerStatementsTest` asserts its absence **in both directions** so putting it back to
+"keep the screen's numbering" fails the build. `AbstractDao.insertReturningId` reads the
+generated key back, which the caller needs: the shift journal files the movement under it.
+
+**Nothing opens a movement for editing, so half of `Add_AccountController` is unreachable.**
+It fully supports `movementId > 0` — it disables the party field and the kind combo, calls
+`selectData` and `selectAllocatedInvoice`, and asks for a shift-correction reason. But the only
+caller that ever passed a movement id was `AccountDetailsController`, which is constructed solely
+by `AccountDetailsApplication`, **which nothing constructs at all**; and the statement screen that
+replaced it has no edit action. Two things go with that: `ShiftCorrectionReasonPrompt.forUpdate()`,
+which exists for this path alone, and the "editing excludes itself" rule below — written, unit
+tested, and reachable from no screen. Whether a recorded movement should be editable at all, or
+corrected with a note the way `OpeningBalanceGuard` says an opening balance must be, is a decision
+the code and the screens currently disagree about: the code assumes the first, the screens enforce
+the second by silence.
+
+**`numberInv` is finally written.** A collection may be allocated to one invoice, and
+`OpenInvoiceQuery` is what offers the unsettled ones: `total - discount - paid - allocated`.
+Three rules there. **Returns are not netted off an invoice** - a return is its own document on
+the statement, and guessing which invoice it belongs to would be an invented rule of exactly the
+kind this codebase has twice had to undo. **Over-allocation is refused, not clamped**, and
+measured inside the saving transaction rather than from the list a dialog is holding, because a
+second till can settle the same invoice while that dialog is open. And **editing a payment
+excludes itself** from what is allocated, or a payment that settled an invoice in full would
+find it already settled by the row being edited. An unallocated payment (`numberInv = 0`) is
+"on account" and remains the default and the ordinary case.
+
+**`AccountService` is gone**, and with it `NameAndAccountInterface.accountList()`. It computed a
+running balance over every movement of every party in Java - the second definition of a party's
+balance, competing with the view - and nothing called it once the collection screen stopped
+scanning the ledger. One screen needing one number now asks
+`PartyStatementService.currentBalance`.
+
+### The two party screens
+
+Both are built in code, and `accountDetailsTreeTableView.fxml` is gone while `account-totals.fxml`
+is down to two nodes. The reason is not taste. The old FXML carried English captions the controller
+replaced at runtime, so three `CheckMenuItem`s shipped reading `"Unspecified Action"`; it bound its
+columns by field-name string through `PropertyValueFactory`, which answers a renamed field with a
+silently empty column; it put a `TreeTableView` with a fixed preferred height inside a `ScrollPane`,
+so the table never grew; and it declared a header field (`txtLast`) that nothing ever wrote, beside a
+label that said "opening balance" over a field holding the **credit limit**. Two files that have to
+agree about one screen did not agree. A screen assembled in one place cannot have a caption nobody
+set or a field nobody fills.
+
+**`AccountDetailsWithItemsController`** is the statement: header, filter bar, tree, footer. It reads
+`PartyStatementService.forPrint` - the whole filtered extract rather than a page - so the table, the
+print, the PDF and the Excel are one set of rows by construction. Loading is off the JavaFX thread
+with a `generation` token that discards the answer to a search the user has already replaced, the way
+`MasterDataPane` and `ItemSuggestionField` do. The lazy expansion of a document row into its lines is
+kept from the old screen: a party with two thousand invoices must not read two thousand line tables
+to render.
+
+**`AccountController2`** is the balances list, over the new `features/party/balances`. It used to call
+`accountTotalList(null, null)` - every row of `account_customer_totals` on every refresh - and then
+filter, search and total it in memory with one checkbox ("show the zeros") as its only filter. Now
+every filter is SQL: balance state, balance as at a chosen day, range, area, text, **over the credit
+limit**, and **idle for N days**. `PartyLedgerSpec.totalsBetweenDatesSql()` had been written and
+documented for the period filter and had no caller anywhere; the period is real now. The four figures
+above the table are filters as well as facts - "over limit: 12" was a number somebody then had to go
+and find.
+
+**A filter field is not an entry field, and `Utils.setTextFormatter` seeds `0.0`.** That is right
+for an amount being entered - a payment starts at zero - and wrong for a filter, where an untouched
+box has to mean "no bound". The balances screen opened filtering `balance >= 0 AND balance <= 0`,
+showing the 118 parties whose account came to nothing out of 145, with a total owed of zero on a
+database owing 13,225 and nobody having typed anything; the statement's amount filter had it too.
+Every unit test passed, because the filter record was doing exactly what it was told - **only
+opening the screen found it.** Use `Utils.setOptionalNumberFormatter` for a filter, and keep the
+distinction the tests pin: no bound adds no condition, and a bound of zero stays a bound somebody
+can ask for.
+
+**A read-only amount must not carry a number formatter.** `Utils.setTextFormatter`'s converter
+round-trips through `Double`, so a string put into such a field comes back as `Double.toString`:
+the collection screen showed `1050.0` for the balance the screen beside it wrote `1,050.00`, and
+every figure on it was a decimal short. That is the same field type doing two different jobs - a box
+somebody types an amount into, and a box the screen writes an answer into. Only the first takes the
+formatter; the second is written with `Columns.money` and styled `.app-readonly-amount`. And do not
+compute from what such a field displays: hold the figure (`Add_AccountController.balanceBefore`) and
+write the display from it, or the arithmetic is done on whatever survived the rounding.
+
+**A value written once does not need a listener; it needs the recompute on the same line.** That
+screen's remainder was recomputed from a listener on the balance field - and the balance is written
+by `addPartyField()`, which runs at the *top* of `otherSetting()` while the listeners were added at
+the bottom. So it opened on a customer owing 1,050 with the remainder reading `0.0`, correcting
+itself only once somebody typed. The same method also has to be called when anything else it depends
+on changes: `applyKind` did not call it, so switching a 500 collection to a 500 debit note left the
+screen reading 550 where the answer is 1,550 - wrong by twice the amount, in the direction that
+flatters the customer. **Neither was visible to any unit test, and both were obvious within seconds
+of opening the screen.**
+
+**Columns.money is the one definition of how an amount is written** - two decimals, thousands
+separated, right-aligned, negatives red through a `PseudoClass` styled in the theme. Screens printed
+`String.valueOf(double)`, so a balance that had been through arithmetic showed as
+`1234.5600000000002`, and the same figure appeared with and without a separator on two screens of one
+ledger. Use it for every money column and for every money label, including footers, so a total
+matches the column it sums.
+
+**`StatementPeriod` holds the period arithmetic** rather than eight buttons wiring eight date pairs.
+The week runs **Saturday to Friday** - a week starting Monday reports Saturday's and Sunday's takings
+in the week before, which are two of the busiest days of an Arabic-market shop. `StatementPeriodTest`
+asks about a January, a leap February and the 31st, because a quarter that starts in the wrong month
+still looks like a quarter on screen.
+
+**The opening balance and the day it is as at are one entry, and the lock takes both.**
+`OpeningBalanceGuard` refuses to rewrite `first_balance` once a party has moved, because it is the
+one figure on the row with no date on it. V56 gave it a date - so the entry has two halves, and a
+guard holding one while leaving the other typable is a way round itself, reachable from the guard's
+own screen: a balance of 1,000 as at January is a different fact from 1,000 as at September, and
+moving the date moves the entry through the history exactly as changing the amount would.
+`PartyTableSpec.openingColumns()` names both, `updateWithoutOpeningSql()` drops both, and
+`OpeningBalanceGuard.withoutAll` removes both values - **refusing indexes given lowest first**,
+because dropping index 5 shifts the date down to 5 and a following drop of 6 takes the price tier
+and leaves the date in the statement. That is a perfectly valid `UPDATE` writing a price tier into a
+date column, invisible until a customer's row is wrong.
+
+**`is_active` decides who may be sold to, not who may be collected from.** The migration says a
+stopped party leaves the combos, and applying that literally would have made an old debt
+uncollectable: the collection screen searches through the same picker, so a party you stopped
+dealing with while they owed you money could not be reached. `PartyTableSpec.PartySearchScope` is
+therefore an argument and not a property of the statement - `ACTIVE_ONLY` for the invoice screen and
+for the default customer in settings, `EVERYONE` for the collection screen and for the parties list,
+which is **the screen a stopped party is switched back on from**, so hiding it there would make the
+flag a one-way door. There is deliberately no no-argument form: the two screens want opposite
+answers, and a default would silently give one of them the other's. Note the brackets in those three
+statements - `a OR b AND c` is `a OR (b AND c)`, so an unbracketed pair would filter the telephone
+match and leave the name match open, which reads on screen as a filter that works sometimes.
+
+**Both party screens are built in code now, and `addName.fxml` is down to a root node.** Every
+caption in it was an English placeholder (`Code`, `Name`, `area`) the controller replaced at runtime,
+the rows were numbered in one file and referred to by number in another, and V56's six fields would
+have meant renumbering nine rows in one place and matching them in the other. Rewriting it found
+three things a green build had never objected to: `selectData` read `nameList()` - every customer in
+the database, each resolving its area and price tier with a query of its own - to edit one row;
+`checkDataToEnableButton` called `binding.or(...)` on a line of its own and returned `binding`, so
+**the result was computed and thrown away** and the save button asked about the name alone; and
+`Double.parseDouble` on an empty limit box reached the user as a reference code. A fourth is
+structural and is why `carryForwardWhatIsNotOnScreen` exists: the update writes the whole row, so a
+column the form has no control for is written back as the model's default - the same trap that had
+`UsersService.update` reactivating every account it touched.
+
+**The parties list deliberately has no balance column.** A party's balance has one definition and
+one screen, `AccountController2` over `features/party/balances`, which already carries the area, the
+credit limit, who is over it and the four figures above the table. A second computation in the list
+would be exactly the defect the party work exists to remove - two screens, two answers, and the one a
+customer signs decided by which was opened. What the list gained instead is what lives on the party's
+own row: a status column (a stopped party is marked, never hidden), an email column, and
+`Columns.moneyOfDouble` in place of `Columns.number` on the opening balance.
+
+**`V56` adds the fields a party record was missing** - email, tax number (the e-invoice needs it),
+payment terms in days (the ageing report needs it, or "ninety days overdue" counts from the invoice
+rather than from when it fell due), a default delegate, an opening-balance date, and `is_active`. Two
+notes on it. `opening_balance_date` is backfilled with `DATE(created_at)`, which is what the view
+already used, so **no figure moves** - and **nothing reads it yet**: re-dating the opening balance
+moves a movement in every existing party's history, which is a decision taken on its own rather than
+as a side effect of a migration that adds a column. And `is_active` exists because `DeleteRegistry`
+rightly refuses to delete a party with one invoice while `custom.name` is UNIQUE, so a party you have
+stopped dealing with stayed in every combo for ever - the same reasoning as `UsersService.updateActive`.
+
+### Row actions and paging
+
+`account.table.RowAction` + `RowActionsColumn` are the one way a table gets buttons that act on
+their own row, and `PageJumpBox` the one way it gets a page number you can type.
+
+**A toolbar button that acts on "the selected row" is two gestures and one invented error.** It
+has to be able to say "choose a row first", a message that exists only because the control is in
+the wrong place. A button in the row cannot be pressed without naming its row - proven on screen:
+with row 53 selected, pressing a button in row 42 opened 42. The balances screen's collect and
+statement buttons moved into the row this way, and the parties list's edit and delete joined the
+show button that was already there. Refresh, print and export stay in the toolbar, because they
+act on the list.
+
+**Three things a button cell gets wrong, and this repository had shipped two of them.** A
+`TableView` recycles cells rather than building one per row, so `updateItem` must clear the graphic
+when empty or buttons appear on blank rows and act on whatever row the cell last held.
+`getTableView().getItems().get(getIndex())` throws during a reload, and an `IndexOutOfBounds` out
+of a cell factory reaches the user as a reference code with no screen in it - use
+`getTableRow().getItem()`, which is the row's own answer. And the buttons are built once, not
+inside `updateItem`. The permission on a `RowAction` is a **hint** in the `isGranted` sense: the
+action is left out rather than shown and refused, and the service behind it still calls `require`.
+
+**The actions column goes first, not last.** These tables are wider than the window and carry a
+horizontal scroll bar; a column appended to the end lands behind that scroll, which for buttons
+meant for "the row in front of you" is the same as not being there.
+
+**`PageJumpBox` reuses `features/totals/PageJump`** - the same clamping (500 in a 24-page list
+means the last page, refusing an obvious intention is worse than answering it) and the same
+alphabet, **including the ٠-٩ an Arabic keyboard actually produces**. It is in the balances screen
+and in `TableController`, so every list screen has it. Its jump goes through
+`pagination.setCurrentPageIndex`, so the typed number and the pager's own numbers are one route
+and cannot disagree.
+
+**Two layout traps found only by opening the screen.** A control placed after a field with
+`hgrow` gets nothing: an `HBox` hands the growing child every spare pixel and then squeezes what
+is left, so the page box was simply not on screen until it was moved *before* the search field and
+given `minWidth="-Infinity"` as a floor. And a bare `Label` inherits whatever its container sets -
+in the table toolbar that came out invisible, so a caption wears the same class as the captions
+beside it (`form-label`) rather than trusting the default.
+
+**`.summary-card` was declared twice in `app-theme.css` and the two disagreed.** Once as a dark
+navy card with white bold labels, and again five hundred lines later under "Capital Management
+Styles" as a white one. The later rule wins on the properties it names, so every card was white
+while its labels went on being painted white - **the footers of five screens had invisible text**:
+party balances, party statement, comprehensive sales, customer receivables and user management.
+The invoice screens escaped only because they scope their own `.invoice-sales .summary-card` in
+the theme files, which is what the capital-management block should have done instead of claiming a
+shared class name. One declaration now, with colours that answer the background it actually has.
+A screen-specific style must never redefine a shared class.
+
+### Debt ageing
+
+`features/party/ageing` is phase D's first report and the first thing built on the payment
+allocation: without `numberInv` being written, "ninety days overdue" can only be guessed from the
+age of a balance, and **a balance has no age** — it is one number with the oldest and newest debt
+folded together.
+
+**It must never become another answer to "how much does this party owe".** It does not add its
+columns up and call the result a balance. It reads the balance from the ledger view — the same
+expression `PartyBalanceQuery` uses — then splits it, ages what it can, and puts the rest in a
+column of its own, so `current + 1-30 + 31-60 + 61-90 + over 90 + unallocated = balance` holds **by
+construction**. `PartyAgeingRow`'s constructor refuses a row that does not reconcile, because a
+wrong ageing report looks exactly like a right one: five plausible columns of money.
+
+**Only an invoice can be aged.** It has a date, a due date and a remaining amount. The other three
+things in the ledger cannot be: an opening balance is settled by nothing in particular, a return is
+its own document and is deliberately not netted off any invoice, and a payment left on account
+names none. Guessing which invoice they belong to — oldest first, say — is an invented rule of the
+kind this codebase has twice had to undo. So `unallocated` is *defined* as the balance less what
+the open invoices account for. **A real run showed why that column has to exist**: on a copy of a
+customer database the open invoices came to 320,148 against a ledger balance of 13,225, because
+three movements in the whole book carried an allocation. Without the column the report would have
+announced 320,148 overdue on a book owing 13,225.
+
+**Overdue is measured from the due date, not the invoice date** — `invoice_date +
+payment_terms_days`, the V56 column that nothing had read. For a customer on thirty days an invoice
+written sixty days ago is thirty days overdue, and calling it sixty puts it in the wrong band.
+`CURRENT` is owed but not yet due and is not counted as overdue; a party can owe nothing on balance
+and still hold a ninety-day-old invoice offset by an unallocated payment, which is exactly the row
+the report is opened to find.
+
+It opens from the balances screen's toolbar rather than the main menu: same data, same permission,
+and a menu entry would need a feature in the signed product catalogue. Exporting requires
+`reports.show.customers` — **the first use of one of the three report keys that were defined,
+granted, and reached by no screen** — deliberately on the export rather than the view: a list on a
+screen is looked at, a file leaves the building.
+
+### Printed reports
+
+The `.jrxml` templates live in **`reports/` at the repository root**, and `Configs.FILE_REPORTS`
+is a *relative* `File`. So `mvn -pl account javafx:run` — whose working directory is `account/` —
+looks in `account/reports/` and finds nothing, exactly as surefire reads `account/config.xml`
+rather than the root one. That is a property of how the app is launched from source, not a defect;
+a packaged install has `reports/` beside the executable.
+
+**A printed figure has to be written the way the screen it came from writes it.** The party totals
+report printed `2905.0` and `16450.0` beside a screen reading `2,905.00` — the detail fields
+carried no `pattern` at all. The printed document is the one a customer is handed, so this is the
+same rule as `Columns.money`, not a matter of taste.
+
+**Money rounds HALF_UP, in a report as everywhere else.** Those templates summed with
+`BigDecimal.ROUND_CEILING`, which always rounds away from zero — so a printed total could exceed
+the sum of the very rows printed above it.
+
+Two traps when fixing this, both paid for:
+
+- **`pattern="#,##0.00"` is resolved against the report's locale.** With an Arabic locale it
+  printed `٢٬٩٠٥٫٠٠` next to a customer code written `164` — money in one script and identifiers
+  in another on one row. Format explicitly with `DecimalFormat` and `Locale.US` symbols rather
+  than relying on the attribute.
+- **Formatting belongs to the text field that shows a value, never to the expression that
+  computes it.** Replacing `$F{amount}` everywhere it appeared also hit the
+  `<variableExpression>` of a `<variable calculation="Sum">`, which then summed *strings*:
+  `ClassCastException: String cannot be cast to Number`, thrown from `JRDoubleSumIncrementer`
+  while filling. Never text-replace an expression in a `.jrxml` without looking at the element it
+  sits in.
+
+One consequence is accepted rather than fixed: on the 80mm receipt layout the amount columns are
+35px, so a six-figure value now wraps onto two lines where the unformatted one fitted. The number
+is complete and readable, and widening those columns would narrow the name column on every row to
+help a handful. The A4 template's 62-64px columns are unaffected.
+
 ### Period locks and stock counts
 
 `accounting_lock` (`V9`) closes a period, and `PeriodLockRegistry` declares every dated document the
@@ -1394,6 +1781,27 @@ correct. The definition stays in `R__procedures.sql` too, and **that copy is sti
 edit** — the versioned file is a snapshot, the repeatable has the last word.
 `AuditProcedureMigrationTest` pins all of it.
 
+**And the same rule has a second scar, in the other direction: `V1` takes its own helpers away
+with it.** `add_index_if_missing` is created at `V1` line 311, used some eighty times, and
+**dropped at `V1` line 994** - so nothing after the baseline can call it, and an install stamped
+at `V1` never created it at all. `V16`, `V21`, `V22`, `V23` and `V4` each define a local copy for
+that reason. `V55` was written calling the original and **failed on the first line it reached**,
+on a schema built from nothing:
+`PROCEDURE …add_index_if_missing does not exist`. It would have done that on every install, new
+and upgrading. Nothing in a green build could see it - a migration is only wrong when MySQL reads
+it - and the test written for that very migration passed, because it checked the *text* of the
+call rather than whether the call could work. **So: a versioned migration defines the helpers it
+calls, and the only thing that says a migration applies at all is migrating a schema from
+nothing.** It costs five minutes.
+
+**`add_column_if_missing` is the same trap and is worse**, because no baseline creates it at all -
+`V20`, `V21`, `V22` and `V23` each define a local copy and drop it again. The first draft of `V56`
+called it and would have failed everywhere, an hour after `V55` had been found doing the same thing
+and the lesson written down. That is the argument for a test rather than a note:
+`MigrationHelperProcedureTest` fails the build when a versioned migration calls a procedure it does
+not define in its own file, and **also** when it defines one and leaves it behind - a stray helper is
+what the *next* migration calls and finds present on its author's machine and missing in the field.
+
 **Views, triggers and procedures are repeatable migrations, not versioned ones.** `R__views.sql` (33
 views; `treasury_balance_after_convert` was removed from it, and the `DROP` for it stays because a
 client that ran an older copy still has it), `R__triggers.sql` and `R__procedures.sql` are re-run by Flyway whenever their checksum changes,
@@ -1456,3 +1864,25 @@ the same value the licence is bound to.
 `LanguageManager` (singleton) with bundles at `controlsfx/src/main/resources/i18n/messages*.properties`;
 Arabic is the default and the choice persists in Java `Preferences`. Several settings (backup path,
 interval, encryption password) also live in `Preferences`, not in files.
+
+**Two placeholder conventions coexist, and picking the wrong one fails silently.**
+`LanguageManager.getString(key, args…)` formats with **`String.format`**, so its messages take
+`%s` and `%d` - 217 keys do, and `%1$d` repeats one argument. A key written with `{0}` is only
+right where the *call site* formats it itself with `MessageFormat`, as `TreasureDetailsController`
+does for `treasury.statement.page`. Mix them and nothing complains: `String.format` returns the
+text with `{0}` still in it and drops the argument, so a sentence reaches the user with a
+placeholder in the middle of it. Four keys shipped that way in the party statement work and were
+caught only because a gated acceptance test happened to assert on a message's text - and the rule
+written to stop it, `MessageKeyArchitectureTest.aKeyGivenArgumentsUsesTheFormatItsFormatterUnderstands`,
+immediately found an older one: `user.shift.reconciliation.summary` rendered eight literal braces
+on the admin shifts screen with all eight arguments dropped.
+
+**And `KEY_SHAPE` demands a dot, so a single-word key is invisible to the general scan** - while
+`name`, `code`, `date`, `search`, `refresh`, `print`, `balance`, `from` and `to` are all real
+single-word keys here. `Columns.text("area", …)` therefore passed every build and rendered the word
+`area` as a heading in an Arabic table until somebody opened the screen. `columnTitleKeysIn` now
+checks the first argument of every `Columns.*` builder whatever it looks like - it can be strict
+there because the match is qualified by `Columns.` and all of those take `titleKey` first - and it
+accepts only a whole literal, since `NamesTables.SEL_PRICE + "2"` is a key nothing static can
+resolve. That rule immediately found twelve **raw Arabic strings** passed as column titles in
+`ReportTotalByYearController`, which rendered correctly by accident and could never be translated.

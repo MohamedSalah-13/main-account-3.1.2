@@ -33,10 +33,15 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * That is a silent defect the build can catch, which makes it one the build should catch.
  * <p>
  * <b>What is checked.</b> Every string literal that appears inside the argument list of one
- * of the {@link #ENTRY_POINTS} calls, and that has the shape of a key (dotted, starting
- * lowercase). Literals are collected from the whole call region rather than the first
- * argument alone, because a screen picks its heading with a ternary as often as not
- * ({@code text(main ? "a.b" : "c.d")}).
+ * of the {@link #ENTRY_POINTS} calls. Literals are collected from the whole call region rather
+ * than the first argument alone, because a screen picks its heading with a ternary as often as
+ * not ({@code text(main ? "a.b" : "c.d")}).
+ * <p>
+ * <b>A {@code Columns.*} builder is held to a stricter rule</b> - see
+ * {@link #columnTitleKeysIn}. {@link #KEY_SHAPE} demands a dot, so a single-word key is invisible
+ * to the general check, and {@code name}, {@code code}, {@code date} and {@code balance} are all
+ * real single-word keys here. That gap let {@code Columns.text("area", …)} pass every build and
+ * render the word {@code area} as a heading in an Arabic table.
  * <p>
  * <b>What is not, and the one rule that follows.</b> A key assembled at run time
  * ({@code "masterdata.notify." + suffix + ".title"}) is invisible here - the halves do not
@@ -70,6 +75,13 @@ class MessageKeyArchitectureTest {
     private static final Pattern ENTRY_POINTS =
             Pattern.compile("(?<![A-Za-z0-9_$])(getString|text|tip|number|date|column)\\s*\\(");
 
+    /**
+     * A {@code Columns.*} builder call, whose first argument is always a title key. Qualified by
+     * the class name so it cannot match an unrelated method - see {@link #columnTitleKeysIn}.
+     */
+    private static final Pattern COLUMN_BUILDERS = Pattern.compile(
+            "Columns\\.(text|number|date|money|moneyOfDouble|column)\\s*\\(");
+
     private static final Pattern KEY_SHAPE =
             Pattern.compile("[a-z][a-zA-Z0-9]*(\\.[a-zA-Z0-9_]+)+");
 
@@ -99,6 +111,81 @@ class MessageKeyArchitectureTest {
                 "LanguageManager answers a missing key with the key itself, so these reach the screen "
                         + "as raw text. Add each to all three bundles under controlsfx/src/main/resources/i18n: "
                         + missing);
+    }
+
+    /**
+     * A key handed arguments must use the placeholders the formatter that reaches it understands.
+     * <p>
+     * <b>Two conventions coexist here, and nothing said which a key needs.</b>
+     * {@link com.hamza.controlsfx.language.LanguageManager#getString(String, Object...)} formats
+     * with {@code String.format}, so its keys take {@code %s} and {@code %d} - 217 of them do. A
+     * caller that wants {@code {0}} has to reach for {@code MessageFormat.format} itself, as
+     * {@code TreasureDetailsController} does for {@code treasury.statement.page}. Both are fine;
+     * mixing them is not.
+     * <p>
+     * And mixing them fails <em>quietly</em>. {@code String.format} does not mind an unknown brace:
+     * it returns the text with {@code {0}} still in it and the argument silently dropped, so the
+     * screen shows a sentence with a placeholder in the middle of it. Four keys written for the
+     * party statement work did exactly that, and the build was green - one of them reached a user
+     * only because a gated acceptance test happened to assert on the message text.
+     * <p>
+     * So: a key named in a {@code getString(key, args…)} call must not carry a brace placeholder.
+     * The reverse direction is not checked, because a key with no placeholder at all is a perfectly
+     * ordinary message that somebody passed a redundant argument to.
+     */
+    @Test
+    void aKeyGivenArgumentsUsesTheFormatItsFormatterUnderstands() {
+        Map<String, Properties> bundles = loadBundles();
+        var offenders = new TreeSet<String>();
+        for (var used : formattedKeysByFile().entrySet()) {
+            for (String key : used.getValue()) {
+                for (var bundle : bundles.entrySet()) {
+                    String message = bundle.getValue().getProperty(key);
+                    if (message != null && BRACE_PLACEHOLDER.matcher(message).find()) {
+                        offenders.add(key + " in " + bundle.getKey() + " (named by " + used.getKey() + ")");
+                    }
+                }
+            }
+        }
+        assertTrue(offenders.isEmpty(),
+                "These keys are passed arguments through LanguageManager.getString, which formats "
+                        + "with String.format - a {0} placeholder is left in the text verbatim and the "
+                        + "argument is dropped, with nothing failing. Use %s / %d (or %1$d to repeat "
+                        + "one argument). Use {0} only where the call site formats with "
+                        + "MessageFormat itself: " + offenders);
+    }
+
+    private static final Pattern BRACE_PLACEHOLDER = Pattern.compile("\\{\\d\\}");
+
+    /**
+     * Keys named as the first argument of a {@code getString}/{@code text}/{@code message} call that
+     * has a second argument - that is, keys that are formatted.
+     * <p>
+     * Deliberately a narrow regex rather than the paren walk {@link #keysByFile()} does: it only has
+     * to find the comma after the key, and a key followed by a comma is formatted whatever else the
+     * call looks like.
+     */
+    private static Map<String, List<String>> formattedKeysByFile() {
+        var result = new LinkedHashMap<String, List<String>>();
+        Pattern call = Pattern.compile(
+                "\\b(?:getString|text|message|tip)\\(\\s*\"([a-zA-Z][a-zA-Z0-9._-]*)\"\\s*,");
+        for (Path root : List.of(SourceTree.MAIN_JAVA, CONTROLSFX.resolve(SourceTree.MAIN_JAVA))) {
+            for (Path file : javaFiles(root)) {
+                String relative = root.relativize(file).toString().replace('\\', '/');
+                if (NOT_LOCALIZATION.contains(relative)) {
+                    continue;
+                }
+                var keys = new ArrayList<String>();
+                Matcher matcher = call.matcher(SourceTree.withoutComments(SourceTree.read(file)));
+                while (matcher.find()) {
+                    keys.add(matcher.group(1));
+                }
+                if (!keys.isEmpty()) {
+                    result.put(relative, keys);
+                }
+            }
+        }
+        return result;
     }
 
     /**
@@ -150,7 +237,64 @@ class MessageKeyArchitectureTest {
                 }
             }
         }
+        keys.addAll(columnTitleKeysIn(source));
         return keys;
+    }
+
+    /**
+     * The first argument of every {@code Columns.*} builder, whatever it looks like.
+     * <p>
+     * <b>This is narrower than {@link #ENTRY_POINTS} on purpose, and it closes a gap the rule
+     * shipped with.</b> {@link #KEY_SHAPE} demands a dot, so a <em>single-word</em> key is
+     * invisible to the check above - while {@code name}, {@code code}, {@code date},
+     * {@code search}, {@code refresh}, {@code print}, {@code balance}, {@code from} and {@code to}
+     * are all real single-word keys in these bundles. A column added as
+     * {@code Columns.text("area", …)} therefore passed every build and rendered the word
+     * {@code area} as its heading in an Arabic table, until somebody opened the screen.
+     * <p>
+     * It can be strict here because the match is qualified by {@code Columns.} and every one of
+     * those builders takes {@code titleKey} first: there is no argument position to guess at. The
+     * general rule above cannot do the same, because a bare {@code date(} or {@code number(} match
+     * may be any method of that name, and {@code getString(key, arg)} may carry a literal argument
+     * that belongs in no bundle.
+     */
+    private static List<String> columnTitleKeysIn(String source) {
+        var keys = new ArrayList<String>();
+        Matcher call = COLUMN_BUILDERS.matcher(source);
+        while (call.find()) {
+            wholeLiteralFirstArgument(source, call.end()).ifPresent(keys::add);
+        }
+        return keys;
+    }
+
+    /**
+     * The first argument, but only when it is a whole string literal.
+     * <p>
+     * {@code Columns.number(NamesTables.SEL_PRICE + "2", …)} must not be read as the key
+     * {@code "2"}: the key there is assembled at run time, which the rule at the top of this file
+     * already forbids and which nothing static can resolve. Taking the argument only when it is a
+     * literal from the opening bracket to the comma keeps this check to what it can actually know.
+     */
+    private static java.util.Optional<String> wholeLiteralFirstArgument(String source, int afterParen) {
+        int index = afterParen;
+        while (index < source.length() && Character.isWhitespace(source.charAt(index))) {
+            index++;
+        }
+        if (index >= source.length() || source.charAt(index) != '"') {
+            return java.util.Optional.empty();
+        }
+        int end = endOfQuoted(source, index, '"');
+        if (end >= source.length()) {
+            return java.util.Optional.empty();
+        }
+        String literal = source.substring(index + 1, end);
+        int after = end + 1;
+        while (after < source.length() && Character.isWhitespace(source.charAt(after))) {
+            after++;
+        }
+        boolean wholeArgument = after < source.length()
+                && (source.charAt(after) == ',' || source.charAt(after) == ')');
+        return wholeArgument ? java.util.Optional.of(literal) : java.util.Optional.empty();
     }
 
     /**

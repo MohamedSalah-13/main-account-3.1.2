@@ -10,6 +10,11 @@ public class PermSuppliersAccountAndName implements PermAccountAndNameInt {
     }
 
     @Override
+    public PermissionKey createAccounts() {
+        return AppPermissions.SUPPLIERS_ACCOUNT_CREATE;
+    }
+
+    @Override
     public PermissionKey updateAccounts() {
         return AppPermissions.SUPPLIERS_ACCOUNT_UPDATE;
     }

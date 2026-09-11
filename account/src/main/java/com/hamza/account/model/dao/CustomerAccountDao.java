@@ -106,26 +106,41 @@ public class CustomerAccountDao extends AbstractDao<CustomerAccount> {
         return SPEC.betweenDatesSql();
     }
 
+    /**
+     * Writes the movement and puts the number MySQL assigned onto the model.
+     * <p>
+     * A payment is a dated document: it changes what the party owed on that day and on every
+     * day after it, so it may not be written into a reported month.
+     * <p>
+     * Only payments and hand-entered adjustments live in this table. An invoice's own line on
+     * the statement is not stored here - the view unions this table with the document tables -
+     * so nothing an invoice save does reaches this check, and the invoice is guarded at its own
+     * DAO instead.
+     * <p>
+     * <b>The number is the database's to give.</b> {@code account_num} is
+     * {@code AUTO_INCREMENT} and always was, but the insert used to write it from a value the
+     * collection screen computed as {@code max + 1} over every movement of every party. Two
+     * tills collecting at the same moment picked the same number and the second one failed on
+     * the primary key - and the read of the whole ledger that produced it was paid on every
+     * open of that screen, on every change of the selected party, and again after every save.
+     * The generated key is read back because the caller needs it: the shift journal files the
+     * movement under it, so a model left holding zero would attribute the cash to movement
+     * zero.
+     */
     @Override
     public int insert(CustomerAccount customerAccount) throws DaoException {
-        // A payment is a dated document: it changes what the customer owed on that day
-        // and on every day after it, so it may not be written into a reported month.
-        //
-        // Only payments live in this table. An invoice's own line on the statement is
-        // not stored here - account_customer_table unions customers_accounts with
-        // total_sales - so nothing an invoice save does reaches this check, and the
-        // invoice is guarded at TotalsSalesDao instead.
         PeriodLock.require(customerAccount.getDate(), PeriodLockRegistry.CUSTOMER_ACCOUNT.label());
-        String sqlQuery = insertSql();
-        var objects = new Object[]{customerAccount.getCustomers().getId()
+        Object[] objects = {customerAccount.getCustomers().getId()
                 , customerAccount.getDate()
+                , customerAccount.getPurchase()
                 , customerAccount.getPaid()
                 , customerAccount.getNotes()
                 , customerAccount.getInvoice_number()
                 , customerAccount.getTreasury().getId()
-                , customerAccount.getId(), customerAccount.getUsers().getId()
+                , customerAccount.getUsers().getId()
         };
-        return executeUpdate(sqlQuery, objects);
+        customerAccount.setId(insertReturningId(insertSql(), objects));
+        return 1;
     }
 
     @Override
@@ -150,6 +165,7 @@ public class CustomerAccountDao extends AbstractDao<CustomerAccount> {
     public Object[] getData(CustomerAccount customerAccount) {
         return new Object[]{customerAccount.getCustomers().getId()
                 , customerAccount.getDate()
+                , customerAccount.getPurchase()
                 , customerAccount.getPaid()
                 , customerAccount.getNotes()
                 , customerAccount.getInvoice_number()

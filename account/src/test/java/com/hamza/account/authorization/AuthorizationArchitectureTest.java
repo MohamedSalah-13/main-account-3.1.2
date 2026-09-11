@@ -271,7 +271,18 @@ class AuthorizationArchitectureTest {
             // authorized to do. A guard would refuse to record that a user had signed in
             // because of a permission nobody asked them for, and on sign-out there may be
             // no session left to ask. Which user it is comes from the authenticated Users.
-            "UserPresenceService#mark");
+            "UserPresenceService#mark",
+
+            // Fine, and the same shape as support recovery above: applying a signed client
+            // edition runs from the separate AccountK-Product-Setup launcher, before any
+            // login, so there is no session to ask a permission of - a technician points it
+            // at the customer's database and it opens no main window. What stands in for the
+            // guard is the envelope itself: apply() persists nothing that
+            // ProductProfileCodec.decode has not verified against the release public key,
+            // whose private half this repository does not hold. Reachable only from
+            // ProductProfileSetupMain; the running application registers the service for
+            // loadCurrent and never calls apply.
+            "ProductProfileService#apply");
 
     /** The methods in one service file that write a row and never call the guard. */
     private static java.util.List<String> unguardedWrites(Path path) {
@@ -282,7 +293,7 @@ class AuthorizationArchitectureTest {
                 .compile("(?m)^    (?:public|protected)[^;{=]*\\{").matcher(source);
         while (signature.find()) {
             String body = bodyOf(source, signature.end() - 1);
-            if (containsDirectDaoWrite(body) && !body.contains("AuthorizationGuard.require(")) {
+            if (containsDirectDaoWrite(body) && !asksPermission(source, body)) {
                 offenders.add(type + "#" + methodName(signature.group()));
             }
         }
@@ -321,9 +332,57 @@ class AuthorizationArchitectureTest {
     private static boolean containsDirectDaoWrite(String source) {
         // Covers fields such as treasuryDao.insert(...), accessors such as
         // accountDao().deleteById(...), and longer generic seams ending in totalDao().
-        return source.matches("(?s).*(?:[A-Za-z0-9_]+Dao)(?:\\(\\))?\\s*\\.\\s*"
-                + "(?:insert|update|delete)[A-Za-z0-9_]*\\s*\\(.*");
+        return source.matches("(?s).*(?:" + WRITE_RECEIVER + ")(?:\\(\\))?\\s*\\.\\s*"
+                + "(?:" + WRITE_CALL + ")[A-Za-z0-9_]*\\s*\\(.*");
     }
+
+    /**
+     * Whether a method body asks a permission before it writes.
+     * <p>
+     * Not every guard is spelled {@code AuthorizationGuard.require(...)}. {@code RbacService}
+     * checks {@code ROLES_MANAGE} through the session and throws, and it does it from a
+     * private {@code requireRoleManagement()} that all four of its write methods open with.
+     * Reading only the method body called that unguarded, which it is not - so this follows
+     * one level of same-file {@code require*} indirection. One level, deliberately: a guard
+     * two calls away from the write is not something a reader of the write can see either.
+     */
+    private static boolean asksPermission(String source, String body) {
+        if (guardsInline(body)) {
+            return true;
+        }
+        var call = java.util.regex.Pattern.compile("\\b(require[A-Za-z0-9_]*)\\s*\\(").matcher(body);
+        while (call.find()) {
+            var helper = java.util.regex.Pattern.compile(
+                    "(?m)^    private[^;{=]*\\b" + call.group(1) + "\\s*\\([^)]*\\)[^;{]*\\{").matcher(source);
+            if (helper.find() && guardsInline(bodyOf(source, helper.end() - 1))) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /** A refusal on a permission: the guard, or the session asked directly and thrown on. */
+    private static boolean guardsInline(String body) {
+        return body.contains("AuthorizationGuard.require(")
+                || (body.contains("hasPermission(") && body.contains("throw"));
+    }
+
+    /**
+     * A DAO stopped being the only thing a service writes through. The newer packages put
+     * a {@code Repository} between the service and the SQL - the shape
+     * {@code docs/new-code-rules.md} asks for - and a receiver called {@code repository}
+     * does not end in {@code Dao}, so every write through one was invisible to this rule.
+     * {@code ProductProfileService.apply} is how that was noticed: it writes two rows and
+     * passed without ever being looked at.
+     */
+    private static final String WRITE_RECEIVER = "[A-Za-z0-9_]+Dao|[A-Za-z0-9_]*[Rr]epository";
+
+    /**
+     * {@code save} is the word the repository seam uses where a DAO says {@code insert}.
+     * It is here for the same reason the update and delete halves stopped naming exact
+     * methods: a method writing a row is a write whatever it is called.
+     */
+    private static final String WRITE_CALL = "insert|update|delete|save";
 
     private static boolean contains(Path path, String text) {
         return read(path).contains(text);

@@ -6,78 +6,49 @@ import com.hamza.account.controller.others.ServiceRegistry;
 import com.hamza.account.model.base.BasePurchasesAndSales;
 import com.hamza.account.service.PurchaseReService;
 import com.hamza.account.service.PurchaseService;
-import com.hamza.account.service.TotalBuyReturnService;
-import com.hamza.account.service.TotalBuyService;
-import com.hamza.account.type.InvoiceType;
+import com.hamza.controlsfx.language.LanguageManager;
 import javafx.scene.control.TreeItem;
 
 import java.util.List;
 
+/**
+ * The supplier side: a document row is a purchase invoice or a purchase return, and its
+ * lines come from {@code purchase} or {@code purchase_re}.
+ * <p>
+ * The two methods that assembled the statement are gone — see {@link AccountDetailsInterface}.
+ */
 public class AccountTotalsPurchase implements AccountDetailsInterface {
-
-    public static final String purchaseLabel = "المشتريات";
-    public static final String purchaseReturnLabel = "مرتجع المشتريات";
-    public static final String count = "عدد";
 
     private final PurchaseService purchaseService = ServiceRegistry.get(PurchaseService.class);
     private final PurchaseReService purchaseReService = ServiceRegistry.get(PurchaseReService.class);
-    private final TotalBuyService totalBuyService = ServiceRegistry.get(TotalBuyService.class);
-    private final TotalBuyReturnService totalBuyReturnService = ServiceRegistry.get(TotalBuyReturnService.class);
 
-
-    public static <T extends BasePurchasesAndSales> void addPurchaseItemsToTree(List<T> purchaseList, TreeItem<AccountCard> accountTreeItem) {
-        purchaseList.forEach(purchase -> {
-            var accountCard = new AccountCard();
-            accountCard.setDetails(purchase.getTotal());
-            accountCard.setNotes(count + " ( " + formatQuantity(purchase.getQuantity()) + " ) " + purchase.getItems().getNameItem()
-                    + " - " + purchase.getTotal());
-            accountTreeItem.getChildren().add(new TreeItem<>(accountCard));
+    public static <T extends BasePurchasesAndSales> void addPurchaseItemsToTree(
+            List<T> lines, TreeItem<AccountCard> treeItem) {
+        String count = LanguageManager.getInstance().getString("party.statement.line.count");
+        lines.forEach(line -> {
+            var card = new AccountCard();
+            card.setDetails(line.getTotal());
+            card.setNotes(count + " ( " + formatQuantity(line.getQuantity()) + " ) "
+                    + line.getItems().getNameItem() + " - " + line.getTotal());
+            treeItem.getChildren().add(new TreeItem<>(card));
         });
     }
 
     private static String formatQuantity(double quantity) {
         if (quantity == Math.floor(quantity)) {
             return String.valueOf((int) quantity);
-        } else {
-            return String.valueOf(quantity);
         }
+        return String.valueOf(quantity);
     }
 
     @Override
-    public void getTotalList(List<AccountCard> list_items, int num_id) throws Exception {
-        var list = totalBuyService.getTotalBuyBySupId(num_id);
-        list.forEach(totalSales -> {
-            AccountCard accountCard = new AccountCard(totalSales.getId(), purchaseLabel, totalSales.getDate(), totalSales.getTotal_after_discount(), totalSales.getPaid()
-                    , 0, totalSales.getNotes(), purchaseLabel);
-            list_items.add(accountCard);
-        });
-
-    }
-
-    @Override
-    public void getTotalReturnList(List<AccountCard> list_items, int num_id) throws Exception {
-        var list = totalBuyReturnService.getTotalBuyBySupId(num_id);
-        list.forEach(total_buy_re -> {
-            double total = 0;
-            if (total_buy_re.getInvoiceType().equals(InvoiceType.CASH)) total = total_buy_re.getTotal_after_discount();
-            AccountCard accountCard = new AccountCard(total_buy_re.getId(), purchaseReturnLabel, total_buy_re.getDate(), total, total_buy_re.getPaid()
-                    , 0, total_buy_re.getNotes(), purchaseReturnLabel);
-            list_items.add(accountCard);
-        });
-    }
-
-    @Override
-    public void addTreeItemTotals(AccountCard t4, TreeItem<AccountCard> accountTreeItem) throws Exception {
-        var id = t4.getId();
-
-        if (t4.getInformation().equals(purchaseLabel)) {
-            var purchaseList = purchaseService.fetchByInvoiceNumber(id);
-            addPurchaseItemsToTree(purchaseList, accountTreeItem);
-        }
-
-        if (t4.getInformation().equals(purchaseReturnLabel)) {
-            var purchaseList = purchaseReService.fetchByInvoiceNumber(id);
-            addPurchaseItemsToTree(purchaseList, accountTreeItem);
+    public void addTreeItemTotals(AccountCard row, TreeItem<AccountCard> treeItem) throws Exception {
+        switch (row.getKind()) {
+            case INVOICE -> addPurchaseItemsToTree(purchaseService.fetchByInvoiceNumber(row.getId()), treeItem);
+            case RETURN -> addPurchaseItemsToTree(purchaseReService.fetchByInvoiceNumber(row.getId()), treeItem);
+            default -> {
+                // Nothing underneath an opening balance or a payment.
+            }
         }
     }
 }

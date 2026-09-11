@@ -1,5 +1,7 @@
 package com.hamza.account.controller.others;
 
+import com.hamza.account.table.PageJumpBox;
+import javafx.scene.layout.HBox;
 import com.hamza.account.config.Image_Setting;
 import com.hamza.account.config.TableAppearance;
 import com.hamza.account.controller.main.DisableButtons;
@@ -76,6 +78,20 @@ public class TableController<T> implements Initializable {
     private GridPane gridPane;
     @FXML
     private Pagination pagination;
+    @FXML
+    private HBox pagerBox;
+
+    /**
+     * Type a page number, land on it.
+     * <p>
+     * {@code Pagination} numbers its own pages but gives no way to reach one directly, so a
+     * list of thirty pages was thirty clicks from its end. Setting
+     * {@code pagination.setCurrentPageIndex} is what moves it, and the page factory reloads
+     * the rows - the same route a click on its own numbers takes, so there is one way pages
+     * change and not two.
+     */
+    private final PageJumpBox pageJump =
+            new PageJumpBox(page -> pagination.setCurrentPageIndex(page));
 
     public TableController(TableInterface<T> tableInterface) {
         this.tableInterface = tableInterface;
@@ -119,9 +135,15 @@ public class TableController<T> implements Initializable {
         int totalItems = tableInterface.getCountItems(); // database.getCount();
         int pageCount = (totalItems / ROWS_PER_PAGE) + 1;
         pagination.setPageCount(pageCount);
+        pagerBox.getChildren().setAll(pageJump);
+        pageJump.showing(pagination.getCurrentPageIndex(), pageCount);
         // 3. تحديد ماذا يحدث عند تغيير الصفحة (Factory)
         pagination.setPageFactory((pageIndex) -> {
             updateTableView(pageIndex);
+            // The box follows the pagination whichever way the page was changed - its own
+            // numbers, or a number typed into the box - so it can never sit there naming a
+            // page the table is not on.
+            pageJump.showing(pageIndex, pagination.getPageCount());
             return tableView; // نعيد الجدول ليتم عرضه داخل صفحة الـ Pagination
         });
 

@@ -97,6 +97,15 @@ public final class AppPermissions {
     public static final PermissionKey CUSTOMER_ACCOUNT_CREATE = key("customer.account.create");
     public static final PermissionKey CUSTOMER_ACCOUNT_UPDATE = key("customer.account.update");
     public static final PermissionKey CUSTOMER_ACCOUNT_DELETE = key("customer.account.delete");
+    /**
+     * Recording a debit or credit note on a party's account - a movement with no cash behind
+     * it. Separate from {@code account.create} on purpose, and granted by {@code V55} to
+     * whoever already held it: collecting money is matched by cash in the drawer, while
+     * adjusting a balance by decision is not, and the two are not the same trust. It is also
+     * the only way to correct an opening balance once a party has moved, which
+     * {@code OpeningBalanceGuard} forbids and {@code opening.correction.customers} promises.
+     */
+    public static final PermissionKey CUSTOMER_ACCOUNT_ADJUST = key("customer.account.adjust");
     public static final PermissionKey SUPPLIERS_SHOW = key("suppliers.show");
     public static final PermissionKey SUPPLIERS_CREATE = key("suppliers.create");
     public static final PermissionKey SUPPLIERS_UPDATE = key("suppliers.update");
@@ -105,6 +114,8 @@ public final class AppPermissions {
     public static final PermissionKey SUPPLIERS_ACCOUNT_CREATE = key("suppliers.account.create");
     public static final PermissionKey SUPPLIERS_ACCOUNT_UPDATE = key("suppliers.account.update");
     public static final PermissionKey SUPPLIERS_ACCOUNT_DELETE = key("suppliers.account.delete");
+    /** The supplier side of {@link #CUSTOMER_ACCOUNT_ADJUST}. */
+    public static final PermissionKey SUPPLIERS_ACCOUNT_ADJUST = key("suppliers.account.adjust");
     public static final PermissionKey EXPENSES_SHOW = key("expenses.show");
     public static final PermissionKey EXPENSES_CREATE = key("expenses.create");
     public static final PermissionKey EXPENSES_UPDATE = key("expenses.update");

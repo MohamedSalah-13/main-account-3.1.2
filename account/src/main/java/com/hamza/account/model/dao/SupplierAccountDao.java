@@ -106,12 +106,21 @@ public class SupplierAccountDao extends AbstractDao<SupplierAccount> {
         return SPEC.betweenDatesSql();
     }
 
+    /** See {@code CustomerAccountDao.insert}: the same write over the other table. */
     @Override
     public int insert(SupplierAccount model) throws DaoException {
-        // See CustomerAccountDao.insert: only payments are stored here, and the invoice
-        // side of a statement comes from total_buy through account_suppliers_table.
         PeriodLock.require(model.getDate(), PeriodLockRegistry.SUPPLIER_ACCOUNT.label());
-        return executeUpdate(insertSql(), getData(model));
+        Object[] objects = {model.getSuppliers().getId()
+                , model.getDate()
+                , model.getPurchase()
+                , model.getPaid()
+                , model.getNotes()
+                , model.getInvoice_number()
+                , model.getTreasury().getId()
+                , model.getUsers().getId()
+        };
+        model.setId(insertReturningId(insertSql(), objects));
+        return 1;
     }
 
     @Override
@@ -119,6 +128,7 @@ public class SupplierAccountDao extends AbstractDao<SupplierAccount> {
         PeriodLock.requireMove(PeriodLockRegistry.SUPPLIER_ACCOUNT, supplierAccount.getId(), supplierAccount.getDate());
         return executeUpdate(updateSql(), supplierAccount.getSuppliers().getId()
                 , supplierAccount.getDate()
+                , supplierAccount.getPurchase()
                 , supplierAccount.getPaid()
                 , supplierAccount.getNotes()
                 , supplierAccount.getInvoice_number()
@@ -132,16 +142,21 @@ public class SupplierAccountDao extends AbstractDao<SupplierAccount> {
     }
 
 
+    /**
+     * The parameters of {@link #updateSql()}, and not of the insert: that one carries the user
+     * and no key, while this carries the key and no user. {@code user_id} records who entered
+     * the movement, and an edit does not make the editor the one who entered it.
+     */
     @Override
     public Object[] getData(SupplierAccount supplierAccount) {
         return new Object[]{supplierAccount.getSuppliers().getId()
                 , supplierAccount.getDate()
+                , supplierAccount.getPurchase()
                 , supplierAccount.getPaid()
                 , supplierAccount.getNotes()
                 , supplierAccount.getInvoice_number()
                 , supplierAccount.getTreasury().getId()
                 , supplierAccount.getId()
-                , supplierAccount.getUsers().getId()
         };
     }
 

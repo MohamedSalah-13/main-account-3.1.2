@@ -1,5 +1,6 @@
 package com.hamza.account.opening;
 
+import com.hamza.account.party.PartyTableSpec;
 import com.hamza.account.delete.Reference;
 import com.hamza.account.delete.ReferenceCheck;
 import com.hamza.account.delete.ReferenceScanner;
@@ -261,6 +262,73 @@ class OpeningBalanceGuardTest {
         void refusesAnIndexThatIsNotThere(int index) {
             assertThrows(IllegalArgumentException.class,
                     () -> OpeningBalanceGuard.without(customerValues(), index));
+        }
+    }
+
+    /**
+     * The opening balance and the day it is as at leave together, and V56 is why: a
+     * balance of 250 as at January is a different fact from 250 as at September, so
+     * re-dating a closed opening entry moves it through the history exactly as
+     * rewriting its amount would. {@code PartyTableSpec.openingColumns()} names both
+     * and this is what removes both values.
+     */
+    @Nested
+    @DisplayName("Removing the opening balance and its date")
+    class RemovingTheOpeningPair {
+
+        /** As {@code CustomerDao.getData}: the balance at 5, its date at 6, the id last. */
+        private Object[] customerValues() {
+            return new Object[]{"محمد", "0100", "القاهرة", "", 5000.0,
+                    /* opening balance */ 250.0, /* its date */ "2026-01-31",
+                    1, 3, "a@b.test", "123", 30, 7, true, 42};
+        }
+
+        @Test
+        @DisplayName("both go, and everything else keeps its order")
+        void dropsBothAndNothingElse() {
+            Object[] kept = OpeningBalanceGuard.withoutAll(customerValues(), List.of(6, 5));
+
+            assertArrayEquals(new Object[]{"محمد", "0100", "القاهرة", "", 5000.0,
+                    1, 3, "a@b.test", "123", 30, 7, true, 42}, kept);
+        }
+
+        @Test
+        @DisplayName("the id stays last, because it is the WHERE clause")
+        void theIdStaysLast() {
+            Object[] kept = OpeningBalanceGuard.withoutAll(customerValues(), List.of(6, 5));
+            assertEquals(42, kept[kept.length - 1]);
+        }
+
+        /**
+         * <b>Lowest-first is refused rather than quietly wrong.</b> Removing index 5 first
+         * shifts the date down to 5, so a following removal of 6 would take the price tier
+         * and leave the date in the statement - which is a valid update writing a price
+         * tier where a date belongs, and nothing about it is visible until a customer's
+         * row is wrong.
+         */
+        @Test
+        void refusesIndexesGivenLowestFirst() {
+            assertThrows(IllegalArgumentException.class,
+                    () -> OpeningBalanceGuard.withoutAll(customerValues(), List.of(5, 6)));
+        }
+
+        @Test
+        @DisplayName("an empty list is the whole array back")
+        void nothingToRemoveChangesNothing() {
+            Object[] all = customerValues();
+            assertArrayEquals(all, OpeningBalanceGuard.withoutAll(all, List.of()));
+        }
+
+        /** What the two specs actually ask for, rather than a hand-written pair. */
+        @Test
+        void theSpecsAskForTheirTwoColumnsHighestFirst() {
+            for (var spec : new PartyTableSpec[]{PartyTableSpec.CUSTOMER, PartyTableSpec.SUPPLIER}) {
+                List<Integer> indexes = spec.openingColumnIndexes();
+                assertEquals(2, indexes.size(), spec.table());
+                assertTrue(indexes.get(0) > indexes.get(1), spec.table() + " must be highest first");
+                assertEquals(spec.updateColumns().indexOf("first_balance"), indexes.get(1));
+                assertEquals(spec.updateColumns().indexOf("opening_balance_date"), indexes.get(0));
+            }
         }
     }
 }

@@ -48,18 +48,18 @@ public class ReportTotalByYearController {
     @FXML
     public void initialize() {
         tableView.getColumns().addAll(
-                Columns.text("الشهر", TableDataReports::getReport_month_name),
-                Columns.number("المشتريات", TableDataReports::getPurchase),
-                Columns.number("خصم المشتريات", TableDataReports::getPurchases_discount),
-                Columns.number("المبيعات", TableDataReports::getSales),
-                Columns.number("خصم المبيعات", TableDataReports::getSales_discount),
-                Columns.number("مرتجع المشتريات", TableDataReports::getPurchases_return),
-                Columns.number("خصم مرتجع المشتريات", TableDataReports::getPurchases_return_discount),
-                Columns.number("مرتجع المبيعات", TableDataReports::getSales_return),
-                Columns.number("خصم مرتجع المبيعات", TableDataReports::getSales_return_discount),
-                Columns.number("المصروفات", TableDataReports::getExpense),
-                Columns.number("الربح", TableDataReports::getProfit),
-                Columns.text("الربح نسبة", TableDataReports::getProfitPercent)
+                Columns.text("report.year.column.month", TableDataReports::getReport_month_name),
+                Columns.number("report.year.column.purchases", TableDataReports::getPurchase),
+                Columns.number("report.year.column.purchases.discount", TableDataReports::getPurchases_discount),
+                Columns.number("report.year.column.sales", TableDataReports::getSales),
+                Columns.number("report.year.column.sales.discount", TableDataReports::getSales_discount),
+                Columns.number("report.year.column.purchases.return", TableDataReports::getPurchases_return),
+                Columns.number("report.year.column.purchases.return.discount", TableDataReports::getPurchases_return_discount),
+                Columns.number("report.year.column.sales.return", TableDataReports::getSales_return),
+                Columns.number("report.year.column.sales.return.discount", TableDataReports::getSales_return_discount),
+                Columns.number("report.year.column.expenses", TableDataReports::getExpense),
+                Columns.number("report.year.column.profit", TableDataReports::getProfit),
+                Columns.text("report.year.column.profit.percent", TableDataReports::getProfitPercent)
         );
         TableSetting.tableMenuSetting(getClass(), tableView);
 

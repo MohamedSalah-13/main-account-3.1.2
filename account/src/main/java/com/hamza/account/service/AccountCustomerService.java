@@ -1,6 +1,5 @@
 package com.hamza.account.service;
 
-import com.hamza.account.interfaces.impl_account.AccountCustomer;
 import com.hamza.account.model.dao.CustomerAccountDao;
 import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.period.PeriodLock;
@@ -19,6 +18,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
+import com.hamza.account.features.party.payment.PartyPaymentAllocationService;
 import com.hamza.account.features.shift.ShiftGate;
 import com.hamza.account.features.shift.ShiftAttributionWriter;
 import com.hamza.account.features.events.PartyKind;
@@ -42,11 +42,6 @@ public record AccountCustomerService(DaoFactory daoFactory) {
         }
         return new ArrayList<>();
     }
-
-    public List<CustomerAccount> accountList() throws DaoException {
-        return AccountService.sumAccountForId(daoFactory.customerAccountDao().loadAll(), new AccountCustomer(daoFactory));
-    }
-
 
     /**
      * A payment is a dated document like an invoice, so it is refused inside a closed
@@ -100,8 +95,8 @@ public record AccountCustomerService(DaoFactory daoFactory) {
 
     public int save(CustomerAccount account, BigDecimal walletFee, String correctionReason) throws DaoException {
         boolean isNew = isNew(account);
-        AuthorizationGuard.require(isNew
-                ? AppPermissions.CUSTOMER_ACCOUNT_CREATE : AppPermissions.CUSTOMER_ACCOUNT_UPDATE);
+        requireMovementPermissions(account, isNew);
+        requireAllocationFits(account, isNew);
         if (!isNew) {
             return TransactionTemplate.execute(() -> {
                 var reader = new JdbcShiftCashEffectReader();
@@ -125,10 +120,20 @@ public record AccountCustomerService(DaoFactory daoFactory) {
             });
         }
         return TransactionTemplate.execute(() -> {
-            var shiftId = ShiftGate.jdbc(daoFactory.userShiftDao()).requireCashAction(
-                    account.getUsers().getId(), account.getTreasury().getId(), BigDecimal.valueOf(account.getPaid()));
+            // A movement that carries no cash does not pass through a till, so it neither
+            // needs an open shift nor belongs in the shift's cash journal: a debit note is an
+            // entry in a ledger, not money in a drawer. Requiring a shift for one would stop
+            // a correction being made outside trading hours, which is when corrections happen.
+            // A later edit is still accounted for - ShiftCashLedger.ensureBaseline writes the
+            // CREATE row for a movement the journal has not seen.
+            boolean movesCash = account.getPaid() != 0;
+            var shiftId = movesCash
+                    ? ShiftGate.jdbc(daoFactory.userShiftDao()).requireCashAction(
+                            account.getUsers().getId(), account.getTreasury().getId(),
+                            BigDecimal.valueOf(account.getPaid()))
+                    : java.util.OptionalInt.empty();
             int rows = accountDao().insert(account);
-            if (rows == 1) {
+            if (rows == 1 && movesCash) {
                 ShiftAttributionWriter.jdbc().assignParty(PartyKind.CUSTOMER, account.getId(), shiftId);
                 ShiftCashLedger.jdbc().created(shiftId, account.getUsers().getId(),
                         ShiftCashEffect.incoming(ShiftCashSource.CUSTOMER_ACCOUNT, account.getId(),
@@ -149,21 +154,59 @@ public record AccountCustomerService(DaoFactory daoFactory) {
     }
 
     /**
-     * Whether this payment is a new one - answered by looking for the row, not by
+     * Whether this movement is a new one - answered by looking for the row, not only by
      * asking whether the id is zero.
      * <p>
-     * <b>This is a bug fix, and the bug was silent.</b> The application assigns the
-     * account number itself: the screen fills its code field with {@code max + 1} and
-     * hands that to the model, so {@code getId()} is <b>never</b> zero, not even for a
-     * brand new payment. From 2026-08-12 (`f2b4baf`, which replaced the controller's
-     * own {@code numInvoice > 0} check with this service) until this fix, every new
-     * collection therefore took the UPDATE branch, matched no row, returned 0, and the
-     * dialog closed reporting nothing - the payment was simply never written. Editing
-     * kept working, because there the id does match a row, which is why it survived.
+     * <b>It used to have to be, and the reason is worth keeping.</b> The application assigned
+     * the movement number itself: the collection screen filled its code field with
+     * {@code max + 1} and handed that to the model, so {@code getId()} was <b>never</b> zero,
+     * not even for a brand new collection. From 2026-08-12 ({@code f2b4baf}, which replaced the
+     * controller's own {@code numInvoice > 0} check with this service) until that was found,
+     * every new collection therefore took the UPDATE branch, matched no row, returned 0, and
+     * the dialog closed reporting nothing: the payment was simply never written. Editing kept
+     * working, because there the id does match a row, which is why it survived eighteen days.
      * <p>
-     * Reading the row is one query and it cannot be got wrong by the next caller,
-     * which an "isNew" flag threaded through the screens could.
+     * Since the number became the database's to assign (see {@code CustomerAccountDao.insert}),
+     * a new movement really does arrive with a zero id and the first clause answers it without
+     * a query. The second clause stays: it costs one read on an edit, it cannot be got wrong by
+     * the next caller the way an "isNew" flag threaded through the screens could, and it is
+     * what still catches an id that names no row.
      */
+    /**
+     * The permission a movement needs, which is not one permission.
+     * <p>
+     * Collecting money is one act and adjusting a balance by decision is another.
+     * A collection is matched by cash in the drawer, and anyone the shop trusts with the till
+     * can take one; a debit note moves what a party owes with nothing on the other side of it,
+     * and whoever stands at the till is not necessarily the person who may decide that a
+     * customer owes another thousand pounds. So {@code *.account.adjust} (V55) is required on
+     * top of create or update, and only when the movement actually carries a debit.
+     * <p>
+     * An ordinary collection is therefore unaffected: it has no {@code purchase}, so it needs
+     * exactly the permission it always needed.
+     */
+    private static void requireMovementPermissions(CustomerAccount account, boolean isNew) throws DaoException {
+        AuthorizationGuard.require(isNew
+                ? AppPermissions.CUSTOMER_ACCOUNT_CREATE : AppPermissions.CUSTOMER_ACCOUNT_UPDATE);
+        if (account.getPurchase() != 0) {
+            AuthorizationGuard.require(AppPermissions.CUSTOMER_ACCOUNT_ADJUST);
+        }
+    }
+
+    /**
+     * Refuses an allocation bigger than the invoice still owes.
+     * <p>
+     * Inside the transaction, against the database, rather than against the list the dialog is
+     * holding: a dialog can stay open while another till settles the same invoice. An
+     * unallocated payment ({@code numberInv = 0}) is the ordinary case and is not checked - it
+     * is "on account", which is what every payment in every existing install is.
+     */
+    private void requireAllocationFits(CustomerAccount account, boolean isNew) throws DaoException {
+        new PartyPaymentAllocationService().requireAllocationFits(
+                PartyKind.CUSTOMER, account.getCustomers().getId(), account.getInvoice_number(),
+                BigDecimal.valueOf(account.getPaid()), isNew ? 0 : account.getId());
+    }
+
     private boolean isNew(CustomerAccount account) throws DaoException {
         return account.getId() <= 0 || accountDao().getAccountByNumForUpdate(account.getId()) == null;
     }

@@ -15,6 +15,8 @@ public class NamesTables {
     public final static String ADDRESS = "column.address";
     public static final String SALARY = "column.salary";
     public static final String EMAIL = "column.email";
+    /** Whether a party is still dealt with - V56's {@code is_active}. */
+    public static final String STATUS = "column.status";
     public static final String TEL = "column.tel";
     public static final String QUANTITY = "column.quantity";
     /**

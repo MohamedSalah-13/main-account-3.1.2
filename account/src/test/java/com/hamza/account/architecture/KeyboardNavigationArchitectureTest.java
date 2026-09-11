@@ -48,11 +48,12 @@ class KeyboardNavigationArchitectureTest {
      * remaining debt is a number that can be trusted.
      * <p>
      * They were <b>not</b> reviewed one by one. Some are ordinary forms that
-     * simply never got the call ({@code AddNameController},
-     * {@code AddEmployeeController}, {@code AddUserController}); others hold
-     * their two fields for filtering rather than for entry, where an Enter
-     * order would be meaningless. Deciding which is which is part of the touch
-     * that removes the file from this list.
+     * simply never got the call ({@code AddEmployeeController},
+     * {@code AddUserController}); others hold their two fields for filtering
+     * rather than for entry, where an Enter order would be meaningless.
+     * Deciding which is which is part of the touch that removes the file from
+     * this list - {@code AddNameController} was the first to leave it, when the
+     * party screen was rebuilt in code for V56.
      */
     private static final Set<String> SCREENS_WITHOUT_AN_ENTER_ORDER = Set.of(
             "com/hamza/account/controller/convert_treasury/TreasuryCashController.java",
@@ -61,8 +62,6 @@ class KeyboardNavigationArchitectureTest {
             "com/hamza/account/controller/items/StockCountController.java",
             "com/hamza/account/controller/items/StocksController.java",
             "com/hamza/account/controller/items/UpdateSomeItems.java",
-            "com/hamza/account/controller/name_account/AccountDetailsWithItemsController.java",
-            "com/hamza/account/controller/name_account/AddNameController.java",
             "com/hamza/account/controller/others/AddEmployeeController.java",
             "com/hamza/account/controller/setting/SettingTabBarcodeController.java",
             "com/hamza/account/controller/setting/SettingTabLanguageController.java",

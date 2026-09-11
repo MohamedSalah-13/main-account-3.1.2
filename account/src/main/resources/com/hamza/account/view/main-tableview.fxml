@@ -37,6 +37,20 @@
                                         <ToggleButton fx:id="btnSelected" mnemonicParsing="false" styleClass="app-neutral-button" text="select/deselect" />
                                     </children>
                                 </HBox>
+                                <!--
+                                  The page-number box, filled in code by TableController with a
+                                  PageJumpBox - the arithmetic of reading a typed page number
+                                  belongs to PageJump, not to a file nothing can test.
+
+                                  It sits BEFORE the search box, and that is not cosmetic. The
+                                  search field grows, so an HBox gives it every spare pixel; put
+                                  after it, this box was starved to nothing and the pager was
+                                  simply not on the screen. minWidth="-Infinity" (USE_PREF_SIZE)
+                                  is the second half of the same guard: it may not be shrunk
+                                  below what it needs.
+                                -->
+                                <HBox fx:id="pagerBox" alignment="CENTER_LEFT" minWidth="-Infinity" spacing="5.0" />
+
                                 <HBox alignment="CENTER_LEFT" spacing="5.0" HBox.hgrow="SOMETIMES">
                                     <children>
                                         <Label fx:id="labelSearch" styleClass="form-label" text="Search" />
@@ -44,6 +58,7 @@
                                         <TextField fx:id="txtSearch" focusTraversable="false" promptText="اكتب للبحث..." styleClass="modern-input" HBox.hgrow="SOMETIMES" />
                                     </children>
                                 </HBox>
+
                             </children>
                         </HBox>
                     </top>

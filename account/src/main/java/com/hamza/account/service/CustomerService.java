@@ -1,6 +1,7 @@
 package com.hamza.account.service;
 
 import com.hamza.account.authorization.AppPermissions;
+import com.hamza.account.party.PartyTableSpec.PartySearchScope;
 import com.hamza.account.authorization.AuthorizationGuard;
 
 import com.hamza.account.model.dao.CustomerDao;
@@ -47,8 +48,14 @@ public record CustomerService(DaoFactory daoFactory) {
         return nameDao().getDataById(id);
     }
 
-    public List<Customers> getFilterCustomers(String newValue) throws DaoException {
-        return nameDao().getFilterCustomers(newValue);
+    /**
+     * The name box's search. {@code scope} is the caller's decision and has no default
+     * here on purpose - see {@link PartySearchScope}: an invoice must not offer a party
+     * you have stopped dealing with, and a collection must still find one who owes you
+     * money.
+     */
+    public List<Customers> getFilterCustomers(String newValue, PartySearchScope scope) throws DaoException {
+        return nameDao().getFilterCustomers(newValue, scope);
     }
 
     public List<Customers> getCustomers(int rowsPerPage, int offset) throws DaoException {

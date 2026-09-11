@@ -39,6 +39,11 @@ import java.util.regex.Pattern;
  * @param updateColumns  the update's SET clause; the key is the WHERE and is not here
  * @param openingBalance the opening-balance column, which the update drops while the
  *                       party has already moved
+ * @param openingDate    the date that balance is as at (V56). It is dropped by the
+ *                       same lock and for the same reason: re-dating a closed opening
+ *                       entry moves it in the history exactly as rewriting its amount
+ *                       would, and a guard that held one and not the other would be a
+ *                       way round itself
  */
 public record PartyTableSpec(
         PartyKind kind,
@@ -48,7 +53,8 @@ public record PartyTableSpec(
         String createdColumn,
         List<String> insertColumns,
         List<String> updateColumns,
-        String openingBalance) {
+        String openingBalance,
+        String openingDate) {
 
     /** As in {@code LockedDocument}: these are concatenated into SQL, so they are checked. */
     private static final Pattern IDENTIFIER = Pattern.compile("[A-Za-z_][A-Za-z0-9_]*");
@@ -66,24 +72,32 @@ public record PartyTableSpec(
             "LEFT JOIN table_area ON custom.area_id = table_area.id",
             "LEFT JOIN table_area ON custom.area_id = table_area.id",
             "created_at",
-            List.of("name", "tel", "address", "notes", "limit_num", "first_balance", "price_id",
-                    "user_id", "area_id"),
-            List.of("name", "tel", "address", "notes", "limit_num", "first_balance", "price_id", "area_id"),
-            "first_balance");
+            List.of("name", "tel", "address", "notes", "limit_num", "first_balance",
+                    "opening_balance_date", "price_id", "user_id", "area_id",
+                    "email", "tax_number", "payment_terms_days", "default_delegate_id", "is_active"),
+            List.of("name", "tel", "address", "notes", "limit_num", "first_balance",
+                    "opening_balance_date", "price_id", "area_id",
+                    "email", "tax_number", "payment_terms_days", "default_delegate_id", "is_active"),
+            "first_balance", "opening_balance_date");
 
     public static final PartyTableSpec SUPPLIER = new PartyTableSpec(
             PartyKind.SUPPLIER, "suppliers",
             "join table_area on suppliers.area_id = table_area.id",
             "",
             "created_at",
-            List.of("name", "tel", "address", "notes", "first_balance", "user_id", "area_id"),
-            List.of("name", "tel", "address", "notes", "first_balance", "area_id"),
-            "first_balance");
+            List.of("name", "tel", "address", "notes", "first_balance", "opening_balance_date",
+                    "user_id", "area_id",
+                    "email", "tax_number", "payment_terms_days", "is_active"),
+            List.of("name", "tel", "address", "notes", "first_balance", "opening_balance_date",
+                    "area_id",
+                    "email", "tax_number", "payment_terms_days", "is_active"),
+            "first_balance", "opening_balance_date");
 
     public PartyTableSpec {
         requireIdentifier(table);
         requireIdentifier(createdColumn);
         requireIdentifier(openingBalance);
+        requireIdentifier(openingDate);
         insertColumns = List.copyOf(insertColumns);
         updateColumns = List.copyOf(updateColumns);
         insertColumns.forEach(PartyTableSpec::requireIdentifier);
@@ -148,7 +162,20 @@ public record PartyTableSpec(
      */
     public String updateWithoutOpeningSql() {
         return optimisticUpdate(updateColumns.stream()
-                .filter(column -> !column.equals(openingBalance)).toList());
+                .filter(column -> !openingColumns().contains(column)).toList());
+    }
+
+    /**
+     * The columns the opening-balance lock takes out together: the amount and its date.
+     * <p>
+     * They are one entry, not two fields that happen to be near each other. A statement
+     * is {@code first_balance} placed at {@code opening_balance_date} plus the movements
+     * after it, so moving the date moves the entry through the history precisely as
+     * changing the amount would - it is the same edit said differently, and letting the
+     * date through would leave the guard guarding half of what it names.
+     */
+    public List<String> openingColumns() {
+        return List.of(openingBalance, openingDate);
     }
 
     private String optimisticUpdate(List<String> columns) {
@@ -168,6 +195,21 @@ public record PartyTableSpec(
         return updateColumns.indexOf(openingBalance);
     }
 
+    /**
+     * Where {@link #openingColumns()} sit in that array, highest index first.
+     * <p>
+     * Descending because the caller removes them one at a time and removing a low index
+     * first would shift every one after it - the off-by-one
+     * {@code OpeningBalanceGuard.without} exists to make impossible.
+     */
+    public List<Integer> openingColumnIndexes() {
+        return openingColumns().stream()
+                .map(updateColumns::indexOf)
+                .filter(index -> index >= 0)
+                .sorted(java.util.Comparator.reverseOrder())
+                .toList();
+    }
+
     public String deleteSql() {
         return SqlStatements.deleteStatement(table, KEY);
     }
@@ -177,15 +219,44 @@ public record PartyTableSpec(
     // Three statements, tried in order: an exact id or telephone, then names that start
     // with what was typed, then names that contain it. Both parties run the same three.
 
-    /** Nothing typed yet: the newest fifty. */
-    public String searchAllSql() {
-        return newestFirst() + " LIMIT " + SEARCH_LIMIT;
+    /**
+     * The column {@code is_active} narrows these three by, and the one question it
+     * answers.
+     * <p>
+     * <b>A stopped party may not be sold to and must still be collected from.</b> Those
+     * are two different screens asking the same search two different questions, which is
+     * why the scope is a parameter and not a property of the statement: the invoice
+     * picker passes {@link PartySearchScope#ACTIVE_ONLY} - a party you have stopped
+     * dealing with should not be reachable by typing three letters into a new invoice -
+     * while the collection screen passes {@link PartySearchScope#EVERYONE}, because a
+     * debt does not stop being owed when you stop selling. Filtering here for both would
+     * make an old debt uncollectable through the only screen that collects, and the
+     * parties list keeps {@code EVERYONE} too or there would be no way back to the row
+     * that switches a party on again.
+     */
+    public enum PartySearchScope {
+        /** Every party, stopped ones included. Lists, and anything settling a debt. */
+        EVERYONE,
+        /** Only parties still dealt with. Anything starting new business. */
+        ACTIVE_ONLY;
+
+        boolean narrows() {
+            return this == ACTIVE_ONLY;
+        }
     }
 
-    public String searchByNumberSql() {
+    /** Nothing typed yet: the newest fifty. */
+    public String searchAllSql(PartySearchScope scope) {
+        return searchFrom()
+               + (scope.narrows() ? " WHERE " + table + ".is_active = 1" : "")
+               + " ORDER BY " + table + "." + KEY + " DESC"
+               + " LIMIT " + SEARCH_LIMIT;
+    }
+
+    public String searchByNumberSql(PartySearchScope scope) {
         return """
                 SELECT * FROM %1$s
-                %2$sWHERE %1$s.id = ? OR %1$s.tel = ?
+                %2$sWHERE (%1$s.id = ? OR %1$s.tel = ?)%4$s
                 ORDER BY
                     CASE
                         WHEN %1$s.id = ? THEN 0
@@ -194,13 +265,13 @@ public record PartyTableSpec(
                     END,
                     %1$s.id DESC
                 LIMIT %3$d
-                """.formatted(table, line(searchJoin), SEARCH_LIMIT);
+                """.formatted(table, line(searchJoin), SEARCH_LIMIT, activeClause(scope));
     }
 
-    public String searchByPrefixSql() {
+    public String searchByPrefixSql(PartySearchScope scope) {
         return """
                 SELECT * FROM %1$s
-                %2$sWHERE %1$s.name LIKE ? OR %1$s.tel LIKE ?
+                %2$sWHERE (%1$s.name LIKE ? OR %1$s.tel LIKE ?)%4$s
                 ORDER BY
                     CASE
                         WHEN %1$s.name LIKE ? THEN 0
@@ -209,16 +280,29 @@ public record PartyTableSpec(
                     END,
                     %1$s.id DESC
                 LIMIT %3$d
-                """.formatted(table, line(searchJoin), SEARCH_LIMIT);
+                """.formatted(table, line(searchJoin), SEARCH_LIMIT, activeClause(scope));
     }
 
-    public String searchByFragmentSql() {
+    public String searchByFragmentSql(PartySearchScope scope) {
         return """
                 SELECT * FROM %1$s
-                %2$sWHERE %1$s.name LIKE ? OR %1$s.tel LIKE ?
+                %2$sWHERE (%1$s.name LIKE ? OR %1$s.tel LIKE ?)%4$s
                 ORDER BY %1$s.id DESC
                 LIMIT %3$d
-                """.formatted(table, line(searchJoin), SEARCH_LIMIT);
+                """.formatted(table, line(searchJoin), SEARCH_LIMIT, activeClause(scope));
+    }
+
+    /**
+     * The status condition, or nothing.
+     * <p>
+     * The two text conditions are parenthesised whether or not this is added: {@code a OR
+     * b AND c} is {@code a OR (b AND c)} in SQL, so appending the status to an unbracketed
+     * {@code OR} would filter the telephone match and leave the name match wide open -
+     * a stopped party would drop out of a search by phone number and stay in a search by
+     * name, which reads on screen as the filter working intermittently.
+     */
+    private String activeClause(PartySearchScope scope) {
+        return scope.narrows() ? " AND " + table + ".is_active = 1" : "";
     }
 
     private String newestFirst() {

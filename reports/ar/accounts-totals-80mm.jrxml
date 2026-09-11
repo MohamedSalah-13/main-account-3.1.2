@@ -161,7 +161,7 @@
                                     <font size="6" isBold="true"/>
                                 </textElement>
                                 <textFieldExpression>
-                                    <![CDATA[new BigDecimal($V{Variable_1_2}).setScale(2, BigDecimal.ROUND_CEILING)]]></textFieldExpression>
+                                    <![CDATA[new java.text.DecimalFormat("#,##0.00", java.text.DecimalFormatSymbols.getInstance(java.util.Locale.US)).format(new BigDecimal($V{Variable_1_2}).setScale(2, java.math.RoundingMode.HALF_UP))]]></textFieldExpression>
                             </textField>
                         </jr:tableFooter>
                         <jr:columnHeader style="Table_CH" height="20" rowSpan="1">
@@ -191,7 +191,7 @@
                                 <textElement>
                                     <font size="7"/>
                                 </textElement>
-                                <textFieldExpression><![CDATA[$F{amount}]]></textFieldExpression>
+                                <textFieldExpression><![CDATA[new java.text.DecimalFormat("#,##0.00", java.text.DecimalFormatSymbols.getInstance(java.util.Locale.US)).format($F{amount})]]></textFieldExpression>
                             </textField>
                         </jr:detailCell>
                     </jr:column>
@@ -206,7 +206,7 @@
                                     <font size="6" isBold="true"/>
                                 </textElement>
                                 <textFieldExpression>
-                                    <![CDATA[new BigDecimal($V{Variable_1_1}).setScale(2, BigDecimal.ROUND_CEILING)]]></textFieldExpression>
+                                    <![CDATA[new java.text.DecimalFormat("#,##0.00", java.text.DecimalFormatSymbols.getInstance(java.util.Locale.US)).format(new BigDecimal($V{Variable_1_1}).setScale(2, java.math.RoundingMode.HALF_UP))]]></textFieldExpression>
                             </textField>
                         </jr:tableFooter>
                         <jr:columnHeader style="Table_CH" height="20" rowSpan="1">
@@ -235,7 +235,7 @@
                                 <textElement>
                                     <font size="7"/>
                                 </textElement>
-                                <textFieldExpression><![CDATA[$F{paid}]]></textFieldExpression>
+                                <textFieldExpression><![CDATA[new java.text.DecimalFormat("#,##0.00", java.text.DecimalFormatSymbols.getInstance(java.util.Locale.US)).format($F{paid})]]></textFieldExpression>
                             </textField>
                         </jr:detailCell>
                     </jr:column>
@@ -250,7 +250,7 @@
                                     <font size="6" isBold="true"/>
                                 </textElement>
                                 <textFieldExpression>
-                                    <![CDATA[new BigDecimal($V{Variable_1}).setScale(2, BigDecimal.ROUND_CEILING)]]></textFieldExpression>
+                                    <![CDATA[new java.text.DecimalFormat("#,##0.00", java.text.DecimalFormatSymbols.getInstance(java.util.Locale.US)).format(new BigDecimal($V{Variable_1}).setScale(2, java.math.RoundingMode.HALF_UP))]]></textFieldExpression>
                             </textField>
                         </jr:tableFooter>
                         <jr:columnHeader style="Table_CH" height="20" rowSpan="1">
@@ -279,7 +279,7 @@
                                 <textElement>
                                     <font size="7"/>
                                 </textElement>
-                                <textFieldExpression><![CDATA[$F{purchase}]]></textFieldExpression>
+                                <textFieldExpression><![CDATA[new java.text.DecimalFormat("#,##0.00", java.text.DecimalFormatSymbols.getInstance(java.util.Locale.US)).format($F{purchase})]]></textFieldExpression>
                             </textField>
                         </jr:detailCell>
                     </jr:column>

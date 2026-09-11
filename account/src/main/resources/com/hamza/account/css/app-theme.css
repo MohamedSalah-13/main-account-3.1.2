@@ -779,7 +779,9 @@
 /* ---------- Summary bars ---------- */
 
 .summary-bar,
-.summary-card {
+/* A dark gradient bar - the invoice totals strip. Its contents are white on navy, which is
+   why the two rules below give it white text. */
+.summary-bar {
     -fx-background-color: linear-gradient(to right, -app-summary-bg, -app-summary-bg-2);
     -fx-background-radius: 1.091em;
     -fx-padding: 0.818em 1.091em;
@@ -787,15 +789,40 @@
     -fx-effect: dropshadow(gaussian, -app-shadow, 10, 0.12, 0, 3);
 }
 
-.summary-bar .label,
-.summary-card .label {
+.summary-bar .label {
     -fx-text-fill: white;
     -fx-font-weight: bold;
 }
 
-.summary-bar Text,
-.summary-card Text {
+.summary-bar Text {
     -fx-fill: -app-summary-value;
+    -fx-font-weight: bold;
+}
+
+/*
+  .summary-card is a WHITE card, and its text has to be dark.
+
+  It used to be declared twice in this file: as the dark navy gradient above, and again five
+  hundred lines further down under "Capital Management Styles" as a white one. The later rule
+  wins on the properties it names, so every summary-card in the application has been white -
+  while the label rule up here went on painting the text inside it white as well. The result
+  was a footer whose labels were invisible on five screens: the party balances, the party
+  statement, the comprehensive sales report, the customer receivables report and user
+  management. The invoice screens never showed it, because they scope their own
+  .invoice-sales .summary-card in theme-light.css and theme-dark.css with matching colours -
+  which is what the capital-management block should have done rather than claiming a shared
+  class name.
+
+  The two declarations are now one, below, and the colours answer the background it actually
+  has.
+*/
+.summary-card .label {
+    -fx-text-fill: -app-text;
+    -fx-font-weight: bold;
+}
+
+.summary-card Text {
+    -fx-fill: -app-primary-dark;
     -fx-font-weight: bold;
 }
 
@@ -1259,12 +1286,21 @@
 
 /* Capital Management Styles */
 
+/*
+  The single declaration of .summary-card - see the note beside its text colours above. It is
+  kept exactly as it rendered before, because this is what every screen using the class has
+  been showing; only the text inside it changed, from white-on-white to readable. The surface
+  is a token rather than the literal `white` it was, so the card is not a bright rectangle on
+  a dark theme.
+*/
 .summary-card {
-    -fx-background-color: white;
-    -fx-border-color: #e0e0e0;
+    -fx-background-color: -app-surface;
+    -fx-border-color: -app-border;
     -fx-border-width: 0.091em;
     -fx-border-radius: 0.727em;
     -fx-background-radius: 0.727em;
+    -fx-padding: 0.818em 1.091em;
+    -fx-spacing: 0.727em;
     -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.1), 5, 0, 0, 2);
     -fx-min-width: 16.364em;
 }
@@ -2043,3 +2079,58 @@
 .printer-missing {
     -fx-text-fill: -app-danger;
 }
+
+/* A money cell holding a negative. Columns.money sets the pseudo-class; the colour lives here so
+   it answers the active palette, and so two screens cannot pick two reds for one condition. */
+.table-cell:negative-amount,
+.tree-table-cell:negative-amount {
+    -fx-text-fill: -app-danger;
+}
+
+/* A statement row that stands for a document, and can be opened to show its lines. It used to be
+   told apart by comparing its translated label against four Arabic literals, and coloured with an
+   inline setStyle that ignored the palette. */
+.tree-table-row-cell:document-row {
+    -fx-background-color: -app-table-row-alt;
+}
+
+/* A button that lives inside a table row and acts on it. It carries an icon and no caption -
+   a column of three captioned buttons is wider than the data it sits beside - so its name is
+   in the tooltip and in its accessible text, never only in a picture. */
+.row-action-button {
+    -fx-padding: 2 6 2 6;
+    -fx-min-width: 34;
+    -fx-background-radius: 6;
+}
+
+.row-action-button:disabled {
+    -fx-opacity: 0.35;
+}
+
+/* An amount a screen shows rather than collects - a balance, a remainder, what an invoice still
+   owes. It is a TextField only because it sits in a column of them; it takes no number formatter,
+   because that formatter's converter round-trips through Double and would rewrite "1,050.00" as
+   "1050.0" while the table beside it kept the first spelling. */
+.app-readonly-amount {
+    -fx-background-color: -app-table-row-alt;
+    -fx-opacity: 1;
+}
+
+/* A party no longer dealt with (V56's is_active). It stays in the list - this is the screen its row
+   is switched back on from - so it is marked rather than hidden. Muted, not red: it is a state
+   somebody chose, not something wrong. */
+.table-cell:party-stopped {
+    -fx-text-fill: -app-text-muted;
+    -fx-font-style: italic;
+}
+
+/* A section heading inside a form card - the party screen builds one per group of fields. */
+.app-section-title {
+    -fx-font-weight: bold;
+    -fx-text-fill: -app-text-muted;
+    -fx-padding: 0 0 4 0;
+}
+
+/* A credit limit the balance has passed. */
+.progress-bar:over-limit > .bar { -fx-background-color: -app-danger; }
+.label:over-limit { -fx-text-fill: -app-danger; -fx-font-weight: bold; }

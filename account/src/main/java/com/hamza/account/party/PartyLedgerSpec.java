@@ -31,7 +31,15 @@ import java.util.regex.Pattern;
  * @param partyAlias    what it calls the party
  * @param createdColumn when the row was entered. One name on both sides since
  *                      {@code V10__supplier_created_at.sql}
- * @param insertColumns the insert, in the order the DAO fills it
+ * @param insertColumns the insert, in the order the DAO fills it. <b>It does not carry
+ *                      {@code account_num}</b>, and that is a fix rather than an omission:
+ *                      the column is {@code BIGINT AUTO_INCREMENT PRIMARY KEY} and always
+ *                      was, but the insert used to write it from a number the screen worked
+ *                      out as {@code max + 1} over the whole ledger. Two tills collecting at
+ *                      the same moment chose the same number and the second one failed on the
+ *                      primary key - the defect {@code InvoiceNumberAllocator} exists to
+ *                      prevent on the invoice side, left standing here. Letting MySQL assign
+ *                      it removes the race and the full read of the ledger together
  * @param updateColumns the update's SET clause; the key is the WHERE and is not here.
  *                      Neither carries {@code user_id}: an edit does not change who
  *                      entered the payment
@@ -68,19 +76,25 @@ public record PartyLedgerSpec(
     public static final PartyLedgerSpec CUSTOMER = new PartyLedgerSpec(
             PartyKind.CUSTOMER, "customers_accounts", "account_customer_table",
             "account_customer_totals", "custom", "act", "c", "created_at",
-            List.of("account_code", "account_date", "paid", "notes", "numberInv", "treasury_id",
-                    "account_num", "user_id"),
+            // purchase is the debit side of a movement, and nothing wrote it until V55 - so
+            // the only movement anyone could record was a collection, and a party's opening
+            // balance could never be corrected upwards. account_num is absent: MySQL assigns
+            // it. See the record's javadoc for both.
+            List.of("account_code", "account_date", "purchase", "paid", "notes", "numberInv",
+                    "treasury_id", "user_id"),
             // No user_id, as on the supplier's side: editing a payment does not change
             // who entered it.
-            List.of("account_code", "account_date", "paid", "notes", "numberInv", "treasury_id"),
+            List.of("account_code", "account_date", "purchase", "paid", "notes", "numberInv",
+                    "treasury_id"),
             true);
 
     public static final PartyLedgerSpec SUPPLIER = new PartyLedgerSpec(
             PartyKind.SUPPLIER, "suppliers_accounts", "account_suppliers_table",
             "account_suppliers_totals", "suppliers", "ac", "s", "created_at",
-            List.of("account_code", "account_date", "paid", "notes", "numberInv", "treasury_id",
-                    "account_num", "user_id"),
-            List.of("account_code", "account_date", "paid", "notes", "numberInv", "treasury_id"),
+            List.of("account_code", "account_date", "purchase", "paid", "notes", "numberInv",
+                    "treasury_id", "user_id"),
+            List.of("account_code", "account_date", "purchase", "paid", "notes", "numberInv",
+                    "treasury_id"),
             false);
 
     public PartyLedgerSpec {
@@ -117,6 +131,12 @@ public record PartyLedgerSpec(
     //
     // One movement per row, with the amount worked out and the party's name joined in.
     // Every listing starts from it.
+    //
+    // The amount is rounded to two places, and used not to be: bare ROUND() rounds to
+    // whole pounds, so a movement of 10.50 was listed as 10 or 11 while
+    // account_customer_totals - which has always had ROUND(..., 2) - summed the real
+    // figure. The two could not be reconciled by anyone reading both screens, and the
+    // piasters were lost on the one a customer is shown.
 
     public String statementSql() {
         String a = ledgerAlias;
@@ -127,7 +147,7 @@ public record PartyLedgerSpec(
                        %1$s.purchase,
                        %1$s.discount,
                        %1$s.paid,
-                       ROUND(%1$s.purchase - %1$s.discount - %1$s.paid) as amount,
+                       ROUND(%1$s.purchase - %1$s.discount - %1$s.paid, 2) as amount,
                        %1$s.notes,
                        %2$s.name,
                        %1$s.information,

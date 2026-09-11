@@ -1,6 +1,7 @@
 package com.hamza.account.interfaces.impl_namesDao;
 
 import com.hamza.account.controller.others.ServiceRegistry;
+import com.hamza.account.party.PartyTableSpec.PartySearchScope;
 import com.hamza.account.controller.search.SearchInterface;
 import com.hamza.account.controller.search.SuppliersSearchController;
 import com.hamza.account.features.events.PartyKind;
@@ -69,11 +70,6 @@ public class SupplierAndAccount implements NameAndAccountInterface<Suppliers, Su
     }
 
     @Override
-    public List<SupplierAccount> accountList() throws DaoException {
-        return accountSupplierService.accountList();
-    }
-
-    @Override
     public List<SupplierAccount> accountListById(int id) throws DaoException {
         return accountSupplierService.getAccountByAccountCode(id);
     }
@@ -86,8 +82,8 @@ public class SupplierAndAccount implements NameAndAccountInterface<Suppliers, Su
     }
 
     @Override
-    public SearchInterface<Suppliers> searchInterface() {
-        return new SuppliersSearchController(suppliersService);
+    public SearchInterface<Suppliers> searchInterface(PartySearchScope scope) {
+        return new SuppliersSearchController(suppliersService, scope);
     }
 
     @Override
@@ -102,7 +98,9 @@ public class SupplierAndAccount implements NameAndAccountInterface<Suppliers, Su
 
     @Override
     public List<Suppliers> getFilterItems(String filter) throws Exception {
-        return suppliersService.getFilterSuppliers(filter);
+        // The parties list, which is where a stopped party is switched back on -
+        // so it shows everyone, stopped ones included.
+        return suppliersService.getFilterSuppliers(filter, PartySearchScope.EVERYONE);
     }
 
     @Override

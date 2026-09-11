@@ -10,51 +10,77 @@
 <?import javafx.scene.layout.GridPane?>
 <?import javafx.scene.layout.RowConstraints?>
 <?import javafx.scene.layout.VBox?>
-<?import org.controlsfx.control.SearchableComboBox?>
 
+<!--
+  Every caption is a resource key rather than an English placeholder the controller
+  overwrites: a label the controller forgets stays in the shipped language otherwise, which
+  is how three CheckMenuItems on the statement screen came to read "Unspecified Action".
+
+  The party is picked with a PartySuggestionField, added in code at row 2 - it is the same
+  field the invoice header uses, it searches in SQL, and it answers with the party object
+  rather than with a name string the screen then has to look an id up from.
+-->
 <AnchorPane styleClass="app-root" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.hamza.account.controller.name_account.Add_AccountController">
     <children>
         <VBox styleClass="app-card" AnchorPane.bottomAnchor="5.0" AnchorPane.leftAnchor="5.0" AnchorPane.rightAnchor="5.0" AnchorPane.topAnchor="5.0">
             <children>
-                <GridPane fx:id="gridPane" hgap="10.0" vgap="14.0">
+                <GridPane fx:id="gridPane" hgap="10.0" vgap="12.0">
                     <columnConstraints>
                         <ColumnConstraints hgrow="SOMETIMES" maxWidth="-Infinity" minWidth="10.0" />
                         <ColumnConstraints hgrow="SOMETIMES" maxWidth="-Infinity" prefWidth="350.0" />
                     </columnConstraints>
                     <rowConstraints>
                         <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
-                  <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
-                        <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
-                  <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
                         <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
                         <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
-                  <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
+                        <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
+                        <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
+                        <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
+                        <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
+                        <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
+                        <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
+                        <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
                         <RowConstraints minHeight="10.0" vgrow="SOMETIMES" />
-                  <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
-                  <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
+                        <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
                     </rowConstraints>
                     <children>
-                        <Label fx:id="labelCode" text="Code" />
-                        <Label fx:id="labelName" text="Name" GridPane.rowIndex="2" />
-                        <Label fx:id="labelDate" text="Date" GridPane.rowIndex="1" />
-                        <Label fx:id="labelBalance" text="Balance" GridPane.rowIndex="4" />
-                        <Label fx:id="labelPaid" text="Paid" GridPane.rowIndex="5" />
-                        <Label fx:id="labelDetails" text="Details" GridPane.rowIndex="8" />
-                        <Label fx:id="labelAmount" text="Amount" GridPane.rowIndex="7" />
-                        <Label fx:id="labelTreasure" text="Treasure" GridPane.rowIndex="3" />
+                        <Label fx:id="labelCode" text="%code" />
                         <TextField fx:id="txtCode" editable="false" GridPane.columnIndex="1" />
-                        <ComboBox fx:id="comboTreasury" maxWidth="1.7976931348623157E308" GridPane.columnIndex="1" GridPane.rowIndex="3" />
-                        <TextField fx:id="txtBalance" editable="false" GridPane.columnIndex="1" GridPane.rowIndex="4" />
-                        <TextField fx:id="txtPaid" GridPane.columnIndex="1" GridPane.rowIndex="5" />
-                        <TextField fx:id="txtAmount" editable="false" GridPane.columnIndex="1" GridPane.rowIndex="7" />
-                        <TextArea fx:id="txtNotes" prefHeight="40.0" GridPane.columnIndex="1" GridPane.rowIndex="8" />
-                        <!-- Shown only for a treasury that charges a fee; see WalletFee. -->
-                        <Label fx:id="labelFee" text="Fee" GridPane.rowIndex="9" />
-                        <TextField fx:id="txtFee" GridPane.columnIndex="1" GridPane.rowIndex="9" />
+
+                        <Label fx:id="labelDate" text="%date" GridPane.rowIndex="1" />
                         <DatePicker fx:id="date" editable="false" maxWidth="1.7976931348623157E308" GridPane.columnIndex="1" GridPane.rowIndex="1" />
-                        <Label fx:id="lAmountInv" text="Amount From inv" GridPane.rowIndex="6" />
-                        <TextField fx:id="txtAmountInv" disable="true" editable="false" GridPane.columnIndex="1" GridPane.rowIndex="6" />
-                        <SearchableComboBox fx:id="searchableName" GridPane.columnIndex="1" GridPane.rowIndex="2" />
+
+                        <Label fx:id="labelName" text="%name" GridPane.rowIndex="2" />
+
+                        <!-- Collection, or a debit note. The second needs *.account.adjust (V55). -->
+                        <Label fx:id="labelKind" text="%party.payment.kind" GridPane.rowIndex="3" />
+                        <ComboBox fx:id="comboKind" maxWidth="1.7976931348623157E308" GridPane.columnIndex="1" GridPane.rowIndex="3" />
+
+                        <Label fx:id="labelTreasure" text="%invoice.treasury" GridPane.rowIndex="4" />
+                        <ComboBox fx:id="comboTreasury" maxWidth="1.7976931348623157E308" GridPane.columnIndex="1" GridPane.rowIndex="4" />
+
+                        <Label fx:id="labelBalance" text="%balance" GridPane.rowIndex="5" />
+                        <TextField fx:id="txtBalance" editable="false" GridPane.columnIndex="1" GridPane.rowIndex="5" />
+
+                        <Label fx:id="labelPaid" text="%party.payment.amount" GridPane.rowIndex="6" />
+                        <TextField fx:id="txtPaid" GridPane.columnIndex="1" GridPane.rowIndex="6" />
+
+                        <!-- numberInv, which nothing wrote until now. See OpenInvoiceQuery. -->
+                        <Label fx:id="labelInvoice" text="%party.payment.invoice" GridPane.rowIndex="7" />
+                        <ComboBox fx:id="comboInvoice" maxWidth="1.7976931348623157E308" GridPane.columnIndex="1" GridPane.rowIndex="7" />
+
+                        <Label fx:id="lAmountInv" text="%party.payment.invoice.remaining" GridPane.rowIndex="8" />
+                        <TextField fx:id="txtAmountInv" editable="false" GridPane.columnIndex="1" GridPane.rowIndex="8" />
+
+                        <Label fx:id="labelAmount" text="%rest" GridPane.rowIndex="9" />
+                        <TextField fx:id="txtAmount" editable="false" GridPane.columnIndex="1" GridPane.rowIndex="9" />
+
+                        <Label fx:id="labelDetails" text="%column.notes" GridPane.rowIndex="10" />
+                        <TextArea fx:id="txtNotes" prefHeight="40.0" GridPane.columnIndex="1" GridPane.rowIndex="10" />
+
+                        <!-- Shown only for a treasury that charges a fee; see WalletFee. -->
+                        <Label fx:id="labelFee" text="%treasury.fee.label" GridPane.rowIndex="11" />
+                        <TextField fx:id="txtFee" GridPane.columnIndex="1" GridPane.rowIndex="11" />
                     </children>
                 </GridPane>
             </children>

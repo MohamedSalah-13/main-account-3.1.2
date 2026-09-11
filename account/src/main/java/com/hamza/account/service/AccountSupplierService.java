@@ -19,6 +19,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
+import com.hamza.account.features.party.payment.PartyPaymentAllocationService;
 import com.hamza.account.features.shift.ShiftGate;
 import com.hamza.account.features.shift.ShiftAttributionWriter;
 import com.hamza.account.features.events.PartyKind;
@@ -46,10 +47,6 @@ public record AccountSupplierService(DaoFactory daoFactory) {
             log.error(e.getMessage(), e);
         }
         return new ArrayList<>();
-    }
-
-    public List<SupplierAccount> accountList() throws DaoException {
-        return AccountService.sumAccountForId(daoFactory.suppliersAccountDao().loadAll(), new AccountSuppliers(daoFactory));
     }
 
     /** Refused inside a closed period, for the same reason as a customer payment. */
@@ -101,8 +98,8 @@ public record AccountSupplierService(DaoFactory daoFactory) {
 
     public int save(SupplierAccount account, BigDecimal walletFee, String correctionReason) throws DaoException {
         boolean isNew = isNew(account);
-        AuthorizationGuard.require(isNew
-                ? AppPermissions.SUPPLIERS_ACCOUNT_CREATE : AppPermissions.SUPPLIERS_ACCOUNT_UPDATE);
+        requireMovementPermissions(account, isNew);
+        requireAllocationFits(account, isNew);
         if (!isNew) {
             return TransactionTemplate.execute(() -> {
                 ShiftCashEffect old = new JdbcShiftCashEffectReader().party(PartyKind.SUPPLIER, account.getId());
@@ -125,10 +122,16 @@ public record AccountSupplierService(DaoFactory daoFactory) {
             });
         }
         return TransactionTemplate.execute(() -> {
-            var shiftId = ShiftGate.jdbc(daoFactory.userShiftDao()).requireCashAction(
-                    account.getUsers().getId(), account.getTreasury().getId(), BigDecimal.valueOf(account.getPaid()));
+            // See AccountCustomerService.save: a movement carrying no cash passes through no
+            // till, so it neither needs an open shift nor belongs in the shift's cash journal.
+            boolean movesCash = account.getPaid() != 0;
+            var shiftId = movesCash
+                    ? ShiftGate.jdbc(daoFactory.userShiftDao()).requireCashAction(
+                            account.getUsers().getId(), account.getTreasury().getId(),
+                            BigDecimal.valueOf(account.getPaid()))
+                    : java.util.OptionalInt.empty();
             int rows = accountDao().insert(account);
-            if (rows == 1) {
+            if (rows == 1 && movesCash) {
                 ShiftAttributionWriter.jdbc().assignParty(PartyKind.SUPPLIER, account.getId(), shiftId);
                 ShiftCashLedger.jdbc().created(shiftId, account.getUsers().getId(),
                         ShiftCashEffect.outgoing(ShiftCashSource.SUPPLIER_ACCOUNT, account.getId(),
@@ -164,6 +167,27 @@ public record AccountSupplierService(DaoFactory daoFactory) {
      * Reading the row is one query and it cannot be got wrong by the next caller,
      * which an "isNew" flag threaded through the screens could.
      */
+    /**
+     * The permission a movement needs, which is not one permission. See
+     * {@code AccountCustomerService.requireMovementPermissions} for why paying a supplier and
+     * adjusting what they are owed are two different rights.
+     */
+    private static void requireMovementPermissions(SupplierAccount account, boolean isNew)
+            throws DaoException {
+        AuthorizationGuard.require(isNew
+                ? AppPermissions.SUPPLIERS_ACCOUNT_CREATE : AppPermissions.SUPPLIERS_ACCOUNT_UPDATE);
+        if (account.getPurchase() != 0) {
+            AuthorizationGuard.require(AppPermissions.SUPPLIERS_ACCOUNT_ADJUST);
+        }
+    }
+
+    /** See {@code AccountCustomerService.requireAllocationFits}. */
+    private void requireAllocationFits(SupplierAccount account, boolean isNew) throws DaoException {
+        new PartyPaymentAllocationService().requireAllocationFits(
+                PartyKind.SUPPLIER, account.getSuppliers().getId(), account.getInvoice_number(),
+                BigDecimal.valueOf(account.getPaid()), isNew ? 0 : account.getId());
+    }
+
     private boolean isNew(SupplierAccount account) throws DaoException {
         return account.getId() <= 0 || accountDao().getAccountByNum(account.getId()) == null;
     }

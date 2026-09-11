@@ -74,6 +74,24 @@ public final class PartySuggestionField<T extends BaseNames> extends TextField {
         return chosenName;
     }
 
+    /**
+     * Shows a party as already chosen, without searching for it.
+     * <p>
+     * A screen that is opened for one party - the collection dialog, opened from a row of the
+     * accounts list - starts with the answer and has no query to run. It reaches
+     * {@link #choose} through the same path a click on a suggestion does, so the chosen party,
+     * the chosen name and the text cannot end up saying three different things.
+     * <p>
+     * Passing {@code null} clears it, which is what a screen opened for nobody wants.
+     */
+    public void select(T party) {
+        if (party == null) {
+            chosenName.set("");
+            return;
+        }
+        choose(party);
+    }
+
     private void configurePopup() {
         suggestions.setFixedCellSize(30);
         suggestions.setCellFactory(view -> new PartySuggestionCell<>(search));

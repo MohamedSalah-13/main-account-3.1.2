@@ -10,6 +10,11 @@ public class PermCustomerAccountAndName implements PermAccountAndNameInt {
     }
 
     @Override
+    public PermissionKey createAccounts() {
+        return AppPermissions.CUSTOMER_ACCOUNT_CREATE;
+    }
+
+    @Override
     public PermissionKey updateAccounts() {
         return AppPermissions.CUSTOMER_ACCOUNT_UPDATE;
     }

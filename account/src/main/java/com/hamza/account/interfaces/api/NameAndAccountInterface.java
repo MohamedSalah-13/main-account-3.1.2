@@ -1,6 +1,7 @@
 package com.hamza.account.interfaces.api;
 
 import com.hamza.account.controller.search.SearchInterface;
+import com.hamza.account.party.PartyTableSpec.PartySearchScope;
 import com.hamza.account.features.events.PartyKind;
 import com.hamza.account.model.base.BaseAccount;
 import com.hamza.account.model.base.BaseNames;
@@ -43,13 +44,19 @@ public interface NameAndAccountInterface<T1 extends BaseNames, T2 extends BaseAc
 
     int deleteAccount(int id, String correctionReason) throws Exception;
 
-    List<T2> accountList() throws Exception;
-
     List<T2> accountListById(int id) throws Exception;
 
     List<T2> accountTotalList(String dateFrom, String dateTo);
 
-    SearchInterface<T1> searchInterface();
+    /**
+     * The picker's search, scoped by the caller.
+     * <p>
+     * There is deliberately no no-argument form: an invoice screen and a collection
+     * screen want opposite answers about a party who is no longer dealt with, and a
+     * default here would silently give one of them the other's - see
+     * {@link PartySearchScope}.
+     */
+    SearchInterface<T1> searchInterface(PartySearchScope scope);
 
     /**
      * Which side this implementation speaks for, and the value carried by the

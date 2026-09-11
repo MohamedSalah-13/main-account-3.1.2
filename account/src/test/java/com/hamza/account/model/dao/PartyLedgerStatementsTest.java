@@ -43,7 +43,7 @@ class PartyLedgerStatementsTest {
             assertEquals(tokens("""
                     SELECT act.account_num, act.account_code, act.account_date, act.purchase,
                     act.discount, act.paid,
-                    ROUND(act.purchase - act.discount - act.paid) as amount,
+                    ROUND(act.purchase - act.discount - act.paid, 2) as amount,
                     act.notes, c.name, act.information, act.type, act.created_at,
                     act.treasury_id, act.numberInv
                     FROM account_customer_table act
@@ -60,12 +60,16 @@ class PartyLedgerStatementsTest {
 
         @Test
         void writes() {
-            assertEquals("INSERT INTO customers_accounts (account_code,account_date,paid,notes,numberInv,"
-                    + "treasury_id,account_num,user_id) VALUES (?,?,?,?,?,?,?,?)", dao.insertSql());
-            // user_id was here and is deliberately gone: the column records who entered
-            // the payment, so an edit no longer restamps it with whoever edited.
-            assertEquals("UPDATE customers_accounts SET account_code=?,account_date=?,paid=?,notes=?,"
-                    + "numberInv=?,treasury_id=? WHERE account_num=?", dao.updateSql());
+            assertEquals("INSERT INTO customers_accounts (account_code,account_date,purchase,paid,notes,"
+                    + "numberInv,treasury_id,user_id) VALUES (?,?,?,?,?,?,?,?)", dao.insertSql());
+            // Two things to read here. user_id was in the update and is deliberately gone:
+            // the column records who entered the payment, so an edit no longer restamps it
+            // with whoever edited. And account_num is gone from the insert: it is
+            // AUTO_INCREMENT, and writing it from a screen's max + 1 was a primary-key
+            // collision waiting for a second till. purchase is new in both - the debit side
+            // of a movement, which nothing could write before V55.
+            assertEquals("UPDATE customers_accounts SET account_code=?,account_date=?,purchase=?,paid=?,"
+                    + "notes=?,numberInv=?,treasury_id=? WHERE account_num=?", dao.updateSql());
             assertEquals("DELETE FROM customers_accounts WHERE account_num=?", dao.deleteSql());
         }
 
@@ -99,9 +103,11 @@ class PartyLedgerStatementsTest {
                     new Customers(42, "عميل"), new Treasury(4, "خزينة"));
             payment.setUsers(new Users(8, "admin"));
 
+            payment.setPurchase(25.0);
+
             Object[] data = dao.getData(payment);
             assertEquals(dao.updateSql().chars().filter(c -> c == '?').count(), data.length);
-            assertArrayEquals(new Object[]{42, "2026-08-11", 150.0, "ملاحظة", 9001, 4, 77}, data);
+            assertArrayEquals(new Object[]{42, "2026-08-11", 25.0, 150.0, "ملاحظة", 9001, 4, 77}, data);
         }
     }
 
@@ -116,7 +122,7 @@ class PartyLedgerStatementsTest {
             assertEquals(tokens("""
                     SELECT ac.account_num, ac.account_code, ac.account_date, ac.purchase,
                     ac.discount, ac.paid,
-                    ROUND(ac.purchase - ac.discount - ac.paid) as amount,
+                    ROUND(ac.purchase - ac.discount - ac.paid, 2) as amount,
                     ac.notes, s.name, ac.information, ac.type, ac.created_at,
                     ac.treasury_id, ac.numberInv
                     FROM account_suppliers_table ac
@@ -140,10 +146,10 @@ class PartyLedgerStatementsTest {
         /** Column for column the customer's, now that the user is out of the update. */
         @Test
         void writes() {
-            assertEquals("INSERT INTO suppliers_accounts (account_code,account_date,paid,notes,numberInv,"
-                    + "treasury_id,account_num,user_id) VALUES (?,?,?,?,?,?,?,?)", dao.insertSql());
-            assertEquals("UPDATE suppliers_accounts SET account_code=?,account_date=?,paid=?,notes=?,"
-                    + "numberInv=?,treasury_id=? WHERE account_num=?", dao.updateSql());
+            assertEquals("INSERT INTO suppliers_accounts (account_code,account_date,purchase,paid,notes,"
+                    + "numberInv,treasury_id,user_id) VALUES (?,?,?,?,?,?,?,?)", dao.insertSql());
+            assertEquals("UPDATE suppliers_accounts SET account_code=?,account_date=?,purchase=?,paid=?,"
+                    + "notes=?,numberInv=?,treasury_id=? WHERE account_num=?", dao.updateSql());
             assertEquals("DELETE FROM suppliers_accounts WHERE account_num=?", dao.deleteSql());
         }
 
@@ -277,12 +283,45 @@ class PartyLedgerStatementsTest {
                     suppliers.updateSql());
         }
 
-        /** Neither update touches the key or the party's own columns. */
+        /**
+         * Neither statement writes the key, and the insert's half of that is the fix.
+         * <p>
+         * The update never did - the key is its {@code WHERE}. The insert did, from a number the
+         * collection screen computed as {@code max(account_num) + 1} over the whole ledger, and
+         * {@code account_num} is {@code BIGINT AUTO_INCREMENT PRIMARY KEY}: two tills collecting
+         * at the same moment chose the same number and the second one failed on the key. Letting
+         * MySQL assign it is the same fix {@code InvoiceNumberAllocator} made on the invoice side,
+         * and the read of the entire ledger that produced the number goes with it.
+         * <p>
+         * Asserted in both directions on purpose. If a later change puts {@code account_num} back
+         * into the insert - to "keep the screen's numbering", say - this fails rather than leaving
+         * the race to be rediscovered from a customer's database.
+         */
         @Test
-        void neitherUpdateSetsItsKey() {
+        void neitherStatementWritesTheKey() {
             for (PartyLedgerSpec spec : new PartyLedgerSpec[]{PartyLedgerSpec.CUSTOMER, PartyLedgerSpec.SUPPLIER}) {
-                assertFalse(spec.updateColumns().contains(PartyLedgerSpec.KEY));
-                assertTrue(spec.insertColumns().contains(PartyLedgerSpec.KEY));
+                assertFalse(spec.updateColumns().contains(PartyLedgerSpec.KEY),
+                        "the key is the update's WHERE, not part of its SET");
+                assertFalse(spec.insertColumns().contains(PartyLedgerSpec.KEY),
+                        "account_num is AUTO_INCREMENT: writing it from the application is the "
+                                + "primary-key race this removed");
+            }
+        }
+
+        /**
+         * Both sides can record a debit as well as a credit.
+         * <p>
+         * {@code purchase} existed from {@code V1} and the views read it, but no insert wrote it,
+         * so the only movement anyone could record on a party's account was a collection. An
+         * opening balance entered too low therefore could not be corrected at all - while
+         * {@code OpeningBalanceGuard} refused to rewrite it and told the user to "record a
+         * movement on the account". See {@code PartyEntryKind}.
+         */
+        @Test
+        void bothStatementsCarryTheDebitColumn() {
+            for (PartyLedgerSpec spec : new PartyLedgerSpec[]{PartyLedgerSpec.CUSTOMER, PartyLedgerSpec.SUPPLIER}) {
+                assertTrue(spec.insertColumns().contains("purchase"));
+                assertTrue(spec.updateColumns().contains("purchase"));
             }
         }
     }

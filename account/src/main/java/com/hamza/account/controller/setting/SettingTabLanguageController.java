@@ -211,7 +211,10 @@ public class SettingTabLanguageController implements Initializable {
     private void chooseCustomer() {
         try {
             TableWithTextSearchApplication<Customers> tableWithTextSearchApplication = new TableWithTextSearchApplication<>(
-                    new CustomerSearchController(customerService)
+                    // The customer new invoices default to, so a stopped one is not
+                    // offered here either.
+                    new CustomerSearchController(customerService,
+                            com.hamza.account.party.PartyTableSpec.PartySearchScope.ACTIVE_ONLY)
             );
             Optional<Customers> customers = tableWithTextSearchApplication.showAndWait();
             customers.ifPresent(itemsModel -> {

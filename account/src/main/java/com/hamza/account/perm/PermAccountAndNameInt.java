@@ -20,6 +20,16 @@ public interface PermAccountAndNameInt {
 
     PermissionKey showAccounts();
 
+    /**
+     * Recording a movement on the account - a collection, or a note.
+     * <p>
+     * Both keys have existed since {@code V1}; only the accessor was missing, so the one
+     * screen that writes a movement guarded itself by naming
+     * {@code AppPermissions.CUSTOMER_ACCOUNT_CREATE} directly and the supplier side had no
+     * way to ask the same question through this interface at all.
+     */
+    PermissionKey createAccounts();
+
     PermissionKey updateAccounts();
 
     PermissionKey deleteAccounts();

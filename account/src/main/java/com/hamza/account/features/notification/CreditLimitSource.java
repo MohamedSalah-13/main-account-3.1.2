@@ -31,6 +31,11 @@ import java.util.stream.Collectors;
  * Warns when a customer's outstanding balance has passed the credit limit set on
  * their record.
  * <p>
+ * The balance it judges comes from {@code view_customer_receivables}, which until this was
+ * written computed its own figure and ignored every sales return - so this warning was
+ * raised against a debt that counted goods the customer had given back. That view is now
+ * derived from {@code account_customer_totals}, the one definition.
+ * <p>
  * The limit lives on {@code custom.limit_num} and the balance in
  * {@code view_customer_receivables}; the two are joined here in Java, using DAO
  * methods that already exist, rather than in a new query. Both lists are small -
@@ -143,13 +148,17 @@ public class CreditLimitSource implements NotificationSource {
 
                     @Override
                     public List<TableColumn<CustomerReceivable, ?>> columns() {
+                        // Keys, not literals. Columns.text resolves its first argument
+                        // through LanguageManager, which answers a missing key with the key
+                        // itself - so these rendered as English headings in an Arabic RTL
+                        // table. The keys were in all three bundles the whole time.
                         return List.of(
-                                Columns.text("Customer Name", CustomerReceivable::getCustomerName),
-                                Columns.text("Customer Phone", CustomerReceivable::getCustomerPhone),
-                                Columns.number("Invoices", CustomerReceivable::getInvoicesDebt),
-                                Columns.number("Opening Balance", CustomerReceivable::getOpeningBalance),
-                                Columns.number("Total Payments", CustomerReceivable::getTotalPayments),
-                                Columns.number("Total Receivable", CustomerReceivable::getTotalReceivable)
+                                Columns.text("report.customer.receivables.col.name", CustomerReceivable::getCustomerName),
+                                Columns.text("column.tel", CustomerReceivable::getCustomerPhone),
+                                Columns.number("report.customer.receivables.col.opening", CustomerReceivable::getOpeningBalance),
+                                Columns.number("report.customer.receivables.col.invoices", CustomerReceivable::getInvoicesDebt),
+                                Columns.number("report.customer.receivables.col.payments", CustomerReceivable::getTotalPayments),
+                                Columns.number("report.customer.receivables.col.total", CustomerReceivable::getTotalReceivable)
                         );
                     }
                 };

@@ -78,6 +78,30 @@ public class Utils {
     }
 
     /**
+     * Restricts a field to a number without putting one in it.
+     * <p>
+     * <b>The difference from {@link #setTextFormatter} is the whole point, and it was a live
+     * defect.</b> That method seeds every field with {@code 0.0}, which is right for an amount
+     * being entered - a payment starts at zero - and wrong for a filter, where an untouched box
+     * has to mean "no bound". The balances screen filtered {@code balance >= 0 AND balance <= 0}
+     * on the day it opened, showing only the parties whose account came to nothing, with both
+     * boxes reading {@code 0.0} and no user having typed anything. The statement's amount filter
+     * had it too.
+     * <p>
+     * So a filter field starts empty and stays empty until somebody types in it. A user who really
+     * wants a lower bound of zero types a zero, and that is a different state from not having asked.
+     *
+     * @param textFields fields that filter rather than collect
+     */
+    public static void setOptionalNumberFormatter(TextField... textFields) {
+        for (TextField textField : textFields) {
+            textField.setTextFormatter(new TextFormatter<>(
+                    TextFormat.doubleStringConverter, null, TextFormat.TEXT_FORMATTER_FILTER));
+            textField.setText("");
+        }
+    }
+
+    /**
      * Clears the content of all provided TextField instances.
      *
      * @param textFields one or more TextField instances to be cleared

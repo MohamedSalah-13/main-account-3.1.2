@@ -1,6 +1,7 @@
 package com.hamza.account.controller.invoice;
 
 import com.hamza.account.authorization.AppPermissions;
+import com.hamza.account.party.PartyTableSpec.PartySearchScope;
 import com.hamza.account.authorization.AuthorizationGuard;
 import com.hamza.account.authorization.PermissionKey;
 import com.hamza.account.config.DefaultStock;
@@ -336,7 +337,9 @@ public class BuyController2<T3 extends BaseNames, T4 extends BaseAccount>
 
     private void addTextSearchName() {
         try {
-            nameSearchField = new PartySuggestionField<>(dataInterface.nameAndAccountInterface().searchInterface());
+            // A party you have stopped dealing with may not be put on a new invoice.
+            nameSearchField = new PartySuggestionField<>(dataInterface.nameAndAccountInterface()
+                    .searchInterface(PartySearchScope.ACTIVE_ONLY));
         } catch (Exception e) {
             logError(e);
             return;
@@ -1124,7 +1127,8 @@ public class BuyController2<T3 extends BaseNames, T4 extends BaseAccount>
                 documentType, catalogService, () -> invoiceStockId);
         new InvoiceTableCoordinator<>(table, editor.lines(), lineEditService,
                 () -> priceTypeByNameId, () -> getInvoiceUpdatePrice(),
-                editor::refreshTotals, getClass(), CurrentUser.get().getId() == 1)
+                editor::refreshTotals, getClass(), CurrentUser.get().getId() == 1,
+                AuthorizationGuard.isGranted(AppPermissions.ITEMS_UPDATE))
                 .configure();
     }
 
