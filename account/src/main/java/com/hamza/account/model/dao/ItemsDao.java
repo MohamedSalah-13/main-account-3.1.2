@@ -71,21 +71,11 @@ public class ItemsDao extends AbstractDao<ItemsModel> {
      * from a catalog-wide query is informational only - the per-stock truth for a
      * specific warehouse is what {@link #findItemByIdAndStockId} and its siblings are
      * for, and they still join the raw (unaggregated) view scoped to one {@code stock_id}.
+     * <p>
+     * The text is {@link ItemCatalogSql#MOVEMENTS}, kept beside the balance expression that
+     * reads it, so the item reports join the very row this list does.
      */
-    private static final String ITEM_MOVEMENTS_ALL_STOCKS = """
-            (SELECT item_id,
-                    ANY_VALUE(stock_id)     AS stock_id,
-                    SUM(first_balance)       AS stock_first_balance,
-                    SUM(quantityPurchase)   AS quantityPurchase,
-                    SUM(quantitySales)      AS quantitySales,
-                    SUM(quantityPurchaseRe) AS quantityPurchaseRe,
-                    SUM(quantitySalesRe)    AS quantitySalesRe,
-                    SUM(fromStock)          AS fromStock,
-                    SUM(toStock)            AS toStock,
-                    SUM(adjustment)         AS adjustment
-             FROM quantity_items_table
-             GROUP BY item_id)
-            """;
+    private static final String ITEM_MOVEMENTS_ALL_STOCKS = ItemCatalogSql.MOVEMENTS;
     private static final String FILTER_ITEMS_SQL_TEXT_STARTS = """
             SELECT *
             FROM items

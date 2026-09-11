@@ -21,29 +21,14 @@ import java.util.List;
  * as it does in the list the report was opened from. A report that built its own
  * {@code WHERE} would be a second opinion on what a filter means, and two opinions is how
  * the treasury ended up with three balances.
+ * <p>
+ * The movement row it joins is {@link ItemCatalogSql#MOVEMENTS} for the same reason, and the
+ * reason is not hypothetical: this class used to keep a copy of it, and when
+ * {@link ItemCatalogSql#BALANCE} began reading the per-warehouse opening balance the copy did
+ * not have that column - so every report showing a balance failed with an unknown column
+ * while the items list, which read the original, went on working.
  */
 public final class JdbcCatalogFactRepository implements CatalogFactRepository {
-
-    /**
-     * One row per item across every warehouse.
-     * <p>
-     * Pre-aggregated by {@code item_id} for the same reason {@code ItemsDao} pre-aggregates
-     * it: {@code quantity_items_table} is keyed by (item, stock), so joining it raw returns
-     * one row per warehouse and a report would count a two-warehouse item twice and halve
-     * its balance.
-     */
-    private static final String MOVEMENTS = """
-            (SELECT item_id,
-                    SUM(quantityPurchase)   AS quantityPurchase,
-                    SUM(quantitySales)      AS quantitySales,
-                    SUM(quantityPurchaseRe) AS quantityPurchaseRe,
-                    SUM(quantitySalesRe)    AS quantitySalesRe,
-                    SUM(fromStock)          AS fromStock,
-                    SUM(toStock)            AS toStock,
-                    SUM(adjustment)         AS adjustment
-             FROM quantity_items_table
-             GROUP BY item_id)
-            """;
 
     /**
      * The most recent date each item appeared on any document.
@@ -94,20 +79,7 @@ public final class JdbcCatalogFactRepository implements CatalogFactRepository {
     @Override
     public List<CatalogFact> facts(ItemCatalogFilter filter, boolean withLastMovement) throws DaoException {
         ItemCatalogSql.Statement query = ItemCatalogSql.build(filter);
-        String sql = SELECT
-                + "       " + ItemCatalogSql.BALANCE + " AS balance,\n"
-                + (withLastMovement ? "       lm.moved_on AS moved_on\n" : "       NULL AS moved_on\n")
-                + "FROM items\n"
-                + "         JOIN " + MOVEMENTS + " ip ON items.id = ip.item_id\n"
-                + "         LEFT JOIN sub_group sg ON sg.id = items.sub_num\n"
-                + "         LEFT JOIN main_group mg ON mg.id = sg.main_id\n"
-                + "         LEFT JOIN units u ON u.unit_id = items.unit_id\n"
-                + (withLastMovement ? "         LEFT JOIN " + LAST_MOVEMENT + " lm ON lm.item_id = items.id\n" : "")
-                + query.where()
-                // Ordered by group and then by name, which is the order every one of these
-                // reports wants to print in. The search ranking the items list uses is
-                // meaningless here - nobody searched.
-                + "\nORDER BY mg.name_g, sg.name, items.nameItem";
+        String sql = factsSql(query, withLastMovement);
 
         List<Object> parameters = new ArrayList<>(query.whereParameters());
         return withConnection(connection -> {
@@ -124,6 +96,28 @@ public final class JdbcCatalogFactRepository implements CatalogFactRepository {
             }
             return facts;
         });
+    }
+
+    /**
+     * The statement {@link #facts} runs. Package-private so that what it reads off the joined
+     * movement row can be checked against what that row provides, without a database - a
+     * column the join does not have is otherwise found only by MySQL, on a customer's screen.
+     */
+    static String factsSql(ItemCatalogSql.Statement query, boolean withLastMovement) {
+        return SELECT
+                + "       " + ItemCatalogSql.BALANCE + " AS balance,\n"
+                + (withLastMovement ? "       lm.moved_on AS moved_on\n" : "       NULL AS moved_on\n")
+                + "FROM items\n"
+                + "         JOIN " + ItemCatalogSql.MOVEMENTS + " ip ON items.id = ip.item_id\n"
+                + "         LEFT JOIN sub_group sg ON sg.id = items.sub_num\n"
+                + "         LEFT JOIN main_group mg ON mg.id = sg.main_id\n"
+                + "         LEFT JOIN units u ON u.unit_id = items.unit_id\n"
+                + (withLastMovement ? "         LEFT JOIN " + LAST_MOVEMENT + " lm ON lm.item_id = items.id\n" : "")
+                + query.where()
+                // Ordered by group and then by name, which is the order every one of these
+                // reports wants to print in. The search ranking the items list uses is
+                // meaningless here - nobody searched.
+                + "\nORDER BY mg.name_g, sg.name, items.nameItem";
     }
 
     private static CatalogFact read(ResultSet rows) throws SQLException {
@@ -176,30 +170,7 @@ public final class JdbcCatalogFactRepository implements CatalogFactRepository {
     @Override
     public List<ExpiringBatch> expiringBatches(ItemCatalogFilter filter) throws DaoException {
         ItemCatalogSql.Statement query = ItemCatalogSql.build(filter);
-        String sql = """
-                SELECT items.id                     AS item_id,
-                       items.barcode                AS barcode,
-                       items.nameItem               AS name_item,
-                       items.buy_price              AS buy_price,
-                       items.alert_days_before_expire AS alert_days,
-                       sg.name                      AS sub_group_name,
-                       mg.name_g                    AS main_group_name,
-                       u.unit_name                  AS unit_name,
-                       batches.expiration_date      AS expiration_date,
-                       batches.remaining            AS remaining
-                FROM items
-                         JOIN %s ip ON items.id = ip.item_id
-                         JOIN (SELECT item_id, expiration_date, SUM(base_quantity) AS remaining
-                               FROM (%s) movements
-                               GROUP BY item_id, expiration_date
-                               HAVING SUM(base_quantity) > 0) batches
-                              ON batches.item_id = items.id
-                         LEFT JOIN sub_group sg ON sg.id = items.sub_num
-                         LEFT JOIN main_group mg ON mg.id = sg.main_id
-                         LEFT JOIN units u ON u.unit_id = items.unit_id
-                %s
-                ORDER BY batches.expiration_date, items.nameItem
-                """.formatted(MOVEMENTS, BATCH_MOVEMENTS, query.where());
+        String sql = expiringBatchesSql(query);
 
         List<Object> parameters = new ArrayList<>(query.whereParameters());
         return withConnection(connection -> {
@@ -229,6 +200,34 @@ public final class JdbcCatalogFactRepository implements CatalogFactRepository {
             }
             return batches;
         });
+    }
+
+    /** The statement {@link #expiringBatches} runs, package-private for the same reason as {@link #factsSql}. */
+    static String expiringBatchesSql(ItemCatalogSql.Statement query) {
+        return """
+                SELECT items.id                     AS item_id,
+                       items.barcode                AS barcode,
+                       items.nameItem               AS name_item,
+                       items.buy_price              AS buy_price,
+                       items.alert_days_before_expire AS alert_days,
+                       sg.name                      AS sub_group_name,
+                       mg.name_g                    AS main_group_name,
+                       u.unit_name                  AS unit_name,
+                       batches.expiration_date      AS expiration_date,
+                       batches.remaining            AS remaining
+                FROM items
+                         JOIN %s ip ON items.id = ip.item_id
+                         JOIN (SELECT item_id, expiration_date, SUM(base_quantity) AS remaining
+                               FROM (%s) movements
+                               GROUP BY item_id, expiration_date
+                               HAVING SUM(base_quantity) > 0) batches
+                              ON batches.item_id = items.id
+                         LEFT JOIN sub_group sg ON sg.id = items.sub_num
+                         LEFT JOIN main_group mg ON mg.id = sg.main_id
+                         LEFT JOIN units u ON u.unit_id = items.unit_id
+                %s
+                ORDER BY batches.expiration_date, items.nameItem
+                """.formatted(ItemCatalogSql.MOVEMENTS, BATCH_MOVEMENTS, query.where());
     }
 
     /**
