@@ -1,6 +1,8 @@
 package com.hamza.controlsfx.table;
 
 import com.hamza.controlsfx.language.LanguageManager;
+import javafx.beans.property.SimpleDoubleProperty;
+import javafx.beans.value.ObservableValue;
 import javafx.scene.control.TableColumn;
 import org.junit.jupiter.api.Test;
 
@@ -53,6 +55,28 @@ class ColumnsTest {
     }
 
     @Test
+    void numberShowsTheValueTheRowHadWhenTheCellWasBuilt() {
+        SimpleDoubleProperty total = new SimpleDoubleProperty(7.5);
+        TableColumn<SimpleDoubleProperty, Number> column = Columns.number("item.title", SimpleDoubleProperty::get);
+        ObservableValue<Number> shown = cellObservable(column, total);
+
+        total.set(22.5);
+
+        assertEquals(7.5, shown.getValue());
+    }
+
+    @Test
+    void observableFollowsAChangeMadeAfterTheCellWasBuilt() {
+        SimpleDoubleProperty total = new SimpleDoubleProperty(7.5);
+        TableColumn<SimpleDoubleProperty, Number> column = Columns.observable("item.title", row -> row);
+        ObservableValue<Number> shown = cellObservable(column, total);
+
+        total.set(22.5);
+
+        assertEquals(22.5, shown.getValue());
+    }
+
+    @Test
     void columnSetsNoIdSoACallerMustOptIntoOneExplicitly() {
         TableColumn<Row, String> column = Columns.text("item.title", Row::name);
         assertNull(column.getId());
@@ -64,7 +88,12 @@ class ColumnsTest {
      * read the TableView argument, only the row.
      */
     private static <S, T> T cellValue(TableColumn<S, T> column, S row) {
+        return cellObservable(column, row).getValue();
+    }
+
+    /** What a cell holds on to - the same object is asked again whenever the cell repaints. */
+    private static <S, T> ObservableValue<T> cellObservable(TableColumn<S, T> column, S row) {
         var features = new TableColumn.CellDataFeatures<S, T>(null, column, row);
-        return column.getCellValueFactory().call(features).getValue();
+        return column.getCellValueFactory().call(features);
     }
 }

@@ -2,6 +2,7 @@ package com.hamza.controlsfx.table;
 
 import com.hamza.controlsfx.language.LanguageManager;
 import javafx.beans.property.ReadOnlyObjectWrapper;
+import javafx.beans.value.ObservableValue;
 import javafx.css.PseudoClass;
 import javafx.scene.control.TableCell;
 import javafx.scene.control.TableColumn;
@@ -43,6 +44,24 @@ public final class Columns {
 
     public static <S> TableColumn<S, Number> number(String titleKey, Function<S, ? extends Number> extractor) {
         return column(titleKey, extractor);
+    }
+
+    /**
+     * A column whose cell follows the row's own property, for a table where editing one cell
+     * changes another cell of the same row.
+     * <p>
+     * Every other builder here wraps what the extractor answered <b>when the cell was built</b>,
+     * and the cell shows that value until the row is rebuilt. That is right for a list that is
+     * read and reloaded, and wrong for an invoice line: editing the quantity recalculates the
+     * total on the model while the total's cell goes on showing the old figure. Handing the cell
+     * the property itself is what lets it see the change. It is still a method reference, so a
+     * renamed property is still a compile error.
+     */
+    public static <S, T> TableColumn<S, T> observable(String titleKey,
+                                                      Function<S, ? extends ObservableValue<T>> property) {
+        TableColumn<S, T> column = new TableColumn<>(LanguageManager.getInstance().getString(titleKey));
+        column.setCellValueFactory(features -> property.apply(features.getValue()));
+        return column;
     }
 
     /** Formats with {@link DateTimeFormatter#ISO_LOCAL_DATE}; a null date renders as an empty cell. */
@@ -110,7 +129,11 @@ public final class Columns {
      */
     public static final PseudoClass NEGATIVE = PseudoClass.getPseudoClass("negative-amount");
 
-    /** Escape hatch for anything the three builders above do not cover - a boolean, a button, a custom type. */
+    /**
+     * Escape hatch for anything the three builders above do not cover - a boolean, a button, a custom type.
+     * The value is read once, when the cell is built; a row whose values change in place wants
+     * {@link #observable}.
+     */
     public static <S, T> TableColumn<S, T> column(String titleKey, Function<S, ? extends T> extractor) {
         TableColumn<S, T> column = new TableColumn<>(LanguageManager.getInstance().getString(titleKey));
         column.setCellValueFactory(features -> new ReadOnlyObjectWrapper<>(extractor.apply(features.getValue())));

@@ -26,6 +26,7 @@ import javafx.scene.control.TableView;
 import javafx.scene.input.KeyEvent;
 import javafx.util.Callback;
 
+import java.util.List;
 import java.util.Objects;
 import java.util.function.BooleanSupplier;
 import java.util.function.IntSupplier;
@@ -83,13 +84,7 @@ public final class InvoiceTableCoordinator<T extends BasePurchasesAndSales> {
     }
 
     public void configure() {
-        table.getColumns().addAll(
-                Columns.number(NamesTables.QUANTITY, BasePurchasesAndSales::getQuantity),
-                Columns.number(NamesTables.PRICE, BasePurchasesAndSales::getPrice),
-                Columns.number(NamesTables.TOTAL, BasePurchasesAndSales::getTotal),
-                Columns.number(NamesTables.DISCOUNT, BasePurchasesAndSales::getDiscount),
-                Columns.number(NamesTables.TOTAL_AFTER, BasePurchasesAndSales::getTotal_after_discount)
-        );
+        table.getColumns().addAll(InvoiceTableCoordinator.<T>amountColumns());
         addIdentityColumns();
         addDeleteColumn();
         // Only the standard screen ever shows this: the quick screen keeps a trailing
@@ -103,6 +98,26 @@ public final class InvoiceTableCoordinator<T extends BasePurchasesAndSales> {
         if (showAdminMenu) {
             TableSetting.tableMenuSetting(menuOwner, table);
         }
+    }
+
+    /**
+     * Quantity, price, total, discount, total after discount - in that order, from
+     * {@link #QUANTITY_COLUMN} on once the identity columns are inserted in front.
+     * <p>
+     * <b>Bound to the line's properties, not read off its getters.</b> An edit to the
+     * quantity, the price or the discount - from a cell, from the +/- keys, or from a
+     * repeated scan merged into an existing line - recalculates the total on the model and
+     * refreshes nothing. A snapshot column went on showing the old total and total after
+     * discount while the footer, which sums the model, showed the new one.
+     */
+    static <L extends BasePurchasesAndSales> List<TableColumn<L, Number>> amountColumns() {
+        return List.of(
+                Columns.<L, Number>observable(NamesTables.QUANTITY, BasePurchasesAndSales::quantityProperty),
+                Columns.<L, Number>observable(NamesTables.PRICE, BasePurchasesAndSales::priceProperty),
+                Columns.<L, Number>observable(NamesTables.TOTAL, BasePurchasesAndSales::totalProperty),
+                Columns.<L, Number>observable(NamesTables.DISCOUNT, BasePurchasesAndSales::discountProperty),
+                Columns.<L, Number>observable(NamesTables.TOTAL_AFTER,
+                        BasePurchasesAndSales::total_after_discountProperty));
     }
 
     private void addIdentityColumns() {
