@@ -6,6 +6,7 @@ import com.hamza.account.controller.others.ServiceRegistry;
 import com.hamza.account.features.events.ItemsChanged;
 import com.hamza.account.model.domain.ItemsModel;
 import com.hamza.account.model.domain.MainGroups;
+import com.hamza.account.model.domain.SubGroups;
 import com.hamza.account.openFxml.FxmlPath;
 import com.hamza.account.otherSetting.MaskerPaneSetting;
 import com.hamza.account.service.ItemsService;
@@ -19,6 +20,7 @@ import com.hamza.controlsfx.observer.EventBus;
 import com.hamza.controlsfx.util.ImageChoose;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
+import javafx.concurrent.Worker;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
 import javafx.scene.image.ImageView;
@@ -31,6 +33,7 @@ import org.kordamp.ikonli.feather.Feather;
 import org.kordamp.ikonli.javafx.FontIcon;
 
 import java.io.FileNotFoundException;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.function.ObjDoubleConsumer;
 import java.util.function.ToDoubleFunction;
@@ -118,6 +121,9 @@ public class UpdateSomeItems {
         checkDeleteImage.setText(lm.getString("item.update.image"));
         checkMini.setText(lm.getString("item.update.mini.quantity"));
         checkFirstBalance.setText(lm.getString("item.update.first.balance"));
+        // The rule is not visible from the box itself, and it is the one an operator trips over:
+        // an item that has moved keeps its opening balance, and the whole save is refused.
+        checkFirstBalance.setTooltip(new Tooltip(lm.getString("item.update.first.balance.tip")));
 
         comboMainGroup.setPromptText(lm.getString("mainGroup"));
         comboSubGroup.setPromptText(lm.getString("subGroup"));
@@ -228,7 +234,38 @@ public class UpdateSomeItems {
         }
     }
 
+    /**
+     * One row as it stood before a save was attempted.
+     * <p>
+     * The options are applied to the rows in memory before they are sent, so a save that fails -
+     * an item whose opening balance is closed, another till editing the same item - leaves the rows
+     * holding values the database does not. Pressing save again in the same dialog would then apply
+     * the percentage a second time (10% becoming 21%) and send a version stamp read inside a
+     * transaction that was rolled back. The refusal message asks for exactly that second save, so
+     * every attempt starts from what the rows held before it.
+     */
+    private record Snapshot(ItemsModel item, SubGroups group, double buy, double sell, boolean active,
+                            double mini, double opening, byte[] image, LocalDateTime updatedAt) {
+        static Snapshot of(ItemsModel item) {
+            return new Snapshot(item, item.getSubGroups(), item.getBuyPrice(), item.getSelPrice1(),
+                    item.isActiveItem(), item.getMini_quantity(), item.getFirstBalanceForStock(),
+                    item.getItem_image(), item.getUpdated_at());
+        }
+
+        void restore() {
+            item.setSubGroups(group);
+            item.setBuyPrice(buy);
+            item.setSelPrice1(sell);
+            item.setActiveItem(active);
+            item.setMini_quantity(mini);
+            item.setFirstBalanceForStock(opening);
+            item.setItem_image(image);
+            item.setUpdated_at(updatedAt);
+        }
+    }
+
     private void saveData() {
+        List<Snapshot> before = itemsModelList.stream().map(Snapshot::of).toList();
         try {
             if (!applyRequestedUpdates(itemsModelList)) {
                 return;
@@ -238,9 +275,16 @@ public class UpdateSomeItems {
             // is written only when this screen was asked to change it, or saving a price rise
             // would blank the picture of every item in the batch. Read here, on the JavaFX thread.
             boolean writesImage = checkDeleteImage.isSelected();
+            // The opening balance goes only to items nothing has moved, and an item that has
+            // moved refuses the whole save - the service decides that before writing anything.
+            boolean writesOpening = checkFirstBalance.isSelected();
             maskerPaneSetting.showMaskerPane(LanguageManager.getInstance().getString("item.dialog.update.items.title"),
-                    () -> itemsService.updateGroup(itemsModelList, writesImage));
+                    () -> itemsService.updateGroup(itemsModelList, writesImage, writesOpening));
 
+            // The failure itself is shown by the masker pane; this only puts the rows back.
+            maskerPaneSetting.getVoidTask().stateProperty().addListener((observable, old, state) -> {
+                if (state == Worker.State.FAILED) before.forEach(Snapshot::restore);
+            });
             maskerPaneSetting.getVoidTask().setOnSucceeded(workerStateEvent -> {
                 if (eventBus != null) eventBus.publish(new ItemsChanged());
                 AllAlerts.alertSave();
@@ -253,6 +297,9 @@ public class UpdateSomeItems {
                 checkFirstBalance.setSelected(false);
             });
         } catch (Exception e) {
+            // A refused option - a missing group, a zero percentage - may come after others
+            // were already applied in memory.
+            before.forEach(Snapshot::restore);
             logError(e);
         }
     }

@@ -297,8 +297,11 @@ Two things follow from that split and both have bitten. **A catalog row must nev
 the model, so saving one deletes them — which is what setting an item's picture from the list used
 to do. Edit a list row through `quickUpdate` or `updateImage`, or load the item again through
 `findItemById`. The bulk editor is the one write that takes list rows by design, so
-`ItemsDao.updateBulk` names only the columns that screen changes and writes the picture only when
-asked (`ItemsBulkUpdateTest`): it used to write every column from the row, and a list row has no
+`ItemsDao.updateBulk` names only the columns that screen changes, writes the picture only when
+asked (`ItemsBulkUpdateTest`), and writes an opening balance only to items nothing has moved - a
+batch holding one that has moved and would change is refused whole, before anything is written
+(`BulkOpeningBalance`, the item screen's `OpeningBalanceGuard` rule; the option used to be dropped
+while the dialog reported the save as done). It used to write every column from the row, and a list row has no
 picture, so every bulk edit blanked the picture of each item in it. And **the page query and its `COUNT` are built from one `WHERE`**
 (`ItemsDao.catalogQuery`, pinned by `ItemsCatalogQueryTest`): filter them separately and the
 pagination control starts describing a different set of rows than the table shows.

@@ -67,6 +67,18 @@ class OpeningBalanceGuardTest {
             assertTrue(guard.mayWrite(OpeningBalanceRegistry.ITEMS, 5, 999));
         }
 
+        /** What a bulk edit asks of every row before it writes any of them. */
+        @Test
+        @DisplayName("the verdict answers what mayWrite answers, without throwing")
+        void theVerdictAgreesWithMayWrite() throws DaoException {
+            assertEquals(OpeningBalanceGuard.Verdict.OPEN,
+                    guardOver(100).verdict(OpeningBalanceRegistry.ITEMS, 5, 999));
+            assertEquals(OpeningBalanceGuard.Verdict.UNCHANGED,
+                    guardOver(250, new Reference("فاتورة بيع", 1)).verdict(OpeningBalanceRegistry.ITEMS, 5, 250.0001));
+            assertEquals(OpeningBalanceGuard.Verdict.REFUSED,
+                    guardOver(250, new Reference("فاتورة بيع", 1)).verdict(OpeningBalanceRegistry.ITEMS, 5, 249.99));
+        }
+
         @Test
         @DisplayName("a row with movements is locked")
         void movedRowIsLocked() throws DaoException {

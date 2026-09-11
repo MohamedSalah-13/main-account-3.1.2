@@ -113,6 +113,27 @@ public final class OpeningBalanceGuard {
         return false;
     }
 
+    /** What writing a value would mean, for a caller that has to answer for many rows at once. */
+    public enum Verdict {
+        /** Nothing has moved the row: the balance may be written. */
+        OPEN,
+        /** The row has moved but already holds this value: nothing to write, and nothing to refuse. */
+        UNCHANGED,
+        /** The row has moved and the value differs: refused. */
+        REFUSED
+    }
+
+    /**
+     * The same two questions {@link #mayWrite} asks, answered without throwing - so a bulk edit
+     * can name every row it would refuse rather than stop at the first one.
+     */
+    public Verdict verdict(@NotNull OpeningBalanceRule rule, int id, double incoming) throws DaoException {
+        if (movements(rule, id).isEmpty()) {
+            return Verdict.OPEN;
+        }
+        return Math.abs(storedBalance(rule, id) - incoming) >= TOLERANCE ? Verdict.REFUSED : Verdict.UNCHANGED;
+    }
+
     private String refusal(OpeningBalanceRule rule, List<Reference> movements, double stored) {
         String moved = movements.stream().map(Reference::toString).collect(Collectors.joining("، "));
         return LanguageManager.getInstance().getString("opening.error.locked",

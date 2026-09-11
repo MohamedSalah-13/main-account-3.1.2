@@ -487,10 +487,10 @@ public class ItemsDao extends AbstractDao<ItemsModel> {
         itemsModel.setSumAllBalanceBySelPrice(roundToTwoDecimalPlaces(itemsModel.getSelPrice1() * sumAllBalance));
     }
 
-    /** The bulk update, never writing the picture. See {@link #updateBulk}. */
+    /** The bulk update, writing neither the picture nor an opening balance. See {@link #updateBulk}. */
     @Override
     public int updateList(List<ItemsModel> list) throws DaoException {
-        return updateBulk(list, false);
+        return updateBulk(list, false, java.util.Set.of());
     }
 
     /**
@@ -503,13 +503,16 @@ public class ItemsDao extends AbstractDao<ItemsModel> {
      * so raising the prices of a batch wrote an empty picture over every item in it. Naming the
      * columns is the same rule {@link #quickUpdate} and {@link #updateImage} already follow.
      * <p>
-     * No {@code first_balance}, ever: the screen has no business rewriting an opening balance,
-     * and leaving the column in was the one path around the rule in {@link #update}, unlogged
-     * and a hundred rows at a time.
+     * <b>The opening balance is written only for the ids in {@code writesOpeningFor}</b>, and this
+     * method does not decide which those are: the service does, for the whole batch and before
+     * anything is written, through {@code OpeningBalanceGuard} ({@code BulkOpeningBalance}) - the
+     * rule {@link #update} applies to one item. For those ids it goes where {@link #update} puts it:
+     * {@code items.first_balance} and the default warehouse's {@code items_stock} row. It used to be
+     * left out altogether while the screen reported the save as done.
      */
-    public int updateBulk(List<ItemsModel> list, boolean writesImage) throws DaoException {
+    public int updateBulk(List<ItemsModel> list, boolean writesImage, java.util.Set<Integer> writesOpeningFor)
+            throws DaoException {
         if (list.isEmpty()) return 0;
-        String sql = bulkUpdateSql(writesImage);
 
         // Execute one compare-and-swap at a time inside a single transaction. A JDBC
         // batch can legally return SUCCESS_NO_INFO, which cannot distinguish a real
@@ -517,8 +520,14 @@ public class ItemsDao extends AbstractDao<ItemsModel> {
         // the whole selection instead of partially applying a bulk edit.
         insertMultiData(() -> {
             for (ItemsModel model : list) {
-                Object[] values = optimisticValues(bulkUpdateValues(model, writesImage), model.getUpdated_at());
+                boolean writesOpening = writesOpeningFor.contains(model.getId());
+                String sql = bulkUpdateSql(writesImage, writesOpening);
+                Object[] values = optimisticValues(bulkUpdateValues(model, writesImage, writesOpening), model.getUpdated_at());
                 requireOptimisticUpdate(executeUpdateWithException(sql, values));
+                if (writesOpening) {
+                    daoFactory.getItemsStockDao().updateOpeningBalance(
+                            model.getId(), DefaultStock.ID, model.getFirstBalanceForStock());
+                }
                 model.setUpdated_at(readUpdatedAt(model.getId()));
             }
         });
@@ -526,16 +535,20 @@ public class ItemsDao extends AbstractDao<ItemsModel> {
     }
 
     /** The statement {@link #updateBulk} runs, with its columns in the order {@link #bulkUpdateValues} binds them. */
-    String bulkUpdateSql(boolean writesImage) {
-        String[] columns = writesImage
-                ? new String[]{SUB_NUM, BUY_PRICE, selPrice1, itemActive, MINI_QUANTITY, ITEM_IMAGE, USER_ID}
-                : new String[]{SUB_NUM, BUY_PRICE, selPrice1, itemActive, MINI_QUANTITY, USER_ID};
-        return optimisticUpdateSql(SqlStatements.updateStatement(TABLE_NAME, ID, columns));
+    String bulkUpdateSql(boolean writesImage, boolean writesOpening) {
+        List<String> columns = new ArrayList<>(List.of(SUB_NUM, BUY_PRICE, selPrice1, itemActive, MINI_QUANTITY));
+        if (writesOpening) columns.add(FIRST_BALANCE);
+        if (writesImage) columns.add(ITEM_IMAGE);
+        columns.add(USER_ID);
+        return optimisticUpdateSql(SqlStatements.updateStatement(TABLE_NAME, ID, columns.toArray(String[]::new)));
     }
 
-    Object[] bulkUpdateValues(ItemsModel model, boolean writesImage) {
+    Object[] bulkUpdateValues(ItemsModel model, boolean writesImage, boolean writesOpening) {
         List<Object> values = new ArrayList<>(List.of(model.getSubGroups().getId(), model.getBuyPrice(),
                 model.getSelPrice1(), model.isActiveItem(), model.getMini_quantity()));
+        if (writesOpening) {
+            values.add(model.getFirstBalanceForStock());
+        }
         if (writesImage) {
             values.add(model.getItem_image() != null ? model.getItem_image() : new byte[0]);
         }

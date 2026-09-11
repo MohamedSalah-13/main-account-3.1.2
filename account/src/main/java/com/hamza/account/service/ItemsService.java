@@ -4,7 +4,10 @@ import com.hamza.account.authorization.AppPermissions;
 import com.hamza.account.authorization.AuthorizationGuard;
 
 import com.hamza.account.delete.DeleteRegistry;
+import com.hamza.account.features.items.BulkOpeningBalance;
 import com.hamza.account.features.items.ItemCatalogFilter;
+import com.hamza.account.opening.OpeningBalanceGuard;
+import com.hamza.account.opening.OpeningBalanceRegistry;
 import com.hamza.account.features.items.ItemImageContent;
 import com.hamza.account.features.events.ChangeAnnouncer;
 import com.hamza.account.features.events.ItemsChanged;
@@ -141,11 +144,30 @@ public record ItemsService(DaoFactory daoFactory) {
      * The bulk editor's save. The rows are usually the items list's own, which carry no picture,
      * so {@code writesImage} says whether the picture column is written at all - see
      * {@code ItemsDao.updateBulk}.
+     * <p>
+     * {@code writesOpening} says the opening balance was asked for. It is written to every item
+     * nothing has moved, and a batch holding an item that has moved and would change is refused
+     * whole, before anything is written - {@link BulkOpeningBalance}, the item screen's rule
+     * applied to many items at once.
      */
-    public int updateGroup(List<ItemsModel> itemsModel, boolean writesImage) throws DaoException {
+    public int updateGroup(List<ItemsModel> itemsModel, boolean writesImage, boolean writesOpening)
+            throws DaoException {
         AuthorizationGuard.require(AppPermissions.ITEMS_UPDATE);
-        return TransactionTemplate.execute(() ->
-                announceItemsChanged(daoFactory.getItemsDao().updateBulk(itemsModel, writesImage)));
+        return TransactionTemplate.execute(() -> {
+            Set<Integer> opening = writesOpening ? openingBalanceTargets(itemsModel) : Set.of();
+            return announceItemsChanged(daoFactory.getItemsDao().updateBulk(itemsModel, writesImage, opening));
+        });
+    }
+
+    private static Set<Integer> openingBalanceTargets(List<ItemsModel> items) throws DaoException {
+        OpeningBalanceGuard guard = OpeningBalanceGuard.shared();
+        return BulkOpeningBalance.writableIds(
+                items.stream()
+                        .map(item -> new BulkOpeningBalance.Item(item.getId(), item.getNameItem(),
+                                item.getFirstBalanceForStock()))
+                        .toList(),
+                (id, incoming) -> guard.verdict(OpeningBalanceRegistry.ITEMS, id, incoming),
+                OpeningBalanceRegistry.ITEMS.correction());
     }
 
     /**
