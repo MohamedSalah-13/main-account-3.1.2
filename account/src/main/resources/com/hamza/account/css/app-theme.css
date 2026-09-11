@@ -748,6 +748,15 @@
     -fx-background-color: -app-success, white;
 }
 
+/* The legend exists on paper only - on screen the checkboxes are the legend. */
+.party-trend-chart.trend-print .chart-legend {
+    -fx-background-color: transparent;
+}
+
+.party-trend-chart.trend-print .chart-legend-item {
+    -fx-text-fill: #1f2937;
+}
+
 /* ---------- Tables ---------- */
 
 .table-view,
