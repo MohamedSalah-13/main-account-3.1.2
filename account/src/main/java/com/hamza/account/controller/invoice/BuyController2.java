@@ -50,6 +50,7 @@ import com.hamza.controlsfx.observer.EventBus;
 import com.hamza.controlsfx.observer.Subscriptions;
 import com.hamza.controlsfx.others.DateSetting;
 import com.hamza.controlsfx.others.Utils;
+import com.hamza.controlsfx.table.Columns;
 import javafx.application.Platform;
 import javafx.beans.binding.Bindings;
 import javafx.beans.binding.BooleanBinding;
@@ -68,15 +69,16 @@ import lombok.extern.log4j.Log4j2;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
+import java.math.BigDecimal;
 import java.net.URL;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.ResourceBundle;
 
 import static com.hamza.account.config.PropertiesName.*;
-import static com.hamza.account.controller.invoice.DialogCashPaid.showCashChangeDialog;
 import static com.hamza.controlsfx.dateTime.DateUtils.DATE_TIME_FORMATTER;
 import static com.hamza.controlsfx.others.Utils.setTextFormatter;
 import static com.hamza.controlsfx.others.Utils.whenEnterPressed;
@@ -715,16 +717,55 @@ public class BuyController2<T3 extends BaseNames, T4 extends BaseAccount>
                 correctionReason = reason.get();
             }
 
-            if (!AllAlerts.confirmSave()) {
+            boolean paymentTaken = paymentScreenApplies();
+            if (paymentTaken) {
+                if (!takePayment(print)) {
+                    return;
+                }
+            } else if (!AllAlerts.confirmSave()) {
                 return;
             }
-            saveInBackground(print, captureSaveCommand(correctionReason));
+            saveInBackground(print, paymentTaken, captureSaveCommand(correctionReason));
         } catch (InvoiceValidationException e) {
             focusValidationTarget(e.target());
             logError(e);
         } catch (Exception e) {
             logError(e);
         }
+    }
+
+    /**
+     * A new sale, on a computer whose settings ask for the payment screen. Not an invoice
+     * being edited: it was paid for when it was made, and what is owed on it now is a matter
+     * for the account, not for the drawer.
+     */
+    private boolean paymentScreenApplies() {
+        return designInterface.showScreenPaidInInvoice()
+                && getInvoiceShowScreenPaid()
+                && num_invoice_update == 0;
+    }
+
+    /**
+     * Shows the payment screen; false when the operator went back to the invoice, in which
+     * case nothing is written. It stands in for "do you want to save?" - see
+     * {@link InvoicePaymentDialog}.
+     */
+    private boolean takePayment(boolean print) throws InvoiceValidationException {
+        updatePaymentViewModel(false);
+        InvoicePaymentTerms terms = editor.requireValidPayment();
+        Optional<InvoiceTender> tender = InvoicePaymentDialog.ask(
+                table.getScene().getWindow(), terms, print);
+        if (tender.isEmpty()) {
+            return false;
+        }
+        if (terms.deferred()) {
+            // What was handed over towards a deferred invoice is its advance payment - the
+            // field it would otherwise have been typed into, so the save reads it from one
+            // place whichever way it arrived. A cash invoice records its net whatever was
+            // handed over: the change left the drawer again.
+            txtPaid.setText(MoneyMath.text(tender.get().paid()));
+        }
+        return true;
     }
 
     /**
@@ -754,7 +795,7 @@ public class BuyController2<T3 extends BaseNames, T4 extends BaseAccount>
                 List.copyOf(linesForSave()), invoiceStockId, correctionReason, loadedUpdatedAt);
     }
 
-    private void saveInBackground(boolean print, InvoiceSaveCommand command) {
+    private void saveInBackground(boolean print, boolean paymentTaken, InvoiceSaveCommand command) {
         editor.setSaving(true);
         javafx.concurrent.Task<InvoiceSaveResult> task = new javafx.concurrent.Task<>() {
             @Override
@@ -767,7 +808,7 @@ public class BuyController2<T3 extends BaseNames, T4 extends BaseAccount>
             editor.setSaving(running);
             maskerPaneSetting.setVisible(running);
         });
-        task.setOnSucceeded(event -> afterSuccessfulSave(print, command, task.getValue()));
+        task.setOnSucceeded(event -> afterSuccessfulSave(print, paymentTaken, command, task.getValue()));
         task.setOnFailed(event -> {
             Throwable failure = task.getException();
             if (failure instanceof InvoiceValidationException validation) {
@@ -782,15 +823,14 @@ public class BuyController2<T3 extends BaseNames, T4 extends BaseAccount>
         worker.start();
     }
 
-    private void afterSuccessfulSave(boolean print, InvoiceSaveCommand command,
+    private void afterSuccessfulSave(boolean print, boolean paymentTaken, InvoiceSaveCommand command,
                                      InvoiceSaveResult result) {
-        AllAlerts.alertSave();
-        if (designInterface.showScreenPaidInInvoice()
-                && getInvoiceShowScreenPaid()
-                && result.payment().invoiceType() == InvoiceType.CASH) {
-            showCashChangeDialog(result.payment().net());
+        // After the payment screen the cashier has already confirmed this sale and watched
+        // the change worked out; a "saved" alert on top is one more Enter per customer. The
+        // screen clearing for the next sale is the answer. Without it, the alert stays.
+        if (!paymentTaken) {
+            AllAlerts.alertSave();
         }
-
         printInvoice(preparePrintRequest(print, command, result));
         if (result.updated()) {
             table.getScene().getWindow().hide();
@@ -1047,11 +1087,13 @@ public class BuyController2<T3 extends BaseNames, T4 extends BaseAccount>
         updatingPaymentUi = true;
         try {
             InvoicePaymentTerms terms = updatePaymentViewModel(resetDeferredPayment);
-            txtRestAfterDiscount.setText(MoneyMath.text(terms.netAmount()));
+            // Read-only answers, written as money; txtPaid is typed into, so it keeps the
+            // plain form its number formatter reads back.
+            txtRestAfterDiscount.setText(Columns.money(terms.netAmount()));
             if (terms.invoiceType() == InvoiceType.CASH || resetDeferredPayment) {
                 txtPaid.setText(MoneyMath.text(terms.paidAmount()));
             }
-            txtRestAfterPaid.setText(MoneyMath.text(terms.remainingAmount()));
+            txtRestAfterPaid.setText(Columns.money(terms.remainingAmount()));
             updatePaymentLabels(terms.invoiceType());
         } finally {
             updatingPaymentUi = false;
@@ -1109,14 +1151,17 @@ public class BuyController2<T3 extends BaseNames, T4 extends BaseAccount>
     private void bindEditorState() {
         textSumCount.textProperty().bind(Bindings.createStringBinding(
                 () -> String.valueOf(editor.totals().lineCount()), editor.totalsProperty()));
+        // Written the way the columns they sum are written. Display only: nothing may read
+        // a figure back out of these - ask editor.totals().
         txtSumQuantity.textProperty().bind(Bindings.createStringBinding(
-                () -> String.valueOf(editor.totals().quantity()), editor.totalsProperty()));
+                () -> Columns.quantity(BigDecimal.valueOf(editor.totals().quantity())),
+                editor.totalsProperty()));
         txtBeforeDiscount.textProperty().bind(Bindings.createStringBinding(
-                () -> String.valueOf(editor.totals().gross()), editor.totalsProperty()));
+                () -> Columns.money(editor.totals().grossAmount()), editor.totalsProperty()));
         txtSumDiscount.textProperty().bind(Bindings.createStringBinding(
-                () -> String.valueOf(editor.totals().discount()), editor.totalsProperty()));
+                () -> Columns.money(editor.totals().discountAmount()), editor.totalsProperty()));
         txtSumTotals.textProperty().bind(Bindings.createStringBinding(
-                () -> String.valueOf(editor.totals().net()), editor.totalsProperty()));
+                () -> Columns.money(editor.totals().netAmount()), editor.totalsProperty()));
     }
 
     private void tableSetting() {
@@ -1224,14 +1269,10 @@ public class BuyController2<T3 extends BaseNames, T4 extends BaseAccount>
         comboDelegate.setVisible(designInterface.showDataForCustomer());
         labelDelegate.setVisible(designInterface.showDataForCustomer());
 
+        // From the totals, not from the footer's text: that is written for a person to read,
+        // and "1,050.00" is not something Double.parseDouble reads.
         BooleanBinding nonPositiveTotal = Bindings.createBooleanBinding(
-                () -> {
-                    try {
-                        return Double.parseDouble(txtSumTotals.getText()) <= 0;
-                    } catch (NumberFormatException ignored) {
-                        return true;
-                    }
-                }, txtSumTotals.textProperty());
+                () -> editor.totals().netAmount().signum() <= 0, editor.totalsProperty());
         BooleanBinding noLines = Bindings.createBooleanBinding(
                 () -> editor.totals().lineCount() == 0, editor.totalsProperty());
         BooleanBinding binding = nonPositiveTotal
@@ -1241,7 +1282,7 @@ public class BuyController2<T3 extends BaseNames, T4 extends BaseAccount>
 
         BooleanBinding invalidPayment = Bindings.createBooleanBinding(
                 this::paymentDraftInvalid,
-                txtSumTotals.textProperty(), txtOtherDiscount.textProperty(),
+                editor.totalsProperty(), txtOtherDiscount.textProperty(),
                 txtPaid.textProperty(), radioCash.selectedProperty(),
                 radioDeffer.selectedProperty(), editor.invalidLinesProperty());
         PermissionKey writePermission = num_invoice_update > 0

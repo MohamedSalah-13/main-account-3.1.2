@@ -9,6 +9,8 @@ import javafx.scene.control.TableColumn;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.text.DecimalFormat;
+import java.text.DecimalFormatSymbols;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.function.Function;
@@ -88,22 +90,22 @@ public final class Columns {
      * column is not a row with zero in it.
      */
     public static <S> TableColumn<S, BigDecimal> money(String titleKey, Function<S, BigDecimal> extractor) {
-        TableColumn<S, BigDecimal> column = column(titleKey, extractor);
-        column.setStyle("-fx-alignment: CENTER-RIGHT;");
-        column.setCellFactory(ignored -> new TableCell<>() {
-            @Override
-            protected void updateItem(BigDecimal value, boolean empty) {
-                super.updateItem(value, empty);
-                if (empty || value == null) {
-                    setText(null);
-                    pseudoClassStateChanged(NEGATIVE, false);
-                    return;
-                }
-                setText(money(value));
-                pseudoClassStateChanged(NEGATIVE, value.signum() < 0);
-            }
-        });
-        return column;
+        return formatted(column(titleKey, extractor), value -> value, Columns::money);
+    }
+
+    /**
+     * Writes an existing column's numbers the way {@link #money(String, Function)} writes its own -
+     * for a column that holds a {@code Number} rather than a {@code BigDecimal}, such as one bound to
+     * a {@code DoubleProperty} through {@link #observable}. An editable column keeps the alignment
+     * but gets its cell from its editor; give that editor a converter that writes the same way.
+     */
+    public static <S, N extends Number> TableColumn<S, N> asMoney(TableColumn<S, N> column) {
+        return formatted(column, Columns::decimalOf, Columns::money);
+    }
+
+    /** The same for a quantity - see {@link #quantity(BigDecimal)}. */
+    public static <S, N extends Number> TableColumn<S, N> asQuantity(TableColumn<S, N> column) {
+        return formatted(column, Columns::decimalOf, Columns::quantity);
     }
 
     /** The same for a screen that holds its amounts as {@code double}. */
@@ -123,6 +125,24 @@ public final class Columns {
     }
 
     /**
+     * A quantity as a person reads it: thousands separated, and only the decimals it has, up to
+     * three - {@code 3}, {@code 2.5}, {@code 0.625}. A quantity is not money: {@code 3.00} pieces
+     * reads as a price, and {@code 3.0} is a {@code double} showing through. Three places, because
+     * an item weighed by the kilogram is sold to the gram.
+     */
+    public static String quantity(BigDecimal value) {
+        if (value == null) {
+            return "";
+        }
+        DecimalFormat format = new DecimalFormat("#,##0.###", DecimalFormatSymbols.getInstance());
+        format.setRoundingMode(RoundingMode.HALF_UP);
+        return format.format(value);
+    }
+
+    /** How every figure column is aligned, so the decimal points of a column sit under each other. */
+    public static final String AMOUNT_ALIGNMENT = "-fx-alignment: CENTER-RIGHT;";
+
+    /**
      * Set on a money cell holding a negative. Styled in {@code app-theme.css} rather than with an
      * inline {@code setStyle}, so it answers the dark palette - and so a screen cannot colour the
      * same condition a different red.
@@ -138,5 +158,30 @@ public final class Columns {
         TableColumn<S, T> column = new TableColumn<>(LanguageManager.getInstance().getString(titleKey));
         column.setCellValueFactory(features -> new ReadOnlyObjectWrapper<>(extractor.apply(features.getValue())));
         return column;
+    }
+
+    private static <S, T> TableColumn<S, T> formatted(TableColumn<S, T> column,
+                                                      Function<T, BigDecimal> toDecimal,
+                                                      Function<BigDecimal, String> format) {
+        column.setStyle(AMOUNT_ALIGNMENT);
+        column.setCellFactory(ignored -> new TableCell<>() {
+            @Override
+            protected void updateItem(T value, boolean empty) {
+                super.updateItem(value, empty);
+                BigDecimal amount = empty || value == null ? null : toDecimal.apply(value);
+                setText(amount == null ? null : format.apply(amount));
+                pseudoClassStateChanged(NEGATIVE, amount != null && amount.signum() < 0);
+            }
+        });
+        return column;
+    }
+
+    /** A {@code double} that is not a number has nothing to show; it is not zero. */
+    private static BigDecimal decimalOf(Number value) {
+        if (value instanceof BigDecimal decimal) {
+            return decimal;
+        }
+        double asDouble = value.doubleValue();
+        return Double.isFinite(asDouble) ? BigDecimal.valueOf(asDouble) : null;
     }
 }

@@ -1,32 +1,21 @@
 package com.hamza.account.controller.invoice;
 
 import com.hamza.account.controller.others.DialogButtons;
-import com.hamza.account.finance.MoneyMath;
 import com.hamza.account.model.domain.ItemsModel;
 import com.hamza.account.service.SelPriceItemService;
 import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.language.LanguageManager;
-import com.hamza.controlsfx.others.Utils;
-import javafx.application.Platform;
 import javafx.scene.control.*;
-import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import javafx.stage.Screen;
-import org.jetbrains.annotations.NotNull;
 
 import java.util.Optional;
 
+/**
+ * The price-tier picker. It used to hold a change calculator as well, shown after a cash sale
+ * had already been saved - see {@link InvoicePaymentDialog} for what replaced it and why.
+ */
 public class DialogCashPaid {
-
-    public static void showCashChangeDialog(double amountDue) {
-        Dialog<Void> dialog = getDialog();
-        dialog.setResizable(false);
-        dialog.setTitle(LanguageManager.getInstance().getString("invoice.dialog.change.title"));
-        dialog.setHeaderText(LanguageManager.getInstance().getString("invoice.dialog.change.header"));
-        var content = createPaymentDialog(amountDue);
-        dialog.getDialogPane().setContent(content);
-        dialog.showAndWait();
-    }
 
     public static Optional<Double> showPriceSelectionDialog(ItemsModel itemsModel
             , SelPriceItemService selPriceItemService) throws DaoException {
@@ -77,41 +66,6 @@ public class DialogCashPaid {
         dialog.getDialogPane().setPrefWidth(screenWidth * 0.25);
         dialog.getDialogPane().getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL);
         DialogButtons.changeNameAndGraphic(dialog.getDialogPane());
-        // إظهار الحوار والانتظار لاختيار المستخدم
         return dialog;
-    }
-
-    @NotNull
-    private static VBox createPaymentDialog(double amountDue) {
-        Label lblTotalText = new Label(LanguageManager.getInstance().getString("invoice.dialog.total.label"));
-        var due = MoneyMath.money(amountDue);
-        Label lblTotal = new Label(MoneyMath.text(due));
-
-        Label lblPaidText = new Label(LanguageManager.getInstance().getString("invoice.dialog.paid.label"));
-        TextField paidField = new TextField();
-        paidField.setStyle("-fx-min-width: 20em");
-        Utils.setTextFormatter(paidField);
-        paidField.setPromptText("0.00");
-        Platform.runLater(paidField::requestFocus);
-
-        Label lblChangeText = new Label(LanguageManager.getInstance().getString("invoice.dialog.change.label"));
-        Label lblChange = new Label("0.00");
-        lblChange.setStyle("-fx-font-weight: bold; -fx-text-fill: #6e0a0a");
-
-        paidField.textProperty().addListener((obs, oldV, newV) -> {
-            try {
-                var change = MoneyMath.subtract(MoneyMath.parseOrZero(newV), due);
-                if (change.signum() < 0) change = MoneyMath.ZERO;
-                lblChange.setText(MoneyMath.text(change));
-            } catch (Exception ex) {
-                lblChange.setText("0.00");
-            }
-        });
-
-        HBox row1 = new HBox(10, lblTotalText, lblTotal);
-        HBox row2 = new HBox(10, lblPaidText, paidField);
-        HBox row3 = new HBox(10, lblChangeText, lblChange);
-        VBox content = new VBox(12, row1, row2, row3);
-        return content;
     }
 }

@@ -14,6 +14,7 @@ import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.language.LanguageManager;
 import com.hamza.controlsfx.table.Columns;
 import com.hamza.controlsfx.table.columnEdit.ColumnSetting;
+import com.hamza.controlsfx.table.columnEdit.NumberTextConverter;
 import javafx.application.Platform;
 import javafx.beans.value.ObservableValue;
 import javafx.collections.ListChangeListener;
@@ -109,15 +110,24 @@ public final class InvoiceTableCoordinator<T extends BasePurchasesAndSales> {
      * repeated scan merged into an existing line - recalculates the total on the model and
      * refreshes nothing. A snapshot column went on showing the old total and total after
      * discount while the footer, which sums the model, showed the new one.
+     * <p>
+     * <b>Written as money and as a quantity</b>, the way every other screen writes them:
+     * {@code 7.50} and {@code 1,050.00}, not {@code 7.5} and {@code 1050.0}. The three that
+     * are edited get their cell from {@link #configureEdits()}, whose converter writes the
+     * same way and reads it back.
      */
     static <L extends BasePurchasesAndSales> List<TableColumn<L, Number>> amountColumns() {
         return List.of(
-                Columns.<L, Number>observable(NamesTables.QUANTITY, BasePurchasesAndSales::quantityProperty),
-                Columns.<L, Number>observable(NamesTables.PRICE, BasePurchasesAndSales::priceProperty),
-                Columns.<L, Number>observable(NamesTables.TOTAL, BasePurchasesAndSales::totalProperty),
-                Columns.<L, Number>observable(NamesTables.DISCOUNT, BasePurchasesAndSales::discountProperty),
-                Columns.<L, Number>observable(NamesTables.TOTAL_AFTER,
-                        BasePurchasesAndSales::total_after_discountProperty));
+                Columns.asQuantity(Columns.<L, Number>observable(NamesTables.QUANTITY,
+                        BasePurchasesAndSales::quantityProperty)),
+                Columns.asMoney(Columns.<L, Number>observable(NamesTables.PRICE,
+                        BasePurchasesAndSales::priceProperty)),
+                Columns.asMoney(Columns.<L, Number>observable(NamesTables.TOTAL,
+                        BasePurchasesAndSales::totalProperty)),
+                Columns.asMoney(Columns.<L, Number>observable(NamesTables.DISCOUNT,
+                        BasePurchasesAndSales::discountProperty)),
+                Columns.asMoney(Columns.<L, Number>observable(NamesTables.TOTAL_AFTER,
+                        BasePurchasesAndSales::total_after_discountProperty)));
     }
 
     private void addIdentityColumns() {
@@ -154,17 +164,17 @@ public final class InvoiceTableCoordinator<T extends BasePurchasesAndSales> {
         }
         columns.enableDoubleEditing(QUANTITY_COLUMN, event -> withRefreshOnFailure(() ->
                 editService.editQuantity(rowAt(event.getTablePosition().getRow()),
-                        event.getNewValue())), table);
+                        event.getNewValue())), table, NumberTextConverter.quantity());
         // The price of this line is always editable; carrying it back to the item is what
         // needs the permission. Dropping the flag here rather than refusing the whole edit
         // keeps the ordinary "sell this one cheaper" working for a cashier.
         columns.enableDoubleEditing(PRICE_COLUMN, event -> withRefreshOnFailure(() ->
                 editService.editPrice(rowAt(event.getTablePosition().getRow()),
                         event.getNewValue(), mayEditCatalog && updateCatalogPrice.getAsBoolean(),
-                        priceTier.getAsInt())), table);
+                        priceTier.getAsInt())), table, NumberTextConverter.money());
         columns.enableDoubleEditing(DISCOUNT_COLUMN, event -> withRefreshOnFailure(() ->
                 editService.editDiscount(rowAt(event.getTablePosition().getRow()),
-                        event.getNewValue())), table);
+                        event.getNewValue())), table, NumberTextConverter.money());
     }
 
     private void configureSelectionAndKeys() {

@@ -598,6 +598,23 @@ the package and a test per class. The pieces worth knowing before changing anyth
   the document — every line, converted to base units — and refuses the save as a whole. It reads through
   `InvoiceStockRepository`, and `JdbcInvoiceStockRepository` already takes a `stock_id`.
 
+**The payment screen is the save's confirmation, not an afterthought to it.** With
+`settings.checks.showPaidScreen` on (per computer, off by default), saving a **new sales** invoice
+opens `InvoicePaymentDialog` in place of "do you want to save?": the amount due, what the customer
+handed over, the change. Going back writes nothing, and no "saved" alert follows it - the screen
+clearing for the next customer is the answer. It used to be a change calculator shown *after*
+the save, whose OK and Cancel did the same thing. The rules are `features/invoice/InvoiceTender`:
+**what is handed over is not what is paid** - the change leaves the drawer, so `paid` never exceeds
+the net and the change is never stored; a cash invoice handed less is refused rather than saved short;
+a deferred one takes the amount as its advance payment through `txtPaid`, the one field the save reads.
+
+**The lines table and its footer write amounts as money** (`Columns.asMoney`, `Columns.money`) and
+quantities through `Columns.quantity`; the editable cells use `NumberTextConverter`, which reads back
+what it writes, separators and Arabic digits included. **Nothing may read a figure back out of the
+footer** - the save button's "total is positive" used to `Double.parseDouble` it, which a formatted
+`1,050.00` would have broken. The columns are bound to the line's properties (`Columns.observable`):
+a column built from a getter is a snapshot, and editing a quantity left the row's total unchanged.
+
 ### The quick invoice
 
 The same four document families open in one of two screens: `InvoiceScreenMode.STANDARD`, which

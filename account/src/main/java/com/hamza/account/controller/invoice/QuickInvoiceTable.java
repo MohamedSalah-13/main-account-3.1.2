@@ -17,8 +17,8 @@ import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyCodeCombination;
 import javafx.scene.input.KeyCombination;
 import javafx.scene.input.KeyEvent;
+import com.hamza.controlsfx.table.columnEdit.NumberTextConverter;
 import javafx.util.converter.DefaultStringConverter;
-import javafx.util.converter.DoubleStringConverter;
 
 import java.util.List;
 import java.util.Objects;
@@ -132,7 +132,7 @@ public final class QuickInvoiceTable {
 
         nameColumn.setCellFactory(view -> new ItemSuggestionCell(host, this::selectByName));
 
-        quantityColumn.setCellFactory(TextFieldTableCell.forTableColumn(new DoubleStringConverter()));
+        quantityColumn.setCellFactory(TextFieldTableCell.forTableColumn(NumberTextConverter.quantity()));
         quantityColumn.setOnEditCommit(event -> {
             BasePurchasesAndSales line = event.getRowValue();
             try {

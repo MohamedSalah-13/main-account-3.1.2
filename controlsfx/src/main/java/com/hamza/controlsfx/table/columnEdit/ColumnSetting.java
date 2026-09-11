@@ -12,6 +12,7 @@ import javafx.scene.control.cell.CheckBoxTableCell;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.control.cell.TextFieldTableCell;
 import javafx.util.Callback;
+import javafx.util.StringConverter;
 import javafx.util.converter.DefaultStringConverter;
 import javafx.util.converter.DoubleStringConverter;
 
@@ -63,8 +64,17 @@ public class ColumnSetting {
      * @param tableView   the TableView instance where the column exists
      */
     public <T> void enableDoubleEditing(int columnIndex, TableColumnEdite<T, Double> columnEdite, TableView<T> tableView) {
+        enableDoubleEditing(columnIndex, columnEdite, tableView, new DoubleStringConverter());
+    }
+
+    /**
+     * The same, with the converter that writes and reads the cell's text - see
+     * {@link NumberTextConverter} for a column that formats its numbers.
+     */
+    public <T> void enableDoubleEditing(int columnIndex, TableColumnEdite<T, Double> columnEdite, TableView<T> tableView,
+                                        StringConverter<Double> converter) {
         TableColumn<T, Double> column = (TableColumn<T, Double>) tableView.getColumns().get(columnIndex);
-        configureColumnEditing(column, columnEdite, TextFieldTableCell.forTableColumn(new DoubleStringConverter()));
+        configureColumnEditing(column, columnEdite, TextFieldTableCell.forTableColumn(converter));
     }
 
     /**
