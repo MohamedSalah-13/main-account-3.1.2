@@ -27,8 +27,8 @@ mvn -o -pl account -am test -Dtest=ScheduledBackupTest -Dsurefire.failIfNoSpecif
 
 **Coverage is real but uneven — know which half you are in.** JUnit 5 and Mockito are declared in the
 root pom and inherited by both modules; surefire needs no configuration. `mvn clean test` currently runs
-**1,482 tests across 189 test source files** with 85 skipped (below) — the figure `mvn clean test`
-reports, measured on 2026-09-07. What is
+**1,827 tests across 247 test source files** with 101 skipped (below) — the figure `mvn clean test`
+reports, measured on 2026-09-11. What is
 genuinely covered:
 
 - **The declarative specs, pinned character for character** — `DocumentDaoStatementsTest`,
@@ -37,12 +37,15 @@ genuinely covered:
   `ItemReferenceRegistryTest`. These fail the build on a wrong column, so they are the
   safety net for anything touching SQL. The last two read the foreign keys straight out of the
   migration files, so the schema itself is what they check against.
-- **Architecture rules** — thirteen `*ArchitectureTest` classes now, plus `DefaultRoleAcceptanceTest`:
+- **Architecture rules** — eighteen `*ArchitectureTest` classes now (twenty files: `ErrorHandlingArchitectureTest`
+  and `TableColumnArchitectureTest` exist once per module), plus `DefaultRoleAcceptanceTest`:
   `AuthorizationArchitectureTest`, `ErrorHandlingArchitectureTest`, `DocumentPackageArchitectureTest`,
   `DefaultStockUsageArchitectureTest`, `LocalizationArchitectureTest`, `FxmlArchitectureTest`,
   `ModelPurityArchitectureTest`, `TableColumnArchitectureTest`, `StocksChangedArchitectureTest`,
   `FxmlWiringArchitectureTest`, `KeyboardNavigationArchitectureTest`, `ShiftGateArchitectureTest`,
-  `MessageKeyArchitectureTest`. They
+  `MessageKeyArchitectureTest`, `ConnectionTimeZoneArchitectureTest`, `MultiDeviceRefreshArchitectureTest`,
+  `PasswordChangeArchitectureTest`, `ProductProfileWiringArchitectureTest` and
+  `TreasuryStatementScreenArchitectureTest`. They
   fail when a new service skips the permission guard, a new exception escapes the error boundary,
   `account.document` starts importing one of the two packages that import it, or a new stock-aware
   operation reaches for `DefaultStock.ID` instead of taking a `stockId`. Two of them carry an explicit
@@ -70,7 +73,7 @@ because *every new party payment had been silently discarded since `f2b4baf`* (s
 observe from inside an enclosing transaction. Fifteen cases pass now, twice in a row, and the class
 checks for its own residue rather than trusting the rollback.
 
-**Twenty classes do not run by default.** `InvoiceStockDatabaseAcceptanceTest`,
+**Twenty-two classes do not run by default.** `InvoiceStockDatabaseAcceptanceTest`,
 `DocumentLineDatabaseAcceptanceTest`, `StockLedgerReconciliationAcceptanceTest`,
 `StockMovementBackfillAcceptanceTest`, `StockTransferDatabaseAcceptanceTest`,
 `TotalDocumentDeleteReversesStockLedgerAcceptanceTest`,
@@ -79,8 +82,9 @@ checks for its own residue rather than trusting the rollback.
 `ReturnSourceAcceptanceTest`, `ReturnableRepositoryAcceptanceTest`, `ItemMergeDatabaseAcceptanceTest`,
 `TreasuryBalanceViewAcceptanceTest`, `ProfitDefinitionDatabaseAcceptanceTest`,
 `ShiftAccountingDatabaseAcceptanceTest`, `ItemGroupMoveDatabaseAcceptanceTest`,
-`MasterDataDuplicateAcceptanceTest`, `ItemsCatalogBalanceAcceptanceTest` and
-`AuditLogDatabaseAcceptanceTest` are gated on
+`MasterDataDuplicateAcceptanceTest`, `ItemsCatalogBalanceAcceptanceTest`,
+`AuditLogDatabaseAcceptanceTest`, `PasswordChangeDatabaseAcceptanceTest` and
+`TreasuryStatementDatabaseAcceptanceTest` are gated on
 `-Daccount.db.acceptance=true` and need a reachable MySQL. A green `mvn clean test` does not run them.
 **`PartyStatementViewAcceptanceTest` and `PartyMovementDatabaseAcceptanceTest` are the newest**,
 written 2026-09-10 with the party statement and payment work and **first run the same day against a
@@ -442,9 +446,9 @@ the user and are shown as-is. Anything else is technical: `ErrorReporter` logs i
 and shows a generic sentence, so a stack trace or a SQL fragment never reaches a screen.
 `GlobalExceptionHandler` is the last boundary.
 
-**No test enforces the split, and this file said one did.** `ErrorHandlingArchitectureTest` lives in
-`controlsfx`, scans only `controlsfx/src/main/java`, and checks two other rules entirely — the legacy
-dialog and double-logging. Nothing has ever failed a build for throwing a raw `RuntimeException` at a
+**No test enforces the split, and this file said one did.** `ErrorHandlingArchitectureTest` exists
+once per module - `controlsfx` and `account`, each scanning its own `src/main/java` - and both check
+two other rules entirely: the legacy dialog and double-logging. Nothing has ever failed a build for throwing a raw `RuntimeException` at a
 user-facing path, and `MainGroupService.insert` did exactly that: it caught the `DaoException` it
 already declared and rethrew it wrapped, so a duplicate group name, a permission refusal and a lost
 connection all reached the screen as the same technical sentence and a reference code. It was found by
@@ -852,10 +856,10 @@ credit-limit warning from. Its three component columns now add up to its fourth,
 not before.
 
 **What is still not done here** is in `docs/party-plan.md`: the credit limit is polled hourly by
-a notification rather than checked when an invoice is saved, `CustomerDao.map` and
-`SuppliersDao.map` still resolve a lookup row per party with a query of their own, the parties
-list shows no balance, and the ageing report that the payment allocation exists to feed has not
-been written.
+a notification rather than checked when an invoice is saved, and `CustomerDao.map` and
+`SuppliersDao.map` still resolve a lookup row per party with a query of their own. The ageing
+report the payment allocation exists to feed has since been written - see **Debt ageing** below -
+and the parties list showing no balance is a decision rather than a gap (**The two party screens**).
 
 ### A movement on a party's account
 
@@ -1731,7 +1735,11 @@ Schema changes are **Flyway migrations**, in `account/src/main/resources/db/migr
 - `V1__baseline.sql` is the schema as shipped to clients in v4.1.3 — tables, indexes, procedures and the
   seed data (including the `admin` user, without which nobody can log in). It is the Flyway baseline: an
   existing client database is **stamped** with it, never executed, because it already is that schema. A
-  new database executes it and continues with `V2`, `V3`, … The current head is `V54`: V54 adds the
+  new database executes it and continues with `V2`, `V3`, … The current head is `V56`: V56 adds the
+  fields a party record was missing - email, tax number, payment terms, a default delegate, an
+  opening-balance date and `is_active` - and V55 adds the debit/credit-note permissions
+  (`*.account.adjust`, granted to whoever held `*.account.create`) with the ledger's date indexes;
+  see **A party's statement** and **A movement on a party's account**. V54 adds the
   signed singleton product profile and its append-only application history. V53 corrects opening
   shift baselines, V52 adds stock-count variance settlement, V51 adds stock counts, and V50 adds
   treasury statement support. V49 adds the audit-administration export permission and the
