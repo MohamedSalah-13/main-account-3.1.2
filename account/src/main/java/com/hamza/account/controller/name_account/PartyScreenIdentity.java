@@ -68,6 +68,19 @@ public record PartyScreenIdentity(PartyKind kind, String styleClass, AppIcon ico
                 styleClass);
     }
 
+    /** The heading of the ageing report - what is owed, split by how overdue it is. */
+    public PartyFormProfile ageingProfile() {
+        LanguageManager language = LanguageManager.getInstance();
+        boolean customer = kind == PartyKind.CUSTOMER;
+        return new PartyFormProfile(
+                language.getString(customer
+                        ? "party.ageing.identity.customers.title" : "party.ageing.identity.suppliers.title"),
+                language.getString(customer
+                        ? "party.ageing.identity.customers.subtitle" : "party.ageing.identity.suppliers.subtitle"),
+                icon,
+                styleClass);
+    }
+
     /** The heading of the trend chart - what was charged and what was collected, over time. */
     public PartyFormProfile trendProfile() {
         LanguageManager language = LanguageManager.getInstance();

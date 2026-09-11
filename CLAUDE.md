@@ -1220,6 +1220,14 @@ It opens from the accounts screen, next to the ageing report, and asks the same 
   neighbouring week. By the year there is no comparison - last year is the point beside this one.
 - **A percentage with nothing to divide by is absent, not zero** (`PartyTrendSummary`): a
   collection rate of nothing charged, or a change against a year with no movement, is not a number.
+- **It prints the chart as drawn** - the ticked lines, the year before when it is showing - above
+  the table of its figures (`PdfExportService.exportChartReport`). The snapshot is taken under a
+  `trend-print` class that paints the chart dark on white whatever the theme, and removed straight
+  after: a dark theme's light axis labels would otherwise print as nothing on a white page.
+
+The ageing report has had the same treatment as the accounts screen it opens from: identity
+header, list actions after the filters, the view menu, content-sized columns, and a PDF and a
+spreadsheet of the columns on screen. Both old fixed-column Excel writers are gone.
 
 ### Printed reports
 

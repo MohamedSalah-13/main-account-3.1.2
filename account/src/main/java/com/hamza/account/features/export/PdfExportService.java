@@ -233,8 +233,31 @@ public class PdfExportService {
     public boolean exportGroupedReport(String filePath, String title, String subtitle,
                                        String[] headers, float[] columnWidths,
                                        List<String[]> data, String[] totals, PageSize pageSize) {
+        return exportChartReport(filePath, title, subtitle, null, headers, columnWidths, data,
+                totals, pageSize);
+    }
+
+    /**
+     * A grouped report with a chart above it: the header, the chart as a picture scaled to the
+     * width of the page, then the same table and totals line {@link #exportGroupedReport} writes.
+     * <p>
+     * The chart arrives as a finished PNG. How it is drawn is the screen's business - this class
+     * places a picture, it does not know what a series is.
+     *
+     * @param chartPng the chart as a PNG, or null for the table alone
+     */
+    public boolean exportChartReport(String filePath, String title, String subtitle, byte[] chartPng,
+                                     String[] headers, float[] columnWidths,
+                                     List<String[]> data, String[] totals, PageSize pageSize) {
         try (Document document = createDocument(filePath, pageSize)) {
             addHeader(document, title, subtitle);
+            if (chartPng != null && chartPng.length > 0) {
+                Image chart = new Image(ImageDataFactory.create(chartPng));
+                chart.setAutoScale(true);
+                chart.setHorizontalAlignment(com.itextpdf.layout.properties.HorizontalAlignment.CENTER);
+                chart.setMarginBottom(10);
+                document.add(chart);
+            }
             Table table = createTable(headers, columnWidths);
             int rowIndex = 0;
             for (String[] row : data) {

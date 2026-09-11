@@ -30,6 +30,7 @@ import javafx.geometry.Insets;
 import javafx.geometry.NodeOrientation;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
+import javafx.scene.SnapshotParameters;
 import javafx.scene.chart.CategoryAxis;
 import javafx.scene.chart.LineChart;
 import javafx.scene.chart.NumberAxis;
@@ -37,12 +38,15 @@ import javafx.scene.chart.XYChart;
 import javafx.scene.control.Button;
 import javafx.scene.control.CheckBox;
 import javafx.scene.control.ComboBox;
+import javafx.scene.control.ContentDisplay;
 import javafx.scene.control.DatePicker;
 import javafx.scene.control.Label;
 import javafx.scene.control.ProgressIndicator;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.Tooltip;
+import javafx.scene.image.Image;
+import javafx.scene.image.PixelReader;
 import javafx.scene.layout.FlowPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Pane;
@@ -50,8 +54,15 @@ import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
+import javafx.scene.paint.Color;
+import javafx.scene.transform.Transform;
 import javafx.util.StringConverter;
 
+import javax.imageio.ImageIO;
+import java.awt.image.BufferedImage;
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.IOException;
 import java.math.BigDecimal;
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
@@ -59,6 +70,7 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.Function;
 
 /**
@@ -84,6 +96,14 @@ public class PartyTrendController<T3 extends BaseNames, T4 extends BaseAccount>
     private static final String DEBIT = "trend-debit";
     private static final String CREDIT = "trend-credit";
     private static final String PREVIOUS = "trend-previous";
+
+    /** Dark on white whatever the theme, for the moment the chart is photographed for a page. */
+    private static final String PRINTING = "trend-print";
+
+    /** The table's amount columns, which the printed totals line sums. The period is not one. */
+    private static final Set<String> TOTALLED_COLUMNS = Set.of("trend-debit-column",
+            "trend-credit-column", "trend-net-column", "trend-previous-debit-column",
+            "trend-previous-credit-column");
 
     private final PartyTrendService trendService = new PartyTrendService();
 
@@ -197,10 +217,16 @@ public class PartyTrendController<T3 extends BaseNames, T4 extends BaseAccount>
         refresh.setMinWidth(Region.USE_PREF_SIZE);
         refresh.setOnAction(event -> load());
 
+        Button print = new Button(text("print"), AppIcon.PRINT.graphic());
+        print.getStyleClass().add("app-neutral-button");
+        print.setContentDisplay(ContentDisplay.RIGHT);
+        print.setMinWidth(Region.USE_PREF_SIZE);
+        print.setOnAction(event -> print());
+
         FlowPane bar = new FlowPane(8, 8,
                 caption("party.trend.granularity"), comboGranularity,
                 caption("party.trend.from"), from, caption("party.trend.to"), to,
-                partyField, allParties, comparePrevious, refresh);
+                partyField, allParties, comparePrevious, refresh, print);
         bar.setAlignment(Pos.CENTER_LEFT);
         bar.getStyleClass().addAll("app-card", "party-form-card");
         return bar;
@@ -335,8 +361,107 @@ public class PartyTrendController<T3 extends BaseNames, T4 extends BaseAccount>
         previousDebitColumn.setVisible(false);
         previousCreditColumn.setVisible(false);
 
+        // Ids, so the printed totals line knows which columns are amounts.
+        period.setId("trend-period-column");
+        debit.setId("trend-debit-column");
+        credit.setId("trend-credit-column");
+        net.setId("trend-net-column");
+        previousDebitColumn.setId("trend-previous-debit-column");
+        previousCreditColumn.setId("trend-previous-credit-column");
+
         table.getColumns().setAll(List.of(period, debit, credit, net,
                 previousDebitColumn, previousCreditColumn));
+    }
+
+    // ---- printing --------------------------------------------------------------------
+
+    /**
+     * The chart as it is drawn - with the lines that are ticked, and the year before when it is
+     * showing - above the table of its figures and a totals line.
+     * <p>
+     * Printed from what is loaded rather than read again: the chart is a picture of the screen,
+     * and the table under it has to be the one that picture was drawn from.
+     */
+    private void print() {
+        if (shown == null || shown.isEmpty()) {
+            AllAlerts.alertError(text("party.error.no.data.print"));
+            return;
+        }
+        String title = title();
+        File target = PartyPdfReport.chooseTarget(chart.getScene().getWindow(), title);
+        if (target == null) {
+            return;
+        }
+        byte[] picture;
+        try {
+            picture = chartImage();
+        } catch (IOException e) {
+            report(e);
+            return;
+        }
+        PartyListPdfLayout layout = PartyListPdfLayout.from(table, shown.points(), Set.of(),
+                TOTALLED_COLUMNS, text("total"));
+        PartyPdfReport.write(target, title, printSubtitle(), picture, layout, () -> { });
+    }
+
+    /** What the figures cover: the grouping, the dates, whose, and the rate the cards show. */
+    private String printSubtitle() {
+        boolean customer = partyKind() == PartyKind.CUSTOMER;
+        PartyTrendFilter printed = shown.filter();
+        T3 party = partyField.chosenPartyProperty().get();
+        boolean onePartyShown = party != null && printed.partyId() != null
+                && party.getId() == printed.partyId();
+        StringBuilder subtitle = new StringBuilder()
+                .append(text(printed.granularity().messageKey()))
+                .append("  |  ").append(text("party.trend.from")).append(' ').append(printed.from())
+                .append(' ').append(text("party.trend.to")).append(' ').append(printed.to())
+                .append("  |  ").append(onePartyShown ? party.getName()
+                        : text(customer ? "party.trend.all.customers" : "party.trend.all.suppliers"));
+        if (printed.compareWithPreviousYear()) {
+            subtitle.append("  |  ").append(text("party.trend.compare.previous"));
+        }
+        shown.summary().collectionPercent().ifPresent(rate -> subtitle.append("  |  ")
+                .append(text(customer ? "party.trend.customers.ratio" : "party.trend.suppliers.ratio"))
+                .append(": ").append(percent(rate)));
+        return subtitle.toString();
+    }
+
+    /**
+     * The chart as a PNG, at twice its size on screen so it stays sharp on paper.
+     * <p>
+     * Photographed under {@code trend-print}, which paints it dark on white whatever the theme:
+     * the page is white, and a dark theme's light axis labels would print as nothing at all.
+     * The class is taken off again straight after, so the screen never shows it.
+     */
+    private byte[] chartImage() throws IOException {
+        chart.getStyleClass().add(PRINTING);
+        try {
+            chart.applyCss();
+            chart.layout();
+            SnapshotParameters parameters = new SnapshotParameters();
+            parameters.setFill(Color.WHITE);
+            parameters.setTransform(Transform.scale(2, 2));
+            return png(chart.snapshot(parameters, null));
+        } finally {
+            chart.getStyleClass().remove(PRINTING);
+            chart.applyCss();
+        }
+    }
+
+    /** Pixel by pixel, so no javafx.swing module is needed for SwingFXUtils. */
+    private static byte[] png(Image image) throws IOException {
+        int width = (int) image.getWidth();
+        int height = (int) image.getHeight();
+        BufferedImage picture = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
+        PixelReader pixels = image.getPixelReader();
+        for (int y = 0; y < height; y++) {
+            for (int x = 0; x < width; x++) {
+                picture.setRGB(x, y, pixels.getArgb(x, y));
+            }
+        }
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        ImageIO.write(picture, "png", out);
+        return out.toByteArray();
     }
 
     // ---- loading ---------------------------------------------------------------------

@@ -718,6 +718,36 @@
     -fx-text-fill: -app-text-muted;
 }
 
+/* The chart at the moment it is photographed for a PDF: dark on white whatever the theme,
+   because the page is white and a dark theme's light labels would print as nothing. The class
+   is on the chart only for the length of the snapshot. */
+.party-trend-chart.trend-print,
+.party-trend-chart.trend-print .chart-plot-background {
+    -fx-background-color: white;
+}
+
+.party-trend-chart.trend-print .axis {
+    -fx-tick-label-fill: #1f2937;
+}
+
+.party-trend-chart.trend-print .axis-tick-mark,
+.party-trend-chart.trend-print .axis-minor-tick-mark {
+    -fx-stroke: #9ca3af;
+}
+
+.party-trend-chart.trend-print .chart-horizontal-grid-lines,
+.party-trend-chart.trend-print .chart-vertical-grid-lines {
+    -fx-stroke: #e5e7eb;
+}
+
+.party-trend-chart.trend-print .chart-line-symbol.trend-debit {
+    -fx-background-color: -app-danger, white;
+}
+
+.party-trend-chart.trend-print .chart-line-symbol.trend-credit {
+    -fx-background-color: -app-success, white;
+}
+
 /* ---------- Tables ---------- */
 
 .table-view,

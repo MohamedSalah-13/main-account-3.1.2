@@ -11,12 +11,13 @@ import javafx.stage.Window;
 import java.io.File;
 
 /**
- * Saving a party list as a PDF: choosing the file, writing it off the JavaFX thread, and
+ * Saving a party screen as a PDF: choosing the file, writing it off the JavaFX thread, and
  * saying where it went.
  *
  * <p>The parties list printed this way first; the accounts screen printed a Jasper template
- * with fixed columns until it was moved here, so the two now print the same way - from a
- * {@link PartyListPdfLayout} of the columns on screen - and cannot come to differ.</p>
+ * with fixed columns until it was moved here, and the ageing report and the trend chart print
+ * here too - so they all print the same way, from a {@link PartyListPdfLayout} of the columns on
+ * screen, and cannot come to differ.</p>
  */
 final class PartyPdfReport {
 
@@ -35,25 +36,34 @@ final class PartyPdfReport {
         return chooser.showSaveDialog(owner);
     }
 
-    /**
-     * Writes the layout in the background. The layout is captured by the caller on the JavaFX
-     * thread - it reads the table's columns - so only the file work happens here.
-     *
-     * @param afterSaved runs on the JavaFX thread once the file is written and announced
-     */
+    /** A table, with its totals line when the layout carries one. */
     static void write(File target, String title, String subtitle, PartyListPdfLayout layout,
                       Runnable afterSaved) {
+        write(target, title, subtitle, null, layout, afterSaved);
+    }
+
+    /**
+     * Writes the report in the background. The layout and the chart are captured by the caller on
+     * the JavaFX thread - one reads the table's columns, the other is a snapshot - so only the file
+     * work happens here.
+     *
+     * @param chartPng   a chart to place above the table, or null. A chart always gets a landscape
+     *                   page: upright, it is a strip too thin to read
+     * @param afterSaved runs on the JavaFX thread once the file is written and announced
+     */
+    static void write(File target, String title, String subtitle, byte[] chartPng,
+                      PartyListPdfLayout layout, Runnable afterSaved) {
         if (layout.headers().length == 0) {
             AllAlerts.alertError(text("party.error.no.data.print"));
             return;
         }
-        PageSize pageSize = layout.headers().length > UPRIGHT_COLUMN_LIMIT
+        PageSize pageSize = chartPng != null || layout.headers().length > UPRIGHT_COLUMN_LIMIT
                 ? PageSize.A4.rotate() : PageSize.A4;
         Task<Boolean> write = new Task<>() {
             @Override
             protected Boolean call() {
-                return new PdfExportService().exportGroupedReport(target.getAbsolutePath(), title,
-                        subtitle, layout.headers(), layout.columnWidths(), layout.rows(),
+                return new PdfExportService().exportChartReport(target.getAbsolutePath(), title,
+                        subtitle, chartPng, layout.headers(), layout.columnWidths(), layout.rows(),
                         layout.totals(), pageSize);
             }
         };
