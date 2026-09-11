@@ -61,6 +61,9 @@ import javafx.util.StringConverter;
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
+import com.hamza.account.table.TablePdfLayout;
+import com.hamza.account.table.TablePdfReport;
+
 import java.io.File;
 import java.io.IOException;
 import java.math.BigDecimal;
@@ -393,7 +396,7 @@ public class PartyTrendController<T3 extends BaseNames, T4 extends BaseAccount>
             return;
         }
         String title = title();
-        File target = PartyPdfReport.chooseTarget(chart.getScene().getWindow(), title);
+        File target = TablePdfReport.chooseTarget(chart.getScene().getWindow(), title);
         if (target == null) {
             return;
         }
@@ -404,9 +407,9 @@ public class PartyTrendController<T3 extends BaseNames, T4 extends BaseAccount>
             report(e);
             return;
         }
-        PartyListPdfLayout layout = PartyListPdfLayout.from(table, shown.points(), Set.of(),
+        TablePdfLayout layout = TablePdfLayout.from(table, shown.points(), Set.of(),
                 TOTALLED_COLUMNS, text("total"));
-        PartyPdfReport.write(target, title, printSubtitle(), picture, layout, () -> { });
+        TablePdfReport.write(target, title, printSubtitle(), picture, layout, () -> { });
     }
 
     /** What the figures cover: the grouping, the dates, whose, and the rate the cards show. */

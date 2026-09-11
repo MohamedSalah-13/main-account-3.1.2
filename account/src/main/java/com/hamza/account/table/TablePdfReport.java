@@ -1,4 +1,4 @@
-package com.hamza.account.controller.name_account;
+package com.hamza.account.table;
 
 import com.hamza.account.features.export.PdfExportService;
 import com.hamza.controlsfx.alert.AllAlerts;
@@ -11,24 +11,25 @@ import javafx.stage.Window;
 import java.io.File;
 
 /**
- * Saving a party screen as a PDF: choosing the file, writing it off the JavaFX thread, and
- * saying where it went.
+ * Saving a list as a PDF: choosing the file, writing it off the JavaFX thread, and saying where
+ * it went.
  *
- * <p>The parties list printed this way first; the accounts screen printed a Jasper template
- * with fixed columns until it was moved here, and the ageing report and the trend chart print
- * here too - so they all print the same way, from a {@link PartyListPdfLayout} of the columns on
- * screen, and cannot come to differ.</p>
+ * <p>The parties list printed this way first, then the accounts screen, the ageing report and the
+ * trend chart, and now the items list - all from a {@link TablePdfLayout} of the columns on screen,
+ * so they cannot come to differ. It was {@code PartyPdfReport} until the items list needed it; the
+ * message keys it uses still carry the party prefix they were written under, and say nothing
+ * specific to a party.</p>
  */
-final class PartyPdfReport {
+public final class TablePdfReport {
 
     /** More columns than this do not fit across an upright A4 page. */
     private static final int UPRIGHT_COLUMN_LIMIT = 5;
 
-    private PartyPdfReport() {
+    private TablePdfReport() {
     }
 
     /** Asks where to save, suggesting the report's title as the file name. Null if cancelled. */
-    static File chooseTarget(Window owner, String title) {
+    public static File chooseTarget(Window owner, String title) {
         FileChooser chooser = new FileChooser();
         chooser.setTitle(text("party.dialog.save.report"));
         chooser.setInitialFileName(safeFileName(title) + ".pdf");
@@ -37,8 +38,8 @@ final class PartyPdfReport {
     }
 
     /** A table, with its totals line when the layout carries one. */
-    static void write(File target, String title, String subtitle, PartyListPdfLayout layout,
-                      Runnable afterSaved) {
+    public static void write(File target, String title, String subtitle, TablePdfLayout layout,
+                             Runnable afterSaved) {
         write(target, title, subtitle, null, layout, afterSaved);
     }
 
@@ -51,8 +52,8 @@ final class PartyPdfReport {
      *                   page: upright, it is a strip too thin to read
      * @param afterSaved runs on the JavaFX thread once the file is written and announced
      */
-    static void write(File target, String title, String subtitle, byte[] chartPng,
-                      PartyListPdfLayout layout, Runnable afterSaved) {
+    public static void write(File target, String title, String subtitle, byte[] chartPng,
+                             TablePdfLayout layout, Runnable afterSaved) {
         if (layout.headers().length == 0) {
             AllAlerts.alertError(text("party.error.no.data.print"));
             return;
@@ -76,10 +77,10 @@ final class PartyPdfReport {
             }
         });
         AllAlerts.handleTaskFailure(text("party.error.export.generic"), write);
-        start(write, "party-pdf-write");
+        start(write, "table-pdf-write");
     }
 
-    static void start(Task<?> task, String name) {
+    public static void start(Task<?> task, String name) {
         Thread thread = new Thread(task, name);
         thread.setDaemon(true);
         thread.start();

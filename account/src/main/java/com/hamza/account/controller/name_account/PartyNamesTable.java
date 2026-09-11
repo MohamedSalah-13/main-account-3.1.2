@@ -39,6 +39,8 @@ final class PartyNamesTable<T extends BaseNames, A extends BaseAccount> implemen
     private static final String VIEW_MODE = "party.list.view.mode";
     private static final String ACTIONS_COLUMN = "party-actions";
     private static final String SELECTION_COLUMN = "party-selection";
+    /** The two columns that are controls rather than data, and so stay off the printed list. */
+    static final Set<String> SCREEN_ONLY_COLUMNS = Set.of(SELECTION_COLUMN, ACTIONS_COLUMN);
 
     private final NameAndAccountInterface<T, A> source;
     private final NameData<T> nameData;

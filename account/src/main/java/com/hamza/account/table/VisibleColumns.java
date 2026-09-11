@@ -8,7 +8,7 @@ import java.util.Set;
 /**
  * What a report of a table carries: the columns on screen, in their order, minus the controls.
  *
- * <p>The PDF ({@code PartyListPdfLayout}) and the spreadsheet ({@link VisibleColumnsExcelWriter})
+ * <p>The PDF ({@link TablePdfLayout}) and the spreadsheet ({@link VisibleColumnsExcelWriter})
  * both read a table through here, so hiding a column from the view menu takes it off the screen,
  * the paper and the file at once - three outputs, one set of columns.</p>
  */

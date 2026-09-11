@@ -30,6 +30,8 @@ import javafx.scene.control.TableColumn;
 import com.hamza.account.table.RowActionsColumn;
 import com.hamza.account.table.RowAction;
 import com.hamza.account.table.PageJumpBox;
+import com.hamza.account.table.TablePdfLayout;
+import com.hamza.account.table.TablePdfReport;
 import com.hamza.account.view.AddAccountApplication;
 import com.hamza.account.view.OpenApplication;
 import com.hamza.controlsfx.alert.AllAlerts;
@@ -617,12 +619,12 @@ public class AccountController2<T3 extends BaseNames, T4 extends BaseAccount>
      * same filter the table used. It used to fill a Jasper template with seven fixed columns, so a
      * column hidden from the view menu stayed on the paper and one the template did not know
      * (the telephone, the credit limit) could never reach it. It now prints the way the parties
-     * list prints - {@link PartyListPdfLayout} over the visible columns, in their order - with a
+     * list prints - {@link TablePdfLayout} over the visible columns, in their order - with a
      * totals line under the three amounts that add up to something.
      */
     private void print() {
         String title = identity().balancesProfile().title();
-        File target = PartyPdfReport.chooseTarget(table.getScene().getWindow(), title);
+        File target = TablePdfReport.chooseTarget(table.getScene().getWindow(), title);
         if (target == null) {
             return;
         }
@@ -639,13 +641,13 @@ public class AccountController2<T3 extends BaseNames, T4 extends BaseAccount>
                 AllAlerts.alertError(text("party.error.no.data.print"));
                 return;
             }
-            PartyListPdfLayout layout = PartyListPdfLayout.from(table, extract.rows(),
+            TablePdfLayout layout = TablePdfLayout.from(table, extract.rows(),
                     Set.of(ACTIONS_COLUMN), TOTALLED_COLUMNS, text("total"));
-            PartyPdfReport.write(target, title, printSubtitle(printed), layout,
+            TablePdfReport.write(target, title, printSubtitle(printed), layout,
                     () -> warnIfTruncated(extract));
         });
         AllAlerts.handleTaskFailure(text("party.error.export.generic"), load);
-        PartyPdfReport.start(load, "party-balances-pdf-load");
+        TablePdfReport.start(load, "party-balances-pdf-load");
     }
 
     /** What the printed figures are as at, and what narrowed them - a balance without its date is not a balance. */

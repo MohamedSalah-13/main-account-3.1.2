@@ -15,6 +15,8 @@ import com.hamza.account.delete.DeletionService;
 import com.hamza.account.openFxml.AddForAllApplication;
 import com.hamza.account.table.ActionButtonToolBar;
 import com.hamza.account.table.TableInterface;
+import com.hamza.account.table.TablePdfLayout;
+import com.hamza.account.table.TablePdfReport;
 import com.hamza.account.table.TableScreenProfile;
 import com.hamza.account.authorization.PermissionKey;
 import com.hamza.controlsfx.database.DaoException;
@@ -273,18 +275,18 @@ public class NameController<T3 extends BaseNames, T4 extends BaseAccount>
             exportPartyPdf(target, rows, query);
         });
         AllAlerts.handleTaskFailure(text("party.error.export.generic"), load);
-        PartyPdfReport.start(load, "party-list-pdf-load");
+        TablePdfReport.start(load, "party-list-pdf-load");
     }
 
     /** Captures the table on the FX thread, then writes the potentially large PDF in the background. */
     private void exportPartyPdf(File target, List<T3> rows, String query) {
         String subtitle = query.isBlank() ? "" : text("search") + ": " + query;
-        PartyPdfReport.write(target, dataInterface.designInterface().nameTextOfReport(), subtitle,
-                PartyListPdfLayout.from(table, rows), () -> { });
+        TablePdfReport.write(target, dataInterface.designInterface().nameTextOfReport(), subtitle,
+                TablePdfLayout.from(table, rows, PartyNamesTable.SCREEN_ONLY_COLUMNS), () -> { });
     }
 
     private File reportTarget() {
-        return PartyPdfReport.chooseTarget(table.getScene().getWindow(),
+        return TablePdfReport.chooseTarget(table.getScene().getWindow(),
                 dataInterface.designInterface().nameTextOfReport());
     }
 

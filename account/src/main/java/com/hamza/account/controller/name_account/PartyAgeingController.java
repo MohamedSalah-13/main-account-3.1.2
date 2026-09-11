@@ -19,6 +19,8 @@ import com.hamza.account.model.base.BaseNames;
 import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.table.ContentSizedColumns;
 import com.hamza.account.table.PageJumpBox;
+import com.hamza.account.table.TablePdfLayout;
+import com.hamza.account.table.TablePdfReport;
 import com.hamza.account.table.TableColumnViews;
 import com.hamza.account.table.TableSetting;
 import com.hamza.account.table.VisibleColumnsExcelWriter;
@@ -90,7 +92,7 @@ import static com.hamza.controlsfx.others.Utils.setOptionalNumberFormatter;
  * parties: the customer's or supplier's header and colours, its list actions after the filters
  * that decide the list rather than on a bar of their own, the "العرض" menu, columns as wide as
  * what they hold, and a PDF and a spreadsheet of the columns on screen - {@code TableColumnViews},
- * {@code ContentSizedColumns}, {@code PartyListPdfLayout} and {@code VisibleColumnsExcelWriter},
+ * {@code ContentSizedColumns}, {@code TablePdfLayout} and {@code VisibleColumnsExcelWriter},
  * the same four pieces, not copies of them.
  *
  * <p>Loading is off the JavaFX thread with a {@code generation} token that discards the answer to
@@ -445,7 +447,7 @@ public class PartyAgeingController<T3 extends BaseNames, T4 extends BaseAccount>
      */
     private void print() {
         String title = identity().ageingProfile().title();
-        File target = PartyPdfReport.chooseTarget(table.getScene().getWindow(), title);
+        File target = TablePdfReport.chooseTarget(table.getScene().getWindow(), title);
         if (target == null) {
             return;
         }
@@ -462,14 +464,14 @@ public class PartyAgeingController<T3 extends BaseNames, T4 extends BaseAccount>
                 AllAlerts.alertError(text("party.error.no.data.print"));
                 return;
             }
-            PartyListPdfLayout layout = PartyListPdfLayout.from(table, extract.rows(), Set.of(),
+            TablePdfLayout layout = TablePdfLayout.from(table, extract.rows(), Set.of(),
                     totalledColumns(), text("total"));
-            PartyPdfReport.write(target, title,
+            TablePdfReport.write(target, title,
                     text("party.ageing.filter.as.of") + ": " + printed.asOf(), layout,
                     () -> warnIfTruncated(extract));
         });
         AllAlerts.handleTaskFailure(text("party.error.export.generic"), load);
-        PartyPdfReport.start(load, "party-ageing-pdf-load");
+        TablePdfReport.start(load, "party-ageing-pdf-load");
     }
 
     /**
