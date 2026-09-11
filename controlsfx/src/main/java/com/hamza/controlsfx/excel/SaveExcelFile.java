@@ -13,9 +13,8 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.time.LocalDate;
 import java.time.LocalTime;
-import java.util.Map;
-import java.util.Set;
-import java.util.TreeMap;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * A utility class for generating and saving Excel files using a user-defined interface.
@@ -31,40 +30,45 @@ public class SaveExcelFile {
      * @throws Exception if an error occurs during the generation or saving of the Excel file.
      */
     public <T> int downLoadExcelFile(WriteExcelInterface<T> writeExcelInterface) throws Exception {
-        Map<String, Object[]> studentData = new TreeMap<>();
-        studentData.put("1", writeExcelInterface.columnHeader());
-
-        if (writeExcelInterface.addDataToFile()) {
-            for (T t : writeExcelInterface.itemsList()) {
-                studentData.put(String.valueOf(studentData.keySet().size() + 1), writeExcelInterface.dataRow(t));
-            }
-        }
-        return saveFile(writeData(studentData, writeExcelInterface.sheetName()));
+        return saveFile(writeData(sheetRows(writeExcelInterface), writeExcelInterface.sheetName()));
     }
 
     /**
-     * Generates an Excel workbook and populates it with the provided student data.
-     *
-     * @param studentData A map where each key represents a unique identifier (e.g., a student ID)
-     *                    and the corresponding value is an array of objects representing a row of
-     *                    student data to be written to the Excel sheet.
-     * @param sheetName   The name of the sheet in which the student data will be written.
-     * @return An XSSFWorkbook object containing the populated Excel sheet.
+     * The header, then one row per item, in the order the items were given.
+     * <p>
+     * <b>They were collected in a {@code TreeMap} keyed by the row number written as a string</b>,
+     * and a string sorts {@code "10"} before {@code "2"}. The header was {@code "1"} and the items
+     * {@code "2"} onwards, so from the ninth item on the file came out in a different order from
+     * the screen - the ninth item written straight under the header, the tenth after it, and so
+     * on - in every export in the application that had more than eight rows.
      */
-    private XSSFWorkbook writeData(Map<String, Object[]> studentData, String sheetName) {
+    static <T> List<Object[]> sheetRows(WriteExcelInterface<T> writeExcelInterface) {
+        List<Object[]> rows = new ArrayList<>();
+        rows.add(writeExcelInterface.columnHeader());
+        if (writeExcelInterface.addDataToFile()) {
+            for (T t : writeExcelInterface.itemsList()) {
+                rows.add(writeExcelInterface.dataRow(t));
+            }
+        }
+        return rows;
+    }
+
+    /**
+     * One sheet, one spreadsheet row per entry. An empty value is an empty cell:
+     * {@code String.valueOf(null)} used to write the word {@code null} into it.
+     */
+    private XSSFWorkbook writeData(List<Object[]> rows, String sheetName) {
         XSSFWorkbook workbook = new XSSFWorkbook();
         XSSFSheet spreadsheet = workbook.createSheet(sheetName);
-        Set<String> keyId = studentData.keySet();
         int rowid = 0;
 
-        for (String key : keyId) {
+        for (Object[] objectArr : rows) {
             XSSFRow row = spreadsheet.createRow(rowid++);
-            Object[] objectArr = studentData.get(key);
             int cellid = 0;
 
             for (Object obj : objectArr) {
                 Cell cell = row.createCell(cellid++);
-                cell.setCellValue(String.valueOf(obj));
+                cell.setCellValue(obj == null ? "" : String.valueOf(obj));
             }
         }
 
