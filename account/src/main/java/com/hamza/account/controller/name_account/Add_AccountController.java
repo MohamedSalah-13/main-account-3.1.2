@@ -41,7 +41,9 @@ import javafx.scene.control.DatePicker;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
+import javafx.scene.layout.AnchorPane;
 import javafx.scene.layout.GridPane;
+import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 import javafx.util.StringConverter;
 import org.jetbrains.annotations.NotNull;
@@ -112,6 +114,10 @@ public class Add_AccountController<T3 extends BaseNames, T4 extends BaseAccount>
     private PartySuggestionField<T3> partyField;
 
     @FXML
+    private AnchorPane screenRoot;
+    @FXML
+    private VBox formRoot;
+    @FXML
     private GridPane gridPane;
     @FXML
     private DatePicker date;
@@ -148,6 +154,16 @@ public class Add_AccountController<T3 extends BaseNames, T4 extends BaseAccount>
         this.name = name;
     }
 
+    /** The party's colours on the dialog's button bar, as the add-party form has them. */
+    @Override
+    public String dialogStyleClass() {
+        return identity().styleClass();
+    }
+
+    private PartyScreenIdentity identity() {
+        return PartyScreenIdentity.forKind(nameAndAccountInterface.partyKind());
+    }
+
     @FXML
     public void initialize() {
         otherSetting();
@@ -160,6 +176,10 @@ public class Add_AccountController<T3 extends BaseNames, T4 extends BaseAccount>
     @Override
     public void otherSetting() {
         var lm = LanguageManager.getInstance();
+        PartyFormProfile profile = identity().paymentProfile();
+        screenRoot.getStyleClass().add(profile.styleClass());
+        formRoot.getChildren().add(0, PartyIdentityHeader.of(profile));
+
         // Only the fields whose caption depends on something are set here; the rest are
         // resource keys in the FXML, which is what stops one being forgotten.
         DateSetting.dateAction(date);

@@ -618,6 +618,38 @@
     -fx-background-color: -party-row-selected;
 }
 
+/* The accounts screen wears the same identity over its figures and its footer. Each figure
+   is also a filter - clicking it narrows the list - so it answers the pointer like a button. */
+.party-stat-card {
+    -fx-cursor: hand;
+}
+
+.party-customers .party-stat-card,
+.party-suppliers .party-stat-card {
+    -fx-border-color: -party-border;
+}
+
+.party-customers .party-stat-card:hover,
+.party-suppliers .party-stat-card:hover {
+    -fx-border-color: -party-accent;
+    -fx-effect: dropshadow(gaussian, -party-shadow, 14, 0.2, 0, 4);
+}
+
+.party-stat-card .stat-value {
+    -fx-font-size: 1.636em;
+    -fx-font-weight: bold;
+}
+
+.party-customers .party-stat-card .stat-value,
+.party-suppliers .party-stat-card .stat-value {
+    -fx-text-fill: -party-accent;
+}
+
+.party-customers .party-summary-bar,
+.party-suppliers .party-summary-bar {
+    -fx-border-color: -party-border;
+}
+
 /* ---------- Tables ---------- */
 
 .table-view,
@@ -2288,3 +2320,10 @@
 /* A credit limit the balance has passed. */
 .progress-bar:over-limit > .bar { -fx-background-color: -app-danger; }
 .label:over-limit { -fx-text-fill: -app-danger; -fx-font-weight: bold; }
+
+/* The row itself. AccountController2 has set this pseudo-class on the balances table all along,
+   and there was no rule for it - a party past their limit looked like every other row. */
+.table-row-cell:over-limit > .table-cell {
+    -fx-text-fill: -app-danger;
+    -fx-font-weight: bold;
+}

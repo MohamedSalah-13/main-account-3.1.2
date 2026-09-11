@@ -23,6 +23,8 @@ import com.hamza.account.model.base.BaseAccount;
 import com.hamza.account.model.base.BaseNames;
 import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.openFxml.FxmlPath;
+import com.hamza.account.table.ContentSizedColumns;
+import com.hamza.account.table.TableColumnViews;
 import com.hamza.account.table.TableSetting;
 import javafx.scene.control.TableColumn;
 import com.hamza.account.table.RowActionsColumn;
@@ -42,20 +44,26 @@ import javafx.collections.FXCollections;
 import javafx.concurrent.Task;
 import javafx.css.PseudoClass;
 import javafx.fxml.FXML;
+import javafx.geometry.Orientation;
 import javafx.geometry.Pos;
+import javafx.scene.Node;
 import javafx.scene.control.Button;
 import javafx.scene.control.CheckBox;
 import javafx.scene.control.ComboBox;
+import javafx.scene.control.ContentDisplay;
 import javafx.scene.control.DatePicker;
 import javafx.scene.control.Label;
+import javafx.scene.control.MenuButton;
 import javafx.scene.control.ProgressIndicator;
 import javafx.scene.control.SelectionMode;
+import javafx.scene.control.Separator;
 import javafx.scene.control.TableRow;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TextField;
 import javafx.scene.layout.FlowPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
+import javafx.scene.layout.Region;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.util.StringConverter;
@@ -65,6 +73,8 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
+import java.util.prefs.Preferences;
 
 import static com.hamza.controlsfx.others.DateSetting.dateAction;
 import static com.hamza.controlsfx.others.Utils.setOptionalNumberFormatter;
@@ -102,6 +112,9 @@ public class AccountController2<T3 extends BaseNames, T4 extends BaseAccount>
     /** What "idle" means on the card. A quarter with no movement is the usual question. */
     private static final int IDLE_DAYS = 90;
 
+    /** The row buttons: fixed width, and never offered in the view menu. */
+    private static final String ACTIONS_COLUMN = "balance-actions";
+
     private final EventBus eventBus = ServiceRegistry.get(EventBus.class);
     private final PartyBalanceService balanceService = new PartyBalanceService();
 
@@ -129,6 +142,9 @@ public class AccountController2<T3 extends BaseNames, T4 extends BaseAccount>
      */
     private final PageJumpBox pageJump = new PageJumpBox(this::search);
 
+    private final ContentSizedColumns<PartyBalanceRow> columnSizing = new ContentSizedColumns<>();
+    private final MenuButton viewMenu = TableColumnViews.menuButton();
+
     private final Label countLabel = new Label();
     private final Button previous = new Button();
     private final Button next = new Button();
@@ -152,8 +168,15 @@ public class AccountController2<T3 extends BaseNames, T4 extends BaseAccount>
 
     @FXML
     public void initialize() {
+        // The customers' or suppliers' colours, the same class the parties list and the
+        // add-party form carry - the table header, the rows and the cards all follow it.
+        PartyScreenIdentity identity = PartyScreenIdentity.forKind(partyKind());
+        stackPane.getStyleClass().add(identity.styleClass());
+
         buildTable();
-        box.getChildren().setAll(toolbar(), statCards(), filterBar(), tableArea(), footer());
+        columnViews().install(viewMenu, table);
+        box.getChildren().setAll(PartyIdentityHeader.of(identity.balancesProfile()),
+                statCards(), filterBar(), tableArea(), footer());
         VBox.setVgrow(box, Priority.ALWAYS);
 
         if (eventBus != null) {
@@ -180,14 +203,16 @@ public class AccountController2<T3 extends BaseNames, T4 extends BaseAccount>
     // ---- the screen ------------------------------------------------------------------
 
     /**
-     * What the toolbar keeps: the things that act on the <b>list</b>.
+     * The things that act on the <b>list</b>, placed after the filters that decide what the
+     * list is - they print and export exactly what those filters matched.
      * <p>
-     * Collecting and opening a statement left it, because they act on <b>one party</b> and are
-     * now buttons in that party's own row. A toolbar button that acts on "the selected row" is
-     * two gestures and carries a message that exists only because the control is in the wrong
-     * place - "choose a row first". A refresh, a print and an export have no row, so they stay.
+     * They had a toolbar of their own above the figures, which spent a whole row on four
+     * buttons. Collecting and opening a statement are not here because they act on <b>one
+     * party</b> and are buttons in that party's own row: a button that acts on "the selected
+     * row" is two gestures and carries a message that exists only because the control is in
+     * the wrong place - "choose a row first". A refresh, a print and an export have no row.
      */
-    private HBox toolbar() {
+    private Node[] listActions() {
         // The ageing report opens from here rather than from the main menu: it is the same data
         // and the same permission, and "these are the balances" leads straight to "how old are
         // they". A menu entry of its own would need a product feature in the signed catalogue,
@@ -198,12 +223,24 @@ public class AccountController2<T3 extends BaseNames, T4 extends BaseAccount>
         Button excel = button("party.statement.export.excel", AppIcon.SPREADSHEET, this::exportExcel);
         excel.getStyleClass().setAll("excel-button");
 
-        HBox spacer = new HBox();
-        HBox.setHgrow(spacer, Priority.ALWAYS);
-        HBox bar = new HBox(8, ageing, spacer, refresh, print, excel);
-        bar.setAlignment(Pos.CENTER_LEFT);
-        bar.getStyleClass().add("app-card");
-        return bar;
+        Separator divider = new Separator(Orientation.VERTICAL);
+        divider.getStyleClass().add("modern-separator");
+        return new Node[]{divider, ageing, refresh, print, excel, viewMenu};
+    }
+
+    /**
+     * The "العرض" menu the parties list has, over this table's columns. It opens on the full
+     * view, which is what this screen showed before the menu existed, so nobody loses a column
+     * on upgrade. Customers and suppliers remember their choice apart: the credit limit means
+     * something for one of them only.
+     */
+    private TableColumnViews<PartyBalanceRow> columnViews() {
+        Preferences preferences = Preferences.userNodeForPackage(AccountController2.class)
+                .node("balances-" + partyKind().name().toLowerCase());
+        return new TableColumnViews<>(preferences, "view.mode", TableColumnViews.Preset.FULL,
+                Set.of("balance-code", "balance-name", "balance-phone", "balance-balance",
+                        "balance-last"),
+                Set.of(ACTIONS_COLUMN));
     }
 
     /**
@@ -228,10 +265,9 @@ public class AccountController2<T3 extends BaseNames, T4 extends BaseAccount>
         Label caption = new Label(text(titleKey));
         caption.getStyleClass().add("stat-title");
         VBox card = new VBox(4, caption, value);
-        card.getStyleClass().add("dashboard-tile");
+        card.getStyleClass().addAll("dashboard-tile", "party-stat-card");
         card.setMinWidth(150);
         card.setOnMouseClicked(event -> onClick.run());
-        card.setStyle("-fx-cursor: hand;");
         return card;
     }
 
@@ -269,13 +305,17 @@ public class AccountController2<T3 extends BaseNames, T4 extends BaseAccount>
         HBox.setHgrow(search, Priority.ALWAYS);
 
         Button apply = new Button(text("search"), AppIcon.SEARCH.graphic());
-        apply.getStyleClass().add("app-primary-button");
+        apply.getStyleClass().addAll("app-primary-button", "party-primary-button");
         apply.setId("balance-apply");
         apply.setOnAction(event -> search(0));
 
         Button clear = new Button(text("party.statement.filter.reset"), AppIcon.CLEAR.graphic());
         clear.getStyleClass().add("app-neutral-button");
         clear.setOnAction(event -> reset());
+        // The search field grows, and an HBox squeezes everything else to make room for it -
+        // a button's minimum is its full caption, or it is cut to "..." on a narrower window.
+        apply.setMinWidth(Region.USE_PREF_SIZE);
+        clear.setMinWidth(Region.USE_PREF_SIZE);
 
         comboState.setOnAction(event -> search(0));
         comboArea.setOnAction(event -> search(0));
@@ -285,15 +325,16 @@ public class AccountController2<T3 extends BaseNames, T4 extends BaseAccount>
         // The Enter order, declared once, in the order the bar is filled - rule ق-ل9.
         whenEnterPressed(balanceFrom, balanceTo, idleDays, search, apply);
 
-        HBox first = new HBox(8, new Label(text("party.balances.filter.state")), comboState,
-                new Label(text("party.balances.filter.area")), comboArea,
-                new Label(text("party.balances.filter.as.of")), asOf, overLimitOnly);
+        HBox first = new HBox(8, caption("party.balances.filter.state"), comboState,
+                caption("party.balances.filter.area"), comboArea,
+                caption("party.balances.filter.as.of"), asOf, overLimitOnly);
         first.setAlignment(Pos.CENTER_LEFT);
         HBox second = new HBox(8, balanceFrom, balanceTo, idleDays, search, apply, clear);
+        second.getChildren().addAll(listActions());
         second.setAlignment(Pos.CENTER_LEFT);
 
         VBox bar = new VBox(8, first, second);
-        bar.getStyleClass().add("app-card");
+        bar.getStyleClass().addAll("app-card", "party-form-card");
         bar.setId("balance-filters");
         return bar;
     }
@@ -321,7 +362,7 @@ public class AccountController2<T3 extends BaseNames, T4 extends BaseAccount>
         // label beside it saying "page 1" is the same fact twice.
         HBox bar = new HBox(12, countLabel, spacer, previous, pageJump, next);
         bar.setAlignment(Pos.CENTER_LEFT);
-        bar.getStyleClass().add("summary-card");
+        bar.getStyleClass().addAll("summary-card", "party-summary-bar");
         return bar;
     }
 
@@ -332,21 +373,29 @@ public class AccountController2<T3 extends BaseNames, T4 extends BaseAccount>
      * had been through arithmetic printed as {@code 1234.5600000000002}.
      */
     private void buildTable() {
-        table.setId("balance-table");
+        // One id per party kind, because TableSetting keys a column's saved visibility by the
+        // table's id - a supplier screen hiding the credit limit must not hide it for customers.
+        table.setId("balance-table-" + partyKind().name().toLowerCase());
         table.getSelectionModel().setSelectionMode(SelectionMode.SINGLE);
-        table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_FLEX_LAST_COLUMN);
         table.setPlaceholder(new Label(text("party.balances.empty")));
+        // Every column carries an id: the view menu's compact set names columns by it, and
+        // TableSetting would otherwise key them by position.
         table.getColumns().setAll(List.of(
-                Columns.number("code", PartyBalanceRow::partyId),
-                Columns.text("name", PartyBalanceRow::name),
-                Columns.text("column.tel", PartyBalanceRow::phone),
-                Columns.text("party.column.area", PartyBalanceRow::areaName),
-                Columns.money("party.balances.column.period.debit", PartyBalanceRow::periodDebit),
-                Columns.money("party.balances.column.period.credit", PartyBalanceRow::periodCredit),
-                Columns.money("party.balances.column.balance", PartyBalanceRow::balance),
-                Columns.money("party.balances.column.limit", PartyBalanceRow::creditLimit),
-                Columns.date("party.balances.column.last", PartyBalanceRow::lastMovement),
-                actionsColumn()));
+                named("balance-code", Columns.number("code", PartyBalanceRow::partyId)),
+                named("balance-name", Columns.text("name", PartyBalanceRow::name)),
+                named("balance-phone", Columns.text("column.tel", PartyBalanceRow::phone)),
+                named("balance-area", Columns.text("party.column.area", PartyBalanceRow::areaName)),
+                named("balance-period-debit", Columns.money("party.balances.column.period.debit",
+                        PartyBalanceRow::periodDebit)),
+                named("balance-period-credit", Columns.money("party.balances.column.period.credit",
+                        PartyBalanceRow::periodCredit)),
+                named("balance-balance", Columns.money("party.balances.column.balance",
+                        PartyBalanceRow::balance)),
+                named("balance-limit", Columns.money("party.balances.column.limit",
+                        PartyBalanceRow::creditLimit)),
+                named("balance-last", Columns.date("party.balances.column.last",
+                        PartyBalanceRow::lastMovement)),
+                named(ACTIONS_COLUMN, actionsColumn())));
 
         table.setRowFactory(view -> new TableRow<>() {
             @Override
@@ -361,7 +410,18 @@ public class AccountController2<T3 extends BaseNames, T4 extends BaseAccount>
                 openStatement(selected);
             }
         });
+        // Columns as wide as what they hold, as on the parties list - not every column stretched
+        // across the window with the figures pushed away from the names they belong to.
+        columnSizing.install(table);
         TableSetting.tableMenuSetting(getClass(), table);
+        // The view menu offers these choices by name; JavaFX's own header menu would be a
+        // second copy of them, in the corner of the table.
+        table.setTableMenuButtonVisible(false);
+    }
+
+    private static <S, V> TableColumn<S, V> named(String id, TableColumn<S, V> column) {
+        column.setId(id);
+        return column;
     }
 
     // ---- loading ---------------------------------------------------------------------
@@ -449,6 +509,7 @@ public class AccountController2<T3 extends BaseNames, T4 extends BaseAccount>
     private void show(PartyBalancePage page) {
         summary = page.summary();
         table.setItems(FXCollections.observableArrayList(page.rows()));
+        columnSizing.layout(table);
 
         statParties.setText(String.valueOf(summary.parties()));
         statOwed.setText(Columns.money(summary.totalOwed()));
@@ -591,11 +652,21 @@ public class AccountController2<T3 extends BaseNames, T4 extends BaseAccount>
         return nameAndAccountInterface.partyKind();
     }
 
+    /** A toolbar button, laid out the way the parties list lays out its own. */
     private Button button(String key, AppIcon icon, Runnable action) {
         Button button = new Button(text(key), icon.graphic());
         button.getStyleClass().add("app-neutral-button");
+        button.setContentDisplay(ContentDisplay.RIGHT);
+        button.setMinWidth(Region.USE_PREF_SIZE);
         button.setOnAction(event -> action.run());
         return button;
+    }
+
+    /** A filter caption, in the same class as the captions of the list and the form. */
+    private static Label caption(String key) {
+        Label label = new Label(text(key));
+        label.getStyleClass().add("form-label");
+        return label;
     }
 
     private static Label statValue(String id) {

@@ -55,4 +55,22 @@ class PartyScreenIdentityTest {
             assertNotEquals(add.title(), edit.title());
         }
     }
+
+    @Test
+    void accountScreensWearTheIdentityOfTheirParty() {
+        PartyScreenIdentity customer = PartyScreenIdentity.forKind(PartyKind.CUSTOMER);
+        PartyScreenIdentity supplier = PartyScreenIdentity.forKind(PartyKind.SUPPLIER);
+
+        for (PartyScreenIdentity identity : new PartyScreenIdentity[]{customer, supplier}) {
+            for (PartyFormProfile profile : new PartyFormProfile[]{
+                    identity.balancesProfile(), identity.paymentProfile()}) {
+                assertEquals(identity.styleClass(), profile.styleClass());
+                assertEquals(identity.icon(), profile.icon());
+                assertFalse(profile.title().isBlank());
+                assertFalse(profile.subtitle().isBlank());
+            }
+        }
+        assertNotEquals(customer.balancesProfile().title(), supplier.balancesProfile().title());
+        assertNotEquals(customer.paymentProfile().title(), supplier.paymentProfile().title());
+    }
 }

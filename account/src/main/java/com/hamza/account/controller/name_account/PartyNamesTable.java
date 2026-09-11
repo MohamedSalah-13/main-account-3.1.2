@@ -6,31 +6,25 @@ import com.hamza.account.interfaces.api.NameAndAccountInterface;
 import com.hamza.account.interfaces.api.NameData;
 import com.hamza.account.model.base.BaseAccount;
 import com.hamza.account.model.base.BaseNames;
+import com.hamza.account.table.ContentSizedColumns;
 import com.hamza.account.table.RowAction;
 import com.hamza.account.table.RowActionsColumn;
+import com.hamza.account.table.TableColumnViews;
 import com.hamza.account.table.TableSetting;
 import com.hamza.controlsfx.language.LanguageManager;
 import com.hamza.controlsfx.table.Columns;
 import javafx.css.PseudoClass;
+import javafx.scene.control.MenuButton;
 import javafx.scene.control.TableCell;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
-import javafx.scene.control.CheckMenuItem;
-import javafx.scene.control.Menu;
-import javafx.scene.control.MenuButton;
-import javafx.scene.control.RadioMenuItem;
-import javafx.scene.control.SeparatorMenuItem;
-import javafx.scene.control.ToggleGroup;
 import javafx.scene.input.MouseButton;
-import javafx.scene.text.Text;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
-import java.util.Collections;
-import java.util.IdentityHashMap;
 import java.util.Set;
-import java.util.prefs.Preferences;
 import java.util.function.Consumer;
+import java.util.prefs.Preferences;
 
 /**
  * The JavaFX adapter for the shared customers/suppliers list.
@@ -42,10 +36,6 @@ import java.util.function.Consumer;
 final class PartyNamesTable<T extends BaseNames, A extends BaseAccount> implements DataTable<T> {
 
     private static final PseudoClass STOPPED = PseudoClass.getPseudoClass("party-stopped");
-    private static final double EMPTY_COLUMN_WIDTH = 10;
-    private static final double MIN_CONTENT_WIDTH = 62;
-    private static final double MAX_CONTENT_WIDTH = 260;
-    private static final double CELL_PADDING = 28;
     private static final String VIEW_MODE = "party.list.view.mode";
     private static final String ACTIONS_COLUMN = "party-actions";
     private static final String SELECTION_COLUMN = "party-selection";
@@ -54,8 +44,7 @@ final class PartyNamesTable<T extends BaseNames, A extends BaseAccount> implemen
     private final NameData<T> nameData;
     private final List<RowAction<T>> actions;
     private final Consumer<T> edit;
-    private final Set<TableColumn<T, ?>> contentSizedColumns =
-            Collections.newSetFromMap(new IdentityHashMap<>());
+    private final ContentSizedColumns<T> sizing = new ContentSizedColumns<>();
 
     PartyNamesTable(NameAndAccountInterface<T, A> source, NameData<T> nameData,
                     List<RowAction<T>> actions, Consumer<T> edit) {
@@ -76,6 +65,7 @@ final class PartyNamesTable<T extends BaseNames, A extends BaseAccount> implemen
         // The shell has a clearer, named view menu for this feature. Leaving JavaFX's header
         // menu on would offer the same choices twice and make the compact headers harder to read.
         tableView.setTableMenuButtonVisible(false);
+        sizing.install(tableView);
         tableView.setOnMouseClicked(event -> {
             if (event.getClickCount() == 2 && event.getButton() == MouseButton.PRIMARY) {
                 T selected = tableView.getSelectionModel().getSelectedItem();
@@ -105,35 +95,10 @@ final class PartyNamesTable<T extends BaseNames, A extends BaseAccount> implemen
         tableView.getColumns().getFirst().setId(SELECTION_COLUMN);
         Preferences preferences = Preferences.userNodeForPackage(PartyNamesTable.class)
                 .node(source.partyKind().name().toLowerCase());
-
-        RadioMenuItem compact = radio("party.list.view.compact");
-        RadioMenuItem full = radio("party.list.view.full");
-        ToggleGroup views = new ToggleGroup();
-        compact.setToggleGroup(views);
-        full.setToggleGroup(views);
-        compact.setOnAction(event -> applyPreset(tableView, Preset.COMPACT, preferences));
-        full.setOnAction(event -> applyPreset(tableView, Preset.FULL, preferences));
-
-        Menu customize = new Menu(text("party.list.view.customize"));
-        for (TableColumn<T, ?> column : configurableColumns(tableView)) {
-            CheckMenuItem item = new CheckMenuItem(column.getText());
-            item.selectedProperty().bindBidirectional(column.visibleProperty());
-            item.setOnAction(event -> preferences.put(VIEW_MODE, Preset.CUSTOM.name()));
-            customize.getItems().add(item);
-        }
-
-        RadioMenuItem selected = preferences.get(VIEW_MODE, Preset.COMPACT.name())
-                .equals(Preset.FULL.name()) ? full : compact;
-        selected.setSelected(true);
-        applySavedView(tableView, preferences);
-
-        var reset = new javafx.scene.control.MenuItem(text("party.list.view.reset"));
-        reset.setOnAction(event -> {
-            compact.setSelected(true);
-            applyPreset(tableView, Preset.COMPACT, preferences);
-        });
-        viewMenu.getItems().setAll(compact, full, new SeparatorMenuItem(), customize,
-                new SeparatorMenuItem(), reset);
+        new TableColumnViews<T>(preferences, VIEW_MODE, TableColumnViews.Preset.COMPACT,
+                Set.of("party-code", "party-name", "party-phone", "party-status"),
+                Set.of(SELECTION_COLUMN, ACTIONS_COLUMN))
+                .install(viewMenu, tableView);
     }
 
     /**
@@ -143,16 +108,7 @@ final class PartyNamesTable<T extends BaseNames, A extends BaseAccount> implemen
      */
     @Override
     public void layoutColumns(TableView<T> tableView) {
-        for (TableColumn<T, ?> column : tableView.getVisibleLeafColumns()) {
-            if (!contentSizedColumns.contains(column) && isFixedColumn(column)) {
-                continue;
-            }
-            contentSizedColumns.add(column);
-            double width = contentWidth(tableView, column);
-            column.setMinWidth(width);
-            column.setPrefWidth(width);
-            column.setMaxWidth(width);
-        }
+        sizing.layout(tableView);
     }
 
     @Override
@@ -194,33 +150,6 @@ final class PartyNamesTable<T extends BaseNames, A extends BaseAccount> implemen
         return column;
     }
 
-    private boolean isFixedColumn(TableColumn<T, ?> column) {
-        return column.getMinWidth() == column.getMaxWidth();
-    }
-
-    private double contentWidth(TableView<T> tableView, TableColumn<T, ?> column) {
-        double widest = 0;
-        boolean hasContent = false;
-        for (T row : tableView.getItems()) {
-            var observable = column.getCellObservableValue(row);
-            Object value = observable == null ? null : observable.getValue();
-            if (value == null || value.toString().isBlank()) {
-                continue;
-            }
-            hasContent = true;
-            widest = Math.max(widest, textWidth(value.toString()));
-        }
-        if (!hasContent) {
-            return EMPTY_COLUMN_WIDTH;
-        }
-        return Math.min(MAX_CONTENT_WIDTH,
-                Math.max(MIN_CONTENT_WIDTH, Math.max(textWidth(column.getText()), widest) + CELL_PADDING));
-    }
-
-    private double textWidth(String value) {
-        return new Text(value).getLayoutBounds().getWidth();
-    }
-
     private void nameDetailColumns(TableView<T> tableView) {
         for (int index = 0; index < tableView.getColumns().size(); index++) {
             TableColumn<T, ?> column = tableView.getColumns().get(index);
@@ -230,57 +159,8 @@ final class PartyNamesTable<T extends BaseNames, A extends BaseAccount> implemen
         }
     }
 
-    private List<TableColumn<T, ?>> configurableColumns(TableView<T> tableView) {
-        return tableView.getColumns().stream()
-                .filter(column -> !SELECTION_COLUMN.equals(column.getId()))
-                .filter(column -> !ACTIONS_COLUMN.equals(column.getId()))
-                .toList();
-    }
-
-    private void applySavedView(TableView<T> tableView, Preferences preferences) {
-        String value = preferences.get(VIEW_MODE, Preset.COMPACT.name());
-        if (Preset.FULL.name().equals(value)) {
-            applyVisibility(tableView, Preset.FULL);
-        } else if (Preset.COMPACT.name().equals(value)) {
-            applyVisibility(tableView, Preset.COMPACT);
-        }
-    }
-
-    private void applyPreset(TableView<T> tableView, Preset preset, Preferences preferences) {
-        applyVisibility(tableView, preset);
-        preferences.put(VIEW_MODE, preset.name());
-    }
-
-    private void applyVisibility(TableView<T> tableView, Preset preset) {
-        for (TableColumn<T, ?> column : configurableColumns(tableView)) {
-            boolean visible = preset == Preset.FULL || isCompactColumn(column);
-            column.setVisible(visible);
-        }
-    }
-
-    private boolean isCompactColumn(TableColumn<T, ?> column) {
-        return switch (column.getId()) {
-            case "party-code", "party-name", "party-phone", "party-status" -> true;
-            default -> false;
-        };
-    }
-
-    private RadioMenuItem radio(String key) {
-        return new RadioMenuItem(text(key));
-    }
-
-    private String text(String key) {
-        return LanguageManager.getInstance().getString(key);
-    }
-
     private static <S, V> TableColumn<S, V> named(String id, TableColumn<S, V> column) {
         column.setId(id);
         return column;
-    }
-
-    private enum Preset {
-        COMPACT,
-        FULL,
-        CUSTOM
     }
 }

@@ -48,7 +48,6 @@ import javafx.scene.control.Tooltip;
 import javafx.scene.layout.ColumnConstraints;
 import javafx.scene.layout.FlowPane;
 import javafx.scene.layout.GridPane;
-import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 import javafx.scene.layout.AnchorPane;
@@ -192,7 +191,7 @@ public class AddNameController<T3 extends BaseNames, T4 extends BaseAccount>
         screenRoot.getStyleClass().add(profile.styleClass());
 
         ScrollPane scroll = scrolling(columns(customer));
-        formRoot.getChildren().setAll(identityHeader(profile), scroll);
+        formRoot.getChildren().setAll(PartyIdentityHeader.of(profile), scroll);
         VBox.setVgrow(scroll, Priority.ALWAYS);
 
         // One declared order through the form - rule ق-ل9, pinned by
@@ -200,31 +199,6 @@ public class AddNameController<T3 extends BaseNames, T4 extends BaseAccount>
         whenEnterPressed(txtName, txtTel, txtEmail, txtAddress, txtTaxNumber,
                 txtBalance, txtLimit, txtTerms, txtOther);
         Platform.runLater(txtName::requestFocus);
-    }
-
-    /**
-     * The same semantic header as the directory: a party is recognisable before any
-     * field is read, while the data-entry cards remain the familiar compact layout.
-     */
-    private HBox identityHeader(PartyFormProfile profile) {
-        HBox iconBox = new HBox(profile.icon().graphic(32));
-        iconBox.setAlignment(Pos.CENTER);
-        iconBox.getStyleClass().add("party-screen-icon-box");
-
-        Label title = new Label(profile.title());
-        title.getStyleClass().add("party-screen-title");
-        Label subtitle = new Label(profile.subtitle());
-        subtitle.getStyleClass().add("party-screen-subtitle");
-
-        VBox textBox = new VBox(3, title, subtitle);
-        textBox.setAlignment(Pos.CENTER_LEFT);
-        HBox.setHgrow(textBox, Priority.ALWAYS);
-
-        HBox header = new HBox(14, iconBox, textBox);
-        header.setAlignment(Pos.CENTER_LEFT);
-        header.setMaxWidth(Double.MAX_VALUE);
-        header.getStyleClass().add("party-screen-header");
-        return header;
     }
 
     /**

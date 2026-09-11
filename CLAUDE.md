@@ -1123,6 +1123,37 @@ the theme files, which is what the capital-management block should have done ins
 shared class name. One declaration now, with colours that answer the background it actually has.
 A screen-specific style must never redefine a shared class.
 
+### Column views and widths
+
+`account.table.TableColumnViews` is the "العرض" menu - a compact view, a full view, a
+hand-picked set of columns and the way back to the default, remembered per table - and
+`ContentSizedColumns` sizes each column to what it holds instead of stretching every column
+across the window. The parties list and the party accounts screen both use them. **A list that
+wants either takes these two classes, not a copy of them** - they were one private class inside
+`PartyNamesTable` until the second screen asked for the same thing.
+
+To give another table the same menu and widths:
+
+- **Give every column an id.** The compact set names columns by id, and
+  `TableSetting.tableMenuSetting` keys each column's saved visibility and width by it - without
+  one it falls back to the column's index, so inserting a column hands its neighbour's saved
+  choice to it.
+- **Call `tableMenuSetting` before `install`, then hide JavaFX's own header menu**
+  (`setTableMenuButtonVisible(false)`), which would offer the same choices a second time. A custom
+  view *is* the columns' own visibility, which `TableSetting` already saves; the menu stores only
+  the preset, and restores "custom" by leaving the columns alone.
+- **Leave the row actions and the selection box out of the menu** (`fixedColumnIds`). Both have a
+  fixed width (min = max), which is also how `ContentSizedColumns` knows not to measure them.
+- **Call `layout` every time rows are placed in the table.** The widths are measured from the
+  loaded rows: a column blank on every row becomes a thin divider rather than a share of the empty
+  width, and an empty result falls back to the headings.
+- **Choose the default preset for what the screen already showed**, so nobody's screen loses
+  columns on upgrade: the parties list opens compact, the accounts screen opens full.
+
+A screen hosted by `TableController` answers `supportsColumnViews`/`configureColumnViews` and
+`usesContentSizedColumns`/`layoutColumns` on its `DataTable` - `PartyNamesTable` is the example. A
+screen built in code puts `TableColumnViews.menuButton()` in its own bar - `AccountController2`.
+
 ### Debt ageing
 
 `features/party/ageing` is phase D's first report and the first thing built on the payment

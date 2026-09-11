@@ -54,4 +54,30 @@ public record PartyScreenIdentity(PartyKind kind, String styleClass, AppIcon ico
                 icon,
                 styleClass);
     }
+
+    /** The heading of the accounts screen - what every customer or supplier owes. */
+    public PartyFormProfile balancesProfile() {
+        LanguageManager language = LanguageManager.getInstance();
+        boolean customer = kind == PartyKind.CUSTOMER;
+        return new PartyFormProfile(
+                language.getString(customer
+                        ? "party.balances.customers.title" : "party.balances.suppliers.title"),
+                language.getString(customer
+                        ? "party.balances.customers.subtitle" : "party.balances.suppliers.subtitle"),
+                icon,
+                styleClass);
+    }
+
+    /** The heading of the dialog that records one movement on a party's account. */
+    public PartyFormProfile paymentProfile() {
+        LanguageManager language = LanguageManager.getInstance();
+        boolean customer = kind == PartyKind.CUSTOMER;
+        return new PartyFormProfile(
+                language.getString(customer
+                        ? "party.payment.customers.title" : "party.payment.suppliers.title"),
+                language.getString(customer
+                        ? "party.payment.customers.subtitle" : "party.payment.suppliers.subtitle"),
+                icon,
+                styleClass);
+    }
 }
