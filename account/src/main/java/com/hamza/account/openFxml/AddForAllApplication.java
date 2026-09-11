@@ -43,6 +43,11 @@ public class AddForAllApplication {
             }
 
             @Override
+            public String dialogStyleClass() {
+                return controller.dialogStyleClass();
+            }
+
+            @Override
             public int save() throws Exception {
                 return controller.insertData();
             }

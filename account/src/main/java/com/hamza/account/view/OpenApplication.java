@@ -21,6 +21,11 @@ public class OpenApplication<T> {
         ChangeOrientation.sceneOrientation(scene);
         ThemeManager.apply(scene);
 
+        String dialogStyleClass = appSettingInterface.dialogStyleClass();
+        if (dialogStyleClass != null && !dialogStyleClass.isBlank()) {
+            dialogPane.getStyleClass().add(dialogStyleClass);
+        }
+
         if (appSettingInterface.addLastPane()) {
             DialogButtons.changeNameAndGraphic(dialogPane);
         }

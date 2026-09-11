@@ -77,4 +77,15 @@ public interface AddInterface extends MainData {
     default boolean resize() {
         return false;
     }
+
+    /**
+     * An optional semantic CSS class for this dialog and its action bar.
+     *
+     * <p>Most add dialogs use the shared appearance. A screen that has a visual identity,
+     * such as customers and suppliers, can return its class here without coupling the
+     * generic dialog infrastructure to a feature package.</p>
+     */
+    default String dialogStyleClass() {
+        return null;
+    }
 }

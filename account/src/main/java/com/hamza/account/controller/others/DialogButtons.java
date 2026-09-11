@@ -1,5 +1,6 @@
 package com.hamza.account.controller.others;
 
+import com.hamza.account.config.AppIcon;
 import com.hamza.account.config.Image_Setting;
 import com.hamza.account.config.ThemeManager;
 import com.hamza.controlsfx.language.Setting_Language;
@@ -12,19 +13,17 @@ import javafx.stage.Stage;
 
 import java.awt.*;
 
-import static com.hamza.controlsfx.util.ImageChoose.createIcon;
-
 public class DialogButtons {
 
     public static void changeNameAndGraphic(DialogPane dialog) {
         var images = new Image_Setting();
         Button okButton = (Button) dialog.lookupButton(ButtonType.OK);
         okButton.setText(Setting_Language.OK);
-        okButton.setGraphic(createIcon(images.save));
+        okButton.setGraphic(AppIcon.SAVE.graphic(16));
 
         Button cancelButton = (Button) dialog.lookupButton(ButtonType.CANCEL);
         cancelButton.setText(Setting_Language.WORD_CANCEL);
-        cancelButton.setGraphic(createIcon(images.cancel));
+        cancelButton.setGraphic(AppIcon.CLOSE.graphic(16));
         cancelButton.setId("btnClose");
 
         var scene = dialog.getScene();

@@ -15,8 +15,8 @@
   meant renumbering nine rows here and matching them there. Two files that have to agree
   about one screen did not have to agree about anything.
 -->
-<AnchorPane styleClass="app-root" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.hamza.account.controller.name_account.AddNameController">
+<AnchorPane fx:id="screenRoot" styleClass="app-root" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.hamza.account.controller.name_account.AddNameController">
     <children>
-        <VBox fx:id="formRoot" AnchorPane.bottomAnchor="5.0" AnchorPane.leftAnchor="5.0" AnchorPane.rightAnchor="5.0" AnchorPane.topAnchor="5.0" />
+        <VBox fx:id="formRoot" spacing="12.0" AnchorPane.bottomAnchor="5.0" AnchorPane.leftAnchor="5.0" AnchorPane.rightAnchor="5.0" AnchorPane.topAnchor="5.0" />
     </children>
 </AnchorPane>

@@ -39,4 +39,20 @@ class PartyScreenIdentityTest {
             assertFalse(profile.searchPrompt().isBlank());
         }
     }
+
+    @Test
+    void formProfileUsesTheSameIdentityForAddAndEdit() {
+        for (PartyKind kind : PartyKind.values()) {
+            PartyScreenIdentity identity = PartyScreenIdentity.forKind(kind);
+            PartyFormProfile add = identity.formProfile(false);
+            PartyFormProfile edit = identity.formProfile(true);
+
+            assertEquals(identity.styleClass(), add.styleClass());
+            assertEquals(identity.icon(), add.icon());
+            assertFalse(add.title().isBlank());
+            assertFalse(add.subtitle().isBlank());
+            assertFalse(edit.title().isBlank());
+            assertNotEquals(add.title(), edit.title());
+        }
+    }
 }

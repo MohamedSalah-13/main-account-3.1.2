@@ -553,6 +553,15 @@
     -fx-text-fill: rgba(255, 255, 255, 0.84);
 }
 
+/* Dialog labels are normally dark; the identity header is the intentional exception. */
+.dialog-pane .party-screen-header .party-screen-title {
+    -fx-text-fill: white;
+}
+
+.dialog-pane .party-screen-header .party-screen-subtitle {
+    -fx-text-fill: rgba(255, 255, 255, 0.84);
+}
+
 .party-customers .party-list-toolbar,
 .party-suppliers .party-list-toolbar {
     -fx-border-color: -party-border;
@@ -571,6 +580,17 @@
 
 .party-primary-button .icon-graphic {
     -fx-icon-color: white;
+}
+
+/* The add/edit form uses the same palette, but keeps its two data cards compact. */
+.party-customers .party-form-card,
+.party-suppliers .party-form-card {
+    -fx-border-color: -party-border;
+}
+
+.party-customers .party-form-card .app-section-title,
+.party-suppliers .party-form-card .app-section-title {
+    -fx-text-fill: -party-accent-dark;
 }
 
 .party-customers .table-view .column-header-background,
@@ -1368,6 +1388,54 @@
     -fx-text-fill: white;
     -fx-font-weight: bold;
     -fx-background-radius: 0.909em;
+}
+
+/* A party dialog extends the identity to its actions, so the primary action is never
+   visually detached from the customer/supplier screen above it. */
+.dialog-pane.party-customers > .button-bar,
+.dialog-pane.party-suppliers > .button-bar {
+    -fx-background-color: -app-surface;
+    -fx-border-color: -party-border transparent transparent transparent;
+    -fx-border-width: 0.091em 0 0 0;
+    -fx-padding: 0.727em 1.091em;
+}
+
+.dialog-pane.party-customers > .button-bar .button,
+.dialog-pane.party-suppliers > .button-bar .button {
+    -fx-min-width: 7.818em;
+    -fx-min-height: 2.909em;
+    -fx-padding: 0.455em 0.909em;
+    -fx-border-radius: 0.909em;
+    -fx-cursor: hand;
+}
+
+.dialog-pane.party-customers > .button-bar .button:default,
+.dialog-pane.party-suppliers > .button-bar .button:default {
+    -fx-background-color: linear-gradient(to right, -party-accent-dark, -party-accent);
+    -fx-effect: dropshadow(gaussian, -party-shadow, 10, 0.16, 0, 2);
+}
+
+.dialog-pane.party-customers > .button-bar .button:default .icon-graphic,
+.dialog-pane.party-suppliers > .button-bar .button:default .icon-graphic {
+    -fx-icon-color: white;
+}
+
+.dialog-pane.party-customers > .button-bar #btnClose,
+.dialog-pane.party-suppliers > .button-bar #btnClose {
+    -fx-background-color: transparent;
+    -fx-text-fill: -party-accent-dark;
+    -fx-border-color: -party-border;
+    -fx-border-width: 0.091em;
+}
+
+.dialog-pane.party-customers > .button-bar #btnClose:hover,
+.dialog-pane.party-suppliers > .button-bar #btnClose:hover {
+    -fx-background-color: -party-row-hover;
+}
+
+.dialog-pane.party-customers > .button-bar #btnClose .icon-graphic,
+.dialog-pane.party-suppliers > .button-bar #btnClose .icon-graphic {
+    -fx-icon-color: -party-accent-dark;
 }
 
 /* Capital Management Styles */

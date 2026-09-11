@@ -42,4 +42,16 @@ public record PartyScreenIdentity(PartyKind kind, String styleClass, AppIcon ico
                 false,
                 true);
     }
+
+    /** The heading content for adding or editing one party. */
+    public PartyFormProfile formProfile(boolean editing) {
+        LanguageManager language = LanguageManager.getInstance();
+        boolean customer = kind == PartyKind.CUSTOMER;
+        String prefix = customer ? "party.form.customers" : "party.form.suppliers";
+        return new PartyFormProfile(
+                language.getString(prefix + (editing ? ".edit.title" : ".add.title")),
+                language.getString(prefix + ".subtitle"),
+                icon,
+                styleClass);
+    }
 }
