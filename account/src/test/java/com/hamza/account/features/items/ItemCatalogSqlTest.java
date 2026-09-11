@@ -10,6 +10,8 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -32,6 +34,25 @@ class ItemCatalogSqlTest {
 
     private static ItemCatalogSql.Statement build(ItemCatalogFilter filter) {
         return ItemCatalogSql.build(filter);
+    }
+
+    @Nested
+    @DisplayName("the balance and the movement row it reads are one definition")
+    class BalanceReadsItsRow {
+
+        @Test
+        @DisplayName("every column BALANCE reads off ip is one MOVEMENTS provides")
+        void everyColumnTheBalanceReadsIsProvided() {
+            Matcher columns = Pattern.compile("ip\\.(\\w+)").matcher(ItemCatalogSql.BALANCE);
+            int read = 0;
+            while (columns.find()) {
+                read++;
+                String column = columns.group(1);
+                assertTrue(Pattern.compile("\\bAS " + column + "\\b").matcher(ItemCatalogSql.MOVEMENTS).find(),
+                        "BALANCE reads ip." + column + ", which MOVEMENTS does not provide");
+            }
+            assertTrue(read > 0, "BALANCE no longer reads the movement row at all");
+        }
     }
 
     @Nested

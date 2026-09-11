@@ -25,6 +25,40 @@ public final class ItemCatalogSql {
     }
 
     /**
+     * The movement row {@link #BALANCE} reads, joined as {@code ip}: one row per item, with
+     * every warehouse folded in.
+     * <p>
+     * {@code quantity_items_table} is keyed by (item, stock), so it is pre-aggregated by
+     * {@code item_id} - joined raw, an item in two warehouses is two rows, each holding only
+     * that warehouse's share. {@code first_balance} is summed with the movements under a name
+     * of its own, {@code stock_first_balance}, because since V18 it is a value per warehouse
+     * and {@code items.first_balance} is only warehouse 1's compatibility mirror.
+     * {@code ANY_VALUE(stock_id)} is for {@code ItemsDao.map}, which reads a stock id; see
+     * {@code ItemsDao.ITEM_MOVEMENTS_ALL_STOCKS}.
+     * <p>
+     * <b>A query that selects or filters by {@link #BALANCE} joins this, never a copy of it.</b>
+     * The expression and the row it reads are one definition in two halves. The item reports
+     * kept a copy of this subquery, and when {@code BALANCE} began reading
+     * {@code stock_first_balance} the copy did not have it: every report showing a balance
+     * failed with an unknown column, while the items list, which read the original, worked.
+     * {@code ItemCatalogSqlTest} checks that every column {@code BALANCE} names is here.
+     */
+    public static final String MOVEMENTS = """
+            (SELECT item_id,
+                    ANY_VALUE(stock_id)     AS stock_id,
+                    SUM(first_balance)       AS stock_first_balance,
+                    SUM(quantityPurchase)   AS quantityPurchase,
+                    SUM(quantitySales)      AS quantitySales,
+                    SUM(quantityPurchaseRe) AS quantityPurchaseRe,
+                    SUM(quantitySalesRe)    AS quantitySalesRe,
+                    SUM(fromStock)          AS fromStock,
+                    SUM(toStock)            AS toStock,
+                    SUM(adjustment)         AS adjustment
+             FROM quantity_items_table
+             GROUP BY item_id)
+            """;
+
+    /**
      * What an item has on hand, in SQL, aliased exactly as {@code ItemsDao.applyBalances}
      * computes it in Java: the opening balance plus everything in, less everything out.
      * <p>
