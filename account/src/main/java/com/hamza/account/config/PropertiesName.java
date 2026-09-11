@@ -1,5 +1,8 @@
 package com.hamza.account.config;
 
+import com.hamza.account.document.DocumentType;
+import com.hamza.account.features.invoice.InvoicePinField;
+
 /**
  * Every stored setting, named. Which store each one goes to is decided by
  * {@link SharedSettingKeys} and applied in {@link PreferencesSetting} - a shared key is
@@ -133,6 +136,19 @@ public class PropertiesName extends PreferencesSetting {
 
     public static void setSettingSaveNameDelegate(String value) {
         putString(SETTING_SAVE_NAME_DELEGATE, value);
+    }
+
+    /**
+     * The locally pinned value for one invoice header field, or zero when the operator
+     * has not pinned that field on this document type.
+     */
+    public static int getInvoicePinnedValue(DocumentType documentType, InvoicePinField field) {
+        return getInt(field.preferenceKey(documentType), 0);
+    }
+
+    /** Stores a workstation-local invoice-header default by its stable database id. */
+    public static void setInvoicePinnedValue(DocumentType documentType, InvoicePinField field, int value) {
+        putInt(field.preferenceKey(documentType), value);
     }
 
     public static String getPathImageMainScreen() {

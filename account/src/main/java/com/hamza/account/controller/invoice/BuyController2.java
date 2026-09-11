@@ -31,6 +31,7 @@ import com.hamza.account.model.base.BasePurchasesAndSales;
 import com.hamza.account.model.base.BaseTotals;
 import com.hamza.account.model.domain.ItemsModel;
 import com.hamza.account.model.domain.Stock;
+import com.hamza.account.model.domain.Treasury;
 import com.hamza.account.model.domain.UnitsModel;
 import com.hamza.account.openFxml.FxmlPath;
 import com.hamza.account.openFxml.OpenFxmlApplication;
@@ -74,7 +75,9 @@ import java.net.URL;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.ResourceBundle;
 
@@ -118,13 +121,18 @@ public class BuyController2<T3 extends BaseNames, T4 extends BaseAccount>
     private boolean itemCatalogChangedWhileOpen;
     private int codeAccount;
     private boolean updatingPaymentUi;
+    /** Delegate names paired with ids, avoiding a database lookup whenever a pin redraws. */
+    private Map<String, Integer> delegateIds = Map.of();
+    /** Active till names paired with their stable ids; the selector itself still displays names. */
+    private Map<String, Integer> activeTreasuryIds = Map.of();
     private StringProperty textSearchName, textSearchItems;
     private PartySuggestionField<T3> nameSearchField;
     @FXML
     private Label labelNum, labelName, labelStock, labelBarcode, labelDate, labelCondition, labelDelegate, labelTreasury, labelSearchBy, labelPrice, labelQuantity, labelItemBalance, labelTotals, last1, last2, last3, last4, last5, labelNotes, labelInvoiceTotal, labelPaid, labelRemaining, labelNetAfterDiscount;
     @FXML
     @Getter
-    private Button btnAdd, btnSave, btnPrintSave, btnNew, btnSearch, btnUpdateItem, btnQuickMode;
+    private Button btnAdd, btnSave, btnPrintSave, btnNew, btnSearch, btnUpdateItem, btnQuickMode,
+            btnPinParty, btnPinDelegate, btnPinTreasury, btnPinStock;
     @FXML
     private Button btnReturnFromInvoice;
     @FXML
@@ -143,6 +151,8 @@ public class BuyController2<T3 extends BaseNames, T4 extends BaseAccount>
     private StackPane stackPane;
     @FXML
     private GridPane gridPane;
+    @FXML
+    private Pane boxDelegate;
     @FXML
     private RadioButton radioCash, radioDeffer, radioRate, radioAmount;
     @FXML
@@ -208,6 +218,7 @@ public class BuyController2<T3 extends BaseNames, T4 extends BaseAccount>
         disableData();
         totalSetting();
         buttonGraphic();
+        configurePinButtons();
 
         if (num_invoice_update > 0) {
             selectData();
@@ -247,19 +258,176 @@ public class BuyController2<T3 extends BaseNames, T4 extends BaseAccount>
         btnSearch.setGraphic(AppIcon.SEARCH.graphic());
         btnSave.setGraphic(AppIcon.SAVE.graphic());
         btnPrintSave.setGraphic(AppIcon.PRINT.graphic());
+        btnPinParty.setGraphic(AppIcon.PIN.graphic(14));
+        btnPinDelegate.setGraphic(AppIcon.PIN.graphic(14));
+        btnPinTreasury.setGraphic(AppIcon.PIN.graphic(14));
+        btnPinStock.setGraphic(AppIcon.PIN.graphic(14));
     }
 
     private void getSavedCustomerAndDelegate() {
-        if (dataInterface.designInterface().showDataForCustomer())
-            try {
-                var s = SettingTabLanguageController.publishCustomer(customerService);
-                textSearchName.set(s);
-
-                var s1 = SettingTabLanguageController.publishDelegate(employeeService);
-                comboDelegate.getSelectionModel().select(s1);
-            } catch (Exception e) {
-                logError(e);
+        applyPinnedDefaults();
+        try {
+            if (selectedPartyId() == 0) {
+                if (dataInterface.designInterface().showDataForCustomer()) {
+                    selectPartyByName(SettingTabLanguageController.publishCustomer(customerService));
+                } else {
+                    selectPartyById(1);
+                }
             }
+            if (dataInterface.designInterface().documentType().hasDelegate()
+                    && selectedDelegateId() == 0) {
+                comboDelegate.getSelectionModel().select(
+                        SettingTabLanguageController.publishDelegate(employeeService));
+            }
+        } catch (Exception e) {
+            logError(e);
+        }
+    }
+
+    /**
+     * Pins are a workstation convenience, so they override this form only. The normal
+     * customer setting remains the shop-wide fallback for a cash sale.
+     */
+    private void applyPinnedDefaults() {
+        selectPartyById(pinnedValue(InvoicePinField.PARTY));
+        selectPinnedDelegate();
+        selectPinnedTreasury();
+        selectPinnedStock();
+        refreshPinButtons();
+    }
+
+    private void configurePinButtons() {
+        btnPinParty.setOnAction(event -> pin(InvoicePinField.PARTY, selectedPartyId()));
+        btnPinDelegate.setOnAction(event -> pin(InvoicePinField.DELEGATE, selectedDelegateId()));
+        btnPinTreasury.setOnAction(event -> pin(InvoicePinField.TREASURY, selectedTreasuryId()));
+        btnPinStock.setOnAction(event -> pin(InvoicePinField.STOCK, selectedStockId()));
+
+        nameSearchField.chosenPartyProperty().addListener((observable, oldValue, newValue) -> refreshPinButtons());
+        comboDelegate.valueProperty().addListener((observable, oldValue, newValue) -> refreshPinButtons());
+        comboTreasury.valueProperty().addListener((observable, oldValue, newValue) -> refreshPinButtons());
+        comboStock.valueProperty().addListener((observable, oldValue, newValue) -> refreshPinButtons());
+        refreshPinButtons();
+    }
+
+    private void pin(InvoicePinField field, int value) {
+        if (value <= 0 || !field.appliesTo(documentType())) {
+            return;
+        }
+        setInvoicePinnedValue(documentType(), field, value);
+        refreshPinButtons();
+    }
+
+    private void refreshPinButtons() {
+        refreshPinButton(btnPinParty, InvoicePinField.PARTY, selectedPartyId());
+        refreshPinButton(btnPinDelegate, InvoicePinField.DELEGATE, selectedDelegateId());
+        refreshPinButton(btnPinTreasury, InvoicePinField.TREASURY, selectedTreasuryId());
+        refreshPinButton(btnPinStock, InvoicePinField.STOCK, selectedStockId());
+    }
+
+    private void refreshPinButton(Button button, InvoicePinField field, int selectedId) {
+        boolean available = field.appliesTo(documentType());
+        boolean pinned = available && selectedId > 0 && selectedId == pinnedValue(field);
+        button.setDisable(!available || selectedId <= 0);
+        button.getStyleClass().remove("invoice-pin-active");
+        if (pinned) {
+            button.getStyleClass().add("invoice-pin-active");
+        }
+        button.setTooltip(new Tooltip(LanguageManager.getInstance().getString(
+                pinned ? "invoice.pin.active" : "invoice.pin.set")));
+    }
+
+    private DocumentType documentType() {
+        return dataInterface.designInterface().documentType();
+    }
+
+    private int pinnedValue(InvoicePinField field) {
+        return field.appliesTo(documentType()) ? getInvoicePinnedValue(documentType(), field) : 0;
+    }
+
+    private int selectedPartyId() {
+        T3 selected = nameSearchField == null ? null : nameSearchField.chosenPartyProperty().get();
+        return selected == null ? 0 : selected.getId();
+    }
+
+    private int selectedDelegateId() {
+        String selected = comboDelegate == null ? null : comboDelegate.getValue();
+        return selected == null ? 0 : delegateIds.getOrDefault(selected, 0);
+    }
+
+    private int selectedTreasuryId() {
+        String selected = comboTreasury == null ? null : comboTreasury.getValue();
+        return selected == null ? 0 : activeTreasuryIds.getOrDefault(selected, 0);
+    }
+
+    private int selectedStockId() {
+        Stock selected = comboStock == null ? null : comboStock.getValue();
+        return selected == null ? 0 : selected.getId();
+    }
+
+    private void selectPartyById(int partyId) {
+        if (partyId <= 0 || nameSearchField == null) {
+            return;
+        }
+        try {
+            nameAndAccountInterface.nameList().stream()
+                    .filter(party -> party != null && party.getId() == partyId)
+                    .findFirst()
+                    .ifPresent(nameSearchField::select);
+        } catch (Exception e) {
+            logError(e);
+        }
+    }
+
+    private void selectPartyByName(String name) {
+        if (name == null || name.isBlank() || nameSearchField == null) {
+            return;
+        }
+        try {
+            nameAndAccountInterface.nameList().stream()
+                    .filter(party -> party != null && name.equals(party.getName()))
+                    .findFirst()
+                    .ifPresentOrElse(nameSearchField::select, () -> textSearchName.set(name));
+        } catch (Exception e) {
+            logError(e);
+        }
+    }
+
+    private void selectPinnedDelegate() {
+        int delegateId = pinnedValue(InvoicePinField.DELEGATE);
+        if (delegateId <= 0) {
+            return;
+        }
+        try {
+            var delegate = employeeService.getDelegateById(delegateId);
+            if (delegate != null) {
+                comboDelegate.getSelectionModel().select(delegate.getName());
+            }
+        } catch (DaoException e) {
+            logError(e);
+        }
+    }
+
+    private void selectPinnedTreasury() {
+        int treasuryId = pinnedValue(InvoicePinField.TREASURY);
+        if (treasuryId <= 0) {
+            return;
+        }
+        activeTreasuryIds.entrySet().stream()
+                .filter(entry -> entry.getValue() == treasuryId)
+                .map(Map.Entry::getKey)
+                .findFirst()
+                .ifPresent(name -> comboTreasury.getSelectionModel().select(name));
+    }
+
+    private void selectPinnedStock() {
+        int stockId = pinnedValue(InvoicePinField.STOCK);
+        if (stockId <= 0) {
+            return;
+        }
+        comboStock.getItems().stream()
+                .filter(stock -> stock.getId() == stockId)
+                .findFirst()
+                .ifPresent(comboStock.getSelectionModel()::select);
     }
 
     private void labelName() {
@@ -428,7 +596,7 @@ public class BuyController2<T3 extends BaseNames, T4 extends BaseAccount>
                         name -> comboDelegate.getSelectionModel().select(name),
                         // Setting the search text is what the party is chosen by
                         // everywhere on this screen; its listener resolves the code.
-                        name -> textSearchName.set(name)),
+                        this::selectPartyByName),
                 itemsService::findItemById,
                 new ReturnEntryCoordinator.LineAppender() {
                     @Override
@@ -664,7 +832,7 @@ public class BuyController2<T3 extends BaseNames, T4 extends BaseAccount>
             String invoiceDate = dataById.getDate();
 
             date.setValue(LocalDate.parse(invoiceDate));
-            textSearchName.set(header.partyName());
+            selectPartyByName(header.partyName());
             comboDelegate.getSelectionModel().select(header.delegateName());
             txtNum.setText(String.valueOf(id));
             codeAccount = header.partyId();
@@ -962,9 +1130,9 @@ public class BuyController2<T3 extends BaseNames, T4 extends BaseAccount>
                 () -> editor.totals().lineCount() > 0, editor.totalsProperty()));
 
         // delegate data
-        comboDelegate.setItems(FXCollections.observableArrayList(getDelegateNames()));
+        reloadDelegateItems();
         // treasury data
-        comboTreasury.setItems(FXCollections.observableArrayList(getListTreasuryModelNames()));
+        reloadTreasuryItems();
 
         try {
             comboTreasury.getSelectionModel().select(treasuryService.getTreasuryById(DefaultTreasury.ID).getName());
@@ -1001,14 +1169,20 @@ public class BuyController2<T3 extends BaseNames, T4 extends BaseAccount>
                 .ifPresent(comboStock.getSelectionModel()::select);
     }
 
-    @NotNull
-    private List<String> getListTreasuryModelNames() {
+    private void reloadTreasuryItems() {
         try {
-            return treasuryService.listTreasuryModelNames();
+            List<Treasury> treasuries = treasuryService.getActiveTreasuryModelList();
+            Map<String, Integer> ids = new LinkedHashMap<>();
+            for (Treasury treasury : treasuries) {
+                ids.put(treasury.getName(), treasury.getId());
+            }
+            activeTreasuryIds = Map.copyOf(ids);
+            comboTreasury.setItems(FXCollections.observableArrayList(ids.keySet()));
         } catch (DaoException e) {
+            activeTreasuryIds = Map.of();
+            comboTreasury.setItems(FXCollections.observableArrayList());
             logError(e);
         }
-        return new ArrayList<>();
     }
 
     private void reset_all() {
@@ -1027,6 +1201,7 @@ public class BuyController2<T3 extends BaseNames, T4 extends BaseAccount>
         radioCash.setSelected(true);
         radioDeffer.setSelected(false);
         returnEntry.reset();
+        applyPinnedDefaults();
         if (quickTable != null) {
             quickTable.focusEntryRow();
         }
@@ -1034,8 +1209,8 @@ public class BuyController2<T3 extends BaseNames, T4 extends BaseAccount>
 
     private void publisherData() {
         if (eventBus != null) {
-            subscriptions.add(eventBus.subscribe(EmployeesChanged.class
-                    , event -> comboDelegate.setItems(FXCollections.observableArrayList(getDelegateNames()))));
+            subscriptions.add(eventBus.subscribe(EmployeesChanged.class,
+                    event -> reloadDelegateItems()));
             // A warehouse created after this controller was built is otherwise never
             // offered in comboStock - see reloadStockItems.
             subscriptions.add(eventBus.subscribe(StocksChanged.class, event -> reloadStockItems()));
@@ -1049,12 +1224,16 @@ public class BuyController2<T3 extends BaseNames, T4 extends BaseAccount>
         subscriptions.disposeWith(stackPane);
     }
 
-    private List<String> getDelegateNames() {
+    private void reloadDelegateItems() {
         try {
-            return employeeService.getDelegateNames();
+            Map<String, Integer> ids = new LinkedHashMap<>();
+            employeeService.getDelegateList().forEach(delegate -> ids.put(delegate.getName(), delegate.getId()));
+            delegateIds = Map.copyOf(ids);
+            comboDelegate.setItems(FXCollections.observableArrayList(ids.keySet()));
         } catch (DaoException e) {
+            delegateIds = Map.of();
+            comboDelegate.setItems(FXCollections.observableArrayList());
             logError(e);
-            return new ArrayList<>();
         }
     }
 
@@ -1267,7 +1446,8 @@ public class BuyController2<T3 extends BaseNames, T4 extends BaseAccount>
 
     private void disableData() {
         comboDelegate.setVisible(designInterface.showDataForCustomer());
-        labelDelegate.setVisible(designInterface.showDataForCustomer());
+        boxDelegate.setVisible(designInterface.showDataForCustomer());
+        boxDelegate.setManaged(designInterface.showDataForCustomer());
 
         // From the totals, not from the footer's text: that is written for a person to read,
         // and "1,050.00" is not something Double.parseDouble reads.

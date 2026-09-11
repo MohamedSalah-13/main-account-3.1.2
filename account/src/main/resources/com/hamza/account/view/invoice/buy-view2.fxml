@@ -73,9 +73,19 @@
                                       </rowConstraints>
                                       <children>
                                           <Label fx:id="labelNum" styleClass="form-label" text="Code" />
-                                          <Label fx:id="labelName" styleClass="form-label" text="Name" GridPane.rowIndex="1" />
+                                          <HBox alignment="CENTER_LEFT" spacing="4.0" GridPane.rowIndex="1">
+                                              <children>
+                                                  <Label fx:id="labelName" styleClass="form-label" text="Name" />
+                                                  <Button fx:id="btnPinParty" mnemonicParsing="false" styleClass="icon-button, invoice-pin-button" />
+                                              </children>
+                                          </HBox>
                                           <Label fx:id="labelDate" styleClass="form-label" text="Date" GridPane.columnIndex="2" />
-                                          <Label fx:id="labelDelegate" styleClass="form-label" text="Delegate" GridPane.columnIndex="2" GridPane.rowIndex="1" />
+                                          <HBox fx:id="boxDelegate" alignment="CENTER_LEFT" spacing="4.0" GridPane.columnIndex="2" GridPane.rowIndex="1">
+                                              <children>
+                                                  <Label fx:id="labelDelegate" styleClass="form-label" text="Delegate" />
+                                                  <Button fx:id="btnPinDelegate" mnemonicParsing="false" styleClass="icon-button, invoice-pin-button" />
+                                              </children>
+                                          </HBox>
                                           <Label fx:id="labelPrice" styleClass="form-label" text="Price" GridPane.columnIndex="2" GridPane.rowIndex="3" />
                                           <Label fx:id="labelSearchBy" styleClass="form-label" text="Search" GridPane.columnIndex="2" GridPane.rowIndex="2" />
                                           <Label fx:id="labelQuantity" styleClass="form-label" text="Quantity" GridPane.columnIndex="4" GridPane.rowIndex="3" />
@@ -83,8 +93,18 @@
                                           <Label fx:id="labelItemBalance" styleClass="form-label" text="Item Balance" GridPane.columnIndex="4" GridPane.rowIndex="2" />
                                           <Label fx:id="labelBarcode" styleClass="form-label" text="barcode" GridPane.rowIndex="2" />
                                           <Label fx:id="labelTotals" styleClass="form-label" text="Totals" GridPane.columnIndex="6" GridPane.rowIndex="3" />
-                                          <Label fx:id="labelTreasury" styleClass="form-label" text="Treasury" GridPane.columnIndex="4" />
-                                          <Label fx:id="labelStock" styleClass="form-label" text="%invoice.stock" GridPane.columnIndex="4" GridPane.rowIndex="1" />
+                                          <HBox alignment="CENTER_LEFT" spacing="4.0" GridPane.columnIndex="4">
+                                              <children>
+                                                  <Label fx:id="labelTreasury" styleClass="form-label" text="Treasury" />
+                                                  <Button fx:id="btnPinTreasury" mnemonicParsing="false" styleClass="icon-button, invoice-pin-button" />
+                                              </children>
+                                          </HBox>
+                                          <HBox alignment="CENTER_LEFT" spacing="4.0" GridPane.columnIndex="4" GridPane.rowIndex="1">
+                                              <children>
+                                                  <Label fx:id="labelStock" styleClass="form-label" text="%invoice.stock" />
+                                                  <Button fx:id="btnPinStock" mnemonicParsing="false" styleClass="icon-button, invoice-pin-button" />
+                                              </children>
+                                          </HBox>
 
                                           <TextField fx:id="txtNum" editable="false" promptText="%invoice.number" GridPane.columnIndex="1" />
                                           <DatePicker fx:id="date" editable="false" GridPane.columnIndex="3" />

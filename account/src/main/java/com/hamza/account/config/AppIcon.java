@@ -69,6 +69,8 @@ public enum AppIcon {
     TREE(Feather.LIST),
     /** A code to be scanned. */
     BARCODE(Feather.HASH),
+    /** The current header choice becomes the local default for future invoices. */
+    PIN(Feather.MAP_PIN),
     /** Selecting rows in bulk. */
     SELECT_ALL(Feather.CHECK_SQUARE),
     /** Something that needs the operator's attention rather than an error. */

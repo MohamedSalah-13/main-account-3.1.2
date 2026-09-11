@@ -352,6 +352,21 @@
 
 /* ---------- Icons (Ikonli FontIcon) ---------- */
 
+/* Invoice-header defaults: a compact icon beside each selector, coloured only when
+ * the currently displayed choice is the one this workstation has pinned. */
+.invoice-pin-button {
+    -fx-min-width: 28px;
+    -fx-min-height: 28px;
+    -fx-pref-width: 28px;
+    -fx-pref-height: 28px;
+    -fx-padding: 4px;
+}
+
+.invoice-pin-button.invoice-pin-active {
+    -fx-background-color: -fx-accent;
+    -fx-icon-color: white;
+}
+
 .icon-graphic {
     -fx-icon-color: -app-text;
 }
