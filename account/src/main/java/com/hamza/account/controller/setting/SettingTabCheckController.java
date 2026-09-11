@@ -81,6 +81,16 @@ public class SettingTabCheckController implements Initializable {
 
         checkSetting(printReceiptInvoice, lm.getString("settings.checks.printReceiptInvoice"), getPrintPaperReceiptInvoice());
         checkSetting(updatePriceInInvoice, lm.getString("settings.checks.updatePriceInInvoice"), getInvoiceUpdatePrice());
+        // Disabled with the reason on it, the way checkBackupAfterSave below is: what this
+        // switch turns on is carrying a line's price back onto the item, which the invoice
+        // screen now refuses without items.update - so a user who cannot use it should not
+        // be left ticking a box that does nothing. The stored setting is untouched, since
+        // it belongs to the shop rather than to whoever happens to open this tab.
+        if (!AuthorizationGuard.isGranted(AppPermissions.ITEMS_UPDATE)) {
+            updatePriceInInvoice.setDisable(true);
+            updatePriceInInvoice.setTooltip(new Tooltip(
+                    lm.getString("settings.checks.updatePriceInInvoice.needsItemsUpdate")));
+        }
         checkSetting(checkBackupAfterSave, lm.getString("settings.checks.backupAfterSave"), getInvoiceBackupAfterSave());
         // On a till whose database lives on another computer this switch does nothing -
         // BuyController2 refuses it - so the screen says so rather than leaving a box that

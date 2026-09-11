@@ -51,14 +51,30 @@ public final class MenuButtonSetting {
         configureButton(button, action, null);
     }
 
+    /**
+     * Hides a button whose feature is absent from the edition - and only ever hides.
+     * <p>
+     * The edition is the last word on whether a command exists at all, but it is not the
+     * only rule that hides a sidebar button, and it must not overrule the others. Writing
+     * {@code setVisible(available)} unconditionally did: shifts are {@code DISABLED} by
+     * default, so {@code refreshShiftButtonVisibility} hides "My shift" during
+     * {@code setupRightPane}, and {@code configureAllButtons} - which runs straight after
+     * it, and again on every language change - put it back, because the edition happened to
+     * carry the feature. A shop with shifts switched off got the shift screen in its sidebar
+     * and in its shortcut map.
+     * <p>
+     * So an absent feature hides; a present one leaves the button exactly as it found it.
+     * The button is visible in the FXML, which is what a present feature means anyway.
+     */
     public void configureButton(Button button, ButtonWithPerm action, FeatureKey feature) {
         setGraphicAndText(button, action);
         disableButton(button::setDisable, action);
         button.focusTraversableProperty().setValue(FOCUS_TRAVERSABLE);
         setActionEvent(button, action, feature);
-        boolean available = feature == null || (productFeatures != null && productFeatures.isEnabled(feature));
-        button.setVisible(available);
-        button.setManaged(available);
+        if (feature != null && (productFeatures == null || !productFeatures.isEnabled(feature))) {
+            button.setVisible(false);
+            button.setManaged(false);
+        }
         trackNavButton(button);
     }
 

@@ -28,8 +28,21 @@ class ProductProfileWiringArchitectureTest {
         assertTrue(source.contains("showCategory(paneSales, ProductFeatures.CATEGORY_SALES)"));
         assertTrue(source.contains("showCategory(paneReports, ProductFeatures.CATEGORY_REPORTS)"));
         assertTrue(menuButton.contains("productFeatures.require(feature)"));
-        assertTrue(menuButton.contains("button.setManaged(available)"));
         assertTrue(source.contains("button.isVisible() && button.isManaged()"));
+
+        // An absent feature hides its button; a present one leaves the button as it found
+        // it. Writing the visibility unconditionally made the edition overrule every other
+        // rule that hides a sidebar button, and one of them is real: shifts are DISABLED by
+        // default, so refreshShiftButtonVisibility hides "My shift" and configureAllButtons
+        // - running straight after it, and again on every language change - put it back.
+        assertTrue(menuButton.contains("button.setVisible(false)")
+                        && menuButton.contains("button.setManaged(false)"),
+                "an absent product feature must hide its sidebar button");
+        assertFalse(menuButton.contains("button.setVisible(available)")
+                        || menuButton.contains("button.setManaged(available)"),
+                "configureButton must only ever hide: making a button visible because the "
+                        + "edition carries its feature overrules the shift policy, which is "
+                        + "the rule that hides the same button when shifts are switched off");
     }
 
     @Test
