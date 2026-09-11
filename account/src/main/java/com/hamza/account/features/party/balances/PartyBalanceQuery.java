@@ -85,6 +85,12 @@ public final class PartyBalanceQuery {
         PartyTableSpec party = PartyTableSpec.of(filter.partyKind());
         String limitColumn = filter.hasCreditLimit() ? "p.limit_num" : "0";
         String tierColumn = filter.hasCreditLimit() ? "p.price_id" : "0";
+        // Only real columns may be grouped. A supplier selects the limit and the tier as a literal
+        // 0, and MySQL reads a number in a GROUP BY as a column *position*: "GROUP BY ..., 0, 0"
+        // was "Unknown column '0' in 'group statement'", and the supplier accounts screen failed
+        // on every open - while every test here passed, because none of them read the GROUP BY.
+        String groupedPartyColumns = filter.hasCreditLimit()
+                ? ", " + limitColumn + ", " + tierColumn : "";
         return """
                 SELECT m.%7$s                                        AS party_id,
                        p.%8$s                                        AS party_name,
@@ -107,9 +113,10 @@ public final class PartyBalanceQuery {
                 WHERE (? IS NULL OR p.area_id = ?)
                   AND (? IS NULL OR %6$s = ?)
                   AND (? IS NULL OR p.%8$s LIKE ? ESCAPE '!' OR p.tel LIKE ? ESCAPE '!')
-                GROUP BY m.%7$s, p.%8$s, p.tel, ta.id, ta.area_name, %5$s, %6$s"""
+                GROUP BY m.%7$s, p.%8$s, p.tel, ta.id, ta.area_name%9$s"""
                 .formatted(BALANCE, ledger.view(), party.table(), PartyTableSpec.KEY,
-                        limitColumn, tierColumn, PartyLedgerSpec.PARTY, PartyTableSpec.NAME);
+                        limitColumn, tierColumn, PartyLedgerSpec.PARTY, PartyTableSpec.NAME,
+                        groupedPartyColumns);
     }
 
     /**

@@ -109,6 +109,32 @@ class PartyBalanceQueryTest {
         assertTrue(customer.contains("p.price_id"), customer);
     }
 
+    /**
+     * MySQL reads a number in a {@code GROUP BY} as a column position, so a literal there is an
+     * error rather than a constant. The supplier's query grouped by {@code 0, 0} - its stand-ins
+     * for a credit limit and a price tier it does not have - and failed with "Unknown column '0'"
+     * on every open of the supplier accounts screen, while every test in this class passed.
+     */
+    @ParameterizedTest
+    @EnumSource(PartyKind.class)
+    void theGroupByNamesOnlyColumns(PartyKind kind) {
+        String sql = PartyBalanceQuery.pageSql(PartyBalanceFilter.allToday(kind));
+        int start = sql.indexOf("GROUP BY");
+        String groupBy = sql.substring(start, sql.indexOf('\n', start));
+
+        assertFalse(groupBy.matches(".*(,|BY)\\s*\\d+\\s*(,|$).*"),
+                "a bare number in a GROUP BY is a column position: " + groupBy);
+    }
+
+    @Test
+    void aSupplierGroupsByItsOwnColumnsOnly() {
+        String sql = PartyBalanceQuery.pageSql(PartyBalanceFilter.allToday(PartyKind.SUPPLIER));
+
+        assertTrue(sql.contains("GROUP BY m.account_code, p.name, p.tel, ta.id, ta.area_name\n"), sql);
+        assertTrue(PartyBalanceQuery.pageSql(PartyBalanceFilter.allToday(PartyKind.CUSTOMER))
+                .contains("GROUP BY m.account_code, p.name, p.tel, ta.id, ta.area_name, p.limit_num, p.price_id\n"));
+    }
+
     /** The three balance states, and that "all" adds no condition at all. */
     @Test
     void eachStateAddsItsOwnCondition() {
