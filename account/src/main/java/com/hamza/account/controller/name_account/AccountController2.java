@@ -225,6 +225,9 @@ public class AccountController2<T3 extends BaseNames, T4 extends BaseAccount>
         // they". A menu entry of its own would need a product feature in the signed catalogue,
         // which is a decision about editions rather than about this report.
         Button ageing = button("party.ageing.open", AppIcon.REPORT, this::openAgeing);
+        // The same period columns as this table, drawn over time - so it opens from here, with the
+        // same permission, for the same reason the ageing report does.
+        Button trend = button("party.trend.open", AppIcon.TREND, this::openTrend);
         Button refresh = button("refresh", AppIcon.REFRESH, this::reload);
         Button print = button("print", AppIcon.PRINT, this::print);
         // The same neutral button as its three neighbours. It used to replace its classes with
@@ -234,7 +237,7 @@ public class AccountController2<T3 extends BaseNames, T4 extends BaseAccount>
 
         Separator divider = new Separator(Orientation.VERTICAL);
         divider.getStyleClass().add("modern-separator");
-        return new Node[]{divider, ageing, refresh, print, excel, viewMenu};
+        return new Node[]{divider, ageing, trend, refresh, print, excel, viewMenu};
     }
 
     /**
@@ -274,7 +277,9 @@ public class AccountController2<T3 extends BaseNames, T4 extends BaseAccount>
         Label caption = new Label(text(titleKey));
         caption.getStyleClass().add("stat-title");
         VBox card = new VBox(4, caption, value);
-        card.getStyleClass().addAll("dashboard-tile", "party-stat-card");
+        // clickable-card: here a figure is also a filter. The trend chart's cards wear the same
+        // look without it, because clicking those does nothing.
+        card.getStyleClass().addAll("dashboard-tile", "party-stat-card", "clickable-card");
         card.setMinWidth(150);
         card.setOnMouseClicked(event -> onClick.run());
         return card;
@@ -591,6 +596,15 @@ public class AccountController2<T3 extends BaseNames, T4 extends BaseAccount>
     private void openAgeing() {
         try {
             new OpenApplication<>(new PartyAgeingController<>(daoFactory, dataPublisher, dataInterface));
+        } catch (Exception e) {
+            report(e);
+        }
+    }
+
+    /** What was charged and what was collected, by year, month or week. */
+    private void openTrend() {
+        try {
+            new OpenApplication<>(new PartyTrendController<>(daoFactory, dataPublisher, dataInterface));
         } catch (Exception e) {
             report(e);
         }

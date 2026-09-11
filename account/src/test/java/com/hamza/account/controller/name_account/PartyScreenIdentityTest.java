@@ -63,7 +63,7 @@ class PartyScreenIdentityTest {
 
         for (PartyScreenIdentity identity : new PartyScreenIdentity[]{customer, supplier}) {
             for (PartyFormProfile profile : new PartyFormProfile[]{
-                    identity.balancesProfile(), identity.paymentProfile()}) {
+                    identity.balancesProfile(), identity.paymentProfile(), identity.trendProfile()}) {
                 assertEquals(identity.styleClass(), profile.styleClass());
                 assertEquals(identity.icon(), profile.icon());
                 assertFalse(profile.title().isBlank());
@@ -72,5 +72,6 @@ class PartyScreenIdentityTest {
         }
         assertNotEquals(customer.balancesProfile().title(), supplier.balancesProfile().title());
         assertNotEquals(customer.paymentProfile().title(), supplier.paymentProfile().title());
+        assertNotEquals(customer.trendProfile().title(), supplier.trendProfile().title());
     }
 }

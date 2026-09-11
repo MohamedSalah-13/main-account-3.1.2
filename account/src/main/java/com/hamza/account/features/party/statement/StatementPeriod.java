@@ -1,5 +1,6 @@
 package com.hamza.account.features.party.statement;
 
+import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.temporal.TemporalAdjusters;
 import java.util.Objects;
@@ -38,6 +39,16 @@ public enum StatementPeriod {
      */
     ALL("party.period.all");
 
+    /**
+     * The first day of a week, for every screen that groups or picks by week - this enum's
+     * {@link #THIS_WEEK} and the trend chart's weekly periods.
+     * <p>
+     * Saturday: this is an Arabic-market application, and a week that starts on Monday reports
+     * Saturday's and Sunday's takings in the week before. One constant, so the two screens cannot
+     * come to disagree about which week a Saturday belongs to.
+     */
+    public static final DayOfWeek FIRST_DAY_OF_WEEK = DayOfWeek.SATURDAY;
+
     private final String messageKey;
 
     StatementPeriod(String messageKey) {
@@ -64,9 +75,8 @@ public enum StatementPeriod {
         Objects.requireNonNull(today, "today");
         return switch (this) {
             case TODAY -> today;
-            // The week runs Saturday to Friday: this is an Arabic-market application, and a week
-            // that starts on Monday reports Saturday's and Sunday's takings in the week before.
-            case THIS_WEEK -> today.with(TemporalAdjusters.previousOrSame(java.time.DayOfWeek.SATURDAY));
+            // The week runs Saturday to Friday - see FIRST_DAY_OF_WEEK.
+            case THIS_WEEK -> today.with(TemporalAdjusters.previousOrSame(FIRST_DAY_OF_WEEK));
             case THIS_MONTH -> today.withDayOfMonth(1);
             case LAST_MONTH -> today.minusMonths(1).withDayOfMonth(1);
             case THIS_QUARTER -> today.withMonth(firstMonthOfQuarter(today)).withDayOfMonth(1);

@@ -63,6 +63,8 @@ public enum AppIcon {
     FILTER(Feather.FILTER),
     /** A report or a figure, as opposed to a list of rows. */
     REPORT(Feather.BAR_CHART_2),
+    /** Figures over time - the trend chart - as opposed to {@link #REPORT}, one set of figures. */
+    TREND(Feather.TRENDING_UP),
     /** A group tree, and the panel that shows one. */
     TREE(Feather.LIST),
     /** A code to be scanned. */

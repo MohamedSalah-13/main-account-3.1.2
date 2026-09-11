@@ -1199,6 +1199,28 @@ and a menu entry would need a feature in the signed product catalogue. Exporting
 granted, and reached by no screen** — deliberately on the export rather than the view: a list on a
 screen is looked at, a file leaves the building.
 
+### Collections trend
+
+`features/party/trend` is the chart of what was charged and what was collected (or, for
+suppliers, owed and paid) by year, month or week, with the same dates a year earlier beside them.
+It opens from the accounts screen, next to the ageing report, and asks the same permission.
+
+- **Its two figures are the balances screen's.** `PartyTrendQuery.DEBIT`/`CREDIT` are the
+  expressions `PartyBalanceQuery` sums into the period-debit and period-credit columns, per row of
+  the same view, and `PartyTrendQueryTest` fails the build if the text of either drifts - a chart
+  that disagrees with the column beside it is the defect this whole area exists to remove. It
+  follows that an opening balance is debit on the day its party was created, and a return is
+  credit rather than a collection, exactly as those columns count them.
+- **The periods are counted in Java, not SQL.** The query answers one row per day and
+  `TrendGranularity` files each into its period. The week starts on
+  `StatementPeriod.FIRST_DAY_OF_WEEK` - one definition of a week for the statement and the chart,
+  not a second one written in MySQL's `WEEK()` modes.
+- **"The year before" is the same calendar dates, filed into this year's periods.** Exact by the
+  month; by the week the dates fall on other weekdays, so a day at a week's edge can land in the
+  neighbouring week. By the year there is no comparison - last year is the point beside this one.
+- **A percentage with nothing to divide by is absent, not zero** (`PartyTrendSummary`): a
+  collection rate of nothing charged, or a change against a year with no movement, is not a number.
+
 ### Printed reports
 
 The `.jrxml` templates live in **`reports/` at the repository root**, and `Configs.FILE_REPORTS`

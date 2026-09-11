@@ -618,9 +618,11 @@
     -fx-background-color: -party-row-selected;
 }
 
-/* The accounts screen wears the same identity over its figures and its footer. Each figure
-   is also a filter - clicking it narrows the list - so it answers the pointer like a button. */
-.party-stat-card {
+/* The accounts screen wears the same identity over its figures and its footer. On that screen
+   each figure is also a filter - clicking it narrows the list - so it carries clickable-card and
+   answers the pointer like a button. The trend chart's figures look the same and are not
+   clickable, so they carry party-stat-card alone and neither the hand nor the glow. */
+.clickable-card {
     -fx-cursor: hand;
 }
 
@@ -629,8 +631,8 @@
     -fx-border-color: -party-border;
 }
 
-.party-customers .party-stat-card:hover,
-.party-suppliers .party-stat-card:hover {
+.party-customers .party-stat-card.clickable-card:hover,
+.party-suppliers .party-stat-card.clickable-card:hover {
     -fx-border-color: -party-accent;
     -fx-effect: dropshadow(gaussian, -party-shadow, 14, 0.2, 0, 4);
 }
@@ -648,6 +650,72 @@
 .party-customers .party-summary-bar,
 .party-suppliers .party-summary-bar {
     -fx-border-color: -party-border;
+}
+
+/* ---------- The party trend chart ----------
+   Debit and credit keep one colour each whichever of them is showing: every series carries a
+   class of its own (trend-debit, trend-credit) rather than being coloured by its position, and
+   default-color0/1 would move to the other line the moment one is hidden. The year before is the
+   same colour, dashed and lighter. The markers beside the checkboxes are the chart's legend. */
+.party-trend-chart .chart-plot-background {
+    -fx-background-color: transparent;
+}
+
+.party-trend-chart .chart-series-line {
+    -fx-stroke-width: 2.5px;
+}
+
+.party-trend-chart .chart-series-line.trend-debit {
+    -fx-stroke: -app-danger;
+}
+
+.party-trend-chart .chart-series-line.trend-credit {
+    -fx-stroke: -app-success;
+}
+
+.party-trend-chart .chart-series-line.trend-previous {
+    -fx-stroke-dash-array: 6 5;
+    -fx-opacity: 0.55;
+}
+
+.party-trend-chart .chart-line-symbol.trend-debit {
+    -fx-background-color: -app-danger, -app-surface;
+}
+
+.party-trend-chart .chart-line-symbol.trend-credit {
+    -fx-background-color: -app-success, -app-surface;
+}
+
+.party-trend-chart .chart-line-symbol.trend-previous {
+    -fx-opacity: 0.55;
+}
+
+.party-trend-chart .axis {
+    -fx-tick-label-fill: -app-text;
+}
+
+.trend-marker {
+    -fx-min-width: 1.6em;
+    -fx-pref-width: 1.6em;
+    -fx-min-height: 0.364em;
+    -fx-max-height: 0.364em;
+    -fx-background-radius: 0.182em;
+}
+
+.trend-marker.trend-debit {
+    -fx-background-color: -app-danger;
+}
+
+.trend-marker.trend-credit {
+    -fx-background-color: -app-success;
+}
+
+.trend-marker.trend-previous {
+    -fx-background-color: -app-text-muted;
+}
+
+.party-stat-card .stat-subtitle {
+    -fx-text-fill: -app-text-muted;
 }
 
 /* ---------- Tables ---------- */

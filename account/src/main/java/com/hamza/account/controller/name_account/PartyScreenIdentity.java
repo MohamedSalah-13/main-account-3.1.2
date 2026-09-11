@@ -68,6 +68,19 @@ public record PartyScreenIdentity(PartyKind kind, String styleClass, AppIcon ico
                 styleClass);
     }
 
+    /** The heading of the trend chart - what was charged and what was collected, over time. */
+    public PartyFormProfile trendProfile() {
+        LanguageManager language = LanguageManager.getInstance();
+        boolean customer = kind == PartyKind.CUSTOMER;
+        return new PartyFormProfile(
+                language.getString(customer
+                        ? "party.trend.customers.title" : "party.trend.suppliers.title"),
+                language.getString(customer
+                        ? "party.trend.customers.subtitle" : "party.trend.suppliers.subtitle"),
+                icon,
+                styleClass);
+    }
+
     /** The heading of the dialog that records one movement on a party's account. */
     public PartyFormProfile paymentProfile() {
         LanguageManager language = LanguageManager.getInstance();
