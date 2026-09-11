@@ -135,11 +135,25 @@ public class PdfExportService {
     }
 
     private Paragraph arabicParagraphBold(String text) {
-        return new Paragraph(ArabicTextHelper.shape(text != null ? text : ""))
-                .setFont(boldFont)
+        String shaped = ArabicTextHelper.shape(text != null ? text : "");
+        return new Paragraph(shaped)
+                .setFont(boldFontFor(shaped))
                 .setBold()
                 .setBaseDirection(BaseDirection.RIGHT_TO_LEFT)
                 .setTextAlignment(TextAlignment.RIGHT);
+    }
+
+    /**
+     * The bold face, unless it cannot draw one of the characters - then the regular face, which
+     * the bold is set over anyway.
+     * <p>
+     * The bundled bold Naskh has no glyph for the hyphen-minus. Every negative figure on a totals
+     * line - the one bold row of a table - printed as its number and an empty box: {@code -7,825.00}
+     * read as a positive {@code 7,825.00}. Found by rendering a report to an image, which is the
+     * only way it could have been: the text extracted from the PDF still says "-".
+     */
+    private PdfFont boldFontFor(String text) {
+        return text.codePoints().allMatch(boldFont::containsGlyph) ? boldFont : arabicFont;
     }
 
     /**
@@ -277,9 +291,17 @@ public class PdfExportService {
         }
     }
 
-    /** The banded last line, one cell per column, in the same order the headers are added. */
+    /**
+     * The banded last line, one cell per column - reversed on the way in, exactly as
+     * {@link #createTable} reverses the headers and {@link #addTableRow} the rows.
+     * <p>
+     * It was not, so the line ran left to right under a table that runs right to left: its label
+     * printed under the last column and every figure under another column's heading, in every
+     * report that has a totals line. The extracted text of such a PDF is correct, so nothing that
+     * read the file could see it; {@code PdfExportServiceLayoutTest} reads the positions.
+     */
     private void addTotalsRow(Table table, String[] cells) {
-        for (String cell : cells) {
+        for (String cell : reverseStrings(cells)) {
             table.addCell(new Cell()
                     .add(arabicParagraphBold(cell == null ? "" : cell)
                             .setTextAlignment(TextAlignment.CENTER))

@@ -1259,6 +1259,19 @@ Two traps when fixing this, both paid for:
   while filling. Never text-replace an expression in a `.jrxml` without looking at the element it
   sits in.
 
+**`PdfExportService` (the non-Jasper PDFs) had the script trap the other way round.**
+`ArabicTextHelper` runs the Unicode bidi pass itself, and under its rules digits after an Arabic
+word become "Arabic numbers" that a hyphen or a percent sign does not join: every PDF printed the
+dates in its subtitle backwards (`01-10-2025`), its rates as `%113.44`, and every negative amount
+as `11,995.00-`. Numbers are now isolated left-to-right before the pass. And the bundled bold Naskh
+has **no glyph for the minus sign**, so a negative total - the one bold row - printed as a
+positive number beside an empty box; `boldFontFor` falls back to the regular face. And the totals
+line ran left to right under a right-to-left table - the headers and rows were reversed on their
+way in and it was not - so every label and figure on it sat under another column's heading, in the
+totals screen's reports as much as the party ones. All three were found only by rendering a report
+to an image: the text extracted from the PDF was right all along. `PdfExportServiceLayoutTest` now
+reads cell positions out of a real PDF, which is the only check that can see the last one.
+
 One consequence is accepted rather than fixed: on the 80mm receipt layout the amount columns are
 35px, so a six-figure value now wraps onto two lines where the unformatted one fitted. The number
 is complete and readable, and widening those columns would narrow the name column on every row to
