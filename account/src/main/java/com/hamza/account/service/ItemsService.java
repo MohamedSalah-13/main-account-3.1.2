@@ -137,10 +137,15 @@ public record ItemsService(DaoFactory daoFactory) {
         return daoFactory.getItemsDao().isOpeningBalanceLocked(itemId);
     }
 
-    public int updateGroup(List<ItemsModel> itemsModel) throws DaoException {
+    /**
+     * The bulk editor's save. The rows are usually the items list's own, which carry no picture,
+     * so {@code writesImage} says whether the picture column is written at all - see
+     * {@code ItemsDao.updateBulk}.
+     */
+    public int updateGroup(List<ItemsModel> itemsModel, boolean writesImage) throws DaoException {
         AuthorizationGuard.require(AppPermissions.ITEMS_UPDATE);
         return TransactionTemplate.execute(() ->
-                announceItemsChanged(daoFactory.getItemsDao().updateList(itemsModel)));
+                announceItemsChanged(daoFactory.getItemsDao().updateBulk(itemsModel, writesImage)));
     }
 
     /**
@@ -203,6 +208,14 @@ public record ItemsService(DaoFactory daoFactory) {
     /** How many rows the same filter matches in total. */
     public int getCatalogCount(ItemCatalogFilter filter) throws DaoException {
         return daoFactory.getItemsDao().getCatalogCount(filter);
+    }
+
+    /**
+     * Every row the same filter matches, with no page boundary: what a print or a bulk edit of
+     * "the list as it is filtered" has to cover, rather than the fifty rows on screen.
+     */
+    public List<ItemsModel> getCatalogExtract(ItemCatalogFilter filter) throws DaoException {
+        return daoFactory.getItemsDao().getCatalogExtract(filter);
     }
 
     public List<ItemsModel> getAllCatalogProducts() throws DaoException {

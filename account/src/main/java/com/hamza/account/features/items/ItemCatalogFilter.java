@@ -19,18 +19,23 @@ import java.util.Objects;
  * arithmetic {@code ItemsDao.applyBalances} performs for the column the operator reads -
  * so a row can never be filtered out by a number different from the one shown in it.
  *
- * @param searchText   what was typed; blank means no text condition
- * @param searchScope  which columns {@code searchText} is matched against
- * @param matchMode    how {@code searchText} is compared to them
- * @param mainGroupId  a main group, expanded to every sub group under it
- * @param subGroupId   a sub group; narrower than {@code mainGroupId} and beats it
- * @param active       whether the item is on sale
- * @param hasBarcode   whether {@code items.barcode} carries anything
- * @param tracksExpiry whether the item is expiry-tracked
- * @param balance      how the item's stock compares to zero, or to its own minimum
- * @param minSellPrice inclusive lower bound on {@code sel_price1}; null for none
- * @param maxSellPrice inclusive upper bound on {@code sel_price1}; null for none
- * @param usage        whether the item has ever appeared on a document
+ * @param searchText       what was typed; blank means no text condition
+ * @param searchScope      which columns {@code searchText} is matched against
+ * @param matchMode        how {@code searchText} is compared to them
+ * @param mainGroupId      a main group, expanded to every sub group under it
+ * @param subGroupId       a sub group; narrower than {@code mainGroupId} and beats it
+ * @param active           whether the item is on sale
+ * @param hasBarcode       whether {@code items.barcode} carries anything
+ * @param tracksExpiry     whether the item is expiry-tracked
+ * @param balance          how the item's stock compares to zero, or to its own minimum
+ * @param minSellPrice     inclusive lower bound on {@code sel_price1}; null for none
+ * @param maxSellPrice     inclusive upper bound on {@code sel_price1}; null for none
+ * @param usage            whether the item has ever appeared on a document
+ * @param miniQuantityFrom inclusive lower bound on the minimum quantity the item is set to
+ *                         ({@code items.mini_quantity}); null for none
+ * @param miniQuantityTo   inclusive upper bound on it; null for none. The pair is what finds
+ *                         "every item whose minimum is still 0 or 1" so it can be raised in one
+ *                         bulk edit
  */
 public record ItemCatalogFilter(String searchText,
                                 SearchScope searchScope,
@@ -43,7 +48,9 @@ public record ItemCatalogFilter(String searchText,
                                 BalanceRule balance,
                                 Double minSellPrice,
                                 Double maxSellPrice,
-                                UsageRule usage) {
+                                UsageRule usage,
+                                Double miniQuantityFrom,
+                                Double miniQuantityTo) {
 
     /** Which columns a typed search is matched against. */
     public enum SearchScope {
@@ -101,7 +108,7 @@ public record ItemCatalogFilter(String searchText,
     public static final ItemCatalogFilter EMPTY = new ItemCatalogFilter(
             "", SearchScope.ANY, MatchMode.AUTO, null, null,
             Tristate.ANY, Tristate.ANY, Tristate.ANY,
-            BalanceRule.ANY, null, null, UsageRule.ANY);
+            BalanceRule.ANY, null, null, UsageRule.ANY, null, null);
 
     public ItemCatalogFilter {
         searchText = searchText == null ? "" : searchText.trim();
@@ -116,53 +123,59 @@ public record ItemCatalogFilter(String searchText,
 
     public ItemCatalogFilter withSearch(String text) {
         return new ItemCatalogFilter(text, searchScope, matchMode, mainGroupId, subGroupId, active, hasBarcode,
-                tracksExpiry, balance, minSellPrice, maxSellPrice, usage);
+                tracksExpiry, balance, minSellPrice, maxSellPrice, usage, miniQuantityFrom, miniQuantityTo);
     }
 
     public ItemCatalogFilter withMatchMode(MatchMode mode) {
         return new ItemCatalogFilter(searchText, searchScope, mode, mainGroupId, subGroupId, active,
-                hasBarcode, tracksExpiry, balance, minSellPrice, maxSellPrice, usage);
+                hasBarcode, tracksExpiry, balance, minSellPrice, maxSellPrice, usage, miniQuantityFrom, miniQuantityTo);
     }
 
     public ItemCatalogFilter withSearchScope(SearchScope scope) {
         return new ItemCatalogFilter(searchText, scope, matchMode, mainGroupId, subGroupId, active, hasBarcode,
-                tracksExpiry, balance, minSellPrice, maxSellPrice, usage);
+                tracksExpiry, balance, minSellPrice, maxSellPrice, usage, miniQuantityFrom, miniQuantityTo);
     }
 
     /** A sub group is the narrower of the two, so the pair is always set together. */
     public ItemCatalogFilter withGroup(Integer main, Integer sub) {
         return new ItemCatalogFilter(searchText, searchScope, matchMode, main, sub, active, hasBarcode,
-                tracksExpiry, balance, minSellPrice, maxSellPrice, usage);
+                tracksExpiry, balance, minSellPrice, maxSellPrice, usage, miniQuantityFrom, miniQuantityTo);
     }
 
     public ItemCatalogFilter withActive(Tristate value) {
         return new ItemCatalogFilter(searchText, searchScope, matchMode, mainGroupId, subGroupId, value, hasBarcode,
-                tracksExpiry, balance, minSellPrice, maxSellPrice, usage);
+                tracksExpiry, balance, minSellPrice, maxSellPrice, usage, miniQuantityFrom, miniQuantityTo);
     }
 
     public ItemCatalogFilter withHasBarcode(Tristate value) {
         return new ItemCatalogFilter(searchText, searchScope, matchMode, mainGroupId, subGroupId, active, value,
-                tracksExpiry, balance, minSellPrice, maxSellPrice, usage);
+                tracksExpiry, balance, minSellPrice, maxSellPrice, usage, miniQuantityFrom, miniQuantityTo);
     }
 
     public ItemCatalogFilter withTracksExpiry(Tristate value) {
         return new ItemCatalogFilter(searchText, searchScope, matchMode, mainGroupId, subGroupId, active, hasBarcode,
-                value, balance, minSellPrice, maxSellPrice, usage);
+                value, balance, minSellPrice, maxSellPrice, usage, miniQuantityFrom, miniQuantityTo);
     }
 
     public ItemCatalogFilter withBalance(BalanceRule rule) {
         return new ItemCatalogFilter(searchText, searchScope, matchMode, mainGroupId, subGroupId, active, hasBarcode,
-                tracksExpiry, rule, minSellPrice, maxSellPrice, usage);
+                tracksExpiry, rule, minSellPrice, maxSellPrice, usage, miniQuantityFrom, miniQuantityTo);
     }
 
     public ItemCatalogFilter withSellPriceBetween(Double min, Double max) {
         return new ItemCatalogFilter(searchText, searchScope, matchMode, mainGroupId, subGroupId, active, hasBarcode,
-                tracksExpiry, balance, min, max, usage);
+                tracksExpiry, balance, min, max, usage, miniQuantityFrom, miniQuantityTo);
     }
 
     public ItemCatalogFilter withUsage(UsageRule rule) {
         return new ItemCatalogFilter(searchText, searchScope, matchMode, mainGroupId, subGroupId, active, hasBarcode,
-                tracksExpiry, balance, minSellPrice, maxSellPrice, rule);
+                tracksExpiry, balance, minSellPrice, maxSellPrice, rule, miniQuantityFrom, miniQuantityTo);
+    }
+
+    /** Items whose minimum quantity lies between the two, both inclusive; either may be null. */
+    public ItemCatalogFilter withMiniQuantityBetween(Double from, Double to) {
+        return new ItemCatalogFilter(searchText, searchScope, matchMode, mainGroupId, subGroupId, active, hasBarcode,
+                tracksExpiry, balance, minSellPrice, maxSellPrice, usage, from, to);
     }
 
     /** Whether anything at all narrows the catalog. Drives the "clear filters" affordance. */
@@ -173,7 +186,8 @@ public record ItemCatalogFilter(String searchText,
                 && mainGroupId == null && subGroupId == null
                 && active == Tristate.ANY && hasBarcode == Tristate.ANY && tracksExpiry == Tristate.ANY
                 && balance == BalanceRule.ANY && usage == UsageRule.ANY
-                && minSellPrice == null && maxSellPrice == null;
+                && minSellPrice == null && maxSellPrice == null
+                && miniQuantityFrom == null && miniQuantityTo == null;
     }
 
     /**
@@ -191,6 +205,7 @@ public record ItemCatalogFilter(String searchText,
         if (balance != BalanceRule.ANY) count++;
         if (usage != UsageRule.ANY) count++;
         if (minSellPrice != null || maxSellPrice != null) count++;
+        if (miniQuantityFrom != null || miniQuantityTo != null) count++;
         if (searchScope != SearchScope.ANY) count++;
         if (matchMode != MatchMode.AUTO) count++;
         return count;
@@ -210,6 +225,8 @@ public record ItemCatalogFilter(String searchText,
                 && tracksExpiry == other.tracksExpiry && balance == other.balance
                 && usage == other.usage
                 && Objects.equals(minSellPrice, other.minSellPrice)
-                && Objects.equals(maxSellPrice, other.maxSellPrice);
+                && Objects.equals(maxSellPrice, other.maxSellPrice)
+                && Objects.equals(miniQuantityFrom, other.miniQuantityFrom)
+                && Objects.equals(miniQuantityTo, other.miniQuantityTo);
     }
 }

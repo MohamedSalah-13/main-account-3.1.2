@@ -96,13 +96,6 @@ public class Print_Reports extends ReportCompany {
         jasperData.printJasperPrint(JasperReportPaths.Report.NAMES_DATA, reportName, map, 1, "");
     }
 
-    public void printItems(@NotNull List<ItemsModel> list) {
-        HashMap<String, Object> map = getStringObjectHashMap(list, null);
-        String wordItems = LanguageManager.getInstance().getString("items");
-        addHeaderToReports(map, wordItems);
-        jasperData.printJasperPrint(JasperReportPaths.Report.ITEMS, wordItems, map, 1, printerNameNormal);
-    }
-
 
     public void printReportByMonth(@NotNull List<TableTotals> list, @NotNull String title) {
         HashMap<String, Object> map = getStringObjectHashMap(list, null);
@@ -232,11 +225,6 @@ public class Print_Reports extends ReportCompany {
         map.put("name_report", nameReport);
         addHeaderToReports(map, nameReport);
         jasperData.printJasperPrint(JasperReportPaths.Invoice.STANDARD, nameReport, map, 1, "");
-    }
-
-    public void printItemsBarcode(List<ItemsModel> list) {
-        HashMap<String, Object> map = getStringObjectHashMap(list, null);
-        jasperData.printJasperPrint(JasperReportPaths.Barcode.ITEMS, "", map, 1, "");
     }
 
     public void printReceiptInvoice(List<ModelPrintInvoice> list, String name, int numInvoice, double otherDiscount

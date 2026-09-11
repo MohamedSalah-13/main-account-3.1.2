@@ -234,8 +234,12 @@ public class UpdateSomeItems {
                 return;
             }
 
+            // The rows are the items list's, and a list row carries no picture: the picture column
+            // is written only when this screen was asked to change it, or saving a price rise
+            // would blank the picture of every item in the batch. Read here, on the JavaFX thread.
+            boolean writesImage = checkDeleteImage.isSelected();
             maskerPaneSetting.showMaskerPane(LanguageManager.getInstance().getString("item.dialog.update.items.title"),
-                    () -> itemsService.updateGroup(itemsModelList));
+                    () -> itemsService.updateGroup(itemsModelList, writesImage));
 
             maskerPaneSetting.getVoidTask().setOnSucceeded(workerStateEvent -> {
                 if (eventBus != null) eventBus.publish(new ItemsChanged());

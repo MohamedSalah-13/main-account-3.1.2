@@ -487,21 +487,29 @@ public class ItemsDao extends AbstractDao<ItemsModel> {
         itemsModel.setSumAllBalanceBySelPrice(roundToTwoDecimalPlaces(itemsModel.getSelPrice1() * sumAllBalance));
     }
 
+    /** The bulk update, never writing the picture. See {@link #updateBulk}. */
     @Override
     public int updateList(List<ItemsModel> list) throws DaoException {
-        if (list.isEmpty()) return 0;
+        return updateBulk(list, false);
+    }
 
-        // No FIRST_BALANCE, ever. This is the bulk update behind the "edit several
-        // items" screen, which changes prices and groups; it has no field for an
-        // opening balance and no business rewriting one. Leaving the column in meant
-        // every item in the batch had its opening balance written back from whatever
-        // the loaded model happened to hold - and it was the one path around the
-        // rule in update(), unlogged and a hundred rows at a time.
-        String sql = optimisticUpdateSql(SqlStatements.updateStatement(
-                TABLE_NAME, ID, BARCODE, NAME_ITEM, SUB_NUM, BUY_PRICE,
-                selPrice1, selPrice2, selPrice3, itemActive, itemHasValidity,
-                numberValidityDays, alertDaysBeforeExpire, UNIT_ID, MINI_QUANTITY,
-                ITEM_IMAGE, USER_ID));
+    /**
+     * The save behind the "edit several items" screen.
+     * <p>
+     * <b>It names only the columns that screen can change</b> - group, buy price, first sell
+     * price, active, minimum quantity - and the picture only when {@code writesImage} says the
+     * screen was asked to change it. The rows it is handed are the items list's own, mapped for
+     * display, and a list row carries no picture: this used to write every column from the row,
+     * so raising the prices of a batch wrote an empty picture over every item in it. Naming the
+     * columns is the same rule {@link #quickUpdate} and {@link #updateImage} already follow.
+     * <p>
+     * No {@code first_balance}, ever: the screen has no business rewriting an opening balance,
+     * and leaving the column in was the one path around the rule in {@link #update}, unlogged
+     * and a hundred rows at a time.
+     */
+    public int updateBulk(List<ItemsModel> list, boolean writesImage) throws DaoException {
+        if (list.isEmpty()) return 0;
+        String sql = bulkUpdateSql(writesImage);
 
         // Execute one compare-and-swap at a time inside a single transaction. A JDBC
         // batch can legally return SUCCESS_NO_INFO, which cannot distinguish a real
@@ -509,13 +517,31 @@ public class ItemsDao extends AbstractDao<ItemsModel> {
         // the whole selection instead of partially applying a bulk edit.
         insertMultiData(() -> {
             for (ItemsModel model : list) {
-                Object[] values = optimisticValues(
-                        dataWithoutOpeningBalance(model), model.getUpdated_at());
+                Object[] values = optimisticValues(bulkUpdateValues(model, writesImage), model.getUpdated_at());
                 requireOptimisticUpdate(executeUpdateWithException(sql, values));
                 model.setUpdated_at(readUpdatedAt(model.getId()));
             }
         });
         return list.size();
+    }
+
+    /** The statement {@link #updateBulk} runs, with its columns in the order {@link #bulkUpdateValues} binds them. */
+    String bulkUpdateSql(boolean writesImage) {
+        String[] columns = writesImage
+                ? new String[]{SUB_NUM, BUY_PRICE, selPrice1, itemActive, MINI_QUANTITY, ITEM_IMAGE, USER_ID}
+                : new String[]{SUB_NUM, BUY_PRICE, selPrice1, itemActive, MINI_QUANTITY, USER_ID};
+        return optimisticUpdateSql(SqlStatements.updateStatement(TABLE_NAME, ID, columns));
+    }
+
+    Object[] bulkUpdateValues(ItemsModel model, boolean writesImage) {
+        List<Object> values = new ArrayList<>(List.of(model.getSubGroups().getId(), model.getBuyPrice(),
+                model.getSelPrice1(), model.isActiveItem(), model.getMini_quantity()));
+        if (writesImage) {
+            values.add(model.getItem_image() != null ? model.getItem_image() : new byte[0]);
+        }
+        values.add(model.getUsers().getId());
+        values.add(model.getId());
+        return values.toArray();
     }
 
     private int insertItem(ItemsModel itemsModel) throws DaoException {
@@ -877,6 +903,19 @@ public class ItemsDao extends AbstractDao<ItemsModel> {
         parameters.add(rowsPerPage);
         parameters.add(offset);
         return queryForObjects(QUERY_CATALOG_ITEMS + query.where() + " ORDER BY " + query.order() + " LIMIT ? OFFSET ?",
+                catalogMapper(), parameters.toArray());
+    }
+
+    /**
+     * Every row {@link #getCatalogProducts} would page through for this filter, in the same
+     * order, with no page boundary - what a print of the list or a bulk edit of "everything
+     * this filter matches" has to cover. Same {@code WHERE}, so it is the set the count names.
+     */
+    public List<ItemsModel> getCatalogExtract(ItemCatalogFilter filter) throws DaoException {
+        ItemCatalogSql.Statement query = ItemCatalogSql.build(filter);
+        List<Object> parameters = new ArrayList<>(query.whereParameters());
+        parameters.addAll(query.orderParameters());
+        return queryForObjects(QUERY_CATALOG_ITEMS + query.where() + " ORDER BY " + query.order(),
                 catalogMapper(), parameters.toArray());
     }
 

@@ -195,6 +195,17 @@ public final class ItemCatalogSql {
             conditions.add("items.sel_price1 <= ?");
             whereParameters.add(safe.maxSellPrice());
         }
+        // The minimum an item is set to, not what it holds: this is how the items whose
+        // minimum was never raised above 0 or 1 are found, to be raised together in a bulk
+        // edit. A plain column of items, so like the price it never forces the movement join.
+        if (safe.miniQuantityFrom() != null) {
+            conditions.add("items.mini_quantity >= ?");
+            whereParameters.add(safe.miniQuantityFrom());
+        }
+        if (safe.miniQuantityTo() != null) {
+            conditions.add("items.mini_quantity <= ?");
+            whereParameters.add(safe.miniQuantityTo());
+        }
 
         String where = conditions.isEmpty() ? "" : " WHERE " + String.join(" AND ", conditions);
         return new Statement(where, whereParameters, order, orderParameters);

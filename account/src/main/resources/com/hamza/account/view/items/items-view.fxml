@@ -25,7 +25,7 @@
 <!--
   The items screen.
 
-  Three things about the layout are deliberate and are worth not undoing:
+  Four things about the layout are deliberate and are worth not undoing:
 
   * There is no ScrollPane around the BorderPane. The table is the thing that scrolls,
     and it virtualises its own rows; wrapping the whole screen made the toolbar
@@ -37,6 +37,10 @@
   * The toolbar is split into commands on one side and view switches on the other. They
     looked identical before - nine buttons in a row - and half of them change what is
     shown while the other half change the data.
+  * Edit and delete are not in the toolbar. They act on one row, so they are buttons in
+    that row (the first column): a toolbar button acting on "the selected row" is two
+    gestures and needs a "choose a row first" message that exists only because the
+    control is in the wrong place. F2 and Delete still act on the selected row.
 -->
 <StackPane fx:id="stackPane" styleClass="app-root" xmlns="http://javafx.com/javafx/21"
            xmlns:fx="http://javafx.com/fxml/1"
@@ -47,13 +51,18 @@
                 <VBox spacing="10.0">
                     <children>
 
-                        <!-- Title strip: what this screen is, and how much of it there is. -->
+                        <!--
+                          Title strip: what this screen is, how much of it there is, and which page
+                          of it is showing. The page box has a floor (minWidth -Infinity) so the
+                          growing region beside it can never squeeze it off the screen.
+                        -->
                         <HBox alignment="CENTER_LEFT" spacing="10.0" styleClass="items-header">
                             <children>
                                 <Label fx:id="labelTitle" styleClass="app-title" text="%item.title" />
                                 <Label fx:id="labelCount" styleClass="items-count-badge" />
                                 <Label fx:id="labelFiltered" managed="false" styleClass="items-filtered-badge"
                                        text="%item.status.filtered" visible="false" />
+                                <HBox fx:id="pagerBox" alignment="CENTER_LEFT" minWidth="-Infinity" spacing="5.0" />
                                 <Region HBox.hgrow="ALWAYS" />
                                 <Label fx:id="labelSelected" styleClass="app-subtitle" />
                             </children>
@@ -66,18 +75,12 @@
                                     <children>
                                         <Button fx:id="btnNew" mnemonicParsing="false" styleClass="success-button"
                                                 text="%item.btn.new" />
-                                        <Button fx:id="btnUpdate" mnemonicParsing="false" styleClass="warning-button"
-                                                text="%item.btn.update" />
-                                        <Button fx:id="btnDelete" mnemonicParsing="false" styleClass="danger-button"
-                                                text="%item.btn.delete" />
                                         <Separator orientation="VERTICAL" />
                                         <MenuButton fx:id="menuButtonPrint" mnemonicParsing="false"
                                                     styleClass="modern-menu-button" text="%item.menu.print">
                                             <items>
                                                 <MenuItem fx:id="menuPrint" mnemonicParsing="false"
-                                                          text="%item.menu.print.all" />
-                                                <MenuItem fx:id="menuPrintMenu" mnemonicParsing="false"
-                                                          text="%item.menu.print.list" />
+                                                          text="%item.menu.print.pdf" />
                                                 <MenuItem fx:id="menuPrintBarcode" mnemonicParsing="false"
                                                           text="%item.menu.print.barcode" />
                                             </items>
@@ -97,6 +100,9 @@
                                         </MenuButton>
                                         <Button fx:id="btnReports" mnemonicParsing="false" styleClass="neutral-button"
                                                 text="%item.btn.reports" />
+                                        <!-- The columns: compact, full, or a hand-picked set - as on the parties lists. -->
+                                        <MenuButton fx:id="menuView" mnemonicParsing="false"
+                                                    styleClass="modern-menu-button" text="%party.list.view" />
                                     </children>
                                 </HBox>
 
@@ -162,6 +168,7 @@
                                         <RowConstraints />
                                         <RowConstraints />
                                         <RowConstraints />
+                                        <RowConstraints />
                                     </rowConstraints>
                                     <children>
                                         <Label styleClass="form-label" text="%item.filter.group"
@@ -205,13 +212,29 @@
                                             </children>
                                         </HBox>
 
-                                        <Label styleClass="form-label" text="%item.filter.saved"
+                                        <!--
+                                          The minimum quantity the item is set to - not what it holds. It is
+                                          how the items whose minimum was left at 0 or 1 are found, to be
+                                          raised together from "bulk edit".
+                                        -->
+                                        <Label styleClass="form-label" text="%item.filter.minimum.range"
                                                GridPane.columnIndex="2" GridPane.rowIndex="2" />
+                                        <HBox spacing="6.0" GridPane.columnIndex="3" GridPane.rowIndex="2">
+                                            <children>
+                                                <TextField fx:id="txtMiniFrom" promptText="%item.filter.price.min"
+                                                           HBox.hgrow="ALWAYS" />
+                                                <TextField fx:id="txtMiniTo" promptText="%item.filter.price.max"
+                                                           HBox.hgrow="ALWAYS" />
+                                            </children>
+                                        </HBox>
+
+                                        <Label styleClass="form-label" text="%item.filter.saved"
+                                               GridPane.columnIndex="0" GridPane.rowIndex="3" />
                                         <ComboBox fx:id="comboSavedFilters" maxWidth="1.7976931348623157E308"
-                                                  promptText="%item.filter.saved.none" GridPane.columnIndex="3"
-                                                  GridPane.rowIndex="2" />
-                                        <HBox spacing="6.0" GridPane.columnIndex="4" GridPane.columnSpan="2"
-                                              GridPane.rowIndex="2">
+                                                  promptText="%item.filter.saved.none" GridPane.columnIndex="1"
+                                                  GridPane.rowIndex="3" />
+                                        <HBox spacing="6.0" GridPane.columnIndex="2" GridPane.columnSpan="2"
+                                              GridPane.rowIndex="3">
                                             <children>
                                                 <Button fx:id="btnSaveFilter" mnemonicParsing="false"
                                                         styleClass="neutral-button" text="%item.filter.save" />

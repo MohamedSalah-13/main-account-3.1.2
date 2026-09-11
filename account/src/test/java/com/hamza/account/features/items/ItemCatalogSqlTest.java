@@ -9,6 +9,8 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
+import java.util.List;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -56,7 +58,8 @@ class ItemCatalogSqlTest {
                     .withTracksExpiry(Tristate.YES)
                     .withBalance(BalanceRule.BELOW_MINIMUM)
                     .withUsage(UsageRule.NEVER_SOLD)
-                    .withSellPriceBetween(5.0, 50.0);
+                    .withSellPriceBetween(5.0, 50.0)
+                    .withMiniQuantityBetween(0.0, 1.0);
 
             ItemCatalogSql.Statement statement = build(filter);
 
@@ -356,6 +359,39 @@ class ItemCatalogSqlTest {
             ItemCatalogFilter chip = ItemCatalogFilter.EMPTY.withBalance(BalanceRule.NEGATIVE);
 
             assertTrue(chip.sameConditionsAs(chip.withSearch("لبن")));
+        }
+
+        @Test
+        @DisplayName("a minimum-quantity range binds both bounds, in order, and counts as one condition")
+        void aMinimumQuantityRangeIsOneCondition() {
+            ItemCatalogFilter filter = ItemCatalogFilter.EMPTY.withMiniQuantityBetween(0.0, 1.0);
+            ItemCatalogSql.Statement statement = build(filter);
+
+            assertTrue(statement.where().contains("items.mini_quantity >= ?"));
+            assertTrue(statement.where().contains("items.mini_quantity <= ?"));
+            assertEquals(List.of(0.0, 1.0), statement.whereParameters());
+            assertEquals(1, filter.activeConditionCount());
+            assertFalse(filter.isEmpty());
+        }
+
+        @Test
+        @DisplayName("the minimum is the item's own setting, so it never forces the movement join")
+        void aMinimumQuantityRangeStaysOnItems() {
+            ItemCatalogFilter filter = ItemCatalogFilter.EMPTY.withMiniQuantityBetween(null, 1.0);
+            ItemCatalogSql.Statement statement = build(filter);
+
+            assertFalse(statement.where().contains("ip."));
+            assertFalse(ItemCatalogSql.requiresMovementJoin(filter));
+            assertEquals(List.of(1.0), statement.whereParameters());
+        }
+
+        @Test
+        @DisplayName("a chip keeps the minimum-quantity range the way it keeps every other condition")
+        void theRangeIsPartOfTheConditions() {
+            ItemCatalogFilter ranged = ItemCatalogFilter.EMPTY.withMiniQuantityBetween(0.0, 1.0);
+
+            assertFalse(ranged.sameConditionsAs(ItemCatalogFilter.EMPTY));
+            assertTrue(ranged.sameConditionsAs(ranged.withSearch("لبن")));
         }
     }
 }

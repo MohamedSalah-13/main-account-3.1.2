@@ -105,6 +105,8 @@ public final class SavedItemFilters {
         append(text, "usage", filter.usage().name());
         append(text, "minPrice", filter.minSellPrice());
         append(text, "maxPrice", filter.maxSellPrice());
+        append(text, "miniFrom", filter.miniQuantityFrom());
+        append(text, "miniTo", filter.miniQuantityTo());
         return text.toString();
     }
 
@@ -126,7 +128,9 @@ public final class SavedItemFilters {
                     enumValue(values.get("balance"), ItemCatalogFilter.BalanceRule.class, ItemCatalogFilter.BalanceRule.ANY),
                     decimal(values.get("minPrice")),
                     decimal(values.get("maxPrice")),
-                    enumValue(values.get("usage"), ItemCatalogFilter.UsageRule.class, ItemCatalogFilter.UsageRule.ANY));
+                    enumValue(values.get("usage"), ItemCatalogFilter.UsageRule.class, ItemCatalogFilter.UsageRule.ANY),
+                    decimal(values.get("miniFrom")),
+                    decimal(values.get("miniTo")));
         } catch (RuntimeException unreadable) {
             return null;
         }

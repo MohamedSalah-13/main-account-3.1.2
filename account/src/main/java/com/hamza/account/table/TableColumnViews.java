@@ -102,7 +102,10 @@ public final class TableColumnViews<T> {
 
         Menu customize = new Menu(text("party.list.view.customize"));
         for (TableColumn<T, ?> column : configurableColumns(tableView)) {
-            CheckMenuItem item = new CheckMenuItem(column.getText());
+            CheckMenuItem item = new CheckMenuItem();
+            // Bound rather than copied: the items list renames its three price columns from the
+            // settings screen while it is open, and the menu should call a column what its heading does.
+            item.textProperty().bind(column.textProperty());
             item.selectedProperty().bindBidirectional(column.visibleProperty());
             item.setOnAction(event -> {
                 preferences.put(modeKey, Preset.CUSTOM.name());

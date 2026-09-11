@@ -61,6 +61,8 @@ public final class ItemsFilterBar {
     private final ComboBox<UsageRule> comboUsage;
     private final TextField txtMinPrice;
     private final TextField txtMaxPrice;
+    private final TextField txtMiniFrom;
+    private final TextField txtMiniTo;
     private final ComboBox<String> comboSaved;
     private final FlowPane chipBar;
     private final Region filterPane;
@@ -84,6 +86,7 @@ public final class ItemsFilterBar {
                           ComboBox<Tristate> comboActive, ComboBox<Tristate> comboBarcode,
                           ComboBox<Tristate> comboExpiry, ComboBox<BalanceRule> comboBalance,
                           ComboBox<UsageRule> comboUsage, TextField txtMinPrice, TextField txtMaxPrice,
+                          TextField txtMiniFrom, TextField txtMiniTo,
                           ComboBox<String> comboSaved, FlowPane chipBar, Region filterPane,
                           ToggleButton btnFilters, Label labelFiltered,
                           Consumer<ItemCatalogFilter> onChanged) {
@@ -97,6 +100,8 @@ public final class ItemsFilterBar {
         this.comboUsage = comboUsage;
         this.txtMinPrice = txtMinPrice;
         this.txtMaxPrice = txtMaxPrice;
+        this.txtMiniFrom = txtMiniFrom;
+        this.txtMiniTo = txtMiniTo;
         this.comboSaved = comboSaved;
         this.chipBar = chipBar;
         this.filterPane = filterPane;
@@ -209,7 +214,7 @@ public final class ItemsFilterBar {
         // The price bounds are a small form and are typed in order, so Enter walks it:
         // from, to, apply. The button is not a default button on purpose - Enter would
         // then fire it from the search box, three controls away, while the panel is shut.
-        whenEnterPressed(txtMinPrice, txtMaxPrice, apply);
+        whenEnterPressed(txtMinPrice, txtMaxPrice, txtMiniFrom, txtMiniTo, apply);
         apply.setOnKeyPressed(event -> {
             if (event.getCode() == KeyCode.ENTER) apply.fire();
         });
@@ -285,7 +290,9 @@ public final class ItemsFilterBar {
                 value(comboBalance, BalanceRule.ANY),
                 price(txtMinPrice),
                 price(txtMaxPrice),
-                value(comboUsage, UsageRule.ANY));
+                value(comboUsage, UsageRule.ANY),
+                price(txtMiniFrom),
+                price(txtMiniTo));
     }
 
     /**
@@ -306,6 +313,8 @@ public final class ItemsFilterBar {
             comboUsage.setValue(filter.usage());
             txtMinPrice.setText(filter.minSellPrice() == null ? "" : String.valueOf(filter.minSellPrice()));
             txtMaxPrice.setText(filter.maxSellPrice() == null ? "" : String.valueOf(filter.maxSellPrice()));
+            txtMiniFrom.setText(filter.miniQuantityFrom() == null ? "" : String.valueOf(filter.miniQuantityFrom()));
+            txtMiniTo.setText(filter.miniQuantityTo() == null ? "" : String.valueOf(filter.miniQuantityTo()));
             selectGroupChoice();
             for (Chip chip : chips) {
                 chip.button().setSelected(chip.isOn(filter));
@@ -485,7 +494,7 @@ public final class ItemsFilterBar {
     }
 
     /**
-     * A price bound, or {@code null} where the field is blank or holds something that is
+     * A numeric bound - a price, or a minimum quantity - or {@code null} where the field is blank or holds something that is
      * not a number. Refusing to parse is not an error worth interrupting anyone over - the
      * bound simply is not applied, and the field shows what was typed.
      */

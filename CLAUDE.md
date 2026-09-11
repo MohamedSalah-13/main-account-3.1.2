@@ -296,7 +296,10 @@ Two things follow from that split and both have bitten. **A catalog row must nev
 `ItemsDao.update`**: it carries no units and no extra barcodes, and that method replaces both from
 the model, so saving one deletes them — which is what setting an item's picture from the list used
 to do. Edit a list row through `quickUpdate` or `updateImage`, or load the item again through
-`findItemById`. And **the page query and its `COUNT` are built from one `WHERE`**
+`findItemById`. The bulk editor is the one write that takes list rows by design, so
+`ItemsDao.updateBulk` names only the columns that screen changes and writes the picture only when
+asked (`ItemsBulkUpdateTest`): it used to write every column from the row, and a list row has no
+picture, so every bulk edit blanked the picture of each item in it. And **the page query and its `COUNT` are built from one `WHERE`**
 (`ItemsDao.catalogQuery`, pinned by `ItemsCatalogQueryTest`): filter them separately and the
 pagination control starts describing a different set of rows than the table shows.
 
@@ -1128,7 +1131,7 @@ A screen-specific style must never redefine a shared class.
 `account.table.TableColumnViews` is the "العرض" menu - a compact view, a full view, a
 hand-picked set of columns and the way back to the default, remembered per table - and
 `ContentSizedColumns` sizes each column to what it holds instead of stretching every column
-across the window. The parties list and the party accounts screen both use them. **A list that
+across the window. The parties list, the party accounts screen and the items list use them. **A list that
 wants either takes these two classes, not a copy of them** - they were one private class inside
 `PartyNamesTable` until the second screen asked for the same thing.
 
@@ -1158,7 +1161,10 @@ screen built in code puts `TableColumnViews.menuButton()` in its own bar - `Acco
 for a report: its visible columns in display order, minus the controls, and a row's value through
 the column's own value factory. **Not through `getCellObservableValue`**, which answers null for
 every row of a column not placed in a table - a silent empty report, found by the first test of
-it. `PartyListPdfLayout` builds the PDF from it and `VisibleColumnsExcelWriter` the spreadsheet,
+it. `TablePdfLayout` builds the PDF from it (with `TablePdfReport` choosing and writing the
+file - both were `PartyListPdfLayout`/`PartyPdfReport` until the items list printed the same way;
+a column holding a plain `double` is money or a quantity only when `NumberFormats` names it) and
+`VisibleColumnsExcelWriter` the spreadsheet,
 so what is hidden on screen is off the paper and out of the file too. The accounts screen uses
 both; its old writer, with a fixed list of nine columns, is gone.
 

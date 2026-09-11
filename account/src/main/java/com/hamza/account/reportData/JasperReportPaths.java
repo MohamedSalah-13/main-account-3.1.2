@@ -28,7 +28,6 @@ public final class JasperReportPaths {
 
     public static class Report {
         public static final String HEADER = BASE_PATH + "Header2.jasper";
-        public static final String ITEMS = BASE_PATH + "items-A4.jrxml";
         public static final String MONTHLY = BASE_PATH + "report-by-month-A4.jrxml";
         public static final String DELEGATE = BASE_PATH + "report-by-delegate-A4.jrxml";
         public static final String NAMES_DATA = BASE_PATH + "name-customer-by-area-A4.jrxml";
@@ -45,7 +44,6 @@ public final class JasperReportPaths {
     public static class Barcode {
         public static final String VERSION_1 = BASE_PATH + "barcode-one-label.jrxml";
         public static final String VERSION_2 = BASE_PATH + "barcode-two-label.jrxml";
-        public static final String ITEMS = BASE_PATH + "items-barcode-A4.jrxml";
     }
 
     public static class Shift {

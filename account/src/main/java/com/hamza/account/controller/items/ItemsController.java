@@ -27,8 +27,16 @@ import com.hamza.account.service.ItemsService;
 import com.hamza.account.service.MainGroupService;
 import com.hamza.account.service.SelPriceItemService;
 import com.hamza.account.service.SupGroupService;
+import com.hamza.account.table.ContentSizedColumns;
 import com.hamza.account.table.EditCell;
+import com.hamza.account.table.PageJumpBox;
+import com.hamza.account.table.RowAction;
+import com.hamza.account.table.RowActionsColumn;
+import com.hamza.account.table.TableColumnViews;
+import com.hamza.account.table.TablePdfLayout;
+import com.hamza.account.table.TablePdfReport;
 import com.hamza.account.table.TableSetting;
+import com.hamza.account.table.VisibleColumnsExcelWriter;
 import com.hamza.account.view.AddItemApplication;
 import com.hamza.account.view.CardApplication;
 import com.hamza.account.view.ItemReportsApplication;
@@ -39,12 +47,14 @@ import com.hamza.account.view.barcode.PrintBarcodeModel;
 import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.error.UserValidationException;
+import com.hamza.controlsfx.excel.ExportData;
 import com.hamza.controlsfx.language.LanguageManager;
 import com.hamza.controlsfx.observer.EventBus;
 import com.hamza.controlsfx.table.Columns;
 import com.hamza.controlsfx.table.columnEdit.ColumnSetting;
 import com.hamza.controlsfx.table.columnEdit.TableColumnEdite;
 import javafx.application.Platform;
+import javafx.beans.InvalidationListener;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -71,16 +81,21 @@ import javafx.scene.Scene;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyCodeCombination;
 import javafx.scene.layout.FlowPane;
+import javafx.scene.layout.HBox;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.prefs.Preferences;
 
 import static com.hamza.controlsfx.others.Utils.whenEnterPressed;
 
@@ -98,8 +113,10 @@ import static com.hamza.controlsfx.others.Utils.whenEnterPressed;
  *       filter so a chip and the panel cannot show different answers;</li>
  *   <li>the group tree, which reads the database - {@link ItemsGroupTreePane}, off the
  *       JavaFX thread, which it was not;</li>
- *   <li>the spreadsheet export - {@link ItemsExcelExport}, which now writes each value under
- *       its own heading.</li>
+ *   <li>the columns, their widths, the print and the spreadsheet - the same shared classes the
+ *       parties lists use ({@link TableColumnViews}, {@link ContentSizedColumns},
+ *       {@link TablePdfLayout}, {@link VisibleColumnsExcelWriter}), so the three outputs carry
+ *       the columns on screen and nothing else.</li>
  * </ul>
  * <p>
  * <b>Columns are held by reference, never by index.</b> Every index in the old version was
@@ -110,29 +127,50 @@ import static com.hamza.controlsfx.others.Utils.whenEnterPressed;
 @FxmlPath(pathFile = "items/items-view.fxml")
 public class ItemsController extends LoadData {
 
+    private static final String ACTIONS_COLUMN = "items-actions";
+    private static final String SELECTION_COLUMN = "items-selection";
+    /** Controls rather than data: never in the view menu, the PDF or the spreadsheet. */
+    private static final Set<String> SCREEN_ONLY_COLUMNS = Set.of(ACTIONS_COLUMN, SELECTION_COLUMN);
+    /** What the compact view keeps: enough to find an item and sell it. */
+    private static final Set<String> COMPACT_COLUMNS = Set.of("items-code", "items-barcode", "items-name",
+            "items-unit", "items-sell-price-1", "items-balance");
+    /** Held as {@code double}, so the PDF is told which are money and which are quantities. */
+    private static final Set<String> MONEY_COLUMNS = Set.of("items-buy-price", "items-sell-price-1",
+            "items-sell-price-2", "items-sell-price-3");
+    private static final Set<String> QUANTITY_COLUMNS = Set.of("items-minimum", "items-opening", "items-balance");
+    private static final String VIEW_MODE = "items.list.view.mode";
+
     private final EventBus eventBus = ServiceRegistry.get(EventBus.class);
     private final TableView<ItemsModel> tableView = new TableView<>();
     private final ItemsService itemsService = ServiceRegistry.get(ItemsService.class);
     private final MainGroupService mainGroupService = ServiceRegistry.get(MainGroupService.class);
     private final SupGroupService supGroupService = ServiceRegistry.get(SupGroupService.class);
     private final SelPriceItemService selPriceService = ServiceRegistry.get(SelPriceItemService.class);
+    private final ContentSizedColumns<ItemsModel> sizing = new ContentSizedColumns<>();
+    /**
+     * Type a page number, land on it. The jump goes through {@code setCurrentPageIndex}, so a
+     * typed number and a click on the pager's own numbers are one route to a page, not two.
+     */
+    private final PageJumpBox pageJump = new PageJumpBox(page -> this.pagination.setCurrentPageIndex(page));
 
     @FXML
-    private Button btnNew, btnUpdate, btnDelete, btnRefresh, btnReports;
+    private Button btnNew, btnRefresh, btnReports;
     @FXML
     private Button btnApplyFilter, btnClearFilter, btnSaveFilter, btnDeleteFilter;
     @FXML
-    private MenuItem menuPrint, menuPrintBarcode, menuPrintMenu, menuItemCard, menuItemConvertGroup, menuItemBulkEdit, menuExportExcel;
+    private MenuItem menuPrint, menuPrintBarcode, menuItemCard, menuItemConvertGroup, menuItemBulkEdit, menuExportExcel;
     @FXML
-    private TextField txtSearch, txtMinPrice, txtMaxPrice;
+    private TextField txtSearch, txtMinPrice, txtMaxPrice, txtMiniFrom, txtMiniTo;
     @FXML
     private StackPane stackPane;
     @FXML
     private ToggleButton btnSelected, btnQuickEdit, btnGroupTree, btnGroupedView, btnFilters;
     @FXML
-    private MenuButton menuButtonOther, menuButtonPrint;
+    private MenuButton menuButtonOther, menuButtonPrint, menuView;
     @FXML
     private Pagination pagination;
+    @FXML
+    private HBox pagerBox;
     @FXML
     private TreeView<ItemsGroupTreePane.GroupNode> groupTree;
     @FXML
@@ -165,9 +203,9 @@ public class ItemsController extends LoadData {
     /**
      * The columns anything else refers to.
      * <p>
-     * Held rather than looked up by position: the units column is inserted at 3, the picture
-     * action is appended, and the selection column is prepended - so the index of any given
-     * column depends on the order three unrelated calls happen to run in.
+     * Held rather than looked up by position: the selection and the row actions are
+     * prepended after the rest are built, so the index of any given column depends on the
+     * order unrelated calls happen to run in.
      */
     private TableColumn<ItemsModel, String> colBarcode;
     private TableColumn<ItemsModel, String> colName;
@@ -196,6 +234,7 @@ public class ItemsController extends LoadData {
         setUpFilterBar();
         setUpGroupTree();
         setUpButtons();
+        setUpPageJump();
         setUpEvents();
         bindStatusLabels();
 
@@ -214,42 +253,43 @@ public class ItemsController extends LoadData {
     // The table
     // ---------------------------------------------------------------------------
 
+    /**
+     * Builds the columns, each with an id.
+     * <p>
+     * The ids are what the view menu's compact set names, what {@link TableSetting} keys a
+     * column's saved visibility by, and how the PDF knows a price from a balance - so they are
+     * stated once here rather than derived from a heading the settings screen can rename.
+     */
     private void buildTable() {
-        colBarcode = Columns.text(NamesTables.STRING, ItemsModel::getBarcode);
-        colName = Columns.text(NamesTables.NAME_ITEM, ItemsModel::getNameItem);
-        colBuyPrice = Columns.number(NamesTables.BUY_PRICE, ItemsModel::getBuyPrice);
-        colSelPrice1 = Columns.number(NamesTables.SEL_PRICE, ItemsModel::getSelPrice1);
-        colSelPrice2 = Columns.number(NamesTables.SEL_PRICE + "2", ItemsModel::getSelPrice2);
-        colSelPrice3 = Columns.number(NamesTables.SEL_PRICE + "3", ItemsModel::getSelPrice3);
+        tableView.setId("items-catalog");
+        colBarcode = named("items-barcode", Columns.text(NamesTables.STRING, ItemsModel::getBarcode));
+        colName = named("items-name", Columns.text(NamesTables.NAME_ITEM, ItemsModel::getNameItem));
+        colBuyPrice = named("items-buy-price", Columns.number(NamesTables.BUY_PRICE, ItemsModel::getBuyPrice));
+        colSelPrice1 = named("items-sell-price-1", Columns.number(NamesTables.SEL_PRICE, ItemsModel::getSelPrice1));
+        colSelPrice2 = named("items-sell-price-2", Columns.number(NamesTables.SEL_PRICE + "2", ItemsModel::getSelPrice2));
+        colSelPrice3 = named("items-sell-price-3", Columns.number(NamesTables.SEL_PRICE + "3", ItemsModel::getSelPrice3));
 
         tableView.getColumns().addAll(
-                Columns.number(NamesTables.CODE, ItemsModel::getId),
+                named("items-code", Columns.number(NamesTables.CODE, ItemsModel::getId)),
                 colBarcode,
                 colName,
+                named("items-unit", unitColumn()),
                 colBuyPrice,
                 colSelPrice1,
                 colSelPrice2,
                 colSelPrice3,
-                Columns.number(NamesTables.MINI_QUANTITY, ItemsModel::getMini_quantity),
-                Columns.number(NamesTables.ALL_STOCKS_FIRST_BALANCE, ItemsModel::getFirstBalanceForStock),
-                Columns.number(NamesTables.ALL_STOCKS_BALANCE, ItemsModel::getSumAllBalance)
+                named("items-minimum", Columns.number(NamesTables.MINI_QUANTITY, ItemsModel::getMini_quantity)),
+                named("items-opening", Columns.number(NamesTables.ALL_STOCKS_FIRST_BALANCE,
+                        ItemsModel::getFirstBalanceForStock)),
+                named("items-balance", Columns.number(NamesTables.ALL_STOCKS_BALANCE, ItemsModel::getSumAllBalance))
         );
         tableView.getSelectionModel().setSelectionMode(SelectionMode.SINGLE);
         tableView.setPlaceholder(new Label(LanguageManager.getInstance().getString("item.table.empty")));
 
-        ItemImageActionColumn.addTo(
-                tableView,
-                this::openItemImage,
-                this::editItem,
-                this::deleteItem,
-                AuthorizationGuard.isGranted(AppPermissions.ITEMS_UPDATE),
-                AuthorizationGuard.isGranted(AppPermissions.ITEMS_DELETE));
-        tableView.getColumns().add(3, unitColumn());
-
         // The cost of goods is a figure a business hides from most of its staff, so the
         // column is REMOVED rather than made invisible. Invisible is not hidden here: the
-        // table's own menu button offers every column back, and TableSetting persists that
-        // choice - so a user without the permission could restore the column and keep it.
+        // view menu offers every column back, and TableSetting persists that choice - so a
+        // user without the permission could restore the column and keep it.
         if (!AuthorizationGuard.isGranted(AppPermissions.SHOW_COLUMN_BUY_PRICE)) {
             tableView.getColumns().remove(colBuyPrice);
         }
@@ -258,54 +298,44 @@ public class ItemsController extends LoadData {
         applyTableEditMode(false);
 
         ColumnSetting.addSelectedColumn(tableView);
-        applyColumnWidths();
-        // An id per column, so the remembered widths and visibility survive a column being
-        // added, removed or moved - the preferences are keyed by index when there is no id,
-        // and removing the buy-price column would otherwise shift every remembered setting.
-        nameColumnsForPreferences();
+        tableView.getColumns().getFirst().setId(SELECTION_COLUMN);
+        // First, not last: the table is wider than the window, and a column appended to the end
+        // lands behind the horizontal scroll bar - which for buttons meant for "the row in front
+        // of you" is the same as not being there.
+        tableView.getColumns().addFirst(named(ACTIONS_COLUMN,
+                RowActionsColumn.of("column.actions", RowAction.permitted(rowActions()))));
+
         TableSetting.tableMenuSetting(getClass(), tableView);
+        // The view menu offers the same choices with names; JavaFX's header menu would offer
+        // them a second time.
+        tableView.setTableMenuButtonVisible(false);
+        sizing.install(tableView);
+        // Every page arrives as a new list, and the widths are measured from what is loaded.
+        tableView.itemsProperty().addListener((observable, old, rows) -> sizing.layout(tableView));
 
         subscribePriceNames();
+        new TableColumnViews<ItemsModel>(Preferences.userNodeForPackage(ItemsController.class).node("items-list"),
+                VIEW_MODE, TableColumnViews.Preset.FULL, COMPACT_COLUMNS, SCREEN_ONLY_COLUMNS)
+                .install(menuView, tableView);
     }
 
     /**
-     * How wide each column starts out, with the item name by far the widest.
-     * <p>
-     * A code is six digits, a price is eight characters and a unit is one word - but a name
-     * is however long the business made it, and it is the column the operator is actually
-     * reading. Left to itself the table divides its width equally, which truncates the one
-     * column that identifies the row while leaving whitespace beside the numbers.
-     * <p>
-     * <b>Set before {@code TableSetting.tableMenuSetting}, deliberately.</b> That method
-     * restores a saved width per column and falls back to {@code getPrefWidth()} when there
-     * is none - so these are the defaults a first run gets, and an operator who drags a
-     * column still keeps their own choice afterwards.
+     * The actions that belong to one item sit in its row, as icons with their name in the
+     * tooltip. The permission on each is a hint - the action is left out rather than shown and
+     * refused - and the service behind it still asks.
      */
-    private void applyColumnWidths() {
-        for (TableColumn<ItemsModel, ?> column : tableView.getColumns()) {
-            column.setMinWidth(60);
-        }
-        colName.setPrefWidth(300);
-        colName.setMinWidth(180);
-        colBarcode.setPrefWidth(140);
-        colBuyPrice.setPrefWidth(95);
-        colSelPrice1.setPrefWidth(95);
-        colSelPrice2.setPrefWidth(95);
-        colSelPrice3.setPrefWidth(95);
-        // Unconstrained, deliberately. A constrained policy recomputes every column's width on
-        // each layout, which would both override the widths above and make TableSetting's saved
-        // widths meaningless - the operator drags a column, it is stored, and the policy
-        // overwrites it on the next layout. Thirteen columns are wider than most windows, so a
-        // horizontal scrollbar is the honest outcome rather than thirteen equal slivers.
-        tableView.setColumnResizePolicy(TableView.UNCONSTRAINED_RESIZE_POLICY);
+    private List<RowAction<ItemsModel>> rowActions() {
+        return List.of(
+                RowAction.of("item.image", AppIcon.SHOW, "app-neutral-button", null, this::openItemImage),
+                RowAction.of("row.action.edit", AppIcon.EDIT, "warning-action-button",
+                        AppPermissions.ITEMS_UPDATE, this::editItem),
+                RowAction.of("row.action.delete", AppIcon.DELETE, "danger-action-button",
+                        AppPermissions.ITEMS_DELETE, this::deleteItem));
     }
 
-    private void nameColumnsForPreferences() {
-        for (TableColumn<ItemsModel, ?> column : tableView.getColumns()) {
-            if (column.getId() == null || column.getId().isBlank()) {
-                column.setId("items_" + (column.getText() == null ? "col" : column.getText()));
-            }
-        }
+    private static <V> TableColumn<ItemsModel, V> named(String id, TableColumn<ItemsModel, V> column) {
+        column.setId(id);
+        return column;
     }
 
     private TableColumn<ItemsModel, String> unitColumn() {
@@ -341,6 +371,8 @@ public class ItemsController extends LoadData {
         if (names.get(1) != null) colSelPrice1.setText(names.get(1));
         if (names.get(2) != null) colSelPrice2.setText(names.get(2));
         if (names.get(3) != null) colSelPrice3.setText(names.get(3));
+        // A heading is part of what a column is measured by.
+        sizing.layout(tableView);
     }
 
     // ---------------------------------------------------------------------------
@@ -458,8 +490,8 @@ public class ItemsController extends LoadData {
     private void setUpFilterBar() {
         filterBar = new ItemsFilterBar(comboSearchScope, comboMatchMode, comboFilterGroup, comboFilterActive,
                 comboFilterBarcode, comboFilterExpiry, comboFilterBalance, comboFilterUsage,
-                txtMinPrice, txtMaxPrice, comboSavedFilters, chipBar, filterPane, btnFilters,
-                labelFiltered, filter -> paginationTableSetting.setFilter(filter));
+                txtMinPrice, txtMaxPrice, txtMiniFrom, txtMiniTo, comboSavedFilters, chipBar, filterPane,
+                btnFilters, labelFiltered, filter -> paginationTableSetting.setFilter(filter));
         filterBar.initialize();
         filterBar.wireButtons(btnApplyFilter, btnClearFilter, btnSaveFilter, btnDeleteFilter);
         // The filter bar owns every condition, and the debounced search box owns the text -
@@ -490,7 +522,7 @@ public class ItemsController extends LoadData {
     }
 
     // ---------------------------------------------------------------------------
-    // The status line
+    // The status line and the page box
     // ---------------------------------------------------------------------------
 
     /**
@@ -513,6 +545,25 @@ public class ItemsController extends LoadData {
                 : LanguageManager.getInstance().getString("item.status.selected", selected));
     }
 
+    /**
+     * The box follows the pager whichever way the page changed - its own numbers, a new
+     * filter sending it back to the first page, or a number typed into the box - so it can
+     * never sit there naming a page the table is not on.
+     */
+    private void setUpPageJump() {
+        pagerBox.getChildren().setAll(pageJump);
+        InvalidationListener follow = observable -> showCurrentPage();
+        pagination.currentPageIndexProperty().addListener(follow);
+        pagination.pageCountProperty().addListener(follow);
+        showCurrentPage();
+    }
+
+    private void showCurrentPage() {
+        int count = pagination.getPageCount();
+        // Before the first count arrives the pager is "indeterminate", which is Integer.MAX_VALUE.
+        pageJump.showing(pagination.getCurrentPageIndex(), count == Pagination.INDETERMINATE ? 1 : count);
+    }
+
     // ---------------------------------------------------------------------------
     // Buttons, keys and events
     // ---------------------------------------------------------------------------
@@ -520,13 +571,9 @@ public class ItemsController extends LoadData {
     private void setUpButtons() {
         var permissions = new DisableButtons.PermissionDisableService();
         permissions.applyPermissionBasedDisable(btnNew::setDisable, AppPermissions.ITEMS_CREATE);
-        permissions.applyPermissionBasedDisable(btnUpdate::setDisable, AppPermissions.ITEMS_UPDATE);
-        permissions.applyPermissionBasedDisable(btnDelete::setDisable, AppPermissions.ITEMS_DELETE);
         permissions.applyPermissionBasedDisable(btnQuickEdit::setDisable, AppPermissions.ITEMS_UPDATE);
 
         btnNew.setGraphic(AppIcon.ADD.graphic(16));
-        btnUpdate.setGraphic(AppIcon.EDIT.graphic(16));
-        btnDelete.setGraphic(AppIcon.DELETE.graphic(16));
         btnRefresh.setGraphic(AppIcon.REFRESH.graphic(16));
         btnReports.setGraphic(AppIcon.REPORT.graphic(16));
         btnFilters.setGraphic(AppIcon.FILTER.graphic(16));
@@ -536,10 +583,9 @@ public class ItemsController extends LoadData {
         btnSelected.setGraphic(AppIcon.SELECT_ALL.graphic(14));
         menuButtonPrint.setGraphic(AppIcon.PRINT.graphic(16));
         menuButtonOther.setGraphic(AppIcon.SETTINGS.graphic(16));
+        menuView.setGraphic(AppIcon.SHOW.graphic(16));
 
         tip(btnNew, "item.tooltip.new");
-        tip(btnUpdate, "item.tooltip.update");
-        tip(btnDelete, "item.tooltip.delete");
         tip(btnRefresh, "item.tooltip.refresh");
         tip(btnGroupTree, "item.tooltip.group.tree");
         tip(btnGroupedView, "item.tooltip.grouped.view");
@@ -552,13 +598,10 @@ public class ItemsController extends LoadData {
         menuItemCard.setOnAction(event -> openCard());
         menuItemConvertGroup.setOnAction(event -> convertGroups());
         menuItemBulkEdit.setOnAction(event -> bulkEdit());
-        menuPrint.setOnAction(event -> printReports.printItems(selectedItems()));
-        menuPrintMenu.setOnAction(event -> printReports.printItemsBarcode(selectedItems()));
+        menuPrint.setOnAction(event -> printPdf());
         menuPrintBarcode.setOnAction(event -> printBarcodes());
 
         btnNew.setOnAction(event -> openItemEditor(0));
-        btnUpdate.setOnAction(event -> editSelected());
-        btnDelete.setOnAction(event -> delete());
         btnRefresh.setOnAction(event -> paginationTableSetting.reload());
         btnReports.setOnAction(event -> openReports());
         btnQuickEdit.setOnAction(event -> applyTableEditMode(btnGroupedView.isSelected()));
@@ -576,7 +619,7 @@ public class ItemsController extends LoadData {
         };
 
         tableView.setOnKeyPressed(event -> {
-            if (event.getCode() == KeyCode.DELETE) btnDelete.fire();
+            if (event.getCode() == KeyCode.DELETE) actOnSelectedRow(AppPermissions.ITEMS_DELETE, this::deleteItem);
         });
         tableView.setOnMouseClicked(event -> {
             if (event.getClickCount() == 2) menuItemCard.fire();
@@ -589,6 +632,9 @@ public class ItemsController extends LoadData {
      * The three commands that get used all day, on the keys every catalogue screen uses for
      * them. Installed on the scene once it exists - a control has no scene while the FXML is
      * still being loaded.
+     * <p>
+     * F2 and Delete act on the selected row and do nothing without one: the row's own buttons
+     * are the way to name a row, and a key pressed with none selected has nothing to ask about.
      */
     private void installAccelerators() {
         stackPane.sceneProperty().addListener((observable, old, scene) -> {
@@ -596,11 +642,16 @@ public class ItemsController extends LoadData {
             scene.getAccelerators().put(new KeyCodeCombination(KeyCode.INSERT), () -> {
                 if (!btnNew.isDisabled()) btnNew.fire();
             });
-            scene.getAccelerators().put(new KeyCodeCombination(KeyCode.F2), () -> {
-                if (!btnUpdate.isDisabled()) btnUpdate.fire();
-            });
+            scene.getAccelerators().put(new KeyCodeCombination(KeyCode.F2),
+                    () -> actOnSelectedRow(AppPermissions.ITEMS_UPDATE, this::editItem));
             scene.getAccelerators().put(new KeyCodeCombination(KeyCode.F5), btnRefresh::fire);
         });
+    }
+
+    private void actOnSelectedRow(com.hamza.account.authorization.PermissionKey permission,
+                                  Consumer<ItemsModel> action) {
+        ItemsModel selected = tableView.getSelectionModel().getSelectedItem();
+        if (selected != null && AuthorizationGuard.isGranted(permission)) action.accept(selected);
     }
 
     private static void tip(javafx.scene.control.Control control, String key) {
@@ -808,11 +859,6 @@ public class ItemsController extends LoadData {
     // Commands
     // ---------------------------------------------------------------------------
 
-    private void editSelected() {
-        ItemsModel selected = requireSelection();
-        if (selected != null) editItem(selected);
-    }
-
     private void editItem(ItemsModel item) {
         openItemEditor(item.getId());
     }
@@ -857,12 +903,6 @@ public class ItemsController extends LoadData {
         }
     }
 
-    private void delete() {
-        ItemsModel selected = requireSelection();
-        if (selected == null) return;
-        deleteItem(selected);
-    }
-
     private void deleteItem(ItemsModel item) {
         if (!AllAlerts.confirmDelete()) return;
         try {
@@ -895,28 +935,151 @@ public class ItemsController extends LoadData {
     }
 
     /**
-     * The bulk editor is a menu entry of its own, not the group screen. It changes prices,
-     * the active flag, the picture, the minimum and the opening balance as well as the group,
-     * and it lost its only way in when "تحويل المجموعات" was repointed at
-     * {@link ItemGroupManagerController} - which moves items between groups and nothing else.
+     * The bulk editor: over the ticked rows, or - when none is ticked and the list is narrowed -
+     * over every item the search and the filters match, after saying how many that is.
+     * <p>
+     * The second is what makes the minimum-quantity filter useful: "every item whose minimum is
+     * still 0 or 1" is usually more than one page, and the tick box only reaches the fifty rows
+     * on screen. An un-narrowed list is refused rather than offered: "every item in the
+     * catalogue" should be a choice somebody makes with a filter, not what an empty selection
+     * falls through to.
+     * <p>
+     * It is a menu entry of its own, not the group screen. It changes prices, the active flag,
+     * the picture and the minimum as well as the group, and it lost its only way in when
+     * "تحويل المجموعات" was repointed at {@link ItemGroupManagerController} - which moves items
+     * between groups and nothing else.
      */
     private void bulkEdit() {
-        List<ItemsModel> selected = selectedItems();
-        if (selected.isEmpty()) {
-            requireTickedRows("item.menu.bulk.edit");
+        List<ItemsModel> ticked = selectedItems();
+        if (!ticked.isEmpty()) {
+            openBulkEditor(ticked);
             return;
         }
+        ItemCatalogFilter current = paginationTableSetting.filter();
+        if (current.isEmpty()) {
+            AllAlerts.handleError(text("item.menu.bulk.edit"),
+                    new UserValidationException(text("item.bulk.edit.none")));
+            return;
+        }
+        int matching = paginationTableSetting.totalRowsProperty().get();
+        if (matching == 0) {
+            AllAlerts.handleError(text("item.menu.bulk.edit"),
+                    new UserValidationException(text("item.table.empty")));
+            return;
+        }
+        if (!AllAlerts.confirm_all(text("item.menu.bulk.edit"), text("item.bulk.edit.filtered.confirm", matching))) {
+            return;
+        }
+        loadExtract(current, "items-bulk-edit-load", rows -> {
+            if (rows.isEmpty()) {
+                AllAlerts.handleError(text("item.menu.bulk.edit"),
+                        new UserValidationException(text("item.table.empty")));
+                return;
+            }
+            openBulkEditor(rows);
+        });
+    }
+
+    private void openBulkEditor(List<ItemsModel> items) {
         try {
             Stage stage = new Stage();
             stage.setScene(new SceneAll(new com.hamza.account.openFxml.OpenFxmlApplication(
-                    new UpdateSomeItems(selected)).getPane()));
-            stage.setTitle(LanguageManager.getInstance().getString("item.menu.bulk.edit"));
+                    new UpdateSomeItems(items)).getPane()));
+            stage.setTitle(text("item.menu.bulk.edit"));
             stage.setResizable(false);
             stage.initModality(Modality.APPLICATION_MODAL);
             stage.show();
         } catch (Exception e) {
             reportError(e);
         }
+    }
+
+    /**
+     * Prints the list as a PDF of the columns on screen, in their order - the way the parties
+     * lists print. The ticked rows when there are any, otherwise every item the search and the
+     * filters match rather than the fifty on this page.
+     * <p>
+     * It replaced two Jasper templates with fixed columns ("الكل" and "الأصناف قوائم"), which
+     * printed what somebody chose once whatever the operator had since hidden or shown.
+     */
+    private void printPdf() {
+        String title = text("item.title");
+        File target = TablePdfReport.chooseTarget(stackPane.getScene().getWindow(), title);
+        if (target == null) return;
+        ItemCatalogFilter printed = paginationTableSetting.filter();
+        List<ItemsModel> ticked = selectedItems();
+        if (!ticked.isEmpty()) {
+            writePdf(target, title, ticked, printed);
+            return;
+        }
+        loadExtract(printed, "items-pdf-load", rows -> {
+            if (rows.isEmpty()) {
+                AllAlerts.alertError(text("party.error.no.data.print"));
+                return;
+            }
+            writePdf(target, title, rows, printed);
+        });
+    }
+
+    private void writePdf(File target, String title, List<ItemsModel> rows, ItemCatalogFilter printed) {
+        TablePdfLayout layout = TablePdfLayout.from(tableView, rows, SCREEN_ONLY_COLUMNS, Set.of(), null,
+                new TablePdfLayout.NumberFormats(MONEY_COLUMNS, QUANTITY_COLUMNS));
+        TablePdfReport.write(target, title, printSubtitle(rows.size(), printed), layout, () -> { });
+    }
+
+    /** How many items, and what narrowed them - a list printed without its filter reads as the whole catalogue. */
+    private static String printSubtitle(int count, ItemCatalogFilter printed) {
+        String subtitle = text("item.status.total", count);
+        if (!printed.searchText().isBlank()) {
+            subtitle += "  -  " + text("search") + ": " + printed.searchText();
+        }
+        if (printed.activeConditionCount() > 0) {
+            subtitle += "  -  " + text("item.status.filtered");
+        }
+        return subtitle;
+    }
+
+    /**
+     * The spreadsheet, over the same rows and the same columns as the PDF. It used to write the
+     * page on screen only, under whatever columns carried a heading - which let the tick box
+     * through as a column of TRUE and FALSE.
+     */
+    private void exportToExcel() {
+        List<ItemsModel> ticked = selectedItems();
+        if (!ticked.isEmpty()) {
+            writeExcel(ticked);
+            return;
+        }
+        loadExtract(paginationTableSetting.filter(), "items-excel-load", this::writeExcel);
+    }
+
+    private void writeExcel(List<ItemsModel> rows) {
+        try {
+            if (rows.isEmpty()) {
+                throw new UserValidationException(text("party.error.no.data.print"));
+            }
+            int written = ExportData.exportDataToExcel(rows,
+                    VisibleColumnsExcelWriter.of(text("item.title"), tableView, SCREEN_ONLY_COLUMNS, rows));
+            // Zero is the save dialog cancelled, not a failure.
+            if (written > 0) {
+                AllAlerts.alertSaveWithMessage(text("itemreport.export.success"));
+            }
+        } catch (Exception e) {
+            AllAlerts.handleError(text("item.menu.export.excel"), e);
+        }
+    }
+
+    /** Every item the filter matches, read off the JavaFX thread and handed back on it. */
+    private void loadExtract(ItemCatalogFilter filter, String threadName, Consumer<List<ItemsModel>> then) {
+        Task<List<ItemsModel>> load = new Task<>() {
+            @Override
+            protected List<ItemsModel> call() throws Exception {
+                return itemsService.getCatalogExtract(filter);
+            }
+        };
+        load.setOnSucceeded(event -> then.accept(load.getValue()));
+        AllAlerts.handleTaskFailure(text("item.dialog.manage.title"), load);
+        TablePdfReport.start(load, threadName);
     }
 
     private void printBarcodes() {
@@ -934,10 +1097,6 @@ public class ItemsController extends LoadData {
         } catch (Exception e) {
             reportError(e);
         }
-    }
-
-    private void exportToExcel() {
-        ItemsExcelExport.export(tableView, "Items", "Items.xlsx");
     }
 
     /** The rows the operator ticked. One definition, used by print, barcodes and grouping. */
@@ -963,6 +1122,11 @@ public class ItemsController extends LoadData {
         LanguageManager language = LanguageManager.getInstance();
         AllAlerts.handleError(language.getString(titleKey),
                 new UserValidationException(language.getString("msg.insert.all")));
+    }
+
+    private static String text(String key, Object... arguments) {
+        LanguageManager language = LanguageManager.getInstance();
+        return arguments.length == 0 ? language.getString(key) : language.getString(key, arguments);
     }
 
     /** Shows a failure to the operator. It does not log - {@code ErrorReporter} does that. */

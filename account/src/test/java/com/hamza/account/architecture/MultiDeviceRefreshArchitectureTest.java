@@ -57,7 +57,9 @@ class MultiDeviceRefreshArchitectureTest {
     void bulkItemEditsAreOptimisticAndAnnounced() {
         String dao = SourceTree.withoutComments(SourceTree.readJava(
                 "com/hamza/account/model/dao/ItemsDao.java"));
-        assertTrue(dao.contains("dataWithoutOpeningBalance(model), model.getUpdated_at()"));
+        // Each row is saved against the version it was loaded with. Which columns it writes -
+        // never the opening balance, the picture only on request - is ItemsBulkUpdateTest's.
+        assertTrue(dao.contains("optimisticValues(bulkUpdateValues(model, writesImage), model.getUpdated_at())"));
         assertTrue(dao.contains("requireOptimisticUpdate(executeUpdateWithException(sql, values))"));
 
         String screen = SourceTree.withoutComments(SourceTree.readJava(
