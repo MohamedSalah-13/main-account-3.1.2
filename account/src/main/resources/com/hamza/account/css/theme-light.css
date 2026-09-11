@@ -76,6 +76,28 @@
     -app-side-muted: #cbd5e1;
 }
 
+/* Customer and supplier screens share the same structure but never the same identity.
+   These variables are consumed by app-theme.css and can be reused by every party screen. */
+.party-customers {
+    -party-accent: #2563eb;
+    -party-accent-dark: #1d4ed8;
+    -party-border: #93c5fd;
+    -party-shadow: rgba(37, 99, 235, 0.28);
+    -party-row-alt: #f4f8ff;
+    -party-row-hover: #dbeafe;
+    -party-row-selected: #bfdbfe;
+}
+
+.party-suppliers {
+    -party-accent: #0f766e;
+    -party-accent-dark: #115e59;
+    -party-border: #5eead4;
+    -party-shadow: rgba(15, 118, 110, 0.28);
+    -party-row-alt: #f0fdfa;
+    -party-row-hover: #ccfbf1;
+    -party-row-selected: #99f6e4;
+}
+
 /* =========================================================
    Invoice Type Colors
    ========================================================= */

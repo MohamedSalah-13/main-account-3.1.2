@@ -2,6 +2,7 @@
 
 <?import javafx.scene.control.Button?>
 <?import javafx.scene.control.Label?>
+<?import javafx.scene.control.MenuButton?>
 <?import javafx.scene.control.Pagination?>
 <?import javafx.scene.control.ScrollPane?>
 <?import javafx.scene.control.Separator?>
@@ -9,66 +10,95 @@
 <?import javafx.scene.control.ToggleButton?>
 <?import javafx.scene.layout.BorderPane?>
 <?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Region?>
 <?import javafx.scene.layout.StackPane?>
 <?import javafx.scene.layout.VBox?>
 
-<StackPane fx:id="root" minHeight="500.0" minWidth="700.0" styleClass="app-root" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.hamza.account.controller.others.TableController">
+<StackPane fx:id="root" minHeight="500.0" minWidth="700.0"
+           styleClass="app-root, table-screen-root"
+           xmlns="http://javafx.com/javafx/21"
+           xmlns:fx="http://javafx.com/fxml/1"
+           fx:controller="com.hamza.account.controller.others.TableController">
     <children>
-        <ScrollPane fitToHeight="true" fitToWidth="true">
+        <ScrollPane fitToHeight="true" fitToWidth="true" styleClass="app-scroll-pane">
             <content>
-                <BorderPane styleClass="app-container">
+                <BorderPane styleClass="app-container, table-screen-container">
                     <top>
-                        <HBox alignment="CENTER_LEFT" minHeight="-Infinity" minWidth="-Infinity" spacing="5.0" styleClass="app-card">
+                        <VBox spacing="10.0">
                             <children>
-                                <HBox alignment="CENTER_LEFT" spacing="5.0">
+                                <!--
+                                  Hidden for neutral legacy lists. A TableScreenProfile reveals and
+                                  fills it for screens with a semantic identity, such as customers
+                                  and suppliers. The colours remain in the theme, never inline here.
+                                -->
+                                <HBox fx:id="identityHeader" alignment="CENTER_LEFT" managed="false"
+                                      spacing="14.0" styleClass="party-screen-header" visible="false">
                                     <children>
-                                        <Button fx:id="btnNew" mnemonicParsing="false" styleClass="success-action-button" text="new" />
+                                        <HBox fx:id="identityIconBox" alignment="CENTER"
+                                              styleClass="party-screen-icon-box" />
+                                        <VBox alignment="CENTER_LEFT" spacing="3.0" HBox.hgrow="ALWAYS">
+                                            <children>
+                                                <Label fx:id="identityTitle" styleClass="party-screen-title" />
+                                                <Label fx:id="identitySubtitle" styleClass="party-screen-subtitle"
+                                                       wrapText="true" />
+                                            </children>
+                                        </VBox>
+                                    </children>
+                                </HBox>
 
-                                        <Button fx:id="btnUpdate" mnemonicParsing="false" styleClass="warning-action-button" text="update" />
+                                <HBox alignment="CENTER_LEFT" spacing="8.0"
+                                      styleClass="app-toolbar, party-list-toolbar">
+                                    <children>
+                                        <Button fx:id="btnNew" mnemonicParsing="false"
+                                                styleClass="success-action-button" text="%new" />
 
-                                        <Button fx:id="btnDelete" mnemonicParsing="false" styleClass="danger-action-button" text="delete" />
+                                        <HBox fx:id="rowRecordActions" alignment="CENTER_LEFT" spacing="8.0">
+                                            <children>
+                                                <Button fx:id="btnUpdate" mnemonicParsing="false"
+                                                        styleClass="warning-action-button" text="%update" />
+                                                <Button fx:id="btnDelete" mnemonicParsing="false"
+                                                        styleClass="danger-action-button" text="%delete" />
+                                            </children>
+                                        </HBox>
 
                                         <Separator orientation="VERTICAL" styleClass="modern-separator" />
 
-                                        <Button fx:id="btnRefresh" mnemonicParsing="false" styleClass="neutral-action-button" text="refresh" />
+                                        <Button fx:id="btnRefresh" mnemonicParsing="false"
+                                                styleClass="neutral-action-button" text="%refresh" />
+                                        <Button fx:id="btnPrint" mnemonicParsing="false"
+                                                styleClass="primary-action-button" text="%print" />
+                                        <ToggleButton fx:id="btnSelected" mnemonicParsing="false"
+                                                      styleClass="app-neutral-button"
+                                                      text="%table.column.select" />
+                                        <MenuButton fx:id="btnView" mnemonicParsing="false"
+                                                    styleClass="neutral-action-button"
+                                                    text="%party.list.view" />
 
-                                        <Button fx:id="btnPrint" mnemonicParsing="false" styleClass="primary-action-button" text="print" />
+                                        <Region HBox.hgrow="ALWAYS" />
 
-                                        <ToggleButton fx:id="btnSelected" mnemonicParsing="false" styleClass="app-neutral-button" text="select/deselect" />
+                                        <!--
+                                          The page-number box sits before the growing search field.
+                                          Otherwise the field takes all spare width and the pager can
+                                          disappear on a narrow window.
+                                        -->
+                                        <HBox fx:id="pagerBox" alignment="CENTER_LEFT"
+                                              minWidth="-Infinity" spacing="5.0" />
+                                        <HBox alignment="CENTER_LEFT" spacing="7.0">
+                                            <children>
+                                                <Label fx:id="labelSearch" styleClass="form-label" text="%search" />
+                                                <TextField fx:id="txtSearch" focusTraversable="false"
+                                                           promptText="%search" styleClass="modern-input"
+                                                           prefWidth="220.0" />
+                                            </children>
+                                        </HBox>
                                     </children>
                                 </HBox>
-                                <!--
-                                  The page-number box, filled in code by TableController with a
-                                  PageJumpBox - the arithmetic of reading a typed page number
-                                  belongs to PageJump, not to a file nothing can test.
-
-                                  It sits BEFORE the search box, and that is not cosmetic. The
-                                  search field grows, so an HBox gives it every spare pixel; put
-                                  after it, this box was starved to nothing and the pager was
-                                  simply not on the screen. minWidth="-Infinity" (USE_PREF_SIZE)
-                                  is the second half of the same guard: it may not be shrunk
-                                  below what it needs.
-                                -->
-                                <HBox fx:id="pagerBox" alignment="CENTER_LEFT" minWidth="-Infinity" spacing="5.0" />
-
-                                <HBox alignment="CENTER_LEFT" spacing="5.0" HBox.hgrow="SOMETIMES">
-                                    <children>
-                                        <Label fx:id="labelSearch" styleClass="form-label" text="Search" />
-
-                                        <TextField fx:id="txtSearch" focusTraversable="false" promptText="اكتب للبحث..." styleClass="modern-input" HBox.hgrow="SOMETIMES" />
-                                    </children>
-                                </HBox>
-
-                            </children>
-                        </HBox>
-                    </top>
-                    <center>
-                        <VBox spacing="5.0">
-                            <children>
-
-                                <Pagination fx:id="pagination" minHeight="-Infinity" minWidth="-Infinity" styleClass="modern-pagination" VBox.vgrow="ALWAYS" />
                             </children>
                         </VBox>
+                    </top>
+                    <center>
+                        <Pagination fx:id="pagination" minHeight="-Infinity" minWidth="-Infinity"
+                                    styleClass="modern-pagination" />
                     </center>
                 </BorderPane>
             </content>

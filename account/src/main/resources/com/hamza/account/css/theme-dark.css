@@ -76,6 +76,27 @@
     -app-side-muted: #94a3b8;
 }
 
+/* Dark equivalents of the shared party identity variables. */
+.party-customers {
+    -party-accent: #3b82f6;
+    -party-accent-dark: #1d4ed8;
+    -party-border: rgba(96, 165, 250, 0.55);
+    -party-shadow: rgba(37, 99, 235, 0.38);
+    -party-row-alt: #172554;
+    -party-row-hover: #1e3a8a;
+    -party-row-selected: #1d4ed8;
+}
+
+.party-suppliers {
+    -party-accent: #14b8a6;
+    -party-accent-dark: #0f766e;
+    -party-border: rgba(45, 212, 191, 0.55);
+    -party-shadow: rgba(13, 148, 136, 0.38);
+    -party-row-alt: #12312f;
+    -party-row-hover: #134e4a;
+    -party-row-selected: #0f766e;
+}
+
 /* =========================================================
    Invoice Type Colors - see theme-light.css for the full rule set
    these variables feed (table header, rows, summary cards). Same

@@ -2,6 +2,7 @@ package com.hamza.account.interfaces.api;
 
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
+import javafx.scene.control.MenuButton;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -9,6 +10,27 @@ import java.util.List;
 public interface DataTable<T> {
 
     default void getTable(TableView<T> tableView) {
+    }
+
+    /**
+     * Whether this table owns widths derived from its data instead of stretching every column
+     * to fill the viewport. Most legacy tables retain the application-wide user preference.
+     */
+    default boolean usesContentSizedColumns() {
+        return false;
+    }
+
+    /** Called after a new page or search result is placed in the table. */
+    default void layoutColumns(TableView<T> tableView) {
+    }
+
+    /** Whether the shared table shell should offer named views and column choices. */
+    default boolean supportsColumnViews() {
+        return false;
+    }
+
+    /** Populates the shared shell's view menu after this table has created its columns. */
+    default void configureColumnViews(MenuButton viewMenu, TableView<T> tableView) {
     }
 
     default List<T> dataList() throws Exception {

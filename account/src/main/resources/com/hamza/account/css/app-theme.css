@@ -512,6 +512,92 @@
     -fx-effect: dropshadow(gaussian, -app-shadow, 12, 0.12, 0, 3);
 }
 
+/* ---------- Customer / supplier identity ----------
+   The two palette classes are defined in theme-light.css and theme-dark.css. They are
+   deliberately screen-agnostic: add/edit and account screens can adopt the same class
+   later and immediately speak the same visual language as the list. */
+
+.party-screen-header {
+    -fx-background-color: linear-gradient(to right, -party-accent-dark, -party-accent);
+    -fx-background-radius: 1.273em;
+    -fx-border-radius: 1.273em;
+    -fx-border-color: -party-border;
+    -fx-border-width: 0.091em;
+    -fx-padding: 1.091em 1.273em;
+    -fx-effect: dropshadow(gaussian, -party-shadow, 16, 0.18, 0, 5);
+}
+
+.party-screen-icon-box {
+    -fx-min-width: 4.091em;
+    -fx-min-height: 4.091em;
+    -fx-max-width: 4.091em;
+    -fx-max-height: 4.091em;
+    -fx-background-color: rgba(255, 255, 255, 0.16);
+    -fx-background-radius: 2.045em;
+    -fx-border-color: rgba(255, 255, 255, 0.30);
+    -fx-border-radius: 2.045em;
+}
+
+.party-screen-header .icon-graphic {
+    -fx-icon-color: white;
+}
+
+.party-screen-title {
+    -fx-font-size: 1.636em;
+    -fx-font-weight: bold;
+    -fx-text-fill: white;
+}
+
+.party-screen-subtitle {
+    -fx-font-size: 1em;
+    -fx-text-fill: rgba(255, 255, 255, 0.84);
+}
+
+.party-customers .party-list-toolbar,
+.party-suppliers .party-list-toolbar {
+    -fx-border-color: -party-border;
+}
+
+.party-primary-button {
+    -fx-background-color: linear-gradient(to right, -party-accent-dark, -party-accent);
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+    -fx-border-color: transparent;
+}
+
+.party-primary-button:hover {
+    -fx-background-color: -party-accent-dark;
+}
+
+.party-primary-button .icon-graphic {
+    -fx-icon-color: white;
+}
+
+.party-customers .table-view .column-header-background,
+.party-suppliers .table-view .column-header-background {
+    -fx-background-color: linear-gradient(to right, -party-accent-dark, -party-accent);
+}
+
+.party-customers .table-row-cell:odd,
+.party-suppliers .table-row-cell:odd {
+    -fx-background-color: -app-table-row;
+}
+
+.party-customers .table-row-cell:even,
+.party-suppliers .table-row-cell:even {
+    -fx-background-color: -party-row-alt;
+}
+
+.party-customers .table-row-cell:hover,
+.party-suppliers .table-row-cell:hover {
+    -fx-background-color: -party-row-hover;
+}
+
+.party-customers .table-row-cell:selected,
+.party-suppliers .table-row-cell:selected {
+    -fx-background-color: -party-row-selected;
+}
+
 /* ---------- Tables ---------- */
 
 .table-view,

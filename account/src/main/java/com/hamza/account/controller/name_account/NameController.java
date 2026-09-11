@@ -2,15 +2,12 @@ package com.hamza.account.controller.name_account;
 
 import com.hamza.account.config.AppIcon;
 import com.hamza.account.table.RowAction;
-import com.hamza.account.table.RowActionsColumn;
 import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.account.controller.main.DataPublisher;
 import com.hamza.account.controller.main.LoadOtherData;
 import com.hamza.account.interfaces.api.DataInterface;
 import com.hamza.account.interfaces.api.DataTable;
-import com.hamza.account.interfaces.api.DesignInterface;
 import com.hamza.account.model.base.BaseAccount;
-import com.hamza.account.config.NamesTables;
 import com.hamza.account.model.base.BaseNames;
 import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.delete.DeleteRegistry;
@@ -18,9 +15,10 @@ import com.hamza.account.delete.DeletionService;
 import com.hamza.account.openFxml.AddForAllApplication;
 import com.hamza.account.table.ActionButtonToolBar;
 import com.hamza.account.table.TableInterface;
-import com.hamza.account.table.TableSetting;
-import com.hamza.account.authorization.AppPermissions;
+import com.hamza.account.table.TableScreenProfile;
 import com.hamza.account.authorization.PermissionKey;
+import com.hamza.account.features.export.PdfExportService;
+import com.itextpdf.kernel.geom.PageSize;
 import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.database.DaoList;
 import com.hamza.controlsfx.database.TransactionTemplate;
@@ -31,15 +29,13 @@ import com.hamza.account.features.events.ChangeAnnouncer;
 import com.hamza.account.features.events.NameChanged;
 import com.hamza.controlsfx.observer.AppEvent;
 import com.hamza.controlsfx.observer.EventBus;
-import com.hamza.controlsfx.others.CssToColorHelper;
-import com.hamza.controlsfx.table.Columns;
 import javafx.beans.property.*;
-import javafx.css.PseudoClass;
+import javafx.concurrent.Task;
 import javafx.scene.control.*;
-import javafx.scene.input.MouseButton;
+import javafx.stage.FileChooser;
 import lombok.extern.log4j.Log4j2;
-import org.jetbrains.annotations.NotNull;
 
+import java.io.File;
 import java.util.List;
 
 
@@ -49,17 +45,20 @@ public class NameController<T3 extends BaseNames, T4 extends BaseAccount>
 
     private final DaoList<T3> nameInterface;
     private final EventBus eventBus = ServiceRegistry.get(EventBus.class);
-    private final DesignInterface designInterface;
+    private final PartyNamesTable<T3, T4> tableData;
     private final StringProperty textSearchData = new SimpleStringProperty("");
     private final ObjectProperty<T3> objectProperty = new SimpleObjectProperty<>();
     private TableView<T3> table;
-    private CssToColorHelper helper;
 
     public NameController(DataInterface<?, ?, T3, T4> dataInterface
             , DaoFactory daoFactory, DataPublisher dataPublisher) throws Exception {
         super(dataInterface, daoFactory, dataPublisher);
-        this.designInterface = dataInterface.designInterface();
         this.nameInterface = nameAndAccountInterface.nameDao();
+        this.tableData = new PartyNamesTable<>(
+                nameAndAccountInterface,
+                nameData,
+                rowActions(),
+                this::editRow);
     }
 
 
@@ -85,8 +84,7 @@ public class NameController<T3 extends BaseNames, T4 extends BaseAccount>
 
             @Override
             public void print() {
-                List<T3> list = table.getItems();
-                printReports.printDetailsOfNames(dataInterface.designInterface().nameTextOfReport(), list, helper);
+                printPartyPdf();
             }
 
             @Override
@@ -130,93 +128,13 @@ public class NameController<T3 extends BaseNames, T4 extends BaseAccount>
 
     @Override
     public DataTable<T3> table_data() {
-        return new DataTable<>() {
-            @Override
-            public void getTable(TableView<T3> tableView) {
-                NameController.this.table = tableView;
-                nameData.addColumns(tableView);
-                addActionsColumn();
-                TableSetting.tableMenuSetting(getClass(), tableView);
-
-                table.setOnMouseClicked(keyEvent -> {
-                    if (keyEvent.getClickCount() == 2 && keyEvent.getButton() == MouseButton.PRIMARY) {
-                        try {
-                            var selectedItem = tableView.getSelectionModel().getSelectedItem();
-                            if (selectedItem != null) {
-                                open(selectedItem.getId());
-                            }
-                        } catch (Exception e) {
-                            log.error(e.getMessage(), e);
-                        }
-                    }
-                });
-            }
-
-            @Override
-            public List<T3> dataList() throws Exception {
-                return nameAndAccountInterface.nameList();
-            }
-
-            /**
-             * What is on the party's own row, and nothing derived from the ledger.
-             * <p>
-             * <b>There is deliberately no balance column here.</b> A party's balance has
-             * one definition and one screen - {@code AccountController2} over
-             * {@code features/party/balances}, which already carries the area, the credit
-             * limit, who is over it and the four figures above the table. Computing it a
-             * second time in this list is exactly the shape of defect the party work
-             * exists to remove: two screens, two answers, and the one a customer is shown
-             * decided by which they happened to open. The opening balance below is not
-             * that - it is a column of this table, read from this row.
-             */
-            @Override
-            public @NotNull List<TableColumn<T3, ?>> columns() {
-                return List.of(
-                        Columns.number(NamesTables.CODE, BaseNames::getId),
-                        Columns.text(NamesTables.NAME, BaseNames::getName),
-                        Columns.text(NamesTables.TEL, BaseNames::getTel),
-                        Columns.text(NamesTables.ADDRESS, BaseNames::getAddress),
-                        Columns.text(NamesTables.EMAIL, BaseNames::getEmail),
-                        Columns.text(NamesTables.NOTES, BaseNames::getNotes),
-                        // Not Columns.number: that prints a double, so an opening balance
-                        // that has been through arithmetic reads 1234.5600000000002 and
-                        // the same figure appears with and without a thousands separator
-                        // on two screens of one ledger.
-                        Columns.moneyOfDouble(NamesTables.FIRST_BALANCE, BaseNames::getFirst_balance),
-                        statusColumn()
-                );
-            }
-        };
+        return tableData;
     }
 
-    /**
-     * Whether the party is still dealt with (V56).
-     * <p>
-     * A stopped party is not hidden from this list - this is the screen its row is
-     * switched back on from, so hiding it here would make {@code is_active} a one-way
-     * door. It is marked instead, and the row is greyed through a {@code PseudoClass}
-     * styled in the theme rather than an inline {@code setStyle}, so a themed build can
-     * say it differently.
-     */
-    private TableColumn<T3, String> statusColumn() {
-        TableColumn<T3, String> column = Columns.text(NamesTables.STATUS,
-                party -> LanguageManager.getInstance().getString(
-                        party.isActive() ? "party.active" : "party.inactive.badge"));
-        column.setCellFactory(unused -> new TableCell<>() {
-            @Override
-            protected void updateItem(String value, boolean empty) {
-                super.updateItem(value, empty);
-                setText(empty ? null : value);
-                T3 party = empty || getIndex() >= getTableView().getItems().size()
-                        ? null : getTableView().getItems().get(getIndex());
-                pseudoClassStateChanged(STOPPED, party != null && !party.isActive());
-            }
-        });
-        return column;
+    @Override
+    public TableScreenProfile screenProfile() {
+        return PartyScreenIdentity.forKind(nameAndAccountInterface.partyKind()).listProfile();
     }
-
-    /** Styled in the theme; see {@code Columns.NEGATIVE} for the same idea on an amount. */
-    private static final PseudoClass STOPPED = PseudoClass.getPseudoClass("party-stopped");
 
     @Override
     public BooleanProperty getColumnSelected(BaseNames t3) {
@@ -266,45 +184,20 @@ public class NameController<T3 extends BaseNames, T4 extends BaseAccount>
         return nameAndAccountInterface.getCountItems();
     }
 
-    @Override
-    public void helper(CssToColorHelper helper) {
-        this.helper = helper;
-    }
-
     private void open(int id) throws Exception {
         new AddForAllApplication(id, new AddNameController<>(dataInterface, daoFactory, dataPublisher, id));
     }
 
-    /**
-     * The three things you do to one party, in that party's own row.
-     * <p>
-     * <b>Edit and delete were toolbar buttons acting on "the selected row".</b> That is two
-     * gestures - select, then travel to the toolbar - and it carried a refusal that existed
-     * only because the control was in the wrong place: "choose a row first". They stay in the
-     * toolbar as well, because a keyboard user selects with the arrow keys and never touches a
-     * row button; what changes is that the mouse no longer needs both.
-     * <p>
-     * This replaces a hand-rolled button cell that had the two defects
-     * {@link RowActionsColumn} exists to prevent: it read its row with
-     * {@code getTableView().getItems().get(getIndex())}, which throws when a reload leaves a
-     * cell pointing past the end of the list, and it re-used one {@code Button} across every
-     * row the cell was recycled through - correct only because it read the index afresh each
-     * time, which is the part that could throw.
-     */
-    private void addActionsColumn() {
+    /** The actions that belong to one party stay beside that party's row. */
+    private List<RowAction<T3>> rowActions() {
         var permissions = dataInterface.permAccountAndNameInt();
-        List<RowAction<T3>> actions = List.of(
+        return List.of(
                 RowAction.of("row.action.show", AppIcon.SHOW, "app-neutral-button",
                         permissions.showNames(), this::showRow),
                 RowAction.of("row.action.edit", AppIcon.EDIT, "warning-action-button",
                         permissions.updateNames(), this::editRow),
                 RowAction.of("row.action.delete", AppIcon.DELETE, "danger-action-button",
                         permissions.deleteNames(), this::deleteRow));
-        // First, not last. This table is wider than the window - it carries ten columns and a
-        // horizontal scroll bar - and a column appended to the end lands past the right of that
-        // scroll, which for buttons meant for "the row in front of you" is the same as not being
-        // there. First puts it against the row's own identity, which is where it was asked for.
-        table.getColumns().add(0, RowActionsColumn.of("column.actions", RowAction.permitted(actions)));
     }
 
     // AllAlerts owns the technical logging behind its reference code, so nothing here logs
@@ -349,6 +242,91 @@ public class NameController<T3 extends BaseNames, T4 extends BaseAccount>
         } catch (Exception e) {
             AllAlerts.handleError(LanguageManager.getInstance().getString("row.action.delete"), e);
         }
+    }
+
+    /** Prints selected rows, or every row matching the search when none are selected. */
+    private void printPartyPdf() {
+        File target = reportTarget();
+        if (target == null) {
+            return;
+        }
+        List<T3> selected = table.getItems().stream()
+                .filter(row -> row.getSelectedRow().get())
+                .toList();
+        String query = textSearchData.get().trim();
+        if (!selected.isEmpty()) {
+            exportPartyPdf(target, selected, query);
+            return;
+        }
+
+        Task<List<T3>> load = new Task<>() {
+            @Override
+            protected List<T3> call() throws Exception {
+                return query.isBlank()
+                        ? nameAndAccountInterface.nameList()
+                        : nameAndAccountInterface.getFilterItems(query);
+            }
+        };
+        load.setOnSucceeded(event -> {
+            List<T3> rows = load.getValue();
+            if (rows.isEmpty()) {
+                AllAlerts.alertError(text("party.error.no.data.print"));
+                return;
+            }
+            exportPartyPdf(target, rows, query);
+        });
+        AllAlerts.handleTaskFailure(text("party.error.export.generic"), load);
+        start(load, "party-list-pdf-load");
+    }
+
+    /** Captures the table on the FX thread, then writes the potentially large PDF in the background. */
+    private void exportPartyPdf(File target, List<T3> rows, String query) {
+        PartyListPdfLayout layout = PartyListPdfLayout.from(table, rows);
+        if (layout.headers().length == 0) {
+            AllAlerts.alertError(text("party.error.no.data.print"));
+            return;
+        }
+        String title = dataInterface.designInterface().nameTextOfReport();
+        String subtitle = query.isBlank() ? "" : text("search") + ": " + query;
+        PageSize pageSize = layout.headers().length > 5 ? PageSize.A4.rotate() : PageSize.A4;
+        Task<Boolean> write = new Task<>() {
+            @Override
+            protected Boolean call() {
+                return new PdfExportService().exportGroupedReport(target.getAbsolutePath(), title, subtitle,
+                        layout.headers(), layout.columnWidths(), layout.rows(), null, pageSize);
+            }
+        };
+        write.setOnSucceeded(event -> {
+            if (Boolean.TRUE.equals(write.getValue())) {
+                AllAlerts.alertSaveWithMessage(text("party.export.success.saved.at", target.getAbsolutePath()));
+            } else {
+                AllAlerts.alertError(text("party.error.export.generic"));
+            }
+        });
+        AllAlerts.handleTaskFailure(text("party.error.export.generic"), write);
+        start(write, "party-list-pdf-write");
+    }
+
+    private File reportTarget() {
+        FileChooser chooser = new FileChooser();
+        chooser.setTitle(text("party.dialog.save.report"));
+        chooser.setInitialFileName(safeFileName(dataInterface.designInterface().nameTextOfReport()) + ".pdf");
+        chooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("PDF", "*.pdf"));
+        return chooser.showSaveDialog(table.getScene().getWindow());
+    }
+
+    private String safeFileName(String title) {
+        return title.replaceAll("[\\\\/:*?\"<>|]", " ").trim();
+    }
+
+    private void start(Task<?> task, String name) {
+        Thread thread = new Thread(task, name);
+        thread.setDaemon(true);
+        thread.start();
+    }
+
+    private String text(String key, Object... arguments) {
+        return LanguageManager.getInstance().getString(key, arguments);
     }
 
     public BaseNames getObjectProperty() {

@@ -6,6 +6,7 @@ import com.hamza.account.authorization.AppPermissions;
 import com.hamza.account.authorization.PermissionKey;
 import com.hamza.controlsfx.observer.AppEvent;
 import com.hamza.controlsfx.observer.Publisher;
+import com.hamza.controlsfx.language.LanguageManager;
 import javafx.beans.property.BooleanProperty;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TextField;
@@ -15,6 +16,14 @@ import javafx.scene.layout.GridPane;
 import java.util.List;
 
 public interface TableInterface<T> extends MainData {
+
+    /** Visual/action configuration for the shared table shell. */
+    default TableScreenProfile screenProfile() {
+        LanguageManager language = LanguageManager.getInstance();
+        return TableScreenProfile.standard(
+                language.getString("search"),
+                language.getString("new"));
+    }
 
 
     default String titleName() {

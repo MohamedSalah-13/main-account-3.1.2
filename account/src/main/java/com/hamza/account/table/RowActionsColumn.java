@@ -59,7 +59,7 @@ public final class RowActionsColumn {
         double width = Math.max(WIDTH_PER_ACTION, actions.size() * WIDTH_PER_ACTION);
         column.setMinWidth(width);
         column.setPrefWidth(width);
-        column.setMaxWidth(width * 1.5);
+        column.setMaxWidth(width);
         column.setCellFactory(ignored -> new ActionCell<>(actions));
         return column;
     }

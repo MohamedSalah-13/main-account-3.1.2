@@ -2,16 +2,17 @@ package com.hamza.account.controller.others;
 
 import com.hamza.account.table.PageJumpBox;
 import javafx.scene.layout.HBox;
-import com.hamza.account.config.Image_Setting;
+import com.hamza.account.config.AppIcon;
 import com.hamza.account.config.TableAppearance;
 import com.hamza.account.controller.main.DisableButtons;
 import com.hamza.account.openFxml.FxmlPath;
 import com.hamza.account.table.ActionButtonToolBar;
 import com.hamza.account.table.TableInterface;
+import com.hamza.account.table.TableScreenProfile;
+import com.hamza.account.interfaces.api.DataTable;
 import com.hamza.controlsfx.alert.AllAlerts;
-import com.hamza.controlsfx.button.ButtonGraphics;
 import com.hamza.controlsfx.error.UserValidationException;
-import com.hamza.controlsfx.language.Setting_Language;
+import com.hamza.controlsfx.language.LanguageManager;
 import com.hamza.controlsfx.observer.EventBus;
 import com.hamza.controlsfx.observer.Subscriptions;
 import com.hamza.controlsfx.others.CssToColorHelper;
@@ -22,19 +23,14 @@ import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.control.*;
 import javafx.scene.input.KeyCode;
-import javafx.scene.layout.GridPane;
+import javafx.scene.Node;
 import javafx.scene.layout.StackPane;
-import javafx.scene.layout.VBox;
-import javafx.scene.text.Text;
 import javafx.util.Duration;
 import lombok.extern.log4j.Log4j2;
 
-import java.io.InputStream;
 import java.net.URL;
 import java.util.List;
 import java.util.ResourceBundle;
-
-import static com.hamza.controlsfx.util.ImageChoose.createIcon;
 
 /**
  * Controller class for managing a TableView and its associated UI components.
@@ -55,31 +51,27 @@ public class TableController<T> implements Initializable {
     private final Subscriptions subscriptions = new Subscriptions();
     private final CssToColorHelper helper = new CssToColorHelper();
     private final ActionButtonToolBar<T> actionButtonToolBar;
+    private final TableScreenProfile screenProfile;
+    private DataTable<T> tableData;
     private final int ROWS_PER_PAGE = 50;
 
     private final TableView<T> tableView = new TableView<>();
     @FXML
     private Button btnNew, btnUpdate, btnDelete, btnRefresh, btnPrint;
     @FXML
-    private Label labelSearch;
+    private Label labelSearch, identityTitle, identitySubtitle;
     @FXML
     private TextField txtSearch;
     @FXML
     private StackPane root;
     @FXML
-    private ToolBar toolBar;
-    @FXML
-    private VBox boxCenter;
-    @FXML
     private ToggleButton btnSelected;
     @FXML
-    private Text textData;
-    @FXML
-    private GridPane gridPane;
+    private MenuButton btnView;
     @FXML
     private Pagination pagination;
     @FXML
-    private HBox pagerBox;
+    private HBox pagerBox, identityHeader, identityIconBox, rowRecordActions;
 
     /**
      * Type a page number, land on it.
@@ -96,15 +88,15 @@ public class TableController<T> implements Initializable {
     public TableController(TableInterface<T> tableInterface) {
         this.tableInterface = tableInterface;
         this.actionButtonToolBar = tableInterface.actionButton();
+        this.screenProfile = tableInterface.screenProfile();
     }
 
     @Override
     public void initialize(URL url, ResourceBundle resourceBundle) {
         getTable();
         initializePagination();
+        applyScreenProfile();
         otherSetting();
-
-        tableInterface.addToLastPane(gridPane, toolBar);
 
         if (tableInterface.styleSheet() != null) {
             root.getStylesheets().add(tableInterface.styleSheet());
@@ -154,7 +146,7 @@ public class TableController<T> implements Initializable {
                 try {
                     loadDataFromDB(newValue); // لا يتم الاستدعاء إلا بعد التوقف عن الكتابة
                 } catch (Exception e) {
-                    reportUnexpected("البحث في بيانات الجدول", e);
+                    reportUnexpected(text("error.operation.table.search"), e);
                 }
             });
             pause.playFromStart();
@@ -167,17 +159,19 @@ public class TableController<T> implements Initializable {
         try {
             List<T> data = tableInterface.getProducts(ROWS_PER_PAGE, offset);
             tableView.setItems(FXCollections.observableArrayList(data));
+            tableData.layoutColumns(tableView);
             tableView.refresh();
         } catch (Exception e) {
             // Keep the currently displayed rows. Replacing them with an empty list
             // would make a database failure look like "there is no data".
-            reportUnexpected("تحميل بيانات الجدول", e);
+            reportUnexpected(text("error.operation.table.update"), e);
         }
     }
 
     private void loadDataFromDB(String newValue) throws Exception {
         var filterItems = tableInterface.getFilterItems(newValue);
         tableView.setItems(FXCollections.observableArrayList(filterItems));
+        tableData.layoutColumns(tableView);
     }
 
     private void permButtons() {
@@ -189,36 +183,63 @@ public class TableController<T> implements Initializable {
 
     private void getTable() {
         tableView.getColumns().clear();
-        tableView.getColumns().addAll(tableInterface.table_data().columns());
-        tableInterface.table_data().getTable(tableView);
+        tableData = tableInterface.table_data();
+        tableView.getColumns().addAll(tableData.columns());
+        tableData.getTable(tableView);
         ColumnSetting.addSelectedColumn(tableView);
+        tableData.configureColumnViews(btnView, tableView);
         tableView.setEditable(true);
         tableView.getSelectionModel().setSelectionMode(SelectionMode.SINGLE);
+        if (tableData.usesContentSizedColumns()) {
+            TableAppearance.setFillAvailableWidthOverride(tableView, false);
+        }
         TableAppearance.apply(tableView);
     }
 
     private void otherSetting() {
-        labelSearch.setText(Setting_Language.WORD_SEARCH);
-        txtSearch.setPromptText(Setting_Language.WORD_SEARCH);
+        labelSearch.setText(text("search"));
+        labelSearch.setGraphic(AppIcon.SEARCH.graphic());
+        txtSearch.setPromptText(screenProfile.searchPrompt());
 
-        var imageSetting = new Image_Setting();
-        buttonSetting(btnNew, Setting_Language.WORD_NEW, imageSetting.add);
-        buttonSetting(btnUpdate, "تعديل", imageSetting.update);
-        buttonSetting(btnDelete, Setting_Language.WORD_DELETE, imageSetting.delete);
-        buttonSetting(btnRefresh, Setting_Language.WORD_REFRESH, imageSetting.refresh);
-        buttonSetting(btnPrint, Setting_Language.WORD_PRINT, imageSetting.print);
-        btnSelected.setGraphic(createIcon(imageSetting.select));
+        buttonSetting(btnNew, screenProfile.addButtonText(), AppIcon.ADD);
+        buttonSetting(btnUpdate, text("update"), AppIcon.EDIT);
+        buttonSetting(btnDelete, text("delete"), AppIcon.DELETE);
+        buttonSetting(btnRefresh, text("refresh"), AppIcon.REFRESH);
+        buttonSetting(btnPrint, text("print"), AppIcon.PRINT);
+        buttonSetting(btnSelected, text("table.column.select"), AppIcon.SELECT_ALL);
+        buttonSetting(btnView, text("party.list.view"), AppIcon.SETTINGS);
     }
 
-    private void buttonSetting(Button button, String title, InputStream stream) {
+    private void buttonSetting(ButtonBase button, String title, AppIcon icon) {
         button.setText(title);
+        button.setGraphic(icon.graphic());
+        button.setContentDisplay(ContentDisplay.RIGHT);
+    }
 
-        if (stream != null) {
-            ButtonGraphics.buttonGraphic(button, stream);
-            button.setContentDisplay(ContentDisplay.RIGHT);
+    /** Applies feature-specific identity without coupling the shared FXML to a domain. */
+    private void applyScreenProfile() {
+        setShown(identityHeader, screenProfile.headerVisible());
+        setShown(btnUpdate, screenProfile.updateVisible());
+        setShown(btnDelete, screenProfile.deleteVisible());
+        setShown(rowRecordActions,
+                screenProfile.updateVisible() || screenProfile.deleteVisible());
+        setShown(btnSelected, screenProfile.selectionVisible());
+        setShown(btnView, tableData.supportsColumnViews());
+
+        if (!screenProfile.rootStyleClass().isBlank()) {
+            root.getStyleClass().add(screenProfile.rootStyleClass());
         }
+        if (screenProfile.headerVisible()) {
+            identityTitle.setText(screenProfile.title());
+            identitySubtitle.setText(screenProfile.subtitle());
+            identityIconBox.getChildren().setAll(screenProfile.icon().graphic(30));
+            btnNew.getStyleClass().add("party-primary-button");
+        }
+    }
 
-        button.getStyleClass().removeAll();
+    private void setShown(Node node, boolean shown) {
+        node.setVisible(shown);
+        node.setManaged(shown);
     }
 
     private void actionButton() {
@@ -242,25 +263,27 @@ public class TableController<T> implements Initializable {
             try {
                 actionButtonToolBar.openNew();
             } catch (Exception e) {
-                reportUnexpected("فتح شاشة إضافة سجل", e);
+                reportUnexpected(text("error.operation.record.open.new"), e);
             }
         });
 
         btnUpdate.setOnAction(actionEvent -> {
             if (tableView.getSelectionModel().isEmpty()) {
-                AllAlerts.handleError("تنفيذ إجراء على السجل", new UserValidationException(Setting_Language.PLEASE_SELECT_ROW));
+                AllAlerts.handleError(text("error.operation.table.action"),
+                        new UserValidationException(text("msg.select.row")));
                 return;
             }
             try {
                 actionButtonToolBar.update(tableView.getSelectionModel().getSelectedItem());
             } catch (Exception e) {
-                reportUnexpected("فتح شاشة تعديل السجل", e);
+                reportUnexpected(text("error.operation.record.open.edit"), e);
             }
         });
 
         btnDelete.setOnAction(actionEvent -> {
             if (tableView.getSelectionModel().isEmpty()) {
-                AllAlerts.handleError("تنفيذ إجراء على السجل", new UserValidationException(Setting_Language.PLEASE_SELECT_ROW));
+                AllAlerts.handleError(text("error.operation.table.action"),
+                        new UserValidationException(text("msg.select.row")));
                 return;
             }
             if (AllAlerts.confirmDelete())
@@ -282,7 +305,7 @@ public class TableController<T> implements Initializable {
             try {
                 actionButtonToolBar.print();
             } catch (Exception e) {
-                reportUnexpected("طباعة بيانات الجدول", e);
+                reportUnexpected(text("report.error.print.table.title"), e);
             }
         });
     }
@@ -298,7 +321,11 @@ public class TableController<T> implements Initializable {
      * failures elsewhere already use {@link AllAlerts#reportError}.
      */
     private void reportDeleteFailure(Exception error) {
-        AllAlerts.handleError("حذف السجل المحدد", error);
+        AllAlerts.handleError(text("row.action.delete"), error);
+    }
+
+    private String text(String key) {
+        return LanguageManager.getInstance().getString(key);
     }
 
 }

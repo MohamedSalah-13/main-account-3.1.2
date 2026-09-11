@@ -30,6 +30,9 @@ public class ColumnSetting {
         final TableColumn<S, Boolean> selectableColumn = new TableColumn<>(LanguageManager.getInstance().getString("table.column.select"));
         selectableColumn.setCellValueFactory(new PropertyValueFactory<>("selectedRow"));
         selectableColumn.setCellFactory(tc -> new CheckBoxTableCell<>());
+        selectableColumn.setMinWidth(42);
+        selectableColumn.setPrefWidth(42);
+        selectableColumn.setMaxWidth(42);
         columns.addFirst(selectableColumn);
     }
 
