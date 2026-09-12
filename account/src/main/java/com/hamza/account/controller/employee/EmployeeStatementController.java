@@ -60,6 +60,7 @@ import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
+import javafx.stage.Stage;
 import javafx.util.StringConverter;
 import lombok.extern.log4j.Log4j2;
 
@@ -139,6 +140,7 @@ public class EmployeeStatementController implements AppSettingInterface {
     private final Label countLabel = new Label();
     private final Button previous = new Button();
     private final Button next = new Button();
+    private final Button close = closeButton();
     private final ProgressIndicator progress = new ProgressIndicator();
 
     @FXML
@@ -363,10 +365,26 @@ public class EmployeeStatementController implements AppSettingInterface {
 
         HBox spacer = new HBox();
         HBox.setHgrow(spacer, Priority.ALWAYS);
-        HBox bar = new HBox(12, countLabel, spacer, previous, pageJump, next);
+        HBox bar = new HBox(12, countLabel, close, spacer, previous, pageJump, next);
         bar.setAlignment(Pos.CENTER_LEFT);
         bar.getStyleClass().addAll("summary-card", "party-summary-bar");
         return bar;
+    }
+
+    /**
+     * The statement's own way out, because {@code addLastPane()} is false.
+     * <p>
+     * It was true, and that is what {@code DialogApplication} reads as "this screen saves": the
+     * dialog grew a save button, so a read-only statement asked "do you want to save?" and then
+     * refused to close, since {@code ActionSave.save()} defaults to 0 and anything but 1 is a
+     * failed save. Nothing here writes a row - the two screens that do are opened from it and
+     * carry their own save. {@code DeleteDataController} is the same shape for the same reason.
+     */
+    private Button closeButton() {
+        Button button = button("common.close", AppIcon.CLOSE, () -> { });
+        button.setId("btnClose");
+        button.setOnAction(event -> ((Stage) button.getScene().getWindow()).close());
+        return button;
     }
 
     private void buildTable() {
@@ -688,13 +706,12 @@ public class EmployeeStatementController implements AppSettingInterface {
     }
 
     /**
-     * A close button, because {@code addLastPane()} defaults to false and a {@code Dialog} with no
-     * {@code ButtonType} ignores the window's own close control - one of the three contracts that
-     * broke the user-management screen before it was ever opened.
+     * No dialog buttons: this screen reads, and the close button in its footer is the way out.
+     * See {@link #closeButton()} for what returning true did.
      */
     @Override
     public boolean addLastPane() {
-        return true;
+        return false;
     }
 
     @Override
