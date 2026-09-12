@@ -103,6 +103,7 @@ class EmployeeAccountDatabaseAcceptanceTest {
                 AppPermissions.EMPLOYEE_PAY, AppPermissions.EXPENSES_CREATE);
 
         transaction = ConnectionManager.beginTransaction();
+        seedOperator();
         employeeId = seedEmployee();
     }
 
@@ -117,6 +118,7 @@ class EmployeeAccountDatabaseAcceptanceTest {
             assertNoResidue(connection, "employees", "column_name LIKE '" + STAMP + "%'");
             assertNoResidue(connection, "expenses_details", "notes LIKE '" + STAMP + "%'");
             assertNoResidue(connection, "employee_ledger", "notes LIKE '" + STAMP + "%'");
+            assertNoResidue(connection, "users", "user_name LIKE '" + STAMP + "%'");
         } finally {
             ConnectionManager.release(connection);
             DataSourceProvider.shutdown();
@@ -244,6 +246,26 @@ class EmployeeAccountDatabaseAcceptanceTest {
         return PAYMENTS.pay(EmployeePayment.parse(employeeId, LocalDate.parse(day),
                 new BigDecimal(amount), purpose, firstTreasury(), firstHeading(),
                 STAMP + " " + purpose));
+    }
+
+    /**
+     * The signed-in user has to exist, and this class deliberately is not user 1.
+     * <p>
+     * Both {@code employee_ledger.user_id} and {@code expenses_details.user_id} are foreign keys
+     * to {@code users}, and a schema built from nothing holds only the seeded administrator - so
+     * every write this class makes was refused by the key until the row was seeded here. In a
+     * running system the signed-in user is a row by construction, which is why nothing but a
+     * fresh schema could show it.
+     */
+    private static void seedOperator() throws Exception {
+        try (PreparedStatement insert = transaction.prepareStatement(
+                "INSERT INTO users (id, user_name, user_pass, user_available) VALUES (?, ?, ?, 0) "
+                        + "ON DUPLICATE KEY UPDATE user_name = VALUES(user_name)")) {
+            insert.setInt(1, OPERATOR);
+            insert.setString(2, STAMP);
+            insert.setString(3, "not-a-password");
+            insert.executeUpdate();
+        }
     }
 
     private static int seedEmployee() throws Exception {
