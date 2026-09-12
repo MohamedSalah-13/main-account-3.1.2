@@ -32,6 +32,10 @@ public final class ErrorReporter {
             LanguageManager.getInstance()::getString);
 
     private final Supplier<String> referenceIds;
+    /** A dotted lower-case identifier, the shape MessageKeyArchitectureTest pins. */
+    private static final java.util.regex.Pattern KEY_SHAPE =
+            java.util.regex.Pattern.compile("[a-z][a-z0-9]*(?:\\.[a-z0-9]+)+");
+
     private final MessageResolver messages;
 
     public static ErrorReporter shared() {
@@ -70,13 +74,36 @@ public final class ErrorReporter {
         String titleKey = category == ErrorCategory.VALIDATION
                 ? VALIDATION_TITLE_KEY
                 : BUSINESS_TITLE_KEY;
-        return new ErrorReport(category, "", messages.get(titleKey), message);
+        return new ErrorReport(category, "", messages.get(titleKey), resolve(message));
     }
 
     /**
      * Logs {@code failure} once and returns a localized report containing no
      * technical details from it.
      */
+    /**
+     * A message key becomes its sentence; anything else is passed through untouched.
+     * <p>
+     * {@code docs/new-code-rules.md} says a service throws a message <i>key</i>, never an Arabic
+     * literal, and nothing on the way to the screen was turning one back into a sentence: the
+     * employee payment screen refused an empty amount with the text
+     * {@code employee.error.pay.amount} in the alert, which is what a user read. It could not be
+     * caught by a build - {@code MessageKeyArchitectureTest} reads the arguments of
+     * {@code getString}/{@code text}/{@code Columns.*}, and a key handed to an exception
+     * constructor is none of those - and the two screens that already threw keys each translated
+     * them their own way, one at the throw and one at the display.
+     * <p>
+     * The test is the shape of the string: a dotted lower-case identifier is a key and an Arabic
+     * sentence can never look like one, so a message written out in full is never touched.
+     */
+    private String resolve(String message) {
+        if (!KEY_SHAPE.matcher(message).matches()) {
+            return message;
+        }
+        String resolved = messages.get(message);
+        return resolved == null || resolved.isBlank() ? message : resolved;
+    }
+
     public ErrorReport reportUnexpected(String operation, Throwable failure) {
         String referenceId = normalizedReference(referenceIds.get());
         String safeOperation = normalizeOperation(operation);

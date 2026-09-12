@@ -45,8 +45,24 @@ public class DateSetting {
         return date != null && date.isAfter(LocalDate.now());
     }
 
+    /**
+     * A date being <b>entered</b>: today, and the shared format.
+     * <p>
+     * Seeding today is right for an entry field - a payment is dated today until somebody says
+     * otherwise - and wrong for a filter, where an untouched picker has to mean "no bound".
+     * Use {@link #dateFilter(DatePicker)} there. This is the {@code Utils.setTextFormatter} /
+     * {@code setOptionalNumberFormatter} distinction, on dates.
+     */
     public static void dateAction(DatePicker datePicker) {
+        dateFilter(datePicker);
         datePicker.setValue(LocalDate.now());
+    }
+
+    /**
+     * A date being <b>filtered</b> on: the same format, and no value, so an untouched picker
+     * adds no condition.
+     */
+    public static void dateFilter(DatePicker datePicker) {
         datePicker.setEditable(false);
         datePicker.setConverter(new StringConverter<>() {
             private final DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern("yyyy/MM/dd");

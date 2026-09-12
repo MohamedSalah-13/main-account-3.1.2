@@ -76,7 +76,7 @@ import java.util.Set;
 import java.util.function.Function;
 import java.util.prefs.Preferences;
 
-import static com.hamza.controlsfx.others.DateSetting.dateAction;
+import static com.hamza.controlsfx.others.DateSetting.dateFilter;
 import static com.hamza.controlsfx.others.Utils.setOptionalNumberFormatter;
 import static com.hamza.controlsfx.others.Utils.whenEnterPressed;
 
@@ -261,8 +261,11 @@ public class EmployeesScreenController extends LoadData {
                 ? text("party.statement.filter.all") : text(type.messageKey())));
         comboEmployment.getSelectionModel().selectFirst();
 
-        dateAction(hiredFrom);
-        dateAction(hiredTo);
+        // A hire-date bound left alone means "any", not "today": dateAction seeds today, which
+        // filtered the list down to whoever was hired this morning. On a real installation that
+        // is an employees screen that opens empty.
+        dateFilter(hiredFrom);
+        dateFilter(hiredTo);
         hiredFrom.setPromptText(text("employee.filter.hired.from"));
         hiredTo.setPromptText(text("employee.filter.hired.to"));
 
