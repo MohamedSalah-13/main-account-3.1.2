@@ -166,6 +166,23 @@ public final class AppPermissions {
      * whoever holds {@code expenses.create}, so nobody loses an ability on upgrade.
      */
     public static final PermissionKey EMPLOYEE_PAY = key("employee.pay");
+
+    public static final PermissionKey PAYROLL_SHOW = key("payroll.show");
+    public static final PermissionKey PAYROLL_CREATE = key("payroll.create");
+
+    /**
+     * Approving a month's payroll.
+     * <p>
+     * Approval is what writes the entitlements into the employees' ledgers and freezes the lines,
+     * so it is the moment the run stops being a working document. Separate from
+     * {@link #PAYROLL_PAY} on purpose: <b>who computes does not disburse</b>. The cash is matched
+     * by a count in the drawer; the decision that a month came to this figure is matched by
+     * nothing, which is the same reasoning that separated {@code account.create} from
+     * {@code account.adjust} in V55.
+     */
+    public static final PermissionKey PAYROLL_APPROVE = key("payroll.approve");
+    public static final PermissionKey PAYROLL_PAY = key("payroll.pay");
+
     public static final PermissionKey JOB_SHOW = key("job.show");
     public static final PermissionKey JOB_CREATE = key("job.create");
     public static final PermissionKey JOB_UPDATE = key("job.update");

@@ -385,3 +385,41 @@ BEGIN
     END IF;
 END|
 DELIMITER ;
+
+-- A payroll line is editable only while its run is a draft. The guard is on the run's
+-- status rather than absolute, because a draft is meant to be corrected - what must not
+-- move is a run somebody has approved, since approval is what wrote the entitlements into
+-- the employees' ledgers.
+--
+-- The DELETE guard takes the @app_bulk_wipe escape and **the UPDATE guard does not**, which
+-- is the distinction V43 missed when it assumed the two were one and failed on a database
+-- holding a closed shift (see CLAUDE.md, "Shifts"). A wipe may take these rows; nothing may
+-- change one.
+DROP TRIGGER IF EXISTS prevent_payroll_line_update_after_approval;
+DROP TRIGGER IF EXISTS prevent_payroll_line_delete_after_approval;
+
+DELIMITER |
+CREATE TRIGGER prevent_payroll_line_update_after_approval
+BEFORE UPDATE ON payroll_line FOR EACH ROW
+BEGIN
+    DECLARE run_status VARCHAR(20);
+    SELECT status INTO run_status FROM payroll_run WHERE id = OLD.payroll_run_id;
+    IF run_status IS NOT NULL AND run_status <> 'DRAFT' THEN
+        SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = 'A payroll line is frozen once its run leaves DRAFT';
+    END IF;
+END|
+
+CREATE TRIGGER prevent_payroll_line_delete_after_approval
+BEFORE DELETE ON payroll_line FOR EACH ROW
+BEGIN
+    DECLARE run_status VARCHAR(20);
+    IF COALESCE(@app_bulk_wipe, 0) <> 1 THEN
+        SELECT status INTO run_status FROM payroll_run WHERE id = OLD.payroll_run_id;
+        IF run_status IS NOT NULL AND run_status <> 'DRAFT' THEN
+            SIGNAL SQLSTATE '45000'
+                SET MESSAGE_TEXT = 'A payroll line is frozen once its run leaves DRAFT';
+        END IF;
+    END IF;
+END|
+DELIMITER ;

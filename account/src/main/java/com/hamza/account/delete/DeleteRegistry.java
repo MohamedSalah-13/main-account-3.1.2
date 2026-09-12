@@ -138,6 +138,12 @@ public final class DeleteRegistry {
             // to, and an employee with one movement is one whose account somebody can still be
             // asked to explain.
             .referencedBy("employee_ledger", "employee_id", "delete.ref.employee.ledger")
+            // A payroll line is the record that this employee was paid for that month, and
+            // an approved run is frozen - so it holds the employee the way an invoice does.
+            // It does not cascade from the employee (it cascades from its own run), which is
+            // exactly the distinction this catalog declares.
+            .referencedBy("payroll_line", "employee_id", "delete.ref.payroll.line")
+            .referencedBy("employee_allowance", "employee_id", "delete.ref.employee.allowance")
             // Kept: the table still holds those three rows and its key still refuses
             // a delete. Nothing reads it for a decision any more - see V23.
             .referencedBy("expense_salary", "employee_id", "delete.ref.salary")

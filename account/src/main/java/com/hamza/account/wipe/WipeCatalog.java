@@ -156,6 +156,13 @@ public final class WipeCatalog {
      */
     public static final WipeTarget EMPLOYEES = WipeTarget.of("employees", "wipe.target.employees",
             List.of(WipeTable.of("employee_ledger"),
+                    // payroll_line cascades from payroll_run, but the run itself is refused
+                    // while a ledger row or a purpose row still points at it - so the run goes
+                    // after employee_ledger and after employee_cash_purpose, which EXPENSES
+                    // empties first.
+                    WipeTable.of("payroll_line"),
+                    WipeTable.of("payroll_run"),
+                    WipeTable.of("employee_allowance"),
                     WipeTable.of("targeted_sales"),
                     WipeTable.of("shift_cash_variance_adjustments"),
                     WipeTable.of("treasury_deposit_expenses"),
