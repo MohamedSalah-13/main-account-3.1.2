@@ -79,6 +79,15 @@ public final class JdbcPayrollRepository extends AbstractDao<PayrollRun>
     }
 
     @Override
+    public int updateLine(int runId, int lineId, PayrollCalculation line, PayrollInput input,
+                          String notes) throws DaoException {
+        return executeUpdate(PayrollQuery.UPDATE_LINE_SQL,
+                input.workedDays(), input.absenceDays(), input.workedHours(), line.basic(),
+                line.commission(), line.deductions(), line.absenceDeduction(), line.netPay(),
+                notes, lineId, runId);
+    }
+
+    @Override
     public int insertLine(int runId, PayrollCalculation line, PayrollInput input, int userId)
             throws DaoException {
         return insertReturningId(PayrollQuery.INSERT_LINE_SQL,

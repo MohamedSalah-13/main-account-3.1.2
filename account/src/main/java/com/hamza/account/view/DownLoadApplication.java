@@ -54,6 +54,7 @@ import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.period.PeriodLockService;
 import com.hamza.account.features.employee.EmployeeLedgerService;
 import com.hamza.account.features.employee.EmployeePaymentService;
+import com.hamza.account.features.employee.payroll.PayrollService;
 import com.hamza.account.features.employee.EmployeeService;
 import com.hamza.account.features.employee.statement.EmployeeStatementService;
 import com.hamza.account.service.*;
@@ -246,6 +247,7 @@ public class DownLoadApplication extends Application {
         ServiceRegistry.register(EmployeeLedgerService.class, new EmployeeLedgerService());
         ServiceRegistry.register(EmployeePaymentService.class,
                 new EmployeePaymentService(ServiceRegistry.get(ExpensesDetailsService.class)));
+        ServiceRegistry.register(PayrollService.class, new PayrollService());
         ServiceRegistry.register(TotalSalesService.class, new TotalSalesService(daoFactory));
         ServiceRegistry.register(TotalBuyService.class, new TotalBuyService(daoFactory));
         ServiceRegistry.register(TotalBuyReturnService.class, new TotalBuyReturnService(daoFactory));

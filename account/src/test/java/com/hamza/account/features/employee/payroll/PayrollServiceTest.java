@@ -294,6 +294,7 @@ class PayrollServiceTest {
         private List<PayrollInput> candidates = new ArrayList<>();
         private int statusMoveResult = 1;
         private final List<LedgerWrite> ledgerWrites = new ArrayList<>();
+        private PayrollCalculation lastEdit;
 
         @Override
         public List<PayrollRun> recentRuns(int limit) {
@@ -348,6 +349,13 @@ class PayrollServiceTest {
         }
 
         @Override
+        public int updateLine(int runId, int lineId, PayrollCalculation calculation,
+                              PayrollInput input, String notes) {
+            lastEdit = calculation;
+            return 1;
+        }
+
+        @Override
         public int insertRunLedgerEntry(int employeeId, LocalDate date, String kind,
                                         BigDecimal amount, String notes, int runId, int userId) {
             ledgerWrites.add(new LedgerWrite(employeeId, date, kind, amount, runId, userId));
@@ -363,5 +371,44 @@ class PayrollServiceTest {
         public int countRunPayments(int runId) {
             return 0;
         }
+    }
+
+    @Test
+    @DisplayName("correcting a line recalculates it rather than storing what the screen typed")
+    void anEditIsRecalculated() throws Exception {
+        signInWith(AppPermissions.PAYROLL_CREATE, AppPermissions.PAYROLL_SHOW);
+        repository.run = draft(1);
+        // 3000 basic, 500 allowances, nothing else - the line the draft was built with.
+        repository.lines = List.of(line(7, "3000", "500", "0", "0", "0"));
+
+        // Somebody types two days of absence and a 150 deduction.
+        service.updateLine(1, PayrollLineEdit.parse(1, null, money("2"), null, null,
+                money("150"), null));
+
+        PayrollCalculation stored = repository.lastEdit;
+        assertEquals(money("200.00"), stored.absenceDeduction(),
+                "3000 over September's 30 days, twice - the screen never works this out");
+        assertEquals(money("3150.00"), stored.netPay(), "3000 + 500 - 200 - 150");
+    }
+
+    @Test
+    @DisplayName("a line of a run that is not a draft is refused")
+    void anEditIsRefusedOnceApproved() {
+        signInWith(AppPermissions.PAYROLL_CREATE, AppPermissions.PAYROLL_SHOW);
+        repository.run = withStatus(1, PayrollRunStatus.APPROVED);
+
+        assertEquals("payroll.error.not.draft",
+                assertThrows(UserValidationException.class,
+                        () -> service.updateLine(1, PayrollLineEdit.parse(1, null, money("1"),
+                                null, null, null, null))).getMessage());
+    }
+
+    @Test
+    @DisplayName("a negative figure is refused before it reaches a database")
+    void anEditRefusesANegative() {
+        assertEquals("payroll.error.line.amount",
+                assertThrows(UserValidationException.class,
+                        () -> PayrollLineEdit.parse(1, null, money("-1"), null, null, null, null))
+                        .getMessage());
     }
 }

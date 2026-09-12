@@ -338,6 +338,14 @@ public class EmployeesScreenController extends LoadData {
 
         Separator divider = new Separator(Orientation.VERTICAL);
         divider.getStyleClass().add("modern-separator");
+
+        // The payroll opens from here rather than from the main menu, the way the ageing report
+        // opens from the balances screen: same people, same permission, and a menu entry would
+        // need a feature in the signed product catalogue.
+        if (AuthorizationGuard.isGranted(AppPermissions.PAYROLL_SHOW)) {
+            Button payroll = button("payroll.title", AppIcon.REPORT, this::openPayroll);
+            return new Node[]{divider, add, jobs, payroll, refresh, print, excel, viewMenu};
+        }
         return new Node[]{divider, add, jobs, refresh, print, excel, viewMenu};
     }
 
@@ -604,6 +612,15 @@ public class EmployeesScreenController extends LoadData {
     private void openJobs() {
         try {
             new AddForAllApplication(0, new JobsController());
+        } catch (Exception e) {
+            report(e);
+        }
+    }
+
+    /** The month's payroll, for the same people this screen lists. */
+    private void openPayroll() {
+        try {
+            new OpenApplication<>(new PayrollController());
         } catch (Exception e) {
             report(e);
         }

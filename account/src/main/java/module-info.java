@@ -128,6 +128,7 @@ module com.hamza.account {
     opens com.hamza.account.controller.items to javafx.fxml;
     exports com.hamza.account.features.employee;
     exports com.hamza.account.features.employee.statement;
+    exports com.hamza.account.features.employee.payroll;
     exports com.hamza.account.controller.employee;
     opens com.hamza.account.controller.employee to javafx.fxml;
     exports com.hamza.account.controller.users;

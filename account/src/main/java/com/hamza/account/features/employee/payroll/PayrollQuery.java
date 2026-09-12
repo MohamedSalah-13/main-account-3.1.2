@@ -128,6 +128,20 @@ public final class PayrollQuery {
             """;
 
     /**
+     * Corrects one line of a draft.
+     * <p>
+     * The recalculated figures are written beside the inputs they came from, never one without
+     * the other: a line whose deduction moved but whose net did not is a row that contradicts
+     * itself, and the payslip would print both.
+     */
+    public static final String UPDATE_LINE_SQL = """
+            UPDATE payroll_line
+               SET worked_days = ?, absence_days = ?, worked_hours = ?, basic = ?,
+                   commission = ?, deductions = ?, absence_deduction = ?, net_pay = ?, notes = ?
+             WHERE id = ? AND payroll_run_id = ?
+            """;
+
+    /**
      * Who the run is built for: everyone employed on any day of the period.
      * <p>
      * Not "everyone active today" - somebody who left in the middle of the month is owed the

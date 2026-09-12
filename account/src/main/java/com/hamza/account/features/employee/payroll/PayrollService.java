@@ -131,6 +131,36 @@ public final class PayrollService {
     }
 
     /**
+     * Corrects one line of a draft, and <b>recalculates it rather than storing what it was told</b>.
+     * <p>
+     * The screen types an absence, a deduction, a commission; the basic and the net follow from
+     * them through {@link PayrollCalculator}, the same way they did when the draft was built.
+     * Letting a screen write a net it computed itself would be a second definition of a month's
+     * pay - which is the defect this whole area exists to avoid.
+     *
+     * @param edit the figures a person may type; everything else comes from the stored line
+     */
+    public int updateLine(int runId, PayrollLineEdit edit) throws DaoException {
+        AuthorizationGuard.require(AppPermissions.PAYROLL_CREATE);
+        PayrollRun run = requireRun(runId);
+        requireEditable(run);
+
+        PayrollLine stored = repository.linesOf(runId).stream()
+                .filter(line -> line.id() == edit.lineId())
+                .findFirst()
+                .orElseThrow(() -> new UserValidationException("payroll.error.line.missing"));
+
+        PayrollInput input = new PayrollInput(stored.employeeId(), stored.employeeName(),
+                stored.salaryKind(), stored.rate(), null, null,
+                edit.absenceDays(), edit.workedDays(), edit.workedHours(),
+                stored.allowances(), edit.commission(), edit.deductions(),
+                stored.advancesOutstanding());
+
+        PayrollCalculation line = PayrollCalculator.calculate(run.period(), input);
+        return repository.updateLine(runId, edit.lineId(), line, input, edit.notes());
+    }
+
+    /**
      * Approves the run: freezes it and writes it into the ledgers.
      * <p>
      * The status move carries the status the caller read ({@code AND status = ?}), so two

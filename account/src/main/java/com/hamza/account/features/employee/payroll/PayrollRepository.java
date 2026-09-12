@@ -42,6 +42,10 @@ public interface PayrollRepository {
 
     int deleteLines(int runId) throws DaoException;
 
+    /** Rewrites one line of a draft, its inputs and its recalculated figures together. */
+    int updateLine(int runId, int lineId, PayrollCalculation calculation, PayrollInput input,
+                   String notes) throws DaoException;
+
     int insertLine(int runId, PayrollCalculation calculation, PayrollInput input, int userId)
             throws DaoException;
 
