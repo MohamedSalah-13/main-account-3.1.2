@@ -2,7 +2,6 @@ package com.hamza.account.model.domain;
 
 import com.hamza.account.config.NamesTables;
 import com.hamza.account.model.base.DForColumnTable;
-import com.hamza.account.type.UsersType;
 import javafx.beans.property.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -29,7 +28,17 @@ public class Employees extends DForColumnTable {
     private String email = "";
     private String tel = "";
     private String address = "";
-    private UsersType job_id;
+    /**
+     * The job as a row of {@code jobs}, not as one of four constants.
+     * <p>
+     * It was a {@code UsersType}, whose ids were matched to that table by hand and whose lookup
+     * answered {@code null} for any other row - so adding a job broke both the drawing and the
+     * saving of the employees screen. The screens read an employee through
+     * {@code features.employee} now; what is left of this model is the delegate an invoice and an
+     * expense still hold, which needs a code and a name.
+     */
+    private int jobId;
+    private String jobName = "";
     private byte[] item_image;
 
     public Employees(int id) {
@@ -42,7 +51,7 @@ public class Employees extends DForColumnTable {
     }
 
     public Employees(int id, @NotNull String name, @NotNull LocalDate birth_date, @NotNull LocalDate hire_date, double salary, String email, String tel, String address
-            , UsersType job_id) {
+            , int jobId) {
         this.id = new SimpleIntegerProperty(id);
         this.name = new SimpleStringProperty(name);
         this.birth_date = birth_date;
@@ -51,7 +60,7 @@ public class Employees extends DForColumnTable {
         this.email = email;
         this.tel = tel;
         this.address = address;
-        this.job_id = job_id;
+        this.jobId = jobId;
     }
 
     public int getId() {

@@ -9,7 +9,7 @@ import com.hamza.account.interfaces.api.DataInterface;
 import com.hamza.account.model.base.BaseAccount;
 import com.hamza.account.model.base.BaseNames;
 import com.hamza.account.model.dao.DaoFactory;
-import com.hamza.account.service.EmployeeService;
+import com.hamza.account.features.employee.EmployeeService;
 import com.hamza.account.service.TotalsService;
 import com.hamza.account.view.BuyApplication;
 import com.hamza.account.view.TotalsApplication;

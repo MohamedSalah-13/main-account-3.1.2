@@ -52,6 +52,7 @@ import com.hamza.account.features.shift.JdbcShiftCashHandoverRepository;
 import com.hamza.account.features.shift.ShiftCashHandoverService;
 import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.period.PeriodLockService;
+import com.hamza.account.features.employee.EmployeeService;
 import com.hamza.account.service.*;
 import com.hamza.account.config.SharedSettings;
 import com.hamza.account.config.SharedSettingsStore;
@@ -225,7 +226,7 @@ public class DownLoadApplication extends Application {
         ServiceRegistry.register(StockTransferService.class, new StockTransferService(daoFactory));
         ServiceRegistry.register(ItemMergeService.class, new ItemMergeService(daoFactory, productFeatures));
         ServiceRegistry.register(PeriodLockService.class, new PeriodLockService(daoFactory));
-        ServiceRegistry.register(EmployeeService.class, new EmployeeService(daoFactory));
+        ServiceRegistry.register(EmployeeService.class, new EmployeeService());
         ServiceRegistry.register(TreasuryService.class, new TreasuryService(daoFactory));
         ServiceRegistry.register(UnitsService.class, new UnitsService(daoFactory));
         ServiceRegistry.register(UsersService.class, new UsersService(daoFactory, rbacService));

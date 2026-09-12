@@ -1,31 +1,32 @@
 package com.hamza.account.dash;
 
+import com.hamza.account.authorization.AppPermissions;
+import com.hamza.account.authorization.PermissionKey;
+import com.hamza.account.config.AppIcon;
 import com.hamza.account.config.Image_Setting;
+import com.hamza.account.controller.employee.EmployeeFormController;
 import com.hamza.account.controller.main.ButtonWithPerm;
 import com.hamza.account.controller.main.DataPublisher;
 import com.hamza.account.controller.main.LoadData;
-import com.hamza.account.controller.others.AddEmployeeController;
-import com.hamza.account.controller.others.EmployeesController;
-import com.hamza.account.controller.others.ServiceRegistry;
 import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.openFxml.AddForAllApplication;
 import com.hamza.account.otherSetting.KeyCodeCombinationSetting;
-import com.hamza.account.service.EmployeeService;
-import com.hamza.account.table.TableOpen;
-import com.hamza.account.authorization.AppPermissions;
-import com.hamza.account.authorization.PermissionKey;
-import com.hamza.controlsfx.button.ImageDesign;
+import com.hamza.account.view.EmployeesApplication;
 import com.hamza.controlsfx.language.LanguageManager;
 import javafx.scene.Node;
+import javafx.scene.control.TabPane;
 import javafx.scene.input.KeyCodeCombination;
-import javafx.stage.Stage;
 import lombok.extern.log4j.Log4j2;
 import org.jetbrains.annotations.NotNull;
 
+/**
+ * The two ways into the employees.
+ * <p>
+ * The list opens as a tab rather than as a modal window, the way the parties' balances screen does:
+ * it is a screen somebody works in beside an invoice, not a dialog that has to be dismissed.
+ */
 @Log4j2
 public class EmployeesButtons extends LoadData {
-
-    private final EmployeeService employeeService = ServiceRegistry.get(EmployeeService.class);
 
     public EmployeesButtons(DaoFactory daoFactory, DataPublisher dataPublisher) throws Exception {
         super(daoFactory, dataPublisher);
@@ -35,13 +36,12 @@ public class EmployeesButtons extends LoadData {
         return new ButtonWithPerm() {
             @Override
             public PermissionKey getPermissionType() {
-                return AppPermissions.EMPLOYEE_SHOW;
+                return AppPermissions.EMPLOYEE_CREATE;
             }
 
             @Override
             public void action() throws Exception {
-                AddEmployeeController addEmployeeController = new AddEmployeeController(0, employeeService);
-                new AddForAllApplication(0, addEmployeeController);
+                new AddForAllApplication(0, new EmployeeFormController(0));
             }
 
             @NotNull
@@ -52,7 +52,7 @@ public class EmployeesButtons extends LoadData {
 
             @Override
             public Node imageNode() {
-                return new ImageDesign(new Image_Setting().setting);
+                return AppIcon.EMPLOYEES.graphic(24);
             }
 
             @Override
@@ -70,15 +70,29 @@ public class EmployeesButtons extends LoadData {
             }
 
             @Override
-            public void action() throws Exception {
-                EmployeesController employeesController = new EmployeesController(dataPublisher, employeeService);
-                new TableOpen<>(employeesController).start(new Stage());
+            public void action() {
+            }
+
+            @Override
+            public void actionAddPaneToTabPane(TabPane tabPane) throws Exception {
+                EmployeesApplication screen = new EmployeesApplication(daoFactory, dataPublisher);
+                addTape(tabPane, screen.getPane(), textName(), new Image_Setting().account);
+            }
+
+            @Override
+            public boolean showOnTapPane() {
+                return true;
             }
 
             @NotNull
             @Override
             public String textName() {
                 return LanguageManager.getInstance().getString("employees");
+            }
+
+            @Override
+            public Node imageNode() {
+                return AppIcon.EMPLOYEES.graphic(24);
             }
         };
     }

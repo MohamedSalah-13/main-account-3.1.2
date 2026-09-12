@@ -36,6 +36,8 @@ import com.hamza.account.model.domain.UnitsModel;
 import com.hamza.account.openFxml.FxmlPath;
 import com.hamza.account.openFxml.OpenFxmlApplication;
 import com.hamza.account.otherSetting.MaskerPaneSetting;
+import com.hamza.account.features.employee.EmployeeScope;
+import com.hamza.account.features.employee.EmployeeService;
 import com.hamza.account.service.*;
 import com.hamza.account.treasury.DefaultTreasury;
 import com.hamza.account.type.DiscountType;
@@ -398,7 +400,7 @@ public class BuyController2<T3 extends BaseNames, T4 extends BaseAccount>
             return;
         }
         try {
-            var delegate = employeeService.getDelegateById(delegateId);
+            var delegate = employeeService.delegateById(delegateId);
             if (delegate != null) {
                 comboDelegate.getSelectionModel().select(delegate.getName());
             }
@@ -619,7 +621,7 @@ public class BuyController2<T3 extends BaseNames, T4 extends BaseAccount>
                         table.getItems().clear();
                     }
                 },
-                employeeService::getDelegateById,
+                employeeService::delegateById,
                 this::partyNameById,
                 error -> AllAlerts.handleError(
                         LanguageManager.getInstance().getString("return.dialog.title"), error));
@@ -1227,7 +1229,8 @@ public class BuyController2<T3 extends BaseNames, T4 extends BaseAccount>
     private void reloadDelegateItems() {
         try {
             Map<String, Integer> ids = new LinkedHashMap<>();
-            employeeService.getDelegateList().forEach(delegate -> ids.put(delegate.getName(), delegate.getId()));
+            employeeService.delegates(EmployeeScope.ACTIVE_ONLY)
+                    .forEach(delegate -> ids.put(delegate.getName(), delegate.getId()));
             delegateIds = Map.copyOf(ids);
             comboDelegate.setItems(FXCollections.observableArrayList(ids.keySet()));
         } catch (DaoException e) {

@@ -48,7 +48,7 @@ class AuthorizationArchitectureTest {
         var files = java.util.List.of(
                 Path.of("src/main/java/com/hamza/account/controller/items/ItemsController.java"),
                 Path.of("src/main/java/com/hamza/account/controller/invoice/ShowInvoiceController.java"),
-                Path.of("src/main/java/com/hamza/account/controller/others/EmployeesController.java"),
+                Path.of("src/main/java/com/hamza/account/controller/employee/EmployeesScreenController.java"),
                 Path.of("src/main/java/com/hamza/account/controller/main/MainScreenController.java"),
                 Path.of("src/main/java/com/hamza/account/interfaces/impl_totalDesgin/TotalSalesImpDesign.java"),
                 Path.of("src/main/java/com/hamza/account/interfaces/impl_totalDesgin/TotalSalesReturnImplDesign.java"));
@@ -201,15 +201,18 @@ class AuthorizationArchitectureTest {
             // A constructor hands no row to a caller and therefore has nothing to guard.
             "UserShiftService#UserShiftService",
 
-            // The delegate on an invoice. Cashiers write invoices, so guarding these breaks
-            // the delegate combo on every invoice screen - which is worse than what they
-            // leak. But they DO leak: a delegate is an Employees and the model carries
-            // salary. The real fix is a projection of id and name, which is a change to the
-            // model and its callers rather than a line in a service, and until then the
-            // invoice screens use getDelegateNames, which is already only names.
-            "EmployeeService#getDelegateList",
-            "EmployeeService#getDelegateByName",
-            "EmployeeService#getDelegateById");
+            // The delegate on an invoice. Cashiers write invoices, so guarding these would
+            // break the delegate combo on every invoice screen.
+            //
+            // They used to leak as well: a delegate was a whole Employees row and the model
+            // carries salary, so filling a dropdown pulled every delegate's pay across the
+            // connection. The projection this list asked for exists now - EmployeeRef, an id
+            // and a name - and all three of these read it; the Employees they answer with is
+            // built from it and carries no figure. They stay listed because the type is what
+            // the scanner can see, and Total_Sales still holds its delegate as that class.
+            "EmployeeService#delegates",
+            "EmployeeService#delegateByName",
+            "EmployeeService#delegateById");
 
     /** The methods in one service file that return such a type and never call the guard. */
     private static java.util.List<String> unguardedSensitiveReads(Path path) {

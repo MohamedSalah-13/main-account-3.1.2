@@ -6,7 +6,7 @@ import com.hamza.account.controller.main.DataPublisher;
 import com.hamza.account.interfaces.api.DataInterface;
 import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.openFxml.OpenFxmlApplication;
-import com.hamza.account.service.EmployeeService;
+import com.hamza.account.features.employee.EmployeeService;
 import com.hamza.controlsfx.others.CssToColorHelper;
 import javafx.scene.layout.Pane;
 import lombok.Getter;

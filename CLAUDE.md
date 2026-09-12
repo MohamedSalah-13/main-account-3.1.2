@@ -202,6 +202,12 @@ Two documents govern work here and are kept current — read them before large c
   `V1` seeds rather than replacing it, why there is no `delete`, and §6 the one decision still
   open — where the support key comes from. **Read it before touching `UsersService`,
   `features/users`, the login path or the `V44`-`V45` tables.**
+- **[`docs/employees-plan.md`](docs/employees-plan.md)** — the employees contract: why the job is a
+  row rather than an enum, why the salary carries a date, why the cash an employee is paid has one
+  writer (`expenses_details`) and the employee ledger records only what is not cash, and why an
+  advance is deducted once - on the day it leaves the drawer. §1.2 lists the twelve defects the
+  review found; §12 the order the phases are built in. **Read it before touching anything under
+  `features/employee`, `controller/employee` or the `V57` tables.**
 - **[`docs/agent-worktree-rules.md`](docs/agent-worktree-rules.md)** - the contract for an AI agent
   working in a worktree, whatever tool it is: never commit, merge or push; always `clean`; never
   run the database acceptance classes without a disposable schema; never create a `config.xml`.
@@ -1079,6 +1085,64 @@ as a side effect of a migration that adds a column. And `is_active` exists becau
 rightly refuses to delete a party with one invoice while `custom.name` is UNIQUE, so a party you have
 stopped dealing with stayed in every combo for ever - the same reasoning as `UsersService.updateActive`.
 
+### Employees
+
+`features/employee` is the record, `controller/employee` the screens, and `docs/employees-plan.md`
+the contract for everything still to come (the employee's account, the payroll run, attendance,
+commission). Phase A is what is shipped: the job, the dated salary and the status.
+
+**The job is a row in `jobs`, and the delegate is a flag on it.** It used to be `UsersType` — four
+constants whose ids were matched to that table by hand — and `getUserTypeById` answered `null` for
+any other id, so **adding a row to an editable table broke the employees screen twice over**: once
+in `EmployeesController` when it drew the job column, once in `EmployeesDao.getData` when it saved.
+A delegate was `job == 4`, written into a DAO constant and two queries, so a shop could not have a
+delivery delegate and a collections delegate. `jobs.is_delegate` is what fills the delegate combos
+now; `V57` sets it on the seeded row 4 alone, so nothing changes on upgrade. The jobs are managed
+from the employees screen rather than through `MasterDataPane`: that editor is a name and one
+numeric slot, and a job carries a flag today and a suggested salary as well.
+
+**The salary is dated, and `employees.salary` means the salary at hire.** One number with no date
+made every calculation of August read a figure raised in September, with nothing recording that it
+had moved — the `first_balance` and `treasury.amount` lesson, twice learned. `employee_compensation`
+carries `(employee, effective_from, kind, rate)`, `employee_current_compensation` is the one place
+that answers "what is he paid now", and the old column keeps a fixed meaning stated in its COMMENT.
+A row dated in the future is the ordinary case: a raise agreed in March to start in April is entered
+when it is agreed, and the view begins reading it on the day.
+
+**`SalaryChangeGuard` is `OpeningBalanceGuard` applied to that figure.** While one dated rate exists
+it and the column say the same single thing, so the form may still correct both. Once there are two,
+the history has begun and the form is refused — and the message names a road that exists, which
+`opening.correction.customers` did not for months: `EmployeeService.changeSalary`, reachable from the
+same screen that shows the refusal. `EmployeeService` keeps `employees.salary` equal to the earliest
+dated rate in one place, so it cannot come to mean two things again.
+
+**A salary is not fetched for a reader who may not see one.** `employees.show.salary` used to hide a
+column — by index, `getColumns().get(4).setVisible(...)` — while the figures crossed the connection
+anyway and sat in the memory of a screen opened by somebody with no right to them. The permission is
+answered once, in `EmployeeService.salaryVisible()`, and it decides whether the columns are
+**selected at all**. It follows that **filtering on a rate requires the same permission**: a bound
+you can move is a way of reading the figure it filters on, one comparison at a time.
+
+**A stopped employee is marked, not hidden.** `DeleteRegistry` rightly refuses to delete anybody
+named on an invoice or an expense, and `employees.column_name` is UNIQUE, so before `is_active` the
+people who had left stayed in every combo for ever. `EmployeeScope` is an argument and never a
+default — `ACTIVE_ONLY` for a document being written, `EVERYONE` for one being re-opened and for the
+employees list, which is the only screen the flag is turned back on from. The same rule, learned the
+same way, as `PartyTableSpec.PartySearchScope`.
+
+**What is left of `model/domain/Employees` is a seam.** `Total_Sales`, `Total_Sales_Re` and
+`ExpensesDetails` hold their delegate as that class, so `EmployeeService.delegates`/`delegateByName`/
+`delegateById` still answer with it — built from `EmployeeRef`, an id and a name, so no salary is
+read to fill a dropdown. It dies with the single `Document` model, not before.
+
+**`V57` was found wrong by running it, not by building it.** `ALTER TABLE jobs MODIFY COLUMN id INT
+AUTO_INCREMENT` fails with error 1833 on every install, new or upgrading, because `employees.job` is
+a foreign key pointing at that column — MySQL refuses to change a column a key points at. A green
+build saw nothing. The key is now taken off and put back, and it is **looked up by its columns in
+`information_schema`** rather than by the name `V1` gives it, since a database converged by `V4` may
+carry another. This is the same class of defect as `V55`'s and `V56`'s helper-procedure calls, and
+the same answer: **migrate a schema from nothing before believing a migration**.
+
 ### Row actions and paging
 
 `account.table.RowAction` + `RowActionsColumn` are the one way a table gets buttons that act on
@@ -1843,7 +1907,9 @@ Schema changes are **Flyway migrations**, in `account/src/main/resources/db/migr
 - `V1__baseline.sql` is the schema as shipped to clients in v4.1.3 — tables, indexes, procedures and the
   seed data (including the `admin` user, without which nobody can log in). It is the Flyway baseline: an
   existing client database is **stamped** with it, never executed, because it already is that schema. A
-  new database executes it and continues with `V2`, `V3`, … The current head is `V56`: V56 adds the
+  new database executes it and continues with `V2`, `V3`, … The current head is `V57`: V57 makes
+  the job a row rather than four constants, gives the salary a date and the employee a status -
+  see **Employees** above. Before it, V56 adds the
   fields a party record was missing - email, tax number, payment terms, a default delegate, an
   opening-balance date and `is_active` - and V55 adds the debit/credit-note permissions
   (`*.account.adjust`, granted to whoever held `*.account.create`) with the ledger's date indexes;

@@ -107,6 +107,20 @@ public final class DeleteRegistry {
             .referencedBy("items", "sub_num", "delete.ref.item")
             .build();
 
+    /**
+     * A job, which became a deletable row in V57.
+     * <p>
+     * Nothing is protected by id here, and that is deliberate. The four seeded jobs were
+     * matched to a Java enum by hand, so none of them could be renamed or removed; now the
+     * only thing holding a job is somebody doing it, which is what the reference below says.
+     * A shop that sells nothing through delegates may delete "مندوب" once no employee holds
+     * it - the rule the units screen arrived at for the same reason.
+     */
+    public static final DeleteRule JOBS = DeleteRule.forEntity("delete.entity.job")
+            .requirePermission(AppPermissions.JOB_DELETE)
+            .referencedBy("employees", "job", "delete.ref.employee")
+            .build();
+
     /** Employee 1 is the seeded "بيع مباشر" delegate. */
     public static final DeleteRule EMPLOYEES = DeleteRule.forEntity("delete.entity.employee")
             .requirePermission(AppPermissions.EMPLOYEE_DELETE)

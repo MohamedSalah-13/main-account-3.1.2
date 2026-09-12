@@ -33,7 +33,8 @@ import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.openFxml.FxmlPath;
 import com.hamza.account.otherSetting.MaskerPaneSetting;
 import com.hamza.account.period.PeriodLockService;
-import com.hamza.account.service.EmployeeService;
+import com.hamza.account.features.employee.EmployeeScope;
+import com.hamza.account.features.employee.EmployeeService;
 import com.hamza.account.service.TotalsService;
 import com.hamza.account.service.UsersService;
 import com.hamza.account.table.TableSetting;
@@ -418,7 +419,7 @@ public class TotalsController<T3 extends BaseNames, T4 extends BaseAccount>
 
     private List<String> getDelegateNames() {
         try {
-            return employeeService.getDelegateNames();
+            return employeeService.delegateNames(EmployeeScope.ACTIVE_ONLY);
         } catch (DaoException e) {
             log.error(e.getMessage(), e);
             return List.of();

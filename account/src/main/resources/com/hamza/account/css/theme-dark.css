@@ -269,3 +269,15 @@
     -fx-border-color: -app-focus-shadow;
     -fx-effect: dropshadow(gaussian, -app-focus-shadow, 10, 0.20, 0, 0);
 }
+
+/* The employees screen - see theme-light.css for why it is a palette class rather than a
+   screen-specific copy of the header rules. */
+.screen-employees {
+    -party-accent: #8b5cf6;
+    -party-accent-dark: #6d28d9;
+    -party-border: rgba(167, 139, 250, 0.55);
+    -party-shadow: rgba(124, 58, 237, 0.38);
+    -party-row-alt: #2e1065;
+    -party-row-hover: #4c1d95;
+    -party-row-selected: #5b21b6;
+}

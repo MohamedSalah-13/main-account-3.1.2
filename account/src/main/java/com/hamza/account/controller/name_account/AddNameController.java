@@ -20,7 +20,8 @@ import com.hamza.account.opening.OpeningBalanceRule;
 import com.hamza.account.openFxml.AddInterface;
 import com.hamza.account.openFxml.FxmlPath;
 import com.hamza.account.service.AreaService;
-import com.hamza.account.service.EmployeeService;
+import com.hamza.account.features.employee.EmployeeScope;
+import com.hamza.account.features.employee.EmployeeService;
 import com.hamza.account.service.SelPriceItemService;
 import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.language.LanguageManager;
@@ -357,7 +358,7 @@ public class AddNameController<T3 extends BaseNames, T4 extends BaseAccount>
         List<Employees> delegates = new ArrayList<>();
         delegates.add(NO_DELEGATE);
         try {
-            delegates.addAll(employeeService.getDelegateList());
+            delegates.addAll(employeeService.delegates(EmployeeScope.ACTIVE_ONLY));
         } catch (DaoException e) {
             log.error("Failed to read the delegates", e);
         }

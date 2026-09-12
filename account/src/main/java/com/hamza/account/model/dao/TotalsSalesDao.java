@@ -27,6 +27,13 @@ import java.util.List;
 
 @Log4j2
 public class TotalsSalesDao extends AbstractDao<Total_Sales> {
+    /**
+     * The employees table calls its name column {@code column_name}. It used to be read through
+     * {@code EmployeesDao.COLUMN_NAME}; that DAO is gone, and this mapper already names every
+     * other column it reads as a literal.
+     */
+    private static final String EMPLOYEE_NAME_COLUMN = "column_name";
+
 
     /** Which document this DAO writes. The period lock it must respect follows from it. */
     static final DocumentType DOCUMENT_TYPE = DocumentType.SALES;
@@ -212,7 +219,7 @@ public class TotalsSalesDao extends AbstractDao<Total_Sales> {
             int stock_id = rs.getInt(STOCK_ID);
             String stock_name = rs.getString(StockDao.STOCK_NAME);
             int delegate_id = rs.getInt(DELEGATE_ID);
-            String delegate_name = rs.getString(EmployeesDao.COLUMN_NAME);
+            String delegate_name = rs.getString(EMPLOYEE_NAME_COLUMN);
             int treasury_id = rs.getInt(TREASURY_ID);
             String treasury_name = rs.getString(TreasuryDao.COLUMN_NAME);
             var netAmount = MoneyMath.subtract(

@@ -47,6 +47,7 @@ class DeleteRegistryTest {
             Map.entry(DeleteRegistry.MAIN_GROUPS, "main_group"),
             Map.entry(DeleteRegistry.SUB_GROUPS, "sub_group"),
             Map.entry(DeleteRegistry.EMPLOYEES, "employees"),
+            Map.entry(DeleteRegistry.JOBS, "jobs"),
             Map.entry(DeleteRegistry.EXPENSES_DETAILS, "expenses_details"));
 
     private record Reference(String child, String column) {

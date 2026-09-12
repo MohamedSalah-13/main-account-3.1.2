@@ -72,10 +72,6 @@ public enum DaoFactory {
         return new SubGroupsDao(this);
     }
 
-    public EmployeesDao employeesDao() {
-        return new EmployeesDao();
-    }
-
     public CustomerDao customersDao() {
         return new CustomerDao(this);
     }

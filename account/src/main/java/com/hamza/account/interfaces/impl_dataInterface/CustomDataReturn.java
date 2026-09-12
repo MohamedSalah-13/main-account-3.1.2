@@ -26,7 +26,7 @@ import com.hamza.account.model.domain.Customers;
 import com.hamza.account.model.domain.Sales_Return;
 import com.hamza.account.model.domain.Total_Sales_Re;
 import com.hamza.account.model.base.BaseTotals;
-import com.hamza.account.service.EmployeeService;
+import com.hamza.account.features.employee.EmployeeService;
 import com.hamza.account.service.TreasuryService;
 import com.hamza.account.service.SalesReService;
 import com.hamza.account.service.TotalSalesReturnService;
@@ -149,7 +149,7 @@ public class CustomDataReturn extends LoadData implements DataInterface<Sales_Re
                 new InvoiceSaveService<>(invoiceBuy, totalsAndPurchaseList,
                         designInterface.documentType(),
                         ServiceRegistry.get(TreasuryService.class)::getTreasuryByName,
-                        ServiceRegistry.get(EmployeeService.class)::getDelegateByName);
+                        ServiceRegistry.get(EmployeeService.class)::delegateByName);
         return invoiceSaveService.save(command);
     }
 

@@ -14,7 +14,8 @@ import com.hamza.account.config.NamesTables;
 import com.hamza.account.model.domain.Employees;
 import com.hamza.account.openFxml.FxmlPath;
 import com.hamza.account.service.CustomerService;
-import com.hamza.account.service.EmployeeService;
+import com.hamza.account.features.employee.EmployeeScope;
+import com.hamza.account.features.employee.EmployeeService;
 import com.hamza.account.view.TableWithTextSearchApplication;
 import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.database.DaoException;
@@ -108,7 +109,7 @@ public class SettingTabLanguageController implements Initializable {
 
     private static Employees getDelegateById(EmployeeService employeeService, int proEmpl) {
         try {
-            return employeeService.getDelegateById(proEmpl);
+            return employeeService.delegateById(proEmpl);
         } catch (DaoException e) {
             log.error("Failed to get delegate by id: {}", e.getMessage());
             return new Employees(1);
@@ -251,7 +252,7 @@ public class SettingTabLanguageController implements Initializable {
 
                 @Override
                 public List<Employees> getFilterItems(String filter) throws Exception {
-                    return employeeService.getDelegateList().stream()
+                    return employeeService.delegates(EmployeeScope.EVERYONE).stream()
                             .filter(employee -> employee.getName().toLowerCase().contains(filter.toLowerCase()))
                             .collect(Collectors.toList());
                 }

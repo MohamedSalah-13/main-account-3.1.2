@@ -1586,3 +1586,29 @@ FROM account_customer_totals act
 WHERE act.purchase <> 0
    OR act.paid <> 0
    OR act.discount <> 0;
+
+-- --------------------------------employee_current_compensation-------------------------------------
+--
+-- الراتب الساري اليوم، من مكان واحد.
+--
+-- `employee_compensation` يحمل التاريخ (V57)، فالسؤال «كم راتبه الآن» له إجابة واحدة هي
+-- أحدث صف لم يأتِ تاريخه بعد. وكتابة هذا السؤال في كل استعلام يحتاجه هو الطريق إلى
+-- إجابتين، وهو بالضبط ما فعله `employees.salary` وحده قبل V57: رقم بلا تاريخ يُعاد
+-- كتابته فيغيّر الماضي.
+--
+-- المفتاح الفريد (employee_id, effective_from) هو ما يجعل الضم يعطي صفا واحدا لا أكثر.
+-- وموظف كل صفوفه مؤرَّخة في المستقبل - زيادة سُجِّلت قبل موعدها - لا يظهر هنا، ولهذا كل
+-- قارئ يضمّه بـ LEFT JOIN.
+DROP VIEW IF EXISTS employee_current_compensation;
+CREATE VIEW employee_current_compensation AS
+SELECT c.employee_id,
+       c.effective_from,
+       c.salary_kind,
+       c.rate
+FROM employee_compensation c
+         JOIN (SELECT employee_id, MAX(effective_from) AS effective_from
+               FROM employee_compensation
+               WHERE effective_from <= CURDATE()
+               GROUP BY employee_id) latest
+              ON latest.employee_id = c.employee_id
+                  AND latest.effective_from = c.effective_from;

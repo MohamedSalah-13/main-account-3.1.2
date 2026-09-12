@@ -261,3 +261,16 @@
     -fx-border-color: #f8c7d8;
     -fx-effect: dropshadow(gaussian, rgba(248, 199, 216, 0.45), 10, 0.20, 0, 0);
 }
+
+/* The employees screen, in the same shape as the two party palettes above it: a palette class
+   the shared .party-screen-* rules read. Violet, so a screen is told apart from customers (blue)
+   and suppliers (teal) at a glance. */
+.screen-employees {
+    -party-accent: #7c3aed;
+    -party-accent-dark: #6d28d9;
+    -party-border: #c4b5fd;
+    -party-shadow: rgba(124, 58, 237, 0.28);
+    -party-row-alt: #f7f4ff;
+    -party-row-hover: #ede9fe;
+    -party-row-selected: #ddd6fe;
+}

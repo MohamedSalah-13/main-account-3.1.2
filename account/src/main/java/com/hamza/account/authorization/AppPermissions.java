@@ -124,6 +124,25 @@ public final class AppPermissions {
     public static final PermissionKey EMPLOYEE_CREATE = key("employee.create");
     public static final PermissionKey EMPLOYEE_UPDATE = key("employee.update");
     public static final PermissionKey EMPLOYEE_DELETE = key("employee.delete");
+    /**
+     * Recording what an employee is paid, from a given day.
+     * <p>
+     * Separate from {@link #EMPLOYEE_UPDATE} on purpose, and granted by {@code V57} to whoever
+     * already held it: correcting a telephone number and deciding what somebody is paid every
+     * month are not the same trust. It is also the only way to move the figure once the dated
+     * history has begun - {@code SalaryChangeGuard} refuses the form after that, the way
+     * {@code OpeningBalanceGuard} refuses an opening balance a party has moved past.
+     */
+    public static final PermissionKey EMPLOYEE_SALARY_CHANGE = key("employee.salary.change");
+    /**
+     * The jobs behind the employees, which were four hard-coded constants until {@code V57}.
+     * Granted to whoever holds the matching employee key, so nobody gains or loses anything on
+     * upgrade.
+     */
+    public static final PermissionKey JOB_SHOW = key("job.show");
+    public static final PermissionKey JOB_CREATE = key("job.create");
+    public static final PermissionKey JOB_UPDATE = key("job.update");
+    public static final PermissionKey JOB_DELETE = key("job.delete");
     public static final PermissionKey SETTING_SHOW = key("setting.show");
     public static final PermissionKey SETTING_COMPANY_SHOW = key("setting.company.show");
     public static final PermissionKey COMPANY_UPDATE = key("company.update");

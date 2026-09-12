@@ -5,7 +5,8 @@ import com.hamza.account.model.domain.ExpensesDetails;
 import com.hamza.account.model.domain.Treasury;
 import com.hamza.account.openFxml.AddInterface;
 import com.hamza.account.openFxml.FxmlPath;
-import com.hamza.account.service.EmployeeService;
+import com.hamza.account.features.employee.EmployeeScope;
+import com.hamza.account.features.employee.EmployeeService;
 import com.hamza.account.service.ExpensesDetailsService;
 import com.hamza.account.service.ExpensesService;
 import com.hamza.account.service.TreasuryService;
@@ -261,7 +262,7 @@ public class AddExpensesController implements AddInterface {
 
     private List<String> employeesList() {
         try {
-            return employeeService.getEmployeeNames();
+            return employeeService.employeeNames(EmployeeScope.ACTIVE_ONLY);
         } catch (DaoException e) {
             log.error(e.getMessage());
             return List.of();
@@ -270,7 +271,7 @@ public class AddExpensesController implements AddInterface {
 
     private Employees getDataByString() {
         try {
-            return employeeService.getDelegateByName(comboName.getSelectionModel().getSelectedItem());
+            return employeeService.delegateByName(comboName.getSelectionModel().getSelectedItem());
         } catch (DaoException e) {
             log.error(e.getMessage());
             return new Employees(1);

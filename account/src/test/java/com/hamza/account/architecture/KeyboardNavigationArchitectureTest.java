@@ -48,8 +48,8 @@ class KeyboardNavigationArchitectureTest {
      * remaining debt is a number that can be trusted.
      * <p>
      * They were <b>not</b> reviewed one by one. Some are ordinary forms that
-     * simply never got the call ({@code AddEmployeeController},
-     * {@code AddUserController}); others hold their two fields for filtering
+     * simply never got the call ({@code AddUserController}); others hold
+     * their two fields for filtering
      * rather than for entry, where an Enter order would be meaningless.
      * Deciding which is which is part of the touch that removes the file from
      * this list - {@code AddNameController} was the first to leave it, when the
@@ -62,7 +62,6 @@ class KeyboardNavigationArchitectureTest {
             "com/hamza/account/controller/items/StockCountController.java",
             "com/hamza/account/controller/items/StocksController.java",
             "com/hamza/account/controller/items/UpdateSomeItems.java",
-            "com/hamza/account/controller/others/AddEmployeeController.java",
             "com/hamza/account/controller/setting/SettingTabBarcodeController.java",
             "com/hamza/account/controller/setting/SettingTabLanguageController.java",
             "com/hamza/account/controller/users/AddUserController.java",

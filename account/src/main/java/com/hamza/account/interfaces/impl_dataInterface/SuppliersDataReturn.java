@@ -26,7 +26,7 @@ import com.hamza.account.model.domain.SupplierAccount;
 import com.hamza.account.model.domain.Suppliers;
 import com.hamza.account.model.domain.Total_Buy_Re;
 import com.hamza.account.model.base.BaseTotals;
-import com.hamza.account.service.EmployeeService;
+import com.hamza.account.features.employee.EmployeeService;
 import com.hamza.account.service.TreasuryService;
 import com.hamza.account.service.PurchaseReService;
 import com.hamza.account.service.TotalBuyReturnService;
@@ -148,7 +148,7 @@ public class SuppliersDataReturn extends LoadData implements DataInterface<Purch
                 new InvoiceSaveService<>(invoiceBuy, totalsAndPurchaseList,
                         designInterface.documentType(),
                         ServiceRegistry.get(TreasuryService.class)::getTreasuryByName,
-                        ServiceRegistry.get(EmployeeService.class)::getDelegateByName);
+                        ServiceRegistry.get(EmployeeService.class)::delegateByName);
         return invoiceSaveService.save(command);
     }
 

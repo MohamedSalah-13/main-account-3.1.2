@@ -26,7 +26,7 @@ import com.hamza.account.model.domain.Customers;
 import com.hamza.account.model.domain.Sales;
 import com.hamza.account.model.domain.Total_Sales;
 import com.hamza.account.model.base.BaseTotals;
-import com.hamza.account.service.EmployeeService;
+import com.hamza.account.features.employee.EmployeeService;
 import com.hamza.account.service.TreasuryService;
 import com.hamza.account.service.SalesService;
 import com.hamza.account.service.TotalSalesService;
@@ -149,7 +149,7 @@ public class CustomData extends LoadData implements DataInterface<Sales, Total_S
                 new InvoiceSaveService<>(invoiceBuy, totalsAndPurchaseList,
                         designInterface.documentType(),
                         ServiceRegistry.get(TreasuryService.class)::getTreasuryByName,
-                        ServiceRegistry.get(EmployeeService.class)::getDelegateByName);
+                        ServiceRegistry.get(EmployeeService.class)::delegateByName);
         return invoiceSaveService.save(command);
     }
 
