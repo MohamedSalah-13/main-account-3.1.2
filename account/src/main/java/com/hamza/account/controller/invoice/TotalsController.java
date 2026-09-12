@@ -37,6 +37,8 @@ import com.hamza.account.service.EmployeeService;
 import com.hamza.account.service.TotalsService;
 import com.hamza.account.service.UsersService;
 import com.hamza.account.table.TableSetting;
+import com.hamza.account.table.TableColumnViews;
+import com.hamza.account.table.ContentSizedColumns;
 import com.hamza.account.type.InvoiceType;
 import com.hamza.account.view.BuyApplication;
 import com.hamza.account.view.ShowInvoiceApplication;
@@ -81,6 +83,7 @@ import java.util.IdentityHashMap;
 import java.util.Map;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.ResourceBundle;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.prefs.Preferences;
@@ -104,6 +107,10 @@ public class TotalsController<T3 extends BaseNames, T4 extends BaseAccount>
     private final String dateToKey;
     private final PauseTransition searchDelay = new PauseTransition(Duration.millis(300));
     private static final int PAGE_SIZE = 50;
+    private static final String VIEW_MODE = "columnView";
+    private static final String SELECTION_COLUMN = "totals-selection";
+    private static final String ACTIONS_COLUMN = "totals-actions";
+    private final ContentSizedColumns<BaseTotals> columnSizing = new ContentSizedColumns<>();
     private boolean update_data = true;
     private boolean syncingFilters;
     private long searchRequest;
@@ -146,6 +153,8 @@ public class TotalsController<T3 extends BaseNames, T4 extends BaseAccount>
     private HBox pagerBar;
     @FXML
     private MenuButton menuButton;
+    @FXML
+    private MenuButton btnView;
     @FXML
     private MenuItem menuItemReportByParty, menuItemReportByDay, menuItemReportByMonth,
             menuItemReportByDelegate, menuItemReportByItem;
@@ -212,6 +221,7 @@ public class TotalsController<T3 extends BaseNames, T4 extends BaseAccount>
             case PURCHASE_RETURN -> "totals-purchase-return";
         };
         stackPane.getStyleClass().add(identityClass);
+        tableView.setId("totals-" + type.name().toLowerCase());
         labelScreenTitle.setText(type.totalText());
     }
     private void buttonGraphic() {
@@ -224,6 +234,8 @@ public class TotalsController<T3 extends BaseNames, T4 extends BaseAccount>
         btnDeleteSelected.setGraphic(AppIcon.DELETE.graphic(16));
         btnFilters.setGraphic(AppIcon.FILTER.graphic(16));
         btnSelected.setGraphic(AppIcon.SELECT_ALL.graphic(16));
+        btnView.setGraphic(AppIcon.SETTINGS.graphic(16));
+        btnView.setContentDisplay(ContentDisplay.RIGHT);
         menuButton.setGraphic(AppIcon.PRINT.graphic(16));
 
         tip(btnSearch, "invoice.tooltip.search");
@@ -301,15 +313,20 @@ public class TotalsController<T3 extends BaseNames, T4 extends BaseAccount>
      */
     private List<TableColumn<BaseTotals, ?>> baseTotalsColumns() {
         return List.of(
-                Columns.number(NamesTables.CODE, BaseTotals::getId),
-                Columns.text(NamesTables.DATE, BaseTotals::getDate),
-                Columns.number(NamesTables.TOTAL, BaseTotals::getTotal),
-                Columns.number(NamesTables.DISCOUNT, BaseTotals::getDiscount),
-                Columns.number(NamesTables.TOTAL_AMOUNT, BaseTotals::getTotal_after_discount),
-                Columns.number(NamesTables.CREDITOR, BaseTotals::getPaid),
-                Columns.number(NamesTables.REST, BaseTotals::getRest),
-                Columns.text(NamesTables.NOTES, BaseTotals::getNotes)
+                named("totals-code", Columns.number(NamesTables.CODE, BaseTotals::getId)),
+                named("totals-date", Columns.text(NamesTables.DATE, BaseTotals::getDate)),
+                named("totals-total", Columns.number(NamesTables.TOTAL, BaseTotals::getTotal)),
+                named("totals-discount", Columns.number(NamesTables.DISCOUNT, BaseTotals::getDiscount)),
+                named("totals-after-discount", Columns.number(NamesTables.TOTAL_AMOUNT, BaseTotals::getTotal_after_discount)),
+                named("totals-paid", Columns.number(NamesTables.CREDITOR, BaseTotals::getPaid)),
+                named("totals-rest", Columns.number(NamesTables.REST, BaseTotals::getRest)),
+                named("totals-notes", Columns.text(NamesTables.NOTES, BaseTotals::getNotes))
         );
+    }
+
+    private static <V> TableColumn<BaseTotals, V> named(String id, TableColumn<BaseTotals, V> column) {
+        column.setId(id);
+        return column;
     }
 
     private void getTable() {
@@ -324,13 +341,18 @@ public class TotalsController<T3 extends BaseNames, T4 extends BaseAccount>
         sortedList.comparatorProperty().bind(tableView.comparatorProperty());
         tableView.setItems(sortedList);
         tableView.setPlaceholder(new Label(LanguageManager.getInstance().getString("invoice.search.empty")));
-        TableSetting.tableMenuSetting(getClass(), tableView);
-
+        assignDocumentColumnIds();
         tableView.getColumns().addFirst(rowActionsColumn());
-        tableView.getColumns().add(Columns.text("users",
-                row -> row.getUsers() == null ? "" : row.getUsers().getUsername()));
-        tableView.getColumns().add(Columns.text("column.entry.time",
-                row -> row.getCreated_at() == null ? "" : row.getCreated_at().toString()));
+        tableView.getColumns().add( named("totals-entered-by", Columns.text("users",
+                row -> row.getUsers() == null ? "" : row.getUsers().getUsername())));
+        tableView.getColumns().add(named("totals-entry-time", Columns.text("column.entry.time",
+                row -> row.getCreated_at() == null ? "" : row.getCreated_at().toString())));
+        tableView.getColumns().get(1).setId(SELECTION_COLUMN);
+
+        TableSetting.tableMenuSetting(getClass(), tableView);
+        tableView.setTableMenuButtonVisible(false);
+        configureColumnViews();
+        columnSizing.install(tableView);
 
         tableView.setRowFactory(view -> new TableRow<>() {
             @Override
@@ -342,6 +364,26 @@ public class TotalsController<T3 extends BaseNames, T4 extends BaseAccount>
                 }
             }
         });
+    }
+
+    /** The document family adds its party/type columns itself; give those stable preferences ids. */
+    private void assignDocumentColumnIds() {
+        int documentColumn = 0;
+        for (TableColumn<BaseTotals, ?> column : tableView.getColumns()) {
+            if (column.getId() == null || column.getId().isBlank()) {
+                column.setId("totals-document-" + documentColumn++);
+            }
+        }
+    }
+
+    /** Reuses the customer-list view model while isolating every document family's choice. */
+    private void configureColumnViews() {
+        String documentType = dataInterface.designInterface().documentType().name().toLowerCase();
+        Preferences viewPreferences = preferences.node("columnViews").node(documentType);
+        new TableColumnViews<BaseTotals>(viewPreferences, VIEW_MODE, TableColumnViews.Preset.COMPACT,
+                Set.of("totals-code", "totals-date", "totals-document-0", "totals-total", "totals-rest"),
+                Set.of(SELECTION_COLUMN, ACTIONS_COLUMN))
+                .install(btnView, tableView);
     }
 
     private void otherSetting() {
@@ -528,6 +570,7 @@ public class TotalsController<T3 extends BaseNames, T4 extends BaseAccount>
     private TableColumn<BaseTotals, Void> rowActionsColumn() {
         TableColumn<BaseTotals, Void> column = new TableColumn<>(
                 LanguageManager.getInstance().getString("invoice.column.actions"));
+        column.setId(ACTIONS_COLUMN);
         column.setSortable(false);
         column.setReorderable(false);
         column.setMinWidth(112);
@@ -755,6 +798,7 @@ public class TotalsController<T3 extends BaseNames, T4 extends BaseAccount>
             if (request != searchRequest) return;
             TotalsPage<? extends BaseTotals> loaded = result.get();
             observableList.setAll(loaded.rows());
+            columnSizing.layout(tableView);
             updatePager(loaded);
             updateFilterPresentation(criteria, loaded.totalRows());
             if (focusResults && !loaded.rows().isEmpty()) {

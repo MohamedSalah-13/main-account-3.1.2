@@ -71,6 +71,8 @@
                                         <Button fx:id="btnClearFilters" mnemonicParsing="false"
                                                 styleClass="neutral-button" text="%invoice.search.clear" />
                                         <Separator orientation="VERTICAL" />
+                                        <MenuButton fx:id="btnView" mnemonicParsing="false"
+                                                    styleClass="neutral-button" text="%party.list.view" />
                                         <Button fx:id="btnRefresh" mnemonicParsing="false" styleClass="icon-button" />
                                         <ToggleButton fx:id="btnSelected" mnemonicParsing="false"
                                                       styleClass="neutral-button" text="%common.select.all" />
