@@ -142,7 +142,8 @@ public final class WipeCatalog {
     // ---- the rest ------------------------------------------------------------
 
     public static final WipeTarget EXPENSES = WipeTarget.of("expenses", "wipe.target.expenses",
-            List.of(WipeTable.of("expense_salary"), WipeTable.of("expenses_details")));
+            List.of(WipeTable.of("employee_cash_purpose"), WipeTable.of("expense_salary"),
+                    WipeTable.of("expenses_details")));
 
     /**
      * Employees and the treasury go together because the old procedure put them
@@ -154,7 +155,8 @@ public final class WipeCatalog {
      * left to refuse the delete.
      */
     public static final WipeTarget EMPLOYEES = WipeTarget.of("employees", "wipe.target.employees",
-            List.of(WipeTable.of("targeted_sales"),
+            List.of(WipeTable.of("employee_ledger"),
+                    WipeTable.of("targeted_sales"),
                     WipeTable.of("shift_cash_variance_adjustments"),
                     WipeTable.of("treasury_deposit_expenses"),
                     WipeTable.of("shift_cash_handover_receipts"),

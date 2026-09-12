@@ -1612,3 +1612,81 @@ FROM employee_compensation c
                GROUP BY employee_id) latest
               ON latest.employee_id = c.employee_id
                   AND latest.effective_from = c.effective_from;
+
+-- --------------------------------employee_account_table-------------------------------------
+--
+-- حساب الموظف كاملا، من مصدريه الاثنين.
+--
+-- `employee_ledger` يحمل ما **ليس** نقدا - استحقاق، مكافأة مستحقة، خصم، عمولة معتمدة،
+-- رصيد افتتاحي - و`expenses_details` يحمل **كل** النقد الذي خرج للموظف، قديمه وجديده.
+-- وهذا هو بالضبط شكل `account_customer_table`: دفتر المدفوعات موحَّدا مع المستندات.
+--
+-- والفائدة ليست تنظيمية: سنوات الصرف الموجودة في قواعد العملاء تدخل هذا الكشف **بلا
+-- ترحيل بيانات ولا هجرة**، لأنه يقرأ الجدول الذي كُتبت فيه أصلا (V58، ق-١).
+--
+-- **الاتجاه معلن مرة واحدة في `EmployeeEntryKind.sign()`**، وهذه الـCASE تطابقه،
+-- و`EmployeeLedgerAgreesWithEntryKindTest` يربط الاثنين. تعريفان للاتجاه هو العطل الذي
+-- أنفق نظام الأطراف شهرا في إزالته (V15).
+--
+-- `credit` = ما يزيد ما على المنشأة للموظف. `debit` = ما ينقصه - والنقد الخارج كله debit.
+-- وصف مصروف بلا صف غرض = راتب، وهو ما تعنيه سنوات الصرف السابقة فعلا.
+--
+-- `emp_id` صار NULL-able في V23 (كان 0 يعني «بلا موظف»، وV23 حوّلها)، فالشرط هنا على
+-- NULL وحدها.
+DROP VIEW IF EXISTS employee_account_table;
+CREATE VIEW employee_account_table AS
+SELECT l.employee_id                                               AS employee_id,
+       l.entry_date                                                AS movement_date,
+       l.kind                                                      AS entry_kind,
+       'LEDGER'                                                    AS source,
+       l.id                                                        AS source_id,
+       ROUND(CASE
+                 WHEN l.kind IN ('OPENING_DUE', 'ENTITLEMENT', 'BONUS', 'COMMISSION')
+                     THEN l.amount
+                 ELSE 0 END, 2)                                    AS credit,
+       ROUND(CASE
+                 WHEN l.kind IN ('OPENING_OWED', 'DEDUCTION') THEN l.amount
+                 ELSE 0 END, 2)                                    AS debit,
+       l.notes                                                     AS notes,
+       l.date_insert                                               AS entered_at,
+       l.user_id                                                   AS user_id
+FROM employee_ledger l
+UNION ALL
+SELECT ed.emp_id                                                   AS employee_id,
+       ed.date                                                     AS movement_date,
+       COALESCE(p.purpose, 'SALARY')                               AS entry_kind,
+       'CASH'                                                      AS source,
+       ed.id                                                       AS source_id,
+       0                                                           AS credit,
+       ROUND(ed.amount, 2)                                         AS debit,
+       ed.notes                                                    AS notes,
+       ed.date_insert                                              AS entered_at,
+       ed.user_id                                                  AS user_id
+FROM expenses_details ed
+         LEFT JOIN employee_cash_purpose p ON p.expense_id = ed.id
+WHERE ed.emp_id IS NOT NULL;
+
+-- --------------------------------employee_balance-------------------------------------
+--
+-- رصيد كل موظف، مشتقا من الكشف نفسه لا محسوبا مرة ثانية.
+--
+-- موجب = المنشأة مدينة للموظف (له مستحق لم يُصرف). سالب = الموظف مدين للمنشأة (سلفة
+-- تجاوزت استحقاقه، أو خصم).
+--
+-- وهو مبني فوق `employee_account_table` عمدا: رصيد يُحسب من استعلامات خاصة به هو إجابة
+-- ثانية على سؤال واحد، وهو ما كان عليه `view_customer_receivables` قبل أن يُشتق من
+-- `account_customer_totals`. الأعمدة الثلاثة هنا تتطابق بالبناء.
+--
+-- LEFT JOIN: موظف بلا حركة واحدة رصيده صفر، لا صف غائب - شاشة تعرض القائمة كلها لا
+-- يصحّ أن يختفي منها من لم يُصرف له شيء بعد.
+DROP VIEW IF EXISTS employee_balance;
+CREATE VIEW employee_balance AS
+SELECT e.id                                              AS employee_id,
+       e.column_name                                     AS employee_name,
+       ROUND(COALESCE(SUM(a.credit), 0), 2)              AS total_credit,
+       ROUND(COALESCE(SUM(a.debit), 0), 2)               AS total_debit,
+       ROUND(COALESCE(SUM(a.credit) - SUM(a.debit), 0), 2) AS balance,
+       MAX(a.movement_date)                              AS last_movement
+FROM employees e
+         LEFT JOIN employee_account_table a ON a.employee_id = e.id
+GROUP BY e.id, e.column_name;

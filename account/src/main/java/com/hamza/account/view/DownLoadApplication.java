@@ -52,7 +52,10 @@ import com.hamza.account.features.shift.JdbcShiftCashHandoverRepository;
 import com.hamza.account.features.shift.ShiftCashHandoverService;
 import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.period.PeriodLockService;
+import com.hamza.account.features.employee.EmployeeLedgerService;
+import com.hamza.account.features.employee.EmployeePaymentService;
 import com.hamza.account.features.employee.EmployeeService;
+import com.hamza.account.features.employee.statement.EmployeeStatementService;
 import com.hamza.account.service.*;
 import com.hamza.account.config.SharedSettings;
 import com.hamza.account.config.SharedSettingsStore;
@@ -236,6 +239,13 @@ public class DownLoadApplication extends Application {
         ServiceRegistry.register(CardItemService.class, new CardItemService(daoFactory));
         ServiceRegistry.register(ExpensesService.class, new ExpensesService(daoFactory));
         ServiceRegistry.register(ExpensesDetailsService.class, new ExpensesDetailsService(daoFactory));
+        // The employee's account (V58). The payment service takes the expenses service rather
+        // than building one: every pound paid to an employee is an expense row, so it inherits
+        // the shift gate, the period lock and the cash journal instead of restating them.
+        ServiceRegistry.register(EmployeeStatementService.class, new EmployeeStatementService());
+        ServiceRegistry.register(EmployeeLedgerService.class, new EmployeeLedgerService());
+        ServiceRegistry.register(EmployeePaymentService.class,
+                new EmployeePaymentService(ServiceRegistry.get(ExpensesDetailsService.class)));
         ServiceRegistry.register(TotalSalesService.class, new TotalSalesService(daoFactory));
         ServiceRegistry.register(TotalBuyService.class, new TotalBuyService(daoFactory));
         ServiceRegistry.register(TotalBuyReturnService.class, new TotalBuyReturnService(daoFactory));

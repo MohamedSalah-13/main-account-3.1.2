@@ -46,7 +46,7 @@ public final class SchemaForeignKeys {
             "V8__stock_count.sql", "V9__accounting_lock.sql",
             "V22__user_shift_treasury.sql", "V23__expense_employee_link.sql",
             "V24__strong_optional_shift_policy.sql", "V25__shift_cash_attribution.sql",
-            "V57__employee_core.sql");
+            "V57__employee_core.sql", "V58__employee_ledger.sql");
 
     private static final List<ForeignKey> KEYS = read();
 

@@ -133,6 +133,11 @@ public final class DeleteRegistry {
             // legacy rows happen to name and let every other one through, with years
             // of salaries behind them.
             .referencedBy("expenses_details", "emp_id", "delete.ref.expense")
+            // What the employee earned, was awarded and was deducted (V58). Not cascading on
+            // purpose: a financial history is not something swept away with the row it belongs
+            // to, and an employee with one movement is one whose account somebody can still be
+            // asked to explain.
+            .referencedBy("employee_ledger", "employee_id", "delete.ref.employee.ledger")
             // Kept: the table still holds those three rows and its key still refuses
             // a delete. Nothing reads it for a decision any more - see V23.
             .referencedBy("expense_salary", "employee_id", "delete.ref.salary")

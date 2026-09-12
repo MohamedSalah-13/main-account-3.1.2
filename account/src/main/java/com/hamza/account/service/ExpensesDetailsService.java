@@ -57,7 +57,30 @@ public record ExpensesDetailsService(DaoFactory daoFactory) {
         });
     }
 
+    /**
+     * Records an expense and answers 1, which is what the dialog contract wants.
+     * <p>
+     * The guard is asked here as well as in {@link #insertReturningId}, rather than left to it:
+     * this is the entry point of a write, and {@code AuthorizationArchitectureTest} reads each
+     * one on its own - the rule that caught {@code openShift} and {@code closeShift} sitting
+     * unguarded while this file described them as guarded.
+     */
     public int insert(ExpensesDetails expensesDetails) throws DaoException {
+        AuthorizationGuard.require(AppPermissions.EXPENSES_CREATE);
+        insertReturningId(expensesDetails);
+        return 1;
+    }
+
+    /**
+     * The same write, answering the generated id.
+     * <p>
+     * It exists for {@code EmployeePaymentService}, which has a second row to file beside this
+     * one ({@code employee_cash_purpose}) and therefore needs the key of the row it belongs to.
+     * Every pound paid to an employee is an expense - ق-١ of {@code docs/employees-plan.md} - so
+     * it goes through this method and inherits the shift gate, the period lock and the shift cash
+     * journal rather than rebuilding four rules beside them.
+     */
+    public int insertReturningId(ExpensesDetails expensesDetails) throws DaoException {
         AuthorizationGuard.require(AppPermissions.EXPENSES_CREATE);
         return TransactionTemplate.execute(() -> {
             var shiftId = ShiftGate.jdbc(daoFactory.userShiftDao()).requireCashAction(
@@ -70,7 +93,7 @@ public record ExpensesDetailsService(DaoFactory daoFactory) {
                             expensesDetails.getTreasuryModel().getId(),
                             shiftId.isPresent() ? shiftId.getAsInt() : null,
                             BigDecimal.valueOf(expensesDetails.getAmount())));
-            return 1;
+            return id;
         });
     }
 

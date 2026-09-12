@@ -139,6 +139,33 @@ public final class AppPermissions {
      * Granted to whoever holds the matching employee key, so nobody gains or loses anything on
      * upgrade.
      */
+    /**
+     * Reading one employee's account - what they have been paid, advanced and deducted.
+     * <p>
+     * V58 grants it to whoever already holds {@link #EMPLOYEES_SHOW_SALARY}, not to everyone who
+     * can open the employees screen: a statement is a list of what somebody is paid, one line at
+     * a time.
+     */
+    public static final PermissionKey EMPLOYEE_ACCOUNT_SHOW = key("employee.account.show");
+    /**
+     * Recording a deduction or an awarded bonus - a movement with no cash behind it.
+     * <p>
+     * Separate from {@link #EMPLOYEE_PAY} in both directions: a deduction takes no pound out of a
+     * till, and the person who counts the drawer is not the person who decides an employee owes
+     * two hundred. The same split V55 made between {@code account.create} and
+     * {@code account.adjust} for the parties, for the same reason - cash is matched by a count,
+     * a decision is matched by nothing.
+     */
+    public static final PermissionKey EMPLOYEE_ACCOUNT_ADJUST = key("employee.account.adjust");
+    /**
+     * Paying an employee out of a till.
+     * <p>
+     * It is the <em>additional</em> permission on top of {@link #EXPENSES_CREATE}, not a
+     * replacement for it: every pound paid to an employee is an expense row (ق-١), so the payment
+     * goes through {@code ExpensesDetailsService} and is refused without both. V58 grants this to
+     * whoever holds {@code expenses.create}, so nobody loses an ability on upgrade.
+     */
+    public static final PermissionKey EMPLOYEE_PAY = key("employee.pay");
     public static final PermissionKey JOB_SHOW = key("job.show");
     public static final PermissionKey JOB_CREATE = key("job.create");
     public static final PermissionKey JOB_UPDATE = key("job.update");

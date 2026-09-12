@@ -207,7 +207,8 @@ Two documents govern work here and are kept current — read them before large c
   writer (`expenses_details`) and the employee ledger records only what is not cash, and why an
   advance is deducted once - on the day it leaves the drawer. §1.2 lists the twelve defects the
   review found; §12 the order the phases are built in. **Read it before touching anything under
-  `features/employee`, `controller/employee` or the `V57` tables.**
+  `features/employee`, `controller/employee` or the `V57`-`V58` tables.** §13 records what phase A
+  delivered and §14 phase B, each with what was actually run and what was not.
 - **[`docs/agent-worktree-rules.md`](docs/agent-worktree-rules.md)** - the contract for an AI agent
   working in a worktree, whatever tool it is: never commit, merge or push; always `clean`; never
   run the database acceptance classes without a disposable schema; never create a `config.xml`.
@@ -1143,6 +1144,67 @@ build saw nothing. The key is now taken off and put back, and it is **looked up 
 carry another. This is the same class of defect as `V55`'s and `V56`'s helper-procedure calls, and
 the same answer: **migrate a schema from nothing before believing a migration**.
 
+
+### The employee's account
+
+`features/employee/statement` is where one employee's account comes from, and `V58` is the schema
+under it. It is `features/party/statement` class for class — a `Filter` whose checks are in its
+constructor, a `Repository`, a `Service`, a `Page`, a `Summary`, a `Query` pinned character for
+character — and it carries the same four rules, for the same reasons.
+
+**Cash has one writer, and it is `expenses_details`.** Every pound that leaves a till for an
+employee — a salary, an advance, a bonus handed over, a settlement — is a row there with an
+`emp_id`, written through `ExpensesDetailsService`. Three things follow, and the third is the one
+worth knowing: `treasury_balance` already reads that table, so the till needs no second ledger;
+`ShiftGate`, `PeriodLock` and the shift cash journal are inherited rather than rebuilt beside four
+chances to forget one; and **the years of wage payments already sitting in customers' databases
+appear on the new statement with no data migration at all**, because it reads the table they were
+written to. That last one is proven rather than assumed: an expense row with no purpose beside it
+comes through the view as a `SALARY`, which is what those rows have always meant.
+
+**So `employee_ledger` holds no cash — a row there with a cash amount is a defect, not a feature.**
+It holds what is *not* cash: an entitlement earned, a bonus awarded, a deduction decided, a
+commission approved, a balance carried in. `employee_account_table` unions the two exactly as
+`account_customer_table` unions a party's payments with their invoices, and `employee_balance` is
+derived from that view rather than summed a second time — the mistake `view_customer_receivables`
+carried for years.
+
+**An advance is a debit on the day the cash leaves, and is never deducted again.** The payroll run
+of phase C enters the whole entitlement into the ledger and hands over the difference; the balance
+squares because each side is recorded once, in its own place. Deducting the advance a second time
+would charge the employee twice for one payment — the line `docs/employees-plan.md` calls its most
+important.
+
+**The direction lives in `EmployeeEntryKind.sign()` and nowhere else.** `amount` is stored unsigned
+with a CHECK, the view restates the direction as a `CASE`, and `V58` restates the list of names as
+a second CHECK — so `EmployeeLedgerAgreesWithEntryKindTest` reads both files and fails the build
+when any of the three drifts. Two definitions of a direction is what cost the party ledger a data
+migration (`V15`) and a screen that had been showing customers the wrong balance. The opening
+balance is two kinds rather than one signed amount: a screen asking "in the employee's favour or
+against them" is answerable, while a box that quietly accepts a minus sign is a place to make a
+mistake worth twice the figure.
+
+**`EmployeeMovementSource` exists because both enums carry a `BONUS`** and they mean opposite
+things — one awarded increases what is owed, one paid reduces it. Resolving a row's kind without
+its source gets the sign backwards on exactly that row.
+
+**A movement with no cash does not pass through `ShiftGate`**, and that is the rule rather than an
+omission: a deduction takes nothing out of a drawer, and requiring an open shift for one would stop
+a correction being made outside trading hours, which is when corrections are made. The same line
+this file draws for a party's debit and credit notes. And there is **no update** of a recorded
+movement — it is corrected with an opposing entry, decided at the start here rather than enforced
+by the silence of a screen.
+
+**No expense heading is seeded, and no purpose maps to one in code.** The first draft of `V58`
+seeded "رواتب وأجور"; migrating a schema from nothing showed that `V1` already seeds "مرتبات" and
+"سلف", so it would have shipped a third heading meaning what two others mean. The payment screen
+offers the headings from `expenses` and the person paying chooses — a constant like
+`SALARY -> 1` is the `UsersType` and `DELEGATE_JOB` mistake at a different editable table.
+
+**`employee.pay` is the additional permission, not a replacement for `expenses.create`.** The base
+act is creating an expense, so a payment needs both; `V58` grants the new one to whoever holds the
+old, so nobody loses an ability on upgrade, but a role given only `employee.pay` cannot pay anybody.
+
 ### Row actions and paging
 
 `account.table.RowAction` + `RowActionsColumn` are the one way a table gets buttons that act on
@@ -1907,9 +1969,11 @@ Schema changes are **Flyway migrations**, in `account/src/main/resources/db/migr
 - `V1__baseline.sql` is the schema as shipped to clients in v4.1.3 — tables, indexes, procedures and the
   seed data (including the `admin` user, without which nobody can log in). It is the Flyway baseline: an
   existing client database is **stamped** with it, never executed, because it already is that schema. A
-  new database executes it and continues with `V2`, `V3`, … The current head is `V57`: V57 makes
-  the job a row rather than four constants, gives the salary a date and the employee a status -
-  see **Employees** above. Before it, V56 adds the
+  new database executes it and continues with `V2`, `V3`, … The current head is `V58`: V58 adds
+  the employee's account - the non-cash ledger, the purpose beside each payment, and the two
+  views that union them (see **The employee's account** above) - and V57 makes the job a row
+  rather than four constants, gives the salary a date and the employee a status. Before them,
+  V56 adds the
   fields a party record was missing - email, tax number, payment terms, a default delegate, an
   opening-balance date and `is_active` - and V55 adds the debit/credit-note permissions
   (`*.account.adjust`, granted to whoever held `*.account.create`) with the ledger's date indexes;

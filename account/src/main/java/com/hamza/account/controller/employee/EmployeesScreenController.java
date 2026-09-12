@@ -29,6 +29,7 @@ import com.hamza.account.table.TablePdfReport;
 import com.hamza.account.table.TableSetting;
 import com.hamza.account.table.VisibleColumnsExcelWriter;
 import com.hamza.account.openFxml.AddForAllApplication;
+import com.hamza.account.view.OpenApplication;
 import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.error.UserValidationException;
 import com.hamza.controlsfx.excel.ExportData;
@@ -431,6 +432,8 @@ public class EmployeesScreenController extends LoadData {
         List<RowAction<Employee>> actions = List.of(
                 RowAction.of("employee.action.edit", AppIcon.EDIT, "app-primary-button",
                         AppPermissions.EMPLOYEE_UPDATE, this::openEdit),
+                RowAction.of("employee.action.statement", AppIcon.REPORT, "app-neutral-button",
+                        AppPermissions.EMPLOYEE_ACCOUNT_SHOW, this::openStatement),
                 RowAction.of("employee.action.salary", AppIcon.TREASURY_CASH, "app-neutral-button",
                         AppPermissions.EMPLOYEE_SALARY_CHANGE, this::openSalary),
                 RowAction.of("employee.action.toggle", AppIcon.SECURITY, "app-neutral-button",
@@ -576,6 +579,20 @@ public class EmployeesScreenController extends LoadData {
         try {
             new AddForAllApplication(employee.id(),
                     new EmployeeSalaryController(employee.id(), employee.name()));
+        } catch (Exception e) {
+            report(e);
+        }
+    }
+
+    /**
+     * One employee's account: what they earned, what was deducted, and every pound paid to them.
+     * <p>
+     * A button in the row, not in the toolbar: it cannot be pressed without naming its employee,
+     * so it needs no "choose a row first" refusal.
+     */
+    private void openStatement(Employee employee) {
+        try {
+            new OpenApplication<>(new EmployeeStatementController(employee.id(), employee.name()));
         } catch (Exception e) {
             report(e);
         }

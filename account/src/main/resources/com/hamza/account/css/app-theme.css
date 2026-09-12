@@ -2464,3 +2464,10 @@
     -fx-font-size: 0.92em;
     -fx-text-fill: -app-text-muted;
 }
+
+/* A row of an employee's statement that is money out of a till, rather than a decision recorded
+   against them. The two read differently on paper and should read differently on screen: one is
+   matched by a count in a drawer, the other by nothing. */
+.table-row-cell:cash-movement > .table-cell {
+    -fx-font-style: italic;
+}
