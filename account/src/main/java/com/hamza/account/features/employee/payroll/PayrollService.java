@@ -3,6 +3,8 @@ package com.hamza.account.features.employee.payroll;
 import com.hamza.account.authorization.AppPermissions;
 import com.hamza.account.authorization.AuthorizationGuard;
 import com.hamza.account.features.employee.EmployeeEntryKind;
+import com.hamza.account.features.employee.attendance.AttendanceService;
+import com.hamza.account.features.employee.attendance.AttendanceSummary;
 import com.hamza.account.features.rbac.CurrentUser;
 import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.database.TransactionTemplate;
@@ -45,12 +47,27 @@ public final class PayrollService {
 
     private final PayrollRepository repository;
 
+    /**
+     * Where the worked days, the absences and the hours come from.
+     * <p>
+     * It is an interface rather than the service itself so the payroll can be built and tested
+     * without attendance at all - which is also the state a shop that has not started
+     * recording it is in. {@link AttendanceSource#NONE} answers every month as unrecorded, and
+     * an unrecorded month leaves the line exactly as the salary alone makes it.
+     */
+    private final AttendanceSource attendance;
+
     public PayrollService() {
-        this(new JdbcPayrollRepository());
+        this(new JdbcPayrollRepository(), AttendanceSource.fromService(new AttendanceService()));
     }
 
     public PayrollService(PayrollRepository repository) {
+        this(repository, AttendanceSource.NONE);
+    }
+
+    public PayrollService(PayrollRepository repository, AttendanceSource attendance) {
         this.repository = Objects.requireNonNull(repository, "repository");
+        this.attendance = Objects.requireNonNull(attendance, "attendance");
     }
 
     // ---- reading ---------------------------------------------------------------------------
@@ -86,7 +103,7 @@ public final class PayrollService {
         AuthorizationGuard.require(AppPermissions.PAYROLL_SHOW);
         List<PayrollCalculation> lines = new ArrayList<>();
         for (PayrollInput input : repository.candidatesFor(period)) {
-            lines.add(PayrollCalculator.calculate(period, input));
+            lines.add(PayrollCalculator.calculate(period, withAttendance(period, input)));
         }
         return lines;
     }
@@ -258,9 +275,32 @@ public final class PayrollService {
 
     // ---- the parts ---------------------------------------------------------------------------
 
+    /**
+     * Folds the month's attendance into a candidate.
+     * <p>
+     * A month with nothing recorded returns the input untouched, so a shop that does not keep
+     * attendance gets exactly what it got before phase D: a monthly salary, whole. That is the
+     * difference that matters - attendance <b>adds</b> a deduction where days were recorded,
+     * and never turns an unkept grid into a month of absences.
+     */
+    private PayrollInput withAttendance(PayrollPeriod period, PayrollInput input)
+            throws DaoException {
+        AttendanceSummary summary = attendance.summaryFor(input.employeeId(),
+                period.firstDay(), period.lastDay());
+        if (summary.isEmpty()) {
+            return input;
+        }
+        return new PayrollInput(input.employeeId(), input.employeeName(), input.salaryKind(),
+                input.rate(), input.hiredOn(), input.endedOn(),
+                summary.absenceDays(), summary.workedDays(), summary.workedHours(),
+                input.allowances(), input.commission(), input.manualDeductions(),
+                input.advancesOutstanding());
+    }
+
     private int fill(int runId, PayrollPeriod period) throws DaoException {
         int written = 0;
-        for (PayrollInput input : repository.candidatesFor(period)) {
+        for (PayrollInput candidate : repository.candidatesFor(period)) {
+            PayrollInput input = withAttendance(period, candidate);
             PayrollCalculation line = PayrollCalculator.calculate(period, input);
             if (line.isEmpty()) {
                 // Somebody who left before the month began, or a commission employee with

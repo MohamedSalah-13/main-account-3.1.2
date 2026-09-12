@@ -163,6 +163,10 @@ public final class WipeCatalog {
                     WipeTable.of("payroll_line"),
                     WipeTable.of("payroll_run"),
                     WipeTable.of("employee_allowance"),
+                    // The grid and the requests point at the employee and at the leave type;
+                    // the types are seeded rows, so they are restored rather than emptied.
+                    WipeTable.of("attendance"),
+                    WipeTable.of("leave_request"),
                     WipeTable.of("targeted_sales"),
                     WipeTable.of("shift_cash_variance_adjustments"),
                     WipeTable.of("treasury_deposit_expenses"),

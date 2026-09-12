@@ -183,6 +183,23 @@ public final class AppPermissions {
     public static final PermissionKey PAYROLL_APPROVE = key("payroll.approve");
     public static final PermissionKey PAYROLL_PAY = key("payroll.pay");
 
+    public static final PermissionKey ATTENDANCE_SHOW = key("attendance.show");
+
+    /**
+     * Recording a day's attendance.
+     * <p>
+     * Separate from {@link #ATTENDANCE_SHOW} because marking the grid is a daily job for a
+     * receptionist while reading it is a manager's, and separate from {@link #LEAVE_APPROVE}
+     * because marking somebody absent is not the same as granting them leave.
+     */
+    public static final PermissionKey ATTENDANCE_RECORD = key("attendance.record");
+
+    /** Asking for leave. It grants nothing, so it is the low-risk half of the pair. */
+    public static final PermissionKey LEAVE_REQUEST = key("leave.request");
+
+    /** Deciding on leave - which writes the days onto the grid and so changes a month's pay. */
+    public static final PermissionKey LEAVE_APPROVE = key("leave.approve");
+
     public static final PermissionKey JOB_SHOW = key("job.show");
     public static final PermissionKey JOB_CREATE = key("job.create");
     public static final PermissionKey JOB_UPDATE = key("job.update");

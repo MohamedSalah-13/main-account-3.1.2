@@ -144,6 +144,10 @@ public final class DeleteRegistry {
             // exactly the distinction this catalog declares.
             .referencedBy("payroll_line", "employee_id", "delete.ref.payroll.line")
             .referencedBy("employee_allowance", "employee_id", "delete.ref.employee.allowance")
+            // The grid and the leave requests are this employee's own record of what each day
+            // was; neither cascades from the employee, which is what this catalog declares.
+            .referencedBy("attendance", "employee_id", "delete.ref.attendance")
+            .referencedBy("leave_request", "employee_id", "delete.ref.leave.request")
             // Kept: the table still holds those three rows and its key still refuses
             // a delete. Nothing reads it for a decision any more - see V23.
             .referencedBy("expense_salary", "employee_id", "delete.ref.salary")
