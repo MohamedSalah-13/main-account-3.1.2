@@ -2,9 +2,11 @@ package com.hamza.account.controller.users;
 
 import com.hamza.account.authorization.AppPermissions;
 import com.hamza.account.authorization.AuthorizationGuard;
+import com.hamza.account.config.AppIcon;
 import com.hamza.account.config.NamesTables;
 import com.hamza.account.controller.others.ServiceRegistry;
 import com.hamza.account.features.rbac.CurrentUser;
+import com.hamza.account.features.events.ShiftsChanged;
 import com.hamza.account.features.shift.ShiftMode;
 import com.hamza.account.features.shift.ShiftPolicy;
 import com.hamza.account.features.shift.ShiftPolicyService;
@@ -24,6 +26,11 @@ import com.hamza.account.features.shift.CashierTreasuryAssignmentService;
 import com.hamza.account.features.shift.ShiftCashHandover;
 import com.hamza.account.features.shift.ShiftCashHandoverPolicy;
 import com.hamza.account.features.shift.ShiftCashHandoverService;
+import com.hamza.account.features.shift.ShiftPeriodExportService;
+import com.hamza.account.features.shift.ShiftPeriodQuery;
+import com.hamza.account.features.shift.ShiftPeriodReport;
+import com.hamza.account.features.shift.ShiftPeriodReportService;
+import com.hamza.account.features.shift.ShiftPeriodRow;
 import com.hamza.account.model.domain.UserShift;
 import com.hamza.account.model.domain.Treasury;
 import com.hamza.account.model.domain.Users;
@@ -38,12 +45,15 @@ import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.error.BusinessRuleException;
 import com.hamza.controlsfx.error.UserValidationException;
 import com.hamza.controlsfx.language.LanguageManager;
+import com.hamza.controlsfx.observer.EventBus;
+import com.hamza.controlsfx.observer.Subscriptions;
 import com.hamza.controlsfx.table.Columns;
 import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
 import javafx.scene.control.CheckBox;
 import javafx.scene.control.ComboBox;
+import javafx.scene.control.DatePicker;
 import javafx.scene.control.Label;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TextField;
@@ -51,16 +61,21 @@ import javafx.scene.control.TextInputDialog;
 import javafx.scene.control.TitledPane;
 import javafx.scene.control.ProgressIndicator;
 import javafx.application.Platform;
+import javafx.stage.FileChooser;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import javafx.util.StringConverter;
 import lombok.extern.log4j.Log4j2;
 
 import java.math.BigDecimal;
+import java.io.File;
+import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.Map;
+import java.util.TreeMap;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 
@@ -79,12 +94,16 @@ public class AdminShiftsController {
     private final CashierTreasuryAssignmentService assignments =
             ServiceRegistry.get(CashierTreasuryAssignmentService.class);
     private final ShiftCashHandoverService handovers = ServiceRegistry.get(ShiftCashHandoverService.class);
+    private final ShiftPeriodReportService periodReports = ServiceRegistry.get(ShiftPeriodReportService.class);
+    private final ShiftPeriodExportService periodExports = ServiceRegistry.get(ShiftPeriodExportService.class);
+    private final EventBus eventBus = ServiceRegistry.get(EventBus.class);
+    private final Subscriptions subscriptions = new Subscriptions();
     private final UsersService users = ServiceRegistry.get(UsersService.class);
     private final TreasuryService treasuries = ServiceRegistry.get(TreasuryService.class);
     private final Print_Reports printReports = new Print_Reports();
 
     @FXML private TableView<UserShift> tableView;
-    @FXML private Button btnRefresh, btnForceClose, btnSavePolicy;
+    @FXML private Button btnRefresh, btnForceClose, btnPrintZ, btnSavePolicy;
     @FXML private ComboBox<ShiftMode> comboShiftMode;
     @FXML private CheckBox checkBlindClose, checkAutoPrintZ, checkVarianceReason,
             checkSupervisorApproval, checkEnforceTreasuryAssignments, checkAssignmentDefault;
@@ -118,29 +137,55 @@ public class AdminShiftsController {
     @FXML private Button btnSaveHandoverPolicy, btnReceiveHandover,
             btnApproveHandoverOpen, btnHandoverRefresh;
     @FXML private ProgressIndicator handoverProgress;
+    @FXML private TitledPane periodReportPane;
+    @FXML private DatePicker reportFrom, reportTo;
+    @FXML private ComboBox<ReportOption> comboReportUser, comboReportTreasury;
+    @FXML private TableView<ShiftPeriodRow> periodReportTable;
+    @FXML private Button btnPeriodReportRefresh, btnPeriodReportExcel, btnPeriodReportPdf;
+    @FXML private ProgressIndicator periodReportProgress;
+    @FXML private Label labelPeriodReportState;
     private List<Treasury> handoverTreasuries = List.of();
     private long ledgerRequest;
     private long reconciliationRequest;
     private long dataRequest;
     private long approvalRequest;
     private long handoverRequest;
+    private long periodReportRequest;
+    private ShiftPeriodReport periodReport;
     private boolean mayDecideClose;
+    private boolean mayManageShifts;
+    private boolean mayManagePolicy;
+    private boolean mayReprintZ;
     private boolean mayManageHandovers;
     private boolean mayReceiveHandovers;
 
     @FXML
     public void initialize() {
+        mayManageShifts = AuthorizationGuard.isGranted(AppPermissions.USER_SHIFT_MANAGE);
+        mayReprintZ = AuthorizationGuard.isGranted(AppPermissions.SHIFT_REPORT_REPRINT);
         setupTable();
         setupActions();
+        setupIcons();
         setupPolicyEditor();
         setupAssignments();
         setupHandovers();
         setupApprovals();
         setupLedger();
-        refreshData();
+        setupPeriodReport();
+        subscribeToRemoteShiftChanges();
+        updateReprintState();
+        if (mayManageShifts) refreshData();
+        else {
+            mainProgress.setVisible(false);
+            if (mayDecideClose) refreshApprovals();
+        }
     }
 
     private void setupTable() {
+        tableView.setDisable(!mayManageShifts);
+        btnRefresh.setDisable(!mayManageShifts);
+        tableView.getSelectionModel().selectedItemProperty().addListener(
+                (observable, old, selected) -> updateReprintState());
         tableView.getColumns().addAll(
                 Columns.number(NamesTables.CODE, UserShift::getId),
                 Columns.text("user.shift.column.username", UserShift::getUsername),
@@ -160,10 +205,34 @@ public class AdminShiftsController {
     private void setupActions() {
         btnRefresh.setOnAction(event -> refreshData());
         btnForceClose.setOnAction(event -> forceCloseSelected());
+        btnPrintZ.setOnAction(event -> reprintSelectedZ());
         btnSavePolicy.setOnAction(event -> savePolicy());
         btnLedgerRefresh.setOnAction(event -> refreshLedger());
         btnLedgerClear.setOnAction(event -> clearLedgerFilters());
         btnLedgerReconcile.setOnAction(event -> reconcileSelected());
+    }
+
+    private void setupIcons() {
+        btnSavePolicy.setGraphic(AppIcon.SAVE.graphic());
+        btnAssignTreasury.setGraphic(AppIcon.ADD.graphic());
+        btnDeactivateAssignment.setGraphic(AppIcon.DELETE.graphic());
+        btnAssignmentRefresh.setGraphic(AppIcon.REFRESH.graphic());
+        btnSaveHandoverPolicy.setGraphic(AppIcon.SAVE.graphic());
+        btnHandoverRefresh.setGraphic(AppIcon.REFRESH.graphic());
+        btnReceiveHandover.setGraphic(AppIcon.CONFIRM.graphic());
+        btnApproveHandoverOpen.setGraphic(AppIcon.SECURITY.graphic());
+        btnRefresh.setGraphic(AppIcon.REFRESH.graphic());
+        btnForceClose.setGraphic(AppIcon.CLOSE.graphic());
+        btnPrintZ.setGraphic(AppIcon.PRINT.graphic());
+        btnApprovalRefresh.setGraphic(AppIcon.REFRESH.graphic());
+        btnApproveClose.setGraphic(AppIcon.CONFIRM.graphic());
+        btnRejectClose.setGraphic(AppIcon.CLOSE.graphic());
+        btnLedgerRefresh.setGraphic(AppIcon.REFRESH.graphic());
+        btnLedgerClear.setGraphic(AppIcon.CLEAR.graphic());
+        btnLedgerReconcile.setGraphic(AppIcon.REPORT.graphic());
+        btnPeriodReportRefresh.setGraphic(AppIcon.REFRESH.graphic());
+        btnPeriodReportExcel.setGraphic(AppIcon.SPREADSHEET.graphic());
+        btnPeriodReportPdf.setGraphic(AppIcon.REPORT.graphic());
     }
 
     private void setupApprovals() {
@@ -328,17 +397,10 @@ public class AdminShiftsController {
         comboShiftMode.setItems(FXCollections.observableArrayList(ShiftMode.values()));
         comboShiftMode.setConverter(enumConverter("user.shift.mode."));
         setTextFormatter(txtVarianceTolerance);
-        boolean mayManage = AuthorizationGuard.isGranted(AppPermissions.SHIFT_POLICY_MANAGE);
-        btnSavePolicy.setDisable(!mayManage);
-        treasuryPolicyRows.setDisable(!mayManage);
-        comboShiftMode.setDisable(!mayManage);
-        txtVarianceTolerance.setDisable(!mayManage);
-        checkBlindClose.setDisable(!mayManage);
-        checkAutoPrintZ.setDisable(!mayManage);
-        checkVarianceReason.setDisable(!mayManage);
-        checkSupervisorApproval.setDisable(!mayManage);
-        checkEnforceTreasuryAssignments.setDisable(!mayManage);
-        btnForceClose.setDisable(!AuthorizationGuard.isGranted(AppPermissions.SHIFT_FORCE_CLOSE));
+        mayManagePolicy = AuthorizationGuard.isGranted(AppPermissions.SHIFT_POLICY_MANAGE);
+        setPolicyBusy(false);
+        btnForceClose.setDisable(!mayManageShifts
+                || !AuthorizationGuard.isGranted(AppPermissions.SHIFT_FORCE_CLOSE));
         try {
             ShiftPolicy policy = policies.current();
             comboShiftMode.setValue(policy.mode());
@@ -382,11 +444,36 @@ public class AdminShiftsController {
                 treasuryPolicies.add(new TreasuryShiftPolicy(
                         (Integer) mode.getUserData(), name.getText(), mode.getValue()));
             }
-            policies.saveConfiguration(policy, treasuryPolicies);
-            AllAlerts.alertSaveWithMessage(message("user.shift.policy.saved"));
+            setPolicyBusy(true);
+            CompletableFuture.runAsync(() -> {
+                try {
+                    policies.saveConfiguration(policy, treasuryPolicies);
+                } catch (DaoException e) {
+                    throw new CompletionException(e);
+                }
+            }).whenComplete((ignored, error) -> Platform.runLater(() -> {
+                setPolicyBusy(false);
+                if (error != null) {
+                    AllAlerts.handleError(message("user.shift.policy.error.save"), rootCause(error));
+                    return;
+                }
+                AllAlerts.alertSaveWithMessage(message("user.shift.policy.saved"));
+            }));
         } catch (Exception e) {
             AllAlerts.handleError(message("user.shift.policy.error.save"), e);
         }
+    }
+
+    private void setPolicyBusy(boolean busy) {
+        btnSavePolicy.setDisable(busy || !mayManagePolicy);
+        treasuryPolicyRows.setDisable(busy || !mayManagePolicy);
+        comboShiftMode.setDisable(busy || !mayManagePolicy);
+        txtVarianceTolerance.setDisable(busy || !mayManagePolicy);
+        checkBlindClose.setDisable(busy || !mayManagePolicy);
+        checkAutoPrintZ.setDisable(busy || !mayManagePolicy);
+        checkVarianceReason.setDisable(busy || !mayManagePolicy);
+        checkSupervisorApproval.setDisable(busy || !mayManagePolicy);
+        checkEnforceTreasuryAssignments.setDisable(busy || !mayManagePolicy);
     }
 
     private void setupAssignments() {
@@ -756,7 +843,184 @@ public class AdminShiftsController {
                 .findFirst().ifPresent(combo::setValue);
     }
 
+    private void setupPeriodReport() {
+        periodReportPane.setDisable(!mayManageShifts);
+        reportFrom.setValue(LocalDate.now().withDayOfMonth(1));
+        reportTo.setValue(LocalDate.now());
+        comboReportUser.setConverter(reportOptionConverter());
+        comboReportTreasury.setConverter(reportOptionConverter());
+        periodReportTable.getColumns().addAll(
+                Columns.text("user.shift.report.period.column.user", ShiftPeriodRow::username),
+                Columns.text("user.shift.report.period.column.treasury", ShiftPeriodRow::treasuryName),
+                Columns.number("user.shift.report.period.column.shifts", ShiftPeriodRow::shiftCount),
+                Columns.number("user.shift.report.period.column.open", ShiftPeriodRow::openShiftCount),
+                Columns.number("user.shift.report.period.column.closed", ShiftPeriodRow::closedShiftCount),
+                Columns.number("user.shift.label.total.sales", ShiftPeriodRow::totalSales),
+                Columns.number("user.shift.label.sales.returns", ShiftPeriodRow::totalSalesReturns),
+                Columns.number("user.shift.label.expenses", ShiftPeriodRow::totalExpenses),
+                Columns.number("user.shift.label.deposits", ShiftPeriodRow::totalDeposits),
+                Columns.number("user.shift.label.withdrawals", ShiftPeriodRow::totalWithdrawals),
+                Columns.number("user.shift.label.expected.balance", ShiftPeriodRow::totalExpectedBalance),
+                Columns.number("user.shift.report.period.column.actual", ShiftPeriodRow::totalActualBalance),
+                Columns.number("user.shift.label.difference", ShiftPeriodRow::totalDifference),
+                Columns.number("user.shift.label.invoices.count", ShiftPeriodRow::invoicesCount));
+        btnPeriodReportRefresh.setOnAction(event -> refreshPeriodReport());
+        btnPeriodReportExcel.setOnAction(event -> exportPeriodReport(true));
+        btnPeriodReportPdf.setOnAction(event -> exportPeriodReport(false));
+        periodReportPane.expandedProperty().addListener((observable, old, expanded) -> {
+            if (expanded && periodReport == null && mayManageShifts) refreshPeriodReport();
+        });
+        setPeriodReportBusy(false);
+        labelPeriodReportState.setText(message("user.shift.report.period.ready"));
+    }
+
+    private void subscribeToRemoteShiftChanges() {
+        if (eventBus == null) return;
+        subscriptions.add(eventBus.subscribe(ShiftsChanged.class, ignored -> {
+            if (!mayManageShifts) return;
+            refreshData();
+            if (periodReportPane.isExpanded()) refreshPeriodReport();
+        }));
+        subscriptions.disposeWith(tableView);
+    }
+
+    private void refreshPeriodReport() {
+        ShiftPeriodQuery query;
+        try {
+            query = periodReportQuery();
+        } catch (Exception error) {
+            AllAlerts.handleError(message("user.shift.report.period.error.title"), error);
+            return;
+        }
+        long request = ++periodReportRequest;
+        setPeriodReportBusy(true);
+        labelPeriodReportState.setText(message("user.shift.report.period.loading"));
+        CompletableFuture.supplyAsync(() -> {
+            try {
+                return periodReports.search(query);
+            } catch (DaoException error) {
+                throw new CompletionException(error);
+            }
+        }).whenComplete((result, error) -> Platform.runLater(() -> {
+            if (request != periodReportRequest) return;
+            setPeriodReportBusy(false);
+            if (error != null) {
+                labelPeriodReportState.setText(message("user.shift.report.period.error.load"));
+                AllAlerts.handleError(message("user.shift.report.period.error.title"), rootCause(error));
+                return;
+            }
+            periodReport = result;
+            periodReportTable.setItems(FXCollections.observableArrayList(result.rows()));
+            labelPeriodReportState.setText(message("user.shift.report.period.rows", result.rows().size()));
+            updatePeriodExportState();
+        }));
+    }
+
+    private ShiftPeriodQuery periodReportQuery() throws UserValidationException {
+        LocalDate from = reportFrom.getValue();
+        LocalDate to = reportTo.getValue();
+        if (from == null || to == null) {
+            throw new UserValidationException(message("user.shift.report.period.error.dates.required"));
+        }
+        if (to.isBefore(from)) {
+            throw new UserValidationException(message("user.shift.report.period.error.date.order"));
+        }
+        ReportOption user = comboReportUser.getValue();
+        ReportOption treasury = comboReportTreasury.getValue();
+        return new ShiftPeriodQuery(from, to, user == null ? null : user.id(),
+                treasury == null ? null : treasury.id());
+    }
+
+    private void exportPeriodReport(boolean excel) {
+        if (periodReport == null || periodReport.rows().isEmpty()) {
+            AllAlerts.handleError(message("user.shift.report.period.error.title"),
+                    new UserValidationException(message("party.error.no.data.export")));
+            return;
+        }
+        FileChooser chooser = new FileChooser();
+        chooser.setTitle(message(excel ? "user.shift.report.period.export.excel"
+                : "user.shift.report.period.export.pdf"));
+        String extension = excel ? ".xlsx" : ".pdf";
+        chooser.setInitialFileName(message("user.shift.report.period.file.name") + extension);
+        chooser.getExtensionFilters().add(new FileChooser.ExtensionFilter(
+                message(excel ? "user.shift.report.period.file.excel" : "user.shift.report.period.file.pdf"),
+                "*" + extension));
+        File target = chooser.showSaveDialog(periodReportTable.getScene().getWindow());
+        if (target == null) return;
+        ShiftPeriodReport reportToExport = periodReport;
+        setPeriodReportBusy(true);
+        CompletableFuture.runAsync(() -> {
+            try {
+                if (excel) periodExports.exportExcel(target.toPath(), reportToExport);
+                else periodExports.exportPdf(target.toPath(), reportToExport);
+            } catch (Exception error) {
+                throw new CompletionException(error);
+            }
+        }).whenComplete((ignored, error) -> Platform.runLater(() -> {
+            setPeriodReportBusy(false);
+            if (error != null) {
+                AllAlerts.handleError(message("user.shift.report.period.error.export"), rootCause(error));
+                return;
+            }
+            AllAlerts.alertSaveWithMessage(message("party.export.success.saved.at", target.getAbsolutePath()));
+        }));
+    }
+
+    private void setPeriodReportBusy(boolean busy) {
+        periodReportProgress.setVisible(busy);
+        btnPeriodReportRefresh.setDisable(busy || !mayManageShifts);
+        updatePeriodExportState();
+    }
+
+    private void updatePeriodExportState() {
+        boolean disabled = periodReportProgress.isVisible() || periodReport == null
+                || periodReport.rows().isEmpty() || !mayManageShifts;
+        btnPeriodReportExcel.setDisable(disabled);
+        btnPeriodReportPdf.setDisable(disabled);
+    }
+
+    private void refreshPeriodReportOptions(List<UserShift> rows) {
+        ReportOption selectedUser = comboReportUser.getValue();
+        ReportOption selectedTreasury = comboReportTreasury.getValue();
+        Map<Integer, String> userNames = new TreeMap<>();
+        Map<Integer, String> treasuryNames = new TreeMap<>();
+        for (UserShift row : rows) {
+            userNames.putIfAbsent(row.getUserId(), row.getUsername());
+            treasuryNames.putIfAbsent(row.getTreasuryId(), row.getTreasuryName());
+        }
+        comboReportUser.setItems(FXCollections.observableArrayList(options(userNames)));
+        comboReportTreasury.setItems(FXCollections.observableArrayList(options(treasuryNames)));
+        restoreReportOption(comboReportUser, selectedUser);
+        restoreReportOption(comboReportTreasury, selectedTreasury);
+    }
+
+    private static List<ReportOption> options(Map<Integer, String> names) {
+        return names.entrySet().stream().filter(entry -> entry.getKey() > 0)
+                .map(entry -> new ReportOption(entry.getKey(), entry.getValue())).toList();
+    }
+
+    private static void restoreReportOption(ComboBox<ReportOption> combo, ReportOption selected) {
+        combo.setValue(null);
+        if (selected == null) return;
+        combo.getItems().stream().filter(item -> item.id() == selected.id())
+                .findFirst().ifPresent(combo::setValue);
+    }
+
+    private static StringConverter<ReportOption> reportOptionConverter() {
+        return new StringConverter<>() {
+            @Override public String toString(ReportOption value) {
+                return value == null ? "" : value.name();
+            }
+            @Override public ReportOption fromString(String text) { throw new UnsupportedOperationException(); }
+        };
+    }
+
     private void refreshData() {
+        if (!mayManageShifts) {
+            tableView.getItems().clear();
+            mainProgress.setVisible(false);
+            return;
+        }
         long request = ++dataRequest;
         mainProgress.setVisible(true);
         CompletableFuture.supplyAsync(() -> {
@@ -768,11 +1032,13 @@ public class AdminShiftsController {
         }).whenComplete((rows, error) -> Platform.runLater(() -> {
             if (request != dataRequest) return;
             mainProgress.setVisible(false);
+            updateReprintState();
             if (error != null) {
                 AllAlerts.handleError(message("user.shift.error.load.title"), rootCause(error));
                 return;
             }
             tableView.setItems(FXCollections.observableArrayList(rows));
+            refreshPeriodReportOptions(rows);
         }));
         if (AuthorizationGuard.isGranted(AppPermissions.SHIFT_FORCE_CLOSE)) refreshApprovals();
     }
@@ -807,13 +1073,15 @@ public class AdminShiftsController {
                 "user.shift.approval.approve.title", "user.shift.approval.approved", true);
     }
 
-    private void autoPrintApprovedZ(int shiftId) {
+    private boolean autoPrintApprovedZ(int shiftId) {
         try {
             if (policies.current().autoPrintZ()) {
-                printReports.printShiftZReport(shiftReports.buildApprovedZReport(shiftId));
+                printReports.printShiftZReportOrThrow(shiftReports.buildApprovedZReport(shiftId));
             }
+            return true;
         } catch (Exception e) {
             log.error("Approved shift {} closed, but its automatic Z report failed", shiftId, e);
+            return false;
         }
     }
 
@@ -836,19 +1104,22 @@ public class AdminShiftsController {
         CompletableFuture.supplyAsync(() -> {
             try {
                 int shiftId = action.execute();
-                if (printZ) autoPrintApprovedZ(shiftId);
-                return shiftId;
+                return !printZ || autoPrintApprovedZ(shiftId);
             } catch (DaoException e) {
                 throw new CompletionException(e);
             }
-        }).whenComplete((shiftId, error) -> Platform.runLater(() -> {
+        }).whenComplete((printSucceeded, error) -> Platform.runLater(() -> {
             setApprovalBusy(false);
             if (error != null) {
                 AllAlerts.handleError(message(titleKey), rootCause(error));
                 return;
             }
-            AllAlerts.alertSaveWithMessage(message(successKey));
-            refreshData();
+            String resultMessage = printSucceeded
+                    ? message(successKey)
+                    : message("user.shift.approval.approved.no.print");
+            AllAlerts.alertSaveWithMessage(resultMessage);
+            if (mayManageShifts) refreshData();
+            else refreshApprovals();
         }));
     }
 
@@ -888,15 +1159,70 @@ public class AdminShiftsController {
             }
             BigDecimal actual = parseMoney(balance.get());
             if (!AllAlerts.confirm_all(message("user.shift.force.close.title"), buildForceCloseMessage(selected))) return;
-            int result = shifts.forceCloseShift(selected.getId(), actual,
-                    reason.get().trim() + " [" + CurrentUser.get().getUsername() + "]");
-            if (result > 0) {
-                AllAlerts.alertSaveWithMessage(message("user.shift.msg.force.close.success"));
-                refreshData();
-            }
+            String closeReason = reason.get().trim() + " [" + CurrentUser.get().getUsername() + "]";
+            btnForceClose.setDisable(true);
+            mainProgress.setVisible(true);
+            updateReprintState();
+            CompletableFuture.supplyAsync(() -> {
+                try {
+                    return shifts.forceCloseShift(selected.getId(), actual, closeReason);
+                } catch (DaoException e) {
+                    throw new CompletionException(e);
+                }
+            }).whenComplete((result, error) -> Platform.runLater(() -> {
+                mainProgress.setVisible(false);
+                updateReprintState();
+                btnForceClose.setDisable(!mayManageShifts
+                        || !AuthorizationGuard.isGranted(AppPermissions.SHIFT_FORCE_CLOSE));
+                if (error != null) {
+                    AllAlerts.handleError(message("user.shift.error.force.close.title"), rootCause(error));
+                    return;
+                }
+                if (result > 0) {
+                    AllAlerts.alertSaveWithMessage(message("user.shift.msg.force.close.success"));
+                    refreshData();
+                }
+            }));
         } catch (Exception e) {
             AllAlerts.handleError(message("user.shift.error.force.close.title"), e);
         }
+    }
+
+    private void reprintSelectedZ() {
+        UserShift selected = tableView.getSelectionModel().getSelectedItem();
+        if (selected == null) {
+            AllAlerts.handleError(message("user.shift.report.z.title"),
+                    new UserValidationException(message("user.shift.msg.select.first")));
+            return;
+        }
+        if (selected.isOpen()) {
+            AllAlerts.handleError(message("user.shift.report.z.title"),
+                    new UserValidationException(message("user.shift.error.select.closed")));
+            return;
+        }
+        mainProgress.setVisible(true);
+        updateReprintState();
+        CompletableFuture.runAsync(() -> {
+            try {
+                printReports.printShiftZReportOrThrow(shiftReports.buildZReport(selected.getId()));
+            } catch (Exception e) {
+                throw new CompletionException(e);
+            }
+        }).whenComplete((ignored, error) -> Platform.runLater(() -> {
+            mainProgress.setVisible(false);
+            updateReprintState();
+            if (error != null) {
+                AllAlerts.handleError(message("user.shift.error.print.zreport.title"), rootCause(error));
+                return;
+            }
+            AllAlerts.alertSaveWithMessage(message("user.shift.msg.print.z.success"));
+        }));
+    }
+
+    private void updateReprintState() {
+        UserShift selected = tableView.getSelectionModel().getSelectedItem();
+        btnPrintZ.setDisable(!mayReprintZ || mainProgress.isVisible()
+                || selected == null || selected.isOpen());
     }
 
     private Optional<String> prompt(String key, String initial) {
@@ -960,5 +1286,11 @@ public class AdminShiftsController {
             List<ShiftCashHandoverPolicy> policies,
             List<Treasury> treasuries,
             List<ShiftCashHandover> pending) {
+    }
+
+    private record ReportOption(int id, String name) {
+        private ReportOption {
+            name = name == null ? "" : name;
+        }
     }
 }

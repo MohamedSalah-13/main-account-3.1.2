@@ -13,6 +13,7 @@ import com.hamza.account.features.shift.CashierTreasuryAssignmentService;
 import com.hamza.account.features.shift.ShiftCashHandoverService;
 import com.hamza.account.features.shift.ShiftMode;
 import com.hamza.account.features.shift.ShiftOpened;
+import com.hamza.account.features.events.ShiftsChanged;
 import com.hamza.account.features.shift.ShiftPolicyService;
 import com.hamza.account.features.shift.ShiftStatus;
 import com.hamza.account.features.shift.ShiftTrackingMode;
@@ -83,10 +84,12 @@ public final class UserShiftService {
     public int openShift(int userId, int treasuryId, BigDecimal openBalance, String notes) throws DaoException {
         AuthorizationGuard.require(AppPermissions.SHIFT_SELF_OPEN);
         requireCurrentUser(userId);
-        validateOpen(userId, treasuryId, openBalance);
+        validateOpenInput(userId, treasuryId, openBalance);
 
         int shiftId = TransactionTemplate.execute(() -> {
+            if (policies != null) policies.lockConfiguration();
             daoFactory.userShiftDao().lockUserAndTreasury(userId, treasuryId);
+            validateOpenPolicy(userId, treasuryId);
             if (daoFactory.userShiftDao().hasOpenShift(userId)) {
                 throw new BusinessRuleException(message("user.shift.msg.already.open"));
             }
@@ -119,6 +122,7 @@ public final class UserShiftService {
         CloseResult result = TransactionTemplate.execute(() -> closeTransactional(
                 userId, closeBalance, notes, false, 0));
         publish(result.closed());
+        if (result.attempt().pendingApproval()) publishChanged();
         return result.attempt();
     }
 
@@ -135,6 +139,7 @@ public final class UserShiftService {
         if (closeBalance == null || closeBalance.signum() < 0) {
             throw new UserValidationException(message("user.shift.msg.close.balance.negative"));
         }
+        if (policies != null) policies.lockConfiguration();
         UserShift shift = requestedShiftId > 0
                 ? daoFactory.userShiftDao().getOpenShiftByIdForUpdate(requestedShiftId)
                 : daoFactory.userShiftDao().getOpenShiftByUserIdForUpdate(userId);
@@ -194,6 +199,7 @@ public final class UserShiftService {
         AuthorizationGuard.require(AppPermissions.SHIFT_FORCE_CLOSE);
         int actor = requireSignedInActor();
         ShiftClosed closed = TransactionTemplate.execute(() -> {
+            if (policies != null) policies.lockConfiguration();
             UserShift shift = requirePendingShift(shiftId);
             ShiftCloseRequest request = requirePendingRequest(shiftId);
             validateDecision(request, actor, closeRequests.currentLedgerLastId(shiftId));
@@ -225,7 +231,7 @@ public final class UserShiftService {
             throw new UserValidationException(message("user.shift.approval.reject.reason.required"));
         }
         int actor = requireSignedInActor();
-        return TransactionTemplate.execute(() -> {
+        int result = TransactionTemplate.execute(() -> {
             requirePendingShift(shiftId);
             ShiftCloseRequest request = requirePendingRequest(shiftId);
             validateDecision(request, actor, request.ledgerLastId());
@@ -235,6 +241,8 @@ public final class UserShiftService {
             }
             return shiftId;
         });
+        publishChanged();
+        return result;
     }
 
     public ShiftSummary getCurrentShiftSummary(int userId) throws DaoException {
@@ -275,7 +283,9 @@ public final class UserShiftService {
         if (daoFactory.userShiftDao().hasAttributedCashMovements(shiftId)) {
             throw new BusinessRuleException(message("user.shift.error.delete.attributed"));
         }
-        return daoFactory.userShiftDao().deleteById(shiftId);
+        int deleted = daoFactory.userShiftDao().deleteById(shiftId);
+        if (deleted > 0) publishChanged();
+        return deleted;
     }
 
     public int forceCloseShift(int shiftId, BigDecimal closeBalance, String notes) throws DaoException {
@@ -285,12 +295,15 @@ public final class UserShiftService {
         return close(shift.getUserId(), closeBalance, notes, true, shiftId);
     }
 
-    private void validateOpen(int userId, int treasuryId, BigDecimal openBalance) throws DaoException {
+    private void validateOpenInput(int userId, int treasuryId, BigDecimal openBalance) throws DaoException {
         if (userId <= 0) throw new UserValidationException(message("user.shift.msg.invalid.user"));
         if (treasuryId <= 0) throw new UserValidationException(message("expenses.error.select.treasury"));
         if (openBalance == null || openBalance.signum() < 0) {
             throw new UserValidationException(message("user.shift.msg.open.balance.negative"));
         }
+    }
+
+    private void validateOpenPolicy(int userId, int treasuryId) throws DaoException {
         if (policies != null) {
             if (policies.current().mode() == ShiftMode.DISABLED) {
                 throw new BusinessRuleException(message("user.shift.error.disabled"));
@@ -437,6 +450,10 @@ public final class UserShiftService {
 
     private void publish(ShiftClosed closed) {
         if (events != null && closed != null) events.publish(closed);
+    }
+
+    private void publishChanged() {
+        if (events != null) events.publish(new ShiftsChanged());
     }
 
     private void requireCurrentUser(int userId) throws BusinessRuleException {

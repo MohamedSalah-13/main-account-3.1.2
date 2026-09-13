@@ -13,6 +13,20 @@ import java.util.List;
 public final class JdbcShiftPolicyRepository implements ShiftPolicyRepository {
 
     @Override
+    public void lockConfiguration() throws DaoException {
+        String sql = "SELECT id FROM shift_policy WHERE id = 1 FOR UPDATE";
+        withConnection(connection -> {
+            try (PreparedStatement statement = connection.prepareStatement(sql);
+                 ResultSet rs = statement.executeQuery()) {
+                if (!rs.next()) throw new DaoException("Shift policy does not exist");
+                return null;
+            } catch (SQLException e) {
+                throw new DaoException("Could not lock the shift policy", e);
+            }
+        });
+    }
+
+    @Override
     public ShiftPolicy load() throws DaoException {
         String sql = "SELECT mode, blind_close, auto_print_z, variance_tolerance, "
                 + "require_variance_reason, require_supervisor_approval, enforce_treasury_assignments "

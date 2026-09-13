@@ -47,9 +47,13 @@ import com.hamza.account.features.shift.ShiftCloseRequestDao;
 import com.hamza.account.features.shift.ShiftCashAuditService;
 import com.hamza.account.features.shift.ShiftReconciliationService;
 import com.hamza.account.features.shift.CashierTreasuryAssignmentService;
+import com.hamza.account.features.shift.CashierShiftScreenService;
 import com.hamza.account.features.shift.JdbcCashierTreasuryAssignmentRepository;
 import com.hamza.account.features.shift.JdbcShiftCashHandoverRepository;
 import com.hamza.account.features.shift.ShiftCashHandoverService;
+import com.hamza.account.features.shift.JdbcShiftPeriodReportRepository;
+import com.hamza.account.features.shift.ShiftPeriodExportService;
+import com.hamza.account.features.shift.ShiftPeriodReportService;
 import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.period.PeriodLockService;
 import com.hamza.account.features.employee.EmployeeLedgerService;
@@ -297,7 +301,13 @@ public class DownLoadApplication extends Application {
         ServiceRegistry.register(ShiftCashAuditService.class, new ShiftCashAuditService());
         ServiceRegistry.register(ShiftReconciliationService.class, new ShiftReconciliationService());
         ServiceRegistry.register(UserShiftService.class, shiftService);
-        ServiceRegistry.register(ShiftReportService.class, new ShiftReportService(daoFactory, shiftService));
+        ServiceRegistry.register(CashierShiftScreenService.class,
+                new CashierShiftScreenService(shiftService, shiftPolicies, cashierTreasuries));
+        ServiceRegistry.register(ShiftPeriodReportService.class,
+                new ShiftPeriodReportService(new JdbcShiftPeriodReportRepository()));
+        ServiceRegistry.register(ShiftPeriodExportService.class, new ShiftPeriodExportService());
+        ServiceRegistry.register(ShiftReportService.class,
+                new ShiftReportService(daoFactory, shiftService, shiftPolicies));
         ServiceRegistry.register(PurchaseService.class, new PurchaseService(daoFactory));
         ServiceRegistry.register(PurchaseReService.class, new PurchaseReService(daoFactory));
         ServiceRegistry.register(SalesService.class, new SalesService(daoFactory));
@@ -365,4 +375,3 @@ public class DownLoadApplication extends Application {
     private record BootstrapResult(DaoFactory daoFactory, MigrationResult migrationResult) {
     }
 }
-

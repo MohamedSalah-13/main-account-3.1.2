@@ -17,6 +17,7 @@ import com.hamza.account.view.PassCheckView;
 import com.hamza.account.view.SettingApplication;
 import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.language.LanguageManager;
+import com.hamza.controlsfx.others.ChangeOrientation;
 import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.control.TabPane;
@@ -237,7 +238,9 @@ public class SettingButtons {
                 if (pane != null) {
                     Stage stage = new Stage();
                     stage.setTitle(textName());
-                    stage.setScene(new Scene(pane));
+                    Scene scene = new Scene(pane);
+                    stage.setScene(scene);
+                    ChangeOrientation.sceneOrientation(scene);
                     stage.show();
                 } else {
                     AllAlerts.reportError(LanguageManager.getInstance().getString("user.shift.error.open.screen.title"),

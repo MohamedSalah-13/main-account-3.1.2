@@ -9,6 +9,7 @@ import com.hamza.account.openFxml.OpenFxmlApplication;
 import com.hamza.account.authorization.AppPermissions;
 import com.hamza.account.authorization.PermissionKey;
 import com.hamza.controlsfx.language.LanguageManager;
+import com.hamza.controlsfx.others.ChangeOrientation;
 import javafx.scene.Scene;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyCodeCombination;
@@ -40,6 +41,7 @@ public class ShiftButtons extends LoadData {
                         , 680, 720);
                 Stage stage = new Stage();
                 stage.setScene(scene);
+                ChangeOrientation.sceneOrientation(scene);
                 stage.show();
             }
 

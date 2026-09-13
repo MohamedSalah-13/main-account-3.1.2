@@ -17,6 +17,8 @@ import javax.print.attribute.PrintRequestAttributeSet;
 import javax.print.attribute.PrintServiceAttributeSet;
 import javax.print.attribute.standard.Copies;
 import javax.print.attribute.standard.PrinterName;
+import java.io.IOException;
+import java.io.InputStream;
 import java.sql.Connection;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -54,6 +56,21 @@ public class JasperData {
     public void printJasperPrintOrThrow(String nameUrl, String title, HashMap<String, Object> parameters,
                                         int copies, String printerName) throws JRException {
         processJasperPrint(title, prepareJasperPrint(nameUrl, parameters), copies, printerName);
+    }
+
+    public void printJasperResource(String resourcePath, String title, HashMap<String, Object> parameters,
+                                    int copies, String printerName) {
+        try {
+            printJasperResourceOrThrow(resourcePath, title, parameters, copies, printerName);
+        } catch (JRException e) {
+            handleJrException(e);
+        }
+    }
+
+    public void printJasperResourceOrThrow(String resourcePath, String title,
+                                           HashMap<String, Object> parameters,
+                                           int copies, String printerName) throws JRException {
+        processJasperPrint(title, prepareJasperResource(resourcePath, parameters), copies, printerName);
     }
 
     /**
@@ -96,6 +113,20 @@ public class JasperData {
         JasperDesign jasperDesign = JRXmlLoader.load(nameUrl);
         JasperReport jasperReport = JasperCompileManager.compileReport(jasperDesign);
         return JasperFillManager.fillReport(jasperReport, parameters, new JREmptyDataSource());
+    }
+
+    private JasperPrint prepareJasperResource(String resourcePath, HashMap<String, Object> parameters)
+            throws JRException {
+        try (InputStream input = JasperData.class.getResourceAsStream(resourcePath)) {
+            if (input == null) {
+                throw new JRException("Packaged report resource was not found: " + resourcePath);
+            }
+            JasperDesign jasperDesign = JRXmlLoader.load(input);
+            JasperReport jasperReport = JasperCompileManager.compileReport(jasperDesign);
+            return JasperFillManager.fillReport(jasperReport, parameters, new JREmptyDataSource());
+        } catch (IOException e) {
+            throw new JRException("Could not close packaged report resource: " + resourcePath, e);
+        }
     }
 
     private JasperPrint prepareJasperPrintWithConnection(String nameUrl, HashMap<String, Object> parameters, Connection connection) throws JRException {

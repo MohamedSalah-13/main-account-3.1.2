@@ -35,6 +35,11 @@ public final class ShiftPolicyService {
         return repository.load();
     }
 
+    /** Must be called from a transaction before a policy-dependent shift mutation. */
+    public void lockConfiguration() throws DaoException {
+        repository.lockConfiguration();
+    }
+
     public List<TreasuryShiftPolicy> treasuries() throws DaoException {
         return repository.loadTreasuries();
     }
@@ -42,13 +47,22 @@ public final class ShiftPolicyService {
     public void save(ShiftPolicy policy) throws DaoException {
         AuthorizationGuard.require(AppPermissions.SHIFT_POLICY_MANAGE);
         validate(policy, null);
-        repository.save(policy);
+        TransactionTemplate.execute(() -> {
+            repository.lockConfiguration();
+            validate(policy, null);
+            repository.save(policy);
+            return null;
+        });
         if (events != null) events.publish(new ShiftPolicyChanged(policy));
     }
 
     public void saveTreasury(TreasuryShiftPolicy policy) throws DaoException {
         AuthorizationGuard.require(AppPermissions.SHIFT_POLICY_MANAGE);
-        repository.saveTreasury(policy);
+        TransactionTemplate.execute(() -> {
+            repository.lockConfiguration();
+            repository.saveTreasury(policy);
+            return null;
+        });
     }
 
     public void saveConfiguration(ShiftPolicy policy, List<TreasuryShiftPolicy> treasuries) throws DaoException {
@@ -56,6 +70,8 @@ public final class ShiftPolicyService {
         List<TreasuryShiftPolicy> safeTreasuries = treasuries == null ? List.of() : List.copyOf(treasuries);
         validate(policy, safeTreasuries);
         TransactionTemplate.execute(() -> {
+            repository.lockConfiguration();
+            validate(policy, safeTreasuries);
             repository.save(policy);
             for (TreasuryShiftPolicy treasury : safeTreasuries) repository.saveTreasury(treasury);
             return null;

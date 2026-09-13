@@ -24,6 +24,7 @@
     <parameter name="expectedBalance"  class="java.lang.Double"/>
     <parameter name="difference"       class="java.lang.Double"/>
     <parameter name="notes"            class="java.lang.String"/>
+    <parameter name="showExpectedBalance" class="java.lang.Boolean"/>
 
     <title>
         <band height="480">
@@ -94,24 +95,14 @@
             <textField pattern="#,##0.00"><reportElement x="120" y="188" width="86" height="15"/>
                 <textFieldExpression>$P{openBalance}</textFieldExpression></textField>
 
-            <textField><reportElement x="0" y="205" width="120" height="15"/>
+            <textField><reportElement x="0" y="205" width="120" height="15">
+                <printWhenExpression><![CDATA[$P{showExpectedBalance}]]></printWhenExpression>
+            </reportElement>
                 <textFieldExpression>$R{user.shift.label.expected.balance}</textFieldExpression></textField>
-            <textField pattern="#,##0.00"><reportElement x="120" y="205" width="86" height="15"/>
+            <textField pattern="#,##0.00"><reportElement x="120" y="205" width="86" height="15">
+                <printWhenExpression><![CDATA[$P{showExpectedBalance}]]></printWhenExpression>
+            </reportElement>
                 <textFieldExpression>$P{expectedBalance}</textFieldExpression></textField>
-
-            <textField><reportElement x="0" y="222" width="120" height="15"/>
-                <textFieldExpression>$R{user.shift.label.actual.balance}</textFieldExpression></textField>
-            <textField pattern="#,##0.00"><reportElement x="120" y="222" width="86" height="15"/>
-                <textFieldExpression>$P{closeBalance}</textFieldExpression></textField>
-
-            <textField><reportElement x="0" y="239" width="120" height="15">
-<!--                <textElement><font isBold="true"/></textElement>-->
-            </reportElement>
-                <textFieldExpression>$R{user.shift.label.difference}</textFieldExpression></textField>
-            <textField pattern="#,##0.00"><reportElement x="120" y="239" width="86" height="15">
-<!--                <textElement><font isBold="true"/></textElement>-->
-            </reportElement>
-                <textFieldExpression>$P{difference}</textFieldExpression></textField>
 
             <line><reportElement x="0" y="260" width="206" height="1"/></line>
 
