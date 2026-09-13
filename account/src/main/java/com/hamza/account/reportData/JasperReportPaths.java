@@ -24,6 +24,8 @@ public final class JasperReportPaths {
         public static final String Z_REPORT_80 = BASE_PATH + "shift-z-report-80mm.jrxml";
         // تقرير لحظي — طباعة حرارية 80mm
         public static final String X_REPORT_80 = BASE_PATH + "shift-x-report-80mm.jrxml";
+        public static final String Z_REPORT_80_RESOURCE = "/reports/ar/shift-z-report-80mm.jrxml";
+        public static final String X_REPORT_80_RESOURCE = "/reports/ar/shift-x-report-80mm.jrxml";
     }
 }
 

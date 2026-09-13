@@ -156,9 +156,17 @@ public class Print_Reports extends ReportCompany {
      */
     public void printShiftXReport(ShiftReportService.ShiftReportData data) {
         HashMap<String, Object> map = buildShiftReportMap(data);
-        jasperData.printJasperPrint(
-                JasperReportPaths.Shift.X_REPORT_80,
+        jasperData.printJasperResource(
+                JasperReportPaths.Shift.X_REPORT_80_RESOURCE,
                 LanguageManager.getInstance().getString("user.shift.report.x.title"), map, 1, printerNameThermal);
+    }
+
+    public void printShiftXReportOrThrow(ShiftReportService.ShiftReportData data) throws JRException {
+        HashMap<String, Object> map = buildShiftReportMap(data);
+        jasperData.printJasperResourceOrThrow(
+                JasperReportPaths.Shift.X_REPORT_80_RESOURCE,
+                LanguageManager.getInstance().getString("user.shift.report.x.title"),
+                map, 1, printerNameThermal);
     }
 
     /**
@@ -166,8 +174,8 @@ public class Print_Reports extends ReportCompany {
      */
     public void printShiftZReport(ShiftReportService.ShiftReportData data) {
         HashMap<String, Object> map = buildShiftReportMap(data);
-        jasperData.printJasperPrint(
-                JasperReportPaths.Shift.Z_REPORT_80,
+        jasperData.printJasperResource(
+                JasperReportPaths.Shift.Z_REPORT_80_RESOURCE,
                 LanguageManager.getInstance().getString("user.shift.report.z.title"), map, 1, printerNameThermal);
     }
 
@@ -180,8 +188,8 @@ public class Print_Reports extends ReportCompany {
      */
     public void printShiftZReportOrThrow(ShiftReportService.ShiftReportData data) throws JRException {
         HashMap<String, Object> map = buildShiftReportMap(data);
-        jasperData.printJasperPrintOrThrow(
-                JasperReportPaths.Shift.Z_REPORT_80,
+        jasperData.printJasperResourceOrThrow(
+                JasperReportPaths.Shift.Z_REPORT_80_RESOURCE,
                 LanguageManager.getInstance().getString("user.shift.report.z.title"), map, 1, printerNameThermal);
     }
 
@@ -195,9 +203,14 @@ public class Print_Reports extends ReportCompany {
         var shift = data.shift();
         var summary = data.summary();
         BigDecimal expected = summary.getExpectedBalance();
-        BigDecimal diff = summary.calculateDifference(shift.getCloseBalance());
+        BigDecimal diff = data.reportType() == ShiftReportService.ShiftReportType.Z
+                ? summary.calculateDifference(shift.getCloseBalance())
+                : BigDecimal.ZERO;
 
-        map.put("reportType", data.reportType());
+        map.put("reportType", data.reportType().label());
+        map.put("showExpectedBalance", data.showExpectedBalance());
+        map.put("showActualBalance", data.showActualBalance());
+        map.put("showDifference", data.showDifference());
         map.put("printTime", data.printTime().format(DATE_TIME_FORMATTER));
         map.put("shiftId", shift.getId());
         map.put("username", shift.getUsername());

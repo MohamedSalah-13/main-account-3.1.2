@@ -70,7 +70,12 @@ public final class CashierTreasuryAssignmentService {
         AuthorizationGuard.require(AppPermissions.SHIFT_POLICY_MANAGE);
         int actor = signedInActor();
         TransactionTemplate.execute(() -> {
-            CashierTreasuryAssignment assignment = repository.findById(assignmentId, true);
+            CashierTreasuryAssignment assignment = repository.findById(assignmentId, false);
+            if (assignment == null || !assignment.active()) {
+                throw new BusinessRuleException(message("user.shift.assignment.error.not.found"));
+            }
+            repository.lockUser(assignment.userId());
+            assignment = repository.findById(assignmentId, true);
             if (assignment == null || !assignment.active()) {
                 throw new BusinessRuleException(message("user.shift.assignment.error.not.found"));
             }

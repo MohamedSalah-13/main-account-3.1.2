@@ -1,6 +1,8 @@
 package com.hamza.account.features.events;
 
 import com.hamza.controlsfx.observer.AppEvent;
+import com.hamza.account.features.shift.ShiftClosed;
+import com.hamza.account.features.shift.ShiftOpened;
 
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -92,6 +94,7 @@ public final class RemoteChangeTopics {
         declare("invoice.purchase", new InvoiceSaved(InvoiceSide.PURCHASE), Announcer.SERVICE);
         declare("stock.balances", new StockBalancesChanged(), Announcer.SERVICE);
         declare("treasury.balances", new TreasuryBalancesChanged(), Announcer.SERVICE);
+        declare("shifts", new ShiftsChanged(), Announcer.RELAY);
 
         // These local events carry details which are useful in-process but cannot be
         // reconstructed safely on another machine. Announce the broad topic and inject
@@ -99,6 +102,8 @@ public final class RemoteChangeTopics {
         announceAs(ItemSaved.class, "items");
         announceAs(StockCountPosted.class, "stock.balances");
         announceAs(TreasuryMovementRecorded.class, "treasury.balances");
+        announceAs(ShiftOpened.class, "shifts");
+        announceAs(ShiftClosed.class, "shifts");
     }
 
     private RemoteChangeTopics() {

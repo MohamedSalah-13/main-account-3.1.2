@@ -82,6 +82,20 @@ class MultiDeviceRefreshArchitectureTest {
     }
 
     @Test
+    void shiftScreensReloadWhenAnotherWorkstationChangesAShift() {
+        String cashier = SourceTree.withoutComments(SourceTree.readJava(
+                "com/hamza/account/controller/users/UserShiftController.java"));
+        String supervisor = SourceTree.withoutComments(SourceTree.readJava(
+                "com/hamza/account/controller/users/AdminShiftsController.java"));
+        assertTrue(cashier.contains("subscribe(ShiftsChanged.class"));
+        assertTrue(supervisor.contains("subscribe(ShiftsChanged.class"));
+        assertEquals("shifts", RemoteChangeTopics.topicOfType(
+                com.hamza.account.features.shift.ShiftOpened.class));
+        assertEquals("shifts", RemoteChangeTopics.topicOfType(
+                com.hamza.account.features.shift.ShiftClosed.class));
+    }
+
+    @Test
     void permissionEditorRefreshesSignedInSessionsAfterEverySecurityChange() {
         String editor = SourceTree.withoutComments(SourceTree.readJava(
                 "com/hamza/account/controller/users/UserPermissionController.java"));

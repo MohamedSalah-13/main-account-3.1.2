@@ -1,5 +1,6 @@
 package com.hamza.account.controller.users;
 
+import com.hamza.account.config.AppIcon;
 import com.hamza.account.controller.others.ServiceRegistry;
 import com.hamza.account.model.domain.ShiftSummary;
 import com.hamza.account.model.domain.UserShift;
@@ -9,12 +10,12 @@ import com.hamza.account.service.ShiftReportService;
 import com.hamza.account.service.UserShiftService;
 import com.hamza.account.session.ShiftContext;
 import com.hamza.account.features.rbac.CurrentUser;
-import com.hamza.account.features.shift.CashierTreasuryAssignmentService;
+import com.hamza.account.features.events.ShiftsChanged;
 import com.hamza.account.features.shift.CashierTreasuryChoice;
-import com.hamza.account.features.shift.ShiftPolicyService;
+import com.hamza.account.features.shift.CashierShiftScreenService;
+import com.hamza.account.features.shift.CashierShiftScreenService.CashierShiftScreenData;
 import com.hamza.account.features.shift.ShiftCloseAttempt;
 import com.hamza.account.features.shift.ShiftStatus;
-import com.hamza.account.features.shift.ShiftTrackingMode;
 import com.hamza.account.authorization.AppPermissions;
 import com.hamza.account.authorization.AuthorizationGuard;
 import com.hamza.controlsfx.alert.AllAlerts;
@@ -22,17 +23,22 @@ import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.error.BusinessRuleException;
 import com.hamza.controlsfx.error.UserValidationException;
 import com.hamza.controlsfx.language.LanguageManager;
+import com.hamza.controlsfx.observer.EventBus;
+import com.hamza.controlsfx.observer.Subscriptions;
 import javafx.beans.property.SimpleIntegerProperty;
 import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
+import javafx.application.Platform;
 import javafx.scene.control.*;
 import javafx.scene.layout.VBox;
 import lombok.extern.log4j.Log4j2;
 
 import java.time.format.DateTimeFormatter;
 import java.math.BigDecimal;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 
 import static com.hamza.controlsfx.others.Utils.setTextFormatter;
 import static com.hamza.controlsfx.others.Utils.whenEnterPressed;
@@ -46,9 +52,10 @@ public class UserShiftController {
     private final int currentUserId;
     private final ShiftReportService shiftReportService = ServiceRegistry.get(ShiftReportService.class);
     private final UserShiftService userShiftService = ServiceRegistry.get(UserShiftService.class);
-    private final ShiftPolicyService shiftPolicyService = ServiceRegistry.get(ShiftPolicyService.class);
-    private final CashierTreasuryAssignmentService treasuryAssignments =
-            ServiceRegistry.get(CashierTreasuryAssignmentService.class);
+    private final CashierShiftScreenService screenService =
+            ServiceRegistry.get(CashierShiftScreenService.class);
+    private final EventBus eventBus = ServiceRegistry.get(EventBus.class);
+    private final Subscriptions subscriptions = new Subscriptions();
 
     private final Print_Reports printReports = new Print_Reports();
     @FXML
@@ -77,6 +84,11 @@ public class UserShiftController {
             labelSummaryOtherIn, labelSummaryOtherOut;
     @FXML
     private Button btnPrintXReport;
+    @FXML
+    private ProgressIndicator shiftProgress;
+    private CashierShiftScreenData viewData;
+    private long viewRequest;
+    private boolean busy;
 
     public UserShiftController() {
         this.currentUserId = CurrentUser.get().getId();
@@ -85,12 +97,21 @@ public class UserShiftController {
 
     @FXML
     public void initialize() {
-        loadTreasuries();
+        setupTreasuryCombo();
         setupTextFormatters();
         setupTableColumns();
         setupActions();
-        applyPermissionHints();
+        setupIcons();
+        applyActionState();
+        subscribeToRemoteShiftChanges();
         refreshView();
+    }
+
+    private void subscribeToRemoteShiftChanges() {
+        if (eventBus != null) {
+            subscriptions.add(eventBus.subscribe(ShiftsChanged.class, ignored -> refreshView()));
+            subscriptions.disposeWith(tableShifts);
+        }
     }
 
     /**
@@ -101,24 +122,15 @@ public class UserShiftController {
      * by is filtered by one: in a business with a drawer and an e-wallet, the
      * wallet's collections were being counted into the cash expected in the drawer.
      */
-    private void loadTreasuries() {
-        try {
-            var choices = treasuryAssignments.availableTreasuries(currentUserId);
-            comboOpenTreasury.setItems(FXCollections.observableArrayList(choices));
-            comboOpenTreasury.setConverter(new javafx.util.StringConverter<>() {
-                @Override public String toString(CashierTreasuryChoice value) {
-                    return value == null ? "" : value.treasuryName();
-                }
-                @Override public CashierTreasuryChoice fromString(String text) {
-                    throw new UnsupportedOperationException();
-                }
-            });
-            choices.stream().filter(CashierTreasuryChoice::defaultTreasury).findFirst()
-                    .ifPresentOrElse(comboOpenTreasury::setValue,
-                            () -> comboOpenTreasury.getSelectionModel().selectFirst());
-        } catch (DaoException e) {
-            AllAlerts.handleError(LanguageManager.getInstance().getString("treasury.error.load.title"), e);
-        }
+    private void setupTreasuryCombo() {
+        comboOpenTreasury.setConverter(new javafx.util.StringConverter<>() {
+            @Override public String toString(CashierTreasuryChoice value) {
+                return value == null ? "" : value.treasuryName();
+            }
+            @Override public CashierTreasuryChoice fromString(String text) {
+                throw new UnsupportedOperationException();
+            }
+        });
     }
 
     private void setupTextFormatters() {
@@ -145,7 +157,6 @@ public class UserShiftController {
     }
 
     private void setupActions() {
-
         btnOpenShift.setOnAction(e -> openShift());
         btnCloseShift.setOnAction(e -> closeShift());
         if (btnPrintXReport != null) {
@@ -155,47 +166,95 @@ public class UserShiftController {
         whenEnterPressed(txtCloseBalance, txtCloseNotes, btnCloseShift);
     }
 
-    private void applyPermissionHints() {
-        btnOpenShift.setDisable(!AuthorizationGuard.isGranted(AppPermissions.SHIFT_SELF_OPEN)
-                || comboOpenTreasury.getItems().isEmpty());
-        btnCloseShift.setDisable(!AuthorizationGuard.isGranted(AppPermissions.SHIFT_SELF_CLOSE));
+    private void setupIcons() {
+        btnOpenShift.setGraphic(AppIcon.TREASURY_CASH.graphic());
+        btnCloseShift.setGraphic(AppIcon.CONFIRM.graphic());
+        btnPrintXReport.setGraphic(AppIcon.PRINT.graphic());
+    }
+
+    private void applyActionState() {
+        boolean closable = viewData != null && viewData.hasClosableShift();
+        boolean hasCurrentShift = viewData != null && viewData.currentShift() != null;
+        btnOpenShift.setDisable(busy
+                || !AuthorizationGuard.isGranted(AppPermissions.SHIFT_SELF_OPEN)
+                || hasCurrentShift || comboOpenTreasury.getItems().isEmpty());
+        btnCloseShift.setDisable(busy
+                || !AuthorizationGuard.isGranted(AppPermissions.SHIFT_SELF_CLOSE)
+                || !closable);
         btnPrintXReport.setVisible(AuthorizationGuard.isGranted(AppPermissions.SHIFT_X_REPORT_VIEW));
         btnPrintXReport.setManaged(btnPrintXReport.isVisible());
+        btnPrintXReport.setDisable(busy || !closable);
+    }
+
+    private void setBusy(boolean value) {
+        busy = value;
+        shiftProgress.setVisible(value);
+        applyActionState();
     }
 
     private void refreshView() {
-        loadCurrentShiftStatus();
-        loadShiftHistory();
-        loadLiveSummary();
+        long request = ++viewRequest;
+        setBusy(true);
+        CompletableFuture.supplyAsync(() -> {
+            try {
+                return screenService.load(currentUserId);
+            } catch (DaoException e) {
+                throw new CompletionException(e);
+            }
+        }).whenComplete((data, error) -> Platform.runLater(() -> {
+            if (request != viewRequest) return;
+            setBusy(false);
+            if (error != null) {
+                AllAlerts.handleError(message("user.shift.error.load.status.title"), rootCause(error));
+                return;
+            }
+            applyViewData(data);
+        }));
     }
 
-    private void loadCurrentShiftStatus() {
-        try {
-            if (userShiftService.hasOpenShift(currentUserId)) {
-                UserShift openShift = userShiftService.getOpenShift(currentUserId);
-                if (openShift.getStatus() == ShiftStatus.OPEN) ShiftContext.setCurrentShift(openShift);
-                else ShiftContext.clear();
-                btnPrintXReport.setDisable(openShift.getStatus() != ShiftStatus.OPEN);
-                showOpenShiftInfo(openShift);
-                boxOpenShift.setDisable(true);
-                boxCloseShift.setDisable(openShift.getStatus() != ShiftStatus.OPEN);
-                txtCloseBalance.setDisable(!isReconcile(openShift.getTreasuryId()));
-                if (!isReconcile(openShift.getTreasuryId())) txtCloseBalance.setText(openShift.getOpenBalance().toPlainString());
-                else if (blindClose()) txtCloseBalance.clear();
-                else txtCloseBalance.setText(openShift.getOpenBalance().toPlainString());
-            } else {
-                ShiftContext.clear();
-                btnPrintXReport.setDisable(true);
-                showNoOpenShift();
-                boxOpenShift.setDisable(false);
-                boxCloseShift.setDisable(true);
-                txtCloseBalance.clear();
-                txtCloseBalance.setDisable(false);
-                txtCloseNotes.clear();
-            }
-        } catch (DaoException e) {
-            AllAlerts.handleError(LanguageManager.getInstance().getString("user.shift.error.load.status.title"), e);
+    private void applyViewData(CashierShiftScreenData data) {
+        viewData = data;
+        CashierTreasuryChoice previous = comboOpenTreasury.getValue();
+        comboOpenTreasury.setItems(FXCollections.observableArrayList(data.treasuryChoices()));
+        if (previous != null && data.treasuryChoices().stream()
+                .anyMatch(item -> item.treasuryId() == previous.treasuryId())) {
+            comboOpenTreasury.getItems().stream()
+                    .filter(item -> item.treasuryId() == previous.treasuryId())
+                    .findFirst().ifPresent(comboOpenTreasury::setValue);
+        } else {
+            data.treasuryChoices().stream().filter(CashierTreasuryChoice::defaultTreasury).findFirst()
+                    .ifPresentOrElse(comboOpenTreasury::setValue,
+                            () -> comboOpenTreasury.getSelectionModel().selectFirst());
         }
+        tableShifts.setItems(FXCollections.observableArrayList(data.history()));
+
+        UserShift current = data.currentShift();
+        if (current == null) {
+            ShiftContext.clear();
+            showNoOpenShift();
+            boxOpenShift.setDisable(false);
+            boxCloseShift.setDisable(true);
+            txtCloseBalance.clear();
+            txtCloseBalance.setDisable(false);
+            txtCloseNotes.clear();
+            clearSummaryLabels();
+        } else {
+            if (data.hasClosableShift()) ShiftContext.setCurrentShift(current);
+            else ShiftContext.clear();
+            showOpenShiftInfo(current);
+            boxOpenShift.setDisable(true);
+            boxCloseShift.setDisable(!data.hasClosableShift());
+            txtCloseBalance.setDisable(!data.reconcilesCash());
+            if (!data.reconcilesCash()) {
+                txtCloseBalance.setText(current.getOpenBalance().toPlainString());
+            } else if (data.blindClose()) {
+                txtCloseBalance.clear();
+            } else if (txtCloseBalance.getText() == null || txtCloseBalance.getText().isBlank()) {
+                txtCloseBalance.setText(current.getOpenBalance().toPlainString());
+            }
+            showLiveSummary(data);
+        }
+        applyActionState();
     }
 
     private void showOpenShiftInfo(UserShift shift) {
@@ -217,49 +276,26 @@ public class UserShiftController {
         labelShiftTreasury.setText("-");
     }
 
-    private void loadShiftHistory() {
-        try {
-            var shifts = userShiftService.getUserShifts(currentUserId);
-            tableShifts.setItems(FXCollections.observableArrayList(shifts));
-        } catch (DaoException e) {
-            AllAlerts.handleError(LanguageManager.getInstance().getString("user.shift.error.load.history.title"), e);
+    private void showLiveSummary(CashierShiftScreenData data) {
+        ShiftSummary summary = data.summary();
+        if (summary == null) {
+            clearSummaryLabels();
+            return;
         }
-    }
+        BigDecimal closeBalance = parseBalanceSafe(txtCloseBalance.getText(), summary.getOpenBalance());
+        BigDecimal difference = summary.calculateDifference(closeBalance);
 
-    /**
-     * تحميل الملخص اللحظي (X-Report) لو هناك وردية مفتوحة.
-     */
-    private void loadLiveSummary() {
-        if (labelSummaryTotalSales == null) {
-            return; // الحقول غير موجودة في الـ fxml بعد
-        }
-        try {
-            if (!userShiftService.hasOpenShift(currentUserId)) {
-                clearSummaryLabels();
-                return;
-            }
-            UserShift current = userShiftService.getOpenShift(currentUserId);
-            if (current == null || current.getStatus() != ShiftStatus.OPEN) {
-                clearSummaryLabels();
-                return;
-            }
-            ShiftSummary s = userShiftService.getCurrentShiftSummary(currentUserId);
-            BigDecimal closeBalance = parseBalanceSafe(txtCloseBalance.getText(), s.getOpenBalance());
-            BigDecimal diff = s.calculateDifference(closeBalance);
-
-            labelSummaryTotalSales.setText(format(s.getTotalSales()));
-            labelSummaryReturns.setText(format(s.getTotalSalesReturns()));
-            labelSummaryExpenses.setText(format(s.getTotalExpenses()));
-            labelSummaryExpected.setText(blindClose() ? "-" : format(s.getExpectedBalance()));
-            labelSummaryDifference.setText(blindClose() ? "-" : format(diff));
-            labelSummaryInvoices.setText(String.valueOf(s.getInvoicesCount()));
-            labelSummaryOtherIn.setText(format(s.getOtherIn()));
-            labelSummaryOtherOut.setText(format(s.getOtherOut()));
-            if (blindClose()) return;
-            setSemanticStyle(labelSummaryDifference, diff.signum() < 0
-                    ? "danger-value" : (diff.signum() > 0 ? "info-value" : "success-value"));
-        } catch (DaoException e) {
-            log.error("Error loading live summary", e);
+        labelSummaryTotalSales.setText(format(summary.getTotalSales()));
+        labelSummaryReturns.setText(format(summary.getTotalSalesReturns()));
+        labelSummaryExpenses.setText(format(summary.getTotalExpenses()));
+        labelSummaryExpected.setText(data.blindClose() ? "-" : format(summary.getExpectedBalance()));
+        labelSummaryDifference.setText(data.blindClose() ? "-" : format(difference));
+        labelSummaryInvoices.setText(String.valueOf(summary.getInvoicesCount()));
+        labelSummaryOtherIn.setText(format(summary.getOtherIn()));
+        labelSummaryOtherOut.setText(format(summary.getOtherOut()));
+        if (!data.blindClose()) {
+            setSemanticStyle(labelSummaryDifference, difference.signum() < 0
+                    ? "danger-value" : (difference.signum() > 0 ? "info-value" : "success-value"));
         }
     }
 
@@ -296,12 +332,25 @@ public class UserShiftController {
             }
             String notes = safeTrim(txtOpenNotes.getText());
             int treasuryId = selectedTreasuryId();
-
-            if (userShiftService.openShift(currentUserId, treasuryId, openBalance, notes) > 0) {
-                AllAlerts.alertSaveWithMessage(LanguageManager.getInstance().getString("user.shift.msg.open.success"));
-                clearOpenShiftFields();
-                refreshView();
-            }
+            setBusy(true);
+            CompletableFuture.supplyAsync(() -> {
+                try {
+                    return userShiftService.openShift(currentUserId, treasuryId, openBalance, notes);
+                } catch (DaoException e) {
+                    throw new CompletionException(e);
+                }
+            }).whenComplete((shiftId, error) -> Platform.runLater(() -> {
+                setBusy(false);
+                if (error != null) {
+                    AllAlerts.handleError(message("user.shift.open"), rootCause(error));
+                    return;
+                }
+                if (shiftId > 0) {
+                    AllAlerts.alertSaveWithMessage(message("user.shift.msg.open.success"));
+                    clearOpenShiftFields();
+                    refreshView();
+                }
+            }));
         } catch (DaoException e) {
             AllAlerts.handleError(LanguageManager.getInstance().getString("user.shift.open"), e);
         } catch (NumberFormatException e) {
@@ -325,86 +374,109 @@ public class UserShiftController {
     }
 
     private void printXReport() {
-        try {
-            var data = shiftReportService.buildXReport(currentUserId);
-            printReports.printShiftXReport(data);
-        } catch (DaoException e) {
-            AllAlerts.handleError(LanguageManager.getInstance().getString("user.shift.error.print.xreport.title"), e);
-        }
+        setBusy(true);
+        CompletableFuture.runAsync(() -> {
+            try {
+                var data = shiftReportService.buildXReport(currentUserId);
+                printReports.printShiftXReportOrThrow(data);
+            } catch (Exception e) {
+                throw new CompletionException(e);
+            }
+        }).whenComplete((ignored, error) -> Platform.runLater(() -> {
+            setBusy(false);
+            if (error != null) {
+                AllAlerts.handleError(message("user.shift.error.print.xreport.title"), rootCause(error));
+            }
+        }));
     }
 
     private void closeShift() {
         try {
-            if (!userShiftService.hasOpenShift(currentUserId)) {
-                AllAlerts.handleError(LanguageManager.getInstance().getString("user.shift.close.title"),
-                        new BusinessRuleException(LanguageManager.getInstance().getString("user.shift.msg.no.open.shift")));
-                return;
-            }
-
             BigDecimal closeBalance = parseBalance(txtCloseBalance.getText());
             if (closeBalance.signum() < 0) {
                 AllAlerts.handleError(LanguageManager.getInstance().getString("user.shift.close.title"),
                         new UserValidationException(LanguageManager.getInstance().getString("user.shift.msg.close.balance.negative")));
                 return;
             }
-
-            // عرض ملخص التأكيد قبل الغلق
-            ShiftSummary s = userShiftService.getCurrentShiftSummary(currentUserId);
-            BigDecimal diff = s.calculateDifference(closeBalance);
-            String msg = buildCloseConfirmMessage(s, closeBalance, diff);
-            if (!AllAlerts.confirm_all(LanguageManager.getInstance().getString("user.shift.close.title"), msg)) {
-                return;
-            }
-
             String notes = safeTrim(txtCloseNotes.getText());
-            ShiftCloseAttempt attempt = userShiftService.requestCloseShift(currentUserId, closeBalance, notes);
-            if (attempt.pendingApproval()) {
-                ShiftContext.clear();
-                AllAlerts.alertSaveWithMessage(LanguageManager.getInstance().getString(
-                        "user.shift.msg.approval.requested"));
-                clearCloseShiftFields();
-                refreshView();
-                return;
-            }
-            int closedShiftId = attempt.shiftId();
-            if (closedShiftId > 0) {
-                ShiftContext.clear();
-                // طباعة Z-Report تلقائياً.
-                // The close is committed and its snapshot is immutable, so nothing here can
-                // undo it - which is why the print must not be able to report a failure of
-                // its own. It used to: printShiftZReport tells the user itself, so a missing
-                // template or an absent printer produced "could not complete the operation"
-                // over a close that had completed, immediately followed by "closed
-                // successfully". The cashier read the first one.
-                boolean zReportPrinted = true;
-                try {
-                    if (!shiftPolicyService.current().autoPrintZ()) throw new AutoPrintDisabled();
-                    var zData = shiftReportService.buildOwnZReport(closedShiftId, currentUserId);
-                    printReports.printShiftZReportOrThrow(zData);
-                } catch (AutoPrintDisabled ignored) {
-                    // Explicit policy: closing succeeds without printing, and says nothing.
-                } catch (Exception ex) {
-                    // Silence would be the other mistake: the drawer is shut and the cashier
-                    // is owed the paper, so say the report did not print - and only that.
-                    zReportPrinted = false;
-                    log.error("Error auto-printing Z-Report", ex);
-                }
-                AllAlerts.alertSaveWithMessage(LanguageManager.getInstance().getString(zReportPrinted
-                        ? "user.shift.msg.close.success"
-                        : "user.shift.msg.close.success.no.print"));
-                clearCloseShiftFields();
-                refreshView();
-            }
-        } catch (DaoException e) {
-            AllAlerts.handleError(LanguageManager.getInstance().getString("user.shift.close.title"), e);
+            prepareClose(closeBalance, notes);
         } catch (NumberFormatException e) {
             AllAlerts.handleError(LanguageManager.getInstance().getString("user.shift.close.title"),
                     new UserValidationException(LanguageManager.getInstance().getString("user.shift.msg.invalid.balance")));
         }
     }
 
-    private String buildCloseConfirmMessage(ShiftSummary s, BigDecimal closeBalance, BigDecimal diff) {
-        if (blindClose()) {
+    private void prepareClose(BigDecimal closeBalance, String notes) {
+        setBusy(true);
+        CompletableFuture.supplyAsync(() -> {
+            try {
+                return screenService.load(currentUserId);
+            } catch (DaoException e) {
+                throw new CompletionException(e);
+            }
+        }).whenComplete((data, error) -> Platform.runLater(() -> {
+            setBusy(false);
+            if (error != null) {
+                AllAlerts.handleError(message("user.shift.close.title"), rootCause(error));
+                return;
+            }
+            applyViewData(data);
+            if (!data.hasClosableShift() || data.summary() == null) {
+                AllAlerts.handleError(message("user.shift.close.title"),
+                        new BusinessRuleException(message("user.shift.msg.no.open.shift")));
+                return;
+            }
+            BigDecimal difference = data.summary().calculateDifference(closeBalance);
+            String confirmation = buildCloseConfirmMessage(
+                    data.summary(), closeBalance, difference, data.blindClose());
+            if (AllAlerts.confirm_all(message("user.shift.close.title"), confirmation)) {
+                executeClose(closeBalance, notes, data.autoPrintZ());
+            }
+        }));
+    }
+
+    private void executeClose(BigDecimal closeBalance, String notes, boolean autoPrintZ) {
+        setBusy(true);
+        CompletableFuture.supplyAsync(() -> {
+            try {
+                ShiftCloseAttempt attempt = userShiftService.requestCloseShift(
+                        currentUserId, closeBalance, notes);
+                boolean printed = true;
+                if (!attempt.pendingApproval() && autoPrintZ) {
+                    try {
+                        var zData = shiftReportService.buildOwnZReport(attempt.shiftId(), currentUserId);
+                        printReports.printShiftZReportOrThrow(zData);
+                    } catch (Exception printError) {
+                        printed = false;
+                        log.error("Error auto-printing Z-Report", printError);
+                    }
+                }
+                return new CloseUiResult(attempt, printed);
+            } catch (DaoException e) {
+                throw new CompletionException(e);
+            }
+        }).whenComplete((result, error) -> Platform.runLater(() -> {
+            setBusy(false);
+            if (error != null) {
+                AllAlerts.handleError(message("user.shift.close.title"), rootCause(error));
+                return;
+            }
+            ShiftContext.clear();
+            if (result.attempt().pendingApproval()) {
+                AllAlerts.alertSaveWithMessage(message("user.shift.msg.approval.requested"));
+            } else {
+                AllAlerts.alertSaveWithMessage(message(result.zReportPrinted()
+                        ? "user.shift.msg.close.success"
+                        : "user.shift.msg.close.success.no.print"));
+            }
+            clearCloseShiftFields();
+            refreshView();
+        }));
+    }
+
+    private String buildCloseConfirmMessage(ShiftSummary s, BigDecimal closeBalance,
+                                            BigDecimal diff, boolean blindClose) {
+        if (blindClose) {
             return String.format(LanguageManager.getInstance().getString("user.shift.close.confirm.blind"),
                     s.getTotalSales(), s.getTotalSalesReturns(), s.getTotalExpenses(),
                     s.getOtherIn(), s.getOtherOut(), closeBalance);
@@ -459,26 +531,17 @@ public class UserShiftController {
         return LanguageManager.getInstance().getString("user.shift.status." + shift.getStatus().name().toLowerCase());
     }
 
-    private boolean blindClose() {
-        try {
-            return shiftPolicyService.current().blindClose();
-        } catch (DaoException e) {
-            return false;
-        }
+    private static Throwable rootCause(Throwable error) {
+        Throwable current = error;
+        while (current.getCause() != null) current = current.getCause();
+        return current;
     }
 
-    private boolean isReconcile(int treasuryId) {
-        try {
-            return shiftPolicyService.treasuries().stream()
-                    .filter(item -> item.treasuryId() == treasuryId)
-                    .map(item -> item.trackingMode() == ShiftTrackingMode.RECONCILE)
-                    .findFirst().orElse(false);
-        } catch (DaoException e) {
-            return true;
-        }
+    private static String message(String key) {
+        return LanguageManager.getInstance().getString(key);
     }
 
-    private static final class AutoPrintDisabled extends RuntimeException {
+    private record CloseUiResult(ShiftCloseAttempt attempt, boolean zReportPrinted) {
     }
 
     private static void setSemanticStyle(Label label, String styleClass) {

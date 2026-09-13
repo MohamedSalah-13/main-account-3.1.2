@@ -5,6 +5,10 @@ import com.hamza.controlsfx.database.DaoException;
 import java.util.List;
 
 public interface ShiftPolicyRepository {
+    /** Serializes policy-dependent shift mutations with configuration changes. */
+    default void lockConfiguration() throws DaoException {
+    }
+
     ShiftPolicy load() throws DaoException;
 
     List<TreasuryShiftPolicy> loadTreasuries() throws DaoException;

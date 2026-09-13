@@ -1,6 +1,9 @@
 package com.hamza.account.features.events;
 
 import com.hamza.controlsfx.observer.AppEvent;
+import com.hamza.account.features.shift.ShiftClosed;
+import com.hamza.account.features.shift.ShiftOpened;
+import java.math.BigDecimal;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -55,9 +58,13 @@ class RemoteChangeTopicsTest {
         assertEquals("items", RemoteChangeTopics.topicOf(new ItemSaved(null)));
         assertEquals("stock.balances", RemoteChangeTopics.topicOf(new StockCountPosted(1, 1)));
         assertEquals("treasury.balances", RemoteChangeTopics.topicOf(new TreasuryMovementRecorded(7)));
+        assertEquals("shifts", RemoteChangeTopics.topicOf(new ShiftOpened(1, 2, 3)));
+        assertEquals("shifts", RemoteChangeTopics.topicOf(
+                new ShiftClosed(1, 2, 3, BigDecimal.ZERO, false)));
         assertEquals(new ItemsChanged(), RemoteChangeTopics.eventOf("items"));
         assertEquals(new StockBalancesChanged(), RemoteChangeTopics.eventOf("stock.balances"));
         assertEquals(new TreasuryBalancesChanged(), RemoteChangeTopics.eventOf("treasury.balances"));
+        assertEquals(new ShiftsChanged(), RemoteChangeTopics.eventOf("shifts"));
 
         assertNull(RemoteChangeTopics.topicOf(new UserRenamed("admin")));
         assertNull(RemoteChangeTopics.topicOf(new SelPriceNamesChanged(Map.of())));

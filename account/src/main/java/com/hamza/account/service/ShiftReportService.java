@@ -2,6 +2,7 @@ package com.hamza.account.service;
 
 import com.hamza.account.authorization.AppPermissions;
 import com.hamza.account.authorization.AuthorizationGuard;
+import com.hamza.account.features.shift.ShiftPolicyService;
 import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.model.domain.ShiftSummary;
 import com.hamza.account.model.domain.UserShift;
@@ -15,7 +16,10 @@ import java.util.List;
 /**
  * خدمة تجميع بيانات تقارير الورديات (X-Report / Z-Report / تقارير تجميعية).
  */
-public record ShiftReportService(DaoFactory daoFactory, UserShiftService userShiftService) {
+public record ShiftReportService(
+        DaoFactory daoFactory,
+        UserShiftService userShiftService,
+        ShiftPolicyService shiftPolicyService) {
 
     /**
      * بيانات تقرير X (لحظي) — وردية مفتوحة.
@@ -27,7 +31,9 @@ public record ShiftReportService(DaoFactory daoFactory, UserShiftService userShi
             throw new BusinessRuleException(message("user.shift.msg.no.open.shift"));
         }
         ShiftSummary summary = userShiftService.getCurrentShiftSummary(userId);
-        return new ShiftReportData(shift, summary, LocalDateTime.now(), "X-Report");
+        boolean showExpectedBalance = !shiftPolicyService.current().blindClose();
+        return new ShiftReportData(
+                shift, summary, LocalDateTime.now(), ShiftReportType.X, showExpectedBalance);
     }
 
     /**
@@ -86,7 +92,7 @@ public record ShiftReportService(DaoFactory daoFactory, UserShiftService userShi
                 .totalOut(totalOut)
                 .invoicesCount(shift.getInvoicesCount())
                 .build();
-        return new ShiftReportData(shift, summary, shift.getCloseTime(), "Z-Report");
+        return new ShiftReportData(shift, summary, shift.getCloseTime(), ShiftReportType.Z, true);
     }
 
     /**
@@ -115,8 +121,31 @@ public record ShiftReportService(DaoFactory daoFactory, UserShiftService userShi
             UserShift shift,
             ShiftSummary summary,
             LocalDateTime printTime,
-            String reportType
+            ShiftReportType reportType,
+            boolean showExpectedBalance
     ) {
+        public boolean showActualBalance() {
+            return reportType == ShiftReportType.Z;
+        }
+
+        public boolean showDifference() {
+            return reportType == ShiftReportType.Z;
+        }
+    }
+
+    public enum ShiftReportType {
+        X("X-Report"),
+        Z("Z-Report");
+
+        private final String label;
+
+        ShiftReportType(String label) {
+            this.label = label;
+        }
+
+        public String label() {
+            return label;
+        }
     }
 
     private static String message(String key) {
