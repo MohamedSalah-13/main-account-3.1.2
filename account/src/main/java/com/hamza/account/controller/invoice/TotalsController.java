@@ -574,17 +574,21 @@ public class TotalsController<T3 extends BaseNames, T4 extends BaseAccount>
         column.setId(ACTIONS_COLUMN);
         column.setSortable(false);
         column.setReorderable(false);
-        column.setMinWidth(112);
-        column.setPrefWidth(112);
+        column.setResizable(false);
+        column.setMinWidth(142);
+        column.setPrefWidth(142);
+        column.setMaxWidth(142);
+        column.getStyleClass().add("totals-actions-column");
         column.setCellFactory(ignored -> new RowActionsCell());
         return column;
     }
 
     /** The three buttons one row carries. One instance per cell, reused as rows scroll. */
     private final class RowActionsCell extends TableCell<BaseTotals, Void> {
-        private final HBox buttons = new HBox(4);
+        private final HBox buttons = new HBox(6);
 
         private RowActionsCell() {
+            getStyleClass().add("totals-actions-cell");
             Button show = rowButton(AppIcon.SHOW, "invoice.tooltip.show", "primary-button",
                     row -> showInvoiceData(row));
             Button edit = rowButton(AppIcon.EDIT, "invoice.tooltip.update", "warning-button",
@@ -607,6 +611,10 @@ public class TotalsController<T3 extends BaseNames, T4 extends BaseAccount>
                                  RowAction action) {
             Button button = new Button();
             button.setGraphic(icon.graphic(14));
+            button.setMinSize(30, 30);
+            button.setPrefSize(30, 30);
+            button.setMaxSize(30, 30);
+            button.setFocusTraversable(false);
             button.getStyleClass().addAll("icon-button", styleClass);
             tip(button, tooltipKey);
             button.setOnAction(event -> {

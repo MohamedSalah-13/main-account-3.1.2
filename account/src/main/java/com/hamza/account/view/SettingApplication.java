@@ -26,6 +26,10 @@ public class SettingApplication extends Application {
         stage.setTitle(LanguageManager.getInstance().getString("settings.title") + " - " + Setting_Language.PROGRAM_TITLE);
         stage.getIcons().add(new javafx.scene.image.Image(new Image_Setting().setting));
         stage.setResizable(true);
+        stage.setMinWidth(820);
+        stage.setMinHeight(540);
+        stage.setWidth(1050);
+        stage.setHeight(660);
         stage.initModality(javafx.stage.Modality.APPLICATION_MODAL);
         stage.show();
 //        StageDimensions.stageDimensions(getClass(), stage);

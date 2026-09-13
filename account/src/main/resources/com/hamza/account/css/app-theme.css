@@ -1889,6 +1889,16 @@
     -fx-padding: 0.18em 0.35em;
 }
 
+/* Invoice commands wrap on short screens instead of being clipped at either edge. */
+.invoice-command-bar {
+    -fx-padding: 0.45em 0.65em;
+}
+
+.invoice-scroll {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+}
+
 .totals-screen-title {
     -fx-font-size: 1.727em;
     -fx-font-weight: bold;
@@ -1987,13 +1997,24 @@
 }
 
 .totals-row-actions {
-    -fx-padding: 0 0.2em;
+    -fx-padding: 0.18em 0.35em;
 }
 
 .totals-row-actions .icon-button {
-    -fx-padding: 0.2em 0.4em;
-    -fx-background-radius: 0.4em;
+    -fx-padding: 0;
+    -fx-background-radius: 0.55em;
     -fx-cursor: hand;
+}
+
+.totals-actions-cell {
+    -fx-alignment: CENTER;
+    -fx-padding: 0.2em 0.35em;
+    -fx-border-color: transparent -app-border transparent transparent;
+    -fx-border-width: 0 0.091em 0 0;
+}
+
+.totals-actions-column .label {
+    -fx-alignment: CENTER;
 }
 
 .totals-pager {

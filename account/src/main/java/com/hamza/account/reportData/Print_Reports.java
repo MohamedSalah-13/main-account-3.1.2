@@ -5,8 +5,6 @@ import com.hamza.controlsfx.database.ConnectionManager;
 import com.hamza.account.controller.invoice.ShowInvoiceNameData;
 import com.hamza.account.controller.model.ModelPrintInvoice;
 import com.hamza.account.controller.model.PrintPurchaseWithName;
-import com.hamza.account.features.inventory.InventoryRow;
-import com.hamza.account.features.inventory.StockBalanceRow;
 import com.hamza.account.model.domain.*;
 import com.hamza.account.service.ShiftReportService;
 import com.hamza.account.features.rbac.CurrentUser;
@@ -83,19 +81,8 @@ public class Print_Reports extends ReportCompany {
      * longer loads item models, and the caller passes every row matching the search
      * rather than the page on screen - "طباعة" used to print whichever fifty rows
      * the user happened to be looking at. The template is unchanged; the row type
-     * carries getters named after the fields in {@code items-inventory-A4.jrxml}.
+     * carries the getters needed by the remaining Jasper inventory consumers.
      */
-    public void printInventoryByTable(List<InventoryRow> list, String stock_name) {
-        HashMap<String, Object> map = getStringObjectHashMap(list, null);
-        map.put("stock_name", stock_name);
-        jasperData.printJasperPrint(JasperReportPaths.Report.INVENTORY_BY_TABLE, LanguageManager.getInstance().getString("items"), map, 1, "");
-    }
-
-    public void printItemsAcrossStocks(@NotNull List<StockBalanceRow> list) {
-        HashMap<String, Object> map = getStringObjectHashMap(list, null);
-        jasperData.printJasperPrint(JasperReportPaths.Report.ITEMS_ACROSS_STOCKS, LanguageManager.getInstance().getString("item.inventory.report.cross.stock.title"), map, 1, printerNameNormal);
-    }
-
     /**
      * @param tableName the document kind the screen is filtered to
      *                  ({@code sales}, {@code purchase_re}, ...), or null for all

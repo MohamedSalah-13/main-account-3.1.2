@@ -7,12 +7,14 @@
 <?import javafx.scene.control.Label?>
 <?import javafx.scene.control.RadioButton?>
 <?import javafx.scene.control.Separator?>
+<?import javafx.scene.control.ScrollPane?>
 <?import javafx.scene.control.TableView?>
 <?import javafx.scene.control.TextArea?>
 <?import javafx.scene.control.TextField?>
 <?import javafx.scene.control.ToggleGroup?>
 <?import javafx.scene.layout.BorderPane?>
 <?import javafx.scene.layout.ColumnConstraints?>
+<?import javafx.scene.layout.FlowPane?>
 <?import javafx.scene.layout.GridPane?>
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.Region?>
@@ -23,11 +25,13 @@
 
 <StackPane fx:id="stackPane" styleClass="app-root" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.hamza.account.controller.invoice.BuyController2">
     <children>
+        <ScrollPane fitToWidth="true" hbarPolicy="AS_NEEDED" vbarPolicy="AS_NEEDED" styleClass="invoice-scroll">
+            <content>
         <BorderPane styleClass="app-container">
             <top>
             <VBox spacing="5.0">
                <children>
-                      <HBox alignment="CENTER_LEFT" spacing="8.0" styleClass="app-card">
+                      <FlowPane fx:id="invoiceTopBar" alignment="CENTER_LEFT" hgap="8.0" vgap="5.0" prefWrapLength="1000.0" styleClass="app-card, invoice-command-bar">
                           <children>
                               <VBox alignment="CENTER_LEFT" spacing="3.0">
                                   <children>
@@ -36,7 +40,7 @@
                                   </children>
                               </VBox>
                               <Label fx:id="labelReturnedBadge" styleClass="warning-button" visible="false" managed="false" />
-                              <Region HBox.hgrow="SOMETIMES" />
+                              <Region fx:id="invoiceTopBarSpacer" />
                               <Button fx:id="btnNew" mnemonicParsing="false" styleClass="primary-button" text="جديد" />
                               <Button fx:id="btnSearch" mnemonicParsing="false" styleClass="neutral-button" text="بحث" />
                               <Button fx:id="btnReturnFromInvoice" mnemonicParsing="false" styleClass="neutral-button" text="ارتجاع من فاتورة" visible="false" managed="false" />
@@ -46,7 +50,7 @@
                               <Button fx:id="btnPrintSave" mnemonicParsing="false" styleClass="primary-button" text="حفظ وطباعة" />
                               <Button fx:id="btnUpdateItem" mnemonicParsing="false" styleClass="warning-button" text="تعديل الصنف" />
                           </children>
-                      </HBox>
+                      </FlowPane>
                           <HBox styleClass="app-card">
                               <children>
                                   <GridPane fx:id="gridPane" hgap="5.0" minHeight="-Infinity" minWidth="-Infinity" vgap="5.0" HBox.hgrow="ALWAYS">
@@ -215,5 +219,7 @@
                     <TableView fx:id="table" styleClass="app-table" />
             </center>
         </BorderPane>
+            </content>
+        </ScrollPane>
     </children>
 </StackPane>

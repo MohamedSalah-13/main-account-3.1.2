@@ -61,7 +61,7 @@ public record InventoryRow(
 
     // ---------------------------------------------------------------------
     // JasperReports reads its data source by JavaBean getter, and the fields in
-    // reports/ar/items-inventory-A4.jrxml are named after ItemsModel's properties.
+    // Legacy Jasper consumers still use these bean-style aliases.
     // These keep the existing template working unchanged; the report is not worth
     // rewriting to save fifteen lines.
     // ---------------------------------------------------------------------

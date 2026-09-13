@@ -20,8 +20,9 @@ import com.hamza.account.features.inventory.StockBalanceRow;
 import com.hamza.account.features.inventory.StockFilter;
 import com.hamza.account.model.domain.Stock;
 import com.hamza.account.features.export.ExcelExportService;
+import com.hamza.account.table.TablePdfLayout;
+import com.hamza.account.table.TablePdfReport;
 import com.hamza.account.openFxml.FxmlPath;
-import com.hamza.account.reportData.Print_Reports;
 import com.hamza.account.service.MainGroupService;
 import com.hamza.account.service.StockService;
 import com.hamza.account.table.TableSetting;
@@ -62,8 +63,10 @@ import lombok.extern.log4j.Log4j2;
 
 import java.io.File;
 import java.io.IOException;
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Set;
 import java.util.Locale;
 
 /**
@@ -700,7 +703,12 @@ public class InventoryController {
             btnPrint.setDisable(false);
             progress.setVisible(false);
             PrintData data = task.getValue();
-            new Print_Reports().printInventoryByTable(data.rows(), data.stockName());
+            String title = LanguageManager.getInstance().getString("items");
+            File target = TablePdfReport.chooseTarget(root.getScene().getWindow(), title);
+            if (target != null) {
+                TablePdfLayout layout = TablePdfLayout.from(tableView, data.rows(), Set.of());
+                TablePdfReport.write(target, title, data.stockName(), layout, () -> { });
+            }
         });
         task.setOnFailed(event -> {
             btnPrint.setDisable(false);
@@ -732,7 +740,7 @@ public class InventoryController {
         task.setOnSucceeded(event -> {
             btnPrintCrossStock.setDisable(false);
             progress.setVisible(false);
-            new Print_Reports().printItemsAcrossStocks(task.getValue());
+            exportCrossStockPdf(task.getValue());
         });
         task.setOnFailed(event -> {
             btnPrintCrossStock.setDisable(false);
@@ -743,6 +751,22 @@ public class InventoryController {
         Thread thread = new Thread(task, "inventory-cross-stock-print");
         thread.setDaemon(true);
         thread.start();
+    }
+
+    private void exportCrossStockPdf(List<StockBalanceRow> rows) {
+        String title = LanguageManager.getInstance().getString("item.inventory.report.cross.stock.title");
+        File target = TablePdfReport.chooseTarget(root.getScene().getWindow(), title);
+        if (target == null) return;
+        TablePdfLayout layout = new TablePdfLayout(
+                new String[]{message("item.name"), message("barcode"), message("stock"), message("balance")},
+                new float[]{215, 110, 150, 80},
+                rows.stream().map(row -> new String[]{row.itemName(), row.barcode(), row.stockName(),
+                        com.hamza.controlsfx.table.Columns.quantity(BigDecimal.valueOf(row.balance()))}).toList(), null);
+        TablePdfReport.write(target, title, "", layout, () -> { });
+    }
+
+    private String message(String key, Object... arguments) {
+        return LanguageManager.getInstance().getString(key, arguments);
     }
 
     /**

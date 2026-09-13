@@ -23,9 +23,7 @@ public final class JasperReportPaths {
     public static class Report {
         public static final String HEADER = BASE_PATH + "Header2.jasper";
         public static final String CARD_ITEMS = BASE_PATH + "items-card-A4.jrxml";
-        public static final String INVENTORY_BY_TABLE = BASE_PATH + "items-inventory-A4.jrxml";
         public static final String TREASURY_STATEMENT_A4_TEMPLATE = BASE_PATH + "treasury-statement-A4.jrxml";
-        public static final String ITEMS_ACROSS_STOCKS = BASE_PATH + "items-across-stocks-A4.jrxml";
     }
 
     public static class Shift {

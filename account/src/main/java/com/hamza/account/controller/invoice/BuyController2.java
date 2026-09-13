@@ -64,8 +64,12 @@ import javafx.fxml.Initializable;
 import javafx.scene.control.*;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.Pane;
+import javafx.scene.layout.FlowPane;
+import javafx.scene.layout.Region;
 import javafx.scene.layout.StackPane;
 import javafx.scene.text.Text;
+import javafx.scene.input.MouseButton;
+import javafx.scene.input.MouseEvent;
 import javafx.stage.Stage;
 import lombok.Getter;
 import lombok.extern.log4j.Log4j2;
@@ -152,6 +156,12 @@ public class BuyController2<T3 extends BaseNames, T4 extends BaseAccount>
     @FXML
     private StackPane stackPane;
     @FXML
+    private FlowPane invoiceTopBar;
+    @FXML
+    private Region invoiceTopBarSpacer;
+    private double dragOffsetX;
+    private double dragOffsetY;
+    @FXML
     private GridPane gridPane;
     @FXML
     private Pane boxDelegate;
@@ -220,6 +230,7 @@ public class BuyController2<T3 extends BaseNames, T4 extends BaseAccount>
         disableData();
         totalSetting();
         buttonGraphic();
+        configureInvoiceTopBar();
         configurePinButtons();
 
         if (num_invoice_update > 0) {
@@ -227,6 +238,34 @@ public class BuyController2<T3 extends BaseNames, T4 extends BaseAccount>
         } else {
             getSavedCustomerAndDelegate();
         }
+    }
+
+    /** Double-clicking the empty centre of the command bar minimizes this invoice window. */
+    private void configureInvoiceTopBar() {
+        invoiceTopBar.addEventFilter(MouseEvent.MOUSE_PRESSED, event -> {
+            if (event.getButton() == MouseButton.PRIMARY && event.getTarget() == invoiceTopBar) {
+                Stage stage = (Stage) invoiceTopBar.getScene().getWindow();
+                dragOffsetX = event.getScreenX() - stage.getX();
+                dragOffsetY = event.getScreenY() - stage.getY();
+            }
+        });
+        invoiceTopBar.addEventFilter(MouseEvent.MOUSE_DRAGGED, event -> {
+            if (event.getButton() == MouseButton.PRIMARY && event.getTarget() == invoiceTopBar) {
+                Stage stage = (Stage) invoiceTopBar.getScene().getWindow();
+                stage.setX(event.getScreenX() - dragOffsetX);
+                stage.setY(event.getScreenY() - dragOffsetY);
+                event.consume();
+            }
+        });
+        invoiceTopBar.addEventFilter(MouseEvent.MOUSE_CLICKED, event -> {
+            if (event.getButton() == MouseButton.PRIMARY
+                    && event.getClickCount() == 2
+                    && (event.getTarget() == invoiceTopBar || event.getTarget() == invoiceTopBarSpacer)) {
+                Stage stage = (Stage) invoiceTopBar.getScene().getWindow();
+                stage.setIconified(true);
+                event.consume();
+            }
+        });
     }
 
     private void applyInvoiceThemeClass() {
