@@ -80,20 +80,29 @@
                        styleClass="page-subtitle"/>
 
                 <HBox spacing="12" alignment="CENTER_LEFT">
-                    <Button text="%common.new"
+                    <Button fx:id="newButton"
+                            text="%common.new"
                             onAction="#newTreasury"
                             styleClass="secondary-button"/>
 
-                    <Button text="%common.save"
+                    <Button fx:id="saveButton"
+                            text="%common.save"
                             onAction="#saveTreasury"
                             styleClass="primary-button"/>
 
-                    <Button text="%common.edit"
+                    <Button fx:id="updateButton"
+                            text="%common.edit"
                             onAction="#updateTreasury"
                             styleClass="warning-button"/>
 
-                    <Button text="%common.refresh"
+                    <Button fx:id="refreshButton"
+                            text="%common.refresh"
                             onAction="#loadTreasuries"
+                            styleClass="neutral-button"/>
+
+                    <Button fx:id="printButton"
+                            text="%print"
+                            onAction="#printTreasuries"
                             styleClass="neutral-button"/>
                 </HBox>
             </VBox>

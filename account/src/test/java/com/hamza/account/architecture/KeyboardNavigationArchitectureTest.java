@@ -57,7 +57,6 @@ class KeyboardNavigationArchitectureTest {
      */
     private static final Set<String> SCREENS_WITHOUT_AN_ENTER_ORDER = Set.of(
             "com/hamza/account/controller/convert_treasury/TreasuryCashController.java",
-            "com/hamza/account/controller/convert_treasury/TreasuryController.java",
             "com/hamza/account/controller/convert_treasury/TreasuryTransferController.java",
             "com/hamza/account/controller/items/StockCountController.java",
             "com/hamza/account/controller/items/StocksController.java",

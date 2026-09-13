@@ -1,5 +1,6 @@
 package com.hamza.account.controller.convert_treasury;
 
+import com.hamza.account.config.AppIcon;
 import com.hamza.account.controller.others.ServiceRegistry;
 import com.hamza.account.features.events.TreasuriesChanged;
 import com.hamza.account.features.events.TreasuryMovementRecorded;
@@ -12,6 +13,8 @@ import com.hamza.account.model.domain.Users;
 import com.hamza.account.openFxml.FxmlPath;
 import com.hamza.account.service.TreasuryBalanceService;
 import com.hamza.account.service.TreasuryService;
+import com.hamza.account.table.TablePdfLayout;
+import com.hamza.account.table.TablePdfReport;
 import com.hamza.account.treasury.TreasuryBalanceSummary;
 import com.hamza.account.treasury.TreasuryType;
 import com.hamza.controlsfx.alert.AllAlerts;
@@ -23,6 +26,7 @@ import com.hamza.controlsfx.observer.Subscriptions;
 import com.hamza.controlsfx.table.Columns;
 import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
+import javafx.scene.control.Button;
 import javafx.scene.control.CheckBox;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.TableView;
@@ -30,7 +34,13 @@ import javafx.scene.control.TextField;
 import javafx.scene.layout.BorderPane;
 import javafx.util.StringConverter;
 
+import java.io.File;
 import java.math.BigDecimal;
+import java.util.List;
+import java.util.Set;
+
+import static com.hamza.controlsfx.others.Utils.setTextFormatter;
+import static com.hamza.controlsfx.others.Utils.whenEnterPressed;
 
 /**
  * Adds and edits treasuries, and is the one screen that shows what each one holds.
@@ -73,6 +83,21 @@ public class TreasuryController {
     private TableView<TreasuryBalanceSummary> treasuryTable;
 
     @FXML
+    private Button newButton;
+
+    @FXML
+    private Button saveButton;
+
+    @FXML
+    private Button updateButton;
+
+    @FXML
+    private Button refreshButton;
+
+    @FXML
+    private Button printButton;
+
+    @FXML
     private BorderPane root;
 
     private final TreasuryService treasuryService;
@@ -104,6 +129,9 @@ public class TreasuryController {
         });
         typeCombo.getSelectionModel().select(TreasuryType.CASH);
 
+        setTextFormatter(amountField, feeField);
+        configureButtons();
+        whenEnterPressed(nameField, amountField, typeCombo, activeCheck, feeField, saveButton);
         buildColumns();
 
         treasuryTable.getSelectionModel().selectedItemProperty()
@@ -133,11 +161,20 @@ public class TreasuryController {
                 Columns.text("treasury.column.state", row -> text(row.active()
                         ? "treasury.state.active"
                         : "treasury.state.closed")),
-                Columns.number("treasury.column.opening", TreasuryBalanceSummary::opening),
-                Columns.number("treasury.column.in", TreasuryBalanceSummary::totalIn),
-                Columns.number("treasury.column.out", TreasuryBalanceSummary::totalOut),
-                Columns.number("treasury.column.balance", TreasuryBalanceSummary::balance),
-                Columns.number("treasury.column.fee", TreasuryBalanceSummary::feePercent));
+                Columns.money("treasury.column.opening", TreasuryBalanceSummary::opening),
+                Columns.money("treasury.column.in", TreasuryBalanceSummary::totalIn),
+                Columns.money("treasury.column.out", TreasuryBalanceSummary::totalOut),
+                Columns.money("treasury.column.balance", TreasuryBalanceSummary::balance),
+                Columns.money("treasury.column.fee", TreasuryBalanceSummary::feePercent));
+    }
+
+    /** The list uses the same PDF path as customers, so the visible columns are the printed columns. */
+    private void configureButtons() {
+        newButton.setGraphic(AppIcon.ADD.graphic());
+        saveButton.setGraphic(AppIcon.SAVE.graphic());
+        updateButton.setGraphic(AppIcon.EDIT.graphic());
+        refreshButton.setGraphic(AppIcon.REFRESH.graphic());
+        printButton.setGraphic(AppIcon.PRINT.graphic());
     }
 
     @FXML
@@ -191,6 +228,22 @@ public class TreasuryController {
         } catch (Exception e) {
             AllAlerts.handleError(text("treasury.op.update"), e);
         }
+    }
+
+    @FXML
+    private void printTreasuries() {
+        List<TreasuryBalanceSummary> rows = List.copyOf(treasuryTable.getItems());
+        if (rows.isEmpty()) {
+            AllAlerts.alertError(text("party.error.no.data.print"));
+            return;
+        }
+        String title = text("treasury.screen.title");
+        File target = TablePdfReport.chooseTarget(treasuryTable.getScene().getWindow(), title);
+        if (target == null) {
+            return;
+        }
+        TablePdfReport.write(target, title, "",
+                TablePdfLayout.from(treasuryTable, rows, Set.of()), () -> { });
     }
 
     private void afterWrite(String message) {

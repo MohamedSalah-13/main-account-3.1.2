@@ -304,7 +304,7 @@ public final class JdbcRbacRepository extends AbstractDao<Object> implements Rba
                       AND NOT EXISTS (SELECT 1 FROM auth_user_role WHERE role_id = ?)
                     """, roleId, roleId);
             if (rows != 1) {
-                throw new BusinessRuleException("لا يمكن حذف دور نظام أو دور مسند إلى مستخدم");
+                throw new BusinessRuleException("user.rbac.error.role.delete.refused");
             }
             affected.set(rows);
             audit(actorUserId, "ROLE_DELETED", "ROLE", roleId, "");
@@ -378,9 +378,9 @@ public final class JdbcRbacRepository extends AbstractDao<Object> implements Rba
                 statement.setString(3, role.description());
                 statement.setBoolean(4, role.active());
                 statement.setInt(5, actorUserId);
-                if (statement.executeUpdate() != 1) throw new DaoException("تعذر إنشاء الدور");
+                if (statement.executeUpdate() != 1) throw new DaoException("user.rbac.error.role.create.failed");
                 try (ResultSet keys = statement.getGeneratedKeys()) {
-                    if (!keys.next()) throw new DaoException("لم تُرجع قاعدة البيانات رقم الدور");
+                    if (!keys.next()) throw new DaoException("user.rbac.error.role.create.key.missing");
                     return keys.getInt(1);
                 }
             }
@@ -393,7 +393,7 @@ public final class JdbcRbacRepository extends AbstractDao<Object> implements Rba
                 SET role_code = ?, role_name = ?, description = ?, active = ?
                 WHERE id = ? AND system_role = 0
                 """, role.code(), role.name(), role.description(), role.active(), role.id());
-        if (rows != 1) throw new BusinessRuleException("لا يمكن تعديل دور النظام أو أن الدور غير موجود");
+        if (rows != 1) throw new BusinessRuleException("user.rbac.error.role.update.refused");
         return role.id();
     }
 

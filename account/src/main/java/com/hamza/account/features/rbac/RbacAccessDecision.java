@@ -13,16 +13,24 @@ public record RbacAccessDecision(
         roleSources = roleSources == null ? Set.of() : Set.copyOf(roleSources);
     }
 
-    public String explanation() {
+    public String explanationKey() {
         if (override != null) {
-            String prefix = override.effect() == RbacOverrideEffect.DENY
-                    ? "مرفوض باستثناء فردي"
-                    : "مسموح باستثناء فردي";
-            return override.reason() == null || override.reason().isBlank()
-                    ? prefix
-                    : prefix + ": " + override.reason();
+            boolean hasReason = override.reason() != null && !override.reason().isBlank();
+            if (override.effect() == RbacOverrideEffect.DENY) {
+                return hasReason ? "user.rbac.access.source.override.deny.reason"
+                        : "user.rbac.access.source.override.deny";
+            }
+            return hasReason ? "user.rbac.access.source.override.allow.reason"
+                    : "user.rbac.access.source.override.allow";
         }
-        if (!roleSources.isEmpty()) return "من الدور: " + String.join("، ", roleSources);
-        return "غير ممنوح";
+        return roleSources.isEmpty() ? "user.rbac.access.source.none"
+                : "user.rbac.access.source.roles";
+    }
+
+    public Object[] explanationArguments() {
+        if (override != null && override.reason() != null && !override.reason().isBlank()) {
+            return new Object[]{override.reason()};
+        }
+        return roleSources.isEmpty() ? new Object[0] : new Object[]{String.join(", ", roleSources)};
     }
 }

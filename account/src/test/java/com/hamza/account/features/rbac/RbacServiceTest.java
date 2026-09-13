@@ -153,9 +153,11 @@ class RbacServiceTest {
         List<RbacAccessDecision> decisions = service.accessDecisionsForUser(7);
 
         assertTrue(decisions.get(0).granted());
-        assertTrue(decisions.get(0).explanation().contains("موظف مبيعات"));
+        assertEquals("user.rbac.access.source.roles", decisions.get(0).explanationKey());
+        assertTrue(decisions.get(0).explanationArguments()[0].toString().contains("موظف مبيعات"));
         assertFalse(decisions.get(1).granted());
-        assertTrue(decisions.get(1).explanation().contains("حظر مؤقت"));
+        assertEquals("user.rbac.access.source.override.deny.reason", decisions.get(1).explanationKey());
+        assertTrue(decisions.get(1).explanationArguments()[0].toString().contains("حظر مؤقت"));
     }
 
     @Test

@@ -1,6 +1,7 @@
 package com.hamza.account.controller.users;
 
 import com.hamza.account.features.rbac.*;
+import com.hamza.account.config.AppIcon;
 import com.hamza.account.openFxml.FxmlPath;
 import com.hamza.account.openFxml.OpenFxmlApplication;
 import com.hamza.account.authorization.AuthorizationGuard;
@@ -28,6 +29,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.LinkedHashSet;
 import java.util.Locale;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 /** RBAC editor: assigns roles to a user and manages each role's permission bundle. */
 @FxmlPath(pathFile = "user-permission.fxml")
@@ -85,6 +87,7 @@ public final class UserPermissionController implements AppSettingInterface {
     public void initialize() {
         configureTables();
         configureRoleSelector();
+        configureActionIcons();
         btnNewRole.setOnAction(event -> beginNewRole());
         btnDeleteRole.setOnAction(event -> deleteSelectedRole());
         btnSaveOverride.setOnAction(event -> saveOverride());
@@ -95,18 +98,26 @@ public final class UserPermissionController implements AppSettingInterface {
         loadData();
     }
 
+    private void configureActionIcons() {
+        btnNewRole.setGraphic(AppIcon.ADD.graphic());
+        btnDeleteRole.setGraphic(AppIcon.DELETE.graphic());
+        btnSaveOverride.setGraphic(AppIcon.SAVE.graphic());
+        btnClearOverride.setGraphic(AppIcon.CLEAR.graphic());
+        btnDeleteOverride.setGraphic(AppIcon.DELETE.graphic());
+    }
+
     private void configureTables() {
         tableUserRoles.setEditable(true);
         colRoleAssigned.setCellValueFactory(cell -> cell.getValue().selectedProperty());
         colRoleAssigned.setCellFactory(CheckBoxTableCell.forTableColumn(colRoleAssigned));
-        colUserRoleName.setCellValueFactory(cell -> new ReadOnlyStringWrapper(cell.getValue().role().name()));
+        colUserRoleName.setCellValueFactory(cell -> new ReadOnlyStringWrapper(roleLabel(cell.getValue().role())));
         colUserRoleCode.setCellValueFactory(cell -> new ReadOnlyStringWrapper(cell.getValue().role().code()));
         tableUserRoles.setItems(userRoleRows);
 
         tableParentRoles.setEditable(true);
         colParentRoleInherited.setCellValueFactory(cell -> cell.getValue().selectedProperty());
         colParentRoleInherited.setCellFactory(CheckBoxTableCell.forTableColumn(colParentRoleInherited));
-        colParentRoleName.setCellValueFactory(cell -> new ReadOnlyStringWrapper(cell.getValue().role().name()));
+        colParentRoleName.setCellValueFactory(cell -> new ReadOnlyStringWrapper(roleLabel(cell.getValue().role())));
         colParentRoleCode.setCellValueFactory(cell -> new ReadOnlyStringWrapper(cell.getValue().role().code()));
         tableParentRoles.setItems(parentRoleRows);
 
@@ -116,7 +127,7 @@ public final class UserPermissionController implements AppSettingInterface {
         colPermissionCategory.setCellValueFactory(cell ->
                 new ReadOnlyStringWrapper(categoryLabel(cell.getValue().permission().category())));
         colPermissionDescription.setCellValueFactory(cell ->
-                new ReadOnlyStringWrapper(cell.getValue().permission().description()));
+                new ReadOnlyStringWrapper(permissionLabel(cell.getValue().permission())));
         colPermissionCode.setCellValueFactory(cell ->
                 new ReadOnlyStringWrapper(cell.getValue().permission().code()));
         filteredPermissions = new FilteredList<>(permissionRows, row -> true);
@@ -131,7 +142,8 @@ public final class UserPermissionController implements AppSettingInterface {
         colOverrideEffect.setCellValueFactory(cell ->
                 new ReadOnlyStringWrapper(overrideEffectLabel(cell.getValue().effect())));
         colOverridePermission.setCellValueFactory(cell ->
-                new ReadOnlyStringWrapper(cell.getValue().permissionDescription()));
+                new ReadOnlyStringWrapper(permissionLabel(cell.getValue().permissionCode(),
+                        cell.getValue().permissionDescription())));
         colOverrideCode.setCellValueFactory(cell ->
                 new ReadOnlyStringWrapper(cell.getValue().permissionCode()));
         colOverrideReason.setCellValueFactory(cell ->
@@ -152,11 +164,11 @@ public final class UserPermissionController implements AppSettingInterface {
                         ? LanguageManager.getInstance().getString("user.rbac.access.allowed")
                         : LanguageManager.getInstance().getString("user.rbac.access.denied")));
         colAccessPermission.setCellValueFactory(cell ->
-                new ReadOnlyStringWrapper(cell.getValue().permission().description()));
+                new ReadOnlyStringWrapper(permissionLabel(cell.getValue().permission())));
         colAccessCode.setCellValueFactory(cell ->
                 new ReadOnlyStringWrapper(cell.getValue().permission().code()));
         colAccessSource.setCellValueFactory(cell ->
-                new ReadOnlyStringWrapper(cell.getValue().explanation()));
+                new ReadOnlyStringWrapper(explanation(cell.getValue())));
         filteredAccess = new FilteredList<>(accessRows, row -> true);
         tableEffectiveAccess.setItems(filteredAccess);
     }
@@ -174,7 +186,7 @@ public final class UserPermissionController implements AppSettingInterface {
             @Override
             protected void updateItem(RbacRole role, boolean empty) {
                 super.updateItem(role, empty);
-                setText(empty || role == null ? null : role.displayName());
+                setText(empty || role == null ? null : roleLabel(role) + " (" + role.code() + ")");
             }
         };
     }
@@ -219,7 +231,7 @@ public final class UserPermissionController implements AppSettingInterface {
             protected void updateItem(RbacPermission permission, boolean empty) {
                 super.updateItem(permission, empty);
                 setText(empty || permission == null ? null
-                        : permission.description() + " (" + permission.code() + ")");
+                        : permissionLabel(permission) + " (" + permission.code() + ")");
             }
         };
     }
@@ -305,8 +317,61 @@ public final class UserPermissionController implements AppSettingInterface {
         String query = value == null ? "" : value.trim().toLowerCase(Locale.ROOT);
         filteredAccess.setPredicate(decision -> query.isEmpty()
                 || decision.permission().code().toLowerCase(Locale.ROOT).contains(query)
-                || decision.permission().description().toLowerCase(Locale.ROOT).contains(query)
-                || decision.explanation().toLowerCase(Locale.ROOT).contains(query));
+                || permissionLabel(decision.permission()).toLowerCase(Locale.ROOT).contains(query)
+                || explanation(decision).toLowerCase(Locale.ROOT).contains(query));
+    }
+
+    private String explanation(RbacAccessDecision decision) {
+        Object[] arguments = decision.roleSources().isEmpty()
+                ? decision.explanationArguments()
+                : new Object[]{decision.roleSources().stream()
+                        .map(this::roleSourceLabel)
+                        .collect(Collectors.joining(", "))};
+        return LanguageManager.getInstance().getString(decision.explanationKey(), arguments);
+    }
+
+    /** Built-in roles have localized labels; a business-created role deliberately keeps its own name. */
+    private String roleLabel(RbacRole role) {
+        if (role == null) return "";
+        if (!LanguageManager.getInstance().isEnglish()) return role.name();
+        return switch (role.code()) {
+            case "DEFAULT_BASIC_USER" -> text("user.rbac.role.default.basic");
+            case "DEFAULT_SALES_CASHIER" -> text("user.rbac.role.default.sales.cashier");
+            case "DEFAULT_SALES_MANAGER" -> text("user.rbac.role.default.sales.manager");
+            case "DEFAULT_PURCHASES" -> text("user.rbac.role.default.purchases");
+            case "DEFAULT_INVENTORY" -> text("user.rbac.role.default.inventory");
+            case "DEFAULT_ACCOUNTANT" -> text("user.rbac.role.default.accountant");
+            case "DEFAULT_SECURITY_ADMIN" -> text("user.rbac.role.default.security.admin");
+            default -> role.name();
+        };
+    }
+
+    private String roleSourceLabel(String source) {
+        return comboRoles.getItems().stream()
+                .filter(role -> role.name().equals(source))
+                .findFirst().map(this::roleLabel).orElse(source);
+    }
+
+    private String permissionLabel(RbacPermission permission) {
+        return permission == null ? "" : permissionLabel(permission.code(), permission.description());
+    }
+
+    /** Permission descriptions are legacy Arabic database data; English derives a readable label from the stable key. */
+    private String permissionLabel(String code, String storedDescription) {
+        if (!LanguageManager.getInstance().isEnglish() || code == null || code.isBlank()) {
+            return storedDescription == null ? "" : storedDescription;
+        }
+        return java.util.Arrays.stream(code.split("\\."))
+                .map(part -> java.util.Arrays.stream(part.split("_"))
+                        .filter(word -> !word.isBlank())
+                        .map(word -> word.substring(0, 1).toUpperCase(Locale.ROOT)
+                                + word.substring(1).toLowerCase(Locale.ROOT))
+                        .collect(Collectors.joining(" ")))
+                .collect(Collectors.joining(" · "));
+    }
+
+    private static String text(String key) {
+        return LanguageManager.getInstance().getString(key);
     }
 
     private String overrideEffectLabel(RbacOverrideEffect effect) {

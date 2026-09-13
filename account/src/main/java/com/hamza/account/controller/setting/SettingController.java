@@ -5,12 +5,16 @@ import com.hamza.account.authorization.AppPermissions;
 import com.hamza.account.authorization.AuthorizationGuard;
 import com.hamza.account.config.ConnectionToDatabase;
 import com.hamza.account.controller.main.DataPublisher;
+import com.hamza.account.controller.others.ServiceRegistry;
+import com.hamza.account.features.events.LanguageChanged;
 import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.openFxml.FxmlPath;
 import com.hamza.account.openFxml.OpenFxmlApplication;
 import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.interfaceData.AppSettingInterface;
 import com.hamza.controlsfx.language.LanguageManager;
+import com.hamza.controlsfx.observer.EventBus;
+import com.hamza.controlsfx.observer.Subscriptions;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.fxml.Initializable;
@@ -33,6 +37,8 @@ public class SettingController implements Initializable, AppSettingInterface {
 
     private final DataPublisher dataPublisher;
     private final DaoFactory daoFactory;
+    private final EventBus eventBus = ServiceRegistry.get(EventBus.class);
+    private final Subscriptions subscriptions = new Subscriptions();
 
     @FXML
     private TabPane pane;
@@ -48,6 +54,10 @@ public class SettingController implements Initializable, AppSettingInterface {
     @Override
     public void initialize(URL url, ResourceBundle resourceBundle) {
         otherSetting();
+        if (eventBus != null) {
+            subscriptions.add(eventBus.subscribe(LanguageChanged.class, event -> reloadTabsForLanguage()));
+            subscriptions.disposeWith(box);
+        }
     }
 
     private void otherSetting() {
@@ -68,6 +78,12 @@ public class SettingController implements Initializable, AppSettingInterface {
     }
 
     private void addTabs() throws Exception {
+        // Keep the four declarative tabs and replace both their content and any optional tabs.
+        // FXML resolves %keys only when it is loaded, so replacing the content is what makes a
+        // language switch visible immediately instead of asking the user to close Settings.
+        while (pane.getTabs().size() > 4) {
+            pane.getTabs().removeLast();
+        }
         var lm = LanguageManager.getInstance();
         // tab company
         Tab tabCompany = pane.getTabs().getFirst();
@@ -96,6 +112,16 @@ public class SettingController implements Initializable, AppSettingInterface {
         if (AuthorizationGuard.isGranted(AppPermissions.SETTING_BACKUP_SHOW)) {
             pane.getTabs().add(new Tab(lm.getString("backup"), backup()));
             pane.getTabs().add(new Tab(lm.getString("workstations.tabTitle"), getTabWorkstations()));
+        }
+    }
+
+    private void reloadTabsForLanguage() {
+        int selectedIndex = pane.getSelectionModel().getSelectedIndex();
+        try {
+            addTabs();
+            pane.getSelectionModel().select(Math.max(0, Math.min(selectedIndex, pane.getTabs().size() - 1)));
+        } catch (Exception e) {
+            AllAlerts.handleError(LanguageManager.getInstance().getString("settings.loadContext"), e);
         }
     }
 
