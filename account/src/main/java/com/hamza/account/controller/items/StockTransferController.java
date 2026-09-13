@@ -8,17 +8,19 @@ import com.hamza.account.features.events.StockBalancesChanged;
 import com.hamza.account.features.rbac.CurrentUser;
 import com.hamza.account.features.stocktransfer.StockTransferCommand;
 import com.hamza.account.features.stocktransfer.StockTransferLine;
+import com.hamza.account.features.stocktransfer.StockTransferReportRow;
 import com.hamza.account.features.stocktransfer.StockTransferService;
 import com.hamza.account.features.stocktransfer.StockTransferSummary;
 import com.hamza.account.model.domain.ItemsModel;
 import com.hamza.account.model.domain.Stock;
 import com.hamza.account.model.domain.UnitsModel;
 import com.hamza.account.openFxml.FxmlPath;
-import com.hamza.account.reportData.Print_Reports;
 import com.hamza.account.service.ItemUnits;
 import com.hamza.account.service.ItemsService;
 import com.hamza.account.service.StockService;
 import com.hamza.account.table.TableSetting;
+import com.hamza.account.table.TablePdfLayout;
+import com.hamza.account.table.TablePdfReport;
 import com.hamza.account.view.TextSearchApplication;
 import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.language.LanguageManager;
@@ -39,7 +41,9 @@ import javafx.scene.layout.AnchorPane;
 import javafx.scene.layout.HBox;
 import javafx.util.StringConverter;
 
+import java.io.File;
 import java.io.IOException;
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 
@@ -299,8 +303,25 @@ public class StockTransferController {
             return;
         }
         try {
-            new Print_Reports().printStockTransferHistory(
-                    transferService.reportRows(from, to), from.toString(), to.toString());
+            List<StockTransferReportRow> rows = transferService.reportRows(from, to);
+            String title = message("stocks.transfer.history.title");
+            File target = TablePdfReport.chooseTarget(root.getScene().getWindow(), title);
+            if (target == null) {
+                return;
+            }
+            TablePdfLayout layout = new TablePdfLayout(
+                    new String[]{
+                            message("stocks.transfer.history.column.id"), message("stocks.transfer.history.column.date"),
+                            message("stocks.transfer.history.column.from"), message("stocks.transfer.history.column.to"),
+                            message("stocks.transfer.item"), message("item.column.unit"), message("quantity")},
+                    new float[]{60, 90, 150, 150, 200, 80, 72},
+                    rows.stream().map(row -> new String[]{
+                            String.valueOf(row.transferId()), row.transferDate().toString(), row.fromStockName(),
+                            row.toStockName(), row.itemName(), row.unitName(),
+                            Columns.quantity(BigDecimal.valueOf(row.quantity()))}).toList(),
+                    null);
+            TablePdfReport.write(target, title,
+                    message("stocks.transfer.report.period", from, to), layout, () -> { });
         } catch (Exception e) {
             reportFailure(e);
         }
@@ -330,8 +351,8 @@ public class StockTransferController {
     // Plumbing
     // ------------------------------------------------------------------
 
-    private String message(String key) {
-        return LanguageManager.getInstance().getString(key);
+    private String message(String key, Object... arguments) {
+        return LanguageManager.getInstance().getString(key, arguments);
     }
 
     private void reportFailure(Throwable error) {

@@ -1,7 +1,6 @@
 package com.hamza.account.reportData;
 
 import com.hamza.account.features.inventory.StockBalanceRow;
-import com.hamza.account.features.stocktransfer.StockTransferReportRow;
 import net.sf.jasperreports.engine.JasperCompileManager;
 import net.sf.jasperreports.engine.JasperFillManager;
 import net.sf.jasperreports.engine.JasperPrint;
@@ -11,7 +10,6 @@ import net.sf.jasperreports.engine.xml.JRXmlLoader;
 import org.junit.jupiter.api.Test;
 
 import java.io.File;
-import java.time.LocalDate;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -24,7 +22,7 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
  * handed at runtime, since {@link JRBeanCollectionDataSource} finds a field by
  * reflection and only fails the moment it is asked to read one. This fills each of
  * the remaining Jasper warehouse reports with one row of the real record types
- * ({@link StockTransferReportRow}, {@link StockBalanceRow}) the way
+ * ({@link StockBalanceRow}) the way
  * {@code Print_Reports} actually does, so a renamed field fails here rather than on
  * a live "طباعة" press.
  */
@@ -37,14 +35,6 @@ class WarehouseReportsFillTest {
         File fromModule = new File("../reports/ar");
         if (fromModule.isDirectory()) return fromModule.getPath();
         return new File("reports/ar").getPath();
-    }
-
-    @Test
-    void transferHistoryFillsFromRealReportRows() {
-        assertDoesNotThrow(() -> fill("stock-transfer-history-A4.jrxml",
-                List.of(new StockTransferReportRow(1, LocalDate.now(), "الرئيسي", "مخزن 2",
-                        "صنف اختبار", "قطعة", 5.0)),
-                Map.of("dateFrom", LocalDate.now().minusDays(30).toString(), "dateTo", LocalDate.now().toString())));
     }
 
     /**

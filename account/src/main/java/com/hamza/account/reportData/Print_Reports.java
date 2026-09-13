@@ -7,7 +7,6 @@ import com.hamza.account.controller.model.ModelPrintInvoice;
 import com.hamza.account.controller.model.PrintPurchaseWithName;
 import com.hamza.account.features.inventory.InventoryRow;
 import com.hamza.account.features.inventory.StockBalanceRow;
-import com.hamza.account.features.stocktransfer.StockTransferReportRow;
 import com.hamza.account.model.domain.*;
 import com.hamza.account.service.ShiftReportService;
 import com.hamza.account.features.rbac.CurrentUser;
@@ -90,13 +89,6 @@ public class Print_Reports extends ReportCompany {
         HashMap<String, Object> map = getStringObjectHashMap(list, null);
         map.put("stock_name", stock_name);
         jasperData.printJasperPrint(JasperReportPaths.Report.INVENTORY_BY_TABLE, LanguageManager.getInstance().getString("items"), map, 1, "");
-    }
-
-    public void printStockTransferHistory(@NotNull List<StockTransferReportRow> list, @NotNull String dateFrom, @NotNull String dateTo) {
-        HashMap<String, Object> map = getStringObjectHashMap(list, null);
-        map.put("dateFrom", dateFrom);
-        map.put("dateTo", dateTo);
-        jasperData.printJasperPrint(JasperReportPaths.Report.STOCK_TRANSFER_HISTORY, LanguageManager.getInstance().getString("stocks.transfer.history.title"), map, 1, printerNameNormal);
     }
 
     public void printItemsAcrossStocks(@NotNull List<StockBalanceRow> list) {
