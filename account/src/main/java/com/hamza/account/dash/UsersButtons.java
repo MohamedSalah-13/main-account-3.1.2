@@ -12,7 +12,7 @@ import com.hamza.account.authorization.AppPermissions;
 import com.hamza.account.authorization.PermissionKey;
 import com.hamza.controlsfx.language.LanguageManager;
 import com.hamza.account.view.OpenApplication;
-import com.hamza.account.config.Image_Setting;
+import com.hamza.account.config.AppIcon;
 import com.hamza.account.openFxml.OpenFxmlApplication;
 import javafx.scene.control.TabPane;
 import javafx.scene.layout.Pane;
@@ -49,7 +49,7 @@ public class UsersButtons extends LoadData {
             @Override
             public void actionAddPaneToTabPane(TabPane tabPane) throws Exception {
                 Pane pane = new OpenFxmlApplication(new UserController()).getPane();
-                addTape(tabPane, pane, textName(), new Image_Setting().setting);
+                addTape(tabPane, pane, textName(), AppIcon.USERS.graphic(20));
             }
 
             @Override

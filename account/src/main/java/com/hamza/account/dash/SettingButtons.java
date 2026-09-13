@@ -1,6 +1,6 @@
 package com.hamza.account.dash;
 
-import com.hamza.account.config.Image_Setting;
+import com.hamza.account.config.AppIcon;
 import com.hamza.account.config.SaveDatabaseFile;
 import com.hamza.account.controller.main.ButtonWithPerm;
 import com.hamza.account.controller.main.DataPublisher;
@@ -16,7 +16,6 @@ import com.hamza.account.view.OpenApplication;
 import com.hamza.account.view.PassCheckView;
 import com.hamza.account.view.SettingApplication;
 import com.hamza.controlsfx.alert.AllAlerts;
-import com.hamza.controlsfx.button.ImageDesign;
 import com.hamza.controlsfx.language.LanguageManager;
 import javafx.scene.Node;
 import javafx.scene.Scene;
@@ -70,7 +69,7 @@ public class SettingButtons {
 
             @Override
             public Node imageNode() {
-                return new ImageDesign(new Image_Setting().setting);
+                return AppIcon.SETTINGS.graphic(24);
             }
 
             @Override

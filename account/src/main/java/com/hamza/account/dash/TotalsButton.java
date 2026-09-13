@@ -1,7 +1,7 @@
 package com.hamza.account.dash;
 
 import com.hamza.account.authorization.PermissionKey;
-import com.hamza.account.config.Image_Setting;
+import com.hamza.account.config.AppIcon;
 import com.hamza.account.controller.main.ButtonWithPerm;
 import com.hamza.account.controller.main.DataPublisher;
 import com.hamza.account.controller.others.ServiceRegistry;
@@ -22,11 +22,14 @@ import org.jetbrains.annotations.NotNull;
 public class TotalsButton<T3 extends BaseNames, T4 extends BaseAccount>
         extends TotalsService<T3, T4> {
 
+    private final AppIcon tabIcon;
+
     private final EmployeeService employeeService = ServiceRegistry.get(EmployeeService.class);
 
     public TotalsButton(DataInterface<?, ?, T3, T4> dataInterface, DaoFactory daoFactory
-            , DataPublisher dataPublisher) throws Exception {
+            , DataPublisher dataPublisher, AppIcon tabIcon) throws Exception {
         super(dataInterface, daoFactory, dataPublisher);
+        this.tabIcon = tabIcon;
     }
 
     public ButtonWithPerm totals() {
@@ -50,7 +53,7 @@ public class TotalsButton<T3 extends BaseNames, T4 extends BaseAccount>
             @Override
             public void actionAddPaneToTabPane(TabPane tabPane) throws Exception {
                 var pane = initializeTotalsApp().getPane();
-                addTape(tabPane, pane, textName(), new Image_Setting().totals);
+                addTape(tabPane, pane, textName(), tabIcon.graphic(20));
             }
 
             @Override
@@ -84,11 +87,11 @@ public class TotalsButton<T3 extends BaseNames, T4 extends BaseAccount>
 //            public void actionAddPaneToTabPane(TabPane tabPane) throws Exception {
 //                BuyApplication buyApp = new BuyApplication(dataInterface, dataPublisher, 0);
 //
-//                var shoppingSales = new Image_Setting().shoppingPurchase;
+//                var shoppingIcon = AppIcon.PURCHASE.graphic(20);
 //                if (textName().equals("sales") || textName().equals("المبيعات"))
-//                    shoppingSales = new Image_Setting().shoppingSales;
+//                    shoppingIcon = AppIcon.SALES.graphic(20);
 //
-//                addTape(tabPane, buyApp.getPane(), textName(), shoppingSales);
+//                addTape(tabPane, buyApp.getPane(), textName(), shoppingIcon);
 //            }
 //
 //            @Override

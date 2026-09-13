@@ -3,7 +3,6 @@ package com.hamza.account.dash;
 import com.hamza.account.authorization.AppPermissions;
 import com.hamza.account.authorization.PermissionKey;
 import com.hamza.account.config.AppIcon;
-import com.hamza.account.config.Image_Setting;
 import com.hamza.account.controller.employee.EmployeeFormController;
 import com.hamza.account.controller.main.ButtonWithPerm;
 import com.hamza.account.controller.main.DataPublisher;
@@ -76,7 +75,7 @@ public class EmployeesButtons extends LoadData {
             @Override
             public void actionAddPaneToTabPane(TabPane tabPane) throws Exception {
                 EmployeesApplication screen = new EmployeesApplication(daoFactory, dataPublisher);
-                addTape(tabPane, screen.getPane(), textName(), new Image_Setting().account);
+                addTape(tabPane, screen.getPane(), textName(), AppIcon.EMPLOYEES.graphic(20));
             }
 
             @Override

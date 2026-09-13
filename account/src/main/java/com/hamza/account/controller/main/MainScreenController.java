@@ -149,6 +149,7 @@ public class MainScreenController extends MainItems implements Initializable {
         try {
             tabPane.getTabs().getFirst().setText(LanguageManager.getInstance().getString("main"));
             tabPane.getTabs().getFirst().setClosable(false);
+            tabPane.getTabs().getFirst().setGraphic(AppIcon.HOME.graphic(20));
         } catch (Exception e) {
             logException(e);
         }

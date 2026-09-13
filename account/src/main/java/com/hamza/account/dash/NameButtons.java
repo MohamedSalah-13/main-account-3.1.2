@@ -1,6 +1,6 @@
 package com.hamza.account.dash;
 
-import com.hamza.account.config.Image_Setting;
+import com.hamza.account.config.AppIcon;
 import com.hamza.account.controller.main.ButtonWithPerm;
 import com.hamza.account.controller.main.DataPublisher;
 import com.hamza.account.controller.main.LoadOtherData;
@@ -24,9 +24,12 @@ import org.jetbrains.annotations.NotNull;
 public class NameButtons<T3 extends BaseNames, T4 extends BaseAccount>
         extends LoadOtherData<T3, T4> {
 
+    private final AppIcon tabIcon;
+
     public NameButtons(DaoFactory daoFactory, DataPublisher dataPublisher
-            , DataInterface<?, ?, T3, T4> dataInterface) throws Exception {
+            , DataInterface<?, ?, T3, T4> dataInterface, AppIcon tabIcon) throws Exception {
         super(dataInterface, daoFactory, dataPublisher);
+        this.tabIcon = tabIcon;
     }
 
     public ButtonWithPerm namesData() {
@@ -51,7 +54,7 @@ public class NameButtons<T3 extends BaseNames, T4 extends BaseAccount>
             public void actionAddPaneToTabPane(TabPane tabPane) throws Exception {
                 NameController<T3, T4> nameController = new NameController<>(dataInterface, daoFactory, dataPublisher);
                 Pane pane = new TableOpen<>(nameController).getPane();
-                addTape(tabPane, pane, textName(), new Image_Setting().personCustomer);
+                addTape(tabPane, pane, textName(), tabIcon.graphic(20));
             }
 
             @Override

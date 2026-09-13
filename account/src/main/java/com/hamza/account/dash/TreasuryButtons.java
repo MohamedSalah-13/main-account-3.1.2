@@ -1,6 +1,6 @@
 package com.hamza.account.dash;
 
-import com.hamza.account.config.Image_Setting;
+import com.hamza.account.config.AppIcon;
 import com.hamza.account.controller.main.ButtonWithPerm;
 import com.hamza.account.controller.main.DataPublisher;
 import com.hamza.account.controller.others.ProcessesController;
@@ -59,7 +59,7 @@ public class TreasuryButtons {
             @Override
             public void actionAddPaneToTabPane(TabPane tabPane) throws Exception {
                 Pane pane = new OpenFxmlApplication(new TreasureDetailsController(daoFactory, dataPublisher)).getPane();
-                addTape(tabPane, pane, textName(), new Image_Setting().tools);
+                addTape(tabPane, pane, textName(), AppIcon.TREASURY_CASH.graphic(20));
             }
 
             @Override
@@ -99,7 +99,7 @@ public class TreasuryButtons {
             @Override
             public void actionAddPaneToTabPane(TabPane tabPane) throws Exception {
                 Pane pane = new OpenFxmlApplication(new TreasuryController(daoFactory)).getPane();
-                addTape(tabPane, pane, textName(), new Image_Setting().tools);
+                addTape(tabPane, pane, textName(), AppIcon.TREASURY_BANK.graphic(20));
             }
 
             @Override
@@ -132,7 +132,7 @@ public class TreasuryButtons {
             @Override
             public void actionAddPaneToTabPane(TabPane tabPane) throws Exception {
                 Pane pane = new OpenFxmlApplication(new TreasuryTransferController(daoFactory)).getPane();
-                addTape(tabPane, pane, textName(), new Image_Setting().tools);
+                addTape(tabPane, pane, textName(), AppIcon.TREASURY_WALLET.graphic(20));
             }
 
             @Override
@@ -165,7 +165,7 @@ public class TreasuryButtons {
             @Override
             public void actionAddPaneToTabPane(TabPane tabPane) throws Exception {
                 Pane pane = new OpenFxmlApplication(new TreasuryCashController(daoFactory)).getPane();
-                addTape(tabPane, pane, textName(), new Image_Setting().tools);
+                addTape(tabPane, pane, textName(), AppIcon.TREASURY_CASH.graphic(20));
             }
 
             @Override
@@ -201,7 +201,7 @@ public class TreasuryButtons {
             @Override
             public void actionAddPaneToTabPane(TabPane tabPane) throws Exception {
                 Pane pane = new OpenFxmlApplication(new TreasuryCapitalController(daoFactory)).getPane();
-                addTape(tabPane, pane, textName(), new Image_Setting().tools);
+                addTape(tabPane, pane, textName(), AppIcon.TREASURY_WALLET.graphic(20));
             }
 
             @Override
@@ -232,7 +232,7 @@ public class TreasuryButtons {
             @Override
             public void actionAddPaneToTabPane(TabPane tabPane) throws Exception {
                 Pane pane = new OpenFxmlApplication(new ProcessesController()).getPane();
-                addTape(tabPane, pane, textName(), new Image_Setting().setting);
+                addTape(tabPane, pane, textName(), AppIcon.REPORT.graphic(20));
             }
 
             @Override
@@ -266,7 +266,7 @@ public class TreasuryButtons {
             public void actionAddPaneToTabPane(TabPane tabPane) throws Exception {
                 var controller = new ExpensesDetailsApplication();
                 Pane pane = new TableOpen<>(controller).getPane();
-                addTape(tabPane, pane, textName(), new Image_Setting().tools);
+                addTape(tabPane, pane, textName(), AppIcon.TREASURY_CASH.graphic(20));
             }
 
             @Override

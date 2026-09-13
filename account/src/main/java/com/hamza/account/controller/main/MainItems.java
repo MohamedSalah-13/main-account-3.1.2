@@ -1,5 +1,6 @@
 package com.hamza.account.controller.main;
 
+import com.hamza.account.config.AppIcon;
 import com.hamza.account.dash.*;
 import com.hamza.account.interfaces.api.DataInterface;
 import com.hamza.account.interfaces.impl_dataInterface.CustomData;
@@ -53,13 +54,13 @@ public class MainItems extends DataPublisher {
         this.forAllButtons = new ForAllButtons(daoFactory, this);
         this.treasuryButtons = new TreasuryButtons(daoFactory, this);
         this.shiftButtons = new ShiftButtons(daoFactory, this);
-        this.nameSup = new NameButtons<>(daoFactory, this, suppliersData);
-        this.nameCustomer = new NameButtons<>(daoFactory, this, customData);
-        this.totalPurchase = new TotalsButton(suppliersData, daoFactory, this);
-        this.totalSales = new TotalsButton(customData, daoFactory, this);
-        this.totalPurchaseReturn = new TotalsButton(getDataInterfacePurchaseReturn(), daoFactory, this);
-        this.totalSalesReturn = new TotalsButton(getDataInterfaceSalesReturn(), daoFactory, this);
-        this.accountButtonsSup = new AccountButtons<>(daoFactory, this, suppliersData);
-        this.accountButtonsCustom = new AccountButtons<>(daoFactory, this, customData);
+        this.nameSup = new NameButtons<>(daoFactory, this, suppliersData, AppIcon.SUPPLIERS);
+        this.nameCustomer = new NameButtons<>(daoFactory, this, customData, AppIcon.CUSTOMERS);
+        this.totalPurchase = new TotalsButton(suppliersData, daoFactory, this, AppIcon.PURCHASE);
+        this.totalSales = new TotalsButton(customData, daoFactory, this, AppIcon.SALES);
+        this.totalPurchaseReturn = new TotalsButton(getDataInterfacePurchaseReturn(), daoFactory, this, AppIcon.PURCHASE);
+        this.totalSalesReturn = new TotalsButton(getDataInterfaceSalesReturn(), daoFactory, this, AppIcon.SALES);
+        this.accountButtonsSup = new AccountButtons<>(daoFactory, this, suppliersData, AppIcon.SUPPLIERS);
+        this.accountButtonsCustom = new AccountButtons<>(daoFactory, this, customData, AppIcon.CUSTOMERS);
     }
 }

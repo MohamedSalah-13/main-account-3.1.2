@@ -1,6 +1,6 @@
 package com.hamza.account.dash;
 
-import com.hamza.account.config.Image_Setting;
+import com.hamza.account.config.AppIcon;
 import com.hamza.account.controller.main.ButtonWithPerm;
 import com.hamza.account.controller.main.DataPublisher;
 import com.hamza.account.controller.main.LoadOtherData;
@@ -20,10 +20,12 @@ import org.jetbrains.annotations.NotNull;
 public class AccountButtons<T3 extends BaseNames, T4 extends BaseAccount>
         extends LoadOtherData<T3, T4> implements ButtonWithPerm {
 
-    public AccountButtons(DaoFactory daoFactory
-            , DataPublisher dataPublisher
-            , DataInterface<?, ?, T3, T4> dataInterface) throws Exception {
+    private final AppIcon tabIcon;
+
+    public AccountButtons(DaoFactory daoFactory, DataPublisher dataPublisher
+            , DataInterface<?, ?, T3, T4> dataInterface, AppIcon tabIcon) throws Exception {
         super(dataInterface, daoFactory, dataPublisher);
+        this.tabIcon = tabIcon;
     }
 
 
@@ -40,7 +42,7 @@ public class AccountButtons<T3 extends BaseNames, T4 extends BaseAccount>
     @Override
     public void actionAddPaneToTabPane(TabPane tabPane) throws Exception {
         AccountTotalsApplication design = new AccountTotalsApplication(daoFactory, dataPublisher, dataInterface);
-        addTape(tabPane, design.getPane(), textName(), new Image_Setting().account);
+        addTape(tabPane, design.getPane(), textName(), tabIcon.graphic(20));
     }
 
     @Override

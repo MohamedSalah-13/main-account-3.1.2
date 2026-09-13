@@ -1,7 +1,7 @@
 package com.hamza.account.dash;
 
 import com.hamza.account.Main;
-import com.hamza.account.config.Image_Setting;
+import com.hamza.account.config.AppIcon;
 import com.hamza.account.controller.main.ButtonWithPerm;
 import com.hamza.account.controller.main.DataPublisher;
 import com.hamza.account.controller.main.LoadData;
@@ -105,7 +105,7 @@ public class ReportsButtons extends LoadData {
             @Override
             public void actionAddPaneToTabPane(TabPane tabPane) throws Exception {
                 Pane pane = new OpenFxmlApplication(new ProfitLossController()).getPane();
-                addTape(tabPane, pane, textName(), new Image_Setting().reports);
+                addTape(tabPane, pane, textName(), AppIcon.REPORT.graphic(20));
             }
 
             @Override
