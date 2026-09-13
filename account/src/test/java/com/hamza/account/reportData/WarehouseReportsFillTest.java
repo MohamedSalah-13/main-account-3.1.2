@@ -2,7 +2,6 @@ package com.hamza.account.reportData;
 
 import com.hamza.account.features.inventory.StockBalanceRow;
 import com.hamza.account.features.stocktransfer.StockTransferReportRow;
-import com.hamza.account.model.domain.Stock;
 import net.sf.jasperreports.engine.JasperCompileManager;
 import net.sf.jasperreports.engine.JasperFillManager;
 import net.sf.jasperreports.engine.JasperPrint;
@@ -24,8 +23,8 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
  * about whether a {@code $F{...}} actually resolves against the bean it will be
  * handed at runtime, since {@link JRBeanCollectionDataSource} finds a field by
  * reflection and only fails the moment it is asked to read one. This fills each of
- * the three warehouse reports with one row of the real record types
- * ({@link Stock}, {@link StockTransferReportRow}, {@link StockBalanceRow}) the way
+ * the remaining Jasper warehouse reports with one row of the real record types
+ * ({@link StockTransferReportRow}, {@link StockBalanceRow}) the way
  * {@code Print_Reports} actually does, so a renamed field fails here rather than on
  * a live "طباعة" press.
  */
@@ -38,12 +37,6 @@ class WarehouseReportsFillTest {
         File fromModule = new File("../reports/ar");
         if (fromModule.isDirectory()) return fromModule.getPath();
         return new File("reports/ar").getPath();
-    }
-
-    @Test
-    void stocksListFillsFromRealStockBeans() {
-        assertDoesNotThrow(() -> fill("stocks-list-A4.jrxml",
-                List.of(new Stock(1, "الرئيسي", "القاهرة")), Map.of()));
     }
 
     @Test

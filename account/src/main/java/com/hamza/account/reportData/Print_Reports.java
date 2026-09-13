@@ -92,11 +92,6 @@ public class Print_Reports extends ReportCompany {
         jasperData.printJasperPrint(JasperReportPaths.Report.INVENTORY_BY_TABLE, LanguageManager.getInstance().getString("items"), map, 1, "");
     }
 
-    public void printStocksList(@NotNull List<Stock> list) {
-        HashMap<String, Object> map = getStringObjectHashMap(list, null);
-        jasperData.printJasperPrint(JasperReportPaths.Report.STOCKS_LIST, LanguageManager.getInstance().getString("stocks.title"), map, 1, printerNameNormal);
-    }
-
     public void printStockTransferHistory(@NotNull List<StockTransferReportRow> list, @NotNull String dateFrom, @NotNull String dateTo) {
         HashMap<String, Object> map = getStringObjectHashMap(list, null);
         map.put("dateFrom", dateFrom);

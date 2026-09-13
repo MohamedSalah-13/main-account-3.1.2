@@ -4,8 +4,9 @@ import com.hamza.account.controller.others.ServiceRegistry;
 import com.hamza.account.features.events.StocksChanged;
 import com.hamza.account.model.domain.Stock;
 import com.hamza.account.openFxml.FxmlPath;
-import com.hamza.account.reportData.Print_Reports;
 import com.hamza.account.service.StockService;
+import com.hamza.account.table.TablePdfLayout;
+import com.hamza.account.table.TablePdfReport;
 import com.hamza.account.table.TableSetting;
 import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.language.LanguageManager;
@@ -15,6 +16,9 @@ import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TextField;
+
+import java.io.File;
+import java.util.List;
 
 @FxmlPath(pathFile = "items/stocks-view.fxml")
 public class StocksController {
@@ -80,7 +84,19 @@ public class StocksController {
     @FXML
     private void print() {
         try {
-            new Print_Reports().printStocksList(table.getItems());
+            String title = text("stocks.report.title");
+            File target = TablePdfReport.chooseTarget(table.getScene().getWindow(), title);
+            if (target == null) {
+                return;
+            }
+            List<Stock> rows = List.copyOf(table.getItems());
+            TablePdfLayout layout = new TablePdfLayout(
+                    new String[]{text("num"), text("stocks.name"), text("stocks.address")},
+                    new float[]{65, 245, 245},
+                    rows.stream().map(stock -> new String[]{
+                            String.valueOf(stock.getId()), stock.getName(), stock.getAddress()}).toList(),
+                    null);
+            TablePdfReport.write(target, title, "", layout, () -> { });
         } catch (Exception e) {
             AllAlerts.handleError(LanguageManager.getInstance().getString("stocks.title"), e);
         }
@@ -99,5 +115,9 @@ public class StocksController {
         } catch (Exception e) {
             AllAlerts.handleError(LanguageManager.getInstance().getString("stocks.title"), e);
         }
+    }
+
+    private String text(String key) {
+        return LanguageManager.getInstance().getString(key);
     }
 }
