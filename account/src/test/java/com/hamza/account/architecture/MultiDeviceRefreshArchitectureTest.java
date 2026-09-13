@@ -82,6 +82,20 @@ class MultiDeviceRefreshArchitectureTest {
     }
 
     @Test
+    void permissionEditorRefreshesSignedInSessionsAfterEverySecurityChange() {
+        String editor = SourceTree.withoutComments(SourceTree.readJava(
+                "com/hamza/account/controller/users/UserPermissionController.java"));
+        assertTrue(occurrences(editor, "publishUsersChanged()") >= 4,
+                "Saving roles, changing overrides, and deleting either must invalidate active sessions");
+        assertTrue(editor.contains("eventBus.publish(new UsersChanged())"));
+
+        String bootstrap = SourceTree.withoutComments(SourceTree.readJava(
+                "com/hamza/account/view/DownLoadApplication.java"));
+        assertTrue(bootstrap.contains("subscribe(UsersChanged.class"));
+        assertTrue(bootstrap.contains("rbacService.refreshCurrentSession()"));
+    }
+
+    @Test
     void openInvoicesWarnWithoutOverwritingEnteredLineValues() {
         String invoiceEditor = SourceTree.withoutComments(SourceTree.readJava(
                 "com/hamza/account/controller/invoice/BuyController2.java"));

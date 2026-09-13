@@ -1,17 +1,20 @@
 package com.hamza.account.controller.users;
 
-import com.hamza.account.features.rbac.*;
+import com.hamza.account.authorization.AppPermissions;
+import com.hamza.account.authorization.AuthorizationGuard;
+import com.hamza.account.authorization.PermissionKey;
 import com.hamza.account.config.AppIcon;
+import com.hamza.account.controller.others.ServiceRegistry;
+import com.hamza.account.features.events.UsersChanged;
+import com.hamza.account.features.rbac.*;
 import com.hamza.account.openFxml.FxmlPath;
 import com.hamza.account.openFxml.OpenFxmlApplication;
-import com.hamza.account.authorization.AuthorizationGuard;
-import com.hamza.account.authorization.AppPermissions;
-import com.hamza.account.authorization.PermissionKey;
 import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.error.UserValidationException;
 import com.hamza.controlsfx.interfaceData.AppSettingInterface;
 import com.hamza.controlsfx.language.LanguageManager;
+import com.hamza.controlsfx.observer.EventBus;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.ReadOnlyStringWrapper;
 import javafx.beans.property.SimpleBooleanProperty;
@@ -26,6 +29,7 @@ import javafx.scene.layout.Pane;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
+import java.util.Arrays;
 import java.util.LinkedHashSet;
 import java.util.Locale;
 import java.util.Set;
@@ -38,6 +42,7 @@ public final class UserPermissionController implements AppSettingInterface {
     private final int userId;
     private final String username;
     private final RbacService rbacService;
+    private final EventBus eventBus = ServiceRegistry.get(EventBus.class);
     private final ObservableList<UserRoleRow> userRoleRows = FXCollections.observableArrayList();
     private final ObservableList<RolePermissionRow> permissionRows = FXCollections.observableArrayList();
     private final ObservableList<UserRoleRow> parentRoleRows = FXCollections.observableArrayList();
@@ -289,6 +294,7 @@ public final class UserPermissionController implements AppSettingInterface {
             rbacService.saveUserOverride(userId, permission.id(), comboOverrideEffect.getValue(),
                     textOverrideReason.getText(), expiresAt);
             AllAlerts.alertSaveWithMessage(LanguageManager.getInstance().getString("user.rbac.msg.override.saved"));
+            publishUsersChanged();
             loadUserSecurityDetails();
         } catch (DaoException e) {
             report(e);
@@ -306,6 +312,7 @@ public final class UserPermissionController implements AppSettingInterface {
         try {
             if (rbacService.deleteUserOverride(userId, selected.permissionId()) > 0) {
                 AllAlerts.alertDelete();
+                publishUsersChanged();
                 loadUserSecurityDetails();
             }
         } catch (DaoException e) {
@@ -326,8 +333,13 @@ public final class UserPermissionController implements AppSettingInterface {
                 ? decision.explanationArguments()
                 : new Object[]{decision.roleSources().stream()
                         .map(this::roleSourceLabel)
-                        .collect(Collectors.joining(", "))};
+                        .collect(Collectors.joining(listSeparator()))};
         return LanguageManager.getInstance().getString(decision.explanationKey(), arguments);
+    }
+
+    /** Arabic separates a list with its own comma. */
+    private static String listSeparator() {
+        return LanguageManager.getInstance().isEnglish() ? ", " : "، ";
     }
 
     /** Built-in roles have localized labels; a business-created role deliberately keeps its own name. */
@@ -361,8 +373,8 @@ public final class UserPermissionController implements AppSettingInterface {
         if (!LanguageManager.getInstance().isEnglish() || code == null || code.isBlank()) {
             return storedDescription == null ? "" : storedDescription;
         }
-        return java.util.Arrays.stream(code.split("\\."))
-                .map(part -> java.util.Arrays.stream(part.split("_"))
+        return Arrays.stream(code.split("\\."))
+                .map(part -> Arrays.stream(part.split("_"))
                         .filter(word -> !word.isBlank())
                         .map(word -> word.substring(0, 1).toUpperCase(Locale.ROOT)
                                 + word.substring(1).toLowerCase(Locale.ROOT))
@@ -450,6 +462,7 @@ public final class UserPermissionController implements AppSettingInterface {
         try {
             if (rbacService.deleteRole(role) == 1) {
                 AllAlerts.alertDelete();
+                publishUsersChanged();
                 loadData();
             }
         } catch (DaoException e) {
@@ -484,6 +497,16 @@ public final class UserPermissionController implements AppSettingInterface {
 
         return rbacService.saveConfiguration(userId, role, permissionIds, parentRoleIds, assignedRoleIds,
                 creatingRole && checkAssignNewRole.isSelected());
+    }
+
+    @Override
+    public void afterSaved() {
+        publishUsersChanged();
+    }
+
+    /** Causes each signed-in workstation to re-read its own effective permission snapshot. */
+    private void publishUsersChanged() {
+        if (eventBus != null) eventBus.publish(new UsersChanged());
     }
 
     private RbacRole roleDraft() {

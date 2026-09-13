@@ -31,6 +31,7 @@ import javafx.scene.control.CheckBox;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TextField;
+import javafx.scene.input.KeyCode;
 import javafx.scene.layout.BorderPane;
 import javafx.util.StringConverter;
 
@@ -131,7 +132,14 @@ public class TreasuryController {
 
         setTextFormatter(amountField, feeField);
         configureButtons();
-        whenEnterPressed(nameField, amountField, typeCombo, activeCheck, feeField, saveButton);
+        whenEnterPressed(nameField, amountField, typeCombo, activeCheck, feeField);
+        // The last field lands on the button that matches the form: editing a selected
+        // treasury must not put focus on "save", which would insert a copy of it.
+        feeField.setOnKeyPressed(event -> {
+            if (event.getCode() == KeyCode.ENTER) {
+                (selectedTreasury == null ? saveButton : updateButton).requestFocus();
+            }
+        });
         buildColumns();
 
         treasuryTable.getSelectionModel().selectedItemProperty()
@@ -165,7 +173,8 @@ public class TreasuryController {
                 Columns.money("treasury.column.in", TreasuryBalanceSummary::totalIn),
                 Columns.money("treasury.column.out", TreasuryBalanceSummary::totalOut),
                 Columns.money("treasury.column.balance", TreasuryBalanceSummary::balance),
-                Columns.money("treasury.column.fee", TreasuryBalanceSummary::feePercent));
+                // A percentage, not an amount: no money formatting, no red for a negative.
+                Columns.number("treasury.column.fee", TreasuryBalanceSummary::feePercent));
     }
 
     /** The list uses the same PDF path as customers, so the visible columns are the printed columns. */

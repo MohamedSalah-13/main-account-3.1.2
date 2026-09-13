@@ -107,6 +107,7 @@ public class SettingCompanyController implements Initializable {
      * Set while the form is being filled in, so filling it does not read as the user typing.
      */
     private boolean filling;
+    private boolean unsavedChanges;
 
     @FXML
     private Button btnAddImage, btnSave, btnClearImage, btnReset;
@@ -379,6 +380,14 @@ public class SettingCompanyController implements Initializable {
     // ------------------------------------------------------------------
 
     /**
+     * Whether the form holds edits nobody has saved. The settings screen asks before it
+     * rebuilds this tab for a language change, which would otherwise discard them.
+     */
+    public boolean hasUnsavedChanges() {
+        return unsavedChanges;
+    }
+
+    /**
      * Whether the form differs from what was last read or saved. It is what enables the
      * save and cancel buttons, so nobody has to guess whether their change went in.
      */
@@ -393,6 +402,7 @@ public class SettingCompanyController implements Initializable {
                 || !trimmed(textCom).equals(orEmpty(company.getCommercial()))
                 || !CompanyLogo.sameBytes(logo, savedLogo);
 
+        unsavedChanges = dirty;
         btnSave.setDisable(!dirty || !mayEdit);
         btnReset.setDisable(!dirty);
         labelStatus.setText(statusText(dirty));

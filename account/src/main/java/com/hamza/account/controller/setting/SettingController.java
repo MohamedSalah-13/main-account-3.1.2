@@ -39,6 +39,7 @@ public class SettingController implements Initializable, AppSettingInterface {
     private final DaoFactory daoFactory;
     private final EventBus eventBus = ServiceRegistry.get(EventBus.class);
     private final Subscriptions subscriptions = new Subscriptions();
+    private SettingCompanyController companyController;
 
     @FXML
     private TabPane pane;
@@ -87,7 +88,11 @@ public class SettingController implements Initializable, AppSettingInterface {
         var lm = LanguageManager.getInstance();
         // tab company
         Tab tabCompany = pane.getTabs().getFirst();
-        tabCompany.setContent(getTabCompany());
+        // A company form with unsaved edits keeps its content (and its old captions) rather
+        // than losing what was typed; it takes the new language the next time it is opened.
+        if (companyController == null || !companyController.hasUnsavedChanges()) {
+            tabCompany.setContent(getTabCompany());
+        }
         tabCompany.setText(lm.getString("settings.company.tabTitle"));
         // tab language
         Tab tabLanguage = pane.getTabs().get(1);
@@ -143,7 +148,8 @@ public class SettingController implements Initializable, AppSettingInterface {
 
     private Pane getTabCompany() throws IOException {
         // Its collaborators come from ServiceRegistry, so it needs nothing handed to it.
-        return new OpenFxmlApplication(new SettingCompanyController()).getPane();
+        companyController = new SettingCompanyController();
+        return new OpenFxmlApplication(companyController).getPane();
     }
 
     private Pane getTabLanguage() throws Exception {
