@@ -314,15 +314,31 @@ public class PayrollController implements AppSettingInterface {
     // ---- loading -----------------------------------------------------------------------------
 
     private void loadRuns() {
+        loadRuns(current == null ? 0 : current.id());
+    }
+
+    /**
+     * Reloads the list and selects one run by id.
+     * <p>
+     * The id is <b>passed in rather than read back from {@code current}</b>, and the combo's
+     * handler is detached while the items are replaced. Both are needed for the same reason:
+     * {@code setAll} fires the handler, which writes whatever the combo happens to hold into
+     * {@code current} - so a "keep what was selected" rule read afterwards re-selects the run
+     * that was showing before. Creating a month then left the screen on the previous month,
+     * announcing that it had created one. Found by pressing the button.
+     */
+    private void loadRuns(int selectRunId) {
         try {
             List<PayrollRun> list = service.recentRuns(60);
+            runs.setOnAction(null);
             runs.getItems().setAll(list);
+            runs.setOnAction(event -> show(runs.getValue()));
             if (list.isEmpty()) {
                 show(null);
                 return;
             }
-            PayrollRun keep = current == null ? list.get(0) : list.stream()
-                    .filter(run -> run.id() == current.id()).findFirst().orElse(list.get(0));
+            PayrollRun keep = list.stream()
+                    .filter(run -> run.id() == selectRunId).findFirst().orElse(list.get(0));
             runs.getSelectionModel().select(keep);
             show(keep);
         } catch (Exception e) {
@@ -396,8 +412,7 @@ public class PayrollController implements AppSettingInterface {
             PayrollPeriod period = PayrollPeriod.parse(year.getValue(), month.getValue());
             int runId = service.createDraft(period, emptyToNull(notes.getText()));
             notes.clear();
-            current = service.findRun(runId).orElse(null);
-            loadRuns();
+            loadRuns(runId);
             AllAlerts.alertSaveWithMessage(text("payroll.created"));
         } catch (Exception e) {
             report(e);

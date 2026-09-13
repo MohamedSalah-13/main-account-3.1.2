@@ -342,11 +342,16 @@ public class EmployeesScreenController extends LoadData {
         // The payroll opens from here rather than from the main menu, the way the ageing report
         // opens from the balances screen: same people, same permission, and a menu entry would
         // need a feature in the signed product catalogue.
+        List<Node> bar = new ArrayList<>(List.of(divider, add, jobs));
         if (AuthorizationGuard.isGranted(AppPermissions.PAYROLL_SHOW)) {
-            Button payroll = button("payroll.title", AppIcon.REPORT, this::openPayroll);
-            return new Node[]{divider, add, jobs, payroll, refresh, print, excel, viewMenu};
+            bar.add(button("payroll.title", AppIcon.REPORT, this::openPayroll));
         }
-        return new Node[]{divider, add, jobs, refresh, print, excel, viewMenu};
+        if (AuthorizationGuard.isGranted(AppPermissions.ATTENDANCE_SHOW)) {
+            bar.add(button("attendance.title", AppIcon.SELECT_ALL, this::openAttendance));
+            bar.add(button("leave.title", AppIcon.INFO, this::openLeave));
+        }
+        bar.addAll(List.of(refresh, print, excel, viewMenu));
+        return bar.toArray(new Node[0]);
     }
 
     private TableColumnViews<Employee> columnViews() {
@@ -612,6 +617,24 @@ public class EmployeesScreenController extends LoadData {
     private void openJobs() {
         try {
             new AddForAllApplication(0, new JobsController());
+        } catch (Exception e) {
+            report(e);
+        }
+    }
+
+    /** The month's attendance grid, for the same people this screen lists. */
+    private void openAttendance() {
+        try {
+            new OpenApplication<>(new AttendanceGridController());
+        } catch (Exception e) {
+            report(e);
+        }
+    }
+
+    /** Leave requests and their decisions. */
+    private void openLeave() {
+        try {
+            new OpenApplication<>(new LeaveRequestsController());
         } catch (Exception e) {
             report(e);
         }
