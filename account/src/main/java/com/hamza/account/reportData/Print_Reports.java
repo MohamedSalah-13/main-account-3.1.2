@@ -1,26 +1,26 @@
 package com.hamza.account.reportData;
 
 import com.hamza.account.finance.MoneyMath;
-import com.hamza.controlsfx.database.ConnectionManager;
 import com.hamza.account.controller.invoice.ShowInvoiceNameData;
 import com.hamza.account.controller.model.ModelPrintInvoice;
 import com.hamza.account.controller.model.PrintPurchaseWithName;
 import com.hamza.account.model.domain.*;
 import com.hamza.account.service.ShiftReportService;
 import com.hamza.account.features.rbac.CurrentUser;
-import com.hamza.controlsfx.database.DaoException;
+import com.hamza.account.table.TablePdfLayout;
+import com.hamza.account.table.TablePdfReport;
+import com.hamza.account.config.NamesTables;
 import com.hamza.controlsfx.language.LanguageManager;
 import com.hamza.controlsfx.others.CssToColorHelper;
 import net.sf.jasperreports.engine.JRException;
 import net.sf.jasperreports.engine.data.JRBeanCollectionDataSource;
 import org.jetbrains.annotations.NotNull;
 
-import java.sql.Connection;
-import java.sql.SQLException;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.HashMap;
 import java.util.List;
+import java.io.File;
 
 import static com.hamza.account.config.PropertiesName.*;
 import static com.hamza.controlsfx.dateTime.DateUtils.DATE_FORMATTER;
@@ -35,20 +35,6 @@ public class Print_Reports extends ReportCompany {
         super();
     }
 
-    /**
-     * Takes a connection from the pool for the length of one report. Building a
-     * ConnectionToDatabase here re-read and decrypted config.xml on every report
-     * just to reach the pool that was already open.
-     */
-    private <E extends Exception> void withConnection(ThrowingConsumer<Connection, E> action) throws E, DaoException, SQLException {
-        Connection connection = null;
-        try {
-            connection = ConnectionManager.acquire();
-            action.accept(connection);
-        } finally {
-            ConnectionManager.release(connection);
-        }
-    }
     public void printMultiInvoice(@NotNull List<PrintPurchaseWithName> list, @NotNull String reportName, @NotNull String from, @NotNull String to, CssToColorHelper helper) {
         HashMap<String, Object> company = getStringObjectHashMap(list, helper);
         company.put("date_from", from);
@@ -64,14 +50,6 @@ public class Print_Reports extends ReportCompany {
         });
         thread.start();
 
-    }
-
-    public <T> void printAccountStatement(List<T> list, boolean s, String reportName, String accountName, CssToColorHelper helper) {
-        HashMap<String, Object> map = getStringObjectHashMap(list, helper);
-        map.put("p1", s);
-        map.put("accountName", accountName);
-        addHeaderToReports(map, reportName);
-        jasperData.printJasperPrint(JasperReportPaths.Account.ACCOUNT_STATEMENT, reportName, map, 1, "");
     }
 
     /**
@@ -90,51 +68,34 @@ public class Print_Reports extends ReportCompany {
      *                  screen showed, so a card filtered to sales printed with the
      *                  purchases still on it and totals that did not match its rows.
      */
-    public void printCardItem(@NotNull Integer itemId, double purchase, double sales, double purchase_re, double sales_re, double first_balance
-            , double amount, @NotNull String dateFrom, @NotNull String dateTo, String tableName) throws DaoException, SQLException {
-        printCardItem(com.hamza.account.config.DefaultStock.ID, itemId, purchase, sales, purchase_re, sales_re,
-                first_balance, amount, dateFrom, dateTo, tableName);
-    }
-
-    public void printCardItem(int stockId, @NotNull Integer itemId, double purchase, double sales, double purchase_re,
-                              double sales_re, double first_balance, double amount, @NotNull String dateFrom,
-                              @NotNull String dateTo, String tableName) throws DaoException, SQLException {
-        HashMap<String, Object> company = getCompany();
-        company.put("itemNum", itemId);
-        company.put("stockId", stockId);
-        company.put("tableName", tableName);
-        company.put("purchase", purchase);
-        company.put("sales", sales);
-        company.put("purchase_re", purchase_re);
-        company.put("sales_re", sales_re);
-        company.put("first_balance", first_balance);
-        company.put("amount", amount);
-        company.put("dateFrom", dateFrom);
-        company.put("dateTo", dateTo);
-        withConnection(connection ->
-                jasperData.printJasperPrintWithConnection(
-                        JasperReportPaths.Report.CARD_ITEMS,
-                        LanguageManager.getInstance().getString("item.card.title"),
-                        company,
-                        1,
-                        "",
-                        connection
-                )
-        );
-    }
-
     public void printInvoice(@NotNull List<?> list, @NotNull HashMap<String, Object> invoiceDetails, String nameReport) { // invoice purchase or nameReport
-        HashMap<String, Object> map = getStringObjectHashMap(list, null);
-        map.put("invoice_id", invoiceDetails.get(ShowInvoiceNameData.ID));
-        map.put("invoice_name", invoiceDetails.get(ShowInvoiceNameData.NAME));
-        map.put("invoice_date", LocalDate.parse(invoiceDetails.get(ShowInvoiceNameData.DATE).toString(), DATE_FORMATTER).toString());
-        map.put("invoice_discount", invoiceDetails.get(ShowInvoiceNameData.DISCOUNT));
-        map.put("invoice_type", invoiceDetails.get(ShowInvoiceNameData.TYPE));
-        map.put("invoice_total", invoiceDetails.get(ShowInvoiceNameData.TOTAL));
-        map.put("invoice_paid", invoiceDetails.get(ShowInvoiceNameData.PAID));
-        map.put("name_report", nameReport);
-        addHeaderToReports(map, nameReport);
-        jasperData.printJasperPrint(JasperReportPaths.Invoice.STANDARD, nameReport, map, 1, "");
+        String title = nameReport == null || nameReport.isBlank()
+                ? LanguageManager.getInstance().getString("invoice.title") : nameReport;
+        File target = TablePdfReport.chooseTarget(null, title);
+        if (target == null) return;
+        String[] headers = {
+                LanguageManager.getInstance().getString(NamesTables.ITEM_NAME),
+                LanguageManager.getInstance().getString(NamesTables.BARCODE),
+                LanguageManager.getInstance().getString(NamesTables.TYPE),
+                LanguageManager.getInstance().getString(NamesTables.QUANTITY),
+                LanguageManager.getInstance().getString(NamesTables.PRICE),
+                LanguageManager.getInstance().getString(NamesTables.DISCOUNT),
+                LanguageManager.getInstance().getString(NamesTables.TOTAL_AMOUNT)};
+        float[] widths = {150, 95, 75, 70, 85, 85, 100};
+        List<String[]> rows = list.stream().map(value -> {
+            ModelPrintInvoice row = (ModelPrintInvoice) value;
+            return new String[]{row.getName_item(), row.getBarcode(), row.getType(),
+                    com.hamza.controlsfx.table.Columns.quantity(BigDecimal.valueOf(row.getQuantity())),
+                    com.hamza.controlsfx.table.Columns.money(BigDecimal.valueOf(row.getPrice())),
+                    com.hamza.controlsfx.table.Columns.money(BigDecimal.valueOf(row.getDiscount())),
+                    com.hamza.controlsfx.table.Columns.money(BigDecimal.valueOf(row.getTotal_amount()))};
+        }).toList();
+        String subtitle = LanguageManager.getInstance().getString("column.code") + ": " + invoiceDetails.get(ShowInvoiceNameData.ID)
+                + "  |  " + LanguageManager.getInstance().getString("column.name") + ": " + invoiceDetails.get(ShowInvoiceNameData.NAME)
+                + "  |  " + LanguageManager.getInstance().getString("column.date") + ": " + invoiceDetails.get(ShowInvoiceNameData.DATE);
+        String[] totals = {LanguageManager.getInstance().getString("total"), "", "", "", "", "",
+                com.hamza.controlsfx.table.Columns.money(BigDecimal.valueOf(((Number) invoiceDetails.get(ShowInvoiceNameData.TOTAL)).doubleValue()))};
+        TablePdfReport.write(target, title, subtitle, new TablePdfLayout(headers, widths, rows, totals), () -> { });
     }
 
     public void printReceiptInvoice(List<ModelPrintInvoice> list, String name, int numInvoice, double otherDiscount
@@ -158,18 +119,6 @@ public class Print_Reports extends ReportCompany {
                     afterDiscount, MoneyMath.decimal(delivery))));
         }
         jasperData.printJasperPrint(JasperReportPaths.Invoice.THERMAL, LanguageManager.getInstance().getString("print"), map, 1, printerNameThermal);
-    }
-
-    public void printAccountStatements(@NotNull List<TreasuryBalance> list, String dateFrom, String dateTo
-            , double total_income, double total_output, double total_balance) {
-        HashMap<String, Object> map = getStringObjectHashMap(list, null);
-        map.put("dateFrom", dateFrom);
-        map.put("dateTo", dateTo);
-        map.put("total_income", total_income);
-        map.put("total_output", total_output);
-        map.put("total_balance", total_balance);
-        jasperData.printJasperPrint(JasperReportPaths.Report.TREASURY_STATEMENT_A4_TEMPLATE,
-                LanguageManager.getInstance().getString("report.treasury.statement.title"), map, 1, "");
     }
 
     private HashMap<String, Object> getStringObjectHashMap(@NotNull List<?> list, CssToColorHelper helper) {
@@ -271,9 +220,5 @@ public class Print_Reports extends ReportCompany {
         return map;
     }
 
-    @FunctionalInterface
-    private interface ThrowingConsumer<T, E extends Exception> {
-        void accept(T t) throws E;
-    }
 }
 

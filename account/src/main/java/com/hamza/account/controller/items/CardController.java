@@ -20,7 +20,8 @@ import com.hamza.account.model.dao.DaoFactory;
 import com.hamza.account.model.domain.*;
 import com.hamza.account.openFxml.FxmlPath;
 import com.hamza.account.openFxml.OpenFxmlApplication;
-import com.hamza.account.reportData.Print_Reports;
+import com.hamza.account.table.TablePdfLayout;
+import com.hamza.account.table.TablePdfReport;
 import com.hamza.account.service.CardItemService;
 import com.hamza.account.service.StockService;
 import com.hamza.account.table.TableSetting;
@@ -54,6 +55,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.ResourceBundle;
+import java.io.File;
+import java.math.BigDecimal;
 
 import static com.hamza.account.type.TypeList.processTypeList;
 import static com.hamza.controlsfx.table.Table_Setting.column_number;
@@ -320,15 +323,34 @@ public class CardController extends LoadData implements Initializable, AppSettin
     /** Prints exactly what is on screen - the same period, the same rows, the same totals. */
     private void print() {
         if (loadedFrom == null || loadedTo == null) return;
-        try {
-            new Print_Reports().printCardItem(stockId, numItem,
-                    totals.purchase(), totals.sales(), totals.purchaseReturn(), totals.salesReturn(),
-                    openingBalance, closingBalance,
-                    loadedFrom.toString(), loadedTo.toString(),
-                    CardItemDao.tableNameOf(loadedProcessType));
-        } catch (Exception e) {
-            logError(e);
-        }
+        String title = LanguageManager.getInstance().getString("item.card.title");
+        File target = TablePdfReport.chooseTarget(tableView.getScene().getWindow(), title);
+        if (target == null) return;
+        String[] headers = {
+                LanguageManager.getInstance().getString(NamesTables.CODE_INVOICE),
+                LanguageManager.getInstance().getString(NamesTables.DATE),
+                LanguageManager.getInstance().getString(NamesTables.NAME),
+                LanguageManager.getInstance().getString(NamesTables.TYPE),
+                LanguageManager.getInstance().getString(NamesTables.QUANTITY),
+                LanguageManager.getInstance().getString(NamesTables.PRICE),
+                LanguageManager.getInstance().getString(NamesTables.DISCOUNT),
+                LanguageManager.getInstance().getString(NamesTables.TOTAL),
+                LanguageManager.getInstance().getString(NamesTables.BALANCE),
+                LanguageManager.getInstance().getString(NamesTables.PROCESS_TYPE),
+                LanguageManager.getInstance().getString(NamesTables.DELEGATE)
+        };
+        float[] widths = {70, 85, 125, 95, 70, 75, 70, 85, 85, 110, 100};
+        List<String[]> reportRows = rows.stream().map(row -> new String[]{
+                String.valueOf(row.getInvoice_num()), row.getInvoice_date() == null ? "" : row.getInvoice_date().toString(),
+                row.getName_account(), row.getType_name(), Columns.quantity(BigDecimal.valueOf(row.getQuantity())),
+                Columns.money(BigDecimal.valueOf(row.getPrice())), Columns.money(BigDecimal.valueOf(row.getDiscount())),
+                Columns.money(BigDecimal.valueOf(row.getTotals())), Columns.quantity(BigDecimal.valueOf(row.getBalance())),
+                row.getProcessTypeName(), row.getDelegate_name()
+        }).toList();
+        String subtitle = LanguageManager.getInstance().getString("from") + ": " + loadedFrom
+                + "  |  " + LanguageManager.getInstance().getString("to") + ": " + loadedTo;
+        TablePdfReport.write(target, title, subtitle,
+                new TablePdfLayout(headers, widths, reportRows, null), () -> { });
     }
 
     /** Flags a movement that left the item at or below nothing on the shelf. */

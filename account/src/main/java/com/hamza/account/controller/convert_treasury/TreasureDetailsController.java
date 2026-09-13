@@ -17,10 +17,10 @@ import com.hamza.account.features.treasury.statement.TreasuryStatementRow;
 import com.hamza.account.features.treasury.statement.TreasuryStatementService;
 import com.hamza.account.features.treasury.statement.TreasuryUserOption;
 import com.hamza.account.model.dao.DaoFactory;
-import com.hamza.account.model.domain.TreasuryBalance;
 import com.hamza.account.openFxml.FxmlPath;
 import com.hamza.account.otherSetting.MaskerPaneSetting;
-import com.hamza.account.reportData.Print_Reports;
+import com.hamza.account.table.TablePdfLayout;
+import com.hamza.account.table.TablePdfReport;
 import com.hamza.account.table.TableSetting;
 import com.hamza.account.type.ProcessType;
 import com.hamza.account.view.ShowInvoiceApplication;
@@ -44,6 +44,7 @@ import javafx.scene.layout.StackPane;
 import javafx.util.StringConverter;
 
 import java.math.BigDecimal;
+import java.io.File;
 import java.math.RoundingMode;
 import java.text.MessageFormat;
 import java.time.LocalDate;
@@ -312,21 +313,26 @@ public class TreasureDetailsController {
     }
 
     private void print(TreasuryStatementPrintData data, TreasuryStatementFilter filter) {
-        List<TreasuryBalance> legacyRows = data.rows().stream().map(this::toPrintRow).toList();
         var summary = data.summary();
-        new Print_Reports().printAccountStatements(legacyRows, filter.from().toString(), filter.to().toString(),
-                summary.totalIncome().doubleValue(), summary.totalOutput().doubleValue(),
-                summary.closingBalance().doubleValue());
-    }
-
-    private TreasuryBalance toPrintRow(TreasuryStatementRow row) {
-        TreasuryBalance legacy = new TreasuryBalance();
-        legacy.setId(row.referenceId()); legacy.setDate(row.movementDate());
-        legacy.setInformation(text(row.kind().labelKey())); legacy.setName(row.treasuryName());
-        legacy.setTotal_income(row.income().doubleValue()); legacy.setTotal_output(row.output().doubleValue());
-        legacy.setBalance(row.runningBalance().doubleValue()); legacy.setUser_id(row.userId());
-        legacy.setUser_name(row.username()); legacy.setTreasury_id(row.treasuryId());
-        return legacy;
+        String title = text("report.treasury.statement.title");
+        File target = TablePdfReport.chooseTarget(tableView.getScene().getWindow(), title);
+        if (target == null) return;
+        String[] headers = {
+                text("treasury.statement.column.reference"), text("treasury.statement.column.date"),
+                text("treasury.statement.column.time"), text("treasury.statement.column.movement"),
+                text("treasury.statement.column.treasury"), text("treasury.statement.column.income"),
+                text("treasury.statement.column.output"), text("treasury.statement.column.balance"),
+                text("treasury.statement.column.user")};
+        float[] widths = {65, 85, 70, 120, 110, 85, 85, 95, 100};
+        List<String[]> rows = data.rows().stream().map(row -> new String[]{
+                String.valueOf(row.referenceId()), row.movementDate().toString(),
+                row.recordedAt() == null ? "" : row.recordedAt().format(TIME_FORMAT),
+                text(row.kind().labelKey()), row.treasuryName(), money(row.income()), money(row.output()),
+                money(row.runningBalance()), row.username()}).toList();
+        String subtitle = text("from") + ": " + filter.from() + "  |  " + text("to") + ": " + filter.to();
+        String[] totals = {text("total"), "", "", "", "", money(summary.totalIncome()), money(summary.totalOutput()),
+                money(summary.closingBalance()), ""};
+        TablePdfReport.write(target, title, subtitle, new TablePdfLayout(headers, widths, rows, totals), () -> { });
     }
 
     private void openInvoice(TreasuryStatementRow row) {

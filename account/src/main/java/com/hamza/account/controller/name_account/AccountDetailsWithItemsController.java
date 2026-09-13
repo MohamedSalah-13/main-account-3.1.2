@@ -27,6 +27,8 @@ import com.hamza.controlsfx.interfaceData.AppSettingInterface;
 import com.hamza.controlsfx.language.LanguageManager;
 import com.hamza.controlsfx.observer.EventBus;
 import com.hamza.controlsfx.table.Columns;
+import com.hamza.account.table.TablePdfLayout;
+import com.hamza.account.table.TablePdfReport;
 import javafx.application.Platform;
 import javafx.concurrent.Task;
 import javafx.css.PseudoClass;
@@ -413,14 +415,24 @@ public class AccountDetailsWithItemsController<T3 extends BaseNames, T4 extends 
      * document lines, which are the rows with no movement kind of their own.
      */
     private void print() {
-        List<AccountCard> rows = printDetails.isSelected()
-                ? allRows(root)
-                : root.getChildren().stream().map(TreeItem::getValue).toList();
-        if (rows.isEmpty()) {
+        if (statement.rows().isEmpty()) {
             report(new UserValidationException(text("party.error.no.data.export")));
             return;
         }
-        printReports.printAccountStatement(rows, true, text("party.statement.title"), partyName, null);
+        String title = LanguageManager.getInstance().getString("party.account.card.title", partyName);
+        File target = TablePdfReport.chooseTarget(treeView.getScene().getWindow(), title);
+        if (target == null) return;
+        String[] headers = {text("date"), text("party.statement.column.kind"), text("party.statement.column.reference"),
+                text("common.debtor"), text("common.creditor"), text("party.statement.column.running"), text("column.notes")};
+        float[] widths = {85, 105, 80, 95, 95, 100, 180};
+        List<String[]> reportRows = statement.rowsOldestFirst().stream().map(row -> new String[]{
+                row.date().toString(), text(row.kind().messageKey()), row.reference() == 0 ? "" : String.valueOf(row.reference()),
+                Columns.money(row.debit()), Columns.money(row.credit()), Columns.money(row.runningBalance()), row.notes()
+        }).toList();
+        String subtitle = text("party.statement.total.debit") + ": " + Columns.money(statement.summary().totalDebit())
+                + "   " + text("party.statement.total.credit") + ": " + Columns.money(statement.summary().totalCredit());
+        TablePdfReport.write(target, title, subtitle,
+                new TablePdfLayout(headers, widths, reportRows, null), () -> { });
     }
 
     private void exportExcel() {

@@ -1,8 +1,16 @@
 package com.hamza.account.dash;
 
+import com.hamza.account.config.Image_Setting;
 import com.hamza.account.controller.main.ButtonWithPerm;
 import com.hamza.account.controller.main.DataPublisher;
+import com.hamza.account.controller.others.ProcessesController;
+import com.hamza.account.controller.convert_treasury.TreasureDetailsController;
+import com.hamza.account.controller.convert_treasury.TreasuryCapitalController;
+import com.hamza.account.controller.convert_treasury.TreasuryCashController;
+import com.hamza.account.controller.convert_treasury.TreasuryController;
+import com.hamza.account.controller.convert_treasury.TreasuryTransferController;
 import com.hamza.account.model.dao.DaoFactory;
+import com.hamza.account.openFxml.OpenFxmlApplication;
 import com.hamza.account.table.TableOpen;
 import com.hamza.account.authorization.AppPermissions;
 import com.hamza.account.authorization.PermissionKey;
@@ -14,6 +22,8 @@ import com.hamza.account.view.OpenTreasuryTransferApplication;
 import com.hamza.account.view.OpenTreasuryDetailsApplication;
 import com.hamza.account.view.ProcessorApplication;
 import com.hamza.controlsfx.language.LanguageManager;
+import javafx.scene.control.TabPane;
+import javafx.scene.layout.Pane;
 import javafx.stage.Stage;
 import org.jetbrains.annotations.NotNull;
 
@@ -46,6 +56,17 @@ public class TreasuryButtons {
                 return OpenTreasuryDetailsApplication.accountStatementTitle();
             }
 
+            @Override
+            public void actionAddPaneToTabPane(TabPane tabPane) throws Exception {
+                Pane pane = new OpenFxmlApplication(new TreasureDetailsController(daoFactory, dataPublisher)).getPane();
+                addTape(tabPane, pane, textName(), new Image_Setting().tools);
+            }
+
+            @Override
+            public boolean showOnTapPane() {
+                return true;
+            }
+
         };
     }
 
@@ -74,6 +95,17 @@ public class TreasuryButtons {
             public String textName() {
                 return OpenTreasuryApplication.treasuriesTitle();
             }
+
+            @Override
+            public void actionAddPaneToTabPane(TabPane tabPane) throws Exception {
+                Pane pane = new OpenFxmlApplication(new TreasuryController(daoFactory)).getPane();
+                addTape(tabPane, pane, textName(), new Image_Setting().tools);
+            }
+
+            @Override
+            public boolean showOnTapPane() {
+                return true;
+            }
         };
     }
 
@@ -96,6 +128,17 @@ public class TreasuryButtons {
             public String textName() {
                 return OpenTreasuryTransferApplication.title();
             }
+
+            @Override
+            public void actionAddPaneToTabPane(TabPane tabPane) throws Exception {
+                Pane pane = new OpenFxmlApplication(new TreasuryTransferController(daoFactory)).getPane();
+                addTape(tabPane, pane, textName(), new Image_Setting().tools);
+            }
+
+            @Override
+            public boolean showOnTapPane() {
+                return true;
+            }
         };
     }
 
@@ -117,6 +160,17 @@ public class TreasuryButtons {
             @Override
             public String textName() {
                 return OpenTreasuryCashApplication.title();
+            }
+
+            @Override
+            public void actionAddPaneToTabPane(TabPane tabPane) throws Exception {
+                Pane pane = new OpenFxmlApplication(new TreasuryCashController(daoFactory)).getPane();
+                addTape(tabPane, pane, textName(), new Image_Setting().tools);
+            }
+
+            @Override
+            public boolean showOnTapPane() {
+                return true;
             }
         };
     }
@@ -143,6 +197,17 @@ public class TreasuryButtons {
             public String textName() {
                 return OpenTreasuryCapitalApplication.title();
             }
+
+            @Override
+            public void actionAddPaneToTabPane(TabPane tabPane) throws Exception {
+                Pane pane = new OpenFxmlApplication(new TreasuryCapitalController(daoFactory)).getPane();
+                addTape(tabPane, pane, textName(), new Image_Setting().tools);
+            }
+
+            @Override
+            public boolean showOnTapPane() {
+                return true;
+            }
         };
     }
 
@@ -162,6 +227,17 @@ public class TreasuryButtons {
             @Override
             public String textName() {
                 return LanguageManager.getInstance().getString("common.process");
+            }
+
+            @Override
+            public void actionAddPaneToTabPane(TabPane tabPane) throws Exception {
+                Pane pane = new OpenFxmlApplication(new ProcessesController()).getPane();
+                addTape(tabPane, pane, textName(), new Image_Setting().setting);
+            }
+
+            @Override
+            public boolean showOnTapPane() {
+                return true;
             }
         };
     }
@@ -184,6 +260,18 @@ public class TreasuryButtons {
             @Override
             public String textName() {
                 return expensesController.titleName();
+            }
+
+            @Override
+            public void actionAddPaneToTabPane(TabPane tabPane) throws Exception {
+                var controller = new ExpensesDetailsApplication();
+                Pane pane = new TableOpen<>(controller).getPane();
+                addTape(tabPane, pane, textName(), new Image_Setting().tools);
+            }
+
+            @Override
+            public boolean showOnTapPane() {
+                return true;
             }
         };
     }

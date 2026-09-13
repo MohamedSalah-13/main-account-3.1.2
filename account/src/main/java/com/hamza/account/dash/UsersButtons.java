@@ -12,6 +12,10 @@ import com.hamza.account.authorization.AppPermissions;
 import com.hamza.account.authorization.PermissionKey;
 import com.hamza.controlsfx.language.LanguageManager;
 import com.hamza.account.view.OpenApplication;
+import com.hamza.account.config.Image_Setting;
+import com.hamza.account.openFxml.OpenFxmlApplication;
+import javafx.scene.control.TabPane;
+import javafx.scene.layout.Pane;
 import javafx.scene.input.KeyCodeCombination;
 import lombok.extern.log4j.Log4j2;
 import org.jetbrains.annotations.NotNull;
@@ -40,6 +44,17 @@ public class UsersButtons extends LoadData {
             @Override
             public String textName() {
                 return LanguageManager.getInstance().getString("users");
+            }
+
+            @Override
+            public void actionAddPaneToTabPane(TabPane tabPane) throws Exception {
+                Pane pane = new OpenFxmlApplication(new UserController()).getPane();
+                addTape(tabPane, pane, textName(), new Image_Setting().setting);
+            }
+
+            @Override
+            public boolean showOnTapPane() {
+                return true;
             }
 
         };

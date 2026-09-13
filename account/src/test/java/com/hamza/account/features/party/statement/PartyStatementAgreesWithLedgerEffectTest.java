@@ -126,7 +126,7 @@ class PartyStatementAgreesWithLedgerEffectTest {
      * {@code common.debtor} and {@code paid} in the one labelled {@code common.creditor},
      * whichever party it is — so a reduction of the balance shows as a credit on a supplier's
      * statement as much as on a customer's. Keeping that is deliberate: it is what users and
-     * {@code account-statement-A4.jrxml} already read, and turning the supplier's statement
+     * legacy Jasper account statement already read, and turning the supplier's statement
      * round is a decision for the redesign in phase ج, made on purpose and once, not as a
      * side effect of this package.
      * <p>

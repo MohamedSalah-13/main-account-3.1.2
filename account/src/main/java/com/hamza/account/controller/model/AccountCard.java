@@ -8,8 +8,8 @@ import lombok.Setter;
  * One row of the statement tree, and of the printed statement.
  * <p>
  * A view row: {@code information} is a translated label for display and {@code details}
- * is the running balance — the names are what {@code account-statement-A4.jrxml} and the
- * tree's column definitions already bind to, so they stay.
+ * is the running balance — the names are shared by the PDF exporter and the tree's
+ * column definitions, so they stay.
  * <p>
  * <b>{@code kind} is what behaviour is decided by, never {@code information}.</b> The
  * screen used to ask whether a row could be expanded into its invoice lines by comparing
