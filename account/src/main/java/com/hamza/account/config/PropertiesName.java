@@ -29,6 +29,8 @@ public class PropertiesName extends PreferencesSetting {
     private static final String SETTING_PRINTER_THERMAL = "setting.printer.thermal";
     private static final String SETTING_PRINTER_BARCODE = "setting.printer.barcode";
     private static final String SETTING_PRINTER_NORMAL = "setting.printer.normal";
+    private static final String REPORT_PDF_OUTPUT_MODE = "report.pdf.output.mode";
+    private static final String REPORT_PDF_PAPER_SIZE = "report.pdf.paper.size";
     private static final String DEFAULT_PRINTER_NAME = "Microsoft Print to PDF";
     private static final String INVOICE_BACKUP_AFTER_SAVE = "invoice.backup.after.save";
     private static final String INVOICE_UPDATE_PRICE = SharedSettingKeys.INVOICE_UPDATE_PRICE;
@@ -181,6 +183,24 @@ public class PropertiesName extends PreferencesSetting {
 
     public static void setSettingPrinterNormal(String value) {
         putString(SETTING_PRINTER_NORMAL, value);
+    }
+
+    /** The action used by the modern PDF table reports on this computer. */
+    public static String getReportPdfOutputMode() {
+        return getString(REPORT_PDF_OUTPUT_MODE, "SAVE_PDF");
+    }
+
+    public static void setReportPdfOutputMode(String value) {
+        putString(REPORT_PDF_OUTPUT_MODE, value);
+    }
+
+    /** The physical page size used when a modern report is generated as PDF. */
+    public static String getReportPdfPaperSize() {
+        return getString(REPORT_PDF_PAPER_SIZE, "A4");
+    }
+
+    public static void setReportPdfPaperSize(String value) {
+        putString(REPORT_PDF_PAPER_SIZE, value);
     }
 
     public static String getSettingCurrency() {

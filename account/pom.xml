@@ -32,6 +32,13 @@
             <version>0.4</version>
         </dependency>
 
+        <!-- Renders the generated PDF directly to the selected physical printer. -->
+        <dependency>
+            <groupId>org.apache.pdfbox</groupId>
+            <artifactId>pdfbox</artifactId>
+            <version>3.0.3</version>
+        </dependency>
+
     </dependencies>
 
     <build>

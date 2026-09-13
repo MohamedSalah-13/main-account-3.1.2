@@ -1,14 +1,28 @@
 package com.hamza.account.table;
 
+import com.hamza.account.features.export.DirectPdfPrintService;
 import com.hamza.account.features.export.PdfExportService;
+import com.hamza.account.features.export.ReportOutputMode;
+import com.hamza.account.features.export.ReportPaperSize;
 import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.language.LanguageManager;
 import com.itextpdf.kernel.geom.PageSize;
 import javafx.concurrent.Task;
+import javafx.scene.control.Alert;
+import javafx.scene.control.ButtonBar;
+import javafx.scene.control.ButtonType;
 import javafx.stage.FileChooser;
 import javafx.stage.Window;
 
 import java.io.File;
+import java.io.IOException;
+import java.util.Map;
+import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
+
+import static com.hamza.account.config.PropertiesName.getReportPdfOutputMode;
+import static com.hamza.account.config.PropertiesName.getReportPdfPaperSize;
+import static com.hamza.account.config.PropertiesName.getSettingPrinterNormal;
 
 /**
  * Saving a list as a PDF: choosing the file, writing it off the JavaFX thread, and saying where
@@ -22,19 +36,44 @@ import java.io.File;
  */
 public final class TablePdfReport {
 
-    /** More columns than this do not fit across an upright A4 page. */
+    /** More columns than this do not fit across an upright page. */
     private static final int UPRIGHT_COLUMN_LIMIT = 5;
+    private static final Map<String, ReportOutputMode> OUTPUT_TARGETS = new ConcurrentHashMap<>();
 
     private TablePdfReport() {
     }
 
-    /** Asks where to save, suggesting the report's title as the file name. Null if cancelled. */
+    /**
+     * Resolves the configured report destination. The legacy callers still pass a File, so a
+     * direct-print request uses a temporary PDF that is deleted after it has reached the spooler.
+     */
     public static File chooseTarget(Window owner, String title) {
+        ReportOutputMode mode = configuredOutputMode();
+        if (mode == ReportOutputMode.ASK) {
+            mode = askOutputMode(owner);
+        }
+        if (mode == null) {
+            return null;
+        }
+        if (mode == ReportOutputMode.PRINT_DIRECT) {
+            try {
+                File target = File.createTempFile("account-report-", ".pdf");
+                OUTPUT_TARGETS.put(target.getAbsolutePath(), mode);
+                return target;
+            } catch (IOException e) {
+                AllAlerts.handleError(text("party.error.export.generic"), e);
+                return null;
+            }
+        }
         FileChooser chooser = new FileChooser();
         chooser.setTitle(text("party.dialog.save.report"));
         chooser.setInitialFileName(safeFileName(title) + ".pdf");
         chooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("PDF", "*.pdf"));
-        return chooser.showSaveDialog(owner);
+        File target = chooser.showSaveDialog(owner);
+        if (target != null) {
+            OUTPUT_TARGETS.put(target.getAbsolutePath(), ReportOutputMode.SAVE_PDF);
+        }
+        return target;
     }
 
     /** A table, with its totals line when the layout carries one. */
@@ -58,24 +97,35 @@ public final class TablePdfReport {
             AllAlerts.alertError(text("party.error.no.data.print"));
             return;
         }
-        PageSize pageSize = chartPng != null || layout.headers().length > UPRIGHT_COLUMN_LIMIT
-                ? PageSize.A4.rotate() : PageSize.A4;
+        PageSize pageSize = pageSize(chartPng, layout);
+        ReportOutputMode mode = OUTPUT_TARGETS.remove(target.getAbsolutePath());
         Task<Boolean> write = new Task<>() {
             @Override
-            protected Boolean call() {
-                return new PdfExportService().exportChartReport(target.getAbsolutePath(), title,
+            protected Boolean call() throws Exception {
+                boolean exported = new PdfExportService().exportChartReport(target.getAbsolutePath(), title,
                         subtitle, chartPng, layout.headers(), layout.columnWidths(), layout.rows(),
                         layout.totals(), pageSize);
+                if (exported && mode == ReportOutputMode.PRINT_DIRECT) {
+                    DirectPdfPrintService.print(target, getSettingPrinterNormal(), configuredPaperSize());
+                }
+                return exported;
             }
         };
         write.setOnSucceeded(event -> {
             if (Boolean.TRUE.equals(write.getValue())) {
-                AllAlerts.alertSaveWithMessage(text("party.export.success.saved.at", target.getAbsolutePath()));
+                if (mode == ReportOutputMode.PRINT_DIRECT) {
+                    deleteTemporaryPrintPdf(target);
+                    AllAlerts.alertSaveWithMessage(text("report.pdf.print.sent", getSettingPrinterNormal()));
+                } else {
+                    AllAlerts.alertSaveWithMessage(text("party.export.success.saved.at", target.getAbsolutePath()));
+                }
                 afterSaved.run();
             } else {
+                deleteTemporaryPrintPdf(target, mode);
                 AllAlerts.alertError(text("party.error.export.generic"));
             }
         });
+        write.setOnFailed(event -> deleteTemporaryPrintPdf(target, mode));
         AllAlerts.handleTaskFailure(text("party.error.export.generic"), write);
         start(write, "table-pdf-write");
     }
@@ -88,6 +138,44 @@ public final class TablePdfReport {
 
     private static String safeFileName(String title) {
         return title.replaceAll("[\\\\/:*?\"<>|]", " ").trim();
+    }
+
+    private static ReportOutputMode configuredOutputMode() {
+        return ReportOutputMode.fromStoredValue(getReportPdfOutputMode());
+    }
+
+    private static ReportPaperSize configuredPaperSize() {
+        return ReportPaperSize.fromStoredValue(getReportPdfPaperSize());
+    }
+
+    private static ReportOutputMode askOutputMode(Window owner) {
+        ButtonType save = new ButtonType(text("report.pdf.output.save"), ButtonBar.ButtonData.YES);
+        ButtonType print = new ButtonType(text("report.pdf.output.print"), ButtonBar.ButtonData.NO);
+        Alert dialog = new Alert(Alert.AlertType.CONFIRMATION, text("report.pdf.output.ask"), save, print,
+                ButtonType.CANCEL);
+        dialog.initOwner(owner);
+        dialog.setTitle(text("report.pdf.output.title"));
+        Optional<ButtonType> choice = dialog.showAndWait();
+        if (choice.isEmpty() || choice.get().equals(ButtonType.CANCEL)) {
+            return null;
+        }
+        return choice.get().equals(print) ? ReportOutputMode.PRINT_DIRECT : ReportOutputMode.SAVE_PDF;
+    }
+
+    private static PageSize pageSize(byte[] chartPng, TablePdfLayout layout) {
+        PageSize configured = configuredPaperSize() == ReportPaperSize.A5 ? PageSize.A5 : PageSize.A4;
+        return chartPng != null || layout.headers().length > UPRIGHT_COLUMN_LIMIT
+                ? configured.rotate() : configured;
+    }
+
+    private static void deleteTemporaryPrintPdf(File target) {
+        deleteTemporaryPrintPdf(target, ReportOutputMode.PRINT_DIRECT);
+    }
+
+    private static void deleteTemporaryPrintPdf(File target, ReportOutputMode mode) {
+        if (mode == ReportOutputMode.PRINT_DIRECT && target.exists() && !target.delete()) {
+            target.deleteOnExit();
+        }
     }
 
     private static String text(String key, Object... arguments) {

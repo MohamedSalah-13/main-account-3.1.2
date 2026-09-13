@@ -1,6 +1,8 @@
 package com.hamza.account.controller.setting;
 
 import com.hamza.account.openFxml.FxmlPath;
+import com.hamza.account.features.export.ReportOutputMode;
+import com.hamza.account.features.export.ReportPaperSize;
 import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.error.UserValidationException;
 import com.hamza.controlsfx.language.LanguageManager;
@@ -8,6 +10,7 @@ import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.print.Printer;
+import javafx.print.Paper;
 import javafx.scene.control.Button;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
@@ -33,6 +36,10 @@ import javax.print.PrintServiceLookup;
 import static com.hamza.account.config.PropertiesName.getSettingPrinterBarcode;
 import static com.hamza.account.config.PropertiesName.getSettingPrinterNormal;
 import static com.hamza.account.config.PropertiesName.getSettingPrinterThermal;
+import static com.hamza.account.config.PropertiesName.getReportPdfOutputMode;
+import static com.hamza.account.config.PropertiesName.getReportPdfPaperSize;
+import static com.hamza.account.config.PropertiesName.setReportPdfOutputMode;
+import static com.hamza.account.config.PropertiesName.setReportPdfPaperSize;
 import static com.hamza.account.config.PropertiesName.setSettingPrinterBarcode;
 import static com.hamza.account.config.PropertiesName.setSettingPrinterNormal;
 import static com.hamza.account.config.PropertiesName.setSettingPrinterThermal;
@@ -45,6 +52,8 @@ public class SettingTabPrintersController implements Initializable {
     @FXML private ComboBox<String> comboBarcode;
     @FXML private ComboBox<String> comboThermal;
     @FXML private ComboBox<String> comboSystemDefault;
+    @FXML private ComboBox<String> comboPdfOutputMode;
+    @FXML private ComboBox<String> comboPdfPaperSize;
     @FXML private Label labelStatus;
     @FXML private Label labelDefaultStatus;
     @FXML private TextArea textCapabilities;
@@ -59,6 +68,7 @@ public class SettingTabPrintersController implements Initializable {
     @FXML private Label labelNormalMissing;
     @FXML private Label labelBarcodeMissing;
     @FXML private Label labelThermalMissing;
+    @FXML private Label labelPdfA5Warning;
 
     /**
      * The printers as of the last refresh.
@@ -79,6 +89,8 @@ public class SettingTabPrintersController implements Initializable {
         wireOutputRole(comboBarcode, labelBarcodeMissing, value -> setSettingPrinterBarcode(value));
         wireOutputRole(comboThermal, labelThermalMissing, value -> setSettingPrinterThermal(value));
         comboSystemDefault.valueProperty().addListener((observable, oldValue, value) -> showCapabilities(value));
+        comboNormal.valueProperty().addListener((observable, oldValue, value) -> updateA5Availability());
+        configurePdfOutputSettings();
         btnRefresh.setOnAction(event -> refreshPrinters());
         btnSetDefault.setOnAction(event -> setWindowsDefault(comboSystemDefault.getValue()));
         btnNormalSettings.setOnAction(event -> openNativeSettings(comboNormal.getValue()));
@@ -145,6 +157,7 @@ public class SettingTabPrintersController implements Initializable {
         markAvailability(comboNormal, labelNormalMissing);
         markAvailability(comboBarcode, labelBarcodeMissing);
         markAvailability(comboThermal, labelThermalMissing);
+        updateA5Availability();
 
         labelStatus.setText(names.isEmpty()
                 ? text("settings.printers.noneFound")
@@ -159,6 +172,54 @@ public class SettingTabPrintersController implements Initializable {
         combo.getItems().setAll(names);
         if (selected != null && !selected.isBlank() && !names.contains(selected)) combo.getItems().add(selected);
         combo.setValue(selected);
+    }
+
+    private void configurePdfOutputSettings() {
+        comboPdfOutputMode.getItems().setAll(
+                text("report.pdf.output.save"),
+                text("report.pdf.output.print"),
+                text("report.pdf.output.ask"));
+        comboPdfOutputMode.getSelectionModel().select(outputModeIndex(
+                ReportOutputMode.fromStoredValue(getReportPdfOutputMode())));
+        comboPdfOutputMode.valueProperty().addListener((observable, oldValue, value) -> {
+            int index = comboPdfOutputMode.getSelectionModel().getSelectedIndex();
+            if (index >= 0) {
+                setReportPdfOutputMode(ReportOutputMode.values()[index].name());
+            }
+        });
+
+        comboPdfPaperSize.getItems().setAll("A4", "A5");
+        comboPdfPaperSize.getSelectionModel().select(ReportPaperSize.fromStoredValue(
+                getReportPdfPaperSize()).ordinal());
+        comboPdfPaperSize.valueProperty().addListener((observable, oldValue, value) -> {
+            int index = comboPdfPaperSize.getSelectionModel().getSelectedIndex();
+            if (index >= 0) {
+                setReportPdfPaperSize(ReportPaperSize.values()[index].name());
+            }
+            updateA5Availability();
+        });
+    }
+
+    private int outputModeIndex(ReportOutputMode mode) {
+        return switch (mode) {
+            case SAVE_PDF -> 0;
+            case PRINT_DIRECT -> 1;
+            case ASK -> 2;
+        };
+    }
+
+    /** The printer driver is authoritative: a selected A5 PDF still needs A5 paper enabled there. */
+    private void updateA5Availability() {
+        boolean a5Selected = ReportPaperSize.A5.name().equals(getReportPdfPaperSize());
+        boolean supported = printers.stream()
+                .filter(printer -> printer.getName().equals(comboNormal.getValue()))
+                .findFirst()
+                .map(printer -> printer.getPrinterAttributes().getSupportedPapers().contains(Paper.A5))
+                .orElse(true);
+        boolean unavailable = a5Selected && !supported;
+        labelPdfA5Warning.setText(unavailable ? text("report.pdf.paper.a5Unsupported") : "");
+        labelPdfA5Warning.setVisible(unavailable);
+        labelPdfA5Warning.setManaged(unavailable);
     }
 
     /**

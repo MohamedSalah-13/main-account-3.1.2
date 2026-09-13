@@ -5,23 +5,15 @@ import com.hamza.controlsfx.database.ConnectionManager;
 import com.hamza.account.controller.invoice.ShowInvoiceNameData;
 import com.hamza.account.controller.model.ModelPrintInvoice;
 import com.hamza.account.controller.model.PrintPurchaseWithName;
-import com.hamza.account.controller.model.TableTotals;
-import com.hamza.account.features.barcodeprint.BarcodeLabelLayout;
-import com.hamza.account.features.barcodeprint.BarcodeLabelText;
-import com.hamza.account.features.barcodeprint.BarcodeNameOverflow;
-import com.hamza.account.features.checkbox.impl.setting.BarcodePrintDoubleLabel;
-import com.hamza.account.features.checkbox.impl.setting.BarcodePrintName;
 import com.hamza.account.features.inventory.InventoryRow;
 import com.hamza.account.features.inventory.StockBalanceRow;
 import com.hamza.account.features.stocktransfer.StockTransferReportRow;
 import com.hamza.account.model.domain.*;
-import com.hamza.account.otherSetting.BarcodeDetails;
 import com.hamza.account.service.ShiftReportService;
 import com.hamza.account.features.rbac.CurrentUser;
 import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.language.LanguageManager;
 import com.hamza.controlsfx.others.CssToColorHelper;
-import lombok.extern.log4j.Log4j2;
 import net.sf.jasperreports.engine.JRException;
 import net.sf.jasperreports.engine.data.JRBeanCollectionDataSource;
 import org.jetbrains.annotations.NotNull;
@@ -30,7 +22,6 @@ import java.sql.Connection;
 import java.sql.SQLException;
 import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
 
@@ -38,11 +29,9 @@ import static com.hamza.account.config.PropertiesName.*;
 import static com.hamza.controlsfx.dateTime.DateUtils.DATE_FORMATTER;
 import static com.hamza.controlsfx.dateTime.DateUtils.DATE_TIME_FORMATTER;
 
-@Log4j2
 public class Print_Reports extends ReportCompany {
 
     private final String printerNameThermal = getSettingPrinterThermal();
-    private final String printerNameBarcode = getSettingPrinterBarcode();
     private final String printerNameNormal = getSettingPrinterNormal();
 
     public Print_Reports() {
@@ -63,47 +52,6 @@ public class Print_Reports extends ReportCompany {
             ConnectionManager.release(connection);
         }
     }
-
-    /**
-     * Prints the totals for accounts using a provided list and helper class.
-     *
-     * @param <T>    The type of elements in the list.
-     * @param list   The list of elements to process, must not be null.
-     * @param helper The helper class instance used for CSS to color conversion, must not be null.
-     */
-    public <T> void printTotalsAccounts(@NotNull List<T> list, CssToColorHelper helper) {
-        HashMap<String, Object> company = getStringObjectHashMap(list, helper);
-        company.put("title", LanguageManager.getInstance().getString("total"));
-        addHeaderToReports(company, LanguageManager.getInstance().getString("total"));
-        var totals = JasperReportPaths.Account.TOTALS;
-        if (getPrintPaperReceiptAccount()) {
-            totals = JasperReportPaths.Account.TOTALS_80;
-        }
-        jasperData.printJasperPrint(totals, LanguageManager.getInstance().getString("total"), company, 1, "");
-    }
-
-    /**
-     * Prints the details of names based on the provided report name and list.
-     *
-     * @param <T3>       The type of the elements in the list.
-     * @param reportName The name of the report.
-     * @param list       The list containing the details to be printed.
-     * @param helper     A helper for converting CSS to colors.
-     */
-    public <T3> void printDetailsOfNames(@NotNull String reportName, @NotNull List<T3> list, CssToColorHelper helper) {
-        HashMap<String, Object> map = getStringObjectHashMap(list, null);
-        addHeaderToReports(map, reportName);
-        jasperData.printJasperPrint(JasperReportPaths.Report.NAMES_DATA, reportName, map, 1, "");
-    }
-
-
-    public void printReportByMonth(@NotNull List<TableTotals> list, @NotNull String title) {
-        HashMap<String, Object> map = getStringObjectHashMap(list, null);
-        map.put("title", title);
-        jasperData.printJasperPrint(JasperReportPaths.Report.MONTHLY, LanguageManager.getInstance().getString("setting.months"), map, 1, "");
-    }
-
-
     public void printMultiInvoice(@NotNull List<PrintPurchaseWithName> list, @NotNull String reportName, @NotNull String from, @NotNull String to, CssToColorHelper helper) {
         HashMap<String, Object> company = getStringObjectHashMap(list, helper);
         company.put("date_from", from);
@@ -121,24 +69,12 @@ public class Print_Reports extends ReportCompany {
 
     }
 
-    public <T> void printAccountByNameOrDate(List<T> list, boolean s, String reportName, CssToColorHelper helper) {
-        HashMap<String, Object> map = getStringObjectHashMap(list, helper);
-        map.put("p1", s);
-        addHeaderToReports(map, reportName);
-        jasperData.printJasperPrint(JasperReportPaths.Account.ACCOUNT_DETAILS_REPORT_PATH, LanguageManager.getInstance().getString("cuAcc"), map, 1, "");
-    }
-
     public <T> void printAccountStatement(List<T> list, boolean s, String reportName, String accountName, CssToColorHelper helper) {
         HashMap<String, Object> map = getStringObjectHashMap(list, helper);
         map.put("p1", s);
         map.put("accountName", accountName);
         addHeaderToReports(map, reportName);
         jasperData.printJasperPrint(JasperReportPaths.Account.ACCOUNT_STATEMENT, reportName, map, 1, "");
-    }
-
-    public void printReceiptAccount(@NotNull List<?> list, @NotNull String name, double total) {
-        HashMap<String, Object> map = dataForPrinterReceipt(name, list, total, LocalDateTime.now().format(DATE_TIME_FORMATTER));
-        jasperData.printJasperPrint(JasperReportPaths.Account.ACCOUNT_DETAILS_REPORT_TEMPLATE, LanguageManager.getInstance().getString("print"), map, 1, printerNameThermal);
     }
 
     /**
@@ -250,40 +186,6 @@ public class Print_Reports extends ReportCompany {
         jasperData.printJasperPrint(JasperReportPaths.Invoice.THERMAL, LanguageManager.getInstance().getString("print"), map, 1, printerNameThermal);
     }
 
-    public void printReportDelegate(String name, Integer year, Integer firstMonth, Integer lastMonth) throws Exception {
-        HashMap<String, Object> company = getCompany();
-        company.put("by_year", year);
-        company.put("by_name", name);
-        company.put("by_first_month", firstMonth);
-        company.put("by_last_month", lastMonth);
-
-        withConnection(connection ->
-                jasperData.printJasperPrintWithConnection(
-                        JasperReportPaths.Report.DELEGATE,
-                        LanguageManager.getInstance().getString("setting.report.delegate"),
-                        company,
-                        1,
-                        "",
-                        connection
-                )
-        );
-    }
-
-
-    public void printDeposit(double amount, int code, String name_report, String statements, String description, String name_type, String treasury_name, String convert_to_treasury, String dateTo) {
-        HashMap<String, Object> company = getCompany();
-        company.put("amount", amount);
-        company.put("code", code);
-        company.put("name_report", name_report);
-        company.put("statements", statements);
-        company.put("description", description);
-        company.put("name_type", name_type);
-        company.put("treasury_name", treasury_name);
-        company.put("convert_to_treasury", convert_to_treasury);
-        company.put("dateTo", dateTo);
-        jasperData.printJasperPrint(JasperReportPaths.Report.EXPENSE_RECEIPT, LanguageManager.getInstance().getString("deposit"), company, 1, "");
-    }
-
     public void printAccountStatements(@NotNull List<TreasuryBalance> list, String dateFrom, String dateTo
             , double total_income, double total_output, double total_balance) {
         HashMap<String, Object> map = getStringObjectHashMap(list, null);
@@ -294,33 +196,6 @@ public class Print_Reports extends ReportCompany {
         map.put("total_balance", total_balance);
         jasperData.printJasperPrint(JasperReportPaths.Report.TREASURY_STATEMENT_A4_TEMPLATE,
                 LanguageManager.getInstance().getString("report.treasury.statement.title"), map, 1, "");
-    }
-
-    public void printSummary(String datePrint, String username, String startTime, String endTime
-            , long countSales, double totalSales, double customerPaid, double totalSalesRe, double expense
-            , long countPurchases, double totalPurchases, double supplierPaid, double totalPurchasesRe, double income) {
-        HashMap<String, Object> map = getCompany();
-        double totals_after_expenses = (totalSales + customerPaid) - (totalSalesRe + expense);
-        double totalsPurchases = (totalPurchases + supplierPaid) - (totalPurchasesRe + income);
-        double totals_all = totals_after_expenses - totalsPurchases;
-        map.put("date", datePrint);
-        map.put("by-user", username);
-        map.put("start-job", startTime);
-        map.put("end-job", endTime);
-        map.put("count_sales", countSales);
-        map.put("total_sales", totalSales);
-        map.put("customer_paid", customerPaid);
-        map.put("total_sales_re", totalSalesRe);
-        map.put("expense", expense);
-        map.put("count_purchases", countPurchases);
-        map.put("total_purchases", totalPurchases);
-        map.put("supplier_paid", supplierPaid);
-        map.put("total_purchases_re", totalPurchasesRe);
-        map.put("income", income);
-        map.put("totals_after_expenses", totals_after_expenses);
-        map.put("totals_all", totals_all);
-
-        jasperData.printJasperPrint(JasperReportPaths.Report.ROSARY_SUMMARY, "", map, 1, "");
     }
 
     private HashMap<String, Object> getStringObjectHashMap(@NotNull List<?> list, CssToColorHelper helper) {
@@ -351,26 +226,6 @@ public class Print_Reports extends ReportCompany {
         return map;
     }
 
-    public void printBarcode(String barcode, String name, String price, int copies) {
-        HashMap<String, Object> map = getCompany();
-        BarcodePrintDoubleLabel barcodePrintDoubleLabel = new BarcodePrintDoubleLabel();
-        String detailsOfBarcode = new BarcodeDetails().getDetailsOfBarcode(barcode, price);
-        BarcodeLabelText.RenderedName renderedName = BarcodeLabelText.renderName(name,
-                BarcodeNameOverflow.fromSetting(getBarcodeLabelNameOverflow()),
-                getBarcodeLabelNameMaxCharacters(), getBarcodeLabelNameFontSize());
-        map.put("name", new BarcodePrintName().getBoolean_saved() && renderedName.visible() ? renderedName.value() : "");
-        map.put("details", detailsOfBarcode);
-        map.put("barcode", barcode);
-        map.put("show_name", new BarcodePrintName().getBoolean_saved() && renderedName.visible());
-        map.put("name_font_size", renderedName.fontSize());
-
-        int labelCount = barcodePrintDoubleLabel.getBoolean_saved() ? 2 : 1;
-        map.put("label_count", labelCount);
-
-        jasperData.printJasperPrint(JasperReportPaths.Barcode.VERSION_1, LanguageManager.getInstance().getString("barcode"), map, copies, printerNameBarcode, design -> BarcodeLabelLayout.apply(design, getBarcodeLabelWidthMm(), getBarcodeLabelHeightMm()));
-
-    }
-
     // ==================== Shift Reports ====================
 
     /**
@@ -380,7 +235,7 @@ public class Print_Reports extends ReportCompany {
         HashMap<String, Object> map = buildShiftReportMap(data);
         jasperData.printJasperPrint(
                 JasperReportPaths.Shift.X_REPORT_80,
-                "X-Report", map, 1, printerNameThermal);
+                LanguageManager.getInstance().getString("user.shift.report.x.title"), map, 1, printerNameThermal);
     }
 
     /**
@@ -390,7 +245,7 @@ public class Print_Reports extends ReportCompany {
         HashMap<String, Object> map = buildShiftReportMap(data);
         jasperData.printJasperPrint(
                 JasperReportPaths.Shift.Z_REPORT_80,
-                "Z-Report", map, 1, printerNameThermal);
+                LanguageManager.getInstance().getString("user.shift.report.z.title"), map, 1, printerNameThermal);
     }
 
     /**
@@ -404,22 +259,7 @@ public class Print_Reports extends ReportCompany {
         HashMap<String, Object> map = buildShiftReportMap(data);
         jasperData.printJasperPrintOrThrow(
                 JasperReportPaths.Shift.Z_REPORT_80,
-                "Z-Report", map, 1, printerNameThermal);
-    }
-
-    /**
-     * طباعة تقرير تجميعي لورديات متعددة - A4.
-     */
-    public void printShiftAggregateReport(List<UserShift> list, String from, String to, String username) {
-        HashMap<String, Object> map = getStringObjectHashMap(list, null);
-        map.put("dateFrom", from);
-        map.put("dateTo", to);
-        map.put("username", username == null ? LanguageManager.getInstance().getString("all") : username);
-        String reportTitle = LanguageManager.getInstance().getString("report.shifts.aggregate.title");
-        addHeaderToReports(map, reportTitle);
-        jasperData.printJasperPrint(
-                JasperReportPaths.Shift.AGGREGATE_A4,
-                reportTitle, map, 1, "");
+                LanguageManager.getInstance().getString("user.shift.report.z.title"), map, 1, printerNameThermal);
     }
 
 //    private HashMap<String, Object> buildShiftReportMap(ShiftShiftReportDataAlias) {

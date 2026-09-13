@@ -67,6 +67,21 @@
                                 <Label fx:id="labelThermalMissing" styleClass="form-error" wrapText="true" visible="false" managed="false" GridPane.columnIndex="1" GridPane.columnSpan="3" GridPane.rowIndex="6" />
                             </children>
                         </GridPane>
+                        <GridPane hgap="12.0" styleClass="app-card" vgap="12.0">
+                            <columnConstraints>
+                                <ColumnConstraints />
+                                <ColumnConstraints hgrow="ALWAYS" maxWidth="1.7976931348623157E308" />
+                            </columnConstraints>
+                            <children>
+                                <Label styleClass="section-title" text="%report.pdf.settings.title" GridPane.columnSpan="2" />
+                                <Label styleClass="settings-subtitle" text="%report.pdf.settings.hint" wrapText="true" GridPane.columnSpan="2" GridPane.rowIndex="1" />
+                                <Label styleClass="form-label" text="%report.pdf.output.label" GridPane.rowIndex="2" />
+                                <ComboBox fx:id="comboPdfOutputMode" maxWidth="1.7976931348623157E308" styleClass="modern-input" GridPane.columnIndex="1" GridPane.rowIndex="2" />
+                                <Label styleClass="form-label" text="%report.pdf.paper.label" GridPane.rowIndex="3" />
+                                <ComboBox fx:id="comboPdfPaperSize" maxWidth="1.7976931348623157E308" styleClass="modern-input" GridPane.columnIndex="1" GridPane.rowIndex="3" />
+                                <Label fx:id="labelPdfA5Warning" styleClass="form-error" wrapText="true" visible="false" managed="false" GridPane.columnIndex="1" GridPane.rowIndex="4" />
+                            </children>
+                        </GridPane>
                         <VBox spacing="8.0" styleClass="app-card">
                             <children>
                                 <Label styleClass="section-title" text="%settings.printers.capabilitiesTitle" />
