@@ -22,6 +22,7 @@ import com.hamza.account.model.domain.Stock;
 import com.hamza.account.features.export.ExcelExportService;
 import com.hamza.account.table.TablePdfLayout;
 import com.hamza.account.table.TablePdfReport;
+import com.hamza.account.table.TableColumnViews;
 import com.hamza.account.openFxml.FxmlPath;
 import com.hamza.account.service.MainGroupService;
 import com.hamza.account.service.StockService;
@@ -42,6 +43,7 @@ import javafx.scene.control.CheckBox;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.ChoiceBox;
 import javafx.scene.control.Label;
+import javafx.scene.control.MenuButton;
 import javafx.scene.control.Pagination;
 import javafx.scene.control.ProgressIndicator;
 import javafx.scene.control.TableCell;
@@ -68,6 +70,7 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.Set;
 import java.util.Locale;
+import java.util.prefs.Preferences;
 
 /**
  * The inventory sheet: every item, what moved, what is left, and what it is worth.
@@ -138,6 +141,8 @@ public class InventoryController {
     @FXML
     private Button btnPrint, btnRefresh, btnExcel, btnClearFilters, btnPrintCrossStock;
     @FXML
+    private MenuButton viewMenu;
+    @FXML
     private ProgressIndicator progress;
     @FXML
     private Pagination pagination;
@@ -193,6 +198,15 @@ public class InventoryController {
         tableView.setRowFactory(view -> new StockRow());
 
         TableSetting.tableMenuSetting(getClass(), tableView);
+        // The explicit toolbar menu gives the inventory sheet the same named views and
+        // column chooser as customers. Keep JavaFX's header menu off: it duplicates
+        // the choices and is too cramped for this wide report.
+        tableView.setTableMenuButtonVisible(false);
+        TableColumnViews.styleMenuButton(viewMenu);
+        new TableColumnViews<InventoryRow>(Preferences.userNodeForPackage(getClass())
+                .node("inventory-list"), "view.mode", TableColumnViews.Preset.FULL,
+                Set.of("name", "barcode", "unit", "balance"), Set.of())
+                .install(viewMenu, tableView);
     }
 
     /**

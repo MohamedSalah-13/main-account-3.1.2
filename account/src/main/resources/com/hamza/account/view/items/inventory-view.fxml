@@ -7,6 +7,7 @@
 <?import javafx.scene.control.ChoiceBox?>
 <?import javafx.scene.control.ComboBox?>
 <?import javafx.scene.control.Label?>
+<?import javafx.scene.control.MenuButton?>
 <?import javafx.scene.control.Pagination?>
 <?import javafx.scene.control.ProgressIndicator?>
 <?import javafx.scene.control.TextField?>
@@ -48,6 +49,7 @@
 
                                 <Region HBox.hgrow="ALWAYS" />
 
+                                <MenuButton fx:id="viewMenu" mnemonicParsing="false" />
                                 <Button fx:id="btnRefresh" mnemonicParsing="false" styleClass="neutral-button" text="%refresh" />
                                 <Button fx:id="btnExcel" mnemonicParsing="false" styleClass="excel-button" text="Excel" />
                                 <Button fx:id="btnPrintCrossStock" mnemonicParsing="false" styleClass="neutral-button" text="%item.inventory.btn.cross.stock" />

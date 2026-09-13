@@ -15,6 +15,7 @@ import com.hamza.account.openFxml.AddForAllApplication;
 import com.hamza.account.openFxml.FxmlPath;
 import com.hamza.account.openFxml.OpenFxmlApplication;
 import com.hamza.account.service.UsersService;
+import com.hamza.account.table.TableColumnViews;
 import com.hamza.account.table.TableSetting;
 import com.hamza.account.view.OpenApplication;
 import com.hamza.controlsfx.alert.AllAlerts;
@@ -32,6 +33,7 @@ import javafx.fxml.FXML;
 import javafx.scene.control.Button;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
+import javafx.scene.control.MenuButton;
 import javafx.scene.control.Pagination;
 import javafx.scene.control.ProgressIndicator;
 import javafx.scene.control.TableColumn;
@@ -41,6 +43,9 @@ import javafx.scene.layout.Pane;
 import javafx.stage.Stage;
 import javafx.util.Duration;
 import javafx.util.StringConverter;
+
+import java.util.Set;
+import java.util.prefs.Preferences;
 
 /** A dedicated, credential-safe user-management screen. */
 @FxmlPath(pathFile = "users-management.fxml")
@@ -70,6 +75,7 @@ public final class UserController implements AppSettingInterface {
     @FXML private Label labelTotal, labelActive, labelInactive, labelKiosk, labelStatus;
     @FXML private ProgressIndicator progress;
     @FXML private Button btnNew, btnEdit, btnToggle, btnPermissions, btnRefresh, btnClose;
+    @FXML private MenuButton viewMenu;
 
     @FXML
     public void initialize() {
@@ -102,6 +108,14 @@ public final class UserController implements AppSettingInterface {
             if (event.getClickCount() == 2 && tableUsers.getSelectionModel().getSelectedItem() != null) editSelected();
         });
         TableSetting.tableMenuSetting(getClass(), tableUsers);
+        // Match the customers list: named views first, then a remembered choice of
+        // individual columns. The toolbar owns that affordance, not the cramped header.
+        tableUsers.setTableMenuButtonVisible(false);
+        TableColumnViews.styleMenuButton(viewMenu);
+        new TableColumnViews<UserSummary>(Preferences.userNodeForPackage(getClass())
+                .node("users-management-list"), "view.mode", TableColumnViews.Preset.FULL,
+                Set.of("colCode", "colUsername", "colRoles", "colStatus"), Set.of())
+                .install(viewMenu, tableUsers);
     }
 
     /** An id is given so {@link TableSetting} remembers a width against the column, not an index. */

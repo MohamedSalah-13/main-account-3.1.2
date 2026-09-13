@@ -6,6 +6,7 @@
 <?import javafx.scene.control.ComboBox?>
 <?import javafx.scene.control.DatePicker?>
 <?import javafx.scene.control.Label?>
+<?import javafx.scene.control.MenuButton?>
 <?import javafx.scene.control.ProgressIndicator?>
 <?import javafx.scene.control.TableView?>
 <?import javafx.scene.control.TextField?>
@@ -38,6 +39,7 @@
 
                                 <Region HBox.hgrow="ALWAYS" />
 
+                                <MenuButton fx:id="viewMenu" mnemonicParsing="false" />
                                 <Button fx:id="btnDelete" mnemonicParsing="false" styleClass="danger-button" text="%item.stockcount.btn.delete.draft" />
                                 <Button fx:id="btnSave" mnemonicParsing="false" styleClass="neutral-button" text="%common.save" />
                                 <Button fx:id="btnPost" mnemonicParsing="false" styleClass="primary-button" text="%item.stockcount.btn.post" />

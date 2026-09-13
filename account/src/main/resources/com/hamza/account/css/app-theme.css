@@ -2492,3 +2492,53 @@
 .table-row-cell:cash-movement > .table-cell {
     -fx-font-style: italic;
 }
+
+/* User management: a quiet operational screen with enough contrast to distinguish
+   account states at a glance. The colours are theme tokens, so the treatment follows
+   the light and dark palettes instead of hard-coding a variant of its own. */
+.users-management-root .users-management-hero {
+    -fx-background-color: -app-surface;
+    -fx-background-radius: 14;
+    -fx-border-color: -app-border;
+    -fx-border-radius: 14;
+    -fx-border-width: 1;
+    -fx-padding: 16 18 16 18;
+    -fx-effect: dropshadow(gaussian, -app-shadow, 14, 0.14, 0, 4);
+}
+
+.users-management-root .users-management-title {
+    -fx-text-fill: -app-primary-dark;
+}
+
+.users-management-root .users-management-subtitle {
+    -fx-max-width: 620;
+}
+
+.users-management-root .users-stat-card {
+    -fx-background-radius: 12;
+    -fx-border-radius: 12;
+    -fx-border-width: 0 0 3 0;
+    -fx-padding: 12 16 12 16;
+}
+
+.users-management-root .users-stat-card .summary-value {
+    -fx-font-size: 1.9em;
+    -fx-text-fill: -app-text-strong;
+}
+
+.users-management-root .users-stat-total { -fx-border-color: -app-primary; }
+.users-management-root .users-stat-active { -fx-border-color: -app-success; }
+.users-management-root .users-stat-inactive { -fx-border-color: -app-warning; }
+.users-management-root .users-stat-kiosk { -fx-border-color: -app-text-muted; }
+
+.users-management-root .users-management-toolbar {
+    -fx-background-radius: 12;
+    -fx-padding: 10 12 10 12;
+}
+
+.users-management-root .table-view {
+    -fx-background-radius: 12;
+    -fx-border-radius: 12;
+    -fx-border-color: -app-border;
+    -fx-border-width: 1;
+}

@@ -16,6 +16,7 @@ import com.hamza.account.service.ItemUnits;
 import com.hamza.account.service.ItemsService;
 import com.hamza.account.service.StockService;
 import com.hamza.account.table.TableSetting;
+import com.hamza.account.table.TableColumnViews;
 import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.database.DaoException;
 import com.hamza.controlsfx.language.LanguageManager;
@@ -31,6 +32,7 @@ import javafx.scene.control.Button;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.DatePicker;
 import javafx.scene.control.Label;
+import javafx.scene.control.MenuButton;
 import javafx.scene.control.ProgressIndicator;
 import javafx.scene.control.TableCell;
 import javafx.scene.control.TableColumn;
@@ -49,6 +51,8 @@ import java.util.Locale;
 import java.util.Optional;
 import java.util.function.Function;
 import java.util.function.ToDoubleFunction;
+import java.util.Set;
+import java.util.prefs.Preferences;
 
 /**
  * The physical count screen (الجرد الفعلي).
@@ -101,6 +105,8 @@ public class StockCountController {
     private Label labelStatus, labelScanHint;
     @FXML
     private Button btnSave, btnPost, btnDelete, btnRemoveLine;
+    @FXML
+    private MenuButton viewMenu;
     @FXML
     private ProgressIndicator progress;
     @FXML
@@ -182,6 +188,20 @@ public class StockCountController {
         });
 
         TableSetting.tableMenuSetting(getClass(), tableView);
+        // A count remains usable when its supporting columns are hidden: the counted
+        // quantity is deliberately fixed, while the user can tailor every reference
+        // column exactly as on the customers list.
+        tableView.setTableMenuButtonVisible(false);
+        TableColumnViews.styleMenuButton(viewMenu);
+        new TableColumnViews<StockCountLine>(Preferences.userNodeForPackage(getClass())
+                .node("stock-count-list"), "view.mode", TableColumnViews.Preset.FULL,
+                Set.of("item", "unit", "system", "difference"), Set.of("counted"))
+                .install(viewMenu, tableView);
+        // The views never touch a fixed column, so a "counted" column hidden through the
+        // old header menu would come back hidden from TableSetting with no way to show it.
+        tableView.getColumns().stream()
+                .filter(column -> "counted".equals(column.getId()))
+                .forEach(column -> column.setVisible(true));
     }
 
     private TableColumn<StockCountLine, String> text(String id, String title,

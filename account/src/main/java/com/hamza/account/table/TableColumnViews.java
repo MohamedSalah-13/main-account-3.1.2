@@ -83,11 +83,22 @@ public final class TableColumnViews<T> {
      * one in {@code main-tableview.fxml} and hands it to {@link #install} instead.
      */
     public static MenuButton menuButton() {
-        MenuButton button = new MenuButton(text("party.list.view"), AppIcon.SETTINGS.graphic());
+        MenuButton button = new MenuButton();
+        styleMenuButton(button);
+        return button;
+    }
+
+    /**
+     * Gives a menu button declared in an FXML the caption, icon and style of
+     * {@link #menuButton()}. The minimum width is the point: in a toolbar beside a
+     * growing search field, an {@code HBox} otherwise squeezes the button off screen.
+     */
+    public static void styleMenuButton(MenuButton button) {
+        button.setText(text("party.list.view"));
+        button.setGraphic(AppIcon.SETTINGS.graphic());
         button.getStyleClass().add("app-neutral-button");
         button.setContentDisplay(ContentDisplay.RIGHT);
         button.setMinWidth(Region.USE_PREF_SIZE);
-        return button;
     }
 
     /** Fills the menu from the table's columns and applies the saved view. */
