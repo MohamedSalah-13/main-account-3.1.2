@@ -52,7 +52,6 @@ class DefaultStockUsageArchitectureTest {
             "com/hamza/account/interfaces/api/DataInterface.java",
             "com/hamza/account/model/dao/CardItemDao.java",
             "com/hamza/account/model/dao/ItemsDao.java",
-            "com/hamza/account/reportData/Print_Reports.java",
             "com/hamza/account/service/StockService.java");
 
     private static Set<String> filesReferencingDefaultStock() {
