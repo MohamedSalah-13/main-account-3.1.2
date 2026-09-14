@@ -217,6 +217,7 @@ public final class ShiftCashHandoverService {
 
         LocalDate date = adjustedAt.toLocalDate();
         PeriodLock.require(date, PeriodLockRegistry.TREASURY_DEPOSIT.label());
+        // The lock still serializes this movement with every other writer of the till.
         var treasury = daoFactory.treasuryCurrentBalanceDao().lockAndRead(treasuryId);
         if (treasury == null) {
             throw new BusinessRuleException(message("treasury.error.not.found"));
@@ -224,9 +225,12 @@ public final class ShiftCashHandoverService {
         BigDecimal amount = difference.abs();
         CashDirection direction = difference.signum() > 0
                 ? CashDirection.DEPOSIT : CashDirection.WITHDRAWAL;
-        if (direction.leavesTheTreasury()) {
-            TreasuryTransferService.requireEnough(treasury, amount);
-        }
+        // No requireEnough, deliberately, even for a shortage. A withdrawal or a transfer asks
+        // whether the money is there before taking it; a shortage records money that is already
+        // gone - the drawer was counted. Refusing it because the book balance is lower did not
+        // keep any cash in the till: it refused the whole close, so the cashier could not end
+        // the shift at all (seen on screen with a book balance of -241,630.46), and the book
+        // went on claiming cash nobody holds. The book may go negative; that is the truth.
         int movementId = daoFactory.cashMovementDao().insertReturningId(
                 new CashMovementCommand(treasuryId, direction, CashCategory.NORMAL, amount, date,
                         message("user.shift.variance.movement", shiftId),
