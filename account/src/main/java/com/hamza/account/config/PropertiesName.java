@@ -3,6 +3,7 @@ package com.hamza.account.config;
 import com.hamza.account.document.DocumentType;
 import com.hamza.account.features.invoice.InvoicePinField;
 
+
 /**
  * Every stored setting, named. Which store each one goes to is decided by
  * {@link SharedSettingKeys} and applied in {@link PreferencesSetting} - a shared key is
@@ -19,6 +20,9 @@ public class PropertiesName extends PreferencesSetting {
     private static final String BARCODE_LABEL_NAME_FONT_SIZE = "barcode.label.name.font.size";
     private static final String BARCODE_LABEL_WIDTH_MM = "barcode.label.width.mm";
     private static final String BARCODE_LABEL_HEIGHT_MM = "barcode.label.height.mm";
+    private static final String BARCODE_LABEL_HORIZONTAL_OFFSET_MM = "barcode.label.horizontal.offset.mm";
+    private static final String BARCODE_LABEL_VERTICAL_OFFSET_MM = "barcode.label.vertical.offset.mm";
+    private static final double MAX_BARCODE_CALIBRATION_MM = 20;
     private static final String PANE_INDEX = "pane.index";
     private static final String SETTING_EXPANDED = "setting.expanded";
     private static final String ITEMS_SUB_GROUP = "items.sub.group";
@@ -256,6 +260,29 @@ public class PropertiesName extends PreferencesSetting {
     public static void setBarcodeLabelWidthMm(double value) { putDouble(BARCODE_LABEL_WIDTH_MM, Math.max(value, 10)); }
     public static double getBarcodeLabelHeightMm() { return getDouble(BARCODE_LABEL_HEIGHT_MM, 28); }
     public static void setBarcodeLabelHeightMm(double value) { putDouble(BARCODE_LABEL_HEIGHT_MM, Math.max(value, 10)); }
+    /** Global shift to the right, in millimetres, applied to every barcode printer on this computer. */
+    public static double getBarcodeLabelHorizontalOffsetMm() {
+        return getDouble(BARCODE_LABEL_HORIZONTAL_OFFSET_MM, 0);
+    }
+
+    public static void setBarcodeLabelHorizontalOffsetMm(double value) {
+        putDouble(BARCODE_LABEL_HORIZONTAL_OFFSET_MM, boundedCalibration(value));
+    }
+
+    /** Global shift down, in millimetres, applied to every barcode printer on this computer. */
+    public static double getBarcodeLabelVerticalOffsetMm() {
+        return getDouble(BARCODE_LABEL_VERTICAL_OFFSET_MM, 0);
+    }
+
+    public static void setBarcodeLabelVerticalOffsetMm(double value) {
+        putDouble(BARCODE_LABEL_VERTICAL_OFFSET_MM, boundedCalibration(value));
+    }
+
+    private static double boundedCalibration(double value) {
+        if (!Double.isFinite(value)) return 0;
+        return Math.max(-MAX_BARCODE_CALIBRATION_MM, Math.min(MAX_BARCODE_CALIBRATION_MM, value));
+    }
+
     /** How a name that cannot fit on a fixed-size barcode label is rendered. */
     public static String getBarcodeLabelNameOverflow() {
         return getString(BARCODE_LABEL_NAME_OVERFLOW, "ELLIPSIS");

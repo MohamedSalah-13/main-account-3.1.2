@@ -4,6 +4,7 @@ import com.hamza.account.config.AppIcon;
 import com.hamza.account.features.barcodeprint.BarcodeLabelOptions;
 import com.hamza.account.features.barcodeprint.BarcodeNameOverflow;
 import com.hamza.account.features.barcodeprint.BarcodePrintBatch;
+import com.hamza.account.features.barcodeprint.BarcodePrintCalibration;
 import com.hamza.account.features.barcodeprint.BarcodePrintLine;
 import com.hamza.account.features.barcodeprint.BarcodePrintProblem;
 import com.hamza.account.features.barcodeprint.BarcodePrintResult;
@@ -46,6 +47,7 @@ import java.util.List;
 import java.util.Objects;
 
 import static com.hamza.account.config.PropertiesName.getBarcodeLabelHeightMm;
+import static com.hamza.account.config.PropertiesName.getBarcodeLabelHorizontalOffsetMm;
 import static com.hamza.account.config.PropertiesName.getBarcodeLabelNameFontSize;
 import static com.hamza.account.config.PropertiesName.getBarcodeLabelNameMaxCharacters;
 import static com.hamza.account.config.PropertiesName.getBarcodeLabelNameOverflow;
@@ -54,6 +56,7 @@ import static com.hamza.account.config.PropertiesName.getBarcodeLabelPrintName;
 import static com.hamza.account.config.PropertiesName.getBarcodeLabelPrintPrice;
 import static com.hamza.account.config.PropertiesName.getBarcodeLabelShowDouble;
 import static com.hamza.account.config.PropertiesName.getBarcodeLabelWidthMm;
+import static com.hamza.account.config.PropertiesName.getBarcodeLabelVerticalOffsetMm;
 import static com.hamza.account.config.PropertiesName.getSettingPrinterBarcode;
 import static com.hamza.account.config.PropertiesName.setSettingPrinterBarcode;
 import static com.hamza.controlsfx.others.Utils.whenEnterPressed;
@@ -92,7 +95,9 @@ public class PrintBarcode implements AppSettingInterface {
     @FXML private ProgressIndicator progress;
 
     public PrintBarcode(ObservableList<PrintBarcodeModel> rows) {
-        this(rows, new BarcodePrintService(new Java2DBarcodePrintEngine()));
+        this(rows, new BarcodePrintService(new Java2DBarcodePrintEngine(ignored ->
+                new BarcodePrintCalibration(getBarcodeLabelHorizontalOffsetMm(),
+                        getBarcodeLabelVerticalOffsetMm()))));
     }
 
     PrintBarcode(ObservableList<PrintBarcodeModel> rows, BarcodePrintService printService) {

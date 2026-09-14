@@ -31,6 +31,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Function;
 
 /** Draws Code 128 labels directly, so the preview and printer no longer depend on JasperReports. */
 public final class Java2DBarcodePrintEngine implements BarcodePrintEngine {
@@ -38,6 +39,15 @@ public final class Java2DBarcodePrintEngine implements BarcodePrintEngine {
     private static final double POINTS_PER_MM = 72d / 25.4d;
     private static final double PIXELS_PER_MM = RENDER_DPI / 25.4d;
     private static final int MIN_MARGIN_PIXELS = 4;
+    private final Function<String, BarcodePrintCalibration> calibrationForPrinter;
+
+    public Java2DBarcodePrintEngine() {
+        this(ignored -> BarcodePrintCalibration.NONE);
+    }
+
+    public Java2DBarcodePrintEngine(Function<String, BarcodePrintCalibration> calibrationForPrinter) {
+        this.calibrationForPrinter = Objects.requireNonNull(calibrationForPrinter, "calibrationForPrinter");
+    }
 
     @Override
     public byte[] previewPng(BarcodePrintBatch batch) throws Exception {
@@ -55,7 +65,9 @@ public final class Java2DBarcodePrintEngine implements BarcodePrintEngine {
         }
         PrinterJob job = PrinterJob.getPrinterJob();
         job.setPrintService(printer);
-        job.setPageable(new LabelPageable(batch));
+        BarcodePrintCalibration calibration = Objects.requireNonNullElse(
+                calibrationForPrinter.apply(batch.printerName()), BarcodePrintCalibration.NONE);
+        job.setPageable(new LabelPageable(batch, calibration, BarcodePrinterProfile.forPrinter(batch.printerName())));
         PrintRequestAttributeSet attributes = new HashPrintRequestAttributeSet();
         attributes.add(new Copies(1));
         job.print(attributes);
@@ -173,7 +185,11 @@ public final class Java2DBarcodePrintEngine implements BarcodePrintEngine {
     }
 
     private static int pixels(double millimetres) {
-        return Math.max(1, (int) Math.round(millimetres * PIXELS_PER_MM));
+        return pixels(millimetres, RENDER_DPI);
+    }
+
+    private static int pixels(double millimetres, int dpi) {
+        return Math.max(1, (int) Math.round(millimetres * dpi / 25.4d));
     }
 
     private static int pointsToPixels(int points) {
@@ -186,11 +202,16 @@ public final class Java2DBarcodePrintEngine implements BarcodePrintEngine {
     private static final class LabelPageable implements Pageable {
         private final List<LabelPage> pages;
         private final PageFormat pageFormat;
+        private final BarcodePrintCalibration calibration;
+        private final BarcodePrinterProfile printerProfile;
         private final Map<BarcodePrintLine, BufferedImage> rendered = new ConcurrentHashMap<>();
 
-        private LabelPageable(BarcodePrintBatch batch) {
+        private LabelPageable(BarcodePrintBatch batch, BarcodePrintCalibration calibration,
+                              BarcodePrinterProfile printerProfile) {
             pages = pages(batch);
             pageFormat = pageFormat(batch.options());
+            this.calibration = calibration;
+            this.printerProfile = printerProfile;
         }
 
         @Override
@@ -209,10 +230,12 @@ public final class Java2DBarcodePrintEngine implements BarcodePrintEngine {
             LabelPage page = pages.get(pageIndex);
             return (graphics, format, requestedPage) -> {
                 if (requestedPage != 0) return Printable.NO_SUCH_PAGE;
-                BufferedImage image = rendered.computeIfAbsent(page.line(), line -> renderUnchecked(line, page.options()));
+                BufferedImage image = rendered.computeIfAbsent(page.line(), line ->
+                        renderUnchecked(line, page.options(), printerProfile.dpi()));
                 Graphics2D target = (Graphics2D) graphics.create();
                 try {
-                    target.drawImage(image, 0, 0, (int) Math.round(format.getImageableWidth()),
+                    target.drawImage(image, offsetPoints(calibration.horizontalOffsetMm()),
+                            offsetPoints(calibration.verticalOffsetMm()), (int) Math.round(format.getImageableWidth()),
                             (int) Math.round(format.getImageableHeight()), null);
                 } finally {
                     target.dispose();
@@ -240,9 +263,13 @@ public final class Java2DBarcodePrintEngine implements BarcodePrintEngine {
             return format;
         }
 
-        private static BufferedImage renderUnchecked(BarcodePrintLine line, BarcodeLabelOptions options) {
+        private static int offsetPoints(double millimetres) {
+            return (int) Math.round(millimetres * POINTS_PER_MM);
+        }
+
+        private static BufferedImage renderUnchecked(BarcodePrintLine line, BarcodeLabelOptions options, int dpi) {
             try {
-                return render(line, options);
+                return render(line, options, dpi);
             } catch (Exception exception) {
                 throw new LabelRenderException(exception);
             }
@@ -251,6 +278,28 @@ public final class Java2DBarcodePrintEngine implements BarcodePrintEngine {
         private void requirePage(int pageIndex) {
             if (pageIndex < 0 || pageIndex >= pages.size()) throw new IndexOutOfBoundsException("Unknown label page " + pageIndex);
         }
+    }
+
+    private static BufferedImage render(BarcodePrintLine line, BarcodeLabelOptions options, int dpi) throws Exception {
+        int width = pixels(options.widthMm(), dpi);
+        int height = pixels(options.heightMm(), dpi);
+        BufferedImage image = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
+        Graphics2D graphics = image.createGraphics();
+        try {
+            graphics.setColor(Color.WHITE);
+            graphics.fillRect(0, 0, width, height);
+            graphics.setColor(Color.BLACK);
+            graphics.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+            int labels = options.doubleLabel() ? 2 : 1;
+            int slotHeight = height / labels;
+            for (int label = 0; label < labels; label++) {
+                drawLabel(graphics, line, options, 0, label * slotHeight, width,
+                        label == labels - 1 ? height - label * slotHeight : slotHeight);
+            }
+        } finally {
+            graphics.dispose();
+        }
+        return image;
     }
 
     private static final class LabelRenderException extends RuntimeException {
