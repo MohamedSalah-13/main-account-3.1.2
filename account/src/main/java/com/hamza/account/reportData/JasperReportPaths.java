@@ -10,7 +10,6 @@ public final class JasperReportPaths {
 
     public static class Invoice {
         public static final String THERMAL = BASE_PATH + "invoice-80mm.jrxml";
-        public static final String MULTI = BASE_PATH + "invoice-multi-A4.jrxml";
         public static final String MULTI_80mm = BASE_PATH + "invoice-multi-80mm.jrxml";
 
     }

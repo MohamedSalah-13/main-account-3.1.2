@@ -9,9 +9,13 @@ import com.hamza.account.service.ShiftReportService;
 import com.hamza.account.features.rbac.CurrentUser;
 import com.hamza.account.table.TablePdfLayout;
 import com.hamza.account.table.TablePdfReport;
+import com.hamza.account.features.invoice.MultiInvoicePdfLayout;
+import com.hamza.account.features.export.PdfExportService;
 import com.hamza.account.config.NamesTables;
+import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.language.LanguageManager;
 import com.hamza.controlsfx.others.CssToColorHelper;
+import com.itextpdf.kernel.geom.PageSize;
 import net.sf.jasperreports.engine.JRException;
 import net.sf.jasperreports.engine.data.JRBeanCollectionDataSource;
 import org.jetbrains.annotations.NotNull;
@@ -36,20 +40,48 @@ public class Print_Reports extends ReportCompany {
     }
 
     public void printMultiInvoice(@NotNull List<PrintPurchaseWithName> list, @NotNull String reportName, @NotNull String from, @NotNull String to, CssToColorHelper helper) {
-        HashMap<String, Object> company = getStringObjectHashMap(list, helper);
-        company.put("date_from", from);
-        company.put("date_to", to);
-        addHeaderToReports(company, reportName);
+        if (getPrintPaperReceiptAccount()) {
+            HashMap<String, Object> company = getStringObjectHashMap(list, helper);
+            company.put("date_from", from);
+            company.put("date_to", to);
+            addHeaderToReports(company, reportName);
+            Thread thread = new Thread(() -> jasperData.printJasperPrint(
+                    JasperReportPaths.Invoice.MULTI_80mm,
+                    LanguageManager.getInstance().getString("total"), company, 1, ""));
+            thread.start();
+            return;
+        }
 
-        Thread thread = new Thread(() -> {
-            if (getPrintPaperReceiptAccount()) {
-                jasperData.printJasperPrint(JasperReportPaths.Invoice.MULTI_80mm, LanguageManager.getInstance().getString("total"), company, 1, "");
-            } else {
-                jasperData.printJasperPrint(JasperReportPaths.Invoice.MULTI, LanguageManager.getInstance().getString("total"), company, 1, "");
-            }
-        });
-        thread.start();
+        LanguageManager language = LanguageManager.getInstance();
+        if (list.isEmpty()) {
+            AllAlerts.alertError(language.getString("invoice.report.empty"));
+            return;
+        }
+        File target = TablePdfReport.chooseTarget(null, reportName);
+        if (target == null) {
+            return;
+        }
+        MultiInvoicePdfLayout layout = MultiInvoicePdfLayout.of(list, language::getString);
+        String subtitle = periodText(language, from, to);
+        PageSize pageSize = TablePdfReport.pageSizeFor(layout.tree().headers().length);
+        TablePdfReport.write(target, file -> new PdfExportService().exportTreeReport(
+                file.getAbsolutePath(), reportName, subtitle, layout.tree(), pageSize));
+    }
 
+    /** The same wording the totals screen's other reports use, including an open end. */
+    private static String periodText(LanguageManager language, String from, String to) {
+        boolean hasFrom = !from.isBlank();
+        boolean hasTo = !to.isBlank();
+        if (hasFrom && hasTo) {
+            return language.getString("invoice.report.filter.period", from, to);
+        }
+        if (hasFrom) {
+            return language.getString("invoice.report.filter.since", from);
+        }
+        if (hasTo) {
+            return language.getString("invoice.report.filter.until", to);
+        }
+        return language.getString("invoice.report.filter.all.dates");
     }
 
     /**
