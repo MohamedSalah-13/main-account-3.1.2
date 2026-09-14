@@ -39,6 +39,20 @@
             <version>3.0.3</version>
         </dependency>
 
+        <!-- Encodes the barcode labels' bars; the label engine draws them as whole printer dots. -->
+        <dependency>
+            <groupId>com.google.zxing</groupId>
+            <artifactId>core</artifactId>
+            <version>3.5.3</version>
+        </dependency>
+        <!-- Reads a rendered label back in the tests, the way a scanner would. -->
+        <dependency>
+            <groupId>com.google.zxing</groupId>
+            <artifactId>javase</artifactId>
+            <version>3.5.3</version>
+            <scope>test</scope>
+        </dependency>
+
     </dependencies>
 
     <build>
