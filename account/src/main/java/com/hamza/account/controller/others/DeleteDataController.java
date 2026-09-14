@@ -280,7 +280,7 @@ public class DeleteDataController implements AppSettingInterface {
 
     private void delete() throws Exception {
         // A backup that fails aborts the wipe: there would be nothing to go back to.
-        SaveDatabaseFile.saveBeforeClose(false);
+        SaveDatabaseFile.save(com.hamza.account.features.backup.BackupKind.BEFORE_DELETE, false);
 
         // The plan takes the closure of what was ticked, so a selection the screen
         // somehow allowed that leaves out a dependency is completed here.

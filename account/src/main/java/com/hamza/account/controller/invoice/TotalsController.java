@@ -545,7 +545,7 @@ public class TotalsController<T3 extends BaseNames, T4 extends BaseAccount>
         if (correctionReason.isEmpty()) return;
         maskerPaneSetting.showMaskerPane(
                 LanguageManager.getInstance().getString("invoice.dialog.delete.title"), () -> {
-                    SaveDatabaseFile.saveBeforeClose(false);
+                    SaveDatabaseFile.save(com.hamza.account.features.backup.BackupKind.BEFORE_DELETE, false);
                     dataInterface.totalDesignInterface().deleteMultiData(correctionReason.get(),
                             documents.stream().map(BaseTotals::getId).toArray(Integer[]::new));
                 });
