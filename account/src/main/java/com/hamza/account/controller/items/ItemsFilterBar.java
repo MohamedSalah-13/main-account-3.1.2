@@ -59,6 +59,7 @@ public final class ItemsFilterBar {
     private final ComboBox<Tristate> comboExpiry;
     private final ComboBox<BalanceRule> comboBalance;
     private final ComboBox<UsageRule> comboUsage;
+    private final ComboBox<Tristate> comboUnits;
     private final TextField txtMinPrice;
     private final TextField txtMaxPrice;
     private final TextField txtMiniFrom;
@@ -85,7 +86,7 @@ public final class ItemsFilterBar {
                           ComboBox<GroupChoice> comboGroup,
                           ComboBox<Tristate> comboActive, ComboBox<Tristate> comboBarcode,
                           ComboBox<Tristate> comboExpiry, ComboBox<BalanceRule> comboBalance,
-                          ComboBox<UsageRule> comboUsage, TextField txtMinPrice, TextField txtMaxPrice,
+                          ComboBox<UsageRule> comboUsage, ComboBox<Tristate> comboUnits, TextField txtMinPrice, TextField txtMaxPrice,
                           TextField txtMiniFrom, TextField txtMiniTo,
                           ComboBox<String> comboSaved, FlowPane chipBar, Region filterPane,
                           ToggleButton btnFilters, Label labelFiltered,
@@ -98,6 +99,7 @@ public final class ItemsFilterBar {
         this.comboExpiry = comboExpiry;
         this.comboBalance = comboBalance;
         this.comboUsage = comboUsage;
+        this.comboUnits = comboUnits;
         this.txtMinPrice = txtMinPrice;
         this.txtMaxPrice = txtMaxPrice;
         this.txtMiniFrom = txtMiniFrom;
@@ -164,6 +166,11 @@ public final class ItemsFilterBar {
             case ANY -> "item.filter.usage.any";
             case NEVER_MOVED -> "item.filter.usage.never.moved";
             case NEVER_SOLD -> "item.filter.usage.never.sold";
+        });
+        fillCombo(comboUnits, Tristate.values(), tristate -> switch (tristate) {
+            case ANY -> "item.filter.units.any";
+            case YES -> "item.filter.units.yes";
+            case NO -> "item.filter.units.no";
         });
 
         comboGroup.setConverter(new StringConverter<>() {
@@ -292,7 +299,8 @@ public final class ItemsFilterBar {
                 price(txtMaxPrice),
                 value(comboUsage, UsageRule.ANY),
                 price(txtMiniFrom),
-                price(txtMiniTo));
+                price(txtMiniTo),
+                value(comboUnits, Tristate.ANY));
     }
 
     /**
@@ -311,6 +319,7 @@ public final class ItemsFilterBar {
             comboExpiry.setValue(filter.tracksExpiry());
             comboBalance.setValue(filter.balance());
             comboUsage.setValue(filter.usage());
+            comboUnits.setValue(filter.multipleUnits());
             txtMinPrice.setText(filter.minSellPrice() == null ? "" : String.valueOf(filter.minSellPrice()));
             txtMaxPrice.setText(filter.maxSellPrice() == null ? "" : String.valueOf(filter.maxSellPrice()));
             txtMiniFrom.setText(filter.miniQuantityFrom() == null ? "" : String.valueOf(filter.miniQuantityFrom()));
@@ -399,6 +408,10 @@ public final class ItemsFilterBar {
                 current -> current.withUsage(UsageRule.NEVER_MOVED),
                 current -> current.withUsage(UsageRule.ANY),
                 current -> current.usage() == UsageRule.NEVER_MOVED);
+        addChip("item.chip.multiple.units",
+                current -> current.withMultipleUnits(Tristate.YES),
+                current -> current.withMultipleUnits(Tristate.ANY),
+                current -> current.multipleUnits() == Tristate.YES);
     }
 
     private void addChip(String labelKey, Function<ItemCatalogFilter, ItemCatalogFilter> on,

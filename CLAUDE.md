@@ -1499,6 +1499,38 @@ the `DEFAULT` on every `type` column. The old rule — ids 1 and 2 can never be 
 nothing about whether anyone relied on them, and left a business that sells nothing by the carton stuck
 with the seeded "كرتونه".
 
+### Unit prices
+
+`features/unitprices` is the screen that lists every item sold in more than one unit with its
+units beneath it and the four prices of each, editable in place and saved together
+(`UnitPricesController`, opened from the items screen's "other" menu, on the ticked rows when there
+are any). Four things to know before touching it:
+
+- **"Automatic" means a stored zero, never a computed figure.** A unit with no price of its own is
+  priced at the till as the item's price times the factor (`ItemUnits.sellPrice`), so it follows the
+  item for ever. `AutomaticPricing.Mode.AUTOMATIC` clears the field; `FIXED` is the deliberate
+  opposite, storing today's figure. The screen shows an automatic price in its own style and
+  `UnitPriceLine.effective` is `UnitPriceSuggestion.forFactor` - the item screen's grey hint - so the
+  two screens cannot quote a carton differently.
+- **A save writes only the fields that changed, and checks only those.** The items and their units
+  are locked (`FOR UPDATE OF`, not the unit-name join), each changed figure is compared with what
+  the screen read, and one mismatch refuses the whole batch. That is also what makes the masked
+  cost safe: a reader without `show.column.buy.price` is handed costs of zero, and writing the whole
+  row back would store them.
+- **Two permissions, because two different rows.** A unit's own price needs
+  `items.unit.price.update` (V62, granted to whoever held `items.update`); the item's own price on
+  the same screen still needs `items.update`; changing any cost also needs the cost column.
+- **`items_units` is audited on UPDATE only** (`R__triggers.sql`). `ItemsDao.saveUnits` replaces an
+  item's unit rows wholesale on every save of the item screen, so insert and delete triggers would
+  log every unit of every item each time its name was saved. `audit_items_update` gained the three
+  sale prices at the same time - it had recorded the cost and never what an item sold for.
+
+`UnitPriceDraft` holds the screen's unsaved edits and every decision about them, and has no JavaFX:
+the tree rows carry two ids and ask the draft on every paint. The filter-wide "automatic prices"
+reads every matching item, previews, and saves on confirmation; the ticked and page scopes change
+the draft and wait for Save. The items list's "more than one unit" filter and unit-count column
+(`ItemCatalogSql.HAS_EXTRA_UNITS` / `UNIT_COUNT`) are the same predicate this screen lists by.
+
 ### Scale barcodes
 
 A shop scale prints its own barcode with the item and a weight inside it, and

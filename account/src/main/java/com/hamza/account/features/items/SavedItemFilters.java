@@ -107,6 +107,7 @@ public final class SavedItemFilters {
         append(text, "maxPrice", filter.maxSellPrice());
         append(text, "miniFrom", filter.miniQuantityFrom());
         append(text, "miniTo", filter.miniQuantityTo());
+        append(text, "units", filter.multipleUnits().name());
         return text.toString();
     }
 
@@ -130,7 +131,8 @@ public final class SavedItemFilters {
                     decimal(values.get("maxPrice")),
                     enumValue(values.get("usage"), ItemCatalogFilter.UsageRule.class, ItemCatalogFilter.UsageRule.ANY),
                     decimal(values.get("miniFrom")),
-                    decimal(values.get("miniTo")));
+                    decimal(values.get("miniTo")),
+                    enumValue(values.get("units"), ItemCatalogFilter.Tristate.class, ItemCatalogFilter.Tristate.ANY));
         } catch (RuntimeException unreadable) {
             return null;
         }

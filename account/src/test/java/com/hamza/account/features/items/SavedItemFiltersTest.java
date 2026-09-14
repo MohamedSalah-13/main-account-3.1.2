@@ -1,10 +1,12 @@
 package com.hamza.account.features.items;
 
 import com.hamza.account.features.items.ItemCatalogFilter.BalanceRule;
+import com.hamza.account.features.items.ItemCatalogFilter.Tristate;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
 /**
@@ -33,5 +35,24 @@ class SavedItemFiltersTest {
         assertEquals(5.0, decoded.minSellPrice());
         assertNull(decoded.miniQuantityFrom());
         assertNull(decoded.miniQuantityTo());
+        assertEquals(Tristate.ANY, decoded.multipleUnits());
+    }
+
+    @Test
+    @DisplayName("the more-than-one-unit condition survives being saved and read back")
+    void theUnitsConditionRoundTrips() {
+        ItemCatalogFilter filter = ItemCatalogFilter.EMPTY.withMultipleUnits(Tristate.YES);
+
+        assertEquals(filter, SavedItemFilters.decode(SavedItemFilters.encode(filter)));
+    }
+
+    @Test
+    @DisplayName("the units condition counts as a condition, so it can be saved and is shown on the filter button")
+    void theUnitsConditionIsACondition() {
+        ItemCatalogFilter filter = ItemCatalogFilter.EMPTY.withMultipleUnits(Tristate.NO);
+
+        assertEquals(1, filter.activeConditionCount());
+        assertFalse(filter.isEmpty());
+        assertFalse(filter.sameConditionsAs(ItemCatalogFilter.EMPTY));
     }
 }

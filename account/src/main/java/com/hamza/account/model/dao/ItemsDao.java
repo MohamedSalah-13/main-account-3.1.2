@@ -252,8 +252,8 @@ public class ItemsDao extends AbstractDao<ItemsModel> {
             ip.quantitySalesRe,
             ip.fromStock,
             ip.toStock,
-            ip.adjustment
-            """;
+            ip.adjustment,
+            """ + ItemCatalogSql.UNIT_COUNT + " AS unit_count";
     private static final String QUERY_CATALOG_ITEMS =
             "SELECT " + CATALOG_COLUMNS + " FROM items JOIN " + ITEM_MOVEMENTS_ALL_STOCKS
                     + " ip ON items.id = ip.item_id ";
@@ -1036,6 +1036,7 @@ public class ItemsDao extends AbstractDao<ItemsModel> {
             itemsModel.setNumberValidityDays(rs.getInt(numberValidityDays));
             itemsModel.setAlertDaysBeforeExpiry(rs.getInt(alertDaysBeforeExpire));
             itemsModel.setUpdated_at(rs.getObject(UPDATED_AT, LocalDateTime.class));
+            itemsModel.setUnitCount(rs.getInt("unit_count"));
 
             itemsModel.setSubGroups(lookups.subGroup(rs.getInt(SUB_NUM)));
             itemsModel.setUnitsType(lookups.unit(rs.getInt(UNIT_ID)));

@@ -35,6 +35,13 @@ public class ItemsModel extends UnitExtends {
     private int numberValidityDays;
     private int alertDaysBeforeExpiry;
 
+    /**
+     * How many units the item is sold in, its own included. Filled by the items list only
+     * ({@code ItemCatalogSql.UNIT_COUNT}), which leaves {@link #itemsUnitsModelList} empty -
+     * so this, not that list's size, is what the list may show.
+     */
+    private int unitCount = 1;
+
     private List<ItemsUnitsModel> itemsUnitsModelList=new ArrayList<>();;
     private List<String> extraBarcodes = new ArrayList<>();
 

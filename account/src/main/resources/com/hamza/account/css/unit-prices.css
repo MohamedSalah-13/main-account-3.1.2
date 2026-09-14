@@ -1,0 +1,62 @@
+.unit-prices-root {
+    -fx-padding: 8;
+}
+
+.unit-prices-summary {
+    -fx-border-color: -app-border;
+    -fx-border-width: 0 0 1 0;
+}
+
+.unit-prices-tree .tree-table-row-cell {
+    -fx-cell-size: 34px;
+}
+
+/* The item row: its own prices, and the heading its units sit under. */
+.unit-prices-tree .tree-table-row-cell.unit-prices-item-row {
+    -fx-background-color: -app-neutral-soft;
+}
+
+.unit-prices-tree .tree-table-row-cell.unit-prices-item-row .tree-table-cell {
+    -fx-text-fill: -app-text-strong;
+    -fx-font-weight: bold;
+}
+
+.unit-prices-tree .tree-table-row-cell:hover {
+    -fx-background-color: -app-table-hover;
+}
+
+.unit-prices-tree .tree-table-row-cell:selected {
+    -fx-background-color: -app-table-selected;
+}
+
+.unit-prices-tree .tree-table-cell.unit-price-cell {
+    -fx-alignment: CENTER-RIGHT;
+}
+
+/* Priced from the item: the figure is what the unit sells for today, not a price stored on it. */
+.unit-prices-tree .tree-table-cell.unit-price-automatic {
+    -fx-text-fill: -app-text-muted;
+    -fx-font-style: italic;
+}
+
+/* Edited and not yet saved. */
+.unit-prices-tree .tree-table-cell.unit-price-changed {
+    -fx-background-color: -app-warning-soft;
+    -fx-border-color: -app-warning;
+    -fx-border-width: 0 0 2 0;
+}
+
+.unit-prices-tree .tree-table-cell.unit-price-below-cost {
+    -fx-text-fill: -app-danger;
+    -fx-font-weight: bold;
+}
+
+.unit-prices-tree .tree-table-cell:focused {
+    -fx-border-color: -app-primary;
+    -fx-border-width: 1;
+}
+
+.unit-prices-pager {
+    -fx-border-color: -app-border;
+    -fx-border-width: 1 0 0 0;
+}
