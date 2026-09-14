@@ -4,6 +4,12 @@ import com.hamza.account.config.PropertiesName;
 import com.hamza.account.config.SharedSettingKeys;
 import com.hamza.account.controller.others.ServiceRegistry;
 import com.hamza.account.features.barcodeprint.BarcodeNameOverflow;
+import com.hamza.account.features.barcodeprint.BarcodeLabelOptions;
+import com.hamza.account.features.barcodeprint.BarcodePrintBatch;
+import com.hamza.account.features.barcodeprint.BarcodePrintCalibration;
+import com.hamza.account.features.barcodeprint.BarcodePrintLine;
+import com.hamza.account.features.barcodeprint.BarcodePrintService;
+import com.hamza.account.features.barcodeprint.Java2DBarcodePrintEngine;
 import com.hamza.account.config.DefaultStock;
 import com.hamza.account.features.scalebarcode.ScaleBarcodeService;
 import com.hamza.account.features.scalebarcode.ScaleBarcodeValueType;
@@ -17,14 +23,17 @@ import com.hamza.account.openFxml.FxmlPath;
 import com.hamza.account.service.SupGroupService;
 import com.hamza.account.service.UnitsService;
 import com.hamza.controlsfx.database.DaoException;
+import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.language.LanguageManager;
 import com.hamza.controlsfx.observer.EventBus;
+import com.hamza.controlsfx.others.TextFormat;
 import com.hamza.account.service.ItemsService;
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.control.CheckBox;
+import javafx.scene.control.Button;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
@@ -33,6 +42,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 
 import java.net.URL;
+import java.math.BigDecimal;
 import java.util.HashMap;
 import java.util.List;
 import java.util.ResourceBundle;
@@ -67,10 +77,12 @@ public class SettingTabBarcodeController implements Initializable {
     @FXML
     private CheckBox show2, showName, showPrice, showBarcode, checkActivateBarcodeScale, checkHasCheckDigit,
             checkValidateCheckDigit;
+    @FXML private Button btnPrintCalibrationTest;
     @FXML
     private ComboBox<String> comboMain, comboSub, comboType, comboNameOverflow, comboScaleValueType;
     @FXML
-    private Label labelMain, labelSub, labelType, previewName, previewBarcode, previewDetails, previewSize;
+    private Label labelMain, labelSub, labelType, previewName, previewBarcode, previewDetails, previewSize,
+            labelCalibrationPrinter, labelCalibrationHelp;
     @FXML
     private Label labelComposition, labelValueDigits, labelCompositionProblem, labelTestResult;
     @FXML
@@ -80,7 +92,8 @@ public class SettingTabBarcodeController implements Initializable {
     @FXML
     private TextField textBarcodeStart, textCountScale, textCountBarcode, textCountItem;
     @FXML
-    private TextField textNameMaxCharacters, textNameFontSize, textLabelWidthMm, textLabelHeightMm;
+    private TextField textNameMaxCharacters, textNameFontSize, textLabelWidthMm, textLabelHeightMm,
+            textLabelHorizontalOffsetMm, textLabelVerticalOffsetMm;
 
     @Override
     public void initialize(URL url, ResourceBundle resourceBundle) {
@@ -89,6 +102,7 @@ public class SettingTabBarcodeController implements Initializable {
         comboSetting(daoFactory);
         barcodeScaleSetting();
         barcodeLabelSetting();
+        barcodeLabelCalibrationSetting();
         configureLabelPreview();
         markSharedSettings();
     }
@@ -235,8 +249,60 @@ public class SettingTabBarcodeController implements Initializable {
                 PropertiesName::setBarcodeLabelHeightMm);
     }
 
+    /** Calibration is local to this computer and applies to every barcode printer it uses. */
+    private void barcodeLabelCalibrationSetting() {
+        String printerName = getSettingPrinterBarcode().trim();
+        boolean configured = !printerName.isEmpty();
+        labelCalibrationPrinter.setText(LanguageManager.getInstance().getString("settings.barcode.calibration.printer"));
+        labelCalibrationHelp.setText(LanguageManager.getInstance().getString(configured
+                ? "settings.barcode.calibration.help" : "settings.barcode.calibration.noPrinter"));
+        btnPrintCalibrationTest.setDisable(!configured);
+        setSignedDecimal(textLabelHorizontalOffsetMm, getBarcodeLabelHorizontalOffsetMm(),
+                PropertiesName::setBarcodeLabelHorizontalOffsetMm);
+        setSignedDecimal(textLabelVerticalOffsetMm, getBarcodeLabelVerticalOffsetMm(),
+                PropertiesName::setBarcodeLabelVerticalOffsetMm);
+        btnPrintCalibrationTest.setOnAction(event -> printCalibrationTest(printerName));
+    }
+
+    private void printCalibrationTest(String printerName) {
+        btnPrintCalibrationTest.setDisable(true);
+        BarcodePrintBatch batch = new BarcodePrintBatch(List.of(new BarcodePrintLine(
+                "CALIBRATION-TEST-123", LanguageManager.getInstance()
+                .getString("settings.barcode.calibration.test.name"), BigDecimal.ZERO, 1)), printerName,
+                currentLabelOptions());
+        BarcodePrintService printer = new BarcodePrintService(new Java2DBarcodePrintEngine(ignored ->
+                new BarcodePrintCalibration(getBarcodeLabelHorizontalOffsetMm(),
+                        getBarcodeLabelVerticalOffsetMm())));
+        javafx.concurrent.Task<Void> task = new javafx.concurrent.Task<>() {
+            @Override
+            protected Void call() throws Exception {
+                printer.print(batch);
+                return null;
+            }
+        };
+        task.setOnSucceeded(event -> {
+            btnPrintCalibrationTest.setDisable(false);
+            AllAlerts.alertSaveWithMessage(LanguageManager.getInstance()
+                    .getString("barcode.print.status.sent", 1, printerName));
+        });
+        task.setOnFailed(event -> {
+            btnPrintCalibrationTest.setDisable(false);
+            AllAlerts.handleError(LanguageManager.getInstance().getString("barcode.print.error.context"),
+                    task.getException());
+        });
+        Thread.ofVirtual().name("barcode-calibration-test").start(task);
+    }
+
+    private BarcodeLabelOptions currentLabelOptions() {
+        return new BarcodeLabelOptions(getBarcodeLabelWidthMm(), getBarcodeLabelHeightMm(),
+                getBarcodeLabelShowDouble(), getBarcodeLabelPrintName(), getBarcodeLabelPrintPrice(),
+                getBarcodeLabelPrintBarcode(), BarcodeNameOverflow.fromSetting(getBarcodeLabelNameOverflow()),
+                getBarcodeLabelNameMaxCharacters(), getBarcodeLabelNameFontSize());
+    }
+
     private void setPositiveDecimal(TextField field, double value, double minimum, double maximum,
                                     java.util.function.DoubleConsumer saver) {
+        field.setTextFormatter(new javafx.scene.control.TextFormatter<>(TextFormat.TEXT_FORMATTER_FILTER));
         field.setText(String.valueOf(value));
         field.textProperty().addListener((observable, oldValue, text) -> {
             try {
@@ -247,6 +313,19 @@ public class SettingTabBarcodeController implements Initializable {
                 }
             } catch (NumberFormatException ignored) {
                 // Half-typed input. The saved value stands until the field reads as a number.
+            }
+        });
+    }
+
+    private void setSignedDecimal(TextField field, double value, java.util.function.DoubleConsumer saver) {
+        field.setTextFormatter(new javafx.scene.control.TextFormatter<>(TextFormat.TEXT_FORMATTER_FILTER));
+        field.setText(String.valueOf(value));
+        field.textProperty().addListener((observable, oldValue, text) -> {
+            try {
+                double parsed = Double.parseDouble(text);
+                if (parsed >= -20 && parsed <= 20) saver.accept(parsed);
+            } catch (NumberFormatException ignored) {
+                // A field may temporarily contain only a sign or a decimal separator while it is edited.
             }
         });
     }
