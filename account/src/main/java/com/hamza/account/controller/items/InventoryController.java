@@ -194,6 +194,10 @@ public class InventoryController {
         tableView.getStyleClass().add("modern-table");
         tableView.setPlaceholder(new Label(LanguageManager.getInstance().getString("item.inventory.placeholder.initial")));
 
+        // This controller may be re-attached when the inventory window is reopened.
+        // Rebuild from the catalogue, rather than appending another copy of every
+        // column to the table that survived the previous attachment.
+        tableView.getColumns().clear();
         InventoryColumns.ALL.forEach(column -> tableView.getColumns().add(build(column)));
         tableView.setRowFactory(view -> new StockRow());
 
