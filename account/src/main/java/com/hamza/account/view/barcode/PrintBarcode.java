@@ -11,8 +11,8 @@ import com.hamza.account.features.barcodeprint.BarcodePrintService;
 import com.hamza.account.features.barcodeprint.BarcodePrintValidation;
 import com.hamza.account.features.barcodeprint.BarcodePrintValidationException;
 import com.hamza.account.features.barcodeprint.BarcodePrinterSelection;
+import com.hamza.account.features.barcodeprint.Java2DBarcodePrintEngine;
 import com.hamza.account.finance.MoneyMath;
-import com.hamza.account.reportData.JasperBarcodePrintEngine;
 import com.hamza.account.table.TableSetting;
 import com.hamza.controlsfx.alert.AllAlerts;
 import com.hamza.controlsfx.error.UserValidationException;
@@ -92,7 +92,7 @@ public class PrintBarcode implements AppSettingInterface {
     @FXML private ProgressIndicator progress;
 
     public PrintBarcode(ObservableList<PrintBarcodeModel> rows) {
-        this(rows, new BarcodePrintService(new JasperBarcodePrintEngine()));
+        this(rows, new BarcodePrintService(new Java2DBarcodePrintEngine()));
     }
 
     PrintBarcode(ObservableList<PrintBarcodeModel> rows, BarcodePrintService printService) {
