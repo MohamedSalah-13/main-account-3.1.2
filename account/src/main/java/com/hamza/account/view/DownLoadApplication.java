@@ -308,7 +308,8 @@ public class DownLoadApplication extends Application {
         ServiceRegistry.register(ShiftCashHandoverService.class, cashHandovers);
         ServiceRegistry.register(ShiftVarianceSettlementService.class, varianceSettlements);
         ServiceRegistry.register(ShiftShortageChargeService.class, new ShiftShortageChargeService(
-                new JdbcShiftShortageChargeRepository(), userSession,
+                new JdbcShiftShortageChargeRepository(), ServiceRegistry.get(EmployeeLedgerService.class),
+                userSession,
                 java.time.Clock.systemDefaultZone()));
         ServiceRegistry.register(ShiftCashAuditService.class, new ShiftCashAuditService());
         ServiceRegistry.register(ShiftReconciliationService.class, new ShiftReconciliationService());

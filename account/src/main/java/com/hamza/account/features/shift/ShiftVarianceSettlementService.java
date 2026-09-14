@@ -35,11 +35,16 @@ public final class ShiftVarianceSettlementService {
     public boolean settleOrDefer(int shiftId, int treasuryId, BigDecimal expected,
                                  BigDecimal actual, int actorUserId,
                                  LocalDateTime closeTime) throws DaoException {
-        BigDecimal difference = MoneyMath.subtract(actual, expected);
+        // Round each balance before subtracting, as reconcileVariance does. The row stores the
+        // rounded balances and V61's CHECK demands difference = actual - expected of exactly
+        // those; the rounded difference of raw balances can differ by a cent from that.
+        BigDecimal expectedMoney = MoneyMath.money(expected);
+        BigDecimal actualMoney = MoneyMath.money(actual);
+        BigDecimal difference = MoneyMath.subtract(actualMoney, expectedMoney);
         if (difference.signum() == 0) return false;
         LocalDate lockedUntil = PeriodLock.lockedUntil();
         if (lockedUntil != null && !closeTime.toLocalDate().isAfter(lockedUntil)) {
-            repository.append(shiftId, treasuryId, MoneyMath.money(expected), MoneyMath.money(actual),
+            repository.append(shiftId, treasuryId, expectedMoney, actualMoney,
                     difference, closeTime.toLocalDate(), actorUserId, closeTime);
             return true;
         }

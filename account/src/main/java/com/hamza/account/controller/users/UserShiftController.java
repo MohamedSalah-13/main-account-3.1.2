@@ -12,6 +12,7 @@ import com.hamza.account.session.ShiftContext;
 import com.hamza.account.features.rbac.CurrentUser;
 import com.hamza.account.features.events.ShiftsChanged;
 import com.hamza.account.features.shift.CashierTreasuryChoice;
+import com.hamza.account.features.shift.CloseBalanceEntry;
 import com.hamza.account.features.shift.CashierShiftScreenService;
 import com.hamza.account.features.shift.CashierShiftScreenService.CashierShiftScreenData;
 import com.hamza.account.features.shift.ShiftCloseAttempt;
@@ -89,6 +90,9 @@ public class UserShiftController {
     private CashierShiftScreenData viewData;
     private long viewRequest;
     private boolean busy;
+    /** Which shift the close-balance field was last filled for, and what the screen wrote there. */
+    private int closeBalanceShiftId;
+    private String closeBalanceWritten;
 
     public UserShiftController() {
         this.currentUserId = CurrentUser.get().getId();
@@ -237,9 +241,8 @@ public class UserShiftController {
             showNoOpenShift();
             boxOpenShift.setDisable(false);
             boxCloseShift.setDisable(true);
-            txtCloseBalance.clear();
+            clearCloseShiftFields();
             txtCloseBalance.setDisable(false);
-            txtCloseNotes.clear();
             clearSummaryLabels();
         } else {
             if (data.hasClosableShift()) ShiftContext.setCurrentShift(current);
@@ -248,13 +251,15 @@ public class UserShiftController {
             boxOpenShift.setDisable(true);
             boxCloseShift.setDisable(!data.hasClosableShift());
             txtCloseBalance.setDisable(!data.reconcilesCash());
-            if (!data.reconcilesCash()) {
-                txtCloseBalance.setText(current.getOpenBalance().toPlainString());
-            } else if (data.blindClose()) {
-                txtCloseBalance.clear();
-            } else if (txtCloseBalance.getText() == null || txtCloseBalance.getText().isBlank()) {
-                txtCloseBalance.setText(current.getOpenBalance().toPlainString());
+            String text = CloseBalanceEntry.textAfterReload(data.reconcilesCash(), data.blindClose(),
+                    current.getOpenBalance().toPlainString(), txtCloseBalance.getText(),
+                    closeBalanceWritten, current.getId() == closeBalanceShiftId);
+            if (!text.equals(txtCloseBalance.getText())) {
+                txtCloseBalance.setText(text);
+                // The formatter may rewrite what was set, so remember what the field reads back.
+                closeBalanceWritten = txtCloseBalance.getText();
             }
+            closeBalanceShiftId = current.getId();
             showLiveSummary(data);
         }
         applyActionState();
@@ -528,6 +533,8 @@ public class UserShiftController {
     private void clearCloseShiftFields() {
         txtCloseBalance.clear();
         txtCloseNotes.clear();
+        closeBalanceWritten = null;
+        closeBalanceShiftId = 0;
     }
 
     private String localizedStatus(UserShift shift) {

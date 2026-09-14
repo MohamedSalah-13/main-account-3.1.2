@@ -4,7 +4,6 @@ import com.hamza.controlsfx.database.AbstractDao;
 import com.hamza.controlsfx.database.DaoException;
 
 import java.math.BigDecimal;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 /** JDBC transaction seam for the deduction and its immutable shift link. */
@@ -41,15 +40,6 @@ public final class JdbcShiftShortageChargeRepository extends AbstractDao<ShiftSh
                 }
             }
         });
-    }
-
-    @Override
-    public int insertDeduction(int employeeId, LocalDate date, BigDecimal amount,
-                               String notes, int actorUserId) throws DaoException {
-        return insertReturningId("""
-                INSERT INTO employee_ledger (employee_id, entry_date, kind, amount, notes, user_id)
-                VALUES (?, ?, 'DEDUCTION', ?, ?, ?)
-                """, employeeId, date, amount, notes, actorUserId);
     }
 
     @Override

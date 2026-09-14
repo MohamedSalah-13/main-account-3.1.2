@@ -61,6 +61,12 @@ public final class EmployeeLedgerService {
         if (run != null) {
             throw new UserValidationException("employee.error.account.payroll.row");
         }
+        // A charged shift shortage is an approval record with a foreign key to this row. Deleting
+        // it would reach the user as a constraint violation and a reference code; and the approval
+        // is immutable by design, so the correction is an opposing entry, as for any movement.
+        if (repository.shiftChargedBy(entryId) != null) {
+            throw new UserValidationException("employee.error.account.shift.shortage.row");
+        }
         return repository.deleteLedgerEntry(employeeId, entryId);
     }
 
