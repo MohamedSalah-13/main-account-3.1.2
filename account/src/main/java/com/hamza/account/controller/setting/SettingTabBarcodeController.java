@@ -9,6 +9,7 @@ import com.hamza.account.features.barcodeprint.BarcodePrintBatch;
 import com.hamza.account.features.barcodeprint.BarcodePrintCalibration;
 import com.hamza.account.features.barcodeprint.BarcodePrintLine;
 import com.hamza.account.features.barcodeprint.BarcodePrintService;
+import com.hamza.account.features.barcodeprint.BarcodePrintValidationException;
 import com.hamza.account.features.barcodeprint.Java2DBarcodePrintEngine;
 import com.hamza.account.config.DefaultStock;
 import com.hamza.account.features.scalebarcode.ScaleBarcodeService;
@@ -28,6 +29,8 @@ import com.hamza.controlsfx.language.LanguageManager;
 import com.hamza.controlsfx.observer.EventBus;
 import com.hamza.controlsfx.others.TextFormat;
 import com.hamza.account.service.ItemsService;
+import com.hamza.account.view.barcode.BarcodePrintProblemMessage;
+import com.hamza.controlsfx.error.UserValidationException;
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
@@ -264,10 +267,16 @@ public class SettingTabBarcodeController implements Initializable {
         btnPrintCalibrationTest.setOnAction(event -> printCalibrationTest(printerName));
     }
 
+    /**
+     * Short and numeric on purpose: it has to fit the smallest label at two dots a module, and the
+     * 20-character text it replaced could not fit a 41 mm label readably at all.
+     */
+    private static final String CALIBRATION_TEST_BARCODE = "12345678";
+
     private void printCalibrationTest(String printerName) {
         btnPrintCalibrationTest.setDisable(true);
         BarcodePrintBatch batch = new BarcodePrintBatch(List.of(new BarcodePrintLine(
-                "CALIBRATION-TEST-123", LanguageManager.getInstance()
+                CALIBRATION_TEST_BARCODE, LanguageManager.getInstance()
                 .getString("settings.barcode.calibration.test.name"), BigDecimal.ZERO, 1)), printerName,
                 currentLabelOptions());
         BarcodePrintService printer = new BarcodePrintService(new Java2DBarcodePrintEngine(ignored ->
@@ -287,8 +296,11 @@ public class SettingTabBarcodeController implements Initializable {
         });
         task.setOnFailed(event -> {
             btnPrintCalibrationTest.setDisable(false);
-            AllAlerts.handleError(LanguageManager.getInstance().getString("barcode.print.error.context"),
-                    task.getException());
+            Throwable failure = task.getException();
+            if (failure instanceof BarcodePrintValidationException validation && !validation.problems().isEmpty()) {
+                failure = new UserValidationException(BarcodePrintProblemMessage.of(validation.problems().getFirst()));
+            }
+            AllAlerts.handleError(LanguageManager.getInstance().getString("barcode.print.error.context"), failure);
         });
         Thread.ofVirtual().name("barcode-calibration-test").start(task);
     }

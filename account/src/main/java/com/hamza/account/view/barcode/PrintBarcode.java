@@ -340,7 +340,8 @@ public class PrintBarcode implements AppSettingInterface {
                 return;
             }
             previewImage.setImage(null);
-            labelPreviewStatus.setText(text("barcode.print.preview.failed"));
+            labelPreviewStatus.setText(task.getException() instanceof BarcodePrintValidationException
+                    ? text("barcode.print.preview.invalid") : text("barcode.print.preview.failed"));
             if (reportFailure) {
                 handleFailure(task.getException());
             }
@@ -402,18 +403,8 @@ public class PrintBarcode implements AppSettingInterface {
     }
 
     private void showProblem(BarcodePrintProblem problem) {
-        String message = switch (problem.type()) {
-            case EMPTY_BATCH -> text("barcode.print.validation.empty");
-            case MISSING_PRINTER -> text("barcode.print.validation.printer.required");
-            case MISSING_BARCODE -> text("barcode.print.validation.barcode", problem.rowNumber());
-            case INVALID_COPIES -> problem.rowNumber() > 0
-                    ? text("barcode.print.validation.copies", problem.rowNumber(), BarcodePrintValidation.MAX_COPIES_PER_LINE)
-                    : text("barcode.print.validation.copies.all", BarcodePrintValidation.MAX_COPIES_PER_LINE);
-            case INVALID_PRICE -> text("barcode.print.validation.price", problem.rowNumber());
-            case INVALID_LABEL_SIZE -> text("barcode.print.validation.size");
-            case INVALID_NAME_SETTINGS -> text("barcode.print.validation.name.settings");
-        };
-        AllAlerts.handleError(text("barcode.print.validation.context"), new UserValidationException(message));
+        AllAlerts.handleError(text("barcode.print.validation.context"),
+                new UserValidationException(BarcodePrintProblemMessage.of(problem)));
     }
 
     private String namePolicyText() {

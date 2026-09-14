@@ -10,7 +10,11 @@ public record BarcodePrintProblem(Type type, int rowNumber) {
         INVALID_COPIES,
         INVALID_PRICE,
         INVALID_LABEL_SIZE,
-        INVALID_NAME_SETTINGS
+        INVALID_NAME_SETTINGS,
+        /** Code 128 cannot carry the value: it holds a character outside ASCII. */
+        UNSUPPORTED_BARCODE,
+        /** The bars, at the narrowest width a scanner reads, and their quiet zones exceed the label. */
+        BARCODE_TOO_WIDE
     }
 
     public static BarcodePrintProblem batch(Type type) {
