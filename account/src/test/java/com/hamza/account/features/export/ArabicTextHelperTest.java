@@ -66,6 +66,23 @@ class ArabicTextHelperTest {
         assertEquals(isolated("-11,995.00"), ArabicTextHelper.isolateNumbers("-11,995.00"));
     }
 
+    /**
+     * A product code is one word, not a word and a number. "نوته NC7013" printed on the invoice as
+     * "7013NC": the digits were isolated on their own, and an isolate is a separate run the
+     * right-to-left paragraph then places before the letters. 45 of 1,836 items on a real
+     * database carry such a code in their name.
+     */
+    @Test
+    void aCodeMixingLettersAndDigitsIsNotSplit() {
+        String shaped = ArabicTextHelper.shape("نوته NC7013");
+        assertTrue(shaped.contains("NC7013"), shaped);
+        assertFalse(shaped.contains("7013NC"), shaped);
+
+        assertTrue(ArabicTextHelper.shape("قلم A4B2").contains("A4B2"));
+        assertTrue(ArabicTextHelper.shape("علبة 12X").contains("12X"));
+        assertEquals("X9", ArabicTextHelper.isolateNumbers("X9"), "a code is left to the bidi pass whole");
+    }
+
     private static String isolated(String number) {
         return LEFT_TO_RIGHT_ISOLATE + number + POP_DIRECTIONAL_ISOLATE;
     }
