@@ -244,6 +244,14 @@ public class UnitsTabController {
         return tableUnitsSetting.getItemsUnitsModelList();
     }
 
+    /**
+     * The tab's "all units automatic": every unit besides the item's own stops carrying prices of
+     * its own and is priced from the item. Nothing is saved until the item is.
+     */
+    public void makeAllAutomatic() {
+        if (UnitEntryRules.makeOwnPricesAutomatic(units()) > 0) tableUnits.refresh();
+    }
+
     /** Shows a saved item's units. */
     public void load(ItemsModel item) {
         tableUnitsSetting.selectTable(item);

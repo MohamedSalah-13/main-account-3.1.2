@@ -192,4 +192,29 @@ class UnitEntryRulesTest {
             assertFalse(UnitEntryRules.holdsUnitBesidesBase(List.of(), "قطعة"));
         }
     }
+
+    @Nested
+    @DisplayName("all units automatic")
+    class AllUnitsAutomatic {
+
+        @Test
+        @DisplayName("clears every price the other units carry and leaves the item's own row alone")
+        void clearsEveryOwnPriceButRowZero() {
+            ItemsUnitsModel base = row("قطعة");
+            base.setSelPrice(10);
+            ItemsUnitsModel carton = row("كرتونة");
+            carton.setBuyPrice(90);
+            carton.setSelPrice(115);
+            carton.setSelPrice3(110);
+            ItemsUnitsModel box = row("علبة");
+
+            int changed = UnitEntryRules.makeOwnPricesAutomatic(new ArrayList<>(List.of(base, carton, box)));
+
+            assertEquals(1, changed, "the box had nothing of its own to clear");
+            assertEquals(10.0, base.getSelPrice());
+            assertEquals(0.0, carton.getBuyPrice());
+            assertEquals(0.0, carton.getSelPrice());
+            assertEquals(0.0, carton.getSelPrice3());
+        }
+    }
 }

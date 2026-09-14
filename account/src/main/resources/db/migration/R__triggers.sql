@@ -212,6 +212,9 @@ BEGIN
                     'nameItem', OLD.nameItem,
                     'sub_num', OLD.sub_num,
                     'buy_price', OLD.buy_price,
+                    'sel_price1', OLD.sel_price1,
+                    'sel_price2', OLD.sel_price2,
+                    'sel_price3', OLD.sel_price3,
                     'first_balance', OLD.first_balance
             ),
             JSON_OBJECT(
@@ -220,6 +223,9 @@ BEGIN
                     'nameItem', NEW.nameItem,
                     'sub_num', NEW.sub_num,
                     'buy_price', NEW.buy_price,
+                    'sel_price1', NEW.sel_price1,
+                    'sel_price2', NEW.sel_price2,
+                    'sel_price3', NEW.sel_price3,
                     'first_balance', NEW.first_balance
             ),
             NULL
@@ -306,6 +312,57 @@ DELIMITER ;
 -- which also covers UPDATE - the trigger never did. Dropping it here as well
 -- keeps a database that reruns this file from getting it back.
 DROP TRIGGER IF EXISTS before_items_units_insert;
+
+-- A unit's own prices had no history at all: the audit triggers covered `items`
+-- and not this table, so a carton repriced - or a hundred of them made automatic
+-- from the unit prices screen in one save - left no trace of who did it or what
+-- the price had been.
+--
+-- UPDATE only, deliberately. `ItemsDao.saveUnits` replaces an item's unit rows
+-- wholesale on every save of the item screen, so INSERT and DELETE triggers would
+-- log every unit of every item each time anybody saved its name - rows that record
+-- nothing having changed. The in-place writes are the price edits (and a merge
+-- repointing a unit), and the IF skips an UPDATE that moved none of the figures.
+DROP TRIGGER IF EXISTS audit_items_units_update;
+
+DELIMITER |
+CREATE TRIGGER audit_items_units_update
+    AFTER UPDATE ON items_units
+    FOR EACH ROW
+BEGIN
+    IF NOT (OLD.items_id <=> NEW.items_id AND OLD.unit <=> NEW.unit
+            AND OLD.quantity <=> NEW.quantity AND OLD.buy_price <=> NEW.buy_price
+            AND OLD.sel_price <=> NEW.sel_price AND OLD.sel_price2 <=> NEW.sel_price2
+            AND OLD.sel_price3 <=> NEW.sel_price3) THEN
+        CALL write_audit_log(
+                'items_units',
+                NEW.id,
+                'UPDATE',
+                COALESCE(@app_user_id, NEW.user_id, OLD.user_id, 1),
+                JSON_OBJECT(
+                        'items_id', OLD.items_id,
+                        'unit', OLD.unit,
+                        'quantity', OLD.quantity,
+                        'buy_price', OLD.buy_price,
+                        'sel_price', OLD.sel_price,
+                        'sel_price2', OLD.sel_price2,
+                        'sel_price3', OLD.sel_price3
+                ),
+                JSON_OBJECT(
+                        'items_id', NEW.items_id,
+                        'unit', NEW.unit,
+                        'quantity', NEW.quantity,
+                        'buy_price', NEW.buy_price,
+                        'sel_price', NEW.sel_price,
+                        'sel_price2', NEW.sel_price2,
+                        'sel_price3', NEW.sel_price3
+                ),
+                NULL
+             );
+    END IF;
+END;
+|
+DELIMITER ;
 
 -- Shift cash handovers are two immutable facts: cashier declaration, then
 -- receipt by a different authenticated user.

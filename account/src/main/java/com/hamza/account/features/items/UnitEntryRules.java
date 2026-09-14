@@ -46,6 +46,30 @@ public final class UnitEntryRules {
         return index > 0;
     }
 
+    /**
+     * Clears every price the item's other units carry of their own, so each is priced from the
+     * item again - its price times the factor - and answers how many rows it changed.
+     * <p>
+     * Row 0 is left alone: it is the item's own unit, its prices are the item's, and it carries
+     * none of its own to clear. Zero is what "no price of its own" has meant since V6; see
+     * {@code ItemUnits.sellPrice} and {@code features/unitprices/AutomaticPricing}.
+     */
+    public static int makeOwnPricesAutomatic(List<ItemsUnitsModel> rows) {
+        int changed = 0;
+        for (int index = 1; index < rows.size(); index++) {
+            ItemsUnitsModel row = rows.get(index);
+            if (row == null) continue;
+            if (row.getBuyPrice() > 0 || row.getSelPrice() > 0 || row.getSelPrice2() > 0 || row.getSelPrice3() > 0) {
+                row.setBuyPrice(0);
+                row.setSelPrice(0);
+                row.setSelPrice2(0);
+                row.setSelPrice3(0);
+                changed++;
+            }
+        }
+        return changed;
+    }
+
     /** Whether an edited cell in the row at {@code index} may be applied. */
     public static boolean mayEditRow(int index) {
         return index > 0;

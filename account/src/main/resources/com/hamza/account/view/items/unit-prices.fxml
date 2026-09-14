@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.CheckBox?>
+<?import javafx.scene.control.ComboBox?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.ProgressIndicator?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.control.TreeTableView?>
+<?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Region?>
+<?import javafx.scene.layout.StackPane?>
+<?import javafx.scene.layout.VBox?>
+
+<!--
+  Every item with a unit besides its own, and each of those units beneath it, with the four prices
+  of each. The columns, the cells and every decision about an edit are made in code - the columns
+  in UnitPricesController, the decisions in features/unitprices/UnitPriceDraft.
+-->
+<StackPane fx:id="root" styleClass="app-root,unit-prices-root"
+           stylesheets="@../../css/unit-prices.css"
+           xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
+           fx:controller="com.hamza.account.controller.items.UnitPricesController">
+    <children>
+        <BorderPane styleClass="app-container">
+            <top>
+                <VBox spacing="8.0">
+                    <children>
+                        <HBox alignment="CENTER_LEFT" spacing="8.0" styleClass="app-card">
+                            <children>
+                                <TextField fx:id="txtSearch" minWidth="260.0"
+                                           promptText="%unit.prices.search" HBox.hgrow="ALWAYS" />
+                                <ComboBox fx:id="comboState" minWidth="170.0" />
+                                <CheckBox fx:id="checkBelowCost" mnemonicParsing="false"
+                                          text="%unit.prices.filter.below.cost" />
+                                <ProgressIndicator fx:id="progress" maxHeight="20.0" maxWidth="20.0"
+                                                   visible="false" />
+                                <Button fx:id="btnExpandAll" mnemonicParsing="false" styleClass="neutral-button"
+                                        text="%unit.prices.expand" />
+                                <Button fx:id="btnCollapseAll" mnemonicParsing="false" styleClass="neutral-button"
+                                        text="%unit.prices.collapse" />
+                                <Button fx:id="btnRefresh" mnemonicParsing="false" styleClass="neutral-button"
+                                        text="%unit.prices.refresh" />
+                            </children>
+                            <padding><Insets bottom="6.0" left="6.0" right="6.0" top="6.0" /></padding>
+                        </HBox>
+                        <HBox alignment="CENTER_LEFT" spacing="10.0" styleClass="app-card,unit-prices-summary">
+                            <children>
+                                <Label fx:id="labelSummary" styleClass="form-label" />
+                                <Label fx:id="labelStatus" styleClass="kpi-hint" />
+                                <Region HBox.hgrow="ALWAYS" />
+                                <Button fx:id="btnAutomatic" mnemonicParsing="false" styleClass="neutral-button"
+                                        text="%unit.prices.automatic" />
+                                <Button fx:id="btnDiscard" mnemonicParsing="false" styleClass="neutral-button"
+                                        text="%unit.prices.discard" />
+                                <Button fx:id="btnSave" mnemonicParsing="false" styleClass="primary-button"
+                                        text="%unit.prices.save" />
+                            </children>
+                            <padding><Insets bottom="6.0" left="8.0" right="8.0" top="6.0" /></padding>
+                        </HBox>
+                    </children>
+                </VBox>
+            </top>
+            <center>
+                <TreeTableView fx:id="tree" styleClass="modern-table-view,unit-prices-tree"
+                               BorderPane.alignment="CENTER" />
+            </center>
+            <bottom>
+                <HBox fx:id="pagerBox" alignment="CENTER" spacing="10.0" styleClass="unit-prices-pager">
+                    <children>
+                        <Button fx:id="btnPrevious" mnemonicParsing="false" styleClass="neutral-button"
+                                text="%unit.prices.page.previous" />
+                        <Label fx:id="labelPage" styleClass="form-label" />
+                        <Button fx:id="btnNext" mnemonicParsing="false" styleClass="neutral-button"
+                                text="%unit.prices.page.next" />
+                    </children>
+                    <padding><Insets bottom="6.0" left="6.0" right="6.0" top="6.0" /></padding>
+                </HBox>
+            </bottom>
+        </BorderPane>
+    </children>
+</StackPane>

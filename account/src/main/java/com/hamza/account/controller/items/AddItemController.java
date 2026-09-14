@@ -175,7 +175,7 @@ public class AddItemController implements AppSettingInterface {
     @FXML
     private TextField textUnitBuyPrice, textUnitSelPrice, textUnitSelPrice2, textUnitSelPrice3;
     @FXML
-    private Button btnAdd;
+    private Button btnAdd, btnUnitsAutomatic;
     @FXML
     private TextField textExtraBarcode;
     @FXML
@@ -463,6 +463,7 @@ public class AddItemController implements AppSettingInterface {
         unitsTab = new UnitsTabController(tableUnits, comboOtherTypes, textUnitQuantity, textUnitBarcode,
                 textUnitBuyPrice, textUnitSelPrice, textUnitSelPrice2, textUnitSelPrice3, btnAdd,
                 unitNames, this::getUnitsModelByName, this::verifyBarcodeIsFree, itemForm);
+        btnUnitsAutomatic.setOnAction(event -> unitsTab.makeAllAutomatic());
     }
 
     /**
@@ -481,6 +482,7 @@ public class AddItemController implements AppSettingInterface {
      */
     private void buttonGraphic() {
         btnAdd.setGraphic(AppIcon.ADD.graphic());
+        btnUnitsAutomatic.setGraphic(AppIcon.REFRESH.graphic());
         btnSave.setGraphic(AppIcon.SAVE.graphic());
         btnBarcode.setGraphic(AppIcon.BARCODE.graphic());
         btnAddImage.setGraphic(AppIcon.SEARCH.graphic());

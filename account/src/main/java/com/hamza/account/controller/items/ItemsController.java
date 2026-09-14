@@ -158,7 +158,8 @@ public class ItemsController extends LoadData {
     @FXML
     private Button btnApplyFilter, btnClearFilter, btnSaveFilter, btnDeleteFilter;
     @FXML
-    private MenuItem menuPrint, menuPrintBarcode, menuItemCard, menuItemConvertGroup, menuItemBulkEdit, menuExportExcel;
+    private MenuItem menuPrint, menuPrintBarcode, menuItemCard, menuItemConvertGroup, menuItemBulkEdit, menuExportExcel,
+            menuItemUnitPrices;
     @FXML
     private TextField txtSearch, txtMinPrice, txtMaxPrice, txtMiniFrom, txtMiniTo;
     @FXML
@@ -599,6 +600,7 @@ public class ItemsController extends LoadData {
         menuExportExcel.setOnAction(event -> exportToExcel());
         menuItemCard.setOnAction(event -> openCard());
         menuItemConvertGroup.setOnAction(event -> convertGroups());
+        menuItemUnitPrices.setOnAction(event -> openUnitPrices());
         menuItemBulkEdit.setOnAction(event -> bulkEdit());
         menuPrint.setOnAction(event -> printPdf());
         menuPrintBarcode.setOnAction(event -> printBarcodes());
@@ -913,6 +915,34 @@ public class ItemsController extends LoadData {
                 paginationTableSetting.reload();
             }
         } catch (DaoException e) {
+            reportError(e);
+        }
+    }
+
+    /**
+     * The unit prices screen, on the ticked rows when there are any and on every item sold in more
+     * than one unit otherwise. A window of its own, like the group manager: it is worked in for a
+     * while, beside this list rather than instead of it.
+     */
+    private void openUnitPrices() {
+        java.util.Set<Integer> ids = new java.util.LinkedHashSet<>();
+        for (ItemsModel item : selectedItems()) ids.add(item.getId());
+        try {
+            var controller = new UnitPricesController(ids);
+            Scene scene = new Scene(new com.hamza.account.openFxml.OpenFxmlApplication(controller).getPane(),
+                    1180, 740);
+            ThemeManager.apply(scene);
+            Stage stage = new Stage();
+            stage.setTitle(LanguageManager.getInstance().getString("unit.prices.title"));
+            stage.setScene(scene);
+            stage.setMinWidth(900);
+            stage.setMinHeight(600);
+            // Unsaved prices are asked about before the window goes, not lost with it.
+            stage.setOnCloseRequest(event -> {
+                if (!controller.confirmClose()) event.consume();
+            });
+            stage.show();
+        } catch (Exception e) {
             reportError(e);
         }
     }

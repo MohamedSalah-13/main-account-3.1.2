@@ -148,6 +148,8 @@
                                                                 <TextField fx:id="textUnitBarcode" GridPane.columnIndex="1" GridPane.rowIndex="1" />
 
                                                                 <Button fx:id="btnAdd" mnemonicParsing="false" styleClass="primary-button" text="%add" GridPane.columnIndex="2" GridPane.rowIndex="1" />
+                                                                <!-- Clears the prices the other units carry of their own, so each is priced from the item again. -->
+                                                                <Button fx:id="btnUnitsAutomatic" mnemonicParsing="false" styleClass="neutral-button" text="%unit.prices.tab.automatic" GridPane.columnIndex="3" GridPane.rowIndex="1" />
 
                                                                 <Label styleClass="form-label" text="%item.buy.price" GridPane.rowIndex="2" />
                                                                 <TextField fx:id="textUnitBuyPrice" promptText="%item.hint.unit.price.blank" GridPane.columnIndex="1" GridPane.rowIndex="2" />

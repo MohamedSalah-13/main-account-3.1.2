@@ -46,6 +46,12 @@ public final class AppPermissions {
     public static final PermissionKey ITEMS_ADD_EXCEL = key("items.add.excel");
     /** Reclassifying items between subgroups without granting every other item edit. */
     public static final PermissionKey ITEMS_GROUP_MOVE = key("items.group.move");
+    /**
+     * Setting the prices a unit carries of its own, or clearing them so the unit is priced from
+     * the item. Narrower than {@link #ITEMS_UPDATE}, which also edits the item's own prices on the
+     * same screen; V62 grants it to every role that already held that.
+     */
+    public static final PermissionKey ITEMS_UNIT_PRICE_UPDATE = key("items.unit.price.update");
     /** Folding one item into another and deleting it. Held with {@link #ITEMS_DELETE}, never instead of it. */
     public static final PermissionKey ITEMS_MERGE = key("items.merge");
     /**
