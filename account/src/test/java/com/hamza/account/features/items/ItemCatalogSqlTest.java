@@ -80,7 +80,8 @@ class ItemCatalogSqlTest {
                     .withBalance(BalanceRule.BELOW_MINIMUM)
                     .withUsage(UsageRule.NEVER_SOLD)
                     .withSellPriceBetween(5.0, 50.0)
-                    .withMiniQuantityBetween(0.0, 1.0);
+                    .withMiniQuantityBetween(0.0, 1.0)
+                    .withMultipleUnits(Tristate.YES);
 
             ItemCatalogSql.Statement statement = build(filter);
 
@@ -95,7 +96,8 @@ class ItemCatalogSqlTest {
                     .withActive(Tristate.NO)
                     .withHasBarcode(Tristate.YES)
                     .withBalance(BalanceRule.NEGATIVE)
-                    .withUsage(UsageRule.NEVER_MOVED));
+                    .withUsage(UsageRule.NEVER_MOVED)
+                    .withMultipleUnits(Tristate.NO));
 
             assertEquals(0, statement.whereParameters().size());
             assertEquals(0, placeholders(statement.where()));
@@ -147,7 +149,8 @@ class ItemCatalogSqlTest {
                     .withSearch("لبن").withGroup(3, null)
                     .withActive(Tristate.YES).withHasBarcode(Tristate.NO)
                     .withTracksExpiry(Tristate.YES).withUsage(UsageRule.NEVER_MOVED)
-                    .withSellPriceBetween(1.0, 2.0);
+                    .withSellPriceBetween(1.0, 2.0)
+                    .withMultipleUnits(Tristate.YES);
 
             assertFalse(build(filter).where().contains("ip."));
             assertFalse(ItemCatalogSql.requiresMovementJoin(filter));
@@ -157,6 +160,31 @@ class ItemCatalogSqlTest {
     @Nested
     @DisplayName("what each condition means")
     class Meaning {
+
+        @Test
+        @DisplayName("more than one unit means a row in items_units besides the item's own unit")
+        void multipleUnitsExcludesTheItemsOwnUnit() {
+            String yes = build(ItemCatalogFilter.EMPTY.withMultipleUnits(Tristate.YES)).where();
+            String no = build(ItemCatalogFilter.EMPTY.withMultipleUnits(Tristate.NO)).where();
+
+            assertEquals(" WHERE " + ItemCatalogSql.HAS_EXTRA_UNITS, yes);
+            assertEquals(" WHERE NOT " + ItemCatalogSql.HAS_EXTRA_UNITS, no);
+            assertTrue(yes.contains("items_units.items_id = items.id"));
+            // A stray row for the item's own unit must not make a one-unit item a multi-unit one.
+            assertTrue(yes.contains("items_units.unit <> items.unit_id"));
+        }
+
+        @Test
+        @DisplayName("the unit-count column and the filter count the same rows")
+        void theColumnAndTheFilterShareOnePredicate() {
+            String exists = ItemCatalogSql.HAS_EXTRA_UNITS;
+            String predicate = exists.substring(exists.indexOf("FROM"), exists.lastIndexOf(')'));
+
+            assertTrue(ItemCatalogSql.UNIT_COUNT.contains(predicate),
+                    "the column counts different rows from the ones the filter asks about");
+            assertTrue(ItemCatalogSql.UNIT_COUNT.startsWith("(1 + "),
+                    "the item's own unit is counted, so a carton item reads 2");
+        }
 
         @Test
         @DisplayName("a minimum of zero means none is set, so such an item is never below it")

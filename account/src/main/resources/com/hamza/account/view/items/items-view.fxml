@@ -228,6 +228,12 @@
                                             </children>
                                         </HBox>
 
+                                        <!-- Sold in a unit besides its own: the items a carton or a dozen was set up for. -->
+                                        <Label styleClass="form-label" text="%item.filter.units"
+                                               GridPane.columnIndex="4" GridPane.rowIndex="2" />
+                                        <ComboBox fx:id="comboFilterUnits" maxWidth="1.7976931348623157E308"
+                                                  GridPane.columnIndex="5" GridPane.rowIndex="2" />
+
                                         <Label styleClass="form-label" text="%item.filter.saved"
                                                GridPane.columnIndex="0" GridPane.rowIndex="3" />
                                         <ComboBox fx:id="comboSavedFilters" maxWidth="1.7976931348623157E308"

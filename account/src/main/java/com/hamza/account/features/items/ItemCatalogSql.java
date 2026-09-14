@@ -90,6 +90,26 @@ public final class ItemCatalogSql {
     public static final String NEVER_SOLD =
             "NOT EXISTS (SELECT 1 FROM sales WHERE sales.num = items.id)";
 
+    /**
+     * A row of {@code items_units} that is a unit <em>besides</em> the item's own.
+     * <p>
+     * The item's own unit is {@code items.unit_id} and is never meant to have a row there -
+     * {@code ItemsDao.saveUnits} filters it out and V5 deleted the ones that existed - but
+     * nothing in the schema refuses one, and counting it would call a single-unit item a
+     * multi-unit one. Excluding it is the same rule the save follows.
+     * <p>
+     * One predicate for the column and the filter, so the list cannot show "2" beside an
+     * item the filter says has one unit.
+     */
+    private static final String EXTRA_UNIT_ROW =
+            "FROM items_units WHERE items_units.items_id = items.id AND items_units.unit <> items.unit_id";
+
+    /** How many units the item is sold in, its own included - so an item with a carton reads 2. */
+    public static final String UNIT_COUNT = "(1 + (SELECT COUNT(*) " + EXTRA_UNIT_ROW + "))";
+
+    /** The item is sold in at least one unit besides its own. */
+    public static final String HAS_EXTRA_UNITS = "EXISTS (SELECT 1 " + EXTRA_UNIT_ROW + ")";
+
     /** An item answers to a code in three tables; a search that knows one of them cannot find it. */
     private static final String SEARCH_ANY_WHERE = """
             (items.nameItem LIKE ?
@@ -217,6 +237,15 @@ public final class ItemCatalogSql {
         switch (safe.usage()) {
             case NEVER_MOVED -> conditions.add(NEVER_MOVED);
             case NEVER_SOLD -> conditions.add(NEVER_SOLD);
+            case ANY -> {
+            }
+        }
+
+        // A condition on items and items_units alone, so like the flags above it never
+        // forces the movement join onto the count.
+        switch (safe.multipleUnits()) {
+            case YES -> conditions.add(HAS_EXTRA_UNITS);
+            case NO -> conditions.add("NOT " + HAS_EXTRA_UNITS);
             case ANY -> {
             }
         }

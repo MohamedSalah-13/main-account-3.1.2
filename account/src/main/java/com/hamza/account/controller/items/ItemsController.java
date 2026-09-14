@@ -188,7 +188,8 @@ public class ItemsController extends LoadData {
     @FXML
     private ComboBox<ItemsFilterBar.GroupChoice> comboFilterGroup;
     @FXML
-    private ComboBox<ItemCatalogFilter.Tristate> comboFilterActive, comboFilterBarcode, comboFilterExpiry;
+    private ComboBox<ItemCatalogFilter.Tristate> comboFilterActive, comboFilterBarcode, comboFilterExpiry,
+            comboFilterUnits;
     @FXML
     private ComboBox<ItemCatalogFilter.BalanceRule> comboFilterBalance;
     @FXML
@@ -274,6 +275,7 @@ public class ItemsController extends LoadData {
                 colBarcode,
                 colName,
                 named("items-unit", unitColumn()),
+                named("items-unit-count", Columns.number("item.column.unit.count", ItemsModel::getUnitCount)),
                 colBuyPrice,
                 colSelPrice1,
                 colSelPrice2,
@@ -489,7 +491,7 @@ public class ItemsController extends LoadData {
 
     private void setUpFilterBar() {
         filterBar = new ItemsFilterBar(comboSearchScope, comboMatchMode, comboFilterGroup, comboFilterActive,
-                comboFilterBarcode, comboFilterExpiry, comboFilterBalance, comboFilterUsage,
+                comboFilterBarcode, comboFilterExpiry, comboFilterBalance, comboFilterUsage, comboFilterUnits,
                 txtMinPrice, txtMaxPrice, txtMiniFrom, txtMiniTo, comboSavedFilters, chipBar, filterPane,
                 btnFilters, labelFiltered, filter -> paginationTableSetting.setFilter(filter));
         filterBar.initialize();
